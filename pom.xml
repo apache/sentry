@@ -61,21 +61,10 @@ limitations under the License.
     <hive.version>0.10.0-cdh4.3.0-SNAPSHOT</hive.version>
     <junit.version>4.9</junit.version>
     <log4j.version>1.2.16</log4j.version>
+    <guava.version>11.0.2</guava.version>
+    <shiro.version>1.2.1</shiro.version>
+    <slf4j.version>1.6.1</slf4j.version>
   </properties>
-
-  <dependencies>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>${junit.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>log4j</groupId>
-      <artifactId>log4j</artifactId>
-      <version>${log4j.version}</version>
-    </dependency>
-  </dependencies>
 
   <dependencyManagement>
     <dependencies>
@@ -84,7 +73,43 @@ limitations under the License.
         <artifactId>hive-common</artifactId>
         <version>${hive.version}</version>
       </dependency>
-   </dependencies>
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>${junit.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>log4j</groupId>
+        <artifactId>log4j</artifactId>
+        <version>${log4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.shiro</groupId>
+        <artifactId>shiro-core</artifactId>
+        <version>${shiro.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>${guava.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-log4j12</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.cloudera.cdh</groupId>
+        <artifactId>access-core</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+    </dependencies>
   </dependencyManagement>
 
   <modules>
@@ -132,6 +157,7 @@ limitations under the License.
                   <exclude>*.log</exclude>
                   <exclude>**/nb-configuration.xml</exclude>
                   <exclude>**.patch</exclude>
+                  <exclude>README*</exclude>
                 </excludes>
               </configuration>
             </execution>
