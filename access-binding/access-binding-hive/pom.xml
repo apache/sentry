@@ -25,7 +25,6 @@ limitations under the License.
     <version>0.1-SNAPSHOT</version>
   </parent>
 
-  <groupId>com.cloudera.cdh</groupId>
   <artifactId>access-binding-hive</artifactId>
   <name>Access Binding for Hive</name>
 
@@ -34,6 +33,30 @@ limitations under the License.
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
     </dependency>
+    <dependency>
+    	<groupId>org.apache.hive</groupId>
+    	<artifactId>hive-exec</artifactId>
+    	</dependency>
+    <dependency>
+    	<groupId>com.cloudera.cdh</groupId>
+    	<artifactId>access-core</artifactId>
+    </dependency>
+    <dependency>
+    	<groupId>com.cloudera.cdh</groupId>
+    	<artifactId>access-provider-file</artifactId>
+    	<version>0.1-SNAPSHOT</version>
+    	<scope>test</scope>
+    </dependency>
+    <dependency>
+    	<groupId>org.apache.hadoop</groupId>
+    	<artifactId>hadoop-common</artifactId>
+    </dependency>
+    <dependency>
+    	<groupId>org.apache.hadoop</groupId>
+    	<artifactId>hadoop-client</artifactId>
+    	<version>${cdh.hadoop.version}</version>
+    </dependency>
   </dependencies>
 
+  <groupId>com.cloudera.cdh</groupId>
 </project>
