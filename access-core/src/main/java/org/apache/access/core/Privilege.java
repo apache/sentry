@@ -14,22 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.cloudera.access.core;
+package org.apache.access.core;
 
-import java.util.EnumSet;
+public enum Privilege {
 
+  INSERT("insert"),
+  SELECT("select"),
+  ALL("*");
 
-public interface AuthorizationProvider {
+  private final String value;
+  private Privilege(String value) {
+    this.value = value;
+  }
 
-  /**
-   * Returns true if the user has the requested privileges on the server, database, and table.
-   */
-  public boolean hasAccess(Subject subject, Server server, Database database, Table table, EnumSet<Privilege> privileges);
-
-  /**
-   * Returns true if the subject has the requested privileges on the server i.e. the
-   * subject has this privilege server wide.
-   */
-  public boolean hasAccess(Subject subject, Server server, ServerResource serverResource, EnumSet<Privilege> privileges);
-
+  public String getValue() {
+    return value;
+  }
 }

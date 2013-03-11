@@ -14,17 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.cloudera.access.core;
+package org.apache.access.core;
 
-public class Table {
-
-  private final String name;
-
-  public Table(String name) {
-    this.name = name;
-  }
-
-  public String getName() {
-    return name;
-  }
+public enum ServerResource {
+  UDFS();
 }

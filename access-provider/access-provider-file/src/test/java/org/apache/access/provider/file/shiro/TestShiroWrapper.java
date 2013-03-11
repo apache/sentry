@@ -14,13 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.cloudea.access.provider.file.shiro;
+package org.apache.access.provider.file.shiro;
 
 import java.util.Arrays;
 import java.util.Collection;
 
 import junit.framework.Assert;
 
+import org.apache.access.provider.file.shiro.AuthorizationOnlyIniRealm;
+import org.apache.access.provider.file.shiro.UsernameToken;
 import org.apache.shiro.mgt.DefaultSecurityManager;
 import org.apache.shiro.mgt.SecurityManager;
 import org.apache.shiro.subject.Subject;
@@ -30,8 +32,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import com.cloudera.access.provider.file.shiro.AuthorizationOnlyIniRealm;
-import com.cloudera.access.provider.file.shiro.UsernameToken;
 
 @RunWith(Parameterized.class)
 public class TestShiroWrapper {

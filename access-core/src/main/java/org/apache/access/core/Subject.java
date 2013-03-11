@@ -14,16 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.cloudera.access.provider.file.shiro;
+package org.apache.access.core;
 
-import org.apache.shiro.authc.UsernamePasswordToken;
+public class Subject {
 
-public class UsernameToken extends UsernamePasswordToken {
+  private final String name;
 
-  private static final long serialVersionUID = 1L;
-
-  public UsernameToken(final String username) {
-    super(username, AuthorizationOnlyIniRealm.DUMMY_PASSWORD);
+  public Subject(String name) {
+    this.name = name;
   }
 
+  public String getName() {
+    return name;
+  }
 }

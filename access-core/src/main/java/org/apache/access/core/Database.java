@@ -14,20 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.cloudera.access.core;
+package org.apache.access.core;
 
-public enum Privilege {
+public class Database {
 
-  INSERT("insert"),
-  SELECT("select"),
-  ALL("*");
+  private final String name;
 
-  private final String value;
-  private Privilege(String value) {
-    this.value = value;
+  public Database(String name) {
+    this.name = name;
   }
 
-  public String getValue() {
-    return value;
+  public String getName() {
+    return name;
   }
 }

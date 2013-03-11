@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.cloudera.access.provider.file.shiro;
+package org.apache.access.provider.file.shiro;
 
 import java.util.Map;
 

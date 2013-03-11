@@ -14,13 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.cloudera.access.core;
+package org.apache.access.core;
 
-public class Subject {
+public class Server {
 
   private final String name;
 
-  public Subject(String name) {
+  public Server(String name) {
     this.name = name;
   }
 

@@ -14,17 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.cloudera.access.core;
+package org.apache.access.core;
 
-public class Database {
+import java.util.EnumSet;
 
-  private final String name;
 
-  public Database(String name) {
-    this.name = name;
-  }
+public interface AuthorizationProvider {
 
-  public String getName() {
-    return name;
-  }
+  /**
+   * Returns true if the user has the requested privileges on the server, database, and table.
+   */
+  public boolean hasAccess(Subject subject, Server server, Database database, Table table, EnumSet<Privilege> privileges);
+
+  /**
+   * Returns true if the subject has the requested privileges on the server i.e. the
+   * subject has this privilege server wide.
+   */
+  public boolean hasAccess(Subject subject, Server server, ServerResource serverResource, EnumSet<Privilege> privileges);
+
 }

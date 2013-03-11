@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.cloudea.access.provider.file.shiro;
+package org.apache.access.provider.file.shiro;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -22,18 +22,18 @@ import java.util.EnumSet;
 
 import junit.framework.Assert;
 
+import org.apache.access.core.Database;
+import org.apache.access.core.Privilege;
+import org.apache.access.core.Server;
+import org.apache.access.core.Subject;
+import org.apache.access.core.Table;
+import org.apache.access.provider.file.ResourceAuthorizationProvider;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 
-import com.cloudera.access.provider.file.ResourceAuthorizationProvider;
-import com.cloudera.access.core.Database;
-import com.cloudera.access.core.Privilege;
-import com.cloudera.access.core.Server;
-import com.cloudera.access.core.Subject;
-import com.cloudera.access.core.Table;
 import com.google.common.base.Objects;
 
 @RunWith(Parameterized.class)

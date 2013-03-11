@@ -14,23 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.cloudera.access.provider.file;
+package org.apache.access.provider.file;
 
 import java.util.EnumSet;
 
+import org.apache.access.core.AuthorizationProvider;
+import org.apache.access.core.Database;
+import org.apache.access.core.Privilege;
+import org.apache.access.core.Server;
+import org.apache.access.core.ServerResource;
+import org.apache.access.core.Subject;
+import org.apache.access.core.Table;
+import org.apache.access.provider.file.shiro.AuthorizationOnlyIniRealm;
+import org.apache.access.provider.file.shiro.UsernameToken;
 import org.apache.shiro.mgt.DefaultSecurityManager;
 import org.apache.shiro.mgt.SecurityManager;
 import org.apache.shiro.util.ThreadContext;
 
-import com.cloudera.access.core.AuthorizationProvider;
-import com.cloudera.access.core.Database;
-import com.cloudera.access.core.Privilege;
-import com.cloudera.access.core.Server;
-import com.cloudera.access.core.ServerResource;
-import com.cloudera.access.core.Subject;
-import com.cloudera.access.core.Table;
-import com.cloudera.access.provider.file.shiro.AuthorizationOnlyIniRealm;
-import com.cloudera.access.provider.file.shiro.UsernameToken;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;

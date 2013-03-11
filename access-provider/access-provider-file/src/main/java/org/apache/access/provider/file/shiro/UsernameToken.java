@@ -14,8 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.cloudera.access.core;
+package org.apache.access.provider.file.shiro;
 
-public enum ServerResource {
-  UDFS();
+import org.apache.shiro.authc.UsernamePasswordToken;
+
+public class UsernameToken extends UsernamePasswordToken {
+
+  private static final long serialVersionUID = 1L;
+
+  public UsernameToken(final String username) {
+    super(username, AuthorizationOnlyIniRealm.DUMMY_PASSWORD);
+  }
+
 }
