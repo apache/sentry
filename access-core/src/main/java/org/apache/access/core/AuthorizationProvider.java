@@ -24,12 +24,12 @@ public interface AuthorizationProvider {
   /**
    * Returns true if the user has the requested privileges on the server, database, and table.
    */
-  public boolean hasAccess(Subject subject, Server server, Database database, Table table, EnumSet<Privilege> privileges);
+  public boolean hasAccess(Subject subject, Server server, Database database, Table table, EnumSet<Action> actions);
 
   /**
    * Returns true if the subject has the requested privileges on the server i.e. the
    * subject has this privilege server wide.
    */
-  public boolean hasAccess(Subject subject, Server server, ServerResource serverResource, EnumSet<Privilege> privileges);
+  public boolean hasAccess(Subject subject, Server server, ServerResource serverResource, EnumSet<Action> actions);
 
 }

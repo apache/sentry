@@ -18,6 +18,11 @@ package org.apache.access.core;
 
 public class Server {
 
+  /**
+   * Represents all servers
+   */
+  public static final Server ALL = new Server(AccessConstants.ALL);
+
   private final String name;
 
   public Server(String name) {
@@ -26,5 +31,10 @@ public class Server {
 
   public String getName() {
     return name;
+  }
+
+  @Override
+  public String toString() {
+    return "Server [name=" + name + "]";
   }
 }

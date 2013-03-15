@@ -18,101 +18,120 @@ package org.apache.access.provider.file;
 
 import java.util.EnumSet;
 
+import org.apache.access.core.AccessConstants;
+import org.apache.access.core.Action;
 import org.apache.access.core.AuthorizationProvider;
 import org.apache.access.core.Database;
-import org.apache.access.core.Privilege;
 import org.apache.access.core.Server;
 import org.apache.access.core.ServerResource;
 import org.apache.access.core.Subject;
 import org.apache.access.core.Table;
-import org.apache.access.provider.file.shiro.AuthorizationOnlyIniRealm;
-import org.apache.access.provider.file.shiro.UsernameToken;
-import org.apache.shiro.mgt.DefaultSecurityManager;
-import org.apache.shiro.mgt.SecurityManager;
-import org.apache.shiro.util.ThreadContext;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.security.Groups;
+import org.apache.shiro.authz.Permission;
+import org.apache.shiro.authz.permission.WildcardPermissionResolver;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import com.google.common.collect.Iterables;
 
 public class ResourceAuthorizationProvider implements AuthorizationProvider {
 
-  private final AuthorizationOnlyIniRealm realm;
-  private final SecurityManager securityManager;
+  private final GroupMappingService groupService;
+  private final Policy policy;
+  private final WildcardPermissionResolver permissionResolver;
+
+  @VisibleForTesting
+  public ResourceAuthorizationProvider(Policy policy,
+      GroupMappingService groupService) {
+    this.policy = policy;
+    this.groupService = groupService;
+    permissionResolver = new WildcardPermissionResolver();
+  }
+
   public ResourceAuthorizationProvider(String resource) {
-    realm = new AuthorizationOnlyIniRealm(resource);
-    securityManager = new DefaultSecurityManager(realm);
+    this(new SimplePolicy(resource), new HadoopGroupMappingService(
+        Groups.getUserToGroupsMappingService(new Configuration())));
   }
 
   @Override
-  public boolean hasAccess(Subject subject, Server server, Database database, Table table, EnumSet<Privilege> privileges) {
+  public boolean hasAccess(Subject subject, Server server, Database database,
+      Table table, EnumSet<Action> actions) {
     Preconditions.checkNotNull(subject, "Subject cannot be null");
     Preconditions.checkNotNull(server, "Server cannot be null");
     Preconditions.checkNotNull(database, "Database cannot be null");
     Preconditions.checkNotNull(table, "Table cannot be null");
-    Preconditions.checkNotNull(privileges, "Privileges cannot be null");
-    Preconditions.checkArgument(privileges.size() > 0, "Privileges cannot be empty");
-    ThreadContext.bind(securityManager);
-    try {
-      // TODO test to see if this is expensive
-      org.apache.shiro.subject.Subject internalSubject =
-          new org.apache.shiro.subject.Subject.Builder(securityManager).buildSubject();
-      internalSubject.login(new UsernameToken(subject.getName()));
-      return doHasAccess(internalSubject, server, database, table, privileges);
-    } finally {
-      ThreadContext.unbindSecurityManager();
-    }
+    Preconditions.checkNotNull(actions, "Actions cannot be null");
+    Preconditions.checkArgument(!actions.isEmpty(), "Actions cannot be empty");
+    return doHasAccess(subject, server, database, table, actions);
   }
 
   @Override
   public boolean hasAccess(Subject subject, Server server,
-      ServerResource serverResource, EnumSet<Privilege> privileges) {
+      ServerResource serverResource, EnumSet<Action> actions) {
     Preconditions.checkNotNull(subject, "Subject cannot be null");
     Preconditions.checkNotNull(server, "Server cannot be null");
-    Preconditions.checkNotNull(privileges, "Privileges cannot be null");
-    Preconditions.checkArgument(privileges.size() > 0, "Privileges cannot be empty");
-    ThreadContext.bind(securityManager);
-    try {
-      // TODO test to see if this is expensive
-      org.apache.shiro.subject.Subject internalSubject =
-          new org.apache.shiro.subject.Subject.Builder(securityManager).buildSubject();
-      internalSubject.login(new UsernameToken(subject.getName()));
-      return doHasAccess(internalSubject, server, serverResource, privileges);
-    } finally {
-      ThreadContext.unbindSecurityManager();
-    }
+    Preconditions.checkNotNull(actions, "Actions cannot be null");
+    Preconditions.checkArgument(!actions.isEmpty(), "Actions cannot be empty");
+    return doHasAccess(subject, server, serverResource, actions);
   }
 
-  private boolean doHasAccess(org.apache.shiro.subject.Subject subject, Server server, Database database,
-      Table table, EnumSet<Privilege> privileges) {
-    for(Privilege privilege : privileges) {
-      String permission = Joiner.on(":").join(returnWildcardOrKV("server", server.getName()),
-          returnWildcardOrKV("db", database.getName()),
-          returnWildcardOrKV("table", table.getName()), privilege.getValue());
-      if(!subject.isPermitted(permission)) {
-        return false;
+  private boolean doHasAccess(Subject subject, Server server,
+      Database database, Table table, EnumSet<Action> actions) {
+    for (String group : groupService.getGroups(subject.getName())) {
+      Iterable<Permission> permissions = getPermissionsForGroup(group);
+      for (Action action : actions) {
+        String requestedPermission = Joiner.on(":").join(
+            returnWildcardOrKV("server", server.getName()),
+            returnWildcardOrKV("db", database.getName()),
+            returnWildcardOrKV("table", table.getName()), action.getValue());
+        for (Permission permission : permissions) {
+          if (permission.implies(permissionResolver
+              .resolvePermission(requestedPermission))) {
+            return true;
+          }
+        }
       }
     }
-    return true;
+    return false;
   }
 
-  private boolean doHasAccess(org.apache.shiro.subject.Subject subject, Server server,
-      ServerResource serverResource, EnumSet<Privilege> privileges) {
-    for(Privilege privilege : privileges) {
-      String permission = Joiner.on(":").join(returnWildcardOrKV("server", server.getName()),
-          serverResource.name().toLowerCase(), privilege.getValue());
-      if(!subject.isPermitted(permission)) {
-        return false;
+  private boolean doHasAccess(Subject subject, Server server,
+      ServerResource serverResource, EnumSet<Action> actions) {
+    for (String group : groupService.getGroups(subject.getName())) {
+      Iterable<Permission> permissions = getPermissionsForGroup(group);
+      for (Action action : actions) {
+        String requestedPermission = Joiner.on(":").join(
+            returnWildcardOrKV("server", server.getName()),
+            serverResource.name().toLowerCase(), action.getValue());
+        for (Permission permission : permissions) {
+          if (permission.implies(permissionResolver
+              .resolvePermission(requestedPermission))) {
+            return true;
+          }
+        }
       }
     }
-    return true;
+    return false;
   }
 
+  private Iterable<Permission> getPermissionsForGroup(String group) {
+    return Iterables.transform(policy.getPermissions(group),
+        new Function<String, Permission>() {
+      @Override
+      public Permission apply(String permission) {
+        return permissionResolver.resolvePermission(permission);
+      }
+    });
+  }
 
   private String returnWildcardOrKV(String prefix, String value) {
     value = Strings.nullToEmpty(value).trim();
-    if(value.isEmpty() || "*".equals(value)) {
-      return "*";
+    if (value.isEmpty() || value.equals(AccessConstants.ALL)) {
+      return AccessConstants.ALL;
     }
     return Joiner.on("=").join(prefix, value);
   }

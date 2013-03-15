@@ -18,6 +18,11 @@ package org.apache.access.core;
 
 public class Table {
 
+  /**
+   * Represents all tables
+   */
+  public static final Table ALL = new Table(AccessConstants.ALL);
+
   private final String name;
 
   public Table(String name) {
@@ -26,5 +31,10 @@ public class Table {
 
   public String getName() {
     return name;
+  }
+
+  @Override
+  public String toString() {
+    return "Table [name=" + name + "]";
   }
 }

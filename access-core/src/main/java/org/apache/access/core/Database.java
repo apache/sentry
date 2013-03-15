@@ -18,6 +18,11 @@ package org.apache.access.core;
 
 public class Database {
 
+  /**
+   * Represents all databases
+   */
+  public static final Database ALL = new Database(AccessConstants.ALL);
+
   private final String name;
 
   public Database(String name) {
@@ -26,5 +31,10 @@ public class Database {
 
   public String getName() {
     return name;
+  }
+
+  @Override
+  public String toString() {
+    return "Database [name=" + name + "]";
   }
 }
