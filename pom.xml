@@ -23,7 +23,6 @@ limitations under the License.
     <version>4.3.0-SNAPSHOT</version>
   </parent>
 
-  <groupId>com.cloudera.cdh</groupId>
   <artifactId>access</artifactId>
   <version>0.1-SNAPSHOT</version>
   <description>Access component</description>
@@ -81,11 +80,6 @@ limitations under the License.
       </dependency>
       <dependency>
         <groupId>org.apache.hive</groupId>
-        <artifactId>hive-exec</artifactId>
-        <version>${hive.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.hive</groupId>
         <artifactId>hive-metastore</artifactId>
         <version>${hive.version}</version>
       </dependency>
@@ -125,6 +119,66 @@ limitations under the License.
         <artifactId>access-core</artifactId>
         <version>${project.version}</version>
       </dependency>
+      <dependency>
+      	<groupId>org.apache.hive</groupId>
+      	<artifactId>hive-jdbc</artifactId>
+      	<version>${hive.version}</version>
+      </dependency>
+      <dependency>
+      	<groupId>org.apache.hive</groupId>
+      	<artifactId>hive-shims</artifactId>
+      	<version>${hive.version}</version>
+      </dependency>
+      <dependency>
+      	<groupId>org.apache.hive</groupId>
+      	<artifactId>hive-serde</artifactId>
+      	<version>${hive.version}</version>
+      </dependency>
+      <dependency>
+      	<groupId>org.apache.hive</groupId>
+      	<artifactId>hive-exec</artifactId>
+      	<version>${hive.version}</version>
+      </dependency>
+      <dependency>
+      	<groupId>org.apache.hive</groupId>
+      	<artifactId>hive-service</artifactId>
+      	<version>${hive.version}</version>
+      </dependency>
+      <dependency>
+      	<groupId>org.apache.hive</groupId>
+      	<artifactId>hive-hwi</artifactId>
+      	<version>${hive.version}</version>
+      </dependency>
+      <dependency>
+      	<groupId>org.apache.hive</groupId>
+      	<artifactId>hive-pdk</artifactId>
+      	<version>${hive.version}</version>
+      </dependency>
+      <dependency>
+      	<groupId>org.apache.hive</groupId>
+      	<artifactId>hive-hbase-handler</artifactId>
+      	<version>${hive.version}</version>
+      </dependency>
+      <dependency>
+      	<groupId>org.apache.hive</groupId>
+      	<artifactId>hive-contrib</artifactId>
+      	<version>${hive.version}</version>
+      </dependency>
+      <dependency>
+      	<groupId>org.apache.hive</groupId>
+      	<artifactId>hive-cli</artifactId>
+      	<version>${hive.version}</version>
+      </dependency>
+      <dependency>
+      	<groupId>org.apache.hive</groupId>
+      	<artifactId>hive-builtins</artifactId>
+      	<version>${hive.version}</version>
+      </dependency>
+      <dependency>
+      	<groupId>org.apache.hive</groupId>
+      	<artifactId>hive-anttasks</artifactId>
+      	<version>${hive.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -132,6 +186,7 @@ limitations under the License.
     <module>access-core</module>
     <module>access-binding</module>
     <module>access-provider</module>
+    <module>access-tests</module>
   </modules>
 
   <build>
@@ -177,6 +232,9 @@ limitations under the License.
                   <exclude>.project</exclude>
                   <exclude>.settings</exclude>
                   <exclude>.classpath</exclude>
+                  <exclude>**/*.lck</exclude>
+                  <exclude>**/*.properties</exclude>
+                  <exclude>**/*.txt</exclude>
                 </excludes>
               </configuration>
             </execution>
