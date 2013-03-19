@@ -102,17 +102,20 @@ public class TestHiveAccess {
         fail(ex.toString());
       }*/
 
+      // drop table
+      userStmt.execute("drop table if exists " + tableName);
+
       // create table 
       userStmt.execute("create table " + tableName
 		   + " (under_col int comment 'the under column', value string) comment '"
 	           + tableComment + "'");
       //TODO: LOAD, QUERY, DROP table fails. See ACCESS-30.
       // load data
-      //stmt.execute("load data local inpath '" + dataFilePath.toString() + "' into table " + tableName);      
+      userStmt.execute("load data local inpath '" + dataFilePath.toString() + "' into table " + tableName);      
       // query table
-      //ResultSet   res = stmt.executeQuery("select under_col, value from " + tableName);
+      ResultSet   res = userStmt.executeQuery("select * from " + tableName);
       //drop table
-      //stmt.execute("drop table " + tableName);
+      userStmt.execute("drop table " + tableName);
       
       
       // per test tear down

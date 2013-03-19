@@ -100,7 +100,7 @@ public class TestResourceAuthorizationProvider {
 
   @Parameters
   public static Collection<Object[]> run() {
-    ResourceAuthorizationProvider authzProvider = new ResourceAuthorizationProvider(
+    ResourceAuthorizationProvider authzProvider = new HadoopGroupResourceAuthorizationProvider(
         new SimplePolicy("classpath:test-authz-provider.ini"),
         new MockGroupMappingServiceProvider(USER_TO_GROUP_MAP));
     return Arrays.asList(new Object[][] {

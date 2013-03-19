@@ -18,17 +18,27 @@
 -->
 
 <configuration>
-  <property>
-    <name>hive.authz.provider</name>
-    <value>org.apache.access.provider.file.LocalGroupResourceAuthorizationProvider</value>
-  </property>
-  <property>
-    <name>hive.authz.provider.resource</name>
-    <value>classpath:test-authz-provider.ini</value>
-  </property>
-  <property>
-    <name>hive.authz.server</name>
-    <value>myHS2</value>
-  </property>
+<property>
+  <name>hive.metastore.warehouse.dir</name>
+  <value>${buildDirectory}/warehouse</value>
+  <description>location of default database for the warehouse</description>
+</property>
+
+<property>
+  <name>mapreduce.framework.name</name>
+  <value>local</value>
+  <description>location of default database for the warehouse</description>
+</property>
+
+<property>
+  <name>javax.jdo.option.ConnectionURL</name>
+  <!-- note: variable substituion not working here because it's loaded by jdo, not Hive -->
+  <value>jdbc:derby:;databaseName=target/metastore_db;create=true</value>
+</property>
+
+<property>
+  <name>hadoop.bin.path</name>
+  <value>hadoop.home</value>
+</property>
+
 </configuration>
-    

@@ -34,8 +34,6 @@ import org.apache.access.binding.hive.conf.HiveAuthzConf;
 import org.apache.access.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
 import org.apache.access.core.Subject;
 import org.apache.access.core.Database;
-import org.apache.access.provider.file.ResourceAuthorizationProvider;
-import org.apache.access.provider.file.SimplePolicy;
 
 /**
  * Test for hive authz bindings
@@ -47,10 +45,10 @@ public class TestHiveAuthzBindings {
   private static String SERVER1 = "server1";
 
   // Users
-  private static Subject ADMIN_SUBJECT = new Subject("admin");
-  private static Subject MANAGER_SUBJECT = new Subject("manager");
-  private static Subject ANALYST_SUBJECT = new Subject("analyst");
-  private static Subject JUNIOR_ANALYST_SUBJECT = new Subject("junior_analyst");
+  private static Subject ADMIN_SUBJECT = new Subject("admin1");
+  private static Subject MANAGER_SUBJECT = new Subject("manager1");
+  private static Subject ANALYST_SUBJECT = new Subject("analyst1");
+  private static Subject JUNIOR_ANALYST_SUBJECT = new Subject("junior_analyst1");
 
   // Databases
   private static String CUSTOMER_DB = "customers";
@@ -88,14 +86,11 @@ public class TestHiveAuthzBindings {
 
     // create auth configuration
     authzConf.set(AuthzConfVars.AUTHZ_PROVIDER.getVar(),
-      "org.apache.access.provider.file.ResourceAuthorizationProvider");
+      "org.apache.access.provider.file.LocalGroupResourceAuthorizationProvider");
     authzConf.set(AuthzConfVars.AUTHZ_PROVIDERRES_RESOURCE.getVar(),
         "classpath:test-authz-provider.ini");
     authzConf.set(AuthzConfVars.AUTHZ_SERVER_NAME.getVar(), SERVER1);
     testAuth = new HiveAuthzBinding(authzConf);
-    testAuth.setAuthProvider(new ResourceAuthorizationProvider(
-        new SimplePolicy("classpath:test-authz-provider.ini"),
-        new MockUserToGroupMapping()));
   }
 
 

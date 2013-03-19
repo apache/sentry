@@ -26,35 +26,26 @@ import org.apache.access.core.Server;
 import org.apache.access.core.ServerResource;
 import org.apache.access.core.Subject;
 import org.apache.access.core.Table;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.security.Groups;
 import org.apache.shiro.authz.Permission;
 import org.apache.shiro.authz.permission.WildcardPermissionResolver;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 
-public class ResourceAuthorizationProvider implements AuthorizationProvider {
+public abstract class ResourceAuthorizationProvider implements AuthorizationProvider {
 
   private final GroupMappingService groupService;
   private final Policy policy;
   private final WildcardPermissionResolver permissionResolver;
 
-  @VisibleForTesting
   public ResourceAuthorizationProvider(Policy policy,
       GroupMappingService groupService) {
     this.policy = policy;
     this.groupService = groupService;
     permissionResolver = new WildcardPermissionResolver();
-  }
-
-  public ResourceAuthorizationProvider(String resource) {
-    this(new SimplePolicy(resource), new HadoopGroupMappingService(
-        Groups.getUserToGroupsMappingService(new Configuration())));
   }
 
   @Override

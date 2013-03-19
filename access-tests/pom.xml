@@ -159,4 +159,19 @@ limitations under the License.
   		<version>0.1-SNAPSHOT</version>
   	</dependency>
   </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+         <groupId>org.apache.maven.plugins</groupId>
+         <artifactId>maven-surefire-plugin</artifactId>
+         <configuration>
+           <systemPropertyVariables>
+             <buildDirectory>${project.build.directory}</buildDirectory>
+             <hadoop.home>/usr/bin/hadoop</hadoop.home>
+            </systemPropertyVariables>
+         </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>
+

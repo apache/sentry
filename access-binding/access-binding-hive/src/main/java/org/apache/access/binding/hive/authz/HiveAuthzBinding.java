@@ -57,10 +57,6 @@ public class HiveAuthzBinding {
     authServer = new Server(authzConf.get(AuthzConfVars.AUTHZ_SERVER_NAME.getVar()));
   }
 
-  public void setAuthProvider (AuthorizationProvider authProvider) {
-    this.authProvider = authProvider;
-  }
-
   // Instantiate the configured authz provider
   private AuthorizationProvider getAuthProvider() throws Exception {
     // get the provider class and resources from the authz config
