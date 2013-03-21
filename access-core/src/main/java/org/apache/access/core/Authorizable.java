@@ -16,31 +16,16 @@
  */
 package org.apache.access.core;
 
-public class Server implements Authorizable {
+public interface Authorizable {
 
-  /**
-   * Represents all servers
-   */
-  public static final Server ALL = new Server(AccessConstants.ALL);
+  public enum AuthorizableType {
+    Server,
+    Db,
+    Table,
+    URI
+  };
 
-  private final String name;
+  public String getName();
 
-  public Server(String name) {
-    this.name = name;
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-
-  @Override
-  public String toString() {
-    return "Server [name=" + name + "]";
-  }
-
-  @Override
-  public AuthorizableType getAuthzType() {
-    return AuthorizableType.Server;
-  }
+  public AuthorizableType getAuthzType();
 }

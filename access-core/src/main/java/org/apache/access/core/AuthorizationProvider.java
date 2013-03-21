@@ -17,6 +17,7 @@
 package org.apache.access.core;
 
 import java.util.EnumSet;
+import java.util.List;
 
 
 public interface AuthorizationProvider {
@@ -31,5 +32,18 @@ public interface AuthorizationProvider {
    * subject has this privilege server wide.
    */
   public boolean hasAccess(Subject subject, Server server, ServerResource serverResource, EnumSet<Action> actions);
+
+  /***
+   * Returns validate subject privileges on given Authorizable object
+   *
+   * @param subject: UserID to validate privileges
+   * @param authorizableHierarchy : List of object accroding to namespace hierarchy.
+   *        eg. Server->Db->Table or Server->Function
+   *        The privileges will be validated from the higher to lower scope
+   * @param actions : Privileges to validate
+   * @return
+   *        True if the subject is authorized to perform requested action on the given object
+   */
+  public boolean hasAccess(Subject subject, List<Authorizable> authorizableHierarchy, EnumSet<Action> actions);
 
 }

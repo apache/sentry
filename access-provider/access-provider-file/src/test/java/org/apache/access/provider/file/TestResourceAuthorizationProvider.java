@@ -16,9 +16,11 @@
  */
 package org.apache.access.provider.file;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.List;
 
 import junit.framework.Assert;
 
@@ -27,6 +29,7 @@ import org.apache.access.core.Database;
 import org.apache.access.core.Server;
 import org.apache.access.core.Subject;
 import org.apache.access.core.Table;
+import org.apache.access.core.Authorizable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -96,6 +99,20 @@ public class TestResourceAuthorizationProvider {
     .add("Table", table).add("Privileges", privileges);
     Assert.assertEquals(helper.toString(), expected,
         authzProvider.hasAccess(subject, server, database, table, privileges));
+  }
+
+  @Test
+  public void testResourceAuthorizationProviderHierarchy() throws Exception {
+    Objects.ToStringHelper helper = Objects.toStringHelper("TestParameters");
+    helper.add("Subject", subject).add("Server", server).add("DB", database)
+    .add("Table", table).add("Privileges", privileges);
+    List<Authorizable> authzHierarchy = Arrays.asList(new Authorizable[] {
+        server, database, table
+    });
+    System.out.println("Running with " + helper.toString());
+    Assert.assertEquals(helper.toString(), expected,
+        authzProvider.hasAccess(subject, authzHierarchy, privileges));
+    System.out.println("Passed " + helper.toString());
   }
 
   @Parameters

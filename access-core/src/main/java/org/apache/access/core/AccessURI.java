@@ -16,31 +16,27 @@
  */
 package org.apache.access.core;
 
-public class Server implements Authorizable {
-
+public class AccessURI implements Authorizable {
   /**
-   * Represents all servers
+   * Represents all URIs
    */
-  public static final Server ALL = new Server(AccessConstants.ALL);
+  public static final AccessURI ALL = new AccessURI(AccessConstants.ALL);
 
-  private final String name;
+  private String uriName;
 
-  public Server(String name) {
-    this.name = name;
+
+  public AccessURI(String uriName) {
+    this.uriName = uriName;
   }
 
   @Override
   public String getName() {
-    return name;
-  }
-
-  @Override
-  public String toString() {
-    return "Server [name=" + name + "]";
+    return uriName;
   }
 
   @Override
   public AuthorizableType getAuthzType() {
-    return AuthorizableType.Server;
+    return AuthorizableType.URI;
   }
+
 }

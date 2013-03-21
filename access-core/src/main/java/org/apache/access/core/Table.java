@@ -16,7 +16,7 @@
  */
 package org.apache.access.core;
 
-public class Table {
+public class Table implements Authorizable {
 
   /**
    * Represents all tables
@@ -29,6 +29,7 @@ public class Table {
     this.name = name;
   }
 
+  @Override
   public String getName() {
     return name;
   }
@@ -36,5 +37,10 @@ public class Table {
   @Override
   public String toString() {
     return "Table [name=" + name + "]";
+  }
+
+  @Override
+  public AuthorizableType getAuthzType() {
+    return AuthorizableType.Table;
   }
 }

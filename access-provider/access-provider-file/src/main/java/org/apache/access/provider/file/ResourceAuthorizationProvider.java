@@ -16,10 +16,13 @@
  */
 package org.apache.access.provider.file;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 
 import org.apache.access.core.AccessConstants;
 import org.apache.access.core.Action;
+import org.apache.access.core.Authorizable;
 import org.apache.access.core.AuthorizationProvider;
 import org.apache.access.core.Database;
 import org.apache.access.core.Server;
@@ -70,6 +73,26 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
     return doHasAccess(subject, server, serverResource, actions);
   }
 
+  /***
+   * @param subject: UserID to validate privileges
+   * @param authorizableHierarchy : List of object accroding to namespace hierarchy.
+   *        eg. Server->Db->Table or Server->Function
+   *        The privileges will be validated from the higher to lower scope
+   * @param actions : Privileges to validate
+   * @return
+   *        True if the subject is authorized to perform requested action on the given object
+   */
+  @Override
+  public boolean hasAccess(Subject subject, List<Authorizable> authorizableHierarchy,
+        EnumSet<Action> actions) {
+    Preconditions.checkNotNull(subject, "Subject cannot be null");
+    Preconditions.checkNotNull(authorizableHierarchy, "Authorizable cannot be null");
+    Preconditions.checkArgument(!authorizableHierarchy.isEmpty(), "Authorizable cannot be empty");
+    Preconditions.checkNotNull(actions, "Actions cannot be null");
+    Preconditions.checkNotNull(!actions.isEmpty(), "Actions cannot be empty");
+    return doHasAccess(subject, authorizableHierarchy, actions);
+  }
+
   private boolean doHasAccess(Subject subject, Server server,
       Database database, Table table, EnumSet<Action> actions) {
     for (String group : groupService.getGroups(subject.getName())) {
@@ -98,6 +121,31 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
         String requestedPermission = Joiner.on(":").join(
             returnWildcardOrKV("server", server.getName()),
             serverResource.name().toLowerCase(), action.getValue());
+        for (Permission permission : permissions) {
+          if (permission.implies(permissionResolver
+              .resolvePermission(requestedPermission))) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  private boolean doHasAccess(Subject subject,
+      List<Authorizable> authorizableHierarchy, EnumSet<Action> actions) {
+    for (String group : groupService.getGroups(subject.getName())) {
+      Iterable<Permission> permissions = getPermissionsForGroup(group);
+      for (Action action : actions) {
+        List<String> hierarchy = new ArrayList<String>();
+        for (Authorizable authorizable : authorizableHierarchy) {
+          hierarchy.add(returnWildcardOrKV(
+              authorizable.getAuthzType().name().toLowerCase(),
+              authorizable.getName()));
+        }
+        String requestedPermission = Joiner.on(":").join(hierarchy);
+        requestedPermission = Joiner.on(":").join(requestedPermission,
+              action.getValue());
         for (Permission permission : permissions) {
           if (permission.implies(permissionResolver
               .resolvePermission(requestedPermission))) {

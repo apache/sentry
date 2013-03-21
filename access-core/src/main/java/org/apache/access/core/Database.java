@@ -16,7 +16,7 @@
  */
 package org.apache.access.core;
 
-public class Database {
+public class Database implements Authorizable {
 
   /**
    * Represents all databases
@@ -29,6 +29,7 @@ public class Database {
     this.name = name;
   }
 
+  @Override
   public String getName() {
     return name;
   }
@@ -36,5 +37,10 @@ public class Database {
   @Override
   public String toString() {
     return "Database [name=" + name + "]";
+  }
+
+  @Override
+  public AuthorizableType getAuthzType() {
+    return AuthorizableType.Db;
   }
 }
