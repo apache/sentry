@@ -16,7 +16,6 @@
  */
 package org.apache.access.provider.file;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -25,11 +24,11 @@ import java.util.List;
 import junit.framework.Assert;
 
 import org.apache.access.core.Action;
+import org.apache.access.core.Authorizable;
 import org.apache.access.core.Database;
 import org.apache.access.core.Server;
 import org.apache.access.core.Subject;
 import org.apache.access.core.Table;
-import org.apache.access.core.Authorizable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;

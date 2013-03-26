@@ -17,11 +17,10 @@
 package org.apache.access.binding.hive;
 
 import org.apache.access.binding.hive.conf.HiveAuthzConf;
+import org.apache.access.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.Assert;
-
-import static org.apache.access.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
 
 public class TestHiveAuthzConf {
   private HiveAuthzConf authzConf;
@@ -31,17 +30,17 @@ public class TestHiveAuthzConf {
     authzConf =  new HiveAuthzConf();
   }
 
-  @Test 
+  @Test
   public void testConfig() {
-    Assert.assertEquals("org.apache.access.provider.file.fooProvider", 
+    Assert.assertEquals("org.apache.access.provider.file.fooProvider",
         authzConf.get(AuthzConfVars.AUTHZ_PROVIDER.getVar()));
   }
-  
+
   @Test
   public void testConfigOverload() {
     authzConf.set(AuthzConfVars.AUTHZ_PROVIDERRES_RESOURCE.getVar(), "fooFile");
     Assert.assertEquals("fooFile",
         authzConf.get(AuthzConfVars.AUTHZ_PROVIDERRES_RESOURCE.getVar()));
   }
-  
+
 }

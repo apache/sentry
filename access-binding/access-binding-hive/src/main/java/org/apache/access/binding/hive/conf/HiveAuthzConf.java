@@ -18,7 +18,6 @@ package org.apache.access.binding.hive.conf;
 
 import java.net.URL;
 
-import org.apache.access.binding.hive.authz.HiveAuthzBinding;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -31,31 +30,31 @@ public class HiveAuthzConf extends Configuration {
   public static enum AuthzConfVars {
     AUTHZ_PROVIDER("hive.authz.provider",
         "com.cloudera.access.provider.file.ResourceAuthorizationProvider"),
-    AUTHZ_PROVIDERRES_RESOURCE("hive.authz.provider.resource", ""),
-    AUTHZ_SERVER_NAME("hive.authz.server", "HS2")
-   ;
+        AUTHZ_PROVIDERRES_RESOURCE("hive.authz.provider.resource", ""),
+        AUTHZ_SERVER_NAME("hive.authz.server", "HS2")
+        ;
 
-   private final String varName;
-   private final String defaultVal;
+    private final String varName;
+    private final String defaultVal;
 
-   AuthzConfVars(String varName, String defaultVal) {
-     this.varName = varName;
-     this.defaultVal = defaultVal;
-   }
-   
-   public String getVar() {
-     return varName;
-   }
-   
-   public String getDefault(String varName) {
-     return valueOf(varName).defaultVal;
-   }
+    AuthzConfVars(String varName, String defaultVal) {
+      this.varName = varName;
+      this.defaultVal = defaultVal;
+    }
+
+    public String getVar() {
+      return varName;
+    }
+
+    public String getDefault(String varName) {
+      return valueOf(varName).defaultVal;
+    }
   }
 
   static final private Log LOG = LogFactory.getLog(HiveAuthzConf.class.getName());
   public static String AUTHZ_SITE_FILE = "authz-site.xml";
   private static URL hiveAuthzSiteURL;
-  
+
   public HiveAuthzConf() {
     super(false);
     ClassLoader classLoader = Thread.currentThread().getContextClassLoader();

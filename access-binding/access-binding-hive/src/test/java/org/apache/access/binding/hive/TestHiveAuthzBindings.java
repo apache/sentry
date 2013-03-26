@@ -19,21 +19,20 @@ package org.apache.access.binding.hive;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.apache.hadoop.hive.ql.metadata.Table;
-import org.apache.hadoop.hive.ql.hooks.ReadEntity;
-import org.apache.hadoop.hive.ql.hooks.WriteEntity;
-import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
-import org.apache.hadoop.hive.ql.plan.HiveOperation;
-import org.junit.Before;
-import org.junit.Test;
-
 import org.apache.access.binding.hive.authz.HiveAuthzBinding;
 import org.apache.access.binding.hive.authz.HiveAuthzPrivileges;
 import org.apache.access.binding.hive.authz.HiveAuthzPrivilegesMap;
 import org.apache.access.binding.hive.conf.HiveAuthzConf;
 import org.apache.access.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
-import org.apache.access.core.Subject;
 import org.apache.access.core.Database;
+import org.apache.access.core.Subject;
+import org.apache.hadoop.hive.ql.hooks.ReadEntity;
+import org.apache.hadoop.hive.ql.hooks.WriteEntity;
+import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
+import org.apache.hadoop.hive.ql.metadata.Table;
+import org.apache.hadoop.hive.ql.plan.HiveOperation;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * Test for hive authz bindings
@@ -54,7 +53,7 @@ public class TestHiveAuthzBindings {
   private static String CUSTOMER_DB = "customers";
   private static String ANALYST_DB = "analyst";
   private static String JUNIOR_ANALYST_DB = "junior_analyst";
-  
+
   // Tables
   private static String PURCHASES_TAB = "purchases";
   private static String PAYMENT_TAB = "payments";
@@ -65,16 +64,16 @@ public class TestHiveAuthzBindings {
   private static HiveAuthzConf authzConf =  new HiveAuthzConf();
 
   // Privileges
-  private static HiveAuthzPrivileges queryPrivileges = 
+  private static HiveAuthzPrivileges queryPrivileges =
       HiveAuthzPrivilegesMap.getHiveAuthzPrivileges(HiveOperation.QUERY);
-  private static HiveAuthzPrivileges createTabPrivileges = 
-    HiveAuthzPrivilegesMap.getHiveAuthzPrivileges(HiveOperation.CREATETABLE);
+  private static HiveAuthzPrivileges createTabPrivileges =
+      HiveAuthzPrivilegesMap.getHiveAuthzPrivileges(HiveOperation.CREATETABLE);
   private static HiveAuthzPrivileges loadTabPrivileges =
-    HiveAuthzPrivilegesMap.getHiveAuthzPrivileges(HiveOperation.LOAD);
-  private static HiveAuthzPrivileges createDbPrivileges = 
-    HiveAuthzPrivilegesMap.getHiveAuthzPrivileges(HiveOperation.CREATEDATABASE);
+      HiveAuthzPrivilegesMap.getHiveAuthzPrivileges(HiveOperation.LOAD);
+  private static HiveAuthzPrivileges createDbPrivileges =
+      HiveAuthzPrivilegesMap.getHiveAuthzPrivileges(HiveOperation.CREATEDATABASE);
   private static HiveAuthzPrivileges createFuncPrivileges =
-    HiveAuthzPrivilegesMap.getHiveAuthzPrivileges(HiveOperation.CREATEFUNCTION);
+      HiveAuthzPrivilegesMap.getHiveAuthzPrivileges(HiveOperation.CREATEFUNCTION);
 
   // auth bindings handler
   private HiveAuthzBinding testAuth = null;
@@ -86,7 +85,7 @@ public class TestHiveAuthzBindings {
 
     // create auth configuration
     authzConf.set(AuthzConfVars.AUTHZ_PROVIDER.getVar(),
-      "org.apache.access.provider.file.LocalGroupResourceAuthorizationProvider");
+        "org.apache.access.provider.file.LocalGroupResourceAuthorizationProvider");
     authzConf.set(AuthzConfVars.AUTHZ_PROVIDERRES_RESOURCE.getVar(),
         "classpath:test-authz-provider.ini");
     authzConf.set(AuthzConfVars.AUTHZ_SERVER_NAME.getVar(), SERVER1);
@@ -94,16 +93,16 @@ public class TestHiveAuthzBindings {
   }
 
 
-   /**
+  /**
    * validate read permission for admin on customer:purchase
    */
   @Test
   public void TestValidateSelectPrivilegesForAdmin() throws Exception {
     inputTabList.add(new ReadEntity(new Table(CUSTOMER_DB, PURCHASES_TAB)));
-    testAuth.authorize(HiveOperation.QUERY, queryPrivileges, ADMIN_SUBJECT, 
-          null, inputTabList, outputTabList);
+    testAuth.authorize(HiveOperation.QUERY, queryPrivileges, ADMIN_SUBJECT,
+        null, inputTabList, outputTabList);
   }
-  
+
   /**
    * validate read permission for admin on customer:purchase
    */
@@ -111,9 +110,9 @@ public class TestHiveAuthzBindings {
   public void TestValidateSelectPrivilegesForUsers() throws Exception {
     inputTabList.add(new ReadEntity(new Table(CUSTOMER_DB, PURCHASES_TAB)));
     testAuth.authorize(HiveOperation.QUERY, queryPrivileges, ANALYST_SUBJECT,
-          null, inputTabList, outputTabList);
+        null, inputTabList, outputTabList);
   }
-  
+
   /**
    * validate read permission for denied for junior analyst on customer:purchase
    */
@@ -121,7 +120,7 @@ public class TestHiveAuthzBindings {
   public void TestValidateSelectPrivilegesRejectionForUsers() throws Exception {
     inputTabList.add(new ReadEntity(new Table(CUSTOMER_DB, PURCHASES_TAB)));
     testAuth.authorize(HiveOperation.QUERY, queryPrivileges, JUNIOR_ANALYST_SUBJECT,
-          null, inputTabList, outputTabList);
+        null, inputTabList, outputTabList);
   }
 
   /**
@@ -195,7 +194,7 @@ public class TestHiveAuthzBindings {
   }
 
   /**
-   * validate create database permission for admin 
+   * validate create database permission for admin
    */
   @Test
   public void TestValidateCreateDbForAdmin() throws Exception {
@@ -203,9 +202,9 @@ public class TestHiveAuthzBindings {
     testAuth.authorize(HiveOperation.CREATEDATABASE, createDbPrivileges, ADMIN_SUBJECT,
         new Database(CUSTOMER_DB), inputTabList, outputTabList);
   }
-  
+
   /**
-   * validate create database permission for admin 
+   * validate create database permission for admin
    */
   @Test(expected=AuthorizationException.class)
   public void TestValidateCreateDbRejectionForUser() throws Exception {
@@ -213,7 +212,7 @@ public class TestHiveAuthzBindings {
     testAuth.authorize(HiveOperation.CREATEDATABASE, createDbPrivileges, ANALYST_SUBJECT,
         new Database(CUSTOMER_DB), inputTabList, outputTabList);
   }
-  
+
   /**
    * Validate create function permission for admin (server level priviledge
    */

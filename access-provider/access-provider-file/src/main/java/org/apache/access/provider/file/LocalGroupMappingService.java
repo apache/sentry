@@ -17,7 +17,6 @@
 
 package org.apache.access.provider.file;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -51,7 +50,7 @@ public class LocalGroupMappingService implements GroupMappingService {
 
   private String USERS_SECTION = "users";
   private static final Logger LOGGER = LoggerFactory
-    .getLogger(LocalGroupMappingService.class);
+      .getLogger(LocalGroupMappingService.class);
 
   private Map <String, List<String>> groupMap =
       new HashMap <String, List<String>> ();

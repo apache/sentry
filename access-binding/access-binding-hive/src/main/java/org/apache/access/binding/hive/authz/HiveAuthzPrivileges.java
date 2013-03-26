@@ -19,8 +19,9 @@ package org.apache.access.binding.hive.authz;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.hadoop.hive.ql.hooks.Entity;
+
 import org.apache.access.core.Action;
+import org.apache.hadoop.hive.ql.hooks.Entity;
 
 /**
  * Hive objects with required access privileges mapped to auth provider privileges
@@ -37,7 +38,7 @@ public class HiveAuthzPrivileges {
     TABLE,
     VIEW,
     URI;
-    
+
     // Covert the Entity type captured by compiler to Hive Authz object type
     public static HiveObjectTypes convertHiveEntity(Entity.Type hiveEntity) {
       switch (hiveEntity) {
@@ -66,7 +67,7 @@ public class HiveAuthzPrivileges {
   /**
    * scope of the operation. The auth provider interface has different methods
    * for some of these. Hence we want to be able to identity the auth scope of
-   * a statement eg. server level or DB level etc. 
+   * a statement eg. server level or DB level etc.
    */
   public static enum HiveOperationScope {
     UNKNOWN,
@@ -107,7 +108,7 @@ public class HiveAuthzPrivileges {
       outputPrivileges.put(outputObjectType, outputPrivilege);
       return this;
     }
-    
+
     public AuthzPrivilegeBuilder setOperationType(HiveOperationType operationType) {
       this.operationType = operationType;
       return this;
@@ -132,19 +133,19 @@ public class HiveAuthzPrivileges {
   }
 
   private final Map<HiveObjectTypes,EnumSet<Action>> inputPrivileges =
-    new HashMap<HiveObjectTypes,EnumSet<Action>>();
+      new HashMap<HiveObjectTypes,EnumSet<Action>>();
   private final Map<HiveObjectTypes,EnumSet<Action>>  outputPrivileges =
-    new HashMap<HiveObjectTypes,EnumSet<Action>>();
+      new HashMap<HiveObjectTypes,EnumSet<Action>>();
   private final HiveOperationType operationType;
   private final HiveOperationScope operationScope;
 
   protected HiveAuthzPrivileges(Map<HiveObjectTypes,EnumSet<Action>> inputPrivileges,
-      Map<HiveObjectTypes,EnumSet<Action>> outputPrivileges, HiveOperationType operationType, 
+      Map<HiveObjectTypes,EnumSet<Action>> outputPrivileges, HiveOperationType operationType,
       HiveOperationScope operationScope) {
     this.inputPrivileges.putAll(inputPrivileges);
     this.outputPrivileges.putAll(outputPrivileges);
     this.operationScope = operationScope;
-    this.operationType = operationType; 
+    this.operationType = operationType;
   }
 
   /**

@@ -20,44 +20,43 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.hadoop.hive.ql.hooks.Entity;
-import org.apache.hadoop.hive.ql.plan.HiveOperation;
-
 import org.apache.access.binding.hive.authz.HiveAuthzPrivileges.HiveObjectTypes;
 import org.apache.access.binding.hive.authz.HiveAuthzPrivileges.HiveOperationScope;
 import org.apache.access.binding.hive.authz.HiveAuthzPrivileges.HiveOperationType;
 import org.apache.access.core.Action;
+import org.apache.hadoop.hive.ql.hooks.Entity;
+import org.apache.hadoop.hive.ql.plan.HiveOperation;
 
 public class HiveAuthzPrivilegesMap {
   private static Map <HiveOperation, HiveAuthzPrivileges> hiveAuthzStmtPrivMap = new HashMap<HiveOperation, HiveAuthzPrivileges>();
 
   static {
     HiveAuthzPrivileges tableDDLPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
-      addOutputObjectPriviledge(HiveObjectTypes.TABLE, EnumSet.of(Action.ALL)).
-      setOperationScope(HiveOperationScope.TABLE).
-      setOperationType(HiveOperationType.DDL).
-      build();
+        addOutputObjectPriviledge(HiveObjectTypes.TABLE, EnumSet.of(Action.ALL)).
+        setOperationScope(HiveOperationScope.TABLE).
+        setOperationType(HiveOperationType.DDL).
+        build();
     HiveAuthzPrivileges tableSelectPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
-      addInputEntityPriviledge(Entity.Type.TABLE, EnumSet.of(Action.SELECT)).
-      setOperationScope(HiveOperationScope.TABLE).
-      setOperationType(HiveOperationType.QUERY).
-      build();
+        addInputEntityPriviledge(Entity.Type.TABLE, EnumSet.of(Action.SELECT)).
+        setOperationScope(HiveOperationScope.TABLE).
+        setOperationType(HiveOperationType.QUERY).
+        build();
     HiveAuthzPrivileges dbDDLPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
-      addOutputObjectPriviledge(HiveObjectTypes.DATABASE, EnumSet.of(Action.ALL)).
-      setOperationScope(HiveOperationScope.DATABASE).
-      setOperationType(HiveOperationType.DDL).
-      build();
+        addOutputObjectPriviledge(HiveObjectTypes.DATABASE, EnumSet.of(Action.ALL)).
+        setOperationScope(HiveOperationScope.DATABASE).
+        setOperationType(HiveOperationType.DDL).
+        build();
     HiveAuthzPrivileges tableDMLPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
-      addOutputObjectPriviledge(HiveObjectTypes.TABLE, EnumSet.of(Action.INSERT)).
-      setOperationScope(HiveOperationScope.TABLE).
-      setOperationType(HiveOperationType.DML).
-      build();
+        addOutputObjectPriviledge(HiveObjectTypes.TABLE, EnumSet.of(Action.INSERT)).
+        setOperationScope(HiveOperationScope.TABLE).
+        setOperationType(HiveOperationType.DML).
+        build();
     HiveAuthzPrivileges serverPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
-      addOutputObjectPriviledge(HiveObjectTypes.SERVER, EnumSet.of(Action.ALL)).
-      setOperationScope(HiveOperationScope.SERVER).
-      setOperationType(HiveOperationType.DDL).
-      build();
-    
+        addOutputObjectPriviledge(HiveObjectTypes.SERVER, EnumSet.of(Action.ALL)).
+        setOperationScope(HiveOperationScope.SERVER).
+        setOperationType(HiveOperationType.DDL).
+        build();
+
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_ADDCOLS, tableDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_REPLACECOLS, tableDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_RENAMECOL, tableDDLPrivilege);
@@ -114,13 +113,13 @@ public class HiveAuthzPrivilegesMap {
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_LOCATION, tableDDLPrivilege); // Disable ??
     hiveAuthzStmtPrivMap.put(HiveOperation.CREATEDATABASE, dbDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.CREATETABLE, tableDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.CREATETABLE_AS_SELECT, 
+    hiveAuthzStmtPrivMap.put(HiveOperation.CREATETABLE_AS_SELECT,
         new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
-          addInputObjectPriviledge(HiveObjectTypes.TABLE, EnumSet.of(Action.SELECT)).
-          addOutputObjectPriviledge(HiveObjectTypes.TABLE, EnumSet.of(Action.ALL)).
-          setOperationScope(HiveOperationScope.TABLE).
-          setOperationType(HiveOperationType.DDL).
-          build());
+        addInputObjectPriviledge(HiveObjectTypes.TABLE, EnumSet.of(Action.SELECT)).
+        addOutputObjectPriviledge(HiveObjectTypes.TABLE, EnumSet.of(Action.ALL)).
+        setOperationScope(HiveOperationScope.TABLE).
+        setOperationType(HiveOperationType.DDL).
+        build());
     hiveAuthzStmtPrivMap.put(HiveOperation.QUERY, tableSelectPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERINDEX_PROPS, tableDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERDATABASE, dbDDLPrivilege);

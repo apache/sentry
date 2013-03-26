@@ -17,12 +17,14 @@
 
 package org.apache.access.tests.e2e;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
+
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
@@ -40,7 +42,7 @@ public class TestHiveAccess {
     if (standAloneServer) {
       // get connection
       return DriverManager.getConnection("jdbc:hive2://localhost:10000/default",
-                                         username, password);
+          username, password);
     } else {
       return DriverManager.getConnection("jdbc:hive2://", username, password);
     }
@@ -88,12 +90,12 @@ public class TestHiveAccess {
 
     // create table
     userStmt.execute("create table " + tableName
-                     + " (under_col int comment 'the under column', value string) comment '"
-                     + tableComment + "'");
+        + " (under_col int comment 'the under column', value string) comment '"
+        + tableComment + "'");
 
     // load data
     userStmt.execute("load data local inpath '" + dataFilePath.toString() + "' into table "
-                     + tableName);
+        + tableName);
     // query table
     ResultSet   res = userStmt.executeQuery("select under_col from " + tableName);
 

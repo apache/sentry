@@ -84,7 +84,7 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
    */
   @Override
   public boolean hasAccess(Subject subject, List<Authorizable> authorizableHierarchy,
-        EnumSet<Action> actions) {
+      EnumSet<Action> actions) {
     Preconditions.checkNotNull(subject, "Subject cannot be null");
     Preconditions.checkNotNull(authorizableHierarchy, "Authorizable cannot be null");
     Preconditions.checkArgument(!authorizableHierarchy.isEmpty(), "Authorizable cannot be empty");
@@ -145,7 +145,7 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
         }
         String requestedPermission = Joiner.on(":").join(hierarchy);
         requestedPermission = Joiner.on(":").join(requestedPermission,
-              action.getValue());
+            action.getValue());
         for (Permission permission : permissions) {
           if (permission.implies(permissionResolver
               .resolvePermission(requestedPermission))) {
