@@ -3,6 +3,8 @@ target/
 .classpath
 .project
 .settings
+.metadata
+**/derby.log
 # Package Files #
 *.jar
 *.war

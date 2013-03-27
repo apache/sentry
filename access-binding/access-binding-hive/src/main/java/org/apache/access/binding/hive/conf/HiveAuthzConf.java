@@ -28,10 +28,10 @@ public class HiveAuthzConf extends Configuration {
    * Config setting definitions
    */
   public static enum AuthzConfVars {
-    AUTHZ_PROVIDER("hive.authz.provider",
-        "com.cloudera.access.provider.file.ResourceAuthorizationProvider"),
-        AUTHZ_PROVIDERRES_RESOURCE("hive.authz.provider.resource", ""),
-        AUTHZ_SERVER_NAME("hive.authz.server", "HS2")
+    AUTHZ_PROVIDER("hive.access.provider",
+        "org.apache.access.provider.file.ResourceAuthorizationProvider"),
+        AUTHZ_PROVIDERRES_RESOURCE("hive.access.provider.resource", ""),
+        AUTHZ_SERVER_NAME("hive.access.server", "HS2")
         ;
 
     private final String varName;
@@ -51,8 +51,9 @@ public class HiveAuthzConf extends Configuration {
     }
   }
 
-  static final private Log LOG = LogFactory.getLog(HiveAuthzConf.class.getName());
-  public static String AUTHZ_SITE_FILE = "authz-site.xml";
+  private static final  Log LOG = LogFactory.getLog(HiveAuthzConf.class);
+  private static final Object staticLock = new Object();
+  public static final String AUTHZ_SITE_FILE = "access-site.xml";
   private static URL hiveAuthzSiteURL;
 
   public HiveAuthzConf() {
@@ -63,11 +64,13 @@ public class HiveAuthzConf extends Configuration {
     }
 
     // Look for hive-site.xml on the CLASSPATH and log its location if found.
-    hiveAuthzSiteURL = classLoader.getResource(AUTHZ_SITE_FILE);
-    if (hiveAuthzSiteURL == null) {
-      LOG.warn("Authz site file " + AUTHZ_SITE_FILE + " not found");
-    } else {
-      addResource(hiveAuthzSiteURL);
+    synchronized (staticLock) {
+      hiveAuthzSiteURL = classLoader.getResource(AUTHZ_SITE_FILE);
+      if (hiveAuthzSiteURL == null) {
+        LOG.warn("Access site file " + AUTHZ_SITE_FILE + " not found");
+      } else {
+        addResource(hiveAuthzSiteURL);
+      }      
     }
   }
 
@@ -79,12 +82,4 @@ public class HiveAuthzConf extends Configuration {
     }
     return retVal;
   }
-
-  /**
-   * @return the authzSiteURL
-   */
-  public static URL getAuthzSiteURL() {
-    return hiveAuthzSiteURL;
-  }
-
 }
