@@ -87,7 +87,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
 
     // validate permission
     try {
-      hiveAuthzBinding.authorize(stmtOperation, stmtAuthObject, getCurrentSubject(),
+      hiveAuthzBinding.authorize(stmtOperation, stmtAuthObject, getCurrentSubject(context),
           currDB, inputs, outputs);
     } catch (AuthorizationException e) {
       throw new SemanticException("No valid privileges", e);
@@ -102,10 +102,10 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
     }
     return sessState.getHiveOperation();
   }
-
-  private Subject getCurrentSubject() {
-    // TODO: Need to pass extract the username from Driver or session to this hook
-    return new Subject("foo");
+  
+  private Subject getCurrentSubject(HiveSemanticAnalyzerHookContext context) {
+    // Extract the username from the hook context
+    return new Subject(context.getUserName());
   }
 
 }
