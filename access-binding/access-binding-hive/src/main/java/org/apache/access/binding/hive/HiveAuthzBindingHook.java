@@ -73,6 +73,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
   @Override
   public void postAnalyze(HiveSemanticAnalyzerHookContext context,
       List<Task<? extends Serializable>> rootTasks) throws SemanticException {
+
     Set<ReadEntity> inputs = context.getInputs();
     Set<WriteEntity> outputs = context.getOutputs();
     HiveOperation stmtOperation = getCurrentHiveStmtOp();

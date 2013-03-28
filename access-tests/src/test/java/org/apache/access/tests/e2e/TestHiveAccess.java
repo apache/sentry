@@ -17,8 +17,7 @@
 
 package org.apache.access.tests.e2e;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.sql.Connection;

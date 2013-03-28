@@ -20,15 +20,14 @@
 <configuration>
   <property>
     <name>hive.access.provider</name>
-    <value>org.apache.access.provider.file.LocalGroupResourceAuthorizationProvider</value>
+    <value>invalid</value>
   </property>
   <property>
     <name>hive.access.provider.resource</name>
-    <value>classpath:test-authz-provider.ini</value>
+    <value>invalid</value>
   </property>
   <property>
     <name>hive.access.server</name>
     <value>myHS2</value>
   </property>
 </configuration>
-    

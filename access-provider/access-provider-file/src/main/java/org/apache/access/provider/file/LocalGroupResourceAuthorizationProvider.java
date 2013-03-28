@@ -18,7 +18,7 @@
 package org.apache.access.provider.file;
 
 public class LocalGroupResourceAuthorizationProvider extends
-ResourceAuthorizationProvider {
+  ResourceAuthorizationProvider {
 
   public LocalGroupResourceAuthorizationProvider(String resource) {
     super (new SimplePolicy(resource), new LocalGroupMappingService(resource));

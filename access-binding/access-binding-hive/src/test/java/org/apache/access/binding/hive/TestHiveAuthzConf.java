@@ -38,9 +38,9 @@ public class TestHiveAuthzConf {
 
   @Test
   public void testConfigOverload() {
-    authzConf.set(AuthzConfVars.AUTHZ_PROVIDERRES_RESOURCE.getVar(), "fooFile");
+    authzConf.set(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar(), "fooFile");
     Assert.assertEquals("fooFile",
-        authzConf.get(AuthzConfVars.AUTHZ_PROVIDERRES_RESOURCE.getVar()));
+        authzConf.get(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar()));
   }
 
 }

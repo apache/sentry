@@ -18,6 +18,7 @@
 package org.apache.access.provider.file;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,8 +31,10 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Mapping users to groups
- * parse the ini file with section [users] that contains the user names. For each user in that list, there's section that contains the group name for that user
- * If there's no user section or no group section for one of users, then just print a warning and continue.
+ * parse the ini file with section [users] that contains the user names.
+ * For each user in that list, there's section that contains the group
+ * name for that user If there's no user section or no group section for
+ * one of users, then just print a warning and continue.
  * Example -
  * [users]
  * usr1
@@ -48,11 +51,11 @@ import org.slf4j.LoggerFactory;
  */
 public class LocalGroupMappingService implements GroupMappingService {
 
-  private String USERS_SECTION = "users";
+  private static final String USERS_SECTION = "users";
   private static final Logger LOGGER = LoggerFactory
       .getLogger(LocalGroupMappingService.class);
 
-  private Map <String, List<String>> groupMap =
+  private final Map <String, List<String>> groupMap =
       new HashMap <String, List<String>> ();
 
   public LocalGroupMappingService(String resourcePath) {
@@ -65,7 +68,7 @@ public class LocalGroupMappingService implements GroupMappingService {
     if (groupMap.containsKey(user)) {
       return groupMap.get(user);
     } else {
-      return null;
+      return Collections.emptyList();
     }
   }
 

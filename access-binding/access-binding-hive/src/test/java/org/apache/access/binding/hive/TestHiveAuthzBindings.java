@@ -86,7 +86,7 @@ public class TestHiveAuthzBindings {
     // create auth configuration
     authzConf.set(AuthzConfVars.AUTHZ_PROVIDER.getVar(),
         "org.apache.access.provider.file.LocalGroupResourceAuthorizationProvider");
-    authzConf.set(AuthzConfVars.AUTHZ_PROVIDERRES_RESOURCE.getVar(),
+    authzConf.set(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar(),
         "classpath:test-authz-provider.ini");
     authzConf.set(AuthzConfVars.AUTHZ_SERVER_NAME.getVar(), SERVER1);
     testAuth = new HiveAuthzBinding(authzConf);

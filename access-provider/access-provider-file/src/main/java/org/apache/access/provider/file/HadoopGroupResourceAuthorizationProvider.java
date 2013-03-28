@@ -23,7 +23,7 @@ import org.apache.hadoop.security.Groups;
 import com.google.common.annotations.VisibleForTesting;
 
 public class HadoopGroupResourceAuthorizationProvider extends
-ResourceAuthorizationProvider {
+  ResourceAuthorizationProvider {
   public HadoopGroupResourceAuthorizationProvider(String resource) {
     super(new SimplePolicy(resource), new HadoopGroupMappingService(
         Groups.getUserToGroupsMappingService(new Configuration())));

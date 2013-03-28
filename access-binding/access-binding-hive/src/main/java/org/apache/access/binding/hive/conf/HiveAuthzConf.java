@@ -17,6 +17,9 @@
 package org.apache.access.binding.hive.conf;
 
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -30,7 +33,7 @@ public class HiveAuthzConf extends Configuration {
   public static enum AuthzConfVars {
     AUTHZ_PROVIDER("hive.access.provider",
         "org.apache.access.provider.file.ResourceAuthorizationProvider"),
-        AUTHZ_PROVIDERRES_RESOURCE("hive.access.provider.resource", ""),
+        AUTHZ_PROVIDER_RESOURCE("hive.access.provider.resource", ""),
         AUTHZ_SERVER_NAME("hive.access.server", "HS2")
         ;
 
@@ -70,8 +73,36 @@ public class HiveAuthzConf extends Configuration {
         LOG.warn("Access site file " + AUTHZ_SITE_FILE + " not found");
       } else {
         addResource(hiveAuthzSiteURL);
-      }      
+      }
     }
+
+    applySystemProperties();
+  }
+  /**
+   * Apply system properties to this object if the property name is defined in ConfVars
+   * and the value is non-null and not an empty string.
+   */
+  private void applySystemProperties() {
+    Map<String, String> systemProperties = getConfSystemProperties();
+    for (Entry<String, String> systemProperty : systemProperties.entrySet()) {
+      this.set(systemProperty.getKey(), systemProperty.getValue());
+    }
+  }
+
+  /**
+   * This method returns a mapping from config variable name to its value for all config variables
+   * which have been set using System properties
+   */
+  public static Map<String, String> getConfSystemProperties() {
+    Map<String, String> systemProperties = new HashMap<String, String>();
+
+    for (AuthzConfVars oneVar : AuthzConfVars.values()) {
+      String value = System.getProperty(oneVar.getVar());
+      if (value != null && value.length() > 0) {
+        systemProperties.put(oneVar.getVar(), value);
+      }
+    }
+    return systemProperties;
   }
 
   @Override

@@ -31,6 +31,8 @@ import org.apache.access.core.Subject;
 import org.apache.access.core.Table;
 import org.apache.shiro.authz.Permission;
 import org.apache.shiro.authz.permission.WildcardPermissionResolver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
@@ -39,7 +41,8 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 
 public abstract class ResourceAuthorizationProvider implements AuthorizationProvider {
-
+  private static final Logger LOGGER = LoggerFactory
+      .getLogger(ResourceAuthorizationProvider.class);
   private final GroupMappingService groupService;
   private final Policy policy;
   private final WildcardPermissionResolver permissionResolver;
@@ -85,6 +88,10 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
   @Override
   public boolean hasAccess(Subject subject, List<Authorizable> authorizableHierarchy,
       EnumSet<Action> actions) {
+    if(LOGGER.isDebugEnabled()) {
+      LOGGER.debug("Authorization Request for " + subject + " " +
+          authorizableHierarchy + " and " + actions);
+    }
     Preconditions.checkNotNull(subject, "Subject cannot be null");
     Preconditions.checkNotNull(authorizableHierarchy, "Authorizable cannot be null");
     Preconditions.checkArgument(!authorizableHierarchy.isEmpty(), "Authorizable cannot be empty");

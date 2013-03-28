@@ -76,11 +76,6 @@ public class HiveAuthzPrivileges {
     TABLE
   }
 
-  /**
-   * 
-   * @author prasadm
-   *
-   */
   public static class AuthzPrivilegeBuilder {
     private final Map<HiveObjectTypes,EnumSet<Action>> inputPrivileges =
         new HashMap<HiveObjectTypes,EnumSet<Action>>();
