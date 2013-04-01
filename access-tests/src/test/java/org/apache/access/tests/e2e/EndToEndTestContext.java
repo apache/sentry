@@ -23,6 +23,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -38,6 +39,7 @@ import org.apache.hadoop.hive.conf.HiveConf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Charsets;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
@@ -55,6 +57,7 @@ public class EndToEndTestContext {
 
   private final File baseDir;
   private final File confDir;
+  private final File dataDir;
   private final File policyFile;
   private final Set<Connection> connections;
   private final Set<Statement> statements;
@@ -70,7 +73,9 @@ public class EndToEndTestContext {
     statements = Sets.newHashSet();
     baseDir = Files.createTempDir();
     confDir = new File(baseDir, "etc");
+    dataDir = new File(baseDir, "data");
     assertTrue("Could not create " + confDir, confDir.mkdirs());
+    assertTrue("Could not create " + dataDir, dataDir.mkdirs());
     policyFile = new File(confDir, AUTHZ_PROVIDER_FILENAME);
     for(Map.Entry<String, String> entry : properties.entrySet()) {
       System.setProperty(entry.getKey(), entry.getValue());
@@ -110,10 +115,25 @@ public class EndToEndTestContext {
     Statement statement  = connection.createStatement();
     assertNotNull("Statement is null", statement);
     statements.add(statement);
-    statement.execute("show tables");
     statement.execute("set hive.support.concurrency = false");
     statement.execute("set hive.semantic.analyzer.hook = org.apache.access.binding.hive.HiveAuthzBindingHook");
     return statement;
+  }
+
+  public void writePolicyFile(String buf) throws IOException {
+    FileOutputStream out = new FileOutputStream(policyFile);
+    out.write(buf.getBytes(Charsets.UTF_8));
+    out.close();
+  }
+
+  public void appendToPolicyFileWithNewLine(String buf) throws IOException {
+    StringBuffer sb = new StringBuffer(buf);
+    sb.append('\n');
+    Files.append(sb, policyFile, Charsets.UTF_8);
+  }
+
+  public boolean deletePolicyFile() throws IOException {
+     return policyFile.delete();
   }
 
   public void close() {
@@ -134,5 +154,9 @@ public class EndToEndTestContext {
     if(baseDir != null) {
       FileUtils.deleteQuietly(baseDir);
     }
+  }
+
+  public File getDataDir() {
+    return dataDir;
   }
 }
