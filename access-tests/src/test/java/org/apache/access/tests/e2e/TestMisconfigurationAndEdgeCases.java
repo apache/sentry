@@ -56,7 +56,7 @@ public class TestMisconfigurationAndEdgeCases {
   @Test
   public void testImpersonationIsDisabled() throws Exception {
     properties.put("hive.server2.enable.impersonation", "true");
-    context = new EndToEndTestContext(false, properties);
+    context = new EndToEndTestContext(properties);
     Connection connection = context.createConnection("TODO", "TODO");
     Statement statement = context.createStatement(connection);
     try {
@@ -73,7 +73,7 @@ public class TestMisconfigurationAndEdgeCases {
   @Test
   public void testAuthenticationIsStrong() throws Exception {
     properties.put("hive.server2.enable.impersonation", "NONE");
-    context = new EndToEndTestContext(false, properties);
+    context = new EndToEndTestContext(properties);
     Connection connection = context.createConnection("TODO", "TODO");
     Statement statement = context.createStatement(connection);
     try {
@@ -89,7 +89,7 @@ public class TestMisconfigurationAndEdgeCases {
    */
   @Test
   public void testRemovalOfPolicyFile() throws Exception {
-    context = new EndToEndTestContext(false, properties);
+    context = new EndToEndTestContext(properties);
     File policyFile = context.getPolicyFile();
     assertTrue("Could not delete " + policyFile, policyFile.delete());
     Connection connection = context.createConnection("TODO", "TODO");
@@ -107,7 +107,7 @@ public class TestMisconfigurationAndEdgeCases {
    */
   @Test
   public void testCorruptionOfPolicyFile() throws Exception {
-    context = new EndToEndTestContext(false, properties);
+    context = new EndToEndTestContext(properties);
     File policyFile = context.getPolicyFile();
     assertTrue("Could not delete " + policyFile, policyFile.delete());
     FileOutputStream out = new FileOutputStream(policyFile);
@@ -130,7 +130,7 @@ public class TestMisconfigurationAndEdgeCases {
   @Test
   public void testUserRemovalBeforeAccessCheckAfterCompile() throws Exception {
     properties.put(EndToEndTestContext.AUTHZ_PROVIDER, SlowLocalGroupResourceAuthorizationProvider.class.getName());
-    context = new EndToEndTestContext(false, properties);
+    context = new EndToEndTestContext(properties);
     File policyFile = context.getPolicyFile();
     fail("TODO remove user from policy file, waiting on changed to Utils");
     Connection connection = context.createConnection("TODO", "TODO");
@@ -150,7 +150,7 @@ public class TestMisconfigurationAndEdgeCases {
   @Test
   public void testUserAdditionBeforeAccessCheckAfterCompile() throws Exception {
     properties.put(EndToEndTestContext.AUTHZ_PROVIDER, SlowLocalGroupResourceAuthorizationProvider.class.getName());
-    context = new EndToEndTestContext(false, properties);
+    context = new EndToEndTestContext(properties);
     File policyFile = context.getPolicyFile();
     fail("TODO add user from policy file, waiting on changed to Utils");
     Connection connection = context.createConnection("TODO", "TODO");
@@ -172,7 +172,7 @@ public class TestMisconfigurationAndEdgeCases {
    */
   @Test
   public void testAuthorizationFailure() throws Exception {
-    context = new EndToEndTestContext(false, properties);
+    context = new EndToEndTestContext(properties);
     Connection connection = context.createConnection("TODO", "TODO");
     Statement statement = context.createStatement(connection);
     try {

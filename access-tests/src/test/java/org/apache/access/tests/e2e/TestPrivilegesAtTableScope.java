@@ -68,7 +68,7 @@ public class TestPrivilegesAtTableScope {
    */
   @Test
   public void testInsertAndSelect() throws Exception {
-    testContext = new EndToEndTestContext(false, testProperties);
+    testContext = new EndToEndTestContext(testProperties);
     File policyFile = testContext.getPolicyFile();
     File dataDir = testContext.getDataDir();
     //copy data file to test dir
@@ -167,7 +167,7 @@ public class TestPrivilegesAtTableScope {
    */
   @Test
   public void testInsert() throws Exception {
-    testContext = new EndToEndTestContext(false, testProperties);
+    testContext = new EndToEndTestContext(testProperties);
     File policyFile = testContext.getPolicyFile();
     File dataDir = testContext.getDataDir();
     //copy data file to test dir
@@ -258,7 +258,7 @@ public class TestPrivilegesAtTableScope {
    */
   @Test
   public void testSelect() throws Exception {
-    testContext = new EndToEndTestContext(false, testProperties);
+    testContext = new EndToEndTestContext(testProperties);
     File policyFile = testContext.getPolicyFile();
     File dataDir = testContext.getDataDir();
     //copy data file to test dir
@@ -352,7 +352,7 @@ public class TestPrivilegesAtTableScope {
    */
   @Test
   public void testTableViewJoin() throws Exception {
-    testContext = new EndToEndTestContext(false, testProperties);
+    testContext = new EndToEndTestContext(testProperties);
     File policyFile = testContext.getPolicyFile();
     File dataDir = testContext.getDataDir();
     //copy data file to test dir
@@ -432,7 +432,7 @@ public class TestPrivilegesAtTableScope {
    */
   @Test
   public void testTableViewJoin2() throws Exception {
-    testContext = new EndToEndTestContext(false, testProperties);
+    testContext = new EndToEndTestContext(testProperties);
     File policyFile = testContext.getPolicyFile();
     File dataDir = testContext.getDataDir();
     //copy data file to test dir
@@ -520,7 +520,7 @@ public class TestPrivilegesAtTableScope {
    */
   @Test
   public void testTableViewJoin3() throws Exception {
-    testContext = new EndToEndTestContext(false, testProperties);
+    testContext = new EndToEndTestContext(testProperties);
     File policyFile = testContext.getPolicyFile();
     File dataDir = testContext.getDataDir();
     //copy data file to test dir
@@ -624,7 +624,7 @@ public class TestPrivilegesAtTableScope {
    */
   @Test
   public void testTableViewJoin4() throws Exception {
-    testContext = new EndToEndTestContext(false, testProperties);
+    testContext = new EndToEndTestContext(testProperties);
     File policyFile = testContext.getPolicyFile();
     File dataDir = testContext.getDataDir();
     //copy data file to test dir

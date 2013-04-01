@@ -46,7 +46,7 @@ public class TestUserManagement {
   @Before
   public void setUp() throws Exception {
     properties = Maps.newHashMap();
-    context = new EndToEndTestContext(false, properties);
+    context = new EndToEndTestContext(properties);
   }
 
   @After

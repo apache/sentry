@@ -38,4 +38,8 @@
   <value>hadoop.home</value>
 </property>
 
+<property>
+  <name>hive.support.concurrency</name>
+  <value>false</value>
+</property>
 </configuration>
