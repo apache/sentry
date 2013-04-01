@@ -39,6 +39,6 @@ public class TestLocalGroupMapping {
     Assert.assertArrayEquals(barGroupsFromResource.toArray(), barGroups);
 
     List <String> unknownGroupsFromResource = localGroupMapping.getGroups("unknown");
-    Assert.assertNull(unknownGroupsFromResource);
+    Assert.assertTrue("List not empty " + unknownGroupsFromResource, unknownGroupsFromResource.isEmpty());
   }
 }
