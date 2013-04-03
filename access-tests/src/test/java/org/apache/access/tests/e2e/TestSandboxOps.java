@@ -17,7 +17,7 @@
 
 package org.apache.access.tests.e2e;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -27,7 +27,6 @@ import java.util.HashMap;
 import org.apache.access.provider.file.LocalGroupResourceAuthorizationProvider;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -60,12 +59,19 @@ public class TestSandboxOps {
   @Test
   public void testDbPrivileges() throws Exception {
     // edit policy file
-    String testPolicies[] = { "[groups]", "admin_group = admin_role",
-        "user_group  = db1_all,db2_all", "[roles]",
+    String testPolicies[] = {
+        "[groups]",
+        "admin_group = admin_role",
+        "user_group  = db1_all,db2_all",
+        "[roles]",
         "db1_all = server=server1:db=db1:*",
-        "db2_all = server=server1:db=db2:*", "admin_role = server=server1:*",
-        "[users]", "user1 = user_group", "user2 = user_group",
-        "admin = admin_group" };
+        "db2_all = server=server1:db=db2:*",
+        "admin_role = server=server1:*",
+        "[users]",
+        "user1 = user_group",
+        "user2 = user_group",
+        "admin = admin_group"
+        };
     context.makeNewPolicy(testPolicies);
 
     // create dbs
@@ -276,21 +282,21 @@ public class TestSandboxOps {
    * b) Admin user grants ALL on DB_1 to group GROUP_1 c) User from GROUP_1
    * creates table TAB_1, TAB_2 in DB_1 d) Admin user grants SELECT on TAB_1 to
    * group GROUP_2
-   * 
+   *
    * 1) verify users from GROUP_2 have only SELECT privileges on TAB_1. They
    * shouldn't be able to perform any operation other than those listed as
    * requiring SELECT in the privilege model.
-   * 
+   *
    * 2) verify users from GROUP_2 can't perform queries involving join between
    * TAB_1 and TAB_2.
-   * 
+   *
    * 3) verify users from GROUP_1 can't perform operations requiring ALL @
    * SERVER scope. Refer to list
    */
   @Test
   public void testNegUserPrivilegesAll() throws Exception {
-    String testPolicies[] = { 
-        "[groups]", 
+    String testPolicies[] = {
+        "[groups]",
         "admin_group = admin_role",
         "user_group1 = db1_all",
         "user_group2 = db1_tab1_select",
@@ -301,7 +307,7 @@ public class TestSandboxOps {
         "[users]",
         "user1 = user_group1",
         "user2 = user_group2",
-        "admin = admin_group" 
+        "admin = admin_group"
         };
     context.makeNewPolicy(testPolicies);
 
@@ -322,6 +328,8 @@ public class TestSandboxOps {
         .execute("load data local inpath '/etc/passwd' into table table_2");
     adminStmt.execute("create view v1 AS select * from table_1");
     adminStmt.execute("create table table_part_1 (name string) PARTITIONED BY (year INT)");
+    adminStmt.execute("ALTER TABLE table_part_1 ADD PARTITION (year = 2012)");
+
     context.close();
 
     Connection userConn = context.createConnection("user2", "foo");
@@ -343,13 +351,6 @@ public class TestSandboxOps {
     }
 
     try {
-      userStmt.execute("create view v2 as select * from table_2");
-      assertTrue("create view shouldn't pass for user user2", false);
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
-
-    try {
       userStmt
           .execute("CREATE INDEX x ON TABLE table_1(name) AS 'org.apache.hadoop.hive.ql.index.compact.CompactIndexHandler'");
       assertTrue("create index shouldn't pass for user user2", false);
@@ -366,7 +367,7 @@ public class TestSandboxOps {
     }
 
     try {
-      userStmt.execute("create tabl c_tab_2 as select * from table_2");
+      userStmt.execute("create table c_tab_2 as select * from table_2");
       assertTrue("CTAS shouldn't pass for user user2", false);
     } catch (SQLException e) {
       context.verifyAuthzException(e);
@@ -388,20 +389,12 @@ public class TestSandboxOps {
     }
 
     try {
-      adminStmt.execute("drop table table_1 (name string)");
+      userStmt.execute("drop table table_1");
       assertTrue("drop table shouldn't pass for user user2", false);
     } catch (SQLException e) {
       context.verifyAuthzException(e);
     }
 
-    try {
-      adminStmt.execute("ALTER TABLE table_part_1 PARTITION (year = 2011) SET LOCATION '/etc'");
-      assertTrue("ALTER TABLE set location shouldn't pass for user user2", false);
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
-
-    // bad ones ..
     try {
       userStmt.execute("DROP VIEW IF EXISTS v1");
       assertTrue("DROP VIEW shouldn't pass for user user2", false);
@@ -410,14 +403,14 @@ public class TestSandboxOps {
     }
 
     try {
-      adminStmt.execute("create table table_5 (name string)");
+      userStmt.execute("create table table_5 (name string)");
       assertTrue("create table shouldn't pass for user user2", false);
     } catch (SQLException e) {
       context.verifyAuthzException(e);
     }
 
     try {
-      adminStmt.execute("ALTER TABLE table_1  RENAME TO table_99");
+      userStmt.execute("ALTER TABLE table_1  RENAME TO table_99");
       assertTrue("ALTER TABLE rename shouldn't pass for user user2", false);
     } catch (SQLException e) {
       context.verifyAuthzException(e);
@@ -431,12 +424,20 @@ public class TestSandboxOps {
     }
 
     try {
-      adminStmt.execute("ALTER TABLE table_part_1 ADD IF NOT EXISTS PARTITION (year = 2011)");
+      userStmt.execute("ALTER TABLE table_part_1 ADD IF NOT EXISTS PARTITION (year = 2012)");
       assertTrue("ALTER TABLE add partition shouldn't pass for user user2", false);
     } catch (SQLException e) {
       context.verifyAuthzException(e);
     }
-    
+
+    try {
+      userStmt.execute("ALTER TABLE table_part_1 PARTITION (year = 2012) SET LOCATION '/etc'");
+      assertTrue("ALTER TABLE set location shouldn't pass for user user2", false);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+
+
     context.close();
   }
 

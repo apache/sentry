@@ -170,6 +170,8 @@ public class HiveAuthzBinding {
     switch (entity.getType()) {
     case TABLE:
       return new Database(entity.getTable().getDbName());
+    case PARTITION:
+      return new Database(entity.getPartition().getTable().getDbName());
     default:
       throw new UnsupportedOperationException("Unsupported entity type " +
           entity.getType().name());
@@ -181,6 +183,8 @@ public class HiveAuthzBinding {
     switch (entity.getType()) {
     case TABLE:
       return new Table(entity.getTable().getTableName());
+    case PARTITION:
+      return new Table(entity.getPartition().getTable().getTableName());
     default:
       throw new UnsupportedOperationException("Unsupported entity type " +
           entity.getType().name());

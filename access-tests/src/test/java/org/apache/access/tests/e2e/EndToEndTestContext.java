@@ -26,7 +26,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.net.ConnectException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -51,9 +50,9 @@ import com.google.common.io.Files;
 import com.google.common.io.Resources;
 
 public class EndToEndTestContext {
-  
+
   public enum HiveServe2Type {
-    Embedded,           // Embedded HS2, directly executed by JDBC, without thrift 
+    Embedded,           // Embedded HS2, directly executed by JDBC, without thrift
     InternalHS2,        // Start a thrift HS2 in the same process
     StartExternalHS2,   // start a remote thrift HS2
     UseExternalHS2      // Use a remote thrift HS2 already running
@@ -76,7 +75,7 @@ public class EndToEndTestContext {
   public static final String DEFAULT_AUTHZ_SERVER_NAME = "server1";
   public static final String AUTHZ_EXCEPTION_SQL_STATE = "42000";
   public static final String AUTHZ_EXCEPTION_ERROR_MSG = "No valid privileges";
- 
+
   private static File baseDir = null;
   private static File confDir;
   private File dataDir;
@@ -205,7 +204,7 @@ public class EndToEndTestContext {
     policyWriter.close();
     assertFalse(policyWriter.checkError());
   }
- 
+
   public void close() {
     for(Statement statement : statements) {
       try {
@@ -228,7 +227,7 @@ public class EndToEndTestContext {
 
   // verify that the sqlexception is due to authorization failure
   public void verifyAuthzException(SQLException sqlException) throws SQLException{
-    if (!sqlException.getSQLState().equals(AUTHZ_EXCEPTION_SQL_STATE) || 
+    if (!AUTHZ_EXCEPTION_SQL_STATE.equals(sqlException.getSQLState()) ||
         !sqlException.getMessage().contains(AUTHZ_EXCEPTION_ERROR_MSG)) {
       throw sqlException;
     }
@@ -239,7 +238,7 @@ public class EndToEndTestContext {
       // generate hive-site
       HiveConf hiveConf = new HiveConf();
       hiveConf.writeXml(new FileOutputStream(new File(confDir, "hive-site.xml")));
-  
+
       // generate authz site
       HiveAuthzConf authzConf = new HiveAuthzConf();
       authzConf.writeXml(new FileOutputStream(new File(confDir,HiveAuthzConf.AUTHZ_SITE_FILE)));
@@ -266,7 +265,7 @@ public class EndToEndTestContext {
 
   private void waitForHS2Startup() throws Exception {
     int startupTimeout = Integer.valueOf(
-        System.getProperty(HIVESERVER2_STARTUP_TIMEOUT, "10")) * 1000; // wait time in sec 
+        System.getProperty(HIVESERVER2_STARTUP_TIMEOUT, "10")) * 1000; // wait time in sec
     int waitTime = 0;
     do {
       Thread.sleep(HIVESERVER2_STARTUP_WAIT_INTERVAL);
@@ -299,6 +298,11 @@ public class EndToEndTestContext {
       hiveServer2Process.destroy();
       hiveServer2Process = null;
     }
+
+    if (hiveServer2 != null) {
+      hiveServer2.stop();
+    }
+
     if(baseDir != null) {
       FileUtils.deleteQuietly(baseDir);
       baseDir = null;

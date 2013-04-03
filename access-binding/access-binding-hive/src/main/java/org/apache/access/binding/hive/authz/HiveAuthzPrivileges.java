@@ -43,6 +43,7 @@ public class HiveAuthzPrivileges {
     public static HiveObjectTypes convertHiveEntity(Entity.Type hiveEntity) {
       switch (hiveEntity) {
       case TABLE :
+      case PARTITION:
         return HiveObjectTypes.TABLE;
       case DFS_DIR:
         return HiveObjectTypes.URI;
@@ -95,7 +96,7 @@ public class HiveAuthzPrivileges {
     }
 
     public AuthzPrivilegeBuilder addOutputEntityPriviledge(Entity.Type outputEntityType, EnumSet<Action> outputPrivilege) {
-      inputPrivileges.put(HiveObjectTypes.convertHiveEntity(outputEntityType), outputPrivilege);
+      outputPrivileges.put(HiveObjectTypes.convertHiveEntity(outputEntityType), outputPrivilege);
       return this;
     }
 
