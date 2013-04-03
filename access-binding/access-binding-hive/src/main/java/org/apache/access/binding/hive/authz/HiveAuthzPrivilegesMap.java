@@ -36,8 +36,12 @@ public class HiveAuthzPrivilegesMap {
         setOperationScope(HiveOperationScope.TABLE).
         setOperationType(HiveOperationType.DDL).
         build();
-    HiveAuthzPrivileges tableSelectPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
+    /* Currently Hive treats both select and insert as Query
+     * The difference is that the insert also has output table entities
+     */
+    HiveAuthzPrivileges tableQueryPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
         addInputEntityPriviledge(Entity.Type.TABLE, EnumSet.of(Action.SELECT)).
+        addOutputEntityPriviledge(Entity.Type.TABLE, EnumSet.of(Action.INSERT)).
         setOperationScope(HiveOperationScope.TABLE).
         setOperationType(HiveOperationType.QUERY).
         build();
@@ -72,7 +76,7 @@ public class HiveAuthzPrivilegesMap {
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_SERDEPROPERTIES, tableDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_SERDEPROPERTIES, tableDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_CLUSTER_SORT, tableDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ANALYZE_TABLE, tableSelectPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ANALYZE_TABLE, tableQueryPrivilege);
     // SHOWDATABASES
     // SHOWTABLES
     // SHOWCOLUMNS
@@ -87,11 +91,11 @@ public class HiveAuthzPrivilegesMap {
     hiveAuthzStmtPrivMap.put(HiveOperation.DROPFUNCTION, serverPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.CREATEVIEW, tableDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.DROPVIEW, tableDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.CREATEINDEX, tableDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.DROPINDEX, tableDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.CREATEINDEX, dbDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.DROPINDEX, dbDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.DROPDATABASE, dbDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.DROPTABLE, tableDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.EXPORT, tableSelectPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.EXPORT, tableQueryPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.LOAD, tableDMLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERINDEX_REBUILD, tableDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERVIEW_PROPERTIES, tableDDLPrivilege);
@@ -112,7 +116,7 @@ public class HiveAuthzPrivilegesMap {
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_LOCATION, tableDDLPrivilege); // Disable ??
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_LOCATION, tableDDLPrivilege); // Disable ??
     hiveAuthzStmtPrivMap.put(HiveOperation.CREATEDATABASE, dbDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.CREATETABLE, tableDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.CREATETABLE, dbDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.CREATETABLE_AS_SELECT,
         new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
         addInputObjectPriviledge(HiveObjectTypes.TABLE, EnumSet.of(Action.SELECT)).
@@ -120,7 +124,7 @@ public class HiveAuthzPrivilegesMap {
         setOperationScope(HiveOperationScope.TABLE).
         setOperationType(HiveOperationType.DDL).
         build());
-    hiveAuthzStmtPrivMap.put(HiveOperation.QUERY, tableSelectPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.QUERY, tableQueryPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERINDEX_PROPS, tableDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERDATABASE, dbDDLPrivilege);
     // DESCDATABASE

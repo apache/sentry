@@ -31,6 +31,8 @@ import org.apache.hadoop.hive.ql.exec.Task;
 import org.apache.hadoop.hive.ql.hooks.ReadEntity;
 import org.apache.hadoop.hive.ql.hooks.WriteEntity;
 import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
+import org.apache.hadoop.hive.ql.metadata.Hive;
+import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
 import org.apache.hadoop.hive.ql.parse.AbstractSemanticAnalyzerHook;
 import org.apache.hadoop.hive.ql.parse.BaseSemanticAnalyzer;
@@ -65,7 +67,11 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
       currDB = new Database(BaseSemanticAnalyzer.unescapeIdentifier(ast.getChild(0).getText()));
       break;
     default:
-      break;
+      try {
+        currDB = new Database(Hive.get().getCurrentDatabase());
+      } catch (HiveException e) {
+        throw new SemanticException("Error retrieving current db", e);
+      }
     }
     return ast;
   }

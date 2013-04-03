@@ -22,7 +22,7 @@ limitations under the License.
   <parent>
     <groupId>com.cloudera.cdh</groupId>
     <artifactId>access-binding</artifactId>
-    <version>0.1-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>access-binding-hive</artifactId>
@@ -44,7 +44,6 @@ limitations under the License.
     <dependency>
     	<groupId>com.cloudera.cdh</groupId>
     	<artifactId>access-provider-file</artifactId>
-    	<version>0.1-SNAPSHOT</version>
     	<scope>test</scope>
     </dependency>
     <dependency>
