@@ -17,8 +17,9 @@
 
 package org.apache.access.tests.e2e;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
+import java.io.IOException;
 import java.io.File;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -52,7 +53,7 @@ public class TestSandboxOps {
   }
 
   @AfterClass
-  public static void shutDown() {
+  public static void shutDown() throws IOException {
     EndToEndTestContext.shutdown();
   }
 
@@ -442,7 +443,6 @@ public class TestSandboxOps {
     } catch (SQLException e) {
       context.verifyAuthzException(e);
     }
-
 
     context.close();
   }

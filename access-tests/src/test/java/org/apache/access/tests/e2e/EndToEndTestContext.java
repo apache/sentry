@@ -76,15 +76,17 @@ public class EndToEndTestContext {
   public static final String AUTHZ_EXCEPTION_SQL_STATE = "42000";
   public static final String AUTHZ_EXCEPTION_ERROR_MSG = "No valid privileges";
 
-  private static File baseDir = null;
+  private static final Object staticLock = new Object();
+  private static File baseDir;
   private static File confDir;
-  private File dataDir;
+  private static HiveServer2 hiveServer2;
+  private static Process hiveServer2Process;
+
+  private final File dataDir;
   private final File policyFile;
   private final Set<Connection> connections;
   private final Set<Statement> statements;
   private final HiveServe2Type standAloneServer;
-  private static HiveServer2 hiveServer2 = null;
-  private static Process hiveServer2Process = null;
 
   public EndToEndTestContext() throws Exception {
     this(new HashMap<String, String>());
@@ -98,10 +100,10 @@ public class EndToEndTestContext {
 
   public EndToEndTestContext(HiveServe2Type serverType, Map<String, String> properties)
       throws Exception {
+    initialize();
     this.standAloneServer = serverType;
     connections = Sets.newHashSet();
     statements = Sets.newHashSet();
-    setupDirs();
     dataDir = new File(baseDir, "data");
     FileUtils.deleteQuietly(dataDir); // clear the old dataDir if any
     assertTrue("Could not create " + dataDir, dataDir.mkdirs());
@@ -113,15 +115,6 @@ public class EndToEndTestContext {
       startInternalHiveServer2();
     }
   }
-
-  private static synchronized void setupDirs() {
-    if (baseDir == null) {
-      baseDir = Files.createTempDir();
-      confDir = new File(baseDir, "etc");
-      assertTrue("Could not create " + confDir, confDir.mkdirs());
-    }
-  }
-
   private void setupEnv(Map<String, String> properties) throws IOException,
         ClassNotFoundException {
     for(Map.Entry<String, String> entry : properties.entrySet()) {
@@ -233,33 +226,37 @@ public class EndToEndTestContext {
     }
   }
 
-  private synchronized void startExternalHiveServer2() throws Exception {
-    if (hiveServer2Process == null) {
-      // generate hive-site
-      HiveConf hiveConf = new HiveConf();
-      hiveConf.writeXml(new FileOutputStream(new File(confDir, "hive-site.xml")));
+  private void startExternalHiveServer2() throws Exception {
+    synchronized (staticLock) {
+      if (hiveServer2Process == null) {
+        // generate hive-site
+        HiveConf hiveConf = new HiveConf();
+        hiveConf.writeXml(new FileOutputStream(new File(confDir, "hive-site.xml")));
 
-      // generate authz site
-      HiveAuthzConf authzConf = new HiveAuthzConf();
-      authzConf.writeXml(new FileOutputStream(new File(confDir,HiveAuthzConf.AUTHZ_SITE_FILE)));
-      // TODO: add set access dist as HIVE_AUX_JARS_PATH env after we have access dist
-      // till then you have to copy the access and shiro jars to $HIVE_HOME/lib
-      hiveServer2Process = Runtime.getRuntime().
-          exec(new String[]{"/bin/sh", "-c",
-              "export HIVE_CONF_DIR=" + confDir + ";" +
-              System.getProperty("hive.bin.path", "/usr/bin/hive") +
-              " --service hiveserver2 > " + baseDir + "/hive.out 2>&1 & echo $! > " + baseDir + "/hs2.pid" });
-      // wait for the server to be online
-      waitForHS2Startup();
+        // generate authz site
+        HiveAuthzConf authzConf = new HiveAuthzConf();
+        authzConf.writeXml(new FileOutputStream(new File(confDir,HiveAuthzConf.AUTHZ_SITE_FILE)));
+        // TODO: add set access dist as HIVE_AUX_JARS_PATH env after we have access dist
+        // till then you have to copy the access and shiro jars to $HIVE_HOME/lib
+        hiveServer2Process = Runtime.getRuntime().
+            exec(new String[]{"/bin/sh", "-c",
+                "export HIVE_CONF_DIR=" + confDir + ";" +
+                System.getProperty("hive.bin.path", "/usr/bin/hive") +
+                " --service hiveserver2 > " + baseDir + "/hive.out 2>&1 & echo $! > " + baseDir + "/hs2.pid" });
+        // wait for the server to be online
+        waitForHS2Startup();
+      }
     }
   }
 
-  private synchronized void startInternalHiveServer2() throws Exception {
-    if (hiveServer2 == null) {
-      hiveServer2 = new HiveServer2();
-      hiveServer2.init(new HiveConf());
-      hiveServer2.start();
-      waitForHS2Startup();
+  private void startInternalHiveServer2() throws Exception {
+    synchronized (staticLock) {
+      if (hiveServer2 == null) {
+        hiveServer2 = new HiveServer2();
+        hiveServer2.init(new HiveConf());
+        hiveServer2.start();
+        waitForHS2Startup();
+      }
     }
   }
 
@@ -287,28 +284,40 @@ public class EndToEndTestContext {
     } while (true);
   }
 
-  public static synchronized void shutdown() {
-    if (hiveServer2Process != null) {
-      try {
-        Runtime.getRuntime().exec(new String[]{"/bin/sh", "-c",
-            "kill -9 `cat " + baseDir + "/hs2.pid`"});
-      } catch (IOException e) {
-        System.out.println(e.getMessage());
+  public static void initialize() {
+    synchronized (staticLock) {
+      if(baseDir == null) {
+        baseDir = Files.createTempDir();
+        confDir = new File(baseDir, "etc");
+        assertTrue("Could not create " + confDir, confDir.isDirectory() || confDir.mkdirs());
       }
-      hiveServer2Process.destroy();
-      hiveServer2Process = null;
-    }
-
-    if (hiveServer2 != null) {
-      hiveServer2.stop();
-    }
-
-    if(baseDir != null) {
-      FileUtils.deleteQuietly(baseDir);
-      baseDir = null;
     }
   }
 
+  public static void shutdown() throws IOException {
+    synchronized (staticLock) {
+      if(hiveServer2 != null) {
+        hiveServer2.stop();
+        hiveServer2 = null;
+      }
+      if (hiveServer2Process != null) {
+        try {
+          Runtime.getRuntime().exec(new String[]{"/bin/sh", "-c",
+              "kill -9 `cat " + baseDir + "/hs2.pid`"});
+        } catch (IOException e) {
+          System.out.println(e.getMessage());
+        }
+        hiveServer2Process.destroy();
+        hiveServer2Process = null;
+      }
+      if(baseDir != null) {
+        FileUtils.deleteQuietly(baseDir);
+      }
+    }
+  }
+  public File getBaseDir() {
+    return baseDir;
+  }
   public File getDataDir() {
     return dataDir;
   }
