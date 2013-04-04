@@ -79,10 +79,11 @@ public class EndToEndTestContext {
   private static final Object staticLock = new Object();
   private static File baseDir;
   private static File confDir;
+
   private static HiveServer2 hiveServer2;
   private static Process hiveServer2Process;
 
-  private final File dataDir;
+  private static File dataDir;
   private final File policyFile;
   private final Set<Connection> connections;
   private final Set<Statement> statements;
@@ -104,9 +105,6 @@ public class EndToEndTestContext {
     this.standAloneServer = serverType;
     connections = Sets.newHashSet();
     statements = Sets.newHashSet();
-    dataDir = new File(baseDir, "data");
-    FileUtils.deleteQuietly(dataDir); // clear the old dataDir if any
-    assertTrue("Could not create " + dataDir, dataDir.mkdirs());
     policyFile = new File(confDir, AUTHZ_PROVIDER_FILENAME);
     setupEnv(properties);
     if (serverType.equals(HiveServe2Type.StartExternalHS2)) {
@@ -115,6 +113,7 @@ public class EndToEndTestContext {
       startInternalHiveServer2();
     }
   }
+
   private void setupEnv(Map<String, String> properties) throws IOException,
         ClassNotFoundException {
     for(Map.Entry<String, String> entry : properties.entrySet()) {
@@ -290,6 +289,8 @@ public class EndToEndTestContext {
         baseDir = Files.createTempDir();
         confDir = new File(baseDir, "etc");
         assertTrue("Could not create " + confDir, confDir.isDirectory() || confDir.mkdirs());
+        dataDir = new File(baseDir, "data");
+        assertTrue("Could not create " + dataDir, dataDir.isDirectory() || dataDir.mkdirs());
       }
     }
   }

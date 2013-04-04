@@ -40,7 +40,6 @@ import org.junit.Test;
 import com.google.common.io.Resources;
 
 /* Tests privileges at table scope within a single database.
- * Implements test cases 2.1, 2.2, 2.3, 2.4.1, 2.4.2, 2.4.3, 2.4.5 in the test plan
  */
 
 public class TestPrivilegesAtTableScope {
@@ -62,13 +61,8 @@ public class TestPrivilegesAtTableScope {
     }
   }
 
-  @AfterClass
-  public static void shutDown() throws IOException {
-    EndToEndTestContext.shutdown();
-  }
 
-  /* 2.1
-   * Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, loads data into TAB_1, TAB_2
+  /* Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, loads data into TAB_1, TAB_2
    * Admin grants SELECT on TAB_1, TAB_2, INSERT on TAB_1 to USER_GROUP of which USER_1 is a member.
    */
   @Test
@@ -127,7 +121,7 @@ public class TestPrivilegesAtTableScope {
     }
 
     assertTrue("Incorrect row count", countRows == 1);
-    assertTrue("Incorrect result", count == 500);
+    assertTrue("Incorrect result", count == 1000);
 
     // negative test: test user can't drop
     try {
@@ -142,13 +136,15 @@ public class TestPrivilegesAtTableScope {
     //connect as admin and drop tab_1
     connection = testContext.createConnection("hive", "hive");
     statement = testContext.createStatement(connection);
+    statement.execute("USE DB_1");
     statement.execute("DROP TABLE TAB_1");
     statement.close();
     connection.close();
 
-    //negative test: connect as user_1 and try to recreate the tab_1
+    //negative test: connect as user_1 and try to recreate tab_1
     connection = testContext.createConnection("user_1", "password");
     statement = testContext.createStatement(connection);
+    statement.execute("USE DB_1");
     try {
       statement.execute("CREATE TABLE TAB_1(A STRING)");
       Assert.fail("Expected SQL exception");
@@ -168,8 +164,7 @@ public class TestPrivilegesAtTableScope {
 
   }
 
-  /* 2.2
-   * Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, loads data into TAB_1, TAB_2.
+  /* Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, loads data into TAB_1, TAB_2.
    * Admin grants INSERT on TAB_1, SELECT on TAB_2 to USER_GROUP of which USER_1 is a member.
    */
   @Test
@@ -200,7 +195,6 @@ public class TestPrivilegesAtTableScope {
     // setup db objects needed by the test
     Connection connection = testContext.createConnection("hive", "hive");
     Statement statement = testContext.createStatement(connection);
-
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("CREATE DATABASE DB_1");
     statement.execute("USE DB_1");
@@ -263,8 +257,7 @@ public class TestPrivilegesAtTableScope {
     connection.close();
   }
 
-  /* 2.3
-   * Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, loads data into TAB_1, TAB_2.
+  /* Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, loads data into TAB_1, TAB_2.
    * Admin grants SELECT on TAB_1, TAB_2 to USER_GROUP of which USER_1 is a member.
    */
   @Test
@@ -358,8 +351,7 @@ public class TestPrivilegesAtTableScope {
     connection.close();
   }
 
-  /* 2.4.1
-   * Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, VIEW_1 on TAB_1 loads data into TAB_1, TAB_2.
+  /* Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, VIEW_1 on TAB_1 loads data into TAB_1, TAB_2.
    * Admin grants SELECT on TAB_1,TAB_2 to USER_GROUP of which USER_1 is a member.
    */
   @Test
@@ -409,7 +401,7 @@ public class TestPrivilegesAtTableScope {
     statement = testContext.createStatement(connection);
     statement.execute("USE DB_1");
     // test user can execute query TAB_1 JOIN TAB_2
-    ResultSet resultSet = statement.executeQuery("SELECT COUNT(*) FROM TAB_1 JOIN TAB_2 ON (TAB_1.B = TAB_2.B)");
+    ResultSet resultSet = statement.executeQuery("SELECT COUNT(*) FROM TAB_1 T1 JOIN TAB_2 T2 ON (T1.B = T2.B)");
     int count = 0;
     int countRows = 0;
 
@@ -422,7 +414,7 @@ public class TestPrivilegesAtTableScope {
 
     // negative test: test user can't execute query VIEW_1 JOIN TAB_2
     try {
-      statement.executeQuery("SELECT COUNT(*) FROM VIEW_1 JOIN TAB_2 ON (VIEW_1.B = TAB_2.B)");
+      statement.executeQuery("SELECT COUNT(*) FROM VIEW_1 V1 JOIN TAB_2 T2 ON (V1.B = T2.B)");
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
       assertEquals("42000", e.getSQLState());
@@ -439,8 +431,7 @@ public class TestPrivilegesAtTableScope {
     connection.close();
   }
 
-  /* 2.4.2
-   * Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, VIEW_1 on TAB_1 loads data into TAB_1, TAB_2.
+  /* Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, VIEW_1 on TAB_1 loads data into TAB_1, TAB_2.
    * Admin grants SELECT on TAB_2 to USER_GROUP of which USER_1 is a member.
    */
   @Test
@@ -528,8 +519,7 @@ public class TestPrivilegesAtTableScope {
     connection.close();
   }
 
-  /* 2.4.3
-   * Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, VIEW_1 on TAB_1 loads data into TAB_1, TAB_2.
+  /* Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, VIEW_1 on TAB_1 loads data into TAB_1, TAB_2.
    * Admin grants SELECT on TAB_2, VIEW_1 to USER_GROUP of which USER_1 is a member.
    */
   @Test
@@ -591,7 +581,7 @@ public class TestPrivilegesAtTableScope {
     assertTrue("Incorrect result", count == 12);
 
     // test user can execute query VIEW_1 JOIN TAB_2
-    resultSet = statement.executeQuery("SELECT COUNT(*) FROM VIEW_1 JOIN TAB_2 ON (VIEW_1.B = TAB_2.B)");
+    resultSet = statement.executeQuery("SELECT COUNT(*) FROM VIEW_1 V1 JOIN TAB_2 T2 ON (V1.B = T2.B)");
     count = 0;
     countRows = 0;
 
@@ -616,7 +606,7 @@ public class TestPrivilegesAtTableScope {
 
     // negative test: test user can't execute query TAB_1 JOIN TAB_2
     try {
-      statement.executeQuery("SELECT COUNT(*) FROM TAB_1 JOIN TAB_2 ON (TAB_1.B = TAB_2.B)");
+      statement.executeQuery("SELECT COUNT(*) FROM TAB_1 T1 JOIN TAB_2 T2 ON (T1.B = T2.B)");
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
       assertEquals("42000", e.getSQLState());
@@ -633,8 +623,7 @@ public class TestPrivilegesAtTableScope {
     connection.close();
   }
 
-  /* 2.5
-   * Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, VIEW_1 on TAB_1 loads data into TAB_1, TAB_2.
+  /* Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, VIEW_1 on TAB_1 loads data into TAB_1, TAB_2.
    * Admin grants SELECT on TAB_1, VIEW_1 to USER_GROUP of which USER_1 is a member.
    */
   @Test
@@ -713,5 +702,10 @@ public class TestPrivilegesAtTableScope {
     statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.close();
     connection.close();
+  }
+
+  @AfterClass
+  public static void shutDown() throws IOException {
+    EndToEndTestContext.shutdown();
   }
 }
