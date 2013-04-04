@@ -130,7 +130,7 @@ public class TestHiveAuthzBindings {
   public void TestValidateCreateTabPrivilegesForAdmin() throws Exception {
     outputTabList.add(new WriteEntity(new Table(CUSTOMER_DB, PAYMENT_TAB)));
     testAuth.authorize(HiveOperation.CREATETABLE, createTabPrivileges, ADMIN_SUBJECT,
-        null, inputTabList, outputTabList);
+        new Database(CUSTOMER_DB), inputTabList, outputTabList);
   }
 
   /**
@@ -140,7 +140,7 @@ public class TestHiveAuthzBindings {
   public void TestValidateCreateTabPrivilegesForUser() throws Exception {
     outputTabList.add(new WriteEntity(new Table(JUNIOR_ANALYST_DB, PAYMENT_TAB)));
     testAuth.authorize(HiveOperation.CREATETABLE, createTabPrivileges, MANAGER_SUBJECT,
-        null, inputTabList, outputTabList);
+        new Database(JUNIOR_ANALYST_DB), inputTabList, outputTabList);
   }
 
   /**
@@ -150,7 +150,7 @@ public class TestHiveAuthzBindings {
   public void TestValidateCreateTabPrivilegesRejectionForUser() throws Exception {
     outputTabList.add(new WriteEntity(new Table(CUSTOMER_DB, PAYMENT_TAB)));
     testAuth.authorize(HiveOperation.CREATETABLE, createTabPrivileges, JUNIOR_ANALYST_SUBJECT,
-        null, inputTabList, outputTabList);
+        new Database(CUSTOMER_DB), inputTabList, outputTabList);
   }
 
   /**
@@ -160,7 +160,7 @@ public class TestHiveAuthzBindings {
   public void TestValidateCreateTabPrivilegesRejectionForUser2() throws Exception {
     outputTabList.add(new WriteEntity(new Table(ANALYST_DB, PAYMENT_TAB)));
     testAuth.authorize(HiveOperation.CREATETABLE, createTabPrivileges, JUNIOR_ANALYST_SUBJECT,
-        null, inputTabList, outputTabList);
+        new Database(ANALYST_DB), inputTabList, outputTabList);
   }
 
   /**
