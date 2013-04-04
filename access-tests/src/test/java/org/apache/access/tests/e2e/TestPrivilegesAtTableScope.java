@@ -18,12 +18,11 @@
 package org.apache.access.tests.e2e;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -34,6 +33,7 @@ import java.util.Map;
 import junit.framework.Assert;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -60,6 +60,11 @@ public class TestPrivilegesAtTableScope {
     if (testContext != null) {
       testContext.close();
     }
+  }
+
+  @AfterClass
+  public static void shutDown() throws IOException {
+    EndToEndTestContext.shutdown();
   }
 
   /* 2.1
@@ -90,11 +95,12 @@ public class TestPrivilegesAtTableScope {
     testContext.appendToPolicyFileWithNewLine("select_tab2 = server=server1:db=DB_1:table=TAB_2:select");
     // users: users -> groups
     testContext.appendToPolicyFileWithNewLine("[users]");
-    testContext.appendToPolicyFileWithNewLine("admin = hive");
+    testContext.appendToPolicyFileWithNewLine("hive = admin");
     testContext.appendToPolicyFileWithNewLine("user_1 = user_group");
     // setup db objects needed by the test
     Connection connection = testContext.createConnection("hive", "hive");
     Statement statement = testContext.createStatement(connection);
+    statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("CREATE DATABASE DB_1");
     statement.execute("USE DB_1");
     statement.execute("CREATE TABLE TAB_1(A STRING)");
@@ -119,6 +125,7 @@ public class TestPrivilegesAtTableScope {
       count = resultSet.getInt(1);
       countRows++;
     }
+
     assertTrue("Incorrect row count", countRows == 1);
     assertTrue("Incorrect result", count == 500);
 
@@ -155,7 +162,7 @@ public class TestPrivilegesAtTableScope {
     //test cleanup
     connection = testContext.createConnection("hive", "hive");
     statement = testContext.createStatement(connection);
-    statement.execute("DROP DATABASE DB_1");
+    statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.close();
     connection.close();
 
@@ -194,6 +201,7 @@ public class TestPrivilegesAtTableScope {
     Connection connection = testContext.createConnection("hive", "hive");
     Statement statement = testContext.createStatement(connection);
 
+    statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("CREATE DATABASE DB_1");
     statement.execute("USE DB_1");
     statement.execute("CREATE TABLE TAB_1(A STRING)");
@@ -227,12 +235,15 @@ public class TestPrivilegesAtTableScope {
       assertEquals("42000", e.getSQLState());
     }
 
+    /**
+     * TODO: Disabling metadata permission test till we finalize the metadata approach
     // negative test case: show tables shouldn't list VIEW_1
     ResultSet resultSet = statement.executeQuery("SHOW TABLES");
     while(resultSet.next()) {
       assertNotNull("table name is null in result set", resultSet.getString(1));
       assertFalse("VIEW_1".equalsIgnoreCase(resultSet.getString(1)));
     }
+     */
 
     //negative test: test user can't create a new view
     try {
@@ -247,7 +258,7 @@ public class TestPrivilegesAtTableScope {
     //test cleanup
     connection = testContext.createConnection("hive", "hive");
     statement = testContext.createStatement(connection);
-    statement.execute("DROP DATABASE DB_1");
+    statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.close();
     connection.close();
   }
@@ -286,6 +297,7 @@ public class TestPrivilegesAtTableScope {
     Connection connection = testContext.createConnection("hive", "hive");
     Statement statement = testContext.createStatement(connection);
 
+    statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("CREATE DATABASE DB_1");
     statement.execute("USE DB_1");
     statement.execute("CREATE TABLE TAB_1(A STRING)");
@@ -341,7 +353,7 @@ public class TestPrivilegesAtTableScope {
     //test cleanup
     connection = testContext.createConnection("hive", "hive");
     statement = testContext.createStatement(connection);
-    statement.execute("DROP DATABASE DB_1");
+    statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.close();
     connection.close();
   }
@@ -379,6 +391,7 @@ public class TestPrivilegesAtTableScope {
     Connection connection = testContext.createConnection("hive", "hive");
     Statement statement = testContext.createStatement(connection);
 
+    statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("CREATE DATABASE DB_1");
     statement.execute("USE DB_1");
     statement.execute("CREATE TABLE TAB_1(B INT, A STRING) " +
@@ -421,7 +434,7 @@ public class TestPrivilegesAtTableScope {
     //test cleanup
     connection = testContext.createConnection("hive", "hive");
     statement = testContext.createStatement(connection);
-    statement.execute("DROP DATABASE DB_1");
+    statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.close();
     connection.close();
   }
@@ -459,6 +472,7 @@ public class TestPrivilegesAtTableScope {
     Connection connection = testContext.createConnection("hive", "hive");
     Statement statement = testContext.createStatement(connection);
 
+    statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("CREATE DATABASE DB_1");
     statement.execute("USE DB_1");
     statement.execute("CREATE TABLE TAB_1(B INT, A STRING) " +
@@ -509,7 +523,7 @@ public class TestPrivilegesAtTableScope {
     //test cleanup
     connection = testContext.createConnection("hive", "hive");
     statement = testContext.createStatement(connection);
-    statement.execute("DROP DATABASE DB_1");
+    statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.close();
     connection.close();
   }
@@ -547,6 +561,7 @@ public class TestPrivilegesAtTableScope {
     Connection connection = testContext.createConnection("hive", "hive");
     Statement statement = testContext.createStatement(connection);
 
+    statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("CREATE DATABASE DB_1");
     statement.execute("USE DB_1");
     statement.execute("CREATE TABLE TAB_1(B INT, A STRING) " +
@@ -613,7 +628,7 @@ public class TestPrivilegesAtTableScope {
     //test cleanup
     connection = testContext.createConnection("hive", "hive");
     statement = testContext.createStatement(connection);
-    statement.execute("DROP DATABASE DB_1");
+    statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.close();
     connection.close();
   }
@@ -651,6 +666,7 @@ public class TestPrivilegesAtTableScope {
     Connection connection = testContext.createConnection("hive", "hive");
     Statement statement = testContext.createStatement(connection);
 
+    statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("CREATE DATABASE DB_1");
     statement.execute("USE DB_1");
     statement.execute("CREATE TABLE TAB_1(B INT, A STRING) " +
@@ -694,7 +710,7 @@ public class TestPrivilegesAtTableScope {
     //test cleanup
     connection = testContext.createConnection("hive", "hive");
     statement = testContext.createStatement(connection);
-    statement.execute("DROP DATABASE DB_1");
+    statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.close();
     connection.close();
   }
