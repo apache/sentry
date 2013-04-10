@@ -26,7 +26,6 @@ import org.apache.access.binding.hive.authz.HiveAuthzPrivilegesMap;
 import org.apache.access.binding.hive.conf.HiveAuthzConf;
 import org.apache.access.core.Database;
 import org.apache.access.core.Subject;
-import org.apache.access.core.Table;
 import org.apache.hadoop.hive.ql.exec.Task;
 import org.apache.hadoop.hive.ql.hooks.ReadEntity;
 import org.apache.hadoop.hive.ql.hooks.WriteEntity;
@@ -43,13 +42,10 @@ import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.ql.session.SessionState;
 
 public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
-  // TODO: Push the wildcard Object to AuthorizationProvider, interface should provide way to pass implicit wildchar
-  static Table anyTable = new Table("*");
-  static Database anyDatabase = new Database("*");
 
   private final HiveAuthzBinding hiveAuthzBinding;
   private final HiveAuthzConf authzConf;
-  private Database currDB = anyDatabase;
+  private Database currDB = Database.ALL;
 
   public HiveAuthzBindingHook() throws Exception {
     authzConf = new HiveAuthzConf();

@@ -14,17 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.access.core;
+package org.apache.access.provider.file;
 
-public class AccessConstants {
+import javax.annotation.Nullable;
 
-  /**
-   * Used as the &quot;name&quot; for a Server, Database, Table object which
-   * represents all Servers, Databases, or Tables.
-   */
-  public static final String ALL = "*";
+import org.apache.shiro.config.ConfigurationException;
 
-  public static final String SELECT = "select";
-  public static final String INSERT = "insert";
+public interface RoleValidator {
 
+  public void validate(@Nullable String database, String role) throws ConfigurationException;
 }

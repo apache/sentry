@@ -24,11 +24,13 @@ import org.junit.Test;
 
 public class TestLocalGroupMapping {
 
-  private String resourcePath = "classpath:test-authz-provider.ini";
+  private String resourcePath = "classpath:test-authz-provider-local-group-mapping.ini";
   private LocalGroupMappingService localGroupMapping =
       new LocalGroupMappingService(resourcePath);
   private String[] fooGroups = new String[] {"admin", "analyst" };
   private String[] barGroups = new String[] {"jranalyst"};
+
+
 
   @Test
   public void testGroupMapping() {

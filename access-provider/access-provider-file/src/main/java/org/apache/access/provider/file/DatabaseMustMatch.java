@@ -16,29 +16,28 @@
  */
 package org.apache.access.provider.file;
 
-import java.util.Collection;
-import java.util.List;
+import org.apache.access.core.Authorizable;
+import org.apache.access.core.Database;
+import org.apache.shiro.config.ConfigurationException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
-
-public class MockGroupMappingServiceProvider implements GroupMappingService {
-  private static final Logger LOGGER = LoggerFactory
-      .getLogger(MockGroupMappingServiceProvider.class);
-  private final Multimap<String, String> userToGroupMap;
-
-  public MockGroupMappingServiceProvider(Multimap<String, String> userToGroupMap) {
-    this.userToGroupMap = userToGroupMap;
-  }
+public class DatabaseMustMatch extends AbstractRoleValidator {
 
   @Override
-  public List<String> getGroups(String user) {
-    Collection<String> groups = userToGroupMap.get(user);
-    LOGGER.info("Mapping " + user + " to " + groups);
-    return Lists.newArrayList(groups);
+  public void validate(String database, String role) throws ConfigurationException {
+    /*
+     *  Rule only applies to rules in per database policy file
+     */
+    if(database != null) {
+      Iterable<Authorizable> authorizables = parseRole(role);
+      for(Authorizable authorizable : authorizables) {
+        if(authorizable instanceof Database &&
+            !database.equalsIgnoreCase(authorizable.getName())) {
+          String msg = "Role " + role + " references db " +
+              authorizable.getName() + ",  but is only allowed to reference "
+              + database;
+          throw new ConfigurationException(msg);
+        }
+      }
+    }
   }
-
 }

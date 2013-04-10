@@ -333,6 +333,7 @@ limitations under the License.
                   <exclude>README*</exclude>
                   <exclude>.project</exclude>
                   <exclude>.settings</exclude>
+                  <exclude>.metadata/</exclude>
                   <exclude>.classpath</exclude>
                   <exclude>**/service.properties</exclude>
                   <exclude>**/kv1.dat</exclude>

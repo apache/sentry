@@ -95,7 +95,7 @@ public class LocalGroupMappingService implements GroupMappingService {
       List<String> groupList = Arrays.asList(groupNames.split(","));
       // add the group,userList to the map of groups
 
-      LOGGER.debug("Got mapping User:" + userName + "Groups:" + groupNames);
+      LOGGER.debug("Got mapping User:" + userName + ", Groups:" + groupNames);
       groupMap.put(userName, groupList);
     }
   }

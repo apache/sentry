@@ -42,10 +42,6 @@ import org.apache.hadoop.hive.ql.plan.HiveOperation;
 public class HiveAuthzBinding {
   static final private Log LOG = LogFactory.getLog(HiveAuthzBinding.class.getName());
 
-  // TODO: Push the wildcard Object to AuthorizationProvider, interface should provide way to pass implicit wildchar
-  static Database anyDatabase = new Database("*");
-  static Table anyTable = new Table("*");
-
   private final HiveAuthzConf authzConf;
   private final Server authServer;
   private AuthorizationProvider authProvider;
@@ -106,7 +102,7 @@ public class HiveAuthzBinding {
        * by the pre-hook
        */
       if (!authProvider.hasAccess(subject, authServer, currDB,
-          anyTable, EnumSet.of(Action.ALL))) {
+          Table.ALL, EnumSet.of(Action.ALL))) {
         throw new AuthorizationException("User " + subject.getName() +
             " does not have priviliedges for " + stmtAuthPrivileges.getOperationType().name());
       }

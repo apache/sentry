@@ -17,7 +17,6 @@
 package org.apache.access.provider.file;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 
@@ -30,16 +29,18 @@ import org.apache.access.core.Server;
 import org.apache.access.core.Subject;
 import org.apache.access.core.Table;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
-@RunWith(Parameterized.class)
+
 public class TestResourceAuthorizationProvider {
+
+  private static final Logger LOGGER = LoggerFactory
+      .getLogger(TestResourceAuthorizationProvider.class);
 
   private static final Multimap<String, String> USER_TO_GROUP_MAP = HashMultimap
       .create();
@@ -71,101 +72,74 @@ public class TestResourceAuthorizationProvider {
   }
 
   private final ResourceAuthorizationProvider authzProvider;
-  private final Subject subject;
-  private final Server server;
-  private final Database database;
-  private final Table table;
-  private final EnumSet<Action> privileges;
-  private final boolean expected;
 
-  public TestResourceAuthorizationProvider(
-      ResourceAuthorizationProvider authzProvider, Subject subject,
+  public TestResourceAuthorizationProvider() {
+    authzProvider = new HadoopGroupResourceAuthorizationProvider(
+        new SimplePolicy("classpath:test-authz-provider.ini"),
+        new MockGroupMappingServiceProvider(USER_TO_GROUP_MAP));
+
+  }
+
+
+  public void doTestResourceAuthorizationProvider(Subject subject,
       Server server, Database database, Table table,
-      EnumSet<Action> privileges, boolean expected) {
-    this.authzProvider = authzProvider;
-    this.subject = subject;
-    this.server = server;
-    this.database = database;
-    this.table = table;
-    this.privileges = privileges;
-    this.expected = expected;
-  }
-
-  @Test
-  public void testResourceAuthorizationProvider() throws Exception {
-    Objects.ToStringHelper helper = Objects.toStringHelper("TestParameters");
-    helper.add("Subject", subject).add("Server", server).add("DB", database)
-    .add("Table", table).add("Privileges", privileges);
-    Assert.assertEquals(helper.toString(), expected,
-        authzProvider.hasAccess(subject, server, database, table, privileges));
-  }
-
-  @Test
-  public void testResourceAuthorizationProviderHierarchy() throws Exception {
-    Objects.ToStringHelper helper = Objects.toStringHelper("TestParameters");
-    helper.add("Subject", subject).add("Server", server).add("DB", database)
-    .add("Table", table).add("Privileges", privileges);
+      EnumSet<Action> privileges, boolean expected) throws Exception {
     List<Authorizable> authzHierarchy = Arrays.asList(new Authorizable[] {
         server, database, table
     });
-    System.out.println("Running with " + helper.toString());
+    Objects.ToStringHelper helper = Objects.toStringHelper("TestParameters");
+    helper.add("Subject", subject).add("Server", server).add("DB", database)
+    .add("Table", table).add("Privileges", privileges).add("authzHierarchy", authzHierarchy);
+    LOGGER.info("Running with " + helper.toString());
     Assert.assertEquals(helper.toString(), expected,
         authzProvider.hasAccess(subject, authzHierarchy, privileges));
-    System.out.println("Passed " + helper.toString());
+    LOGGER.info("Passed " + helper.toString());
   }
 
-  @Parameters
-  public static Collection<Object[]> run() {
-    ResourceAuthorizationProvider authzProvider = new HadoopGroupResourceAuthorizationProvider(
-        new SimplePolicy("classpath:test-authz-provider.ini"),
-        new MockGroupMappingServiceProvider(USER_TO_GROUP_MAP));
-    return Arrays.asList(new Object[][] {
-        /*
-         * Admin
-         */
-        { authzProvider, SUB_ADMIN, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, ALL, true },
-        { authzProvider, SUB_ADMIN, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, SELECT, true },
-        { authzProvider, SUB_ADMIN, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, INSERT, true },
-        // TODO SVR_ALL privilege shouldn't exist AKAIK
-        { authzProvider, SUB_ADMIN, SVR_ALL, DB_CUSTOMERS, TBL_PURCHASES, SELECT, false },
+  @Test
+  public void testAdmin() throws Exception {
+    doTestResourceAuthorizationProvider(SUB_ADMIN, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, ALL, true);
+    doTestResourceAuthorizationProvider(SUB_ADMIN, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, SELECT, true);
+    doTestResourceAuthorizationProvider(SUB_ADMIN, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, INSERT, true);
+    // TODO SVR_ALL privilege shouldn't exist AKAIK
+    doTestResourceAuthorizationProvider(SUB_ADMIN, SVR_ALL, DB_CUSTOMERS, TBL_PURCHASES, SELECT, false);
+  }
+  @Test
+  public void testManager() throws Exception {
+    doTestResourceAuthorizationProvider(SUB_MANAGER, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, ALL, false);
+    doTestResourceAuthorizationProvider(SUB_MANAGER, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, SELECT, true);
+    doTestResourceAuthorizationProvider(SUB_MANAGER, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, INSERT, false);
+    doTestResourceAuthorizationProvider(SUB_MANAGER, SVR_ALL, DB_CUSTOMERS, TBL_PURCHASES, SELECT, false);
+  }
+  @Test
+  public void testAnalyst() throws Exception {
+    doTestResourceAuthorizationProvider(SUB_ANALYST, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, ALL, false);
+    doTestResourceAuthorizationProvider(SUB_ANALYST, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, SELECT, true);
+    doTestResourceAuthorizationProvider(SUB_ANALYST, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, INSERT, false);
+    doTestResourceAuthorizationProvider(SUB_ANALYST, SVR_ALL, DB_CUSTOMERS, TBL_PURCHASES, SELECT, false);
 
-        /*
-         * Manager
-         */
-        { authzProvider, SUB_MANAGER, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, ALL, false },
-        { authzProvider, SUB_MANAGER, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, SELECT, true },
-        { authzProvider, SUB_MANAGER, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, INSERT, false },
-        { authzProvider, SUB_MANAGER, SVR_ALL, DB_CUSTOMERS, TBL_PURCHASES, SELECT, false },
-        /*
-         * Analyst
-         */
-        { authzProvider, SUB_ANALYST, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, ALL, false },
-        { authzProvider, SUB_ANALYST, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, SELECT, true },
-        { authzProvider, SUB_ANALYST, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, INSERT, false },
-        { authzProvider, SUB_ANALYST, SVR_ALL, DB_CUSTOMERS, TBL_PURCHASES, SELECT, false },
+    // analyst sandbox
+    doTestResourceAuthorizationProvider(SUB_ANALYST, SVR_SERVER1, DB_ANALYST, TBL_PURCHASES, ALL, true);
+    doTestResourceAuthorizationProvider(SUB_ANALYST, SVR_SERVER1, DB_ANALYST, TBL_PURCHASES, SELECT, true);
+    doTestResourceAuthorizationProvider(SUB_ANALYST, SVR_SERVER1, DB_ANALYST, TBL_PURCHASES, INSERT, true);
+    doTestResourceAuthorizationProvider(SUB_ANALYST, SVR_ALL, DB_ANALYST, TBL_PURCHASES, SELECT, false);
 
-        // analyst sandbox
-        { authzProvider, SUB_ANALYST, SVR_SERVER1, DB_ANALYST, TBL_PURCHASES, ALL, true },
-        { authzProvider, SUB_ANALYST, SVR_SERVER1, DB_ANALYST, TBL_PURCHASES, SELECT, true },
-        { authzProvider, SUB_ANALYST, SVR_SERVER1, DB_ANALYST, TBL_PURCHASES, INSERT, true },
-        { authzProvider, SUB_ANALYST, SVR_ALL, DB_ANALYST, TBL_PURCHASES, SELECT, false },
-        // jr analyst sandbox
-        { authzProvider, SUB_ANALYST, SVR_SERVER1, DB_JR_ANALYST, TBL_PURCHASES, ALL, false },
-        { authzProvider, SUB_ANALYST, SVR_SERVER1, DB_JR_ANALYST, TBL_PURCHASES, SELECT, true },
-        { authzProvider, SUB_ANALYST, SVR_SERVER1, DB_JR_ANALYST, TBL_PURCHASES, INSERT, false },
-        { authzProvider, SUB_ANALYST, SVR_ALL, DB_JR_ANALYST, TBL_PURCHASES, SELECT, false },
-        /*
-         * Junior Analyst
-         */
-        { authzProvider, SUB_JUNIOR_ANALYST, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, ALL, false },
-        { authzProvider, SUB_JUNIOR_ANALYST, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, SELECT, false },
-        { authzProvider, SUB_JUNIOR_ANALYST, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, INSERT, false },
-        { authzProvider, SUB_JUNIOR_ANALYST, SVR_ALL, DB_CUSTOMERS, TBL_PURCHASES, SELECT, false },
-        // jr analyst sandbox
-        { authzProvider, SUB_JUNIOR_ANALYST, SVR_SERVER1, DB_JR_ANALYST, TBL_PURCHASES, ALL, true },
-        { authzProvider, SUB_JUNIOR_ANALYST, SVR_SERVER1, DB_JR_ANALYST, TBL_PURCHASES, SELECT, true },
-        { authzProvider, SUB_JUNIOR_ANALYST, SVR_SERVER1, DB_JR_ANALYST, TBL_PURCHASES, INSERT, true },
-        { authzProvider, SUB_JUNIOR_ANALYST, SVR_ALL, DB_JR_ANALYST, TBL_PURCHASES, SELECT, false },
-    });
+    // jr analyst sandbox
+    doTestResourceAuthorizationProvider(SUB_ANALYST, SVR_SERVER1, DB_JR_ANALYST, TBL_PURCHASES, ALL, false);
+    doTestResourceAuthorizationProvider(SUB_ANALYST, SVR_SERVER1, DB_JR_ANALYST, TBL_PURCHASES, SELECT, true);
+    doTestResourceAuthorizationProvider(SUB_ANALYST, SVR_SERVER1, DB_JR_ANALYST, TBL_PURCHASES, INSERT, false);
+    doTestResourceAuthorizationProvider(SUB_ANALYST, SVR_ALL, DB_JR_ANALYST, TBL_PURCHASES, SELECT, false);
+  }
+  @Test
+  public void testJuniorAnalyst() throws Exception {
+    doTestResourceAuthorizationProvider(SUB_JUNIOR_ANALYST, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, ALL, false);
+    doTestResourceAuthorizationProvider(SUB_JUNIOR_ANALYST, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, SELECT, false);
+    doTestResourceAuthorizationProvider(SUB_JUNIOR_ANALYST, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, INSERT, false);
+    doTestResourceAuthorizationProvider(SUB_JUNIOR_ANALYST, SVR_ALL, DB_CUSTOMERS, TBL_PURCHASES, SELECT, false);
+    // jr analyst sandbox
+    doTestResourceAuthorizationProvider(SUB_JUNIOR_ANALYST, SVR_SERVER1, DB_JR_ANALYST, TBL_PURCHASES, ALL, true);
+    doTestResourceAuthorizationProvider(SUB_JUNIOR_ANALYST, SVR_SERVER1, DB_JR_ANALYST, TBL_PURCHASES, SELECT, true);
+    doTestResourceAuthorizationProvider(SUB_JUNIOR_ANALYST, SVR_SERVER1, DB_JR_ANALYST, TBL_PURCHASES, INSERT, true);
+    doTestResourceAuthorizationProvider(SUB_JUNIOR_ANALYST, SVR_ALL, DB_JR_ANALYST, TBL_PURCHASES, SELECT, false);
   }
 }

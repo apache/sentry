@@ -16,11 +16,14 @@
  */
 package org.apache.access.provider.file;
 
+import static org.apache.access.provider.file.PolicyFileConstants.AUTHORIZABLE_JOINER;
+import static org.apache.access.provider.file.PolicyFileConstants.KV_JOINER;
+import static org.apache.access.provider.file.PolicyFileConstants.PRIVILEGE_NAME;
+
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
-import org.apache.access.core.AccessConstants;
 import org.apache.access.core.Action;
 import org.apache.access.core.Authorizable;
 import org.apache.access.core.AuthorizationProvider;
@@ -30,55 +33,45 @@ import org.apache.access.core.ServerResource;
 import org.apache.access.core.Subject;
 import org.apache.access.core.Table;
 import org.apache.shiro.authz.Permission;
-import org.apache.shiro.authz.permission.WildcardPermissionResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
-import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 
 public abstract class ResourceAuthorizationProvider implements AuthorizationProvider {
   private static final Logger LOGGER = LoggerFactory
       .getLogger(ResourceAuthorizationProvider.class);
   private final GroupMappingService groupService;
   private final Policy policy;
-  private final WildcardPermissionResolver permissionResolver;
 
   public ResourceAuthorizationProvider(Policy policy,
       GroupMappingService groupService) {
     this.policy = policy;
     this.groupService = groupService;
-    permissionResolver = new WildcardPermissionResolver();
   }
 
   @Override
   public boolean hasAccess(Subject subject, Server server, Database database,
       Table table, EnumSet<Action> actions) {
-    Preconditions.checkNotNull(subject, "Subject cannot be null");
-    Preconditions.checkNotNull(server, "Server cannot be null");
-    Preconditions.checkNotNull(database, "Database cannot be null");
-    Preconditions.checkNotNull(table, "Table cannot be null");
-    Preconditions.checkNotNull(actions, "Actions cannot be null");
-    Preconditions.checkArgument(!actions.isEmpty(), "Actions cannot be empty");
-    return doHasAccess(subject, server, database, table, actions);
+    List<Authorizable> authorizables = Lists.newArrayList();
+    authorizables.add(server);
+    authorizables.add(database);
+    authorizables.add(table);
+    return hasAccess(subject, authorizables, actions);
   }
 
   @Override
   public boolean hasAccess(Subject subject, Server server,
       ServerResource serverResource, EnumSet<Action> actions) {
-    Preconditions.checkNotNull(subject, "Subject cannot be null");
-    Preconditions.checkNotNull(server, "Server cannot be null");
-    Preconditions.checkNotNull(actions, "Actions cannot be null");
-    Preconditions.checkArgument(!actions.isEmpty(), "Actions cannot be empty");
-    return doHasAccess(subject, server, serverResource, actions);
+    throw new UnsupportedOperationException("Deprecated");
   }
 
   /***
    * @param subject: UserID to validate privileges
-   * @param authorizableHierarchy : List of object accroding to namespace hierarchy.
+   * @param authorizableHierarchy : List of object according to namespace hierarchy.
    *        eg. Server->Db->Table or Server->Function
    *        The privileges will be validated from the higher to lower scope
    * @param actions : Privileges to validate
@@ -100,85 +93,39 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
     return doHasAccess(subject, authorizableHierarchy, actions);
   }
 
-  private boolean doHasAccess(Subject subject, Server server,
-      Database database, Table table, EnumSet<Action> actions) {
-    for (String group : groupService.getGroups(subject.getName())) {
-      Iterable<Permission> permissions = getPermissionsForGroup(group);
-      for (Action action : actions) {
-        String requestedPermission = Joiner.on(":").join(
-            returnWildcardOrKV("server", server.getName()),
-            returnWildcardOrKV("db", database.getName()),
-            returnWildcardOrKV("table", table.getName()), action.getValue());
-        for (Permission permission : permissions) {
-          if (permission.implies(permissionResolver
-              .resolvePermission(requestedPermission))) {
-            return true;
-          }
-        }
-      }
-    }
-    return false;
-  }
-
-  private boolean doHasAccess(Subject subject, Server server,
-      ServerResource serverResource, EnumSet<Action> actions) {
-    for (String group : groupService.getGroups(subject.getName())) {
-      Iterable<Permission> permissions = getPermissionsForGroup(group);
-      for (Action action : actions) {
-        String requestedPermission = Joiner.on(":").join(
-            returnWildcardOrKV("server", server.getName()),
-            serverResource.name().toLowerCase(), action.getValue());
-        for (Permission permission : permissions) {
-          if (permission.implies(permissionResolver
-              .resolvePermission(requestedPermission))) {
-            return true;
-          }
-        }
-      }
-    }
-    return false;
-  }
-
   private boolean doHasAccess(Subject subject,
-      List<Authorizable> authorizableHierarchy, EnumSet<Action> actions) {
-    for (String group : groupService.getGroups(subject.getName())) {
-      Iterable<Permission> permissions = getPermissionsForGroup(group);
-      for (Action action : actions) {
-        List<String> hierarchy = new ArrayList<String>();
-        for (Authorizable authorizable : authorizableHierarchy) {
-          hierarchy.add(returnWildcardOrKV(
-              authorizable.getAuthzType().name().toLowerCase(),
-              authorizable.getName()));
+      List<Authorizable> authorizables, EnumSet<Action> actions) {
+    List<String> groups = groupService.getGroups(subject.getName());
+    List<String> hierarchy = new ArrayList<String>();
+    for (Authorizable authorizable : authorizables) {
+      hierarchy.add(KV_JOINER.join(authorizable.getAuthzType().name(), authorizable.getName()));
+    }
+    Iterable<Permission> permissions = getPermissions(authorizables, groups);
+    for (Action action : actions) {
+      String requestPermission = AUTHORIZABLE_JOINER.join(hierarchy);
+      requestPermission = AUTHORIZABLE_JOINER.join(requestPermission,
+          KV_JOINER.join(PRIVILEGE_NAME, action.getValue()));
+      for (Permission permission : permissions) {
+        boolean result = permission.implies(new WildcardPermission(requestPermission));
+        if(LOGGER.isDebugEnabled()) {
+          LOGGER.debug("FilePermission {}, RequestPermission {}, result {}",
+              new Object[]{ permission, requestPermission, result});
         }
-        String requestedPermission = Joiner.on(":").join(hierarchy);
-        requestedPermission = Joiner.on(":").join(requestedPermission,
-            action.getValue());
-        for (Permission permission : permissions) {
-          if (permission.implies(permissionResolver
-              .resolvePermission(requestedPermission))) {
-            return true;
-          }
+        if (result) {
+          return true;
         }
       }
     }
     return false;
   }
 
-  private Iterable<Permission> getPermissionsForGroup(String group) {
-    return Iterables.transform(policy.getPermissions(group),
+  private Iterable<Permission> getPermissions(List<Authorizable> authorizables, List<String> groups) {
+    return Iterables.transform(policy.getPermissions(authorizables, groups).values(),
         new Function<String, Permission>() {
       @Override
       public Permission apply(String permission) {
-        return permissionResolver.resolvePermission(permission);
+        return new WildcardPermission(permission);
       }
     });
-  }
-
-  private String returnWildcardOrKV(String prefix, String value) {
-    value = Strings.nullToEmpty(value).trim();
-    if (value.isEmpty() || value.equals(AccessConstants.ALL)) {
-      return AccessConstants.ALL;
-    }
-    return Joiner.on("=").join(prefix, value);
   }
 }

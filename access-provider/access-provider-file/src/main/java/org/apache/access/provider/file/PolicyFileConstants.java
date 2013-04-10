@@ -14,15 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.access.provider.file;
 
+import com.google.common.base.Joiner;
+import com.google.common.base.Splitter;
 
-public class LocalGroupResourceAuthorizationProvider extends
-  ResourceAuthorizationProvider {
+public class PolicyFileConstants {
 
-  public LocalGroupResourceAuthorizationProvider(String resource) {
-    super (new SimplePolicy(resource), new LocalGroupMappingService(resource));
-  }
+  // TODO change to privilege
+  public static final String PRIVILEGE_NAME = "action";
+  public static final String ROLE_SEPARATOR = ",";
+  public static final String AUTHORIZABLE_SEPARATOR = ":";
+  public static final String KV_SEPARATOR = "=";
+
+  public static final Splitter ROLE_SPLITTER = Splitter.on(ROLE_SEPARATOR);
+  public static final Splitter AUTHORIZABLE_SPLITTER = Splitter.on(AUTHORIZABLE_SEPARATOR);
+  public static final Splitter KV_SPLITTER = Splitter.on(KV_SEPARATOR);
+  public static final Joiner ROLE_JOINER = Joiner.on(ROLE_SEPARATOR);
+  public static final Joiner AUTHORIZABLE_JOINER = Joiner.on(AUTHORIZABLE_SEPARATOR);
+  public static final Joiner KV_JOINER = Joiner.on(KV_SEPARATOR);
 
 }

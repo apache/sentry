@@ -17,6 +17,7 @@
 package org.apache.access.provider.file;
 
 import java.io.File;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -24,11 +25,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.access.core.Authorizable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
 
 public class SimplePollingPolicy implements Policy {
 
@@ -63,7 +65,6 @@ public class SimplePollingPolicy implements Policy {
       throw new IllegalArgumentException("Resource must either be a Shiro resource" +
           " or a file: " + resourceFile);
     }
-    assert(resourceFile != null);
     executor.scheduleAtFixedRate(new Runnable() {
       @Override
       public void run() {
@@ -86,7 +87,7 @@ public class SimplePollingPolicy implements Policy {
    * {@inheritDoc}
    */
   @Override
-  public ImmutableSet<String> getPermissions(String group) {
-    return policy.getPermissions(group);
+  public ImmutableSetMultimap<String, String> getPermissions(List<Authorizable> authorizables, List<String> groups) {
+    return policy.getPermissions(authorizables, groups);
   }
 }
