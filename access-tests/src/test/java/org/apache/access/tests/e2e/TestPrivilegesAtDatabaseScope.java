@@ -81,9 +81,9 @@ public class TestPrivilegesAtDatabaseScope {
     testContext.appendToPolicyFileWithNewLine("user_group2 = all_db2");
     // roles: privileges -> role
     testContext.appendToPolicyFileWithNewLine("[roles]");
-    testContext.appendToPolicyFileWithNewLine("all_server = server=server1:*");
-    testContext.appendToPolicyFileWithNewLine("all_db1 = server=server1:db=DB_1:*");
-    testContext.appendToPolicyFileWithNewLine("all_db2 = server=server1:db=DB_2:*");
+    testContext.appendToPolicyFileWithNewLine("all_server = server=server1");
+    testContext.appendToPolicyFileWithNewLine("all_db1 = server=server1->db=DB_1");
+    testContext.appendToPolicyFileWithNewLine("all_db2 = server=server1->db=DB_2");
     // users: users -> groups
     testContext.appendToPolicyFileWithNewLine("[users]");
     testContext.appendToPolicyFileWithNewLine("hive = admin");
@@ -200,9 +200,9 @@ public class TestPrivilegesAtDatabaseScope {
     testContext.appendToPolicyFileWithNewLine("user_group2 = all_db2");
     // roles: privileges -> role
     testContext.appendToPolicyFileWithNewLine("[roles]");
-    testContext.appendToPolicyFileWithNewLine("all_server = server=server1:*");
-    testContext.appendToPolicyFileWithNewLine("all_db1 = server=server1:db=DB_1:*");
-    testContext.appendToPolicyFileWithNewLine("all_db2 = server=server1:db=DB_2:*");
+    testContext.appendToPolicyFileWithNewLine("all_server = server=server1");
+    testContext.appendToPolicyFileWithNewLine("all_db1 = server=server1->db=DB_1");
+    testContext.appendToPolicyFileWithNewLine("all_db2 = server=server1->db=DB_2");
     // users: users -> groups
     testContext.appendToPolicyFileWithNewLine("[users]");
     testContext.appendToPolicyFileWithNewLine("hive = admin");
@@ -319,9 +319,9 @@ public class TestPrivilegesAtDatabaseScope {
     testContext.appendToPolicyFileWithNewLine("user_group2 = all_db2");
     // roles: privileges -> role
     testContext.appendToPolicyFileWithNewLine("[roles]");
-    testContext.appendToPolicyFileWithNewLine("all_server = server=server1:*");
-    testContext.appendToPolicyFileWithNewLine("all_db1 = server=server1:db=DB_1:*");
-    testContext.appendToPolicyFileWithNewLine("all_db2 = server=server1:db=DB_2:*");
+    testContext.appendToPolicyFileWithNewLine("all_server = server=server1");
+    testContext.appendToPolicyFileWithNewLine("all_db1 = server=server1->db=DB_1");
+    testContext.appendToPolicyFileWithNewLine("all_db2 = server=server1->db=DB_2");
     // users: users -> groups
     testContext.appendToPolicyFileWithNewLine("[users]");
     testContext.appendToPolicyFileWithNewLine("hive = admin");

@@ -86,14 +86,14 @@ public class TestPerDatabasePolicyFile {
    */
   @Test
   public void testDbSpecificFileGrantsToOtherDb() throws Exception {
-    doTestDbSpecificFileGrants("server=server1:db=db1:*");
+    doTestDbSpecificFileGrants("server=server1->db=db1");
   }
   /**
    * Ensure that db specific file cannot grant to all db
    */
   @Test
   public void testDbSpecificFileGrantsToAllDb() throws Exception {
-    doTestDbSpecificFileGrants("server=server1:*");
+    doTestDbSpecificFileGrants("server=server1");
   }
   /**
    * Ensure that db specific file cannot grant to all servers
@@ -120,7 +120,7 @@ public class TestPerDatabasePolicyFile {
     append("[groups]", globalPolicyFile);
     append("admin1 = server1_all", globalPolicyFile);
     append("[roles]", globalPolicyFile);
-    append("server1_all = server=server1:*", globalPolicyFile);
+    append("server1_all = server=server1", globalPolicyFile);
 
     append("[groups]", db2SpecificPolicyFile);
     append("group1 = db1_all", db2SpecificPolicyFile);

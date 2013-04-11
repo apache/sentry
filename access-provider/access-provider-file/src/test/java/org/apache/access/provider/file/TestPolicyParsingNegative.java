@@ -72,7 +72,7 @@ public class TestPolicyParsingNegative {
     append("[groups]", otherPolicyFile);
     append("other_group = malicious_role", otherPolicyFile);
     append("[roles]", otherPolicyFile);
-    append("malicious_role = server=server1:db=customers:table=purchases:action=select", otherPolicyFile);
+    append("malicious_role = server=server1->db=customers->table=purchases->action=select", otherPolicyFile);
     Policy policy = new SimplePolicy(globalPolicyFile.getPath());
     ImmutableSet<String> permissions = policy.getPermissions(
         Arrays.asList(new Authorizable[] {

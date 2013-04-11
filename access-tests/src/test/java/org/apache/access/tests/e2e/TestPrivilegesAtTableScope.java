@@ -83,10 +83,10 @@ public class TestPrivilegesAtTableScope {
     testContext.appendToPolicyFileWithNewLine("user_group = select_tab1, insert_tab1, select_tab2");
     // roles: privileges -> role
     testContext.appendToPolicyFileWithNewLine("[roles]");
-    testContext.appendToPolicyFileWithNewLine("all_server = server=server1:*");
-    testContext.appendToPolicyFileWithNewLine("select_tab1 = server=server1:db=DB_1:table=TAB_1:select");
-    testContext.appendToPolicyFileWithNewLine("insert_tab1 = server=server1:db=DB_1:table=TAB_1:insert");
-    testContext.appendToPolicyFileWithNewLine("select_tab2 = server=server1:db=DB_1:table=TAB_2:select");
+    testContext.appendToPolicyFileWithNewLine("all_server = server=server1");
+    testContext.appendToPolicyFileWithNewLine("select_tab1 = server=server1->db=DB_1->table=TAB_1->action=select");
+    testContext.appendToPolicyFileWithNewLine("insert_tab1 = server=server1->db=DB_1->table=TAB_1->action=insert");
+    testContext.appendToPolicyFileWithNewLine("select_tab2 = server=server1->db=DB_1->table=TAB_2->action=select");
     // users: users -> groups
     testContext.appendToPolicyFileWithNewLine("[users]");
     testContext.appendToPolicyFileWithNewLine("hive = admin");
@@ -185,9 +185,9 @@ public class TestPrivilegesAtTableScope {
     testContext.appendToPolicyFileWithNewLine("user_group = insert_tab1, select_tab2");
     // roles: privileges -> role
     testContext.appendToPolicyFileWithNewLine("[roles]");
-    testContext.appendToPolicyFileWithNewLine("all_server = server=server1:*");
-    testContext.appendToPolicyFileWithNewLine("insert_tab1 = server=server1:db=DB_1:table=TAB_1:insert");
-    testContext.appendToPolicyFileWithNewLine("select_tab2 = server=server1:db=DB_1:table=TAB_2:select");
+    testContext.appendToPolicyFileWithNewLine("all_server = server=server1");
+    testContext.appendToPolicyFileWithNewLine("insert_tab1 = server=server1->db=DB_1->table=TAB_1->action=insert");
+    testContext.appendToPolicyFileWithNewLine("select_tab2 = server=server1->db=DB_1->table=TAB_2->action=select");
     // users: users -> groups
     testContext.appendToPolicyFileWithNewLine("[users]");
     testContext.appendToPolicyFileWithNewLine("hive = admin");
@@ -278,10 +278,10 @@ public class TestPrivilegesAtTableScope {
     testContext.appendToPolicyFileWithNewLine("user_group = select_tab1, select_tab2");
     // roles: privileges -> role
     testContext.appendToPolicyFileWithNewLine("[roles]");
-    testContext.appendToPolicyFileWithNewLine("all_server = server=server1:*");
-    testContext.appendToPolicyFileWithNewLine("select_tab1 = server=server1:db=DB_1:table=TAB_1:select");
-    testContext.appendToPolicyFileWithNewLine("insert_tab1 = server=server1:db=DB_1:table=TAB_1:insert");
-    testContext.appendToPolicyFileWithNewLine("select_tab2 = server=server1:db=DB_1:table=TAB_2:select");
+    testContext.appendToPolicyFileWithNewLine("all_server = server=server1");
+    testContext.appendToPolicyFileWithNewLine("select_tab1 = server=server1->db=DB_1->table=TAB_1->action=select");
+    testContext.appendToPolicyFileWithNewLine("insert_tab1 = server=server1->db=DB_1->table=TAB_1->action=insert");
+    testContext.appendToPolicyFileWithNewLine("select_tab2 = server=server1->db=DB_1->table=TAB_2->action=select");
     // users: users -> groups
     testContext.appendToPolicyFileWithNewLine("[users]");
     testContext.appendToPolicyFileWithNewLine("hive = admin");
@@ -372,9 +372,9 @@ public class TestPrivilegesAtTableScope {
     testContext.appendToPolicyFileWithNewLine("user_group = select_tab1, select_tab2");
     // roles: privileges -> role
     testContext.appendToPolicyFileWithNewLine("[roles]");
-    testContext.appendToPolicyFileWithNewLine("all_server = server=server1:*");
-    testContext.appendToPolicyFileWithNewLine("select_tab1 = server=server1:db=DB_1:table=TAB_1:select");
-    testContext.appendToPolicyFileWithNewLine("select_tab2 = server=server1:db=DB_1:table=TAB_2:select");
+    testContext.appendToPolicyFileWithNewLine("all_server = server=server1");
+    testContext.appendToPolicyFileWithNewLine("select_tab1 = server=server1->db=DB_1->table=TAB_1->action=select");
+    testContext.appendToPolicyFileWithNewLine("select_tab2 = server=server1->db=DB_1->table=TAB_2->action=select");
     // users: users -> groups
     testContext.appendToPolicyFileWithNewLine("[users]");
     testContext.appendToPolicyFileWithNewLine("hive = admin");
@@ -452,9 +452,9 @@ public class TestPrivilegesAtTableScope {
     testContext.appendToPolicyFileWithNewLine("user_group = select_tab2");
     // roles: privileges -> role
     testContext.appendToPolicyFileWithNewLine("[roles]");
-    testContext.appendToPolicyFileWithNewLine("all_server = server=server1:*");
-    testContext.appendToPolicyFileWithNewLine("select_tab1 = server=server1:db=DB_1:table=TAB_1:select");
-    testContext.appendToPolicyFileWithNewLine("select_tab2 = server=server1:db=DB_1:table=TAB_2:select");
+    testContext.appendToPolicyFileWithNewLine("all_server = server=server1");
+    testContext.appendToPolicyFileWithNewLine("select_tab1 = server=server1->db=DB_1->table=TAB_1->action=select");
+    testContext.appendToPolicyFileWithNewLine("select_tab2 = server=server1->db=DB_1->table=TAB_2->action=select");
     // users: users -> groups
     testContext.appendToPolicyFileWithNewLine("[users]");
     testContext.appendToPolicyFileWithNewLine("hive = admin");
@@ -540,9 +540,9 @@ public class TestPrivilegesAtTableScope {
     testContext.appendToPolicyFileWithNewLine("user_group = select_tab2, select_view1");
     // roles: privileges -> role
     testContext.appendToPolicyFileWithNewLine("[roles]");
-    testContext.appendToPolicyFileWithNewLine("all_server = server=server1:*");
-    testContext.appendToPolicyFileWithNewLine("select_view1 = server=server1:db=DB_1:table=VIEW_1:select");
-    testContext.appendToPolicyFileWithNewLine("select_tab2 = server=server1:db=DB_1:table=TAB_2:select");
+    testContext.appendToPolicyFileWithNewLine("all_server = server=server1");
+    testContext.appendToPolicyFileWithNewLine("select_view1 = server=server1->db=DB_1->table=VIEW_1->action=select");
+    testContext.appendToPolicyFileWithNewLine("select_tab2 = server=server1->db=DB_1->table=TAB_2->action=select");
     // users: users -> groups
     testContext.appendToPolicyFileWithNewLine("[users]");
     testContext.appendToPolicyFileWithNewLine("hive = admin");
@@ -644,9 +644,9 @@ public class TestPrivilegesAtTableScope {
     testContext.appendToPolicyFileWithNewLine("user_group = select_tab1, select_view1");
     // roles: privileges -> role
     testContext.appendToPolicyFileWithNewLine("[roles]");
-    testContext.appendToPolicyFileWithNewLine("all_server = server=server1:*");
-    testContext.appendToPolicyFileWithNewLine("select_view1 = server=server1:db=DB_1:table=VIEW_1:select");
-    testContext.appendToPolicyFileWithNewLine("select_tab1 = server=server1:db=DB_1:table=TAB_1:select");
+    testContext.appendToPolicyFileWithNewLine("all_server = server=server1");
+    testContext.appendToPolicyFileWithNewLine("select_view1 = server=server1->db=DB_1->table=VIEW_1->action=select");
+    testContext.appendToPolicyFileWithNewLine("select_tab1 = server=server1->db=DB_1->table=TAB_1->action=select");
     // users: users -> groups
     testContext.appendToPolicyFileWithNewLine("[users]");
     testContext.appendToPolicyFileWithNewLine("hive = admin");

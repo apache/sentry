@@ -87,9 +87,9 @@ public class TestCrossDbOps {
         "admin_group = admin_role",
         "user_group  = db1_all,db2_all",
         "[roles]",
-        "db1_all = server=server1:db=db1:*",
-        "db2_all = server=server1:db=db2:*",
-        "admin_role = server=server1:*",
+        "db1_all = server=server1->db=db1",
+        "db2_all = server=server1->db=db2",
+        "admin_role = server=server1",
         "[users]",
         "user1 = user_group",
         "user2 = user_group",
@@ -141,7 +141,7 @@ public class TestCrossDbOps {
   public void testAdminDbPrivileges() throws Exception {
     // edit policy file
     String testPolicies[] = { "[groups]", "admin_group = admin_role",
-        "[roles]", "admin_role = server=server1:*", "[users]",
+        "[roles]", "admin_role = server=server1->", "[users]",
         "admin = admin_group" };
     context.makeNewPolicy(testPolicies);
 
@@ -180,9 +180,9 @@ public class TestCrossDbOps {
     // edit policy file
     String testPolicies[] = { "[groups]", "admin_group = admin_role",
         "user_group  = db1_tab1_insert, db1_tab2_all", "[roles]",
-        "db1_tab2_all = server=server1:db=db1:table=table_2:*",
-        "db1_tab1_insert = server=server1:db=db1:table=table_1:insert",
-        "admin_role = server=server1:*", "[users]", "user3 = user_group",
+        "db1_tab2_all = server=server1->db=db1->table=table_2",
+        "db1_tab1_insert = server=server1->db=db1->table=table_1->insert",
+        "admin_role = server=server1", "[users]", "user3 = user_group",
         "admin = admin_group" };
     context.makeNewPolicy(testPolicies);
 
@@ -222,8 +222,8 @@ public class TestCrossDbOps {
   public void testNegativeUserDMLPrivileges() throws Exception {
     String testPolicies[] = { "[groups]", "admin_group = admin_role",
         "user_group  = db1_tab2_all", "[roles]",
-        "db1_tab2_all = server=server1:db=db1:table=table_2:*",
-        "admin_role = server=server1:*", "[users]", "user3 = user_group",
+        "db1_tab2_all = server=server1->db=db1->table=table_2",
+        "admin_role = server=server1", "[users]", "user3 = user_group",
         "admin = admin_group" };
     context.makeNewPolicy(testPolicies);
 
@@ -282,9 +282,9 @@ public class TestCrossDbOps {
         "user_group1 = db1_all",
         "user_group2 = db1_tab1_select",
         "[roles]",
-        "db1_all = server=server1:db=db1:*",
-        "db1_tab1_select = server=server1:db=db1:table=table_1:select",
-        "admin_role = server=server1:*",
+        "db1_all = server=server1->db=db1",
+        "db1_tab1_select = server=server1->db=db1->table=table_1->action=select",
+        "admin_role = server=server1",
         "[users]",
         "user1 = user_group1",
         "user2 = user_group2",
@@ -452,9 +452,9 @@ public class TestCrossDbOps {
     editor.addPolicy("admin = admin", "groups");
     editor.addPolicy("group1 = all_db1", "groups");
     editor.addPolicy("group1 = all_db2", "groups");
-    editor.addPolicy("admin = server=server1:*", "roles");
-    editor.addPolicy("all_db1 = server=server1:db=db_1:*", "roles");
-    editor.addPolicy("all_db2 = server=server1:db=db_2:*", "roles");
+    editor.addPolicy("admin = server=server1", "roles");
+    editor.addPolicy("all_db1 = server=server1->db=db_1", "roles");
+    editor.addPolicy("all_db2 = server=server1->db=db_2", "roles");
     editor.addPolicy("admin1 = admin", "users");
     editor.addPolicy("user1 = group1", "users");
 

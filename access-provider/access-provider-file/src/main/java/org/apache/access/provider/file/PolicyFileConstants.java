@@ -24,7 +24,7 @@ public class PolicyFileConstants {
   // TODO change to privilege
   public static final String PRIVILEGE_NAME = "action";
   public static final String ROLE_SEPARATOR = ",";
-  public static final String AUTHORIZABLE_SEPARATOR = ":";
+  public static final String AUTHORIZABLE_SEPARATOR = "->";
   public static final String KV_SEPARATOR = "=";
 
   public static final Splitter ROLE_SPLITTER = Splitter.on(ROLE_SEPARATOR);

@@ -95,7 +95,7 @@ public class TestUserManagement {
     File policyFile = context.getPolicyFile();
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
     editor.addPolicy("admin = admin", "groups");
-    editor.addPolicy("admin = server=server1:*", "roles");
+    editor.addPolicy("admin = server=server1", "roles");
     editor.addPolicy("admin1 = admin", "users");
     editor.addPolicy("admin2 = admin", "users");
     editor.addPolicy("admin3 = admin", "users");
@@ -143,7 +143,7 @@ public class TestUserManagement {
     File policyFile = context.getPolicyFile();
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
     editor.addPolicy("admin = admin", "groups");
-    editor.addPolicy("admin = server=server1:*", "roles");
+    editor.addPolicy("admin = server=server1", "roles");
 
     // verify by SQL
     // although no user is added to admin group, nothing should broken
@@ -195,7 +195,7 @@ public class TestUserManagement {
     File policyFile = context.getPolicyFile();
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
     editor.addPolicy("admin = admin", "groups");
-    editor.addPolicy("admin = server=server1:*", "roles");
+    editor.addPolicy("admin = server=server1", "roles");
     editor.addPolicy("admin1 = admin", "users");
     editor.addPolicy("admin2 = admin", "users");
     editor.addPolicy("admin3 = admin", "users");
@@ -253,7 +253,7 @@ public class TestUserManagement {
     File policyFile = context.getPolicyFile();
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
     editor.addPolicy("admin = admin_group1, admin_group2", "groups");
-    editor.addPolicy("admin = server=server1:*", "roles");
+    editor.addPolicy("admin = server=server1", "roles");
     editor.addPolicy("admin1 = admin_group1, admin_group2", "users");
     editor.addPolicy("admin2 = admin_group1, admin_group2", "users");
     editor.addPolicy("admin3 = admin_group1, admin_group2", "users");
@@ -297,7 +297,7 @@ public class TestUserManagement {
     File policyFile = context.getPolicyFile();
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
     editor.addPolicy("group1 = admin", "groups");
-    editor.addPolicy("admin = server=server1:*", "roles");
+    editor.addPolicy("admin = server=server1", "roles");
     editor.addPolicy("user1 = group1", "users");
     editor.addPolicy("user2 = group1", "users");
     editor.addPolicy("user3 = group1", "users");
@@ -343,8 +343,8 @@ public class TestUserManagement {
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
     editor.addPolicy("group1 = admin", "groups");
     editor.addPolicy("group1 = analytics", "groups");
-    editor.addPolicy("admin = server=server1:*", "roles");
-    editor.addPolicy("analytics = server=server1:db=default:*", "roles");
+    editor.addPolicy("admin = server=server1", "roles");
+    editor.addPolicy("analytics = server=server1->db=default", "roles");
     editor.addPolicy("user1 = group1", "users");
     editor.addPolicy("user2 = group1", "users");
     editor.addPolicy("user3 = group1", "users");
@@ -386,7 +386,7 @@ public class TestUserManagement {
     File policyFile = context.getPolicyFile();
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
     editor.addPolicy("group1 = analytics", "groups");
-    editor.addPolicy("analytics = server=server1:db=default:*", "roles");
+    editor.addPolicy("analytics = server=server1->db=default", "roles");
     editor.addPolicy("user1 = group1", "users");
     editor.addPolicy("user2 = group1", "users");
     editor.addPolicy("user3 = group1", "users");
@@ -420,7 +420,7 @@ public class TestUserManagement {
     File policyFile = context.getPolicyFile();
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
     editor.addPolicy("group1 = analytics", "groups");
-    editor.addPolicy("analytics = server=server1:db=default:*", "roles");
+    editor.addPolicy("analytics = server=server1->db=default", "roles");
     editor.addPolicy("user1 = group1, group1", "users");
     editor.addPolicy("user2 = group1, group1", "users");
     editor.addPolicy("user3 = group1, group1", "users");
@@ -450,7 +450,7 @@ public class TestUserManagement {
     File policyFile = context.getPolicyFile();
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
     editor.addPolicy("group1 = analytics", "groups");
-    editor.addPolicy("analytics = server=server1:db=default:*", "roles");
+    editor.addPolicy("analytics = server=server1->db=default", "roles");
     editor.addPolicy("group1 = group1", "users");
     editor.addPolicy("user2 = group1", "users");
     editor.addPolicy("user3 = group1", "users");
@@ -492,7 +492,7 @@ public class TestUserManagement {
     File policyFile = context.getPolicyFile();
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
     editor.addPolicy("group1~!@#$%^&*()+- = analytics", "groups");
-    editor.addPolicy("analytics = server=server1:db=default:*", "roles");
+    editor.addPolicy("analytics = server=server1->db=default", "roles");
     editor.addPolicy("group1~!@#$%^&*()+- = user1, user2, user3", "users");
     editor.addPolicy("user1 = group1~!@#$%^&*()+-", "users");
     editor.addPolicy("user2 = group1~!@#$%^&*()+-", "users");
@@ -536,7 +536,7 @@ public class TestUserManagement {
     File policyFile = context.getPolicyFile();
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
     editor.addPolicy("group1 = admin", "groups");
-    editor.addPolicy("admin = server=server1:*", "roles");
+    editor.addPolicy("admin = server=server1", "roles");
     editor.addPolicy("user1~!@#$%^&*()+- = group1", "users");
     editor.addPolicy("user2 = group1", "users");
     editor.addPolicy("user3 = group1", "users");

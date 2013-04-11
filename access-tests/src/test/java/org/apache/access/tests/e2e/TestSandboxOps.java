@@ -71,9 +71,9 @@ public class TestSandboxOps {
         "admin_group = admin_role",
         "user_group  = db1_all,db2_all",
         "[roles]",
-        "db1_all = server=server1:db=db1:*",
-        "db2_all = server=server1:db=db2:*",
-        "admin_role = server=server1:*",
+        "db1_all = server=server1->db=db1",
+        "db2_all = server=server1->db=db2",
+        "admin_role = server=server1",
         "[users]",
         "user1 = user_group",
         "user2 = user_group",
@@ -126,8 +126,8 @@ public class TestSandboxOps {
     // edit policy file
     String testPolicies[] = { "[groups]", "admin_group = admin_role",
         "user_group  = db1_all,db2_all", "[roles]",
-        "db1_all = server=server1:db=db1:*",
-        "db2_all = server=server1:db=db2:*", "admin_role = server=server1:*",
+        "db1_all = server=server1->db=db1",
+        "db2_all = server=server1->db=db2", "admin_role = server=server1",
         "[users]", "user1 = user_group", "user2 = user_group",
         "admin = admin_group" };
     context.makeNewPolicy(testPolicies);
@@ -156,7 +156,7 @@ public class TestSandboxOps {
   public void testAdminDbPrivileges() throws Exception {
     // edit policy file
     String testPolicies[] = { "[groups]", "admin_group = admin_role",
-        "[roles]", "admin_role = server=server1:*", "[users]",
+        "[roles]", "admin_role = server=server1", "[users]",
         "admin = admin_group" };
     context.makeNewPolicy(testPolicies);
 
@@ -196,9 +196,9 @@ public class TestSandboxOps {
     // edit policy file
     String testPolicies[] = { "[groups]", "admin_group = admin_role",
         "user_group  = db1_tab1_insert, db1_tab2_all", "[roles]",
-        "db1_tab2_all = server=server1:db=db1:table=table_2:*",
-        "db1_tab1_insert = server=server1:db=db1:table=table_1:insert",
-        "admin_role = server=server1:*", "[users]", "user3 = user_group",
+        "db1_tab2_all = server=server1->db=db1->table=table_2",
+        "db1_tab1_insert = server=server1->db=db1->table=table_1->action=insert",
+        "admin_role = server=server1", "[users]", "user3 = user_group",
         "admin = admin_group" };
     context.makeNewPolicy(testPolicies);
 
@@ -247,8 +247,8 @@ public class TestSandboxOps {
   public void testNegativeUserDMLPrivileges() throws Exception {
     String testPolicies[] = { "[groups]", "admin_group = admin_role",
         "user_group  = db1_tab2_all", "[roles]",
-        "db1_tab2_all = server=server1:db=db1:table=table_2:*",
-        "admin_role = server=server1:*", "[users]", "user3 = user_group",
+        "db1_tab2_all = server=server1->db=db1->table=table_2",
+        "admin_role = server=server1", "[users]", "user3 = user_group",
         "admin = admin_group" };
     context.makeNewPolicy(testPolicies);
 
@@ -308,9 +308,9 @@ public class TestSandboxOps {
         "user_group1 = db1_all",
         "user_group2 = db1_tab1_select",
         "[roles]",
-        "db1_all = server=server1:db=db1:*",
-        "db1_tab1_select = server=server1:db=db1:table=table_1:select",
-        "admin_role = server=server1:*",
+        "db1_all = server=server1->db=db1",
+        "db1_tab1_select = server=server1->db=db1->table=table_1->action=select",
+        "admin_role = server=server1",
         "[users]",
         "user1 = user_group1",
         "user2 = user_group2",
@@ -481,9 +481,9 @@ public class TestSandboxOps {
     editor.addPolicy("admin = admin", "groups");
     editor.addPolicy("group1 = all_db1", "groups");
     editor.addPolicy("group1 = all_db2", "groups");
-    editor.addPolicy("admin = server=server1:*", "roles");
-    editor.addPolicy("all_db1 = server=server1:db=db_1:*", "roles");
-    editor.addPolicy("all_db2 = server=server1:db=db_2:*", "roles");
+    editor.addPolicy("admin = server=server1", "roles");
+    editor.addPolicy("all_db1 = server=server1->db=db_1", "roles");
+    editor.addPolicy("all_db2 = server=server1->db=db_2", "roles");
     editor.addPolicy("admin1 = admin", "users");
     editor.addPolicy("user1 = group1", "users");
 
@@ -564,7 +564,7 @@ public class TestSandboxOps {
     assertEquals("user1 should be able to switch between database",
         statement.execute("USE " + dbName1));
     editor.removePolicy("group1 = all_db2");
-    editor.removePolicy("all_db2 = server=server1:db=db_2:*");
+    editor.removePolicy("all_db2 = server=server1->db=db_2");
     assertEquals("user1 should be able to drop table " + tableName1,
         statement.execute("DROP TABLE IF EXISTS " + tableName1));
     assertEquals(
@@ -582,7 +582,7 @@ public class TestSandboxOps {
 
     // f
     editor.addPolicy("group1 = select_tb2", "groups");
-    editor.addPolicy("select_tb2 = server=server1:db=db_2:tb=tb_2:select",
+    editor.addPolicy("select_tb2 = server=server1->db=db_2->tb=tb_2->action=select",
         "roles");
     assertEquals("user1 should be able to drop view " + viewName2,
         statement.execute("DROP VIEW IF EXISTS " + viewName2));
@@ -623,7 +623,7 @@ public class TestSandboxOps {
     File policyFile = context.getPolicyFile();
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
     editor.addPolicy("admin = admin", "groups");
-    editor.addPolicy("admin = server=server1:*", "roles");
+    editor.addPolicy("admin = server=server1", "roles");
     editor.addPolicy("admin1 = admin", "users");
 
     // verify by SQL
@@ -646,8 +646,8 @@ public class TestSandboxOps {
 
     editor.addPolicy("group1 = insert_tb1", "groups");
     editor.addPolicy("group1 = select_tb1", "groups");
-    editor.addPolicy("insert_tb1 = server=server1:db=db_1:insert", "roles");
-    editor.addPolicy("select_tb1 = server=server1:db=db_1:select", "roles");
+    editor.addPolicy("insert_tb1 = server=server1->db=db_1->table=*->action=insert", "roles");
+    editor.addPolicy("select_tb1 = server=server1->db=db_1->table=*->action=select", "roles");
     editor.addPolicy("user1 = group1", "users");
 
     // a
@@ -693,9 +693,9 @@ public class TestSandboxOps {
     editor.addPolicy("admin = admin", "groups");
     editor.addPolicy("group1 = all_db1", "groups");
     editor.addPolicy("group2 = select_tb1", "groups");
-    editor.addPolicy("select_tb1 = server=server1:db=db_1:select", "roles");
-    editor.addPolicy("all_db1 = server=server1:db=db_1:*", "roles");
-    editor.addPolicy("admin = server=server1:*", "roles");
+    editor.addPolicy("select_tb1 = server=server1->db=db_1->table=*->action=select", "roles");
+    editor.addPolicy("all_db1 = server=server1->db=db_1", "roles");
+    editor.addPolicy("admin = server=server1", "roles");
     editor.addPolicy("admin1 = admin", "users");
     editor.addPolicy("user1 = group1", "users");
     editor.addPolicy("user2 = group2", "users");
@@ -821,13 +821,13 @@ public class TestSandboxOps {
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
     editor.addPolicy("admin = admin", "groups");
     editor.addPolicy("group1 = all_db1", "groups");
-    editor.addPolicy("all_db1 = server=server1:db=db_1:*", "roles");
-    editor.addPolicy("admin = server=server1:*", "roles");
+    editor.addPolicy("all_db1 = server=server1->db=db_1", "roles");
+    editor.addPolicy("admin = server=server1", "roles");
     editor.addPolicy("admin1 = admin", "users");
     editor.addPolicy("user1 = group1", "users");
     // location specified policy
     editor.addPolicy("group1 = path1", "groups");
-    editor.addPolicy("path1 = " + EXTERNAL_HDFS_DIR + ":*", "locations");// *
+    editor.addPolicy("path1 = " + EXTERNAL_HDFS_DIR, "locations");// *
                                                                          // means
                                                                          // all
 
