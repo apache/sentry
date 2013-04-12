@@ -23,6 +23,7 @@ import static org.junit.Assert.assertEquals;
 import java.io.File;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
 
@@ -107,7 +108,7 @@ public class TestUserManagement {
       Connection connection = context.createConnection(admin, "foo");
       Statement statement = context.createStatement(connection);
 
-      statement.execute("DROP DATABASE IF EXISTS " + dbName);
+      statement.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
       statement.execute("CREATE DATABASE " + dbName);
 
       ResultSet res = statement.executeQuery("SHOW DATABASES");
@@ -119,7 +120,7 @@ public class TestUserManagement {
       }
       assertEquals("database " + dbName + " is not created", true,
           created);
-      statement.execute("DROP DATABASE " + dbName);
+      statement.execute("DROP DATABASE " + dbName + " CASCADE");
 
       statement.close();
       connection.close();
@@ -160,7 +161,7 @@ public class TestUserManagement {
       Connection connection = context.createConnection(admin, "foo");
       Statement statement = context.createStatement(connection);
 
-      statement.execute("DROP DATABASE IF EXISTS " + dbName);
+      statement.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
       statement.execute("CREATE DATABASE " + dbName);
 
       ResultSet res = statement.executeQuery("SHOW DATABASES");
@@ -172,7 +173,7 @@ public class TestUserManagement {
       }
       assertEquals("database " + dbName + " is not created", true,
           created);
-      statement.execute("DROP DATABASE " + dbName);
+      statement.execute("DROP DATABASE " + dbName + " CASCADE");
 
       statement.close();
       connection.close();
@@ -207,7 +208,7 @@ public class TestUserManagement {
       Connection connection = context.createConnection(admin, "foo");
       Statement statement = context.createStatement(connection);
 
-      statement.execute("DROP DATABASE IF EXISTS " + dbName);
+      statement.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
       statement.execute("CREATE DATABASE " + dbName);
 
       ResultSet res = statement.executeQuery("SHOW DATABASES");
@@ -219,7 +220,7 @@ public class TestUserManagement {
       }
       assertEquals("database " + dbName + " is not created", true,
           created);
-      statement.execute("DROP DATABASE " + dbName);
+      statement.execute("DROP DATABASE " + dbName + " CASCADE");
 
       statement.close();
       connection.close();
@@ -234,9 +235,12 @@ public class TestUserManagement {
     Statement statement = connection.createStatement();
 
     // should fail
-    assertFalse(
-        "admin1 has been remove from the admin group, should not be able to create database",
-        statement.execute("CREATE DATABASE " + dbName));
+    try {
+      statement.execute("CREATE DATABASE " + dbName);
+      assertFalse("admin1 has been remove from the admin group, should not be able to create database",false);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
   }
 
   /**
@@ -265,7 +269,7 @@ public class TestUserManagement {
       Connection connection = context.createConnection(admin, "foo");
       Statement statement = context.createStatement(connection);
 
-      statement.execute("DROP DATABASE IF EXISTS " + dbName);
+      statement.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
       statement.execute("CREATE DATABASE " + dbName);
 
       ResultSet res = statement.executeQuery("SHOW DATABASES");
@@ -277,7 +281,7 @@ public class TestUserManagement {
       }
       assertEquals("database " + dbName + " is not created", true,
           created);
-      statement.execute("DROP DATABASE " + dbName);
+      statement.execute("DROP DATABASE " + dbName + " CASCADE");
 
       statement.close();
       connection.close();
@@ -309,7 +313,7 @@ public class TestUserManagement {
       Connection connection = context.createConnection(admin, "foo");
       Statement statement = context.createStatement(connection);
 
-      statement.execute("DROP DATABASE IF EXISTS " + dbName);
+      statement.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
       statement.execute("CREATE DATABASE " + dbName);
 
       ResultSet res = statement.executeQuery("SHOW DATABASES");
@@ -321,7 +325,7 @@ public class TestUserManagement {
       }
       assertEquals("database " + dbName + " is not created", true,
           created);
-      statement.execute("DROP DATABASE " + dbName);
+      statement.execute("DROP DATABASE " + dbName + " CASCADE");
 
       statement.close();
       connection.close();
@@ -356,7 +360,7 @@ public class TestUserManagement {
       Connection connection = context.createConnection(admin, "foo");
       Statement statement = context.createStatement(connection);
 
-      statement.execute("DROP DATABASE IF EXISTS " + dbName);
+      statement.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
       statement.execute("CREATE DATABASE " + dbName);
 
       ResultSet res = statement.executeQuery("SHOW DATABASES");
@@ -368,7 +372,7 @@ public class TestUserManagement {
       }
       assertEquals("database " + dbName + " is not created", true,
           created);
-      statement.execute("DROP DATABASE " + dbName);
+      statement.execute("DROP DATABASE " + dbName + " CASCADE");
 
       statement.close();
       connection.close();
@@ -548,7 +552,7 @@ public class TestUserManagement {
       Connection connection = context.createConnection(admin, "foo");
       Statement statement = context.createStatement(connection);
 
-      statement.execute("DROP DATABASE IF EXISTS " + dbName);
+      statement.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
       statement.execute("CREATE DATABASE " + dbName);
 
       ResultSet res = statement.executeQuery("SHOW DATABASES");
@@ -560,7 +564,7 @@ public class TestUserManagement {
       }
       assertEquals("database " + dbName + " is not created", true,
           created);
-      statement.execute("DROP DATABASE " + dbName);
+      statement.execute("DROP DATABASE " + dbName + " CASCADE");
 
       statement.close();
       connection.close();

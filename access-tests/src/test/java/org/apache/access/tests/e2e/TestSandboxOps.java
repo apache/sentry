@@ -19,6 +19,7 @@ package org.apache.access.tests.e2e;
 
 import static org.junit.Assert.*;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.File;
 import java.sql.Connection;
@@ -27,22 +28,29 @@ import java.sql.Statement;
 import java.util.HashMap;
 
 import org.apache.access.provider.file.LocalGroupResourceAuthorizationProvider;
-import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.io.Resources;
+
 public class TestSandboxOps {
   private EndToEndTestContext context;
-  private final String dataFileDir = "src/test/resources";
-  private Path dataFilePath = new Path(dataFileDir, "kv1.dat");
+  private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
+  private File dataDir;
+  private File dataFile;
   private String EXTERNAL_HDFS_DIR = "hdfs://namenode:9000/tmp/externalDir";
   private String NONE_EXISTS_DIR = "hdfs://namenode:9000/tmp/nonExists";
 
   @Before
   public void setup() throws Exception {
     context = new EndToEndTestContext(new HashMap<String, String>());
+    dataDir = context.getDataDir();
+    dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
+    FileOutputStream to = new FileOutputStream(dataFile);
+    Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
+    to.close();
   }
 
   @After
@@ -500,8 +508,8 @@ public class TestSandboxOps {
     // admin create two databases
     Connection connection = context.createConnection("admin1", "foo");
     Statement statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE IF EXISTS " + dbName1);
-    statement.execute("DROP DATABASE IF EXISTS " + dbName2);
+    statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
+    statement.execute("DROP DATABASE IF EXISTS " + dbName2 + " CASCADE");
     statement.execute("CREATE DATABASE " + dbName1);
     statement.execute("CREATE DATABASE " + dbName2);
     statement.close();
@@ -511,93 +519,177 @@ public class TestSandboxOps {
     statement = context.createStatement(connection);
 
     // a
-    assertEquals("user1 should be able to switch to " + dbName1,
-        statement.execute("USE " + dbName1));
-    assertEquals("user1 should be able to drop table " + tableName1,
-        statement.execute("DROP TABLE IF EXISTS " + tableName1));
-    assertEquals(
-        "user1 should be able to create table " + tableName1,
-        statement.execute("create table " + tableName1
-            + " (under_col int comment 'the under column', value string)"));
-    assertEquals(
-        "user1 should be able to load data into table " + tableName1,
-        statement.execute("load data local inpath '" + dataFilePath.toString()
-            + "' into table " + tableName1));
-    assertEquals("user1 should be able to drop view " + viewName1,
-        statement.execute("DROP VIEW IF EXISTS " + viewName1));
-    assertEquals(
-        "user1 should be able to create view " + viewName1,
-        statement.execute("CREATE VIEW " + viewName1
-            + " (value) AS SELECT value from " + tableName1 + " LIMIT 10"));
+    try {
+      statement.execute("USE " + dbName1);
+      assertTrue("user1 should be able to switch to " + dbName1, true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("DROP TABLE IF EXISTS " + tableName1);
+      assertTrue("user1 should be able to drop table " + tableName1, true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("create table " + tableName1
+          + " (under_col int, value string)");
+      assertTrue("user1 should be able to create table " + tableName1, true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("load data local inpath '" + dataFile.getPath() + "' into table " + tableName1);
+      assertTrue("admin should be able to load data to table tb_1", true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("DROP VIEW IF EXISTS " + viewName1);
+      assertTrue("user1 should be able to drop view " + viewName1, true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("CREATE VIEW " + viewName1
+          + " (value) AS SELECT value from " + tableName1 + " LIMIT 10");
+      assertTrue("user1 should be able to create view " + viewName1, true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
 
     // b
-    assertEquals("user1 should be able to switch between database",
-        statement.execute("USE " + dbName2));
-    assertEquals("user1 should be able to drop table " + tableName2,
-        statement.execute("DROP TABLE IF EXISTS " + tableName2));
-    assertEquals(
-        "user1 should be able to create table " + tableName2,
-        statement.execute("create table " + tableName2
-            + " (under_col int comment 'the under column', value string)"));
-    assertEquals(
-        "user1 should be able to load data into table " + tableName2,
-        statement.execute("load data local inpath '" + dataFilePath.toString()
-            + "' into table " + tableName2));
-    assertEquals("user1 should be able to drop table " + tableName3,
-        statement.execute("DROP TABLE IF EXISTS " + tableName3));
-    assertEquals(
-        "user1 should be able to create table " + tableName3,
-        statement.execute("create table " + tableName3
-            + " (under_col int comment 'the under column', value string)"));
-    assertEquals(
-        "user1 should be able to load data into table " + tableName3,
-        statement.execute("load data local inpath '" + dataFilePath.toString()
-            + "' into table " + tableName3));
+    try {
+      statement.execute("USE " + dbName2);
+      assertTrue("user1 should be able to switch between database",true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("DROP TABLE IF EXISTS " + tableName2);
+      assertTrue("user1 should be able to drop table " + tableName2, true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("create table " + tableName2
+          + " (under_col int comment 'the under column', value string)");
+      assertTrue("user1 should be able to create table " + tableName2,true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("load data local inpath '" + dataFile.getPath()
+          + "' into table " + tableName2);
+      assertTrue("user1 should be able to load data into table " + tableName2,true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("DROP TABLE IF EXISTS " + tableName3);
+      assertTrue("user1 should be able to drop table " + tableName3,true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("create table " + tableName3
+          + " (under_col int comment 'the under column', value string)");
+      assertTrue("user1 should be able to create table " + tableName3,true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("load data local inpath '" + dataFile.getPath()
+          + "' into table " + tableName3);
+      assertTrue("user1 should be able to load data into table " + tableName3,true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
 
     // c
-    assertFalse("user1 shouldn't be able to drop database",
-        statement.execute("DROP DATABASE IF EXISTS " + dbName1));
-    assertFalse("user1 shouldn't be able to drop database",
-        statement.execute("DROP DATABASE IF EXISTS " + dbName2));
+    try {
+      statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
+      assertFalse("user1 shouldn't be able to drop database",false);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("DROP DATABASE IF EXISTS " + dbName2 + " CASCADE");
+      assertFalse("user1 shouldn't be able to drop database",false);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
 
     // d
-    assertEquals("user1 should be able to switch between database",
-        statement.execute("USE " + dbName1));
+    try {
+      statement.execute("USE " + dbName1);
+      assertTrue("user1 should be able to switch between database",true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
     editor.removePolicy("group1 = all_db2");
     editor.removePolicy("all_db2 = server=server1->db=db_2");
-    assertEquals("user1 should be able to drop table " + tableName1,
-        statement.execute("DROP TABLE IF EXISTS " + tableName1));
-    assertEquals(
-        "user1 should be able to create table " + tableName1,
-        statement.execute("create table " + tableName1
-            + " (under_col int comment 'the under column', value string)"));
+    try {
+      statement.execute("DROP TABLE IF EXISTS " + tableName1);
+      assertTrue("user1 should be able to drop table " + tableName1,true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("create table " + tableName1
+          + " (under_col int comment 'the under column', value string)");
+      assertTrue("user1 should be able to create table " + tableName1,true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
 
     // e
-    assertEquals("user1 should be able to drop view " + viewName2,
-        statement.execute("DROP VIEW IF EXISTS " + viewName2));
-    assertFalse(
-        "user1 should not be able to create based on table " + tableName2,
-        statement.execute("CREATE VIEW " + viewName2
-            + " (value) AS SELECT value from " + tableName2 + " LIMIT 10"));
+    try {
+      statement.execute("DROP VIEW IF EXISTS " + viewName2);
+      assertTrue("user1 should be able to drop view " + viewName2,true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("CREATE VIEW " + viewName2
+          + " (value) AS SELECT value from " + tableName2 + " LIMIT 10");
+      assertFalse("user1 should not be able to create based on table " + tableName2,false);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
 
     // f
     editor.addPolicy("group1 = select_tb2", "groups");
     editor.addPolicy("select_tb2 = server=server1->db=db_2->tb=tb_2->action=select",
         "roles");
-    assertEquals("user1 should be able to drop view " + viewName2,
-        statement.execute("DROP VIEW IF EXISTS " + viewName2));
-    assertEquals(
-        "user1 should be able to create based on table " + tableName2,
-        statement.execute("CREATE VIEW " + viewName2
-            + " (value) AS SELECT value from " + tableName2 + " LIMIT 10"));
+    try {
+      statement.execute("DROP VIEW IF EXISTS " + viewName2);
+      assertTrue("user1 should be able to drop view " + viewName2,true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("CREATE VIEW " + viewName2
+          + " (value) AS SELECT value from " + tableName2 + " LIMIT 10");
+      assertTrue("user1 should be able to create based on table " + tableName2,true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
 
     // g
-    assertEquals("user1 should be able to drop view " + viewName3,
-        statement.execute("DROP VIEW IF EXISTS " + viewName3));
-    assertFalse(
-        "user1 should not be able to create based on table " + tableName3,
-        statement.execute("CREATE VIEW " + viewName3
-            + " (value) AS SELECT value from " + tableName3 + " LIMIT 10"));
+    try {
+      statement.execute("DROP VIEW IF EXISTS " + viewName3);
+      assertTrue("user1 should be able to drop view " + viewName3,true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("CREATE VIEW " + viewName3
+          + " (value) AS SELECT value from " + tableName3 + " LIMIT 10");
+      assertFalse("user1 should not be able to create based on table " + tableName3,false);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
 
     statement.close();
     connection.close();
@@ -632,12 +724,12 @@ public class TestSandboxOps {
     String indexName1 = "index_1";
     Connection connection = context.createConnection("admin1", "foo");
     Statement statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE IF EXISTS " + dbName1);
+    statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
     statement.execute("CREATE DATABASE " + dbName1);
     statement.execute("DROP TABLE IF EXISTS " + tableName1);
     statement.execute("create table " + tableName1
         + " (under_col int comment 'the under column', value string)");
-    statement.execute("load data local inpath '" + dataFilePath.toString()
+    statement.execute("load data local inpath '" + dataFile.getPath()
         + "' into table " + tableName1);
     statement.execute("DROP INDEX IF EXISTS " + indexName1 + " ON "
         + tableName1);
@@ -651,13 +743,21 @@ public class TestSandboxOps {
     editor.addPolicy("user1 = group1", "users");
 
     // a
-    assertFalse(
-        "user1 should not be able to issue this query",
-        statement.execute("SELECT * FROM " + tableName1
-            + " WHERE under_col > 5"));
+    try {
+      statement.execute("SELECT * FROM " + tableName1
+          + " WHERE under_col > 5");
+      assertFalse("user1 should not be able to issue this query",false);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+
     // b
-    assertFalse("user1 should not be able to see all indexes",
-        statement.execute("SHOW INDEXES"));
+    try {
+      statement.execute("SHOW INDEXES ON " + tableName1);
+      assertFalse("user1 should not be able to see all indexes",false);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
   }
 
   /**
@@ -708,91 +808,164 @@ public class TestSandboxOps {
     String tableName3 = "tb_external";
     Connection connection = context.createConnection("admin1", "foo");
     Statement statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE IF EXISTS " + dbName1);
+    statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
     statement.execute("CREATE DATABASE " + dbName1);
     statement.close();
     connection.close();
 
     connection = context.createConnection("user1", "foo");
     statement = context.createStatement(connection);
-    assertEquals("user1 shouldn't have privilege to switch to " + dbName1,
-        statement.execute("USE " + dbName1));
-    assertEquals("user1 shouldn't have privilege to drop table " + tableName1,
-        statement.execute("DROP TABLE IF EXISTS " + tableName1));
-    assertEquals("user1 shouldn't have privilege to drop table " + tableName2,
-        statement.execute("DROP TABLE IF EXISTS " + tableName2));
-    assertEquals(
-        "user1 shouldn't have privilege to create table " + tableName1,
-        statement.execute("create table " + tableName1
-            + " (under_col int comment 'the under column', value string)"));
-    assertEquals(
-        "user1 should be able to create table " + tableName2,
-        statement.execute("create table " + tableName2
-            + " (under_col int comment 'the under column', value string)"));
-    assertEquals(
-        "user1 should be able to load data into table " + tableName1,
-        statement.execute("load data local inpath '" + dataFilePath.toString()
-            + "' into table " + tableName1));
-    assertEquals(
-        "user1 should be able to load data into table " + tableName2,
-        statement.execute("load data local inpath '" + dataFilePath.toString()
-            + "' into table " + tableName2));
-    // c
-    assertFalse("user1 shouldn't have privilege to create any database",
-        statement.execute("CREATE DATABASE " + dbName2));
-    assertFalse("user1 shouldn't have privilege to drop any database",
-        statement.execute("DROP DATABASE IF EXISTS " + dbName1));
-    assertFalse("user1 shouldn't have privilege to list all databases",
-        statement.execute("SHOW DATABASES"));
-    assertFalse("user1 shouldn't have privilege to list lock for any table",
-        statement.execute("SHOW LOCKS " + tableName1));
-    assertFalse(
-        "user1 shouldn't have privilege to alter table",
-        statement.execute("ALTER TABLE " + tableName1
-            + " ADD PARTITION (value = 10) LOCATION 'part1'"));
-    assertFalse(
-        "uesr1 shouldn't have privilege to alter partition",
-        statement.execute("ALTER TABLE " + tableName1
-            + " SET PARTITION (value = 10) LOCATION 'part2'"));
-    assertFalse(
-        "user1 shouldn't have privilege to create external table",
-        statement.execute("CREATE EXTERNAL TABLE " + tableName3
-            + " (under_col int, value string) LOCATION 'external'"));
-    assertFalse("user1 shouldn't have privilege to execute 'ADD JAR'",
-        statement.execute("ADD JAR /usr/lib/hive/lib/hbase.jar"));
+    try {
+      statement.execute("USE " + dbName1);
+      assertTrue("user1 shouldn't have privilege to switch to " + dbName1,true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("DROP TABLE IF EXISTS " + tableName1);
+      assertTrue("user1 shouldn't have privilege to drop table " + tableName1,true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("DROP TABLE IF EXISTS " + tableName2);
+      assertTrue("user1 shouldn't have privilege to drop table " + tableName2,true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("create table " + tableName1
+          + " (under_col int comment 'the under column', value string)");
+      assertTrue("user1 shouldn't have privilege to create table " + tableName1,true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("create table " + tableName2
+          + " (under_col int comment 'the under column', value string)");
+      assertTrue("user1 should be able to create table " + tableName2,true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("load data local inpath '" + dataFile.getPath()
+          + "' into table " + tableName1);
+      assertTrue("user1 should be able to load data into table " + tableName1,true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("load data local inpath '" + dataFile.getPath()
+          + "' into table " + tableName2);
+      assertTrue("user1 should be able to load data into table " + tableName2,true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
 
+    // c
+    try {
+      statement.execute("CREATE DATABASE " + dbName2);
+      assertFalse("user1 shouldn't have privilege to create any database",false);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
+      assertFalse("user1 shouldn't have privilege to drop any database",false);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("SHOW DATABASES");
+      assertFalse("user1 shouldn't have privilege to list all databases",false);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("SHOW LOCKS " + tableName1);
+      assertFalse("user1 shouldn't have privilege to list lock for any table",false);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("ALTER TABLE " + tableName1
+          + " ADD PARTITION (value = 10) LOCATION 'part1'");
+      assertFalse("user1 shouldn't have privilege to alter table",false);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("ALTER TABLE " + tableName1
+          + " SET PARTITION (value = 10) LOCATION 'part2'");
+      assertFalse("uesr1 shouldn't have privilege to alter partition",false);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("CREATE EXTERNAL TABLE " + tableName3
+          + " (under_col int, value string) LOCATION 'external'");
+      assertFalse("user1 shouldn't have privilege to create external table",false);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("ADD JAR /usr/lib/hive/lib/hbase.jar");
+      assertFalse("user1 shouldn't have privilege to execute 'ADD JAR'",false);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
     statement.close();
     connection.close();
 
     connection = context.createConnection("user2", "foo");
     statement = context.createStatement(connection);
     // a
-    assertEquals("user2 shouldn't have privilege to select data from table "
-        + tableName1,
-        statement.execute("SELECT * FROM TABLE " + tableName1 + " LIMIT 10"));
-    assertEquals(
-        "user2 shouldn't have privilege to explain a query",
-        statement.execute("EXPLAIN SELECT * FROM TABLE " + tableName1
-            + " WHERE under_col > 5 LIMIT 10"));
-    assertEquals("user2 shouldn't have privilege to describe a table",
-        statement.execute("DESCRIBE " + tableName1));
+    try {
+      statement.execute("SELECT * FROM TABLE " + tableName1 + " LIMIT 10");
+      assertTrue("user2 shouldn't have privilege to select data from table "
+          + tableName1,true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("EXPLAIN SELECT * FROM TABLE " + tableName1
+          + " WHERE under_col > 5 LIMIT 10");
+      assertTrue("user2 shouldn't have privilege to explain a query", true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("DESCRIBE " + tableName1);
+      assertTrue("user2 shouldn't have privilege to describe a table",true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
+          + "' INTO TABLE " + tableName1);
+      assertFalse("user2 shouldn't have privilege to insert data into table "
+          + tableName1,false);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("analyze table " + tableName1
+          + " compute statistics for columns under_col, value");
+      assertFalse("user2 shouldn't have privilege to analyze table " + tableName1,false);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
 
-    assertFalse(
-        "user2 shouldn't have privilege to insert data into table "
-            + tableName1,
-        statement.execute("LOAD DATA LOCAL INPATH '" + dataFilePath.toString()
-            + "' INTO TABLE " + tableName1));
-    assertFalse(
-        "user2 shouldn't have privilege to analyze table " + tableName1,
-        statement.execute("analyze table " + tableName1
-            + " compute statistics for columns under_col, value"));
     // b
-    assertFalse(
-        "user2 shouldn't have privilege to join " + tableName1 + " and "
-            + tableName2,
-        statement.execute("SELECT " + tableName1 + ".* FROM " + tableName1
-            + " JOIN " + tableName2 + " ON (" + tableName1 + ".value = "
-            + tableName2 + ".value)"));
+    try {
+      statement.execute("SELECT " + tableName1 + ".* FROM " + tableName1
+          + " JOIN " + tableName2 + " ON (" + tableName1 + ".value = "
+          + tableName2 + ".value)");
+      assertFalse("user2 shouldn't have privilege to join " + tableName1 + " and "
+          + tableName2,false);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
     statement.close();
     connection.close();
   }
@@ -827,9 +1000,7 @@ public class TestSandboxOps {
     editor.addPolicy("user1 = group1", "users");
     // location specified policy
     editor.addPolicy("group1 = path1", "groups");
-    editor.addPolicy("path1 = " + EXTERNAL_HDFS_DIR, "locations");// *
-                                                                         // means
-                                                                         // all
+    editor.addPolicy("path1 = " + EXTERNAL_HDFS_DIR, "locations");
 
     // verify by SQL
     String dbName1 = "db_1";
@@ -837,71 +1008,130 @@ public class TestSandboxOps {
     String tableName2 = "tb_2";
     Connection connection = context.createConnection("admin1", "foo");
     Statement statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE IF EXISTS " + dbName1);
+    statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
     statement.execute("CREATE DATABASE " + dbName1);
     statement.close();
     connection.close();
 
     connection = context.createConnection("user1", "foo");
     statement = context.createStatement(connection);
-    assertEquals("user1 should be able to switch to " + dbName1,
-        statement.execute("USE " + dbName1));
-    assertEquals("user1 should be able to drop table " + tableName1,
-        statement.execute("DROP TABLE IF EXISTS " + tableName1));
-    assertEquals(
-        "user1 should be able to create table " + tableName1,
-        statement.execute("create table " + tableName1
-            + " (under_col int comment 'the under column', value string)"));
-    assertEquals("user1 should be able to drop table " + tableName2,
-        statement.execute("DROP TABLE IF EXISTS " + tableName2));
-    assertEquals(
-        "user1 should be able to create table " + tableName2,
-        statement.execute("create table " + tableName2
-            + " (under_col int comment 'the under column', value string)"));
+
+    try {
+      statement.execute("USE " + dbName1);
+      assertTrue("user1 should be able to switch to " + dbName1,true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("DROP TABLE IF EXISTS " + tableName1);
+      assertTrue("user1 should be able to drop table " + tableName1,true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("create table " + tableName1
+          + " (under_col int comment 'the under column', value string)");
+      assertTrue("user1 should be able to create table " + tableName1,true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("DROP TABLE IF EXISTS " + tableName2);
+      assertTrue("user1 should be able to drop table " + tableName2,true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("create table " + tableName2
+          + " (under_col int comment 'the under column', value string)");
+      assertTrue("user1 should be able to create table " + tableName2,true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+
     // a
-    assertEquals(
-        "user1 has privilege to load data from " + EXTERNAL_HDFS_DIR,
-        statement.execute("LOAD DATA INPATH '" + EXTERNAL_HDFS_DIR
-            + "' INTO TABLE " + tableName1));
+    try {
+      statement.execute("LOAD DATA INPATH '" + EXTERNAL_HDFS_DIR
+          + "' INTO TABLE " + tableName1);
+      assertTrue("user1 has privilege to load data from " + EXTERNAL_HDFS_DIR,true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+
     // b
-    assertEquals(
-        "user1 should be able to import data from " + tableName1 + " to "
-            + tableName2,
-        statement.execute("INSERT OVERWRITE " + tableName2 + "SELECT * FROM "
-            + tableName1));
+    try {
+      statement.execute("INSERT OVERWRITE " + tableName2 + "SELECT * FROM "
+          + tableName1);
+      assertTrue("user1 should be able to import data from " + tableName1 + " to "
+          + tableName2,true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+
     // c
-    assertEquals(
-        "user1 should be able to export data from " + tableName2 + " to "
-            + EXTERNAL_HDFS_DIR,
-        statement.execute("INSERT OVERWRITE LOCAL DIRECTORY '"
-            + EXTERNAL_HDFS_DIR + "' SELECT * FROM " + tableName2));
+    try {
+      statement.execute("INSERT OVERWRITE LOCAL DIRECTORY '"
+          + EXTERNAL_HDFS_DIR + "' SELECT * FROM " + tableName2);
+      assertTrue("user1 should be able to export data from " + tableName2 + " to "
+          + EXTERNAL_HDFS_DIR,true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+
     // d
-    assertEquals("user1 should be able to switch to " + dbName1,
-        statement.execute("USE " + dbName1));
-    assertEquals("user1 should be able to drop table " + tableName1,
-        statement.execute("DROP TABLE IF EXISTS " + tableName1));
-    assertEquals(
-        "user1 should be able to create table " + tableName1,
-        statement.execute("create table " + tableName1
-            + " (under_col int comment 'the under column', value string)"));
-    assertEquals("user1 should be able to drop table " + tableName2,
-        statement.execute("DROP TABLE IF EXISTS " + tableName2));
-    assertEquals(
-        "user1 should be able to create table " + tableName2,
-        statement.execute("create table " + tableName2
-            + " (under_col int comment 'the under column', value string)"));
-    assertFalse(
-        "",
-        statement.execute("LOAD DATA INPATH '" + NONE_EXISTS_DIR
-            + "' INTO TABLE " + tableName1));
-    assertFalse(
-        "",
-        statement.execute("INSERT OVERWRITE " + tableName2 + "SELECT * FROM "
-            + tableName1));
-    assertFalse(
-        "",
-        statement.execute("INSERT OVERWRITE LOCAL DIRECTORY '"
-            + NONE_EXISTS_DIR + "' SELECT * FROM " + tableName2));
+    try {
+      statement.execute("USE " + dbName1);
+      assertTrue("user1 should be able to switch to " + dbName1,true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("DROP TABLE IF EXISTS " + tableName1);
+      assertTrue("user1 should be able to drop table " + tableName1,true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("create table " + tableName1
+          + " (under_col int comment 'the under column', value string)");
+      assertTrue("user1 should be able to create table " + tableName1,true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("DROP TABLE IF EXISTS " + tableName2);
+      assertTrue("user1 should be able to drop table " + tableName2,true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("create table " + tableName2
+          + " (under_col int comment 'the under column', value string)");
+      assertTrue("user1 should be able to create table " + tableName2,true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("LOAD DATA INPATH '" + NONE_EXISTS_DIR
+          + "' INTO TABLE " + tableName1);
+      assertFalse("user_1 shouldn't be able to laod data into table " + tableName1,false);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("INSERT OVERWRITE " + tableName2 + "SELECT * FROM "
+          + tableName1);
+      assertFalse("user_1 shouldn't be able to insert data to " + tableName1,false);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("INSERT OVERWRITE LOCAL DIRECTORY '"
+          + NONE_EXISTS_DIR + "' SELECT * FROM " + tableName2);
+      assertFalse("user_1 shouldn't be able to export data to " + NONE_EXISTS_DIR,false);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
     statement.close();
     connection.close();
   }
