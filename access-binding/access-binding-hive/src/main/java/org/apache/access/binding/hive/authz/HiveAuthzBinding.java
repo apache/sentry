@@ -17,14 +17,18 @@
 package org.apache.access.binding.hive.authz;
 
 import java.lang.reflect.Constructor;
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.access.binding.hive.authz.HiveAuthzPrivileges.HiveObjectTypes;
 import org.apache.access.binding.hive.conf.HiveAuthzConf;
 import org.apache.access.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
+import org.apache.access.core.AccessURI;
 import org.apache.access.core.Action;
+import org.apache.access.core.Authorizable;
 import org.apache.access.core.AuthorizationProvider;
 import org.apache.access.core.Database;
 import org.apache.access.core.Server;
@@ -33,11 +37,14 @@ import org.apache.access.core.Subject;
 import org.apache.access.core.Table;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.hooks.Entity;
+import org.apache.hadoop.hive.ql.hooks.Entity.Type;
 import org.apache.hadoop.hive.ql.hooks.ReadEntity;
 import org.apache.hadoop.hive.ql.hooks.WriteEntity;
 import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
+import org.apache.hadoop.hive.ql.session.SessionState;
 
 public class HiveAuthzBinding {
   static final private Log LOG = LogFactory.getLog(HiveAuthzBinding.class.getName());
@@ -85,14 +92,17 @@ public class HiveAuthzBinding {
     LOG.debug("Going to authorize statement " + hiveOp.name() + " for subject " + subject.getName());
     LOG.debug("Input Entities " + printEntities(inputEntities));
     LOG.debug("Output Entities " + printEntities(outputEntities));
+    List<Authorizable> inputHierarchy = null;
+    List<Authorizable> outputHierarchy = null;
 
     switch (stmtAuthPrivileges.getOperationScope()) {
     case SERVER :
       // validate server level privileges if applicable. Eg create UDF,register jar etc ..
-      if (!authProvider.hasAccess(subject, authServer,
-          getResoruce(hiveOp), EnumSet.of(Action.ALL))) {
+      inputHierarchy = new ArrayList<Authorizable>();
+      inputHierarchy.add(authServer);
+      if (!authProvider.hasAccess(subject, inputHierarchy,  EnumSet.of(Action.ALL))) {
         throw new AuthorizationException("User " + subject.getName() +
-            " does not have priviliedges for " + stmtAuthPrivileges.getOperationType().name());
+              " does not have priviliedges for " + stmtAuthPrivileges.getOperationType().name());
       }
       break;
     case DATABASE:
@@ -101,12 +111,17 @@ public class HiveAuthzBinding {
        * Currently hive compiler doesn't capture db name all these cases so use the one saved
        * by the pre-hook
        */
-      if (!authProvider.hasAccess(subject, authServer, currDB,
-          Table.ALL, EnumSet.of(Action.ALL))) {
+      inputHierarchy = new ArrayList<Authorizable>();
+      inputHierarchy.add(authServer);
+      inputHierarchy.add(currDB);
+      if (!authProvider.hasAccess(subject, inputHierarchy,  EnumSet.of(Action.ALL))) {
         throw new AuthorizationException("User " + subject.getName() +
             " does not have priviliedges for " + stmtAuthPrivileges.getOperationType().name());
       }
-      break;
+      /**
+       * The DB level operation could have additional input/output entities, eg URIs
+       * Fall through !!
+       */
     case TABLE:
       /* for each read and write entity captured by the compiler -
        *    check if that object type is part of the input/output privilege list
@@ -127,14 +142,16 @@ public class HiveAuthzBinding {
               requiredInputPrivileges.get(HiveObjectTypes.
                   convertHiveEntity(readEntity.getType()));
 
-          if (!authProvider.hasAccess(subject, authServer,
-              getDatabaseFromEntity(readEntity), getTableFromEntity(readEntity),
-              inputPrivSet)) {
+          inputHierarchy = new ArrayList<Authorizable>();
+          inputHierarchy.add(authServer);
+          inputHierarchy.addAll(getAuthzHierarchyFromEntity(readEntity));
+          if (!authProvider.hasAccess(subject, inputHierarchy, inputPrivSet)) {
             throw new AuthorizationException("User " + subject.getName() +
                 " does not have priviliedges for " + hiveOp.name());
           }
         }
       }
+
       // Check write entities
       Map<HiveObjectTypes, EnumSet<Action>> requiredOutputPrivileges =
           stmtAuthPrivileges.getOutputPrivileges();
@@ -142,13 +159,17 @@ public class HiveAuthzBinding {
         // check if the statement needs any objects to be validated as per validation policy
         if (requiredOutputPrivileges.containsKey(
             HiveObjectTypes.convertHiveEntity(writeEntity.getType()))) {
+          // check if we want to skip this entity verification
+            if (filterWriteEntity(writeEntity)) {
+              continue;
+            }
           EnumSet<Action> outputPrivSet =
               requiredOutputPrivileges.get(HiveObjectTypes.
                   convertHiveEntity(writeEntity.getType()));
-
-          if (!authProvider.hasAccess(subject, authServer,
-              getDatabaseFromEntity(writeEntity), getTableFromEntity(writeEntity),
-              outputPrivSet)) {
+          outputHierarchy = new ArrayList<Authorizable>();
+          outputHierarchy.add(authServer);
+          outputHierarchy.addAll(getAuthzHierarchyFromEntity(writeEntity));
+          if (!authProvider.hasAccess(subject, outputHierarchy, outputPrivSet)) {
             throw new AuthorizationException("User " + subject.getName() +
                 " does not have priviliedges for " + hiveOp.name());
           }
@@ -161,30 +182,53 @@ public class HiveAuthzBinding {
     }
   }
 
-  // Extract the DB from the hive entity
-  private Database getDatabaseFromEntity(Entity entity) {
-    switch (entity.getType()) {
-    case TABLE:
-      return new Database(entity.getTable().getDbName());
-    case PARTITION:
-      return new Database(entity.getPartition().getTable().getDbName());
-    default:
-      throw new UnsupportedOperationException("Unsupported entity type " +
-          entity.getType().name());
+// Check if this write entity needs to skipped
+  private boolean filterWriteEntity(WriteEntity writeEntity) {
+    // skip URI validation for session scratch file URIs
+    try {
+      if (writeEntity.getTyp().equals(Type.DFS_DIR) ||
+          writeEntity.getTyp().equals(Type.LOCAL_DIR)) {
+        HiveConf conf = SessionState.get().getConf();
+        if (writeEntity.getLocation().getPath().
+            startsWith(conf.getVar(HiveConf.ConfVars.SCRATCHDIR))) {
+          return true;
+        }
+        if (writeEntity.getLocation().getPath().
+            startsWith(conf.getVar(HiveConf.ConfVars.LOCALSCRATCHDIR))) {
+          return true;
+        }
+      }
+    } catch (Exception e) {
+      throw new AuthorizationException("Failed to extract uri details", e);
     }
+    return false;
   }
 
-  // Extract Table from the hive entity
-  private Table getTableFromEntity(Entity entity) {
+  // Build the hierarchy of authorizable object for the given entity type.
+  private List<Authorizable> getAuthzHierarchyFromEntity(Entity entity) {
+    List<Authorizable> objectHierarchy = new ArrayList<Authorizable>();
     switch (entity.getType()) {
     case TABLE:
-      return new Table(entity.getTable().getTableName());
+      objectHierarchy.add(new Database(entity.getTable().getDbName()));
+      objectHierarchy.add(new Table(entity.getTable().getTableName()));
+      break;
     case PARTITION:
-      return new Table(entity.getPartition().getTable().getTableName());
+      objectHierarchy.add(new Database(entity.getPartition().getTable().getDbName()));
+      objectHierarchy.add(new Table(entity.getPartition().getTable().getTableName()));
+      break;
+    case DFS_DIR:
+    case LOCAL_DIR:
+      try {
+        objectHierarchy.add(new AccessURI(entity.toString()));
+      } catch (Exception e) {
+        throw new AuthorizationException("Failed to get File URI", e);
+      }
+      break;
     default:
       throw new UnsupportedOperationException("Unsupported entity type " +
           entity.getType().name());
     }
+    return objectHierarchy;
   }
 
   // Extract server resource

@@ -33,6 +33,8 @@ public class HiveAuthzPrivilegesMap {
   static {
     HiveAuthzPrivileges tableDDLPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
         addOutputObjectPriviledge(HiveObjectTypes.TABLE, EnumSet.of(Action.ALL)).
+        addInputEntityPriviledge(Entity.Type.DFS_DIR, EnumSet.of(Action.SELECT)).
+        addInputEntityPriviledge(Entity.Type.LOCAL_DIR, EnumSet.of(Action.SELECT)).
         setOperationScope(HiveOperationScope.TABLE).
         setOperationType(HiveOperationType.DDL).
         build();
@@ -42,11 +44,37 @@ public class HiveAuthzPrivilegesMap {
     HiveAuthzPrivileges tableQueryPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
         addInputEntityPriviledge(Entity.Type.TABLE, EnumSet.of(Action.SELECT)).
         addOutputEntityPriviledge(Entity.Type.TABLE, EnumSet.of(Action.INSERT)).
+        addOutputEntityPriviledge(Entity.Type.DFS_DIR, EnumSet.of(Action.INSERT)).
+        addOutputEntityPriviledge(Entity.Type.LOCAL_DIR, EnumSet.of(Action.INSERT)).
         setOperationScope(HiveOperationScope.TABLE).
         setOperationType(HiveOperationType.QUERY).
         build();
+    HiveAuthzPrivileges tableLoadPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
+        addInputEntityPriviledge(Entity.Type.DFS_DIR, EnumSet.of(Action.SELECT)).
+        addInputEntityPriviledge(Entity.Type.LOCAL_DIR, EnumSet.of(Action.SELECT)).
+        addOutputEntityPriviledge(Entity.Type.TABLE, EnumSet.of(Action.INSERT)).
+        setOperationScope(HiveOperationScope.TABLE).
+        setOperationType(HiveOperationType.DATA_LOAD).
+        build();
+    HiveAuthzPrivileges tableExportPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
+        addInputEntityPriviledge(Entity.Type.TABLE, EnumSet.of(Action.SELECT)).
+        addOutputEntityPriviledge(Entity.Type.DFS_DIR, EnumSet.of(Action.INSERT)).
+        setOperationScope(HiveOperationScope.TABLE).
+        setOperationType(HiveOperationType.DATA_UNLOAD).
+        build();
+    HiveAuthzPrivileges tableImportPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
+        addInputEntityPriviledge(Entity.Type.DFS_DIR, EnumSet.of(Action.SELECT)).
+        addOutputEntityPriviledge(Entity.Type.TABLE, EnumSet.of(Action.INSERT)).
+        setOperationScope(HiveOperationScope.TABLE).
+        setOperationType(HiveOperationType.DATA_UNLOAD).
+        build();
+
+    // insert overwrite dir
+
     HiveAuthzPrivileges dbDDLPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
         addOutputObjectPriviledge(HiveObjectTypes.DATABASE, EnumSet.of(Action.ALL)).
+        addInputEntityPriviledge(Entity.Type.DFS_DIR, EnumSet.of(Action.SELECT)).
+        addInputEntityPriviledge(Entity.Type.LOCAL_DIR, EnumSet.of(Action.SELECT)).
         setOperationScope(HiveOperationScope.DATABASE).
         setOperationType(HiveOperationType.DDL).
         build();
@@ -95,8 +123,9 @@ public class HiveAuthzPrivilegesMap {
     hiveAuthzStmtPrivMap.put(HiveOperation.DROPINDEX, dbDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.DROPDATABASE, dbDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.DROPTABLE, tableDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.EXPORT, tableQueryPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.LOAD, tableDMLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.EXPORT, tableExportPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.IMPORT, tableImportPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.LOAD, tableLoadPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERINDEX_REBUILD, tableDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERVIEW_PROPERTIES, tableDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.LOCKTABLE, tableDMLPrivilege);

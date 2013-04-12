@@ -26,6 +26,7 @@ import org.apache.access.binding.hive.authz.HiveAuthzPrivilegesMap;
 import org.apache.access.binding.hive.conf.HiveAuthzConf;
 import org.apache.access.core.Database;
 import org.apache.access.core.Subject;
+import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hadoop.hive.ql.exec.Task;
 import org.apache.hadoop.hive.ql.hooks.ReadEntity;
 import org.apache.hadoop.hive.ql.hooks.WriteEntity;
@@ -56,10 +57,12 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
   public ASTNode preAnalyze(HiveSemanticAnalyzerHookContext context, ASTNode ast)
       throws SemanticException {
 
+    SessionState.get().getConf().setBoolVar(ConfVars.HIVE_ENITITY_CAPTURE_INPUT_URI, true);
     switch (ast.getToken().getType()) {
     // Hive parser doesn't capture the database name in output entity, so we store it here for now
     case HiveParser.TOK_CREATEDATABASE:
     case HiveParser.TOK_ALTERDATABASE_PROPERTIES:
+    case HiveParser.TOK_DROPDATABASE:
       currDB = new Database(BaseSemanticAnalyzer.unescapeIdentifier(ast.getChild(0).getText()));
       break;
     default:
@@ -104,7 +107,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
     }
     return sessState.getHiveOperation();
   }
-  
+
   private Subject getCurrentSubject(HiveSemanticAnalyzerHookContext context) {
     // Extract the username from the hook context
     return new Subject(context.getUserName());

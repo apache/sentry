@@ -46,6 +46,7 @@ public class HiveAuthzPrivileges {
       case PARTITION:
         return HiveObjectTypes.TABLE;
       case DFS_DIR:
+      case LOCAL_DIR:
         return HiveObjectTypes.URI;
       default:
         throw new UnsupportedOperationException("Unsupported entity type " +
@@ -61,6 +62,8 @@ public class HiveAuthzPrivileges {
     UNKNOWN,
     DDL,
     DML,
+    DATA_LOAD,
+    DATA_UNLOAD,
     QUERY,
     INFO
   };
@@ -74,7 +77,8 @@ public class HiveAuthzPrivileges {
     UNKNOWN,
     SERVER,
     DATABASE,
-    TABLE
+    TABLE,
+    URI
   }
 
   public static class AuthzPrivilegeBuilder {

@@ -26,6 +26,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URI;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -38,6 +39,8 @@ import java.util.concurrent.TimeoutException;
 import org.apache.access.binding.hive.conf.HiveAuthzConf;
 import org.apache.access.provider.file.LocalGroupResourceAuthorizationProvider;
 import org.apache.commons.io.FileUtils;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hive.service.server.HiveServer2;
@@ -80,8 +83,9 @@ public class EndToEndTestContext {
   private static File baseDir;
   private static File confDir;
 
-  private static HiveServer2 hiveServer2;
+  private static volatile HiveServer2 hiveServer2;
   private static Process hiveServer2Process;
+  private static MiniDFSCluster dfsCluster;
 
   private static File dataDir;
   private final File policyFile;
@@ -94,19 +98,33 @@ public class EndToEndTestContext {
   }
 
   public EndToEndTestContext(Map<String, String> properties)
-  throws Exception {
+      throws Exception {
     this(HiveServe2Type.valueOf(System.getProperty(HIVESERVER2_TYPE, HiveServe2Type.InternalHS2.toString())),
         properties);
   }
 
+  public EndToEndTestContext(Map<String, String> properties, boolean miniDFS)
+      throws Exception {
+    this(HiveServe2Type.valueOf(System.getProperty(HIVESERVER2_TYPE, HiveServe2Type.InternalHS2.toString())),
+        properties, miniDFS);
+  }
+
   public EndToEndTestContext(HiveServe2Type serverType, Map<String, String> properties)
       throws Exception {
+    this(serverType, properties, false);
+  }
+
+  public EndToEndTestContext(HiveServe2Type serverType, Map<String, String> properties, boolean miniDFS)
+      throws Exception {
     initialize();
+    if (miniDFS) {
+      startMiniDFS();
+    }
     this.standAloneServer = serverType;
     connections = Sets.newHashSet();
     statements = Sets.newHashSet();
     policyFile = new File(confDir, AUTHZ_PROVIDER_FILENAME);
-    setupEnv(properties);
+    setupEnv(properties, miniDFS);
     if (serverType.equals(HiveServe2Type.StartExternalHS2)) {
       startExternalHiveServer2();
     } else if (serverType.equals(HiveServe2Type.InternalHS2)) {
@@ -114,13 +132,17 @@ public class EndToEndTestContext {
     }
   }
 
-  private void setupEnv(Map<String, String> properties) throws IOException,
+  private void setupEnv(Map<String, String> properties, boolean miniDfs) throws IOException,
         ClassNotFoundException {
     for(Map.Entry<String, String> entry : properties.entrySet()) {
       System.setProperty(entry.getKey(), entry.getValue());
     }
     if(!properties.containsKey(WAREHOUSE_DIR)) {
-      System.setProperty(WAREHOUSE_DIR, new File(baseDir, "warehouse").getPath());
+      if (miniDfs) {
+        System.setProperty(WAREHOUSE_DIR, getDFSUri().toString() + "/data");
+      } else {
+        System.setProperty(WAREHOUSE_DIR, new File(baseDir, "warehouse").getPath());
+      }
     }
     if(!properties.containsKey(METASTORE_CONNECTION_URL)) {
       System.setProperty(METASTORE_CONNECTION_URL,
@@ -270,7 +292,7 @@ public class EndToEndTestContext {
         throw new TimeoutException("Couldn't access new HiveServer");
       }
       try {
-        createConnection("foo", "bar");
+        Connection conn = createConnection("foo", "bar");
         close();
         break;
       } catch (SQLException e) {
@@ -283,7 +305,14 @@ public class EndToEndTestContext {
     } while (true);
   }
 
-  public static void initialize() {
+  private void startMiniDFS() throws IOException {
+    synchronized (staticLock) {
+      System.setProperty(MiniDFSCluster.PROP_TEST_BUILD_DATA, baseDir.getPath());
+      dfsCluster = new  MiniDFSCluster(new Configuration(), 2, true, null);
+    }
+  }
+
+  public static void initialize() throws IOException {
     synchronized (staticLock) {
       if(baseDir == null) {
         baseDir = Files.createTempDir();
@@ -314,6 +343,9 @@ public class EndToEndTestContext {
       if(baseDir != null) {
         FileUtils.deleteQuietly(baseDir);
       }
+      if (dfsCluster != null) {
+        dfsCluster.shutdown();
+      }
     }
   }
   public File getBaseDir() {
@@ -321,5 +353,15 @@ public class EndToEndTestContext {
   }
   public File getDataDir() {
     return dataDir;
+  }
+
+  public MiniDFSCluster getdfsCluster () {
+    return dfsCluster;
+  }
+
+  @SuppressWarnings("static-access")
+  public static URI getDFSUri() throws IOException {
+    return dfsCluster.getFileSystem().
+      getDefaultUri(dfsCluster.getFileSystem().getConf());
   }
 }

@@ -39,4 +39,9 @@ public class AccessURI implements Authorizable {
     return AuthorizableType.URI;
   }
 
+  @Override
+  public String toString() {
+    return "URI [name=" + uriName + "]";
+  }
+
 }
