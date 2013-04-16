@@ -16,6 +16,8 @@
  */
 package org.apache.access.provider.file;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
@@ -28,6 +30,8 @@ import org.apache.access.core.Database;
 import org.apache.access.core.Server;
 import org.apache.access.core.Subject;
 import org.apache.access.core.Table;
+import org.apache.commons.io.FileUtils;
+import org.junit.After;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +39,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Objects;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import com.google.common.io.Files;
 
 
 public class TestResourceAuthorizationProvider {
@@ -72,12 +77,22 @@ public class TestResourceAuthorizationProvider {
   }
 
   private final ResourceAuthorizationProvider authzProvider;
+  private File baseDir;
 
-  public TestResourceAuthorizationProvider() {
+  public TestResourceAuthorizationProvider() throws IOException {
+    baseDir = Files.createTempDir();
+    PolicyFiles.copyToDir(baseDir, "test-authz-provider.ini", "test-authz-provider-other-group.ini");
     authzProvider = new HadoopGroupResourceAuthorizationProvider(
-        new SimplePolicy("classpath:test-authz-provider.ini"),
+        new SimplePolicy(new File(baseDir, "test-authz-provider.ini").getPath()),
         new MockGroupMappingServiceProvider(USER_TO_GROUP_MAP));
 
+  }
+
+  @After
+  public void teardown() {
+    if(baseDir != null) {
+      FileUtils.deleteQuietly(baseDir);
+    }
   }
 
 

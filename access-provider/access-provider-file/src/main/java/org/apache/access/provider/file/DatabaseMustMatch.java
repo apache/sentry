@@ -33,7 +33,7 @@ public class DatabaseMustMatch extends AbstractRoleValidator {
         if(authorizable instanceof Database &&
             !database.equalsIgnoreCase(authorizable.getName())) {
           String msg = "Role " + role + " references db " +
-              authorizable.getName() + ",  but is only allowed to reference "
+              authorizable.getName() + ", but is only allowed to reference "
               + database;
           throw new ConfigurationException(msg);
         }

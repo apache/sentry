@@ -17,6 +17,7 @@
 
 package org.apache.access.provider.file;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -24,10 +25,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.shiro.config.Ini;
 import org.apache.shiro.config.Ini.Section;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.annotations.VisibleForTesting;
 
 /**
  * Mapping users to groups
@@ -58,9 +64,13 @@ public class LocalGroupMappingService implements GroupMappingService {
   private final Map <String, List<String>> groupMap =
       new HashMap <String, List<String>> ();
 
-  public LocalGroupMappingService(String resourcePath) {
+  public LocalGroupMappingService(Path resourcePath) throws IOException {
+    this(new Configuration(), resourcePath);
+  }
+  @VisibleForTesting
+  public LocalGroupMappingService(Configuration configuration, Path resourcePath) throws IOException {
     // parse user/group mapping
-    parseGroups(resourcePath);
+    parseGroups(resourcePath.getFileSystem(configuration), resourcePath);
   }
 
   @Override
@@ -72,8 +82,8 @@ public class LocalGroupMappingService implements GroupMappingService {
     }
   }
 
-  private void parseGroups(String resourcePath) {
-    Ini ini = Ini.fromResourcePath(resourcePath);
+  private void parseGroups(FileSystem fileSystem, Path resourcePath) throws IOException {
+    Ini ini = PolicyFiles.loadFromPath(fileSystem, resourcePath);
     Section usersSection = ini.getSection(USERS_SECTION);
     if (usersSection == null) {
       LOGGER.warn("No section " + USERS_SECTION + " in the " + resourcePath);

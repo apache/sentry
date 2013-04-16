@@ -16,7 +16,7 @@
  */
 package org.apache.access.provider.file;
 
-import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -45,11 +45,11 @@ public class SimplePollingPolicy implements Policy {
   /**
    * @param resourcePath path to resource or file, {@link org.apache.shiro.io.ResourceUtils}
    * @param pollingFrequency interval to check for updates to the resource
+   * @throws IOException
    */
-  public SimplePollingPolicy(final SimplePolicy policy,
-      final File resourceFile, int pollingFrequency) {
+  public SimplePollingPolicy(final SimplePolicy policy, int pollingFrequency) throws IOException {
     this.policy = policy;
-    lastUpdateTimeStamp = new AtomicLong(resourceFile.lastModified());
+    lastUpdateTimeStamp = new AtomicLong(policy.getModificationTime());
     executor = Executors.newScheduledThreadPool(1, new ThreadFactory() {
       @Override
       public Thread newThread(Runnable target) {
@@ -59,22 +59,18 @@ public class SimplePollingPolicy implements Policy {
         return thread;
       }
     });
-    LOGGER.info("Creating instance with " + resourceFile + " and polling" +
-        " frequency " + pollingFrequency);
-    if(!resourceFile.isFile()) {
-      throw new IllegalArgumentException("Resource must either be a Shiro resource" +
-          " or a file: " + resourceFile);
-    }
+    LOGGER.info("Creating instance polling frequency " + pollingFrequency);
     executor.scheduleAtFixedRate(new Runnable() {
       @Override
       public void run() {
-        if(resourceFile.lastModified() > lastUpdateTimeStamp.get()) {
-          lastUpdateTimeStamp.set(resourceFile.lastModified());
-          try {
-            policy.parse();
-          } catch (Throwable throwable) {
-            LOGGER.error("Unxpected error", throwable);
+        try {
+          long modificationTime = policy.getModificationTime();
+          if(modificationTime > lastUpdateTimeStamp.get()) {
+            lastUpdateTimeStamp.set(modificationTime);
+              policy.parse();
           }
+        } catch (Throwable throwable) {
+          LOGGER.error("Unxpected error", throwable);
         }
       }
     }, pollingFrequency, pollingFrequency, TimeUnit.SECONDS);

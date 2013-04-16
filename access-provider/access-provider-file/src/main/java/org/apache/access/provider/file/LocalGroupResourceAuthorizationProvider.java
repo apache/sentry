@@ -17,12 +17,16 @@
 
 package org.apache.access.provider.file;
 
+import java.io.IOException;
+
+import org.apache.hadoop.fs.Path;
+
 
 public class LocalGroupResourceAuthorizationProvider extends
   ResourceAuthorizationProvider {
 
-  public LocalGroupResourceAuthorizationProvider(String resource) {
-    super (new SimplePolicy(resource), new LocalGroupMappingService(resource));
+  public LocalGroupResourceAuthorizationProvider(String resource) throws IOException {
+    super (new SimplePolicy(resource), new LocalGroupMappingService(new Path(resource)));
   }
 
 }

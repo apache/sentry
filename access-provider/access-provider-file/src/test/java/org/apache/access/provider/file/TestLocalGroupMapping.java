@@ -17,20 +17,41 @@
 
 package org.apache.access.provider.file;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.hadoop.fs.Path;
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
+
+import com.google.common.io.Files;
 
 public class TestLocalGroupMapping {
 
-  private String resourcePath = "classpath:test-authz-provider-local-group-mapping.ini";
-  private LocalGroupMappingService localGroupMapping =
-      new LocalGroupMappingService(resourcePath);
+  private String resourcePath = "test-authz-provider-local-group-mapping.ini";
+  private LocalGroupMappingService localGroupMapping;
   private String[] fooGroups = new String[] {"admin", "analyst" };
   private String[] barGroups = new String[] {"jranalyst"};
 
+  private File baseDir;
 
+  @Before
+  public void setup() throws IOException {
+    baseDir = Files.createTempDir();
+    PolicyFiles.copyToDir(baseDir, resourcePath);
+    localGroupMapping = new LocalGroupMappingService(new Path(new File(baseDir, resourcePath).getPath()));
+  }
+
+  @After
+  public void teardown() {
+    if(baseDir != null) {
+      FileUtils.deleteQuietly(baseDir);
+    }
+  }
 
   @Test
   public void testGroupMapping() {

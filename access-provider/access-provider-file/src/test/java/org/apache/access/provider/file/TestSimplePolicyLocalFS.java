@@ -14,27 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.access.provider.file;
 
+import java.io.File;
 import java.io.IOException;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.security.Groups;
+import junit.framework.Assert;
 
-import com.google.common.annotations.VisibleForTesting;
+import org.apache.commons.io.FileUtils;
 
-public class HadoopGroupResourceAuthorizationProvider extends
-  ResourceAuthorizationProvider {
-  public HadoopGroupResourceAuthorizationProvider(String resource) throws IOException {
-    super(new SimplePolicy(resource), new HadoopGroupMappingService(
-        Groups.getUserToGroupsMappingService(new Configuration())));
+public class TestSimplePolicyLocalFS extends AbstractTestSimplePolicy {
+
+  @Override
+  protected void  afterSetup() throws IOException {
+    File baseDir = getBaseDir();
+    Assert.assertNotNull(baseDir);
+    Assert.assertTrue(baseDir.isDirectory() || baseDir.mkdirs());
+    PolicyFiles.copyToDir(baseDir, "test-authz-provider.ini", "test-authz-provider-other-group.ini");
+    setPolicy(new SimplePolicy(new File(baseDir, "test-authz-provider.ini").getPath()));
   }
-
-  @VisibleForTesting
-  public HadoopGroupResourceAuthorizationProvider(Policy policy,
-      GroupMappingService groupService) {
-    super(policy, groupService);
+  @Override
+  protected void beforeTeardown() throws IOException {
+    File baseDir = getBaseDir();
+    Assert.assertNotNull(baseDir);
+    FileUtils.deleteQuietly(baseDir);
   }
-
 }

@@ -16,7 +16,9 @@
  */
 package org.apache.access.provider.file;
 
-import static org.apache.access.provider.file.PolicyFileConstants.*;
+import static org.apache.access.provider.file.PolicyFileConstants.AUTHORIZABLE_SPLITTER;
+import static org.apache.access.provider.file.PolicyFileConstants.KV_SEPARATOR;
+import static org.apache.access.provider.file.PolicyFileConstants.PRIVILEGE_NAME;
 
 import java.util.List;
 

@@ -19,6 +19,7 @@ package org.apache.access.provider.file;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.IOException;
@@ -57,16 +58,10 @@ public class TestSimplePollingPolicy {
 
   @Test
   public void testPolling() throws Exception {
-    resourceFile.setLastModified(1);
-    pollingPolicy = new SimplePollingPolicy(policy, resourceFile, 1);
-    resourceFile.setLastModified(System.currentTimeMillis());
+    when(policy.getModificationTime()).thenReturn(1L);
+    pollingPolicy = new SimplePollingPolicy(policy, 1);
+    when(policy.getModificationTime()).thenReturn(System.currentTimeMillis());
     TimeUnit.SECONDS.sleep(3);
     verify(policy).parse();
-  }
-
-  @Test(expected = IllegalArgumentException.class)
-  public void testNotFile() throws Exception {
-    Assert.assertTrue(FileUtils.deleteQuietly(resourceFile));
-    pollingPolicy = new SimplePollingPolicy(policy, resourceFile, 1);
   }
 }

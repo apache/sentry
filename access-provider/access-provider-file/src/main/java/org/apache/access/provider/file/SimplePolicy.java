@@ -16,8 +16,11 @@
  */
 package org.apache.access.provider.file;
 
-import static org.apache.access.provider.file.PolicyFileConstants.*;
+import static org.apache.access.provider.file.PolicyFileConstants.ROLE_SPLITTER;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -28,11 +31,15 @@ import javax.annotation.Nullable;
 
 import org.apache.access.core.Authorizable;
 import org.apache.access.core.Database;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.shiro.config.Ini;
 import org.apache.shiro.util.PermissionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.HashMultimap;
@@ -52,11 +59,18 @@ public class SimplePolicy implements Policy {
   private static final String GROUPS = "groups";
   private static final String ROLES = "roles";
 
-  private final String resourcePath;
+  private final FileSystem fileSystem;
+  private final Path resourcePath;
+  private final List<Path> perDbResources = Lists.newArrayList();
   private final AtomicReference<Roles> rolesReference;
 
-  public SimplePolicy(String resourcePath) {
+  public SimplePolicy(String resourcePath) throws IOException {
+    this(new Configuration(), new Path(resourcePath));
+  }
+  @VisibleForTesting
+  public SimplePolicy(Configuration conf, Path resourcePath) throws IOException {
     this.resourcePath = resourcePath;
+    this.fileSystem = resourcePath.getFileSystem(conf);
     this.rolesReference = new AtomicReference<Roles>();
     this.rolesReference.set(new Roles());
     parse();
@@ -69,7 +83,8 @@ public class SimplePolicy implements Policy {
     LOGGER.info("Parsing " + resourcePath);
     Roles roles = new Roles();
     try {
-      Ini ini = Ini.fromResourcePath(resourcePath);
+      perDbResources.clear();
+      Ini ini = PolicyFiles.loadFromPath(fileSystem, resourcePath);
       ImmutableSetMultimap<String, String> globalRoles;
       Map<String, ImmutableSetMultimap<String, String>> perDatabaseRoles = Maps.newHashMap();
       globalRoles = parseIni(null, ini);
@@ -79,10 +94,14 @@ public class SimplePolicy implements Policy {
       } else {
         for(Map.Entry<String, String> entry : filesSection.entrySet()) {
           String database = Strings.nullToEmpty(entry.getKey()).trim().toLowerCase();
-          String file = Strings.nullToEmpty(entry.getValue()).trim();
+          Path perDbPolicy = new Path(Strings.nullToEmpty(entry.getValue()).trim());
+          if(isRelative(perDbPolicy)) {
+            perDbPolicy = new Path(resourcePath.getParent(), perDbPolicy);
+          }
           try {
-            LOGGER.info("Parsing " + file);
-            perDatabaseRoles.put(database, parseIni(database, Ini.fromResourcePath(file)));
+            LOGGER.info("Parsing " + perDbPolicy);
+            perDatabaseRoles.put(database, parseIni(database, PolicyFiles.loadFromPath(fileSystem, perDbPolicy)));
+            perDbResources.add(perDbPolicy);
           } catch (Exception e) {
             LOGGER.error("Error processing key " + entry.getKey() + ", skipping " + entry.getValue(), e);
             throw e;
@@ -94,6 +113,29 @@ public class SimplePolicy implements Policy {
       LOGGER.error("Error processing file, ignoring " + resourcePath, e);
     }
     rolesReference.set(roles);
+  }
+
+  /**
+   * Relative for our purposes is no scheme, no authority
+   * and a non-absolute path portion.
+   */
+  private boolean isRelative(Path path) {
+    URI uri = path.toUri();
+    return uri.getAuthority() == null && uri.getScheme() == null && !path.isUriPathAbsolute();
+  }
+
+  protected long getModificationTime() throws IOException {
+    // if resource path has been deleted, throw all exceptions
+    long result = fileSystem.getFileStatus(resourcePath).getModificationTime();
+    for(Path perDbPolicy : perDbResources) {
+      try {
+        result = Math.max(result, fileSystem.getFileStatus(perDbPolicy).getModificationTime());
+      } catch (FileNotFoundException e) {
+        // if a per-db file has been deleted, wait until the main
+        // policy file has been updated before refreshing
+      }
+    }
+    return result;
   }
 
   private ImmutableSetMultimap<String, String> parseIni(String database, Ini ini) {

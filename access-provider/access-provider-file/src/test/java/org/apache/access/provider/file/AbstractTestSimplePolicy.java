@@ -16,6 +16,8 @@
  */
 package org.apache.access.provider.file;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -24,13 +26,18 @@ import junit.framework.Assert;
 
 import org.apache.access.core.Authorizable;
 import org.apache.access.core.Database;
+import org.apache.commons.io.FileUtils;
+import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.google.common.io.Files;
 
-public class TestSimplePolicy {
+public abstract class AbstractTestSimplePolicy {
   private static final String PERM_SERVER1_CUSTOMERS_SELECT = "server=server1->db=customers->table=purchases->action=select";
   private static final String PERM_SERVER1_CUSTOMERS_DB_CUSTOMERS_PARTIAL_SELECT = "server=server1->db=customers->view=purchases_partial->action=select";
   private static final String PERM_SERVER1_FUNCTIONS_ALL = "server=server1->functions";
@@ -40,12 +47,42 @@ public class TestSimplePolicy {
   private static final String PERM_SERVER1_OTHER_GROUP_DB_CUSTOMERS_SELECT = "server=server1->db=other_group_db->table=purchases->action=select";
 
   private static final String PERM_SERVER1_ADMIN = "server=server1->db=*";
-  private Policy policyFile;
-  private List<Authorizable> authorizables;
+  private Policy policy;
+  private static File baseDir;
+  private List<Authorizable> authorizables = Lists.newArrayList();
+
+  @BeforeClass
+  public static void setupClazz() throws IOException {
+    baseDir = Files.createTempDir();
+  }
+
+  @AfterClass
+  public static void teardownClazz() throws IOException {
+    if(baseDir != null) {
+      FileUtils.deleteQuietly(baseDir);
+    }
+  }
+
+  protected void setPolicy(Policy policy) {
+    this.policy = policy;
+  }
+  protected static File getBaseDir() {
+    return baseDir;
+  }
   @Before
-  public void setup() {
-    policyFile = new SimplePolicy("classpath:test-authz-provider.ini");
-    authorizables = Lists.newArrayList();
+  public void setup() throws IOException {
+    afterSetup();
+  }
+  @After
+  public void teardown() throws IOException {
+    beforeTeardown();
+  }
+  protected void afterSetup() throws IOException {
+
+  }
+
+  protected void beforeTeardown() throws IOException {
+
   }
 
   @Test
@@ -58,7 +95,7 @@ public class TestSimplePolicy {
 //        ,PERM_SERVER1_FUNCTIONS_ALL
         ));
     Assert.assertEquals(expected.toString(),
-        new TreeSet<String>(policyFile.getPermissions(authorizables, list("manager")).values())
+        new TreeSet<String>(policy.getPermissions(authorizables, list("manager")).values())
         .toString());
   }
 
@@ -68,7 +105,7 @@ public class TestSimplePolicy {
         PERM_SERVER1_CUSTOMERS_SELECT, PERM_SERVER1_ANALYST_ALL,
         PERM_SERVER1_JUNIOR_ANALYST_READ));
     Assert.assertEquals(expected.toString(),
-        new TreeSet<String>(policyFile.getPermissions(authorizables, list("analyst")).values())
+        new TreeSet<String>(policy.getPermissions(authorizables, list("analyst")).values())
         .toString());
   }
 
@@ -78,7 +115,7 @@ public class TestSimplePolicy {
         .newHashSet(PERM_SERVER1_JUNIOR_ANALYST_ALL,
             PERM_SERVER1_CUSTOMERS_DB_CUSTOMERS_PARTIAL_SELECT));
     Assert.assertEquals(expected.toString(),
-        new TreeSet<String>(policyFile.getPermissions(authorizables, list("jranalyst")).values())
+        new TreeSet<String>(policy.getPermissions(authorizables, list("jranalyst")).values())
         .toString());
   }
 
@@ -86,7 +123,7 @@ public class TestSimplePolicy {
   public void testAdmin() throws Exception {
     Set<String> expected = Sets.newTreeSet(Sets.newHashSet(PERM_SERVER1_ADMIN));
     Assert.assertEquals(expected.toString(),
-        new TreeSet<String>(policyFile.getPermissions(authorizables, list("admin")).values())
+        new TreeSet<String>(policy.getPermissions(authorizables, list("admin")).values())
         .toString());
   }
 
@@ -97,7 +134,7 @@ public class TestSimplePolicy {
     Set<String> expected = Sets.newTreeSet(Sets.newHashSet(
         PERM_SERVER1_OTHER_GROUP_DB_CUSTOMERS_SELECT));
     Assert.assertEquals(expected.toString(),
-        new TreeSet<String>(policyFile.getPermissions(authorizables, list("other_group")).values())
+        new TreeSet<String>(policy.getPermissions(authorizables, list("other_group")).values())
         .toString());
   }
 

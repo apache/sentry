@@ -16,6 +16,7 @@
  */
 package org.apache.access.binding.hive;
 
+import java.io.File;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -26,14 +27,19 @@ import org.apache.access.binding.hive.conf.HiveAuthzConf;
 import org.apache.access.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
 import org.apache.access.core.Database;
 import org.apache.access.core.Subject;
+import org.apache.access.provider.file.PolicyFiles;
+import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.hive.ql.hooks.ReadEntity;
 import org.apache.hadoop.hive.ql.hooks.WriteEntity;
 import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import com.google.common.io.Files;
 
 /**
  * Test for hive authz bindings
@@ -41,6 +47,7 @@ import org.junit.Test;
  * resource test-authz-provider.ini
  */
 public class TestHiveAuthzBindings {
+  private static final String RESOURCE_PATH = "test-authz-provider.ini";
   // Servers
   private static final String SERVER1 = "server1";
 
@@ -78,21 +85,30 @@ public class TestHiveAuthzBindings {
 
   // auth bindings handler
   private HiveAuthzBinding testAuth = null;
+  private File baseDir;
 
   @Before
   public void setUp() throws Exception {
     inputTabList.clear();
     outputTabList.clear();
+    baseDir = Files.createTempDir();
+    PolicyFiles.copyToDir(baseDir, RESOURCE_PATH);
 
     // create auth configuration
     authzConf.set(AuthzConfVars.AUTHZ_PROVIDER.getVar(),
         "org.apache.access.provider.file.LocalGroupResourceAuthorizationProvider");
     authzConf.set(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar(),
-        "classpath:test-authz-provider.ini");
+        new File(baseDir, RESOURCE_PATH).getPath());
     authzConf.set(AuthzConfVars.AUTHZ_SERVER_NAME.getVar(), SERVER1);
     testAuth = new HiveAuthzBinding(authzConf);
   }
 
+  @After
+  public void teardown() {
+    if(baseDir != null) {
+      FileUtils.deleteQuietly(baseDir);
+    }
+  }
 
   /**
    * validate read permission for admin on customer:purchase
