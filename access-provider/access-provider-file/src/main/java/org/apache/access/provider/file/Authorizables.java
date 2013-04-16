@@ -22,6 +22,7 @@ import org.apache.access.core.Authorizable.AuthorizableType;
 import org.apache.access.core.Database;
 import org.apache.access.core.Server;
 import org.apache.access.core.Table;
+import org.apache.access.core.View;
 
 public class Authorizables {
 
@@ -45,6 +46,8 @@ public class Authorizables {
       return new Database(name);
     case Table:
       return new Table(name);
+    case View:
+      return new View(name);
     case URI:
       return new AccessURI(name);
     default:

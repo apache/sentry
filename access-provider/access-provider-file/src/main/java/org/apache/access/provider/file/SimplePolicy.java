@@ -28,7 +28,6 @@ import javax.annotation.Nullable;
 
 import org.apache.access.core.Authorizable;
 import org.apache.access.core.Database;
-import org.apache.shiro.config.ConfigurationException;
 import org.apache.shiro.config.Ini;
 import org.apache.shiro.util.PermissionUtils;
 import org.slf4j.Logger;

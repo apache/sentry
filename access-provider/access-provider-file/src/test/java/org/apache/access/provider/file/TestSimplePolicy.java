@@ -32,6 +32,7 @@ import com.google.common.collect.Sets;
 
 public class TestSimplePolicy {
   private static final String PERM_SERVER1_CUSTOMERS_SELECT = "server=server1->db=customers->table=purchases->action=select";
+  private static final String PERM_SERVER1_CUSTOMERS_DB_CUSTOMERS_PARTIAL_SELECT = "server=server1->db=customers->view=purchases_partial->action=select";
   private static final String PERM_SERVER1_FUNCTIONS_ALL = "server=server1->functions";
   private static final String PERM_SERVER1_ANALYST_ALL = "server=server1->db=analyst1";
   private static final String PERM_SERVER1_JUNIOR_ANALYST_ALL = "server=server1->db=jranalyst1";
@@ -51,7 +52,8 @@ public class TestSimplePolicy {
   public void testManager() throws Exception {
     Set<String> expected = Sets.newTreeSet(Sets.newHashSet(
         PERM_SERVER1_CUSTOMERS_SELECT, PERM_SERVER1_ANALYST_ALL,
-        PERM_SERVER1_JUNIOR_ANALYST_ALL, PERM_SERVER1_JUNIOR_ANALYST_READ
+        PERM_SERVER1_JUNIOR_ANALYST_ALL, PERM_SERVER1_JUNIOR_ANALYST_READ,
+        PERM_SERVER1_CUSTOMERS_DB_CUSTOMERS_PARTIAL_SELECT
 //        TODO figure out how to handle functions
 //        ,PERM_SERVER1_FUNCTIONS_ALL
         ));
@@ -73,7 +75,8 @@ public class TestSimplePolicy {
   @Test
   public void testJuniorAnalyst() throws Exception {
     Set<String> expected = Sets.newTreeSet(Sets
-        .newHashSet(PERM_SERVER1_JUNIOR_ANALYST_ALL));
+        .newHashSet(PERM_SERVER1_JUNIOR_ANALYST_ALL,
+            PERM_SERVER1_CUSTOMERS_DB_CUSTOMERS_PARTIAL_SELECT));
     Assert.assertEquals(expected.toString(),
         new TreeSet<String>(policyFile.getPermissions(authorizables, list("jranalyst")).values())
         .toString());

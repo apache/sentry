@@ -16,16 +16,16 @@
  */
 package org.apache.access.core;
 
-public class Table implements TableOrView {
+public class View implements TableOrView {
 
   /**
-   * Represents all tables
+   * Represents all views
    */
-  public static final Table ALL = new Table(AccessConstants.ALL);
+  public static final View ALL = new View(AccessConstants.ALL);
 
   private final String name;
 
-  public Table(String name) {
+  public View(String name) {
     this.name = name;
   }
 
@@ -36,11 +36,11 @@ public class Table implements TableOrView {
 
   @Override
   public String toString() {
-    return "Table [name=" + name + "]";
+    return "View [name=" + name + "]";
   }
 
   @Override
   public AuthorizableType getAuthzType() {
-    return AuthorizableType.Table;
+    return AuthorizableType.View;
   }
 }

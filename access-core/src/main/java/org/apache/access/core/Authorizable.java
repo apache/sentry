@@ -22,6 +22,7 @@ public interface Authorizable {
     Server,
     Db,
     Table,
+    View,
     URI
   };
 
