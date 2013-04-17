@@ -73,9 +73,11 @@ public class TestMovingToProduction {
     editor.addPolicy("group1 = insert_tb1", "groups");
     editor.addPolicy("group1 = select_tb1", "groups");
     editor.addPolicy("group1 = insert_produTB", "groups");
+    editor.addPolicy("group1 = load_data", "groups");
     editor.addPolicy("select_produTB = server=server1:db=produdb:tb=tb_1:select", "roles");
     editor.addPolicy("select_tb1 = server=server1:db=db_1:tb=tb_1:select", "roles");
     editor.addPolicy("insert_produTB = server=server1:db=produdb:tb=tb_1:insert", "roles");
+    editor.addPolicy("load_data = server=server1->uri=file:" + dataFilePath.toString(), "roles");
     editor.addPolicy("insert_tb1 = server=server1:db=db_1:tb=tb_1:insert", "roles");
     editor.addPolicy("admin = server=server1:*", "roles");
     editor.addPolicy("admin1 = admin", "users");

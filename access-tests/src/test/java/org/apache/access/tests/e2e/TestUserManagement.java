@@ -17,8 +17,8 @@
 
 package org.apache.access.tests.e2e;
 
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 import java.io.File;
 import java.sql.Connection;
@@ -57,9 +57,15 @@ public class TestUserManagement {
   @Test
   public void testSanity() throws Exception {
     // per test setup
-    Connection connection = context.createConnection("foo", "foo");
+    Connection connection = context.createConnection("admin1", "foo");
     Statement statement = context.createStatement(connection);
     Path dataFilePath = new Path(dataFileDir, "kv1.dat");
+    File policyFile = context.getPolicyFile();
+    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
+    editor.addPolicy("admin = admin", "groups");
+    editor.addPolicy("admin = server=server1", "roles");
+    editor.addPolicy("load_data = server=server1->uri=file:" + dataFilePath.toString(), "roles");
+    editor.addPolicy("admin1 = admin", "users");
 
     // drop table
     statement.execute("drop table if exists " + tableName);
@@ -493,10 +499,12 @@ public class TestUserManagement {
   @Test
   public void testGroup6() throws Exception {
     // edit policy file
+    Path dataFilePath = new Path(dataFileDir, "kv1.dat");
     File policyFile = context.getPolicyFile();
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("group1~!@#$%^&*()+- = analytics", "groups");
+    editor.addPolicy("group1~!@#$%^&*()+- = analytics, load_data", "groups");
     editor.addPolicy("analytics = server=server1->db=default", "roles");
+    editor.addPolicy("load_data = server=server1->uri=file:" + dataFilePath.toString(), "roles");
     editor.addPolicy("group1~!@#$%^&*()+- = user1, user2, user3", "users");
     editor.addPolicy("user1 = group1~!@#$%^&*()+-", "users");
     editor.addPolicy("user2 = group1~!@#$%^&*()+-", "users");
@@ -508,7 +516,6 @@ public class TestUserManagement {
       Connection connection = context.createConnection(admin, "foo");
       Statement statement = context.createStatement(connection);
 
-      Path dataFilePath = new Path(dataFileDir, "kv1.dat");
 
       statement.execute("drop table if exists " + tableName);
 

@@ -77,13 +77,14 @@ public class TestPrivilegesAtDatabaseScope {
     // groups : role -> group
     testContext.appendToPolicyFileWithNewLine("[groups]");
     testContext.appendToPolicyFileWithNewLine("admin = all_server");
-    testContext.appendToPolicyFileWithNewLine("user_group1 = all_db1");
+    testContext.appendToPolicyFileWithNewLine("user_group1 = all_db1, load_data");
     testContext.appendToPolicyFileWithNewLine("user_group2 = all_db2");
     // roles: privileges -> role
     testContext.appendToPolicyFileWithNewLine("[roles]");
     testContext.appendToPolicyFileWithNewLine("all_server = server=server1");
     testContext.appendToPolicyFileWithNewLine("all_db1 = server=server1->db=DB_1");
     testContext.appendToPolicyFileWithNewLine("all_db2 = server=server1->db=DB_2");
+    testContext.appendToPolicyFileWithNewLine("load_data = server=server1->uri=file:" + dataFile.getPath());
     // users: users -> groups
     testContext.appendToPolicyFileWithNewLine("[users]");
     testContext.appendToPolicyFileWithNewLine("hive = admin");
@@ -196,13 +197,14 @@ public class TestPrivilegesAtDatabaseScope {
     // groups : role -> group
     testContext.appendToPolicyFileWithNewLine("[groups]");
     testContext.appendToPolicyFileWithNewLine("admin = all_server");
-    testContext.appendToPolicyFileWithNewLine("user_group1 = all_db1");
+    testContext.appendToPolicyFileWithNewLine("user_group1 = all_db1, load_data");
     testContext.appendToPolicyFileWithNewLine("user_group2 = all_db2");
     // roles: privileges -> role
     testContext.appendToPolicyFileWithNewLine("[roles]");
     testContext.appendToPolicyFileWithNewLine("all_server = server=server1");
     testContext.appendToPolicyFileWithNewLine("all_db1 = server=server1->db=DB_1");
     testContext.appendToPolicyFileWithNewLine("all_db2 = server=server1->db=DB_2");
+    testContext.appendToPolicyFileWithNewLine("load_data = server=server1->uri=file:" + dataFile.getPath());
     // users: users -> groups
     testContext.appendToPolicyFileWithNewLine("[users]");
     testContext.appendToPolicyFileWithNewLine("hive = admin");

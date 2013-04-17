@@ -89,6 +89,7 @@ public class TestCrossDbOps {
         "[roles]",
         "db1_all = server=server1->db=db1",
         "db2_all = server=server1->db=db2",
+        "load_data = server=server1->uri=file:" + dataFilePath.toString(),
         "admin_role = server=server1",
         "[users]",
         "user1 = user_group",
@@ -140,9 +141,14 @@ public class TestCrossDbOps {
   @Test
   public void testAdminDbPrivileges() throws Exception {
     // edit policy file
-    String testPolicies[] = { "[groups]", "admin_group = admin_role",
-        "[roles]", "admin_role = server=server1->", "[users]",
-        "admin = admin_group" };
+    String testPolicies[] = { 
+        "[groups]", 
+        "admin_group = admin_role",
+        "[roles]", 
+        "admin_role = server=server1->", 
+        "[users]",
+        "admin = admin_group" 
+    };
     context.makeNewPolicy(testPolicies);
 
     // Admin should be able to create new databases
@@ -452,9 +458,11 @@ public class TestCrossDbOps {
     editor.addPolicy("admin = admin", "groups");
     editor.addPolicy("group1 = all_db1", "groups");
     editor.addPolicy("group1 = all_db2", "groups");
+    editor.addPolicy("group1 = load_data", "groups");
     editor.addPolicy("admin = server=server1", "roles");
     editor.addPolicy("all_db1 = server=server1->db=db_1", "roles");
     editor.addPolicy("all_db2 = server=server1->db=db_2", "roles");
+    editor.addPolicy("load_data = server=server1->uri=file:" + dataFilePath.toString(), "roles");
     editor.addPolicy("admin1 = admin", "users");
     editor.addPolicy("user1 = group1", "users");
 

@@ -487,11 +487,12 @@ public class TestSandboxOps {
     File policyFile = context.getPolicyFile();
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
     editor.addPolicy("admin = admin", "groups");
-    editor.addPolicy("group1 = all_db1", "groups");
+    editor.addPolicy("group1 = all_db1, load_data", "groups");
     editor.addPolicy("group1 = all_db2", "groups");
     editor.addPolicy("admin = server=server1", "roles");
     editor.addPolicy("all_db1 = server=server1->db=db_1", "roles");
     editor.addPolicy("all_db2 = server=server1->db=db_2", "roles");
+    editor.addPolicy("load_data = server=server1->uri=file:" + dataFile.toString(), "roles");
     editor.addPolicy("admin1 = admin", "users");
     editor.addPolicy("user1 = group1", "users");
 
@@ -791,10 +792,11 @@ public class TestSandboxOps {
     File policyFile = context.getPolicyFile();
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
     editor.addPolicy("admin = admin", "groups");
-    editor.addPolicy("group1 = all_db1", "groups");
+    editor.addPolicy("group1 = all_db1, load_data", "groups");
     editor.addPolicy("group2 = select_tb1", "groups");
     editor.addPolicy("select_tb1 = server=server1->db=db_1->table=*->action=select", "roles");
     editor.addPolicy("all_db1 = server=server1->db=db_1", "roles");
+    editor.addPolicy("load_data = server=server1->uri=file:" + dataFile.toString(), "roles");
     editor.addPolicy("admin = server=server1", "roles");
     editor.addPolicy("admin1 = admin", "users");
     editor.addPolicy("user1 = group1", "users");
@@ -993,9 +995,10 @@ public class TestSandboxOps {
     File policyFile = context.getPolicyFile();
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
     editor.addPolicy("admin = admin", "groups");
-    editor.addPolicy("group1 = all_db1", "groups");
+    editor.addPolicy("group1 = all_db1, load_data", "groups");
     editor.addPolicy("all_db1 = server=server1->db=db_1", "roles");
     editor.addPolicy("admin = server=server1", "roles");
+    editor.addPolicy("load_data = server=server1->uri=file:" + EXTERNAL_HDFS_DIR, "roles");
     editor.addPolicy("admin1 = admin", "users");
     editor.addPolicy("user1 = group1", "users");
     // location specified policy
