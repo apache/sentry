@@ -64,7 +64,6 @@ public class TestUserManagement {
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
     editor.addPolicy("admin = admin", "groups");
     editor.addPolicy("admin = server=server1", "roles");
-    editor.addPolicy("load_data = server=server1->uri=file:" + dataFilePath.toString(), "roles");
     editor.addPolicy("admin1 = admin", "users");
 
     // drop table
@@ -262,7 +261,8 @@ public class TestUserManagement {
     // edit policy file
     File policyFile = context.getPolicyFile();
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("admin = admin_group1, admin_group2", "groups");
+    editor.addPolicy("admin_group1 = admin", "groups");
+    editor.addPolicy("admin_group2 = admin", "groups");
     editor.addPolicy("admin = server=server1", "roles");
     editor.addPolicy("admin1 = admin_group1, admin_group2", "users");
     editor.addPolicy("admin2 = admin_group1, admin_group2", "users");
@@ -411,8 +411,12 @@ public class TestUserManagement {
       Statement statement = context.createStatement(connection);
 
       // should fail
-      assertFalse("two groups with the same name should fail",
-          statement.execute("SHOW TABLES"));
+      try {
+        statement.execute("SHOW TABLES");
+        assertFalse("two groups with the same name should fail", true);
+      } catch (SQLException e) {
+        context.verifyAuthzException(e);
+      }
 
       statement.close();
       connection.close();
@@ -441,8 +445,12 @@ public class TestUserManagement {
       Statement statement = context.createStatement(connection);
 
       // should fail
-      assertFalse("two groups with the same name should fail",
-          statement.execute("SHOW TABLES"));
+      try {
+        statement.execute("SHOW TABLES");
+        assertFalse("two groups with the same name should fail", true);
+      } catch (SQLException e) {
+        context.verifyAuthzException(e);
+      }
 
       statement.close();
       connection.close();
@@ -456,11 +464,13 @@ public class TestUserManagement {
    **/
   @Test
   public void testGroup5() throws Exception {
+    String dataFilePath = this.getClass().getResource("/kv1.dat").getFile();
     // edit policy file
     File policyFile = context.getPolicyFile();
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("group1 = analytics", "groups");
+    editor.addPolicy("group1 = analytics, load_data", "groups");
     editor.addPolicy("analytics = server=server1->db=default", "roles");
+    editor.addPolicy("load_data = server=server1->URI=file:" + dataFilePath, "roles");
     editor.addPolicy("group1 = group1", "users");
     editor.addPolicy("user2 = group1", "users");
     editor.addPolicy("user3 = group1", "users");
@@ -471,8 +481,6 @@ public class TestUserManagement {
       Connection connection = context.createConnection(admin, "foo");
       Statement statement = context.createStatement(connection);
 
-      Path dataFilePath = new Path(dataFileDir, "kv1.dat");
-
       statement.execute("drop table if exists " + tableName);
 
       statement
@@ -481,7 +489,7 @@ public class TestUserManagement {
               + " (under_col int comment 'the under column', value string) comment '"
               + tableComment + "'");
 
-      statement.execute("load data local inpath '" + dataFilePath.toString()
+      statement.execute("load data local inpath '" + dataFilePath
           + "' into table " + tableName);
 
       statement.execute("drop table " + tableName);
@@ -499,13 +507,13 @@ public class TestUserManagement {
   @Test
   public void testGroup6() throws Exception {
     // edit policy file
-    Path dataFilePath = new Path(dataFileDir, "kv1.dat");
+    String dataFilePath = this.getClass().getResource("/kv1.dat").getFile();
     File policyFile = context.getPolicyFile();
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
     editor.addPolicy("group1~!@#$%^&*()+- = analytics, load_data", "groups");
     editor.addPolicy("analytics = server=server1->db=default", "roles");
-    editor.addPolicy("load_data = server=server1->uri=file:" + dataFilePath.toString(), "roles");
-    editor.addPolicy("group1~!@#$%^&*()+- = user1, user2, user3", "users");
+    editor.addPolicy("load_data = server=server1->URI=file:" + dataFilePath, "roles");
+//    editor.addPolicy("group1~!@#$%^&*()+- = user1, user2, user3", "users");
     editor.addPolicy("user1 = group1~!@#$%^&*()+-", "users");
     editor.addPolicy("user2 = group1~!@#$%^&*()+-", "users");
     editor.addPolicy("user3 = group1~!@#$%^&*()+-", "users");
@@ -525,7 +533,7 @@ public class TestUserManagement {
               + " (under_col int comment 'the under column', value string) comment '"
               + tableComment + "'");
 
-      statement.execute("load data local inpath '" + dataFilePath.toString()
+      statement.execute("load data local inpath '" + dataFilePath
           + "' into table " + tableName);
 
       statement.execute("DROP TABLE " + tableName);
@@ -600,8 +608,12 @@ public class TestUserManagement {
       Statement statement = context.createStatement(connection);
 
       // should fail
-      assertFalse("doesn't grant any privilege to group, should fail",
-          statement.execute("SHOW TABLES"));
+      try {
+        statement.execute("SHOW TABLES");
+        assertFalse("doesn't grant any privilege to group, should fail", true);
+      } catch (SQLException e) {
+        context.verifyAuthzException(e);
+      }
 
       statement.close();
       connection.close();

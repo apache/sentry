@@ -43,10 +43,12 @@ import com.google.common.io.Resources;
 public class TestCrossDbOps {
   private EndToEndTestContext context;
   private final String dataFileDir = "src/test/resources";
-  private Path dataFilePath = new Path(dataFileDir, "kv1.dat");
+  // private Path dataFilePath = new Path(dataFileDir, "kv1.dat");
   private String EXTERNAL_HDFS_DIR = "hdfs://namenode:9000/tmp/externalDir";
   private String NONE_EXISTS_DIR = "hdfs://namenode:9000/tmp/nonExists";
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
+  private String dataFilePath = this.getClass().getResource("/" +
+       SINGLE_TYPE_DATA_FILE_NAME).getFile();
   private File dataFile;
 
   @Before
@@ -85,11 +87,11 @@ public class TestCrossDbOps {
     String testPolicies[] = {
         "[groups]",
         "admin_group = admin_role",
-        "user_group  = db1_all,db2_all",
+        "user_group  = db1_all,db2_all, load_data",
         "[roles]",
         "db1_all = server=server1->db=db1",
         "db2_all = server=server1->db=db2",
-        "load_data = server=server1->uri=file:" + dataFilePath.toString(),
+        "load_data = server=server1->URI=file:" + dataFilePath,
         "admin_role = server=server1",
         "[users]",
         "user1 = user_group",
@@ -462,7 +464,7 @@ public class TestCrossDbOps {
     editor.addPolicy("admin = server=server1", "roles");
     editor.addPolicy("all_db1 = server=server1->db=db_1", "roles");
     editor.addPolicy("all_db2 = server=server1->db=db_2", "roles");
-    editor.addPolicy("load_data = server=server1->uri=file:" + dataFilePath.toString(), "roles");
+    editor.addPolicy("load_data = server=server1->URI=file:" + dataFilePath, "roles");
     editor.addPolicy("admin1 = admin", "users");
     editor.addPolicy("user1 = group1", "users");
 
@@ -500,7 +502,7 @@ public class TestCrossDbOps {
             + " (under_col int comment 'the under column', value string)"));
     assertEquals(
         "user1 should be able to load data into table " + dbName1 + "." +tableName1,
-        statement.execute("load data local inpath '" + dataFilePath.toString()
+        statement.execute("load data local inpath '" + dataFilePath
             + "' into table " + dbName1 + "." + tableName1));
     assertEquals("user1 should be able to drop view " + dbName1 + "." +viewName1,
         statement.execute("DROP VIEW IF EXISTS " + dbName1 + "." +viewName1));
@@ -518,7 +520,7 @@ public class TestCrossDbOps {
             + " (under_col int comment 'the under column', value string)"));
     assertEquals(
         "user1 should be able to load data into table " + dbName2 + "." + tableName2,
-        statement.execute("load data local inpath '" + dataFilePath.toString()
+        statement.execute("load data local inpath '" + dataFilePath
             + "' into table " + dbName2 + "." + tableName2));
     assertEquals("user1 should be able to drop table " + dbName2 + "." + tableName3,
         statement.execute("DROP TABLE IF EXISTS " + dbName2 + "." + tableName3));
@@ -528,7 +530,7 @@ public class TestCrossDbOps {
             + " (under_col int comment 'the under column', value string)"));
     assertEquals(
         "user1 should be able to load data into table " + dbName2 + "." + tableName3,
-        statement.execute("load data local inpath '" + dataFilePath.toString()
+        statement.execute("load data local inpath '" + dataFilePath
             + "' into table " + dbName2 + "." + tableName3));
 
     // c

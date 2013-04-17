@@ -17,11 +17,12 @@
 
 package org.apache.access.tests.e2e;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.File;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -487,8 +488,8 @@ public class TestSandboxOps {
     File policyFile = context.getPolicyFile();
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
     editor.addPolicy("admin = admin", "groups");
-    editor.addPolicy("group1 = all_db1, load_data", "groups");
-    editor.addPolicy("group1 = all_db2", "groups");
+    editor.addPolicy("group1 = all_db1, all_db2, load_data", "groups");
+//    editor.addPolicy("group1 = ", "groups");
     editor.addPolicy("admin = server=server1", "roles");
     editor.addPolicy("all_db1 = server=server1->db=db_1", "roles");
     editor.addPolicy("all_db2 = server=server1->db=db_2", "roles");

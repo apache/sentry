@@ -25,7 +25,6 @@ import java.sql.Connection;
 import java.sql.Statement;
 import java.util.HashMap;
 
-import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -33,7 +32,8 @@ import org.junit.Test;
 public class TestMovingToProduction {
   private EndToEndTestContext context;
   private final String dataFileDir = "src/test/resources";
-  private Path dataFilePath = new Path(dataFileDir, "kv1.dat");
+  // private Path dataFilePath = new Path(dataFileDir, "kv1.dat");
+  private String dataFilePath = this.getClass().getResource("/kv1.dat").getFile();
 
   @Before
   public void setUp() throws Exception {
@@ -74,12 +74,12 @@ public class TestMovingToProduction {
     editor.addPolicy("group1 = select_tb1", "groups");
     editor.addPolicy("group1 = insert_produTB", "groups");
     editor.addPolicy("group1 = load_data", "groups");
-    editor.addPolicy("select_produTB = server=server1:db=produdb:tb=tb_1:select", "roles");
-    editor.addPolicy("select_tb1 = server=server1:db=db_1:tb=tb_1:select", "roles");
-    editor.addPolicy("insert_produTB = server=server1:db=produdb:tb=tb_1:insert", "roles");
+    editor.addPolicy("select_produTB = server=server1->db=produdb->table=tb_1->action=select", "roles");
+    editor.addPolicy("select_tb1 = server=server1->db=db_1->table=tb_1->action=select", "roles");
+    editor.addPolicy("insert_produTB = server=server1->db=produdb->table=tb_1->action=insert", "roles");
     editor.addPolicy("load_data = server=server1->uri=file:" + dataFilePath.toString(), "roles");
-    editor.addPolicy("insert_tb1 = server=server1:db=db_1:tb=tb_1:insert", "roles");
-    editor.addPolicy("admin = server=server1:*", "roles");
+    editor.addPolicy("insert_tb1 = server=server1->db=db_1->table=tb_1->action=insert", "roles");
+    editor.addPolicy("admin = server=server1", "roles");
     editor.addPolicy("admin1 = admin", "users");
     editor.addPolicy("user1 = group1", "users");
     editor.addPolicy("user2 = group2", "users");
@@ -89,8 +89,8 @@ public class TestMovingToProduction {
     String tableName1 = "tb_1";
     Connection connection = context.createConnection("admin1", "foo");
     Statement statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE IF EXISTS " + dbName1);
-    statement.execute("DROP DATABASE IF EXISTS " + dbName2);
+    statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
+    statement.execute("DROP DATABASE IF EXISTS " + dbName2 + " CASCADE");
     statement.execute("CREATE DATABASE " + dbName1);
     statement.execute("CREATE DATABASE " + dbName2);
     statement.execute("DROP TABLE IF EXISTS " + dbName2 + "." + tableName1);
@@ -167,11 +167,13 @@ public class TestMovingToProduction {
     editor.addPolicy("group1 = insert_tb1", "groups");
     editor.addPolicy("group1 = select_tb1", "groups");
     editor.addPolicy("group1 = insert_produTB", "groups");
-    editor.addPolicy("select_produTB = server=server1:db=produdb:tb=tb_1:select", "roles");
-    editor.addPolicy("select_tb1 = server=server1:db=db_1:tb=tb_1:select", "roles");
-    editor.addPolicy("insert_produTB = server=server1:db=produdb:tb=tb_1:insert", "roles");
-    editor.addPolicy("insert_tb1 = server=server1:db=db_1:tb=tb_1:insert", "roles");
-    editor.addPolicy("admin = server=server1:*", "roles");
+    editor.addPolicy("group1 = load_data", "groups");
+    editor.addPolicy("select_produTB = server=server1->db=produdb->table=tb_1->action=select", "roles");
+    editor.addPolicy("select_tb1 = server=server1->db=db_1->table=tb_1->action=select", "roles");
+    editor.addPolicy("insert_produTB = server=server1->db=produdb->table=tb_1->action=insert", "roles");
+    editor.addPolicy("insert_tb1 = server=server1->db=db_1->table=tb_1->action=insert", "roles");
+    editor.addPolicy("load_data = server=server1->uri=file:" + dataFilePath.toString(), "roles");
+    editor.addPolicy("admin = server=server1", "roles");
     editor.addPolicy("admin1 = admin", "users");
     editor.addPolicy("user1 = group1", "users");
     editor.addPolicy("user2 = group2", "users");
@@ -181,8 +183,8 @@ public class TestMovingToProduction {
     String tableName1 = "tb_1";
     Connection connection = context.createConnection("admin1", "foo");
     Statement statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE IF EXISTS " + dbName1);
-    statement.execute("DROP DATABASE IF EXISTS " + dbName2);
+    statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
+    statement.execute("DROP DATABASE IF EXISTS " + dbName2 + " CASCADE");
     statement.execute("CREATE DATABASE " + dbName1);
     statement.execute("CREATE DATABASE " + dbName2);
     statement.execute("DROP TABLE IF EXISTS " + dbName2 + "." + tableName1);
