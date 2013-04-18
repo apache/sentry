@@ -17,22 +17,22 @@
 package org.apache.access.binding.hive;
 
 import java.io.File;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.access.binding.hive.authz.HiveAuthzBinding;
 import org.apache.access.binding.hive.authz.HiveAuthzPrivileges;
 import org.apache.access.binding.hive.authz.HiveAuthzPrivilegesMap;
 import org.apache.access.binding.hive.conf.HiveAuthzConf;
 import org.apache.access.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
+import org.apache.access.core.Authorizable;
 import org.apache.access.core.Database;
+import org.apache.access.core.Server;
 import org.apache.access.core.Subject;
+import org.apache.access.core.Table;
 import org.apache.access.provider.file.PolicyFiles;
 import org.apache.commons.io.FileUtils;
-import org.apache.hadoop.hive.ql.hooks.ReadEntity;
-import org.apache.hadoop.hive.ql.hooks.WriteEntity;
 import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
-import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.junit.After;
 import org.junit.Before;
@@ -67,8 +67,8 @@ public class TestHiveAuthzBindings {
   private static final String PAYMENT_TAB = "payments";
 
   // Entities
-  private Set<ReadEntity> inputTabList = new LinkedHashSet<ReadEntity>();
-  private Set<WriteEntity> outputTabList = new LinkedHashSet<WriteEntity>();
+  private List<List<Authorizable>> inputTabHierarcyList = new ArrayList<List<Authorizable>>();
+  private List<List<Authorizable>> outputTabHierarcyList = new ArrayList<List<Authorizable>>();
   private HiveAuthzConf authzConf =  new HiveAuthzConf();
 
   // Privileges
@@ -89,8 +89,8 @@ public class TestHiveAuthzBindings {
 
   @Before
   public void setUp() throws Exception {
-    inputTabList.clear();
-    outputTabList.clear();
+    inputTabHierarcyList.clear();
+    outputTabHierarcyList.clear();
     baseDir = Files.createTempDir();
     PolicyFiles.copyToDir(baseDir, RESOURCE_PATH);
 
@@ -115,9 +115,9 @@ public class TestHiveAuthzBindings {
    */
   @Test
   public void TestValidateSelectPrivilegesForAdmin() throws Exception {
-    inputTabList.add(new ReadEntity(new Table(CUSTOMER_DB, PURCHASES_TAB)));
+    inputTabHierarcyList.add(buildObjectHierarchy(SERVER1, CUSTOMER_DB, PURCHASES_TAB));
     testAuth.authorize(HiveOperation.QUERY, queryPrivileges, ADMIN_SUBJECT,
-        null, inputTabList, outputTabList);
+        inputTabHierarcyList, outputTabHierarcyList);
   }
 
   /**
@@ -125,9 +125,9 @@ public class TestHiveAuthzBindings {
    */
   @Test
   public void TestValidateSelectPrivilegesForUsers() throws Exception {
-    inputTabList.add(new ReadEntity(new Table(CUSTOMER_DB, PURCHASES_TAB)));
+    inputTabHierarcyList.add(buildObjectHierarchy(SERVER1, CUSTOMER_DB, PURCHASES_TAB));
     testAuth.authorize(HiveOperation.QUERY, queryPrivileges, ANALYST_SUBJECT,
-        null, inputTabList, outputTabList);
+        inputTabHierarcyList, outputTabHierarcyList);
   }
 
   /**
@@ -135,9 +135,9 @@ public class TestHiveAuthzBindings {
    */
   @Test(expected=AuthorizationException.class)
   public void TestValidateSelectPrivilegesRejectionForUsers() throws Exception {
-    inputTabList.add(new ReadEntity(new Table(CUSTOMER_DB, PURCHASES_TAB)));
+    inputTabHierarcyList.add(buildObjectHierarchy(SERVER1, CUSTOMER_DB, PURCHASES_TAB));
     testAuth.authorize(HiveOperation.QUERY, queryPrivileges, JUNIOR_ANALYST_SUBJECT,
-        null, inputTabList, outputTabList);
+        inputTabHierarcyList, outputTabHierarcyList);
   }
 
   /**
@@ -145,9 +145,9 @@ public class TestHiveAuthzBindings {
    */
   @Test
   public void TestValidateCreateTabPrivilegesForAdmin() throws Exception {
-    outputTabList.add(new WriteEntity(new Table(CUSTOMER_DB, PAYMENT_TAB)));
+    outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, CUSTOMER_DB, PAYMENT_TAB));
     testAuth.authorize(HiveOperation.CREATETABLE, createTabPrivileges, ADMIN_SUBJECT,
-        new Database(CUSTOMER_DB), inputTabList, outputTabList);
+        inputTabHierarcyList, outputTabHierarcyList);
   }
 
   /**
@@ -155,9 +155,9 @@ public class TestHiveAuthzBindings {
    */
   @Test
   public void TestValidateCreateTabPrivilegesForUser() throws Exception {
-    outputTabList.add(new WriteEntity(new Table(JUNIOR_ANALYST_DB, PAYMENT_TAB)));
+    outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, JUNIOR_ANALYST_DB, PAYMENT_TAB));
     testAuth.authorize(HiveOperation.CREATETABLE, createTabPrivileges, MANAGER_SUBJECT,
-        new Database(JUNIOR_ANALYST_DB), inputTabList, outputTabList);
+        inputTabHierarcyList, outputTabHierarcyList);
   }
 
   /**
@@ -165,9 +165,9 @@ public class TestHiveAuthzBindings {
    */
   @Test(expected=AuthorizationException.class)
   public void TestValidateCreateTabPrivilegesRejectionForUser() throws Exception {
-    outputTabList.add(new WriteEntity(new Table(CUSTOMER_DB, PAYMENT_TAB)));
+    outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, CUSTOMER_DB, null));
     testAuth.authorize(HiveOperation.CREATETABLE, createTabPrivileges, JUNIOR_ANALYST_SUBJECT,
-        new Database(CUSTOMER_DB), inputTabList, outputTabList);
+        inputTabHierarcyList, outputTabHierarcyList);
   }
 
   /**
@@ -175,9 +175,9 @@ public class TestHiveAuthzBindings {
    */
   @Test(expected=AuthorizationException.class)
   public void TestValidateCreateTabPrivilegesRejectionForUser2() throws Exception {
-    outputTabList.add(new WriteEntity(new Table(ANALYST_DB, PAYMENT_TAB)));
+    outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, ANALYST_DB, null));
     testAuth.authorize(HiveOperation.CREATETABLE, createTabPrivileges, JUNIOR_ANALYST_SUBJECT,
-        new Database(ANALYST_DB), inputTabList, outputTabList);
+        inputTabHierarcyList, outputTabHierarcyList);
   }
 
   /**
@@ -185,9 +185,9 @@ public class TestHiveAuthzBindings {
    */
   @Test
   public void TestValidateLoadTabPrivilegesForAdmin() throws Exception {
-    outputTabList.add(new WriteEntity(new Table(CUSTOMER_DB, PURCHASES_TAB)));
+    outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, CUSTOMER_DB, PURCHASES_TAB));
     testAuth.authorize(HiveOperation.LOAD, loadTabPrivileges, ADMIN_SUBJECT,
-        null, inputTabList, outputTabList);
+        inputTabHierarcyList, outputTabHierarcyList);
   }
 
   /**
@@ -195,19 +195,18 @@ public class TestHiveAuthzBindings {
    */
   @Test
   public void TestValidateLoadTabPrivilegesForUser() throws Exception {
-    outputTabList.add(new WriteEntity(new Table(CUSTOMER_DB, PURCHASES_TAB)));
+    outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, CUSTOMER_DB, PURCHASES_TAB));
     testAuth.authorize(HiveOperation.LOAD, loadTabPrivileges, MANAGER_SUBJECT,
-        null, inputTabList, outputTabList);
-  }
+        inputTabHierarcyList, outputTabHierarcyList);  }
 
   /**
    * validate load table permissions rejected for analyst on customer:purchases
    */
   @Test(expected=AuthorizationException.class)
   public void TestValidateLoadTabPrivilegesRejectionForUser() throws Exception {
-    outputTabList.add(new WriteEntity(new Table(CUSTOMER_DB, PURCHASES_TAB)));
+    outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, CUSTOMER_DB, PURCHASES_TAB));
     testAuth.authorize(HiveOperation.LOAD, loadTabPrivileges, ANALYST_SUBJECT,
-        null, inputTabList, outputTabList);
+        inputTabHierarcyList, outputTabHierarcyList);
   }
 
   /**
@@ -215,9 +214,9 @@ public class TestHiveAuthzBindings {
    */
   @Test
   public void TestValidateCreateDbForAdmin() throws Exception {
-    // Hive compiler doesn't capture Entities for DB operations
+    outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, CUSTOMER_DB, null));
     testAuth.authorize(HiveOperation.CREATEDATABASE, createDbPrivileges, ADMIN_SUBJECT,
-        new Database(CUSTOMER_DB), inputTabList, outputTabList);
+        inputTabHierarcyList, outputTabHierarcyList);
   }
 
   /**
@@ -226,8 +225,9 @@ public class TestHiveAuthzBindings {
   @Test(expected=AuthorizationException.class)
   public void TestValidateCreateDbRejectionForUser() throws Exception {
     // Hive compiler doesn't capture Entities for DB operations
+    outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, CUSTOMER_DB, null));
     testAuth.authorize(HiveOperation.CREATEDATABASE, createDbPrivileges, ANALYST_SUBJECT,
-        new Database(CUSTOMER_DB), inputTabList, outputTabList);
+        inputTabHierarcyList, outputTabHierarcyList);
   }
 
   /**
@@ -236,8 +236,9 @@ public class TestHiveAuthzBindings {
   @Test
   @Ignore // TODO fix functions
   public void TestValidateCreateFunctionForAdmin() throws Exception {
+    outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, null, null));
     testAuth.authorize(HiveOperation.CREATEFUNCTION, createFuncPrivileges, ADMIN_SUBJECT,
-        null, inputTabList, outputTabList);
+        inputTabHierarcyList, outputTabHierarcyList);
   }
 
   /**
@@ -246,8 +247,21 @@ public class TestHiveAuthzBindings {
   @Test(expected=AuthorizationException.class)
   @Ignore // TODO fix functions
   public void TestValidateCreateFunctionRejectionForUser() throws Exception {
+    outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, null, null));
     testAuth.authorize(HiveOperation.CREATEFUNCTION, createFuncPrivileges, ANALYST_SUBJECT,
-        null, inputTabList, outputTabList);
+        inputTabHierarcyList, outputTabHierarcyList);
+  }
+
+  private List <Authorizable>  buildObjectHierarchy(String server, String db, String table) {
+    List <Authorizable> authList = new ArrayList<Authorizable> ();
+    authList.add(new Server(server));
+    if (db != null) {
+      authList.add(new Database(CUSTOMER_DB));
+      if (table != null) {
+        authList.add(new Table(PURCHASES_TAB));
+      }
+    }
+    return authList;
   }
 
 }
