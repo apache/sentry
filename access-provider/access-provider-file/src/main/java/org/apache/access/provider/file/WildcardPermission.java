@@ -28,12 +28,15 @@ import java.io.Serializable;
 import java.util.List;
 
 import org.apache.access.core.AccessConstants;
+import org.apache.access.core.Authorizable.AuthorizableType;
 import org.apache.shiro.authz.Permission;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
+// XXX this class is made ugly by the fact that Action is not a Authorizable.
 public class WildcardPermission implements Permission, Serializable {
 
   private static final long serialVersionUID = -6785051263922740818L;
@@ -79,17 +82,15 @@ public class WildcardPermission implements Permission, Serializable {
       // in this permission is automatically implied, so return true
       if (parts.size() - 1 < index) {
         return true;
-        //
       } else {
         KeyValue part = parts.get(index);
         // are the keys even equal
         if(!part.getKey().equals(otherPart.getKey())) {
           return false;
-          //
         }
         // in order to imply, the values either have to be equal or our value has
         // to be ALL
-        if (!part.getValue().equals(AccessConstants.ALL) && !part.equals(otherPart)) {
+        if (!implies(part, otherPart)) {
           return false;
         }
         index++;
@@ -107,6 +108,22 @@ public class WildcardPermission implements Permission, Serializable {
 
     return true;
   }
+
+  private boolean implies(KeyValue policyPart, KeyValue requestPart) {
+    Preconditions.checkState(policyPart.getKey().equalsIgnoreCase(requestPart.getKey()),
+        "Please report, this method should not be called with two different keys");
+    if(policyPart.getValue().equals(AccessConstants.ALL) || policyPart.equals(requestPart)) {
+      return true;
+    } else if(policyPart.getKey().equalsIgnoreCase(AuthorizableType.URI.name())) {
+      /*
+       * URI is a a special case. For URI's, /a implies /a/b.
+       * Therefore the test is "/a/b".startsWith("/a");
+       */
+      return requestPart.getValue().startsWith(policyPart.getValue());
+    }
+    return false;
+  }
+
 
   @Override
   public String toString() {

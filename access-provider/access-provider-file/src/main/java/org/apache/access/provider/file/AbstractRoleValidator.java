@@ -17,8 +17,7 @@
 package org.apache.access.provider.file;
 
 import static org.apache.access.provider.file.PolicyFileConstants.AUTHORIZABLE_SPLITTER;
-import static org.apache.access.provider.file.PolicyFileConstants.KV_SEPARATOR;
-import static org.apache.access.provider.file.PolicyFileConstants.PRIVILEGE_NAME;
+import static org.apache.access.provider.file.PolicyFileConstants.PRIVILEGE_PREFIX;
 
 import java.util.List;
 
@@ -30,14 +29,12 @@ import com.google.common.collect.Lists;
 
 public abstract class AbstractRoleValidator implements RoleValidator {
 
-  private static final String ACTION_PREFIX = (PRIVILEGE_NAME + KV_SEPARATOR).toLowerCase();
-
   @VisibleForTesting
   public static Iterable<Authorizable> parseRole(String string) {
     List<Authorizable> result = Lists.newArrayList();
     for(String section : AUTHORIZABLE_SPLITTER.split(string)) {
-      // action is not an authorizeable and should be ignored
-      if(!section.toLowerCase().startsWith(ACTION_PREFIX)) {
+      // XXX this ugly hack is because action is not an authorizeable
+      if(!section.toLowerCase().startsWith(PRIVILEGE_PREFIX)) {
         Authorizable authorizable = Authorizables.from(section);
         if(authorizable == null) {
           String msg = "No authorizable found for " + section;

@@ -26,8 +26,7 @@ import org.apache.access.core.View;
 
 public class Authorizables {
 
-  public static Authorizable from(String s) {
-    KeyValue keyValue = new KeyValue(s);
+  public static Authorizable from(KeyValue keyValue) {
     String prefix = keyValue.getKey().toLowerCase();
     String name = keyValue.getValue().toLowerCase();
     for(AuthorizableType type : AuthorizableType.values()) {
@@ -36,6 +35,9 @@ public class Authorizables {
       }
     }
     return null;
+  }
+  public static Authorizable from(String s) {
+    return from(new KeyValue(s));
   }
 
   private static Authorizable from(AuthorizableType type, String name) {

@@ -106,6 +106,9 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
       requestPermission = AUTHORIZABLE_JOINER.join(requestPermission,
           KV_JOINER.join(PRIVILEGE_NAME, action.getValue()));
       for (Permission permission : permissions) {
+        /*
+         * Does the permission granted in the policy file imply the requested action?
+         */
         boolean result = permission.implies(new WildcardPermission(requestPermission));
         if(LOGGER.isDebugEnabled()) {
           LOGGER.debug("FilePermission {}, RequestPermission {}, result {}",

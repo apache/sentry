@@ -45,6 +45,14 @@ public class TestWildcardPermission {
   private static final Permission ROLE_SERVER_ALL_DB_DB1 =
       create(new KeyValue("server", ALL), new KeyValue("db", "db1"));
 
+  private static final Permission ROLE_SERVER_SERVER1_URI_URI1 =
+      create(new KeyValue("server", "server1"), new KeyValue("uri", "/path/to/uri1"));
+  private static final Permission ROLE_SERVER_SERVER1_URI_URI2 =
+      create(new KeyValue("server", "server1"), new KeyValue("uri", "/path/to/uri2"));
+  private static final Permission ROLE_SERVER_SERVER1_URI_ALL =
+      create(new KeyValue("server", "server1"), new KeyValue("uri", ALL));
+
+
   private static final Permission ROLE_SERVER_SERVER1 =
       create(new KeyValue("server", "server1"));
 
@@ -57,6 +65,11 @@ public class TestWildcardPermission {
       create(new KeyValue("server", "server1"), new KeyValue("db", "db2"));
   private static final Permission REQUEST_SERVER2_DB2 =
       create(new KeyValue("server", "server2"), new KeyValue("db", "db2"));
+
+  private static final Permission REQUEST_SERVER1_URI1 =
+      create(new KeyValue("server", "server1"), new KeyValue("uri", "/path/to/uri1/some/file"));
+  private static final Permission REQUEST_SERVER1_URI2 =
+      create(new KeyValue("server", "server1"), new KeyValue("uri", "/path/to/uri2/some/other/file"));
 
   private static final Permission REQUEST_SERVER1_OTHER =
       create(new KeyValue("server", "server2"), new KeyValue("other", "thing"));
@@ -151,6 +164,28 @@ public class TestWildcardPermission {
     assertFalse(REQUEST_SERVER2_DB1.implies(ROLE_SERVER_ALL_DB_DB1));
     assertFalse(REQUEST_SERVER1_DB2.implies(ROLE_SERVER_ALL_DB_DB1));
     assertFalse(REQUEST_SERVER2_DB2.implies(ROLE_SERVER_ALL_DB_DB1));
+
+    // uri
+    assertTrue(ROLE_SERVER_SERVER1.implies(REQUEST_SERVER1_URI1));
+    assertTrue(ROLE_SERVER_SERVER1.implies(REQUEST_SERVER1_URI2));
+    assertTrue(ROLE_SERVER_SERVER1.implies(REQUEST_SERVER1_URI2));
+    assertTrue(ROLE_SERVER_SERVER1_URI_ALL.implies(REQUEST_SERVER1_URI1));
+    assertTrue(ROLE_SERVER_SERVER1_URI_ALL.implies(REQUEST_SERVER1_URI2));
+    assertTrue(ROLE_SERVER_SERVER1.implies(REQUEST_SERVER1_URI2));
+    assertTrue(ROLE_SERVER_SERVER1_URI_URI1.implies(REQUEST_SERVER1_URI1));
+    assertFalse(ROLE_SERVER_SERVER1_URI_URI1.implies(REQUEST_SERVER1_URI2));
+    assertTrue(ROLE_SERVER_SERVER1_URI_URI2.implies(REQUEST_SERVER1_URI2));
+    assertFalse(ROLE_SERVER_SERVER1_URI_URI2.implies(REQUEST_SERVER1_URI1));
+    assertFalse(REQUEST_SERVER2_DB2.implies(REQUEST_SERVER1_URI1));
+    assertFalse(ROLE_SERVER_ALL_DB_DB1.implies(REQUEST_SERVER1_URI1));
+    // test inverse
+    assertFalse(REQUEST_SERVER1_URI1.implies(ROLE_SERVER_SERVER1_URI_ALL));
+    assertFalse(REQUEST_SERVER1_URI2.implies(ROLE_SERVER_SERVER1_URI_ALL));
+    assertFalse(REQUEST_SERVER1_URI1.implies(ROLE_SERVER_SERVER1));
+    assertFalse(REQUEST_SERVER1_URI1.implies(ROLE_SERVER_SERVER1_URI_URI1));
+    assertFalse(REQUEST_SERVER1_URI2.implies(ROLE_SERVER_SERVER1_URI_URI1));
+    assertFalse(REQUEST_SERVER1_URI2.implies(ROLE_SERVER_SERVER1_URI_URI2));
+    assertFalse(REQUEST_SERVER1_URI1.implies(ROLE_SERVER_SERVER1_URI_URI2));
   };
   @Test
   public void testUnexpected() throws Exception {
