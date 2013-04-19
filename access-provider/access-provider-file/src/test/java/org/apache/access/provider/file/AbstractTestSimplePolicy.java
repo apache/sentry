@@ -40,13 +40,12 @@ import com.google.common.io.Files;
 public abstract class AbstractTestSimplePolicy {
   private static final String PERM_SERVER1_CUSTOMERS_SELECT = "server=server1->db=customers->table=purchases->action=select";
   private static final String PERM_SERVER1_CUSTOMERS_DB_CUSTOMERS_PARTIAL_SELECT = "server=server1->db=customers->view=purchases_partial->action=select";
-  private static final String PERM_SERVER1_FUNCTIONS_ALL = "server=server1->functions";
   private static final String PERM_SERVER1_ANALYST_ALL = "server=server1->db=analyst1";
   private static final String PERM_SERVER1_JUNIOR_ANALYST_ALL = "server=server1->db=jranalyst1";
   private static final String PERM_SERVER1_JUNIOR_ANALYST_READ = "server=server1->db=jranalyst1->table=*->action=select";
   private static final String PERM_SERVER1_OTHER_GROUP_DB_CUSTOMERS_SELECT = "server=server1->db=other_group_db->table=purchases->action=select";
 
-  private static final String PERM_SERVER1_ADMIN = "server=server1->db=*";
+  private static final String PERM_SERVER1_ADMIN = "server=server1";
   private Policy policy;
   private static File baseDir;
   private List<Authorizable> authorizables = Lists.newArrayList();
@@ -91,8 +90,6 @@ public abstract class AbstractTestSimplePolicy {
         PERM_SERVER1_CUSTOMERS_SELECT, PERM_SERVER1_ANALYST_ALL,
         PERM_SERVER1_JUNIOR_ANALYST_ALL, PERM_SERVER1_JUNIOR_ANALYST_READ,
         PERM_SERVER1_CUSTOMERS_DB_CUSTOMERS_PARTIAL_SELECT
-//        TODO figure out how to handle functions
-//        ,PERM_SERVER1_FUNCTIONS_ALL
         ));
     Assert.assertEquals(expected.toString(),
         new TreeSet<String>(policy.getPermissions(authorizables, list("manager")).values())

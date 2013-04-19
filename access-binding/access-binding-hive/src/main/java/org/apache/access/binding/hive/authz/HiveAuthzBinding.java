@@ -232,7 +232,7 @@ public class HiveAuthzBinding {
   }
 
   // Extract server resource
-  private ServerResource getResoruce(HiveOperation hiveOp) {
+  private ServerResource getResource(HiveOperation hiveOp) {
     switch (hiveOp) {
     case CREATEFUNCTION:
       return ServerResource.UDFS;

@@ -24,6 +24,7 @@ import java.util.List;
 
 import junit.framework.Assert;
 
+import org.apache.access.core.AccessConstants;
 import org.apache.access.core.Action;
 import org.apache.access.core.Authorizable;
 import org.apache.access.core.Database;
@@ -56,7 +57,7 @@ public class TestResourceAuthorizationProvider {
   private static final Subject SUB_JUNIOR_ANALYST = new Subject("jranalyst1");
 
   private static final Server SVR_SERVER1 = new Server("server1");
-  private static final Server SVR_ALL = new Server("*");
+  private static final Server SVR_ALL = new Server(AccessConstants.ALL);
 
   private static final Database DB_CUSTOMERS = new Database("customers");
   private static final Database DB_ANALYST = new Database("analyst1");
@@ -95,8 +96,19 @@ public class TestResourceAuthorizationProvider {
     }
   }
 
+  private void doTestAuthorizables(
+      Subject subject, EnumSet<Action> privileges, boolean expected,
+      Authorizable... authorizables) throws Exception {
+    List<Authorizable> authzHierarchy = Arrays.asList(authorizables);
+    Objects.ToStringHelper helper = Objects.toStringHelper("TestParameters");
+      helper.add("authorizables", authzHierarchy).add("Privileges", privileges);
+    LOGGER.info("Running with " + helper.toString());
+    Assert.assertEquals(helper.toString(), expected,
+        authzProvider.hasAccess(subject, authzHierarchy, privileges));
+    LOGGER.info("Passed " + helper.toString());
+  }
 
-  public void doTestResourceAuthorizationProvider(Subject subject,
+  private void doTestResourceAuthorizationProvider(Subject subject,
       Server server, Database database, Table table,
       EnumSet<Action> privileges, boolean expected) throws Exception {
     List<Authorizable> authzHierarchy = Arrays.asList(new Authorizable[] {
@@ -117,7 +129,8 @@ public class TestResourceAuthorizationProvider {
     doTestResourceAuthorizationProvider(SUB_ADMIN, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, SELECT, true);
     doTestResourceAuthorizationProvider(SUB_ADMIN, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, INSERT, true);
     // TODO SVR_ALL privilege shouldn't exist AKAIK
-    doTestResourceAuthorizationProvider(SUB_ADMIN, SVR_ALL, DB_CUSTOMERS, TBL_PURCHASES, SELECT, false);
+    doTestAuthorizables(SUB_ADMIN, SELECT, false, SVR_ALL, DB_CUSTOMERS, TBL_PURCHASES);
+
   }
   @Test
   public void testManager() throws Exception {
