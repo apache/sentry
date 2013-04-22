@@ -96,10 +96,8 @@ public class TestPrivilegeAtTransform extends AbstractTestWithStaticHiveServer {
     assertTrue("admin should be able to drop view view_1",
         !statement.execute("DROP VIEW IF EXISTS " + viewName1));
 
-    assertTrue(
-        "admin should be able to create view view_1",
-        !statement.execute("CREATE VIEW " + viewName1
-            + " (value) AS SELECT value from " + tableName1 + " LIMIT 10"));
+    statement.execute("CREATE VIEW " + viewName1
+            + " (value) AS SELECT value from " + tableName1 + " LIMIT 10");
 
     ResultSet rs = statement
         .executeQuery("select TRANSFORM(a.under_col, a.value) USING 'cat' AS (tunder_col, tvalue) FROM "
@@ -112,19 +110,18 @@ public class TestPrivilegeAtTransform extends AbstractTestWithStaticHiveServer {
     connection = context.createConnection("user1", "foo");
     statement = context.createStatement(connection);
 
-    assertTrue("user_1 should be able to switch to database db_1",
-        !statement.execute("USE " + dbName1));
     // 3
     editor.addPolicy("group1 = all_db1", "groups");
     editor.addPolicy("all_db1 = server=server1->db=db_1", "roles");
+    assertTrue("user_1 should be able to switch to database db_1",
+        !statement.execute("USE " + dbName1));
     try {
-      assertFalse(
-          "TRANSFORM fail",
-          statement
-              .execute("select TRANSFORM(a.under_col, a.value) USING 'cat' AS (tunder_col, tvalue) FROM "
-                  + tableName1 + " a"));
+      statement.execute("select TRANSFORM(a.under_col, a.value) USING 'cat' AS (tunder_col, tvalue) FROM "
+                  + tableName1 + " a");
+      assertFalse("TRANSFORM should fail", true);
+
     } catch (SQLException e) {
-      context.verifyAuthzException(e);
+      context.verifyAuthzExecHookException(e);
     }
     editor.removePolicy("group1 = all_db1");
     editor.removePolicy("all_db1 = server=server1->db=db_1");
@@ -145,7 +142,7 @@ public class TestPrivilegeAtTransform extends AbstractTestWithStaticHiveServer {
               .execute("select TRANSFORM(a.under_col, a.value) USING 'cat' AS (tunder_col, tvalue) FROM "
                   + tableName1 + " a"));
     } catch (SQLException e) {
-      context.verifyAuthzException(e);
+      context.verifyAuthzExecHookException(e);
     }
     editor.removePolicy("group1 = select_tb1");
     editor
@@ -154,35 +151,21 @@ public class TestPrivilegeAtTransform extends AbstractTestWithStaticHiveServer {
     editor
         .removePolicy("insert_tb1 = server=server1->db=db_1->table=tb_1->action=insert");
 
-    // 5
-    editor.addPolicy("group1 = select_view1", "groups");
-    editor.addPolicy(
-        "select_view1 = server=server1->db=db_1->table=view_1->action=select",
-        "roles");
-    try {
-      assertFalse(
-          "TRANSFORM fail",
-          statement
-              .execute("select TRANSFORM(a.under_col, a.value) USING 'cat' AS (tunder_col, tvalue) FROM "
-                  + tableName1 + " a"));
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
-    editor.removePolicy("group1 = select_view1");
-    editor
-        .removePolicy("select_view1 = server=server1->db=db_1->table=view_1->action=select");
-
-    // 6
-    editor.addPolicy("group1 = transform_db_1", "groups");
-    editor
-        .addPolicy("transform_db_1 = server=server1->action=transform", "roles");
-    rs = statement
-        .executeQuery("select TRANSFORM(a.under_col, a.value) USING 'cat' AS (tunder_col, tvalue) FROM "
-            + tableName1 + " a");
-    assertTrue("TRANSFORM fail", rs.next());
-    editor.removePolicy("group1 = transform_db_1");
-    editor.removePolicy("transform_db_1 = server=server1->action=transform");
-    statement.close();
-    connection.close();
+    /***
+     * Transform action is not supported at this point. We enable allow on for Server-all privilege
+     * In future we could implement separate transform privilege that can be granted to specific users
+     *
+        editor.addPolicy("group1 = transform_db_1", "groups");
+        editor
+            .addPolicy("transform_db_1 = server=server1->action=transform", "roles");
+        rs = statement
+            .executeQuery("select TRANSFORM(a.under_col, a.value) USING 'cat' AS (tunder_col, tvalue) FROM "
+                + tableName1 + " a");
+        assertTrue("TRANSFORM fail", rs.next());
+        editor.removePolicy("group1 = transform_db_1");
+        editor.removePolicy("transform_db_1 = server=server1->action=transform");
+        statement.close();
+        connection.close();
+    */
   }
 }

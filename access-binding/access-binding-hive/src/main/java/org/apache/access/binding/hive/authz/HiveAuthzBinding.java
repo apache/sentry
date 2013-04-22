@@ -21,6 +21,8 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.access.binding.hive.conf.HiveAuthzConf;
 import org.apache.access.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
@@ -33,12 +35,18 @@ import org.apache.access.core.ServerResource;
 import org.apache.access.core.Subject;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.ql.hooks.Entity;
 import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
+import org.apache.hadoop.hive.ql.session.SessionState;
 
 public class HiveAuthzBinding {
-  static final private Log LOG = LogFactory.getLog(HiveAuthzBinding.class.getName());
+  private static final Log LOG = LogFactory.getLog(HiveAuthzBinding.class.getName());
+  private static final Map<String, HiveAuthzBinding> authzBindingMap =
+      new ConcurrentHashMap<String, HiveAuthzBinding>();
+  private static final AtomicInteger queryID = new AtomicInteger();
+  public static final String HIVE_BINDING_TAG = "hive.authz.bindings.tag";
 
   private final HiveAuthzConf authzConf;
   private final Server authServer;
@@ -48,6 +56,41 @@ public class HiveAuthzBinding {
     this.authzConf = authzConf;
     this.authServer = new Server(authzConf.get(AuthzConfVars.AUTHZ_SERVER_NAME.getVar()));
     this.authProvider = getAuthProvider(authServer.getName());
+  }
+
+  /**
+   * Retrieve the HiveAuthzBinding if the tag is saved in the given configuration
+   * @param conf
+   * @return HiveAuthzBinding or null
+   */
+  public static HiveAuthzBinding get(Configuration conf) {
+    String tagName = conf.get(HIVE_BINDING_TAG);
+    if (tagName == null) {
+      return null;
+    } else {
+      return authzBindingMap.get(tagName);
+    }
+  }
+
+  /**
+   * store the HiveAuthzBinding in the authzBindingMap and save a tag in the given configuration
+   * @param conf
+   */
+  public void set (Configuration conf) {
+    String tagName = SessionState.get().getSessionId() + "_" + queryID.incrementAndGet();
+    authzBindingMap.put(tagName, this);
+    conf.set(HIVE_BINDING_TAG, tagName);
+  }
+
+  /**
+   * remove the authzBindingMap entry for given tag
+   * @param conf
+   */
+  public void clear(Configuration conf) {
+    String tagName = conf.get(HIVE_BINDING_TAG);
+    if (tagName == null) {
+      authzBindingMap.remove(tagName);
+    }
   }
 
   // Instantiate the configured authz provider

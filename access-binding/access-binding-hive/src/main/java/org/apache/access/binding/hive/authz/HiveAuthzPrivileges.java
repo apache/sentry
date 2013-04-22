@@ -55,6 +55,11 @@ public class HiveAuthzPrivileges {
     CONNECT
   }
 
+  public static enum HiveExtendedOperation {
+    TRANSFORM,
+    RESOURCE
+  }
+
   public static class AuthzPrivilegeBuilder {
     private final Map<AuthorizableType, EnumSet<Action>> inputPrivileges =
         new HashMap<AuthorizableType ,EnumSet<Action>>();

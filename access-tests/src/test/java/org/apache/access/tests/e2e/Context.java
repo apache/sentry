@@ -47,6 +47,7 @@ public class Context {
       .getLogger(Context.class);
 
   public static final String AUTHZ_EXCEPTION_SQL_STATE = "42000";
+  public static final String AUTHZ_EXEC_HOOK_EXCEPTION_SQL_STATE = "08S01";
   public static final String AUTHZ_EXCEPTION_ERROR_MSG = "No valid privileges";
 
   private final HiveServer hiveServer;
@@ -78,6 +79,7 @@ public class Context {
     assertFalse("Connection should not be closed", connection.isClosed());
     Statement statement  = connection.createStatement();
     statement.execute("set hive.semantic.analyzer.hook = org.apache.access.binding.hive.HiveAuthzBindingHook");
+    statement.execute("set hive.exec.pre.hooks = org.apache.access.binding.hive.HiveAuthzBindingPreExecHook");
     statement.close();
     return connection;
   }
@@ -137,10 +139,22 @@ public class Context {
 
   // verify that the sqlexception is due to authorization failure
   public void verifyAuthzException(SQLException sqlException) throws SQLException{
-    if (!AUTHZ_EXCEPTION_SQL_STATE.equals(sqlException.getSQLState())) {
+    verifyAuthzExceptionForState(sqlException, AUTHZ_EXCEPTION_SQL_STATE);
+  }
+
+  // verify that the sqlexception is due to authorization failure due to exec hooks
+  public void verifyAuthzExecHookException(SQLException sqlException) throws SQLException{
+    verifyAuthzExceptionForState(sqlException, AUTHZ_EXEC_HOOK_EXCEPTION_SQL_STATE);
+  }
+
+  // verify that the sqlexception is due to authorization failure
+  private void verifyAuthzExceptionForState(SQLException sqlException,
+        String expectedSqlState) throws SQLException {
+    if (!expectedSqlState.equals(sqlException.getSQLState())) {
       throw sqlException;
     }
   }
+
   public File getBaseDir() {
     return baseDir;
   }

@@ -20,6 +20,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.access.binding.hive.authz.HiveAuthzPrivileges.HiveExtendedOperation;
 import org.apache.access.binding.hive.authz.HiveAuthzPrivileges.HiveOperationScope;
 import org.apache.access.binding.hive.authz.HiveAuthzPrivileges.HiveOperationType;
 import org.apache.access.core.Action;
@@ -27,7 +28,10 @@ import org.apache.access.core.Authorizable.AuthorizableType;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 
 public class HiveAuthzPrivilegesMap {
-  private static Map <HiveOperation, HiveAuthzPrivileges> hiveAuthzStmtPrivMap = new HashMap<HiveOperation, HiveAuthzPrivileges>();
+  private static final Map <HiveOperation, HiveAuthzPrivileges> hiveAuthzStmtPrivMap =
+    new HashMap<HiveOperation, HiveAuthzPrivileges>();
+  private static final Map <HiveExtendedOperation, HiveAuthzPrivileges> hiveAuthzExtendedPrivMap =
+    new HashMap<HiveExtendedOperation, HiveAuthzPrivileges>();
 
   static {
     HiveAuthzPrivileges tableDDLPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
@@ -176,9 +180,15 @@ public class HiveAuthzPrivilegesMap {
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_MERGEFILES, tableDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_SKEWED, tableDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTBLPART_SKEWED_LOCATION, tableDDLPrivilege);
+
+    hiveAuthzExtendedPrivMap.put(HiveExtendedOperation.TRANSFORM, serverPrivilege);
   }
 
   public static HiveAuthzPrivileges getHiveAuthzPrivileges(HiveOperation hiveStmtOp) {
     return hiveAuthzStmtPrivMap.get(hiveStmtOp);
+  }
+
+  public static HiveAuthzPrivileges getHiveExtendedAuthzPrivileges(HiveExtendedOperation hiveExtOp) {
+    return hiveAuthzExtendedPrivMap.get(hiveExtOp);
   }
 }

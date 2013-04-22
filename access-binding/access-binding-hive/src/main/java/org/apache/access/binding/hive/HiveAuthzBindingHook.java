@@ -145,6 +145,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
     } catch (AuthorizationException e) {
       throw new SemanticException("No valid privileges", e);
     }
+    hiveAuthzBinding.set(context.getConf());
   }
 
   /**
@@ -245,6 +246,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
     // validate permission
     hiveAuthzBinding.authorize(stmtOperation, stmtAuthObject, getCurrentSubject(context),
           inputHierarchy, outputHierarchy);
+    hiveAuthzBinding.set(context.getConf());
   }
 
   private HiveOperation getCurrentHiveStmtOp () {
