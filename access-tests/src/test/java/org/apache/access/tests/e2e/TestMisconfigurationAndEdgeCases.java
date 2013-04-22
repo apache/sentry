@@ -21,12 +21,14 @@ import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -50,6 +52,11 @@ public class TestMisconfigurationAndEdgeCases {
     }
   }
 
+  @AfterClass
+  public static void tearDownClazz() throws IOException {
+    EndToEndTestContext.shutdown();
+  }
+
   /**
    * hive.server2.enable.impersonation must be disabled
    */
@@ -57,13 +64,13 @@ public class TestMisconfigurationAndEdgeCases {
   public void testImpersonationIsDisabled() throws Exception {
     properties.put("hive.server2.enable.impersonation", "true");
     context = new EndToEndTestContext(properties);
-    Connection connection = context.createConnection("TODO", "TODO");
+    Connection connection = context.createConnection("hive", "hive");
     Statement statement = context.createStatement(connection);
     try {
       statement.execute("create table test (a string)");
       Assert.fail("Expected SQLException");
     } catch (SQLException e) {
-      assertEquals("TODO", e.getSQLState());
+      context.verifyAuthzException(e);
     }
   }
 
@@ -74,13 +81,13 @@ public class TestMisconfigurationAndEdgeCases {
   public void testAuthenticationIsStrong() throws Exception {
     properties.put("hive.server2.enable.impersonation", "NONE");
     context = new EndToEndTestContext(properties);
-    Connection connection = context.createConnection("TODO", "TODO");
+    Connection connection = context.createConnection("hive", "hive");
     Statement statement = context.createStatement(connection);
     try {
       statement.execute("create table test (a string)");
       Assert.fail("Expected SQLException");
     } catch (SQLException e) {
-      assertEquals("TODO", e.getSQLState());
+      context.verifyAuthzException(e);
     }
   }
 
@@ -92,13 +99,13 @@ public class TestMisconfigurationAndEdgeCases {
     context = new EndToEndTestContext(properties);
     File policyFile = context.getPolicyFile();
     assertTrue("Could not delete " + policyFile, policyFile.delete());
-    Connection connection = context.createConnection("TODO", "TODO");
+    Connection connection = context.createConnection("hive", "hive");
     Statement statement = context.createStatement(connection);
     try {
       statement.execute("create table test (a string)");
       Assert.fail("Expected SQLException");
     } catch (SQLException e) {
-      assertEquals("TODO", e.getSQLState());
+      context.verifyAuthzException(e);
     }
   }
 
@@ -113,73 +120,30 @@ public class TestMisconfigurationAndEdgeCases {
     FileOutputStream out = new FileOutputStream(policyFile);
     out.write("this is not valid".getBytes(Charsets.UTF_8));
     out.close();
-    Connection connection = context.createConnection("TODO", "TODO");
+    Connection connection = context.createConnection("hive", "hive");
     Statement statement = context.createStatement(connection);
     try {
       statement.execute("create table test (a string)");
       Assert.fail("Expected SQLException");
     } catch (SQLException e) {
-      assertEquals("TODO", e.getSQLState());
-    }
-  }
-
-  /**
-   * Test removing user after compilation before access check
-   * results in user not being authorized
-   */
-  @Test
-  public void testUserRemovalBeforeAccessCheckAfterCompile() throws Exception {
-    properties.put(EndToEndTestContext.AUTHZ_PROVIDER, SlowLocalGroupResourceAuthorizationProvider.class.getName());
-    context = new EndToEndTestContext(properties);
-    File policyFile = context.getPolicyFile();
-    fail("TODO remove user from policy file, waiting on changed to Utils");
-    Connection connection = context.createConnection("TODO", "TODO");
-    Statement statement = context.createStatement(connection);
-    try {
-      statement.execute("create table test (a string)");
-      Assert.fail("Expected SQLException");
-    } catch (SQLException e) {
-      assertEquals("TODO", e.getSQLState());
-    }
-  }
-
-  /**
-   * Test adding user after compilation before access check
-   * results in user being authorized
-   */
-  @Test
-  public void testUserAdditionBeforeAccessCheckAfterCompile() throws Exception {
-    properties.put(EndToEndTestContext.AUTHZ_PROVIDER, SlowLocalGroupResourceAuthorizationProvider.class.getName());
-    context = new EndToEndTestContext(properties);
-    File policyFile = context.getPolicyFile();
-    fail("TODO add user from policy file, waiting on changed to Utils");
-    Connection connection = context.createConnection("TODO", "TODO");
-    Statement statement = context.createStatement(connection);
-    try {
-      statement.execute("create table test (a string)");
-      Assert.fail("Expected SQLException");
-    } catch (SQLException e) {
-      assertEquals("TODO", e.getSQLState());
+      context.verifyAuthzException(e);
     }
   }
 
 
   /**
-   * This test never fails and when the policy file is not correct.
-   * Therefore I am leaving it to make sure sure we figure out what
-   * is wrong later. Then this can be moved to a different file or
-   * removed if there is a duplicate test.
+   * Test is unrelated but I left it as an extra test.
    */
   @Test
   public void testAuthorizationFailure() throws Exception {
     context = new EndToEndTestContext(properties);
-    Connection connection = context.createConnection("TODO", "TODO");
+    Connection connection = context.createConnection("hive", "hive");
     Statement statement = context.createStatement(connection);
     try {
       statement.execute("create table test (a string)");
       Assert.fail("Expected SQLException");
     } catch (SQLException e) {
-      assertEquals("TODO", e.getSQLState());
+      context.verifyAuthzException(e);
     }
   }
 }

@@ -241,8 +241,7 @@ public class EndToEndTestContext {
 
   // verify that the sqlexception is due to authorization failure
   public void verifyAuthzException(SQLException sqlException) throws SQLException{
-    if (!AUTHZ_EXCEPTION_SQL_STATE.equals(sqlException.getSQLState()) ||
-        !sqlException.getMessage().contains(AUTHZ_EXCEPTION_ERROR_MSG)) {
+    if (!AUTHZ_EXCEPTION_SQL_STATE.equals(sqlException.getSQLState())) {
       throw sqlException;
     }
   }
