@@ -25,8 +25,8 @@ import org.apache.hadoop.fs.Path;
 public class LocalGroupResourceAuthorizationProvider extends
   ResourceAuthorizationProvider {
 
-  public LocalGroupResourceAuthorizationProvider(String resource) throws IOException {
-    super (new SimplePolicy(resource), new LocalGroupMappingService(new Path(resource)));
+  public LocalGroupResourceAuthorizationProvider(String resource, String serverName) throws IOException {
+    super (new SimplePolicy(resource, serverName), new LocalGroupMappingService(new Path(resource)));
   }
 
 }

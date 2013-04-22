@@ -16,27 +16,28 @@
  */
 package org.apache.access.provider.file;
 
-import java.io.File;
-import java.io.IOException;
+import javax.annotation.Nullable;
 
-import junit.framework.Assert;
+import org.apache.access.core.Authorizable;
+import org.apache.access.core.Server;
+import org.apache.shiro.config.ConfigurationException;
 
-import org.apache.commons.io.FileUtils;
+public class ServerNameMustMatch extends AbstractRoleValidator {
 
-public class TestSimplePolicyLocalFS extends AbstractTestSimplePolicy {
-
-  @Override
-  protected void  afterSetup() throws IOException {
-    File baseDir = getBaseDir();
-    Assert.assertNotNull(baseDir);
-    Assert.assertTrue(baseDir.isDirectory() || baseDir.mkdirs());
-    PolicyFiles.copyToDir(baseDir, "test-authz-provider.ini", "test-authz-provider-other-group.ini");
-    setPolicy(new SimplePolicy(new File(baseDir, "test-authz-provider.ini").getPath(), "server1"));
+  private final String serverName;
+  public ServerNameMustMatch(String serverName) {
+    this.serverName = serverName;
   }
   @Override
-  protected void beforeTeardown() throws IOException {
-    File baseDir = getBaseDir();
-    Assert.assertNotNull(baseDir);
-    FileUtils.deleteQuietly(baseDir);
+  public void validate(@Nullable String database, String role) throws ConfigurationException {
+    Iterable<Authorizable> authorizables = parseRole(role);
+    for(Authorizable authorizable : authorizables) {
+      if(authorizable instanceof Server && !serverName.equalsIgnoreCase(authorizable.getName())) {
+        String msg = "Server name " + authorizable.getName() + " in "
+      + role + " is invalid. Expected " + serverName;
+        throw new ConfigurationException(msg);
+      }
+    }
   }
+
 }

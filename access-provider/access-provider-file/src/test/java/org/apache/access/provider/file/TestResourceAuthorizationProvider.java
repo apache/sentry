@@ -84,7 +84,7 @@ public class TestResourceAuthorizationProvider {
     baseDir = Files.createTempDir();
     PolicyFiles.copyToDir(baseDir, "test-authz-provider.ini", "test-authz-provider-other-group.ini");
     authzProvider = new HadoopGroupResourceAuthorizationProvider(
-        new SimplePolicy(new File(baseDir, "test-authz-provider.ini").getPath()),
+        new SimplePolicy(new File(baseDir, "test-authz-provider.ini").getPath(), "server1"),
         new MockGroupMappingServiceProvider(USER_TO_GROUP_MAP));
 
   }

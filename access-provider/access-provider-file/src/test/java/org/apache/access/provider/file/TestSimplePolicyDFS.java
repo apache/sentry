@@ -61,7 +61,7 @@ public class TestSimplePolicyDFS extends AbstractTestSimplePolicy {
     fileSystem.delete(etc, true);
     fileSystem.mkdirs(etc);
     PolicyFiles.copyToDir(fileSystem, etc, "test-authz-provider.ini", "test-authz-provider-other-group.ini");
-    setPolicy(new SimplePolicy(new Path(etc, "test-authz-provider.ini").toString()));
+    setPolicy(new SimplePolicy(new Path(etc, "test-authz-provider.ini").toString(), "server1"));
   }
   @Override
   protected void beforeTeardown() throws IOException {

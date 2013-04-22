@@ -46,12 +46,12 @@ public class HiveAuthzBinding {
 
   public HiveAuthzBinding (HiveAuthzConf authzConf) throws Exception {
     this.authzConf = authzConf;
-    this.authProvider = getAuthProvider();
-    authServer = new Server(authzConf.get(AuthzConfVars.AUTHZ_SERVER_NAME.getVar()));
+    this.authServer = new Server(authzConf.get(AuthzConfVars.AUTHZ_SERVER_NAME.getVar()));
+    this.authProvider = getAuthProvider(authServer.getName());
   }
 
   // Instantiate the configured authz provider
-  private AuthorizationProvider getAuthProvider() throws Exception {
+  private AuthorizationProvider getAuthProvider(String serverName) throws Exception {
     // get the provider class and resources from the authz config
     String authProviderName = authzConf.get(AuthzConfVars.AUTHZ_PROVIDER.getVar());
     String resourceName =
@@ -61,9 +61,9 @@ public class HiveAuthzBinding {
 
     // load the authz provider class
     Constructor<?> constrctor =
-        Class.forName(authProviderName).getDeclaredConstructor(String.class);
+        Class.forName(authProviderName).getDeclaredConstructor(String.class, String.class);
     constrctor.setAccessible(true);
-    return (AuthorizationProvider) constrctor.newInstance(new Object[] {resourceName});
+    return (AuthorizationProvider) constrctor.newInstance(new Object[] {resourceName, serverName});
   }
 
 

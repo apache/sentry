@@ -61,15 +61,17 @@ public class SimplePolicy implements Policy {
 
   private final FileSystem fileSystem;
   private final Path resourcePath;
+  private final String serverName;
   private final List<Path> perDbResources = Lists.newArrayList();
   private final AtomicReference<Roles> rolesReference;
 
-  public SimplePolicy(String resourcePath) throws IOException {
-    this(new Configuration(), new Path(resourcePath));
+  public SimplePolicy(String resourcePath, String serverName) throws IOException {
+    this(new Configuration(), new Path(resourcePath), serverName);
   }
   @VisibleForTesting
-  public SimplePolicy(Configuration conf, Path resourcePath) throws IOException {
+  public SimplePolicy(Configuration conf, Path resourcePath, String serverName) throws IOException {
     this.resourcePath = resourcePath;
+    this.serverName = serverName;
     this.fileSystem = resourcePath.getFileSystem(conf);
     this.rolesReference = new AtomicReference<Roles>();
     this.rolesReference.set(new Roles());
@@ -164,7 +166,8 @@ public class SimplePolicy implements Policy {
     List<? extends RoleValidator> validators = Lists.newArrayList(
         new ServersAllIsInvalid(),
         new DatabaseMustMatch(),
-        new DatabaseRequiredInRole());
+        new DatabaseRequiredInRole(),
+        new ServerNameMustMatch(serverName));
     for (Map.Entry<String, String> entry : rolesSection.entrySet()) {
       String roleName = Strings.nullToEmpty(entry.getKey()).trim();
       String roleValue = Strings.nullToEmpty(entry.getValue()).trim();

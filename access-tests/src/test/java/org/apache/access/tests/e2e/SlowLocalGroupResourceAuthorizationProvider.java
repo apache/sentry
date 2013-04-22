@@ -32,8 +32,8 @@ public class SlowLocalGroupResourceAuthorizationProvider extends LocalGroupResou
   static long sleepLengthSeconds = 30;
   private boolean hasSlept;
 
-  public SlowLocalGroupResourceAuthorizationProvider(String resource) throws IOException {
-    super(resource);
+  public SlowLocalGroupResourceAuthorizationProvider(String resource, String serverName) throws IOException {
+    super(resource, serverName);
   }
   @Override
   public boolean hasAccess(Subject subject, List<Authorizable> authorizableHierarchy,
