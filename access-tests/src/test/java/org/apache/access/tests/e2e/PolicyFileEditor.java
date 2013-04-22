@@ -17,80 +17,49 @@
 
 package org.apache.access.tests.e2e;
 
-import static org.junit.Assert.assertEquals;
-
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
+
+import com.google.common.base.Charsets;
+import com.google.common.base.Joiner;
+import com.google.common.collect.Lists;
+import com.google.common.io.Files;
 
 public class PolicyFileEditor {
+
+  private static final String NL = System.getProperty("line.separator", "\n");
+
   private File policy;
 
   public PolicyFileEditor (File policy) {
     this.policy = policy;
   }
 
-  public void addPolicy(String line, String cat) {
-    try {
-
-      BufferedReader br = new BufferedReader(new FileReader(policy));
-
-      // reading contents to a list
-      // insert line into corresponding cat
-      ArrayList<String> list = new ArrayList<String>();
-      String s;
-      boolean exist = false;
-      while ((s = br.readLine()) != null) {
-        list.add(s);
-        if (s.equals("[" + cat + "]")) {
-          list.add(line);
-          exist = true;
-         }
-      }
-      if (exist == false) {
-        list.add("[" + cat + "]");
-        list.add(line);
-      }
-      br.close();
-
-      // dump content to new file
-      BufferedWriter bw = new BufferedWriter(new FileWriter(policy));
-        for (int i = 0; i < list.size(); i++) {
-          bw.write(list.get(i) + "\r\n");
-        }
-        bw.close();
-    } catch (IOException e) {
-      assertEquals("TODO", e.getMessage());
+  public void addPolicy(String line, String cat) throws IOException {
+    List<String> result = new ArrayList<String>();
+    boolean exist = false;
+    for(String s : Files.readLines(policy, Charsets.UTF_8)) {
+      result.add(s);
+      if (s.equals("[" + cat + "]")) {
+        result.add(line);
+        exist = true;
+       }
     }
+    if (!exist) {
+      result.add("[" + cat + "]");
+      result.add(line);
+    }
+    Files.write(Joiner.on(NL).join(result), policy, Charsets.UTF_8);
   }
-
-  public void removePolicy(String line) {
-    try {
-      BufferedReader br = new BufferedReader(new FileReader(policy));
-
-      // reading contents to a list
-      // insert line into corresponding cat
-      ArrayList<String> list = new ArrayList<String>();
-      String s;
-      while ((s = br.readLine()) != null) {
-        if (!s.equals(line)) {
-          list.add(s);
-        }
+  public void removePolicy(String line) throws IOException {
+    List<String> result = Lists.newArrayList();
+    for(String s : Files.readLines(policy, Charsets.UTF_8)) {
+      if (!s.equals(line)) {
+        result.add(s);
       }
-      br.close();
-
-      // dump content to new file
-      BufferedWriter bw = new BufferedWriter(new FileWriter(policy));
-      for (int i = 0; i < list.size(); i++) {
-        bw.write(list.get(i) + "\r\n");
-      }
-      bw.close();
-    } catch (IOException e) {
-      assertEquals("TODO", e.getMessage());
     }
+    Files.write(Joiner.on(NL).join(result), policy, Charsets.UTF_8);
   }
 }

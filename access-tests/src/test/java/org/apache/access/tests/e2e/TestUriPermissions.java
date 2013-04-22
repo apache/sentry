@@ -47,6 +47,11 @@ public class TestUriPermissions {
     }
   }
 
+  @AfterClass
+  public static void shutDown() throws IOException {
+    EndToEndTestContext.shutdown();
+  }
+
   // test load data into table
   @Test
   public void testLoadPrivileges() throws Exception {
@@ -275,8 +280,4 @@ public class TestUriPermissions {
     context.close();
   }
 
-  @AfterClass
-  public static void shutDown() throws IOException {
-    EndToEndTestContext.shutdown();
-  }
 }

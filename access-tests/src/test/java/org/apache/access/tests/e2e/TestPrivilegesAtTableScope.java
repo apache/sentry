@@ -61,6 +61,10 @@ public class TestPrivilegesAtTableScope {
     }
   }
 
+  @AfterClass
+  public static void shutDown() throws IOException {
+    EndToEndTestContext.shutdown();
+  }
 
   /* Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, loads data into TAB_1, TAB_2
    * Admin grants SELECT on TAB_1, TAB_2, INSERT on TAB_1 to USER_GROUP of which USER_1 is a member.
@@ -702,10 +706,5 @@ public class TestPrivilegesAtTableScope {
     statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.close();
     connection.close();
-  }
-
-  @AfterClass
-  public static void shutDown() throws IOException {
-    EndToEndTestContext.shutdown();
   }
 }

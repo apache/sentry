@@ -21,18 +21,18 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.util.HashMap;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
 public class TestMovingToProduction {
   private EndToEndTestContext context;
-  private final String dataFileDir = "src/test/resources";
-  // private Path dataFilePath = new Path(dataFileDir, "kv1.dat");
   private String dataFilePath = this.getClass().getResource("/kv1.dat").getFile();
 
   @Before
@@ -45,6 +45,11 @@ public class TestMovingToProduction {
     if (context != null) {
       context.close();
     }
+  }
+
+  @AfterClass
+  public static void shutDown() throws IOException {
+    EndToEndTestContext.shutdown();
   }
 
   /**

@@ -28,6 +28,7 @@ import java.sql.Statement;
 import junit.framework.Assert;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -67,6 +68,11 @@ public class TestPerDatabasePolicyFile {
         testContext.close();
       }
     }
+  }
+
+  @AfterClass
+  public static void shutDown() throws IOException {
+    EndToEndTestContext.shutdown();
   }
 
   private void append(String from, File to) throws IOException {

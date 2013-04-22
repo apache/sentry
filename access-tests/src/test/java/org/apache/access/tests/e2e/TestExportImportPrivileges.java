@@ -61,7 +61,7 @@ public class TestExportImportPrivileges {
     String tabName = "tab1";
     Connection userConn = null;
     Statement userStmt = null;
-    String dumpDir = context.getDFSUri().toString() + "/hive_data_dump";
+    String dumpDir = EndToEndTestContext.getDFSUri().toString() + "/hive_data_dump";
 
     String testPolicies[] = {
         "[groups]",
@@ -126,7 +126,7 @@ public class TestExportImportPrivileges {
     String newTabName = "tab2";
     Connection userConn = null;
     Statement userStmt = null;
-    String exportDir = context.getDFSUri().toString() + "/hive_export1";
+    String exportDir = EndToEndTestContext.getDFSUri().toString() + "/hive_export1";
 
     String testPolicies[] = {
         "[groups]",

@@ -54,7 +54,7 @@ import com.google.common.io.Resources;
 
 public class EndToEndTestContext {
 
-  public enum HiveServe2Type {
+  public enum HiveServer2Type {
     Embedded,           // Embedded HS2, directly executed by JDBC, without thrift
     InternalHS2,        // Start a thrift HS2 in the same process
     StartExternalHS2,   // start a remote thrift HS2
@@ -91,7 +91,7 @@ public class EndToEndTestContext {
   private final File policyFile;
   private final Set<Connection> connections;
   private final Set<Statement> statements;
-  private final HiveServe2Type standAloneServer;
+  private final HiveServer2Type standAloneServer;
 
   public EndToEndTestContext() throws Exception {
     this(new HashMap<String, String>());
@@ -99,22 +99,22 @@ public class EndToEndTestContext {
 
   public EndToEndTestContext(Map<String, String> properties)
       throws Exception {
-    this(HiveServe2Type.valueOf(System.getProperty(HIVESERVER2_TYPE, HiveServe2Type.InternalHS2.toString())),
+    this(HiveServer2Type.valueOf(System.getProperty(HIVESERVER2_TYPE, HiveServer2Type.InternalHS2.toString())),
         properties);
   }
 
   public EndToEndTestContext(Map<String, String> properties, boolean miniDFS)
       throws Exception {
-    this(HiveServe2Type.valueOf(System.getProperty(HIVESERVER2_TYPE, HiveServe2Type.InternalHS2.toString())),
+    this(HiveServer2Type.valueOf(System.getProperty(HIVESERVER2_TYPE, HiveServer2Type.InternalHS2.toString())),
         properties, miniDFS);
   }
 
-  public EndToEndTestContext(HiveServe2Type serverType, Map<String, String> properties)
+  public EndToEndTestContext(HiveServer2Type serverType, Map<String, String> properties)
       throws Exception {
     this(serverType, properties, false);
   }
 
-  public EndToEndTestContext(HiveServe2Type serverType, Map<String, String> properties, boolean miniDFS)
+  public EndToEndTestContext(HiveServer2Type serverType, Map<String, String> properties, boolean miniDFS)
       throws Exception {
     initialize();
     if (miniDFS) {
@@ -125,9 +125,9 @@ public class EndToEndTestContext {
     statements = Sets.newHashSet();
     policyFile = new File(confDir, AUTHZ_PROVIDER_FILENAME);
     setupEnv(properties, miniDFS);
-    if (serverType.equals(HiveServe2Type.StartExternalHS2)) {
+    if (serverType.equals(HiveServer2Type.StartExternalHS2)) {
       startExternalHiveServer2();
-    } else if (serverType.equals(HiveServe2Type.InternalHS2)) {
+    } else if (serverType.equals(HiveServer2Type.InternalHS2)) {
       startInternalHiveServer2();
     }
   }
@@ -169,7 +169,7 @@ public class EndToEndTestContext {
 
   public Connection createConnection(String username, String password) throws Exception {
     String url;
-    if (standAloneServer.equals(HiveServe2Type.Embedded)) {
+    if (standAloneServer.equals(HiveServer2Type.Embedded)) {
       url = "jdbc:hive2://";
     } else {
       url = "jdbc:hive2://" + System.getProperty(ConfVars.HIVE_SERVER2_THRIFT_BIND_HOST.toString(), "localhost") +

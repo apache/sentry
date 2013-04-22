@@ -21,6 +21,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 import java.io.File;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -29,6 +30,7 @@ import java.util.Map;
 
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -52,6 +54,11 @@ public class TestUserManagement {
     if (context != null) {
       context.close();
     }
+  }
+
+  @AfterClass
+  public static void shutDown() throws IOException {
+    EndToEndTestContext.shutdown();
   }
 
   @Test

@@ -59,6 +59,11 @@ public class TestPrivilegesAtDatabaseScope {
     }
   }
 
+  @AfterClass
+  public static void shutDown() throws IOException {
+    EndToEndTestContext.shutdown();
+  }
+
   /* Admin creates database DB_1
    * Admin grants ALL to USER_GROUP of which USER_1 is a member.
    */
@@ -369,10 +374,5 @@ public class TestPrivilegesAtDatabaseScope {
     statement.close();
     connection.close();
     testContext.close();
-  }
-
-  @AfterClass
-  public static void shutDown() throws IOException {
-    EndToEndTestContext.shutdown();
   }
 }
