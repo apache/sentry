@@ -34,7 +34,8 @@ public class HiveAuthzConf extends Configuration {
     AUTHZ_PROVIDER("hive.access.provider",
         "org.apache.access.provider.file.ResourceAuthorizationProvider"),
         AUTHZ_PROVIDER_RESOURCE("hive.access.provider.resource", ""),
-        AUTHZ_SERVER_NAME("hive.access.server", "HS2")
+        AUTHZ_SERVER_NAME("hive.access.server", "HS2"),
+        AUTHZ_RESTRICT_DEFAULT_DB("hive.access.restrict.defaultDB", "false")
         ;
 
     private final String varName;

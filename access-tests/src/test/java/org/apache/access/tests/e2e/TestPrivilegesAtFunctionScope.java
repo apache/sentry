@@ -1,5 +1,5 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
+printf_test_3 * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
@@ -17,9 +17,7 @@
 
 package org.apache.access.tests.e2e;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -57,297 +55,88 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticHiveSer
   }
 
   /**
-   * Steps: 1. admin create database DB_1, create table tb_1 in it 2. admin
-   * doesn't grant any privilege to user_1 3. user_1 try to create function
-   * printf_test, expect to fail 4. admin grant user_1 select privilege on tb_1 5.
-   * user_1 try to create function printf_test, expect to fail 6. admin is able to
-   * create function printf_test since it requires A@Server 7. user_1 is able to
-   * show function and describe function printf_test 8. user_1 cannot drop
-   * function printf_test 9. admin remove user_1 select privilege on tb_1, show
-   * function and describe function should fail 11. admin is abel to dorp function
-   * printf_test since it requires All@Server
+   * admin should be able to create/drop temp functions
+   * user with db level access should be able to create/drop temp functions
+   * user with table level access should be able to create/drop temp functions
+   * user with no privilege should NOT be able to create/drop temp functions
    */
   @Test
   public void testFuncPrivileges1() throws Exception {
+    String dbName1 = "db_1";
+    String tableName1 = "tb_1";
     // edit policy file
     File policyFile = context.getPolicyFile();
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
     editor.addPolicy("admin = admin", "groups");
+    editor.addPolicy("group1 = db1_all,UDF_JAR", "groups");
+    editor.addPolicy("group2 = db1_tab1,UDF_JAR", "groups");
+    editor.addPolicy("group3 = db1_tab1", "groups");
     editor.addPolicy("admin = server=server1", "roles");
+    editor.addPolicy("db1_all = server=server1->db=" + dbName1, "roles");
+    editor.addPolicy("db1_tab1 = server=server1->db=" + dbName1 + "->table=" + tableName1, "roles");
+    editor.addPolicy("UDF_JAR = server=server1->uri=${user.home}/.m2", "roles");
     editor.addPolicy("admin1 = admin", "users");
     editor.addPolicy("user1 = group1", "users");
+    editor.addPolicy("user2 = group2", "users");
+    editor.addPolicy("user3 = group3", "users");
 
-    // verify by SQL
-    // 1
-    String dbName1 = "db_1";
-    String tableName1 = "tb_1";
     Connection connection = context.createConnection("admin1", "foo");
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
     statement.execute("CREATE DATABASE " + dbName1);
+    statement.execute("USE " + dbName1);
     statement.execute("DROP TABLE IF EXISTS " + dbName1 + "." + tableName1);
     statement.execute("create table " + dbName1 + "." + tableName1
         + " (under_col int comment 'the under column', value string)");
     statement.execute("LOAD DATA INPATH '" + dataFile.getPath() + "' INTO TABLE "
         + dbName1 + "." + tableName1);
-    statement.close();
-    connection.close();
+    statement.execute("DROP TEMPORARY FUNCTION IF EXISTS printf_test");
+    statement.execute("DROP TEMPORARY FUNCTION IF EXISTS printf_test_2");
+    context.close();
 
-    // 2,3
+    // user1 should be able create/drop temp functions
     connection = context.createConnection("user1", "foo");
+    statement = context.createStatement(connection);
+    statement.execute("USE " + dbName1);
+    statement.execute(
+        "CREATE TEMPORARY FUNCTION printf_test AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
+    statement.execute("DROP TEMPORARY FUNCTION printf_test");
+    context.close();
+
+    // user2 has select privilege on one of the tables in db2, should be able create/drop temp functions
+    connection = context.createConnection("user2", "foo");
+    statement = context.createStatement(connection);
+    statement.execute("USE " + dbName1);
+    statement.execute(
+        "CREATE TEMPORARY FUNCTION printf_test_2 AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
+    statement.execute("DROP TEMPORARY FUNCTION printf_test");
+    context.close();
+
+    // user3 shouldn't be able to create/drop temp functions since it doesn't have permission for jar
+    connection = context.createConnection("user3", "foo");
     statement = context.createStatement(connection);
     try {
       statement.execute("USE " + dbName1);
-      assertTrue("user_1 should be able to switch to database db_1", true);
+      statement.execute(
+      "CREATE TEMPORARY FUNCTION printf_test_bad AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
+      assertFalse("CREATE TEMPORARY FUNCTION should fail for user3", true);
     } catch (SQLException e) {
       context.verifyAuthzException(e);
     }
-    try {
-      statement
-          .execute("CREATE TEMPORARY FUNCTION printf_test AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
-      assertFalse(
-          "user_1 should not have privilge to create function printf_test", false);
-    } catch (SQLException e) {
-      assertEquals("42000", e.getSQLState());
-    }
-    statement.close();
-    connection.close();
+    context.close();
 
-    // 4
-    editor.addPolicy("group1 = select_tb1", "groups");
-    editor.addPolicy(
-        "select_tb1 = server=server1->db=db_1->table=tb_1->action=select",
-        "roles");
-
-    // 5
-    connection = context.createConnection("user1", "foo");
+    // user4 (not part of any group ) shouldn't be able to create/drop temp functions
+    connection = context.createConnection("user4", "foo");
     statement = context.createStatement(connection);
     try {
-      statement.execute("USE " + dbName1);
-      assertTrue("user_1 should be able to switch to database db_1", true);
+      statement.execute("USE default");
+      statement.execute(
+      "CREATE TEMPORARY FUNCTION printf_test_bad AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
+      assertFalse("CREATE TEMPORARY FUNCTION should fail for user4", true);
     } catch (SQLException e) {
       context.verifyAuthzException(e);
     }
-    try {
-      statement
-          .execute("CREATE TEMPORARY FUNCTION printf_test AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
-      assertFalse(
-          "user_1 should not have privilge to create function printf_test", false);
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
-    connection.close();
+    context.close();
 
-    // 6
-    connection = context.createConnection("admin1", "foo");
-    statement = context.createStatement(connection);
-    try {
-      statement.execute("USE " + dbName1);
-      assertTrue("user_1 should be able to switch to database db_1", true);
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
-    try {
-      statement
-          .execute("CREATE TEMPORARY FUNCTION printf_test AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
-      assertTrue("admin should have privilge to create function printf_test",
-          true);
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
-    statement.close();
-    connection.close();
-
-    // 7,8
-    connection = context.createConnection("user1", "foo");
-    statement = context.createStatement(connection);
-    try {
-      statement.execute("USE " + dbName1);
-      assertTrue("user_1 should be able to switch to database db_1", true);
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
-    try {
-      statement.execute("DESCRIBE FUNCTION printf_test");
-      assertTrue("user_1 should have privilge to describe function printf_test",
-          true);
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
-    try {
-      statement
-          .execute("SELECT printf_test(\"Hello World %d %s\", 100, \"days\") FROM "
-              + tableName1 + " LIMIT 1");
-      assertTrue("user_1 should have privilege to execute function printf_test",
-          true);
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
-    try {
-      statement.execute("DROP TEMPORARY FUNCTION IF EXISTS printf_test");
-      assertFalse(
-          "user_1 should not have privilege to drop function printf_test", false);
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
-    statement.close();
-    connection.close();
-
-    // 9
-    editor.removePolicy("group1 = select_tb1");
-    editor
-        .removePolicy("select_tb1 = server=server1->db=db_1->table=tb_1->action=select");
-    connection = context.createConnection("user1", "foo");
-    statement = context.createStatement(connection);
-    try {
-      statement.execute("USE " + dbName1);
-      assertTrue("user_1 should be able to switch to database db_1", true);
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
-    try {
-      statement.execute("DESCRIBE FUNCTION printf_test");
-      assertFalse(
-          "user_1 should not have privilge to describe function printf_test",
-          false);
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
-    try {
-      statement
-          .execute("SELECT printf_test(\"Hello World %d %s\", 100, \"days\") FROM "
-              + tableName1 + " limit 1");
-      assertFalse(
-          "user_1 should not have privilege to execute function printf_test",
-          false);
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
-    statement.close();
-    connection.close();
-
-    // 10
-    connection = context.createConnection("admin1", "foo");
-    statement = context.createStatement(connection);
-    try {
-      statement.execute("USE " + dbName1);
-      assertTrue("admin should be able to switch to database db_1", true);
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
-    try {
-      statement.execute("DROP TEMPORARY FUNCTION IF EXISTS printf_test");
-      assertTrue("admin should have privilge to drop function printf_test", true);
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
-    statement.close();
-    connection.close();
-  }
-
-  /**
-   * table insert privilege is not enough for user to do describe function and
-   * execute function Step 4, privilege is insert instead of select Step 7 and 8
-   * expected to fail instead of success
-   */
-  @Test
-  public void testFuncPrivileges2() throws Exception {
-    // edit policy file
-    File policyFile = context.getPolicyFile();
-    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("admin = admin", "groups");
-    editor.addPolicy("admin = server=server1", "roles");
-    editor.addPolicy("admin1 = admin", "users");
-    editor.addPolicy("user1 = group1", "users");
-
-    // verify by SQL
-    // 1
-    String dbName1 = "db_1";
-    String tableName1 = "tb_1";
-    Connection connection = context.createConnection("admin1", "foo");
-    Statement statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
-    statement.execute("CREATE DATABASE " + dbName1);
-    statement.execute("DROP TABLE IF EXISTS " + dbName1 + "." + tableName1);
-    statement.execute("create table " + dbName1 + "." + tableName1
-        + " (under_col int comment 'the under column', value string)");
-    statement.execute("LOAD DATA INPATH '" + dataFile.getPath() + "' INTO TABLE "
-        + dbName1 + "." + tableName1);
-    statement.close();
-    connection.close();
-
-    // 4
-    editor.addPolicy("group1 = insert_tb1", "groups");
-    editor.addPolicy("insert_tb1 = server=server1->db=db_1->table=tb_1->action=insert",
-        "roles");
-
-    // 5
-    connection = context.createConnection("user1", "foo");
-    statement = context.createStatement(connection);
-    try {
-      statement
-          .execute("CREATE TEMPORARY FUNCTION printf_test AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
-      assertFalse(
-          "user_1 should not have privilge to create function printf_test", false);
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
-    connection.close();
-
-    // 6
-    connection = context.createConnection("admin1", "foo");
-    statement = context.createStatement(connection);
-    try {
-      statement
-          .execute("CREATE TEMPORARY FUNCTION printf_test AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
-      assertTrue("admin should have privilge to create function printf_test",
-          true);
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
-    statement.close();
-    connection.close();
-
-    // 7,8
-    connection = context.createConnection("user1", "foo");
-    statement = context.createStatement(connection);
-    try {
-      statement.execute("DESCRIBE FUNCTION printf_test");
-      assertFalse(
-          "user1 shouldn't have privilege to describe function printf_test",
-          false);
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
-    try {
-      statement
-          .execute("SELECT printf_test(\"Hello World %d %s\", 100, \"days\") FROM "
-              + dbName1 + "." + tableName1 + " LIMIT 1");
-      assertFalse(
-          "user_1 should not have privilege to execute function printf_test",
-          false);
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
-    try {
-      statement.execute("DROP TEMPORARY FUNCTION IF EXISTS printf_test");
-      assertFalse("user_1 shouldn't have privilege to drop function", false);
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
-    statement.close();
-    connection.close();
-
-    // 10
-    connection = context.createConnection("admin1", "foo");
-    statement = context.createStatement(connection);
-    try {
-      statement.execute("DROP TEMPORARY FUNCTION IF EXISTS printf_test");
-      assertTrue("admin should have privilge to drop function printf_test", true);
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
-    statement.close();
-    connection.close();
   }
 }

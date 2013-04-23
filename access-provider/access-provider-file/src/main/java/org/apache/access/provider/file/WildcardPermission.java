@@ -29,6 +29,7 @@ import java.util.List;
 
 import org.apache.access.core.AccessConstants;
 import org.apache.access.core.Authorizable.AuthorizableType;
+import org.apache.commons.lang.text.StrSubstitutor;
 import org.apache.shiro.authz.Permission;
 
 import com.google.common.base.Preconditions;
@@ -38,18 +39,18 @@ import com.google.common.collect.Lists;
 
 // XXX this class is made ugly by the fact that Action is not a Authorizable.
 public class WildcardPermission implements Permission, Serializable {
-
   private static final long serialVersionUID = -6785051263922740818L;
+
   private final ImmutableList<KeyValue> parts;
 
   public WildcardPermission(String wildcardString) {
-    wildcardString = Strings.nullToEmpty(wildcardString).trim().toLowerCase();
+    wildcardString = Strings.nullToEmpty(wildcardString).trim();
     if (wildcardString.isEmpty()) {
       throw new IllegalArgumentException("Wildcard string cannot be null or empty.");
     }
     List<KeyValue>parts = Lists.newArrayList();
     for (String authorizable : AUTHORIZABLE_SPLITTER.split(wildcardString)) {
-      authorizable = authorizable.trim().toLowerCase();
+      authorizable = authorizable.trim();
       if (authorizable.isEmpty()) {
         throw new IllegalArgumentException("Portion of " + wildcardString + " is invalid");
       }
@@ -85,7 +86,7 @@ public class WildcardPermission implements Permission, Serializable {
       } else {
         KeyValue part = parts.get(index);
         // are the keys even equal
-        if(!part.getKey().equals(otherPart.getKey())) {
+        if(!part.getKey().equalsIgnoreCase(otherPart.getKey())) {
           return false;
         }
         // in order to imply, the values either have to be equal or our value has
@@ -114,12 +115,16 @@ public class WildcardPermission implements Permission, Serializable {
         "Please report, this method should not be called with two different keys");
     if(policyPart.getValue().equals(AccessConstants.ALL) || policyPart.equals(requestPart)) {
       return true;
+    } else if (AccessConstants.ALL.equalsIgnoreCase(requestPart.getValue())) {
+      /* permission request is to match with any object of given type */
+      return true;
     } else if(policyPart.getKey().equalsIgnoreCase(AuthorizableType.URI.name())) {
       /*
        * URI is a a special case. For URI's, /a implies /a/b.
        * Therefore the test is "/a/b".startsWith("/a");
        */
-      return requestPart.getValue().startsWith(policyPart.getValue());
+      String policyUri =new StrSubstitutor(System.getProperties()).replace(policyPart.getValue());
+      return requestPart.getValue().startsWith(policyUri);
     }
     return false;
   }
@@ -143,4 +148,5 @@ public class WildcardPermission implements Permission, Serializable {
   public int hashCode() {
     return parts.hashCode();
   }
+
 }

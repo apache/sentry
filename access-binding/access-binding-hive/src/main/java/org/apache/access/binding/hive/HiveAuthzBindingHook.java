@@ -16,7 +16,10 @@
  */
 package org.apache.access.binding.hive;
 
+import static org.apache.hadoop.hive.metastore.MetaStoreUtils.DEFAULT_DATABASE_NAME;
+
 import java.io.Serializable;
+import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -55,6 +58,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
   private final HiveAuthzConf authzConf;
   private Database currDB = Database.ALL;
   private Table currTab = null;
+  private AccessURI udfURI = null;
 
   public HiveAuthzBindingHook() throws Exception {
     authzConf = new HiveAuthzConf();
@@ -78,10 +82,34 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
     case HiveParser.TOK_CREATEDATABASE:
     case HiveParser.TOK_ALTERDATABASE_PROPERTIES:
     case HiveParser.TOK_DROPDATABASE:
+    case HiveParser.TOK_SWITCHDATABASE:
       currDB = new Database(BaseSemanticAnalyzer.unescapeIdentifier(ast.getChild(0).getText()));
       break;
     case HiveParser.TOK_DESCDATABASE:
       currDB = new Database(BaseSemanticAnalyzer.unescapeIdentifier(ast.getChild(0).getText()));
+      break;
+    case HiveParser.TOK_CREATEFUNCTION:
+      String udfClassName = BaseSemanticAnalyzer.unescapeSQLString(ast.getChild(1).getText());
+      try {
+        CodeSource udfSrc = Class.forName(udfClassName).getProtectionDomain().getCodeSource();
+        if (udfSrc == null) {
+          throw new SemanticException("Could not resolve the jar for UDF class " + udfClassName);
+        }
+        String udfJar = udfSrc.getLocation().getPath();
+        if (udfJar == null || udfJar.isEmpty()) {
+          throw new SemanticException("Could not find the jar for UDF class " + udfClassName +
+              "to validate privileges");
+        }
+        udfURI = new AccessURI(udfJar);
+      } catch (ClassNotFoundException e) {
+        throw new SemanticException("Error retrieving current db", e);
+      }
+      // create/drop function is allowed with any database
+      currDB = Database.ALL;
+      break;
+    case HiveParser.TOK_DROPFUNCTION:
+      // create/drop function is allowed with any database
+      currDB = Database.ALL;
       break;
     case HiveParser.TOK_DESCTABLE:
       // describe doesn't support db.table format. so just extract the table name here.
@@ -178,6 +206,37 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
           inputHierarchy.add(externalAuthorizableHierarchy);
         }
         break;
+      case CONNECT:
+        /* The 'CONNECT' is an implicit privilege scope currently used for
+         *  - CREATE TEMP FUNCTION
+         *  - DROP TEMP FUNCTION
+         *  - USE <db>
+         *  It's allowed when the user has any privilege on the current database. For application
+         *  backward compatibility, we allow (optional) implicit connect permission on 'default' db.
+         */
+        List<Authorizable> connectHierarchy = new ArrayList<Authorizable>();
+        connectHierarchy.add(hiveAuthzBinding.getAuthServer());
+        // by default allow connect access to default db
+        if (DEFAULT_DATABASE_NAME.equalsIgnoreCase(currDB.getName()) &&
+            "false".equalsIgnoreCase(authzConf.
+                get(HiveAuthzConf.AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), "false"))) {
+          currDB = Database.ALL;
+        }
+        connectHierarchy.add(currDB);
+        connectHierarchy.add(Table.ALL);
+
+        inputHierarchy.add(connectHierarchy);
+        // check if this is a create temp function and we need to validate URI
+        if (udfURI != null) {
+          List<Authorizable> udfUriHierarchy = new ArrayList<Authorizable>();
+          udfUriHierarchy.add(hiveAuthzBinding.getAuthServer());
+          udfUriHierarchy.add(udfURI);
+          inputHierarchy.add(udfUriHierarchy);
+        }
+
+        outputHierarchy.add(connectHierarchy);
+        break;
+
       default:
         throw new AuthorizationException("Unknown operation scope type " +
             stmtAuthObject.getOperationScope().toString());

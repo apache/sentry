@@ -17,6 +17,7 @@
 
 package org.apache.access.tests.e2e;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -25,9 +26,12 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.HashMap;
+import java.util.Map;
 
 import junit.framework.Assert;
 
+import org.apache.access.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,14 +41,14 @@ import com.google.common.io.Resources;
 /* Tests privileges at table scope within a single database.
  */
 
-public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticHiveServer {
+public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
 
   private Context context;
+  Map <String, String >testProperties;
   private static final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
 
   @Before
   public void setup() throws Exception {
-    context = createContext();
   }
 
   @After
@@ -59,6 +63,9 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticHiveSer
    */
   @Test
   public void testAllPrivilege() throws Exception {
+    testProperties = new HashMap<String, String>();
+    context = createContext(testProperties);
+
     File policyFile = context.getPolicyFile();
     File dataDir = context.getDataDir();
     //copy data file to test dir
@@ -177,6 +184,9 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticHiveSer
    */
   @Test
   public void testAllPrivilegeOnObjectOwnedByAdmin() throws Exception {
+    testProperties = new HashMap<String, String>();
+    context = createContext(testProperties);
+
     File policyFile = context.getPolicyFile();
     File dataDir = context.getDataDir();
     //copy data file to test dir
@@ -297,6 +307,9 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticHiveSer
    */
   @Test
   public void testPrivilegesForMetadataOperations() throws Exception {
+    testProperties = new HashMap<String, String>();
+    context = createContext(testProperties);
+
     File policyFile = context.getPolicyFile();
     File dataDir = context.getDataDir();
     //copy data file to test dir
@@ -362,4 +375,198 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticHiveSer
     connection.close();
     context.close();
   }
+
+  /**
+   * Test privileges for 'use <db>'
+   * Admin should be able to run use <db> with server level access
+   * User with db level access should be able to run use <db>
+   * User with table level access should be able to run use <db>
+   * User with no access to that db objects, should NOT be able run use <db>
+   * @throws Exception
+   */
+  @Test
+  public void testUseDbPrivilege() throws Exception {
+    testProperties = new HashMap<String, String>();
+    context = createContext(testProperties);
+
+    File policyFile = context.getPolicyFile();
+
+    // groups : role -> group
+    context.appendToPolicyFileWithNewLine("[groups]");
+    context.appendToPolicyFileWithNewLine("admin = all_server");
+    context.appendToPolicyFileWithNewLine("user_group1 = all_db1");
+    context.appendToPolicyFileWithNewLine("user_group2 = select_db2");
+    context.appendToPolicyFileWithNewLine("user_group3 = all_db3");
+    // roles: privileges -> role
+    context.appendToPolicyFileWithNewLine("[roles]");
+    context.appendToPolicyFileWithNewLine("all_server = server=server1");
+    context.appendToPolicyFileWithNewLine("all_db1 = server=server1->db=DB_1");
+    context.appendToPolicyFileWithNewLine("select_db2 = server=server1->db=DB_2->table=tab_2->action=select");
+    context.appendToPolicyFileWithNewLine("all_db3 = server=server1->db=DB_3");
+
+    // users: users -> groups
+    context.appendToPolicyFileWithNewLine("[users]");
+    context.appendToPolicyFileWithNewLine("hive = admin");
+    context.appendToPolicyFileWithNewLine("user_1 = user_group1");
+    context.appendToPolicyFileWithNewLine("user_2 = user_group2");
+    context.appendToPolicyFileWithNewLine("user_3 = user_group3");
+
+    // setup db objects needed by the test
+    Connection connection = context.createConnection("hive", "hive");
+    Statement statement = context.createStatement(connection);
+    statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
+    statement.execute("CREATE DATABASE DB_1");
+    statement.execute("use DB_1");
+    statement.execute("CREATE TABLE TAB_1(A STRING)");
+    statement.execute("DROP DATABASE IF EXISTS DB_2 CASCADE");
+    statement.execute("CREATE DATABASE DB_2");
+    statement.execute("use DB_1");
+    statement.execute("CREATE TABLE TAB_2(A STRING)");
+    context.close();
+
+    // user_1 should be able to connect db_1
+    connection = context.createConnection("user_1", "hive");
+    statement = context.createStatement(connection);
+    statement.execute("use DB_1");
+    context.close();
+
+    // user_2 should not be able to connect db_1
+    connection = context.createConnection("user_2", "hive");
+    statement = context.createStatement(connection);
+    try {
+      statement.execute("use DB_1");
+      assertFalse("User_2 shouldn't be able switch to db_1", true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    statement.execute("use DB_2");
+    context.close();
+
+    // user_3 who is not listed in policy file should not be able to connect db_2
+    connection = context.createConnection("user_3", "hive");
+    statement = context.createStatement(connection);
+    try {
+      statement.execute("use DB_2");
+      assertFalse("User_3 shouldn't be able switch to db_2", true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    context.close();
+  }
+
+  /**
+   * Test access to default DB with out of box authz config
+   * All users should be able to switch to default, including the users that don't have any
+   * privilege on default db objects via policy file
+   * @throws Exception
+   */
+  @Test
+  public void testDefaultDbPrivilege() throws Exception {
+    testProperties = new HashMap<String, String>();
+    context = createContext(testProperties);
+
+    File policyFile = context.getPolicyFile();
+
+    // groups : role -> group
+    context.appendToPolicyFileWithNewLine("[groups]");
+    context.appendToPolicyFileWithNewLine("admin = all_server");
+    context.appendToPolicyFileWithNewLine("user_group1 = all_db1");
+    context.appendToPolicyFileWithNewLine("user_group2 = select_db2");
+    context.appendToPolicyFileWithNewLine("user_group3 = all_default");
+    // roles: privileges -> role
+    context.appendToPolicyFileWithNewLine("[roles]");
+    context.appendToPolicyFileWithNewLine("all_server = server=server1");
+    context.appendToPolicyFileWithNewLine("all_db1 = server=server1->db=DB_1");
+    context.appendToPolicyFileWithNewLine("select_db2 = server=server1->db=DB_2->table=tab_2->action=select");
+    context.appendToPolicyFileWithNewLine("all_default = server=server1->db=default");
+    // users: users -> groups
+    context.appendToPolicyFileWithNewLine("[users]");
+    context.appendToPolicyFileWithNewLine("hive = admin");
+    context.appendToPolicyFileWithNewLine("user_1 = user_group1");
+    context.appendToPolicyFileWithNewLine("user_2 = user_group2");
+    context.appendToPolicyFileWithNewLine("user_3 = user_group3");
+
+    Connection connection = context.createConnection("hive", "hive");
+    Statement statement = context.createStatement(connection);
+    statement.execute("use default");
+    context.close();
+
+    connection = context.createConnection("user_1", "hive");
+    statement = context.createStatement(connection);
+    statement.execute("use default");
+    context.close();
+
+    connection = context.createConnection("user_2", "hive");
+    statement = context.createStatement(connection);
+    statement.execute("use default");
+    context.close();
+
+    connection = context.createConnection("user_3", "hive");
+    statement = context.createStatement(connection);
+    statement.execute("use default");
+    context.close();
+  }
+
+  /**
+   * Test access to default DB with explicit privilege requirement
+   * Admin should be able to run use default with server level access
+   * User with db level access should be able to run use default
+   * User with table level access should be able to run use default
+   * User with no access to default db objects, should NOT be able run use default
+   * @throws Exception
+   */
+  @Test
+  public void testDefaultDbRestrictivePrivilege() throws Exception {
+    testProperties = new HashMap<String, String>();
+
+    testProperties.put(AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), "true");
+    context = createContext(testProperties);
+    File policyFile = context.getPolicyFile();
+
+    // groups : role -> group
+    context.appendToPolicyFileWithNewLine("[groups]");
+    context.appendToPolicyFileWithNewLine("admin = all_server");
+    context.appendToPolicyFileWithNewLine("user_group1 = all_default");
+    context.appendToPolicyFileWithNewLine("user_group2 = select_default");
+    context.appendToPolicyFileWithNewLine("user_group3 = all_db1");
+    // roles: privileges -> role
+    context.appendToPolicyFileWithNewLine("[roles]");
+    context.appendToPolicyFileWithNewLine("all_server = server=server1");
+    context.appendToPolicyFileWithNewLine("all_default = server=server1->db=default");
+    context.appendToPolicyFileWithNewLine("select_default = server=server1->db=default->table=tab_2->action=select");
+    context.appendToPolicyFileWithNewLine("all_db1 = server=server1->db=DB_1");
+    // users: users -> groups
+    context.appendToPolicyFileWithNewLine("[users]");
+    context.appendToPolicyFileWithNewLine("hive = admin");
+    context.appendToPolicyFileWithNewLine("user_1 = user_group1");
+    context.appendToPolicyFileWithNewLine("user_2 = user_group2");
+    context.appendToPolicyFileWithNewLine("user_3 = user_group3");
+
+    Connection connection = context.createConnection("hive", "hive");
+    Statement statement = context.createStatement(connection);
+    statement.execute("use default");
+    context.close();
+
+    connection = context.createConnection("user_1", "hive");
+    statement = context.createStatement(connection);
+    statement.execute("use default");
+    context.close();
+
+    connection = context.createConnection("user_2", "hive");
+    statement = context.createStatement(connection);
+    statement.execute("use default");
+    context.close();
+
+    connection = context.createConnection("user_3", "hive");
+    statement = context.createStatement(connection);
+    try {
+      // user_3 doesn't have any implicit permission for default
+      statement.execute("use default");
+      assertFalse("User_3 shouldn't be able switch to default", true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    context.close();
+  }
+
 }
