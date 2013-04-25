@@ -5,6 +5,7 @@ target/
 .settings
 .metadata
 **/derby.log
+**/TempStatsStore/
 # Package Files #
 *.jar
 *.war
