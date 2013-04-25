@@ -35,7 +35,7 @@
 
 <property>
   <name>hadoop.bin.path</name>
-  <value>hadoop.home</value>
+  <value>./target/hadoop/bin/hadoop</value>
 </property>
 
 <property>
