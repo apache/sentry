@@ -16,29 +16,26 @@
  */
 package org.apache.access.tests.e2e;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashMap;
 
 import junit.framework.Assert;
 
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
 // uses mini DFS cluster
-public class TestExportImportPrivileges {
-  private EndToEndTestContext context;
+public class TestExportImportPrivileges extends AbstractTestWithStaticDFS {
+  private Context context;
   private static final String dataFile = "/kv1.dat";
   private String dataFilePath = this.getClass().getResource(dataFile).getFile();
 
   @Before
   public void setup() throws Exception {
-    context = new EndToEndTestContext(new HashMap<String, String>(), true);
+    context = createContext();
   }
 
   @After
@@ -48,12 +45,6 @@ public class TestExportImportPrivileges {
     }
   }
 
-  @AfterClass
-  public static void shutDown() throws IOException {
-    EndToEndTestContext.shutdown();
-  }
-
-
   // test insert overwrite directory
   @Test
   public void testInsertToDirPrivileges() throws Exception {
@@ -61,7 +52,7 @@ public class TestExportImportPrivileges {
     String tabName = "tab1";
     Connection userConn = null;
     Statement userStmt = null;
-    String dumpDir = EndToEndTestContext.getDFSUri().toString() + "/hive_data_dump";
+    String dumpDir = context.getDFSUri().toString() + "/hive_data_dump";
 
     String testPolicies[] = {
         "[groups]",
@@ -126,7 +117,7 @@ public class TestExportImportPrivileges {
     String newTabName = "tab2";
     Connection userConn = null;
     Statement userStmt = null;
-    String exportDir = EndToEndTestContext.getDFSUri().toString() + "/hive_export1";
+    String exportDir = context.getDFSUri().toString() + "/hive_export1";
 
     String testPolicies[] = {
         "[groups]",

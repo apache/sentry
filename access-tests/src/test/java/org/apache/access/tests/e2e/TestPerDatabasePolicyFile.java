@@ -25,10 +25,10 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+
 import junit.framework.Assert;
 
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -36,9 +36,9 @@ import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 
-public class TestPerDatabasePolicyFile {
+public class TestPerDatabasePolicyFile extends AbstractTestWithStaticHiveServer {
 
-  private EndToEndTestContext testContext;
+  private Context testContext;
   private File globalPolicyFile;
   private File dataDir;
   private File dataFile;
@@ -46,7 +46,7 @@ public class TestPerDatabasePolicyFile {
 
   @Before
   public void setup() throws Exception {
-    testContext = new EndToEndTestContext();
+    testContext = createContext();
     globalPolicyFile = testContext.getPolicyFile();
     dataDir = testContext.getDataDir();
     assertTrue("Could not delete " + globalPolicyFile, testContext.deletePolicyFile());
@@ -68,11 +68,6 @@ public class TestPerDatabasePolicyFile {
         testContext.close();
       }
     }
-  }
-
-  @AfterClass
-  public static void shutDown() throws IOException {
-    EndToEndTestContext.shutdown();
   }
 
   private void append(String from, File to) throws IOException {

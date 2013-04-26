@@ -23,28 +23,25 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashMap;
 
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.io.Resources;
 
-public class TestPrivilegesAtFunctionScope {
-  private EndToEndTestContext context;
+public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticHiveServer {
+  private Context context;
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private File dataDir;
   private File dataFile;
 
   @Before
   public void setup() throws Exception {
-    context = new EndToEndTestContext(new HashMap<String, String>());
+    context = createContext();
     dataDir = context.getDataDir();
     dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
@@ -57,11 +54,6 @@ public class TestPrivilegesAtFunctionScope {
     if (context != null) {
       context.close();
     }
-  }
-
-  @AfterClass
-  public static void shutDown() throws IOException {
-    EndToEndTestContext.shutdown();
   }
 
   /**
@@ -142,7 +134,7 @@ public class TestPrivilegesAtFunctionScope {
       assertFalse(
           "user_1 should not have privilge to create function printf_test", false);
     } catch (SQLException e) {
-      assertEquals("42000", e.getSQLState());
+      context.verifyAuthzException(e);
     }
     connection.close();
 
@@ -196,7 +188,7 @@ public class TestPrivilegesAtFunctionScope {
       assertFalse(
           "user_1 should not have privilege to drop function printf_test", false);
     } catch (SQLException e) {
-      assertEquals("42000", e.getSQLState());
+      context.verifyAuthzException(e);
     }
     statement.close();
     connection.close();
@@ -219,7 +211,7 @@ public class TestPrivilegesAtFunctionScope {
           "user_1 should not have privilge to describe function printf_test",
           false);
     } catch (SQLException e) {
-      assertEquals("42000", e.getSQLState());
+      context.verifyAuthzException(e);
     }
     try {
       statement
@@ -229,7 +221,7 @@ public class TestPrivilegesAtFunctionScope {
           "user_1 should not have privilege to execute function printf_test",
           false);
     } catch (SQLException e) {
-      assertEquals("42000", e.getSQLState());
+      context.verifyAuthzException(e);
     }
     statement.close();
     connection.close();
@@ -264,7 +256,7 @@ public class TestPrivilegesAtFunctionScope {
     File policyFile = context.getPolicyFile();
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
     editor.addPolicy("admin = admin", "groups");
-    editor.addPolicy("admin = server=server1:*", "roles");
+    editor.addPolicy("admin = server=server1", "roles");
     editor.addPolicy("admin1 = admin", "users");
     editor.addPolicy("user1 = group1", "users");
 
@@ -286,7 +278,7 @@ public class TestPrivilegesAtFunctionScope {
 
     // 4
     editor.addPolicy("group1 = insert_tb1", "groups");
-    editor.addPolicy("insert_tb1 = server=server1:db=db_1:tb=tb_1:insert",
+    editor.addPolicy("insert_tb1 = server=server1->db=db_1->table=tb_1->action=insert",
         "roles");
 
     // 5
@@ -298,7 +290,7 @@ public class TestPrivilegesAtFunctionScope {
       assertFalse(
           "user_1 should not have privilge to create function printf_test", false);
     } catch (SQLException e) {
-      assertEquals("42000", e.getSQLState());
+      context.verifyAuthzException(e);
     }
     connection.close();
 
@@ -325,23 +317,23 @@ public class TestPrivilegesAtFunctionScope {
           "user1 shouldn't have privilege to describe function printf_test",
           false);
     } catch (SQLException e) {
-      assertEquals("42000", e.getSQLState());
+      context.verifyAuthzException(e);
     }
     try {
       statement
           .execute("SELECT printf_test(\"Hello World %d %s\", 100, \"days\") FROM "
-              + tableName1 + " LIMIT 1");
+              + dbName1 + "." + tableName1 + " LIMIT 1");
       assertFalse(
           "user_1 should not have privilege to execute function printf_test",
           false);
     } catch (SQLException e) {
-      assertEquals("42000", e.getSQLState());
+      context.verifyAuthzException(e);
     }
     try {
       statement.execute("DROP TEMPORARY FUNCTION IF EXISTS printf_test");
       assertFalse("user_1 shouldn't have privilege to drop function", false);
     } catch (SQLException e) {
-      assertEquals("42000", e.getSQLState());
+      context.verifyAuthzException(e);
     }
     statement.close();
     connection.close();

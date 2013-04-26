@@ -16,28 +16,26 @@
  */
 package org.apache.access.tests.e2e;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashMap;
 
 import junit.framework.Assert;
 
+import org.apache.access.tests.e2e.hiveserver.HiveServerFactory;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
-public class TestUriPermissions {
-  private EndToEndTestContext context;
+public class TestUriPermissions extends AbstractTestWithStaticHiveServer {
+  private Context context;
   private static final String dataFile = "/kv1.dat";
   private String dataFilePath = this.getClass().getResource(dataFile).getFile();
 
   @Before
   public void setup() throws Exception {
-    context = new EndToEndTestContext(new HashMap<String, String>());
+    context = createContext();
   }
 
   @After
@@ -45,11 +43,6 @@ public class TestUriPermissions {
     if (context != null) {
       context.close();
     }
-  }
-
-  @AfterClass
-  public static void shutDown() throws IOException {
-    EndToEndTestContext.shutdown();
   }
 
   // test load data into table
@@ -119,7 +112,7 @@ public class TestUriPermissions {
     String dbName = "db1";
     String tabName = "tab1";
     String newPartitionDir = "foo";
-    String tabDir = System.getProperty(EndToEndTestContext.WAREHOUSE_DIR) +
+    String tabDir = hiveServer.getProperty(HiveServerFactory.WAREHOUSE_DIR) +
       "/" + tabName + "/" + newPartitionDir;
     Connection userConn = null;
     Statement userStmt = null;
@@ -177,7 +170,7 @@ public class TestUriPermissions {
   public void testAlterTableLocationPrivileges() throws Exception {
     String dbName = "db1";
     String tabName = "tab1";
-    String tabDir = "file:" + System.getProperty(EndToEndTestContext.WAREHOUSE_DIR) +
+    String tabDir = "file:" +  hiveServer.getProperty(HiveServerFactory.WAREHOUSE_DIR) +
       "/" + tabName;
     Connection userConn = null;
     Statement userStmt = null;

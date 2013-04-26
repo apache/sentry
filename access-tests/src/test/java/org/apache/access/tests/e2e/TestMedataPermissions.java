@@ -16,25 +16,22 @@
  */
 package org.apache.access.tests.e2e;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashMap;
 
 import junit.framework.Assert;
 
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
 
-public class TestMedataPermissions {
-  private EndToEndTestContext context;
+public class TestMedataPermissions extends AbstractTestWithStaticHiveServer {
+  private Context context;
   @Before
   public void setup() throws Exception {
-    context = new EndToEndTestContext(new HashMap<String, String>());
+    context = createContext();
     // edit policy file
     String testPolicies[] = {
         "[groups]",
@@ -71,11 +68,6 @@ public class TestMedataPermissions {
     if (context != null) {
       context.close();
     }
-  }
-
-  @AfterClass
-  public static void shutDown() throws IOException {
-    EndToEndTestContext.shutdown();
   }
 
   /**

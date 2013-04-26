@@ -21,19 +21,14 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashMap;
-import java.util.Map;
 
 import junit.framework.Assert;
 
 import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.base.Charsets;
@@ -44,17 +39,11 @@ import com.google.common.io.Resources;
 /**
  * Test privileges per database policy files
  */
-public class TestPerDBConfiguration {
+public class TestPerDBConfiguration extends AbstractTestWithStaticHiveServer {
   private static final String MULTI_TYPE_DATA_FILE_NAME = "emp.dat";
   private static final String DB2_POLICY_FILE = "db2-policy-file.ini";
 
-  private EndToEndTestContext testContext;
-  private Map<String, String> testProperties;
-
-  @Before
-  public void setup() throws Exception {
-    testProperties = new HashMap<String, String>();
-  }
+  private Context testContext;
 
   @After
   public void teardown() throws Exception {
@@ -62,15 +51,10 @@ public class TestPerDBConfiguration {
       testContext.close();
     }
   }
-  
-  @AfterClass
-  public static void shutDown() throws IOException {
-    EndToEndTestContext.shutdown();
-  }
 
   @Test
   public void testPerDB() throws Exception {
-    testContext = new EndToEndTestContext(testProperties);
+    testContext = createContext();
     File policyFile = testContext.getPolicyFile();
     File db2PolicyFile = new File(policyFile.getParent(), DB2_POLICY_FILE);
     File dataDir = testContext.getDataDir();
@@ -175,7 +159,7 @@ public class TestPerDBConfiguration {
     }
     assertTrue("Incorrect row count", countRows == 1);
     assertTrue("Incorrect result", count == 12);
-    
+
     // user2 cannot query tbl1
     try {
       statement.executeQuery("SELECT COUNT(*) FROM db1.tbl1");

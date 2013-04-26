@@ -21,32 +21,25 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 import java.io.File;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Map;
 
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.common.collect.Maps;
-
-public class TestUserManagement {
-  private EndToEndTestContext context;
-  private Map<String, String> properties;
+public class TestUserManagement extends AbstractTestWithStaticHiveServer {
+  private Context context;
   private final String dataFileDir = "src/test/resources";
   private String tableName = "Test_Tab007";
   private String tableComment = "Test table";
 
   @Before
   public void setUp() throws Exception {
-    properties = Maps.newHashMap();
-    context = new EndToEndTestContext(properties);
+    context = createContext();
   }
 
   @After
@@ -54,11 +47,6 @@ public class TestUserManagement {
     if (context != null) {
       context.close();
     }
-  }
-
-  @AfterClass
-  public static void shutDown() throws IOException {
-    EndToEndTestContext.shutdown();
   }
 
   @Test

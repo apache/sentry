@@ -22,22 +22,19 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashMap;
 
 import org.apache.access.provider.file.LocalGroupResourceAuthorizationProvider;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.io.Resources;
 
-public class TestSandboxOps {
-  private EndToEndTestContext context;
+public class TestSandboxOps  extends AbstractTestWithStaticHiveServer {
+  private Context context;
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private File dataDir;
   private File dataFile;
@@ -46,7 +43,7 @@ public class TestSandboxOps {
 
   @Before
   public void setup() throws Exception {
-    context = new EndToEndTestContext(new HashMap<String, String>());
+    context = createContext();
     dataDir = context.getDataDir();
     dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
@@ -59,11 +56,6 @@ public class TestSandboxOps {
     if (context != null) {
       context.close();
     }
-  }
-
-  @AfterClass
-  public static void shutDown() throws IOException {
-    EndToEndTestContext.shutdown();
   }
 
   /**

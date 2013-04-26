@@ -23,16 +23,12 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashMap;
 
 import org.apache.access.provider.file.LocalGroupResourceAuthorizationProvider;
-import org.apache.hadoop.fs.Path;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -40,8 +36,8 @@ import com.google.common.io.Resources;
 
 /* Tests privileges at table scope with cross database access */
 
-public class TestCrossDbOps {
-  private EndToEndTestContext context;
+public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
+  private Context context;
   private final String dataFileDir = "src/test/resources";
   // private Path dataFilePath = new Path(dataFileDir, "kv1.dat");
   private String EXTERNAL_HDFS_DIR = "hdfs://namenode:9000/tmp/externalDir";
@@ -53,7 +49,7 @@ public class TestCrossDbOps {
 
   @Before
   public void setup() throws Exception {
-    context = new EndToEndTestContext(new HashMap<String, String>());
+    context = createContext();
     File dataDir = context.getDataDir();
     //copy data file to test dir
     dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
@@ -68,11 +64,6 @@ public class TestCrossDbOps {
     if (context != null) {
       context.close();
     }
-  }
-
-  @AfterClass
-  public static void shutDown() throws IOException {
-    EndToEndTestContext.shutdown();
   }
 
   /**
@@ -143,13 +134,13 @@ public class TestCrossDbOps {
   @Test
   public void testAdminDbPrivileges() throws Exception {
     // edit policy file
-    String testPolicies[] = { 
-        "[groups]", 
+    String testPolicies[] = {
+        "[groups]",
         "admin_group = admin_role",
-        "[roles]", 
-        "admin_role = server=server1->", 
+        "[roles]",
+        "admin_role = server=server1->",
         "[users]",
-        "admin = admin_group" 
+        "admin = admin_group"
     };
     context.makeNewPolicy(testPolicies);
 

@@ -21,28 +21,23 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.Statement;
-import java.util.HashMap;
 
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.io.Resources;
 
-public class TestEndToEnd {
-  private EndToEndTestContext context;
+public class TestEndToEnd extends AbstractTestWithStaticHiveServer {
+  private Context context;
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
-  private File dataDir;
   private File dataFile;
 
   @Before
   public void setup() throws Exception {
-    context = new EndToEndTestContext(new HashMap<String, String>());
-    dataDir = context.getDataDir();
+    context = createContext();
     dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
@@ -54,11 +49,6 @@ public class TestEndToEnd {
     if (context != null) {
       context.close();
     }
-  }
-
-  @AfterClass
-  public static void shutDown() throws IOException {
-    EndToEndTestContext.shutdown();
   }
 
   /**

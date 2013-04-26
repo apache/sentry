@@ -22,18 +22,14 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashMap;
-import java.util.Map;
 
 import junit.framework.Assert;
 
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -42,28 +38,22 @@ import com.google.common.io.Resources;
 /* Tests privileges at table scope within a single database.
  */
 
-public class TestPrivilegesAtTableScope {
+public class TestPrivilegesAtTableScope extends AbstractTestWithStaticHiveServer {
 
-  private EndToEndTestContext testContext;
-  private Map<String, String> testProperties;
+  private Context context;
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private final String MULTI_TYPE_DATA_FILE_NAME = "emp.dat";
 
   @Before
   public void setup() throws Exception {
-    testProperties = new HashMap<String, String>();
+    context = createContext();
   }
 
   @After
   public void teardown() throws Exception {
-    if (testContext != null) {
-      testContext.close();
+    if (context != null) {
+      context.close();
     }
-  }
-
-  @AfterClass
-  public static void shutDown() throws IOException {
-    EndToEndTestContext.shutdown();
   }
 
   /* Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, loads data into TAB_1, TAB_2
@@ -71,33 +61,32 @@ public class TestPrivilegesAtTableScope {
    */
   @Test
   public void testInsertAndSelect() throws Exception {
-    testContext = new EndToEndTestContext(testProperties);
-    File policyFile = testContext.getPolicyFile();
-    File dataDir = testContext.getDataDir();
+    File policyFile = context.getPolicyFile();
+    File dataDir = context.getDataDir();
     //copy data file to test dir
     File dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
     //delete existing policy file; create new policy file
-    assertTrue("Could not delete " + policyFile, testContext.deletePolicyFile());
+    assertTrue("Could not delete " + policyFile, context.deletePolicyFile());
     // groups : role -> group
-    testContext.appendToPolicyFileWithNewLine("[groups]");
-    testContext.appendToPolicyFileWithNewLine("admin = all_server");
-    testContext.appendToPolicyFileWithNewLine("user_group = select_tab1, insert_tab1, select_tab2");
+    context.appendToPolicyFileWithNewLine("[groups]");
+    context.appendToPolicyFileWithNewLine("admin = all_server");
+    context.appendToPolicyFileWithNewLine("user_group = select_tab1, insert_tab1, select_tab2");
     // roles: privileges -> role
-    testContext.appendToPolicyFileWithNewLine("[roles]");
-    testContext.appendToPolicyFileWithNewLine("all_server = server=server1");
-    testContext.appendToPolicyFileWithNewLine("select_tab1 = server=server1->db=DB_1->table=TAB_1->action=select");
-    testContext.appendToPolicyFileWithNewLine("insert_tab1 = server=server1->db=DB_1->table=TAB_1->action=insert");
-    testContext.appendToPolicyFileWithNewLine("select_tab2 = server=server1->db=DB_1->table=TAB_2->action=select");
+    context.appendToPolicyFileWithNewLine("[roles]");
+    context.appendToPolicyFileWithNewLine("all_server = server=server1");
+    context.appendToPolicyFileWithNewLine("select_tab1 = server=server1->db=DB_1->table=TAB_1->action=select");
+    context.appendToPolicyFileWithNewLine("insert_tab1 = server=server1->db=DB_1->table=TAB_1->action=insert");
+    context.appendToPolicyFileWithNewLine("select_tab2 = server=server1->db=DB_1->table=TAB_2->action=select");
     // users: users -> groups
-    testContext.appendToPolicyFileWithNewLine("[users]");
-    testContext.appendToPolicyFileWithNewLine("hive = admin");
-    testContext.appendToPolicyFileWithNewLine("user_1 = user_group");
+    context.appendToPolicyFileWithNewLine("[users]");
+    context.appendToPolicyFileWithNewLine("hive = admin");
+    context.appendToPolicyFileWithNewLine("user_1 = user_group");
     // setup db objects needed by the test
-    Connection connection = testContext.createConnection("hive", "hive");
-    Statement statement = testContext.createStatement(connection);
+    Connection connection = context.createConnection("hive", "hive");
+    Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("CREATE DATABASE DB_1");
     statement.execute("USE DB_1");
@@ -109,8 +98,8 @@ public class TestPrivilegesAtTableScope {
     connection.close();
 
     // test execution
-    connection = testContext.createConnection("user_1", "password");
-    statement = testContext.createStatement(connection);
+    connection = context.createConnection("user_1", "password");
+    statement = context.createStatement(connection);
     statement.execute("USE DB_1");
     // test user can insert
     statement.execute("INSERT INTO TABLE TAB_1 SELECT A FROM TAB_2");
@@ -138,16 +127,16 @@ public class TestPrivilegesAtTableScope {
     connection.close();
 
     //connect as admin and drop tab_1
-    connection = testContext.createConnection("hive", "hive");
-    statement = testContext.createStatement(connection);
+    connection = context.createConnection("hive", "hive");
+    statement = context.createStatement(connection);
     statement.execute("USE DB_1");
     statement.execute("DROP TABLE TAB_1");
     statement.close();
     connection.close();
 
     //negative test: connect as user_1 and try to recreate tab_1
-    connection = testContext.createConnection("user_1", "password");
-    statement = testContext.createStatement(connection);
+    connection = context.createConnection("user_1", "password");
+    statement = context.createStatement(connection);
     statement.execute("USE DB_1");
     try {
       statement.execute("CREATE TABLE TAB_1(A STRING)");
@@ -160,8 +149,8 @@ public class TestPrivilegesAtTableScope {
     connection.close();
 
     //test cleanup
-    connection = testContext.createConnection("hive", "hive");
-    statement = testContext.createStatement(connection);
+    connection = context.createConnection("hive", "hive");
+    statement = context.createStatement(connection);
     statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.close();
     connection.close();
@@ -173,32 +162,31 @@ public class TestPrivilegesAtTableScope {
    */
   @Test
   public void testInsert() throws Exception {
-    testContext = new EndToEndTestContext(testProperties);
-    File policyFile = testContext.getPolicyFile();
-    File dataDir = testContext.getDataDir();
+    File policyFile = context.getPolicyFile();
+    File dataDir = context.getDataDir();
     //copy data file to test dir
     File dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
     //delete existing policy file; create new policy file
-    assertTrue("Could not delete " + policyFile, testContext.deletePolicyFile());
+    assertTrue("Could not delete " + policyFile, context.deletePolicyFile());
     // groups : role -> group
-    testContext.appendToPolicyFileWithNewLine("[groups]");
-    testContext.appendToPolicyFileWithNewLine("admin = all_server");
-    testContext.appendToPolicyFileWithNewLine("user_group = insert_tab1, select_tab2");
+    context.appendToPolicyFileWithNewLine("[groups]");
+    context.appendToPolicyFileWithNewLine("admin = all_server");
+    context.appendToPolicyFileWithNewLine("user_group = insert_tab1, select_tab2");
     // roles: privileges -> role
-    testContext.appendToPolicyFileWithNewLine("[roles]");
-    testContext.appendToPolicyFileWithNewLine("all_server = server=server1");
-    testContext.appendToPolicyFileWithNewLine("insert_tab1 = server=server1->db=DB_1->table=TAB_1->action=insert");
-    testContext.appendToPolicyFileWithNewLine("select_tab2 = server=server1->db=DB_1->table=TAB_2->action=select");
+    context.appendToPolicyFileWithNewLine("[roles]");
+    context.appendToPolicyFileWithNewLine("all_server = server=server1");
+    context.appendToPolicyFileWithNewLine("insert_tab1 = server=server1->db=DB_1->table=TAB_1->action=insert");
+    context.appendToPolicyFileWithNewLine("select_tab2 = server=server1->db=DB_1->table=TAB_2->action=select");
     // users: users -> groups
-    testContext.appendToPolicyFileWithNewLine("[users]");
-    testContext.appendToPolicyFileWithNewLine("hive = admin");
-    testContext.appendToPolicyFileWithNewLine("user_1 = user_group");
+    context.appendToPolicyFileWithNewLine("[users]");
+    context.appendToPolicyFileWithNewLine("hive = admin");
+    context.appendToPolicyFileWithNewLine("user_1 = user_group");
     // setup db objects needed by the test
-    Connection connection = testContext.createConnection("hive", "hive");
-    Statement statement = testContext.createStatement(connection);
+    Connection connection = context.createConnection("hive", "hive");
+    Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("CREATE DATABASE DB_1");
     statement.execute("USE DB_1");
@@ -211,8 +199,8 @@ public class TestPrivilegesAtTableScope {
     connection.close();
 
     // test execution
-    connection = testContext.createConnection("user_1", "password");
-    statement = testContext.createStatement(connection);
+    connection = context.createConnection("user_1", "password");
+    statement = context.createStatement(connection);
     statement.execute("USE DB_1");
     // test user can execute insert on table
     statement.executeQuery("INSERT INTO TABLE TAB_1 SELECT A FROM TAB_2");
@@ -254,8 +242,8 @@ public class TestPrivilegesAtTableScope {
     connection.close();
 
     //test cleanup
-    connection = testContext.createConnection("hive", "hive");
-    statement = testContext.createStatement(connection);
+    connection = context.createConnection("hive", "hive");
+    statement = context.createStatement(connection);
     statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.close();
     connection.close();
@@ -266,33 +254,32 @@ public class TestPrivilegesAtTableScope {
    */
   @Test
   public void testSelect() throws Exception {
-    testContext = new EndToEndTestContext(testProperties);
-    File policyFile = testContext.getPolicyFile();
-    File dataDir = testContext.getDataDir();
+    File policyFile = context.getPolicyFile();
+    File dataDir = context.getDataDir();
     //copy data file to test dir
     File dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
     //delete existing policy file; create new policy file
-    assertTrue("Could not delete " + policyFile, testContext.deletePolicyFile());
+    assertTrue("Could not delete " + policyFile, context.deletePolicyFile());
     // groups : role -> group
-    testContext.appendToPolicyFileWithNewLine("[groups]");
-    testContext.appendToPolicyFileWithNewLine("admin = all_server");
-    testContext.appendToPolicyFileWithNewLine("user_group = select_tab1, select_tab2");
+    context.appendToPolicyFileWithNewLine("[groups]");
+    context.appendToPolicyFileWithNewLine("admin = all_server");
+    context.appendToPolicyFileWithNewLine("user_group = select_tab1, select_tab2");
     // roles: privileges -> role
-    testContext.appendToPolicyFileWithNewLine("[roles]");
-    testContext.appendToPolicyFileWithNewLine("all_server = server=server1");
-    testContext.appendToPolicyFileWithNewLine("select_tab1 = server=server1->db=DB_1->table=TAB_1->action=select");
-    testContext.appendToPolicyFileWithNewLine("insert_tab1 = server=server1->db=DB_1->table=TAB_1->action=insert");
-    testContext.appendToPolicyFileWithNewLine("select_tab2 = server=server1->db=DB_1->table=TAB_2->action=select");
+    context.appendToPolicyFileWithNewLine("[roles]");
+    context.appendToPolicyFileWithNewLine("all_server = server=server1");
+    context.appendToPolicyFileWithNewLine("select_tab1 = server=server1->db=DB_1->table=TAB_1->action=select");
+    context.appendToPolicyFileWithNewLine("insert_tab1 = server=server1->db=DB_1->table=TAB_1->action=insert");
+    context.appendToPolicyFileWithNewLine("select_tab2 = server=server1->db=DB_1->table=TAB_2->action=select");
     // users: users -> groups
-    testContext.appendToPolicyFileWithNewLine("[users]");
-    testContext.appendToPolicyFileWithNewLine("hive = admin");
-    testContext.appendToPolicyFileWithNewLine("user_1 = user_group");
+    context.appendToPolicyFileWithNewLine("[users]");
+    context.appendToPolicyFileWithNewLine("hive = admin");
+    context.appendToPolicyFileWithNewLine("user_1 = user_group");
     // setup db objects needed by the test
-    Connection connection = testContext.createConnection("hive", "hive");
-    Statement statement = testContext.createStatement(connection);
+    Connection connection = context.createConnection("hive", "hive");
+    Statement statement = context.createStatement(connection);
 
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("CREATE DATABASE DB_1");
@@ -306,8 +293,8 @@ public class TestPrivilegesAtTableScope {
     connection.close();
 
     // test execution
-    connection = testContext.createConnection("user_1", "password");
-    statement = testContext.createStatement(connection);
+    connection = context.createConnection("user_1", "password");
+    statement = context.createStatement(connection);
     statement.execute("USE DB_1");
     // test user can execute query on table
     ResultSet resultSet = statement.executeQuery("SELECT COUNT(A) FROM TAB_1");
@@ -348,8 +335,8 @@ public class TestPrivilegesAtTableScope {
     connection.close();
 
     //test cleanup
-    connection = testContext.createConnection("hive", "hive");
-    statement = testContext.createStatement(connection);
+    connection = context.createConnection("hive", "hive");
+    statement = context.createStatement(connection);
     statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.close();
     connection.close();
@@ -360,32 +347,31 @@ public class TestPrivilegesAtTableScope {
    */
   @Test
   public void testTableViewJoin() throws Exception {
-    testContext = new EndToEndTestContext(testProperties);
-    File policyFile = testContext.getPolicyFile();
-    File dataDir = testContext.getDataDir();
+    File policyFile = context.getPolicyFile();
+    File dataDir = context.getDataDir();
     //copy data file to test dir
     File dataFile = new File(dataDir, MULTI_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(MULTI_TYPE_DATA_FILE_NAME), to);
     to.close();
     //delete existing policy file; create new policy file
-    assertTrue("Could not delete " + policyFile, testContext.deletePolicyFile());
+    assertTrue("Could not delete " + policyFile, context.deletePolicyFile());
     // groups : role -> group
-    testContext.appendToPolicyFileWithNewLine("[groups]");
-    testContext.appendToPolicyFileWithNewLine("admin = all_server");
-    testContext.appendToPolicyFileWithNewLine("user_group = select_tab1, select_tab2");
+    context.appendToPolicyFileWithNewLine("[groups]");
+    context.appendToPolicyFileWithNewLine("admin = all_server");
+    context.appendToPolicyFileWithNewLine("user_group = select_tab1, select_tab2");
     // roles: privileges -> role
-    testContext.appendToPolicyFileWithNewLine("[roles]");
-    testContext.appendToPolicyFileWithNewLine("all_server = server=server1");
-    testContext.appendToPolicyFileWithNewLine("select_tab1 = server=server1->db=DB_1->table=TAB_1->action=select");
-    testContext.appendToPolicyFileWithNewLine("select_tab2 = server=server1->db=DB_1->table=TAB_2->action=select");
+    context.appendToPolicyFileWithNewLine("[roles]");
+    context.appendToPolicyFileWithNewLine("all_server = server=server1");
+    context.appendToPolicyFileWithNewLine("select_tab1 = server=server1->db=DB_1->table=TAB_1->action=select");
+    context.appendToPolicyFileWithNewLine("select_tab2 = server=server1->db=DB_1->table=TAB_2->action=select");
     // users: users -> groups
-    testContext.appendToPolicyFileWithNewLine("[users]");
-    testContext.appendToPolicyFileWithNewLine("hive = admin");
-    testContext.appendToPolicyFileWithNewLine("user_1 = user_group");
+    context.appendToPolicyFileWithNewLine("[users]");
+    context.appendToPolicyFileWithNewLine("hive = admin");
+    context.appendToPolicyFileWithNewLine("user_1 = user_group");
     // setup db objects needed by the test
-    Connection connection = testContext.createConnection("hive", "hive");
-    Statement statement = testContext.createStatement(connection);
+    Connection connection = context.createConnection("hive", "hive");
+    Statement statement = context.createStatement(connection);
 
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("CREATE DATABASE DB_1");
@@ -401,8 +387,8 @@ public class TestPrivilegesAtTableScope {
     connection.close();
 
     // test execution
-    connection = testContext.createConnection("user_1", "password");
-    statement = testContext.createStatement(connection);
+    connection = context.createConnection("user_1", "password");
+    statement = context.createStatement(connection);
     statement.execute("USE DB_1");
     // test user can execute query TAB_1 JOIN TAB_2
     ResultSet resultSet = statement.executeQuery("SELECT COUNT(*) FROM TAB_1 T1 JOIN TAB_2 T2 ON (T1.B = T2.B)");
@@ -428,8 +414,8 @@ public class TestPrivilegesAtTableScope {
     connection.close();
 
     //test cleanup
-    connection = testContext.createConnection("hive", "hive");
-    statement = testContext.createStatement(connection);
+    connection = context.createConnection("hive", "hive");
+    statement = context.createStatement(connection);
     statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.close();
     connection.close();
@@ -440,32 +426,31 @@ public class TestPrivilegesAtTableScope {
    */
   @Test
   public void testTableViewJoin2() throws Exception {
-    testContext = new EndToEndTestContext(testProperties);
-    File policyFile = testContext.getPolicyFile();
-    File dataDir = testContext.getDataDir();
+    File policyFile = context.getPolicyFile();
+    File dataDir = context.getDataDir();
     //copy data file to test dir
     File dataFile = new File(dataDir, MULTI_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(MULTI_TYPE_DATA_FILE_NAME), to);
     to.close();
     //delete existing policy file; create new policy file
-    assertTrue("Could not delete " + policyFile, testContext.deletePolicyFile());
+    assertTrue("Could not delete " + policyFile, context.deletePolicyFile());
     // groups : role -> group
-    testContext.appendToPolicyFileWithNewLine("[groups]");
-    testContext.appendToPolicyFileWithNewLine("admin = all_server");
-    testContext.appendToPolicyFileWithNewLine("user_group = select_tab2");
+    context.appendToPolicyFileWithNewLine("[groups]");
+    context.appendToPolicyFileWithNewLine("admin = all_server");
+    context.appendToPolicyFileWithNewLine("user_group = select_tab2");
     // roles: privileges -> role
-    testContext.appendToPolicyFileWithNewLine("[roles]");
-    testContext.appendToPolicyFileWithNewLine("all_server = server=server1");
-    testContext.appendToPolicyFileWithNewLine("select_tab1 = server=server1->db=DB_1->table=TAB_1->action=select");
-    testContext.appendToPolicyFileWithNewLine("select_tab2 = server=server1->db=DB_1->table=TAB_2->action=select");
+    context.appendToPolicyFileWithNewLine("[roles]");
+    context.appendToPolicyFileWithNewLine("all_server = server=server1");
+    context.appendToPolicyFileWithNewLine("select_tab1 = server=server1->db=DB_1->table=TAB_1->action=select");
+    context.appendToPolicyFileWithNewLine("select_tab2 = server=server1->db=DB_1->table=TAB_2->action=select");
     // users: users -> groups
-    testContext.appendToPolicyFileWithNewLine("[users]");
-    testContext.appendToPolicyFileWithNewLine("hive = admin");
-    testContext.appendToPolicyFileWithNewLine("user_1 = user_group");
+    context.appendToPolicyFileWithNewLine("[users]");
+    context.appendToPolicyFileWithNewLine("hive = admin");
+    context.appendToPolicyFileWithNewLine("user_1 = user_group");
     // setup db objects needed by the test
-    Connection connection = testContext.createConnection("hive", "hive");
-    Statement statement = testContext.createStatement(connection);
+    Connection connection = context.createConnection("hive", "hive");
+    Statement statement = context.createStatement(connection);
 
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("CREATE DATABASE DB_1");
@@ -481,8 +466,8 @@ public class TestPrivilegesAtTableScope {
     connection.close();
 
     // test execution
-    connection = testContext.createConnection("user_1", "password");
-    statement = testContext.createStatement(connection);
+    connection = context.createConnection("user_1", "password");
+    statement = context.createStatement(connection);
     statement.execute("USE DB_1");
     // test user can execute query on TAB_2
     ResultSet resultSet = statement.executeQuery("SELECT COUNT(*) FROM TAB_2");
@@ -516,8 +501,8 @@ public class TestPrivilegesAtTableScope {
     connection.close();
 
     //test cleanup
-    connection = testContext.createConnection("hive", "hive");
-    statement = testContext.createStatement(connection);
+    connection = context.createConnection("hive", "hive");
+    statement = context.createStatement(connection);
     statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.close();
     connection.close();
@@ -528,32 +513,31 @@ public class TestPrivilegesAtTableScope {
    */
   @Test
   public void testTableViewJoin3() throws Exception {
-    testContext = new EndToEndTestContext(testProperties);
-    File policyFile = testContext.getPolicyFile();
-    File dataDir = testContext.getDataDir();
+    File policyFile = context.getPolicyFile();
+    File dataDir = context.getDataDir();
     //copy data file to test dir
     File dataFile = new File(dataDir, MULTI_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(MULTI_TYPE_DATA_FILE_NAME), to);
     to.close();
     //delete existing policy file; create new policy file
-    assertTrue("Could not delete " + policyFile, testContext.deletePolicyFile());
+    assertTrue("Could not delete " + policyFile, context.deletePolicyFile());
     // groups : role -> group
-    testContext.appendToPolicyFileWithNewLine("[groups]");
-    testContext.appendToPolicyFileWithNewLine("admin = all_server");
-    testContext.appendToPolicyFileWithNewLine("user_group = select_tab2, select_view1");
+    context.appendToPolicyFileWithNewLine("[groups]");
+    context.appendToPolicyFileWithNewLine("admin = all_server");
+    context.appendToPolicyFileWithNewLine("user_group = select_tab2, select_view1");
     // roles: privileges -> role
-    testContext.appendToPolicyFileWithNewLine("[roles]");
-    testContext.appendToPolicyFileWithNewLine("all_server = server=server1");
-    testContext.appendToPolicyFileWithNewLine("select_view1 = server=server1->db=DB_1->table=VIEW_1->action=select");
-    testContext.appendToPolicyFileWithNewLine("select_tab2 = server=server1->db=DB_1->table=TAB_2->action=select");
+    context.appendToPolicyFileWithNewLine("[roles]");
+    context.appendToPolicyFileWithNewLine("all_server = server=server1");
+    context.appendToPolicyFileWithNewLine("select_view1 = server=server1->db=DB_1->table=VIEW_1->action=select");
+    context.appendToPolicyFileWithNewLine("select_tab2 = server=server1->db=DB_1->table=TAB_2->action=select");
     // users: users -> groups
-    testContext.appendToPolicyFileWithNewLine("[users]");
-    testContext.appendToPolicyFileWithNewLine("hive = admin");
-    testContext.appendToPolicyFileWithNewLine("user_1 = user_group");
+    context.appendToPolicyFileWithNewLine("[users]");
+    context.appendToPolicyFileWithNewLine("hive = admin");
+    context.appendToPolicyFileWithNewLine("user_1 = user_group");
     // setup db objects needed by the test
-    Connection connection = testContext.createConnection("hive", "hive");
-    Statement statement = testContext.createStatement(connection);
+    Connection connection = context.createConnection("hive", "hive");
+    Statement statement = context.createStatement(connection);
 
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("CREATE DATABASE DB_1");
@@ -569,8 +553,8 @@ public class TestPrivilegesAtTableScope {
     connection.close();
 
     // test execution
-    connection = testContext.createConnection("user_1", "password");
-    statement = testContext.createStatement(connection);
+    connection = context.createConnection("user_1", "password");
+    statement = context.createStatement(connection);
     statement.execute("USE DB_1");
     // test user can execute query on TAB_2
     ResultSet resultSet = statement.executeQuery("SELECT COUNT(*) FROM TAB_2");
@@ -620,8 +604,8 @@ public class TestPrivilegesAtTableScope {
     connection.close();
 
     //test cleanup
-    connection = testContext.createConnection("hive", "hive");
-    statement = testContext.createStatement(connection);
+    connection = context.createConnection("hive", "hive");
+    statement = context.createStatement(connection);
     statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.close();
     connection.close();
@@ -632,32 +616,31 @@ public class TestPrivilegesAtTableScope {
    */
   @Test
   public void testTableViewJoin4() throws Exception {
-    testContext = new EndToEndTestContext(testProperties);
-    File policyFile = testContext.getPolicyFile();
-    File dataDir = testContext.getDataDir();
+    File policyFile = context.getPolicyFile();
+    File dataDir = context.getDataDir();
     //copy data file to test dir
     File dataFile = new File(dataDir, MULTI_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(MULTI_TYPE_DATA_FILE_NAME), to);
     to.close();
     //delete existing policy file; create new policy file
-    assertTrue("Could not delete " + policyFile, testContext.deletePolicyFile());
+    assertTrue("Could not delete " + policyFile, context.deletePolicyFile());
     // groups : role -> group
-    testContext.appendToPolicyFileWithNewLine("[groups]");
-    testContext.appendToPolicyFileWithNewLine("admin = all_server");
-    testContext.appendToPolicyFileWithNewLine("user_group = select_tab1, select_view1");
+    context.appendToPolicyFileWithNewLine("[groups]");
+    context.appendToPolicyFileWithNewLine("admin = all_server");
+    context.appendToPolicyFileWithNewLine("user_group = select_tab1, select_view1");
     // roles: privileges -> role
-    testContext.appendToPolicyFileWithNewLine("[roles]");
-    testContext.appendToPolicyFileWithNewLine("all_server = server=server1");
-    testContext.appendToPolicyFileWithNewLine("select_view1 = server=server1->db=DB_1->table=VIEW_1->action=select");
-    testContext.appendToPolicyFileWithNewLine("select_tab1 = server=server1->db=DB_1->table=TAB_1->action=select");
+    context.appendToPolicyFileWithNewLine("[roles]");
+    context.appendToPolicyFileWithNewLine("all_server = server=server1");
+    context.appendToPolicyFileWithNewLine("select_view1 = server=server1->db=DB_1->table=VIEW_1->action=select");
+    context.appendToPolicyFileWithNewLine("select_tab1 = server=server1->db=DB_1->table=TAB_1->action=select");
     // users: users -> groups
-    testContext.appendToPolicyFileWithNewLine("[users]");
-    testContext.appendToPolicyFileWithNewLine("hive = admin");
-    testContext.appendToPolicyFileWithNewLine("user_1 = user_group");
+    context.appendToPolicyFileWithNewLine("[users]");
+    context.appendToPolicyFileWithNewLine("hive = admin");
+    context.appendToPolicyFileWithNewLine("user_1 = user_group");
     // setup db objects needed by the test
-    Connection connection = testContext.createConnection("hive", "hive");
-    Statement statement = testContext.createStatement(connection);
+    Connection connection = context.createConnection("hive", "hive");
+    Statement statement = context.createStatement(connection);
 
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("CREATE DATABASE DB_1");
@@ -673,8 +656,8 @@ public class TestPrivilegesAtTableScope {
     connection.close();
 
     // test execution
-    connection = testContext.createConnection("user_1", "password");
-    statement = testContext.createStatement(connection);
+    connection = context.createConnection("user_1", "password");
+    statement = context.createStatement(connection);
     statement.execute("USE DB_1");
 
     // test user can execute query VIEW_1 JOIN TAB_1
@@ -701,8 +684,8 @@ public class TestPrivilegesAtTableScope {
     connection.close();
 
     //test cleanup
-    connection = testContext.createConnection("hive", "hive");
-    statement = testContext.createStatement(connection);
+    connection = context.createConnection("hive", "hive");
+    statement = context.createStatement(connection);
     statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.close();
     connection.close();
