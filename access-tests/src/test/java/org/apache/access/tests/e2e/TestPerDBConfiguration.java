@@ -147,6 +147,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticHiveServer {
     // test per-db file for db2
 
     connection = testContext.createConnection("user_2", "password");
+    statement = testContext.createStatement(connection);
     statement.execute("USE db2");
     // test user2 can execute query on tbl2
     resultSet = statement.executeQuery("SELECT COUNT(*) FROM tbl2");
