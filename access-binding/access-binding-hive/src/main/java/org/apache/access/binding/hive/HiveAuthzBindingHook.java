@@ -21,20 +21,29 @@ import static org.apache.hadoop.hive.metastore.MetaStoreUtils.DEFAULT_DATABASE_N
 import java.io.Serializable;
 import java.security.CodeSource;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
 import org.apache.access.binding.hive.authz.HiveAuthzBinding;
 import org.apache.access.binding.hive.authz.HiveAuthzPrivileges;
 import org.apache.access.binding.hive.authz.HiveAuthzPrivilegesMap;
+import org.apache.access.binding.hive.authz.HiveAuthzPrivileges.HiveOperationScope;
+import org.apache.access.binding.hive.authz.HiveAuthzPrivileges.HiveOperationType;
 import org.apache.access.binding.hive.conf.HiveAuthzConf;
 import org.apache.access.core.AccessURI;
+import org.apache.access.core.Action;
 import org.apache.access.core.Authorizable;
 import org.apache.access.core.Database;
 import org.apache.access.core.Subject;
 import org.apache.access.core.Table;
+import org.apache.access.core.Authorizable.AuthorizableType;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
+import org.apache.hadoop.hive.ql.HiveDriverFilterHook;
+import org.apache.hadoop.hive.ql.HiveDriverFilterHookContext;
+import org.apache.hadoop.hive.ql.HiveDriverFilterHookResult;
+import org.apache.hadoop.hive.ql.HiveDriverFilterHookResultImpl;
 import org.apache.hadoop.hive.ql.exec.Task;
 import org.apache.hadoop.hive.ql.hooks.Entity;
 import org.apache.hadoop.hive.ql.hooks.Entity.Type;
@@ -52,7 +61,7 @@ import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.ql.session.SessionState;
 
-public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
+public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook implements HiveDriverFilterHook {
 
   private final HiveAuthzBinding hiveAuthzBinding;
   private final HiveAuthzConf authzConf;
@@ -74,11 +83,11 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
    */
   @Override
   public ASTNode preAnalyze(HiveSemanticAnalyzerHookContext context, ASTNode ast)
-      throws SemanticException {
+  throws SemanticException {
 
     SessionState.get().getConf().setBoolVar(ConfVars.HIVE_EXTENDED_ENITITY_CAPTURE, true);
     switch (ast.getToken().getType()) {
-    // Hive parser doesn't capture the database name in output entity, so we store it here for now
+      // Hive parser doesn't capture the database name in output entity, so we store it here for now
     case HiveParser.TOK_CREATEDATABASE:
     case HiveParser.TOK_ALTERDATABASE_PROPERTIES:
     case HiveParser.TOK_DROPDATABASE:
@@ -125,7 +134,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
         String udfJar = udfSrc.getLocation().getPath();
         if (udfJar == null || udfJar.isEmpty()) {
           throw new SemanticException("Could not find the jar for UDF class " + udfClassName +
-              "to validate privileges");
+                                      "to validate privileges");
         }
         udfURI = new AccessURI(udfJar);
       } catch (ClassNotFoundException e) {
@@ -172,11 +181,11 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
    */
   @Override
   public void postAnalyze(HiveSemanticAnalyzerHookContext context,
-      List<Task<? extends Serializable>> rootTasks) throws SemanticException {
+                          List<Task<? extends Serializable>> rootTasks) throws SemanticException {
 
     HiveOperation stmtOperation = getCurrentHiveStmtOp();
     HiveAuthzPrivileges stmtAuthObject =
-        HiveAuthzPrivilegesMap.getHiveAuthzPrivileges(stmtOperation);
+      HiveAuthzPrivilegesMap.getHiveAuthzPrivileges(stmtOperation);
     if (stmtAuthObject == null) {
       // We don't handle authorizing this statement
       return;
@@ -200,7 +209,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
    * @throws AuthorizationException
    */
   private void authorizeWithHiveBindings(HiveSemanticAnalyzerHookContext context,
-      HiveAuthzPrivileges stmtAuthObject, HiveOperation stmtOperation) throws  AuthorizationException {
+                                         HiveAuthzPrivileges stmtAuthObject, HiveOperation stmtOperation) throws  AuthorizationException {
 
     Set<ReadEntity> inputs = context.getInputs();
     Set<WriteEntity> outputs = context.getOutputs();
@@ -208,85 +217,85 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
     List<List<Authorizable>> outputHierarchy = new ArrayList<List<Authorizable>> ();
 
     switch (stmtAuthObject.getOperationScope()) {
-      case SERVER :
-        // validate server level privileges if applicable. Eg create UDF,register jar etc ..
-        List<Authorizable> serverHierarchy = new ArrayList<Authorizable>();
-        serverHierarchy.add(hiveAuthzBinding.getAuthServer());
-        inputHierarchy.add(serverHierarchy);
-        break;
-      case DATABASE:
-        // workaround for database scope statements (create/alter/drop db)
-        List<Authorizable> dbHierarchy = new ArrayList<Authorizable>();
-        dbHierarchy.add(hiveAuthzBinding.getAuthServer());
-        dbHierarchy.add(currDB);
-        inputHierarchy.add(dbHierarchy);
-        outputHierarchy.add(dbHierarchy);
-        break;
-      case TABLE:
-        for (ReadEntity readEntity: inputs) {
-          List<Authorizable> entityHierarchy = new ArrayList<Authorizable>();
-          entityHierarchy.add(hiveAuthzBinding.getAuthServer());
-          entityHierarchy.addAll(getAuthzHierarchyFromEntity(readEntity));
-          inputHierarchy.add(entityHierarchy);
+    case SERVER :
+      // validate server level privileges if applicable. Eg create UDF,register jar etc ..
+      List<Authorizable> serverHierarchy = new ArrayList<Authorizable>();
+      serverHierarchy.add(hiveAuthzBinding.getAuthServer());
+      inputHierarchy.add(serverHierarchy);
+      break;
+    case DATABASE:
+      // workaround for database scope statements (create/alter/drop db)
+      List<Authorizable> dbHierarchy = new ArrayList<Authorizable>();
+      dbHierarchy.add(hiveAuthzBinding.getAuthServer());
+      dbHierarchy.add(currDB);
+      inputHierarchy.add(dbHierarchy);
+      outputHierarchy.add(dbHierarchy);
+      break;
+    case TABLE:
+      for (ReadEntity readEntity: inputs) {
+        List<Authorizable> entityHierarchy = new ArrayList<Authorizable>();
+        entityHierarchy.add(hiveAuthzBinding.getAuthServer());
+        entityHierarchy.addAll(getAuthzHierarchyFromEntity(readEntity));
+        inputHierarchy.add(entityHierarchy);
+      }
+      for (WriteEntity writeEntity: outputs) {
+        if (filterWriteEntity(writeEntity)) {
+          continue;
         }
-        for (WriteEntity writeEntity: outputs) {
-          if (filterWriteEntity(writeEntity)) {
-            continue;
-          }
-          List<Authorizable> entityHierarchy = new ArrayList<Authorizable>();
-          entityHierarchy.add(hiveAuthzBinding.getAuthServer());
-          entityHierarchy.addAll(getAuthzHierarchyFromEntity(writeEntity));
-          outputHierarchy.add(entityHierarchy);
-        }
-        // workaround for metadata queries.
-        // Capture the table name in pre-analyze and include that in the entity list
-        if (currTab != null) {
-          List<Authorizable> externalAuthorizableHierarchy = new ArrayList<Authorizable>();
-          externalAuthorizableHierarchy.add(hiveAuthzBinding.getAuthServer());
-          externalAuthorizableHierarchy.add(currDB);
-          externalAuthorizableHierarchy.add(currTab);
-          inputHierarchy.add(externalAuthorizableHierarchy);
-        }
-        break;
-      case CONNECT:
-        /* The 'CONNECT' is an implicit privilege scope currently used for
-         *  - CREATE TEMP FUNCTION
-         *  - DROP TEMP FUNCTION
-         *  - USE <db>
-         *  It's allowed when the user has any privilege on the current database. For application
-         *  backward compatibility, we allow (optional) implicit connect permission on 'default' db.
-         */
-        List<Authorizable> connectHierarchy = new ArrayList<Authorizable>();
-        connectHierarchy.add(hiveAuthzBinding.getAuthServer());
-        // by default allow connect access to default db
-        if (DEFAULT_DATABASE_NAME.equalsIgnoreCase(currDB.getName()) &&
-            "false".equalsIgnoreCase(authzConf.
-                get(HiveAuthzConf.AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), "false"))) {
-          currDB = Database.ALL;
-        }
-        connectHierarchy.add(currDB);
-        connectHierarchy.add(Table.ALL);
+        List<Authorizable> entityHierarchy = new ArrayList<Authorizable>();
+        entityHierarchy.add(hiveAuthzBinding.getAuthServer());
+        entityHierarchy.addAll(getAuthzHierarchyFromEntity(writeEntity));
+        outputHierarchy.add(entityHierarchy);
+      }
+      // workaround for metadata queries.
+      // Capture the table name in pre-analyze and include that in the entity list
+      if (currTab != null) {
+        List<Authorizable> externalAuthorizableHierarchy = new ArrayList<Authorizable>();
+        externalAuthorizableHierarchy.add(hiveAuthzBinding.getAuthServer());
+        externalAuthorizableHierarchy.add(currDB);
+        externalAuthorizableHierarchy.add(currTab);
+        inputHierarchy.add(externalAuthorizableHierarchy);
+      }
+      break;
+    case CONNECT:
+      /* The 'CONNECT' is an implicit privilege scope currently used for
+       *  - CREATE TEMP FUNCTION
+       *  - DROP TEMP FUNCTION
+       *  - USE <db>
+       *  It's allowed when the user has any privilege on the current database. For application
+       *  backward compatibility, we allow (optional) implicit connect permission on 'default' db.
+       */
+      List<Authorizable> connectHierarchy = new ArrayList<Authorizable>();
+      connectHierarchy.add(hiveAuthzBinding.getAuthServer());
+      // by default allow connect access to default db
+      if (DEFAULT_DATABASE_NAME.equalsIgnoreCase(currDB.getName()) &&
+          "false".equalsIgnoreCase(authzConf.
+                                   get(HiveAuthzConf.AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), "false"))) {
+        currDB = Database.ALL;
+      }
+      connectHierarchy.add(currDB);
+      connectHierarchy.add(Table.ALL);
 
-        inputHierarchy.add(connectHierarchy);
-        // check if this is a create temp function and we need to validate URI
-        if (udfURI != null) {
-          List<Authorizable> udfUriHierarchy = new ArrayList<Authorizable>();
-          udfUriHierarchy.add(hiveAuthzBinding.getAuthServer());
-          udfUriHierarchy.add(udfURI);
-          inputHierarchy.add(udfUriHierarchy);
-        }
+      inputHierarchy.add(connectHierarchy);
+      // check if this is a create temp function and we need to validate URI
+      if (udfURI != null) {
+        List<Authorizable> udfUriHierarchy = new ArrayList<Authorizable>();
+        udfUriHierarchy.add(hiveAuthzBinding.getAuthServer());
+        udfUriHierarchy.add(udfURI);
+        inputHierarchy.add(udfUriHierarchy);
+      }
 
-        outputHierarchy.add(connectHierarchy);
-        break;
+      outputHierarchy.add(connectHierarchy);
+      break;
 
-      default:
-        throw new AuthorizationException("Unknown operation scope type " +
-            stmtAuthObject.getOperationScope().toString());
+    default:
+      throw new AuthorizationException("Unknown operation scope type " +
+                                       stmtAuthObject.getOperationScope().toString());
     }
 
     // validate permission
     hiveAuthzBinding.authorize(stmtOperation, stmtAuthObject, getCurrentSubject(context),
-          inputHierarchy, outputHierarchy);
+                               inputHierarchy, outputHierarchy);
     hiveAuthzBinding.set(context.getConf());
   }
 
@@ -326,14 +335,14 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
       break;
     default:
       throw new UnsupportedOperationException("Unsupported entity type " +
-          entity.getType().name());
+                                              entity.getType().name());
     }
     return objectHierarchy;
   }
 
 //Check if this write entity needs to skipped
   private boolean filterWriteEntity(WriteEntity writeEntity)
-      throws AuthorizationException {
+  throws AuthorizationException {
     // skip URI validation for session scratch file URIs
     try {
       if (writeEntity.getTyp().equals(Type.DFS_DIR) ||
@@ -354,4 +363,115 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
     return false;
   }
 
+  private List<String> filterShowTables(List<String> queryResult, HiveOperation operation,
+      String userName) throws SemanticException {
+    List<String> filteredResult = new ArrayList<String>();
+    Subject subject = new Subject(userName);
+    HiveAuthzPrivileges tableMetaDataPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
+    addInputObjectPriviledge(AuthorizableType.Table, EnumSet.of(Action.SELECT, Action.INSERT)).
+    setOperationScope(HiveOperationScope.TABLE).
+    setOperationType(HiveOperationType.INFO).
+    build();
+
+    for (String tableName:queryResult) {
+      // if user has privileges on table, add to filtered list, else discard
+      Table table = new Table(tableName);
+      Database database;
+      try {
+        database = new Database(Hive.get().getCurrentDatabase());
+      } catch (HiveException e) {
+        throw new SemanticException("Error retrieving current db", e);
+      }
+
+      List<List<Authorizable>> inputHierarchy = new ArrayList<List<Authorizable>>();
+      List<List<Authorizable>> outputHierarchy = new ArrayList<List<Authorizable>>();
+      List<Authorizable> externalAuthorizableHierarchy = new ArrayList<Authorizable>();
+      externalAuthorizableHierarchy.add(hiveAuthzBinding.getAuthServer());
+      externalAuthorizableHierarchy.add(database);
+      externalAuthorizableHierarchy.add(table);
+      inputHierarchy.add(externalAuthorizableHierarchy);
+
+      try {
+        hiveAuthzBinding.authorize(operation, tableMetaDataPrivilege, subject,inputHierarchy, outputHierarchy);
+        filteredResult.add(table.getName());
+      } catch (AuthorizationException e) {
+        // squash the exception, user doesn't have privileges, so the table is not added to
+        // filtered list.
+        ;
+      }
+    }
+    return filteredResult;
+  }
+
+
+  private List<String> filterShowDatabases(List<String> queryResult, HiveOperation operation,
+      String userName) throws SemanticException {
+    List<String> filteredResult = new ArrayList<String>();
+    Subject subject = new Subject(userName);
+    HiveAuthzPrivileges anyPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
+    addInputObjectPriviledge(AuthorizableType.Table, EnumSet.of(Action.SELECT, Action.INSERT)).
+    addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(Action.SELECT)).
+    setOperationScope(HiveOperationScope.CONNECT).
+    setOperationType(HiveOperationType.QUERY).
+    build();
+
+    for (String dbName:queryResult) {
+      // if user has privileges on database, add to filtered list, else discard
+      Database database = null;
+
+      // if default is not restricted, continue
+      if (DEFAULT_DATABASE_NAME.equalsIgnoreCase(dbName) &&
+          "false".equalsIgnoreCase(authzConf.
+                                   get(HiveAuthzConf.AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), "false"))) {
+        filteredResult.add(DEFAULT_DATABASE_NAME);
+        continue;
+      }
+
+      database = new Database(dbName);
+
+      List<List<Authorizable>> inputHierarchy = new ArrayList<List<Authorizable>>();
+      List<List<Authorizable>> outputHierarchy = new ArrayList<List<Authorizable>>();
+      List<Authorizable> externalAuthorizableHierarchy = new ArrayList<Authorizable>();
+      externalAuthorizableHierarchy.add(hiveAuthzBinding.getAuthServer());
+      externalAuthorizableHierarchy.add(database);
+      externalAuthorizableHierarchy.add(Table.ALL);
+      inputHierarchy.add(externalAuthorizableHierarchy);
+
+      try {
+        hiveAuthzBinding.authorize(operation, anyPrivilege, subject,inputHierarchy, outputHierarchy);
+        filteredResult.add(database.getName());
+      } catch (AuthorizationException e) {
+        // squash the exception, user doesn't have privileges, so the table is not added to
+        // filtered list.
+        ;
+      }
+    }
+
+    return filteredResult;
+  }
+
+  @Override
+  public HiveDriverFilterHookResult postDriverFetch( HiveDriverFilterHookContext hookContext)
+  throws Exception {
+    HiveDriverFilterHookResult hookResult = new HiveDriverFilterHookResultImpl();
+    HiveOperation hiveOperation = hookContext.getHiveOperation();
+    List<String> queryResult = new ArrayList<String>();
+    queryResult = hookContext.getResult();
+    List<String> filteredResult = null;
+    String userName = hookContext.getUserName();
+    String operationName = hiveOperation.getOperationName();
+
+    if ("SHOWTABLES".equalsIgnoreCase(operationName)) {
+      filteredResult = filterShowTables(queryResult, hiveOperation, userName);
+    } else if ("SHOWDATABASES".equalsIgnoreCase(operationName)) {
+      filteredResult = filterShowDatabases(queryResult, hiveOperation, userName);
+    }
+
+    hookResult.setHiveOperation(hiveOperation);
+    hookResult.setResult(filteredResult);
+    hookResult.setUserName(userName);
+    hookResult.setConf(hookContext.getConf());
+
+    return hookResult;
+  }
 }

@@ -17,16 +17,23 @@
 
 package org.apache.access.tests.e2e;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 
 import junit.framework.Assert;
 
+import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,15 +45,15 @@ import com.google.common.io.Resources;
 public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
   private Context context;
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
-  private String dataFilePath = this.getClass().getResource("/" +
-      SINGLE_TYPE_DATA_FILE_NAME).getFile();
+  private String dataFilePath = this.getClass()
+      .getResource("/" + SINGLE_TYPE_DATA_FILE_NAME).getFile();
   private File dataFile;
 
   @Before
   public void setup() throws Exception {
     context = createContext();
     File dataDir = context.getDataDir();
-    //copy data file to test dir
+    // copy data file to test dir
     dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
@@ -61,6 +68,125 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
     }
   }
 
+  /*
+   * Admin creates DB_1, DB2, tables (tab_1 ) and (tab_2, tab_3) in DB_1 and
+   * DB_2 respectively. User user_1 has select on DB_1.tab_1, insert on
+   * DB2.tab_2 User user_2 has select on DB2.tab_3 Test show database and show
+   * tables for both user_1 and user_2
+   */
+  @Test
+  public void testShowDatabasesAndShowTables() throws Exception {
+    // edit policy file
+    File policyFile = context.getPolicyFile();
+    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
+    editor.addPolicy("admin = admin", "groups");
+    editor.addPolicy("group1 = select_tab1, insert_tab2", "groups");
+    editor.addPolicy("group2 = select_tab3", "groups");
+    editor.addPolicy("admin = server=server1", "roles");
+    editor.addPolicy(
+        "select_tab1 = server=server1->db=db_1->table=tab_1->action=select",
+        "roles");
+    editor.addPolicy(
+        "select_tab3 = server=server1->db=db_2->table=tab_3->action=select",
+        "roles");
+    editor.addPolicy(
+        "insert_tab2 = server=server1->db=db_2->table=tab_2->action=insert",
+        "roles");
+    editor.addPolicy("admin1 = admin", "users");
+    editor.addPolicy("user1 = group1", "users");
+    editor.addPolicy("user2 = group2", "users");
+
+    // admin create two databases
+    Connection connection = context.createConnection("admin1", "foo");
+    Statement statement = context.createStatement(connection);
+    statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
+    statement.execute("DROP DATABASE IF EXISTS DB_2 CASCADE");
+    statement.execute("DROP DATABASE IF EXISTS DB1 CASCADE");
+    statement.execute("DROP DATABASE IF EXISTS DB2 CASCADE");
+
+    statement.execute("CREATE DATABASE DB_1");
+    statement.execute("CREATE DATABASE DB_2");
+    statement.execute("USE DB_1");
+    statement.execute("CREATE TABLE TAB_1(id int)");
+    statement.executeQuery("SHOW TABLES");
+    statement.execute("USE DB_2");
+    statement.execute("CREATE TABLE TAB_2(id int)");
+    statement.execute("CREATE TABLE TAB_3(id int)");
+
+    // test show databases
+    // show databases shouldn't filter any of the dbs from the resultset
+    Connection conn = context.createConnection("user1", "");
+    Statement stmt = context.createStatement(conn);
+    ResultSet res = stmt.executeQuery("SHOW DATABASES");
+    List<String> result = new ArrayList<String>();
+    result.add("db_1");
+    result.add("db_2");
+    result.add("default");
+
+    while (res.next()) {
+      String dbName = res.getString(1);
+      assertTrue(dbName, result.remove(dbName));
+    }
+    assertTrue(result.toString(), result.isEmpty());
+    res.close();
+
+    stmt.execute("USE DB_1");
+    res = stmt.executeQuery("SHOW TABLES");
+    result.clear();
+    result.add("tab_1");
+
+    while (res.next()) {
+      String tableName = res.getString(1);
+      assertTrue(tableName, result.remove(tableName));
+    }
+    assertTrue(result.toString(), result.isEmpty());
+
+    stmt.execute("USE DB_2");
+    res = stmt.executeQuery("SHOW TABLES");
+    result.clear();
+    result.add("tab_2");
+
+    while (res.next()) {
+      String tableName = res.getString(1);
+      assertTrue(tableName, result.remove(tableName));
+    }
+    assertTrue(result.toString(), result.isEmpty());
+
+    // test show databases and show tables for user2
+    conn = context.createConnection("user2", "");
+    stmt = context.createStatement(conn);
+    res = stmt.executeQuery("SHOW DATABASES");
+    result.clear();
+    result.add("db_2");
+    result.add("default");
+
+    while (res.next()) {
+      String dbName = res.getString(1);
+      assertTrue(dbName, result.remove(dbName));
+    }
+    assertTrue(result.toString(), result.isEmpty());
+
+    // test show tables
+    stmt.execute("USE DB_2");
+    res = stmt.executeQuery("SHOW TABLES");
+    result.clear();
+    result.add("tab_3");
+
+    while (res.next()) {
+      String tableName = res.getString(1);
+      assertTrue(tableName, result.remove(tableName));
+    }
+    assertTrue(result.toString(), result.isEmpty());
+
+    try {
+      stmt.execute("USE DB_1");
+      Assert.fail("Expected SQL exception");
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    context.close();
+  }
+
   /**
    * 2.8 admin user create two database, DB_1, DB_2 admin grant all to USER_1,
    * USER_2 on DB_1, admin grant all to USER_1's group, USER_2's group on DB_2
@@ -70,38 +196,31 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
   @Test
   public void testDbPrivileges() throws Exception {
     // edit policy file
-    String testPolicies[] = {
-        "[groups]",
-        "admin_group = admin_role",
-        "user_group  = db1_all,db2_all, load_data",
-        "[roles]",
-        "db1_all = server=server1->db=db1",
-        "db2_all = server=server1->db=db2",
+    String testPolicies[] = {"[groups]", "admin_group = admin_role",
+        "user_group  = db1_all,db2_all, load_data", "[roles]",
+        "db1_all = server=server1->db=db1", "db2_all = server=server1->db=db2",
         "load_data = server=server1->URI=file:" + dataFilePath,
-        "admin_role = server=server1",
-        "[users]",
-        "user1 = user_group",
-        "user2 = user_group",
-        "admin = admin_group"
-    };
+        "admin_role = server=server1", "[users]", "user1 = user_group",
+        "user2 = user_group", "admin = admin_group"};
     context.makeNewPolicy(testPolicies);
 
     // create dbs
     Connection adminCon = context.createConnection("admin", "foo");
     Statement adminStmt = context.createStatement(adminCon);
-    for (String dbName : new String[] { "db1", "db2" }) {
+    for (String dbName : new String[]{"db1", "db2"}) {
       adminStmt.execute("use default");
       adminStmt.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
       adminStmt.execute("CREATE DATABASE " + dbName);
     }
     context.close();
 
-    for (String user : new String[] { "user1", "user2" }) {
-      for (String dbName : new String[] { "db1", "db2" }) {
+    for (String user : new String[]{"user1", "user2"}) {
+      for (String dbName : new String[]{"db1", "db2"}) {
         Connection userConn = context.createConnection(user, "foo");
         String tabName = user + "_tab1";
         Statement userStmt = context.createStatement(userConn);
-        // Positive case: test user1 and user2 has permissions to access db1 and
+        // Positive case: test user1 and user2 has permissions to access
+        // db1 and
         // db2
         userStmt.execute("create table " + dbName + "." + tabName + " (id int)");
         userStmt.execute("LOAD DATA LOCAL INPATH '" + dataFilePath + "' INTO TABLE " + dbName + "." + tabName);
@@ -114,7 +233,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
     // drop dbs
     adminCon = context.createConnection("admin", "foo");
     adminStmt = context.createStatement(adminCon);
-    for (String dbName : new String[] { "db1", "db2" }) {
+    for (String dbName : new String[]{"db1", "db2"}) {
       adminStmt.execute("use default");
       adminStmt.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
     }
@@ -137,6 +256,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
         "[users]",
         "admin = admin_group"
         };
+
     context.makeNewPolicy(testPolicies);
 
     // Admin should be able to create new databases
@@ -148,7 +268,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
     adminStmt.execute("CREATE DATABASE " + dbName);
 
     // access the new databases
-    //    adminStmt.execute("use " + dbName);
+    // adminStmt.execute("use " + dbName);
     String tabName = dbName + "." + "admin_tab1";
     adminStmt.execute("create table " + tabName + "(c1 string)");
     adminStmt.execute("load data local inpath '/etc/passwd' into table "
@@ -184,6 +304,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
         "user3 = user_group",
         "admin = admin_group"
     };
+
     context.makeNewPolicy(testPolicies);
 
     // create dbs
@@ -199,7 +320,8 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
     Connection userConn = context.createConnection("user3", "foo");
     Statement userStmt = context.createStatement(userConn);
 
-    // since user3 only has insert privilege, all other statements should fail
+    // since user3 only has insert privilege, all other statements should
+    // fail
     try {
       userStmt.execute("select * from " + dbName + ".table_1");
       fail("select shouldn't pass for user user3 ");
@@ -226,11 +348,8 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
         "user_group  = db1_tab2_all",
         "[roles]",
         "db1_tab2_all = server=server1->db=db1->table=table_2",
-        "admin_role = server=server1",
-        "[users]",
-        "user3 = user_group",
-        "admin = admin_group"
-    };
+        "admin_role = server=server1", "[users]", "user3 = user_group",
+        "admin = admin_group"};
     context.makeNewPolicy(testPolicies);
 
     // create dbs
@@ -248,16 +367,19 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
     Connection userConn = context.createConnection("user3", "foo");
     Statement userStmt = context.createStatement(userConn);
 
-    // user3 doesn't have select priviledge on table_1, so insert/select should fail
+    // user3 doesn't have select priviledge on table_1, so insert/select
+    // should fail
     try {
-      userStmt.execute("insert overwrite table  " + dbName + ".table_2 select * from " + dbName + ".table_1");
+      userStmt.execute("insert overwrite table  " + dbName
+          + ".table_2 select * from " + dbName + ".table_1");
       fail("select shouldn't pass for user user3 ");
     } catch (SQLException e) {
       context.verifyAuthzException(e);
     }
 
     try {
-      userStmt.execute("insert overwrite directory '/tmp' select * from  " + dbName + ".table_1");
+      userStmt.execute("insert overwrite directory '/tmp' select * from  "
+          + dbName + ".table_1");
       fail("select shouldn't pass for user user3 ");
     } catch (SQLException e) {
       context.verifyAuthzException(e);
@@ -269,14 +391,14 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
    * b) Admin user grants ALL on DB_1 to group GROUP_1 c) User from GROUP_1
    * creates table TAB_1, TAB_2 in DB_1 d) Admin user grants SELECT on TAB_1 to
    * group GROUP_2
-   *
+   * 
    * 1) verify users from GROUP_2 have only SELECT privileges on TAB_1. They
    * shouldn't be able to perform any operation other than those listed as
    * requiring SELECT in the privilege model.
-   *
+   * 
    * 2) verify users from GROUP_2 can't perform queries involving join between
    * TAB_1 and TAB_2.
-   *
+   * 
    * 3) verify users from GROUP_1 can't perform operations requiring ALL @
    * SERVER scope. Refer to list
    */
@@ -290,12 +412,8 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
         "[roles]",
         "db1_all = server=server1->db=db1",
         "db1_tab1_select = server=server1->db=db1->table=table_1->action=select",
-        "admin_role = server=server1",
-        "[users]",
-        "user1 = user_group1",
-        "user2 = user_group2",
-        "admin = admin_group"
-    };
+        "admin_role = server=server1", "[users]", "user1 = user_group1",
+        "user2 = user_group2", "admin = admin_group"};
     context.makeNewPolicy(testPolicies);
 
     // create dbs
@@ -305,7 +423,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
     adminStmt.execute("use default");
     adminStmt.execute("create table table_def (name string)");
     adminStmt
-    .execute("load data local inpath '/etc/passwd' into table table_def");
+        .execute("load data local inpath '/etc/passwd' into table table_def");
 
     adminStmt.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
     adminStmt.execute("CREATE DATABASE " + dbName);
@@ -313,12 +431,13 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
 
     adminStmt.execute("create table table_1 (name string)");
     adminStmt
-    .execute("load data local inpath '/etc/passwd' into table table_1");
+        .execute("load data local inpath '/etc/passwd' into table table_1");
     adminStmt.execute("create table table_2 (name string)");
     adminStmt
-    .execute("load data local inpath '/etc/passwd' into table table_2");
+        .execute("load data local inpath '/etc/passwd' into table table_2");
     adminStmt.execute("create view v1 AS select * from table_1");
-    adminStmt.execute("create table table_part_1 (name string) PARTITIONED BY (year INT)");
+    adminStmt
+        .execute("create table table_part_1 (name string) PARTITIONED BY (year INT)");
     adminStmt.execute("ALTER TABLE table_part_1 ADD PARTITION (year = 2012)");
 
     context.close();
@@ -336,14 +455,16 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
     // Hive currently doesn't support cross db index DDL
 
     try {
-      userStmt.execute("CREATE TEMPORARY FUNCTION strip AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
+      userStmt
+          .execute("CREATE TEMPORARY FUNCTION strip AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
       fail("create function shouldn't pass for user user2");
     } catch (SQLException e) {
       context.verifyAuthzException(e);
     }
 
     try {
-      userStmt.execute("create table  " + dbName + ".c_tab_2 as select * from  " + dbName + ".table_2");
+      userStmt.execute("create table  " + dbName
+          + ".c_tab_2 as select * from  " + dbName + ".table_2");
       fail("CTAS shouldn't pass for user user2");
     } catch (SQLException e) {
       context.verifyAuthzException(e);
@@ -386,35 +507,40 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
     }
 
     try {
-      userStmt.execute("ALTER TABLE " + dbName + ".table_1  RENAME TO " + dbName + ".table_99");
+      userStmt.execute("ALTER TABLE " + dbName + ".table_1  RENAME TO "
+          + dbName + ".table_99");
       fail("ALTER TABLE rename shouldn't pass for user user2");
     } catch (SQLException e) {
       context.verifyAuthzException(e);
     }
 
     try {
-      userStmt.execute("insert overwrite table " + dbName + ".table_2 select * from " + dbName + ".table_1");
+      userStmt.execute("insert overwrite table " + dbName
+          + ".table_2 select * from " + dbName + ".table_1");
       fail("insert shouldn't pass for user user2");
     } catch (SQLException e) {
       context.verifyAuthzException(e);
     }
 
     try {
-      userStmt.execute("insert overwrite table " + dbName + ".table_2 select * from " + "table_def");
+      userStmt.execute("insert overwrite table " + dbName
+          + ".table_2 select * from " + "table_def");
       fail("insert shouldn't pass for user user2");
     } catch (SQLException e) {
       context.verifyAuthzException(e);
     }
 
     try {
-      userStmt.execute("ALTER TABLE " + dbName + ".table_part_1 ADD IF NOT EXISTS PARTITION (year = 2012)");
+      userStmt.execute("ALTER TABLE " + dbName
+          + ".table_part_1 ADD IF NOT EXISTS PARTITION (year = 2012)");
       fail("ALTER TABLE add partition shouldn't pass for user user2");
     } catch (SQLException e) {
       context.verifyAuthzException(e);
     }
 
     try {
-      userStmt.execute("ALTER TABLE " + dbName + ".table_part_1 PARTITION (year = 2012) SET LOCATION '/etc'");
+      userStmt.execute("ALTER TABLE " + dbName
+          + ".table_part_1 PARTITION (year = 2012) SET LOCATION '/etc'");
       fail("ALTER TABLE set location shouldn't pass for user user2");
     } catch (SQLException e) {
       context.verifyAuthzException(e);
@@ -447,7 +573,8 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
     editor.addPolicy("group1 = all_db1,load_data,all_db2", "groups");
     editor.addPolicy("all_db1 = server=server1->db=db_1", "roles");
     editor.addPolicy("all_db2 = server=server1->db=db_2", "roles");
-    editor.addPolicy("load_data = server=server1->URI=file:" + dataFilePath, "roles");
+    editor.addPolicy("load_data = server=server1->URI=file:" + dataFilePath,
+        "roles");
     editor.addPolicy("admin1 = admin", "users");
     editor.addPolicy("user1 = group1", "users");
 
@@ -603,4 +730,3 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
 
   }
 }
-

@@ -82,6 +82,7 @@ public class Context {
     Statement statement  = connection.createStatement();
     statement.execute("set hive.semantic.analyzer.hook = org.apache.access.binding.hive.HiveAuthzBindingHook");
     statement.execute("set hive.exec.pre.hooks = org.apache.access.binding.hive.HiveAuthzBindingPreExecHook");
+    statement.execute("set hive.exec.filter.hook = org.apache.access.binding.hive.HiveAuthzBindingHook");
     statement.close();
     return connection;
   }

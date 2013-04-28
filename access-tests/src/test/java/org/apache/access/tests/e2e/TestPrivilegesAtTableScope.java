@@ -17,6 +17,7 @@
 
 package org.apache.access.tests.e2e;
 
+import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -38,7 +39,9 @@ import com.google.common.io.Resources;
 /* Tests privileges at table scope within a single database.
  */
 
-public class TestPrivilegesAtTableScope extends AbstractTestWithStaticHiveServer {
+public class TestPrivilegesAtTableScope
+    extends
+      AbstractTestWithStaticHiveServer {
 
   private Context context;
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
@@ -56,21 +59,24 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticHiveServer
     }
   }
 
-  /* Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, loads data into TAB_1, TAB_2
-   * Admin grants SELECT on TAB_1, TAB_2, INSERT on TAB_1 to USER_GROUP of which USER_1 is a member.
+  /*
+   * Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, loads data into
+   * TAB_1, TAB_2 Admin grants SELECT on TAB_1, TAB_2, INSERT on TAB_1 to
+   * USER_GROUP of which USER_1 is a member.
    */
   @Test
   public void testInsertAndSelect() throws Exception {
     File policyFile = context.getPolicyFile();
     File dataDir = context.getDataDir();
-    //copy data file to test dir
+    // copy data file to test dir
     File dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
-    //delete existing policy file; create new policy file
+    // delete existing policy file; create new policy file
     assertTrue("Could not delete " + policyFile, context.deletePolicyFile());
     // groups : role -> group
+
     context.append("[groups]");
     context.append("admin = all_server");
     context.append("user_group = select_tab1, insert_tab1, select_tab2");
@@ -91,9 +97,11 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticHiveServer
     statement.execute("CREATE DATABASE DB_1");
     statement.execute("USE DB_1");
     statement.execute("CREATE TABLE TAB_1(A STRING)");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE TAB_1");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
+        + "' INTO TABLE TAB_1");
     statement.execute("CREATE TABLE TAB_2(A STRING)");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE TAB_2");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
+        + "' INTO TABLE TAB_2");
     statement.close();
     connection.close();
 
@@ -121,12 +129,12 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticHiveServer
       statement.execute("DROP TABLE TAB_1");
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
-      assertEquals("42000", e.getSQLState());
+      context.verifyAuthzException(e);
     }
     statement.close();
     connection.close();
 
-    //connect as admin and drop tab_1
+    // connect as admin and drop tab_1
     connection = context.createConnection("hive", "hive");
     statement = context.createStatement(connection);
     statement.execute("USE DB_1");
@@ -134,7 +142,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticHiveServer
     statement.close();
     connection.close();
 
-    //negative test: connect as user_1 and try to recreate tab_1
+    // negative test: connect as user_1 and try to recreate tab_1
     connection = context.createConnection("user_1", "password");
     statement = context.createStatement(connection);
     statement.execute("USE DB_1");
@@ -142,13 +150,13 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticHiveServer
       statement.execute("CREATE TABLE TAB_1(A STRING)");
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
-      assertEquals("42000", e.getSQLState());
+      context.verifyAuthzException(e);
     }
 
     statement.close();
     connection.close();
 
-    //test cleanup
+    // test cleanup
     connection = context.createConnection("hive", "hive");
     statement = context.createStatement(connection);
     statement.execute("DROP DATABASE DB_1 CASCADE");
@@ -157,21 +165,24 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticHiveServer
 
   }
 
-  /* Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, loads data into TAB_1, TAB_2.
-   * Admin grants INSERT on TAB_1, SELECT on TAB_2 to USER_GROUP of which USER_1 is a member.
+  /*
+   * Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, loads data into
+   * TAB_1, TAB_2. Admin grants INSERT on TAB_1, SELECT on TAB_2 to USER_GROUP
+   * of which USER_1 is a member.
    */
   @Test
   public void testInsert() throws Exception {
     File policyFile = context.getPolicyFile();
     File dataDir = context.getDataDir();
-    //copy data file to test dir
+    // copy data file to test dir
     File dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
-    //delete existing policy file; create new policy file
+    // delete existing policy file; create new policy file
     assertTrue("Could not delete " + policyFile, context.deletePolicyFile());
     // groups : role -> group
+
     context.append("[groups]");
     context.append("admin = all_server");
     context.append("user_group = insert_tab1, select_tab2");
@@ -191,10 +202,12 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticHiveServer
     statement.execute("CREATE DATABASE DB_1");
     statement.execute("USE DB_1");
     statement.execute("CREATE TABLE TAB_1(A STRING)");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE TAB_1");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
+        + "' INTO TABLE TAB_1");
     statement.execute("CREATE VIEW VIEW_1(A) AS SELECT A FROM TAB_1");
     statement.execute("CREATE TABLE TAB_2(A STRING)");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE TAB_2");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
+        + "' INTO TABLE TAB_2");
     statement.close();
     connection.close();
 
@@ -210,7 +223,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticHiveServer
       statement.executeQuery("SELECT COUNT(A) FROM TAB_1");
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
-      assertEquals("42000", e.getSQLState());
+      context.verifyAuthzException(e);
     }
 
     // negative test: test user can't query view
@@ -218,30 +231,29 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticHiveServer
       statement.executeQuery("SELECT COUNT(A) FROM VIEW_1");
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
-      assertEquals("42000", e.getSQLState());
+      context.verifyAuthzException(e);
     }
 
-    /**
-     * TODO: Disabling metadata permission test till we finalize the metadata approach
     // negative test case: show tables shouldn't list VIEW_1
     ResultSet resultSet = statement.executeQuery("SHOW TABLES");
-    while(resultSet.next()) {
-      assertNotNull("table name is null in result set", resultSet.getString(1));
-      assertFalse("VIEW_1".equalsIgnoreCase(resultSet.getString(1)));
+    while (resultSet.next()) {
+      String tableName = resultSet.getString(1);
+      assertNotNull("table name is null in result set", tableName);
+      assertFalse("Found VIEW_1 in the result set",
+          "VIEW_1".equalsIgnoreCase(tableName));
     }
-     */
 
-    //negative test: test user can't create a new view
+    // negative test: test user can't create a new view
     try {
       statement.executeQuery("CREATE VIEW VIEW_2(A) AS SELECT A FROM TAB_1");
       Assert.fail("Expected SQL Exception");
     } catch (SQLException e) {
-      assertEquals("42000", e.getSQLState());
+      context.verifyAuthzException(e);
     }
     statement.close();
     connection.close();
 
-    //test cleanup
+    // test cleanup
     connection = context.createConnection("hive", "hive");
     statement = context.createStatement(connection);
     statement.execute("DROP DATABASE DB_1 CASCADE");
@@ -249,19 +261,21 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticHiveServer
     connection.close();
   }
 
-  /* Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, loads data into TAB_1, TAB_2.
-   * Admin grants SELECT on TAB_1, TAB_2 to USER_GROUP of which USER_1 is a member.
+  /*
+   * Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, loads data into
+   * TAB_1, TAB_2. Admin grants SELECT on TAB_1, TAB_2 to USER_GROUP of which
+   * USER_1 is a member.
    */
   @Test
   public void testSelect() throws Exception {
     File policyFile = context.getPolicyFile();
     File dataDir = context.getDataDir();
-    //copy data file to test dir
+    // copy data file to test dir
     File dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
-    //delete existing policy file; create new policy file
+    // delete existing policy file; create new policy file
     assertTrue("Could not delete " + policyFile, context.deletePolicyFile());
     // groups : role -> group
     context.append("[groups]");
@@ -285,10 +299,12 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticHiveServer
     statement.execute("CREATE DATABASE DB_1");
     statement.execute("USE DB_1");
     statement.execute("CREATE TABLE TAB_1(A STRING)");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE TAB_1");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
+        + "' INTO TABLE TAB_1");
     statement.execute("CREATE VIEW VIEW_1(A) AS SELECT A FROM TAB_1");
     statement.execute("CREATE TABLE TAB_2(A STRING)");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE TAB_2");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
+        + "' INTO TABLE TAB_2");
     statement.close();
     connection.close();
 
@@ -313,7 +329,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticHiveServer
       statement.executeQuery("INSERT INTO TABLE TAB_1 SELECT A FROM TAB_2");
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
-      assertEquals("42000", e.getSQLState());
+      context.verifyAuthzException(e);
     }
 
     // negative test: test user can't query view
@@ -321,20 +337,20 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticHiveServer
       statement.executeQuery("SELECT COUNT(A) FROM VIEW_1");
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
-      assertEquals("42000", e.getSQLState());
+      context.verifyAuthzException(e);
     }
 
-    //negative test: test user can't create a new view
+    // negative test: test user can't create a new view
     try {
       statement.executeQuery("CREATE VIEW VIEW_2(A) AS SELECT A FROM TAB_1");
       Assert.fail("Expected SQL Exception");
     } catch (SQLException e) {
-      assertEquals("42000", e.getSQLState());
+      context.verifyAuthzException(e);
     }
     statement.close();
     connection.close();
 
-    //test cleanup
+    // test cleanup
     connection = context.createConnection("hive", "hive");
     statement = context.createStatement(connection);
     statement.execute("DROP DATABASE DB_1 CASCADE");
@@ -342,19 +358,21 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticHiveServer
     connection.close();
   }
 
-  /* Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, VIEW_1 on TAB_1 loads data into TAB_1, TAB_2.
-   * Admin grants SELECT on TAB_1,TAB_2 to USER_GROUP of which USER_1 is a member.
+  /*
+   * Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, VIEW_1 on TAB_1
+   * loads data into TAB_1, TAB_2. Admin grants SELECT on TAB_1,TAB_2 to
+   * USER_GROUP of which USER_1 is a member.
    */
   @Test
   public void testTableViewJoin() throws Exception {
     File policyFile = context.getPolicyFile();
     File dataDir = context.getDataDir();
-    //copy data file to test dir
+    // copy data file to test dir
     File dataFile = new File(dataDir, MULTI_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(MULTI_TYPE_DATA_FILE_NAME), to);
     to.close();
-    //delete existing policy file; create new policy file
+    // delete existing policy file; create new policy file
     assertTrue("Could not delete " + policyFile, context.deletePolicyFile());
     // groups : role -> group
     context.append("[groups]");
@@ -376,13 +394,15 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticHiveServer
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("CREATE DATABASE DB_1");
     statement.execute("USE DB_1");
-    statement.execute("CREATE TABLE TAB_1(B INT, A STRING) " +
-                      " row format delimited fields terminated by '|'  stored as textfile");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE TAB_1");
+    statement.execute("CREATE TABLE TAB_1(B INT, A STRING) "
+        + " row format delimited fields terminated by '|'  stored as textfile");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
+        + "' INTO TABLE TAB_1");
     statement.execute("CREATE VIEW VIEW_1 AS SELECT A, B FROM TAB_1");
-    statement.execute("CREATE TABLE TAB_2(B INT, A STRING) " +
-                      " row format delimited fields terminated by '|'  stored as textfile");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE TAB_2");
+    statement.execute("CREATE TABLE TAB_2(B INT, A STRING) "
+        + " row format delimited fields terminated by '|'  stored as textfile");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
+        + "' INTO TABLE TAB_2");
     statement.close();
     connection.close();
 
@@ -391,7 +411,8 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticHiveServer
     statement = context.createStatement(connection);
     statement.execute("USE DB_1");
     // test user can execute query TAB_1 JOIN TAB_2
-    ResultSet resultSet = statement.executeQuery("SELECT COUNT(*) FROM TAB_1 T1 JOIN TAB_2 T2 ON (T1.B = T2.B)");
+    ResultSet resultSet = statement
+        .executeQuery("SELECT COUNT(*) FROM TAB_1 T1 JOIN TAB_2 T2 ON (T1.B = T2.B)");
     int count = 0;
     int countRows = 0;
 
@@ -404,16 +425,17 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticHiveServer
 
     // negative test: test user can't execute query VIEW_1 JOIN TAB_2
     try {
-      statement.executeQuery("SELECT COUNT(*) FROM VIEW_1 V1 JOIN TAB_2 T2 ON (V1.B = T2.B)");
+      statement
+          .executeQuery("SELECT COUNT(*) FROM VIEW_1 V1 JOIN TAB_2 T2 ON (V1.B = T2.B)");
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
-      assertEquals("42000", e.getSQLState());
+      context.verifyAuthzException(e);
     }
 
     statement.close();
     connection.close();
 
-    //test cleanup
+    // test cleanup
     connection = context.createConnection("hive", "hive");
     statement = context.createStatement(connection);
     statement.execute("DROP DATABASE DB_1 CASCADE");
@@ -421,29 +443,33 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticHiveServer
     connection.close();
   }
 
-  /* Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, VIEW_1 on TAB_1 loads data into TAB_1, TAB_2.
-   * Admin grants SELECT on TAB_2 to USER_GROUP of which USER_1 is a member.
+  /*
+   * Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, VIEW_1 on TAB_1
+   * loads data into TAB_1, TAB_2. Admin grants SELECT on TAB_2 to USER_GROUP of
+   * which USER_1 is a member.
    */
   @Test
   public void testTableViewJoin2() throws Exception {
     File policyFile = context.getPolicyFile();
     File dataDir = context.getDataDir();
-    //copy data file to test dir
+    // copy data file to test dir
     File dataFile = new File(dataDir, MULTI_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(MULTI_TYPE_DATA_FILE_NAME), to);
     to.close();
-    //delete existing policy file; create new policy file
+    // delete existing policy file; create new policy file
     assertTrue("Could not delete " + policyFile, context.deletePolicyFile());
     // groups : role -> group
     context.append("[groups]");
     context.append("admin = all_server");
     context.append("user_group = select_tab2");
     // roles: privileges -> role
+
     context.append("[roles]");
     context.append("all_server = server=server1");
     context.append("select_tab1 = server=server1->db=DB_1->table=TAB_1->action=select");
     context.append("select_tab2 = server=server1->db=DB_1->table=TAB_2->action=select");
+
     // users: users -> groups
     context.append("[users]");
     context.append("hive = admin");
@@ -455,13 +481,15 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticHiveServer
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("CREATE DATABASE DB_1");
     statement.execute("USE DB_1");
-    statement.execute("CREATE TABLE TAB_1(B INT, A STRING) " +
-                      " row format delimited fields terminated by '|'  stored as textfile");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE TAB_1");
+    statement.execute("CREATE TABLE TAB_1(B INT, A STRING) "
+        + " row format delimited fields terminated by '|'  stored as textfile");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
+        + "' INTO TABLE TAB_1");
     statement.execute("CREATE VIEW VIEW_1 AS SELECT A, B FROM TAB_1");
-    statement.execute("CREATE TABLE TAB_2(B INT, A STRING) " +
-                      " row format delimited fields terminated by '|'  stored as textfile");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE TAB_2");
+    statement.execute("CREATE TABLE TAB_2(B INT, A STRING) "
+        + " row format delimited fields terminated by '|'  stored as textfile");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
+        + "' INTO TABLE TAB_2");
     statement.close();
     connection.close();
 
@@ -483,24 +511,26 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticHiveServer
 
     // negative test: test user can't execute query VIEW_1 JOIN TAB_2
     try {
-      statement.executeQuery("SELECT COUNT(*) FROM VIEW_1 JOIN TAB_2 ON (VIEW_1.B = TAB_2.B)");
+      statement
+          .executeQuery("SELECT COUNT(*) FROM VIEW_1 JOIN TAB_2 ON (VIEW_1.B = TAB_2.B)");
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
-      assertEquals("42000", e.getSQLState());
+      context.verifyAuthzException(e);
     }
 
     // negative test: test user can't execute query TAB_1 JOIN TAB_2
     try {
-      statement.executeQuery("SELECT COUNT(*) FROM TAB_1 JOIN TAB_2 ON (TAB_1.B = TAB_2.B)");
+      statement
+          .executeQuery("SELECT COUNT(*) FROM TAB_1 JOIN TAB_2 ON (TAB_1.B = TAB_2.B)");
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
-      assertEquals("42000", e.getSQLState());
+      context.verifyAuthzException(e);
     }
 
     statement.close();
     connection.close();
 
-    //test cleanup
+    // test cleanup
     connection = context.createConnection("hive", "hive");
     statement = context.createStatement(connection);
     statement.execute("DROP DATABASE DB_1 CASCADE");
@@ -508,21 +538,24 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticHiveServer
     connection.close();
   }
 
-  /* Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, VIEW_1 on TAB_1 loads data into TAB_1, TAB_2.
-   * Admin grants SELECT on TAB_2, VIEW_1 to USER_GROUP of which USER_1 is a member.
+  /*
+   * Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, VIEW_1 on TAB_1
+   * loads data into TAB_1, TAB_2. Admin grants SELECT on TAB_2, VIEW_1 to
+   * USER_GROUP of which USER_1 is a member.
    */
   @Test
   public void testTableViewJoin3() throws Exception {
     File policyFile = context.getPolicyFile();
     File dataDir = context.getDataDir();
-    //copy data file to test dir
+    // copy data file to test dir
     File dataFile = new File(dataDir, MULTI_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(MULTI_TYPE_DATA_FILE_NAME), to);
     to.close();
-    //delete existing policy file; create new policy file
+    // delete existing policy file; create new policy file
     assertTrue("Could not delete " + policyFile, context.deletePolicyFile());
     // groups : role -> group
+
     context.append("[groups]");
     context.append("admin = all_server");
     context.append("user_group = select_tab2, select_view1");
@@ -542,13 +575,15 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticHiveServer
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("CREATE DATABASE DB_1");
     statement.execute("USE DB_1");
-    statement.execute("CREATE TABLE TAB_1(B INT, A STRING) " +
-                      " row format delimited fields terminated by '|'  stored as textfile");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE TAB_1");
+    statement.execute("CREATE TABLE TAB_1(B INT, A STRING) "
+        + " row format delimited fields terminated by '|'  stored as textfile");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
+        + "' INTO TABLE TAB_1");
     statement.execute("CREATE VIEW VIEW_1 AS SELECT A, B FROM TAB_1");
-    statement.execute("CREATE TABLE TAB_2(B INT, A STRING) " +
-                      " row format delimited fields terminated by '|'  stored as textfile");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE TAB_2");
+    statement.execute("CREATE TABLE TAB_2(B INT, A STRING) "
+        + " row format delimited fields terminated by '|'  stored as textfile");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
+        + "' INTO TABLE TAB_2");
     statement.close();
     connection.close();
 
@@ -569,7 +604,8 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticHiveServer
     assertTrue("Incorrect result", count == 12);
 
     // test user can execute query VIEW_1 JOIN TAB_2
-    resultSet = statement.executeQuery("SELECT COUNT(*) FROM VIEW_1 V1 JOIN TAB_2 T2 ON (V1.B = T2.B)");
+    resultSet = statement
+        .executeQuery("SELECT COUNT(*) FROM VIEW_1 V1 JOIN TAB_2 T2 ON (V1.B = T2.B)");
     count = 0;
     countRows = 0;
 
@@ -594,16 +630,17 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticHiveServer
 
     // negative test: test user can't execute query TAB_1 JOIN TAB_2
     try {
-      statement.executeQuery("SELECT COUNT(*) FROM TAB_1 T1 JOIN TAB_2 T2 ON (T1.B = T2.B)");
+      statement
+          .executeQuery("SELECT COUNT(*) FROM TAB_1 T1 JOIN TAB_2 T2 ON (T1.B = T2.B)");
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
-      assertEquals("42000", e.getSQLState());
+      context.verifyAuthzException(e);
     }
 
     statement.close();
     connection.close();
 
-    //test cleanup
+    // test cleanup
     connection = context.createConnection("hive", "hive");
     statement = context.createStatement(connection);
     statement.execute("DROP DATABASE DB_1 CASCADE");
@@ -611,21 +648,24 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticHiveServer
     connection.close();
   }
 
-  /* Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, VIEW_1 on TAB_1 loads data into TAB_1, TAB_2.
-   * Admin grants SELECT on TAB_1, VIEW_1 to USER_GROUP of which USER_1 is a member.
+  /*
+   * Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, VIEW_1 on TAB_1
+   * loads data into TAB_1, TAB_2. Admin grants SELECT on TAB_1, VIEW_1 to
+   * USER_GROUP of which USER_1 is a member.
    */
   @Test
   public void testTableViewJoin4() throws Exception {
     File policyFile = context.getPolicyFile();
     File dataDir = context.getDataDir();
-    //copy data file to test dir
+    // copy data file to test dir
     File dataFile = new File(dataDir, MULTI_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(MULTI_TYPE_DATA_FILE_NAME), to);
     to.close();
-    //delete existing policy file; create new policy file
+    // delete existing policy file; create new policy file
     assertTrue("Could not delete " + policyFile, context.deletePolicyFile());
     // groups : role -> group
+
     context.append("[groups]");
     context.append("admin = all_server");
     context.append("user_group = select_tab1, select_view1");
@@ -645,13 +685,15 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticHiveServer
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("CREATE DATABASE DB_1");
     statement.execute("USE DB_1");
-    statement.execute("CREATE TABLE TAB_1(B INT, A STRING) " +
-                      " row format delimited fields terminated by '|'  stored as textfile");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE TAB_1");
+    statement.execute("CREATE TABLE TAB_1(B INT, A STRING) "
+        + " row format delimited fields terminated by '|'  stored as textfile");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
+        + "' INTO TABLE TAB_1");
     statement.execute("CREATE VIEW VIEW_1 AS SELECT A, B FROM TAB_1");
-    statement.execute("CREATE TABLE TAB_2(B INT, A STRING) " +
-                      " row format delimited fields terminated by '|'  stored as textfile");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE TAB_2");
+    statement.execute("CREATE TABLE TAB_2(B INT, A STRING) "
+        + " row format delimited fields terminated by '|'  stored as textfile");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
+        + "' INTO TABLE TAB_2");
     statement.close();
     connection.close();
 
@@ -661,7 +703,8 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticHiveServer
     statement.execute("USE DB_1");
 
     // test user can execute query VIEW_1 JOIN TAB_1
-    ResultSet resultSet = statement.executeQuery("SELECT COUNT(*) FROM VIEW_1 JOIN TAB_1 ON (VIEW_1.B = TAB_1.B)");
+    ResultSet resultSet = statement
+        .executeQuery("SELECT COUNT(*) FROM VIEW_1 JOIN TAB_1 ON (VIEW_1.B = TAB_1.B)");
     int count = 0;
     int countRows = 0;
 
@@ -674,16 +717,17 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticHiveServer
 
     // negative test: test user can't execute query TAB_1 JOIN TAB_2
     try {
-      statement.executeQuery("SELECT COUNT(*) FROM TAB_1 JOIN TAB_2 ON (TAB_1.B = TAB_2.B)");
+      statement
+          .executeQuery("SELECT COUNT(*) FROM TAB_1 JOIN TAB_2 ON (TAB_1.B = TAB_2.B)");
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
-      assertEquals("42000", e.getSQLState());
+      context.verifyAuthzException(e);
     }
 
     statement.close();
     connection.close();
 
-    //test cleanup
+    // test cleanup
     connection = context.createConnection("hive", "hive");
     statement = context.createStatement(connection);
     statement.execute("DROP DATABASE DB_1 CASCADE");
