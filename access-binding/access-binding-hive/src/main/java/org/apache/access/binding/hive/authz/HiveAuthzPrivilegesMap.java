@@ -106,21 +106,21 @@ public class HiveAuthzPrivilegesMap {
         setOperationType(HiveOperationType.QUERY).
         build();
 
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_ADDCOLS, tableDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_REPLACECOLS, tableDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_RENAMECOL, tableDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_RENAMEPART, tableDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_RENAME, tableDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_DROPPARTS, tableDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_ADDPARTS, tableDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_TOUCH, tableDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_ARCHIVE, tableDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_UNARCHIVE, tableDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_SERIALIZER, tableDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_SERIALIZER, tableDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_SERDEPROPERTIES, tableDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_SERDEPROPERTIES, tableDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_CLUSTER_SORT, tableDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_ADDCOLS, dbDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_REPLACECOLS, dbDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_RENAMECOL, dbDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_RENAMEPART, dbDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_RENAME, dbDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_DROPPARTS, dbDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_ADDPARTS, dbDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_TOUCH, dbDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_ARCHIVE, dbDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_UNARCHIVE, dbDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_SERIALIZER, dbDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_SERIALIZER, dbDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_SERDEPROPERTIES, dbDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_SERDEPROPERTIES, dbDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_CLUSTER_SORT, dbDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ANALYZE_TABLE, tableQueryPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.SWITCHDATABASE, anyPrivilege);
     // SHOWDATABASES
@@ -135,12 +135,12 @@ public class HiveAuthzPrivilegesMap {
     // SHOWLOCKS
     hiveAuthzStmtPrivMap.put(HiveOperation.CREATEFUNCTION, anyPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.DROPFUNCTION, anyPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.CREATEVIEW, tableDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.DROPVIEW, tableDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.CREATEVIEW, dbDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.DROPVIEW, dbDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.CREATEINDEX, dbDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.DROPINDEX, dbDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.DROPDATABASE, serverPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.DROPTABLE, tableDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.DROPTABLE, dbDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.EXPORT, tableExportPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.IMPORT, tableImportPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.LOAD, tableLoadPrivilege);
@@ -156,12 +156,12 @@ public class HiveAuthzPrivilegesMap {
     // GRANT_ROLE
     // REVOKE_ROLE
     // SHOW_ROLE_GRANT
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_PROTECTMODE, tableDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_PROTECTMODE, tableDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_FILEFORMAT, tableDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_FILEFORMAT, tableDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_LOCATION, tableDDLPrivilege); // Disable ??
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_LOCATION, tableDDLPrivilege); // Disable ??
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_PROTECTMODE, dbDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_PROTECTMODE, dbDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_FILEFORMAT, dbDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_FILEFORMAT, dbDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_LOCATION, dbDDLPrivilege); // Disable ??
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_LOCATION, dbDDLPrivilege); // Disable ??
     hiveAuthzStmtPrivMap.put(HiveOperation.CREATEDATABASE, serverPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.CREATETABLE, dbDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.CREATETABLE_AS_SELECT,
@@ -172,14 +172,14 @@ public class HiveAuthzPrivilegesMap {
         setOperationType(HiveOperationType.DDL).
         build());
     hiveAuthzStmtPrivMap.put(HiveOperation.QUERY, tableQueryPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERINDEX_PROPS, tableDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERINDEX_PROPS, dbDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERDATABASE, dbDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.DESCDATABASE, dbMetaDataPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.DESCTABLE, tableMetaDataPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_MERGEFILES, tableDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_MERGEFILES, tableDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_SKEWED, tableDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTBLPART_SKEWED_LOCATION, tableDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_MERGEFILES, dbDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_MERGEFILES, dbDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_SKEWED, dbDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTBLPART_SKEWED_LOCATION, dbDDLPrivilege);
 
     hiveAuthzExtendedPrivMap.put(HiveExtendedOperation.TRANSFORM, serverPrivilege);
   }

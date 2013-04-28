@@ -40,6 +40,11 @@ public class PolicyFileEditor {
     this.policy = policy;
   }
 
+  public void clearOldPolicy() throws IOException {
+    policy.delete();
+    policy.createNewFile();
+  }
+
   public void addPolicy(String line, String cat) throws IOException {
     List<String> result = new ArrayList<String>();
     boolean exist = false;

@@ -88,6 +88,31 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
     case HiveParser.TOK_DESCDATABASE:
       currDB = new Database(BaseSemanticAnalyzer.unescapeIdentifier(ast.getChild(0).getText()));
       break;
+    case HiveParser.TOK_CREATETABLE:
+    case HiveParser.TOK_DROPTABLE:
+    case HiveParser.TOK_ALTERTABLE_ADDCOLS:
+    case HiveParser.TOK_ALTERTABLE_RENAMECOL:
+    case HiveParser.TOK_ALTERTABLE_REPLACECOLS:
+    case HiveParser.TOK_ALTERTABLE_RENAME:
+    case HiveParser.TOK_ALTERTABLE_DROPPARTS:
+    case HiveParser.TOK_ALTERTABLE_ADDPARTS:
+    case HiveParser.TOK_ALTERTABLE_PROPERTIES:
+    case HiveParser.TOK_ALTERTABLE_SERIALIZER:
+    case HiveParser.TOK_CREATEVIEW:
+    case HiveParser.TOK_DROPVIEW:
+    case HiveParser.TOK_ALTERVIEW_ADDPARTS:
+    case HiveParser.TOK_ALTERVIEW_DROPPARTS:
+    case HiveParser.TOK_ALTERVIEW_PROPERTIES:
+    case HiveParser.TOK_ALTERVIEW_RENAME:
+      /*
+       * Compiler doesn't create read/write entities for create table.
+       * Hence we need extract dbname from db.tab format, if applicable
+       */
+      String tableName = BaseSemanticAnalyzer.getUnescapedName((ASTNode)ast.getChild(0));
+      if (tableName.contains(".")) {
+        currDB = new Database((tableName.split("\\."))[0]);
+      }
+      break;
     case HiveParser.TOK_CREATEFUNCTION:
       String udfClassName = BaseSemanticAnalyzer.unescapeSQLString(ast.getChild(1).getText());
       try {
