@@ -125,13 +125,13 @@ public class HiveAuthzPrivilegesMap {
     hiveAuthzStmtPrivMap.put(HiveOperation.SWITCHDATABASE, anyPrivilege);
     // SHOWDATABASES
     // SHOWTABLES
-    // SHOWCOLUMNS
-    // SHOW_TABLESTATUS
-    // SHOW_TBLPROPERTIES
-    // SHOW_CREATETABLE
+    hiveAuthzStmtPrivMap.put(HiveOperation.SHOWCOLUMNS, tableMetaDataPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.SHOW_TABLESTATUS, tableMetaDataPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.SHOW_TBLPROPERTIES, tableMetaDataPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.SHOW_CREATETABLE, tableMetaDataPrivilege);
     // SHOWFUNCTIONS
-    // SHOWINDEXES
-    // SHOWPARTITIONS
+    hiveAuthzStmtPrivMap.put(HiveOperation.SHOWINDEXES, tableMetaDataPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.SHOWPARTITIONS, tableMetaDataPrivilege);
     // SHOWLOCKS
     hiveAuthzStmtPrivMap.put(HiveOperation.CREATEFUNCTION, anyPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.DROPFUNCTION, anyPrivilege);

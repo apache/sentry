@@ -36,7 +36,9 @@ public class PolicyFileEditor {
 
   private File policy;
 
-  public PolicyFileEditor (File policy) {
+  public PolicyFileEditor (File policy) throws IOException {
+    policy.delete();
+    policy.createNewFile();
     this.policy = policy;
   }
 

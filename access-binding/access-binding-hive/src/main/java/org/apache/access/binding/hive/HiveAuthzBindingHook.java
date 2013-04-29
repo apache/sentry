@@ -136,19 +136,39 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
       // create/drop function is allowed with any database
       currDB = Database.ALL;
       break;
+    case HiveParser.TOK_SHOW_TABLESTATUS:
+    case HiveParser.TOK_SHOW_CREATETABLE:
+    case HiveParser.TOK_SHOWINDEXES:
+    case HiveParser.TOK_SHOWPARTITIONS:
+      // Find the target table for metadata operations, these are not covered in the read entities by the compiler
+      currTab = new Table(BaseSemanticAnalyzer.getUnescapedName((ASTNode) ast.getChild(0)));
+      currDB = getCanonicalDb();
+      break;
     case HiveParser.TOK_DESCTABLE:
       // describe doesn't support db.table format. so just extract the table name here.
       currTab = new Table(BaseSemanticAnalyzer.
           unescapeIdentifier(ast.getChild(0).getChild(0).getText()));
-      // *** FALL THROUGH ***
+      currDB = getCanonicalDb();
+      break;
+    case HiveParser.TOK_SHOW_TBLPROPERTIES:
+      currTab = new Table(BaseSemanticAnalyzer.
+            getUnescapedName((ASTNode) ast.getChild(0)));
+      currDB = getCanonicalDb();
+      break;
     default:
-      try {
-        currDB = new Database(Hive.get().getCurrentDatabase());
-      } catch (HiveException e) {
-        throw new SemanticException("Error retrieving current db", e);
-      }
+      currDB = getCanonicalDb();
+      break;
     }
     return ast;
+  }
+
+  // Find the current database for session
+  private Database getCanonicalDb() throws SemanticException {
+    try {
+      return new Database(Hive.get().getCurrentDatabase());
+    } catch (HiveException e) {
+      throw new SemanticException("Error retrieving current db", e);
+    }
   }
 
   /**
