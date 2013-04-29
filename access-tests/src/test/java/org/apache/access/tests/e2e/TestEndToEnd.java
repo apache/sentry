@@ -24,6 +24,8 @@ import java.io.FileOutputStream;
 import java.sql.Connection;
 import java.sql.Statement;
 
+import junit.framework.Assert;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -68,8 +70,8 @@ public class TestEndToEnd extends AbstractTestWithStaticHiveServer {
   public void testEndToEnd1() throws Exception {
     File policyFile = context.getPolicyFile();
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("admin = adminPri", "groups");
-    editor.addPolicy("adminPri = server=server1", "roles");
+    editor.addPolicy("admin = admin_role", "groups");
+    editor.addPolicy("admin_role = server=server1", "roles");
     editor.addPolicy("admin1 = admin", "users");
 
     String dbName1 = "db_1";
@@ -80,19 +82,17 @@ public class TestEndToEnd extends AbstractTestWithStaticHiveServer {
     Connection connection = context.createConnection("admin1", "foo");
     Statement statement = context.createStatement(connection);
     // 1
-    assertTrue("DROP DATABASE fail", !statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE"));
-    assertTrue("CREATE DATABASE fail", !statement.execute("CREATE DATABASE " + dbName1));
+    statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
+    statement.execute("CREATE DATABASE " + dbName1);
     // 2
-    assertTrue("DROP DATABASE fail", !statement.execute("DROP DATABASE IF EXISTS " + dbName2 + " CASCADE"));
-    assertTrue("CREATE DATABASE fail", !statement.execute("CREATE DATABASE " + dbName2));
-    assertTrue("switch database fail", !statement.execute("USE " + dbName2));
-    assertTrue("DROP TABLE fail", !statement.execute("DROP TABLE IF EXISTS " + dbName2 + "." + tableName2));
-    assertTrue("CREATE TABLE fail", !statement.execute("create table " + dbName2 + "." + tableName2
-        + " (under_col int comment 'the under column', value string)"));
-    assertTrue(
-        "admin should be able to load data to table " + tableName2,
-        !statement.execute("load data local inpath '" + dataFile.getPath()
-            + "' into table " + tableName2));
+    statement.execute("DROP DATABASE IF EXISTS " + dbName2 + " CASCADE");
+    statement.execute("CREATE DATABASE " + dbName2);
+    statement.execute("USE " + dbName2);
+    statement.execute("DROP TABLE IF EXISTS " + dbName2 + "." + tableName2);
+    statement.execute("create table " + dbName2 + "." + tableName2
+        + " (under_col int comment 'the under column', value string)");
+    statement.execute("load data local inpath '" + dataFile.getPath()
+            + "' into table " + tableName2);
     statement.close();
     connection.close();
 
@@ -100,33 +100,31 @@ public class TestEndToEnd extends AbstractTestWithStaticHiveServer {
     editor.addPolicy("user1 = group1", "users");
 
     // 4
-    editor.addPolicy("group1 = all_db1", "groups");
+    editor.addPolicy("group1 = all_db1, data_uri", "groups");
     editor.addPolicy("all_db1 = server=server1->db=db_1", "roles");
+    editor.addPolicy("data_uri = server=server1->uri=file:" + dataDir.getPath(), "roles");
 
     // 5
     connection = context.createConnection("user1", "foo");
     statement = context.createStatement(connection);
-    assertTrue("user_1 should be able to switch to database db_1", !statement.execute("USE " + dbName1));
-    assertTrue("DROP TABLE fail", !statement.execute("DROP TABLE IF EXISTS " + dbName1 + "." + tableName1));
-    assertTrue("CREATE TABLE fail", !statement.execute("create table " + dbName1 + "." + tableName1
-        + " (under_col int comment 'the under column', value string)"));
-    assertTrue(
-        "admin should be able to load data to table " + tableName1,
-        !statement.execute("load data local inpath '" + dataFile.getPath()
-            + "' into table " + tableName1));
+    statement.execute("USE " + dbName1);
+    statement.execute("DROP TABLE IF EXISTS " + dbName1 + "." + tableName1);
+    statement.execute("create table " + dbName1 + "." + tableName1
+        + " (under_col int comment 'the under column', value string)");
+    statement.execute("load data local inpath '" + dataFile.getPath()
+            + "' into table " + tableName1);
     // 6
-    assertTrue("user1 should be able to create view view_1", !statement.execute("CREATE VIEW " + viewName1
-        + " (value) AS SELECT value from " + tableName1 + " LIMIT 10"));
+    statement.execute("CREATE VIEW " + viewName1 + " (value) AS SELECT value from " + tableName1 + " LIMIT 10");
     statement.close();
     connection.close();
 
     // 7
     connection = context.createConnection("admin1", "foo");
     statement = context.createStatement(connection);
-    assertTrue("user_1 should be able to switch to database db_1", !statement.execute("USE " + dbName2));
-    assertTrue("DROP TABLE fail", !statement.execute("DROP TABLE IF EXISTS " + dbName1 + "." + tableName1));
-    assertTrue("CREATE TABLE fail", !statement.execute("create table " + dbName1 + "." + tableName1
-        + " (under_col int comment 'the under column', value string)"));
+    statement.execute("USE " + dbName2);
+    statement.execute("DROP TABLE IF EXISTS " + dbName1 + "." + tableName1);
+    statement.execute("create table " + dbName1 + "." + tableName1
+        + " (under_col int comment 'the under column', value string)");
     statement.close();
     connection.close();
 
@@ -139,10 +137,10 @@ public class TestEndToEnd extends AbstractTestWithStaticHiveServer {
     // 9
     connection = context.createConnection("user1", "foo");
     statement = context.createStatement(connection);
-    assertTrue("user_1 should be able to switch to database db_1", !statement.execute("USE " + dbName2));
-    assertTrue("load data between database fail", !statement.execute("INSERT OVERWRITE TABLE "
+    statement.execute("USE " + dbName2);
+    statement.execute("INSERT OVERWRITE TABLE "
         + tableName1 + " SELECT * FROM " + dbName1
-        + "." + tableName1));
+        + "." + tableName1);
     statement.close();
     connection.close();
   }
