@@ -32,6 +32,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Set;
 
+import junit.framework.Assert;
+
 import org.apache.access.tests.e2e.hiveserver.HiveServer;
 import org.apache.hadoop.fs.FileSystem;
 import org.slf4j.Logger;
@@ -147,6 +149,16 @@ public class Context {
       }
     }
     connections.clear();
+  }
+
+  public void assertAuthzException(Statement statement, String query)
+      throws SQLException {
+    try {
+      statement.execute(query);
+      Assert.fail("Expected SQLException");
+    } catch (SQLException e) {
+      verifyAuthzException(e);
+    }
   }
 
   // verify that the sqlexception is due to authorization failure
