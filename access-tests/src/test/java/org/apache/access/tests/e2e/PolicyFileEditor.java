@@ -27,6 +27,9 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 
+/**
+ * Deprecated} use Context.append()
+ */
 public class PolicyFileEditor {
 
   private static final String NL = System.getProperty("line.separator", "\n");

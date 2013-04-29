@@ -91,23 +91,35 @@ public class Context {
     statements.add(statement);
     return statement;
   }
-
+  /**
+   * Deprecated} use append()
+   */
   public void writePolicyFile(String buf) throws IOException {
     FileOutputStream out = new FileOutputStream(policyFile);
     out.write(buf.getBytes(Charsets.UTF_8));
     out.close();
   }
-
-  public void appendToPolicyFileWithNewLine(String buf) throws IOException {
-    StringBuffer sb = new StringBuffer(buf);
-    sb.append('\n');
-    Files.append(sb, policyFile, Charsets.UTF_8);
+  /**
+   * Deprecated} use append()
+   */
+  @Deprecated
+  public void appendToPolicyFileWithNewLine(String line) throws IOException {
+    append(line);
+  }
+  public void append(String...lines) throws IOException {
+    StringBuffer buffer = new StringBuffer();
+    for(String line : lines) {
+      buffer.append(line).append("\n");
+    }
+    Files.append(buffer, policyFile, Charsets.UTF_8);
   }
 
   public boolean deletePolicyFile() throws IOException {
      return policyFile.delete();
   }
-
+  /**
+   * Deprecated} use append()
+   */
   public void makeNewPolicy(String policyLines[]) throws FileNotFoundException {
     PrintWriter policyWriter = new PrintWriter (policyFile.toString());
     for (String line : policyLines) {

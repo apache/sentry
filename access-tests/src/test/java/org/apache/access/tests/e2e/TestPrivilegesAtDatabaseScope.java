@@ -76,21 +76,21 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
     //delete existing policy file; create new policy file
     assertTrue("Could not delete " + policyFile, context.deletePolicyFile());
     // groups : role -> group
-    context.appendToPolicyFileWithNewLine("[groups]");
-    context.appendToPolicyFileWithNewLine("admin = all_server");
-    context.appendToPolicyFileWithNewLine("user_group1 = all_db1, load_data");
-    context.appendToPolicyFileWithNewLine("user_group2 = all_db2");
+    context.append("[groups]");
+    context.append("admin = all_server");
+    context.append("user_group1 = all_db1, load_data");
+    context.append("user_group2 = all_db2");
     // roles: privileges -> role
-    context.appendToPolicyFileWithNewLine("[roles]");
-    context.appendToPolicyFileWithNewLine("all_server = server=server1");
-    context.appendToPolicyFileWithNewLine("all_db1 = server=server1->db=DB_1");
-    context.appendToPolicyFileWithNewLine("all_db2 = server=server1->db=DB_2");
-    context.appendToPolicyFileWithNewLine("load_data = server=server1->uri=file:" + dataFile.getPath());
+    context.append("[roles]");
+    context.append("all_server = server=server1");
+    context.append("all_db1 = server=server1->db=DB_1");
+    context.append("all_db2 = server=server1->db=DB_2");
+    context.append("load_data = server=server1->uri=file:" + dataFile.getPath());
     // users: users -> groups
-    context.appendToPolicyFileWithNewLine("[users]");
-    context.appendToPolicyFileWithNewLine("hive = admin");
-    context.appendToPolicyFileWithNewLine("user_1 = user_group1");
-    context.appendToPolicyFileWithNewLine("user_2 = user_group2");
+    context.append("[users]");
+    context.append("hive = admin");
+    context.append("user_1 = user_group1");
+    context.append("user_2 = user_group2");
     // setup db objects needed by the test
     Connection connection = context.createConnection("hive", "hive");
     Statement statement = context.createStatement(connection);
@@ -198,21 +198,21 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
     //delete existing policy file; create new policy file
     assertTrue("Could not delete " + policyFile, context.deletePolicyFile());
     // groups : role -> group
-    context.appendToPolicyFileWithNewLine("[groups]");
-    context.appendToPolicyFileWithNewLine("admin = all_server");
-    context.appendToPolicyFileWithNewLine("user_group1 = all_db1, load_data");
-    context.appendToPolicyFileWithNewLine("user_group2 = all_db2");
+    context.append("[groups]");
+    context.append("admin = all_server");
+    context.append("user_group1 = all_db1, load_data");
+    context.append("user_group2 = all_db2");
     // roles: privileges -> role
-    context.appendToPolicyFileWithNewLine("[roles]");
-    context.appendToPolicyFileWithNewLine("all_server = server=server1");
-    context.appendToPolicyFileWithNewLine("all_db1 = server=server1->db=DB_1");
-    context.appendToPolicyFileWithNewLine("all_db2 = server=server1->db=DB_2");
-    context.appendToPolicyFileWithNewLine("load_data = server=server1->uri=file:" + dataFile.getPath());
+    context.append("[roles]");
+    context.append("all_server = server=server1");
+    context.append("all_db1 = server=server1->db=DB_1");
+    context.append("all_db2 = server=server1->db=DB_2");
+    context.append("load_data = server=server1->uri=file:" + dataFile.getPath());
     // users: users -> groups
-    context.appendToPolicyFileWithNewLine("[users]");
-    context.appendToPolicyFileWithNewLine("hive = admin");
-    context.appendToPolicyFileWithNewLine("user_1 = user_group1");
-    context.appendToPolicyFileWithNewLine("user_2 = user_group2");
+    context.append("[users]");
+    context.append("hive = admin");
+    context.append("user_1 = user_group1");
+    context.append("user_2 = user_group2");
     // setup db objects needed by the test
     Connection connection = context.createConnection("hive", "hive");
     Statement statement = context.createStatement(connection);
@@ -320,20 +320,20 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
     //delete existing policy file; create new policy file
     assertTrue("Could not delete " + policyFile, context.deletePolicyFile());
     // groups : role -> group
-    context.appendToPolicyFileWithNewLine("[groups]");
-    context.appendToPolicyFileWithNewLine("admin = all_server");
-    context.appendToPolicyFileWithNewLine("user_group1 = all_db1");
-    context.appendToPolicyFileWithNewLine("user_group2 = all_db2");
+    context.append("[groups]");
+    context.append("admin = all_server");
+    context.append("user_group1 = all_db1");
+    context.append("user_group2 = all_db2");
     // roles: privileges -> role
-    context.appendToPolicyFileWithNewLine("[roles]");
-    context.appendToPolicyFileWithNewLine("all_server = server=server1");
-    context.appendToPolicyFileWithNewLine("all_db1 = server=server1->db=DB_1");
-    context.appendToPolicyFileWithNewLine("all_db2 = server=server1->db=DB_2");
+    context.append("[roles]");
+    context.append("all_server = server=server1");
+    context.append("all_db1 = server=server1->db=DB_1");
+    context.append("all_db2 = server=server1->db=DB_2");
     // users: users -> groups
-    context.appendToPolicyFileWithNewLine("[users]");
-    context.appendToPolicyFileWithNewLine("hive = admin");
-    context.appendToPolicyFileWithNewLine("user_1 = user_group1");
-    context.appendToPolicyFileWithNewLine("user_2 = user_group2");
+    context.append("[users]");
+    context.append("hive = admin");
+    context.append("user_1 = user_group1");
+    context.append("user_2 = user_group2");
     // setup db objects needed by the test
     Connection connection = context.createConnection("hive", "hive");
     Statement statement = context.createStatement(connection);
@@ -392,24 +392,24 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
     File policyFile = context.getPolicyFile();
 
     // groups : role -> group
-    context.appendToPolicyFileWithNewLine("[groups]");
-    context.appendToPolicyFileWithNewLine("admin = all_server");
-    context.appendToPolicyFileWithNewLine("user_group1 = all_db1");
-    context.appendToPolicyFileWithNewLine("user_group2 = select_db2");
-    context.appendToPolicyFileWithNewLine("user_group3 = all_db3");
+    context.append("[groups]");
+    context.append("admin = all_server");
+    context.append("user_group1 = all_db1");
+    context.append("user_group2 = select_db2");
+    context.append("user_group3 = all_db3");
     // roles: privileges -> role
-    context.appendToPolicyFileWithNewLine("[roles]");
-    context.appendToPolicyFileWithNewLine("all_server = server=server1");
-    context.appendToPolicyFileWithNewLine("all_db1 = server=server1->db=DB_1");
-    context.appendToPolicyFileWithNewLine("select_db2 = server=server1->db=DB_2->table=tab_2->action=select");
-    context.appendToPolicyFileWithNewLine("all_db3 = server=server1->db=DB_3");
+    context.append("[roles]");
+    context.append("all_server = server=server1");
+    context.append("all_db1 = server=server1->db=DB_1");
+    context.append("select_db2 = server=server1->db=DB_2->table=tab_2->action=select");
+    context.append("all_db3 = server=server1->db=DB_3");
 
     // users: users -> groups
-    context.appendToPolicyFileWithNewLine("[users]");
-    context.appendToPolicyFileWithNewLine("hive = admin");
-    context.appendToPolicyFileWithNewLine("user_1 = user_group1");
-    context.appendToPolicyFileWithNewLine("user_2 = user_group2");
-    context.appendToPolicyFileWithNewLine("user_3 = user_group3");
+    context.append("[users]");
+    context.append("hive = admin");
+    context.append("user_1 = user_group1");
+    context.append("user_2 = user_group2");
+    context.append("user_3 = user_group3");
 
     // setup db objects needed by the test
     Connection connection = context.createConnection("hive", "hive");
@@ -468,23 +468,23 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
     File policyFile = context.getPolicyFile();
 
     // groups : role -> group
-    context.appendToPolicyFileWithNewLine("[groups]");
-    context.appendToPolicyFileWithNewLine("admin = all_server");
-    context.appendToPolicyFileWithNewLine("user_group1 = all_db1");
-    context.appendToPolicyFileWithNewLine("user_group2 = select_db2");
-    context.appendToPolicyFileWithNewLine("user_group3 = all_default");
+    context.append("[groups]");
+    context.append("admin = all_server");
+    context.append("user_group1 = all_db1");
+    context.append("user_group2 = select_db2");
+    context.append("user_group3 = all_default");
     // roles: privileges -> role
-    context.appendToPolicyFileWithNewLine("[roles]");
-    context.appendToPolicyFileWithNewLine("all_server = server=server1");
-    context.appendToPolicyFileWithNewLine("all_db1 = server=server1->db=DB_1");
-    context.appendToPolicyFileWithNewLine("select_db2 = server=server1->db=DB_2->table=tab_2->action=select");
-    context.appendToPolicyFileWithNewLine("all_default = server=server1->db=default");
+    context.append("[roles]");
+    context.append("all_server = server=server1");
+    context.append("all_db1 = server=server1->db=DB_1");
+    context.append("select_db2 = server=server1->db=DB_2->table=tab_2->action=select");
+    context.append("all_default = server=server1->db=default");
     // users: users -> groups
-    context.appendToPolicyFileWithNewLine("[users]");
-    context.appendToPolicyFileWithNewLine("hive = admin");
-    context.appendToPolicyFileWithNewLine("user_1 = user_group1");
-    context.appendToPolicyFileWithNewLine("user_2 = user_group2");
-    context.appendToPolicyFileWithNewLine("user_3 = user_group3");
+    context.append("[users]");
+    context.append("hive = admin");
+    context.append("user_1 = user_group1");
+    context.append("user_2 = user_group2");
+    context.append("user_3 = user_group3");
 
     Connection connection = context.createConnection("hive", "hive");
     Statement statement = context.createStatement(connection);
@@ -524,23 +524,23 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
     File policyFile = context.getPolicyFile();
 
     // groups : role -> group
-    context.appendToPolicyFileWithNewLine("[groups]");
-    context.appendToPolicyFileWithNewLine("admin = all_server");
-    context.appendToPolicyFileWithNewLine("user_group1 = all_default");
-    context.appendToPolicyFileWithNewLine("user_group2 = select_default");
-    context.appendToPolicyFileWithNewLine("user_group3 = all_db1");
+    context.append("[groups]");
+    context.append("admin = all_server");
+    context.append("user_group1 = all_default");
+    context.append("user_group2 = select_default");
+    context.append("user_group3 = all_db1");
     // roles: privileges -> role
-    context.appendToPolicyFileWithNewLine("[roles]");
-    context.appendToPolicyFileWithNewLine("all_server = server=server1");
-    context.appendToPolicyFileWithNewLine("all_default = server=server1->db=default");
-    context.appendToPolicyFileWithNewLine("select_default = server=server1->db=default->table=tab_2->action=select");
-    context.appendToPolicyFileWithNewLine("all_db1 = server=server1->db=DB_1");
+    context.append("[roles]");
+    context.append("all_server = server=server1");
+    context.append("all_default = server=server1->db=default");
+    context.append("select_default = server=server1->db=default->table=tab_2->action=select");
+    context.append("all_db1 = server=server1->db=DB_1");
     // users: users -> groups
-    context.appendToPolicyFileWithNewLine("[users]");
-    context.appendToPolicyFileWithNewLine("hive = admin");
-    context.appendToPolicyFileWithNewLine("user_1 = user_group1");
-    context.appendToPolicyFileWithNewLine("user_2 = user_group2");
-    context.appendToPolicyFileWithNewLine("user_3 = user_group3");
+    context.append("[users]");
+    context.append("hive = admin");
+    context.append("user_1 = user_group1");
+    context.append("user_2 = user_group2");
+    context.append("user_3 = user_group3");
 
     Connection connection = context.createConnection("hive", "hive");
     Statement statement = context.createStatement(connection);
