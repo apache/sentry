@@ -128,8 +128,7 @@ public class TestResourceAuthorizationProvider {
     doTestResourceAuthorizationProvider(SUB_ADMIN, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, ALL, true);
     doTestResourceAuthorizationProvider(SUB_ADMIN, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, SELECT, true);
     doTestResourceAuthorizationProvider(SUB_ADMIN, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, INSERT, true);
-    // TODO SVR_ALL privilege shouldn't exist AKAIK
-    doTestAuthorizables(SUB_ADMIN, SELECT, false, SVR_ALL, DB_CUSTOMERS, TBL_PURCHASES);
+    doTestAuthorizables(SUB_ADMIN, SELECT, true, SVR_ALL, DB_CUSTOMERS, TBL_PURCHASES);
 
   }
   @Test
@@ -137,26 +136,26 @@ public class TestResourceAuthorizationProvider {
     doTestResourceAuthorizationProvider(SUB_MANAGER, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, ALL, false);
     doTestResourceAuthorizationProvider(SUB_MANAGER, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, SELECT, true);
     doTestResourceAuthorizationProvider(SUB_MANAGER, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, INSERT, false);
-    doTestResourceAuthorizationProvider(SUB_MANAGER, SVR_ALL, DB_CUSTOMERS, TBL_PURCHASES, SELECT, false);
+    doTestResourceAuthorizationProvider(SUB_MANAGER, SVR_ALL, DB_CUSTOMERS, TBL_PURCHASES, SELECT, true);
   }
   @Test
   public void testAnalyst() throws Exception {
     doTestResourceAuthorizationProvider(SUB_ANALYST, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, ALL, false);
     doTestResourceAuthorizationProvider(SUB_ANALYST, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, SELECT, true);
     doTestResourceAuthorizationProvider(SUB_ANALYST, SVR_SERVER1, DB_CUSTOMERS, TBL_PURCHASES, INSERT, false);
-    doTestResourceAuthorizationProvider(SUB_ANALYST, SVR_ALL, DB_CUSTOMERS, TBL_PURCHASES, SELECT, false);
+    doTestResourceAuthorizationProvider(SUB_ANALYST, SVR_ALL, DB_CUSTOMERS, TBL_PURCHASES, SELECT, true);
 
     // analyst sandbox
     doTestResourceAuthorizationProvider(SUB_ANALYST, SVR_SERVER1, DB_ANALYST, TBL_PURCHASES, ALL, true);
     doTestResourceAuthorizationProvider(SUB_ANALYST, SVR_SERVER1, DB_ANALYST, TBL_PURCHASES, SELECT, true);
     doTestResourceAuthorizationProvider(SUB_ANALYST, SVR_SERVER1, DB_ANALYST, TBL_PURCHASES, INSERT, true);
-    doTestResourceAuthorizationProvider(SUB_ANALYST, SVR_ALL, DB_ANALYST, TBL_PURCHASES, SELECT, false);
+    doTestResourceAuthorizationProvider(SUB_ANALYST, SVR_ALL, DB_ANALYST, TBL_PURCHASES, SELECT, true);
 
     // jr analyst sandbox
     doTestResourceAuthorizationProvider(SUB_ANALYST, SVR_SERVER1, DB_JR_ANALYST, TBL_PURCHASES, ALL, false);
     doTestResourceAuthorizationProvider(SUB_ANALYST, SVR_SERVER1, DB_JR_ANALYST, TBL_PURCHASES, SELECT, true);
     doTestResourceAuthorizationProvider(SUB_ANALYST, SVR_SERVER1, DB_JR_ANALYST, TBL_PURCHASES, INSERT, false);
-    doTestResourceAuthorizationProvider(SUB_ANALYST, SVR_ALL, DB_JR_ANALYST, TBL_PURCHASES, SELECT, false);
+    doTestResourceAuthorizationProvider(SUB_ANALYST, SVR_ALL, DB_JR_ANALYST, TBL_PURCHASES, SELECT, true);
   }
   @Test
   public void testJuniorAnalyst() throws Exception {
@@ -168,6 +167,6 @@ public class TestResourceAuthorizationProvider {
     doTestResourceAuthorizationProvider(SUB_JUNIOR_ANALYST, SVR_SERVER1, DB_JR_ANALYST, TBL_PURCHASES, ALL, true);
     doTestResourceAuthorizationProvider(SUB_JUNIOR_ANALYST, SVR_SERVER1, DB_JR_ANALYST, TBL_PURCHASES, SELECT, true);
     doTestResourceAuthorizationProvider(SUB_JUNIOR_ANALYST, SVR_SERVER1, DB_JR_ANALYST, TBL_PURCHASES, INSERT, true);
-    doTestResourceAuthorizationProvider(SUB_JUNIOR_ANALYST, SVR_ALL, DB_JR_ANALYST, TBL_PURCHASES, SELECT, false);
+    doTestResourceAuthorizationProvider(SUB_JUNIOR_ANALYST, SVR_ALL, DB_JR_ANALYST, TBL_PURCHASES, SELECT, true);
   }
 }

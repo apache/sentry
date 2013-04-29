@@ -39,7 +39,7 @@ import com.google.common.io.Files;
 
 public abstract class AbstractTestSimplePolicy {
   private static final String PERM_SERVER1_CUSTOMERS_SELECT = "server=server1->db=customers->table=purchases->action=select";
-  private static final String PERM_SERVER1_CUSTOMERS_DB_CUSTOMERS_PARTIAL_SELECT = "server=server1->db=customers->view=purchases_partial->action=select";
+  private static final String PERM_SERVER1_CUSTOMERS_DB_CUSTOMERS_PARTIAL_SELECT = "server=server1->db=customers->table=purchases_partial->action=select";
   private static final String PERM_SERVER1_ANALYST_ALL = "server=server1->db=analyst1";
   private static final String PERM_SERVER1_JUNIOR_ANALYST_ALL = "server=server1->db=jranalyst1";
   private static final String PERM_SERVER1_JUNIOR_ANALYST_READ = "server=server1->db=jranalyst1->table=*->action=select";

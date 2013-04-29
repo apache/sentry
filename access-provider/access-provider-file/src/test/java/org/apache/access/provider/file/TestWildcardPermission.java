@@ -101,9 +101,9 @@ public class TestWildcardPermission {
     assertFalse(ROLE_SERVER_SERVER1_DB_ALL.implies(REQUEST_SERVER2_DB2));
 
     // test inverse
-    assertFalse(REQUEST_SERVER1_DB1.implies(ROLE_SERVER_SERVER1_DB_ALL));
+    assertTrue(REQUEST_SERVER1_DB1.implies(ROLE_SERVER_SERVER1_DB_ALL));
     assertFalse(REQUEST_SERVER2_DB1.implies(ROLE_SERVER_SERVER1_DB_ALL));
-    assertFalse(REQUEST_SERVER1_DB2.implies(ROLE_SERVER_SERVER1_DB_ALL));
+    assertTrue(REQUEST_SERVER1_DB2.implies(ROLE_SERVER_SERVER1_DB_ALL));
     assertFalse(REQUEST_SERVER2_DB2.implies(ROLE_SERVER_SERVER1_DB_ALL));
 
     // ROLE_SERVER_SERVER1_DB_DB1
@@ -126,9 +126,9 @@ public class TestWildcardPermission {
 
     // test inverse
     assertFalse(REQUEST_SERVER1_DB1.implies(ROLE_SERVER_SERVER2_DB_ALL));
-    assertFalse(REQUEST_SERVER2_DB1.implies(ROLE_SERVER_SERVER2_DB_ALL));
+    assertTrue(REQUEST_SERVER2_DB1.implies(ROLE_SERVER_SERVER2_DB_ALL));
     assertFalse(REQUEST_SERVER1_DB2.implies(ROLE_SERVER_SERVER2_DB_ALL));
-    assertFalse(REQUEST_SERVER2_DB2.implies(ROLE_SERVER_SERVER2_DB_ALL));
+    assertTrue(REQUEST_SERVER2_DB2.implies(ROLE_SERVER_SERVER2_DB_ALL));
 
     // ROLE_SERVER_SERVER2_DB_DB1
     assertFalse(ROLE_SERVER_SERVER2_DB_DB1.implies(REQUEST_SERVER1_DB1));
@@ -148,10 +148,10 @@ public class TestWildcardPermission {
     assertTrue(ROLE_SERVER_ALL_DB_ALL.implies(REQUEST_SERVER2_DB2));
 
     // test inverse
-    assertFalse(REQUEST_SERVER1_DB1.implies(ROLE_SERVER_ALL_DB_ALL));
-    assertFalse(REQUEST_SERVER2_DB1.implies(ROLE_SERVER_ALL_DB_ALL));
-    assertFalse(REQUEST_SERVER1_DB2.implies(ROLE_SERVER_ALL_DB_ALL));
-    assertFalse(REQUEST_SERVER2_DB2.implies(ROLE_SERVER_ALL_DB_ALL));
+    assertTrue(REQUEST_SERVER1_DB1.implies(ROLE_SERVER_ALL_DB_ALL));
+    assertTrue(REQUEST_SERVER2_DB1.implies(ROLE_SERVER_ALL_DB_ALL));
+    assertTrue(REQUEST_SERVER1_DB2.implies(ROLE_SERVER_ALL_DB_ALL));
+    assertTrue(REQUEST_SERVER2_DB2.implies(ROLE_SERVER_ALL_DB_ALL));
 
     // ROLE_SERVER_ALL_DB_DB1
     assertTrue(ROLE_SERVER_ALL_DB_DB1.implies(REQUEST_SERVER1_DB1));
@@ -160,8 +160,8 @@ public class TestWildcardPermission {
     assertFalse(ROLE_SERVER_ALL_DB_DB1.implies(REQUEST_SERVER2_DB2));
 
     // test inverse
-    assertFalse(REQUEST_SERVER1_DB1.implies(ROLE_SERVER_ALL_DB_DB1));
-    assertFalse(REQUEST_SERVER2_DB1.implies(ROLE_SERVER_ALL_DB_DB1));
+    assertTrue(REQUEST_SERVER1_DB1.implies(ROLE_SERVER_ALL_DB_DB1));
+    assertTrue(REQUEST_SERVER2_DB1.implies(ROLE_SERVER_ALL_DB_DB1));
     assertFalse(REQUEST_SERVER1_DB2.implies(ROLE_SERVER_ALL_DB_DB1));
     assertFalse(REQUEST_SERVER2_DB2.implies(ROLE_SERVER_ALL_DB_DB1));
 
@@ -179,8 +179,8 @@ public class TestWildcardPermission {
     assertFalse(REQUEST_SERVER2_DB2.implies(REQUEST_SERVER1_URI1));
     assertFalse(ROLE_SERVER_ALL_DB_DB1.implies(REQUEST_SERVER1_URI1));
     // test inverse
-    assertFalse(REQUEST_SERVER1_URI1.implies(ROLE_SERVER_SERVER1_URI_ALL));
-    assertFalse(REQUEST_SERVER1_URI2.implies(ROLE_SERVER_SERVER1_URI_ALL));
+    assertTrue(REQUEST_SERVER1_URI1.implies(ROLE_SERVER_SERVER1_URI_ALL));
+    assertTrue(REQUEST_SERVER1_URI2.implies(ROLE_SERVER_SERVER1_URI_ALL));
     assertFalse(REQUEST_SERVER1_URI1.implies(ROLE_SERVER_SERVER1));
     assertFalse(REQUEST_SERVER1_URI1.implies(ROLE_SERVER_SERVER1_URI_URI1));
     assertFalse(REQUEST_SERVER1_URI2.implies(ROLE_SERVER_SERVER1_URI_URI1));

@@ -89,8 +89,6 @@ public class WildcardPermission implements Permission, Serializable {
         if(!part.getKey().equalsIgnoreCase(otherPart.getKey())) {
           return false;
         }
-        // in order to imply, the values either have to be equal or our value has
-        // to be ALL
         if (!implies(part, otherPart)) {
           return false;
         }
@@ -115,7 +113,8 @@ public class WildcardPermission implements Permission, Serializable {
         "Please report, this method should not be called with two different keys");
     if(policyPart.getValue().equals(AccessConstants.ALL) || policyPart.equals(requestPart)) {
       return true;
-    } else if (AccessConstants.ALL.equalsIgnoreCase(requestPart.getValue())) {
+    } else if (!PolicyFileConstants.PRIVILEGE_NAME.equalsIgnoreCase(policyPart.getKey())
+        && AccessConstants.ALL.equalsIgnoreCase(requestPart.getValue())) {
       /* permission request is to match with any object of given type */
       return true;
     } else if(policyPart.getKey().equalsIgnoreCase(AuthorizableType.URI.name())) {
@@ -123,7 +122,7 @@ public class WildcardPermission implements Permission, Serializable {
        * URI is a a special case. For URI's, /a implies /a/b.
        * Therefore the test is "/a/b".startsWith("/a");
        */
-      String policyUri =new StrSubstitutor(System.getProperties()).replace(policyPart.getValue());
+      String policyUri = new StrSubstitutor(System.getProperties()).replace(policyPart.getValue());
       return requestPart.getValue().startsWith(policyUri);
     }
     return false;
