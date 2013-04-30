@@ -70,11 +70,11 @@ public class TestServerMisconfiguration extends AbstractTestWithHiveServer {
   }
 
   /**
-   * hive.server2.enable.impersonation must be set to LDAP or KERBEROS
+   * hive.server2.authentication must be set to LDAP or KERBEROS
    */
   @Test
   public void testAuthenticationIsStrong() throws Exception {
-    properties.put("hive.server2.enable.impersonation", "NONE");
+    properties.put("hive.server2.authentication", "NONE");
     context = createContext(properties);
     Connection connection = context.createConnection("hive", "hive");
     Statement statement = context.createStatement(connection);
