@@ -195,23 +195,28 @@ limitations under the License.
               </goals>
               <configuration>
                 <target>
-                  <echo file="target/download-hadoop.sh">
-
-                    # URL for hadoop archive
-                    URL=http://archive.cloudera.com/cdh4/cdh/4/hadoop-latest.tar.gz
-                    # Where to download the archive on the jenkins slave
+                  <echo file="target/download.sh">
+                    set -e
+                    set -x
                     BASE_DIR=./target
                     DOWNLOAD_DIR=$BASE_DIR/downloads
-                    rm -rf "$BASE_DIR/hadoop" "$DOWNLOAD_DIR"
-                    mkdir -p "$DOWNLOAD_DIR"
-                    wget -nv -O $DOWNLOAD_DIR/hadoop.tar.gz $URL
-                    tar -zxf $DOWNLOAD_DIR/hadoop.tar.gz -C $BASE_DIR
-                    rm $DOWNLOAD_DIR/hadoop.tar.gz
-                    mv $BASE_DIR/hadoop* $BASE_DIR/hadoop
-
+                    download() {
+                      url=$1;
+                      tarName=$2
+                      finalName=$3
+                      rm -rf $BASE_DIR/$finalName
+                      wget -nv -O $DOWNLOAD_DIR/$tarName $url
+                      tar -zxf $DOWNLOAD_DIR/$tarName -C $BASE_DIR
+                      rm $DOWNLOAD_DIR/$tarName
+                      mv $BASE_DIR/${finalName}* $BASE_DIR/$finalName
+                    }
+                    rm -rf $DOWNLOAD_DIR
+                    mkdir -p $DOWNLOAD_DIR
+                    download "http://archive.cloudera.com/cdh4/cdh/4/hadoop-latest.tar.gz" hadoop.tar.gz hadoop
+                    download "http://archive.cloudera.com/cdh4/cdh/4/hive-latest.tar.gz" hive.tar.gz hive
                   </echo>
                   <exec executable="sh" dir="${basedir}" failonerror="true">
-                    <arg line="target/download-hadoop.sh"/>
+                    <arg line="target/download.sh"/>
                   </exec>
                 </target>
               </configuration>

@@ -27,11 +27,14 @@ import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.junit.After;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.io.Files;
 
 public abstract class AbstractTestWithHiveServer {
-
+  private static final Logger LOGGER = LoggerFactory
+      .getLogger(AbstractTestWithHiveServer.class);
   protected File baseDir;
   protected File confDir;
   protected File dataDir;
@@ -70,7 +73,11 @@ public abstract class AbstractTestWithHiveServer {
       hiveServer = null;
     }
     if(baseDir != null) {
-      FileUtils.deleteQuietly(baseDir);
+      if(System.getProperty(HiveServerFactory.KEEP_BASEDIR) == null) {
+        FileUtils.deleteQuietly(baseDir);
+      } else {
+        LOGGER.info("BaseDir = " + baseDir);
+      }
       baseDir = null;
     }
   }

@@ -40,6 +40,7 @@ public class HiveServerFactory {
   private static final String HIVE_DRIVER_NAME = "org.apache.hive.jdbc.HiveDriver";
   private static final String DERBY_DRIVER_NAME = "org.apache.derby.jdbc.EmbeddedDriver";
   public static final String HIVESERVER2_TYPE = "access.e2etest.hiveServer2Type";
+  public static final String KEEP_BASEDIR = "access.e2etest.keepBaseDir";
   public static final String METASTORE_CONNECTION_URL = HiveConf.ConfVars.METASTORECONNECTURLKEY.varname;
   public static final String WAREHOUSE_DIR = HiveConf.ConfVars.METASTOREWAREHOUSE.varname;
   public static final String AUTHZ_PROVIDER = HiveAuthzConf.AuthzConfVars.AUTHZ_PROVIDER.getVar();
@@ -66,7 +67,7 @@ public class HiveServerFactory {
       type = System.getProperty(HIVESERVER2_TYPE);
     }
     if(type == null) {
-      type = HiveServer2Type.InternalHS2.name();
+      type = HiveServer2Type.InternalHiveServer2.name();
     }
     return create(HiveServer2Type.valueOf(type.trim()), properties,
         baseDir, confDir, policyFile, fileSystem);
@@ -123,13 +124,17 @@ public class HiveServerFactory {
       authzConf.set(entry.getKey(), entry.getValue());
     }
     switch (type) {
-    case Embedded:
+    case EmbeddedHiveServer2:
+      LOGGER.info("Creating EmbeddedHiveServer");
       return new EmbeddedHiveServer();
-    case InternalHS2:
+    case InternalHiveServer2:
+      LOGGER.info("Creating InternalHiveServer");
       return new InternalHiveServer(conf);
-    case StartExternalHS2:
+    case ExternalHiveServer2:
+      LOGGER.info("Creating ExternalHiveServer");
       return new ExternalHiveServer(conf, authzConf, baseDir);
-    case UseExternalHS2:
+    case UnmanagedHiveServer2:
+      LOGGER.info("Creating UnmanagedHiveServer");
       return new UnmanagedHiveServer(conf);
     default:
       throw new UnsupportedOperationException(type.name());
@@ -143,10 +148,10 @@ public class HiveServerFactory {
   }
 
   private static enum HiveServer2Type {
-    Embedded,           // Embedded HS2, directly executed by JDBC, without thrift
-    InternalHS2,        // Start a thrift HS2 in the same process
-    StartExternalHS2,   // start a remote thrift HS2
-    UseExternalHS2      // Use a remote thrift HS2 already running
+    EmbeddedHiveServer2,           // Embedded HS2, directly executed by JDBC, without thrift
+    InternalHiveServer2,        // Start a thrift HS2 in the same process
+    ExternalHiveServer2,   // start a remote thrift HS2
+    UnmanagedHiveServer2      // Use a remote thrift HS2 already running
     ;
   }
 }

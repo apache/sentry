@@ -62,13 +62,13 @@ public abstract class AbstractHiveServer implements HiveServer {
     int waitTime = 0;
     long startupTimeout = 1000L * 10L;
     do {
-      Thread.sleep(250L);
-      waitTime += 250L;
+      Thread.sleep(500L);
+      waitTime += 500L;
       if (waitTime > startupTimeout) {
         throw new TimeoutException("Couldn't access new HiveServer: " + hiveServer.getURL());
       }
       try {
-        Connection connection =  DriverManager.getConnection(hiveServer.getURL(), "foo", "bar");
+        Connection connection =  DriverManager.getConnection(hiveServer.getURL(), "hive", "bar");
         connection.close();
         break;
       } catch (SQLException e) {
