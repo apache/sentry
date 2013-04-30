@@ -43,28 +43,28 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticHiveServer {
   private static final String MULTI_TYPE_DATA_FILE_NAME = "emp.dat";
   private static final String DB2_POLICY_FILE = "db2-policy-file.ini";
 
-  private Context testContext;
+  private Context context;
 
   @After
   public void teardown() throws Exception {
-    if (testContext != null) {
-      testContext.close();
+    if (context != null) {
+      context.close();
     }
   }
 
   @Test
   public void testPerDB() throws Exception {
-    testContext = createContext();
-    File policyFile = testContext.getPolicyFile();
+    context = createContext();
+    File policyFile = context.getPolicyFile();
     File db2PolicyFile = new File(policyFile.getParent(), DB2_POLICY_FILE);
-    File dataDir = testContext.getDataDir();
+    File dataDir = context.getDataDir();
     //copy data file to test dir
     File dataFile = new File(dataDir, MULTI_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(MULTI_TYPE_DATA_FILE_NAME), to);
     to.close();
     //delete existing policy file; create new policy file
-    assertTrue("Could not delete " + policyFile, testContext.deletePolicyFile());
+    assertTrue("Could not delete " + policyFile, context.deletePolicyFile());
     assertTrue("Could not delete " + db2PolicyFile,!db2PolicyFile.exists() || db2PolicyFile.delete());
 
     String[] policyFileContents = {
@@ -85,7 +85,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticHiveServer {
         "[databases]",
         "db2 = " + db2PolicyFile.getPath(),
     };
-    testContext.makeNewPolicy(policyFileContents);
+    context.makeNewPolicy(policyFileContents);
 
     String[] db2PolicyFileContents = {
         "[groups]",
@@ -95,11 +95,9 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticHiveServer {
     };
     Files.write(Joiner.on("\n").join(db2PolicyFileContents), db2PolicyFile, Charsets.UTF_8);
 
-    // TODO wait until policy file is reloaded
-
     // setup db objects needed by the test
-    Connection connection = testContext.createConnection("hive", "hive");
-    Statement statement = testContext.createStatement(connection);
+    Connection connection = context.createConnection("hive", "hive");
+    Statement statement = context.createStatement(connection);
 
     statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
     statement.execute("DROP DATABASE IF EXISTS db2 CASCADE");
@@ -118,11 +116,43 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticHiveServer {
     connection.close();
 
     // test execution
-    connection = testContext.createConnection("user_1", "password");
-    statement = testContext.createStatement(connection);
+    connection = context.createConnection("user_1", "password");
+    statement = context.createStatement(connection);
     statement.execute("USE db1");
     // test user1 can execute query on tbl1
-    ResultSet resultSet = statement.executeQuery("SELECT COUNT(*) FROM tbl1");
+    verifyCount(statement, "SELECT COUNT(*) FROM tbl1");
+
+    // user1 cannot query db2.tbl2
+    context.assertAuthzException(statement, "USE db2");
+    context.assertAuthzException(statement, "SELECT COUNT(*) FROM db2.tbl2");
+    statement.close();
+    connection.close();
+
+    // test per-db file for db2
+
+    connection = context.createConnection("user_2", "password");
+    statement = context.createStatement(connection);
+    statement.execute("USE db2");
+    // test user2 can execute query on tbl2
+    verifyCount(statement, "SELECT COUNT(*) FROM tbl2");
+
+    // user2 cannot query db1.tbl1
+    context.assertAuthzException(statement, "SELECT COUNT(*) FROM db1.tbl1");
+    context.assertAuthzException(statement, "USE db1");
+
+    statement.close();
+    connection.close();
+
+    //test cleanup
+    connection = context.createConnection("hive", "hive");
+    statement = context.createStatement(connection);
+    statement.execute("DROP DATABASE db1 CASCADE");
+    statement.execute("DROP DATABASE db2 CASCADE");
+    statement.close();
+    connection.close();
+  }
+  private void verifyCount(Statement statement, String query) throws SQLException {
+    ResultSet resultSet = statement.executeQuery(query);
     int count = 0;
     int countRows = 0;
 
@@ -132,59 +162,5 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticHiveServer {
     }
     assertTrue("Incorrect row count", countRows == 1);
     assertTrue("Incorrect result", count == 12);
-
-    // user1 cannot query tbl2
-    statement.execute("USE db2");
-    try {
-      statement.executeQuery("SELECT COUNT(*) FROM tbl2");
-      Assert.fail("Expected SQL exception");
-    } catch (SQLException e) {
-      testContext.verifyAuthzException(e);
-    }
-    statement.close();
-    connection.close();
-
-    // test per-db file for db2
-
-    connection = testContext.createConnection("user_2", "password");
-    statement = testContext.createStatement(connection);
-    statement.execute("USE db2");
-    // test user2 can execute query on tbl2
-    resultSet = statement.executeQuery("SELECT COUNT(*) FROM tbl2");
-    count = 0;
-    countRows = 0;
-
-    while (resultSet.next()) {
-      count = resultSet.getInt(1);
-      countRows++;
-    }
-    assertTrue("Incorrect row count", countRows == 1);
-    assertTrue("Incorrect result", count == 12);
-
-    // user2 cannot query tbl1
-    try {
-      statement.executeQuery("SELECT COUNT(*) FROM db1.tbl1");
-      Assert.fail("Expected SQL exception");
-    } catch (SQLException e) {
-      testContext.verifyAuthzException(e);
-    }
-    statement.execute("USE db1");
-    try {
-      statement.executeQuery("SELECT COUNT(*) FROM tbl1");
-      Assert.fail("Expected SQL exception");
-    } catch (SQLException e) {
-      testContext.verifyAuthzException(e);
-    }
-
-    statement.close();
-    connection.close();
-
-    //test cleanup
-    connection = testContext.createConnection("hive", "hive");
-    statement = testContext.createStatement(connection);
-    statement.execute("DROP DATABASE db1 CASCADE");
-    statement.execute("DROP DATABASE db2 CASCADE");
-    statement.close();
-    connection.close();
   }
 }
