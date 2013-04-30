@@ -76,7 +76,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
   public ASTNode preAnalyze(HiveSemanticAnalyzerHookContext context, ASTNode ast)
       throws SemanticException {
 
-    SessionState.get().getConf().setBoolVar(ConfVars.HIVE_ENITITY_CAPTURE_INPUT_URI, true);
+    SessionState.get().getConf().setBoolVar(ConfVars.HIVE_EXTENDED_ENITITY_CAPTURE, true);
     switch (ast.getToken().getType()) {
     // Hive parser doesn't capture the database name in output entity, so we store it here for now
     case HiveParser.TOK_CREATEDATABASE:
@@ -111,6 +111,8 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
       String tableName = BaseSemanticAnalyzer.getUnescapedName((ASTNode)ast.getChild(0));
       if (tableName.contains(".")) {
         currDB = new Database((tableName.split("\\."))[0]);
+      } else {
+        currDB = getCanonicalDb();
       }
       break;
     case HiveParser.TOK_CREATEFUNCTION:
@@ -142,12 +144,6 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
     case HiveParser.TOK_SHOWPARTITIONS:
       // Find the target table for metadata operations, these are not covered in the read entities by the compiler
       currTab = new Table(BaseSemanticAnalyzer.getUnescapedName((ASTNode) ast.getChild(0)));
-      currDB = getCanonicalDb();
-      break;
-    case HiveParser.TOK_DESCTABLE:
-      // describe doesn't support db.table format. so just extract the table name here.
-      currTab = new Table(BaseSemanticAnalyzer.
-          unescapeIdentifier(ast.getChild(0).getChild(0).getText()));
       currDB = getCanonicalDb();
       break;
     case HiveParser.TOK_SHOW_TBLPROPERTIES:
