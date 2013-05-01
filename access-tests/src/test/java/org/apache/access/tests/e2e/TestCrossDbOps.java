@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -84,13 +85,13 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
     editor.addPolicy("group2 = select_tab3", "groups");
     editor.addPolicy("admin = server=server1", "roles");
     editor.addPolicy(
-        "select_tab1 = server=server1->db=db_1->table=tab_1->action=select",
+        "select_tab1 = server=server1->db=db1->table=tab1->action=select",
         "roles");
     editor.addPolicy(
-        "select_tab3 = server=server1->db=db_2->table=tab_3->action=select",
+        "select_tab3 = server=server1->db=db2->table=tab3->action=select",
         "roles");
     editor.addPolicy(
-        "insert_tab2 = server=server1->db=db_2->table=tab_2->action=insert",
+        "insert_tab2 = server=server1->db=db2->table=tab2->action=insert",
         "roles");
     editor.addPolicy("admin1 = admin", "users");
     editor.addPolicy("user1 = group1", "users");
@@ -104,14 +105,14 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
     statement.execute("DROP DATABASE IF EXISTS DB1 CASCADE");
     statement.execute("DROP DATABASE IF EXISTS DB2 CASCADE");
 
-    statement.execute("CREATE DATABASE DB_1");
-    statement.execute("CREATE DATABASE DB_2");
-    statement.execute("USE DB_1");
-    statement.execute("CREATE TABLE TAB_1(id int)");
+    statement.execute("CREATE DATABASE DB1");
+    statement.execute("CREATE DATABASE DB2");
+    statement.execute("USE DB1");
+    statement.execute("CREATE TABLE TAB1(id int)");
     statement.executeQuery("SHOW TABLES");
-    statement.execute("USE DB_2");
-    statement.execute("CREATE TABLE TAB_2(id int)");
-    statement.execute("CREATE TABLE TAB_3(id int)");
+    statement.execute("USE DB2");
+    statement.execute("CREATE TABLE TAB2(id int)");
+    statement.execute("CREATE TABLE TAB3(id int)");
 
     // test show databases
     // show databases shouldn't filter any of the dbs from the resultset
@@ -119,8 +120,8 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
     Statement stmt = context.createStatement(conn);
     ResultSet res = stmt.executeQuery("SHOW DATABASES");
     List<String> result = new ArrayList<String>();
-    result.add("db_1");
-    result.add("db_2");
+    result.add("db1");
+    result.add("db2");
     result.add("default");
 
     while (res.next()) {
@@ -130,34 +131,40 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
     assertTrue(result.toString(), result.isEmpty());
     res.close();
 
-    stmt.execute("USE DB_1");
+    // test show tables
+    stmt.execute("USE DB1");
     res = stmt.executeQuery("SHOW TABLES");
     result.clear();
-    result.add("tab_1");
+    result.add("tab1");
 
     while (res.next()) {
       String tableName = res.getString(1);
       assertTrue(tableName, result.remove(tableName));
     }
     assertTrue(result.toString(), result.isEmpty());
+    res.close();
 
-    stmt.execute("USE DB_2");
+    stmt.execute("USE DB2");
     res = stmt.executeQuery("SHOW TABLES");
     result.clear();
-    result.add("tab_2");
+    result.add("tab2");
 
     while (res.next()) {
       String tableName = res.getString(1);
       assertTrue(tableName, result.remove(tableName));
     }
     assertTrue(result.toString(), result.isEmpty());
+    res.close();
+
+    stmt.close();
+    conn.close();
 
     // test show databases and show tables for user2
     conn = context.createConnection("user2", "");
     stmt = context.createStatement(conn);
     res = stmt.executeQuery("SHOW DATABASES");
     result.clear();
-    result.add("db_2");
+    result.add("db2");
     result.add("default");
 
     while (res.next()) {
@@ -165,25 +172,191 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
       assertTrue(dbName, result.remove(dbName));
     }
     assertTrue(result.toString(), result.isEmpty());
+    res.close();
 
     // test show tables
-    stmt.execute("USE DB_2");
+    stmt.execute("USE DB2");
     res = stmt.executeQuery("SHOW TABLES");
     result.clear();
-    result.add("tab_3");
+    result.add("tab3");
 
     while (res.next()) {
       String tableName = res.getString(1);
       assertTrue(tableName, result.remove(tableName));
     }
     assertTrue(result.toString(), result.isEmpty());
+    res.close();
 
     try {
-      stmt.execute("USE DB_1");
+      stmt.execute("USE DB1");
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
       context.verifyAuthzException(e);
     }
+    context.close();
+  }
+
+  /*
+   * Admin creates DB_1, DB2, tables (tab_1 ) and (tab_2, tab_3) in DB_1 and
+   * DB_2 respectively. User user_1 has select on DB_1.tab_1, insert on
+   * DB2.tab_2 User user_2 has select on DB2.tab_3 Test show database and show
+   * tables for both user_1 and user_2
+   */
+  @Test
+  public void testJDBCGetSchemasAndGetTables() throws Exception {
+    // edit policy file
+    File policyFile = context.getPolicyFile();
+    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
+    editor.addPolicy("admin = admin", "groups");
+    editor.addPolicy("group1 = select_tab1, insert_tab2", "groups");
+    editor.addPolicy("group2 = select_tab3", "groups");
+    editor.addPolicy("admin = server=server1", "roles");
+    editor.addPolicy("select_tab1 = server=server1->db=db1->table=tab1->action=select","roles");
+    editor.addPolicy("select_tab3 = server=server1->db=db2->table=tab3->action=select","roles");
+    editor.addPolicy("insert_tab2 = server=server1->db=db2->table=tab2->action=insert","roles");
+    editor.addPolicy("admin1 = admin", "users");
+    editor.addPolicy("user1 = group1", "users");
+    editor.addPolicy("user2 = group2", "users");
+
+    // admin create two databases
+    Connection connection = context.createConnection("admin1", "foo");
+    Statement statement = context.createStatement(connection);
+    statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
+    statement.execute("DROP DATABASE IF EXISTS DB_2 CASCADE");
+    statement.execute("DROP DATABASE IF EXISTS DB1 CASCADE");
+    statement.execute("DROP DATABASE IF EXISTS DB2 CASCADE");
+
+    statement.execute("CREATE DATABASE DB1");
+    statement.execute("CREATE DATABASE DB2");
+    statement.execute("USE DB1");
+    statement.execute("CREATE TABLE TAB1(id int)");
+    statement.executeQuery("SHOW TABLES");
+    statement.execute("USE DB2");
+    statement.execute("CREATE TABLE TAB2(id int)");
+    statement.execute("CREATE TABLE TAB3(id int)");
+
+    // test show databases
+    // show databases shouldn't filter any of the dbs from the resultset
+    Connection conn = context.createConnection("user1", "");
+    List<String> result = new ArrayList<String>();
+
+    // test direct JDBC metadata API
+    ResultSet res = conn.getMetaData().getSchemas();
+    ResultSetMetaData resMeta = res.getMetaData();
+    assertEquals(2, resMeta.getColumnCount());
+    assertEquals("TABLE_SCHEMA", resMeta.getColumnName(1));
+    assertEquals("TABLE_CATALOG", resMeta.getColumnName(2));
+
+    result.add("db1");
+    result.add("db2");
+    result.add("default");
+
+    while (res.next()) {
+      String dbName = res.getString(1);
+      assertTrue(dbName, result.remove(dbName));
+    }
+    assertTrue(result.toString(), result.isEmpty());
+    res.close();
+
+    // test direct JDBC metadata API
+    res = conn.getMetaData().getTables(null, "DB1", "tab%", null);
+    result.add("tab1");
+
+    while (res.next()) {
+      String tableName = res.getString(3);
+      assertTrue(tableName, result.remove(tableName));
+    }
+    assertTrue(result.toString(), result.isEmpty());
+    res.close();
+
+    // test direct JDBC metadata API
+    res = conn.getMetaData().getTables(null, "DB2", "tab%", null);
+    result.add("tab2");
+
+    while (res.next()) {
+      String tableName = res.getString(3);
+      assertTrue(tableName, result.remove(tableName));
+    }
+    assertTrue(result.toString(), result.isEmpty());
+    res.close();
+
+    res = conn.getMetaData().getTables(null, "DB%", "tab%", null);
+    result.add("tab2");
+    result.add("tab1");
+
+    while (res.next()) {
+      String tableName = res.getString(3);
+      assertTrue(tableName, result.remove(tableName));
+    }
+    assertTrue(result.toString(), result.isEmpty());
+    res.close();
+    
+    //test show columns
+    res = conn.getMetaData().getColumns(null, "DB%", "tab%","i%" );
+    result.add("id");
+    result.add("id");
+
+    while (res.next()) {
+      String columnName = res.getString(4);
+      assertTrue(columnName, result.remove(columnName));
+    }
+    assertTrue(result.toString(), result.isEmpty());
+    res.close();
+    
+    conn.close();
+
+    // test show databases and show tables for user2
+    conn = context.createConnection("user2", "");
+
+    // test direct JDBC metadata API
+    res = conn.getMetaData().getSchemas();
+    resMeta = res.getMetaData();
+    assertEquals(2, resMeta.getColumnCount());
+    assertEquals("TABLE_SCHEMA", resMeta.getColumnName(1));
+    assertEquals("TABLE_CATALOG", resMeta.getColumnName(2));
+
+    result.add("db2");
+    result.add("default");
+
+    while (res.next()) {
+      String dbName = res.getString(1);
+      assertTrue(dbName, result.remove(dbName));
+    }
+    assertTrue(result.toString(), result.isEmpty());
+    res.close();
+
+    // test JDBC direct API
+    res = conn.getMetaData().getTables(null, "DB%", "tab%", null);
+    result.add("tab3");
+
+    while (res.next()) {
+      String tableName = res.getString(3);
+      assertTrue(tableName, result.remove(tableName));
+    }
+    assertTrue(result.toString(), result.isEmpty());
+    res.close();
+    
+    //test show columns
+    res = conn.getMetaData().getColumns(null, "DB%", "tab%","i%" );
+    result.add("id");
+    
+    while (res.next()) {
+      String columnName = res.getString(4);
+      assertTrue(columnName, result.remove(columnName));
+    }
+    assertTrue(result.toString(), result.isEmpty());
+    res.close();
+    
+    //test show columns
+    res = conn.getMetaData().getColumns(null, "DB1", "tab%","i%" );
+    
+    while (res.next()) {
+      String columnName = res.getString(4);
+      assertTrue(columnName, result.remove(columnName));
+    }
+    assertTrue(result.toString(), result.isEmpty());
+    res.close();
+    
     context.close();
   }
 
@@ -222,8 +395,10 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
         // Positive case: test user1 and user2 has permissions to access
         // db1 and
         // db2
-        userStmt.execute("create table " + dbName + "." + tabName + " (id int)");
-        userStmt.execute("LOAD DATA LOCAL INPATH '" + dataFilePath + "' INTO TABLE " + dbName + "." + tabName);
+        userStmt
+            .execute("create table " + dbName + "." + tabName + " (id int)");
+        userStmt.execute("LOAD DATA LOCAL INPATH '" + dataFilePath
+            + "' INTO TABLE " + dbName + "." + tabName);
         userStmt.execute("select * from " + dbName + "." + tabName);
         context.close();
       }
@@ -248,14 +423,8 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
   @Test
   public void testAdminDbPrivileges() throws Exception {
     // edit policy file
-    String testPolicies[] = {
-        "[groups]",
-        "admin_group = admin_role",
-        "[roles]",
-        "admin_role = server=server1",
-        "[users]",
-        "admin = admin_group"
-        };
+    String testPolicies[] = {"[groups]", "admin_group = admin_role", "[roles]",
+        "admin_role = server=server1", "[users]", "admin = admin_group"};
 
     context.makeNewPolicy(testPolicies);
 
@@ -299,11 +468,8 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
         "[roles]",
         "db1_tab2_all = server=server1->db=db1->table=table_2",
         "db1_tab1_insert = server=server1->db=db1->table=table_1->action=insert",
-        "admin_role = server=server1",
-        "[users]",
-        "user3 = user_group",
-        "admin = admin_group"
-    };
+        "admin_role = server=server1", "[users]", "user3 = user_group",
+        "admin = admin_group"};
 
     context.makeNewPolicy(testPolicies);
 
@@ -342,11 +508,8 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
    */
   @Test
   public void testNegativeUserDMLPrivileges() throws Exception {
-    String testPolicies[] = {
-        "[groups]",
-        "admin_group = admin_role",
-        "user_group  = db1_tab2_all",
-        "[roles]",
+    String testPolicies[] = {"[groups]", "admin_group = admin_role",
+        "user_group  = db1_tab2_all", "[roles]",
         "db1_tab2_all = server=server1->db=db1->table=table_2",
         "admin_role = server=server1", "[users]", "user3 = user_group",
         "admin = admin_group"};
@@ -550,16 +713,13 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
   }
 
   /**
-   * Steps:
-   * 1. admin user create databases, DB_1 and DB_2, no table or other
-   * object in database
-   * 2. admin grant all to USER_1's group on DB_1 and DB_2
-   *   positive test case:
-   *     a)USER_1 has the privilege to create table, load data,
-   *     drop table, create view, insert more data on both databases
-   *     b) USER_1 can switch between DB_1 and DB_2 without
-   *     exception negative test case:
-   *     c) USER_1 cannot drop database
+   * Steps: 1. admin user create databases, DB_1 and DB_2, no table or other
+   * object in database 2. admin grant all to USER_1's group on DB_1 and DB_2
+   * positive test case: a)USER_1 has the privilege to create table, load data,
+   * drop table, create view, insert more data on both databases b) USER_1 can
+   * switch between DB_1 and DB_2 without exception negative test case: c)
+   * USER_1 cannot drop database
+   * 
    * @throws Exception
    */
   @Test
@@ -604,59 +764,53 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
     // a
     statement.execute("DROP TABLE IF EXISTS " + dbName1 + "." + tableName1);
     statement.execute("create table " + dbName1 + "." + tableName1
-            + " (under_col int comment 'the under column', value string)");
+        + " (under_col int comment 'the under column', value string)");
     statement.execute("load data local inpath '" + dataFilePath
-            + "' into table " + dbName1 + "." + tableName1);
-    statement.execute("DROP VIEW IF EXISTS " + dbName1 + "." +viewName1);
-        statement.execute("CREATE VIEW " + dbName1 + "." +viewName1
-            + " (value) AS SELECT value from " + dbName1 + "." + tableName1 + " LIMIT 10");
+        + "' into table " + dbName1 + "." + tableName1);
+    statement.execute("DROP VIEW IF EXISTS " + dbName1 + "." + viewName1);
+    statement.execute("CREATE VIEW " + dbName1 + "." + viewName1
+        + " (value) AS SELECT value from " + dbName1 + "." + tableName1
+        + " LIMIT 10");
 
     // b
     statement.execute("DROP TABLE IF EXISTS " + dbName2 + "." + tableName2);
     statement.execute("create table " + dbName2 + "." + tableName2
-            + " (under_col int comment 'the under column', value string)");
-   statement.execute("load data local inpath '" + dataFilePath
-            + "' into table " + dbName2 + "." + tableName2);
-   statement.execute("DROP TABLE IF EXISTS " + dbName2 + "." + tableName3);
-   statement.execute("create table " + dbName2 + "." + tableName3
-            + " (under_col int comment 'the under column', value string)");
-   statement.execute("load data local inpath '" + dataFilePath
-            + "' into table " + dbName2 + "." + tableName3);
+        + " (under_col int comment 'the under column', value string)");
+    statement.execute("load data local inpath '" + dataFilePath
+        + "' into table " + dbName2 + "." + tableName2);
+    statement.execute("DROP TABLE IF EXISTS " + dbName2 + "." + tableName3);
+    statement.execute("create table " + dbName2 + "." + tableName3
+        + " (under_col int comment 'the under column', value string)");
+    statement.execute("load data local inpath '" + dataFilePath
+        + "' into table " + dbName2 + "." + tableName3);
 
     // c
-   try {
-     statement.execute("DROP DATABASE IF EXISTS " + dbName1);
-     fail("DROP DATABASE should fail");
-   } catch (SQLException e) {
-     context.verifyAuthzException(e);
-   }
+    try {
+      statement.execute("DROP DATABASE IF EXISTS " + dbName1);
+      fail("DROP DATABASE should fail");
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
 
-   try {
-     statement.execute("DROP DATABASE IF EXISTS " + dbName2);
-     fail("DROP DATABASE should fail");
-   } catch (SQLException e) {
-     context.verifyAuthzException(e);
-   }
+    try {
+      statement.execute("DROP DATABASE IF EXISTS " + dbName2);
+      fail("DROP DATABASE should fail");
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
     statement.close();
     connection.close();
   }
 
   /**
-   * Steps:
-   * 1. admin user create databases, DB_1 and DB_2, no table or other
-   * object in database
-   *    positive test case:
-   *     d) USER_1 has the privilege to create view on tables in DB_1
-   *    negative test case:
-   *     e) USER_1 cannot create view  in DB_1 that select
-   *     from tables in DB_2 with no select privilege
-   * 2.
-   *    positive test case:
-   *     f) USER_1 has the privilege to create view to select from
-   *     DB_1.tb_1 and DB_2.tb_2
-   *    negative test case:
-   *     g) USER_1 cannot create view to select from DB_1.tb_1
-   *     and DB_2.tb_3
+   * Steps: 1. admin user create databases, DB_1 and DB_2, no table or other
+   * object in database positive test case: d) USER_1 has the privilege to
+   * create view on tables in DB_1 negative test case: e) USER_1 cannot create
+   * view in DB_1 that select from tables in DB_2 with no select privilege 2.
+   * positive test case: f) USER_1 has the privilege to create view to select
+   * from DB_1.tb_1 and DB_2.tb_2 negative test case: g) USER_1 cannot create
+   * view to select from DB_1.tb_1 and DB_2.tb_3
+   * 
    * @throws Exception
    */
   @Test
@@ -670,8 +824,11 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
     editor.addPolicy("admin = server=server1", "roles");
     editor.addPolicy("all_db1 = server=server1->db=db_1", "roles");
     editor.addPolicy("all_db2 = server=server1->db=db_2", "roles");
-    editor.addPolicy("select_tb2 = server=server1->db=db_2->table=tb_1->action=select","roles");
-    editor.addPolicy("load_data = server=server1->URI=file:" + dataFilePath, "roles");
+    editor.addPolicy(
+        "select_tb2 = server=server1->db=db_2->table=tb_1->action=select",
+        "roles");
+    editor.addPolicy("load_data = server=server1->URI=file:" + dataFilePath,
+        "roles");
     editor.addPolicy("admin1 = admin", "users");
     editor.addPolicy("user1 = group1", "users");
 
@@ -692,9 +849,12 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
     statement.execute("DROP DATABASE IF EXISTS " + dbName2 + " CASCADE");
     statement.execute("CREATE DATABASE " + dbName1);
     statement.execute("CREATE DATABASE " + dbName2);
-    statement.execute("CREATE TABLE " + dbName1 + "." + tableName1 + "(id int)");
-    statement.execute("CREATE TABLE " + dbName2 + "." + tableName1 + "(id int)");
-    statement.execute("CREATE TABLE " + dbName2 + "." + tableName2 + "(id int)");
+    statement
+        .execute("CREATE TABLE " + dbName1 + "." + tableName1 + "(id int)");
+    statement
+        .execute("CREATE TABLE " + dbName2 + "." + tableName1 + "(id int)");
+    statement
+        .execute("CREATE TABLE " + dbName2 + "." + tableName2 + "(id int)");
     context.close();
 
     connection = context.createConnection("user1", "foo");
@@ -703,30 +863,33 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
     // d
     statement.execute("DROP TABLE IF EXISTS " + dbName1 + "." + tableName1);
     statement.execute("create table " + dbName1 + "." + tableName1
-             + " (under_col int comment 'the under column', value string)");
+        + " (under_col int comment 'the under column', value string)");
 
-     // e
-     statement.execute("DROP VIEW IF EXISTS " + dbName1 + "." + viewName2);
-     try {
-     statement.execute("CREATE VIEW " + dbName1 + "." + viewName2
-             + " (value) AS SELECT value from " + dbName2 + "." + tableName2 + " LIMIT 10");
-     } catch (SQLException e) {
-       context.verifyAuthzException(e);
-     }
+    // e
+    statement.execute("DROP VIEW IF EXISTS " + dbName1 + "." + viewName2);
+    try {
+      statement.execute("CREATE VIEW " + dbName1 + "." + viewName2
+          + " (value) AS SELECT value from " + dbName2 + "." + tableName2
+          + " LIMIT 10");
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
 
-     // f
-     statement.execute("DROP VIEW IF EXISTS " + dbName1 + "." + viewName2);
-     statement.execute("CREATE VIEW " + dbName1 + "." + viewName2
-             + " (value) AS SELECT value from " + dbName1 + "." + tableName1 + " LIMIT 10");
+    // f
+    statement.execute("DROP VIEW IF EXISTS " + dbName1 + "." + viewName2);
+    statement.execute("CREATE VIEW " + dbName1 + "." + viewName2
+        + " (value) AS SELECT value from " + dbName1 + "." + tableName1
+        + " LIMIT 10");
 
-     // g
-     statement.execute("DROP VIEW IF EXISTS " + dbName1 + "." + viewName3);
-     try {
-       statement.execute("CREATE VIEW " + dbName1 + "." + viewName3
-             + " (value) AS SELECT value from " + dbName2 + "." + tableName2 + " LIMIT 10");
-     } catch (SQLException e) {
-       context.verifyAuthzException(e);
-     }
+    // g
+    statement.execute("DROP VIEW IF EXISTS " + dbName1 + "." + viewName3);
+    try {
+      statement.execute("CREATE VIEW " + dbName1 + "." + viewName3
+          + " (value) AS SELECT value from " + dbName2 + "." + tableName2
+          + " LIMIT 10");
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
 
   }
 }
