@@ -85,6 +85,16 @@ public class SimplePolicy implements Policy {
     try {
       perDbResources.clear();
       Ini ini = PolicyFiles.loadFromPath(fileSystem, resourcePath);
+      if(LOGGER.isDebugEnabled()) {
+        for(String sectionName : ini.getSectionNames()) {
+          LOGGER.debug("Section: " + sectionName);
+          Ini.Section section = ini.get(sectionName);
+          for(String key : section.keySet()) {
+            String value = section.get(key);
+            LOGGER.debug(key + " = " + value);
+          }
+        }
+      }
       ImmutableSetMultimap<String, String> globalRoles;
       Map<String, ImmutableSetMultimap<String, String>> perDatabaseRoles = Maps.newHashMap();
       globalRoles = parseIni(null, ini);
@@ -233,6 +243,10 @@ public class SimplePolicy implements Policy {
     for(String group : groups) {
       resultBuilder.putAll(group, roles.getRoles(database, group));
     }
-    return resultBuilder.build();
+    ImmutableSetMultimap<String, String> result = resultBuilder.build();
+    if(LOGGER.isDebugEnabled()) {
+      LOGGER.debug("result = " + result);
+    }
+    return result;
   }
 }

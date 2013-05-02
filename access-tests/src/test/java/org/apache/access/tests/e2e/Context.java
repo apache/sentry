@@ -156,7 +156,7 @@ public class Context {
       throws SQLException {
     try {
       statement.execute(query);
-      Assert.fail("Expected SQLException");
+      Assert.fail("Expected SQLException for '" + query + "'");
     } catch (SQLException e) {
       verifyAuthzException(e);
     }

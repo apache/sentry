@@ -145,7 +145,11 @@ public class HiveAuthzBinding {
   public void authorize(HiveOperation hiveOp, HiveAuthzPrivileges stmtAuthPrivileges,
       Subject subject, List<List<Authorizable>> inputHierarchyList, List<List<Authorizable>> outputHierarchyList )
           throws AuthorizationException {
-    LOG.debug("Going to authorize statement " + hiveOp.name() + " for subject " + subject.getName());
+    boolean isDebug = LOG.isDebugEnabled();
+    if(isDebug) {
+      LOG.debug("Going to authorize statement " + hiveOp.name() +
+          " for subject " + subject.getName());
+    }
 
       /* for each read and write entity captured by the compiler -
        *    check if that object type is part of the input/output privilege list
@@ -159,6 +163,11 @@ public class HiveAuthzBinding {
       Map<AuthorizableType, EnumSet<Action>> requiredInputPrivileges =
           stmtAuthPrivileges.getInputPrivileges();
       for (List<Authorizable> inputHierarchy : inputHierarchyList) {
+        if(isDebug) {
+          LOG.debug("requiredInputPrivileges = " + requiredInputPrivileges);
+          LOG.debug("inputHierarchy = " + inputHierarchy);
+          LOG.debug("getAuthzType(inputHierarchy) = " + getAuthzType(inputHierarchy));
+        }
         if (requiredInputPrivileges.containsKey(getAuthzType(inputHierarchy))) {
           EnumSet<Action> inputPrivSet =
             requiredInputPrivileges.get(getAuthzType(inputHierarchy));
@@ -168,11 +177,15 @@ public class HiveAuthzBinding {
           }
         }
       }
-
       // Check write entities
       Map<AuthorizableType, EnumSet<Action>> requiredOutputPrivileges =
           stmtAuthPrivileges.getOutputPrivileges();
       for (List<Authorizable> outputHierarchy : outputHierarchyList) {
+        if(isDebug) {
+          LOG.debug("requiredOutputPrivileges = " + requiredOutputPrivileges);
+          LOG.debug("outputHierarchy = " + outputHierarchy);
+          LOG.debug("getAuthzType(outputHierarchy) = " + getAuthzType(outputHierarchy));
+        }
         if (requiredOutputPrivileges.containsKey(getAuthzType(outputHierarchy))) {
           EnumSet<Action> outputPrivSet =
             requiredOutputPrivileges.get(getAuthzType(outputHierarchy));
@@ -186,25 +199,6 @@ public class HiveAuthzBinding {
 
   public Server getAuthServer() {
     return authServer;
-  }
-
-  // Extract server resource
-  private ServerResource getResource(HiveOperation hiveOp) {
-    switch (hiveOp) {
-    case CREATEFUNCTION:
-      return ServerResource.UDFS;
-    default:
-      throw new UnsupportedOperationException("Unsupported ServerResource type " +
-          hiveOp.name());
-    }
-  }
-
-  private String printEntities (Set<? extends Entity> entitySet) {
-    StringBuilder st = new StringBuilder();
-    for (Entity e: entitySet) {
-      st.append(e.toString() + ", ");
-    }
-    return st.toString();
   }
 
   private AuthorizableType getAuthzType (List<Authorizable> hierarchy){

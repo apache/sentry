@@ -38,6 +38,8 @@ import org.apache.access.core.Database;
 import org.apache.access.core.Subject;
 import org.apache.access.core.Table;
 import org.apache.access.core.Authorizable.AuthorizableType;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hadoop.hive.ql.HiveDriverFilterHook;
@@ -61,13 +63,16 @@ import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.ql.session.SessionState;
 
-public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook implements HiveDriverFilterHook {
+import com.google.common.collect.ImmutableList;
 
+public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook implements HiveDriverFilterHook {
+  private static final Log LOG = LogFactory.getLog(HiveAuthzBindingHook.class);
   private final HiveAuthzBinding hiveAuthzBinding;
   private final HiveAuthzConf authzConf;
   private Database currDB = Database.ALL;
-  private Table currTab = null;
-  private AccessURI udfURI = null;
+  private Table currTab;
+  private AccessURI udfURI;
+  private AccessURI partitionURI;
 
   public HiveAuthzBindingHook() throws Exception {
     authzConf = new HiveAuthzConf();
@@ -83,11 +88,11 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook implement
    */
   @Override
   public ASTNode preAnalyze(HiveSemanticAnalyzerHookContext context, ASTNode ast)
-  throws SemanticException {
+      throws SemanticException {
 
     SessionState.get().getConf().setBoolVar(ConfVars.HIVE_EXTENDED_ENITITY_CAPTURE, true);
     switch (ast.getToken().getType()) {
-      // Hive parser doesn't capture the database name in output entity, so we store it here for now
+    // Hive parser doesn't capture the database name in output entity, so we store it here for now
     case HiveParser.TOK_CREATEDATABASE:
     case HiveParser.TOK_ALTERDATABASE_PROPERTIES:
     case HiveParser.TOK_DROPDATABASE:
@@ -104,7 +109,6 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook implement
     case HiveParser.TOK_ALTERTABLE_REPLACECOLS:
     case HiveParser.TOK_ALTERTABLE_RENAME:
     case HiveParser.TOK_ALTERTABLE_DROPPARTS:
-    case HiveParser.TOK_ALTERTABLE_ADDPARTS:
     case HiveParser.TOK_ALTERTABLE_PROPERTIES:
     case HiveParser.TOK_ALTERTABLE_SERIALIZER:
     case HiveParser.TOK_CREATEVIEW:
@@ -117,12 +121,15 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook implement
        * Compiler doesn't create read/write entities for create table.
        * Hence we need extract dbname from db.tab format, if applicable
        */
-      String tableName = BaseSemanticAnalyzer.getUnescapedName((ASTNode)ast.getChild(0));
-      if (tableName.contains(".")) {
-        currDB = new Database((tableName.split("\\."))[0]);
-      } else {
-        currDB = getCanonicalDb();
-      }
+      currDB = extractDatabase(ast);
+      break;
+    case HiveParser.TOK_ALTERTABLE_ADDPARTS:
+      /*
+       * Compiler doesn't create read/write entities for create table.
+       * Hence we need extract dbname from db.tab format, if applicable
+       */
+      currDB = extractDatabase(ast);
+      partitionURI = extractPartition(ast);
       break;
     case HiveParser.TOK_CREATEFUNCTION:
       String udfClassName = BaseSemanticAnalyzer.unescapeSQLString(ast.getChild(1).getText());
@@ -134,11 +141,11 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook implement
         String udfJar = udfSrc.getLocation().getPath();
         if (udfJar == null || udfJar.isEmpty()) {
           throw new SemanticException("Could not find the jar for UDF class " + udfClassName +
-                                      "to validate privileges");
+              "to validate privileges");
         }
         udfURI = new AccessURI(udfJar);
       } catch (ClassNotFoundException e) {
-        throw new SemanticException("Error retrieving current db", e);
+        throw new SemanticException("Error retrieving udf class", e);
       }
       // create/drop function is allowed with any database
       currDB = Database.ALL;
@@ -157,7 +164,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook implement
       break;
     case HiveParser.TOK_SHOW_TBLPROPERTIES:
       currTab = new Table(BaseSemanticAnalyzer.
-            getUnescapedName((ASTNode) ast.getChild(0)));
+          getUnescapedName((ASTNode) ast.getChild(0)));
       currDB = getCanonicalDb();
       break;
     default:
@@ -176,16 +183,28 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook implement
     }
   }
 
+  private Database extractDatabase(ASTNode ast) throws SemanticException {
+    String tableName = BaseSemanticAnalyzer.getUnescapedName((ASTNode)ast.getChild(0));
+    if (tableName.contains(".")) {
+      return new Database((tableName.split("\\."))[0]);
+    } else {
+      return getCanonicalDb();
+    }
+  }
+  private AccessURI extractPartition(ASTNode ast) {
+    return  new AccessURI(BaseSemanticAnalyzer.
+        unescapeSQLString(ast.getChild(2).getChild(0).getText()));
+  }
   /**
    * Post analyze hook that invokes hive auth bindings
    */
   @Override
   public void postAnalyze(HiveSemanticAnalyzerHookContext context,
-                          List<Task<? extends Serializable>> rootTasks) throws SemanticException {
+      List<Task<? extends Serializable>> rootTasks) throws SemanticException {
 
     HiveOperation stmtOperation = getCurrentHiveStmtOp();
     HiveAuthzPrivileges stmtAuthObject =
-      HiveAuthzPrivilegesMap.getHiveAuthzPrivileges(stmtOperation);
+        HiveAuthzPrivilegesMap.getHiveAuthzPrivileges(stmtOperation);
     if (stmtAuthObject == null) {
       // We don't handle authorizing this statement
       return;
@@ -209,12 +228,18 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook implement
    * @throws AuthorizationException
    */
   private void authorizeWithHiveBindings(HiveSemanticAnalyzerHookContext context,
-                                         HiveAuthzPrivileges stmtAuthObject, HiveOperation stmtOperation) throws  AuthorizationException {
+      HiveAuthzPrivileges stmtAuthObject, HiveOperation stmtOperation) throws  AuthorizationException {
 
     Set<ReadEntity> inputs = context.getInputs();
     Set<WriteEntity> outputs = context.getOutputs();
     List<List<Authorizable>> inputHierarchy = new ArrayList<List<Authorizable>> ();
     List<List<Authorizable>> outputHierarchy = new ArrayList<List<Authorizable>> ();
+
+    if(LOG.isDebugEnabled()) {
+      LOG.debug("stmtAuthObject.getOperationScope() = " + stmtAuthObject.getOperationScope());
+      LOG.debug("context.getInputs() = " + context.getInputs());
+      LOG.debug("context.getOutputs() = " + context.getOutputs());
+    }
 
     switch (stmtAuthObject.getOperationScope()) {
     case SERVER :
@@ -230,6 +255,10 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook implement
       dbHierarchy.add(currDB);
       inputHierarchy.add(dbHierarchy);
       outputHierarchy.add(dbHierarchy);
+      // workaround for add partitions
+      if(partitionURI != null) {
+        inputHierarchy.add(ImmutableList.of(hiveAuthzBinding.getAuthServer(), partitionURI));
+      }
       break;
     case TABLE:
       for (ReadEntity readEntity: inputs) {
@@ -270,7 +299,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook implement
       // by default allow connect access to default db
       if (DEFAULT_DATABASE_NAME.equalsIgnoreCase(currDB.getName()) &&
           "false".equalsIgnoreCase(authzConf.
-                                   get(HiveAuthzConf.AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), "false"))) {
+              get(HiveAuthzConf.AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), "false"))) {
         currDB = Database.ALL;
       }
       connectHierarchy.add(currDB);
@@ -290,12 +319,12 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook implement
 
     default:
       throw new AuthorizationException("Unknown operation scope type " +
-                                       stmtAuthObject.getOperationScope().toString());
+          stmtAuthObject.getOperationScope().toString());
     }
 
     // validate permission
     hiveAuthzBinding.authorize(stmtOperation, stmtAuthObject, getCurrentSubject(context),
-                               inputHierarchy, outputHierarchy);
+        inputHierarchy, outputHierarchy);
     hiveAuthzBinding.set(context.getConf());
   }
 
@@ -335,14 +364,14 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook implement
       break;
     default:
       throw new UnsupportedOperationException("Unsupported entity type " +
-                                              entity.getType().name());
+          entity.getType().name());
     }
     return objectHierarchy;
   }
 
-//Check if this write entity needs to skipped
+  //Check if this write entity needs to skipped
   private boolean filterWriteEntity(WriteEntity writeEntity)
-  throws AuthorizationException {
+      throws AuthorizationException {
     // skip URI validation for session scratch file URIs
     try {
       if (writeEntity.getTyp().equals(Type.DFS_DIR) ||
@@ -368,10 +397,10 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook implement
     List<String> filteredResult = new ArrayList<String>();
     Subject subject = new Subject(userName);
     HiveAuthzPrivileges tableMetaDataPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
-    addInputObjectPriviledge(AuthorizableType.Table, EnumSet.of(Action.SELECT, Action.INSERT)).
-    setOperationScope(HiveOperationScope.TABLE).
-    setOperationType(HiveOperationType.INFO).
-    build();
+        addInputObjectPriviledge(AuthorizableType.Table, EnumSet.of(Action.SELECT, Action.INSERT)).
+        setOperationScope(HiveOperationScope.TABLE).
+        setOperationType(HiveOperationType.INFO).
+        build();
 
     for (String tableName:queryResult) {
       // if user has privileges on table, add to filtered list, else discard
@@ -409,11 +438,11 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook implement
     List<String> filteredResult = new ArrayList<String>();
     Subject subject = new Subject(userName);
     HiveAuthzPrivileges anyPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
-    addInputObjectPriviledge(AuthorizableType.Table, EnumSet.of(Action.SELECT, Action.INSERT)).
-    addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(Action.SELECT)).
-    setOperationScope(HiveOperationScope.CONNECT).
-    setOperationType(HiveOperationType.QUERY).
-    build();
+        addInputObjectPriviledge(AuthorizableType.Table, EnumSet.of(Action.SELECT, Action.INSERT)).
+        addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(Action.SELECT)).
+        setOperationScope(HiveOperationScope.CONNECT).
+        setOperationType(HiveOperationType.QUERY).
+        build();
 
     for (String dbName:queryResult) {
       // if user has privileges on database, add to filtered list, else discard
@@ -422,7 +451,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook implement
       // if default is not restricted, continue
       if (DEFAULT_DATABASE_NAME.equalsIgnoreCase(dbName) &&
           "false".equalsIgnoreCase(authzConf.
-                                   get(HiveAuthzConf.AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), "false"))) {
+              get(HiveAuthzConf.AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), "false"))) {
         filteredResult.add(DEFAULT_DATABASE_NAME);
         continue;
       }
@@ -452,7 +481,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook implement
 
   @Override
   public HiveDriverFilterHookResult postDriverFetch( HiveDriverFilterHookContext hookContext)
-  throws Exception {
+      throws Exception {
     HiveDriverFilterHookResult hookResult = new HiveDriverFilterHookResultImpl();
     HiveOperation hiveOperation = hookContext.getHiveOperation();
     List<String> queryResult = new ArrayList<String>();

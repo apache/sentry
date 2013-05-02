@@ -122,13 +122,16 @@ public class TestUriPermissions extends AbstractTestWithStaticHiveServer {
         "admin_group = admin_role",
         "user_group1  = db1_all, data_read",
         "user_group2  = db1_all",
+        "user_group3  = db1_tab1_all, data_read",
         "[roles]",
         "db1_all = server=server1->db=" + dbName,
+        "db1_tab1_all = server=server1->db=" + dbName + "->table=" + tabName,
         "data_read = server=server1->URI=" + tabDir,
         "admin_role = server=server1",
         "[users]",
         "user1 = user_group1",
         "user2 = user_group2",
+        "user3 = user_group3",
         "admin = admin_group"
         };
     context.makeNewPolicy(testPolicies);
@@ -141,28 +144,45 @@ public class TestUriPermissions extends AbstractTestWithStaticHiveServer {
     adminStmt.execute("CREATE DATABASE " + dbName);
     adminStmt.execute("use " + dbName);
     adminStmt.execute("CREATE TABLE " + tabName + " (id int) PARTITIONED BY (dt string)");
-    context.close();
+    adminCon.close();
 
-    // negative test: user2 doesn't have privilege to alter table set partition
-    userConn = context.createConnection("user2", "foo");
-    userStmt = context.createStatement(userConn);
-    userStmt.execute("use " + dbName);
-    try {
-      userStmt.execute("ALTER TABLE " + tabName + " ADD PARTITION (dt = '21-Dec-2012') " +
-          " LOCATION '" + tabDir + "/foo'");
-    Assert.assertTrue("partition location shouldfail for user2", false);
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
-    context.close();
-
- // positive test: user doesn't have privilege to alter table set partition    userConn = context.createConnection("user1", "foo");
+    // positive test: user1 has privilege to alter table add partition but not set location
     userConn = context.createConnection("user1", "foo");
     userStmt = context.createStatement(userConn);
     userStmt.execute("use " + dbName);
     userStmt.execute("ALTER TABLE " + tabName + " ADD PARTITION (dt = '21-Dec-2012') " +
             " LOCATION '" + tabDir + "'");
-    context.close();
+    // negative test user1 cannot alter partition location
+    context.assertAuthzException(userStmt,
+        "ALTER TABLE " + tabName + " PARTITION (dt = '21-Dec-2012') " + " SET LOCATION '" + tabDir + "'");
+    userConn.close();
+
+    // negative test: user2 doesn't have privilege to alter table add partition
+    userConn = context.createConnection("user2", "foo");
+    userStmt = context.createStatement(userConn);
+    userStmt.execute("use " + dbName);
+    context.assertAuthzException(userStmt,
+        "ALTER TABLE " + tabName + " ADD PARTITION (dt = '22-Dec-2012') " +
+          " LOCATION '" + tabDir + "/foo'");
+    userConn.close();
+
+    // negative test: user3 doesn't have privilege to add/drop partitions
+    userConn = context.createConnection("user3", "foo");
+    userStmt = context.createStatement(userConn);
+    userStmt.execute("use " + dbName);
+    context.assertAuthzException(userStmt,
+        "ALTER TABLE " + tabName + " ADD PARTITION (dt = '22-Dec-2012') " +
+          " LOCATION '" + tabDir + "/foo'");
+    context.assertAuthzException(userStmt,
+        "ALTER TABLE " + tabName + " DROP PARTITION (dt = '21-Dec-2012')");
+    userConn.close();
+
+    // positive test: user1 has privilege to alter drop partition
+    userConn = context.createConnection("user1", "foo");
+    userStmt = context.createStatement(userConn);
+    userStmt.execute("use " + dbName);
+    userStmt.execute("ALTER TABLE " + tabName + " DROP PARTITION (dt = '21-Dec-2012')");
+    userConn.close();
   }
 
   // test alter table set location
@@ -178,12 +198,13 @@ public class TestUriPermissions extends AbstractTestWithStaticHiveServer {
     String testPolicies[] = {
         "[groups]",
         "admin_group = admin_role",
-        "user_group1  = db1_all, data_read",
-        "user_group2  = db1_all",
+        "user_group1  = server1_all",
+        "user_group2  = db1_all, data_read",
         "[roles]",
         "db1_all = server=server1->db=" + dbName,
         "data_read = server=server1->URI=" + tabDir,
         "admin_role = server=server1",
+        "server1_all = server=server1",
         "[users]",
         "user1 = user_group1",
         "user2 = user_group2",
@@ -198,34 +219,29 @@ public class TestUriPermissions extends AbstractTestWithStaticHiveServer {
     adminStmt.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
     adminStmt.execute("CREATE DATABASE " + dbName);
     adminStmt.execute("use " + dbName);
-    adminStmt.execute("CREATE TABLE " + tabName + " (id int)");
-    context.close();
+    adminStmt.execute("CREATE TABLE " + tabName + " (id int)  PARTITIONED BY (dt string)");
+    adminCon.close();
 
     // negative test: user2 doesn't have privilege to alter table set partition
     userConn = context.createConnection("user2", "foo");
     userStmt = context.createStatement(userConn);
     userStmt.execute("use " + dbName);
-    try {
-      userStmt.execute("ALTER TABLE " + tabName + " SET LOCATION '" + tabDir +  "'");
-    Assert.assertTrue("set table location should fail for user2", false);
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
-    context.close();
+    context.assertAuthzException(userStmt,
+        "ALTER TABLE " + tabName + " SET LOCATION '" + tabDir +  "'");
+    userConn.close();
 
- // positive test: user doesn't have privilege to alter table set partition    userConn = context.createConnection("user1", "foo");
+    // positive test: user1 has privilege to alter table set partition
     userConn = context.createConnection("user1", "foo");
     userStmt = context.createStatement(userConn);
     userStmt.execute("use " + dbName);
     userStmt.execute("ALTER TABLE " + tabName + " SET LOCATION '" + tabDir + "'");
-    context.close();
+    userConn.close();
   }
 
   // Test external table
   @Test
   public void testExternalTablePrivileges() throws Exception {
     String dbName = "db1";
-    String tabName = "tab1";
     Connection userConn = null;
     Statement userStmt = null;
 
@@ -251,26 +267,22 @@ public class TestUriPermissions extends AbstractTestWithStaticHiveServer {
     adminStmt.execute("use default");
     adminStmt.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
     adminStmt.execute("CREATE DATABASE " + dbName);
-    context.close();
+    adminCon.close();
 
     // negative test: user2 doesn't have privilege to create external table in given path
     userConn = context.createConnection("user2", "foo");
     userStmt = context.createStatement(userConn);
     userStmt.execute("use " + dbName);
-    try {
-    userStmt.execute("CREATE EXTERNAL TABLE extab1(id INT) LOCATION '" + context.getDataDir() + "'");
-    Assert.assertTrue("load should fail for user2", false);
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
-    context.close();
+    context.assertAuthzException(userStmt,
+        "CREATE EXTERNAL TABLE extab1(id INT) LOCATION '" + context.getDataDir() + "'");
+    userConn.close();
 
     // positive test: user1 has privilege to create external table in given path
     userConn = context.createConnection("user1", "foo");
     userStmt = context.createStatement(userConn);
     userStmt.execute("use " + dbName);
     userStmt.execute("CREATE EXTERNAL TABLE extab1(id INT) LOCATION '" + context.getDataDir() + "'");
-    context.close();
+    userConn.close();
   }
 
 }
