@@ -100,6 +100,7 @@ public class TestHiveAuthzBindings {
     authzConf.set(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar(),
         new File(baseDir, RESOURCE_PATH).getPath());
     authzConf.set(AuthzConfVars.AUTHZ_SERVER_NAME.getVar(), SERVER1);
+    authzConf.set(AuthzConfVars.ACCESS_TESTING_MODE.getVar(), "true");
     testAuth = new HiveAuthzBinding(authzConf);
   }
 

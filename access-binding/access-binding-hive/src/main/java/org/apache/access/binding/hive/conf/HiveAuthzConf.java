@@ -51,8 +51,16 @@ public class HiveAuthzConf extends Configuration {
       return varName;
     }
 
-    public String getDefault(String varName) {
-      return valueOf(varName).defaultVal;
+    public String getDefault() {
+      return defaultVal;
+    }
+    public static String getDefault(String varName) {
+      for (AuthzConfVars oneVar : AuthzConfVars.values()) {
+        if(oneVar.getVar().equalsIgnoreCase(varName)) {
+          return oneVar.getDefault();
+        }
+      }
+      return null;
     }
   }
 
@@ -111,7 +119,7 @@ public class HiveAuthzConf extends Configuration {
   public String get(String varName) {
     String retVal = super.get(varName);
     if (retVal == null) {
-      retVal = AuthzConfVars.valueOf(varName).getDefault(varName);
+      retVal = AuthzConfVars.getDefault(varName);
     }
     return retVal;
   }
