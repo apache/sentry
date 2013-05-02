@@ -17,11 +17,20 @@
 
 package org.apache.access.tests.e2e.hiveserver;
 
+import org.apache.hadoop.hive.metastore.HiveMetaStore;
+import org.fest.reflect.core.Reflection;
+
 public class EmbeddedHiveServer implements HiveServer {
 
   @Override
   public void start() {
-
+    // Fix for ACCESS-148. Resets a static field
+    // so the default database is created even
+    // though is has been created before in this JVM
+    Reflection.staticField("createDefaultDB")
+    .ofType(boolean.class)
+    .in(HiveMetaStore.HMSHandler.class)
+    .set(false);
   }
 
   @Override

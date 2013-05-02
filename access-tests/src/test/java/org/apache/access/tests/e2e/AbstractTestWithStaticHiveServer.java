@@ -28,12 +28,15 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 
 public abstract class AbstractTestWithStaticHiveServer {
-
+  private static final Logger LOGGER = LoggerFactory
+      .getLogger(AbstractTestWithStaticHiveServer.class);
   protected static File baseDir;
   protected static File confDir;
   protected static File dataDir;
@@ -62,6 +65,7 @@ public abstract class AbstractTestWithStaticHiveServer {
       throws Exception {
     fileSystem = FileSystem.get(new Configuration());
     baseDir = Files.createTempDir();
+    LOGGER.info("BaseDir = " + baseDir);
     confDir = assertCreateDir(new File(baseDir, "etc"));
     dataDir = assertCreateDir(new File(baseDir, "data"));
     policyFile = new File(confDir, HiveServerFactory.AUTHZ_PROVIDER_FILENAME);
@@ -77,7 +81,9 @@ public abstract class AbstractTestWithStaticHiveServer {
       hiveServer = null;
     }
     if(baseDir != null) {
-      FileUtils.deleteQuietly(baseDir);
+      if(System.getProperty(HiveServerFactory.KEEP_BASEDIR) == null) {
+        FileUtils.deleteQuietly(baseDir);
+      }
       baseDir = null;
     }
   }

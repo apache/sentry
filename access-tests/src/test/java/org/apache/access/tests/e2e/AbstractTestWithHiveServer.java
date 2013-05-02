@@ -46,6 +46,7 @@ public abstract class AbstractTestWithHiveServer {
       throws Exception {
     fileSystem = FileSystem.get(new Configuration());
     baseDir = Files.createTempDir();
+    LOGGER.info("BaseDir = " + baseDir);
     confDir = assertCreateDir(new File(baseDir, "etc"));
     dataDir = assertCreateDir(new File(baseDir, "data"));
     policyFile = new File(confDir, HiveServerFactory.AUTHZ_PROVIDER_FILENAME);
@@ -75,8 +76,6 @@ public abstract class AbstractTestWithHiveServer {
     if(baseDir != null) {
       if(System.getProperty(HiveServerFactory.KEEP_BASEDIR) == null) {
         FileUtils.deleteQuietly(baseDir);
-      } else {
-        LOGGER.info("BaseDir = " + baseDir);
       }
       baseDir = null;
     }

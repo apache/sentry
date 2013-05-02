@@ -119,6 +119,7 @@ public class HiveServerFactory {
     HiveConf conf = new HiveConf();
     HiveAuthzConf authzConf = new HiveAuthzConf();
     for(Map.Entry<String, String> entry : properties.entrySet()) {
+      LOGGER.debug(entry.getKey() + " => " + entry.getValue());
       System.setProperty(entry.getKey(), entry.getValue());
       conf.set(entry.getKey(), entry.getValue());
       authzConf.set(entry.getKey(), entry.getValue());
