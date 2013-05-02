@@ -30,16 +30,21 @@ import org.apache.access.core.Action;
 import org.apache.access.core.Authorizable;
 import org.apache.access.core.Authorizable.AuthorizableType;
 import org.apache.access.core.AuthorizationProvider;
+import org.apache.access.core.NoAuthorizationProvider;
 import org.apache.access.core.Server;
 import org.apache.access.core.ServerResource;
 import org.apache.access.core.Subject;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hadoop.hive.ql.hooks.Entity;
 import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.ql.session.SessionState;
+
+import com.google.common.base.Strings;
 
 public class HiveAuthzBinding {
   private static final Log LOG = LogFactory.getLog(HiveAuthzBinding.class.getName());
@@ -95,11 +100,28 @@ public class HiveAuthzBinding {
 
   // Instantiate the configured authz provider
   private AuthorizationProvider getAuthProvider(String serverName) throws Exception {
+    boolean isTestingMode = Boolean.parseBoolean(Strings.nullToEmpty(
+        authzConf.get(AuthzConfVars.ACCESS_TESTING_MODE.getVar())).trim());
+    HiveConf hiveConf = new HiveConf();
+    LOG.debug("Testing mode is " + isTestingMode);
+    if(!isTestingMode) {
+      String authMethod = Strings.nullToEmpty(hiveConf.getVar(ConfVars.HIVE_SERVER2_AUTHENTICATION)).trim();
+      if("none".equalsIgnoreCase(authMethod)) {
+        LOG.error("HiveServer2 authentication method cannot be set to none unless testing mode is enabled");
+        return new NoAuthorizationProvider();
+      }
+      boolean impersonation = Boolean.parseBoolean(Strings.nullToEmpty(
+          hiveConf.getVar(ConfVars.HIVE_SERVER2_KERBEROS_IMPERSONATION)).trim());
+      if(impersonation) {
+        LOG.error("HiveServer2 does not work with impersonation");
+        return new NoAuthorizationProvider();
+      }
+    }
     // get the provider class and resources from the authz config
     String authProviderName = authzConf.get(AuthzConfVars.AUTHZ_PROVIDER.getVar());
     String resourceName =
         authzConf.get(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar());
-    LOG.debug("Using autherization provide " + authProviderName +
+    LOG.debug("Using authorization provide " + authProviderName +
         " with resource " + resourceName);
 
     // load the authz provider class

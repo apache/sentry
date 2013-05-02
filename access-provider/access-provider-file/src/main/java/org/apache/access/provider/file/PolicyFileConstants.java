@@ -21,6 +21,10 @@ import com.google.common.base.Splitter;
 
 public class PolicyFileConstants {
 
+  public static final String DATABASES = "databases";
+  public static final String GROUPS = "groups";
+  public static final String ROLES = "roles";
+
   public static final String ROLE_SEPARATOR = ",";
   public static final String AUTHORIZABLE_SEPARATOR = "->";
   public static final String KV_SEPARATOR = "=";

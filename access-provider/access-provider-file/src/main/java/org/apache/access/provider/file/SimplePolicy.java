@@ -16,7 +16,7 @@
  */
 package org.apache.access.provider.file;
 
-import static org.apache.access.provider.file.PolicyFileConstants.ROLE_SPLITTER;
+import static org.apache.access.provider.file.PolicyFileConstants.*;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -55,9 +55,7 @@ public class SimplePolicy implements Policy {
   private static final Logger LOGGER = LoggerFactory
       .getLogger(SimplePolicy.class);
 
-  private static final String DATABASES = "databases";
-  private static final String GROUPS = "groups";
-  private static final String ROLES = "roles";
+
 
   private final FileSystem fileSystem;
   private final Path resourcePath;
