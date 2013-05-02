@@ -47,6 +47,7 @@ public class HiveServerFactory {
   public static final String AUTHZ_PROVIDER_RESOURCE = HiveAuthzConf.AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar();
   public static final String AUTHZ_PROVIDER_FILENAME = "test-authz-provider.ini";
   public static final String AUTHZ_SERVER_NAME = HiveAuthzConf.AuthzConfVars.AUTHZ_SERVER_NAME.getVar();
+  public static final String ACCESS_TESTING_MODE = HiveAuthzConf.AuthzConfVars.ACCESS_TESTING_MODE.getVar();
   public static final String HS2_PORT = ConfVars.HIVE_SERVER2_THRIFT_PORT.toString();
   public static final String DEFAULT_AUTHZ_SERVER_NAME = "server1";
 
@@ -97,6 +98,9 @@ public class HiveServerFactory {
       FileOutputStream to = new FileOutputStream(policyFile);
       Resources.copy(Resources.getResource(AUTHZ_PROVIDER_FILENAME), to);
       to.close();
+    }
+    if(!properties.containsKey(ACCESS_TESTING_MODE)) {
+      properties.put(ACCESS_TESTING_MODE, "true");
     }
     if(!properties.containsKey(AUTHZ_PROVIDER_RESOURCE)) {
       properties.put(AUTHZ_PROVIDER_RESOURCE, policyFile.getPath());

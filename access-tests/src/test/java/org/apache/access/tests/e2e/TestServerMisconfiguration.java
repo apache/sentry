@@ -26,6 +26,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
 
+import org.apache.access.tests.e2e.hiveserver.HiveServerFactory;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -33,15 +34,18 @@ import org.junit.Test;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.Maps;
+import com.google.common.io.Files;
 
 public class TestServerMisconfiguration extends AbstractTestWithHiveServer {
 
   private Context context;
   private Map<String, String> properties;
+  private PolicyFile policyFile;
 
   @Before
   public void setup() throws Exception {
     properties = Maps.newHashMap();
+    policyFile = PolicyFile.createAdminOnServer1("hive");
 
   }
 
@@ -57,8 +61,10 @@ public class TestServerMisconfiguration extends AbstractTestWithHiveServer {
    */
   @Test
   public void testImpersonationIsDisabled() throws Exception {
+    properties.put(HiveServerFactory.ACCESS_TESTING_MODE, "false");
     properties.put("hive.server2.enable.impersonation", "true");
     context = createContext(properties);
+    policyFile.write(context.getPolicyFile());
     Connection connection = context.createConnection("hive", "hive");
     Statement statement = context.createStatement(connection);
     try {
@@ -74,8 +80,11 @@ public class TestServerMisconfiguration extends AbstractTestWithHiveServer {
    */
   @Test
   public void testAuthenticationIsStrong() throws Exception {
+    properties.put(HiveServerFactory.ACCESS_TESTING_MODE, "false");
     properties.put("hive.server2.authentication", "NONE");
     context = createContext(properties);
+    policyFile.write(context.getPolicyFile());
+    System.out.println(Files.toString(context.getPolicyFile(), Charsets.UTF_8));
     Connection connection = context.createConnection("hive", "hive");
     Statement statement = context.createStatement(connection);
     try {
