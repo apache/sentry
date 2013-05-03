@@ -17,29 +17,36 @@
 
 package org.apache.access.tests.e2e;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.sql.Connection;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Statement;
 
-import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.io.Resources;
+
 public class TestUserManagement extends AbstractTestWithStaticHiveServer {
+  private static final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
+  private static final String dbName = "db1";
+  private static final String tableName = "t1";
+  private static final String tableComment = "Test table";
+  private File dataFile;
   private Context context;
-  private final String dataFileDir = "src/test/resources";
-  private String tableName = "Test_Tab007";
-  private String tableComment = "Test table";
 
   @Before
   public void setUp() throws Exception {
     context = createContext();
+    dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
+    FileOutputStream to = new FileOutputStream(dataFile);
+    Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
+    to.close();
   }
 
   @After
@@ -48,51 +55,70 @@ public class TestUserManagement extends AbstractTestWithStaticHiveServer {
       context.close();
     }
   }
-
+  private void doCreateDbLoadDataDropDb(String admin, String...users) throws Exception {
+    doDropDb(admin);
+    for (String user : users) {
+      doCreateDb(user);
+      Connection connection = context.createConnection(user, "password");
+      Statement statement = context.createStatement(connection);
+      ResultSet res = statement.executeQuery("SHOW DATABASES");
+      boolean created = false;
+      while (res.next()) {
+        if (res.getString(1).equals(dbName)) {
+          created = true;
+        }
+      }
+      assertTrue("database " + dbName + " is not created", created);
+      doCreateTableLoadData(user);
+      doDropDb(user);
+      statement.close();
+      connection.close();
+    }
+  }
+  private void doDropDb(String user) throws Exception {
+    Connection connection = context.createConnection(user, "password");
+    Statement statement = connection.createStatement();
+    statement.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
+    statement.close();
+    connection.close();
+  }
+  private void doCreateDb(String user) throws Exception {
+    Connection connection = context.createConnection(user, "password");
+    Statement statement = connection.createStatement();
+    statement.execute("CREATE DATABASE " + dbName);
+    statement.close();
+    connection.close();
+  }
+  private void doCreateTableLoadData(String user) throws Exception {
+    Connection connection = context.createConnection(user, "password");
+    Statement statement = context.createStatement(connection);
+    statement.execute("USE " + dbName);
+    statement.execute("CREATE TABLE " + tableName +
+        " (under_col int comment 'the under column', value string) comment '"
+        + tableComment + "'");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' into table " + tableName);
+    assertTrue(statement.execute("SELECT * FROM " + tableName));
+    statement.close();
+    connection.close();
+  }
+  /**
+   * Basic sanity test
+   */
   @Test
   public void testSanity() throws Exception {
-    // per test setup
-    Connection connection = context.createConnection("admin1", "foo");
-    Statement statement = context.createStatement(connection);
-    Path dataFilePath = new Path(dataFileDir, "kv1.dat");
     File policyFile = context.getPolicyFile();
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
     editor.addPolicy("admin = admin", "groups");
     editor.addPolicy("admin = server=server1", "roles");
     editor.addPolicy("admin1 = admin", "users");
-
-    // drop table
-    statement.execute("drop table if exists " + tableName);
-
-    // create table
-    statement.execute("create table " + tableName
-        + " (under_col int comment 'the under column', value string) comment '"
-        + tableComment + "'");
-
-    // load data
-    statement.execute("load data local inpath '" + dataFilePath.toString()
-        + "' into table " + tableName);
-    // query table
-    statement.executeQuery("select under_col from " + tableName);
-
-    // drop table
-    statement.execute("drop table " + tableName);
-
-    // per test tear down
-    statement.close();
-    statement.close();
+    doCreateDbLoadDataDropDb("admin1", "admin1");
   }
 
   /**
-   * Steps:
-   * 1. in policy file, create a admin group, ADMIN_GROUP_1.
-   * 2. add a list of users (USER_1, USER_2, USER_3....) in it.
-   * 3. verify every user has admin privilege
-   * (execute CREATE DATABASE and DROP DATABASE)
+   * Tests admin privileges allow admins to create/drop dbs
    **/
   @Test
   public void testAdmin1() throws Exception {
-    // edit policy file
     File policyFile = context.getPolicyFile();
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
     editor.addPolicy("admin = admin", "groups");
@@ -100,95 +126,12 @@ public class TestUserManagement extends AbstractTestWithStaticHiveServer {
     editor.addPolicy("admin1 = admin", "users");
     editor.addPolicy("admin2 = admin", "users");
     editor.addPolicy("admin3 = admin", "users");
-
-    // verify by SQL
-    String[] users = { "admin1", "admin2", "admin3" };
-    for (String admin : users) {
-      String dbName = "db_1";
-      Connection connection = context.createConnection(admin, "foo");
-      Statement statement = context.createStatement(connection);
-
-      statement.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
-      statement.execute("CREATE DATABASE " + dbName);
-
-      ResultSet res = statement.executeQuery("SHOW DATABASES");
-      boolean created = false;
-      while (res.next()) {
-        if (res.getString(1).equals(dbName)) {
-          created = true;
-        }
-      }
-      assertEquals("database " + dbName + " is not created", true,
-          created);
-      statement.execute("DROP DATABASE " + dbName + " CASCADE");
-
-      statement.close();
-      connection.close();
-    }
+    doCreateDbLoadDataDropDb("admin1", "admin1", "admin2", "admin3");
   }
 
   /**
-   * Steps:
-   * 1. in policy file, create a admin group.
-   * 2. ADMIN_GROUP_1 don't add any user into it at this
-   * moment make sure nothing is broken.
-   * 3. And non-admin user is created.
-   * 4. Add a list of users (USER_1, USER_2, USER_3....) in
-   * ADMIN_GROUP_1 in policy file
-   * 5. verify every user has admin privilege (execute
-   * CREATE DATABASE and DROP DATABASE)
-   **/
-  @Test
-  public void testAdmin2() throws Exception {
-    // edit policy file
-    File policyFile = context.getPolicyFile();
-    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("admin = admin", "groups");
-    editor.addPolicy("admin = server=server1", "roles");
-
-    // verify by SQL
-    // although no user is added to admin group, nothing should broken
-    testSanity();
-
-    // add user to admin group now
-    editor.addPolicy("admin1 = admin", "users");
-    editor.addPolicy("admin2 = admin", "users");
-    editor.addPolicy("admin3 = admin", "users");
-
-    String[] users = { "admin1", "admin2", "admin3" };
-    for (String admin : users) {
-      String dbName = "db_1";
-      Connection connection = context.createConnection(admin, "foo");
-      Statement statement = context.createStatement(connection);
-
-      statement.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
-      statement.execute("CREATE DATABASE " + dbName);
-
-      ResultSet res = statement.executeQuery("SHOW DATABASES");
-      boolean created = false;
-      while (res.next()) {
-        if (res.getString(1).equals(dbName)) {
-          created = true;
-        }
-      }
-      assertEquals("database " + dbName + " is not created", true,
-          created);
-      statement.execute("DROP DATABASE " + dbName + " CASCADE");
-
-      statement.close();
-      connection.close();
-    }
-  }
-
-  /** Negative case
-   * Steps:
-   * 1. in policy file, create a admin group, ADMIN_GROUP_1.
-   * 2. add a list of users (USER_1, USER_2, USER_3....) in it.
-   * 3. verify every user has admin privilege
-   * (execute CREATE DATABASE and DROP DATABASE)
-   * 4. move one user USER_1 from that group.
-   * 5. verify user USER_1 doesn't have admin privilege
-   * (execute CREATE DATABASE and DROP DATABASE)
+   * Negative case: Tests that when a user is removed
+   * from the policy file their permissions have no effect
    **/
   @Test
   public void testAdmin3() throws Exception {
@@ -200,60 +143,22 @@ public class TestUserManagement extends AbstractTestWithStaticHiveServer {
     editor.addPolicy("admin1 = admin", "users");
     editor.addPolicy("admin2 = admin", "users");
     editor.addPolicy("admin3 = admin", "users");
-
-    // verify by SQL
-    String[] users = { "admin1", "admin2", "admin3" };
-    for (String admin : users) {
-      String dbName = "db_1";
-      Connection connection = context.createConnection(admin, "foo");
-      Statement statement = context.createStatement(connection);
-
-      statement.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
-      statement.execute("CREATE DATABASE " + dbName);
-
-      ResultSet res = statement.executeQuery("SHOW DATABASES");
-      boolean created = false;
-      while (res.next()) {
-        if (res.getString(1).equals(dbName)) {
-          created = true;
-        }
-      }
-      assertEquals("database " + dbName + " is not created", true,
-          created);
-      statement.execute("DROP DATABASE " + dbName + " CASCADE");
-
-      statement.close();
-      connection.close();
-    }
-
+    doCreateDbLoadDataDropDb("admin1", "admin1", "admin2", "admin3");
     // remove admin1 from admin group
     editor.removePolicy("admin1 = admin");
-
     // verify admin1 doesn't have admin privilege
-    String dbName = "db_1";
     Connection connection = context.createConnection("admin1", "foo");
     Statement statement = connection.createStatement();
-
-    // should fail
-    try {
-      statement.execute("CREATE DATABASE " + dbName);
-      assertFalse("admin1 has been remove from the admin group, should not be able to create database",false);
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
+    context.assertAuthzException(statement, "CREATE DATABASE somedb");
+    statement.close();
+    connection.close();
   }
 
   /**
-   * Steps:
-   * 1. in policy file, create a admin group, ADMIN_GROUP_1, ADMIN_GROUP_2.
-   * 2. add a list of same users (USER_1, USER_2, USER_3....) in both
-   * ADMIN_GROUP_1 and ADMIN_GROUP_2.
-   * 3. verify every user has admin privilege
-   * (execute CREATE DATABASE and DROP DATABASE)
+   * Tests that users in two groups work correctly
    **/
   @Test
   public void testAdmin5() throws Exception {
-    // edit policy file
     File policyFile = context.getPolicyFile();
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
     editor.addPolicy("admin_group1 = admin", "groups");
@@ -262,291 +167,130 @@ public class TestUserManagement extends AbstractTestWithStaticHiveServer {
     editor.addPolicy("admin1 = admin_group1, admin_group2", "users");
     editor.addPolicy("admin2 = admin_group1, admin_group2", "users");
     editor.addPolicy("admin3 = admin_group1, admin_group2", "users");
-
-    // verify by SQL
-    String[] users = { "admin1", "admin2", "admin3" };
-    for (String admin : users) {
-      String dbName = "db_1";
-      Connection connection = context.createConnection(admin, "foo");
-      Statement statement = context.createStatement(connection);
-
-      statement.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
-      statement.execute("CREATE DATABASE " + dbName);
-
-      ResultSet res = statement.executeQuery("SHOW DATABASES");
-      boolean created = false;
-      while (res.next()) {
-        if (res.getString(1).equals(dbName)) {
-          created = true;
-        }
-      }
-      assertEquals("database " + dbName + " is not created", true,
-          created);
-      statement.execute("DROP DATABASE " + dbName + " CASCADE");
-
-      statement.close();
-      connection.close();
-    }
+    doCreateDbLoadDataDropDb("admin1", "admin1", "admin2", "admin3");
   }
 
   /**
-   * Steps:
-   * 1. create several user groups, GROUP_1, GROUP_2, GROUP_3.
-   * 2. add users into it apply admin privilege to GROUP_1.
-   * 3. verify every user in GROUP_1 has admin privilege
-   * (execute CREATE DATABASE and DROP DATABASE)
+   * Tests admin group does not infect non-admin group
    **/
   @Test
-  public void testGroup1() throws Exception {
-    // edit policy file
+  public void testAdmin6() throws Exception {
     File policyFile = context.getPolicyFile();
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("group1 = admin", "groups");
-    editor.addPolicy("admin = server=server1", "roles");
+    editor.addPolicy("admin_group = admin_role", "groups");
+    editor.addPolicy("admin_role = server=server1", "roles");
+    editor.addPolicy("admin1 = admin_group", "users");
+    editor.addPolicy("group1 = non_admin_role", "groups");
+    editor.addPolicy("non_admin_role = server=server1->db=" + dbName, "roles");
     editor.addPolicy("user1 = group1", "users");
-    editor.addPolicy("user2 = group1", "users");
-    editor.addPolicy("user3 = group1", "users");
-
-    // verify by SQL
-    String[] users = { "user1", "user2", "user3" };
-    for (String admin : users) {
-      String dbName = "db_1";
-      Connection connection = context.createConnection(admin, "foo");
-      Statement statement = context.createStatement(connection);
-
-      statement.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
-      statement.execute("CREATE DATABASE " + dbName);
-
-      ResultSet res = statement.executeQuery("SHOW DATABASES");
-      boolean created = false;
-      while (res.next()) {
-        if (res.getString(1).equals(dbName)) {
-          created = true;
-        }
-      }
-      assertEquals("database " + dbName + " is not created", true,
-          created);
-      statement.execute("DROP DATABASE " + dbName + " CASCADE");
-
-      statement.close();
-      connection.close();
-    }
+    doCreateDbLoadDataDropDb("admin1", "admin1");
+    Connection connection = context.createConnection("user1", "password");
+    Statement statement = connection.createStatement();
+    context.assertAuthzException(statement, "CREATE DATABASE " + dbName);
+    statement.close();
+    connection.close();
   }
 
   /**
-   * Steps:
-   * 1. in policy file, create user groups, GROUP_1.
-   * 2. add user USER_1 into GROUP_1.
-   * 3. apply admin privileges to GROUP_1,
-   * apply NON-ADMIN_1 to user_1 in GROUP_1.
-   * 4. verify user_1 has admin privilege
+   * Tests that user with two roles the most powerful role takes effect
    **/
   @Test
   public void testGroup2() throws Exception {
-    // edit policy file
     File policyFile = context.getPolicyFile();
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("group1 = admin", "groups");
-    editor.addPolicy("group1 = analytics", "groups");
+    editor.addPolicy("group1 = admin, analytics", "groups");
     editor.addPolicy("admin = server=server1", "roles");
-    editor.addPolicy("analytics = server=server1->db=default", "roles");
+    editor.addPolicy("analytics = server=server1->db=" + dbName, "roles");
     editor.addPolicy("user1 = group1", "users");
     editor.addPolicy("user2 = group1", "users");
     editor.addPolicy("user3 = group1", "users");
-
-    // verify by SQL
-    String[] users = { "user1", "user2", "user3" };
-    for (String admin : users) {
-      String dbName = "db_1";
-      Connection connection = context.createConnection(admin, "foo");
-      Statement statement = context.createStatement(connection);
-
-      statement.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
-      statement.execute("CREATE DATABASE " + dbName);
-
-      ResultSet res = statement.executeQuery("SHOW DATABASES");
-      boolean created = false;
-      while (res.next()) {
-        if (res.getString(1).equals(dbName)) {
-          created = true;
-        }
-      }
-      assertEquals("database " + dbName + " is not created", true,
-          created);
-      statement.execute("DROP DATABASE " + dbName + " CASCADE");
-
-      statement.close();
-      connection.close();
-    }
+    doCreateDbLoadDataDropDb("user1", "user1", "user2", "user3");
   }
-
-  /** Negative case
-   * Steps:
-   * in policy file, create a group with the duplicated users, but different
-   * users in it should see exception
-   **/
-  @Test
-  public void testGroup3() throws Exception {
-    // edit policy file
-    File policyFile = context.getPolicyFile();
-    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("group1 = analytics", "groups");
-    editor.addPolicy("analytics = server=server1->db=default", "roles");
-    editor.addPolicy("user1 = group1", "users");
-    editor.addPolicy("user2 = group1", "users");
-    editor.addPolicy("user3 = group1", "users");
-    editor.addPolicy("user1 = group1", "users");
-    editor.addPolicy("user2 = group1", "users");
-    editor.addPolicy("user3 = group1", "users");
-
-    // verify by SQL
-    String[] users = { "user1", "user2", "user3" };
-    for (String admin : users) {
-      Connection connection = context.createConnection(admin, "foo");
-      Statement statement = context.createStatement(connection);
-
-      // should fail
-      try {
-        statement.execute("SHOW TABLES");
-        assertFalse("two groups with the same name should fail", true);
-      } catch (SQLException e) {
-        context.verifyAuthzException(e);
-      }
-
-      statement.close();
-      connection.close();
-    }
-  }
-
-  /** Negative case
-   * Steps:
-   * in policy file, create two group with the same name, but same users
-   * in it should see exception
+  /**
+   * Tests that user without uri privilege can create table but not load data
    **/
   @Test
   public void testGroup4() throws Exception {
-    // edit policy file
     File policyFile = context.getPolicyFile();
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("group1 = analytics", "groups");
-    editor.addPolicy("analytics = server=server1->db=default", "roles");
-    editor.addPolicy("user1 = group1, group1", "users");
-    editor.addPolicy("user2 = group1, group1", "users");
-    editor.addPolicy("user3 = group1, group1", "users");
-    // verify by SQL
-    String[] users = { "user1", "user2", "user3" };
-    for (String admin : users) {
-      Connection connection = context.createConnection(admin, "foo");
+    editor.addPolicy("admin_group = admin_role", "groups");
+    editor.addPolicy("admin_role = server=server1", "roles");
+    editor.addPolicy("admin1 = admin_group", "users");
+    editor.addPolicy("group1 = non_admin_role, load_data", "groups");
+    editor.addPolicy("non_admin_role = server=server1->db=" + dbName, "roles");
+    editor.addPolicy("user1 = group1", "users");
+    editor.addPolicy("user2 = group1", "users");
+    editor.addPolicy("user3 = group1", "users");
+    doDropDb("admin1");
+    for(String user : new String[]{"user1", "user2", "user3"}) {
+      doCreateDb("admin1");
+      Connection connection = context.createConnection(user, "password");
       Statement statement = context.createStatement(connection);
-
-      // should fail
-      try {
-        statement.execute("SHOW TABLES");
-        assertFalse("two groups with the same name should fail", true);
-      } catch (SQLException e) {
-        context.verifyAuthzException(e);
-      }
-
+      statement.execute("USE " + dbName);
+      statement.execute("CREATE TABLE " + tableName +
+          " (under_col int comment 'the under column', value string) comment '"
+          + tableComment + "'");
+      context.assertAuthzException(statement,
+          "LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' into table " + tableName);
+      assertTrue(statement.execute("SELECT * FROM " + tableName));
       statement.close();
       connection.close();
+      doDropDb("admin1");
     }
   }
-
   /**
-   * Steps:
-   * in policy file, create a user group, 'GROUP_1', and add user with
-   * same name 'GROUP_1' into it should NOT see exception
+   * Tests users can have same name as groups
    **/
   @Test
   public void testGroup5() throws Exception {
-    String dataFilePath = this.getClass().getResource("/kv1.dat").getFile();
-    // edit policy file
     File policyFile = context.getPolicyFile();
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("group1 = analytics, load_data", "groups");
-    editor.addPolicy("analytics = server=server1->db=default", "roles");
-    editor.addPolicy("load_data = server=server1->URI=file:" + dataFilePath, "roles");
+    editor.addPolicy("admin_group = admin_role", "groups");
+    editor.addPolicy("admin_role = server=server1", "roles");
+    editor.addPolicy("admin1 = admin_group", "users");
+    editor.addPolicy("group1 = non_admin_role, load_data", "groups");
+    editor.addPolicy("non_admin_role = server=server1->db=" + dbName, "roles");
+    editor.addPolicy("load_data = server=server1->URI=file:" + dataFile.getPath(), "roles");
     editor.addPolicy("group1 = group1", "users");
     editor.addPolicy("user2 = group1", "users");
     editor.addPolicy("user3 = group1", "users");
-
-    // verify by SQL
-    String[] users = { "group1", "user2", "user3" };
-    for (String admin : users) {
-      Connection connection = context.createConnection(admin, "foo");
-      Statement statement = context.createStatement(connection);
-
-      statement.execute("drop table if exists " + tableName);
-
-      statement
-          .execute("create table "
-              + tableName
-              + " (under_col int comment 'the under column', value string) comment '"
-              + tableComment + "'");
-
-      statement.execute("load data local inpath '" + dataFilePath
-          + "' into table " + tableName);
-
-      statement.execute("drop table " + tableName);
-
-      statement.close();
-      connection.close();
+    doDropDb("admin1");
+    for(String user : new String[]{"group1", "user2", "user3"}) {
+      doCreateDb("admin1");
+      doCreateTableLoadData(user);
+      doDropDb("admin1");
     }
   }
 
   /**
-   * Steps:
-   * in policy file, create a user group, its name includes all the
-   * special charactors should NOT see exception
+   * Tests that group names with special characters are handled correctly
    **/
   @Test
   public void testGroup6() throws Exception {
-    // edit policy file
-    String dataFilePath = this.getClass().getResource("/kv1.dat").getFile();
     File policyFile = context.getPolicyFile();
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
+    editor.addPolicy("admin_group = admin_role", "groups");
+    editor.addPolicy("admin_role = server=server1", "roles");
+    editor.addPolicy("admin1 = admin_group", "users");
     editor.addPolicy("group1~!@#$%^&*()+- = analytics, load_data", "groups");
-    editor.addPolicy("analytics = server=server1->db=default", "roles");
-    editor.addPolicy("load_data = server=server1->URI=file:" + dataFilePath, "roles");
-//    editor.addPolicy("group1~!@#$%^&*()+- = user1, user2, user3", "users");
+    editor.addPolicy("analytics = server=server1->db=" + dbName, "roles");
+    editor.addPolicy("load_data = server=server1->URI=file:" + dataFile.getPath(), "roles");
     editor.addPolicy("user1 = group1~!@#$%^&*()+-", "users");
     editor.addPolicy("user2 = group1~!@#$%^&*()+-", "users");
     editor.addPolicy("user3 = group1~!@#$%^&*()+-", "users");
-
-    // verify by SQL
-    String[] users = { "user1", "user2", "user3" };
-    for (String admin : users) {
-      Connection connection = context.createConnection(admin, "foo");
-      Statement statement = context.createStatement(connection);
-
-
-      statement.execute("drop table if exists " + tableName);
-
-      statement
-          .execute("create table "
-              + tableName
-              + " (under_col int comment 'the under column', value string) comment '"
-              + tableComment + "'");
-
-      statement.execute("load data local inpath '" + dataFilePath
-          + "' into table " + tableName);
-
-      statement.execute("DROP TABLE " + tableName);
-
-      statement.close();
-      connection.close();
+    doDropDb("admin1");
+    for(String user : new String[]{"user1", "user2", "user3"}) {
+      doCreateDb("admin1");
+      doCreateTableLoadData(user);
+      doDropDb("admin1");
     }
   }
 
   /**
-   * Steps:
-   * in policy file, create a user group, add one user into it, user's
-   * name includes all the special charactors make this group an admin group (or
-   * non-admin group) should NOT see exception
+   * Tests that user names with special characters are handled correctly
    **/
   @Test
   public void testGroup7() throws Exception {
-    // edit policy file
     File policyFile = context.getPolicyFile();
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
     editor.addPolicy("group1 = admin", "groups");
@@ -554,62 +298,37 @@ public class TestUserManagement extends AbstractTestWithStaticHiveServer {
     editor.addPolicy("user1~!@#$%^&*()+- = group1", "users");
     editor.addPolicy("user2 = group1", "users");
     editor.addPolicy("user3 = group1", "users");
-
-    // verify by SQL
-    String[] users = { "user1~!@#$%^&*()+-", "user2", "user3" };
-    for (String admin : users) {
-      String dbName = "db_1";
-      Connection connection = context.createConnection(admin, "foo");
-      Statement statement = context.createStatement(connection);
-
-      statement.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
-      statement.execute("CREATE DATABASE " + dbName);
-
-      ResultSet res = statement.executeQuery("SHOW DATABASES");
-      boolean created = false;
-      while (res.next()) {
-        if (res.getString(1).equals(dbName)) {
-          created = true;
-        }
-      }
-      assertEquals("database " + dbName + " is not created", true,
-          created);
-      statement.execute("DROP DATABASE " + dbName + " CASCADE");
-
-      statement.close();
-      connection.close();
-    }
+    doCreateDbLoadDataDropDb("user1~!@#$%^&*()+-", "user1~!@#$%^&*()+-", "user2", "user3");
   }
 
-  /** Negative case
-   * Steps:
-   * in policy file, create a new group admin try to apply a doesn't
-   * existing role (either admin or non-admin role) to this group will fail
+  /**
+   * Tests that users with no privileges cannot list any tables
    **/
   @Test
   public void testGroup8() throws Exception {
-    // edit policy file
     File policyFile = context.getPolicyFile();
     PolicyFileEditor editor = new PolicyFileEditor(policyFile);
+    editor.addPolicy("admin_group = admin_role", "groups");
+    editor.addPolicy("admin_role = server=server1", "roles");
+    editor.addPolicy("admin1 = admin_group", "users");
     editor.addPolicy("group1 = analytics", "groups");
     editor.addPolicy("user1 = group1", "users");
     editor.addPolicy("user2 = group1", "users");
     editor.addPolicy("user3 = group1", "users");
-
-    // verify by SQL
+    Connection connection = context.createConnection("admin1", "password");
+    Statement statement = connection.createStatement();
+    statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
+    statement.execute("CREATE DATABASE db1");
+    statement.execute("USE db1");
+    statement.execute("CREATE TABLE t1 (under_col int, value string)");
+    statement.close();
+    connection.close();
     String[] users = { "user1", "user2", "user3" };
-    for (String admin : users) {
-      Connection connection = context.createConnection(admin, "foo");
-      Statement statement = context.createStatement(connection);
-
-      // should fail
-      try {
-        statement.execute("SHOW TABLES");
-        assertFalse("doesn't grant any privilege to group, should fail", true);
-      } catch (SQLException e) {
-        context.verifyAuthzException(e);
-      }
-
+    for (String user : users) {
+      connection = context.createConnection(user, "foo");
+      statement = context.createStatement(connection);
+      assertFalse("No results should be returned",
+          statement.executeQuery("SHOW TABLES").next());
       statement.close();
       connection.close();
     }
