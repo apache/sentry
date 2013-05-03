@@ -162,6 +162,17 @@ public class Context {
     }
   }
 
+  public void assertAuthzExecHookException(Statement statement, String query)
+      throws SQLException {
+    try {
+      statement.execute(query);
+      Assert.fail("Expected SQLException for '" + query + "'");
+    } catch (SQLException e) {
+      verifyAuthzExecHookException(e);
+    }
+  }
+
+
   // verify that the sqlexception is due to authorization failure
   public void verifyAuthzException(SQLException sqlException) throws SQLException{
     verifyAuthzExceptionForState(sqlException, AUTHZ_EXCEPTION_SQL_STATE);

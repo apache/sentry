@@ -58,8 +58,8 @@ public class HiveAuthzBindingPreExecHook implements ExecuteWithHookContext {
         serverHierarchy.add(hiveAuthzBinding.getAuthServer());
         outputHierarchy.add(serverHierarchy);
         hiveAuthzBinding.authorize(HiveOperation.QUERY,
-            HiveAuthzPrivilegesMap.getHiveExtendedAuthzPrivileges(HiveExtendedOperation.TRANSFORM),
-            new Subject(hookContext.getUserName()), inputHierarchy, outputHierarchy);
+          HiveAuthzPrivilegesMap.getHiveExtendedAuthzPrivileges(HiveExtendedOperation.TRANSFORM),
+          new Subject(hookContext.getUserName()), inputHierarchy, outputHierarchy);
       }
     } finally {
       if (hiveAuthzBinding != null) {

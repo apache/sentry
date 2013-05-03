@@ -38,6 +38,7 @@ public class TestPrivilegeAtTransform extends AbstractTestWithStaticHiveServer {
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private File dataDir;
   private File dataFile;
+  private PolicyFile policyFile;
 
   @Before
   public void setup() throws Exception {
@@ -47,6 +48,7 @@ public class TestPrivilegeAtTransform extends AbstractTestWithStaticHiveServer {
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
+    policyFile = PolicyFile.createAdminOnServer1("admin1");
   }
 
   @After
@@ -67,42 +69,27 @@ public class TestPrivilegeAtTransform extends AbstractTestWithStaticHiveServer {
    */
   @Test
   public void testTransform1() throws Exception {
-    // edit policy file
-    File policyFile = context.getPolicyFile();
-    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("admin = adminPri", "groups");
-    editor.addPolicy("adminPri = server=server1", "roles");
-    editor.addPolicy("admin1 = admin", "users");
-    editor.addPolicy("user1 = group1", "users");
+    policyFile
+      .addGroupsToUser("user1", "group1")
+      .addPermissionsToRole("all_db1", "server=server1->db=db_1")
+      .addRolesToGroup("group1", "all_db1");
+    policyFile.write(context.getPolicyFile());
 
     // verify by SQL
     // 1, 2
     String dbName1 = "db_1";
     String tableName1 = "tb_1";
-    String viewName1 = "view_1";
+    String query = "select TRANSFORM(a.under_col, a.value) USING 'cat' AS (tunder_col, tvalue) FROM " + dbName1 + "." + tableName1 + " a";
     Connection connection = context.createConnection("admin1", "foo");
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
     statement.execute("CREATE DATABASE " + dbName1);
-    assertTrue("admin should be able to switch to database db_1",
-        !statement.execute("USE " + dbName1));
     statement.execute("DROP TABLE IF EXISTS " + dbName1 + "." + tableName1);
     statement.execute("create table " + dbName1 + "." + tableName1
         + " (under_col int, value string)");
-    assertTrue(
-        "admin should be able to load data to table tb_1",
-        !statement.execute("load data local inpath '" + dataFile.getPath()
-            + "' into table " + tableName1));
-    assertTrue("admin should be able to drop view view_1",
-        !statement.execute("DROP VIEW IF EXISTS " + viewName1));
-
-    statement.execute("CREATE VIEW " + viewName1
-            + " (value) AS SELECT value from " + tableName1 + " LIMIT 10");
-
-    ResultSet rs = statement
-        .executeQuery("select TRANSFORM(a.under_col, a.value) USING 'cat' AS (tunder_col, tvalue) FROM "
-            + tableName1 + " a");
-    assertTrue("TRANSFORM fail", rs.next());
+     statement.execute("load data local inpath '" + dataFile.getPath()
+            + "' into table " + dbName1 + "." + tableName1);
+    assertTrue(query, statement.execute(query));
 
     statement.close();
     connection.close();
@@ -111,61 +98,23 @@ public class TestPrivilegeAtTransform extends AbstractTestWithStaticHiveServer {
     statement = context.createStatement(connection);
 
     // 3
-    editor.addPolicy("group1 = all_db1", "groups");
-    editor.addPolicy("all_db1 = server=server1->db=db_1", "roles");
-    assertTrue("user_1 should be able to switch to database db_1",
-        !statement.execute("USE " + dbName1));
-    try {
-      statement.execute("select TRANSFORM(a.under_col, a.value) USING 'cat' AS (tunder_col, tvalue) FROM "
-                  + tableName1 + " a");
-      assertFalse("TRANSFORM should fail", true);
-
-    } catch (SQLException e) {
-      context.verifyAuthzExecHookException(e);
-    }
-    editor.removePolicy("group1 = all_db1");
-    editor.removePolicy("all_db1 = server=server1->db=db_1");
+    context.assertAuthzExecHookException(statement, query);
 
     // 4
-    editor.addPolicy("group1 = select_tb1", "groups");
-    editor.addPolicy(
-        "select_tb1 = server=server1->db=db_1->table=tb_1->action=select",
-        "roles");
-    editor.addPolicy("group1 = insert_tb1", "groups");
-    editor.addPolicy(
-        "insert_tb1 = server=server1->db=db_1->table=tb_1->action=insert",
-        "roles");
-    try {
-      assertFalse(
-          "TRANSFORM fail",
-          statement
-              .execute("select TRANSFORM(a.under_col, a.value) USING 'cat' AS (tunder_col, tvalue) FROM "
-                  + tableName1 + " a"));
-    } catch (SQLException e) {
-      context.verifyAuthzExecHookException(e);
-    }
-    editor.removePolicy("group1 = select_tb1");
-    editor
-        .removePolicy("select_tb1 = server=server1->db=db_1->table=tb_1->action=select");
-    editor.removePolicy("group1 = insert_tb1");
-    editor
-        .removePolicy("insert_tb1 = server=server1->db=db_1->table=tb_1->action=insert");
+    policyFile
+      .addPermissionsToRole("select_tb1", "server=server1->db=db_1->table=tb_1->action=select")
+      .addPermissionsToRole("insert_tb1", "server=server1->db=db_1->table=tb_1->action=insert")
+      .addRolesToGroup("group1", "select_tb1", "insert_tb1");
+    policyFile.write(context.getPolicyFile());
+    context.assertAuthzExecHookException(statement, query);
 
-    /***
-     * Transform action is not supported at this point. We enable allow on for Server-all privilege
-     * In future we could implement separate transform privilege that can be granted to specific users
-     *
-        editor.addPolicy("group1 = transform_db_1", "groups");
-        editor
-            .addPolicy("transform_db_1 = server=server1->action=transform", "roles");
-        rs = statement
-            .executeQuery("select TRANSFORM(a.under_col, a.value) USING 'cat' AS (tunder_col, tvalue) FROM "
-                + tableName1 + " a");
-        assertTrue("TRANSFORM fail", rs.next());
-        editor.removePolicy("group1 = transform_db_1");
-        editor.removePolicy("transform_db_1 = server=server1->action=transform");
-        statement.close();
-        connection.close();
-    */
+    // 5
+    policyFile
+      .addPermissionsToRole("all_server1", "server=server1")
+      .addRolesToGroup("group1", "all_server1");
+    policyFile.write(context.getPolicyFile());
+    assertTrue(query, statement.execute(query));
+    statement.close();
+    connection.close();
   }
 }
