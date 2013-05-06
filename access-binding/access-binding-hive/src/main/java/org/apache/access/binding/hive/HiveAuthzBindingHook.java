@@ -27,17 +27,17 @@ import java.util.Set;
 
 import org.apache.access.binding.hive.authz.HiveAuthzBinding;
 import org.apache.access.binding.hive.authz.HiveAuthzPrivileges;
-import org.apache.access.binding.hive.authz.HiveAuthzPrivilegesMap;
 import org.apache.access.binding.hive.authz.HiveAuthzPrivileges.HiveOperationScope;
 import org.apache.access.binding.hive.authz.HiveAuthzPrivileges.HiveOperationType;
+import org.apache.access.binding.hive.authz.HiveAuthzPrivilegesMap;
 import org.apache.access.binding.hive.conf.HiveAuthzConf;
 import org.apache.access.core.AccessURI;
 import org.apache.access.core.Action;
 import org.apache.access.core.Authorizable;
+import org.apache.access.core.Authorizable.AuthorizableType;
 import org.apache.access.core.Database;
 import org.apache.access.core.Subject;
 import org.apache.access.core.Table;
-import org.apache.access.core.Authorizable.AuthorizableType;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -62,6 +62,7 @@ import org.apache.hadoop.hive.ql.parse.HiveSemanticAnalyzerHookContext;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.ql.session.SessionState;
+
 import com.google.common.collect.ImmutableList;
 
 public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook
@@ -224,7 +225,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook
    * authorizables for cases like Database and metadata operations where the
    * compiler doesn't capture entities. invoke the hive binding to validate
    * permissions
-   * 
+   *
    * @param context
    * @param stmtAuthObject
    * @param stmtOperation
@@ -265,6 +266,10 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook
       break;
     case TABLE:
       for (ReadEntity readEntity: inputs) {
+        // skip the tables/view that are part of expanded view definition.
+        if (isChildTabForView(readEntity)) {
+          continue;
+        }
         List<Authorizable> entityHierarchy = new ArrayList<Authorizable>();
         entityHierarchy.add(hiveAuthzBinding.getAuthServer());
         entityHierarchy.addAll(getAuthzHierarchyFromEntity(readEntity));
@@ -506,7 +511,32 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook
     hookResult.setUserName(userName);
     hookResult.setConf(hookContext.getConf());
 
-    
+
     return hookResult;
+  }
+
+  /**
+   * Check if the given read entity is a table that has parents of type Table
+   * Hive compiler performs a query rewrite by replacing view with its definition. In the process, tt captures both
+   * the original view and the tables/view that it selects from .
+   * The access authorization is only interested in the top level views and not the underlying tables.
+   * @param readEntity
+   * @return
+   */
+  private boolean isChildTabForView(ReadEntity readEntity) {
+    // If this is a table added for view, then we need to skip that
+    if (!readEntity.getType().equals(Type.TABLE)) {
+      return false;
+    }
+    if ((readEntity.getParents() != null) && (readEntity.getParents().size() > 0)) {
+      for (ReadEntity parentEntity : readEntity.getParents()) {
+        if (!parentEntity.getType().equals(Type.TABLE)) {
+          return false;
+        }
+      }
+      return true;
+    } else {
+      return false;
+    }
   }
 }
