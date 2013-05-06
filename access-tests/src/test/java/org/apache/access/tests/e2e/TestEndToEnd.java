@@ -17,14 +17,10 @@
 
 package org.apache.access.tests.e2e;
 
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.sql.Connection;
 import java.sql.Statement;
-
-import junit.framework.Assert;
 
 import org.junit.After;
 import org.junit.Before;
@@ -100,9 +96,12 @@ public class TestEndToEnd extends AbstractTestWithStaticHiveServer {
     editor.addPolicy("user1 = group1", "users");
 
     // 4
-    editor.addPolicy("group1 = all_db1, data_uri", "groups");
+    editor.addPolicy("group1 = all_db1, data_uri, select_tb1, insert_tb1", "groups");
     editor.addPolicy("all_db1 = server=server1->db=db_1", "roles");
     editor.addPolicy("data_uri = server=server1->uri=file:" + dataDir.getPath(), "roles");
+    editor.addPolicy("select_tb1 = server=server1->db=productionDB->table=tb_1->action=select","roles");
+    editor.addPolicy("insert_tb2 = server=server1->db=productionDB->table=tb_2->action=insert","roles");
+    editor.addPolicy("insert_tb1 = server=server1->db=productionDB->table=tb_2->action=insert","roles");
 
     // 5
     connection = context.createConnection("user1", "foo");
@@ -128,18 +127,12 @@ public class TestEndToEnd extends AbstractTestWithStaticHiveServer {
     statement.close();
     connection.close();
 
-    // 8
-    editor.addPolicy("group1 = select_tb1", "groups");
-    editor.addPolicy("select_tb1 = server=server1->db=productionDB->table=tb_1->action=select","roles");
-    editor.addPolicy("group1 = insert_tb1", "groups");
-    editor.addPolicy("insert_tb1 = server=server1->db=productionDB->table=tb_1->action=insert","roles");
-
     // 9
     connection = context.createConnection("user1", "foo");
     statement = context.createStatement(connection);
     statement.execute("USE " + dbName2);
-    statement.execute("INSERT OVERWRITE TABLE "
-        + tableName1 + " SELECT * FROM " + dbName1
+    statement.execute("INSERT OVERWRITE TABLE " +
+        dbName2 + "." + tableName2 + " SELECT * FROM " + dbName1
         + "." + tableName1);
     statement.close();
     connection.close();
