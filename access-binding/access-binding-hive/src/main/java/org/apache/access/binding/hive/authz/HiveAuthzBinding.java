@@ -173,7 +173,7 @@ public class HiveAuthzBinding {
             requiredInputPrivileges.get(getAuthzType(inputHierarchy));
           if (!authProvider.hasAccess(subject, inputHierarchy, inputPrivSet)) {
             throw new AuthorizationException("User " + subject.getName() +
-                " does not have priviliedges for " + hiveOp.name());
+                " does not have privileges for " + hiveOp.name());
           }
         }
       }

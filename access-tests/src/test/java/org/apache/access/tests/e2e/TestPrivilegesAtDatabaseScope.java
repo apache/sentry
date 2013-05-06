@@ -199,7 +199,7 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
     // groups : role -> group
     context.append("[groups]");
     context.append("admin = all_server");
-    context.append("user_group1 = all_db1, load_data");
+    context.append("user_group1 = all_db1, load_data, exttab");
     context.append("user_group2 = all_db2");
     // roles: privileges -> role
     context.append("[roles]");
@@ -207,6 +207,7 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
     context.append("all_db1 = server=server1->db=DB_1");
     context.append("all_db2 = server=server1->db=DB_2");
     context.append("load_data = server=server1->uri=file:" + dataFile.getPath());
+    context.append("exttab = server=server1->uri=file:" + dataDir.getPath());
     // users: users -> groups
     context.append("[users]");
     context.append("hive = admin");
@@ -271,13 +272,8 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
 
     //negative test case: user can't create external tables
     assertTrue("Unable to create directory for external table test" , externalTblDir.mkdir());
-    try {
-      statement.execute("CREATE EXTERNAL TABLE EXT_TAB_1(A STRING) STORED AS TEXTFILE LOCATION '"+
+    statement.execute("CREATE EXTERNAL TABLE EXT_TAB_1(A STRING) STORED AS TEXTFILE LOCATION 'file:"+
                         externalTblDir.getAbsolutePath() + "'");
-      Assert.fail("Expected SQL exception");
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
 
     //negative test case: user can't execute alter table set location
     try {
@@ -287,6 +283,18 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
       context.verifyAuthzException(e);
     }
 
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection("user_2", "password");
+    statement = context.createStatement(connection);
+    try {
+      statement.execute("CREATE EXTERNAL TABLE EXT_TAB_1(A STRING) STORED AS TEXTFILE LOCATION 'file:"+
+        externalTblDir.getAbsolutePath() + "'");
+      Assert.fail("Expected SQL exception");
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
 
     statement.close();
     connection.close();

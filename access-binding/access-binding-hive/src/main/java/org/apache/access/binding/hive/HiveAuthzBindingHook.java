@@ -263,6 +263,13 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook
       if(partitionURI != null) {
         inputHierarchy.add(ImmutableList.of(hiveAuthzBinding.getAuthServer(), partitionURI));
       }
+
+      for(ReadEntity readEntity:inputs) {
+        List<Authorizable> entityHierarchy = new ArrayList<Authorizable>();
+        entityHierarchy.add(hiveAuthzBinding.getAuthServer());
+        entityHierarchy.addAll(getAuthzHierarchyFromEntity(readEntity));
+        inputHierarchy.add(entityHierarchy);
+      }
       break;
     case TABLE:
       for (ReadEntity readEntity: inputs) {
