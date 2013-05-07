@@ -17,17 +17,23 @@
 package org.apache.access.tests.e2e;
 
 import java.io.File;
+import java.io.IOException;
+
+import junit.framework.Assert;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 
 public abstract class AbstractTestWithStaticDFS extends AbstractTestWithStaticHiveServer {
 
   protected static MiniDFSCluster dfsCluster;
   protected static FileSystem fileSystem;
+  protected static Path dfsBaseDir;
 
   @Override
   public Context createContext() throws Exception {
@@ -40,18 +46,31 @@ public abstract class AbstractTestWithStaticDFS extends AbstractTestWithStaticHi
     return fileSystem;
   }
 
+  @Before
+  public void setupTestWithDFS() throws IOException {
+    Assert.assertTrue(dfsBaseDir.toString(), fileSystem.delete(dfsBaseDir, true));
+    Assert.assertTrue(dfsBaseDir.toString(), fileSystem.mkdirs(dfsBaseDir));
+  }
+
+  protected static Path assertCreateDfsDir(Path dir) throws IOException {
+    if(!fileSystem.isDirectory(dir)) {
+      Assert.assertTrue("Failed creating " + dir, fileSystem.mkdirs(dir));
+    }
+    return dir;
+  }
   @BeforeClass
-  public static void setupTestWithDFS()
+  public static void setupTestWithDFSClazz()
       throws Exception {
     Configuration conf = new Configuration();
     File dfsDir = assertCreateDir(new File(baseDir, "dfs"));
     conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, dfsDir.getPath());
     dfsCluster = new MiniDFSCluster.Builder(conf).numDataNodes(2).build();
     fileSystem = dfsCluster.getFileSystem();
+    dfsBaseDir = assertCreateDfsDir(new Path(new Path(fileSystem.getUri()), "/base"));
   }
 
   @AfterClass
-  public static void tearDownTestWithDFS() throws Exception {
+  public static void tearDownTestWithDFSCazz() throws Exception {
     if(dfsCluster != null) {
       dfsCluster.shutdown();
       dfsCluster = null;

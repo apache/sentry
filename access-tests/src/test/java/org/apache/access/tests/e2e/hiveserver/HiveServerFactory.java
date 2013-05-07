@@ -41,6 +41,7 @@ public class HiveServerFactory {
   private static final String DERBY_DRIVER_NAME = "org.apache.derby.jdbc.EmbeddedDriver";
   public static final String HIVESERVER2_TYPE = "access.e2etest.hiveServer2Type";
   public static final String KEEP_BASEDIR = "access.e2etest.keepBaseDir";
+  public static final String SUPPORT_CONCURRENCY = HiveConf.ConfVars.HIVE_SUPPORT_CONCURRENCY.varname;
   public static final String METASTORE_CONNECTION_URL = HiveConf.ConfVars.METASTORECONNECTURLKEY.varname;
   public static final String WAREHOUSE_DIR = HiveConf.ConfVars.METASTOREWAREHOUSE.varname;
   public static final String AUTHZ_PROVIDER = HiveAuthzConf.AuthzConfVars.AUTHZ_PROVIDER.getVar();

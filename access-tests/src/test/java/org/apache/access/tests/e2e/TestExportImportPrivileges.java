@@ -154,8 +154,8 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticDFS {
     userStmt = context.createStatement(userConn);
     userStmt.execute("use " + dbName);
     try {
-    userStmt.execute("EXPORT TABLE " + tabName + " TO '" + exportDir + "'");
-    Assert.assertTrue("export should fail for user2", false);
+      userStmt.execute("EXPORT TABLE " + tabName + " TO '" + exportDir + "'");
+      Assert.assertTrue("export should fail for user2", false);
     } catch (SQLException e) {
       context.verifyAuthzException(e);
     }
@@ -173,8 +173,8 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticDFS {
     userStmt = context.createStatement(userConn);
     userStmt.execute("use " + dbName);
     try {
-    userStmt.execute("IMPORT TABLE " + newTabName + " FROM '" + exportDir + "'");
-    Assert.assertTrue("export should fail for user2", false);
+      userStmt.execute("IMPORT TABLE " + newTabName + " FROM '" + exportDir + "'");
+      Assert.assertTrue("export should fail for user2", false);
     } catch (SQLException e) {
       context.verifyAuthzException(e);
     }
