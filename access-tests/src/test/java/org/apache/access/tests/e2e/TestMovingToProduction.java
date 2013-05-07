@@ -116,9 +116,13 @@ public class TestMovingToProduction extends AbstractTestWithStaticHiveServer {
 
     // b
     editor.addPolicy("select_proddb_tbl1 = server=server1->db=proddb->table=tb_1->action=select", "roles");
-    statement.execute("SELECT * FROM " + tableName1 + " LIMIT 10");
-    assertTrue("user1 should be able to describe table " + tableName1,
-        statement.execute("DESCRIBE " + tableName1));
+    ResultSet resultSet = statement.executeQuery("SELECT * FROM " + tableName1 + " LIMIT 10");
+    int count = 0;
+    while(resultSet.next()) {
+      count++;
+    }
+    assertEquals(10, count);
+    statement.execute("DESCRIBE " + tableName1);
 
     // c
     connection = context.createConnection("user2", "foo");
