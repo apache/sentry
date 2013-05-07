@@ -21,35 +21,31 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.sql.Statement;
-
-import junit.framework.Assert;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.common.base.Charsets;
-import com.google.common.io.Files;
 import com.google.common.io.Resources;
 
 public class TestPerDatabasePolicyFile extends AbstractTestWithStaticHiveServer {
-
-  private Context testContext;
+  private static final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
+  private static final String ADMIN1 = "admin1";
+  private Context context;
+  private PolicyFile policyFile;
   private File globalPolicyFile;
   private File dataDir;
   private File dataFile;
-  private static final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
 
   @Before
   public void setup() throws Exception {
-    testContext = createContext();
-    globalPolicyFile = testContext.getPolicyFile();
-    dataDir = testContext.getDataDir();
-    assertTrue("Could not delete " + globalPolicyFile, testContext.deletePolicyFile());
+    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
+    context = createContext();
+    globalPolicyFile = context.getPolicyFile();
+    dataDir = context.getDataDir();
+    assertTrue("Could not delete " + globalPolicyFile, context.deletePolicyFile());
     dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
@@ -58,23 +54,14 @@ public class TestPerDatabasePolicyFile extends AbstractTestWithStaticHiveServer 
 
   @After
   public void teardown() throws Exception {
-    if (testContext != null) {
-      try {
-        Connection connection = testContext.createConnection("hive", "hive");
-        Statement statement = testContext.createStatement(connection);
-        statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
-        statement.execute("DROP DATABASE IF EXISTS db2 CASCADE");
-      } finally {
-        testContext.close();
-      }
+    if (context != null) {
+      context.close();
     }
   }
 
-  private void append(String from, File to) throws IOException {
-    Files.append(from + "\n", to, Charsets.UTF_8);
-  }
   private void createSampleDbTable(Statement statement, String db, String table)
       throws Exception {
+    statement.execute("DROP DATABASE IF EXISTS " + db + " CASCADE");
     statement.execute("CREATE DATABASE " + db);
     statement.execute("USE " + db);
     statement.execute("CREATE TABLE " + table + "(a STRING)");
@@ -112,39 +99,35 @@ public class TestPerDatabasePolicyFile extends AbstractTestWithStaticHiveServer 
   }
 
   public void doTestDbSpecificFileGrants(String grant) throws Exception {
-    File db2SpecificPolicyFile = new File(testContext.getBaseDir(), "db2-policy.ini");
-    append("[databases]", globalPolicyFile);
-    append("db2 = " + db2SpecificPolicyFile.getPath(), globalPolicyFile);
-    append("[users]", globalPolicyFile);
-    append("user1 = group1", globalPolicyFile);
-    append("hive = admin1", globalPolicyFile);
-    append("[groups]", globalPolicyFile);
-    append("admin1 = server1_all", globalPolicyFile);
-    append("[roles]", globalPolicyFile);
-    append("server1_all = server=server1", globalPolicyFile);
 
-    append("[groups]", db2SpecificPolicyFile);
-    append("group1 = db1_all", db2SpecificPolicyFile);
-    append("[roles]", db2SpecificPolicyFile);
-    append("db1_all = " + grant, db2SpecificPolicyFile);
+    policyFile.write(context.getPolicyFile());
+
     // setup db objects needed by the test
-    Connection connection = testContext.createConnection("hive", "hive");
-    Statement statement = testContext.createStatement(connection);
+    Connection connection = context.createConnection(ADMIN1, "password");
+    Statement statement = context.createStatement(connection);
     createSampleDbTable(statement, "db1", "tbl1");
     createSampleDbTable(statement, "db2", "tbl1");
     statement.close();
     connection.close();
 
+    File specificPolicyFileFile = new File(context.getBaseDir(), "db2-policy.ini");
+
+    PolicyFile specificPolicyFile = new PolicyFile()
+    .addPermissionsToRole("db1_role", grant)
+    .addRolesToGroup("group1", "db1_role")
+    .addGroupsToUser("user1", "group1");
+    specificPolicyFile.write(specificPolicyFileFile);
+
+    policyFile.addDatabase("db2", specificPolicyFileFile.getPath());
+    policyFile.write(context.getPolicyFile());
+
+
+
     // test execution
-    connection = testContext.createConnection("user1", "password");
-    statement = testContext.createStatement(connection);
-    statement.execute("USE db1");
+    connection = context.createConnection("user1", "password");
+    statement = context.createStatement(connection);
     // test user can query table
-    try {
-      statement.executeQuery("SELECT COUNT(a) FROM tbl1");
-      Assert.fail();
-    } catch (SQLException ex) {
-      testContext.verifyAuthzException(ex);
-    }
+    context.assertAuthzException(statement, "USE db1");
+    context.assertAuthzException(statement, "SELECT COUNT(a) FROM db1.tbl1");
   }
 }
