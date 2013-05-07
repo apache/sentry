@@ -74,7 +74,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticHiveSer
     editor.addPolicy("admin = server=server1", "roles");
     editor.addPolicy("db1_all = server=server1->db=" + dbName1, "roles");
     editor.addPolicy("db1_tab1 = server=server1->db=" + dbName1 + "->table=" + tableName1, "roles");
-    editor.addPolicy("UDF_JAR = server=server1->uri=${user.home}/.m2", "roles");
+    editor.addPolicy("UDF_JAR = server=server1->uri=file://${user.home}/.m2", "roles");
     editor.addPolicy("admin1 = admin", "users");
     editor.addPolicy("user1 = group1", "users");
     editor.addPolicy("user2 = group2", "users");

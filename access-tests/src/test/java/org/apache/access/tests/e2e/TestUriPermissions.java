@@ -61,7 +61,7 @@ public class TestUriPermissions extends AbstractTestWithStaticHiveServer {
         "[roles]",
         "db1_write = server=server1->db=" + dbName + "->table=" + tabName + "->action=INSERT",
         "db1_read = server=server1->db=" + dbName + "->table=" + tabName + "->action=SELECT",
-        "data_read = server=server1->URI=file:" + dataFilePath,
+        "data_read = server=server1->URI=file://" + dataFilePath,
         "admin_role = server=server1",
         "[users]",
         "user1 = user_group1",
@@ -112,7 +112,7 @@ public class TestUriPermissions extends AbstractTestWithStaticHiveServer {
     String dbName = "db1";
     String tabName = "tab1";
     String newPartitionDir = "foo";
-    String tabDir = hiveServer.getProperty(HiveServerFactory.WAREHOUSE_DIR) +
+    String tabDir = "file://" + hiveServer.getProperty(HiveServerFactory.WAREHOUSE_DIR) +
       "/" + tabName + "/" + newPartitionDir;
     Connection userConn = null;
     Statement userStmt = null;
@@ -190,8 +190,7 @@ public class TestUriPermissions extends AbstractTestWithStaticHiveServer {
   public void testAlterTableLocationPrivileges() throws Exception {
     String dbName = "db1";
     String tabName = "tab1";
-    String tabDir = "file:" +  hiveServer.getProperty(HiveServerFactory.WAREHOUSE_DIR) +
-      "/" + tabName;
+    String tabDir = "file://" + hiveServer.getProperty(HiveServerFactory.WAREHOUSE_DIR) + "/" + tabName;
     Connection userConn = null;
     Statement userStmt = null;
 
@@ -244,7 +243,7 @@ public class TestUriPermissions extends AbstractTestWithStaticHiveServer {
     String dbName = "db1";
     Connection userConn = null;
     Statement userStmt = null;
-
+    String tableDir = "file://" + context.getDataDir();
     String testPolicies[] = {
         "[groups]",
         "admin_group = admin_role",
@@ -252,7 +251,7 @@ public class TestUriPermissions extends AbstractTestWithStaticHiveServer {
         "user_group2  = db1_all",
         "[roles]",
         "db1_all = server=server1->db=" + dbName,
-        "data_read = server=server1->URI=" + context.getDataDir(),
+        "data_read = server=server1->URI=" + tableDir,
         "admin_role = server=server1",
         "[users]",
         "user1 = user_group1",
@@ -274,14 +273,14 @@ public class TestUriPermissions extends AbstractTestWithStaticHiveServer {
     userStmt = context.createStatement(userConn);
     userStmt.execute("use " + dbName);
     context.assertAuthzException(userStmt,
-        "CREATE EXTERNAL TABLE extab1(id INT) LOCATION '" + context.getDataDir() + "'");
+        "CREATE EXTERNAL TABLE extab1(id INT) LOCATION '" + tableDir + "'");
     userConn.close();
 
     // positive test: user1 has privilege to create external table in given path
     userConn = context.createConnection("user1", "foo");
     userStmt = context.createStatement(userConn);
     userStmt.execute("use " + dbName);
-    userStmt.execute("CREATE EXTERNAL TABLE extab1(id INT) LOCATION '" + context.getDataDir() + "'");
+    userStmt.execute("CREATE EXTERNAL TABLE extab1(id INT) LOCATION '" + tableDir + "'");
     userConn.close();
   }
 

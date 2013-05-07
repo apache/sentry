@@ -1,3 +1,4 @@
+package org.apache.access.core;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,32 +15,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.access.binding.hive;
 
-import org.apache.access.binding.hive.conf.HiveAuthzConf;
-import org.apache.access.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
-import org.junit.Assert;
-import org.junit.Before;
+
 import org.junit.Test;
 
-public class TestHiveAuthzConf {
-  private HiveAuthzConf authzConf;
+public class TestURI {
 
-  @Before
-  public void setUp() {
-    authzConf =  new HiveAuthzConf();
+  @Test(expected=IllegalArgumentException.class)
+  public void testBadUriEmpty() {
+    new AccessURI("");
   }
-
-  @Test
-  public void testConfig() {
-    Assert.assertEquals("org.apache.access.provider.file.fooProvider",
-        authzConf.get(AuthzConfVars.AUTHZ_PROVIDER.getVar()));
+  @Test(expected=IllegalArgumentException.class)
+  public void testBadUriNull() {
+    new AccessURI(null);
   }
-
-  @Test
-  public void testConfigOverload() {
-    authzConf.set(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar(), "fooFile");
-    Assert.assertEquals("fooFile",
-        authzConf.get(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar()));
+  @Test(expected=IllegalArgumentException.class)
+  public void testBadUriNoFilePrefix() {
+    new AccessURI("/");
+  }
+  @Test(expected=IllegalArgumentException.class)
+  public void testBadUriIncorrectFilePrefix() {
+    new AccessURI("file:/some/path");
+  }
+  @Test(expected=IllegalArgumentException.class)
+  public void testBadUriIncorrectHdfsPrefix() {
+    new AccessURI("hdfs:/some/path");
   }
 }

@@ -127,7 +127,7 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticDFS {
         "[roles]",
         "db1_write = server=server1->db=" + dbName + "->table=" + tabName + "->action=INSERT",
         "db1_read = server=server1->db=" + dbName + "->table=" + tabName + "->action=SELECT",
-        "data_read = server=server1->URI=file:" + dataFilePath,
+        "data_read = server=server1->URI=file://" + dataFilePath,
         "data_export = server=server1->URI=" + exportDir,
         "admin_role = server=server1",
         "[users]",

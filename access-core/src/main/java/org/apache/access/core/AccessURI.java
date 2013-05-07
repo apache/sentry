@@ -22,10 +22,17 @@ public class AccessURI implements Authorizable {
    */
   public static final AccessURI ALL = new AccessURI(AccessConstants.ALL);
 
-  private String uriName;
+  private final String uriName;
 
 
   public AccessURI(String uriName) {
+    uriName = uriName == null ? "" : uriName;
+    if(uriName.isEmpty() ||
+        (uriName.startsWith("file:") && !uriName.startsWith("file://")) ||
+        uriName.startsWith("/") ||
+        (uriName.startsWith("hdfs:") && !uriName.startsWith("hdfs://"))) {
+      throw new IllegalArgumentException("URI '" + uriName + "' in invalid. Must start with file:// or hdfs://");
+    }
     this.uriName = uriName;
   }
 

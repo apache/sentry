@@ -72,7 +72,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
     to.close();
     policyFile = PolicyFile.createAdminOnServer1(ADMIN);
 
-    loadData = "server=server1->uri=file:" + dataFile.getPath();
+    loadData = "server=server1->uri=file://" + dataFile.getPath();
   }
 
   @After
@@ -175,7 +175,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
     adminStmt.execute("use " + dbName);
     String tabName = "admin_tab1";
     adminStmt.execute("create table " + tabName + "(c1 string)");
-    adminStmt.execute("load data local inpath '/etc/passwd' into table "
+    adminStmt.execute("load data local inpath '" + dataFile.getPath() + "' into table "
         + tabName);
     adminStmt.execute("select * from " + tabName);
 
@@ -450,7 +450,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
     editor.addPolicy("group2 = select_tb1", "groups");
     editor.addPolicy("select_tb1 = server=server1->db=db_1->table=tbl_1->action=select", "roles");
     editor.addPolicy("all_db1 = server=server1->db=db_1", "roles");
-    editor.addPolicy("load_data = server=server1->uri=file:" + dataFile.toString(), "roles");
+    editor.addPolicy("load_data = server=server1->uri=file://" + dataFile.toString(), "roles");
     editor.addPolicy("admin = server=server1", "roles");
     editor.addPolicy("admin1 = admin", "users");
     editor.addPolicy("user1 = group1", "users");
@@ -517,7 +517,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
     editor.addPolicy("all_db1 = server=server1->db=db_1", "roles");
     editor.addPolicy("admin = server=server1", "roles");
     editor.addPolicy("load_data = server=server1->uri=file://" + allowedDir.getPath() +
-        ", server=server1->uri=file:" + allowedDir.getPath() +
+        ", server=server1->uri=file://" + allowedDir.getPath() +
         ", server=server1->uri=" + allowedDfsDir.toString(), "roles");
     editor.addPolicy("admin1 = admin", "users");
     editor.addPolicy("user1 = group1", "users");

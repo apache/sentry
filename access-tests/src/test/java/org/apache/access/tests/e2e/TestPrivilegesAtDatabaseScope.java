@@ -85,7 +85,7 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
     context.append("all_server = server=server1");
     context.append("all_db1 = server=server1->db=DB_1");
     context.append("all_db2 = server=server1->db=DB_2");
-    context.append("load_data = server=server1->uri=file:" + dataFile.getPath());
+    context.append("load_data = server=server1->uri=file://" + dataFile.getPath());
     // users: users -> groups
     context.append("[users]");
     context.append("hive = admin");
@@ -206,8 +206,9 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
     context.append("all_server = server=server1");
     context.append("all_db1 = server=server1->db=DB_1");
     context.append("all_db2 = server=server1->db=DB_2");
-    context.append("load_data = server=server1->uri=file:" + dataFile.getPath());
-    context.append("exttab = server=server1->uri=file:" + dataDir.getPath());
+    context.append("exttab = server=server1->uri=file://" + dataDir.getPath());
+    context.append("load_data = server=server1->uri=file://" + dataFile.getPath());
+
     // users: users -> groups
     context.append("[users]");
     context.append("hive = admin");

@@ -79,7 +79,7 @@ public class TestMovingToProduction extends AbstractTestWithStaticHiveServer {
     editor.addPolicy("admin = admin", "groups");
     editor.addPolicy("group1 = all_db1, load_data, select_proddb_tbl1, insert_proddb_tbl1", "groups");
     editor.addPolicy("all_db1 = server=server1->db=db_1", "roles");
-    editor.addPolicy("load_data = server=server1->uri=file:" + dataDir.getPath(), "roles");
+    editor.addPolicy("load_data = server=server1->uri=file://" + dataDir.getPath(), "roles");
     editor.addPolicy("admin = server=server1", "roles");
     editor.addPolicy("admin1 = admin", "users");
     editor.addPolicy("user1 = group1", "users");
@@ -107,7 +107,7 @@ public class TestMovingToProduction extends AbstractTestWithStaticHiveServer {
     statement.execute("DROP TABLE IF EXISTS " + tableName1);
     statement.execute("create table " + tableName1
         + " (under_col int comment 'the under column', value string)");
-    statement.execute("LOAD DATA INPATH 'file:" + dataDir.getPath()
+    statement.execute("LOAD DATA INPATH 'file://" + dataDir.getPath()
         + "' INTO TABLE " + tableName1);
 
     editor.addPolicy("insert_proddb_tbl1 = server=server1->db=proddb->table=tb_1->action=insert", "roles");
@@ -159,7 +159,7 @@ public class TestMovingToProduction extends AbstractTestWithStaticHiveServer {
     editor.addPolicy("admin = admin", "groups");
     editor.addPolicy("group1 = all_db1, load_data, select_proddb_tbl1, insert_proddb_tbl1", "groups");
     editor.addPolicy("all_db1 = server=server1->db=db_1", "roles");
-    editor.addPolicy("load_data = server=server1->uri=file:" + dataDir.getPath(), "roles");
+    editor.addPolicy("load_data = server=server1->uri=file://" + dataDir.getPath(), "roles");
     editor.addPolicy("admin = server=server1", "roles");
     editor.addPolicy("admin1 = admin", "users");
     editor.addPolicy("user1 = group1", "users");
@@ -186,7 +186,7 @@ public class TestMovingToProduction extends AbstractTestWithStaticHiveServer {
     statement.execute("DROP TABLE IF EXISTS " + dbName1 + "." + tableName1);
     statement.execute("create table " + dbName1 + "." + tableName1
         + " (under_col int comment 'the under column', value string)");
-    statement.execute("LOAD DATA INPATH 'file:" + dataDir.getPath()
+    statement.execute("LOAD DATA INPATH 'file://" + dataDir.getPath()
         + "' INTO TABLE " + dbName1 + "." + tableName1);
 
     editor.addPolicy("insert_proddb_tbl1 = server=server1->db=proddb->table=tb_1->action=insert", "roles");

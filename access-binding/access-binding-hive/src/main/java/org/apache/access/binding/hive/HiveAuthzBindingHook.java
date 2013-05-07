@@ -19,6 +19,8 @@ package org.apache.access.binding.hive;
 import static org.apache.hadoop.hive.metastore.MetaStoreUtils.DEFAULT_DATABASE_NAME;
 
 import java.io.Serializable;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -63,6 +65,7 @@ import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.ql.session.SessionState;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 
 public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook
@@ -145,7 +148,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook
           throw new SemanticException("Could not find the jar for UDF class " + udfClassName +
               "to validate privileges");
         }
-        udfURI = new AccessURI(udfJar);
+        udfURI = parseURI(udfJar);
       } catch (ClassNotFoundException e) {
         throw new SemanticException("Error retrieving udf class", e);
       }
@@ -193,9 +196,41 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook
       return getCanonicalDb();
     }
   }
-  private AccessURI extractPartition(ASTNode ast) {
-    return  new AccessURI(BaseSemanticAnalyzer.
-        unescapeSQLString(ast.getChild(2).getChild(0).getText()));
+  private AccessURI extractPartition(ASTNode ast) throws SemanticException {
+    if(ast.getChildCount() > 2) {
+      return parseURI(BaseSemanticAnalyzer.
+          unescapeSQLString(ast.getChild(2).getChild(0).getText()));
+    }
+    return null;
+  }
+  @VisibleForTesting
+  protected static AccessURI parseURI(String uri) throws SemanticException {
+    if(!(uri.startsWith("file://") || uri.startsWith("hdfs://"))) {
+      if(uri.startsWith("file:")) {
+        uri = uri.replace("file:", "file://");
+      } else if(uri.startsWith("/")) {
+        String wareHouseDir = SessionState.get().getConf().get(ConfVars.METASTOREWAREHOUSE.varname);
+        if(wareHouseDir.startsWith("hdfs:")) {
+          URI warehouse = toDFSURI(wareHouseDir);
+          uri = warehouse.getScheme() + "://" + warehouse.getAuthority() + uri;
+        } else {
+          uri = "file://" + uri;
+        }
+      }
+      return new AccessURI(uri);
+    }
+    return new AccessURI(uri);
+  }
+  private static URI toDFSURI(String s) throws SemanticException {
+   try {
+     URI uri = new URI(s);
+     if(uri.getScheme() == null || uri.getAuthority() == null) {
+       throw new SemanticException("Invalid URI " + s + ". No scheme or authority.");
+     }
+     return uri;
+    } catch (URISyntaxException e) {
+      throw new SemanticException("Invalid URI " + s, e);
+    }
   }
   /**
    * Post analyze hook that invokes hive auth bindings
@@ -373,7 +408,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook
     case DFS_DIR:
     case LOCAL_DIR:
       try {
-        objectHierarchy.add(new AccessURI(entity.toString()));
+        objectHierarchy.add(parseURI(entity.toString()));
       } catch (Exception e) {
         throw new AuthorizationException("Failed to get File URI", e);
       }

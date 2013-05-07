@@ -372,7 +372,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
     String testPolicies[] = {"[groups]", "admin_group = admin_role",
         "user_group  = db1_all,db2_all, load_data", "[roles]",
         "db1_all = server=server1->db=db1", "db2_all = server=server1->db=db2",
-        "load_data = server=server1->URI=file:" + dataFilePath,
+        "load_data = server=server1->URI=file://" + dataFilePath,
         "admin_role = server=server1", "[users]", "user1 = user_group",
         "user2 = user_group", "admin = admin_group"};
     context.makeNewPolicy(testPolicies);
@@ -733,7 +733,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
     editor.addPolicy("group1 = all_db1,load_data,all_db2", "groups");
     editor.addPolicy("all_db1 = server=server1->db=db_1", "roles");
     editor.addPolicy("all_db2 = server=server1->db=db_2", "roles");
-    editor.addPolicy("load_data = server=server1->URI=file:" + dataFilePath,
+    editor.addPolicy("load_data = server=server1->URI=file://" + dataFilePath,
         "roles");
     editor.addPolicy("admin1 = admin", "users");
     editor.addPolicy("user1 = group1", "users");
@@ -827,7 +827,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticHiveServer {
     editor.addPolicy(
         "select_tb2 = server=server1->db=db_2->table=tb_1->action=select",
         "roles");
-    editor.addPolicy("load_data = server=server1->URI=file:" + dataFilePath,
+    editor.addPolicy("load_data = server=server1->URI=file://" + dataFilePath,
         "roles");
     editor.addPolicy("admin1 = admin", "users");
     editor.addPolicy("user1 = group1", "users");

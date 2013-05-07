@@ -98,10 +98,10 @@ public class TestEndToEnd extends AbstractTestWithStaticHiveServer {
     // 4
     editor.addPolicy("group1 = all_db1, data_uri, select_tb1, insert_tb1", "groups");
     editor.addPolicy("all_db1 = server=server1->db=db_1", "roles");
-    editor.addPolicy("data_uri = server=server1->uri=file:" + dataDir.getPath(), "roles");
     editor.addPolicy("select_tb1 = server=server1->db=productionDB->table=tb_1->action=select","roles");
     editor.addPolicy("insert_tb2 = server=server1->db=productionDB->table=tb_2->action=insert","roles");
     editor.addPolicy("insert_tb1 = server=server1->db=productionDB->table=tb_2->action=insert","roles");
+    editor.addPolicy("data_uri = server=server1->uri=file://" + dataDir.getPath(), "roles");
 
     // 5
     connection = context.createConnection("user1", "foo");

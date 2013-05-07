@@ -250,7 +250,7 @@ public class TestUserManagement extends AbstractTestWithStaticHiveServer {
     editor.addPolicy("admin1 = admin_group", "users");
     editor.addPolicy("group1 = non_admin_role, load_data", "groups");
     editor.addPolicy("non_admin_role = server=server1->db=" + dbName, "roles");
-    editor.addPolicy("load_data = server=server1->URI=file:" + dataFile.getPath(), "roles");
+    editor.addPolicy("load_data = server=server1->URI=file://" + dataFile.getPath(), "roles");
     editor.addPolicy("group1 = group1", "users");
     editor.addPolicy("user2 = group1", "users");
     editor.addPolicy("user3 = group1", "users");
@@ -274,7 +274,7 @@ public class TestUserManagement extends AbstractTestWithStaticHiveServer {
     editor.addPolicy("admin1 = admin_group", "users");
     editor.addPolicy("group1~!@#$%^&*()+- = analytics, load_data", "groups");
     editor.addPolicy("analytics = server=server1->db=" + dbName, "roles");
-    editor.addPolicy("load_data = server=server1->URI=file:" + dataFile.getPath(), "roles");
+    editor.addPolicy("load_data = server=server1->URI=file://" + dataFile.getPath(), "roles");
     editor.addPolicy("user1 = group1~!@#$%^&*()+-", "users");
     editor.addPolicy("user2 = group1~!@#$%^&*()+-", "users");
     editor.addPolicy("user3 = group1~!@#$%^&*()+-", "users");
