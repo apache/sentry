@@ -32,32 +32,6 @@ import org.junit.Test;
 import com.google.common.io.Resources;
 
 public class TestSandboxOps  extends AbstractTestWithStaticDFS {
-  private static final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
-  private static final String ADMIN = "admin1";
-  private static final String ALL_DB1 = "server=server1->db=db_1",
-      ALL_DB2 = "server=server1->db=db_2",
-      SELECT_DB1_TBL1 = "server=server1->db=db_1->table=tb_1->action=select",
-      SELECT_DB1_TBL2 = "server=server1->db=db_1->table=tb_2->action=select",
-      INSERT_DB1_TBL1 = "server=server1->db=db_1->table=tb_1->action=insert",
-      SELECT_DB2_TBL2 = "server=server1->db=db_2->table=tb_2->action=select",
-      USER1 = "user1",
-      USER2 = "user2",
-      GROUP1 = "group1",
-      GROUP1_ROLE = "group1_role",
-      DB1 = "db_1",
-      DB2 = "db_2",
-      DB3 = "db_3",
-      TBL1 = "tb_1",
-      TBL2 = "tb_2",
-      TBL3 = "tb_3",
-      VIEW1 = "view_1",
-      VIEW2 = "view_2",
-      VIEW3 = "view_3",
-      INDEX1 = "index_1";
-
-
-
-  private Context context;
   private PolicyFile policyFile;
   private File dataFile;
   private String loadData;
@@ -70,8 +44,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
-    policyFile = PolicyFile.createAdminOnServer1(ADMIN);
-
+    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
     loadData = "server=server1->uri=file://" + dataFile.getPath();
   }
 
@@ -90,38 +63,6 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
     .addRolesToGroup("user_group", "db1_all", "db2_all");
     return policyFile;
   }
-  private void dropDb(String user, String...dbs) throws Exception {
-    Connection connection = context.createConnection(user, "password");
-    Statement statement = connection.createStatement();
-    for(String db : dbs) {
-      statement.execute("DROP DATABASE IF EXISTS " + db + " CASCADE");
-    }
-    statement.close();
-    connection.close();
-  }
-  private void createDb(String user, String...dbs) throws Exception {
-    Connection connection = context.createConnection(user, "password");
-    Statement statement = connection.createStatement();
-    for(String db : dbs) {
-      statement.execute("CREATE DATABASE " + db);
-    }
-    statement.close();
-    connection.close();
-  }
-  private void createTable(String user, String db, String...tables) throws Exception {
-    Connection connection = context.createConnection(user, "password");
-    Statement statement = connection.createStatement();
-    statement.execute("USE " + db);
-    for(String table : tables) {
-      statement.execute("DROP TABLE IF EXISTS " + table);
-      statement.execute("create table " + table
-          + " (under_col int comment 'the under column', value string)");
-      statement.execute("load data local inpath '" + dataFile.getPath()
-          + "' into table " + table);
-    }
-    statement.close();
-    connection.close();
-  }
   /**
    * Tests to ensure that users with all@db can create tables
    * and that they cannot create databases or load data
@@ -131,8 +72,8 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
     addTwoUsersWithAllDb().write(context.getPolicyFile());
     String[] dbs = new String[] { "db1", "db2" };
     for (String dbName : dbs) {
-      dropDb(ADMIN, dbName);
-      createDb(ADMIN, dbName);
+      dropDb(ADMIN1, dbName);
+      createDb(ADMIN1, dbName);
     }
     for (String user : new String[] { "user1", "user2" }) {
       for (String dbName : new String[] { "db1", "db2" }) {
@@ -153,7 +94,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
     }
 
     for (String dbName : dbs) {
-      dropDb(ADMIN, dbName);
+      dropDb(ADMIN1, dbName);
     }
 
   }
@@ -164,7 +105,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
   @Test
   public void testAdminDbPrivileges() throws Exception {
     policyFile.write(context.getPolicyFile());
-    Connection adminCon = context.createConnection(ADMIN, "password");
+    Connection adminCon = context.createConnection(ADMIN1, "password");
     Statement adminStmt = context.createStatement(adminCon);
     String dbName = "db1";
     adminStmt.execute("use default");
@@ -199,7 +140,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
     .addRolesToGroup("group1", "db1_tab2_all")
     .addGroupsToUser("user3", "group1");
     policyFile.write(context.getPolicyFile());
-    Connection adminCon = context.createConnection(ADMIN, "password");
+    Connection adminCon = context.createConnection(ADMIN1, "password");
     Statement adminStmt = context.createStatement(adminCon);
     String dbName = "db1";
     adminStmt.execute("use default");
@@ -326,19 +267,19 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
     .addGroupsToUser(USER1, GROUP1);
     policyFile.write(context.getPolicyFile());
 
-    dropDb(ADMIN, DB1, DB2);
-    createDb(ADMIN, DB1, DB2);
+    dropDb(ADMIN1, DB1, DB2);
+    createDb(ADMIN1, DB1, DB2);
 
     Connection connection = context.createConnection(USER1, "password");
     Statement statement = context.createStatement(connection);
 
     // a
     statement.execute("USE " + DB1);
-    createTable(USER1, DB1, TBL1);
+    createTable(USER1, DB1, dataFile, TBL1);
     statement.execute("DROP VIEW IF EXISTS " + VIEW1);
     statement.execute("CREATE VIEW " + VIEW1 + " (value) AS SELECT value from " + TBL1 + " LIMIT 10");
 
-    createTable(USER1, DB2, TBL2, TBL3);
+    createTable(USER1, DB2, dataFile, TBL2, TBL3);
     // c
     context.assertAuthzException(statement, "DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
     context.assertAuthzException(statement, "DROP DATABASE IF EXISTS " + DB2 + " CASCADE");
@@ -347,9 +288,14 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
     policyFile.removePermissionsFromRole(GROUP1_ROLE, ALL_DB2);
     policyFile.write(context.getPolicyFile());
     // e
+    // create db1.view1 as select from db2.tbl2
     statement.execute("DROP VIEW IF EXISTS " + VIEW2);
     context.assertAuthzException(statement, "CREATE VIEW " + VIEW2 +
         " (value) AS SELECT value from " + DB2 + "." + TBL2 + " LIMIT 10");
+    // create db1.tbl2 as select from db2.tbl2
+    statement.execute("DROP TABLE IF EXISTS " + TBL2);
+    context.assertAuthzException(statement, "CREATE TABLE " + TBL2 +
+        " AS SELECT value from " + DB2 + "." + TBL2 + " LIMIT 10");
     // f
     policyFile.addPermissionsToRole(GROUP1_ROLE, SELECT_DB2_TBL2);
     policyFile.write(context.getPolicyFile());
@@ -363,7 +309,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
         + " (value) AS SELECT value from " + DB2 + "." + TBL3 + " LIMIT 10");
     statement.close();
     connection.close();
-    dropDb(ADMIN, DB1, DB2);
+    dropDb(ADMIN1, DB1, DB2);
   }
 
   /**
@@ -390,10 +336,10 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
     .addRolesToGroup(GROUP1, GROUP1_ROLE)
     .addGroupsToUser(USER1, GROUP1);
     policyFile.write(context.getPolicyFile());
-    dropDb(ADMIN, DB1);
-    createDb(ADMIN, DB1);
-    createTable(ADMIN, DB1, TBL1);
-    Connection connection = context.createConnection(ADMIN, "password");
+    dropDb(ADMIN1, DB1);
+    createDb(ADMIN1, DB1);
+    createTable(ADMIN1, DB1, dataFile, TBL1);
+    Connection connection = context.createConnection(ADMIN1, "password");
     Statement statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
     statement.execute("DROP INDEX IF EXISTS " + INDEX1 + " ON " + TBL1);
@@ -412,7 +358,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
     assertTrue(statement.execute("SELECT * FROM " + TBL1 + " WHERE under_col == 5"));
     assertTrue(statement.execute("SHOW INDEXES ON " + TBL1));
     policyFile.write(context.getPolicyFile());
-    dropDb(ADMIN, DB1, DB2);
+    dropDb(ADMIN1, DB1, DB2);
   }
 
   /**
@@ -456,10 +402,10 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
     editor.addPolicy("user1 = group1", "users");
     editor.addPolicy("user2 = group2", "users");
 
-    dropDb(ADMIN, DB1);
-    createDb(ADMIN, DB1);
+    dropDb(ADMIN1, DB1);
+    createDb(ADMIN1, DB1);
 
-    createTable(USER1, DB1, TBL1, TBL2);
+    createTable(USER1, DB1, dataFile, TBL1, TBL2);
     Connection connection = context.createConnection(USER1, "password");
     Statement statement = context.createStatement(connection);
     // c
@@ -521,9 +467,9 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
         ", server=server1->uri=" + allowedDfsDir.toString(), "roles");
     editor.addPolicy("admin1 = admin", "users");
     editor.addPolicy("user1 = group1", "users");
-    dropDb(ADMIN, DB1);
-    createDb(ADMIN, DB1);
-    createTable(ADMIN, DB1, TBL1);
+    dropDb(ADMIN1, DB1);
+    createDb(ADMIN1, DB1);
+    createTable(ADMIN1, DB1, dataFile, TBL1);
     Connection connection = context.createConnection(USER1, "password");
     Statement statement = context.createStatement(connection);
     statement.execute("USE " + DB1);

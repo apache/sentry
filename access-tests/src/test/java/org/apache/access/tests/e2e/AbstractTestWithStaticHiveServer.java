@@ -17,6 +17,8 @@
 package org.apache.access.tests.e2e;
 
 import java.io.File;
+import java.sql.Connection;
+import java.sql.Statement;
 import java.util.Map;
 
 import junit.framework.Assert;
@@ -37,16 +39,72 @@ import com.google.common.io.Files;
 public abstract class AbstractTestWithStaticHiveServer {
   private static final Logger LOGGER = LoggerFactory
       .getLogger(AbstractTestWithStaticHiveServer.class);
+  protected static final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
+  protected static final String ADMIN1 = "admin1";
+  protected static final String ALL_DB1 = "server=server1->db=db_1",
+      ALL_DB2 = "server=server1->db=db_2",
+      SELECT_DB1_TBL1 = "server=server1->db=db_1->table=tb_1->action=select",
+      SELECT_DB1_TBL2 = "server=server1->db=db_1->table=tb_2->action=select",
+      INSERT_DB1_TBL1 = "server=server1->db=db_1->table=tb_1->action=insert",
+      SELECT_DB2_TBL2 = "server=server1->db=db_2->table=tb_2->action=select",
+      USER1 = "user1",
+      USER2 = "user2",
+      GROUP1 = "group1",
+      GROUP1_ROLE = "group1_role",
+      DB1 = "db_1",
+      DB2 = "db_2",
+      DB3 = "db_3",
+      TBL1 = "tb_1",
+      TBL2 = "tb_2",
+      TBL3 = "tb_3",
+      VIEW1 = "view_1",
+      VIEW2 = "view_2",
+      VIEW3 = "view_3",
+      INDEX1 = "index_1";
   protected static File baseDir;
   protected static File confDir;
   protected static File dataDir;
   protected static File policyFile;
   protected static HiveServer hiveServer;
   protected static FileSystem fileSystem;
+  protected Context context;
 
   public Context createContext() throws Exception {
     return new Context(hiveServer, getFileSystem(),
         baseDir, confDir, dataDir, policyFile);
+  }
+  protected void dropDb(String user, String...dbs) throws Exception {
+    Connection connection = context.createConnection(user, "password");
+    Statement statement = connection.createStatement();
+    for(String db : dbs) {
+      statement.execute("DROP DATABASE IF EXISTS " + db + " CASCADE");
+    }
+    statement.close();
+    connection.close();
+  }
+  protected void createDb(String user, String...dbs) throws Exception {
+    Connection connection = context.createConnection(user, "password");
+    Statement statement = connection.createStatement();
+    for(String db : dbs) {
+      statement.execute("CREATE DATABASE " + db);
+    }
+    statement.close();
+    connection.close();
+  }
+  protected void createTable(String user, String db, File dataFile, String...tables)
+      throws Exception {
+    Connection connection = context.createConnection(user, "password");
+    Statement statement = connection.createStatement();
+    statement.execute("USE " + db);
+    for(String table : tables) {
+      statement.execute("DROP TABLE IF EXISTS " + table);
+      statement.execute("create table " + table
+          + " (under_col int comment 'the under column', value string)");
+      statement.execute("load data local inpath '" + dataFile.getPath()
+          + "' into table " + table);
+    }
+    statement.close();
+    connection.close();
   }
 
   protected static File assertCreateDir(File dir) {
