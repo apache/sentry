@@ -115,7 +115,7 @@ public class TestHiveAuthzBindings {
    * validate read permission for admin on customer:purchase
    */
   @Test
-  public void TestValidateSelectPrivilegesForAdmin() throws Exception {
+  public void testValidateSelectPrivilegesForAdmin() throws Exception {
     inputTabHierarcyList.add(buildObjectHierarchy(SERVER1, CUSTOMER_DB, PURCHASES_TAB));
     testAuth.authorize(HiveOperation.QUERY, queryPrivileges, ADMIN_SUBJECT,
         inputTabHierarcyList, outputTabHierarcyList);
@@ -125,7 +125,7 @@ public class TestHiveAuthzBindings {
    * validate read permission for admin on customer:purchase
    */
   @Test
-  public void TestValidateSelectPrivilegesForUsers() throws Exception {
+  public void testValidateSelectPrivilegesForUsers() throws Exception {
     inputTabHierarcyList.add(buildObjectHierarchy(SERVER1, CUSTOMER_DB, PURCHASES_TAB));
     testAuth.authorize(HiveOperation.QUERY, queryPrivileges, ANALYST_SUBJECT,
         inputTabHierarcyList, outputTabHierarcyList);
@@ -135,7 +135,7 @@ public class TestHiveAuthzBindings {
    * validate read permission for denied for junior analyst on customer:purchase
    */
   @Test(expected=AuthorizationException.class)
-  public void TestValidateSelectPrivilegesRejectionForUsers() throws Exception {
+  public void testValidateSelectPrivilegesRejectionForUsers() throws Exception {
     inputTabHierarcyList.add(buildObjectHierarchy(SERVER1, CUSTOMER_DB, PURCHASES_TAB));
     testAuth.authorize(HiveOperation.QUERY, queryPrivileges, JUNIOR_ANALYST_SUBJECT,
         inputTabHierarcyList, outputTabHierarcyList);
@@ -145,7 +145,7 @@ public class TestHiveAuthzBindings {
    * validate create table permissions for admin in customer db
    */
   @Test
-  public void TestValidateCreateTabPrivilegesForAdmin() throws Exception {
+  public void testValidateCreateTabPrivilegesForAdmin() throws Exception {
     outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, CUSTOMER_DB, PAYMENT_TAB));
     testAuth.authorize(HiveOperation.CREATETABLE, createTabPrivileges, ADMIN_SUBJECT,
         inputTabHierarcyList, outputTabHierarcyList);
@@ -155,7 +155,7 @@ public class TestHiveAuthzBindings {
    * validate create table permissions for manager in junior_analyst sandbox db
    */
   @Test
-  public void TestValidateCreateTabPrivilegesForUser() throws Exception {
+  public void testValidateCreateTabPrivilegesForUser() throws Exception {
     outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, JUNIOR_ANALYST_DB, PAYMENT_TAB));
     testAuth.authorize(HiveOperation.CREATETABLE, createTabPrivileges, MANAGER_SUBJECT,
         inputTabHierarcyList, outputTabHierarcyList);
@@ -165,7 +165,7 @@ public class TestHiveAuthzBindings {
    * validate create table permissions denided to junior_analyst in customer db
    */
   @Test(expected=AuthorizationException.class)
-  public void TestValidateCreateTabPrivilegesRejectionForUser() throws Exception {
+  public void testValidateCreateTabPrivilegesRejectionForUser() throws Exception {
     outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, CUSTOMER_DB, null));
     testAuth.authorize(HiveOperation.CREATETABLE, createTabPrivileges, JUNIOR_ANALYST_SUBJECT,
         inputTabHierarcyList, outputTabHierarcyList);
@@ -175,7 +175,7 @@ public class TestHiveAuthzBindings {
    * validate create table permissions denided to junior_analyst in analyst sandbox db
    */
   @Test(expected=AuthorizationException.class)
-  public void TestValidateCreateTabPrivilegesRejectionForUser2() throws Exception {
+  public void testValidateCreateTabPrivilegesRejectionForUser2() throws Exception {
     outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, ANALYST_DB, null));
     testAuth.authorize(HiveOperation.CREATETABLE, createTabPrivileges, JUNIOR_ANALYST_SUBJECT,
         inputTabHierarcyList, outputTabHierarcyList);
@@ -185,7 +185,7 @@ public class TestHiveAuthzBindings {
    * validate load permissions for admin on customer:purchases
    */
   @Test
-  public void TestValidateLoadTabPrivilegesForAdmin() throws Exception {
+  public void testValidateLoadTabPrivilegesForAdmin() throws Exception {
     outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, CUSTOMER_DB, PURCHASES_TAB));
     testAuth.authorize(HiveOperation.LOAD, loadTabPrivileges, ADMIN_SUBJECT,
         inputTabHierarcyList, outputTabHierarcyList);
@@ -195,7 +195,7 @@ public class TestHiveAuthzBindings {
    * validate load table permissions on manager for customer:purchases
    */
   @Test
-  public void TestValidateLoadTabPrivilegesForUser() throws Exception {
+  public void testValidateLoadTabPrivilegesForUser() throws Exception {
     outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, CUSTOMER_DB, PURCHASES_TAB));
     testAuth.authorize(HiveOperation.LOAD, loadTabPrivileges, MANAGER_SUBJECT,
         inputTabHierarcyList, outputTabHierarcyList);  }
@@ -204,7 +204,7 @@ public class TestHiveAuthzBindings {
    * validate load table permissions rejected for analyst on customer:purchases
    */
   @Test(expected=AuthorizationException.class)
-  public void TestValidateLoadTabPrivilegesRejectionForUser() throws Exception {
+  public void testValidateLoadTabPrivilegesRejectionForUser() throws Exception {
     outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, CUSTOMER_DB, PURCHASES_TAB));
     testAuth.authorize(HiveOperation.LOAD, loadTabPrivileges, ANALYST_SUBJECT,
         inputTabHierarcyList, outputTabHierarcyList);
@@ -214,8 +214,8 @@ public class TestHiveAuthzBindings {
    * validate create database permission for admin
    */
   @Test
-  public void TestValidateCreateDbForAdmin() throws Exception {
-    outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, CUSTOMER_DB, null));
+  public void testValidateCreateDbForAdmin() throws Exception {
+    outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, null, null));
     testAuth.authorize(HiveOperation.CREATEDATABASE, createDbPrivileges, ADMIN_SUBJECT,
         inputTabHierarcyList, outputTabHierarcyList);
   }
@@ -224,9 +224,9 @@ public class TestHiveAuthzBindings {
    * validate create database permission for admin
    */
   @Test(expected=AuthorizationException.class)
-  public void TestValidateCreateDbRejectionForUser() throws Exception {
+  public void testValidateCreateDbRejectionForUser() throws Exception {
     // Hive compiler doesn't capture Entities for DB operations
-    outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, CUSTOMER_DB, null));
+    outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, null, null));
     testAuth.authorize(HiveOperation.CREATEDATABASE, createDbPrivileges, ANALYST_SUBJECT,
         inputTabHierarcyList, outputTabHierarcyList);
   }
@@ -236,7 +236,7 @@ public class TestHiveAuthzBindings {
    */
   @Test
   @Ignore // TODO fix functions
-  public void TestValidateCreateFunctionForAdmin() throws Exception {
+  public void testValidateCreateFunctionForAdmin() throws Exception {
     outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, null, null));
     testAuth.authorize(HiveOperation.CREATEFUNCTION, createFuncPrivileges, ADMIN_SUBJECT,
         inputTabHierarcyList, outputTabHierarcyList);
@@ -247,7 +247,7 @@ public class TestHiveAuthzBindings {
    */
   @Test(expected=AuthorizationException.class)
   @Ignore // TODO fix functions
-  public void TestValidateCreateFunctionRejectionForUser() throws Exception {
+  public void testValidateCreateFunctionRejectionForUser() throws Exception {
     outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, null, null));
     testAuth.authorize(HiveOperation.CREATEFUNCTION, createFuncPrivileges, ANALYST_SUBJECT,
         inputTabHierarcyList, outputTabHierarcyList);
