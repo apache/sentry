@@ -139,4 +139,39 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticHiveSer
     context.close();
 
   }
+
+  @Test
+  public void testUdfWhiteList () throws Exception {
+    String dbName1 = "db1";
+    String tableName1 = "tab1";
+
+    File policyFile = context.getPolicyFile();
+    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
+    editor.addPolicy("admin = admin", "groups");
+    editor.addPolicy("group1 = db1_all,UDF_JAR", "groups");
+    editor.addPolicy("group2 = db1_tab1,UDF_JAR", "groups");
+    editor.addPolicy("group3 = db1_tab1", "groups");
+    editor.addPolicy("admin = server=server1", "roles");
+    editor.addPolicy("db1_all = server=server1->db=" + dbName1, "roles");
+    editor.addPolicy("db1_tab1 = server=server1->db=" + dbName1 + "->table=" + tableName1, "roles");
+    editor.addPolicy("UDF_JAR = server=server1->uri=file://${user.home}/.m2", "roles");
+    editor.addPolicy("admin1 = admin", "users");
+    editor.addPolicy("user1 = group1", "users");
+
+    Connection connection = context.createConnection("admin1", "password");
+    Statement statement = connection.createStatement();
+    statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
+    statement.execute("CREATE DATABASE " + dbName1);
+    statement.execute("USE " + dbName1);
+    statement.execute("create table " + tableName1
+        + " (under_col int comment 'the under column', value string)");
+    statement.execute("LOAD DATA INPATH '" + dataFile.getPath() + "' INTO TABLE "
+        + dbName1 + "." + tableName1);
+    statement.execute("SELECT rand(), concat(value, '_foo') FROM " + tableName1);
+
+    context.assertAuthzException(statement,
+        "SELECT  reflect('java.net.URLDecoder', 'decode', 'http://www.apache.org', 'utf-8'), value FROM " + tableName1);
+    statement.close();
+    connection.close();
+  }
 }

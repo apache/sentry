@@ -312,6 +312,12 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook
         if (isChildTabForView(readEntity)) {
           continue;
         }
+        // If this is a UDF, then check whether its allowed to be executed
+        // TODO: when we support execute privileges on UDF, this can be removed.
+        if (isBuiltinUDF(readEntity)) {
+          checkUDFWhiteList(readEntity.getUDF().getDisplayName());
+          continue;
+        }
         List<Authorizable> entityHierarchy = new ArrayList<Authorizable>();
         entityHierarchy.add(hiveAuthzBinding.getAuthServer());
         entityHierarchy.addAll(getAuthzHierarchyFromEntity(readEntity));
@@ -377,6 +383,25 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook
         inputHierarchy, outputHierarchy);
 
     hiveAuthzBinding.set(context.getConf());
+  }
+
+  private boolean isBuiltinUDF(ReadEntity readEntity) {
+    return readEntity.getType().equals(Type.UDF) &&
+        readEntity.getUDF().isNative();
+
+  }
+
+  private void checkUDFWhiteList(String queryUDF) throws AuthorizationException {
+    String whiteList = authzConf.get(HiveAuthzConf.AuthzConfVars.AUTHZ_UDF_WHITELIST.getVar());
+    if (whiteList == null) {
+      return;
+    }
+    for (String hiveUDF : whiteList.split(",")) {
+      if (queryUDF.equalsIgnoreCase(hiveUDF)) {
+        return; // found the given UDF in whitelist
+      }
+    }
+    throw new AuthorizationException("The UDF " + queryUDF + " is not found in the list of allowed UDFs");
   }
 
   private HiveOperation getCurrentHiveStmtOp() {
