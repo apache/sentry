@@ -27,20 +27,19 @@ import org.junit.Before;
 import org.junit.Test;
 
 
-public class TestMedataPermissions extends AbstractTestWithStaticHiveServer {
+public class TestMetadataPermissions extends AbstractTestWithStaticHiveServer {
   private Context context;
   @Before
   public void setup() throws Exception {
     context = createContext();
-    // edit policy file
     String testPolicies[] = {
         "[groups]",
         "admin_group = admin_role",
         "user_group1 = db1_all,db2_all",
         "user_group2 = db1_all",
         "[roles]",
-        "db1_all = server=server1->db=db1->table=*->action=insert",
-        "db2_all = server=server1->db=db2->table=*->action=select",
+        "db1_all = server=server1->db=db1",
+        "db2_all = server=server1->db=db2",
         "admin_role = server=server1",
         "[users]",
         "user1 = user_group1",
@@ -48,7 +47,6 @@ public class TestMedataPermissions extends AbstractTestWithStaticHiveServer {
         "admin = admin_group"
         };
     context.makeNewPolicy(testPolicies);
-    // create dbs
     Connection adminCon = context.createConnection("admin", "foo");
     Statement adminStmt = context.createStatement(adminCon);
     for (String dbName : new String[] { "db1", "db2" }) {
@@ -71,90 +69,74 @@ public class TestMedataPermissions extends AbstractTestWithStaticHiveServer {
   }
 
   /**
-   * Test Case 2.14
-   * Positive test:  Describe <object>
+   * Ensure that a user with no privileges on a database cannot
+   * query that databases metadata.
    */
   @Test
   public void testDescPrivilegesNegative() throws Exception {
-  // verify user2 doesn't can't run describe agains db2 objects
-    Connection user2Con = context.createConnection("user2", "foo");
-    Statement user2Stmt = context.createStatement(user2Con);
     String dbName = "db2";
-
-    user2Stmt.execute("USE " + dbName);
-
-    for (String tabName : new String[] { "tab1", "tab2" }) {
-      try {
-        user2Stmt.execute("DESCRIBE " + tabName);
-        Assert.assertTrue("user2 shouldn't be able to run describe on db2 objects", false);
-      } catch (SQLException e) {
-        context.verifyAuthzException(e);
-      }
-      try {
-        user2Stmt.execute("DESCRIBE EXTENDED " + tabName);
-        Assert.assertTrue("user2 shouldn't be able to run describe on db2 objects", false);
-      } catch (SQLException e) {
-        context.verifyAuthzException(e);
-      }
-    }
+    Connection connection = context.createConnection("user2", "password");
+    Statement statement = context.createStatement(connection);
+    context.assertAuthzException(statement, "USE " + dbName);
+//    TODO when DESCRIBE db.table is supported tests should be uncommented
+//    for (String tabName : new String[] { "tab1", "tab2" }) {
+//      context.assertAuthzException(statement, "DESCRIBE " + dbName + "." + tabName);
+//      context.assertAuthzException(statement, "DESCRIBE EXTENDED " + dbName + "." + tabName);
+//    }
+    statement.close();
+    connection.close();
   }
 
   /**
-   * Test Case 2.14
-   * Negative test:  Describe database <object>
+   * Ensure that a user cannot describe databases to which the user
+   * has no privilege.
    */
   @Test
   public void testDescDbPrivilegesNegative() throws Exception {
-  // verify user2 doesn't can't run describe db2 database
-    Connection user2Con = context.createConnection("user2", "foo");
-    Statement user2Stmt = context.createStatement(user2Con);
     String dbName = "db2";
-    try {
-      Assert.assertTrue(user2Stmt.execute("DESCRIBE DATABASE " + dbName));
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
-    try {
-    Assert.assertTrue(user2Stmt.execute("DESCRIBE DATABASE EXTENDED " + dbName));
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
+    Connection connection = context.createConnection("user2", "password");
+    Statement statement = context.createStatement(connection);
+    context.assertAuthzException(statement, "DESCRIBE DATABASE " + dbName);
+    context.assertAuthzException(statement, "DESCRIBE DATABASE EXTENDED " + dbName);
+    statement.close();
+    connection.close();
   }
 
   /**
-   * Test Case 2.14
-   * Positive test:  Describe database <object>
+   * Ensure that a user with privileges on a database can describe
+   * the database.
    */
   @Test
   public void testDescDbPrivilegesPositive() throws Exception {
-    // verify user1 can describe both dbs and tables
-    Connection user1Con = context.createConnection("user1", "foo");
-    Statement user1Stmt = context.createStatement(user1Con);
+    Connection connection = context.createConnection("user1", "password");
+    Statement statement = context.createStatement(connection);
     for (String dbName : new String[] { "db1", "db2" }) {
-      user1Stmt.execute("USE " + dbName);
-      Assert.assertTrue(user1Stmt.execute("DESCRIBE DATABASE " + dbName));
-      Assert.assertTrue(user1Stmt.execute("DESCRIBE DATABASE EXTENDED " + dbName));
+      statement.execute("USE " + dbName);
+      Assert.assertTrue(statement.executeQuery("DESCRIBE DATABASE " + dbName).next());
+      Assert.assertTrue(statement.executeQuery("DESCRIBE DATABASE EXTENDED " + dbName).next());
     }
+    statement.close();
+    connection.close();
   }
 
   /**
-   * Test Case 2.14
-   * Positive test:  Describe <object>
+   * Ensure that a user with privileges on a table can describe the table.
    */
   @Test
   public void testDescPrivilegesPositive() throws Exception {
-    // verify user1 can describe both tables
-    Connection user1Con = context.createConnection("user1", "foo");
-    Statement user1Stmt = context.createStatement(user1Con);
+    Connection connection = context.createConnection("user1", "password");
+    Statement statement = context.createStatement(connection);
     for (String dbName : new String[] { "db1", "db2" }) {
-      user1Stmt.execute("USE " + dbName);
-      Assert.assertTrue(user1Stmt.execute("DESCRIBE DATABASE " + dbName));
+      statement.execute("USE " + dbName);
+      Assert.assertTrue(statement.executeQuery("DESCRIBE DATABASE " + dbName).next());
       for (String tabName : new String[] { "tab1", "tab2" }) {
-        Assert.assertTrue(user1Stmt.execute("DESCRIBE " + tabName));
-        Assert.assertTrue(user1Stmt.execute("DESCRIBE EXTENDED " + tabName));
+        Assert.assertTrue(statement.executeQuery("DESCRIBE " + tabName).next());
+        Assert.assertTrue(statement.executeQuery("DESCRIBE EXTENDED " + tabName).next());
 
       }
     }
+    statement.close();
+    connection.close();
   }
 
 }
