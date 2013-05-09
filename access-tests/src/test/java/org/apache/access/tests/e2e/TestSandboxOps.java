@@ -320,7 +320,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
    * 2. admin create TABLE_1 in DB_1
    * 3. admin create INDEX_1 for COLUMN_1 in TABLE_1 in DB_1
    * 4. admin user grant INSERT and SELECT to USER_1's group on TABLE_1
-   * 5. admin user doesn't grant SELECT to USER_1's group on INDEX_1
+   *
    *   negative test case:
    *     a) USER_1 try to SELECT * FROM TABLE_1 WHERE COLUMN_1 == ...
    *     should NOT work
@@ -421,7 +421,6 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
         + " PARTITION (value = 10) SET LOCATION '" + dataDir.getPath() + "'");
     context.assertAuthzException(statement, "CREATE EXTERNAL TABLE " + TBL3
         + " (under_col int, value string) LOCATION '" + dataDir.getPath() + "'");
-    context.assertAuthzException(statement, "ADD JAR /usr/lib/hive/lib/hbase.jar");
     statement.close();
     connection.close();
 

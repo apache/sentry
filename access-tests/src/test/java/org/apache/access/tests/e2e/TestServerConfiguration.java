@@ -17,11 +17,13 @@
 
 package org.apache.access.tests.e2e;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
@@ -36,7 +38,7 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 
-public class TestServerMisconfiguration extends AbstractTestWithHiveServer {
+public class TestServerConfiguration extends AbstractTestWithHiveServer {
 
   private Context context;
   private Map<String, String> properties;
@@ -134,4 +136,44 @@ public class TestServerMisconfiguration extends AbstractTestWithHiveServer {
     }
   }
 
+  @Test
+  public void testAddDeleteDFSRestriction() throws Exception {
+    // edit policy file
+    context = createContext(properties);
+    File policyFile = context.getPolicyFile();
+    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
+    editor.addPolicy("admin = admin", "groups");
+    editor.addPolicy("group1 = all_db1", "groups");
+    editor.addPolicy("group2 = select_tb1", "groups");
+    editor.addPolicy("select_tb1 = server=server1->db=db_1->table=tbl_1->action=select", "roles");
+    editor.addPolicy("all_db1 = server=server1->db=db_1", "roles");
+    editor.addPolicy("admin = server=server1", "roles");
+    editor.addPolicy("admin1 = admin", "users");
+    editor.addPolicy("user1 = group1", "users");
+
+    Connection connection = context.createConnection("user1", "password");
+    Statement statement = context.createStatement(connection);
+
+    // disallow external executables
+    statement.execute("set hive.server2.authorization.external.exec = false");
+    context.assertAuthzException(statement, "ADD JAR /usr/lib/hive/lib/hbase.jar");
+    context.assertAuthzException(statement, "ADD FILE /tmp/tt.py");
+    context.assertAuthzException(statement, "DFS -ls");
+    context.assertAuthzException(statement, "DELETE JAR /usr/lib/hive/lib/hbase.jar");
+    context.assertAuthzException(statement, "DELETE FILE /tmp/tt.py");
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection("user1", "password");
+    statement = context.createStatement(connection);
+
+    // allow external executables
+    statement.execute("ADD JAR /usr/lib/hive/lib/hbase.jar");
+    statement.execute("ADD FILE /tmp/tt.py");
+    statement.execute("DFS -ls");
+    statement.execute("DELETE JAR /usr/lib/hive/lib/hbase.jar");
+    statement.execute("DELETE FILE /tmp/tt.py");
+    statement.close();
+    connection.close();
+  }
 }
