@@ -83,6 +83,14 @@ public class HiveAuthzPrivilegesMap {
         setOperationType(HiveOperationType.DDL).
         build();
 
+    HiveAuthzPrivileges createViewPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
+    addOutputObjectPriviledge(AuthorizableType.Db, EnumSet.of(Action.ALL)).
+    addInputObjectPriviledge(AuthorizableType.Table, EnumSet.of(Action.SELECT)).
+    addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(Action.SELECT)).
+    setOperationScope(HiveOperationScope.DATABASE).
+    setOperationType(HiveOperationType.DDL).
+    build();
+
     HiveAuthzPrivileges dbMetaDataPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
       addInputObjectPriviledge(AuthorizableType.Db, EnumSet.of(Action.SELECT)).
       setOperationScope(HiveOperationScope.DATABASE).
@@ -137,7 +145,7 @@ public class HiveAuthzPrivilegesMap {
     // SHOWLOCKS
     hiveAuthzStmtPrivMap.put(HiveOperation.CREATEFUNCTION, anyPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.DROPFUNCTION, anyPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.CREATEVIEW, dbDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.CREATEVIEW, createViewPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.DROPVIEW, dbDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.CREATEINDEX, dbDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.DROPINDEX, dbDDLPrivilege);
