@@ -41,12 +41,16 @@ public abstract class AbstractTestWithStaticConfiguration {
       .getLogger(AbstractTestWithStaticConfiguration.class);
   protected static final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   protected static final String ADMIN1 = "admin1";
-  protected static final String ALL_DB1 = "server=server1->db=db_1",
+  protected static final String ALL_DB1 = "server=server1->db=db_1",      
       ALL_DB2 = "server=server1->db=db_2",
       SELECT_DB1_TBL1 = "server=server1->db=db_1->table=tb_1->action=select",
       SELECT_DB1_TBL2 = "server=server1->db=db_1->table=tb_2->action=select",
+      SELECT_DB1_NONTABLE = "server=server1->db=db_1->table=this table does not exist->action=select",
       INSERT_DB1_TBL1 = "server=server1->db=db_1->table=tb_1->action=insert",
+      INSERT_DB1_TBL2 = "server=server1->db=db_1->table=tb_2->action=insert",
       SELECT_DB2_TBL2 = "server=server1->db=db_2->table=tb_2->action=select",
+      INSERT_DB2_TBL1 = "server=server1->db=db_2->table=tb_1->action=insert",
+      SELECT_DB1_VIEW1 = "server=server1->db=db_1->table=view_1->action=select",
       USER1 = "user1",
       USER2 = "user2",
       GROUP1 = "group1",
@@ -60,7 +64,10 @@ public abstract class AbstractTestWithStaticConfiguration {
       VIEW1 = "view_1",
       VIEW2 = "view_2",
       VIEW3 = "view_3",
-      INDEX1 = "index_1";
+      INDEX1 = "index_1",
+      INDEX2 = "index_2";
+
+
   protected static File baseDir;
   protected static File confDir;
   protected static File dataDir;

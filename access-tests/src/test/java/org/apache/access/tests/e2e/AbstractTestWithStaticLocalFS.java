@@ -17,10 +17,8 @@
 package org.apache.access.tests.e2e;
 
 import org.apache.access.tests.e2e.hiveserver.HiveServerFactory;
-import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,19 +33,5 @@ public abstract class AbstractTestWithStaticLocalFS extends AbstractTestWithStat
     fileSystem = FileSystem.get(new Configuration());
     hiveServer = HiveServerFactory.create(properties, baseDir, confDir, policyFile, fileSystem);
     hiveServer.start();
-  }
-
-  @AfterClass
-  public static void tearDownTestWithStaticHiveServer() throws Exception {
-    if(hiveServer != null) {
-      hiveServer.shutdown();
-      hiveServer = null;
-    }
-    if(baseDir != null) {
-      if(System.getProperty(HiveServerFactory.KEEP_BASEDIR) == null) {
-        FileUtils.deleteQuietly(baseDir);
-      }
-      baseDir = null;
-    }
   }
 }

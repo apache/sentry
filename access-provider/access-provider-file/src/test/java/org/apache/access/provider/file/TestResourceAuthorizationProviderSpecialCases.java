@@ -61,7 +61,7 @@ public class TestResourceAuthorizationProviderSpecialCases {
   public void testNonAbolutePath() throws Exception {
     Subject user1 = new Subject("user1");
     Server server1 = new Server("server1");
-    AccessURI uri = new AccessURI("/path/to/");
+    AccessURI uri = new AccessURI("file:///path/to/");
     EnumSet<Action> actions = EnumSet.of(Action.ALL, Action.SELECT, Action.INSERT);
     policyFile.addGroupsToUser(user1.getName(), "group1")
       .addRolesToGroup("group1", "role1")
@@ -74,25 +74,25 @@ public class TestResourceAuthorizationProviderSpecialCases {
         authzProvider.hasAccess(user1, authorizableHierarchy, actions));
     // negative tests
     // TODO we should support the case of /path/to/./ but let's to that later
-    uri = new AccessURI("/path/to/./");
+    uri = new AccessURI("file:///path/to/./");
     authorizableHierarchy = ImmutableList.of(server1, uri);
     Assert.assertFalse(authorizableHierarchy.toString(),
         authzProvider.hasAccess(user1, authorizableHierarchy, actions));
-    uri = new AccessURI("/path/to/../");
+    uri = new AccessURI("file:///path/to/../");
     authorizableHierarchy = ImmutableList.of(server1, uri);
     Assert.assertFalse(authorizableHierarchy.toString(),
         authzProvider.hasAccess(user1, authorizableHierarchy, actions));
-    uri = new AccessURI("/path/to/../../");
+    uri = new AccessURI("file:///path/to/../../");
     authorizableHierarchy = ImmutableList.of(server1, uri);
     Assert.assertFalse(authorizableHierarchy.toString(),
         authzProvider.hasAccess(user1, authorizableHierarchy, actions));
-    uri = new AccessURI("/path/to/dir/../../");
+    uri = new AccessURI("file:///path/to/dir/../../");
     authorizableHierarchy = ImmutableList.of(server1, uri);
     Assert.assertFalse(authorizableHierarchy.toString(),
         authzProvider.hasAccess(user1, authorizableHierarchy, actions));
-    uri = new AccessURI(":invaliduri");
-    authorizableHierarchy = ImmutableList.of(server1, uri);
-    Assert.assertFalse(authorizableHierarchy.toString(),
-        authzProvider.hasAccess(user1, authorizableHierarchy, actions));
+  }
+  @Test(expected=IllegalArgumentException.class)
+  public void testInvalidPath() throws Exception {
+    new AccessURI(":invaliduri");
   }
 }

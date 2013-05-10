@@ -51,8 +51,8 @@ public class TestAuthorizables {
   }
   @Test
   public void testURI() throws Exception {
-    AccessURI uri = (AccessURI)Authorizables.from("UrI=uri://uri1:8200/blah");
-    assertEquals("uri://uri1:8200/blah", uri.getName());
+    AccessURI uri = (AccessURI)Authorizables.from("UrI=hdfs://uri1:8200/blah");
+    assertEquals("hdfs://uri1:8200/blah", uri.getName());
   }
 
   @Test(expected=IllegalArgumentException.class)

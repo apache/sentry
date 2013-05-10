@@ -27,11 +27,10 @@ public class AccessURI implements Authorizable {
 
   public AccessURI(String uriName) {
     uriName = uriName == null ? "" : uriName;
-    if(uriName.isEmpty() ||
-        (uriName.startsWith("file:") && !uriName.startsWith("file://")) ||
-        uriName.startsWith("/") ||
-        (uriName.startsWith("hdfs:") && !uriName.startsWith("hdfs://"))) {
-      throw new IllegalArgumentException("URI '" + uriName + "' in invalid. Must start with file:// or hdfs://");
+    if(!(uriName.equals(AccessConstants.ALL) || 
+        uriName.startsWith("file://") ||
+        uriName.startsWith("hdfs://"))) {
+      throw new IllegalArgumentException("URI '" + uriName + "' in invalid. Must start with file:// or hdfs://");      
     }
     this.uriName = uriName;
   }
