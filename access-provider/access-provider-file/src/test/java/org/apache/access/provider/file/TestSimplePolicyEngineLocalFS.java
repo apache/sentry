@@ -23,7 +23,7 @@ import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
 
-public class TestSimplePolicyLocalFS extends AbstractTestSimplePolicy {
+public class TestSimplePolicyEngineLocalFS extends AbstractTestSimplePolicyEngine {
 
   @Override
   protected void  afterSetup() throws IOException {
@@ -31,7 +31,7 @@ public class TestSimplePolicyLocalFS extends AbstractTestSimplePolicy {
     Assert.assertNotNull(baseDir);
     Assert.assertTrue(baseDir.isDirectory() || baseDir.mkdirs());
     PolicyFiles.copyToDir(baseDir, "test-authz-provider.ini", "test-authz-provider-other-group.ini");
-    setPolicy(new SimplePolicy(new File(baseDir, "test-authz-provider.ini").getPath(), "server1"));
+    setPolicy(new SimplePolicyEngine(new File(baseDir, "test-authz-provider.ini").getPath(), "server1"));
   }
   @Override
   protected void beforeTeardown() throws IOException {

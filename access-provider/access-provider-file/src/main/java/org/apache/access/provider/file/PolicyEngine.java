@@ -23,7 +23,7 @@ import org.apache.access.core.Authorizable;
 
 import com.google.common.collect.ImmutableSetMultimap;
 
-public interface Policy {
+public interface PolicyEngine {
 
   /**
    * Get permissions associated with a group. Returns Strings which can be resolved

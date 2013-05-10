@@ -24,6 +24,7 @@ import java.io.FileOutputStream;
 import java.sql.Connection;
 import java.sql.Statement;
 
+import org.apache.access.provider.file.PolicyFile;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

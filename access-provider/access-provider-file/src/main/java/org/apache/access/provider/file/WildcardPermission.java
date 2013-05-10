@@ -25,13 +25,18 @@ import static org.apache.access.provider.file.PolicyFileConstants.AUTHORIZABLE_J
 import static org.apache.access.provider.file.PolicyFileConstants.AUTHORIZABLE_SPLITTER;
 
 import java.io.Serializable;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 
 import org.apache.access.core.AccessConstants;
 import org.apache.access.core.Authorizable.AuthorizableType;
 import org.apache.commons.lang.text.StrSubstitutor;
 import org.apache.shiro.authz.Permission;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -39,6 +44,8 @@ import com.google.common.collect.Lists;
 
 // XXX this class is made ugly by the fact that Action is not a Authorizable.
 public class WildcardPermission implements Permission, Serializable {
+  private static final Logger LOGGER = LoggerFactory
+      .getLogger(WildcardPermission.class);
   private static final long serialVersionUID = -6785051263922740818L;
 
   private final ImmutableList<KeyValue> parts;
@@ -89,7 +96,7 @@ public class WildcardPermission implements Permission, Serializable {
         if(!part.getKey().equalsIgnoreCase(otherPart.getKey())) {
           return false;
         }
-        if (!implies(part, otherPart)) {
+        if (!impliesKeyValue(part, otherPart)) {
           return false;
         }
         index++;
@@ -108,7 +115,7 @@ public class WildcardPermission implements Permission, Serializable {
     return true;
   }
 
-  private boolean implies(KeyValue policyPart, KeyValue requestPart) {
+  private boolean impliesKeyValue(KeyValue policyPart, KeyValue requestPart) {
     Preconditions.checkState(policyPart.getKey().equalsIgnoreCase(requestPart.getKey()),
         "Please report, this method should not be called with two different keys");
     if(policyPart.getValue().equals(AccessConstants.ALL) || policyPart.equals(requestPart)) {
@@ -118,16 +125,44 @@ public class WildcardPermission implements Permission, Serializable {
       /* permission request is to match with any object of given type */
       return true;
     } else if(policyPart.getKey().equalsIgnoreCase(AuthorizableType.URI.name())) {
-      /*
-       * URI is a a special case. For URI's, /a implies /a/b.
-       * Therefore the test is "/a/b".startsWith("/a");
-       */
-      String policyUri = new StrSubstitutor(System.getProperties()).replace(policyPart.getValue());
-      return requestPart.getValue().startsWith(policyUri);
+      return impliesURI(policyPart.getValue(), requestPart.getValue());
     }
     return false;
   }
 
+  /**
+   * URI is a a special case. For URI's, /a implies /a/b.
+   * Therefore the test is "/a/b".startsWith("/a");
+   */
+  @VisibleForTesting
+  protected static boolean impliesURI(String policy, String request) {
+    try {
+      URI policyURI = new URI(new StrSubstitutor(System.getProperties()).replace(policy));
+      URI requestURI = new URI(request);
+      if(policyURI.getScheme() == null || policyURI.getPath() == null) {
+        LOGGER.warn("Policy URI " + policy + " is not valid. Either no scheme or no path.");
+        return false;
+      }
+      if(requestURI.getScheme() == null || requestURI.getPath() == null) {
+        LOGGER.warn("Request URI " + request + " is not valid. Either no scheme or no path.");
+        return false;
+      }
+      // schemes are equal &&
+      // request path does not contain relative parts /a/../b &&
+      // request path starts with policy path &&
+      // authorities (nullable) are equal
+      if(policyURI.getScheme().equals(requestURI.getScheme()) &&
+          requestURI.getPath().equals(new URI(request).normalize().getPath()) &&
+          requestURI.getPath().startsWith(policyURI.getPath()) &&
+          Strings.nullToEmpty(policyURI.getAuthority()).equals(Strings.nullToEmpty(requestURI.getAuthority()))) {
+        return true;
+      }
+      return false;
+    } catch (URISyntaxException e) {
+      LOGGER.warn("Request URI " + request + " is not a URI", e);
+      return false;
+    }
+  }
 
   @Override
   public String toString() {

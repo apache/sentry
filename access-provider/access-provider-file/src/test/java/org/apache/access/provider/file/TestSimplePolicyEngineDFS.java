@@ -28,7 +28,7 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-public class TestSimplePolicyDFS extends AbstractTestSimplePolicy {
+public class TestSimplePolicyEngineDFS extends AbstractTestSimplePolicyEngine {
 
   private static MiniDFSCluster dfsCluster;
   private static FileSystem fileSystem;
@@ -61,7 +61,7 @@ public class TestSimplePolicyDFS extends AbstractTestSimplePolicy {
     fileSystem.delete(etc, true);
     fileSystem.mkdirs(etc);
     PolicyFiles.copyToDir(fileSystem, etc, "test-authz-provider.ini", "test-authz-provider-other-group.ini");
-    setPolicy(new SimplePolicy(new Path(etc, "test-authz-provider.ini").toString(), "server1"));
+    setPolicy(new SimplePolicyEngine(new Path(etc, "test-authz-provider.ini").toString(), "server1"));
   }
   @Override
   protected void beforeTeardown() throws IOException {

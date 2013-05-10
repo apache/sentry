@@ -50,10 +50,10 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
-public class SimplePolicy implements Policy {
+public class SimplePolicyEngine implements PolicyEngine {
 
   private static final Logger LOGGER = LoggerFactory
-      .getLogger(SimplePolicy.class);
+      .getLogger(SimplePolicyEngine.class);
 
 
 
@@ -63,11 +63,11 @@ public class SimplePolicy implements Policy {
   private final List<Path> perDbResources = Lists.newArrayList();
   private final AtomicReference<Roles> rolesReference;
 
-  public SimplePolicy(String resourcePath, String serverName) throws IOException {
+  public SimplePolicyEngine(String resourcePath, String serverName) throws IOException {
     this(new Configuration(), new Path(resourcePath), serverName);
   }
   @VisibleForTesting
-  public SimplePolicy(Configuration conf, Path resourcePath, String serverName) throws IOException {
+  public SimplePolicyEngine(Configuration conf, Path resourcePath, String serverName) throws IOException {
     this.resourcePath = resourcePath;
     this.serverName = serverName;
     this.fileSystem = resourcePath.getFileSystem(conf);

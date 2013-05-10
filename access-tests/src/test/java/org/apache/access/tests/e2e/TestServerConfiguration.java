@@ -28,6 +28,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
 
+import org.apache.access.provider.file.PolicyFile;
 import org.apache.access.tests.e2e.hiveserver.HiveServerFactory;
 import org.junit.After;
 import org.junit.Assert;

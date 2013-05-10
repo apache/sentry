@@ -32,6 +32,7 @@ import java.util.List;
 
 import junit.framework.Assert;
 
+import org.apache.access.provider.file.PolicyFile;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

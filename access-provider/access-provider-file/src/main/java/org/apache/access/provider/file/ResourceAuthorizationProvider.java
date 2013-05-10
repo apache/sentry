@@ -45,9 +45,9 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
   private static final Logger LOGGER = LoggerFactory
       .getLogger(ResourceAuthorizationProvider.class);
   private final GroupMappingService groupService;
-  private final Policy policy;
+  private final PolicyEngine policy;
 
-  public ResourceAuthorizationProvider(Policy policy,
+  public ResourceAuthorizationProvider(PolicyEngine policy,
       GroupMappingService groupService) {
     this.policy = policy;
     this.groupService = groupService;

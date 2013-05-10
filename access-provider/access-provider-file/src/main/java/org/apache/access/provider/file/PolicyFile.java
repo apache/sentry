@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.access.tests.e2e;
+package org.apache.access.provider.file;
 
 import static org.apache.access.provider.file.LocalGroupMappingService.USERS;
 import static org.apache.access.provider.file.PolicyFileConstants.DATABASES;
@@ -31,6 +31,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.collect.HashMultimap;
@@ -46,6 +47,7 @@ import com.google.common.io.Files;
  * This is because in a test if you mean to remove a user from the policy file,
  * the user should absolutely be there. If not, the test is mis-behaving.
  */
+@VisibleForTesting
 public class PolicyFile {
 
   private static final Logger LOGGER = LoggerFactory

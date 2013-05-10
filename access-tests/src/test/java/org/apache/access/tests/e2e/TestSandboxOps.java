@@ -24,6 +24,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
+import org.apache.access.provider.file.PolicyFile;
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;

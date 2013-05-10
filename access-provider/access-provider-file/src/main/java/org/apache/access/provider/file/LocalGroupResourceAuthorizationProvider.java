@@ -26,7 +26,7 @@ public class LocalGroupResourceAuthorizationProvider extends
   ResourceAuthorizationProvider {
 
   public LocalGroupResourceAuthorizationProvider(String resource, String serverName) throws IOException {
-    super (new SimplePolicy(resource, serverName), new LocalGroupMappingService(new Path(resource)));
+    super (new SimplePolicyEngine(resource, serverName), new LocalGroupMappingService(new Path(resource)));
   }
 
 }

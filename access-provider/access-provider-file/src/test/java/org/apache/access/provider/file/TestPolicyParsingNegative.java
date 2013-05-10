@@ -73,7 +73,7 @@ public class TestPolicyParsingNegative {
     append("other_group = malicious_role", otherPolicyFile);
     append("[roles]", otherPolicyFile);
     append("malicious_role = server=server1->db=customers->table=purchases->action=select", otherPolicyFile);
-    Policy policy = new SimplePolicy(globalPolicyFile.getPath(), "server1");
+    PolicyEngine policy = new SimplePolicyEngine(globalPolicyFile.getPath(), "server1");
     ImmutableSet<String> permissions = policy.getPermissions(
         Arrays.asList(new Authorizable[] {
             new Server("server1"),
@@ -89,7 +89,7 @@ public class TestPolicyParsingNegative {
     append("other_group = malicious_role", otherPolicyFile);
     append("[roles]", otherPolicyFile);
     append("malicious_role = server=server1", otherPolicyFile);
-    Policy policy = new SimplePolicy(globalPolicyFile.getPath(), "server1");
+    PolicyEngine policy = new SimplePolicyEngine(globalPolicyFile.getPath(), "server1");
     ImmutableSet<String> permissions = policy.getPermissions(
         Arrays.asList(new Authorizable[] {
             new Server("server1"),
@@ -103,7 +103,7 @@ public class TestPolicyParsingNegative {
     append("group = malicious_role", globalPolicyFile);
     append("[roles]", globalPolicyFile);
     append("malicious_role = server=*", globalPolicyFile);
-    Policy policy = new SimplePolicy(globalPolicyFile.getPath(), "server1");
+    PolicyEngine policy = new SimplePolicyEngine(globalPolicyFile.getPath(), "server1");
     ImmutableSet<String> permissions = policy.getPermissions(
         Arrays.asList(new Authorizable[] {
             Server.ALL,
@@ -117,7 +117,7 @@ public class TestPolicyParsingNegative {
     append("group = malicious_role", globalPolicyFile);
     append("[roles]", globalPolicyFile);
     append("malicious_role = server=server2", globalPolicyFile);
-    Policy policy = new SimplePolicy(globalPolicyFile.getPath(), "server1");
+    PolicyEngine policy = new SimplePolicyEngine(globalPolicyFile.getPath(), "server1");
     ImmutableSet<String> permissions = policy.getPermissions(
         Arrays.asList(new Authorizable[] {
             Server.ALL,
@@ -132,7 +132,7 @@ public class TestPolicyParsingNegative {
     append("group = malicious_role", globalPolicyFile);
     append("[roles]", globalPolicyFile);
     append("malicious_role = *", globalPolicyFile);
-    Policy policy = new SimplePolicy(globalPolicyFile.getPath(), "server1");
+    PolicyEngine policy = new SimplePolicyEngine(globalPolicyFile.getPath(), "server1");
     ImmutableSet<String> permissions = policy.getPermissions(
         Arrays.asList(new Authorizable[] {
             Server.ALL,

@@ -43,10 +43,10 @@ import com.google.common.collect.Multimap;
 import com.google.common.io.Files;
 
 
-public class TestResourceAuthorizationProvider {
+public class TestResourceAuthorizationProviderGeneralCases {
 
   private static final Logger LOGGER = LoggerFactory
-      .getLogger(TestResourceAuthorizationProvider.class);
+      .getLogger(TestResourceAuthorizationProviderGeneralCases.class);
 
   private static final Multimap<String, String> USER_TO_GROUP_MAP = HashMultimap
       .create();
@@ -80,11 +80,11 @@ public class TestResourceAuthorizationProvider {
   private final ResourceAuthorizationProvider authzProvider;
   private File baseDir;
 
-  public TestResourceAuthorizationProvider() throws IOException {
+  public TestResourceAuthorizationProviderGeneralCases() throws IOException {
     baseDir = Files.createTempDir();
     PolicyFiles.copyToDir(baseDir, "test-authz-provider.ini", "test-authz-provider-other-group.ini");
     authzProvider = new HadoopGroupResourceAuthorizationProvider(
-        new SimplePolicy(new File(baseDir, "test-authz-provider.ini").getPath(), "server1"),
+        new SimplePolicyEngine(new File(baseDir, "test-authz-provider.ini").getPath(), "server1"),
         new MockGroupMappingServiceProvider(USER_TO_GROUP_MAP));
 
   }

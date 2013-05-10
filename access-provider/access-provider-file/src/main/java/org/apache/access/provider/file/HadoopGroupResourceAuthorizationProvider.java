@@ -27,12 +27,12 @@ import com.google.common.annotations.VisibleForTesting;
 public class HadoopGroupResourceAuthorizationProvider extends
   ResourceAuthorizationProvider {
   public HadoopGroupResourceAuthorizationProvider(String resource, String serverName) throws IOException {
-    this(new SimplePolicy(resource, serverName), new HadoopGroupMappingService(
+    this(new SimplePolicyEngine(resource, serverName), new HadoopGroupMappingService(
         Groups.getUserToGroupsMappingService(new Configuration())));
   }
 
   @VisibleForTesting
-  public HadoopGroupResourceAuthorizationProvider(Policy policy,
+  public HadoopGroupResourceAuthorizationProvider(PolicyEngine policy,
       GroupMappingService groupService) {
     super(policy, groupService);
   }

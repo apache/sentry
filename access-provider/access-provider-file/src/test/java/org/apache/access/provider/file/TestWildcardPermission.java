@@ -46,9 +46,11 @@ public class TestWildcardPermission {
       create(new KeyValue("server", ALL), new KeyValue("db", "db1"));
 
   private static final Permission ROLE_SERVER_SERVER1_URI_URI1 =
-      create(new KeyValue("server", "server1"), new KeyValue("uri", "/path/to/uri1"));
+      create(new KeyValue("server", "server1"), new KeyValue("uri",
+          "hdfs://namenode:8020/path/to/uri1"));
   private static final Permission ROLE_SERVER_SERVER1_URI_URI2 =
-      create(new KeyValue("server", "server1"), new KeyValue("uri", "/path/to/uri2"));
+      create(new KeyValue("server", "server1"), new KeyValue("uri",
+          "hdfs://namenode:8020/path/to/uri2"));
   private static final Permission ROLE_SERVER_SERVER1_URI_ALL =
       create(new KeyValue("server", "server1"), new KeyValue("uri", ALL));
 
@@ -67,9 +69,11 @@ public class TestWildcardPermission {
       create(new KeyValue("server", "server2"), new KeyValue("db", "db2"));
 
   private static final Permission REQUEST_SERVER1_URI1 =
-      create(new KeyValue("server", "server1"), new KeyValue("uri", "/path/to/uri1/some/file"));
+      create(new KeyValue("server", "server1"), new KeyValue("uri",
+          "hdfs://namenode:8020/path/to/uri1/some/file"));
   private static final Permission REQUEST_SERVER1_URI2 =
-      create(new KeyValue("server", "server1"), new KeyValue("uri", "/path/to/uri2/some/other/file"));
+      create(new KeyValue("server", "server1"), new KeyValue("uri",
+          "hdfs://namenode:8020/path/to/uri2/some/other/file"));
 
   private static final Permission REQUEST_SERVER1_OTHER =
       create(new KeyValue("server", "server2"), new KeyValue("other", "thing"));
@@ -228,6 +232,42 @@ public class TestWildcardPermission {
   public void testOnlySeperators() throws Exception {
     System.out.println(create(AUTHORIZABLE_JOINER.
         join(KV_SEPARATOR, KV_SEPARATOR, KV_SEPARATOR)));
+  }
+  @Test
+  public void testImpliesURIPositive() throws Exception {
+    assertTrue(WildcardPermission.impliesURI("hdfs://namenode:8020/path",
+        "hdfs://namenode:8020/path/to/some/dir"));
+    assertTrue(WildcardPermission.impliesURI("hdfs://namenode:8020/path",
+        "hdfs://namenode:8020/path"));
+    assertTrue(WildcardPermission.impliesURI("file:///path",
+        "file:///path/to/some/dir"));
+    assertTrue(WildcardPermission.impliesURI("file:///path",
+        "file:///path"));
+  }
+  @Test
+  public void testImpliesURINegative() throws Exception {
+    // relative path
+    assertFalse(WildcardPermission.impliesURI("hdfs://namenode:8020/path",
+        "hdfs://namenode:8020/path/to/../../other"));
+    assertFalse(WildcardPermission.impliesURI("file:///path",
+        "file:///path/to/../../other"));
+    // bad policy
+    assertFalse(WildcardPermission.impliesURI("blah",
+        "hdfs://namenode:8020/path/to/some/dir"));
+    // bad request
+    assertFalse(WildcardPermission.impliesURI("hdfs://namenode:8020/path",
+        "blah"));
+    // scheme
+    assertFalse(WildcardPermission.impliesURI("hdfs://namenode:8020/path",
+        "file:///path/to/some/dir"));
+    assertFalse(WildcardPermission.impliesURI("hdfs://namenode:8020/path",
+        "file://namenode:8020/path/to/some/dir"));
+    // hostname
+    assertFalse(WildcardPermission.impliesURI("hdfs://namenode1:8020/path",
+        "hdfs://namenode2:8020/path/to/some/dir"));
+    // port
+    assertFalse(WildcardPermission.impliesURI("hdfs://namenode:8020/path",
+        "hdfs://namenode:8021/path/to/some/dir"));
   }
   static WildcardPermission create(KeyValue... keyValues) {
     return create(AUTHORIZABLE_JOINER.join(keyValues));

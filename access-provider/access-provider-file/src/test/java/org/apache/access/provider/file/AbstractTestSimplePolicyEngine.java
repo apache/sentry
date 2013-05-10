@@ -37,7 +37,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 
-public abstract class AbstractTestSimplePolicy {
+public abstract class AbstractTestSimplePolicyEngine {
   private static final String PERM_SERVER1_CUSTOMERS_SELECT = "server=server1->db=customers->table=purchases->action=select";
   private static final String PERM_SERVER1_CUSTOMERS_DB_CUSTOMERS_PARTIAL_SELECT = "server=server1->db=customers->table=purchases_partial->action=select";
   private static final String PERM_SERVER1_ANALYST_ALL = "server=server1->db=analyst1";
@@ -46,7 +46,7 @@ public abstract class AbstractTestSimplePolicy {
   private static final String PERM_SERVER1_OTHER_GROUP_DB_CUSTOMERS_SELECT = "server=server1->db=other_group_db->table=purchases->action=select";
 
   private static final String PERM_SERVER1_ADMIN = "server=server1";
-  private Policy policy;
+  private PolicyEngine policy;
   private static File baseDir;
   private List<Authorizable> authorizables = Lists.newArrayList();
 
@@ -62,7 +62,7 @@ public abstract class AbstractTestSimplePolicy {
     }
   }
 
-  protected void setPolicy(Policy policy) {
+  protected void setPolicy(PolicyEngine policy) {
     this.policy = policy;
   }
   protected static File getBaseDir() {
