@@ -28,7 +28,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class TestUriPermissions extends AbstractTestWithStaticHiveServer {
+public class TestUriPermissions extends AbstractTestWithStaticLocalFS {
   private Context context;
   private static final String dataFile = "/kv1.dat";
   private String dataFilePath = this.getClass().getResource(dataFile).getFile();

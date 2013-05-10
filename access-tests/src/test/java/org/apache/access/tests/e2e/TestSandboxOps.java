@@ -444,7 +444,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
 
   /**
    * Positive and negative tests for INSERT OVERWRITE [LOCAL] DIRECTORY and
-   * LOAD DATA [LOCAL] INPATH. EXPORT/IMPORT are handled in seperate junit class.
+   * LOAD DATA [LOCAL] INPATH. EXPORT/IMPORT are handled in separate junit class.
    * Formerly testSandboxOpt18
    */
   @Test
@@ -473,20 +473,14 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
     Connection connection = context.createConnection(USER1, "password");
     Statement statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
-    statement.execute("INSERT OVERWRITE LOCAL DIRECTORY 'file://" +
-        allowedDir.getPath() + "' SELECT * FROM " + TBL1);
+    statement.execute("INSERT OVERWRITE LOCAL DIRECTORY 'file://" + allowedDir.getPath() + "' SELECT * FROM " + TBL1);
     statement.execute("INSERT OVERWRITE DIRECTORY '" + allowedDfsDir + "' SELECT * FROM " + TBL1);
-    statement.execute("LOAD DATA LOCAL INPATH 'file://" + allowedDir.getPath()
-        + "' INTO TABLE " + TBL1);
-    statement.execute("LOAD DATA INPATH 'file://" + allowedDir.getPath()
-        + "' INTO TABLE " + TBL1);
-    context.assertAuthzException(statement, "INSERT OVERWRITE LOCAL DIRECTORY 'file://" +
-        restrictedDir.getPath() + "' SELECT * FROM " + TBL1);
+    statement.execute("LOAD DATA LOCAL INPATH 'file://" + allowedDir.getPath() + "' INTO TABLE " + TBL1);
+    statement.execute("LOAD DATA INPATH '" + allowedDfsDir + "' INTO TABLE " + TBL1);
+    context.assertAuthzException(statement, "INSERT OVERWRITE LOCAL DIRECTORY 'file://" + restrictedDir.getPath() + "' SELECT * FROM " + TBL1);
     context.assertAuthzException(statement, "INSERT OVERWRITE DIRECTORY '" + restrictedDfsDir + "' SELECT * FROM " + TBL1);
-    context.assertAuthzException(statement, "LOAD DATA INPATH 'file://" + restrictedDir.getPath()
-        + "' INTO TABLE " + TBL1);
-    context.assertAuthzException(statement, "LOAD DATA LOCAL INPATH 'file://" + restrictedDir.getPath()
-        + "' INTO TABLE " + TBL1);
+    context.assertAuthzException(statement, "LOAD DATA INPATH 'file://" + restrictedDir.getPath() + "' INTO TABLE " + TBL1);
+    context.assertAuthzException(statement, "LOAD DATA LOCAL INPATH 'file://" + restrictedDir.getPath() + "' INTO TABLE " + TBL1);
     statement.close();
     connection.close();
   }

@@ -18,6 +18,7 @@ package org.apache.access.tests.e2e;
 
 import java.io.File;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.Map;
 
@@ -26,7 +27,6 @@ import junit.framework.Assert;
 import org.apache.access.tests.e2e.hiveserver.HiveServer;
 import org.apache.access.tests.e2e.hiveserver.HiveServerFactory;
 import org.apache.commons.io.FileUtils;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -36,9 +36,9 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 
-public abstract class AbstractTestWithStaticHiveServer {
+public abstract class AbstractTestWithStaticConfiguration {
   private static final Logger LOGGER = LoggerFactory
-      .getLogger(AbstractTestWithStaticHiveServer.class);
+      .getLogger(AbstractTestWithStaticConfiguration.class);
   protected static final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   protected static final String ADMIN1 = "admin1";
   protected static final String ALL_DB1 = "server=server1->db=db_1",
@@ -67,10 +67,11 @@ public abstract class AbstractTestWithStaticHiveServer {
   protected static File policyFile;
   protected static HiveServer hiveServer;
   protected static FileSystem fileSystem;
+  protected static Map<String, String> properties;
   protected Context context;
 
   public Context createContext() throws Exception {
-    return new Context(hiveServer, getFileSystem(),
+    return new Context(hiveServer, fileSystem,
         baseDir, confDir, dataDir, policyFile);
   }
   protected void dropDb(String user, String...dbs) throws Exception {
@@ -102,6 +103,9 @@ public abstract class AbstractTestWithStaticHiveServer {
           + " (under_col int comment 'the under column', value string)");
       statement.execute("load data local inpath '" + dataFile.getPath()
           + "' into table " + table);
+      ResultSet res = statement.executeQuery("select * from " + table);
+      Assert.assertTrue("Table should have data after load", res.next());
+      res.close();
     }
     statement.close();
     connection.close();
@@ -117,23 +121,19 @@ public abstract class AbstractTestWithStaticHiveServer {
   protected FileSystem getFileSystem() {
     return fileSystem;
   }
-
   @BeforeClass
-  public static void setupTestWithHiveServer()
+  public static void setupTestStaticConfiguration()
       throws Exception {
-    fileSystem = FileSystem.get(new Configuration());
+    properties = Maps.newHashMap();
     baseDir = Files.createTempDir();
     LOGGER.info("BaseDir = " + baseDir);
     confDir = assertCreateDir(new File(baseDir, "etc"));
     dataDir = assertCreateDir(new File(baseDir, "data"));
     policyFile = new File(confDir, HiveServerFactory.AUTHZ_PROVIDER_FILENAME);
-    Map<String, String> properties = Maps.newHashMap();
-    hiveServer = HiveServerFactory.create(properties, baseDir, confDir, policyFile, fileSystem);
-    hiveServer.start();
   }
 
   @AfterClass
-  public static void tearDownTestWithHiveServer() throws Exception {
+  public static void tearDownTestStaticConfiguration() throws Exception {
     if(hiveServer != null) {
       hiveServer.shutdown();
       hiveServer = null;

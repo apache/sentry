@@ -21,30 +21,18 @@ import java.io.IOException;
 
 import junit.framework.Assert;
 
+import org.apache.access.tests.e2e.hiveserver.HiveServerFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
-public abstract class AbstractTestWithStaticDFS extends AbstractTestWithStaticHiveServer {
+public abstract class AbstractTestWithStaticDFS extends AbstractTestWithStaticConfiguration {
 
   protected static MiniDFSCluster dfsCluster;
-  protected static FileSystem fileSystem;
   protected static Path dfsBaseDir;
-
-  @Override
-  public Context createContext() throws Exception {
-    return new Context(hiveServer, getFileSystem(),
-        baseDir, confDir, dataDir, policyFile);
-  }
-
-  @Override
-  protected FileSystem getFileSystem() {
-    return fileSystem;
-  }
 
   @Before
   public void setupTestWithDFS() throws IOException {
@@ -59,7 +47,7 @@ public abstract class AbstractTestWithStaticDFS extends AbstractTestWithStaticHi
     return dir;
   }
   @BeforeClass
-  public static void setupTestWithDFSClazz()
+  public static void setupTestWithStaticDFS()
       throws Exception {
     Configuration conf = new Configuration();
     File dfsDir = assertCreateDir(new File(baseDir, "dfs"));
@@ -67,10 +55,12 @@ public abstract class AbstractTestWithStaticDFS extends AbstractTestWithStaticHi
     dfsCluster = new MiniDFSCluster.Builder(conf).numDataNodes(2).build();
     fileSystem = dfsCluster.getFileSystem();
     dfsBaseDir = assertCreateDfsDir(new Path(new Path(fileSystem.getUri()), "/base"));
+    hiveServer = HiveServerFactory.create(properties, baseDir, confDir, policyFile, fileSystem);
+    hiveServer.start();
   }
 
   @AfterClass
-  public static void tearDownTestWithDFSCazz() throws Exception {
+  public static void tearDownTestWithStaticDFS() throws Exception {
     if(dfsCluster != null) {
       dfsCluster.shutdown();
       dfsCluster = null;

@@ -28,7 +28,7 @@ import org.junit.Test;
 
 import com.google.common.io.Resources;
 
-public class TestEndToEnd extends AbstractTestWithStaticHiveServer {
+public class TestEndToEnd extends AbstractTestWithStaticLocalFS {
   private Context context;
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private File dataFile;

@@ -27,7 +27,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 
-public class TestMetadataPermissions extends AbstractTestWithStaticHiveServer {
+public class TestMetadataPermissions extends AbstractTestWithStaticLocalFS {
   private Context context;
   @Before
   public void setup() throws Exception {

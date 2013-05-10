@@ -31,7 +31,7 @@ import org.junit.Test;
 
 import com.google.common.io.Resources;
 
-public class TestPerDatabasePolicyFile extends AbstractTestWithStaticHiveServer {
+public class TestPerDatabasePolicyFile extends AbstractTestWithStaticLocalFS {
   private static final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private static final String ADMIN1 = "admin1";
   private Context context;

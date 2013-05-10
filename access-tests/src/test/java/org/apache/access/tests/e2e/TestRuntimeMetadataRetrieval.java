@@ -40,7 +40,7 @@ import com.google.common.io.Resources;
  */
 public class TestRuntimeMetadataRetrieval
     extends
-      AbstractTestWithStaticHiveServer {
+      AbstractTestWithStaticLocalFS {
   private Context context;
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private File dataDir;

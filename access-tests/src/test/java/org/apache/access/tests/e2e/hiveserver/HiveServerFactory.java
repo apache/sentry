@@ -79,9 +79,11 @@ public class HiveServerFactory {
       Map<String, String> properties, File baseDir, File confDir,
       File policyFile, FileSystem fileSystem) throws Exception {
     if(!properties.containsKey(WAREHOUSE_DIR)) {
-      @SuppressWarnings("static-access")
-      String dfsUri = fileSystem.getDefaultUri(fileSystem.getConf()).toString();
+      LOGGER.error("fileSystem " + fileSystem.getClass().getSimpleName());
       if (fileSystem instanceof DistributedFileSystem) {
+        @SuppressWarnings("static-access")
+        String dfsUri = fileSystem.getDefaultUri(fileSystem.getConf()).toString();
+        LOGGER.error("dfsUri " + dfsUri);
         properties.put(WAREHOUSE_DIR, dfsUri + "/data");
       } else {
         properties.put(WAREHOUSE_DIR, new File(baseDir, "warehouse").getPath());
@@ -124,7 +126,7 @@ public class HiveServerFactory {
     HiveConf conf = new HiveConf();
     HiveAuthzConf authzConf = new HiveAuthzConf();
     for(Map.Entry<String, String> entry : properties.entrySet()) {
-      LOGGER.debug(entry.getKey() + " => " + entry.getValue());
+      LOGGER.info(entry.getKey() + " => " + entry.getValue());
       System.setProperty(entry.getKey(), entry.getValue());
       conf.set(entry.getKey(), entry.getValue());
       authzConf.set(entry.getKey(), entry.getValue());
