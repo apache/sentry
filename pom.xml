@@ -73,21 +73,31 @@ limitations under the License.
         <groupId>org.apache.hive</groupId>
         <artifactId>hive-common</artifactId>
         <version>${hive.version}</version>
+        <scope>provided</scope>
       </dependency>
       <dependency>
         <groupId>org.apache.hadoop</groupId>
         <artifactId>hadoop-common</artifactId>
         <version>${hadoop.version}</version>
+        <scope>provided</scope>
       </dependency>
       <dependency>
         <groupId>org.apache.hadoop</groupId>
         <artifactId>hadoop-minicluster</artifactId>
         <version>${hadoop.version}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-client</artifactId>
+        <version>${cdh.hadoop.version}</version>
+        <scope>provided</scope>
       </dependency>
       <dependency>
         <groupId>org.apache.hive</groupId>
         <artifactId>hive-metastore</artifactId>
         <version>${hive.version}</version>
+        <scope>provided</scope>
       </dependency>
       <dependency>
         <groupId>junit</groupId>
@@ -105,6 +115,7 @@ limitations under the License.
         <groupId>log4j</groupId>
         <artifactId>log4j</artifactId>
         <version>${log4j.version}</version>
+        <scope>provided</scope>
       </dependency>
       <dependency>
         <groupId>org.apache.shiro</groupId>
@@ -115,16 +126,19 @@ limitations under the License.
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
         <version>${guava.version}</version>
+        <scope>provided</scope>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
         <version>${slf4j.version}</version>
+        <scope>provided</scope>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-log4j12</artifactId>
         <version>${slf4j.version}</version>
+        <scope>provided</scope>
       </dependency>
       <dependency>
         <groupId>com.cloudera.cdh</groupId>
@@ -135,62 +149,74 @@ limitations under the License.
         <groupId>org.apache.hive</groupId>
         <artifactId>hive-jdbc</artifactId>
         <version>${hive.version}</version>
-       </dependency>
+        <scope>provided</scope>
+      </dependency>
       <dependency>
         <groupId>org.apache.hive</groupId>
         <artifactId>hive-shims</artifactId>
         <version>${hive.version}</version>
-       </dependency>
+        <scope>provided</scope>
+      </dependency>
       <dependency>
         <groupId>org.apache.hive</groupId>
         <artifactId>hive-serde</artifactId>
         <version>${hive.version}</version>
+        <scope>provided</scope>
       </dependency>
       <dependency>
         <groupId>org.apache.hive</groupId>
         <artifactId>hive-exec</artifactId>
         <version>${hive.version}</version>
-       </dependency>
+        <scope>provided</scope>
+      </dependency>
       <dependency>
         <groupId>org.apache.hive</groupId>
         <artifactId>hive-service</artifactId>
         <version>${hive.version}</version>
-       </dependency>
+        <scope>provided</scope>
+      </dependency>
       <dependency>
         <groupId>org.apache.hive</groupId>
         <artifactId>hive-hwi</artifactId>
         <version>${hive.version}</version>
-       </dependency>
+        <scope>provided</scope>
+      </dependency>
       <dependency>
         <groupId>org.apache.hive</groupId>
         <artifactId>hive-pdk</artifactId>
         <version>${hive.version}</version>
-       </dependency>
+        <scope>provided</scope>
+      </dependency>
       <dependency>
         <groupId>org.apache.hive</groupId>
         <artifactId>hive-hbase-handler</artifactId>
         <version>${hive.version}</version>
-       </dependency>
+        <scope>provided</scope>
+      </dependency>
       <dependency>
         <groupId>org.apache.hive</groupId>
         <artifactId>hive-contrib</artifactId>
         <version>${hive.version}</version>
-       </dependency>
+        <scope>provided</scope>
+      </dependency>
       <dependency>
         <groupId>org.apache.hive</groupId>
         <artifactId>hive-cli</artifactId>
         <version>${hive.version}</version>
-       </dependency>
+        <scope>provided</scope>
+      </dependency>
       <dependency>
         <groupId>org.apache.hive</groupId>
         <artifactId>hive-builtins</artifactId>
         <version>${hive.version}</version>
+        <scope>provided</scope>
       </dependency>
       <dependency>
         <groupId>org.apache.hive</groupId>
         <artifactId>hive-anttasks</artifactId>
         <version>${hive.version}</version>
-       </dependency>
+        <scope>provided</scope>
+      </dependency>
       <dependency>
         <groupId>com.cloudera.cdh</groupId>
         <artifactId>access-binding-hive</artifactId>
@@ -203,6 +229,11 @@ limitations under the License.
         <version>${project.version}</version>
         <scope>test</scope>
       </dependency>
+      <dependency>
+        <groupId>com.cloudera.cdh</groupId>
+        <artifactId>access-dist</artifactId>
+        <version>${project.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -211,6 +242,7 @@ limitations under the License.
     <module>access-binding</module>
     <module>access-provider</module>
     <module>access-tests</module>
+    <module>access-dist</module>
   </modules>
 
   <build>
