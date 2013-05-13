@@ -70,8 +70,14 @@ public class HiveAuthzPrivilegesMap {
         setOperationType(HiveOperationType.INFO).
         build();
 
-
     HiveAuthzPrivileges dbDDLPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
+        addOutputObjectPriviledge(AuthorizableType.Db, EnumSet.of(Action.ALL)).
+        addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(Action.ALL)).
+        setOperationScope(HiveOperationScope.DATABASE).
+        setOperationType(HiveOperationType.DDL).
+        build();
+
+    HiveAuthzPrivileges dbImportPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
         addOutputObjectPriviledge(AuthorizableType.Db, EnumSet.of(Action.ALL)).
         addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(Action.SELECT)).
         setOperationScope(HiveOperationScope.DATABASE).
@@ -147,7 +153,7 @@ public class HiveAuthzPrivilegesMap {
     hiveAuthzStmtPrivMap.put(HiveOperation.DROPDATABASE, serverPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.DROPTABLE, dbDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.EXPORT, tableExportPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.IMPORT, dbDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.IMPORT, dbImportPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.LOAD, tableLoadPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERINDEX_REBUILD, tableDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERVIEW_PROPERTIES, tableDDLPrivilege);
