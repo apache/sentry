@@ -19,7 +19,9 @@ package org.apache.access.tests.e2e.hiveserver;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.ServerSocket;
+import java.net.URL;
 import java.util.Map;
 
 import org.apache.access.binding.hive.conf.HiveAuthzConf;
@@ -28,6 +30,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
+import org.fest.reflect.core.Reflection;
 import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +65,8 @@ public class HiveServerFactory {
   }
 
   public static HiveServer create(Map<String, String> properties,
-      File baseDir, File confDir, File policyFile, FileSystem fileSystem)
+      File baseDir, File confDir, File logDir, File policyFile,
+      FileSystem fileSystem)
           throws Exception {
     String type = properties.get(HIVESERVER2_TYPE);
     if(type == null) {
@@ -72,12 +76,12 @@ public class HiveServerFactory {
       type = HiveServer2Type.InternalHiveServer2.name();
     }
     return create(HiveServer2Type.valueOf(type.trim()), properties,
-        baseDir, confDir, policyFile, fileSystem);
+        baseDir, confDir, logDir, policyFile, fileSystem);
   }
 
   private static HiveServer create(HiveServer2Type type,
       Map<String, String> properties, File baseDir, File confDir,
-      File policyFile, FileSystem fileSystem) throws Exception {
+      File logDir, File policyFile, FileSystem fileSystem) throws Exception {
     if(!properties.containsKey(WAREHOUSE_DIR)) {
       LOGGER.error("fileSystem " + fileSystem.getClass().getSimpleName());
       if (fileSystem instanceof DistributedFileSystem) {
@@ -92,7 +96,7 @@ public class HiveServerFactory {
     if(!properties.containsKey(METASTORE_CONNECTION_URL)) {
       properties.put(METASTORE_CONNECTION_URL,
           String.format("jdbc:derby:;databaseName=%s;create=true",
-          new File(baseDir, "metastore").getPath()));
+              new File(baseDir, "metastore").getPath()));
     }
     if(policyFile.exists()) {
       LOGGER.info("Policy file " + policyFile + " exists");
@@ -118,32 +122,52 @@ public class HiveServerFactory {
       properties.put(HS2_PORT, String.valueOf(findPort()));
     }
     /*
-     * The system properties need to be set because we don't have
-     * references to the configuration objects which will be created
-     * by the servers. However, the child objects need the HiveConf
-     * and HiveAuthzConf objects.
+     * This hack, setting the hiveSiteURL field removes a previous hack involving
+     * setting of system properties for each property. Although both are hacks,
+     * I prefer this hack because once the system properties are set they can
+     * affect later tests unless those tests clear them. This hack allows for
+     * a clean switch to a new set of defaults when a new HiveConf object is created.
      */
-    HiveConf conf = new HiveConf();
-    HiveAuthzConf authzConf = new HiveAuthzConf();
+    Reflection.staticField("hiveSiteURL")
+      .ofType(URL.class)
+      .in(HiveConf.class)
+      .set(null);
+    HiveConf hiveConf = new HiveConf();
+    HiveAuthzConf authzConf = new HiveAuthzConf(Resources.getResource("access-site.xml"));
     for(Map.Entry<String, String> entry : properties.entrySet()) {
       LOGGER.info(entry.getKey() + " => " + entry.getValue());
-      System.setProperty(entry.getKey(), entry.getValue());
-      conf.set(entry.getKey(), entry.getValue());
+      hiveConf.set(entry.getKey(), entry.getValue());
       authzConf.set(entry.getKey(), entry.getValue());
     }
+    File hiveSite = new File(confDir, "hive-site.xml");
+    File accessSite = new File(confDir, HiveAuthzConf.AUTHZ_SITE_FILE);
+    OutputStream out = new FileOutputStream(accessSite);
+    authzConf.writeXml(out);
+    out.close();
+    // points hive-site.xml at access-site.xml
+    hiveConf.set(HiveAuthzConf.HIVE_ACCESS_CONF_URL, accessSite.toURI().toURL().toExternalForm());
+    out = new FileOutputStream(hiveSite);
+    hiveConf.writeXml(out);
+    out.close();
+
+    Reflection.staticField("hiveSiteURL")
+      .ofType(URL.class)
+      .in(HiveConf.class)
+      .set(hiveSite.toURI().toURL());
+
     switch (type) {
     case EmbeddedHiveServer2:
       LOGGER.info("Creating EmbeddedHiveServer");
       return new EmbeddedHiveServer();
     case InternalHiveServer2:
       LOGGER.info("Creating InternalHiveServer");
-      return new InternalHiveServer(conf);
+      return new InternalHiveServer(hiveConf);
     case ExternalHiveServer2:
       LOGGER.info("Creating ExternalHiveServer");
-      return new ExternalHiveServer(conf, authzConf, baseDir);
+      return new ExternalHiveServer(hiveConf, confDir, logDir);
     case UnmanagedHiveServer2:
       LOGGER.info("Creating UnmanagedHiveServer");
-      return new UnmanagedHiveServer(conf);
+      return new UnmanagedHiveServer(hiveConf);
     default:
       throw new UnsupportedOperationException(type.name());
     }

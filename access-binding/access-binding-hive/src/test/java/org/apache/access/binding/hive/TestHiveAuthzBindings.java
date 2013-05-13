@@ -32,6 +32,7 @@ import org.apache.access.core.Subject;
 import org.apache.access.core.Table;
 import org.apache.access.provider.file.PolicyFiles;
 import org.apache.commons.io.FileUtils;
+import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.junit.After;
@@ -40,6 +41,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.io.Files;
+import com.google.common.io.Resources;
 
 /**
  * Test for hive authz bindings
@@ -69,7 +71,8 @@ public class TestHiveAuthzBindings {
   // Entities
   private List<List<Authorizable>> inputTabHierarcyList = new ArrayList<List<Authorizable>>();
   private List<List<Authorizable>> outputTabHierarcyList = new ArrayList<List<Authorizable>>();
-  private HiveAuthzConf authzConf =  new HiveAuthzConf();
+  private HiveConf hiveConf = new HiveConf();
+  private HiveAuthzConf authzConf = new HiveAuthzConf(Resources.getResource("access-site.xml"));
 
   // Privileges
   private static final HiveAuthzPrivileges queryPrivileges =
@@ -101,7 +104,7 @@ public class TestHiveAuthzBindings {
         new File(baseDir, RESOURCE_PATH).getPath());
     authzConf.set(AuthzConfVars.AUTHZ_SERVER_NAME.getVar(), SERVER1);
     authzConf.set(AuthzConfVars.ACCESS_TESTING_MODE.getVar(), "true");
-    testAuth = new HiveAuthzBinding(authzConf);
+    testAuth = new HiveAuthzBinding(hiveConf, authzConf);
   }
 
   @After

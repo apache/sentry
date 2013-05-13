@@ -32,19 +32,20 @@ import org.apache.access.core.AuthorizationProvider;
 import org.apache.access.core.NoAuthorizationProvider;
 import org.apache.access.core.Server;
 import org.apache.access.core.Subject;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.ql.session.SessionState;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Strings;
 
 public class HiveAuthzBinding {
-  private static final Log LOG = LogFactory.getLog(HiveAuthzBinding.class.getName());
+  private static final Logger LOG = LoggerFactory
+      .getLogger(HiveAuthzBinding.class);
   private static final Map<String, HiveAuthzBinding> authzBindingMap =
       new ConcurrentHashMap<String, HiveAuthzBinding>();
   private static final AtomicInteger queryID = new AtomicInteger();
@@ -52,12 +53,12 @@ public class HiveAuthzBinding {
 
   private final HiveAuthzConf authzConf;
   private final Server authServer;
-  private AuthorizationProvider authProvider;
+  private final AuthorizationProvider authProvider;
 
-  public HiveAuthzBinding (HiveAuthzConf authzConf) throws Exception {
+  public HiveAuthzBinding (HiveConf hiveConf, HiveAuthzConf authzConf) throws Exception {
     this.authzConf = authzConf;
     this.authServer = new Server(authzConf.get(AuthzConfVars.AUTHZ_SERVER_NAME.getVar()));
-    this.authProvider = getAuthProvider(authServer.getName());
+    this.authProvider = getAuthProvider(hiveConf, authServer.getName());
   }
 
   /**
@@ -96,10 +97,9 @@ public class HiveAuthzBinding {
   }
 
   // Instantiate the configured authz provider
-  private AuthorizationProvider getAuthProvider(String serverName) throws Exception {
+  private AuthorizationProvider getAuthProvider(HiveConf hiveConf, String serverName) throws Exception {
     boolean isTestingMode = Boolean.parseBoolean(Strings.nullToEmpty(
         authzConf.get(AuthzConfVars.ACCESS_TESTING_MODE.getVar())).trim());
-    HiveConf hiveConf = new HiveConf();
     LOG.debug("Testing mode is " + isTestingMode);
     if(!isTestingMode) {
       String authMethod = Strings.nullToEmpty(hiveConf.getVar(ConfVars.HIVE_SERVER2_AUTHENTICATION)).trim();

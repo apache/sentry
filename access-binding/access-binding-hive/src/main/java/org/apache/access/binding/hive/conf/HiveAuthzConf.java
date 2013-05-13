@@ -21,12 +21,18 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class HiveAuthzConf extends Configuration {
+
+  /**
+   * Configuration key used in hive-site.xml to point at access-site.xml
+   */
+  public static final String HIVE_ACCESS_CONF_URL = "hive.access.conf.url";
+
   /**
    * Config setting definitions
    */
@@ -84,28 +90,14 @@ public class HiveAuthzConf extends Configuration {
     "variance,weekofyear,when,xpath,xpath_boolean,xpath_double,xpath_float,xpath_int,xpath_long," +
     "xpath_number,xpath_short,xpath_string,year";
 
-  private static final  Log LOG = LogFactory.getLog(HiveAuthzConf.class);
-  private static final Object staticLock = new Object();
+  @SuppressWarnings("unused")
+  private static final Logger LOG = LoggerFactory
+      .getLogger(HiveAuthzConf.class);
   public static final String AUTHZ_SITE_FILE = "access-site.xml";
-  private static URL hiveAuthzSiteURL;
 
-  public HiveAuthzConf() {
+  public HiveAuthzConf(URL hiveAuthzSiteURL) {
     super(false);
-    ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-    if (classLoader == null) {
-      classLoader = HiveAuthzConf.class.getClassLoader();
-    }
-
-    // Look for hive-site.xml on the CLASSPATH and log its location if found.
-    synchronized (staticLock) {
-      hiveAuthzSiteURL = classLoader.getResource(AUTHZ_SITE_FILE);
-      if (hiveAuthzSiteURL == null) {
-        LOG.warn("Access site file " + AUTHZ_SITE_FILE + " not found");
-      } else {
-        addResource(hiveAuthzSiteURL);
-      }
-    }
-
+    addResource(hiveAuthzSiteURL);
     applySystemProperties();
   }
   /**

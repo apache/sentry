@@ -24,15 +24,16 @@ import org.apache.access.binding.hive.authz.HiveAuthzPrivileges.HiveExtendedOper
 import org.apache.access.binding.hive.authz.HiveAuthzPrivilegesMap;
 import org.apache.access.core.Authorizable;
 import org.apache.access.core.Subject;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.ql.QueryPlan;
 import org.apache.hadoop.hive.ql.hooks.ExecuteWithHookContext;
 import org.apache.hadoop.hive.ql.hooks.HookContext;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HiveAuthzBindingPreExecHook implements ExecuteWithHookContext {
-  private static final Log LOG = LogFactory.getLog(HiveAuthzBindingPreExecHook.class.getName());
+  private static final Logger LOG = LoggerFactory
+      .getLogger(HiveAuthzBindingPreExecHook.class);
 
   /**
    * Raise error if the given query contains transforms

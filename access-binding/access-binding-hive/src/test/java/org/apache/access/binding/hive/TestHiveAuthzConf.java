@@ -22,12 +22,14 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.io.Resources;
+
 public class TestHiveAuthzConf {
   private HiveAuthzConf authzConf;
 
   @Before
   public void setUp() {
-    authzConf =  new HiveAuthzConf();
+    authzConf =  new HiveAuthzConf(Resources.getResource("access-site.xml"));
   }
 
   @Test

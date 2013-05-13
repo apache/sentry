@@ -55,7 +55,7 @@ public abstract class AbstractTestWithStaticDFS extends AbstractTestWithStaticCo
     dfsCluster = new MiniDFSCluster.Builder(conf).numDataNodes(2).build();
     fileSystem = dfsCluster.getFileSystem();
     dfsBaseDir = assertCreateDfsDir(new Path(new Path(fileSystem.getUri()), "/base"));
-    hiveServer = HiveServerFactory.create(properties, baseDir, confDir, policyFile, fileSystem);
+    hiveServer = HiveServerFactory.create(properties, baseDir, confDir, logDir, policyFile, fileSystem);
     hiveServer.start();
   }
 

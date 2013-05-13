@@ -31,7 +31,7 @@ public abstract class AbstractTestWithStaticLocalFS extends AbstractTestWithStat
   public static void setupTestWithStaticHiveServer()
       throws Exception {
     fileSystem = FileSystem.get(new Configuration());
-    hiveServer = HiveServerFactory.create(properties, baseDir, confDir, policyFile, fileSystem);
+    hiveServer = HiveServerFactory.create(properties, baseDir, confDir, logDir, policyFile, fileSystem);
     hiveServer.start();
   }
 }

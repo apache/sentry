@@ -16,17 +16,13 @@
  */
 package org.apache.access.tests.e2e.hiveserver;
 
-import static org.junit.Assert.assertTrue;
-
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.List;
 
-import org.apache.access.binding.hive.conf.HiveAuthzConf;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,14 +43,10 @@ public class ExternalHiveServer extends AbstractHiveServer {
   private final File logDir;
   private Process process;
 
-  public ExternalHiveServer(HiveConf hiveConf, HiveAuthzConf authzConf, File baseDir) throws Exception {
+  public ExternalHiveServer(HiveConf hiveConf, File confDir, File logDir) throws Exception {
     super(hiveConf, getHostname(hiveConf), getPort(hiveConf));
-    confDir = new File(baseDir, "etc");
-    assertTrue("Could not create " + confDir, confDir.isDirectory() || confDir.mkdirs());
-    logDir = new File(baseDir, "logs");
-    assertTrue("Could not create " + logDir, logDir.isDirectory() || logDir.mkdirs());
-    hiveConf.writeXml(new FileOutputStream(new File(confDir, "hive-site.xml")));
-    authzConf.writeXml(new FileOutputStream(new File(confDir,HiveAuthzConf.AUTHZ_SITE_FILE)));
+    this.confDir = confDir;
+    this.logDir = logDir;
   }
 
 

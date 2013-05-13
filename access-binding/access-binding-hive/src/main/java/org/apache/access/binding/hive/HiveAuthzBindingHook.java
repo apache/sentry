@@ -19,8 +19,10 @@ package org.apache.access.binding.hive;
 import static org.apache.hadoop.hive.metastore.MetaStoreUtils.DEFAULT_DATABASE_NAME;
 
 import java.io.Serializable;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -40,8 +42,6 @@ import org.apache.access.core.Authorizable.AuthorizableType;
 import org.apache.access.core.Database;
 import org.apache.access.core.Subject;
 import org.apache.access.core.Table;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hadoop.hive.ql.HiveDriverFilterHook;
@@ -64,13 +64,16 @@ import org.apache.hadoop.hive.ql.parse.HiveSemanticAnalyzerHookContext;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.ql.session.SessionState;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 
 public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook
-    implements HiveDriverFilterHook {
-  private static final Log LOG = LogFactory.getLog(HiveAuthzBindingHook.class);
+implements HiveDriverFilterHook {
+  private static final Logger LOG = LoggerFactory
+      .getLogger(HiveAuthzBindingHook.class);
   private final HiveAuthzBinding hiveAuthzBinding;
   private final HiveAuthzConf authzConf;
   private Database currDB = Database.ALL;
@@ -79,8 +82,19 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook
   private AccessURI partitionURI;
 
   public HiveAuthzBindingHook() throws Exception {
-    authzConf = new HiveAuthzConf();
-    hiveAuthzBinding = new HiveAuthzBinding(authzConf);
+    HiveConf hiveConf = new HiveConf();
+    String hiveAuthzConf = hiveConf.get(HiveAuthzConf.HIVE_ACCESS_CONF_URL);
+    if(hiveAuthzConf == null || (hiveAuthzConf = hiveAuthzConf.trim()).isEmpty()) {
+      throw new IllegalArgumentException("Configuration key " + HiveAuthzConf.HIVE_ACCESS_CONF_URL
+          + " value '" + hiveAuthzConf + "' is invalid.");
+    }
+    try {
+      authzConf = new HiveAuthzConf(new URL(hiveAuthzConf));
+    } catch (MalformedURLException e) {
+      throw new IllegalArgumentException("Configuration key " + HiveAuthzConf.HIVE_ACCESS_CONF_URL
+          + " specifies a malformed URL '" + hiveAuthzConf + "'", e);
+    }
+    hiveAuthzBinding = new HiveAuthzBinding(hiveConf, authzConf);
   }
 
   /**
@@ -95,7 +109,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook
       throws SemanticException {
 
     SessionState.get().getConf()
-        .setBoolVar(ConfVars.HIVE_EXTENDED_ENITITY_CAPTURE, true);
+    .setBoolVar(ConfVars.HIVE_EXTENDED_ENITITY_CAPTURE, true);
     switch (ast.getToken().getType()) {
     // Hive parser doesn't capture the database name in output entity, so we store it here for now
     case HiveParser.TOK_CREATEDATABASE:
@@ -222,12 +236,12 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook
     return new AccessURI(uri);
   }
   private static URI toDFSURI(String s) throws SemanticException {
-   try {
-     URI uri = new URI(s);
-     if(uri.getScheme() == null || uri.getAuthority() == null) {
-       throw new SemanticException("Invalid URI " + s + ". No scheme or authority.");
-     }
-     return uri;
+    try {
+      URI uri = new URI(s);
+      if(uri.getScheme() == null || uri.getAuthority() == null) {
+        throw new SemanticException("Invalid URI " + s + ". No scheme or authority.");
+      }
+      return uri;
     } catch (URISyntaxException e) {
       throw new SemanticException("Invalid URI " + s, e);
     }
@@ -370,8 +384,8 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook
         inputHierarchy.add(udfUriHierarchy);
       }
 
-        outputHierarchy.add(connectHierarchy);
-        break;
+      outputHierarchy.add(connectHierarchy);
+      break;
 
     default:
       throw new AuthorizationException("Unknown operation scope type " +
@@ -470,7 +484,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook
 
   private List<String> filterShowTables(List<String> queryResult,
       HiveOperation operation, String userName, String dbName)
-      throws SemanticException {
+          throws SemanticException {
     List<String> filteredResult = new ArrayList<String>();
     Subject subject = new Subject(userName);
     HiveAuthzPrivileges tableMetaDataPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
@@ -519,7 +533,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook
         build();
 
     for (String dbName:queryResult) {
-       // if user has privileges on database, add to filtered list, else discard
+      // if user has privileges on database, add to filtered list, else discard
       Database database = null;
 
       // if default is not restricted, continue

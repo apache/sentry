@@ -36,6 +36,7 @@ public abstract class AbstractTestWithHiveServer {
   private static final Logger LOGGER = LoggerFactory
       .getLogger(AbstractTestWithHiveServer.class);
   protected File baseDir;
+  protected File logDir;
   protected File confDir;
   protected File dataDir;
   protected File policyFile;
@@ -47,10 +48,11 @@ public abstract class AbstractTestWithHiveServer {
     fileSystem = FileSystem.get(new Configuration());
     baseDir = Files.createTempDir();
     LOGGER.info("BaseDir = " + baseDir);
+    logDir = assertCreateDir(new File(baseDir, "log"));
     confDir = assertCreateDir(new File(baseDir, "etc"));
     dataDir = assertCreateDir(new File(baseDir, "data"));
     policyFile = new File(confDir, HiveServerFactory.AUTHZ_PROVIDER_FILENAME);
-    hiveServer = HiveServerFactory.create(properties, baseDir, confDir, policyFile, fileSystem);
+    hiveServer = HiveServerFactory.create(properties, baseDir, confDir, logDir, policyFile, fileSystem);
     hiveServer.start();
     return new Context(hiveServer, getFileSystem(),
         baseDir, confDir, dataDir, policyFile);

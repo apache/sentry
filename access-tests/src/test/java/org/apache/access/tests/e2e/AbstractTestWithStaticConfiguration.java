@@ -69,6 +69,7 @@ public abstract class AbstractTestWithStaticConfiguration {
 
 
   protected static File baseDir;
+  protected static File logDir;
   protected static File confDir;
   protected static File dataDir;
   protected static File policyFile;
@@ -134,6 +135,7 @@ public abstract class AbstractTestWithStaticConfiguration {
     properties = Maps.newHashMap();
     baseDir = Files.createTempDir();
     LOGGER.info("BaseDir = " + baseDir);
+    logDir = assertCreateDir(new File(baseDir, "log"));
     confDir = assertCreateDir(new File(baseDir, "etc"));
     dataDir = assertCreateDir(new File(baseDir, "data"));
     policyFile = new File(confDir, HiveServerFactory.AUTHZ_PROVIDER_FILENAME);
