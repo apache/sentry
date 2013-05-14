@@ -17,7 +17,8 @@
 
 package org.apache.access.tests.e2e;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -28,8 +29,11 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
 
+import org.apache.access.binding.hive.HiveAuthzBindingSessionHook;
 import org.apache.access.provider.file.PolicyFile;
 import org.apache.access.tests.e2e.hiveserver.HiveServerFactory;
+import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -176,5 +180,46 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
     statement.execute("DELETE FILE /tmp/tt.py");
     statement.close();
     connection.close();
+  }
+
+  /**
+   * Test that the required access configs are set by session hook
+   */
+  @Test
+  public void testAccessConfigRestrictions() throws Exception {
+    context = createContext(properties);
+    File policyFile = context.getPolicyFile();
+    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
+    editor.addPolicy("admin = admin", "groups");
+    editor.addPolicy("admin = server=server1", "roles");
+    editor.addPolicy("admin1 = admin", "users");
+
+    // verify the config is set correctly by session hook
+    verifyConfig(ConfVars.SEMANTIC_ANALYZER_HOOK.varname,
+        HiveAuthzBindingSessionHook.SEMANTIC_HOOK);
+    verifyConfig(ConfVars.PREEXECHOOKS.varname,
+        HiveAuthzBindingSessionHook.PRE_EXEC_HOOK);
+    verifyConfig(ConfVars.HIVE_EXEC_FILTER_HOOK.varname,
+        HiveAuthzBindingSessionHook.FILTER_HOOK);
+    verifyConfig(ConfVars.HIVE_EXTENDED_ENITITY_CAPTURE.varname, "true");
+    verifyConfig(ConfVars.HIVE_SERVER2_AUTHZ_EXTERNAL_EXEC.varname, "true");
+    verifyConfig(HiveConf.ConfVars.HIVE_CONF_RESTRICTED_LIST.varname,
+        HiveAuthzBindingSessionHook.ACCESS_RESTRICT_LIST);
+   }
+
+  private void verifyConfig(String confVar, String expectedValue) throws Exception {
+    Connection connection = context.createConnection("user1", "password");
+    Statement statement = context.createStatement(connection);
+    statement.execute("set " + confVar);
+    ResultSet res = statement.getResultSet();
+    assertTrue(res.next());
+    String configValue = res.getString(1);
+    assertNotNull(configValue);
+    String restrictListValues = (configValue.split("="))[1];
+    assertFalse(restrictListValues.isEmpty());
+    for (String restrictConfig: expectedValue.split(",")) {
+      assertTrue(restrictListValues.toLowerCase().contains(restrictConfig.toLowerCase()));
+    }
+
   }
 }

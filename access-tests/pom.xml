@@ -25,6 +25,10 @@ limitations under the License.
   <artifactId>access-tests</artifactId>
   <name>Access Tests</name>
   <description>end to end tests for access project</description>
+  <properties>
+    <hadoop-dist></hadoop-dist>
+    <hive-dist>${hadoop-dist}</hive-dist>
+  </properties>
   <dependencies>
     <dependency>
       <groupId>com.cloudera.cdh</groupId>
@@ -248,6 +252,46 @@ limitations under the License.
                   </echo>
                   <exec executable="sh" dir="${basedir}" failonerror="true">
                     <arg line="target/download.sh"/>
+                  </exec>
+                </target>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+     </build>
+   </profile>
+   <profile>
+     <id>link-hadoop</id>
+     <build>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-antrun-plugin</artifactId>
+          <configuration>
+            <skipTests>false</skipTests>
+          </configuration>
+          <executions>
+            <execution>
+              <id>link-hadoop</id>
+              <phase>generate-sources</phase>
+              <goals>
+                <goal>run</goal>
+              </goals>
+              <configuration>
+                <target>
+                  <echo file="target/link_dist.sh">
+                    set -e
+                    set -x
+                    /bin/pwd
+                    BASE_DIR=./target
+                    rm -f $BASE_DIR/hadoop
+                    ln -s $1/hadoop $BASE_DIR/.
+                    rm -f $BASE_DIR/hive
+                    ln -s $2/hive $BASE_DIR/.
+                  </echo>
+                  <exec executable="sh" dir="${basedir}" failonerror="true">
+                    <arg line="target/link_dist.sh ${hadoop-dist} ${hive-dist}"/>
                   </exec>
                 </target>
               </configuration>

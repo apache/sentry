@@ -310,6 +310,9 @@ limitations under the License.
           <version>2.12</version>
           <configuration>
             <forkMode>always</forkMode>
+            <environmentVariables>
+              <HADOOP_CLIENT_OPTS>-Xmx1000m -Dhive.log.dir=./target/</HADOOP_CLIENT_OPTS>
+            </environmentVariables>
             <forkedProcessTimeoutInSeconds>900</forkedProcessTimeoutInSeconds>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
             <argLine>-Xms256m -Xmx1g</argLine>

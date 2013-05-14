@@ -115,8 +115,6 @@ implements HiveDriverFilterHook {
   public ASTNode preAnalyze(HiveSemanticAnalyzerHookContext context, ASTNode ast)
       throws SemanticException {
 
-    SessionState.get().getConf()
-    .setBoolVar(ConfVars.HIVE_EXTENDED_ENITITY_CAPTURE, true);
     switch (ast.getToken().getType()) {
     // Hive parser doesn't capture the database name in output entity, so we store it here for now
     case HiveParser.TOK_CREATEDATABASE:

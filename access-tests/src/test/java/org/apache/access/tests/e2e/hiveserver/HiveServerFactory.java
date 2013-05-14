@@ -161,6 +161,8 @@ public class HiveServerFactory {
     out.close();
     // points hive-site.xml at access-site.xml
     hiveConf.set(HiveAuthzConf.HIVE_ACCESS_CONF_URL, accessSite.toURI().toURL().toExternalForm());
+    hiveConf.set(HiveConf.ConfVars.HIVE_SERVER2_SESSION_HOOK.varname,
+        "org.apache.access.binding.hive.HiveAuthzBindingSessionHook");
     out = new FileOutputStream(hiveSite);
     hiveConf.writeXml(out);
     out.close();

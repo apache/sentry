@@ -17,7 +17,9 @@
 
 package org.apache.access.tests.e2e;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.sql.Connection;
@@ -484,4 +486,39 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
     statement.close();
     connection.close();
   }
+
+  /**
+   * test create table as with cross database ref
+   * @throws Exception
+   */
+  @Test
+  public void testSandboxOpt10() throws Exception {
+
+    String rTab1 = "rtab_1";
+    String rTab2 = "rtab_2";
+
+    policyFile
+    .addPermissionsToRole(GROUP1_ROLE, ALL_DB1, SELECT_DB2_TBL2, loadData)
+    .addRolesToGroup(GROUP1, GROUP1_ROLE)
+    .addGroupsToUser(USER1, GROUP1);
+    policyFile.write(context.getPolicyFile());
+
+    dropDb(ADMIN1, DB1, DB2);
+    createDb(ADMIN1, DB1, DB2);
+    createTable(ADMIN1, DB1, dataFile, TBL1);
+    createTable(ADMIN1, DB2, dataFile, TBL2, TBL3);
+
+    // a
+    Connection connection = context.createConnection(USER1, "password");
+    Statement statement = context.createStatement(connection);
+    statement.execute("USE " + DB1);
+    statement.execute("CREATE TABLE " + rTab1 + " AS SELECT * FROM " + DB2 + "." + TBL2);
+    // user1 doesn't have access to db2, so following create table as should fail
+    context.assertAuthzException(statement, "CREATE TABLE " + rTab2 + " AS SELECT * FROM " + DB2 + "." + TBL3);
+
+    statement.close();
+    connection.close();
+    dropDb(ADMIN1, DB1, DB2);
+  }
+
 }
