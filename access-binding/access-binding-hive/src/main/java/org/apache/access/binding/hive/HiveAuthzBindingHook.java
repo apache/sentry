@@ -82,7 +82,14 @@ implements HiveDriverFilterHook {
   private AccessURI partitionURI;
 
   public HiveAuthzBindingHook() throws Exception {
-    HiveConf hiveConf = new HiveConf();
+    SessionState session = SessionState.get();
+    if(session == null) {
+      throw new IllegalStateException("Session has not been started");
+    }
+    HiveConf hiveConf = session.getConf();
+    if(hiveConf == null) {
+      throw new IllegalStateException("Session HiveConf is null");
+    }
     String hiveAuthzConf = hiveConf.get(HiveAuthzConf.HIVE_ACCESS_CONF_URL);
     if(hiveAuthzConf == null || (hiveAuthzConf = hiveAuthzConf.trim()).isEmpty()) {
       throw new IllegalArgumentException("Configuration key " + HiveAuthzConf.HIVE_ACCESS_CONF_URL
