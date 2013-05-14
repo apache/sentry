@@ -18,6 +18,7 @@ package org.apache.access.binding.hive;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.access.binding.hive.authz.HiveAuthzBinding;
@@ -25,6 +26,8 @@ import org.apache.access.binding.hive.authz.HiveAuthzPrivileges;
 import org.apache.access.binding.hive.authz.HiveAuthzPrivilegesMap;
 import org.apache.access.binding.hive.conf.HiveAuthzConf;
 import org.apache.access.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
+import org.apache.access.core.AccessConstants;
+import org.apache.access.core.AccessURI;
 import org.apache.access.core.Authorizable;
 import org.apache.access.core.Database;
 import org.apache.access.core.Server;
@@ -37,7 +40,6 @@ import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.io.Files;
@@ -58,6 +60,7 @@ public class TestHiveAuthzBindings {
   private static final Subject MANAGER_SUBJECT = new Subject("manager1");
   private static final Subject ANALYST_SUBJECT = new Subject("analyst1");
   private static final Subject JUNIOR_ANALYST_SUBJECT = new Subject("junior_analyst1");
+  private static final Subject NO_SUCH_SUBJECT = new Subject("no such subject");
 
   // Databases
   private static final String CUSTOMER_DB = "customers";
@@ -238,20 +241,39 @@ public class TestHiveAuthzBindings {
    * Validate create function permission for admin (server level priviledge
    */
   @Test
-  @Ignore // TODO fix functions
   public void testValidateCreateFunctionForAdmin() throws Exception {
-    outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, null, null));
+    inputTabHierarcyList.add(buildObjectHierarchy(SERVER1, null, null));
+    inputTabHierarcyList.add(Arrays.asList(new Authorizable[] {
+        new Server(SERVER1), new AccessURI("file:///some/path/to/a/jar")
+    }));
     testAuth.authorize(HiveOperation.CREATEFUNCTION, createFuncPrivileges, ADMIN_SUBJECT,
         inputTabHierarcyList, outputTabHierarcyList);
   }
-
-  /**
-   * Validate create function permission for admin (server level priviledge
-   */
+  @Test
+  public void testValidateCreateFunctionAppropiateURI() throws Exception {
+    inputTabHierarcyList.add(Arrays.asList(new Authorizable[] {
+        new Server(SERVER1), new Database(CUSTOMER_DB), new Table(AccessConstants.ALL)
+    }));
+    inputTabHierarcyList.add(Arrays.asList(new Authorizable[] {
+        new Server(SERVER1), new AccessURI("file:///path/to/some/lib/dir/my.jar")
+    }));
+    testAuth.authorize(HiveOperation.CREATEFUNCTION, createFuncPrivileges, ANALYST_SUBJECT,
+        inputTabHierarcyList, outputTabHierarcyList);
+  }
   @Test(expected=AuthorizationException.class)
-  @Ignore // TODO fix functions
-  public void testValidateCreateFunctionRejectionForUser() throws Exception {
-    outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, null, null));
+  public void testValidateCreateFunctionRejectionForUnknownUser() throws Exception {
+    inputTabHierarcyList.add(buildObjectHierarchy(SERVER1, CUSTOMER_DB, AccessConstants.ALL));
+    testAuth.authorize(HiveOperation.CREATEFUNCTION, createFuncPrivileges, NO_SUCH_SUBJECT,
+        inputTabHierarcyList, outputTabHierarcyList);
+  }
+  @Test(expected=AuthorizationException.class)
+  public void testValidateCreateFunctionRejectionForUserWithoutURI() throws Exception {
+    inputTabHierarcyList.add(Arrays.asList(new Authorizable[] {
+        new Server(SERVER1), new Database(CUSTOMER_DB), new Table(AccessConstants.ALL)
+    }));
+    inputTabHierarcyList.add(Arrays.asList(new Authorizable[] {
+        new Server(SERVER1), new AccessURI("file:///some/path/to/a.jar")
+    }));
     testAuth.authorize(HiveOperation.CREATEFUNCTION, createFuncPrivileges, ANALYST_SUBJECT,
         inputTabHierarcyList, outputTabHierarcyList);
   }
@@ -260,12 +282,11 @@ public class TestHiveAuthzBindings {
     List <Authorizable> authList = new ArrayList<Authorizable> ();
     authList.add(new Server(server));
     if (db != null) {
-      authList.add(new Database(CUSTOMER_DB));
+      authList.add(new Database(db));
       if (table != null) {
-        authList.add(new Table(PURCHASES_TAB));
+        authList.add(new Table(table));
       }
     }
     return authList;
   }
-
 }
