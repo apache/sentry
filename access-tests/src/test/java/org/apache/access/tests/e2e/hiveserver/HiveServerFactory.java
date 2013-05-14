@@ -35,6 +35,7 @@ import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
 
 public class HiveServerFactory {
@@ -44,7 +45,6 @@ public class HiveServerFactory {
   private static final String DERBY_DRIVER_NAME = "org.apache.derby.jdbc.EmbeddedDriver";
   public static final String HIVESERVER2_TYPE = "access.e2etest.hiveServer2Type";
   public static final String KEEP_BASEDIR = "access.e2etest.keepBaseDir";
-  public static final String SUPPORT_CONCURRENCY = HiveConf.ConfVars.HIVE_SUPPORT_CONCURRENCY.varname;
   public static final String METASTORE_CONNECTION_URL = HiveConf.ConfVars.METASTORECONNECTURLKEY.varname;
   public static final String WAREHOUSE_DIR = HiveConf.ConfVars.METASTOREWAREHOUSE.varname;
   public static final String AUTHZ_PROVIDER = HiveAuthzConf.AuthzConfVars.AUTHZ_PROVIDER.getVar();
@@ -53,7 +53,10 @@ public class HiveServerFactory {
   public static final String AUTHZ_SERVER_NAME = HiveAuthzConf.AuthzConfVars.AUTHZ_SERVER_NAME.getVar();
   public static final String ACCESS_TESTING_MODE = HiveAuthzConf.AuthzConfVars.ACCESS_TESTING_MODE.getVar();
   public static final String HS2_PORT = ConfVars.HIVE_SERVER2_THRIFT_PORT.toString();
+  public static final String SUPPORT_CONCURRENCY = HiveConf.ConfVars.HIVE_SUPPORT_CONCURRENCY.varname;
+  public static final String HADOOPBIN = ConfVars.HADOOPBIN.toString();
   public static final String DEFAULT_AUTHZ_SERVER_NAME = "server1";
+
 
   static {
     try {
@@ -120,6 +123,19 @@ public class HiveServerFactory {
     }
     if(!properties.containsKey(HS2_PORT)) {
       properties.put(HS2_PORT, String.valueOf(findPort()));
+    }
+    if(!properties.containsKey(SUPPORT_CONCURRENCY)) {
+      properties.put(SUPPORT_CONCURRENCY, "false");
+    }
+    if(!properties.containsKey(HADOOPBIN)) {
+      properties.put(HADOOPBIN, "./target/hadoop/bin/hadoop");
+    }
+    String hadoopBinPath = properties.get(HADOOPBIN);
+    Assert.assertNotNull(hadoopBinPath, "Hadoop Bin");
+    File hadoopBin = new File(hadoopBinPath);
+    if(!hadoopBin.isFile()) {
+      Assert.fail("Path to hadoop bin " + hadoopBin.getPath() + "is invalid. "
+          + "Perhaps you missed the download-hadoop profile.");
     }
     /*
      * This hack, setting the hiveSiteURL field removes a previous hack involving

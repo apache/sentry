@@ -228,6 +228,7 @@ limitations under the License.
                   <echo file="target/download.sh">
                     set -e
                     set -x
+                    /bin/pwd
                     BASE_DIR=./target
                     DOWNLOAD_DIR=$BASE_DIR/downloads
                     download() {
