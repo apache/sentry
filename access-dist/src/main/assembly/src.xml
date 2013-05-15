@@ -41,6 +41,8 @@
         <include>com.cloudera.cdh:access-core</include>
         <include>com.cloudera.cdh:access-provider</include>
         <include>com.cloudera.cdh:access-provider-file</include>
+        <include>com.cloudera.cdh:access-tests</include>
+        <include>com.cloudera.cdh:access-dist</include>
       </includes>
 
       <binaries>

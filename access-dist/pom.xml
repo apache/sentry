@@ -55,7 +55,7 @@ limitations under the License.
             <configuration>
               <finalName>access-${project.version}</finalName>
               <descriptors>
-                <descriptor>src/main/assembly/bin.xml</descriptor>
+                <descriptor>src/main/assembly/src.xml</descriptor>
               </descriptors>
             </configuration>
           </execution>
