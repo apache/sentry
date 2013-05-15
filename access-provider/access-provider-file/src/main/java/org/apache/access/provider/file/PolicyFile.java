@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
-import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
@@ -55,18 +55,27 @@ public class PolicyFile {
   private static final String NL = System.getProperty("line.separator", "\n");
 
   private final Map<String, String> databasesToPolicyFiles = Maps.newHashMap();
-  private final Multimap<String, String> usersToGroups = HashMultimap.create();
-  private final Multimap<String, String> groupsToRoles = HashMultimap.create();
-  private final Multimap<String, String> rolesToPermissions = HashMultimap.create();
+  private final Multimap<String, String> usersToGroups = ArrayListMultimap.create();
+  private final Multimap<String, String> groupsToRoles = ArrayListMultimap.create();
+  private final Multimap<String, String> rolesToPermissions = ArrayListMultimap.create();
 
   public PolicyFile addRolesToGroup(String groupName, String... roleNames) {
-    return add(groupsToRoles.get(groupName), roleNames);
+    return addRolesToGroup(groupName, false, roleNames);
+  }
+  public PolicyFile addRolesToGroup(String groupName, boolean allowDuplicates, String... roleNames) {
+    return add(groupsToRoles.get(groupName), allowDuplicates, roleNames);
   }
   public PolicyFile addPermissionsToRole(String roleName, String... permissionNames) {
-    return add(rolesToPermissions.get(roleName), permissionNames);
+    return addPermissionsToRole(roleName, false, permissionNames);
+  }
+  public PolicyFile addPermissionsToRole(String roleName, boolean allowDuplicates, String... permissionNames) {
+    return add(rolesToPermissions.get(roleName), allowDuplicates, permissionNames);
   }
   public PolicyFile addGroupsToUser(String userName, String... groupNames) {
-    return add(usersToGroups.get(userName), groupNames);
+    return addGroupsToUser(userName, false, groupNames);
+  }
+  public PolicyFile addGroupsToUser(String userName, boolean allowDuplicates, String... groupNames) {
+    return add(usersToGroups.get(userName), allowDuplicates, groupNames);
   }
   public PolicyFile addDatabase(String databaseName, String path) {
     String oldPath;
@@ -149,11 +158,12 @@ public class PolicyFile {
     }
     return this;
   }
-  private PolicyFile add(Collection<String> exitingItems, String[] newItems) {
+  private PolicyFile add(Collection<String> exitingItems, boolean allowDuplicates, String[] newItems) {
     for(String newItem : newItems) {
-      if(!exitingItems.add(newItem)) {
-        throw new IllegalStateException("Iterm " + newItem + " already exists in " + exitingItems);
+      if(exitingItems.contains(newItem) && !allowDuplicates) {
+        throw new IllegalStateException("Item " + newItem + " already exists in " + exitingItems);
       }
+      exitingItems.add(newItem);
     }
     return this;
   }

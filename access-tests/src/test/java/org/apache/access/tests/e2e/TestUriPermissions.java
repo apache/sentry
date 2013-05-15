@@ -61,7 +61,8 @@ public class TestUriPermissions extends AbstractTestWithStaticLocalFS {
         "[roles]",
         "db1_write = server=server1->db=" + dbName + "->table=" + tabName + "->action=INSERT",
         "db1_read = server=server1->db=" + dbName + "->table=" + tabName + "->action=SELECT",
-        "data_read = server=server1->URI=file://" + dataFilePath,
+        // role below has duplicate privilege for ACCESS-178
+        "data_read = server=server1->URI=file://" + dataFilePath + ", server=server1->URI=file://" + dataFilePath,
         "admin_role = server=server1",
         "[users]",
         "user1 = user_group1",

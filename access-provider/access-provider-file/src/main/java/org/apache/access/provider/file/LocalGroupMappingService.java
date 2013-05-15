@@ -18,7 +18,6 @@
 package org.apache.access.provider.file;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -34,6 +33,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
 
 /**
  * Mapping users to groups
@@ -89,22 +90,20 @@ public class LocalGroupMappingService implements GroupMappingService {
       return;
     }
     for (Entry<String, String> userEntry : usersSection.entrySet()) {
-      String userName = userEntry.getKey();
-      String groupNames = userEntry.getValue();
-      if (userName == null) {
+      String userName = Strings.nullToEmpty(userEntry.getKey()).trim();
+      String groupNames = Strings.nullToEmpty(userEntry.getValue()).trim();
+      if (userName.isEmpty()) {
         LOGGER.error("Invalid user name in the " + resourcePath);
         continue;
       }
-      if (groupNames == null || groupNames.isEmpty()) {
+      if (groupNames.isEmpty()) {
         LOGGER.warn("No groups available for user " + userName +
             " in the " + resourcePath);
         continue;
       }
-
-      List<String> groupList = Arrays.asList(groupNames.split(","));
-      // add the group,userList to the map of groups
-
-      LOGGER.debug("Got mapping User:" + userName + ", Groups:" + groupNames);
+      List<String> groupList = Lists.newArrayList(
+          PolicyFileConstants.ROLE_SPLITTER.trimResults().split(groupNames));
+      LOGGER.debug("Got user mapping: " + userName + ", Groups: " + groupNames);
       groupMap.put(userName, groupList);
     }
   }

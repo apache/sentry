@@ -56,10 +56,9 @@ public class WildcardPermission implements Permission, Serializable {
       throw new IllegalArgumentException("Wildcard string cannot be null or empty.");
     }
     List<KeyValue>parts = Lists.newArrayList();
-    for (String authorizable : AUTHORIZABLE_SPLITTER.split(wildcardString)) {
-      authorizable = authorizable.trim();
+    for (String authorizable : AUTHORIZABLE_SPLITTER.trimResults().split(wildcardString)) {
       if (authorizable.isEmpty()) {
-        throw new IllegalArgumentException("Portion of " + wildcardString + " is invalid");
+        throw new IllegalArgumentException("Privilege '" + wildcardString + "' has an empty section");
       }
       parts.add(new KeyValue(authorizable));
     }

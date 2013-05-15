@@ -57,6 +57,23 @@ public class TestResourceAuthorizationProviderSpecialCases {
       FileUtils.deleteQuietly(baseDir);
     }
   }
+
+  @Test
+  public void testDuplicateEntries() throws Exception {
+    Subject user1 = new Subject("user1");
+    Server server1 = new Server("server1");
+    AccessURI uri = new AccessURI("file:///path/to/");
+    EnumSet<Action> actions = EnumSet.of(Action.ALL, Action.SELECT, Action.INSERT);
+    policyFile.addGroupsToUser(user1.getName(), true, "group1", "group1")
+      .addRolesToGroup("group1",  true, "role1", "role1")
+      .addPermissionsToRole("role1", true, "server=" + server1.getName() + "->uri=" + uri.getName(),
+          "server=" + server1.getName() + "->uri=" + uri.getName());
+    policyFile.write(iniFile);
+    authzProvider = new LocalGroupResourceAuthorizationProvider(initResource, server1.getName());
+    List<Authorizable> authorizableHierarchy = ImmutableList.of(server1, uri);
+    Assert.assertTrue(authorizableHierarchy.toString(),
+        authzProvider.hasAccess(user1, authorizableHierarchy, actions));
+  }
   @Test
   public void testNonAbolutePath() throws Exception {
     Subject user1 = new Subject("user1");
