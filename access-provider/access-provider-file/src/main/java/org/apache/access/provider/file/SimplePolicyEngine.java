@@ -34,6 +34,7 @@ import org.apache.access.core.Database;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.shiro.config.ConfigurationException;
 import org.apache.shiro.config.Ini;
 import org.apache.shiro.util.PermissionUtils;
 import org.slf4j.Logger;
@@ -110,7 +111,14 @@ public class SimplePolicyEngine implements PolicyEngine {
           }
           try {
             LOGGER.info("Parsing " + perDbPolicy);
-            perDatabaseRoles.put(database, parseIni(database, PolicyFiles.loadFromPath(fileSystem, perDbPolicy)));
+            Ini perDbIni = PolicyFiles.loadFromPath(fileSystem, perDbPolicy);
+            if(perDbIni.containsKey(USERS)) {
+              throw new ConfigurationException("Per-db policy files cannot contain " + USERS + " section");
+            }
+            if(perDbIni.containsKey(DATABASES)) {
+              throw new ConfigurationException("Per-db policy files cannot contain " + DATABASES + " section");
+            }
+            perDatabaseRoles.put(database, parseIni(database, perDbIni));
             perDbResources.add(perDbPolicy);
           } catch (Exception e) {
             LOGGER.error("Error processing key " + entry.getKey() + ", skipping " + entry.getValue(), e);

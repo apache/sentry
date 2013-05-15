@@ -24,6 +24,7 @@ public class PolicyFileConstants {
   public static final String DATABASES = "databases";
   public static final String GROUPS = "groups";
   public static final String ROLES = "roles";
+  public static final String USERS = "users";
 
   public static final String ROLE_SEPARATOR = ",";
   public static final String AUTHORIZABLE_SEPARATOR = "->";

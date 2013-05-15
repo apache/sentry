@@ -82,6 +82,42 @@ public class TestPolicyParsingNegative {
     Assert.assertTrue(permissions.toString(), permissions.isEmpty());
   }
   @Test
+  public void testPerDbFileCannotContainUsersOrDatabases() throws Exception {
+    PolicyEngine policy;
+    ImmutableSet<String> permissions;
+    PolicyFile policyFile;
+    // test sanity
+    policyFile = PolicyFile.createAdminOnServer1("admin1");
+    policyFile.write(globalPolicyFile);
+    policyFile.write(otherPolicyFile);
+    policy = new SimplePolicyEngine(globalPolicyFile.getPath(), "server1");
+    permissions = policy.getPermissions(
+        Arrays.asList(new Authorizable[] {
+            new Server("server1")
+    }), Lists.newArrayList("admin")).get("admin");
+    Assert.assertEquals(permissions.toString(), "[server=server1]");
+    // test to ensure [users] fails parsing of per-db file
+    policyFile.addDatabase("other", otherPolicyFile.getPath());
+    policyFile.write(globalPolicyFile);
+    policyFile.write(otherPolicyFile);
+    policy = new SimplePolicyEngine(globalPolicyFile.getPath(), "server1");
+    permissions = policy.getPermissions(
+        Arrays.asList(new Authorizable[] {
+            new Server("server1")
+    }), Lists.newArrayList("admin")).get("admin");
+    Assert.assertTrue(permissions.toString(), permissions.isEmpty());
+    // test to ensure [databases] fails parsing of per-db file
+    // by removing the user mapping from the per-db policy file
+    policyFile.removeGroupsFromUser("admin1", "admin")
+      .write(otherPolicyFile);
+    policy = new SimplePolicyEngine(globalPolicyFile.getPath(), "server1");
+    permissions = policy.getPermissions(
+        Arrays.asList(new Authorizable[] {
+            new Server("server1")
+    }), Lists.newArrayList("admin")).get("admin");
+    Assert.assertTrue(permissions.toString(), permissions.isEmpty());
+  }
+  @Test
   public void testDatabaseRequiredInRole() throws Exception {
     append("[databases]", globalPolicyFile);
     append("other_group_db = " + otherPolicyFile.getPath(), globalPolicyFile);

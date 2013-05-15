@@ -17,7 +17,6 @@
 
 package org.apache.access.provider.file;
 
-import static org.apache.access.provider.file.LocalGroupMappingService.USERS;
 import static org.apache.access.provider.file.PolicyFileConstants.DATABASES;
 import static org.apache.access.provider.file.PolicyFileConstants.GROUPS;
 import static org.apache.access.provider.file.PolicyFileConstants.ROLES;
@@ -109,7 +108,7 @@ public class PolicyFile {
     }
     String contents = Joiner.on(NL)
         .join(getSection(DATABASES, databasesToPolicyFiles),
-            getSection(USERS, usersToGroups),
+            getSection(PolicyFileConstants.USERS, usersToGroups),
             getSection(GROUPS, groupsToRoles),
             getSection(ROLES, rolesToPermissions),
             "");

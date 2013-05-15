@@ -57,7 +57,6 @@ import com.google.common.annotations.VisibleForTesting;
  */
 public class LocalGroupMappingService implements GroupMappingService {
 
-  public static final String USERS = "users";
   private static final Logger LOGGER = LoggerFactory
       .getLogger(LocalGroupMappingService.class);
 
@@ -84,9 +83,9 @@ public class LocalGroupMappingService implements GroupMappingService {
 
   private void parseGroups(FileSystem fileSystem, Path resourcePath) throws IOException {
     Ini ini = PolicyFiles.loadFromPath(fileSystem, resourcePath);
-    Section usersSection = ini.getSection(USERS);
+    Section usersSection = ini.getSection(PolicyFileConstants.USERS);
     if (usersSection == null) {
-      LOGGER.warn("No section " + USERS + " in the " + resourcePath);
+      LOGGER.warn("No section " + PolicyFileConstants.USERS + " in the " + resourcePath);
       return;
     }
     for (Entry<String, String> userEntry : usersSection.entrySet()) {

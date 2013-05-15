@@ -28,7 +28,7 @@ public class KeyValue {
   private final String key;
   private final String value;
   public KeyValue(String keyValue) {
-    List<String> kvList = Lists.newArrayList(KV_SPLITTER.split(keyValue));
+    List<String> kvList = Lists.newArrayList(KV_SPLITTER.trimResults().split(keyValue));
     if(kvList.size() != 2) {
       throw new IllegalArgumentException("Invalid key value: " + keyValue + " " + kvList);
     }
