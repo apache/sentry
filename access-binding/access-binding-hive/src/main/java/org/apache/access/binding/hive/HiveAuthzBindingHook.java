@@ -68,6 +68,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 
 public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook
@@ -415,7 +416,7 @@ implements HiveDriverFilterHook {
     if (whiteList == null) {
       return;
     }
-    for (String hiveUDF : whiteList.split(",")) {
+    for (String hiveUDF : Splitter.on(",").omitEmptyStrings().trimResults().split(whiteList)) {
       if (queryUDF.equalsIgnoreCase(hiveUDF)) {
         return; // found the given UDF in whitelist
       }

@@ -33,6 +33,7 @@ import org.apache.access.core.NoAuthorizationProvider;
 import org.apache.access.core.Server;
 import org.apache.access.core.Subject;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.CommonConfigurationKeys;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
@@ -113,6 +114,11 @@ public class HiveAuthzBinding {
         LOG.error("HiveServer2 does not work with impersonation");
         return new NoAuthorizationProvider();
       }
+    }    
+    String defaultUmask = hiveConf.get(CommonConfigurationKeys.FS_PERMISSIONS_UMASK_KEY);
+    if("077".equalsIgnoreCase(defaultUmask)) {
+      LOG.error("HiveServer2 required a default umask of 077");
+      return new NoAuthorizationProvider();
     }
     // get the provider class and resources from the authz config
     String authProviderName = authzConf.get(AuthzConfVars.AUTHZ_PROVIDER.getVar());

@@ -171,6 +171,8 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticLocalFS
 
     context.assertAuthzException(statement,
         "SELECT  reflect('java.net.URLDecoder', 'decode', 'http://www.apache.org', 'utf-8'), value FROM " + tableName1);
+    context.assertAuthzException(statement,
+        "SELECT  java_method('java.net.URLDecoder', 'decode', 'http://www.apache.org', 'utf-8'), value FROM " + tableName1);
     statement.close();
     connection.close();
   }

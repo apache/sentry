@@ -79,10 +79,11 @@ public class HiveAuthzConf extends Configuration {
     "datediff,day,dayofmonth,degrees,div,e,elt,ewah_bitmap,ewah_bitmap_and,ewah_bitmap_empty," +
     "ewah_bitmap_or,exp,explode,field,find_in_set,floor,format_number,from_unixtime," +
     "from_utc_timestamp,get_json_object,hash,hex,histogram_numeric,hour,if,in,in_file,index," +
-    "inline,instr,isnotnull,isnull,java_method,json_tuple,lcase,length,like,ln,locate,log," +
+    "inline,instr,isnotnull,isnull," + // java_method is skipped
+    "json_tuple,lcase,length,like,ln,locate,log," +
     "log10,log2,lower,lpad,ltrim,map,map_keys,map_values,max,min," +
     "minute,month,named_struct,negative,ngrams,not,or,parse_url,parse_url_tuple,percentile," +
-    "percentile_approx,pi,pmod,positive,pow,power,printf,radians,rand," + // ** reflect is skipped
+    "percentile_approx,pi,pmod,positive,pow,power,printf,radians,rand," + // reflect is skipped
     "regexp,regexp_extract,regexp_replace,repeat,reverse,rlike,round,rpad,rtrim,second," +
     "sentences,sign,sin,size,sort_array,space,split,sqrt,stack,std," +
     "stddev,stddev_pop,stddev_samp,str_to_map,struct,substr,substring,sum,tan,to_date," +
