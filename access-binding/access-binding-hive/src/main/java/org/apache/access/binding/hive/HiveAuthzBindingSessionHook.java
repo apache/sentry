@@ -39,8 +39,23 @@ public class HiveAuthzBindingSessionHook
     ConfVars.SCRATCHDIR.varname + "," +
     ConfVars.LOCALSCRATCHDIR.varname + "," +
     ConfVars.HIVE_SERVER2_AUTHZ_EXTERNAL_EXEC.varname + "," +
+    ConfVars.METASTOREURIS.varname + "," +
+    ConfVars.METASTORECONNECTURLKEY.varname + "," +
+    ConfVars.HADOOPBIN.varname + "," +
+    ConfVars.HIVESESSIONID.varname + "," +
+    ConfVars.HIVEAUXJARS.varname + "," +
+    ConfVars.HIVESTATSDBCONNECTIONSTRING.varname + "," +
     HiveAuthzConf.HIVE_ACCESS_CONF_URL;
 
+  /**
+   * The session hook for access authorization that sets the required session level configuration
+   * 1. Setup the access hooks -
+   *    semantic, exec and filter hooks
+   * 2. Set additional config properties required for auth
+   *      set HIVE_EXTENDED_ENITITY_CAPTURE = true
+   *      set HIVE_SERVER2_AUTHZ_EXTERNAL_EXEC = false
+   * 3. Add sensetive config parameters to the config restrict list so that they can't be overridden by users
+   */
   @Override
   public void run(HiveSessionHookContext sessionHookContext) throws HiveSQLException {
     // Add access hooks to the session configuration
@@ -51,10 +66,10 @@ public class HiveAuthzBindingSessionHook
 
     // setup config
     sessionConf.setBoolVar(ConfVars.HIVE_EXTENDED_ENITITY_CAPTURE, true);
-    sessionConf.setBoolVar(ConfVars.HIVE_SERVER2_AUTHZ_EXTERNAL_EXEC, true);
+    sessionConf.setBoolVar(ConfVars.HIVE_SERVER2_AUTHZ_EXTERNAL_EXEC, false);
 
     // setup restrict list
-    appendConfVar(sessionConf, ConfVars.HIVE_CONF_RESTRICTED_LIST, ACCESS_RESTRICT_LIST);
+    sessionConf.addToRestrictList(ACCESS_RESTRICT_LIST);
   }
 
   // Setup given access hooks

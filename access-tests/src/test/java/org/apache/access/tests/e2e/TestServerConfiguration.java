@@ -159,25 +159,12 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
     Connection connection = context.createConnection("user1", "password");
     Statement statement = context.createStatement(connection);
 
-    // disallow external executables
-    statement.execute("set hive.server2.authorization.external.exec = false");
+    // disallow external executables. The external.exec is set to false by session hooks
     context.assertAuthzException(statement, "ADD JAR /usr/lib/hive/lib/hbase.jar");
     context.assertAuthzException(statement, "ADD FILE /tmp/tt.py");
     context.assertAuthzException(statement, "DFS -ls");
     context.assertAuthzException(statement, "DELETE JAR /usr/lib/hive/lib/hbase.jar");
     context.assertAuthzException(statement, "DELETE FILE /tmp/tt.py");
-    statement.close();
-    connection.close();
-
-    connection = context.createConnection("user1", "password");
-    statement = context.createStatement(connection);
-
-    // allow external executables
-    statement.execute("ADD JAR /usr/lib/hive/lib/hbase.jar");
-    statement.execute("ADD FILE /tmp/tt.py");
-    statement.execute("DFS -ls");
-    statement.execute("DELETE JAR /usr/lib/hive/lib/hbase.jar");
-    statement.execute("DELETE FILE /tmp/tt.py");
     statement.close();
     connection.close();
   }
@@ -202,7 +189,7 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
     verifyConfig(ConfVars.HIVE_EXEC_FILTER_HOOK.varname,
         HiveAuthzBindingSessionHook.FILTER_HOOK);
     verifyConfig(ConfVars.HIVE_EXTENDED_ENITITY_CAPTURE.varname, "true");
-    verifyConfig(ConfVars.HIVE_SERVER2_AUTHZ_EXTERNAL_EXEC.varname, "true");
+    verifyConfig(ConfVars.HIVE_SERVER2_AUTHZ_EXTERNAL_EXEC.varname, "false");
     verifyConfig(HiveConf.ConfVars.HIVE_CONF_RESTRICTED_LIST.varname,
         HiveAuthzBindingSessionHook.ACCESS_RESTRICT_LIST);
    }
