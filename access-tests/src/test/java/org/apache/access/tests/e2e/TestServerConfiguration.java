@@ -190,6 +190,7 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
         HiveAuthzBindingSessionHook.FILTER_HOOK);
     verifyConfig(ConfVars.HIVE_EXTENDED_ENITITY_CAPTURE.varname, "true");
     verifyConfig(ConfVars.HIVE_SERVER2_AUTHZ_EXTERNAL_EXEC.varname, "false");
+    verifyConfig(ConfVars.SCRATCHDIRPERMISSION.varname, HiveAuthzBindingSessionHook.SCRATCH_DIR_PERMISSIONS);
     verifyConfig(HiveConf.ConfVars.HIVE_CONF_RESTRICTED_LIST.varname,
         HiveAuthzBindingSessionHook.ACCESS_RESTRICT_LIST);
    }

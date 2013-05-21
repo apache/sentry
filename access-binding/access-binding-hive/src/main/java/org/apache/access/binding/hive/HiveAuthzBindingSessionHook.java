@@ -31,6 +31,7 @@ public class HiveAuthzBindingSessionHook
     "org.apache.access.binding.hive.HiveAuthzBindingPreExecHook";
   public static final String FILTER_HOOK =
     "org.apache.access.binding.hive.HiveAuthzBindingHook";
+  public static final String SCRATCH_DIR_PERMISSIONS = "700";
   public static final String ACCESS_RESTRICT_LIST =
     ConfVars.SEMANTIC_ANALYZER_HOOK.varname + "," +
     ConfVars.PREEXECHOOKS.varname + "," +
@@ -45,6 +46,7 @@ public class HiveAuthzBindingSessionHook
     ConfVars.HIVESESSIONID.varname + "," +
     ConfVars.HIVEAUXJARS.varname + "," +
     ConfVars.HIVESTATSDBCONNECTIONSTRING.varname + "," +
+    ConfVars.SCRATCHDIRPERMISSION.varname + "," +
     HiveAuthzConf.HIVE_ACCESS_CONF_URL;
 
   /**
@@ -54,6 +56,7 @@ public class HiveAuthzBindingSessionHook
    * 2. Set additional config properties required for auth
    *      set HIVE_EXTENDED_ENITITY_CAPTURE = true
    *      set HIVE_SERVER2_AUTHZ_EXTERNAL_EXEC = false
+   *      set SCRATCHDIRPERMISSION = 700
    * 3. Add sensetive config parameters to the config restrict list so that they can't be overridden by users
    */
   @Override
@@ -67,6 +70,7 @@ public class HiveAuthzBindingSessionHook
     // setup config
     sessionConf.setBoolVar(ConfVars.HIVE_EXTENDED_ENITITY_CAPTURE, true);
     sessionConf.setBoolVar(ConfVars.HIVE_SERVER2_AUTHZ_EXTERNAL_EXEC, false);
+    sessionConf.setVar(ConfVars.SCRATCHDIRPERMISSION, SCRATCH_DIR_PERMISSIONS);
 
     // setup restrict list
     sessionConf.addToRestrictList(ACCESS_RESTRICT_LIST);
