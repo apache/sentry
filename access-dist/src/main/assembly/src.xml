@@ -102,6 +102,8 @@
         <include>bin/**</include>
         <include>conf/**</include>
         <include>pom.xml</include>
+        <include>LICENSE.txt</include>
+        <include>NOTICE</include>
       </includes>
     </fileSet>
   </fileSets>
