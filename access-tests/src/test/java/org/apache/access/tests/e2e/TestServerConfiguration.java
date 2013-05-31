@@ -30,6 +30,7 @@ import java.sql.Statement;
 import java.util.Map;
 
 import org.apache.access.binding.hive.HiveAuthzBindingSessionHook;
+import org.apache.access.binding.hive.conf.HiveAuthzConf;
 import org.apache.access.provider.file.PolicyFile;
 import org.apache.access.tests.e2e.hiveserver.HiveServerFactory;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -180,23 +181,25 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
     editor.addPolicy("admin = admin", "groups");
     editor.addPolicy("admin = server=server1", "roles");
     editor.addPolicy("admin1 = admin", "users");
+    String testUser = "user1";
 
     // verify the config is set correctly by session hook
-    verifyConfig(ConfVars.SEMANTIC_ANALYZER_HOOK.varname,
+    verifyConfig(testUser, ConfVars.SEMANTIC_ANALYZER_HOOK.varname,
         HiveAuthzBindingSessionHook.SEMANTIC_HOOK);
-    verifyConfig(ConfVars.PREEXECHOOKS.varname,
+    verifyConfig(testUser, ConfVars.PREEXECHOOKS.varname,
         HiveAuthzBindingSessionHook.PRE_EXEC_HOOK);
-    verifyConfig(ConfVars.HIVE_EXEC_FILTER_HOOK.varname,
+    verifyConfig(testUser, ConfVars.HIVE_EXEC_FILTER_HOOK.varname,
         HiveAuthzBindingSessionHook.FILTER_HOOK);
-    verifyConfig(ConfVars.HIVE_EXTENDED_ENITITY_CAPTURE.varname, "true");
-    verifyConfig(ConfVars.HIVE_SERVER2_AUTHZ_EXTERNAL_EXEC.varname, "false");
-    verifyConfig(ConfVars.SCRATCHDIRPERMISSION.varname, HiveAuthzBindingSessionHook.SCRATCH_DIR_PERMISSIONS);
-    verifyConfig(HiveConf.ConfVars.HIVE_CONF_RESTRICTED_LIST.varname,
+    verifyConfig(testUser, ConfVars.HIVE_EXTENDED_ENITITY_CAPTURE.varname, "true");
+    verifyConfig(testUser, ConfVars.HIVE_SERVER2_AUTHZ_EXTERNAL_EXEC.varname, "false");
+    verifyConfig(testUser, ConfVars.SCRATCHDIRPERMISSION.varname, HiveAuthzBindingSessionHook.SCRATCH_DIR_PERMISSIONS);
+    verifyConfig(testUser, HiveConf.ConfVars.HIVE_CONF_RESTRICTED_LIST.varname,
         HiveAuthzBindingSessionHook.ACCESS_RESTRICT_LIST);
+    verifyConfig(testUser, HiveAuthzConf.HIVE_ACCESS_SUBJECT_NAME, testUser);
    }
 
-  private void verifyConfig(String confVar, String expectedValue) throws Exception {
-    Connection connection = context.createConnection("user1", "password");
+  private void verifyConfig(String userName, String confVar, String expectedValue) throws Exception {
+    Connection connection = context.createConnection(userName, "password");
     Statement statement = context.createStatement(connection);
     statement.execute("set " + confVar);
     ResultSet res = statement.getResultSet();

@@ -32,6 +32,7 @@ public class HiveAuthzConf extends Configuration {
    * Configuration key used in hive-site.xml to point at access-site.xml
    */
   public static final String HIVE_ACCESS_CONF_URL = "hive.access.conf.url";
+  public static final String HIVE_ACCESS_SUBJECT_NAME = "hive.access.subject.name";
 
   /**
    * Config setting definitions

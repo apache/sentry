@@ -47,7 +47,8 @@ public class HiveAuthzBindingSessionHook
     ConfVars.HIVEAUXJARS.varname + "," +
     ConfVars.HIVESTATSDBCONNECTIONSTRING.varname + "," +
     ConfVars.SCRATCHDIRPERMISSION.varname + "," +
-    HiveAuthzConf.HIVE_ACCESS_CONF_URL;
+    HiveAuthzConf.HIVE_ACCESS_CONF_URL + "," +
+    HiveAuthzConf.HIVE_ACCESS_SUBJECT_NAME;
 
   /**
    * The session hook for access authorization that sets the required session level configuration
@@ -63,6 +64,7 @@ public class HiveAuthzBindingSessionHook
   public void run(HiveSessionHookContext sessionHookContext) throws HiveSQLException {
     // Add access hooks to the session configuration
     HiveConf sessionConf = sessionHookContext.getSessionConf();
+
     appendConfVar(sessionConf, ConfVars.SEMANTIC_ANALYZER_HOOK, SEMANTIC_HOOK);
     appendConfVar(sessionConf, ConfVars.PREEXECHOOKS, PRE_EXEC_HOOK);
     appendConfVar(sessionConf, ConfVars.HIVE_EXEC_FILTER_HOOK, FILTER_HOOK);
@@ -71,6 +73,9 @@ public class HiveAuthzBindingSessionHook
     sessionConf.setBoolVar(ConfVars.HIVE_EXTENDED_ENITITY_CAPTURE, true);
     sessionConf.setBoolVar(ConfVars.HIVE_SERVER2_AUTHZ_EXTERNAL_EXEC, false);
     sessionConf.setVar(ConfVars.SCRATCHDIRPERMISSION, SCRATCH_DIR_PERMISSIONS);
+
+    // set user name
+    sessionConf.set(HiveAuthzConf.HIVE_ACCESS_SUBJECT_NAME, sessionHookContext.getSessionUser());
 
     // setup restrict list
     sessionConf.addToRestrictList(ACCESS_RESTRICT_LIST);
