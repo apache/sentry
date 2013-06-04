@@ -18,7 +18,6 @@ package org.apache.access.tests.e2e;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Statement;
 
 import junit.framework.Assert;
@@ -97,14 +96,10 @@ public class TestUriPermissions extends AbstractTestWithStaticLocalFS {
     userConn = context.createConnection("user2", "foo");
     userStmt = context.createStatement(userConn);
     userStmt.execute("use " + dbName);
-    try {
-    userStmt.execute("load data local inpath '" + dataFilePath +
+    context.assertAuthzException(userStmt, "load data local inpath '" + dataFilePath +
         "' into table " + tabName);
-    Assert.assertTrue("load should fail for user2", false);
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
-    context.close();
+    userStmt.close();
+    userConn.close();
   }
 
   // Test alter partition location
@@ -165,6 +160,9 @@ public class TestUriPermissions extends AbstractTestWithStaticLocalFS {
     context.assertAuthzException(userStmt,
         "ALTER TABLE " + tabName + " ADD PARTITION (dt = '22-Dec-2012') " +
           " LOCATION '" + tabDir + "/foo'");
+    // positive test, user2 can alter managed partitions
+    userStmt.execute("ALTER TABLE " + tabName + " ADD PARTITION (dt = '22-Dec-2012')");
+    userStmt.execute("ALTER TABLE " + tabName + " DROP PARTITION (dt = '22-Dec-2012')");
     userConn.close();
 
     // negative test: user3 doesn't have privilege to add/drop partitions
@@ -183,6 +181,7 @@ public class TestUriPermissions extends AbstractTestWithStaticLocalFS {
     userStmt = context.createStatement(userConn);
     userStmt.execute("use " + dbName);
     userStmt.execute("ALTER TABLE " + tabName + " DROP PARTITION (dt = '21-Dec-2012')");
+    userStmt.close();
     userConn.close();
   }
 
@@ -267,6 +266,7 @@ public class TestUriPermissions extends AbstractTestWithStaticLocalFS {
     adminStmt.execute("use default");
     adminStmt.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
     adminStmt.execute("CREATE DATABASE " + dbName);
+    adminStmt.close();
     adminCon.close();
 
     // negative test: user2 doesn't have privilege to create external table in given path
@@ -275,6 +275,8 @@ public class TestUriPermissions extends AbstractTestWithStaticLocalFS {
     userStmt.execute("use " + dbName);
     context.assertAuthzException(userStmt,
         "CREATE EXTERNAL TABLE extab1(id INT) LOCATION '" + tableDir + "'");
+    context.assertAuthzException(userStmt, "CREATE TABLE extab1(id INT) LOCATION '" + tableDir + "'");
+    userStmt.close();
     userConn.close();
 
     // positive test: user1 has privilege to create external table in given path
@@ -282,6 +284,9 @@ public class TestUriPermissions extends AbstractTestWithStaticLocalFS {
     userStmt = context.createStatement(userConn);
     userStmt.execute("use " + dbName);
     userStmt.execute("CREATE EXTERNAL TABLE extab1(id INT) LOCATION '" + tableDir + "'");
+    userStmt.execute("DROP TABLE extab1");
+    userStmt.execute("CREATE TABLE extab1(id INT) LOCATION '" + tableDir + "'");
+    userStmt.close();
     userConn.close();
   }
 
