@@ -235,6 +235,8 @@ limitations under the License.
                     /bin/pwd
                     BASE_DIR=./target
                     DOWNLOAD_DIR=$BASE_DIR/downloads
+                    hadoop_tarball=$1
+                    hive_tarball=$2
                     download() {
                       url=$1;
                       tarName=$2
@@ -247,11 +249,11 @@ limitations under the License.
                     }
                     rm -rf $DOWNLOAD_DIR
                     mkdir -p $DOWNLOAD_DIR
-                    download "http://archive.cloudera.com/cdh4/cdh/4/hadoop-latest.tar.gz" hadoop.tar.gz hadoop
-                    download "http://archive.cloudera.com/cdh4/cdh/4/hive-latest.tar.gz" hive.tar.gz hive
+                    download $hadoop_tarball hadoop.tar.gz hadoop
+                    download $hive_tarball hive.tar.gz hive
                   </echo>
                   <exec executable="sh" dir="${basedir}" failonerror="true">
-                    <arg line="target/download.sh"/>
+                    <arg line="target/download.sh ${hadoop.tarball} ${hive.tarball}"/>
                   </exec>
                 </target>
               </configuration>

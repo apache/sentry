@@ -53,12 +53,42 @@ limitations under the License.
     <url>https://github.com/cloudera/access</url>
   </scm>
 
+  <profiles>
+    <profile>
+      <id>apache-hive</id>
+      <activation>
+        <property>
+          <name>hadoop-distro</name>
+          <value>apache</value>
+        </property>
+      </activation>
+      <properties>
+        <hive.version>0.11.0-auth</hive.version>
+        <hadoop.version>1.2.0</hadoop.version>
+        <hadoop.tarball>"http://archive.cloudera.com/cdh4/cdh/4/hadoop-latest.tar.gz"</hadoop.tarball>
+        <hive.tarball>"http://archive.cloudera.com/cdh4/cdh/4/hive-latest.tar.gz"</hive.tarball>
+      </properties>
+    </profile>
+    <profile>
+      <id>cdh-hive</id>
+      <activation>
+        <property>
+          <name>!hadoop-distro</name>
+        </property>
+      </activation>
+      <properties>
+        <hive.version>0.10.0-cdh4.4.0-SNAPSHOT</hive.version>
+        <hadoop.version>2.0.0-cdh4.4.0-SNAPSHOT</hadoop.version>
+        <hadoop.tarball>"http://archive.cloudera.com/cdh4/cdh/4/hadoop-latest.tar.gz"</hadoop.tarball>
+        <hive.tarball>"http://archive.cloudera.com/cdh4/cdh/4/hive-latest.tar.gz"</hive.tarball>
+      </properties>
+    </profile>
+  </profiles>
+
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compile.source>1.6</maven.compile.source>
     <maven.compile.target>1.6</maven.compile.target>
-    <hive.version>0.10.0-cdh4.4.0-SNAPSHOT</hive.version>
-    <hadoop.version>2.0.0-cdh4.4.0-SNAPSHOT</hadoop.version>
     <junit.version>4.9</junit.version>
     <fest.reflect.version>1.4.1</fest.reflect.version>
     <log4j.version>1.2.16</log4j.version>
@@ -323,6 +353,14 @@ limitations under the License.
   </build>
 
   <repositories>
+    <repository>
+      <id>apache</id>
+      <url>https://repository.apache.org/content/repositories/releases/</url>
+    </repository>
+    <repository>
+      <id>apache-snapshot</id>
+      <url>https://repository.apache.org/content/repositories/snapshots/</url>
+    </repository>
     <repository>
       <id>cloudera</id>
       <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
