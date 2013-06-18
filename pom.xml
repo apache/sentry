@@ -63,7 +63,7 @@ limitations under the License.
         </property>
       </activation>
       <properties>
-        <hive.version>0.11.0-auth</hive.version>
+        <hive.version>0.11.0-Auth</hive.version>
         <hadoop.version>1.2.0</hadoop.version>
         <hadoop.tarball>"http://archive.cloudera.com/cdh4/cdh/4/hadoop-latest.tar.gz"</hadoop.tarball>
         <hive.tarball>"http://archive.cloudera.com/cdh4/cdh/4/hive-latest.tar.gz"</hive.tarball>
