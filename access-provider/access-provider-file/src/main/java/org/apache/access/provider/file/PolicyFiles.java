@@ -52,7 +52,7 @@ public class PolicyFiles {
       FSDataOutputStream out = fs.create(new Path(dest, resource));
       long bytes = ByteStreams.copy(in, out);
       in.close();
-      out.hflush();
+      out.flush();
       out.close();
       LOGGER.info("Copying " + resource + " to " + dest + ", bytes " + bytes);
     }

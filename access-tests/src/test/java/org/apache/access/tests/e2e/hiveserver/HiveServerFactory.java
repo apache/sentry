@@ -55,7 +55,8 @@ public class HiveServerFactory {
   public static final String SUPPORT_CONCURRENCY = HiveConf.ConfVars.HIVE_SUPPORT_CONCURRENCY.varname;
   public static final String HADOOPBIN = ConfVars.HADOOPBIN.toString();
   public static final String DEFAULT_AUTHZ_SERVER_NAME = "server1";
-
+  public static final String HS2_IMPERSONATION = "hive.server2.enable.impersonation";
+  public static final String HS2_DO_AS= "hive.server2.enable.doAs";
 
   static {
     try {
@@ -136,6 +137,14 @@ public class HiveServerFactory {
       Assert.fail("Path to hadoop bin " + hadoopBin.getPath() + "is invalid. "
           + "Perhaps you missed the download-hadoop profile.");
     }
+
+    if(!properties.containsKey(HS2_IMPERSONATION)) {
+      properties.put(HS2_IMPERSONATION, "false");
+    }
+    if(!properties.containsKey(HS2_DO_AS)) {
+      properties.put(HS2_DO_AS, "false");
+    }
+
     /*
      * This hack, setting the hiveSiteURL field removes a previous hack involving
      * setting of system properties for each property. Although both are hacks,

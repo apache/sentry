@@ -31,7 +31,7 @@ limitations under the License.
   <dependencies>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
-      <artifactId>hadoop-common</artifactId>
+      <artifactId>${hadoop.common.artifact}</artifactId>
     </dependency>
 
     <dependency>
@@ -69,6 +69,9 @@ limitations under the License.
       <groupId>com.cloudera.cdh</groupId>
       <artifactId>access-core</artifactId>
     </dependency>
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+    </dependency>
   </dependencies>
-
 </project>

@@ -63,10 +63,14 @@ limitations under the License.
         </property>
       </activation>
       <properties>
-        <hive.version>0.11.0-Auth</hive.version>
-        <hadoop.version>1.2.0</hadoop.version>
+        <hive.version>0.11.0-auth-SNAPSHOT</hive.version>
+        <hadoop.version>1.1.2</hadoop.version>
+        <hadoop.common.artifact>hadoop-core</hadoop.common.artifact>
+        <hadoop.minicluster.version>1.0.2 </hadoop.minicluster.version>
         <hadoop.tarball>"http://archive.cloudera.com/cdh4/cdh/4/hadoop-latest.tar.gz"</hadoop.tarball>
         <hive.tarball>"http://archive.cloudera.com/cdh4/cdh/4/hive-latest.tar.gz"</hive.tarball>
+        <test-dfs.exclude>**/TestSimplePolicyEngineDFS.java</test-dfs.exclude>
+        <static-dfs.exclude>**/AbstractTestWithStaticDFS.java</static-dfs.exclude>
       </properties>
     </profile>
     <profile>
@@ -79,8 +83,12 @@ limitations under the License.
       <properties>
         <hive.version>0.10.0-cdh4.4.0-SNAPSHOT</hive.version>
         <hadoop.version>2.0.0-cdh4.4.0-SNAPSHOT</hadoop.version>
+        <hadoop.common.artifact>hadoop-common</hadoop.common.artifact>
+        <hadoop.minicluster.version>${hadoop.version}</hadoop.minicluster.version>
         <hadoop.tarball>"http://archive.cloudera.com/cdh4/cdh/4/hadoop-latest.tar.gz"</hadoop.tarball>
         <hive.tarball>"http://archive.cloudera.com/cdh4/cdh/4/hive-latest.tar.gz"</hive.tarball>
+        <test-dfs.exclude>foo.java</test-dfs.exclude>
+        <static-dfs.exclude>foo.java</static-dfs.exclude>
       </properties>
     </profile>
   </profiles>
@@ -107,20 +115,20 @@ limitations under the License.
       </dependency>
       <dependency>
         <groupId>org.apache.hadoop</groupId>
-        <artifactId>hadoop-common</artifactId>
+        <artifactId>${hadoop.common.artifact}</artifactId>
         <version>${hadoop.version}</version>
         <scope>provided</scope>
       </dependency>
       <dependency>
         <groupId>org.apache.hadoop</groupId>
         <artifactId>hadoop-minicluster</artifactId>
-        <version>${hadoop.version}</version>
+        <version>${hadoop.minicluster.version}</version>
         <scope>provided</scope>
       </dependency>
       <dependency>
         <groupId>org.apache.hadoop</groupId>
         <artifactId>hadoop-client</artifactId>
-        <version>${cdh.hadoop.version}</version>
+        <version>${hadoop.version}</version>
         <scope>provided</scope>
       </dependency>
       <dependency>
@@ -211,12 +219,14 @@ limitations under the License.
         <version>${hive.version}</version>
         <scope>provided</scope>
       </dependency>
+      <!--
       <dependency>
         <groupId>org.apache.hive</groupId>
         <artifactId>hive-pdk</artifactId>
         <version>${hive.version}</version>
         <scope>provided</scope>
       </dependency>
+      -->
       <dependency>
         <groupId>org.apache.hive</groupId>
         <artifactId>hive-hbase-handler</artifactId>
@@ -235,12 +245,14 @@ limitations under the License.
         <version>${hive.version}</version>
         <scope>provided</scope>
       </dependency>
+      <!--
       <dependency>
         <groupId>org.apache.hive</groupId>
         <artifactId>hive-builtins</artifactId>
         <version>${hive.version}</version>
         <scope>provided</scope>
       </dependency>
+      -->
       <dependency>
         <groupId>org.apache.hive</groupId>
         <artifactId>hive-anttasks</artifactId>
@@ -263,6 +275,16 @@ limitations under the License.
         <groupId>com.cloudera.cdh</groupId>
         <artifactId>access-dist</artifactId>
         <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-lang</groupId>
+        <artifactId>commons-lang</artifactId>
+        <version>2.5</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-io</groupId>
+        <artifactId>commons-io</artifactId>
+        <version>2.1</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -288,11 +310,30 @@ limitations under the License.
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>2.3.2</version>
+          <version>2.5.1</version>
           <configuration>
             <source>${maven.compile.source}</source>
             <target>${maven.compile.target}</target>
+            <excludes>
+              <exclude>${test-dfs.exclude}</exclude>
+              <exclude>${static-dfs.exclude}</exclude>
+            </excludes>
           </configuration>
+          <executions>
+            <execution>
+              <id>default-testCompile</id>
+              <phase>test-compile</phase>
+              <configuration>
+                <testExcludes>
+                  <exclude>${test-dfs.exclude}</exclude>
+                  <exclude>${static-dfs.exclude}</exclude>
+                </testExcludes>
+              </configuration> 
+              <goals>
+                <goal>testCompile</goal>
+              </goals>
+            </execution>                  
+          </executions>
         </plugin>
         <plugin>
           <groupId>org.apache.rat</groupId>
@@ -364,6 +405,11 @@ limitations under the License.
     <repository>
       <id>cloudera</id>
       <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
+    </repository>
+    <repository>
+      <id>lib-snapshots-local</id>
+      <name>libs-snapshot-local</name>
+      <url>http://maven.jenkins.cloudera.com:8081/artifactory/libs-snapshot-local</url>
     </repository>
   </repositories>
 

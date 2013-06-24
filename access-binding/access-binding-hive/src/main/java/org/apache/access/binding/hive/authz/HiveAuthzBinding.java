@@ -51,6 +51,7 @@ public class HiveAuthzBinding {
       new ConcurrentHashMap<String, HiveAuthzBinding>();
   private static final AtomicInteger queryID = new AtomicInteger();
   public static final String HIVE_BINDING_TAG = "hive.authz.bindings.tag";
+  public static final String FS_PERMISSIONS_UMASK_KEY = "fs.permissions.umask-mode";
 
   private final HiveAuthzConf authzConf;
   private final Server authServer;
@@ -108,14 +109,12 @@ public class HiveAuthzBinding {
         LOG.error("HiveServer2 authentication method cannot be set to none unless testing mode is enabled");
         return new NoAuthorizationProvider();
       }
-      boolean impersonation = Boolean.parseBoolean(Strings.nullToEmpty(
-          hiveConf.getVar(ConfVars.HIVE_SERVER2_KERBEROS_IMPERSONATION)).trim());
-      if(impersonation) {
+      if(getHiveImpersonationStatus(hiveConf)) {
         LOG.error("HiveServer2 does not work with impersonation");
         return new NoAuthorizationProvider();
       }
-    }    
-    String defaultUmask = hiveConf.get(CommonConfigurationKeys.FS_PERMISSIONS_UMASK_KEY);
+    }
+    String defaultUmask = hiveConf.get(FS_PERMISSIONS_UMASK_KEY);
     if("077".equalsIgnoreCase(defaultUmask)) {
       LOG.error("HiveServer2 required a default umask of 077");
       return new NoAuthorizationProvider();
@@ -206,5 +205,12 @@ public class HiveAuthzBinding {
 
   private AuthorizableType getAuthzType (List<Authorizable> hierarchy){
     return hierarchy.get(hierarchy.size() -1).getAuthzType();
+  }
+
+  private boolean getHiveImpersonationStatus(HiveConf hiveConf) {
+    return Boolean.parseBoolean(Strings.nullToEmpty(
+        hiveConf.get("hive.server2.enable.impersonation", "false")).trim()) ||
+        Boolean.parseBoolean(Strings.nullToEmpty(
+            hiveConf.get("hive.server2.enable.doAs", "false")).trim());
   }
 }
