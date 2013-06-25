@@ -69,7 +69,9 @@ limitations under the License.
         <hadoop.tarball>"http://archive.cloudera.com/cdh4/cdh/4/hadoop-latest.tar.gz"</hadoop.tarball>
         <hive.tarball>"http://archive.cloudera.com/cdh4/cdh/4/hive-latest.tar.gz"</hive.tarball>
         <test-dfs.exclude>**/TestSimplePolicyEngineDFS.java</test-dfs.exclude>
-        <static-dfs.exclude>**/AbstractTestWithStaticDFS.java</static-dfs.exclude>
+        <dfs1.exclude>**/AbstractTestWithStaticDFS.java</dfs1.exclude>
+        <dfs2.exclude>**/TestSandboxOps.java</dfs2.exclude>
+        <dfs3.exclude>**/TestExportImportPrivileges.java</dfs3.exclude>
       </properties>
     </profile>
     <profile>
@@ -77,7 +79,7 @@ limitations under the License.
       <activation>
         <property>
           <name>hadoop-distro</name>
-          <value>apache</value>
+          <value>cdh</value>
         </property>
       </activation>
       <properties>
@@ -88,7 +90,9 @@ limitations under the License.
         <hadoop.tarball>"http://archive.cloudera.com/cdh4/cdh/4/hadoop-latest.tar.gz"</hadoop.tarball>
         <hive.tarball>"http://archive.cloudera.com/cdh4/cdh/4/hive-latest.tar.gz"</hive.tarball>
         <test-dfs.exclude>foo.java</test-dfs.exclude>
-        <static-dfs.exclude>foo.java</static-dfs.exclude>
+        <dfs1.exclude>**/foo.java</dfs1.exclude>
+        <dfs2.exclude>**/foo.java</dfs2.exclude>
+        <dfs3.exclude>**/foo.java</dfs3.exclude>
       </properties>
     </profile>
   </profiles>
@@ -316,7 +320,9 @@ limitations under the License.
             <target>${maven.compile.target}</target>
             <excludes>
               <exclude>${test-dfs.exclude}</exclude>
-              <exclude>${static-dfs.exclude}</exclude>
+              <exclude>${dfs1.exclude}</exclude>
+              <exclude>${dfs2.exclude}</exclude>
+              <exclude>${dfs3.exclude}</exclude>
             </excludes>
           </configuration>
           <executions>
@@ -326,7 +332,9 @@ limitations under the License.
               <configuration>
                 <testExcludes>
                   <exclude>${test-dfs.exclude}</exclude>
-                  <exclude>${static-dfs.exclude}</exclude>
+                  <exclude>${dfs1.exclude}</exclude>
+                  <exclude>${dfs2.exclude}</exclude>
+                  <exclude>${dfs3.exclude}</exclude>
                 </testExcludes>
               </configuration> 
               <goals>
