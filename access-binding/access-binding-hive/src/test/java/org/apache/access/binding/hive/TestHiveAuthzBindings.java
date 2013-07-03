@@ -36,6 +36,7 @@ import org.apache.access.core.Table;
 import org.apache.access.provider.file.PolicyFiles;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.junit.After;
@@ -275,6 +276,43 @@ public class TestHiveAuthzBindings {
         new Server(SERVER1), new AccessURI("file:///some/path/to/a.jar")
     }));
     testAuth.authorize(HiveOperation.CREATEFUNCTION, createFuncPrivileges, ANALYST_SUBJECT,
+        inputTabHierarcyList, outputTabHierarcyList);
+  }
+
+  /**
+   * Turn on impersonation and make sure that the authorization fails.
+   * @throws Exception
+   */
+  @Test(expected=AuthorizationException.class)
+  public void testImpersonationRestriction() throws Exception {
+    // perpare the hive and auth configs
+    hiveConf.setBoolVar(ConfVars.HIVE_SERVER2_KERBEROS_IMPERSONATION, true);
+    hiveConf.setVar(ConfVars.HIVE_SERVER2_AUTHENTICATION, "Kerberos");
+    authzConf.set(AuthzConfVars.ACCESS_TESTING_MODE.getVar(), "false");
+    testAuth = new HiveAuthzBinding(hiveConf, authzConf);
+
+    // following check should pass, but with impersonation it will fail with due to NoAuthorizationProvider
+    inputTabHierarcyList.add(buildObjectHierarchy(SERVER1, CUSTOMER_DB, PURCHASES_TAB));
+    testAuth.authorize(HiveOperation.QUERY, queryPrivileges, ADMIN_SUBJECT,
+        inputTabHierarcyList, outputTabHierarcyList);
+  }
+
+  /**
+   * Turn on impersonation and make sure that the authorization fails.
+   * @throws Exception
+   */
+  @Test
+  public void testImpersonationAllowed() throws Exception {
+    // perpare the hive and auth configs
+    hiveConf.setBoolVar(ConfVars.HIVE_SERVER2_KERBEROS_IMPERSONATION, true);
+    hiveConf.setVar(ConfVars.HIVE_SERVER2_AUTHENTICATION, "Kerberos");
+    authzConf.set(AuthzConfVars.ACCESS_TESTING_MODE.getVar(), "false");
+    authzConf.set(AuthzConfVars.AUTHZ_ALLOW_HIVE_IMPERSONATION.getVar(), "true");
+    testAuth = new HiveAuthzBinding(hiveConf, authzConf);
+
+    // following check should pass, even with impersonation
+    inputTabHierarcyList.add(buildObjectHierarchy(SERVER1, CUSTOMER_DB, PURCHASES_TAB));
+    testAuth.authorize(HiveOperation.QUERY, queryPrivileges, ADMIN_SUBJECT,
         inputTabHierarcyList, outputTabHierarcyList);
   }
 

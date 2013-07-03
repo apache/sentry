@@ -108,13 +108,15 @@ public class HiveAuthzBinding {
         LOG.error("HiveServer2 authentication method cannot be set to none unless testing mode is enabled");
         return new NoAuthorizationProvider();
       }
-      boolean impersonation = Boolean.parseBoolean(Strings.nullToEmpty(
-          hiveConf.getVar(ConfVars.HIVE_SERVER2_KERBEROS_IMPERSONATION)).trim());
-      if(impersonation) {
-        LOG.error("HiveServer2 does not work with impersonation");
+      boolean impersonation = hiveConf.getBoolVar(ConfVars.HIVE_SERVER2_KERBEROS_IMPERSONATION);
+      boolean allowImpersonation = Boolean.parseBoolean(Strings.nullToEmpty(
+          authzConf.get(AuthzConfVars.AUTHZ_ALLOW_HIVE_IMPERSONATION.getVar())).trim());
+
+      if(impersonation && !allowImpersonation) {
+        LOG.error("Role based authorization does not work with HiveServer2 impersonation");
         return new NoAuthorizationProvider();
       }
-    }    
+    }
     String defaultUmask = hiveConf.get(CommonConfigurationKeys.FS_PERMISSIONS_UMASK_KEY);
     if("077".equalsIgnoreCase(defaultUmask)) {
       LOG.error("HiveServer2 required a default umask of 077");

@@ -45,6 +45,7 @@ public class HiveAuthzConf extends Configuration {
         AUTHZ_RESTRICT_DEFAULT_DB("hive.access.restrict.defaultDB", "false"),
         ACCESS_TESTING_MODE("hive.access.testing.mode", "false"),
         AUTHZ_UDF_WHITELIST("hive.access.udf.whitelist", HIVE_UDF_WHITE_LIST),
+        AUTHZ_ALLOW_HIVE_IMPERSONATION("hive.access.allow.hive.impersonation", "false"),
         ;
 
     private final String varName;
