@@ -65,10 +65,24 @@ limitations under the License.
     <guava.version>11.0.2</guava.version>
     <shiro.version>1.2.1</shiro.version>
     <slf4j.version>1.6.1</slf4j.version>
+    <libthrift.version>0.9.0-cdh4-1</libthrift.version>
+    <derby.version>10.4.2.0</derby.version>
   </properties>
 
   <dependencyManagement>
     <dependencies>
+     <dependency>
+        <groupId>org.apache.derby</groupId>
+        <artifactId>derby</artifactId>
+        <version>${derby.version}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.thrift</groupId>
+        <artifactId>libthrift</artifactId>
+        <version>${libthrift.version}</version>
+        <scope>provided</scope>
+      </dependency>
       <dependency>
         <groupId>org.apache.hive</groupId>
         <artifactId>hive-common</artifactId>

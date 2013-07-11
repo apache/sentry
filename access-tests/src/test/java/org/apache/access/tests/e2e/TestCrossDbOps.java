@@ -242,7 +242,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticLocalFS {
     ResultSet res = conn.getMetaData().getSchemas();
     ResultSetMetaData resMeta = res.getMetaData();
     assertEquals(2, resMeta.getColumnCount());
-    assertEquals("TABLE_SCHEMA", resMeta.getColumnName(1));
+    assertEquals("TABLE_SCHEM", resMeta.getColumnName(1));
     assertEquals("TABLE_CATALOG", resMeta.getColumnName(2));
 
     result.add("db1");
@@ -310,7 +310,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticLocalFS {
     res = conn.getMetaData().getSchemas();
     resMeta = res.getMetaData();
     assertEquals(2, resMeta.getColumnCount());
-    assertEquals("TABLE_SCHEMA", resMeta.getColumnName(1));
+    assertEquals("TABLE_SCHEM", resMeta.getColumnName(1));
     assertEquals("TABLE_CATALOG", resMeta.getColumnName(2));
 
     result.add("db2");
