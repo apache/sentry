@@ -105,7 +105,7 @@ public class TestPolicyParsingNegative {
         Arrays.asList(new Authorizable[] {
             new Server("server1")
     }), Lists.newArrayList("admin")).get("admin");
-    Assert.assertTrue(permissions.toString(), permissions.isEmpty());
+    Assert.assertEquals(permissions.toString(), "[server=server1]");
     // test to ensure [databases] fails parsing of per-db file
     // by removing the user mapping from the per-db policy file
     policyFile.removeGroupsFromUser("admin1", "admin")
@@ -115,7 +115,7 @@ public class TestPolicyParsingNegative {
         Arrays.asList(new Authorizable[] {
             new Server("server1")
     }), Lists.newArrayList("admin")).get("admin");
-    Assert.assertTrue(permissions.toString(), permissions.isEmpty());
+    Assert.assertEquals(permissions.toString(), "[server=server1]");
   }
   @Test
   public void testDatabaseRequiredInRole() throws Exception {
@@ -175,6 +175,63 @@ public class TestPolicyParsingNegative {
             new Database("some_db")
     }), Lists.newArrayList("group")).get("group");
     Assert.assertTrue(permissions.toString(), permissions.isEmpty());
+  }
+
+  /**
+   * Create policy file with multiple per db files.
+   * Verify that a file with bad format is the only one that's ignored
+   * @throws Exception
+   */
+  @Test
+  public void testMultiDbWithErrors() throws Exception {
+    File db1PolicyFile = new File(baseDir, "db1.ini");
+    File db2PolicyFile = new File(baseDir, "db2.ini");
+
+    // global policy file
+    append("[databases]", globalPolicyFile);
+    append("db1 = " + db1PolicyFile.getPath(), globalPolicyFile);
+    append("db2 = " + db2PolicyFile.getPath(), globalPolicyFile);
+    append("[groups]", globalPolicyFile);
+    append("db3_group = db3_rule", globalPolicyFile);
+    append("[roles]", globalPolicyFile);
+    append("db3_rule = server=server1->db=db3->table=sales->action=select", globalPolicyFile);
+
+    //db1 policy file with badly formatted rule
+    append("[groups]", db1PolicyFile);
+    append("db1_group = bad_rule", db1PolicyFile);
+    append("[roles]", db1PolicyFile);
+    append("bad_rule = server=server1->db=customers->=purchases->action=", db1PolicyFile);
+
+    //db2 policy file with proper rule
+    append("[groups]", db2PolicyFile);
+    append("db2_group = db2_rule", db2PolicyFile);
+    append("[roles]", db2PolicyFile);
+    append("db2_rule = server=server1->db=db2->table=purchases->action=select", db2PolicyFile);
+
+    PolicyEngine policy = new SimplePolicyEngine(globalPolicyFile.getPath(), "server1");
+
+    // verify that the db1 rule is empty
+    ImmutableSet<String> permissions = policy.getPermissions(
+        Arrays.asList(new Authorizable[] {
+            new Server("server1"),
+            new Database("db1")
+    }), Lists.newArrayList("db1_group")).get("db1_group");
+    Assert.assertTrue(permissions.toString(), permissions.isEmpty());
+
+    permissions = policy.getPermissions(
+        Arrays.asList(new Authorizable[] {
+            new Server("server1"),
+            new Database("db2")
+    }), Lists.newArrayList("db2_group")).get("db2_group");
+    Assert.assertEquals(permissions.toString(), 1, permissions.size());
+
+    permissions = policy.getPermissions(
+        Arrays.asList(new Authorizable[] {
+            new Server("server1"),
+            new Database("db2")
+    }), Lists.newArrayList("db2_group")).get("db2_group");
+    Assert.assertEquals(permissions.toString(), 1, permissions.size());
+
   }
 
 }

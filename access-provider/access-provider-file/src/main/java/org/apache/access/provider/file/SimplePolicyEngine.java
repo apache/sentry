@@ -16,7 +16,11 @@
  */
 package org.apache.access.provider.file;
 
-import static org.apache.access.provider.file.PolicyFileConstants.*;
+import static org.apache.access.provider.file.PolicyFileConstants.DATABASES;
+import static org.apache.access.provider.file.PolicyFileConstants.GROUPS;
+import static org.apache.access.provider.file.PolicyFileConstants.ROLES;
+import static org.apache.access.provider.file.PolicyFileConstants.ROLE_SPLITTER;
+import static org.apache.access.provider.file.PolicyFileConstants.USERS;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -118,11 +122,11 @@ public class SimplePolicyEngine implements PolicyEngine {
             if(perDbIni.containsKey(DATABASES)) {
               throw new ConfigurationException("Per-db policy files cannot contain " + DATABASES + " section");
             }
-            perDatabaseRoles.put(database, parseIni(database, perDbIni));
+            ImmutableSetMultimap<String, String> currentDbRoles = parseIni(database, perDbIni);
+            perDatabaseRoles.put(database, currentDbRoles);
             perDbResources.add(perDbPolicy);
           } catch (Exception e) {
             LOGGER.error("Error processing key " + entry.getKey() + ", skipping " + entry.getValue(), e);
-            throw e;
           }
         }
       }
