@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nullable;
 
+import org.apache.access.core.AccessURI;
 import org.apache.access.core.Authorizable;
 import org.apache.access.core.Database;
 import org.apache.hadoop.conf.Configuration;
@@ -67,6 +68,7 @@ public class SimplePolicyEngine implements PolicyEngine {
   private final String serverName;
   private final List<Path> perDbResources = Lists.newArrayList();
   private final AtomicReference<Roles> rolesReference;
+  public final static String ACCESS_ALLOW_URI_PER_DB_POLICYFILE = "access.allow.uri.db.policyfile";
 
   public SimplePolicyEngine(String resourcePath, String serverName) throws IOException {
     this(new Configuration(), new Path(resourcePath), serverName);
@@ -243,17 +245,22 @@ public class SimplePolicyEngine implements PolicyEngine {
   public ImmutableSetMultimap<String, String> getPermissions(List<Authorizable> authorizables, List<String> groups) {
     Roles roles = rolesReference.get();
     String database = null;
+    Boolean isURI = false;
     for(Authorizable authorizable : authorizables) {
       if(authorizable instanceof Database) {
         database = authorizable.getName();
       }
+      if (authorizable instanceof AccessURI) {
+        isURI = true;
+      }
     }
+
     if(LOGGER.isDebugEnabled()) {
       LOGGER.debug("Getting permissions for {} via {}", groups, database);
     }
     ImmutableSetMultimap.Builder<String, String> resultBuilder = ImmutableSetMultimap.builder();
     for(String group : groups) {
-      resultBuilder.putAll(group, roles.getRoles(database, group));
+      resultBuilder.putAll(group, roles.getRoles(database, group, isURI));
     }
     ImmutableSetMultimap<String, String> result = resultBuilder.build();
     if(LOGGER.isDebugEnabled()) {

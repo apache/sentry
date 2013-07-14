@@ -18,6 +18,7 @@ package org.apache.access.provider.file;
 
 import javax.annotation.Nullable;
 
+import org.apache.access.core.AccessURI;
 import org.apache.access.core.Authorizable;
 import org.apache.access.core.Database;
 import org.apache.shiro.config.ConfigurationException;
@@ -33,16 +34,34 @@ public class DatabaseRequiredInRole extends AbstractRoleValidator {
       Iterable<Authorizable> authorizables = parseRole(role);
       /*
        * Each permission in a non-global file must have a database
-       * object.
+       * object except for URIs.
+       *
+       * We allow URIs to be specified in the per DB policy file for
+       * ease of mangeability. URIs will contain to remain server scope
+       * objects.
        */
       boolean foundDatabaseInAuthorizables = false;
+      boolean foundURIInAuthorizables = false;
+      boolean allowURIInAuthorizables = false;
+
+      if ("true".equalsIgnoreCase(
+          System.getProperty(SimplePolicyEngine.ACCESS_ALLOW_URI_PER_DB_POLICYFILE))) {
+        allowURIInAuthorizables = true;
+      }
+
       for(Authorizable authorizable : authorizables) {
         if(authorizable instanceof Database) {
           foundDatabaseInAuthorizables = true;
-          break;
+        }
+        if (authorizable instanceof AccessURI) {
+          if (foundDatabaseInAuthorizables) {
+            String msg = "URI object is specified at DB scope in " + role;
+            throw new ConfigurationException(msg);
+          }
+          foundURIInAuthorizables = true;
         }
       }
-      if(!foundDatabaseInAuthorizables) {
+      if(!foundDatabaseInAuthorizables && !(foundURIInAuthorizables && allowURIInAuthorizables)) {
         String msg = "Missing database object in " + role;
         throw new ConfigurationException(msg);
       }

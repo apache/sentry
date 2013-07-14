@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.io.Resources;
 
 public class Roles {
   private static final Logger LOGGER = LoggerFactory
@@ -41,14 +42,27 @@ public class Roles {
     this.globalRoles = globalRoles;
     this.perDatabaseRoles = perDatabaseRoles;
   }
-  public ImmutableSet<String> getRoles(@Nullable String database, String group) {
+  public ImmutableSet<String> getRoles(@Nullable String database, String group, Boolean isURI) {
     ImmutableSet.Builder<String> resultBuilder = ImmutableSet.builder();
+    String allowURIPerDbFile = 
+        System.getProperty(SimplePolicyEngine.ACCESS_ALLOW_URI_PER_DB_POLICYFILE);
+    Boolean consultPerDbRolesForURI = isURI && ("true".equalsIgnoreCase(allowURIPerDbFile));
+
     if(database != null) {
       ImmutableSetMultimap<String, String> dbPolicies =  perDatabaseRoles.get(database);
       if(dbPolicies != null && dbPolicies.containsKey(group)) {
         resultBuilder.addAll(dbPolicies.get(group));
       }
     }
+    if (consultPerDbRolesForURI) {
+      for(String db:perDatabaseRoles.keySet()) {
+        ImmutableSetMultimap<String, String> dbPolicies =  perDatabaseRoles.get(db);
+        if(dbPolicies != null && dbPolicies.containsKey(group)) {
+          resultBuilder.addAll(dbPolicies.get(group));
+        }
+      }
+    }
+
     if(globalRoles.containsKey(group)) {
       resultBuilder.addAll(globalRoles.get(group));
     }
