@@ -24,6 +24,7 @@ import java.net.ServerSocket;
 import java.net.URL;
 import java.util.Map;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.access.binding.hive.conf.HiveAuthzConf;
 import org.apache.access.provider.file.LocalGroupResourceAuthorizationProvider;
 import org.apache.hadoop.fs.FileSystem;
@@ -196,7 +197,8 @@ public class HiveServerFactory {
     return port;
   }
 
-  private static enum HiveServer2Type {
+  @VisibleForTesting
+  public static enum HiveServer2Type {
     EmbeddedHiveServer2,           // Embedded HS2, directly executed by JDBC, without thrift
     InternalHiveServer2,        // Start a thrift HS2 in the same process
     ExternalHiveServer2,   // start a remote thrift HS2

@@ -42,6 +42,7 @@ import org.apache.access.core.Authorizable.AuthorizableType;
 import org.apache.access.core.Database;
 import org.apache.access.core.Subject;
 import org.apache.access.core.Table;
+import org.apache.hadoop.hive.common.JavaUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hadoop.hive.ql.HiveDriverFilterHook;
@@ -51,6 +52,7 @@ import org.apache.hadoop.hive.ql.HiveDriverFilterHookResultImpl;
 import org.apache.hadoop.hive.ql.exec.Task;
 import org.apache.hadoop.hive.ql.hooks.Entity;
 import org.apache.hadoop.hive.ql.hooks.Entity.Type;
+import org.apache.hadoop.hive.ql.hooks.Hook;
 import org.apache.hadoop.hive.ql.hooks.ReadEntity;
 import org.apache.hadoop.hive.ql.hooks.WriteEntity;
 import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
@@ -270,9 +272,25 @@ implements HiveDriverFilterHook {
     try {
       authorizeWithHiveBindings(context, stmtAuthObject, stmtOperation);
     } catch (AuthorizationException e) {
+      executeOnFailureHooks(context, e);
       throw new SemanticException("No valid privileges", e);
     }
     hiveAuthzBinding.set(context.getConf());
+  }
+
+  private void executeOnFailureHooks(HiveSemanticAnalyzerHookContext context,
+      AuthorizationException e) {
+    AccessOnFailureHookContext hookCtx = new AccessOnFailureHookContextImpl(
+        context.getCommand(), context.getInputs(), context.getOutputs(),
+        currDB, currTab, udfURI, partitionURI, context.getUserName(),
+        context.getIpAddress(), e);
+    try {
+      for (Hook aofh : getHooks(HiveAuthzConf.AuthzConfVars.AUTHZ_ONFAILURE_HOOKS)) {
+        ((AccessOnFailureHook)aofh).run(hookCtx);
+      }
+    } catch (Exception ex) {
+      LOG.error("Error executing hook:", ex);
+    }
   }
 
   /**
@@ -625,5 +643,58 @@ implements HiveDriverFilterHook {
     } else {
       return false;
     }
+  }
+
+  /**
+   * Returns a set of hooks specified in a configuration variable.
+   *
+   * See getHooks(HiveAuthzConf.AuthzConfVars hookConfVar, Class<T> clazz)
+   * @param hookConfVar
+   * @return
+   * @throws Exception
+   */
+  private List<Hook> getHooks(HiveAuthzConf.AuthzConfVars hookConfVar) throws Exception {
+    return getHooks(hookConfVar, Hook.class);
+  }
+
+  /**
+   * Returns the hooks specified in a configuration variable.  The hooks are returned in a list in
+   * the order they were specified in the configuration variable.
+   *
+   * @param hookConfVar The configuration variable specifying a comma separated list of the hook
+   *                    class names.
+   * @param clazz       The super type of the hooks.
+   * @return            A list of the hooks cast as the type specified in clazz, in the order
+   *                    they are listed in the value of hookConfVar
+   * @throws Exception
+   */
+  private <T extends Hook> List<T> getHooks(HiveAuthzConf.AuthzConfVars hookConfVar, Class<T> clazz)
+      throws Exception {
+
+    List<T> hooks = new ArrayList<T>();
+    String csHooks = authzConf.get(hookConfVar.getVar(), "");
+    if (csHooks == null) {
+      return hooks;
+    }
+
+    csHooks = csHooks.trim();
+    if (csHooks.equals("")) {
+      return hooks;
+    }
+
+    String[] hookClasses = csHooks.split(",");
+
+    for (String hookClass : hookClasses) {
+      try {
+        T hook =
+            (T) Class.forName(hookClass.trim(), true, JavaUtils.getClassLoader()).newInstance();
+        hooks.add(hook);
+      } catch (ClassNotFoundException e) {
+        LOG.error(hookConfVar.getVar() + " Class not found:" + e.getMessage());
+        throw e;
+      }
+    }
+
+    return hooks;
   }
 }

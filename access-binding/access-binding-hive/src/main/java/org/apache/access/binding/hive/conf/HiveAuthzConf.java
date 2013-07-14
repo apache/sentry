@@ -46,6 +46,7 @@ public class HiveAuthzConf extends Configuration {
         ACCESS_TESTING_MODE("hive.access.testing.mode", "false"),
         AUTHZ_UDF_WHITELIST("hive.access.udf.whitelist", HIVE_UDF_WHITE_LIST),
         AUTHZ_ALLOW_HIVE_IMPERSONATION("hive.access.allow.hive.impersonation", "false"),
+        AUTHZ_ONFAILURE_HOOKS("hive.access.failure.hooks", ""),
         ;
 
     private final String varName;
