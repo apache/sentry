@@ -23,7 +23,7 @@ limitations under the License.
     <version>4.4.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>access</artifactId>
+  <artifactId>sentry</artifactId>
   <version>1.1.0-SNAPSHOT</version>
   <description>Access component</description>
   <name>Access</name>
@@ -65,10 +65,24 @@ limitations under the License.
     <guava.version>11.0.2</guava.version>
     <shiro.version>1.2.1</shiro.version>
     <slf4j.version>1.6.1</slf4j.version>
+    <derby.version>10.4.2.0</derby.version>
+    <libthrift.version>0.9.0-cdh4-1</libthrift.version>
   </properties>
 
   <dependencyManagement>
     <dependencies>
+      <dependency>
+        <groupId>org.apache.derby</groupId>
+        <artifactId>derby</artifactId>
+        <version>${derby.version}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.thrift</groupId>
+        <artifactId>libthrift</artifactId>
+        <version>${libthrift.version}</version>
+        <scope>provided</scope>
+      </dependency>
       <dependency>
         <groupId>org.apache.hive</groupId>
         <artifactId>hive-common</artifactId>
@@ -142,7 +156,7 @@ limitations under the License.
       </dependency>
       <dependency>
         <groupId>com.cloudera.cdh</groupId>
-        <artifactId>access-core</artifactId>
+        <artifactId>sentry-core</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -219,30 +233,30 @@ limitations under the License.
       </dependency>
       <dependency>
         <groupId>com.cloudera.cdh</groupId>
-        <artifactId>access-binding-hive</artifactId>
+        <artifactId>sentry-binding-hive</artifactId>
         <version>${project.version}</version>
         <scope>test</scope>
        </dependency>
       <dependency>
         <groupId>com.cloudera.cdh</groupId>
-        <artifactId>access-provider-file</artifactId>
+        <artifactId>sentry-provider-file</artifactId>
         <version>${project.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>com.cloudera.cdh</groupId>
-        <artifactId>access-dist</artifactId>
+        <artifactId>sentry-dist</artifactId>
         <version>${project.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
 
   <modules>
-    <module>access-core</module>
-    <module>access-binding</module>
-    <module>access-provider</module>
-    <module>access-tests</module>
-    <module>access-dist</module>
+    <module>sentry-core</module>
+    <module>sentry-binding</module>
+    <module>sentry-provider</module>
+    <module>sentry-tests</module>
+    <module>sentry-dist</module>
   </modules>
 
   <build>
