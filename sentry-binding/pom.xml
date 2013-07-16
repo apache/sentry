@@ -26,7 +26,7 @@ limitations under the License.
 
   <groupId>com.cloudera.cdh</groupId>
   <artifactId>sentry-binding</artifactId>
-  <name>Access Bindings</name>
+  <name>Sentry Bindings</name>
   <packaging>pom</packaging>
 
   <modules>
