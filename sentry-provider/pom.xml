@@ -26,7 +26,7 @@ limitations under the License.
 
   <groupId>com.cloudera.cdh</groupId>
   <artifactId>sentry-provider</artifactId>
-  <name>Access Providers</name>
+  <name>Sentry Providers</name>
   <packaging>pom</packaging>
 
   <modules>

@@ -26,7 +26,7 @@ limitations under the License.
   </parent>
 
   <artifactId>sentry-binding-hive</artifactId>
-  <name>Access Binding for Hive</name>
+  <name>Sentry Binding for Hive</name>
 
   <dependencies>
     <dependency>

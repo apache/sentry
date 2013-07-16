@@ -26,7 +26,7 @@ limitations under the License.
 
   <groupId>com.cloudera.cdh</groupId>
   <artifactId>sentry-core</artifactId>
-  <name>Access core</name>
+  <name>Sentry core</name>
 
   <dependencies>
     <dependency>
