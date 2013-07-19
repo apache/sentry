@@ -205,6 +205,10 @@ implements HiveDriverFilterHook {
           getUnescapedName((ASTNode) ast.getChild(0)));
       currDB = getCanonicalDb();
       break;
+    case HiveParser.TOK_LOAD:
+      String dbName = BaseSemanticAnalyzer.unescapeIdentifier(ast.getChild(1).getChild(0).getChild(0).getText());
+      currDB = new Database(dbName);
+      break;
     default:
       currDB = getCanonicalDb();
       break;

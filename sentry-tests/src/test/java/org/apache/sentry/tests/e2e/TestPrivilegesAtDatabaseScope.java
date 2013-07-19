@@ -103,16 +103,16 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
 
     // test execution
     connection = context.createConnection("user_1", "password");
-    statement = context.createStatement(connection);
+    statement = context.createStatement(connection);  
+    // test user can create table
+    statement.execute("CREATE TABLE DB_1.TAB_1(A STRING)");
+    // test user can execute load
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE DB_1.TAB_1");
+    statement.execute("CREATE TABLE DB_1.TAB_2(A STRING)");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE DB_1.TAB_2");
+
     // test user can switch db
     statement.execute("USE DB_1");
-    // test user can create table
-    statement.execute("CREATE TABLE TAB_1(A STRING)");
-    // test user can execute load
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE TAB_1");
-    statement.execute("CREATE TABLE TAB_2(A STRING)");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE TAB_2");
-
     //test user can create view
     statement.execute("CREATE VIEW VIEW_1(A) AS SELECT A FROM TAB_1");
 
