@@ -18,6 +18,8 @@
 
 package org.apache.sentry.binding.hive;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.sentry.core.AccessURI;
 import org.apache.sentry.core.Database;
 import org.apache.sentry.core.Table;
@@ -35,6 +37,7 @@ public class SentryOnFailureHookContextImpl implements SentryOnFailureHookContex
   private final String command;
   private final Set<ReadEntity> inputs;
   private final Set<WriteEntity> outputs;
+  private final HiveOperation hiveOp;
   private final String userName;
   private final String ipAddress;
   private final Database database;
@@ -42,14 +45,17 @@ public class SentryOnFailureHookContextImpl implements SentryOnFailureHookContex
   private final AccessURI udfURI;
   private final AccessURI partitionURI;
   private final AuthorizationException authException;
+  private final Configuration conf;
 
   public SentryOnFailureHookContextImpl(String command,
-      Set<ReadEntity> inputs, Set<WriteEntity> outputs, Database db,
-      Table tab, AccessURI udfURI, AccessURI partitionURI,
-      String userName, String ipAddress, AuthorizationException e) {
+      Set<ReadEntity> inputs, Set<WriteEntity> outputs, HiveOperation hiveOp,
+      Database db, Table tab, AccessURI udfURI, AccessURI partitionURI,
+      String userName, String ipAddress, AuthorizationException e,
+      Configuration conf) {
     this.command = command;
     this.inputs = inputs;
     this.outputs = outputs;
+    this.hiveOp = hiveOp;
     this.userName = userName;
     this.ipAddress = ipAddress;
     this.database = db;
@@ -57,6 +63,7 @@ public class SentryOnFailureHookContextImpl implements SentryOnFailureHookContex
     this.udfURI = udfURI;
     this.partitionURI = partitionURI;
     this.authException = e;
+    this.conf = conf;
   }
 
   @Override
@@ -72,6 +79,11 @@ public class SentryOnFailureHookContextImpl implements SentryOnFailureHookContex
   @Override
   public Set<WriteEntity> getOutputs() {
     return outputs;
+  }
+
+  @Override
+  public HiveOperation getHiveOp() {
+    return hiveOp;
   }
 
   @Override
@@ -107,5 +119,10 @@ public class SentryOnFailureHookContextImpl implements SentryOnFailureHookContex
   @Override
   public AuthorizationException getException() {
     return authException;
+  }
+
+  @Override
+  public Configuration getConf() {
+    return conf;
   }
 }

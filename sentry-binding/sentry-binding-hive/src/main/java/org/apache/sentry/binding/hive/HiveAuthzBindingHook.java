@@ -287,18 +287,18 @@ implements HiveDriverFilterHook {
     try {
       authorizeWithHiveBindings(context, stmtAuthObject, stmtOperation);
     } catch (AuthorizationException e) {
-      executeOnFailureHooks(context, e);
+      executeOnFailureHooks(context, stmtOperation, e);
       throw new SemanticException("No valid privileges", e);
     }
     hiveAuthzBinding.set(context.getConf());
   }
 
   private void executeOnFailureHooks(HiveSemanticAnalyzerHookContext context,
-      AuthorizationException e) {
+      HiveOperation hiveOp, AuthorizationException e) {
     SentryOnFailureHookContext hookCtx = new SentryOnFailureHookContextImpl(
         context.getCommand(), context.getInputs(), context.getOutputs(),
-        currDB, currTab, udfURI, partitionURI, context.getUserName(),
-        context.getIpAddress(), e);
+        hiveOp, currDB, currTab, udfURI, partitionURI, context.getUserName(),
+        context.getIpAddress(), e, context.getConf());
     try {
       for (Hook aofh : getHooks(HiveAuthzConf.AuthzConfVars.AUTHZ_ONFAILURE_HOOKS)) {
         ((SentryOnFailureHook)aofh).run(hookCtx);

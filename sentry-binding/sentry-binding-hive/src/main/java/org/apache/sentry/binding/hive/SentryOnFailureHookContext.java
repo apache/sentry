@@ -18,6 +18,8 @@
 
 package org.apache.sentry.binding.hive;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.sentry.core.AccessURI;
 import org.apache.sentry.core.Database;
 import org.apache.sentry.core.Table;
@@ -50,6 +52,11 @@ public interface SentryOnFailureHookContext  {
    * @return the set of write entities
    */
   public Set<WriteEntity> getOutputs();
+
+  /**
+   * @return the operation
+   */
+  public HiveOperation getHiveOp();
 
   /**
    * @return the user name
@@ -85,5 +92,10 @@ public interface SentryOnFailureHookContext  {
    * @return the authorization failure exception
    */
   public AuthorizationException getException();
+
+  /**
+   * @return the config
+   */
+  public Configuration getConf();
 
 }
