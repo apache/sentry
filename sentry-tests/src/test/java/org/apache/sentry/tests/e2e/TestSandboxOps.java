@@ -213,6 +213,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
     adminStmt.execute("create view v1 AS select * from table_1");
     adminStmt.execute("create table table_part_1 (name string) PARTITIONED BY (year INT)");
     adminStmt.execute("ALTER TABLE table_part_1 ADD PARTITION (year = 2012)");
+    adminStmt.execute("ALTER TABLE table_1 SET TBLPROPERTIES (\"createTime\"=\"1375824555\")");
     adminStmt.close();
     adminCon.close();
 
@@ -235,6 +236,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
     context.assertAuthzException(userStmt, "insert overwrite table table_2 select * from table_1");
     context.assertAuthzException(userStmt, "ALTER TABLE table_part_1 ADD IF NOT EXISTS PARTITION (year = 2012)");
     context.assertAuthzException(userStmt, "ALTER TABLE table_part_1 PARTITION (year = 2012) SET LOCATION '" + baseDir.getPath() + "'");
+    context.assertAuthzException(userStmt, "ALTER TABLE table_1 SET TBLPROPERTIES (\"createTime\"=\"1375824555\")");
   }
 
   /**

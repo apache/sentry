@@ -128,6 +128,7 @@ public class HiveAuthzPrivilegesMap {
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_ARCHIVE, dbDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_UNARCHIVE, dbDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_SERIALIZER, dbDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_PROPERTIES, dbDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_SERIALIZER, dbDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_SERDEPROPERTIES, dbDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_SERDEPROPERTIES, dbDDLPrivilege);
