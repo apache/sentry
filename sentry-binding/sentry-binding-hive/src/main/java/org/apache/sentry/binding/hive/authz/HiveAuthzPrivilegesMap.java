@@ -178,8 +178,8 @@ public class HiveAuthzPrivilegesMap {
     hiveAuthzStmtPrivMap.put(HiveOperation.CREATETABLE_AS_SELECT,
         new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
         addInputObjectPriviledge(AuthorizableType.Table, EnumSet.of(Action.SELECT)).
-        addOutputObjectPriviledge(AuthorizableType.Table, EnumSet.of(Action.ALL)).
-        setOperationScope(HiveOperationScope.TABLE).
+        addOutputObjectPriviledge(AuthorizableType.Db, EnumSet.of(Action.ALL)).
+        setOperationScope(HiveOperationScope.DATABASE).
         setOperationType(HiveOperationType.DDL).
         build());
     hiveAuthzStmtPrivMap.put(HiveOperation.QUERY, tableQueryPrivilege);

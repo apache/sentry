@@ -224,7 +224,9 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
     context.assertAuthzException(userStmt, "drop database " + dbName);
     context.assertAuthzException(userStmt, "CREATE INDEX x ON TABLE table_1(name) AS 'org.apache.hadoop.hive.ql.index.compact.CompactIndexHandler'");
     context.assertAuthzException(userStmt, "CREATE TEMPORARY FUNCTION strip AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
-    context.assertAuthzException(userStmt, "create table c_tab_2 as select * from table_2");
+    context.assertAuthzException(userStmt, "create table foo(id int)");
+    context.assertAuthzException(userStmt, "create table c_tab_2 as select * from table_2"); // no select or create privilege
+    context.assertAuthzException(userStmt, "create table c_tab_1 as select * from table_1"); // no create privilege
     context.assertAuthzException(userStmt, "ALTER DATABASE " + dbName + " SET DBPROPERTIES ('foo' = 'bar')");
     context.assertAuthzException(userStmt, "ALTER VIEW v1 SET TBLPROPERTIES ('foo' = 'bar')");
     context.assertAuthzException(userStmt, "DROP VIEW IF EXISTS v1");
@@ -299,6 +301,9 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
     statement.execute("DROP TABLE IF EXISTS " + TBL2);
     context.assertAuthzException(statement, "CREATE TABLE " + TBL2 +
         " AS SELECT value from " + DB2 + "." + TBL2 + " LIMIT 10");
+    context.assertAuthzException(statement, "CREATE TABLE " + DB2 + "." + TBL2 +
+        " AS SELECT value from " + DB2 + "." + TBL2 + " LIMIT 10");
+
     // f
     policyFile.addPermissionsToRole(GROUP1_ROLE, SELECT_DB2_TBL2);
     policyFile.write(context.getPolicyFile());
