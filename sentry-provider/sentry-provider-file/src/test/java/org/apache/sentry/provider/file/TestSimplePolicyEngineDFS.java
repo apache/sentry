@@ -18,6 +18,7 @@ package org.apache.sentry.provider.file;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import junit.framework.Assert;
 
@@ -25,10 +26,16 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.apache.sentry.provider.file.PolicyFiles;
-import org.apache.sentry.provider.file.SimplePolicyEngine;
+import org.apache.sentry.core.Authorizable;
+import org.apache.sentry.core.Database;
+import org.apache.sentry.core.Server;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Test;
+
+import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.Lists;
+import com.google.common.io.Files;
 
 public class TestSimplePolicyEngineDFS extends AbstractTestSimplePolicyEngine {
 
@@ -68,5 +75,41 @@ public class TestSimplePolicyEngineDFS extends AbstractTestSimplePolicyEngine {
   @Override
   protected void beforeTeardown() throws IOException {
     fileSystem.delete(etc, true);
+  }
+
+  @Test
+  public void testMultiFSPolicy() throws Exception {
+    File globalPolicyFile = new File(Files.createTempDir(), "global-policy.ini");
+    File dbPolicyFile = new File(Files.createTempDir(), "db11-policy.ini");
+
+    // Create global policy file
+    PolicyFile dbPolicy = new PolicyFile()
+      .addPermissionsToRole("db11_role", "server=server1->db=db11")
+      .addRolesToGroup("group1", "db11_role");
+    dbPolicy.write(dbPolicyFile);
+    Path dbPolicyPath = new Path(etc, "db11-policy.ini");
+
+    // create per-db policy file
+    PolicyFile globalPolicy = new PolicyFile()
+      .addPermissionsToRole("admin_role", "server=server1")
+      .addRolesToGroup("admin_group", "admin_role")
+      .addGroupsToUser("hive", "admin_group");
+    globalPolicy.addDatabase("db11", dbPolicyPath.toUri().toString());
+    globalPolicy.write(globalPolicyFile);
+
+
+    PolicyFiles.copyFilesToDir(fileSystem, etc, globalPolicyFile);
+    PolicyFiles.copyFilesToDir(fileSystem, etc, dbPolicyFile);
+    SimplePolicyEngine multiFSEngine =
+        new SimplePolicyEngine(globalPolicyFile.getPath(), "server1");
+
+    List<Authorizable> dbAuthorizables = Lists.newArrayList();
+    dbAuthorizables.add(new Server("server1"));
+    dbAuthorizables.add(new Database("db11"));
+    List<String> dbGroups = Lists.newArrayList();
+    dbGroups.add("group1");
+    ImmutableSetMultimap <String, String> dbPerms =
+        multiFSEngine.getPermissions(dbAuthorizables, dbGroups);
+    Assert.assertEquals("No DB permissions found", 1, dbPerms.size());
   }
 }

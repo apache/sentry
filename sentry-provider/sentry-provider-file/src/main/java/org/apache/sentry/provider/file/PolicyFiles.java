@@ -17,6 +17,7 @@
 package org.apache.sentry.provider.file;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -56,6 +57,16 @@ public class PolicyFiles {
       out.close();
       LOGGER.info("Copying " + resource + " to " + dest + ", bytes " + bytes);
     }
+  }
+
+  public static void copyFilesToDir(FileSystem fs, Path dest, File inputFile)
+      throws IOException {
+    InputStream input = new FileInputStream(inputFile.getPath());
+    FSDataOutputStream out = fs.create(new Path(dest, inputFile.getName()));
+    long bytes = ByteStreams.copy(input, out);
+    input.close();
+    out.hflush();
+    out.close();
   }
 
 

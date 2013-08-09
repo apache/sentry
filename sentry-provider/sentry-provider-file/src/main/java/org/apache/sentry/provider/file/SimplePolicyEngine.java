@@ -68,6 +68,7 @@ public class SimplePolicyEngine implements PolicyEngine {
   private final String serverName;
   private final List<Path> perDbResources = Lists.newArrayList();
   private final AtomicReference<Roles> rolesReference;
+  private final Configuration conf;
   public final static String ACCESS_ALLOW_URI_PER_DB_POLICYFILE = "sentry.allow.uri.db.policyfile";
 
   public SimplePolicyEngine(String resourcePath, String serverName) throws IOException {
@@ -80,6 +81,7 @@ public class SimplePolicyEngine implements PolicyEngine {
     this.fileSystem = resourcePath.getFileSystem(conf);
     this.rolesReference = new AtomicReference<Roles>();
     this.rolesReference.set(new Roles());
+    this.conf = conf;
     parse();
   }
 
@@ -117,7 +119,7 @@ public class SimplePolicyEngine implements PolicyEngine {
           }
           try {
             LOGGER.info("Parsing " + perDbPolicy);
-            Ini perDbIni = PolicyFiles.loadFromPath(fileSystem, perDbPolicy);
+            Ini perDbIni = PolicyFiles.loadFromPath(perDbPolicy.getFileSystem(conf), perDbPolicy);
             if(perDbIni.containsKey(USERS)) {
               throw new ConfigurationException("Per-db policy files cannot contain " + USERS + " section");
             }

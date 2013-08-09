@@ -28,16 +28,21 @@ import java.sql.Statement;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.provider.file.PolicyFiles;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.base.Charsets;
+import com.google.common.base.Joiner;
+import com.google.common.io.Files;
 import com.google.common.io.Resources;
 
 public class TestSandboxOps  extends AbstractTestWithStaticDFS {
   private PolicyFile policyFile;
   private File dataFile;
   private String loadData;
+  private static final String DB2_POLICY_FILE = "db2-policy-file.ini";
 
 
   @Before
@@ -526,6 +531,86 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
     statement.close();
     connection.close();
     dropDb(ADMIN1, DB1, DB2);
+  }
+
+   // Create per-db policy file on hdfs and global policy on local.
+  @Test
+  public void testPerDbPolicyOnDFS() throws Exception {
+    context = createContext();
+    File policyFile = context.getPolicyFile();
+    File db2PolicyFile = new File(baseDir.getPath(), DB2_POLICY_FILE);
+
+    //delete existing policy file; create new policy file
+    assertTrue("Could not delete " + policyFile, context.deletePolicyFile());
+    assertTrue("Could not delete " + db2PolicyFile,!db2PolicyFile.exists() || db2PolicyFile.delete());
+
+    String[] policyFileContents = {
+        // groups : role -> group
+        "[groups]",
+        "admin = all_server",
+        "user_group1 = select_tbl1",
+        "user_group2 = select_tbl2",
+        // roles: privileges -> role
+        "[roles]",
+        "all_server = server=server1",
+        "select_tbl1 = server=server1->db=db1->table=tbl1->action=select",
+        // users: users -> groups
+        "[users]",
+        "hive = admin",
+        "user_1 = user_group1",
+        "user_2 = user_group2",
+        "[databases]",
+        "db2 = " + dfsBaseDir.toUri().toString() + "/" + db2PolicyFile.getName()
+    };
+    context.makeNewPolicy(policyFileContents);
+
+    String[] db2PolicyFileContents = {
+        "[groups]",
+        "user_group2 = select_tbl2",
+        "[roles]",
+        "select_tbl2 = server=server1->db=db2->table=tbl2->action=select"
+    };
+    Files.write(Joiner.on("\n").join(db2PolicyFileContents), db2PolicyFile, Charsets.UTF_8);
+    PolicyFiles.copyFilesToDir(dfsCluster.getFileSystem(), dfsBaseDir, db2PolicyFile);
+
+    // setup db objects needed by the test
+    Connection connection = context.createConnection("hive", "hive");
+    Statement statement = context.createStatement(connection);
+
+    statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
+    statement.execute("DROP DATABASE IF EXISTS db2 CASCADE");
+    statement.execute("CREATE DATABASE db1");
+    statement.execute("USE db1");
+    statement.execute("CREATE TABLE tbl1(B INT, A STRING) " +
+                      " row format delimited fields terminated by '|'  stored as textfile");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE tbl1");
+    statement.execute("DROP DATABASE IF EXISTS db2 CASCADE");
+    statement.execute("CREATE DATABASE db2");
+    statement.execute("USE db2");
+    statement.execute("CREATE TABLE tbl2(B INT, A STRING) " +
+                      " row format delimited fields terminated by '|'  stored as textfile");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE tbl2");
+    statement.close();
+    connection.close();
+
+    // test per-db file for db2
+
+    connection = context.createConnection("user_2", "password");
+    statement = context.createStatement(connection);
+    // test user2 can use db2
+    statement.execute("USE db2");
+    statement.execute("select * from tbl2");
+
+    statement.close();
+    connection.close();
+
+    //test cleanup
+    connection = context.createConnection("hive", "hive");
+    statement = context.createStatement(connection);
+    statement.execute("DROP DATABASE db1 CASCADE");
+    statement.execute("DROP DATABASE db2 CASCADE");
+    statement.close();
+    connection.close();
   }
 
 }
