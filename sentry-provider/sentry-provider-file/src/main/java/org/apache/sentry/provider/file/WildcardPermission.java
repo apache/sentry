@@ -24,6 +24,7 @@ package org.apache.sentry.provider.file;
 import static org.apache.sentry.provider.file.PolicyFileConstants.AUTHORIZABLE_JOINER;
 import static org.apache.sentry.provider.file.PolicyFileConstants.AUTHORIZABLE_SPLITTER;
 
+import java.io.File;
 import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -150,9 +151,11 @@ public class WildcardPermission implements Permission, Serializable {
       // request path does not contain relative parts /a/../b &&
       // request path starts with policy path &&
       // authorities (nullable) are equal
+      String requestPath = requestURI.getPath() + File.separator;
+      String policyPath = policyURI.getPath() + File.separator;
       if(policyURI.getScheme().equals(requestURI.getScheme()) &&
           requestURI.getPath().equals(new URI(request).normalize().getPath()) &&
-          requestURI.getPath().startsWith(policyURI.getPath()) &&
+          requestPath.startsWith(policyPath) &&
           Strings.nullToEmpty(policyURI.getAuthority()).equals(Strings.nullToEmpty(requestURI.getAuthority()))) {
         return true;
       }

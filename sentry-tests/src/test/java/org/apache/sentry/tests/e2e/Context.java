@@ -204,4 +204,8 @@ public class Context {
   public URI getDFSUri() throws IOException {
     return fileSystem.getDefaultUri(fileSystem.getConf());
   }
+
+  public String getProperty(String propName) {
+    return hiveServer.getProperty(propName);
+  }
 }

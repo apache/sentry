@@ -23,6 +23,7 @@ import java.io.FileOutputStream;
 import java.sql.Connection;
 import java.sql.Statement;
 
+import org.apache.hadoop.hive.conf.HiveConf;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -80,6 +81,15 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticDFS {
     statement = context.createStatement(connection);
     statement.execute("use " + DB1);
     context.assertAuthzException(statement, "INSERT OVERWRITE DIRECTORY '" + dumpDir + "' SELECT * FROM " + TBL1);
+    statement.close();
+    connection.close();
+
+    // Negative test, user2 doesn't have access to dir that's similar to scratch dir
+    String scratchDumpDir = context.getProperty(HiveConf.ConfVars.SCRATCHDIR.varname) + "_foo" + "/bar";
+    connection = context.createConnection(USER2, "password");
+    statement = context.createStatement(connection);
+    statement.execute("use " + DB1);
+    context.assertAuthzException(statement, "INSERT OVERWRITE DIRECTORY '" + scratchDumpDir + "' SELECT * FROM " + TBL1);
     statement.close();
     connection.close();
 

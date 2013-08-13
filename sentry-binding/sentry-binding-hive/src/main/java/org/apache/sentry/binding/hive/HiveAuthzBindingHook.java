@@ -18,6 +18,7 @@ package org.apache.sentry.binding.hive;
 
 import static org.apache.hadoop.hive.metastore.MetaStoreUtils.DEFAULT_DATABASE_NAME;
 
+import java.io.File;
 import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -29,6 +30,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.hadoop.hive.common.JavaUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hadoop.hive.ql.HiveDriverFilterHook;
@@ -54,18 +56,17 @@ import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.sentry.binding.hive.authz.HiveAuthzBinding;
 import org.apache.sentry.binding.hive.authz.HiveAuthzPrivileges;
-import org.apache.sentry.binding.hive.authz.HiveAuthzPrivilegesMap;
 import org.apache.sentry.binding.hive.authz.HiveAuthzPrivileges.HiveOperationScope;
 import org.apache.sentry.binding.hive.authz.HiveAuthzPrivileges.HiveOperationType;
+import org.apache.sentry.binding.hive.authz.HiveAuthzPrivilegesMap;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.core.AccessURI;
 import org.apache.sentry.core.Action;
 import org.apache.sentry.core.Authorizable;
+import org.apache.sentry.core.Authorizable.AuthorizableType;
 import org.apache.sentry.core.Database;
 import org.apache.sentry.core.Subject;
 import org.apache.sentry.core.Table;
-import org.apache.hadoop.hive.common.JavaUtils;
-import org.apache.sentry.core.Authorizable.AuthorizableType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -506,12 +507,19 @@ implements HiveDriverFilterHook {
       if (writeEntity.getTyp().equals(Type.DFS_DIR)
           || writeEntity.getTyp().equals(Type.LOCAL_DIR)) {
         HiveConf conf = SessionState.get().getConf();
-        if (writeEntity.getLocation().getPath()
-            .startsWith(conf.getVar(HiveConf.ConfVars.SCRATCHDIR))) {
+        String scratchDirPath = conf.getVar(HiveConf.ConfVars.SCRATCHDIR);
+        if (!scratchDirPath.endsWith(File.pathSeparator)) {
+          scratchDirPath = scratchDirPath + File.pathSeparator;
+        }
+        if (writeEntity.getLocation().getPath().startsWith(scratchDirPath)) {
           return true;
         }
-        if (writeEntity.getLocation().getPath()
-            .startsWith(conf.getVar(HiveConf.ConfVars.LOCALSCRATCHDIR))) {
+
+        String localScratchDirPath = conf.getVar(HiveConf.ConfVars.LOCALSCRATCHDIR);
+        if (!scratchDirPath.endsWith(File.pathSeparator)) {
+          localScratchDirPath = localScratchDirPath + File.pathSeparator;
+        }
+        if (writeEntity.getLocation().getPath().startsWith(localScratchDirPath)) {
           return true;
         }
       }

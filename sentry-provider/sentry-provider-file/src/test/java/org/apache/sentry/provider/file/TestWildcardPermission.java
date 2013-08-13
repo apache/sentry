@@ -25,8 +25,6 @@ import static org.apache.sentry.provider.file.PolicyFileConstants.KV_JOINER;
 import static org.apache.sentry.provider.file.PolicyFileConstants.KV_SEPARATOR;
 
 import org.apache.sentry.core.AccessConstants;
-import org.apache.sentry.provider.file.KeyValue;
-import org.apache.sentry.provider.file.WildcardPermission;
 import org.apache.shiro.authz.Permission;
 import org.junit.Test;
 
@@ -270,6 +268,9 @@ public class TestWildcardPermission {
     // port
     assertFalse(WildcardPermission.impliesURI("hdfs://namenode:8020/path",
         "hdfs://namenode:8021/path/to/some/dir"));
+    // mangled path
+    assertFalse(WildcardPermission.impliesURI("hdfs://namenode:8020/path",
+        "hdfs://namenode:8020/pathFooBar"));
   }
   static WildcardPermission create(KeyValue... keyValues) {
     return create(AUTHORIZABLE_JOINER.join(keyValues));
