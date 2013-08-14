@@ -182,7 +182,7 @@ implements HiveDriverFilterHook {
           throw new SemanticException("Could not find the jar for UDF class " + udfClassName +
               "to validate privileges");
         }
-        udfURI = parseURI(udfJar);
+        udfURI = parseURI(udfJar, true);
       } catch (ClassNotFoundException e) {
         throw new SemanticException("Error retrieving udf class", e);
       }
@@ -241,25 +241,40 @@ implements HiveDriverFilterHook {
     }
     return null;
   }
+
   @VisibleForTesting
   protected static AccessURI parseURI(String uri) throws SemanticException {
-    if(!(uri.startsWith("file://") || uri.startsWith("hdfs://"))) {
-      if(uri.startsWith("file:")) {
+    return parseURI(uri, false);
+  }
+
+  @VisibleForTesting
+  protected static AccessURI parseURI(String uri, boolean isLocal)
+      throws SemanticException {
+    if (!(uri.startsWith("file://") || uri.startsWith("hdfs://"))) {
+      if (uri.startsWith("file:")) {
         uri = uri.replace("file:", "file://");
-      } else if(uri.startsWith("/")) {
-        String wareHouseDir = SessionState.get().getConf().get(ConfVars.METASTOREWAREHOUSE.varname);
-        if(wareHouseDir.startsWith("hdfs:")) {
+      } else if (uri.startsWith("/")) {
+        String wareHouseDir = SessionState.get().getConf()
+            .get(ConfVars.METASTOREWAREHOUSE.varname);
+        if (wareHouseDir.startsWith("hdfs:")) {
           URI warehouse = toDFSURI(wareHouseDir);
           uri = warehouse.getScheme() + "://" + warehouse.getAuthority() + uri;
-        } else {
+        } else if (wareHouseDir.startsWith("file:")) {
           uri = "file://" + uri;
+        } else {
+          if (isLocal) {
+            uri = "file://" + uri;
+          } else {
+            uri = "hdfs://" + uri;
+          }
         }
       }
       return new AccessURI(uri);
     }
     return new AccessURI(uri);
   }
-  private static URI toDFSURI(String s) throws SemanticException {
+
+    private static URI toDFSURI(String s) throws SemanticException {
     try {
       URI uri = new URI(s);
       if(uri.getScheme() == null || uri.getAuthority() == null) {
