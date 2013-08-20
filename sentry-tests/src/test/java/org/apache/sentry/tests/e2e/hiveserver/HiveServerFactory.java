@@ -56,6 +56,7 @@ public class HiveServerFactory {
   public static final String SUPPORT_CONCURRENCY = HiveConf.ConfVars.HIVE_SUPPORT_CONCURRENCY.varname;
   public static final String HADOOPBIN = ConfVars.HADOOPBIN.toString();
   public static final String DEFAULT_AUTHZ_SERVER_NAME = "server1";
+  public static final String HIVESERVER2_IMPERSONATION = "hive.server2.enable.doAs";
 
 
   static {
@@ -166,6 +167,7 @@ public class HiveServerFactory {
       hiveConf.set(HiveConf.ConfVars.HIVE_SERVER2_SESSION_HOOK.varname,
         "org.apache.sentry.binding.hive.HiveAuthzBindingSessionHook");
     }
+    hiveConf.set(HIVESERVER2_IMPERSONATION, "false");
     out = new FileOutputStream(hiveSite);
     hiveConf.writeXml(out);
     out.close();
