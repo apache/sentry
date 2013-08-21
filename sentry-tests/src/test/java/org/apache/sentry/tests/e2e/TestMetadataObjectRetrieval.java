@@ -71,27 +71,28 @@ AbstractTestWithStaticLocalFS {
     statement.execute("USE " + db);
     ResultSet rs = statement.executeQuery("DESCRIBE " + table);
     assertTrue(rs.next());
-    assertTrue("describe table fail", rs.getString(1).equals("under_col"));
-    assertTrue("describe table fail", rs.getString(2).equals("int"));
+    
+    assertTrue("describe table fail", rs.getString(1).trim().equals("under_col"));
+    assertTrue("describe table fail", rs.getString(2).trim().equals("int"));
     assertTrue(rs.next());
-    assertTrue("describe table fail", rs.getString(1).equals("value"));
-    assertTrue("describe table fail", rs.getString(2).equals("string"));
+    assertTrue("describe table fail", rs.getString(1).trim().equals("value"));
+    assertTrue("describe table fail", rs.getString(2).trim().equals("string"));
 
     rs = statement.executeQuery("DESCRIBE " + table + " under_col");
     assertTrue(rs.next());
-    assertTrue("describe table fail", rs.getString(1).equals("under_col"));
-    assertTrue("describe table fail", rs.getString(2).equals("int"));
+    assertTrue("describe table fail", rs.getString(1).trim().equals("under_col"));
+    assertTrue("describe table fail", rs.getString(2).trim().equals("int"));
 
     rs = statement.executeQuery("DESCRIBE " + table + " value");
     assertTrue(rs.next());
-    assertTrue("describe table fail", rs.getString(1).equals("value"));
-    assertTrue("describe table fail", rs.getString(2).equals("string"));
+    assertTrue("describe table fail", rs.getString(1).trim().equals("value"));
+    assertTrue("describe table fail", rs.getString(2).trim().equals("string"));
 
     rs = statement.executeQuery("SHOW COLUMNS FROM " + table);
     assertTrue(rs.next());
-    assertTrue("show columns from fail", rs.getString(1).equals("under_col"));
+    assertTrue("show columns from fail", rs.getString(1).trim().equals("under_col"));
     assertTrue(rs.next());
-    assertTrue("show columns from fail", rs.getString(1).equals("value"));
+    assertTrue("show columns from fail", rs.getString(1).trim().equals("value"));
 
     rs = statement.executeQuery("SHOW CREATE TABLE " + table);
     assertTrue("SHOW CREATE TABLE fail", rs.next());
