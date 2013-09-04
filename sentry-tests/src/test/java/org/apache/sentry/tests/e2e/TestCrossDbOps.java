@@ -69,9 +69,9 @@ public class TestCrossDbOps extends AbstractTestWithStaticLocalFS {
 
   /*
    * Admin creates DB_1, DB2, tables (tab_1 ) and (tab_2, tab_3) in DB_1 and
-   * DB_2 respectively. User user_1 has select on DB_1.tab_1, insert on
-   * DB2.tab_2 User user_2 has select on DB2.tab_3 Test show database and show
-   * tables for both user_1 and user_2
+   * DB_2 respectively. User user1 has select on DB_1.tab_1, insert on
+   * DB2.tab_2 User user2 has select on DB2.tab_3 Test show database and show
+   * tables for both user1 and user2
    */
   @Test
   public void testShowDatabasesAndShowTables() throws Exception {
@@ -196,9 +196,9 @@ public class TestCrossDbOps extends AbstractTestWithStaticLocalFS {
 
   /*
    * Admin creates DB_1, DB2, tables (tab_1 ) and (tab_2, tab_3) in DB_1 and
-   * DB_2 respectively. User user_1 has select on DB_1.tab_1, insert on
-   * DB2.tab_2 User user_2 has select on DB2.tab_3 Test show database and show
-   * tables for both user_1 and user_2
+   * DB_2 respectively. User user1 has select on DB_1.tab_1, insert on
+   * DB2.tab_2 User user2 has select on DB2.tab_3 Test show database and show
+   * tables for both user1 and user2
    */
   @Test
   public void testJDBCGetSchemasAndGetTables() throws Exception {
@@ -359,10 +359,10 @@ public class TestCrossDbOps extends AbstractTestWithStaticLocalFS {
   }
 
   /**
-   * 2.8 admin user create two database, DB_1, DB_2 admin grant all to USER_1,
-   * USER_2 on DB_1, admin grant all to USER_1's group, USER_2's group on DB_2
-   * positive test case: USER_1, USER_2 has ALL privilege on both DB_1 and DB_2
-   * negative test case: USER_1, USER_2 don't have ALL privilege on SERVER
+   * 2.8 admin user create two database, DB_1, DB_2 admin grant all to USER1,
+   * USER2 on DB_1, admin grant all to user1's group, user2's group on DB_2
+   * positive test case: user1, user2 has ALL privilege on both DB_1 and DB_2
+   * negative test case: user1, user2 don't have ALL privilege on SERVER
    */
   @Test
   public void testDbPrivileges() throws Exception {
@@ -424,8 +424,8 @@ public class TestCrossDbOps extends AbstractTestWithStaticLocalFS {
 
   /**
    * Test Case 2.14 admin user create a new database DB_1 create TABLE_1 in DB_1
-   * admin user grant INSERT to USER_1's group on TABLE_1 negative test case:
-   * USER_1 try to do following on TABLE_1 will fail: --explain --analyze
+   * admin user grant INSERT to user1's group on TABLE_1 negative test case:
+   * user1 try to do following on TABLE_1 will fail: --explain --analyze
    * --describe --describe function --show columns --show table status --show
    * table properties --show create table --show partitions --show indexes
    * --select * from TABLE_1.
@@ -462,8 +462,8 @@ public class TestCrossDbOps extends AbstractTestWithStaticLocalFS {
 
   /**
    * Test Case 2.16 admin user create a new database DB_1 create TABLE_1 and
-   * TABLE_2 (same schema) in DB_1 admin user grant SELECT, INSERT to USER_1's
-   * group on TABLE_2 negative test case: USER_1 try to do following on TABLE_1
+   * TABLE_2 (same schema) in DB_1 admin user grant SELECT, INSERT to user1's
+   * group on TABLE_2 negative test case: user1 try to do following on TABLE_1
    * will fail: --insert overwrite TABLE_2 select * from TABLE_1
    */
   @Test
@@ -582,13 +582,13 @@ public class TestCrossDbOps extends AbstractTestWithStaticLocalFS {
   /**
    * Steps: 1. admin user create databases, DB_1 and DB_2, no table or other
    * object in database
-   * 2. admin grant all to USER_1's group on DB_1 and DB_2
+   * 2. admin grant all to user1's group on DB_1 and DB_2
    * positive test case:
-   *  a)USER_1 has the privilege to create table, load data,
+   *  a)user1 has the privilege to create table, load data,
    *   drop table, create view, insert more data on both databases
-   * b) USER_1 can switch between DB_1 and DB_2 without exception
+   * b) user1 can switch between DB_1 and DB_2 without exception
    * negative test case:
-   * c) USER_1 cannot drop database
+   * c) user1 cannot drop database
    */
   @Test
   public void testSandboxOpt9() throws Exception {
@@ -656,13 +656,13 @@ public class TestCrossDbOps extends AbstractTestWithStaticLocalFS {
   /**
    * Steps: 1. admin user create databases, DB_1 and DB_2, no table or other
    * object in database positive test case:
-   * d) USER_1 has the privilege to create view on tables in DB_1 negative test case:
-   * e) USER_1 cannot create view in DB_1 that select from tables in DB_2
+   * d) user1 has the privilege to create view on tables in DB_1 negative test case:
+   * e) user1 cannot create view in DB_1 that select from tables in DB_2
    *  with no select privilege 2.
    * positive test case:
-   * f) USER_1 has the privilege to create view to select from DB_1.tb_1
+   * f) user1 has the privilege to create view to select from DB_1.tb_1
    *  and DB_2.tb_2 negative test case:
-   * g) USER_1 cannot create view to select from DB_1.tb_1 and DB_2.tb_3
+   * g) user1 cannot create view to select from DB_1.tb_1 and DB_2.tb_3
    */
   @Test
   public void testCrossDbViewOperations() throws Exception {

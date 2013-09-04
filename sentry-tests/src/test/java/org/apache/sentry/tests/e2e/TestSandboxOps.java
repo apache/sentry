@@ -137,8 +137,8 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
 
   /**
    * Test Case 2.16 admin user create a new database DB_1 create TABLE_1 and
-   * TABLE_2 (same schema) in DB_1 admin user grant SELECT, INSERT to USER_1's
-   * group on TABLE_2 negative test case: USER_1 try to do following on TABLE_1
+   * TABLE_2 (same schema) in DB_1 admin user grant SELECT, INSERT to user1's
+   * group on TABLE_2 negative test case: user1 try to do following on TABLE_1
    * will fail: --insert overwrite TABLE_2 select * from TABLE_1
    */
   @Test
@@ -248,25 +248,25 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
    * Steps:
    * 1. admin user create databases, DB_1 and DB_2, no table or other
    * object in database
-   * 2. admin grant all to USER_1's group on DB_1 and DB_2
+   * 2. admin grant all to user1's group on DB_1 and DB_2
    *   positive test case:
-   *     a)USER_1 has the privilege to create table, load data,
+   *     a)user1 has the privilege to create table, load data,
    *     drop table, create view, insert more data on both databases
-   *     b) USER_1 can switch between DB_1 and DB_2 without
+   *     b) user1 can switch between DB_1 and DB_2 without
    *     exception negative test case:
-   *     c) USER_1 cannot drop database
+   *     c) user1 cannot drop database
    * 3. admin remove all to group1 on DB_2
    *   positive test case:
-   *     d) USER_1 has the privilege to create view on tables in DB_1
+   *     d) user1 has the privilege to create view on tables in DB_1
    *   negative test case:
-   *     e) USER_1 cannot create view on tables in DB_1 that select
+   *     e) user1 cannot create view on tables in DB_1 that select
    *     from tables in DB_2
    * 4. admin grant select to group1 on DB_2.ta_2
    *   positive test case:
-   *     f) USER_1 has the privilege to create view to select from
+   *     f) user1 has the privilege to create view to select from
    *     DB_1.tb_1 and DB_2.tb_2
    *   negative test case:
-   *     g) USER_1 cannot create view to select from DB_1.tb_1
+   *     g) user1 cannot create view to select from DB_1.tb_1
    *     and DB_2.tb_3
    * @throws Exception
    */
@@ -334,12 +334,12 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
    * 1. admin user create a new database DB_1
    * 2. admin create TABLE_1 in DB_1
    * 3. admin create INDEX_1 for COLUMN_1 in TABLE_1 in DB_1
-   * 4. admin user grant INSERT and SELECT to USER_1's group on TABLE_1
+   * 4. admin user grant INSERT and SELECT to user1's group on TABLE_1
    *
    *   negative test case:
-   *     a) USER_1 try to SELECT * FROM TABLE_1 WHERE COLUMN_1 == ...
+   *     a) user1 try to SELECT * FROM TABLE_1 WHERE COLUMN_1 == ...
    *     should NOT work
-   *     b) USER_1 should not be able to check the list of view or
+   *     b) user1 should not be able to check the list of view or
    *     index in DB_1
    * @throws Exception
    */
@@ -557,8 +557,8 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
         // users: users -> groups
         "[users]",
         "hive = admin",
-        "user_1 = user_group1",
-        "user_2 = user_group2",
+        "user1 = user_group1",
+        "user2 = user_group2",
         "[databases]",
         "db2 = " + dfsBaseDir.toUri().toString() + "/" + db2PolicyFile.getName()
     };
@@ -595,7 +595,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
 
     // test per-db file for db2
 
-    connection = context.createConnection("user_2", "password");
+    connection = context.createConnection("user2", "password");
     statement = context.createStatement(connection);
     // test user2 can use db2
     statement.execute("USE db2");

@@ -56,7 +56,7 @@ public class TestSentryOnFailureHookLoading extends AbstractTestWithHiveServer {
   }
 
   /* Admin creates database DB_2
-   * USER_1 tries to drop DB_2, but it has permissions for DB_1.
+   * user1 tries to drop DB_2, but it has permissions for DB_1.
    */
   @Test
   public void testOnFailureHookLoading() throws Exception {
@@ -94,7 +94,7 @@ public class TestSentryOnFailureHookLoading extends AbstractTestWithHiveServer {
     // users: users -> groups
     context.append("[users]");
     context.append("hive = admin");
-    context.append("user_1 = user_group1");
+    context.append("user1 = user_group1");
     // setup db objects needed by the test
     Connection connection = context.createConnection("hive", "hive");
     Statement statement = context.createStatement(connection);
@@ -106,7 +106,7 @@ public class TestSentryOnFailureHookLoading extends AbstractTestWithHiveServer {
     connection.close();
 
     // test execution
-    connection = context.createConnection("user_1", "password");
+    connection = context.createConnection("user1", "password");
     statement = context.createStatement(connection);
 
     //negative test case: user can't drop another user's database

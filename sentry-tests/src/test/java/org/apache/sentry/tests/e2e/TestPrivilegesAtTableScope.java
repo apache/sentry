@@ -62,7 +62,7 @@ public class TestPrivilegesAtTableScope
   /*
    * Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, loads data into
    * TAB_1, TAB_2 Admin grants SELECT on TAB_1, TAB_2, INSERT on TAB_1 to
-   * USER_GROUP of which USER_1 is a member.
+   * USER_GROUP of which user1 is a member.
    */
   @Test
   public void testInsertAndSelect() throws Exception {
@@ -89,7 +89,7 @@ public class TestPrivilegesAtTableScope
     // users: users -> groups
     context.append("[users]");
     context.append("hive = admin");
-    context.append("user_1 = user_group");
+    context.append("user1 = user_group");
     // setup db objects needed by the test
     Connection connection = context.createConnection("hive", "hive");
     Statement statement = context.createStatement(connection);
@@ -106,7 +106,7 @@ public class TestPrivilegesAtTableScope
     connection.close();
 
     // test execution
-    connection = context.createConnection("user_1", "password");
+    connection = context.createConnection("user1", "password");
     statement = context.createStatement(connection);
     statement.execute("USE DB_1");
     // test user can insert
@@ -142,8 +142,8 @@ public class TestPrivilegesAtTableScope
     statement.close();
     connection.close();
 
-    // negative test: connect as user_1 and try to recreate tab_1
-    connection = context.createConnection("user_1", "password");
+    // negative test: connect as user1 and try to recreate tab_1
+    connection = context.createConnection("user1", "password");
     statement = context.createStatement(connection);
     statement.execute("USE DB_1");
     try {
@@ -168,7 +168,7 @@ public class TestPrivilegesAtTableScope
   /*
    * Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, loads data into
    * TAB_1, TAB_2. Admin grants INSERT on TAB_1, SELECT on TAB_2 to USER_GROUP
-   * of which USER_1 is a member.
+   * of which user1 is a member.
    */
   @Test
   public void testInsert() throws Exception {
@@ -194,7 +194,7 @@ public class TestPrivilegesAtTableScope
     // users: users -> groups
     context.append("[users]");
     context.append("hive = admin");
-    context.append("user_1 = user_group");
+    context.append("user1 = user_group");
     // setup db objects needed by the test
     Connection connection = context.createConnection("hive", "hive");
     Statement statement = context.createStatement(connection);
@@ -212,7 +212,7 @@ public class TestPrivilegesAtTableScope
     connection.close();
 
     // test execution
-    connection = context.createConnection("user_1", "password");
+    connection = context.createConnection("user1", "password");
     statement = context.createStatement(connection);
     statement.execute("USE DB_1");
     // test user can execute insert on table
@@ -264,7 +264,7 @@ public class TestPrivilegesAtTableScope
   /*
    * Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, loads data into
    * TAB_1, TAB_2. Admin grants SELECT on TAB_1, TAB_2 to USER_GROUP of which
-   * USER_1 is a member.
+   * user1 is a member.
    */
   @Test
   public void testSelect() throws Exception {
@@ -290,7 +290,7 @@ public class TestPrivilegesAtTableScope
     // users: users -> groups
     context.append("[users]");
     context.append("hive = admin");
-    context.append("user_1 = user_group");
+    context.append("user1 = user_group");
     // setup db objects needed by the test
     Connection connection = context.createConnection("hive", "hive");
     Statement statement = context.createStatement(connection);
@@ -309,7 +309,7 @@ public class TestPrivilegesAtTableScope
     connection.close();
 
     // test execution
-    connection = context.createConnection("user_1", "password");
+    connection = context.createConnection("user1", "password");
     statement = context.createStatement(connection);
     statement.execute("USE DB_1");
     // test user can execute query on table
@@ -361,7 +361,7 @@ public class TestPrivilegesAtTableScope
   /*
    * Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, VIEW_1 on TAB_1
    * loads data into TAB_1, TAB_2. Admin grants SELECT on TAB_1,TAB_2 to
-   * USER_GROUP of which USER_1 is a member.
+   * USER_GROUP of which user1 is a member.
    */
   @Test
   public void testTableViewJoin() throws Exception {
@@ -386,7 +386,7 @@ public class TestPrivilegesAtTableScope
     // users: users -> groups
     context.append("[users]");
     context.append("hive = admin");
-    context.append("user_1 = user_group");
+    context.append("user1 = user_group");
     // setup db objects needed by the test
     Connection connection = context.createConnection("hive", "hive");
     Statement statement = context.createStatement(connection);
@@ -407,7 +407,7 @@ public class TestPrivilegesAtTableScope
     connection.close();
 
     // test execution
-    connection = context.createConnection("user_1", "password");
+    connection = context.createConnection("user1", "password");
     statement = context.createStatement(connection);
     statement.execute("USE DB_1");
     // test user can execute query TAB_1 JOIN TAB_2
@@ -446,7 +446,7 @@ public class TestPrivilegesAtTableScope
   /*
    * Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, VIEW_1 on TAB_1
    * loads data into TAB_1, TAB_2. Admin grants SELECT on TAB_2 to USER_GROUP of
-   * which USER_1 is a member.
+   * which user1 is a member.
    */
   @Test
   public void testTableViewJoin2() throws Exception {
@@ -473,7 +473,7 @@ public class TestPrivilegesAtTableScope
     // users: users -> groups
     context.append("[users]");
     context.append("hive = admin");
-    context.append("user_1 = user_group");
+    context.append("user1 = user_group");
     // setup db objects needed by the test
     Connection connection = context.createConnection("hive", "hive");
     Statement statement = context.createStatement(connection);
@@ -494,7 +494,7 @@ public class TestPrivilegesAtTableScope
     connection.close();
 
     // test execution
-    connection = context.createConnection("user_1", "password");
+    connection = context.createConnection("user1", "password");
     statement = context.createStatement(connection);
     statement.execute("USE DB_1");
     // test user can execute query on TAB_2
@@ -541,7 +541,7 @@ public class TestPrivilegesAtTableScope
   /*
    * Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, VIEW_1 on TAB_1
    * loads data into TAB_1, TAB_2. Admin grants SELECT on TAB_2, VIEW_1 to
-   * USER_GROUP of which USER_1 is a member.
+   * USER_GROUP of which user1 is a member.
    */
   @Test
   public void testTableViewJoin3() throws Exception {
@@ -567,7 +567,7 @@ public class TestPrivilegesAtTableScope
     // users: users -> groups
     context.append("[users]");
     context.append("hive = admin");
-    context.append("user_1 = user_group");
+    context.append("user1 = user_group");
     // setup db objects needed by the test
     Connection connection = context.createConnection("hive", "hive");
     Statement statement = context.createStatement(connection);
@@ -588,7 +588,7 @@ public class TestPrivilegesAtTableScope
     connection.close();
 
     // test execution
-    connection = context.createConnection("user_1", "password");
+    connection = context.createConnection("user1", "password");
     statement = context.createStatement(connection);
     statement.execute("USE DB_1");
     // test user can execute query on TAB_2
@@ -651,7 +651,7 @@ public class TestPrivilegesAtTableScope
   /*
    * Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, VIEW_1 on TAB_1
    * loads data into TAB_1, TAB_2. Admin grants SELECT on TAB_1, VIEW_1 to
-   * USER_GROUP of which USER_1 is a member.
+   * USER_GROUP of which user1 is a member.
    */
   @Test
   public void testTableViewJoin4() throws Exception {
@@ -677,7 +677,7 @@ public class TestPrivilegesAtTableScope
     // users: users -> groups
     context.append("[users]");
     context.append("hive = admin");
-    context.append("user_1 = user_group");
+    context.append("user1 = user_group");
     // setup db objects needed by the test
     Connection connection = context.createConnection("hive", "hive");
     Statement statement = context.createStatement(connection);
@@ -698,7 +698,7 @@ public class TestPrivilegesAtTableScope
     connection.close();
 
     // test execution
-    connection = context.createConnection("user_1", "password");
+    connection = context.createConnection("user1", "password");
     statement = context.createStatement(connection);
     statement.execute("USE DB_1");
 

@@ -79,8 +79,8 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
         // users: users -> groups
         "[users]",
         "hive = admin",
-        "user_1 = user_group1",
-        "user_2 = user_group2",
+        "user1 = user_group1",
+        "user2 = user_group2",
         "[databases]",
         "db2 = " + db2PolicyFile.getPath(),
     };
@@ -115,7 +115,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // test execution
-    connection = context.createConnection("user_1", "password");
+    connection = context.createConnection("user1", "password");
     statement = context.createStatement(connection);
     statement.execute("USE db1");
     // test user1 can execute query on tbl1
@@ -129,7 +129,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
 
     // test per-db file for db2
 
-    connection = context.createConnection("user_2", "password");
+    connection = context.createConnection("user2", "password");
     statement = context.createStatement(connection);
     statement.execute("USE db2");
     // test user2 can execute query on tbl2
@@ -190,10 +190,10 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
         // users: users -> groups
         "[users]",
         "hive = admin",
-        "user_1 = user_group1",
-        "user_2 = user_group2",
-        "user_3 = user_group3",
-        "user_4 = user_group4",
+        "user1 = user_group1",
+        "user2 = user_group2",
+        "user3 = user_group3",
+        "user4 = user_group4",
         "[databases]",
         "db2 = " + db2PolicyFile.getPath(),
         "db3 = " + db3PolicyFile.getPath(),
@@ -260,14 +260,14 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // test execution
-    connection = context.createConnection("user_1", "password");
+    connection = context.createConnection("user1", "password");
     statement = context.createStatement(connection);
     statement.execute("USE db1");
     // test user1 can execute query on tbl1
     verifyCount(statement, "SELECT COUNT(*) FROM tbl1");
     connection.close();
 
-    connection = context.createConnection("user_2", "password");
+    connection = context.createConnection("user2", "password");
     statement = context.createStatement(connection);
     statement.execute("USE db2");
     // test user1 can execute query on tbl1
@@ -275,14 +275,14 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // verify no access to db3 due to badly formatted rule in db3 policy file
-    connection = context.createConnection("user_3", "password");
+    connection = context.createConnection("user3", "password");
     statement = context.createStatement(connection);
     context.assertAuthzException(statement, "USE db3");
     // test user1 can execute query on tbl1
     context.assertAuthzException(statement, "SELECT COUNT(*) FROM db3.tbl3");
     connection.close();
 
-    connection = context.createConnection("user_4", "password");
+    connection = context.createConnection("user4", "password");
     statement = context.createStatement(connection);
     statement.execute("USE db4");
     // test user1 can execute query on tbl1
@@ -328,8 +328,8 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
         // users: users -> groups
         "[users]",
         "hive = admin",
-        "user_1 = user_group1",
-        "user_2 = user_group2",
+        "user1 = user_group1",
+        "user2 = user_group2",
         "[databases]",
         "db2 = " + db2PolicyFile.getPath(),
     };
@@ -369,7 +369,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // test execution
-    connection = context.createConnection("user_1", "password");
+    connection = context.createConnection("user1", "password");
     statement = context.createStatement(connection);
     statement.execute("USE db1");
     // test user1 can execute query on tbl1
@@ -382,7 +382,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // test per-db file for db2
-    connection = context.createConnection("user_2", "password");
+    connection = context.createConnection("user2", "password");
     statement = context.createStatement(connection);
     statement.execute("USE db2");
     // test user2 can execute query on tbl2

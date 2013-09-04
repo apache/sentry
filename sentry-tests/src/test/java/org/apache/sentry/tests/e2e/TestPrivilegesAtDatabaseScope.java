@@ -60,7 +60,7 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
   }
 
   /* Admin creates database DB_1
-   * Admin grants ALL to USER_GROUP of which USER_1 is a member.
+   * Admin grants ALL to USER_GROUP of which user1 is a member.
    */
   @Test
   public void testAllPrivilege() throws Exception {
@@ -89,8 +89,8 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
     // users: users -> groups
     context.append("[users]");
     context.append("hive = admin");
-    context.append("user_1 = user_group1");
-    context.append("user_2 = user_group2");
+    context.append("user1 = user_group1");
+    context.append("user2 = user_group2");
     // setup db objects needed by the test
     Connection connection = context.createConnection("hive", "hive");
     Statement statement = context.createStatement(connection);
@@ -102,7 +102,7 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
     connection.close();
 
     // test execution
-    connection = context.createConnection("user_1", "password");
+    connection = context.createConnection("user1", "password");
     statement = context.createStatement(connection);  
     // test user can create table
     statement.execute("CREATE TABLE DB_1.TAB_1(A STRING)");
@@ -180,7 +180,7 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
   }
 
   /* Admin creates database DB_1, creates table TAB_1, loads data into it
-   * Admin grants ALL to USER_GROUP of which USER_1 is a member.
+   * Admin grants ALL to USER_GROUP of which user1 is a member.
    */
   @Test
   public void testAllPrivilegeOnObjectOwnedByAdmin() throws Exception {
@@ -212,8 +212,8 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
     // users: users -> groups
     context.append("[users]");
     context.append("hive = admin");
-    context.append("user_1 = user_group1");
-    context.append("user_2 = user_group2");
+    context.append("user1 = user_group1");
+    context.append("user2 = user_group2");
     // setup db objects needed by the test
     Connection connection = context.createConnection("hive", "hive");
     Statement statement = context.createStatement(connection);
@@ -231,7 +231,7 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
     connection.close();
 
     // test execution
-    connection = context.createConnection("user_1", "password");
+    connection = context.createConnection("user1", "password");
     statement = context.createStatement(connection);
     // test user can switch db
     statement.execute("USE DB_1");
@@ -287,7 +287,7 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
     statement.close();
     connection.close();
 
-    connection = context.createConnection("user_2", "password");
+    connection = context.createConnection("user2", "password");
     statement = context.createStatement(connection);
     try {
       statement.execute("CREATE EXTERNAL TABLE EXT_TAB_1(A STRING) STORED AS TEXTFILE LOCATION 'file:"+
@@ -338,9 +338,9 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
     // users: users -> groups
     context.append("[users]");
     context.append("hive = admin");
-    context.append("user_1 = user_group1");
-    context.append("user_2 = user_group2");
-    context.append("user_3 = user_group3");
+    context.append("user1 = user_group1");
+    context.append("user2 = user_group2");
+    context.append("user3 = user_group3");
 
     // setup db objects needed by the test
     Connection connection = context.createConnection("hive", "hive");
@@ -355,30 +355,30 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
     statement.execute("CREATE TABLE TAB_2(A STRING)");
     context.close();
 
-    // user_1 should be able to connect db_1
-    connection = context.createConnection("user_1", "hive");
+    // user1 should be able to connect db_1
+    connection = context.createConnection("user1", "hive");
     statement = context.createStatement(connection);
     statement.execute("use DB_1");
     context.close();
 
-    // user_2 should not be able to connect db_1
-    connection = context.createConnection("user_2", "hive");
+    // user2 should not be able to connect db_1
+    connection = context.createConnection("user2", "hive");
     statement = context.createStatement(connection);
     try {
       statement.execute("use DB_1");
-      assertFalse("User_2 shouldn't be able switch to db_1", true);
+      assertFalse("user2 shouldn't be able switch to db_1", true);
     } catch (SQLException e) {
       context.verifyAuthzException(e);
     }
     statement.execute("use DB_2");
     context.close();
 
-    // user_3 who is not listed in policy file should not be able to connect db_2
-    connection = context.createConnection("user_3", "hive");
+    // user3 who is not listed in policy file should not be able to connect db_2
+    connection = context.createConnection("user3", "hive");
     statement = context.createStatement(connection);
     try {
       statement.execute("use DB_2");
-      assertFalse("User_3 shouldn't be able switch to db_2", true);
+      assertFalse("user3 shouldn't be able switch to db_2", true);
     } catch (SQLException e) {
       context.verifyAuthzException(e);
     }
@@ -410,26 +410,26 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
     // users: users -> groups
     context.append("[users]");
     context.append("hive = admin");
-    context.append("user_1 = user_group1");
-    context.append("user_2 = user_group2");
-    context.append("user_3 = user_group3");
+    context.append("user1 = user_group1");
+    context.append("user2 = user_group2");
+    context.append("user3 = user_group3");
 
     Connection connection = context.createConnection("hive", "hive");
     Statement statement = context.createStatement(connection);
     statement.execute("use default");
     context.close();
 
-    connection = context.createConnection("user_1", "hive");
+    connection = context.createConnection("user1", "hive");
     statement = context.createStatement(connection);
     statement.execute("use default");
     context.close();
 
-    connection = context.createConnection("user_2", "hive");
+    connection = context.createConnection("user2", "hive");
     statement = context.createStatement(connection);
     statement.execute("use default");
     context.close();
 
-    connection = context.createConnection("user_3", "hive");
+    connection = context.createConnection("user3", "hive");
     statement = context.createStatement(connection);
     statement.execute("use default");
     context.close();
@@ -463,31 +463,31 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
     // users: users -> groups
     context.append("[users]");
     context.append("hive = admin");
-    context.append("user_1 = user_group1");
-    context.append("user_2 = user_group2");
-    context.append("user_3 = user_group3");
+    context.append("user1 = user_group1");
+    context.append("user2 = user_group2");
+    context.append("user3 = user_group3");
 
     Connection connection = context.createConnection("hive", "hive");
     Statement statement = context.createStatement(connection);
     statement.execute("use default");
     context.close();
 
-    connection = context.createConnection("user_1", "hive");
+    connection = context.createConnection("user1", "hive");
     statement = context.createStatement(connection);
     statement.execute("use default");
     context.close();
 
-    connection = context.createConnection("user_2", "hive");
+    connection = context.createConnection("user2", "hive");
     statement = context.createStatement(connection);
     statement.execute("use default");
     context.close();
 
-    connection = context.createConnection("user_3", "hive");
+    connection = context.createConnection("user3", "hive");
     statement = context.createStatement(connection);
     try {
-      // user_3 doesn't have any implicit permission for default
+      // user3 doesn't have any implicit permission for default
       statement.execute("use default");
-      assertFalse("User_3 shouldn't be able switch to default", true);
+      assertFalse("user3 shouldn't be able switch to default", true);
     } catch (SQLException e) {
       context.verifyAuthzException(e);
     }

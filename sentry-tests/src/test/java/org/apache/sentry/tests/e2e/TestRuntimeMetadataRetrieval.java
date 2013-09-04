@@ -66,7 +66,7 @@ public class TestRuntimeMetadataRetrieval
   /**
    * Steps: 1. admin create db_1 and db_1.tb_1
    *        2. admin should see all tables
-   *        3. user_1 should only see the tables it has any level of privilege
+   *        3. user1 should only see the tables it has any level of privilege
    */
   @Test
   public void testShowTables1() throws Exception {
@@ -120,7 +120,7 @@ public class TestRuntimeMetadataRetrieval
   /**
    * Steps: 1. admin create db_1 and tables
    * 2. admin should see all tables
-   * 3. user_1 should only see the all tables with db level privilege
+   * 3. user1 should only see the all tables with db level privilege
    */
   @Test
   public void testShowTables2() throws Exception {
@@ -168,7 +168,7 @@ public class TestRuntimeMetadataRetrieval
   /**
    * Steps: 1. admin create db_1 and db_1.tb_1
    *        2. admin should see all tables
-   *        3. user_1 should only see the tables he/she has any level of privilege
+   *        3. user1 should only see the tables he/she has any level of privilege
    */
   @Test
   public void testShowTables3() throws Exception {
@@ -218,7 +218,7 @@ public class TestRuntimeMetadataRetrieval
   /**
    * Steps: 1. admin create db_1 and db_1.tb_1
    *        2. admin should see all tables
-   *        3. user_1 should only see the tables with db level privilege
+   *        3. user1 should only see the tables with db level privilege
    */
   @Test
   public void testShowTables4() throws Exception {
@@ -265,7 +265,7 @@ public class TestRuntimeMetadataRetrieval
 
   /**
    * Steps: 1. admin creates tables in default db
-   *        2. user_1 shouldn't see any table when he/she doesn't have any privilege on default
+   *        2. user1 shouldn't see any table when he/she doesn't have any privilege on default
    */
   @Test
   public void testShowTables5() throws Exception {
