@@ -4,6 +4,8 @@ target/
 .project
 .settings
 .metadata
+.idea/
+*.iml
 **/derby.log
 **/TempStatsStore/
 # Package Files #
