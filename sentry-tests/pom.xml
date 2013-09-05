@@ -18,9 +18,9 @@ limitations under the License.
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>com.cloudera.cdh</groupId>
+    <groupId>org.apache.sentry</groupId>
     <artifactId>sentry</artifactId>
-    <version>1.2.0-SNAPSHOT</version>
+    <version>1.2.0-incubating-SNAPSHOT</version>
   </parent>
   <artifactId>sentry-tests</artifactId>
   <name>Sentry Tests</name>
@@ -47,7 +47,7 @@ limitations under the License.
       <artifactId>derby</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.cloudera.cdh</groupId>
+      <groupId>org.apache.sentry</groupId>
       <artifactId>sentry-core</artifactId>
     </dependency>
     <dependency>
@@ -128,61 +128,73 @@ limitations under the License.
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-annotations</artifactId>
+      <version>${hadoop.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-auth</artifactId>
+      <version>${hadoop.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-hdfs</artifactId>
+      <version>${hadoop.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-mapreduce-client-common</artifactId>
+      <version>${hadoop.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-mapreduce-client-core</artifactId>
+      <version>${hadoop.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-mapreduce-client-jobclient</artifactId>
+      <version>${hadoop.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-mapreduce-client-shuffle</artifactId>
+      <version>${hadoop.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-yarn-api</artifactId>
+      <version>${hadoop.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-yarn-common</artifactId>
+      <version>${hadoop.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-yarn-server-common</artifactId>
+      <version>${hadoop.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-yarn-server-nodemanager</artifactId>
+      <version>${hadoop.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.zookeeper</groupId>
       <artifactId>zookeeper</artifactId>
+      <version>${zookeeper.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -194,7 +206,7 @@ limitations under the License.
       <artifactId>fest-reflect</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.cloudera.cdh</groupId>
+      <groupId>org.apache.sentry</groupId>
       <artifactId>sentry-binding-hive</artifactId>
     </dependency>
     <dependency>
@@ -203,7 +215,7 @@ limitations under the License.
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.cloudera.cdh</groupId>
+      <groupId>org.apache.sentry</groupId>
       <artifactId>sentry-provider-file</artifactId>
     </dependency>
     <dependency>

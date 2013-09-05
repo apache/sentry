@@ -23,6 +23,7 @@ limitations under the License.
     <version>13</version>
   </parent>
 
+  <groupId>org.apache.sentry</groupId>
   <artifactId>sentry</artifactId>
   <version>1.2.0-incubating-SNAPSHOT</version>
   <description>Sentry component</description>
@@ -54,6 +55,8 @@ limitations under the License.
     <slf4j.version>1.6.1</slf4j.version>
     <derby.version>10.4.2.0</derby.version>
     <libthrift.version>0.9.0-cdh4-1</libthrift.version>
+    <hadoop.version>2.0.0-cdh4.4.0-SNAPSHOT</hadoop.version>
+    <zookeeper.version>3.4.5-cdh4.4.0-SNAPSHOT</zookeeper.version>
   </properties>
 
   <dependencyManagement>
@@ -142,7 +145,7 @@ limitations under the License.
         <scope>provided</scope>
       </dependency>
       <dependency>
-        <groupId>com.cloudera.cdh</groupId>
+        <groupId>org.apache.sentry</groupId>
         <artifactId>sentry-core</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -219,19 +222,19 @@ limitations under the License.
         <scope>provided</scope>
       </dependency>
       <dependency>
-        <groupId>com.cloudera.cdh</groupId>
+        <groupId>org.apache.sentry</groupId>
         <artifactId>sentry-binding-hive</artifactId>
         <version>${project.version}</version>
         <scope>test</scope>
        </dependency>
       <dependency>
-        <groupId>com.cloudera.cdh</groupId>
+        <groupId>org.apache.sentry</groupId>
         <artifactId>sentry-provider-file</artifactId>
         <version>${project.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>
-        <groupId>com.cloudera.cdh</groupId>
+        <groupId>org.apache.sentry</groupId>
         <artifactId>sentry-dist</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -259,7 +262,7 @@ limitations under the License.
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>2.3.2</version>
+          <version>2.5.1</version>
           <configuration>
             <source>${maven.compile.source}</source>
             <target>${maven.compile.target}</target>
@@ -268,7 +271,7 @@ limitations under the License.
         <plugin>
           <groupId>org.apache.rat</groupId>
           <artifactId>apache-rat-plugin</artifactId>
-          <version>0.8</version>
+          <version>0.10</version>
           <executions>
             <execution>
               <id>header-check</id>
@@ -302,13 +305,13 @@ limitations under the License.
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>2.3.2</version>
+          <version>2.4</version>
         </plugin>
 
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.12</version>
+          <version>2.16</version>
           <configuration>
             <forkMode>always</forkMode>
             <environmentVariables>
