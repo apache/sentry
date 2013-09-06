@@ -27,7 +27,6 @@ import junit.framework.Assert;
 import org.apache.commons.io.FileUtils;
 import org.apache.sentry.core.Authorizable;
 import org.apache.sentry.core.Database;
-import org.apache.sentry.provider.file.PolicyEngine;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -129,6 +128,27 @@ public abstract class AbstractTestSimplePolicyEngine {
   @Test
   public void testOtherGroup() throws Exception {
     authorizables.add(new Database("other_group_db"));
+    Set<String> expected = Sets.newTreeSet(Sets.newHashSet(
+        PERM_SERVER1_OTHER_GROUP_DB_CUSTOMERS_SELECT));
+    Assert.assertEquals(expected.toString(),
+        new TreeSet<String>(policy.getPermissions(authorizables, list("other_group")).values())
+        .toString());
+  }
+
+  @Test
+  public void testDbAll() throws Exception {
+    authorizables.add(new Database(Database.ALL.getName()));
+    Set<String> expected = Sets.newTreeSet(Sets
+        .newHashSet(PERM_SERVER1_JUNIOR_ANALYST_ALL,
+            PERM_SERVER1_CUSTOMERS_DB_CUSTOMERS_PARTIAL_SELECT));
+    Assert.assertEquals(expected.toString(),
+        new TreeSet<String>(policy.getPermissions(authorizables, list("jranalyst")).values())
+        .toString());
+  }
+
+  @Test
+  public void testDbAllforOtherGroup() throws Exception {
+    authorizables.add(new Database(Database.ALL.getName()));
     Set<String> expected = Sets.newTreeSet(Sets.newHashSet(
         PERM_SERVER1_OTHER_GROUP_DB_CUSTOMERS_SELECT));
     Assert.assertEquals(expected.toString(),

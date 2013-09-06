@@ -16,15 +16,17 @@
  */
 package org.apache.sentry.provider.file;
 
+import java.util.Map.Entry;
+
 import javax.annotation.Nullable;
 
+import org.apache.sentry.core.Database;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.io.Resources;
 
 public class Roles {
   private static final Logger LOGGER = LoggerFactory
@@ -44,16 +46,24 @@ public class Roles {
   }
   public ImmutableSet<String> getRoles(@Nullable String database, String group, Boolean isURI) {
     ImmutableSet.Builder<String> resultBuilder = ImmutableSet.builder();
-    String allowURIPerDbFile = 
+    String allowURIPerDbFile =
         System.getProperty(SimplePolicyEngine.ACCESS_ALLOW_URI_PER_DB_POLICYFILE);
     Boolean consultPerDbRolesForURI = isURI && ("true".equalsIgnoreCase(allowURIPerDbFile));
 
-    if(database != null) {
+    // handle Database.ALL
+    if (Database.ALL.getName().equals(database)) {
+      for(Entry<String, ImmutableSetMultimap<String, String>> dbListEntry : perDatabaseRoles.entrySet()) {
+        if (dbListEntry.getValue().containsKey(group)) {
+          resultBuilder.addAll(dbListEntry.getValue().get(group));
+        }
+      }
+    } else if(database != null) {
       ImmutableSetMultimap<String, String> dbPolicies =  perDatabaseRoles.get(database);
       if(dbPolicies != null && dbPolicies.containsKey(group)) {
         resultBuilder.addAll(dbPolicies.get(group));
       }
     }
+
     if (consultPerDbRolesForURI) {
       for(String db:perDatabaseRoles.keySet()) {
         ImmutableSetMultimap<String, String> dbPolicies =  perDatabaseRoles.get(db);

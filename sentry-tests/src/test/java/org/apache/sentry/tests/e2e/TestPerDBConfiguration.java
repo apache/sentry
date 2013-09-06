@@ -408,6 +408,179 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
     System.setProperty(SimplePolicyEngine.ACCESS_ALLOW_URI_PER_DB_POLICYFILE, "false");
   }
 
+  /**
+   * Test 'use default' statement. It should work as long as the user as privilege to assess any object in system
+   * @throws Exception
+   */
+  @Test
+  public void testDefaultDb() throws Exception {
+    context = createContext();
+    File policyFile = context.getPolicyFile();
+    File dataDir = context.getDataDir();
+    //copy data file to test dir
+    File dataFile = new File(dataDir, MULTI_TYPE_DATA_FILE_NAME);
+    FileOutputStream to = new FileOutputStream(dataFile);
+    Resources.copy(Resources.getResource(MULTI_TYPE_DATA_FILE_NAME), to);
+    to.close();
+    //delete existing policy file; create new policy file
+    assertTrue("Could not delete " + policyFile, context.deletePolicyFile());
+
+    String[] policyFileContents = {
+        // groups : role -> group
+        "[groups]",
+        "admin = all_server",
+        "user_group1 = select_tbl1",
+        // roles: privileges -> role
+        "[roles]",
+        "all_server = server=server1",
+        "select_tbl1 = server=server1->db=db1->table=tbl1->action=select",
+        // users: users -> groups
+        "[users]",
+        "hive = admin",
+        "user_1 = user_group1",
+        "user_2 = user_group2",
+    };
+    context.makeNewPolicy(policyFileContents);
+
+    // setup db objects needed by the test
+    Connection connection = context.createConnection("hive", "hive");
+    Statement statement = context.createStatement(connection);
+
+    statement.execute("USE default");
+
+    statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
+    statement.execute("CREATE DATABASE db1");
+    statement.execute("USE db1");
+    statement.execute("CREATE TABLE tbl1(B INT, A STRING) " +
+                      " row format delimited fields terminated by '|'  stored as textfile");
+    statement.execute("DROP DATABASE IF EXISTS db2 CASCADE");
+    statement.close();
+    connection.close();
+
+    // user_1 should be able to access default
+    connection = context.createConnection("user_1", "password");
+    statement = context.createStatement(connection);
+    statement.execute("USE default");
+    statement.close();
+    connection.close();
+
+    // user_2 should NOT be able to access default since it does have access to any other object
+    connection = context.createConnection("user_2", "password");
+    statement = context.createStatement(connection);
+    context.assertAuthzException(statement, "USE default");
+    statement.close();
+    connection.close();
+
+  }
+
+  @Test
+  public void testDefaultDBwithDbPolicy() throws Exception {
+    context = createContext();
+    File policyFile = context.getPolicyFile();
+    File db2PolicyFile = new File(policyFile.getParent(), DB2_POLICY_FILE);
+    File defaultPolicyFile = new File(policyFile.getParent(), "default-policy-file.ini");
+    File dataDir = context.getDataDir();
+    //copy data file to test dir
+    File dataFile = new File(dataDir, MULTI_TYPE_DATA_FILE_NAME);
+    FileOutputStream to = new FileOutputStream(dataFile);
+    Resources.copy(Resources.getResource(MULTI_TYPE_DATA_FILE_NAME), to);
+    to.close();
+    //delete existing policy file; create new policy file
+    assertTrue("Could not delete " + policyFile, context.deletePolicyFile());
+    assertTrue("Could not delete " + db2PolicyFile,!db2PolicyFile.exists() || db2PolicyFile.delete());
+    assertTrue("Could not delete " + defaultPolicyFile,!defaultPolicyFile.exists() || defaultPolicyFile.delete());
+
+    String[] policyFileContents = {
+        // groups : role -> group
+        "[groups]",
+        "admin = all_server",
+        "user_group1 = select_tbl1",
+        "user_group2 = select_tbl2",
+        // roles: privileges -> role
+        "[roles]",
+        "all_server = server=server1",
+        "select_tbl1 = server=server1->db=db1->table=tbl1->action=select",
+        // users: users -> groups
+        "[users]",
+        "hive = admin",
+        "user_1 = user_group1",
+        "user_2 = user_group2",
+        "user_3 = user_group3",
+        "[databases]",
+        "db2 = " + db2PolicyFile.getPath(),
+        "default = " + defaultPolicyFile.getPath()
+    };
+    context.makeNewPolicy(policyFileContents);
+
+    String[] db2PolicyFileContents = {
+        "[groups]",
+        "user_group2 = select_tbl2",
+        "[roles]",
+        "select_tbl2 = server=server1->db=db2->table=tbl2->action=select"
+    };
+    Files.write(Joiner.on("\n").join(db2PolicyFileContents), db2PolicyFile, Charsets.UTF_8);
+
+    String[] defautlPolicyFileContents = {
+        "[groups]",
+        "user_group2 = select_def",
+        "[roles]",
+        "select_def = server=server1->db=default->table=dtab->action=select"
+    };
+    Files.write(Joiner.on("\n").join(defautlPolicyFileContents), defaultPolicyFile, Charsets.UTF_8);
+
+
+    // setup db objects needed by the test
+    Connection connection = context.createConnection("hive", "hive");
+    Statement statement = context.createStatement(connection);
+    statement.execute("USE default");
+    statement.execute("CREATE TABLE dtab(B INT, A STRING) " +
+                      " row format delimited fields terminated by '|'  stored as textfile");
+
+    statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
+    statement.execute("DROP DATABASE IF EXISTS db2 CASCADE");
+    statement.execute("CREATE DATABASE db1");
+    statement.execute("USE db1");
+    statement.execute("CREATE TABLE tbl1(B INT, A STRING) " +
+                      " row format delimited fields terminated by '|'  stored as textfile");
+    statement.execute("DROP DATABASE IF EXISTS db2 CASCADE");
+    statement.execute("CREATE DATABASE db2");
+    statement.execute("USE db2");
+    statement.execute("CREATE TABLE tbl2(B INT, A STRING) " +
+                      " row format delimited fields terminated by '|'  stored as textfile");
+    statement.close();
+    connection.close();
+
+    // user_1 should be able to switch to default, but not the tables from default
+    connection = context.createConnection("user_1", "password");
+    statement = context.createStatement(connection);
+    statement.execute("USE db1");
+    statement.execute("USE default");
+    context.assertAuthzException(statement, "SELECT * FROM dtab");
+    statement.execute("USE db1");
+    context.assertAuthzException(statement, "SELECT * FROM default.dtab");
+
+    statement.close();
+    connection.close();
+
+    // user_2 should be able to access default and select from default's tables
+    connection = context.createConnection("user_2", "password");
+    statement = context.createStatement(connection);
+    statement.execute("USE db2");
+    statement.execute("USE default");
+    statement.execute("SELECT * FROM dtab");
+    statement.execute("USE db2");
+    statement.execute("SELECT * FROM default.dtab");
+    statement.close();
+    connection.close();
+
+    // user_3 should NOT be able to switch to default since it doesn't have access to any objects
+    connection = context.createConnection("user_3", "password");
+    statement = context.createStatement(connection);
+    context.assertAuthzException(statement, "USE default");
+    statement.close();
+    connection.close();
+  }
+
   private void verifyCount(Statement statement, String query) throws SQLException {
     ResultSet resultSet = statement.executeQuery(query);
     int count = 0;
