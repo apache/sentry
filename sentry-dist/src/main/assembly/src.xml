@@ -36,13 +36,13 @@
       <useAllReactorProjects>true</useAllReactorProjects>
 
       <includes>
-        <include>com.cloudera.cdh:sentry-binding</include>
-        <include>com.cloudera.cdh:sentry-binding-hive</include>
-        <include>com.cloudera.cdh:sentry-core</include>
-        <include>com.cloudera.cdh:sentry-provider</include>
-        <include>com.cloudera.cdh:sentry-provider-file</include>
-        <include>com.cloudera.cdh:sentry-tests</include>
-        <include>com.cloudera.cdh:sentry-dist</include>
+        <include>org.apache.sentry:sentry-binding</include>
+        <include>org.apache.sentry:sentry-binding-hive</include>
+        <include>org.apache.sentry:sentry-core</include>
+        <include>org.apache.sentry:sentry-provider</include>
+        <include>org.apache.sentry:sentry-provider-file</include>
+        <include>org.apache.sentry:sentry-tests</include>
+        <include>org.apache.sentry:sentry-dist</include>
       </includes>
 
       <binaries>
