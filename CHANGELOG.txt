@@ -1,6 +1,7 @@
 Release Notes - Sentry - Version v1.2.0
 
 ** Bug
+    * [SENTRY-15] - log4j.properties file under sentry-tests references the old access package
     * [SENTRY-1] - use default on HiveServer2 fails with invalid privileges exception
     * [SENTRY-2] - Code cleanup in various poms
     * [ACCESS-8] - Log warning if authorization is not used with strong authentication
