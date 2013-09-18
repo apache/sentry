@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -42,6 +43,7 @@ public class TestRuntimeMetadataRetrieval
     extends
       AbstractTestWithStaticLocalFS {
   private Context context;
+  private PolicyFile policyFile;
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private File dataDir;
   private File dataFile;
@@ -54,6 +56,7 @@ public class TestRuntimeMetadataRetrieval
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
+    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
   }
 
   @After
@@ -75,20 +78,16 @@ public class TestRuntimeMetadataRetrieval
     String tableNames[] = {"tb_1", "tb_2", "tb_3", "tb_4"};
     List<String> tableNamesValidation = new ArrayList<String>();
 
-    // edit policy file
-    File policyFile = context.getPolicyFile();
-    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("admin = adminPri", "groups");
-    editor.addPolicy("user_group = tab1_priv,tab2_priv,tab3_priv", "groups");
-    editor.addPolicy("adminPri = server=server1", "roles");
-    editor.addPolicy("tab1_priv = server=server1->db=" + dbName1 + "->table="
-        + tableNames[0] + "->action=select", "roles");
-    editor.addPolicy("tab2_priv = server=server1->db=" + dbName1 + "->table="
-        + tableNames[1] + "->action=insert", "roles");
-    editor.addPolicy("tab3_priv = server=server1->db=" + dbName1 + "->table="
-        + tableNames[2] + "->action=select", "roles");
-    editor.addPolicy("admin1 = admin", "users");
-    editor.addPolicy("user1 = user_group", "users");
+    policyFile
+        .addRolesToGroup("user_group", "tab1_priv,tab2_priv,tab3_priv")
+        .addPermissionsToRole("tab1_priv", "server=server1->db=" + dbName1 + "->table="
+            + tableNames[0] + "->action=select")
+        .addPermissionsToRole("tab2_priv", "server=server1->db=" + dbName1 + "->table="
+            + tableNames[1] + "->action=insert")
+        .addPermissionsToRole("tab3_priv", "server=server1->db=" + dbName1 + "->table="
+            + tableNames[2] + "->action=select")
+        .addGroupsToUser("user1", "user_group")
+        .write(context.getPolicyFile());
 
     String user1TableNames[] = {"tb_1", "tb_2", "tb_3"};
 
@@ -129,15 +128,11 @@ public class TestRuntimeMetadataRetrieval
     String tableNames[] = {"tb_1", "tb_2", "tb_3", "tb_4"};
     List<String> tableNamesValidation = new ArrayList<String>();
 
-    // edit policy file
-    File policyFile = context.getPolicyFile();
-    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("admin = adminPri", "groups");
-    editor.addPolicy("user_group = db_priv", "groups");
-    editor.addPolicy("adminPri = server=server1", "roles");
-    editor.addPolicy("db_priv = server=server1->db=" + dbName1, "roles");
-    editor.addPolicy("admin1 = admin", "users");
-    editor.addPolicy("user1 = user_group", "users");
+    policyFile
+        .addRolesToGroup("user_group", "db_priv")
+        .addPermissionsToRole("db_priv", "server=server1->db=" + dbName1)
+        .addGroupsToUser("user1", "user_group")
+        .write(context.getPolicyFile());
 
     String user1TableNames[] = {"tb_1", "tb_2", "tb_3", "tb_4"};
 
@@ -177,16 +172,12 @@ public class TestRuntimeMetadataRetrieval
     String tableNames[] = {"tb_1", "tb_2", "tb_3", "newtab_3"};
     List<String> tableNamesValidation = new ArrayList<String>();
 
-    // edit policy file
-    File policyFile = context.getPolicyFile();
-    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("admin = adminPri", "groups");
-    editor.addPolicy("user_group = tab_priv", "groups");
-    editor.addPolicy("adminPri = server=server1", "roles");
-    editor.addPolicy("tab_priv = server=server1->db=" + dbName1 + "->table="
-        + tableNames[3] + "->action=insert", "roles");
-    editor.addPolicy("admin1 = admin", "users");
-    editor.addPolicy("user1 = user_group", "users");
+    policyFile
+        .addRolesToGroup("user_group", "tab_priv")
+        .addPermissionsToRole("tab_priv", "server=server1->db=" + dbName1 + "->table="
+            + tableNames[3] + "->action=insert")
+        .addGroupsToUser("user1", "user_group")
+        .write(context.getPolicyFile());
 
     String adminTableNames[] = {"tb_3", "newtab_3", "tb_2", "tb_1"};
     String user1TableNames[] = {"newtab_3"};
@@ -226,15 +217,11 @@ public class TestRuntimeMetadataRetrieval
     String tableNames[] = {"tb_1", "tb_2", "tb_3", "newtab_3"};
     List<String> tableNamesValidation = new ArrayList<String>();
 
-    // edit policy file
-    File policyFile = context.getPolicyFile();
-    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("admin = adminPri", "groups");
-    editor.addPolicy("user_group = tab_priv", "groups");
-    editor.addPolicy("adminPri = server=server1", "roles");
-    editor.addPolicy("tab_priv = server=server1->db=" + dbName1, "roles");
-    editor.addPolicy("admin1 = admin", "users");
-    editor.addPolicy("user1 = user_group", "users");
+    policyFile
+        .addRolesToGroup("user_group", "tab_priv")
+        .addPermissionsToRole("tab_priv", "server=server1->db=" + dbName1)
+        .addGroupsToUser("user1", "user_group")
+        .write(context.getPolicyFile());
 
     String adminTableNames[] = {"tb_3", "newtab_3", "tb_1", "tb_2"};
     String user1TableNames[] = {"tb_3", "newtab_3", "tb_1", "tb_2"};
@@ -271,14 +258,9 @@ public class TestRuntimeMetadataRetrieval
   public void testShowTables5() throws Exception {
     String tableNames[] = {"tb_1", "tb_2", "tb_3", "tb_4"};
 
-    // edit policy file
-    File policyFile = context.getPolicyFile();
-    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("admin = adminPri", "groups");
-    editor.addPolicy("user_group = db_priv", "groups");
-    editor.addPolicy("adminPri = server=server1", "roles");
-    editor.addPolicy("admin1 = admin", "users");
-
+    policyFile
+        .addRolesToGroup("user_group", "db_priv")
+        .write(context.getPolicyFile());
     Connection connection = context.createConnection("admin1", "foo");
     Statement statement = context.createStatement(connection);
     createTabs(statement, "default", tableNames);
@@ -301,17 +283,15 @@ public class TestRuntimeMetadataRetrieval
    */
   @Test
   public void testShowDatabases1() throws Exception {
-    File policyFile = context.getPolicyFile();
-    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
     List<String> dbNamesValidation = new ArrayList<String>();
-    editor.addPolicy("admin = adminPri", "groups");
-    editor.addPolicy("group1 = db1_all", "groups");
-    editor.addPolicy("db1_all = server=server1->db=db_1", "roles");
-    editor.addPolicy("adminPri = server=server1", "roles");
-    editor.addPolicy("admin1 = admin", "users");
-    editor.addPolicy("user1 = group1", "users");
     String[] dbNames = {"db_1", "db_2", "db_3"};
     String[] user1DbNames = {"db_1"};
+
+    policyFile
+        .addRolesToGroup("group1", "db1_all")
+        .addPermissionsToRole("db1_all", "server=server1->db=db_1")
+        .addGroupsToUser("user1", "group1")
+        .write(context.getPolicyFile());
 
     Connection connection = context.createConnection("admin1", "foo");
     Statement statement = context.createStatement(connection);
@@ -344,18 +324,16 @@ public class TestRuntimeMetadataRetrieval
    */
   @Test
   public void testShowDatabases2() throws Exception {
-    File policyFile = context.getPolicyFile();
     String[] dbNames = {"db_1", "db_2", "db_3"};
     List<String> dbNamesValidation = new ArrayList<String>();
-    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("admin = adminPri", "groups");
-    editor.addPolicy("group1 = db1_tab,db2_tab", "groups");
-    editor.addPolicy("db1_tab = server=server1->db=db_1->table=tb_1->action=select","roles");
-    editor.addPolicy("db2_tab = server=server1->db=db_2->table=tb_1->action=insert","roles");
-    editor.addPolicy("adminPri = server=server1", "roles");
-    editor.addPolicy("admin1 = admin", "users");
-    editor.addPolicy("user1 = group1", "users");
     String[] user1DbNames = {"db_1", "db_2"};
+
+    policyFile
+        .addRolesToGroup("group1", "db1_tab,db2_tab")
+        .addPermissionsToRole("db1_tab", "server=server1->db=db_1->table=tb_1->action=select")
+        .addPermissionsToRole("db2_tab", "server=server1->db=db_2->table=tb_1->action=insert")
+        .addGroupsToUser("user1", "group1")
+        .write(context.getPolicyFile());
 
     // verify by SQL
     // 1, 2

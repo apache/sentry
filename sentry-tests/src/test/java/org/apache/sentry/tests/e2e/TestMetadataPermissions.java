@@ -22,6 +22,7 @@ import java.sql.Statement;
 
 import junit.framework.Assert;
 
+import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,9 +30,14 @@ import org.junit.Test;
 
 public class TestMetadataPermissions extends AbstractTestWithStaticLocalFS {
   private Context context;
+  private PolicyFile policyFile;
+
   @Before
   public void setup() throws Exception {
     context = createContext();
+    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
+
+/*
     String testPolicies[] = {
         "[groups]",
         "admin_group = admin_role",
@@ -47,7 +53,17 @@ public class TestMetadataPermissions extends AbstractTestWithStaticLocalFS {
         "admin = admin_group"
         };
     context.makeNewPolicy(testPolicies);
-    Connection adminCon = context.createConnection("admin", "foo");
+*/
+    policyFile
+        .addRolesToGroup("user_group1", "db1_all", "db2_all")
+        .addRolesToGroup("user_group2", "db1_all")
+        .addPermissionsToRole("db1_all", "server=server1->db=db1")
+        .addPermissionsToRole("db2_all", "server=server1->db=db2")
+        .addGroupsToUser("user1", "user_group1")
+        .addGroupsToUser("user2", "user_group2")
+        .write(context.getPolicyFile());
+
+    Connection adminCon = context.createConnection(ADMIN1, "foo");
     Statement adminStmt = context.createStatement(adminCon);
     for (String dbName : new String[] { "db1", "db2" }) {
       adminStmt.execute("USE default");

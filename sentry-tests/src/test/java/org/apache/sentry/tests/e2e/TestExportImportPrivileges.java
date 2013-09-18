@@ -24,6 +24,7 @@ import java.sql.Connection;
 import java.sql.Statement;
 
 import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,6 +33,7 @@ import com.google.common.io.Resources;
 
 public class TestExportImportPrivileges extends AbstractTestWithStaticDFS {
   private File dataFile;
+  private PolicyFile policyFile;
 
   @Before
   public void setup() throws Exception {
@@ -40,6 +42,7 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticDFS {
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
+    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
   }
 
   @After
@@ -55,22 +58,15 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticDFS {
     Statement statement = null;
     String dumpDir = context.getDFSUri().toString() + "/hive_data_dump";
 
-    String testPolicies[] = {
-        "[groups]",
-        "admin_group = admin_role",
-        "user_group1  = db1_read, db1_write, data_dump",
-        "user_group2  = db1_read, db1_write",
-        "[roles]",
-        "db1_write = server=server1->db=" + DB1 + "->table=" + TBL1 + "->action=INSERT",
-        "db1_read = server=server1->db=" + DB1 + "->table=" + TBL1 + "->action=SELECT",
-        "data_dump = server=server1->URI=" + dumpDir,
-        "admin_role = server=server1",
-        "[users]",
-        "user1 = user_group1",
-        "user2 = user_group2",
-        ADMIN1 + " = admin_group"
-    };
-    context.makeNewPolicy(testPolicies);
+    policyFile
+        .addRolesToGroup("user_group1", "db1_read", "db1_write", "data_dump")
+        .addRolesToGroup("user_group2", "db1_read", "db1_write")
+        .addPermissionsToRole("db1_write", "server=server1->db=" + DB1 + "->table=" + TBL1 + "->action=INSERT")
+        .addPermissionsToRole("db1_read", "server=server1->db=" + DB1 + "->table=" + TBL1 + "->action=SELECT")
+        .addPermissionsToRole("data_dump", "server=server1->URI=" + dumpDir)
+        .addGroupsToUser("user1", "user_group1")
+        .addGroupsToUser("user2", "user_group2");
+    policyFile.write(context.getPolicyFile());
 
     dropDb(ADMIN1, DB1);
     createDb(ADMIN1, DB1);
@@ -107,24 +103,17 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticDFS {
     Statement statement = null;
     String exportDir = context.getDFSUri().toString() + "/hive_export1";
 
-    String testPolicies[] = {
-        "[groups]",
-        "admin_group = admin_role",
-        "user_group1  = tab1_read, tab1_write, db1_all, data_read, data_export",
-        "user_group2  = tab1_write, tab1_read",
-        "[roles]",
-        "tab1_write = server=server1->db=" + DB1 + "->table=" + TBL1 + "->action=INSERT",
-        "tab1_read = server=server1->db=" + DB1 + "->table=" + TBL1 + "->action=SELECT",
-        "db1_all = server=server1->db=" + DB1,
-        "data_read = server=server1->URI=file://" + dataFile.getPath(),
-        "data_export = server=server1->URI=" + exportDir,
-        "admin_role = server=server1",
-        "[users]",
-        "user1 = user_group1",
-        "user2 = user_group2",
-        ADMIN1 + " = admin_group"
-    };
-    context.makeNewPolicy(testPolicies);
+    policyFile
+        .addRolesToGroup("user_group1", "tab1_read", "tab1_write", "db1_all", "data_read", "data_export")
+        .addRolesToGroup("user_group2", "tab1_write", "tab1_read")
+        .addPermissionsToRole("tab1_write", "server=server1->db=" + DB1 + "->table=" + TBL1 + "->action=INSERT")
+        .addPermissionsToRole("tab1_read", "server=server1->db=" + DB1 + "->table=" + TBL1 + "->action=SELECT")
+        .addPermissionsToRole("db1_all", "server=server1->db=" + DB1)
+        .addPermissionsToRole("data_read", "server=server1->URI=file://" + dataFile.getPath())
+        .addPermissionsToRole("data_export", "server=server1->URI=" + exportDir)
+        .addGroupsToUser("user1", "user_group1")
+        .addGroupsToUser("user2", "user_group2");
+    policyFile.write(context.getPolicyFile());
 
     dropDb(ADMIN1, DB1);
     createDb(ADMIN1, DB1);

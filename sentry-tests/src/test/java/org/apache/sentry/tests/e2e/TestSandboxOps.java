@@ -187,24 +187,16 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
    */
   @Test
   public void testNegUserPrivilegesAll() throws Exception {
-    String testPolicies[] = {
-        "[groups]",
-        "admin_group = admin_role",
-        "user_group1 = db1_all",
-        "user_group2 = db1_tab1_select",
-        "[roles]",
-        "db1_all = server=server1->db=db1",
-        "db1_tab1_select = server=server1->db=db1->table=table_1->action=select",
-        "admin_role = server=server1",
-        "[users]",
-        "user1 = user_group1",
-        "user2 = user_group2",
-        "admin = admin_group"
-    };
-    context.makeNewPolicy(testPolicies);
-
+    policyFile
+        .addRolesToGroup("user_group1", "db1_all")
+        .addRolesToGroup("user_group2", "db1_tab1_select")
+        .addPermissionsToRole("db1_tab1_select", "server=server1->db=db1->table=table_1->action=select")
+        .addPermissionsToRole("db1_all", "server=server1->db=db1")
+        .addGroupsToUser("user1", "user_group1")
+        .addGroupsToUser("user2", "user_group2")
+        .write(context.getPolicyFile());
     // create dbs
-    Connection adminCon = context.createConnection("admin", "foo");
+    Connection adminCon = context.createConnection("admin1", "foo");
     Statement adminStmt = context.createStatement(adminCon);
     String dbName = "db1";
     adminStmt.execute("use default");
@@ -403,20 +395,16 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
    */
   @Test
   public void testSandboxOpt17() throws Exception {
-    // edit policy file
-    File policyFile = context.getPolicyFile();
-    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("admin = admin", "groups");
-    editor.addPolicy("group1 = all_db1, load_data", "groups");
-    editor.addPolicy("group2 = select_tb1", "groups");
-    editor.addPolicy("select_tb1 = server=server1->db=db_1->table=tbl_1->action=select", "roles");
-    editor.addPolicy("all_db1 = server=server1->db=db_1", "roles");
-    editor.addPolicy("load_data = server=server1->uri=file://" + dataFile.toString(), "roles");
-    editor.addPolicy("admin = server=server1", "roles");
-    editor.addPolicy("admin1 = admin", "users");
-    editor.addPolicy("user1 = group1", "users");
-    editor.addPolicy("user2 = group2", "users");
 
+    policyFile
+        .addRolesToGroup("group1", "all_db1", "load_data")
+        .addRolesToGroup("group2", "select_tb1")
+        .addPermissionsToRole("select_tb1", "server=server1->db=db_1->table=tbl_1->action=select")
+        .addPermissionsToRole("all_db1", "server=server1->db=db_1")
+        .addPermissionsToRole("load_data", "server=server1->uri=file://" + dataFile.toString())
+        .addGroupsToUser("user1", "group1")
+        .addGroupsToUser("user2", "group2")
+        .write(context.getPolicyFile());
     dropDb(ADMIN1, DB1);
     createDb(ADMIN1, DB1);
 
@@ -470,17 +458,16 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
         "test-" + (counter++)));
     Path allowedDfsDir = assertCreateDfsDir(new Path(dfsBaseDir, "test-" + (counter++)));
     Path restrictedDfsDir = assertCreateDfsDir(new Path(dfsBaseDir, "test-" + (counter++)));
-    File policyFile = context.getPolicyFile();
-    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("admin = admin", "groups");
-    editor.addPolicy("group1 = all_db1, load_data", "groups");
-    editor.addPolicy("all_db1 = server=server1->db=db_1", "roles");
-    editor.addPolicy("admin = server=server1", "roles");
-    editor.addPolicy("load_data = server=server1->uri=file://" + allowedDir.getPath() +
-        ", server=server1->uri=file://" + allowedDir.getPath() +
-        ", server=server1->uri=" + allowedDfsDir.toString(), "roles");
-    editor.addPolicy("admin1 = admin", "users");
-    editor.addPolicy("user1 = group1", "users");
+
+    policyFile
+        .addRolesToGroup("group1", "all_db1", "load_data")
+        .addPermissionsToRole("all_db1", "server=server1->db=db_1")
+        .addPermissionsToRole("load_data", "server=server1->uri=file://" + allowedDir.getPath() +
+            ", server=server1->uri=file://" + allowedDir.getPath() +
+            ", server=server1->uri=" + allowedDfsDir.toString())
+        .addGroupsToUser("user1", "group1")
+        .write(context.getPolicyFile());
+
     dropDb(ADMIN1, DB1);
     createDb(ADMIN1, DB1);
     createTable(ADMIN1, DB1, dataFile, TBL1);
@@ -536,45 +523,27 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
    // Create per-db policy file on hdfs and global policy on local.
   @Test
   public void testPerDbPolicyOnDFS() throws Exception {
-    context = createContext();
-    File policyFile = context.getPolicyFile();
-    File db2PolicyFile = new File(baseDir.getPath(), DB2_POLICY_FILE);
 
-    //delete existing policy file; create new policy file
-    assertTrue("Could not delete " + policyFile, context.deletePolicyFile());
-    assertTrue("Could not delete " + db2PolicyFile,!db2PolicyFile.exists() || db2PolicyFile.delete());
+    policyFile
+        .addRolesToGroup("user_group1", "select_tbl1")
+        .addRolesToGroup("user_group2", "select_tbl2")
+        .addPermissionsToRole("select_tbl1", "server=server1->db=db1->table=tbl1->action=select")
+        .addGroupsToUser("user1", "user_group1")
+        .addGroupsToUser("user2", "user_group2")
+        .addDatabase("db2", dfsBaseDir.toUri().toString() + "/" + DB2_POLICY_FILE)
+        .write(context.getPolicyFile());
 
-    String[] policyFileContents = {
-        // groups : role -> group
-        "[groups]",
-        "admin = all_server",
-        "user_group1 = select_tbl1",
-        "user_group2 = select_tbl2",
-        // roles: privileges -> role
-        "[roles]",
-        "all_server = server=server1",
-        "select_tbl1 = server=server1->db=db1->table=tbl1->action=select",
-        // users: users -> groups
-        "[users]",
-        "hive = admin",
-        "user1 = user_group1",
-        "user2 = user_group2",
-        "[databases]",
-        "db2 = " + dfsBaseDir.toUri().toString() + "/" + db2PolicyFile.getName()
-    };
-    context.makeNewPolicy(policyFileContents);
+    File db2PolicyFileHandle = new File(baseDir.getPath(), DB2_POLICY_FILE);
 
-    String[] db2PolicyFileContents = {
-        "[groups]",
-        "user_group2 = select_tbl2",
-        "[roles]",
-        "select_tbl2 = server=server1->db=db2->table=tbl2->action=select"
-    };
-    Files.write(Joiner.on("\n").join(db2PolicyFileContents), db2PolicyFile, Charsets.UTF_8);
-    PolicyFiles.copyFilesToDir(dfsCluster.getFileSystem(), dfsBaseDir, db2PolicyFile);
+    PolicyFile db2PolicyFile = new PolicyFile();
+    db2PolicyFile
+        .addRolesToGroup("user_group2", "select_tbl2")
+        .addPermissionsToRole("select_tbl2", "server=server1->db=db2->table=tbl2->action=select")
+        .write(db2PolicyFileHandle);
+    PolicyFiles.copyFilesToDir(dfsCluster.getFileSystem(), dfsBaseDir, db2PolicyFileHandle);
 
     // setup db objects needed by the test
-    Connection connection = context.createConnection("hive", "hive");
+    Connection connection = context.createConnection("admin1", "hive");
     Statement statement = context.createStatement(connection);
 
     statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
@@ -605,7 +574,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
     connection.close();
 
     //test cleanup
-    connection = context.createConnection("hive", "hive");
+    connection = context.createConnection("admin1", "hive");
     statement = context.createStatement(connection);
     statement.execute("DROP DATABASE db1 CASCADE");
     statement.execute("DROP DATABASE db2 CASCADE");

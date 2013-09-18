@@ -26,6 +26,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
+import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,6 +40,7 @@ public class TestUserManagement extends AbstractTestWithStaticLocalFS {
   private static final String tableComment = "Test table";
   private File dataFile;
   private Context context;
+  private PolicyFile policyFile;
 
   @Before
   public void setUp() throws Exception {
@@ -106,11 +108,8 @@ public class TestUserManagement extends AbstractTestWithStaticLocalFS {
    */
   @Test
   public void testSanity() throws Exception {
-    File policyFile = context.getPolicyFile();
-    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("admin = admin", "groups");
-    editor.addPolicy("admin = server=server1", "roles");
-    editor.addPolicy("admin1 = admin", "users");
+    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
+    policyFile.write(context.getPolicyFile());
     doCreateDbLoadDataDropDb("admin1", "admin1");
   }
 
@@ -119,13 +118,12 @@ public class TestUserManagement extends AbstractTestWithStaticLocalFS {
    **/
   @Test
   public void testAdmin1() throws Exception {
-    File policyFile = context.getPolicyFile();
-    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("admin = admin", "groups");
-    editor.addPolicy("admin = server=server1", "roles");
-    editor.addPolicy("admin1 = admin", "users");
-    editor.addPolicy("admin2 = admin", "users");
-    editor.addPolicy("admin3 = admin", "users");
+    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
+    policyFile
+        .addGroupsToUser("admin2", "admin")
+        .addGroupsToUser("admin3", "admin")
+        .write(context.getPolicyFile());
+
     doCreateDbLoadDataDropDb("admin1", "admin1", "admin2", "admin3");
   }
 
@@ -135,17 +133,17 @@ public class TestUserManagement extends AbstractTestWithStaticLocalFS {
    **/
   @Test
   public void testAdmin3() throws Exception {
-    // edit policy file
-    File policyFile = context.getPolicyFile();
-    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("admin = admin", "groups");
-    editor.addPolicy("admin = server=server1", "roles");
-    editor.addPolicy("admin1 = admin", "users");
-    editor.addPolicy("admin2 = admin", "users");
-    editor.addPolicy("admin3 = admin", "users");
+    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
+    policyFile
+        .addGroupsToUser("admin2", "admin")
+        .addGroupsToUser("admin3", "admin")
+        .write(context.getPolicyFile());
     doCreateDbLoadDataDropDb("admin1", "admin1", "admin2", "admin3");
+
     // remove admin1 from admin group
-    editor.removePolicy("admin1 = admin");
+    policyFile
+        .removeGroupsFromUser("admin1", "admin")
+        .write(context.getPolicyFile());
     // verify admin1 doesn't have admin privilege
     Connection connection = context.createConnection("admin1", "foo");
     Statement statement = connection.createStatement();
@@ -159,14 +157,15 @@ public class TestUserManagement extends AbstractTestWithStaticLocalFS {
    **/
   @Test
   public void testAdmin5() throws Exception {
-    File policyFile = context.getPolicyFile();
-    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("admin_group1 = admin", "groups");
-    editor.addPolicy("admin_group2 = admin", "groups");
-    editor.addPolicy("admin = server=server1", "roles");
-    editor.addPolicy("admin1 = admin_group1, admin_group2", "users");
-    editor.addPolicy("admin2 = admin_group1, admin_group2", "users");
-    editor.addPolicy("admin3 = admin_group1, admin_group2", "users");
+    policyFile = new PolicyFile();
+    policyFile
+        .addRolesToGroup("admin_group1", "admin")
+        .addRolesToGroup("admin_group2", "admin")
+        .addPermissionsToRole("admin", "server=server1")
+        .addGroupsToUser("admin1", "admin_group1", "admin_group2")
+        .addGroupsToUser("admin2", "admin_group1", "admin_group2")
+        .addGroupsToUser("admin3", "admin_group1", "admin_group2")
+        .write(context.getPolicyFile());
     doCreateDbLoadDataDropDb("admin1", "admin1", "admin2", "admin3");
   }
 
@@ -175,14 +174,13 @@ public class TestUserManagement extends AbstractTestWithStaticLocalFS {
    **/
   @Test
   public void testAdmin6() throws Exception {
-    File policyFile = context.getPolicyFile();
-    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("admin_group = admin_role", "groups");
-    editor.addPolicy("admin_role = server=server1", "roles");
-    editor.addPolicy("admin1 = admin_group", "users");
-    editor.addPolicy("group1 = non_admin_role", "groups");
-    editor.addPolicy("non_admin_role = server=server1->db=" + dbName, "roles");
-    editor.addPolicy("user1 = group1", "users");
+    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
+    policyFile
+        .addRolesToGroup("group1", "non_admin_role")
+        .addPermissionsToRole("non_admin_role", "server=server1->db=" + dbName)
+        .addGroupsToUser("user1", "group1")
+        .write(context.getPolicyFile());
+
     doCreateDbLoadDataDropDb("admin1", "admin1");
     Connection connection = context.createConnection("user1", "password");
     Statement statement = connection.createStatement();
@@ -196,14 +194,15 @@ public class TestUserManagement extends AbstractTestWithStaticLocalFS {
    **/
   @Test
   public void testGroup2() throws Exception {
-    File policyFile = context.getPolicyFile();
-    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("group1 = admin, analytics", "groups");
-    editor.addPolicy("admin = server=server1", "roles");
-    editor.addPolicy("analytics = server=server1->db=" + dbName, "roles");
-    editor.addPolicy("user1 = group1", "users");
-    editor.addPolicy("user2 = group1", "users");
-    editor.addPolicy("user3 = group1", "users");
+    policyFile = new PolicyFile();
+    policyFile
+        .addRolesToGroup("group1", "admin", "analytics")
+        .addPermissionsToRole("admin", "server=server1")
+        .addPermissionsToRole("analytics", "server=server1->db=" + dbName)
+        .addGroupsToUser("user1", "group1")
+        .addGroupsToUser("user2", "group1")
+        .addGroupsToUser("user3", "group1")
+        .write(context.getPolicyFile());
     doCreateDbLoadDataDropDb("user1", "user1", "user2", "user3");
   }
   /**
@@ -211,16 +210,15 @@ public class TestUserManagement extends AbstractTestWithStaticLocalFS {
    **/
   @Test
   public void testGroup4() throws Exception {
-    File policyFile = context.getPolicyFile();
-    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("admin_group = admin_role", "groups");
-    editor.addPolicy("admin_role = server=server1", "roles");
-    editor.addPolicy("admin1 = admin_group", "users");
-    editor.addPolicy("group1 = non_admin_role, load_data", "groups");
-    editor.addPolicy("non_admin_role = server=server1->db=" + dbName, "roles");
-    editor.addPolicy("user1 = group1", "users");
-    editor.addPolicy("user2 = group1", "users");
-    editor.addPolicy("user3 = group1", "users");
+    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
+    policyFile
+        .addRolesToGroup("group1", "non_admin_role", "load_data")
+        .addPermissionsToRole("non_admin_role", "server=server1->db=" + dbName)
+        .addGroupsToUser("user1", "group1")
+        .addGroupsToUser("user2", "group1")
+        .addGroupsToUser("user3", "group1")
+        .write(context.getPolicyFile());
+
     doDropDb("admin1");
     for(String user : new String[]{"user1", "user2", "user3"}) {
       doCreateDb("admin1");
@@ -243,17 +241,17 @@ public class TestUserManagement extends AbstractTestWithStaticLocalFS {
    **/
   @Test
   public void testGroup5() throws Exception {
-    File policyFile = context.getPolicyFile();
-    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("admin_group = admin_role", "groups");
-    editor.addPolicy("admin_role = server=server1", "roles");
-    editor.addPolicy("admin1 = admin_group", "users");
-    editor.addPolicy("group1 = non_admin_role, load_data", "groups");
-    editor.addPolicy("non_admin_role = server=server1->db=" + dbName, "roles");
-    editor.addPolicy("load_data = server=server1->URI=file://" + dataFile.getPath(), "roles");
-    editor.addPolicy("group1 = group1", "users");
-    editor.addPolicy("user2 = group1", "users");
-    editor.addPolicy("user3 = group1", "users");
+
+    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
+    policyFile
+        .addRolesToGroup("group1", "non_admin_role", "load_data")
+        .addPermissionsToRole("non_admin_role", "server=server1->db=" + dbName)
+        .addPermissionsToRole("load_data", "server=server1->URI=file://" + dataFile.getPath())
+        .addGroupsToUser("group1", "group1")
+        .addGroupsToUser("user2", "group1")
+        .addGroupsToUser("user3", "group1")
+        .write(context.getPolicyFile());
+
     doDropDb("admin1");
     for(String user : new String[]{"group1", "user2", "user3"}) {
       doCreateDb("admin1");
@@ -267,17 +265,16 @@ public class TestUserManagement extends AbstractTestWithStaticLocalFS {
    **/
   @Test
   public void testGroup6() throws Exception {
-    File policyFile = context.getPolicyFile();
-    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("admin_group = admin_role", "groups");
-    editor.addPolicy("admin_role = server=server1", "roles");
-    editor.addPolicy("admin1 = admin_group", "users");
-    editor.addPolicy("group1~!@#$%^&*()+- = analytics, load_data", "groups");
-    editor.addPolicy("analytics = server=server1->db=" + dbName, "roles");
-    editor.addPolicy("load_data = server=server1->URI=file://" + dataFile.getPath(), "roles");
-    editor.addPolicy("user1 = group1~!@#$%^&*()+-", "users");
-    editor.addPolicy("user2 = group1~!@#$%^&*()+-", "users");
-    editor.addPolicy("user3 = group1~!@#$%^&*()+-", "users");
+    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
+    policyFile
+        .addRolesToGroup("group1~!@#$%^&*()+-", "analytics", "load_data")
+        .addPermissionsToRole("analytics", "server=server1->db=" + dbName)
+        .addPermissionsToRole("load_data", "server=server1->URI=file://" + dataFile.getPath())
+        .addGroupsToUser("user1", "group1~!@#$%^&*()+-")
+        .addGroupsToUser("user2", "group1~!@#$%^&*()+-")
+        .addGroupsToUser("user3", "group1~!@#$%^&*()+-")
+        .write(context.getPolicyFile());
+
     doDropDb("admin1");
     for(String user : new String[]{"user1", "user2", "user3"}) {
       doCreateDb("admin1");
@@ -291,13 +288,14 @@ public class TestUserManagement extends AbstractTestWithStaticLocalFS {
    **/
   @Test
   public void testGroup7() throws Exception {
-    File policyFile = context.getPolicyFile();
-    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("group1 = admin", "groups");
-    editor.addPolicy("admin = server=server1", "roles");
-    editor.addPolicy("user1~!@#$%^&*()+- = group1", "users");
-    editor.addPolicy("user2 = group1", "users");
-    editor.addPolicy("user3 = group1", "users");
+    policyFile = new PolicyFile();
+    policyFile
+        .addRolesToGroup("group1", "admin")
+        .addPermissionsToRole("admin", "server=server1")
+        .addGroupsToUser("user1~!@#$%^&*()+-", "group1")
+        .addGroupsToUser("user2", "group1")
+        .addGroupsToUser("user3", "group1")
+        .write(context.getPolicyFile());
     doCreateDbLoadDataDropDb("user1~!@#$%^&*()+-", "user1~!@#$%^&*()+-", "user2", "user3");
   }
 
@@ -306,15 +304,14 @@ public class TestUserManagement extends AbstractTestWithStaticLocalFS {
    **/
   @Test
   public void testGroup8() throws Exception {
-    File policyFile = context.getPolicyFile();
-    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("admin_group = admin_role", "groups");
-    editor.addPolicy("admin_role = server=server1", "roles");
-    editor.addPolicy("admin1 = admin_group", "users");
-    editor.addPolicy("group1 = analytics", "groups");
-    editor.addPolicy("user1 = group1", "users");
-    editor.addPolicy("user2 = group1", "users");
-    editor.addPolicy("user3 = group1", "users");
+    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
+    policyFile
+        .addRolesToGroup("group1", "analytics")
+        .addGroupsToUser("user1", "group1")
+        .addGroupsToUser("user2", "group1")
+        .addGroupsToUser("user3", "group1")
+        .write(context.getPolicyFile());
+
     Connection connection = context.createConnection("admin1", "password");
     Statement statement = connection.createStatement();
     statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");

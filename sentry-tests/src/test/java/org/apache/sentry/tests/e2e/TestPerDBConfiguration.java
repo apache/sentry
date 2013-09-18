@@ -26,8 +26,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.provider.file.SimplePolicyEngine;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.base.Charsets;
@@ -43,6 +45,22 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
   private static final String DB2_POLICY_FILE = "db2-policy-file.ini";
 
   private Context context;
+  private File dataFile;
+  private PolicyFile policyFile;
+
+  @Before
+  public void setup() throws Exception {
+    context = createContext();
+    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
+
+    File dataDir = context.getDataDir();
+    //copy data file to test dir
+    dataFile = new File(dataDir, MULTI_TYPE_DATA_FILE_NAME);
+    FileOutputStream to = new FileOutputStream(dataFile);
+    Resources.copy(Resources.getResource(MULTI_TYPE_DATA_FILE_NAME), to);
+    to.close();
+
+  }
 
   @After
   public void teardown() throws Exception {
@@ -53,49 +71,24 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
 
   @Test
   public void testPerDB() throws Exception {
-    context = createContext();
-    File policyFile = context.getPolicyFile();
-    File db2PolicyFile = new File(policyFile.getParent(), DB2_POLICY_FILE);
-    File dataDir = context.getDataDir();
-    //copy data file to test dir
-    File dataFile = new File(dataDir, MULTI_TYPE_DATA_FILE_NAME);
-    FileOutputStream to = new FileOutputStream(dataFile);
-    Resources.copy(Resources.getResource(MULTI_TYPE_DATA_FILE_NAME), to);
-    to.close();
-    //delete existing policy file; create new policy file
-    assertTrue("Could not delete " + policyFile, context.deletePolicyFile());
-    assertTrue("Could not delete " + db2PolicyFile,!db2PolicyFile.exists() || db2PolicyFile.delete());
+    PolicyFile db2PolicyFile = new PolicyFile();
+    File db2PolicyFileHandle = new File(context.getPolicyFile().getParent(), DB2_POLICY_FILE);
+    db2PolicyFile
+        .addRolesToGroup("user_group2", "select_tbl2")
+        .addPermissionsToRole("select_tbl2", "server=server1->db=db2->table=tbl2->action=select")
+        .write(db2PolicyFileHandle);
 
-    String[] policyFileContents = {
-        // groups : role -> group
-        "[groups]",
-        "admin = all_server",
-        "user_group1 = select_tbl1",
-        "user_group2 = select_tbl2",
-        // roles: privileges -> role
-        "[roles]",
-        "all_server = server=server1",
-        "select_tbl1 = server=server1->db=db1->table=tbl1->action=select",
-        // users: users -> groups
-        "[users]",
-        "hive = admin",
-        "user1 = user_group1",
-        "user2 = user_group2",
-        "[databases]",
-        "db2 = " + db2PolicyFile.getPath(),
-    };
-    context.makeNewPolicy(policyFileContents);
-
-    String[] db2PolicyFileContents = {
-        "[groups]",
-        "user_group2 = select_tbl2",
-        "[roles]",
-        "select_tbl2 = server=server1->db=db2->table=tbl2->action=select"
-    };
-    Files.write(Joiner.on("\n").join(db2PolicyFileContents), db2PolicyFile, Charsets.UTF_8);
+    policyFile
+        .addRolesToGroup("user_group1", "select_tbl1")
+        .addRolesToGroup("user_group2", "select_tbl2")
+        .addPermissionsToRole("select_tbl1", "server=server1->db=db1->table=tbl1->action=select")
+        .addGroupsToUser("user1", "user_group1")
+        .addGroupsToUser("user2", "user_group2")
+        .addDatabase("db2", db2PolicyFileHandle.getPath())
+        .write(context.getPolicyFile());
 
     // setup db objects needed by the test
-    Connection connection = context.createConnection("hive", "hive");
+    Connection connection = context.createConnection(ADMIN1, "hive");
     Statement statement = context.createStatement(connection);
 
     statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
@@ -143,7 +136,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     //test cleanup
-    connection = context.createConnection("hive", "hive");
+    connection = context.createConnection(ADMIN1, "hive");
     statement = context.createStatement(connection);
     statement.execute("DROP DATABASE db1 CASCADE");
     statement.execute("DROP DATABASE db2 CASCADE");
@@ -162,70 +155,40 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
     String DB3_POLICY_FILE = "db3-policy-file.ini";
     String DB4_POLICY_FILE = "db4-policy-file.ini";
 
-    context = createContext();
-    File policyFile = context.getPolicyFile();
-    File db2PolicyFile = new File(policyFile.getParent(), DB2_POLICY_FILE);
-    File db3PolicyFile = new File(policyFile.getParent(), DB3_POLICY_FILE);
-    File db4PolicyFile = new File(policyFile.getParent(), DB4_POLICY_FILE);
-    File dataDir = context.getDataDir();
-    //copy data file to test dir
-    File dataFile = new File(dataDir, MULTI_TYPE_DATA_FILE_NAME);
-    FileOutputStream to = new FileOutputStream(dataFile);
-    Resources.copy(Resources.getResource(MULTI_TYPE_DATA_FILE_NAME), to);
-    to.close();
-    //delete existing policy file; create new policy file
-    assertTrue("Could not delete " + policyFile, context.deletePolicyFile());
-    assertTrue("Could not delete " + db2PolicyFile,!db2PolicyFile.exists() || db2PolicyFile.delete());
+    File db2PolicyFileHandle = new File(context.getPolicyFile().getParent(), DB2_POLICY_FILE);
+    File db3PolicyFileHandle = new File(context.getPolicyFile().getParent(), DB3_POLICY_FILE);
+    File db4PolicyFileHandle = new File(context.getPolicyFile().getParent(), DB4_POLICY_FILE);
 
-    String[] policyFileContents = {
-        // groups : role -> group
-        "[groups]",
-        "admin = all_server",
-        "user_group1 = select_tbl1",
-        "user_group2 = select_tbl2",
-        // roles: privileges -> role
-        "[roles]",
-        "all_server = server=server1",
-        "select_tbl1 = server=server1->db=db1->table=tbl1->action=select",
-        // users: users -> groups
-        "[users]",
-        "hive = admin",
-        "user1 = user_group1",
-        "user2 = user_group2",
-        "user3 = user_group3",
-        "user4 = user_group4",
-        "[databases]",
-        "db2 = " + db2PolicyFile.getPath(),
-        "db3 = " + db3PolicyFile.getPath(),
-        "db4 = " + db4PolicyFile.getPath(),
-    };
-    context.makeNewPolicy(policyFileContents);
-
-    String[] db2PolicyFileContents = {
-        "[groups]",
-        "user_group2 = select_tbl2",
-        "[roles]",
-        "select_tbl2 = server=server1->db=db2->table=tbl2->action=select"
-    };
-    String[] db3PolicyFileContents = {
-        "[groups]",
-        "user_group3 = select_tbl3_BAD",
-        "[roles]",
-        "select_tbl3_BAD = server=server1->db=db3------>table->action=select"
-    };
-    String[] db4PolicyFileContents = {
-        "[groups]",
-        "user_group4 = select_tbl4",
-        "[roles]",
-        "select_tbl4 = server=server1->db=db4->table=tbl4->action=select"
-    };
-
-    Files.write(Joiner.on("\n").join(db2PolicyFileContents), db2PolicyFile, Charsets.UTF_8);
-    Files.write(Joiner.on("\n").join(db3PolicyFileContents), db3PolicyFile, Charsets.UTF_8);
-    Files.write(Joiner.on("\n").join(db4PolicyFileContents), db4PolicyFile, Charsets.UTF_8);
+    PolicyFile db2PolicyFile = new PolicyFile();
+    PolicyFile db3PolicyFile = new PolicyFile();
+    PolicyFile db4PolicyFile = new PolicyFile();
+    db2PolicyFile
+        .addRolesToGroup("user_group2", "select_tbl2")
+        .addPermissionsToRole("select_tbl2", "server=server1->db=db2->table=tbl2->action=select")
+        .write(db2PolicyFileHandle);
+    db3PolicyFile
+        .addRolesToGroup("user_group3", "select_tbl3_BAD")
+        .addPermissionsToRole("select_tbl3_BAD", "server=server1->db=db3------>table->action=select")
+        .write(db3PolicyFileHandle);
+    db4PolicyFile
+        .addRolesToGroup("user_group4", "select_tbl4")
+        .addPermissionsToRole("select_tbl4", "server=server1->db=db4->table=tbl4->action=select")
+        .write(db4PolicyFileHandle);
+    policyFile
+        .addRolesToGroup("user_group1", "select_tbl1")
+        .addRolesToGroup("user_group2", "select_tbl2")
+        .addPermissionsToRole("select_tbl1", "server=server1->db=db1->table=tbl1->action=select")
+        .addGroupsToUser("user1", "user_group1")
+        .addGroupsToUser("user2", "user_group2")
+        .addGroupsToUser("user3", "user_group3")
+        .addGroupsToUser("user4", "user_group4")
+        .addDatabase("db2", db2PolicyFileHandle.getPath())
+        .addDatabase("db3", db3PolicyFileHandle.getPath())
+        .addDatabase("db4", db4PolicyFileHandle.getPath())
+        .write(context.getPolicyFile());
 
     // setup db objects needed by the test
-    Connection connection = context.createConnection("hive", "hive");
+    Connection connection = context.createConnection(ADMIN1, "hive");
     Statement statement = context.createStatement(connection);
 
     statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
@@ -290,7 +253,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     //test cleanup
-    connection = context.createConnection("hive", "hive");
+    connection = context.createConnection(ADMIN1, "hive");
     statement = context.createStatement(connection);
     statement.execute("DROP DATABASE db1 CASCADE");
     statement.execute("DROP DATABASE db2 CASCADE");
@@ -302,54 +265,30 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
 
   @Test
   public void testPerDBPolicyFileWithURI() throws Exception {
-    context = createContext();
-    File policyFile = context.getPolicyFile();
-    File db2PolicyFile = new File(policyFile.getParent(), DB2_POLICY_FILE);
-    File dataDir = context.getDataDir();
-    //copy data file to test dir
-    File dataFile = new File(dataDir, MULTI_TYPE_DATA_FILE_NAME);
-    FileOutputStream to = new FileOutputStream(dataFile);
-    Resources.copy(Resources.getResource(MULTI_TYPE_DATA_FILE_NAME), to);
-    to.close();
-    //delete existing policy file; create new policy file
-    assertTrue("Could not delete " + policyFile, context.deletePolicyFile());
-    assertTrue("Could not delete " + db2PolicyFile,!db2PolicyFile.exists() || db2PolicyFile.delete());
+    File db2PolicyFileHandle = new File(context.getPolicyFile().getParent(), DB2_POLICY_FILE);
 
-    String[] policyFileContents = {
-        // groups : role -> group
-        "[groups]",
-        "admin = all_server",
-        "user_group1 = select_tbl1",
-        "user_group2 = select_tbl2",
-        // roles: privileges -> role
-        "[roles]",
-        "all_server = server=server1",
-        "select_tbl1 = server=server1->db=db1->table=tbl1->action=select",
-        // users: users -> groups
-        "[users]",
-        "hive = admin",
-        "user1 = user_group1",
-        "user2 = user_group2",
-        "[databases]",
-        "db2 = " + db2PolicyFile.getPath(),
-    };
-    context.makeNewPolicy(policyFileContents);
+    policyFile
+        .addRolesToGroup("user_group1", "select_tbl1")
+        .addRolesToGroup("user_group2", "select_tbl2")
+        .addPermissionsToRole("select_tbl1", "server=server1->db=db1->table=tbl1->action=select")
+        .addGroupsToUser("user1", "user_group1")
+        .addGroupsToUser("user2", "user_group2")
+        .addDatabase("db2", db2PolicyFileHandle.getPath())
+        .write(context.getPolicyFile());
 
-    String[] db2PolicyFileContents = {
-        "[groups]",
-        "user_group2 = select_tbl2, data_read, insert_tbl2",
-        "[roles]",
-        "select_tbl2 = server=server1->db=db2->table=tbl2->action=select",
-        "insert_tbl2 = server=server1->db=db2->table=tbl2->action=insert",
-        "data_read = server=server1->URI=file://" + dataFile
-    };
-    Files.write(Joiner.on("\n").join(db2PolicyFileContents), db2PolicyFile, Charsets.UTF_8);
+    PolicyFile db2PolicyFile = new PolicyFile();
+    db2PolicyFile
+        .addRolesToGroup("user_group2", "select_tbl2", "data_read", "insert_tbl2")
+        .addPermissionsToRole("select_tbl2", "server=server1->db=db2->table=tbl2->action=select")
+        .addPermissionsToRole("insert_tbl2", "server=server1->db=db2->table=tbl2->action=insert")
+        .addPermissionsToRole("data_read", "server=server1->URI=file://" + dataFile)
+        .write(db2PolicyFileHandle);
     // ugly hack: needs to go away once this becomes a config property. Note that this property
     // will not be set with external HS and this test will fail. Hope is this fix will go away
     // by then.
     System.setProperty(SimplePolicyEngine.ACCESS_ALLOW_URI_PER_DB_POLICYFILE, "true");
     // setup db objects needed by the test
-    Connection connection = context.createConnection("hive", "hive");
+    Connection connection = context.createConnection(ADMIN1, "hive");
     Statement statement = context.createStatement(connection);
 
     statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
@@ -399,7 +338,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     //test cleanup
-    connection = context.createConnection("hive", "hive");
+    connection = context.createConnection(ADMIN1, "hive");
     statement = context.createStatement(connection);
     statement.execute("DROP DATABASE db1 CASCADE");
     statement.execute("DROP DATABASE db2 CASCADE");
@@ -414,36 +353,15 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
    */
   @Test
   public void testDefaultDb() throws Exception {
-    context = createContext();
-    File policyFile = context.getPolicyFile();
-    File dataDir = context.getDataDir();
-    //copy data file to test dir
-    File dataFile = new File(dataDir, MULTI_TYPE_DATA_FILE_NAME);
-    FileOutputStream to = new FileOutputStream(dataFile);
-    Resources.copy(Resources.getResource(MULTI_TYPE_DATA_FILE_NAME), to);
-    to.close();
-    //delete existing policy file; create new policy file
-    assertTrue("Could not delete " + policyFile, context.deletePolicyFile());
-
-    String[] policyFileContents = {
-        // groups : role -> group
-        "[groups]",
-        "admin = all_server",
-        "user_group1 = select_tbl1",
-        // roles: privileges -> role
-        "[roles]",
-        "all_server = server=server1",
-        "select_tbl1 = server=server1->db=db1->table=tbl1->action=select",
-        // users: users -> groups
-        "[users]",
-        "hive = admin",
-        "user_1 = user_group1",
-        "user_2 = user_group2",
-    };
-    context.makeNewPolicy(policyFileContents);
+    policyFile
+        .addRolesToGroup("user_group1", "select_tbl1")
+        .addPermissionsToRole("select_tbl1", "server=server1->db=db1->table=tbl1->action=select")
+        .addGroupsToUser("user_1", "user_group1")
+        .addGroupsToUser("user_2", "user_group2")
+        .write(context.getPolicyFile());
 
     // setup db objects needed by the test
-    Connection connection = context.createConnection("hive", "hive");
+    Connection connection = context.createConnection(ADMIN1, "hive");
     Statement statement = context.createStatement(connection);
 
     statement.execute("USE default");
@@ -475,62 +393,34 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
 
   @Test
   public void testDefaultDBwithDbPolicy() throws Exception {
-    context = createContext();
-    File policyFile = context.getPolicyFile();
-    File db2PolicyFile = new File(policyFile.getParent(), DB2_POLICY_FILE);
-    File defaultPolicyFile = new File(policyFile.getParent(), "default-policy-file.ini");
-    File dataDir = context.getDataDir();
-    //copy data file to test dir
-    File dataFile = new File(dataDir, MULTI_TYPE_DATA_FILE_NAME);
-    FileOutputStream to = new FileOutputStream(dataFile);
-    Resources.copy(Resources.getResource(MULTI_TYPE_DATA_FILE_NAME), to);
-    to.close();
-    //delete existing policy file; create new policy file
-    assertTrue("Could not delete " + policyFile, context.deletePolicyFile());
-    assertTrue("Could not delete " + db2PolicyFile,!db2PolicyFile.exists() || db2PolicyFile.delete());
-    assertTrue("Could not delete " + defaultPolicyFile,!defaultPolicyFile.exists() || defaultPolicyFile.delete());
+    File db2PolicyFileHandle = new File(context.getPolicyFile().getParent(), DB2_POLICY_FILE);
+    File defaultPolicyFileHandle = new File(context.getPolicyFile().getParent(), "default.ini");
 
-    String[] policyFileContents = {
-        // groups : role -> group
-        "[groups]",
-        "admin = all_server",
-        "user_group1 = select_tbl1",
-        "user_group2 = select_tbl2",
-        // roles: privileges -> role
-        "[roles]",
-        "all_server = server=server1",
-        "select_tbl1 = server=server1->db=db1->table=tbl1->action=select",
-        // users: users -> groups
-        "[users]",
-        "hive = admin",
-        "user_1 = user_group1",
-        "user_2 = user_group2",
-        "user_3 = user_group3",
-        "[databases]",
-        "db2 = " + db2PolicyFile.getPath(),
-        "default = " + defaultPolicyFile.getPath()
-    };
-    context.makeNewPolicy(policyFileContents);
+    policyFile
+        .addRolesToGroup("user_group1", "select_tbl1")
+        .addRolesToGroup("user_group2", "select_tbl2")
+        .addPermissionsToRole("select_tbl1", "server=server1->db=db1->table=tbl1->action=select")
+        .addGroupsToUser("user_1", "user_group1")
+        .addGroupsToUser("user_2", "user_group2")
+        .addGroupsToUser("user_3", "user_group3")
+        .addDatabase("db2", db2PolicyFileHandle.getPath())
+        .addDatabase("default", defaultPolicyFileHandle.getPath())
+        .write(context.getPolicyFile());
 
-    String[] db2PolicyFileContents = {
-        "[groups]",
-        "user_group2 = select_tbl2",
-        "[roles]",
-        "select_tbl2 = server=server1->db=db2->table=tbl2->action=select"
-    };
-    Files.write(Joiner.on("\n").join(db2PolicyFileContents), db2PolicyFile, Charsets.UTF_8);
+    PolicyFile db2PolicyFile = new PolicyFile();
+    db2PolicyFile
+        .addRolesToGroup("user_group2", "select_tbl2")
+        .addPermissionsToRole("select_tbl2", "server=server1->db=db2->table=tbl2->action=select")
+        .write(db2PolicyFileHandle);
 
-    String[] defautlPolicyFileContents = {
-        "[groups]",
-        "user_group2 = select_def",
-        "[roles]",
-        "select_def = server=server1->db=default->table=dtab->action=select"
-    };
-    Files.write(Joiner.on("\n").join(defautlPolicyFileContents), defaultPolicyFile, Charsets.UTF_8);
-
+    PolicyFile defaultPolicyFile = new PolicyFile();
+    defaultPolicyFile
+        .addRolesToGroup("user_group2", "select_def")
+        .addPermissionsToRole("select_def", "server=server1->db=default->table=dtab->action=select")
+        .write(defaultPolicyFileHandle);
 
     // setup db objects needed by the test
-    Connection connection = context.createConnection("hive", "hive");
+    Connection connection = context.createConnection(ADMIN1, "hive");
     Statement statement = context.createStatement(connection);
     statement.execute("USE default");
     statement.execute("CREATE TABLE dtab(B INT, A STRING) " +

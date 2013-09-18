@@ -19,6 +19,7 @@ package org.apache.sentry.tests.e2e;
 
 import com.google.common.io.Resources;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
+import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.tests.e2e.hiveserver.HiveServerFactory;
 import org.junit.After;
 import org.junit.Before;
@@ -38,6 +39,8 @@ import static org.junit.Assert.assertFalse;
 public class TestSentryOnFailureHookLoading extends AbstractTestWithHiveServer {
 
   private Context context;
+  private PolicyFile policyFile;
+
   Map<String, String > testProperties;
   private static final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
 
@@ -46,6 +49,7 @@ public class TestSentryOnFailureHookLoading extends AbstractTestWithHiveServer {
     testProperties = new HashMap<String, String>();
     testProperties.put(HiveAuthzConf.AuthzConfVars.AUTHZ_ONFAILURE_HOOKS.getVar(),
         DummySentryOnFailureHook.class.getName());
+    policyFile = PolicyFile.createAdminOnServer1("admin1");
   }
 
   @After
@@ -74,29 +78,21 @@ public class TestSentryOnFailureHookLoading extends AbstractTestWithHiveServer {
 
     context = createContext(testProperties);
 
-    File policyFile = context.getPolicyFile();
     File dataDir = context.getDataDir();
     //copy data file to test dir
     File dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
-    //delete existing policy file; create new policy file
-    assertTrue("Could not delete " + policyFile, context.deletePolicyFile());
-    // groups : role -> group
-    context.append("[groups]");
-    context.append("admin = all_server");
-    context.append("user_group1 = all_db1, load_data");
-    // roles: privileges -> role
-    context.append("[roles]");
-    context.append("all_server = server=server1");
-    context.append("all_db1 = server=server1->db=DB_1");
-    // users: users -> groups
-    context.append("[users]");
-    context.append("hive = admin");
-    context.append("user1 = user_group1");
+
+    policyFile
+        .addRolesToGroup("user_group1", "all_db1", "load_data")
+        .addPermissionsToRole("all_db1", "server=server1->db=DB_1")
+        .addGroupsToUser("user1", "user_group1")
+        .write(context.getPolicyFile());
+
     // setup db objects needed by the test
-    Connection connection = context.createConnection("hive", "hive");
+    Connection connection = context.createConnection("admin1", "hive");
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("DROP DATABASE IF EXISTS DB_2 CASCADE");
@@ -122,7 +118,7 @@ public class TestSentryOnFailureHookLoading extends AbstractTestWithHiveServer {
     connection.close();
 
     //test cleanup
-    connection = context.createConnection("hive", "hive");
+    connection = context.createConnection("admin1", "hive");
     statement = context.createStatement(connection);
     statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.execute("DROP DATABASE DB_2 CASCADE");

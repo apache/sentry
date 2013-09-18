@@ -22,6 +22,7 @@ import java.sql.Statement;
 
 import junit.framework.Assert;
 
+import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.tests.e2e.hiveserver.HiveServerFactory;
 import org.junit.After;
 import org.junit.Before;
@@ -29,12 +30,15 @@ import org.junit.Test;
 
 public class TestUriPermissions extends AbstractTestWithStaticLocalFS {
   private Context context;
+  private PolicyFile policyFile;
+
   private static final String dataFile = "/kv1.dat";
   private String dataFilePath = this.getClass().getResource(dataFile).getFile();
 
   @Before
   public void setup() throws Exception {
     context = createContext();
+    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
   }
 
   @After
@@ -52,26 +56,19 @@ public class TestUriPermissions extends AbstractTestWithStaticLocalFS {
     Connection userConn = null;
     Statement userStmt = null;
 
-    String testPolicies[] = {
-        "[groups]",
-        "admin_group = admin_role",
-        "user_group1  = db1_read, db1_write, data_read",
-        "user_group2  = db1_write",
-        "[roles]",
-        "db1_write = server=server1->db=" + dbName + "->table=" + tabName + "->action=INSERT",
-        "db1_read = server=server1->db=" + dbName + "->table=" + tabName + "->action=SELECT",
-        // role below has duplicate privilege for ACCESS-178
-        "data_read = server=server1->URI=file://" + dataFilePath + ", server=server1->URI=file://" + dataFilePath,
-        "admin_role = server=server1",
-        "[users]",
-        "user1 = user_group1",
-        "user2 = user_group2",
-        "admin = admin_group"
-        };
-    context.makeNewPolicy(testPolicies);
+    policyFile
+        .addRolesToGroup("user_group1", "db1_read", "db1_write", "data_read")
+        .addRolesToGroup("user_group2", "db1_write")
+        .addPermissionsToRole("db1_write", "server=server1->db=" + dbName + "->table=" + tabName + "->action=INSERT")
+        .addPermissionsToRole("db1_read", "server=server1->db=" + dbName + "->table=" + tabName + "->action=SELECT")
+        .addPermissionsToRole("data_read", "server=server1->URI=file://" + dataFilePath
+            + ", server=server1->URI=file://" + dataFilePath)
+        .addGroupsToUser("user1", "user_group1")
+        .addGroupsToUser("user2", "user_group2")
+        .write(context.getPolicyFile());
 
     // create dbs
-    Connection adminCon = context.createConnection("admin", "foo");
+    Connection adminCon = context.createConnection("admin1", "foo");
     Statement adminStmt = context.createStatement(adminCon);
     adminStmt.execute("use default");
     adminStmt.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
@@ -113,27 +110,20 @@ public class TestUriPermissions extends AbstractTestWithStaticLocalFS {
     Connection userConn = null;
     Statement userStmt = null;
 
-    String testPolicies[] = {
-        "[groups]",
-        "admin_group = admin_role",
-        "user_group1  = db1_all, data_read",
-        "user_group2  = db1_all",
-        "user_group3  = db1_tab1_all, data_read",
-        "[roles]",
-        "db1_all = server=server1->db=" + dbName,
-        "db1_tab1_all = server=server1->db=" + dbName + "->table=" + tabName,
-        "data_read = server=server1->URI=" + tabDir,
-        "admin_role = server=server1",
-        "[users]",
-        "user1 = user_group1",
-        "user2 = user_group2",
-        "user3 = user_group3",
-        "admin = admin_group"
-        };
-    context.makeNewPolicy(testPolicies);
+    policyFile
+        .addRolesToGroup("user_group1", "db1_all", "data_read")
+        .addRolesToGroup("user_group2", "db1_all")
+        .addRolesToGroup("user_group3", "db1_tab1_all", "data_read")
+        .addPermissionsToRole("db1_all", "server=server1->db=" + dbName)
+        .addPermissionsToRole("db1_tab1_all", "server=server1->db=" + dbName + "->table=" + tabName)
+        .addPermissionsToRole("data_read", "server=server1->URI=" + tabDir)
+        .addGroupsToUser("user1", "user_group1")
+        .addGroupsToUser("user2", "user_group2")
+        .addGroupsToUser("user3", "user_group3")
+        .write(context.getPolicyFile());
 
     // create dbs
-    Connection adminCon = context.createConnection("admin", "foo");
+    Connection adminCon = context.createConnection("admin1", "foo");
     Statement adminStmt = context.createStatement(adminCon);
     adminStmt.execute("use default");
     adminStmt.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
@@ -194,25 +184,18 @@ public class TestUriPermissions extends AbstractTestWithStaticLocalFS {
     Connection userConn = null;
     Statement userStmt = null;
 
-    String testPolicies[] = {
-        "[groups]",
-        "admin_group = admin_role",
-        "user_group1  = server1_all",
-        "user_group2  = db1_all, data_read",
-        "[roles]",
-        "db1_all = server=server1->db=" + dbName,
-        "data_read = server=server1->URI=" + tabDir,
-        "admin_role = server=server1",
-        "server1_all = server=server1",
-        "[users]",
-        "user1 = user_group1",
-        "user2 = user_group2",
-        "admin = admin_group"
-        };
-    context.makeNewPolicy(testPolicies);
+    policyFile
+        .addRolesToGroup("user_group1", "server1_all")
+        .addRolesToGroup("user_group2", "db1_all, data_read")
+        .addPermissionsToRole("db1_all", "server=server1->db=" + dbName)
+        .addPermissionsToRole("data_read", "server=server1->URI=" + tabDir)
+        .addPermissionsToRole("server1_all", "server=server1")
+        .addGroupsToUser("user1", "user_group1")
+        .addGroupsToUser("user2", "user_group2")
+        .write(context.getPolicyFile());
 
     // create dbs
-    Connection adminCon = context.createConnection("admin", "foo");
+    Connection adminCon = context.createConnection("admin1", "foo");
     Statement adminStmt = context.createStatement(adminCon);
     adminStmt.execute("use default");
     adminStmt.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
@@ -244,24 +227,18 @@ public class TestUriPermissions extends AbstractTestWithStaticLocalFS {
     Connection userConn = null;
     Statement userStmt = null;
     String tableDir = "file://" + context.getDataDir();
-    String testPolicies[] = {
-        "[groups]",
-        "admin_group = admin_role",
-        "user_group1  = db1_all, data_read",
-        "user_group2  = db1_all",
-        "[roles]",
-        "db1_all = server=server1->db=" + dbName,
-        "data_read = server=server1->URI=" + tableDir,
-        "admin_role = server=server1",
-        "[users]",
-        "user1 = user_group1",
-        "user2 = user_group2",
-        "admin = admin_group"
-        };
-    context.makeNewPolicy(testPolicies);
+
+    policyFile
+        .addRolesToGroup("user_group1", "db1_all", "data_read")
+        .addRolesToGroup("user_group2", "db1_all")
+        .addPermissionsToRole("db1_all", "server=server1->db=" + dbName)
+        .addPermissionsToRole("data_read", "server=server1->URI=" + tableDir)
+        .addGroupsToUser("user1", "user_group1")
+        .addGroupsToUser("user2", "user_group2")
+        .write(context.getPolicyFile());
 
     // create dbs
-    Connection adminCon = context.createConnection("admin", "foo");
+    Connection adminCon = context.createConnection("admin1", "foo");
     Statement adminStmt = context.createStatement(adminCon);
     adminStmt.execute("use default");
     adminStmt.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");

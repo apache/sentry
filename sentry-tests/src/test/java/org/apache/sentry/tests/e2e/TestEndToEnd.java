@@ -22,6 +22,7 @@ import java.io.FileOutputStream;
 import java.sql.Connection;
 import java.sql.Statement;
 
+import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,6 +33,8 @@ public class TestEndToEnd extends AbstractTestWithStaticLocalFS {
   private Context context;
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private File dataFile;
+  private PolicyFile policyFile;
+
 
   @Before
   public void setup() throws Exception {
@@ -40,6 +43,8 @@ public class TestEndToEnd extends AbstractTestWithStaticLocalFS {
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
+    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
+
   }
 
   @After
@@ -64,11 +69,7 @@ public class TestEndToEnd extends AbstractTestWithStaticLocalFS {
    */
   @Test
   public void testEndToEnd1() throws Exception {
-    File policyFile = context.getPolicyFile();
-    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("admin = admin_role", "groups");
-    editor.addPolicy("admin_role = server=server1", "roles");
-    editor.addPolicy("admin1 = admin", "users");
+    policyFile.write(context.getPolicyFile());
 
     String dbName1 = "db_1";
     String dbName2 = "productionDB";
@@ -93,15 +94,17 @@ public class TestEndToEnd extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // 3
-    editor.addPolicy("user1 = group1", "users");
+    policyFile.addGroupsToUser("user1", "group1");
 
     // 4
-    editor.addPolicy("group1 = all_db1, data_uri, select_tb1, insert_tb1", "groups");
-    editor.addPolicy("all_db1 = server=server1->db=db_1", "roles");
-    editor.addPolicy("select_tb1 = server=server1->db=productionDB->table=tb_1->action=select","roles");
-    editor.addPolicy("insert_tb2 = server=server1->db=productionDB->table=tb_2->action=insert","roles");
-    editor.addPolicy("insert_tb1 = server=server1->db=productionDB->table=tb_2->action=insert","roles");
-    editor.addPolicy("data_uri = server=server1->uri=file://" + dataDir.getPath(), "roles");
+    policyFile
+        .addRolesToGroup("group1", "all_db1", "data_uri", "select_tb1", "insert_tb1")
+        .addPermissionsToRole("all_db1", "server=server1->db=db_1")
+        .addPermissionsToRole("select_tb1", "server=server1->db=productionDB->table=tb_1->action=select")
+        .addPermissionsToRole("insert_tb2", "server=server1->db=productionDB->table=tb_2->action=insert")
+        .addPermissionsToRole("insert_tb1", "server=server1->db=productionDB->table=tb_2->action=insert")
+        .addPermissionsToRole("data_uri", "server=server1->uri=file://" + dataDir.getPath());
+    policyFile.write(context.getPolicyFile());
 
     // 5
     connection = context.createConnection("user1", "foo");

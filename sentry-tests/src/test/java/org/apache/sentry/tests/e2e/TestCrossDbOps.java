@@ -76,24 +76,15 @@ public class TestCrossDbOps extends AbstractTestWithStaticLocalFS {
   @Test
   public void testShowDatabasesAndShowTables() throws Exception {
     // edit policy file
-    File policyFile = context.getPolicyFile();
-    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("admin = admin", "groups");
-    editor.addPolicy("group1 = select_tab1, insert_tab2", "groups");
-    editor.addPolicy("group2 = select_tab3", "groups");
-    editor.addPolicy("admin = server=server1", "roles");
-    editor.addPolicy(
-        "select_tab1 = server=server1->db=db1->table=tab1->action=select",
-        "roles");
-    editor.addPolicy(
-        "select_tab3 = server=server1->db=db2->table=tab3->action=select",
-        "roles");
-    editor.addPolicy(
-        "insert_tab2 = server=server1->db=db2->table=tab2->action=insert",
-        "roles");
-    editor.addPolicy("admin1 = admin", "users");
-    editor.addPolicy("user1 = group1", "users");
-    editor.addPolicy("user2 = group2", "users");
+    policyFile
+        .addRolesToGroup("group1", "select_tab1", "insert_tab2")
+        .addRolesToGroup("group2", "select_tab3")
+        .addPermissionsToRole("select_tab1",  "server=server1->db=db1->table=tab1->action=select")
+        .addPermissionsToRole("select_tab3", "server=server1->db=db2->table=tab3->action=select")
+        .addPermissionsToRole("insert_tab2", "server=server1->db=db2->table=tab2->action=insert")
+        .addGroupsToUser("user1", "group1")
+        .addGroupsToUser("user2", "group2");
+    policyFile.write(context.getPolicyFile());
 
     // admin create two databases
     Connection connection = context.createConnection(ADMIN1, "foo");
@@ -203,18 +194,14 @@ public class TestCrossDbOps extends AbstractTestWithStaticLocalFS {
   @Test
   public void testJDBCGetSchemasAndGetTables() throws Exception {
     // edit policy file
-    File policyFile = context.getPolicyFile();
-    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("admin = admin", "groups");
-    editor.addPolicy("group1 = select_tab1, insert_tab2", "groups");
-    editor.addPolicy("group2 = select_tab3", "groups");
-    editor.addPolicy("admin = server=server1", "roles");
-    editor.addPolicy("select_tab1 = server=server1->db=db1->table=tab1->action=select","roles");
-    editor.addPolicy("select_tab3 = server=server1->db=db2->table=tab3->action=select","roles");
-    editor.addPolicy("insert_tab2 = server=server1->db=db2->table=tab2->action=insert","roles");
-    editor.addPolicy("admin1 = admin", "users");
-    editor.addPolicy("user1 = group1", "users");
-    editor.addPolicy("user2 = group2", "users");
+    policyFile.addRolesToGroup("group1", "select_tab1", "insert_tab2")
+        .addRolesToGroup("group2", "select_tab3")
+        .addPermissionsToRole("select_tab1", "server=server1->db=db1->table=tab1->action=select")
+        .addPermissionsToRole("select_tab3", "server=server1->db=db2->table=tab3->action=select")
+        .addPermissionsToRole("insert_tab2", "server=server1->db=db2->table=tab2->action=insert")
+        .addGroupsToUser("user1", "group1")
+        .addGroupsToUser("user2", "group2");
+    policyFile.write(context.getPolicyFile());
 
     // admin create two databases
     Connection connection = context.createConnection(ADMIN1, "foo");
@@ -367,21 +354,14 @@ public class TestCrossDbOps extends AbstractTestWithStaticLocalFS {
   @Test
   public void testDbPrivileges() throws Exception {
     // edit policy file
-    String testPolicies[] = {
-        "[groups]",
-        "admin_group = admin_role",
-        "user_group  = db1_all,db2_all, load_data",
-        "[roles]",
-        "db1_all = server=server1->db=" + DB1,
-        "db2_all = server=server1->db=" + DB2,
-        "load_data = server=server1->URI=file://" + dataFile.getPath(),
-        "admin_role = server=server1",
-        "[users]",
-        "user1 = user_group",
-        "user2 = user_group",
-        ADMIN1 + " = admin_group"
-    };
-    context.makeNewPolicy(testPolicies);
+    policyFile.addRolesToGroup("user_group", "db1_all,db2_all, load_data")
+        .addPermissionsToRole("db1_all", "server=server1->db=" + DB1)
+        .addPermissionsToRole("db2_all", "server=server1->db=" + DB2)
+        .addPermissionsToRole("load_data", "server=server1->URI=file://" + dataFile.getPath())
+        .addGroupsToUser("user1", "user_group")
+        .addGroupsToUser("user2", "user_group");
+    policyFile.write(context.getPolicyFile());
+
     dropDb(ADMIN1, DB1, DB2);
     createDb(ADMIN1, DB1, DB2);
     for (String user : new String[]{USER1, USER2}) {
@@ -433,18 +413,13 @@ public class TestCrossDbOps extends AbstractTestWithStaticLocalFS {
   @Test
   public void testNegativeUserPrivileges() throws Exception {
     // edit policy file
-    String testPolicies[] = {
-        "[groups]",
-        "admin_group = admin_role",
-        "user_group  = db1_tab1_insert, db1_tab2_all",
-        "[roles]",
-        "db1_tab2_all = server=server1->db=db1->table=table_2",
-        "db1_tab1_insert = server=server1->db=db1->table=table_1->action=insert",
-        "admin_role = server=server1", "[users]", "user3 = user_group",
-    "admin = admin_group"};
+    policyFile.addRolesToGroup("user_group", "db1_tab1_insert", "db1_tab2_all")
+        .addPermissionsToRole("db1_tab2_all", "server=server1->db=db1->table=table_2")
+        .addPermissionsToRole("db1_tab1_insert", "server=server1->db=db1->table=table_1->action=insert")
+        .addGroupsToUser("user3", "user_group");
+    policyFile.write(context.getPolicyFile());
 
-    context.makeNewPolicy(testPolicies);
-    Connection adminCon = context.createConnection("admin", "foo");
+    Connection adminCon = context.createConnection(ADMIN1, "foo");
     Statement adminStmt = context.createStatement(adminCon);
     String dbName = "db1";
     adminStmt.execute("use default");
@@ -469,10 +444,11 @@ public class TestCrossDbOps extends AbstractTestWithStaticLocalFS {
   @Test
   public void testNegativeUserDMLPrivileges() throws Exception {
     policyFile
-    .addPermissionsToRole("db1_tab2_all", "server=server1->db=db1->table=table_2")
-    .addRolesToGroup("group1", "db1_tab2_all")
-    .addGroupsToUser("user3", "group1");
+        .addPermissionsToRole("db1_tab2_all", "server=server1->db=db1->table=table_2")
+        .addRolesToGroup("group1", "db1_tab2_all")
+        .addGroupsToUser("user3", "group1");
     policyFile.write(context.getPolicyFile());
+
     dropDb(ADMIN1, DB1);
     createDb(ADMIN1, DB1);
     Connection adminCon = context.createConnection(ADMIN1, "password");
@@ -510,20 +486,18 @@ public class TestCrossDbOps extends AbstractTestWithStaticLocalFS {
    */
   @Test
   public void testNegUserPrivilegesAll() throws Exception {
-    String testPolicies[] = {
-        "[groups]",
-        "admin_group = admin_role",
-        "user_group1 = db1_all",
-        "user_group2 = db1_tab1_select",
-        "[roles]",
-        "db1_all = server=server1->db=db1",
-        "db1_tab1_select = server=server1->db=db1->table=table_1->action=select",
-        "admin_role = server=server1", "[users]", "user1 = user_group1",
-        "user2 = user_group2", "admin = admin_group"};
-    context.makeNewPolicy(testPolicies);
+
+    policyFile
+        .addRolesToGroup("user_group1", "db1_all")
+        .addRolesToGroup("user_group2", "db1_tab1_select")
+        .addPermissionsToRole("db1_all", "server=server1->db=db1")
+        .addPermissionsToRole("db1_tab1_select", "server=server1->db=db1->table=table_1->action=select")
+        .addGroupsToUser("user1", "user_group1")
+        .addGroupsToUser("user2", "user_group2");
+    policyFile.write(context.getPolicyFile());
 
     // create dbs
-    Connection adminCon = context.createConnection("admin", "foo");
+    Connection adminCon = context.createConnection(ADMIN1, "foo");
     Statement adminStmt = context.createStatement(adminCon);
     String dbName = "db1";
     adminStmt.execute("use default");
@@ -593,9 +567,9 @@ public class TestCrossDbOps extends AbstractTestWithStaticLocalFS {
   @Test
   public void testSandboxOpt9() throws Exception {
     policyFile
-    .addPermissionsToRole(GROUP1_ROLE, ALL_DB1, ALL_DB2, loadData)
-    .addRolesToGroup(GROUP1, GROUP1_ROLE)
-    .addGroupsToUser(USER1, GROUP1);
+        .addPermissionsToRole(GROUP1_ROLE, ALL_DB1, ALL_DB2, loadData)
+        .addRolesToGroup(GROUP1, GROUP1_ROLE)
+        .addGroupsToUser(USER1, GROUP1);
     policyFile.write(context.getPolicyFile());
 
     dropDb(ADMIN1, DB1, DB2);
@@ -667,21 +641,14 @@ public class TestCrossDbOps extends AbstractTestWithStaticLocalFS {
   @Test
   public void testCrossDbViewOperations() throws Exception {
     // edit policy file
-    File policyFile = context.getPolicyFile();
-    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.clearOldPolicy();
-    editor.addPolicy("admin = admin", "groups");
-    editor.addPolicy("group1 = all_db1,load_data,select_tb2", "groups");
-    editor.addPolicy("admin = server=server1", "roles");
-    editor.addPolicy("all_db1 = server=server1->db=db_1", "roles");
-    editor.addPolicy("all_db2 = server=server1->db=db_2", "roles");
-    editor.addPolicy(
-        "select_tb2 = server=server1->db=db_2->table=tb_1->action=select",
-        "roles");
-    editor.addPolicy("load_data = server=server1->URI=file://" + dataFile.getPath(),
-        "roles");
-    editor.addPolicy("admin1 = admin", "users");
-    editor.addPolicy("user1 = group1", "users");
+    policyFile
+        .addRolesToGroup("group1", "all_db1", "load_data", "select_tb2")
+        .addPermissionsToRole("all_db1", "server=server1->db=db_1")
+        .addPermissionsToRole("all_db2", "server=server1->db=db_2")
+        .addPermissionsToRole("select_tb2", "server=server1->db=db_2->table=tb_1->action=select")
+        .addPermissionsToRole("load_data", "server=server1->URI=file://" + dataFile.getPath())
+        .addGroupsToUser("user1", "group1");
+    policyFile.write(context.getPolicyFile());
 
     // admin create two databases
     dropDb(ADMIN1, DB1, DB2);

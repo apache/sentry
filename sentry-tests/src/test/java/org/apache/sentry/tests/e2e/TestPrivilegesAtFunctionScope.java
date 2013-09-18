@@ -25,6 +25,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,6 +37,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticLocalFS
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private File dataDir;
   private File dataFile;
+  private PolicyFile policyFile;
 
   @Before
   public void setup() throws Exception {
@@ -45,6 +47,8 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticLocalFS
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
+    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
+
   }
 
   @After
@@ -64,21 +68,18 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticLocalFS
   public void testFuncPrivileges1() throws Exception {
     String dbName1 = "db_1";
     String tableName1 = "tb_1";
-    // edit policy file
-    File policyFile = context.getPolicyFile();
-    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("admin = admin", "groups");
-    editor.addPolicy("group1 = db1_all,UDF_JAR", "groups");
-    editor.addPolicy("group2 = db1_tab1,UDF_JAR", "groups");
-    editor.addPolicy("group3 = db1_tab1", "groups");
-    editor.addPolicy("admin = server=server1", "roles");
-    editor.addPolicy("db1_all = server=server1->db=" + dbName1, "roles");
-    editor.addPolicy("db1_tab1 = server=server1->db=" + dbName1 + "->table=" + tableName1, "roles");
-    editor.addPolicy("UDF_JAR = server=server1->uri=file://${user.home}/.m2", "roles");
-    editor.addPolicy("admin1 = admin", "users");
-    editor.addPolicy("user1 = group1", "users");
-    editor.addPolicy("user2 = group2", "users");
-    editor.addPolicy("user3 = group3", "users");
+
+    policyFile
+        .addRolesToGroup("group1", "db1_all", "UDF_JAR")
+        .addRolesToGroup("group2", "db1_tab1", "UDF_JAR")
+        .addRolesToGroup("group3", "db1_tab1")
+        .addPermissionsToRole("db1_all", "server=server1->db=" + dbName1)
+        .addPermissionsToRole("db1_tab1", "server=server1->db=" + dbName1 + "->table=" + tableName1)
+        .addPermissionsToRole("UDF_JAR", "server=server1->uri=file://${user.home}/.m2")
+        .addGroupsToUser("user1", "group1")
+        .addGroupsToUser("user2", "group2")
+        .addGroupsToUser("user3", "group3")
+        .write(context.getPolicyFile());
 
     Connection connection = context.createConnection("admin1", "foo");
     Statement statement = context.createStatement(connection);
@@ -145,18 +146,15 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticLocalFS
     String dbName1 = "db1";
     String tableName1 = "tab1";
 
-    File policyFile = context.getPolicyFile();
-    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("admin = admin", "groups");
-    editor.addPolicy("group1 = db1_all,UDF_JAR", "groups");
-    editor.addPolicy("group2 = db1_tab1,UDF_JAR", "groups");
-    editor.addPolicy("group3 = db1_tab1", "groups");
-    editor.addPolicy("admin = server=server1", "roles");
-    editor.addPolicy("db1_all = server=server1->db=" + dbName1, "roles");
-    editor.addPolicy("db1_tab1 = server=server1->db=" + dbName1 + "->table=" + tableName1, "roles");
-    editor.addPolicy("UDF_JAR = server=server1->uri=file://${user.home}/.m2", "roles");
-    editor.addPolicy("admin1 = admin", "users");
-    editor.addPolicy("user1 = group1", "users");
+    policyFile
+        .addRolesToGroup("group1", "db1_all", "UDF_JAR")
+        .addRolesToGroup("group2", "db1_tab1", "UDF_JAR")
+        .addRolesToGroup("group3", "db1_tab1")
+        .addPermissionsToRole("db1_all", "server=server1->db=" + dbName1)
+        .addPermissionsToRole("db1_tab1", "server=server1->db=" + dbName1 + "->table=" + tableName1)
+        .addPermissionsToRole("UDF_JAR", "server=server1->uri=file://${user.home}/.m2")
+        .addGroupsToUser("user1", "group1")
+        .write(context.getPolicyFile());
 
     Connection connection = context.createConnection("admin1", "password");
     Statement statement = connection.createStatement();

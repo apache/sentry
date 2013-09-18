@@ -28,6 +28,7 @@ import java.sql.Statement;
 
 import junit.framework.Assert;
 
+import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,6 +38,8 @@ import com.google.common.io.Resources;
 public class TestMovingToProduction extends AbstractTestWithStaticLocalFS {
   private Context context;
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
+  private PolicyFile policyFile;
+
 
   @Before
   public void setUp() throws Exception {
@@ -45,6 +48,7 @@ public class TestMovingToProduction extends AbstractTestWithStaticLocalFS {
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
+    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
   }
 
   @After
@@ -72,23 +76,19 @@ public class TestMovingToProduction extends AbstractTestWithStaticLocalFS {
    */
   @Test
   public void testMovingTable1() throws Exception {
-    File policyFile = context.getPolicyFile();
-    Assert.assertTrue(policyFile.delete() && policyFile.createNewFile());
-
-    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("admin = admin", "groups");
-    editor.addPolicy("group1 = all_db1, load_data, select_proddb_tbl1, insert_proddb_tbl1", "groups");
-    editor.addPolicy("all_db1 = server=server1->db=db_1", "roles");
-    editor.addPolicy("load_data = server=server1->uri=file://" + dataDir.getPath(), "roles");
-    editor.addPolicy("admin = server=server1", "roles");
-    editor.addPolicy("admin1 = admin", "users");
-    editor.addPolicy("user1 = group1", "users");
-    editor.addPolicy("user2 = group2", "users");
+    policyFile
+        .addRolesToGroup("group1", "all_db1", "load_data", "select_proddb_tbl1", "insert_proddb_tbl1")
+        .addPermissionsToRole("load_data", "server=server1->uri=file://" + dataDir.getPath())
+        .addPermissionsToRole("all_db1", "server=server1->db=db_1")
+        .addGroupsToUser("user1", "group1")
+        .addGroupsToUser("user2", "group2")
+        .write(context.getPolicyFile());
 
     String dbName1 = "db_1";
     String dbName2 = "proddb";
     String tableName1 = "tb_1";
-    Connection connection = context.createConnection("admin1", "foo");
+
+    Connection connection = context.createConnection(ADMIN1, "foo");
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
     statement.execute("DROP DATABASE IF EXISTS " + dbName2 + " CASCADE");
@@ -110,14 +110,18 @@ public class TestMovingToProduction extends AbstractTestWithStaticLocalFS {
     statement.execute("LOAD DATA INPATH 'file://" + dataDir.getPath()
         + "' INTO TABLE " + tableName1);
 
-    editor.addPolicy("insert_proddb_tbl1 = server=server1->db=proddb->table=tb_1->action=insert", "roles");
+    policyFile
+        .addPermissionsToRole("insert_proddb_tbl1", "server=server1->db=proddb->table=tb_1->action=insert")
+        .write(context.getPolicyFile());
     statement.execute("USE " + dbName2);
     statement.execute("INSERT OVERWRITE TABLE "
         + tableName1 + " SELECT * FROM " + dbName1
         + "." + tableName1);
 
     // b
-    editor.addPolicy("select_proddb_tbl1 = server=server1->db=proddb->table=tb_1->action=select", "roles");
+    policyFile
+        .addPermissionsToRole("select_proddb_tbl1", "server=server1->db=proddb->table=tb_1->action=select")
+        .write(context.getPolicyFile());
     ResultSet resultSet = statement.executeQuery("SELECT * FROM " + tableName1 + " LIMIT 10");
     int count = 0;
     while(resultSet.next()) {
@@ -154,16 +158,13 @@ public class TestMovingToProduction extends AbstractTestWithStaticLocalFS {
    */
   @Test
   public void testMovingTable2() throws Exception {
-    File policyFile = context.getPolicyFile();
-    PolicyFileEditor editor = new PolicyFileEditor(policyFile);
-    editor.addPolicy("admin = admin", "groups");
-    editor.addPolicy("group1 = all_db1, load_data, select_proddb_tbl1, insert_proddb_tbl1", "groups");
-    editor.addPolicy("all_db1 = server=server1->db=db_1", "roles");
-    editor.addPolicy("load_data = server=server1->uri=file://" + dataDir.getPath(), "roles");
-    editor.addPolicy("admin = server=server1", "roles");
-    editor.addPolicy("admin1 = admin", "users");
-    editor.addPolicy("user1 = group1", "users");
-    editor.addPolicy("user2 = group2", "users");
+    policyFile
+        .addRolesToGroup("group1", "all_db1", "load_data", "select_proddb_tbl1", "insert_proddb_tbl1")
+        .addPermissionsToRole("all_db1", "server=server1->db=db_1")
+        .addPermissionsToRole("load_data", "server=server1->uri=file://" + dataDir.getPath())
+        .addGroupsToUser("user1", "group1")
+        .addGroupsToUser("user2", "group2")
+        .write(context.getPolicyFile());
 
     String dbName1 = "db_1";
     String dbName2 = "proddb";
@@ -189,13 +190,17 @@ public class TestMovingToProduction extends AbstractTestWithStaticLocalFS {
     statement.execute("LOAD DATA INPATH 'file://" + dataDir.getPath()
         + "' INTO TABLE " + dbName1 + "." + tableName1);
 
-    editor.addPolicy("insert_proddb_tbl1 = server=server1->db=proddb->table=tb_1->action=insert", "roles");
+    policyFile
+        .addPermissionsToRole("insert_proddb_tbl1", "server=server1->db=proddb->table=tb_1->action=insert")
+        .write(context.getPolicyFile());
     statement.execute("INSERT OVERWRITE TABLE "
         + dbName2 + "." + tableName1 + " SELECT * FROM " + dbName1
         + "." + tableName1);
 
     // b
-    editor.addPolicy("select_proddb_tbl1 = server=server1->db=proddb->table=tb_1->action=select", "roles");
+    policyFile
+        .addPermissionsToRole("select_proddb_tbl1", "server=server1->db=proddb->table=tb_1->action=select")
+        .write(context.getPolicyFile());
     assertTrue("user1 should be able to select data from "
         + dbName2 + "." + dbName2 + "." + tableName1, statement.execute("SELECT * FROM "
             + dbName2 + "." + tableName1 + " LIMIT 10"));
