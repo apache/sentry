@@ -17,6 +17,8 @@
 
 package org.apache.sentry.tests.e2e.hiveserver;
 
+import java.sql.Connection;
+
 public interface HiveServer {
 
   public void start() throws Exception;
@@ -26,5 +28,7 @@ public interface HiveServer {
   public String getURL();
 
   public String getProperty(String key);
+
+  public Connection createConnection(String user, String password) throws Exception;
 
 }

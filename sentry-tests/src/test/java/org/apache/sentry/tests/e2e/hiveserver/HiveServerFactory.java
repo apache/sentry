@@ -189,7 +189,7 @@ public class HiveServerFactory {
       return new ExternalHiveServer(hiveConf, confDir, logDir);
     case UnmanagedHiveServer2:
       LOGGER.info("Creating UnmanagedHiveServer");
-      return new UnmanagedHiveServer(hiveConf);
+      return new UnmanagedHiveServer();
     default:
       throw new UnsupportedOperationException(type.name());
     }

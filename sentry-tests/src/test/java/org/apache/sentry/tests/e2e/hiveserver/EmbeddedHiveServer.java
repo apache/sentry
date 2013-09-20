@@ -20,6 +20,9 @@ package org.apache.sentry.tests.e2e.hiveserver;
 import org.apache.hadoop.hive.metastore.HiveMetaStore;
 import org.fest.reflect.core.Reflection;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+
 public class EmbeddedHiveServer implements HiveServer {
 
   @Override
@@ -31,6 +34,12 @@ public class EmbeddedHiveServer implements HiveServer {
     .ofType(boolean.class)
     .in(HiveMetaStore.HMSHandler.class)
     .set(false);
+  }
+
+  public Connection createConnection(String user, String password) throws Exception{
+    String url = getURL();
+    Connection connection =  DriverManager.getConnection(url, user, password);
+    return connection;
   }
 
   @Override
