@@ -42,6 +42,7 @@
         <include>org.apache.sentry:sentry-provider</include>
         <include>org.apache.sentry:sentry-provider-file</include>
         <include>org.apache.sentry:sentry-tests</include>
+        <include>org.apache.sentry:sentry-tests-hive</include>
         <include>org.apache.sentry:sentry-dist</include>
       </includes>
 
