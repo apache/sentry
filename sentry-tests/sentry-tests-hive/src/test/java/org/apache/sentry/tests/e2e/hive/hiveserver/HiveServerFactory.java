@@ -51,7 +51,7 @@ public class HiveServerFactory {
   public static final String AUTHZ_PROVIDER_RESOURCE = HiveAuthzConf.AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar();
   public static final String AUTHZ_PROVIDER_FILENAME = "test-authz-provider.ini";
   public static final String AUTHZ_SERVER_NAME = HiveAuthzConf.AuthzConfVars.AUTHZ_SERVER_NAME.getVar();
-  public static final String ACCESS_TESTING_MODE = HiveAuthzConf.AuthzConfVars.ACCESS_TESTING_MODE.getVar();
+  public static final String ACCESS_TESTING_MODE = HiveAuthzConf.AuthzConfVars.SENTRY_TESTING_MODE.getVar();
   public static final String HS2_PORT = ConfVars.HIVE_SERVER2_THRIFT_PORT.toString();
   public static final String SUPPORT_CONCURRENCY = HiveConf.ConfVars.HIVE_SUPPORT_CONCURRENCY.varname;
   public static final String HADOOPBIN = ConfVars.HADOOPBIN.toString();

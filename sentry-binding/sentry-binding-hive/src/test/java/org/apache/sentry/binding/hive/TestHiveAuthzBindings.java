@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import junit.framework.Assert;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
@@ -31,6 +33,7 @@ import org.apache.sentry.binding.hive.authz.HiveAuthzPrivileges;
 import org.apache.sentry.binding.hive.authz.HiveAuthzPrivilegesMap;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
+import org.apache.sentry.binding.hive.conf.InvalidConfigurationException;
 import org.apache.sentry.core.AccessConstants;
 import org.apache.sentry.core.AccessURI;
 import org.apache.sentry.core.Authorizable;
@@ -107,7 +110,7 @@ public class TestHiveAuthzBindings {
     authzConf.set(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar(),
         new File(baseDir, RESOURCE_PATH).getPath());
     authzConf.set(AuthzConfVars.AUTHZ_SERVER_NAME.getVar(), SERVER1);
-    authzConf.set(AuthzConfVars.ACCESS_TESTING_MODE.getVar(), "true");
+    authzConf.set(AuthzConfVars.SENTRY_TESTING_MODE.getVar(), "true");
     testAuth = new HiveAuthzBinding(hiveConf, authzConf);
   }
 
@@ -288,7 +291,7 @@ public class TestHiveAuthzBindings {
     // perpare the hive and auth configs
     hiveConf.setBoolVar(ConfVars.HIVE_SERVER2_KERBEROS_IMPERSONATION, true);
     hiveConf.setVar(ConfVars.HIVE_SERVER2_AUTHENTICATION, "Kerberos");
-    authzConf.set(AuthzConfVars.ACCESS_TESTING_MODE.getVar(), "false");
+    authzConf.set(AuthzConfVars.SENTRY_TESTING_MODE.getVar(), "false");
     testAuth = new HiveAuthzBinding(hiveConf, authzConf);
 
     // following check should pass, but with impersonation it will fail with due to NoAuthorizationProvider
@@ -306,7 +309,7 @@ public class TestHiveAuthzBindings {
     // perpare the hive and auth configs
     hiveConf.setBoolVar(ConfVars.HIVE_SERVER2_KERBEROS_IMPERSONATION, true);
     hiveConf.setVar(ConfVars.HIVE_SERVER2_AUTHENTICATION, "Kerberos");
-    authzConf.set(AuthzConfVars.ACCESS_TESTING_MODE.getVar(), "false");
+    authzConf.set(AuthzConfVars.SENTRY_TESTING_MODE.getVar(), "false");
     authzConf.set(AuthzConfVars.AUTHZ_ALLOW_HIVE_IMPERSONATION.getVar(), "true");
     testAuth = new HiveAuthzBinding(hiveConf, authzConf);
 
@@ -326,5 +329,17 @@ public class TestHiveAuthzBindings {
       }
     }
     return authList;
+  }
+  
+  /**
+   * Turn off authentication and verify exception is raised in non-testing mode
+   * @throws Exception
+   */
+  @Test(expected=InvalidConfigurationException.class)
+  public void testNoAuthenticationRestriction() throws Exception {
+    // perpare the hive and auth configs
+    hiveConf.setVar(ConfVars.HIVE_SERVER2_AUTHENTICATION, "None");
+    authzConf.set(AuthzConfVars.SENTRY_TESTING_MODE.getVar(), "false");
+    testAuth = new HiveAuthzBinding(hiveConf, authzConf);
   }
 }

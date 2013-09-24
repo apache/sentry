@@ -17,6 +17,7 @@
 package org.apache.sentry.binding.hive.authz;
 
 import java.lang.reflect.Constructor;
+
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +42,7 @@ import org.apache.sentry.core.Subject;
 import org.apache.sentry.core.Authorizable.AuthorizableType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.sentry.binding.hive.conf.InvalidConfigurationException;
 
 import com.google.common.base.Strings;
 
@@ -100,13 +102,12 @@ public class HiveAuthzBinding {
   // Instantiate the configured authz provider
   private AuthorizationProvider getAuthProvider(HiveConf hiveConf, String serverName) throws Exception {
     boolean isTestingMode = Boolean.parseBoolean(Strings.nullToEmpty(
-        authzConf.get(AuthzConfVars.ACCESS_TESTING_MODE.getVar())).trim());
+        authzConf.get(AuthzConfVars.SENTRY_TESTING_MODE.getVar())).trim());
     LOG.debug("Testing mode is " + isTestingMode);
     if(!isTestingMode) {
       String authMethod = Strings.nullToEmpty(hiveConf.getVar(ConfVars.HIVE_SERVER2_AUTHENTICATION)).trim();
       if("none".equalsIgnoreCase(authMethod)) {
-        LOG.error("HiveServer2 authentication method cannot be set to none unless testing mode is enabled");
-        return new NoAuthorizationProvider();
+        throw new InvalidConfigurationException("Authentication can't be NONE in non-testing mode");
       }
       boolean impersonation = hiveConf.getBoolVar(ConfVars.HIVE_SERVER2_KERBEROS_IMPERSONATION);
       boolean allowImpersonation = Boolean.parseBoolean(Strings.nullToEmpty(

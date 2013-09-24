@@ -46,7 +46,7 @@ public class HiveAuthzConf extends Configuration {
         AUTHZ_PROVIDER_RESOURCE("hive.sentry.provider.resource", ""),
         AUTHZ_SERVER_NAME("hive.sentry.server", "HS2"),
         AUTHZ_RESTRICT_DEFAULT_DB("hive.sentry.restrict.defaultDB", "false"),
-        ACCESS_TESTING_MODE("hive.sentry.testing.mode", "false"),
+        SENTRY_TESTING_MODE("hive.sentry.testing.mode", "false"),
         AUTHZ_UDF_WHITELIST("hive.sentry.udf.whitelist", HIVE_UDF_WHITE_LIST),
         AUTHZ_ALLOW_HIVE_IMPERSONATION("hive.sentry.allow.hive.impersonation", "false"),
         AUTHZ_ONFAILURE_HOOKS("hive.sentry.failure.hooks", ""),
@@ -56,7 +56,7 @@ public class HiveAuthzConf extends Configuration {
         AUTHZ_PROVIDER_RESOURCE_DEPRECATED("hive.access.provider.resource", ""),
         AUTHZ_SERVER_NAME_DEPRECATED("hive.access.server", "HS2"),
         AUTHZ_RESTRICT_DEFAULT_DB_DEPRECATED("hive.access.restrict.defaultDB", "false"),
-        ACCESS_TESTING_MODE_DEPRECATED("hive.access.testing.mode", "false"),
+        SENTRY_TESTING_MODE_DEPRECATED("hive.access.testing.mode", "false"),
         AUTHZ_UDF_WHITELIST_DEPRECATED("hive.access.udf.whitelist", HIVE_UDF_WHITE_LIST),
         AUTHZ_ALLOW_HIVE_IMPERSONATION_DEPRECATED("hive.access.allow.hive.impersonation", "false"),
         AUTHZ_ONFAILURE_HOOKS_DEPRECATED("hive.access.failure.hooks", ""),
@@ -115,7 +115,7 @@ public class HiveAuthzConf extends Configuration {
    deprecatedConfigs.put(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE_DEPRECATED.getVar(), AuthzConfVars.AUTHZ_PROVIDER_RESOURCE);
    deprecatedConfigs.put(AuthzConfVars.AUTHZ_SERVER_NAME_DEPRECATED.getVar(), AuthzConfVars.AUTHZ_SERVER_NAME);
    deprecatedConfigs.put(AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB_DEPRECATED.getVar(), AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB);
-   deprecatedConfigs.put(AuthzConfVars.ACCESS_TESTING_MODE_DEPRECATED.getVar(), AuthzConfVars.ACCESS_TESTING_MODE);
+   deprecatedConfigs.put(AuthzConfVars.SENTRY_TESTING_MODE_DEPRECATED.getVar(), AuthzConfVars.SENTRY_TESTING_MODE);
    deprecatedConfigs.put(AuthzConfVars.AUTHZ_UDF_WHITELIST_DEPRECATED.getVar(), AuthzConfVars.AUTHZ_UDF_WHITELIST);
    deprecatedConfigs.put(AuthzConfVars.AUTHZ_ALLOW_HIVE_IMPERSONATION_DEPRECATED.getVar(), AuthzConfVars.AUTHZ_ALLOW_HIVE_IMPERSONATION);
    deprecatedConfigs.put(AuthzConfVars.AUTHZ_ONFAILURE_HOOKS_DEPRECATED.getVar(), AuthzConfVars.AUTHZ_ONFAILURE_HOOKS);
