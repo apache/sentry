@@ -41,27 +41,25 @@ public class HiveAuthzConf extends Configuration {
    * Config setting definitions
    */
   public static enum AuthzConfVars {
-    AUTHZ_PROVIDER("hive.sentry.provider",
-        "org.apache.sentry.provider.file.ResourceAuthorizationProvider"),
-        AUTHZ_PROVIDER_RESOURCE("hive.sentry.provider.resource", ""),
-        AUTHZ_SERVER_NAME("hive.sentry.server", "HS2"),
-        AUTHZ_RESTRICT_DEFAULT_DB("hive.sentry.restrict.defaultDB", "false"),
-        SENTRY_TESTING_MODE("hive.sentry.testing.mode", "false"),
-        AUTHZ_UDF_WHITELIST("hive.sentry.udf.whitelist", HIVE_UDF_WHITE_LIST),
-        AUTHZ_ALLOW_HIVE_IMPERSONATION("hive.sentry.allow.hive.impersonation", "false"),
-        AUTHZ_ONFAILURE_HOOKS("hive.sentry.failure.hooks", ""),
+    AUTHZ_PROVIDER("sentry.provider",
+      "org.apache.sentry.provider.file.ResourceAuthorizationProvider"),
+    AUTHZ_PROVIDER_RESOURCE("sentry.hive.provider.resource", ""),
+    AUTHZ_SERVER_NAME("sentry.hive.server", "HS2"),
+    AUTHZ_RESTRICT_DEFAULT_DB("sentry.hive.restrict.defaultDB", "false"),
+    SENTRY_TESTING_MODE("sentry.hive.testing.mode", "false"),
+    AUTHZ_UDF_WHITELIST("sentry.hive.udf.whitelist", HIVE_UDF_WHITE_LIST),
+    AUTHZ_ALLOW_HIVE_IMPERSONATION("sentry.hive.allow.hive.impersonation", "false"),
+    AUTHZ_ONFAILURE_HOOKS("sentry.hive.failure.hooks", ""),
 
-        AUTHZ_PROVIDER_DEPRECATED("hive.access.provider",
-        "org.apache.sentry.provider.file.ResourceAuthorizationProvider"),
-        AUTHZ_PROVIDER_RESOURCE_DEPRECATED("hive.access.provider.resource", ""),
-        AUTHZ_SERVER_NAME_DEPRECATED("hive.access.server", "HS2"),
-        AUTHZ_RESTRICT_DEFAULT_DB_DEPRECATED("hive.access.restrict.defaultDB", "false"),
-        SENTRY_TESTING_MODE_DEPRECATED("hive.access.testing.mode", "false"),
-        AUTHZ_UDF_WHITELIST_DEPRECATED("hive.access.udf.whitelist", HIVE_UDF_WHITE_LIST),
-        AUTHZ_ALLOW_HIVE_IMPERSONATION_DEPRECATED("hive.access.allow.hive.impersonation", "false"),
-        AUTHZ_ONFAILURE_HOOKS_DEPRECATED("hive.access.failure.hooks", ""),
-
-        ;
+    AUTHZ_PROVIDER_DEPRECATED("hive.sentry.provider",
+      "org.apache.sentry.provider.file.ResourceAuthorizationProvider"),
+    AUTHZ_PROVIDER_RESOURCE_DEPRECATED("hive.sentry.provider.resource", ""),
+    AUTHZ_SERVER_NAME_DEPRECATED("hive.sentry.server", "HS2"),
+    AUTHZ_RESTRICT_DEFAULT_DB_DEPRECATED("hive.sentry.restrict.defaultDB", "false"),
+    SENTRY_TESTING_MODE_DEPRECATED("hive.sentry.testing.mode", "false"),
+    AUTHZ_UDF_WHITELIST_DEPRECATED("hive.sentry.udf.whitelist", HIVE_UDF_WHITE_LIST),
+    AUTHZ_ALLOW_HIVE_IMPERSONATION_DEPRECATED("hive.sentry.allow.hive.impersonation", "false"),
+    AUTHZ_ONFAILURE_HOOKS_DEPRECATED("hive.sentry.failure.hooks", "");
 
     private final String varName;
     private final String defaultVal;
@@ -108,17 +106,22 @@ public class HiveAuthzConf extends Configuration {
     "variance,weekofyear,when,xpath,xpath_boolean,xpath_double,xpath_float,xpath_int,xpath_long," +
     "xpath_number,xpath_short,xpath_string,year";
 
-  private static final Map<String, AuthzConfVars> deprecatedConfigs =
+  // map of current property names - > deprecated property names.
+  // The binding layer code should work if the deprecated property names are provided,
+  // as long as the new property names aren't also provided.  Since the binding code
+  // only calls the new property names, we require a map from current names to deprecated
+  // names in order to check if the deprecated name of a property was set.
+  private static final Map<String, AuthzConfVars> currentToDeprecatedProps =
       new HashMap<String, AuthzConfVars>();
   static {
-   deprecatedConfigs.put(AuthzConfVars.AUTHZ_PROVIDER_DEPRECATED.getVar(), AuthzConfVars.AUTHZ_PROVIDER);
-   deprecatedConfigs.put(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE_DEPRECATED.getVar(), AuthzConfVars.AUTHZ_PROVIDER_RESOURCE);
-   deprecatedConfigs.put(AuthzConfVars.AUTHZ_SERVER_NAME_DEPRECATED.getVar(), AuthzConfVars.AUTHZ_SERVER_NAME);
-   deprecatedConfigs.put(AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB_DEPRECATED.getVar(), AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB);
-   deprecatedConfigs.put(AuthzConfVars.SENTRY_TESTING_MODE_DEPRECATED.getVar(), AuthzConfVars.SENTRY_TESTING_MODE);
-   deprecatedConfigs.put(AuthzConfVars.AUTHZ_UDF_WHITELIST_DEPRECATED.getVar(), AuthzConfVars.AUTHZ_UDF_WHITELIST);
-   deprecatedConfigs.put(AuthzConfVars.AUTHZ_ALLOW_HIVE_IMPERSONATION_DEPRECATED.getVar(), AuthzConfVars.AUTHZ_ALLOW_HIVE_IMPERSONATION);
-   deprecatedConfigs.put(AuthzConfVars.AUTHZ_ONFAILURE_HOOKS_DEPRECATED.getVar(), AuthzConfVars.AUTHZ_ONFAILURE_HOOKS);
+    currentToDeprecatedProps.put(AuthzConfVars.AUTHZ_PROVIDER.getVar(), AuthzConfVars.AUTHZ_PROVIDER_DEPRECATED);
+    currentToDeprecatedProps.put(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar(), AuthzConfVars.AUTHZ_PROVIDER_RESOURCE_DEPRECATED);
+    currentToDeprecatedProps.put(AuthzConfVars.AUTHZ_SERVER_NAME.getVar(), AuthzConfVars.AUTHZ_SERVER_NAME_DEPRECATED);
+    currentToDeprecatedProps.put(AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB_DEPRECATED);
+    currentToDeprecatedProps.put(AuthzConfVars.SENTRY_TESTING_MODE.getVar(), AuthzConfVars.SENTRY_TESTING_MODE_DEPRECATED);
+    currentToDeprecatedProps.put(AuthzConfVars.AUTHZ_UDF_WHITELIST.getVar(), AuthzConfVars.AUTHZ_UDF_WHITELIST_DEPRECATED);
+    currentToDeprecatedProps.put(AuthzConfVars.AUTHZ_ALLOW_HIVE_IMPERSONATION.getVar(), AuthzConfVars.AUTHZ_ALLOW_HIVE_IMPERSONATION_DEPRECATED);
+    currentToDeprecatedProps.put(AuthzConfVars.AUTHZ_ONFAILURE_HOOKS.getVar(), AuthzConfVars.AUTHZ_ONFAILURE_HOOKS_DEPRECATED);
   };
 
   @SuppressWarnings("unused")
@@ -163,13 +166,13 @@ public class HiveAuthzConf extends Configuration {
     String retVal = super.get(varName);
     if (retVal == null) {
       // check if the deprecated value is set here
-      if (deprecatedConfigs.containsKey(varName)) {
-        retVal = super.get(deprecatedConfigs.get(varName).getVar());
+      if (currentToDeprecatedProps.containsKey(varName)) {
+        retVal = super.get(currentToDeprecatedProps.get(varName).getVar());
       }
       if (retVal == null) {
         retVal = AuthzConfVars.getDefault(varName);
       } else {
-        Log.info("Using the deprecated config setting " + deprecatedConfigs.get(varName).getVar() +
+        Log.warn("Using the deprecated config setting " + currentToDeprecatedProps.get(varName).getVar() +
             " instead of " + varName);
       }
     }

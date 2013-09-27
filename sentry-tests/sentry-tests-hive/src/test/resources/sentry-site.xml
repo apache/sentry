@@ -19,15 +19,15 @@
 
 <configuration>
   <property>
-    <name>hive.sentry.provider</name>
+    <name>sentry.provider</name>
     <value>invalid</value>
   </property>
   <property>
-    <name>hive.sentry.provider.resource</name>
+    <name>sentry.hive.provider.resource</name>
     <value>invalid</value>
   </property>
   <property>
-    <name>hive.sentry.server</name>
+    <name>sentry.hive.server</name>
     <value>myHS2</value>
   </property>
 </configuration>

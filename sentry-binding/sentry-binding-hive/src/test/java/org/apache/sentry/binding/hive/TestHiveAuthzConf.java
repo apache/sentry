@@ -16,6 +16,8 @@
  */
 package org.apache.sentry.binding.hive;
 
+import java.util.Arrays;
+import java.util.List;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
 import org.junit.Assert;
@@ -27,37 +29,54 @@ import com.google.common.io.Resources;
 public class TestHiveAuthzConf {
   private HiveAuthzConf authzConf;
   private HiveAuthzConf authzDepConf;
+  private List<AuthzConfVars> currentProps;
 
   @Before
   public void setUp() {
     authzConf =  new HiveAuthzConf(Resources.getResource("sentry-site.xml"));
-    authzDepConf =  new HiveAuthzConf(Resources.getResource("access-site.xml"));
+    authzDepConf = new HiveAuthzConf(Resources.getResource("sentry-deprecated-site.xml"));
+    currentProps = Arrays.asList(new AuthzConfVars[] {
+        AuthzConfVars.AUTHZ_PROVIDER, AuthzConfVars.AUTHZ_PROVIDER_RESOURCE,
+        AuthzConfVars.AUTHZ_SERVER_NAME, AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB,
+        AuthzConfVars.SENTRY_TESTING_MODE, AuthzConfVars.AUTHZ_UDF_WHITELIST,
+        AuthzConfVars.AUTHZ_ALLOW_HIVE_IMPERSONATION, AuthzConfVars.AUTHZ_ONFAILURE_HOOKS });
+
   }
 
   @Test
   public void testConfig() {
-    Assert.assertEquals("org.apache.sentry.provider.file.fooProvider",
+    Assert.assertEquals("deprecated",
         authzDepConf.get(AuthzConfVars.AUTHZ_PROVIDER_DEPRECATED.getVar()));
     Assert.assertEquals("org.apache.sentry.provider.file.fooProvider",
         authzConf.get(AuthzConfVars.AUTHZ_PROVIDER.getVar()));
   }
 
-  @Test
-  public void testConfigOverload() {
-    authzConf.set(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar(), "fooFile");
-    Assert.assertEquals("fooFile",
-        authzConf.get(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar()));
-    authzDepConf.set(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE_DEPRECATED.getVar(), "fooFile");
-    Assert.assertEquals("fooFile",
-        authzDepConf.get(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE_DEPRECATED.getVar()));
-  }
-
   /**
-   * Check the deprecated properties from the config files that doesn't explicitly set it
+   * Check that the deprecated property values are used if the current properties
+   * are not set.
    */
   @Test
   public void testDeprecatedConfig() {
-    Assert.assertEquals("classpath:test-authz-provider.ini",
-        authzConf.get(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE_DEPRECATED.getVar()));
+    for (AuthzConfVars currentVar : currentProps) {
+      Assert.assertEquals("deprecated", authzDepConf.get(currentVar.getVar()));
+    }
+  }
+
+  /**
+   * Test that deprecated configs do not override non-deprecated configs
+   */
+  @Test
+  public void testDeprecatedOverride() {
+    try {
+      for (AuthzConfVars currentVar : currentProps) {
+        authzDepConf.set(currentVar.getVar(), "current");
+        Assert.assertEquals("current", authzDepConf.get(currentVar.getVar()));
+      }
+    }
+    finally {
+      for (AuthzConfVars currentVar : currentProps) {
+        authzDepConf.unset(currentVar.getVar());
+      }
+    }
   }
 }

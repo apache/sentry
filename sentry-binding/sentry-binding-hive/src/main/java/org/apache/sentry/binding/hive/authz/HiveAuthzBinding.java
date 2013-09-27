@@ -127,7 +127,7 @@ public class HiveAuthzBinding {
     String authProviderName = authzConf.get(AuthzConfVars.AUTHZ_PROVIDER.getVar());
     String resourceName =
         authzConf.get(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar());
-    LOG.debug("Using authorization provide " + authProviderName +
+    LOG.debug("Using authorization provider " + authProviderName +
         " with resource " + resourceName);
 
     // load the authz provider class

@@ -79,7 +79,7 @@ public class TestHiveAuthzBindings {
   private List<List<Authorizable>> inputTabHierarcyList = new ArrayList<List<Authorizable>>();
   private List<List<Authorizable>> outputTabHierarcyList = new ArrayList<List<Authorizable>>();
   private HiveConf hiveConf = new HiveConf();
-  private HiveAuthzConf authzConf = new HiveAuthzConf(Resources.getResource("access-site.xml"));
+  private HiveAuthzConf authzConf = new HiveAuthzConf(Resources.getResource("sentry-deprecated-site.xml"));
 
   // Privileges
   private static final HiveAuthzPrivileges queryPrivileges =
