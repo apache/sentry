@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.provider.file;
+package org.apache.sentry.provider.db;
 
 import org.apache.sentry.core.AccessURI;
 import org.apache.sentry.core.Authorizable;
@@ -23,8 +23,9 @@ import org.apache.sentry.core.Server;
 import org.apache.sentry.core.Table;
 import org.apache.sentry.core.View;
 import org.apache.sentry.core.Authorizable.AuthorizableType;
+import org.apache.sentry.provider.file.KeyValue;
 
-public class Authorizables {
+public class DBAuthorizables {
 
   public static Authorizable from(KeyValue keyValue) {
     String prefix = keyValue.getKey().toLowerCase();

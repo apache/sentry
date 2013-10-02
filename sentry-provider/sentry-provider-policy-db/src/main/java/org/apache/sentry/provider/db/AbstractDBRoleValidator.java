@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.provider.file;
+package org.apache.sentry.provider.db;
 
 import static org.apache.sentry.provider.file.PolicyFileConstants.AUTHORIZABLE_SPLITTER;
 import static org.apache.sentry.provider.file.PolicyFileConstants.PRIVILEGE_PREFIX;
@@ -22,12 +22,13 @@ import static org.apache.sentry.provider.file.PolicyFileConstants.PRIVILEGE_PREF
 import java.util.List;
 
 import org.apache.sentry.core.Authorizable;
+import org.apache.sentry.provider.file.RoleValidator;
 import org.apache.shiro.config.ConfigurationException;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 
-public abstract class AbstractRoleValidator implements RoleValidator {
+public abstract class AbstractDBRoleValidator implements RoleValidator {
 
   @VisibleForTesting
   public static Iterable<Authorizable> parseRole(String string) {
@@ -35,7 +36,7 @@ public abstract class AbstractRoleValidator implements RoleValidator {
     for(String section : AUTHORIZABLE_SPLITTER.split(string)) {
       // XXX this ugly hack is because action is not an authorizeable
       if(!section.toLowerCase().startsWith(PRIVILEGE_PREFIX)) {
-        Authorizable authorizable = Authorizables.from(section);
+        Authorizable authorizable = DBAuthorizables.from(section);
         if(authorizable == null) {
           String msg = "No authorizable found for " + section;
           throw new ConfigurationException(msg);

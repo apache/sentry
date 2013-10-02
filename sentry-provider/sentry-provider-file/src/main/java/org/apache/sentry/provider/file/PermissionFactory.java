@@ -16,24 +16,11 @@
  */
 package org.apache.sentry.provider.file;
 
-import javax.annotation.Nullable;
+import org.apache.shiro.authz.Permission;
 
-import org.apache.sentry.core.Authorizable;
-import org.apache.sentry.core.Server;
-import org.apache.shiro.config.ConfigurationException;
-
-public class ServersAllIsInvalid extends AbstractRoleValidator {
-
-  @Override
-  public void validate(@Nullable String database, String role) throws ConfigurationException {
-    Iterable<Authorizable> authorizables = parseRole(role);
-    for(Authorizable authorizable : authorizables) {
-      if(authorizable instanceof Server &&
-          authorizable.getName().equals(Server.ALL.getName())) {
-        String msg = "Invalid value for " + authorizable.getAuthzType() + " in " + role;
-        throw new ConfigurationException(msg);
-      }
-    }
-  }
-
+/**
+ * Factory for creating Shiro permissions
+ */
+public interface PermissionFactory {
+  Permission createPermission(String permission);
 }

@@ -27,7 +27,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 import org.apache.sentry.provider.file.PolicyFile;
-import org.apache.sentry.provider.file.SimplePolicyEngine;
+import org.apache.sentry.provider.db.SimpleDBPolicyEngine;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -278,7 +278,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
     // ugly hack: needs to go away once this becomes a config property. Note that this property
     // will not be set with external HS and this test will fail. Hope is this fix will go away
     // by then.
-    System.setProperty(SimplePolicyEngine.ACCESS_ALLOW_URI_PER_DB_POLICYFILE, "true");
+    System.setProperty(SimpleDBPolicyEngine.ACCESS_ALLOW_URI_PER_DB_POLICYFILE, "true");
     // setup db objects needed by the test
     Connection connection = context.createConnection(ADMIN1, "hive");
     Statement statement = context.createStatement(connection);
@@ -336,7 +336,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
     statement.execute("DROP DATABASE db2 CASCADE");
     statement.close();
     connection.close();
-    System.setProperty(SimplePolicyEngine.ACCESS_ALLOW_URI_PER_DB_POLICYFILE, "false");
+    System.setProperty(SimpleDBPolicyEngine.ACCESS_ALLOW_URI_PER_DB_POLICYFILE, "false");
   }
 
   /**

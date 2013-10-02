@@ -14,30 +14,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.provider.file;
+package org.apache.sentry.provider.db;
+
+import javax.annotation.Nullable;
 
 import org.apache.sentry.core.Authorizable;
-import org.apache.sentry.core.Database;
+import org.apache.sentry.core.Server;
 import org.apache.shiro.config.ConfigurationException;
 
-public class DatabaseMustMatch extends AbstractRoleValidator {
+public class ServerNameMustMatch extends AbstractDBRoleValidator {
 
+  private final String serverName;
+  public ServerNameMustMatch(String serverName) {
+    this.serverName = serverName;
+  }
   @Override
-  public void validate(String database, String role) throws ConfigurationException {
-    /*
-     *  Rule only applies to rules in per database policy file
-     */
-    if(database != null) {
-      Iterable<Authorizable> authorizables = parseRole(role);
-      for(Authorizable authorizable : authorizables) {
-        if(authorizable instanceof Database &&
-            !database.equalsIgnoreCase(authorizable.getName())) {
-          String msg = "Role " + role + " references db " +
-              authorizable.getName() + ", but is only allowed to reference "
-              + database;
-          throw new ConfigurationException(msg);
-        }
+  public void validate(@Nullable String database, String role) throws ConfigurationException {
+    Iterable<Authorizable> authorizables = parseRole(role);
+    for(Authorizable authorizable : authorizables) {
+      if(authorizable instanceof Server && !serverName.equalsIgnoreCase(authorizable.getName())) {
+        String msg = "Server name " + authorizable.getName() + " in "
+      + role + " is invalid. Expected " + serverName;
+        throw new ConfigurationException(msg);
       }
     }
   }
+
 }

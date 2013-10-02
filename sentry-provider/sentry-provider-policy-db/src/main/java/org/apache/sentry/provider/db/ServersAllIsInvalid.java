@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.provider.file;
+package org.apache.sentry.provider.db;
 
 import javax.annotation.Nullable;
 
@@ -22,19 +22,15 @@ import org.apache.sentry.core.Authorizable;
 import org.apache.sentry.core.Server;
 import org.apache.shiro.config.ConfigurationException;
 
-public class ServerNameMustMatch extends AbstractRoleValidator {
+public class ServersAllIsInvalid extends AbstractDBRoleValidator {
 
-  private final String serverName;
-  public ServerNameMustMatch(String serverName) {
-    this.serverName = serverName;
-  }
   @Override
   public void validate(@Nullable String database, String role) throws ConfigurationException {
     Iterable<Authorizable> authorizables = parseRole(role);
     for(Authorizable authorizable : authorizables) {
-      if(authorizable instanceof Server && !serverName.equalsIgnoreCase(authorizable.getName())) {
-        String msg = "Server name " + authorizable.getName() + " in "
-      + role + " is invalid. Expected " + serverName;
+      if(authorizable instanceof Server &&
+          authorizable.getName().equals(Server.ALL.getName())) {
+        String msg = "Invalid value for " + authorizable.getAuthzType() + " in " + role;
         throw new ConfigurationException(msg);
       }
     }

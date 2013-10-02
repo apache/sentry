@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.provider.file;
+package org.apache.sentry.provider.db;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,10 +32,9 @@ import org.apache.sentry.core.Database;
 import org.apache.sentry.core.Server;
 import org.apache.sentry.core.Subject;
 import org.apache.sentry.core.Table;
-import org.apache.sentry.provider.file.HadoopGroupResourceAuthorizationProvider;
 import org.apache.sentry.provider.file.PolicyFiles;
+import org.apache.sentry.provider.file.MockGroupMappingServiceProvider;
 import org.apache.sentry.provider.file.ResourceAuthorizationProvider;
-import org.apache.sentry.provider.file.SimplePolicyEngine;
 import org.junit.After;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -88,7 +87,7 @@ public class TestResourceAuthorizationProviderGeneralCases {
     baseDir = Files.createTempDir();
     PolicyFiles.copyToDir(baseDir, "test-authz-provider.ini", "test-authz-provider-other-group.ini");
     authzProvider = new HadoopGroupResourceAuthorizationProvider(
-        new SimplePolicyEngine(new File(baseDir, "test-authz-provider.ini").getPath(), "server1"),
+        new SimpleDBPolicyEngine(new File(baseDir, "test-authz-provider.ini").getPath(), "server1"),
         new MockGroupMappingServiceProvider(USER_TO_GROUP_MAP));
 
   }

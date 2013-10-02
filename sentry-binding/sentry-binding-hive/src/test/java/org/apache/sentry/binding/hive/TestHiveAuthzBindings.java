@@ -106,7 +106,7 @@ public class TestHiveAuthzBindings {
 
     // create auth configuration
     authzConf.set(AuthzConfVars.AUTHZ_PROVIDER.getVar(),
-        "org.apache.sentry.provider.file.LocalGroupResourceAuthorizationProvider");
+        "org.apache.sentry.provider.db.LocalGroupResourceAuthorizationProvider");
     authzConf.set(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar(),
         new File(baseDir, RESOURCE_PATH).getPath());
     authzConf.set(AuthzConfVars.AUTHZ_SERVER_NAME.getVar(), SERVER1);

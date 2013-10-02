@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.provider.file;
+package org.apache.sentry.provider.db;
 
 import javax.annotation.Nullable;
 
@@ -23,7 +23,7 @@ import org.apache.sentry.core.Authorizable;
 import org.apache.sentry.core.Database;
 import org.apache.shiro.config.ConfigurationException;
 
-public class DatabaseRequiredInRole extends AbstractRoleValidator {
+public class DatabaseRequiredInRole extends AbstractDBRoleValidator {
 
   @Override
   public void validate(@Nullable String database, String role) throws ConfigurationException {
@@ -45,7 +45,7 @@ public class DatabaseRequiredInRole extends AbstractRoleValidator {
       boolean allowURIInAuthorizables = false;
 
       if ("true".equalsIgnoreCase(
-          System.getProperty(SimplePolicyEngine.ACCESS_ALLOW_URI_PER_DB_POLICYFILE))) {
+          System.getProperty(SimpleDBPolicyEngine.ACCESS_ALLOW_URI_PER_DB_POLICYFILE))) {
         allowURIInAuthorizables = true;
       }
 

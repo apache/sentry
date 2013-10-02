@@ -19,7 +19,7 @@
 
 // copied from apache shiro
 
-package org.apache.sentry.provider.file;
+package org.apache.sentry.provider.db;
 
 import static org.apache.sentry.provider.file.PolicyFileConstants.AUTHORIZABLE_JOINER;
 import static org.apache.sentry.provider.file.PolicyFileConstants.AUTHORIZABLE_SPLITTER;
@@ -33,6 +33,9 @@ import java.util.List;
 import org.apache.commons.lang.text.StrSubstitutor;
 import org.apache.sentry.core.AccessConstants;
 import org.apache.sentry.core.Authorizable.AuthorizableType;
+import org.apache.sentry.provider.file.KeyValue;
+import org.apache.sentry.provider.file.PermissionFactory;
+import org.apache.sentry.provider.file.PolicyFileConstants;
 import org.apache.shiro.authz.Permission;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,14 +47,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 // XXX this class is made ugly by the fact that Action is not a Authorizable.
-public class WildcardPermission implements Permission, Serializable {
+public class DBWildcardPermission implements Permission, Serializable {
   private static final Logger LOGGER = LoggerFactory
-      .getLogger(WildcardPermission.class);
+      .getLogger(DBWildcardPermission.class);
   private static final long serialVersionUID = -6785051263922740818L;
 
   private final ImmutableList<KeyValue> parts;
 
-  public WildcardPermission(String wildcardString) {
+  public DBWildcardPermission(String wildcardString) {
     wildcardString = Strings.nullToEmpty(wildcardString).trim();
     if (wildcardString.isEmpty()) {
       throw new IllegalArgumentException("Wildcard string cannot be null or empty.");
@@ -72,12 +75,12 @@ public class WildcardPermission implements Permission, Serializable {
 
   @Override
   public boolean implies(Permission p) {
-    // By default only supports comparisons with other WildcardPermissions
-    if (!(p instanceof WildcardPermission)) {
+    // By default only supports comparisons with other DBWildcardPermissions
+    if (!(p instanceof DBWildcardPermission)) {
       return false;
     }
 
-    WildcardPermission wp = (WildcardPermission) p;
+    DBWildcardPermission wp = (DBWildcardPermission) p;
 
     List<KeyValue> otherParts = wp.parts;
     if(equals(wp)) {
@@ -173,8 +176,8 @@ public class WildcardPermission implements Permission, Serializable {
 
   @Override
   public boolean equals(Object o) {
-    if (o instanceof WildcardPermission) {
-      WildcardPermission wp = (WildcardPermission) o;
+    if (o instanceof DBWildcardPermission) {
+      DBWildcardPermission wp = (DBWildcardPermission) o;
       return parts.equals(wp.parts);
     }
     return false;
@@ -185,4 +188,10 @@ public class WildcardPermission implements Permission, Serializable {
     return parts.hashCode();
   }
 
+  public static class DBWildcardPermissionFactory implements PermissionFactory {
+    @Override
+    public Permission createPermission(String permission) {
+      return new DBWildcardPermission(permission);
+    }
+  }
 }

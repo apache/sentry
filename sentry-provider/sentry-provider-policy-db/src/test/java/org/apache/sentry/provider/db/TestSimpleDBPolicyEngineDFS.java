@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.provider.file;
+package org.apache.sentry.provider.db;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,6 +29,9 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.sentry.core.Authorizable;
 import org.apache.sentry.core.Database;
 import org.apache.sentry.core.Server;
+import org.apache.sentry.provider.file.AbstractTestSimplePolicyEngine;
+import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.provider.file.PolicyFiles;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -37,7 +40,7 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 
-public class TestSimplePolicyEngineDFS extends AbstractTestSimplePolicyEngine {
+public class TestSimpleDBPolicyEngineDFS extends AbstractTestSimplePolicyEngine {
 
   private static MiniDFSCluster dfsCluster;
   private static FileSystem fileSystem;
@@ -70,7 +73,7 @@ public class TestSimplePolicyEngineDFS extends AbstractTestSimplePolicyEngine {
     fileSystem.delete(etc, true);
     fileSystem.mkdirs(etc);
     PolicyFiles.copyToDir(fileSystem, etc, "test-authz-provider.ini", "test-authz-provider-other-group.ini");
-    setPolicy(new SimplePolicyEngine(new Path(etc, "test-authz-provider.ini").toString(), "server1"));
+    setPolicy(new SimpleDBPolicyEngine(new Path(etc, "test-authz-provider.ini").toString(), "server1"));
   }
   @Override
   protected void beforeTeardown() throws IOException {
@@ -94,15 +97,15 @@ public class TestSimplePolicyEngineDFS extends AbstractTestSimplePolicyEngine {
     PolicyFile globalPolicy = new PolicyFile()
       .addPermissionsToRole("admin_role", "server=server1")
       .addRolesToGroup("admin_group", "admin_role")
-      .addGroupsToUser("hive", "admin_group");
+      .addGroupsToUser("db", "admin_group");
     globalPolicy.addDatabase("db11", dbPolicyPath.toUri().toString());
     globalPolicy.write(globalPolicyFile);
 
 
     PolicyFiles.copyFilesToDir(fileSystem, etc, globalPolicyFile);
     PolicyFiles.copyFilesToDir(fileSystem, etc, dbPolicyFile);
-    SimplePolicyEngine multiFSEngine =
-        new SimplePolicyEngine(globalPolicyFile.getPath(), "server1");
+    SimpleDBPolicyEngine multiFSEngine =
+        new SimpleDBPolicyEngine(globalPolicyFile.getPath(), "server1");
 
     List<Authorizable> dbAuthorizables = Lists.newArrayList();
     dbAuthorizables.add(new Server("server1"));

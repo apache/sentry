@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sentry.provider.file;
+package org.apache.sentry.provider.db;
 
 import junit.framework.Assert;
 
@@ -30,7 +30,7 @@ public class TestDatabaseRequiredInRole {
     DatabaseRequiredInRole dbRequiredInRole = new DatabaseRequiredInRole();
     System.setProperty("sentry.allow.uri.db.policyfile", "true");
     dbRequiredInRole.validate("db1",
-      "server=server1->URI=file:///user/hive/warehouse/tab1");
+      "server=server1->URI=file:///user/db/warehouse/tab1");
     System.setProperty("sentry.allow.uri.db.policyfile", "false");
   }
 
@@ -39,7 +39,7 @@ public class TestDatabaseRequiredInRole {
     DatabaseRequiredInRole dbRequiredInRole = new DatabaseRequiredInRole();
     try {
       dbRequiredInRole.validate("db1",
-        "server=server1->db=db1->URI=file:///user/hive/warehouse/tab1");
+        "server=server1->db=db1->URI=file:///user/db/warehouse/tab1");
       Assert.fail("Expected ConfigurationException");
     } catch (ConfigurationException e) {
       ;

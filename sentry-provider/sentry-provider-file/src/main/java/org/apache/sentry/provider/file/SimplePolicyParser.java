@@ -50,38 +50,41 @@ import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
-public class SimplePolicyEngine implements PolicyEngine {
+public class SimplePolicyParser {
 
   private static final Logger LOGGER = LoggerFactory
-      .getLogger(SimplePolicyEngine.class);
+      .getLogger(SimplePolicyParser.class);
 
 
 
   private final FileSystem fileSystem;
   private final Path resourcePath;
-  private final String serverName;
   private final List<Path> perDbResources = Lists.newArrayList();
   private final AtomicReference<Roles> rolesReference;
+  private final RolesFactory rolesFactory;
   private final Configuration conf;
-  public final static String ACCESS_ALLOW_URI_PER_DB_POLICYFILE = "sentry.allow.uri.db.policyfile";
+  private final List<? extends RoleValidator> validators;
 
-  public SimplePolicyEngine(String resourcePath, String serverName) throws IOException {
-    this(new Configuration(), new Path(resourcePath), serverName);
+  public SimplePolicyParser(String resourcePath, RolesFactory rolesFactory, List<? extends RoleValidator> validators) throws IOException {
+    this(new Configuration(), new Path(resourcePath), rolesFactory, validators);
   }
+
   @VisibleForTesting
-  public SimplePolicyEngine(Configuration conf, Path resourcePath, String serverName) throws IOException {
+  public SimplePolicyParser(Configuration conf, Path resourcePath, RolesFactory rolesFactory, List<? extends RoleValidator> validators) throws IOException {
     this.resourcePath = resourcePath;
-    this.serverName = serverName;
     this.fileSystem = resourcePath.getFileSystem(conf);
     this.rolesReference = new AtomicReference<Roles>();
-    this.rolesReference.set(new Roles());
+    this.rolesReference.set(rolesFactory.createRoles());
     this.conf = conf;
+    this.rolesFactory = rolesFactory;
+    this.validators = validators;
     parse();
   }
 
@@ -90,7 +93,7 @@ public class SimplePolicyEngine implements PolicyEngine {
    */
   protected void parse() {
     LOGGER.info("Parsing " + resourcePath);
-    Roles roles = new Roles();
+    Roles roles = rolesFactory.createRoles();
     try {
       perDbResources.clear();
       Ini ini = PolicyFiles.loadFromPath(fileSystem, resourcePath);
@@ -134,13 +137,12 @@ public class SimplePolicyEngine implements PolicyEngine {
           }
         }
       }
-      roles = new Roles(globalRoles, ImmutableMap.copyOf(perDatabaseRoles));
+      roles = rolesFactory.createRoles(globalRoles, ImmutableMap.copyOf(perDatabaseRoles));
     } catch (Exception e) {
       LOGGER.error("Error processing file, ignoring " + resourcePath, e);
     }
     rolesReference.set(roles);
   }
-
   /**
    * Relative for our purposes is no scheme, no authority
    * and a non-absolute path portion.
@@ -187,11 +189,6 @@ public class SimplePolicyEngine implements PolicyEngine {
     ImmutableSetMultimap.Builder<String, String> resultBuilder = ImmutableSetMultimap.builder();
     Multimap<String, String> roleNameToPrivilegeMap = HashMultimap
         .create();
-    List<? extends RoleValidator> validators = Lists.newArrayList(
-        new ServersAllIsInvalid(),
-        new DatabaseMustMatch(),
-        new DatabaseRequiredInRole(),
-        new ServerNameMustMatch(serverName));
     for (Map.Entry<String, String> entry : rolesSection.entrySet()) {
       String roleName = Strings.nullToEmpty(entry.getKey()).trim();
       String roleValue = Strings.nullToEmpty(entry.getValue()).trim();
@@ -238,36 +235,7 @@ public class SimplePolicyEngine implements PolicyEngine {
     return resultBuilder.build();
   }
 
-
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public ImmutableSetMultimap<String, String> getPermissions(List<Authorizable> authorizables, List<String> groups) {
-    Roles roles = rolesReference.get();
-    String database = null;
-    Boolean isURI = false;
-    for(Authorizable authorizable : authorizables) {
-      if(authorizable instanceof Database) {
-        database = authorizable.getName();
-      }
-      if (authorizable instanceof AccessURI) {
-        isURI = true;
-      }
-    }
-
-    if(LOGGER.isDebugEnabled()) {
-      LOGGER.debug("Getting permissions for {} via {}", groups, database);
-    }
-    ImmutableSetMultimap.Builder<String, String> resultBuilder = ImmutableSetMultimap.builder();
-    for(String group : groups) {
-      resultBuilder.putAll(group, roles.getRoles(database, group, isURI));
-    }
-    ImmutableSetMultimap<String, String> result = resultBuilder.build();
-    if(LOGGER.isDebugEnabled()) {
-      LOGGER.debug("result = " + result);
-    }
-    return result;
+  public ImmutableSet<String> getRoles(@Nullable String database, String group, Boolean isURI) {
+    return rolesReference.get().getRoles(database, group, isURI);
   }
 }

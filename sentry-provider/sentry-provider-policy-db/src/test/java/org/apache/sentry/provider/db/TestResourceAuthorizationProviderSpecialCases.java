@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.provider.file;
+package org.apache.sentry.provider.db;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,7 +30,7 @@ import org.apache.sentry.core.Authorizable;
 import org.apache.sentry.core.AuthorizationProvider;
 import org.apache.sentry.core.Server;
 import org.apache.sentry.core.Subject;
-import org.apache.sentry.provider.file.LocalGroupResourceAuthorizationProvider;
+import org.apache.sentry.provider.db.LocalGroupResourceAuthorizationProvider;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.After;
 import org.junit.Before;

@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sentry.provider.file;
+package org.apache.sentry.provider.db;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNull;
 
@@ -25,56 +25,56 @@ import org.apache.sentry.core.Database;
 import org.apache.sentry.core.Server;
 import org.apache.sentry.core.Table;
 import org.apache.sentry.core.View;
-import org.apache.sentry.provider.file.Authorizables;
+import org.apache.sentry.provider.db.DBAuthorizables;
 import org.junit.Test;
 
-public class TestAuthorizables {
+public class TestDBAuthorizables {
 
   @Test
   public void testServer() throws Exception {
-    Server server = (Server)Authorizables.from("SeRvEr=server1");
+    Server server = (Server)DBAuthorizables.from("SeRvEr=server1");
     assertEquals("server1", server.getName());
   }
   @Test
   public void testDb() throws Exception {
-    Database db = (Database)Authorizables.from("dB=db1");
+    Database db = (Database)DBAuthorizables.from("dB=db1");
     assertEquals("db1", db.getName());
   }
   @Test
   public void testTable() throws Exception {
-    Table table = (Table)Authorizables.from("tAbLe=t1");
+    Table table = (Table)DBAuthorizables.from("tAbLe=t1");
     assertEquals("t1", table.getName());
   }
   @Test
   public void testView() throws Exception {
-    View view = (View)Authorizables.from("vIeW=v1");
+    View view = (View)DBAuthorizables.from("vIeW=v1");
     assertEquals("v1", view.getName());
   }
   @Test
   public void testURI() throws Exception {
-    AccessURI uri = (AccessURI)Authorizables.from("UrI=hdfs://uri1:8200/blah");
+    AccessURI uri = (AccessURI)DBAuthorizables.from("UrI=hdfs://uri1:8200/blah");
     assertEquals("hdfs://uri1:8200/blah", uri.getName());
   }
 
   @Test(expected=IllegalArgumentException.class)
   public void testNoKV() throws Exception {
-    System.out.println(Authorizables.from("nonsense"));
+    System.out.println(DBAuthorizables.from("nonsense"));
   }
 
   @Test(expected=IllegalArgumentException.class)
   public void testTooManyKV() throws Exception {
-    System.out.println(Authorizables.from("k=v1=v2"));
+    System.out.println(DBAuthorizables.from("k=v1=v2"));
   }
   @Test(expected=IllegalArgumentException.class)
   public void testEmptyKey() throws Exception {
-    System.out.println(Authorizables.from("=v"));
+    System.out.println(DBAuthorizables.from("=v"));
   }
   @Test(expected=IllegalArgumentException.class)
   public void testEmptyValue() throws Exception {
-    System.out.println(Authorizables.from("k="));
+    System.out.println(DBAuthorizables.from("k="));
   }
   @Test
   public void testNotAuthorizable() throws Exception {
-    assertNull(Authorizables.from("k=v"));
+    assertNull(DBAuthorizables.from("k=v"));
   }
 }

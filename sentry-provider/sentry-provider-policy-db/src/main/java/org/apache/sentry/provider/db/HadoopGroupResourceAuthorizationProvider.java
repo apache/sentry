@@ -15,26 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.sentry.provider.file;
+package org.apache.sentry.provider.db;
 
 import java.io.IOException;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.Groups;
+import org.apache.sentry.provider.file.GroupMappingService;
+import org.apache.sentry.provider.file.HadoopGroupMappingService;
+import org.apache.sentry.provider.file.PolicyEngine;
+import org.apache.sentry.provider.file.ResourceAuthorizationProvider;
 
 import com.google.common.annotations.VisibleForTesting;
 
 public class HadoopGroupResourceAuthorizationProvider extends
   ResourceAuthorizationProvider {
   public HadoopGroupResourceAuthorizationProvider(String resource, String serverName) throws IOException {
-    this(new SimplePolicyEngine(resource, serverName), new HadoopGroupMappingService(
+    this(new SimpleDBPolicyEngine(resource, serverName), new HadoopGroupMappingService(
         Groups.getUserToGroupsMappingService(new Configuration())));
   }
 
   @VisibleForTesting
   public HadoopGroupResourceAuthorizationProvider(PolicyEngine policy,
       GroupMappingService groupService) {
-    super(policy, groupService);
+    super(policy, groupService, new DBWildcardPermission.DBWildcardPermissionFactory());
   }
 
 }

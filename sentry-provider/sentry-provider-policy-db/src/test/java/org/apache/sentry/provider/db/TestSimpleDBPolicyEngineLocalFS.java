@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.provider.file;
+package org.apache.sentry.provider.db;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,10 +22,10 @@ import java.io.IOException;
 import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.sentry.provider.file.AbstractTestSimplePolicyEngine;
 import org.apache.sentry.provider.file.PolicyFiles;
-import org.apache.sentry.provider.file.SimplePolicyEngine;
 
-public class TestSimplePolicyEngineLocalFS extends AbstractTestSimplePolicyEngine {
+public class TestSimpleDBPolicyEngineLocalFS extends AbstractTestSimplePolicyEngine {
 
   @Override
   protected void  afterSetup() throws IOException {
@@ -33,7 +33,7 @@ public class TestSimplePolicyEngineLocalFS extends AbstractTestSimplePolicyEngin
     Assert.assertNotNull(baseDir);
     Assert.assertTrue(baseDir.isDirectory() || baseDir.mkdirs());
     PolicyFiles.copyToDir(baseDir, "test-authz-provider.ini", "test-authz-provider-other-group.ini");
-    setPolicy(new SimplePolicyEngine(new File(baseDir, "test-authz-provider.ini").getPath(), "server1"));
+    setPolicy(new SimpleDBPolicyEngine(new File(baseDir, "test-authz-provider.ini").getPath(), "server1"));
   }
   @Override
   protected void beforeTeardown() throws IOException {

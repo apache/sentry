@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sentry.provider.file;
+package org.apache.sentry.provider.db;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertTrue;
@@ -25,10 +25,11 @@ import static org.apache.sentry.provider.file.PolicyFileConstants.KV_JOINER;
 import static org.apache.sentry.provider.file.PolicyFileConstants.KV_SEPARATOR;
 
 import org.apache.sentry.core.AccessConstants;
+import org.apache.sentry.provider.file.KeyValue;
 import org.apache.shiro.authz.Permission;
 import org.junit.Test;
 
-public class TestWildcardPermission {
+public class TestDBWildcardPermission {
 
   private static final String ALL = AccessConstants.ALL;
 
@@ -235,48 +236,48 @@ public class TestWildcardPermission {
   }
   @Test
   public void testImpliesURIPositive() throws Exception {
-    assertTrue(WildcardPermission.impliesURI("hdfs://namenode:8020/path",
+    assertTrue(DBWildcardPermission.impliesURI("hdfs://namenode:8020/path",
         "hdfs://namenode:8020/path/to/some/dir"));
-    assertTrue(WildcardPermission.impliesURI("hdfs://namenode:8020/path",
+    assertTrue(DBWildcardPermission.impliesURI("hdfs://namenode:8020/path",
         "hdfs://namenode:8020/path"));
-    assertTrue(WildcardPermission.impliesURI("file:///path",
+    assertTrue(DBWildcardPermission.impliesURI("file:///path",
         "file:///path/to/some/dir"));
-    assertTrue(WildcardPermission.impliesURI("file:///path",
+    assertTrue(DBWildcardPermission.impliesURI("file:///path",
         "file:///path"));
   }
   @Test
   public void testImpliesURINegative() throws Exception {
     // relative path
-    assertFalse(WildcardPermission.impliesURI("hdfs://namenode:8020/path",
+    assertFalse(DBWildcardPermission.impliesURI("hdfs://namenode:8020/path",
         "hdfs://namenode:8020/path/to/../../other"));
-    assertFalse(WildcardPermission.impliesURI("file:///path",
+    assertFalse(DBWildcardPermission.impliesURI("file:///path",
         "file:///path/to/../../other"));
     // bad policy
-    assertFalse(WildcardPermission.impliesURI("blah",
+    assertFalse(DBWildcardPermission.impliesURI("blah",
         "hdfs://namenode:8020/path/to/some/dir"));
     // bad request
-    assertFalse(WildcardPermission.impliesURI("hdfs://namenode:8020/path",
+    assertFalse(DBWildcardPermission.impliesURI("hdfs://namenode:8020/path",
         "blah"));
     // scheme
-    assertFalse(WildcardPermission.impliesURI("hdfs://namenode:8020/path",
+    assertFalse(DBWildcardPermission.impliesURI("hdfs://namenode:8020/path",
         "file:///path/to/some/dir"));
-    assertFalse(WildcardPermission.impliesURI("hdfs://namenode:8020/path",
+    assertFalse(DBWildcardPermission.impliesURI("hdfs://namenode:8020/path",
         "file://namenode:8020/path/to/some/dir"));
     // hostname
-    assertFalse(WildcardPermission.impliesURI("hdfs://namenode1:8020/path",
+    assertFalse(DBWildcardPermission.impliesURI("hdfs://namenode1:8020/path",
         "hdfs://namenode2:8020/path/to/some/dir"));
     // port
-    assertFalse(WildcardPermission.impliesURI("hdfs://namenode:8020/path",
+    assertFalse(DBWildcardPermission.impliesURI("hdfs://namenode:8020/path",
         "hdfs://namenode:8021/path/to/some/dir"));
     // mangled path
-    assertFalse(WildcardPermission.impliesURI("hdfs://namenode:8020/path",
+    assertFalse(DBWildcardPermission.impliesURI("hdfs://namenode:8020/path",
         "hdfs://namenode:8020/pathFooBar"));
   }
-  static WildcardPermission create(KeyValue... keyValues) {
+  static DBWildcardPermission create(KeyValue... keyValues) {
     return create(AUTHORIZABLE_JOINER.join(keyValues));
 
   }
-  static WildcardPermission create(String s) {
-    return new WildcardPermission(s);
+  static DBWildcardPermission create(String s) {
+    return new DBWildcardPermission(s);
   }
 }

@@ -46,11 +46,14 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
       .getLogger(ResourceAuthorizationProvider.class);
   private final GroupMappingService groupService;
   private final PolicyEngine policy;
+  private final PermissionFactory permissionFactory;
 
   public ResourceAuthorizationProvider(PolicyEngine policy,
-      GroupMappingService groupService) {
+      GroupMappingService groupService, PermissionFactory permissionFactory) {
+    Preconditions.checkNotNull(permissionFactory, "Permission factory cannot be null");
     this.policy = policy;
     this.groupService = groupService;
+    this.permissionFactory = permissionFactory;
   }
 
   @Override
@@ -109,7 +112,7 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
         /*
          * Does the permission granted in the policy file imply the requested action?
          */
-        boolean result = permission.implies(new WildcardPermission(requestPermission));
+        boolean result = permission.implies(permissionFactory.createPermission(requestPermission));
         if(LOGGER.isDebugEnabled()) {
           LOGGER.debug("FilePermission {}, RequestPermission {}, result {}",
               new Object[]{ permission, requestPermission, result});
@@ -127,7 +130,7 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
         new Function<String, Permission>() {
       @Override
       public Permission apply(String permission) {
-        return new WildcardPermission(permission);
+        return permissionFactory.createPermission(permission);
       }
     });
   }
