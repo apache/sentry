@@ -40,7 +40,7 @@ AbstractTestWithStaticLocalFS {
 
   @Before
   public void setup() throws Exception {
-    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
     context = createContext();
     dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
@@ -153,24 +153,24 @@ AbstractTestWithStaticLocalFS {
   public void testAllOnServerSelectInsertNegativeNoneAllOnDifferentTable()
       throws Exception {
     policyFile
-    .addPermissionsToRole(GROUP1_ROLE, "server=server1->db=" + DB1 + "->table=" + TBL2)
-    .addRolesToGroup(GROUP1, GROUP1_ROLE)
-    .addGroupsToUser(USER1, GROUP1)
-    .write(context.getPolicyFile());
+        .addPermissionsToRole(GROUP1_ROLE, "server=server1->db=" + DB1 + "->table=" + TBL2)
+        .addRolesToGroup(USERGROUP1, GROUP1_ROLE)
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
+        .write(context.getPolicyFile());
     dropDb(ADMIN1, DB1);
     createDb(ADMIN1, DB1);
     createTable(ADMIN1, DB1, dataFile, TBL1);
     positiveDescribeShowTests(ADMIN1, DB1, TBL1);
-    negativeDescribeShowTests(USER1, DB1, TBL1);
+    negativeDescribeShowTests(USER1_1, DB1, TBL1);
     policyFile
     .addPermissionsToRole(GROUP1_ROLE, SELECT_DB1_TBL1)
     .write(context.getPolicyFile());
-    positiveDescribeShowTests(USER1, DB1, TBL1);
+    positiveDescribeShowTests(USER1_1, DB1, TBL1);
     policyFile.removePermissionsFromRole(GROUP1_ROLE, SELECT_DB1_TBL1);
     policyFile
     .addPermissionsToRole(GROUP1_ROLE, INSERT_DB1_TBL1)
     .write(context.getPolicyFile());
-    positiveDescribeShowTests(USER1, DB1, TBL1);
+    positiveDescribeShowTests(USER1_1, DB1, TBL1);
   }
 
   /**
@@ -191,15 +191,15 @@ AbstractTestWithStaticLocalFS {
   @Test
   public void testAllOnServerAndAllOnDb() throws Exception {
     policyFile
-    .addPermissionsToRole(GROUP1_ROLE, "server=server1->db=" + DB1)
-    .addRolesToGroup(GROUP1, GROUP1_ROLE)
-    .addGroupsToUser(USER1, GROUP1)
-    .write(context.getPolicyFile());
+      .addPermissionsToRole(GROUP1_ROLE, "server=server1->db=" + DB1)
+      .addRolesToGroup(USERGROUP1, GROUP1_ROLE)
+      .setUserGroupMapping(StaticUserGroup.getStaticMapping())
+      .write(context.getPolicyFile());
     dropDb(ADMIN1, DB1);
     createDb(ADMIN1, DB1);
     createTable(ADMIN1, DB1, dataFile, TBL1);
     positiveDescribeShowTests(ADMIN1, DB1, TBL1);
-    positiveDescribeShowTests(USER1, DB1, TBL1);
+    positiveDescribeShowTests(USER1_1, DB1, TBL1);
   }
 
   /**
@@ -221,10 +221,10 @@ AbstractTestWithStaticLocalFS {
   @Test
   public void testAllOnServerNegativeAllOnView() throws Exception {
     policyFile
-    .addPermissionsToRole(GROUP1_ROLE, "server=server1->db=" + DB1 + "->table=" + VIEW1)
-    .addRolesToGroup(GROUP1, GROUP1_ROLE)
-    .addGroupsToUser(USER1, GROUP1)
-    .write(context.getPolicyFile());
+      .addPermissionsToRole(GROUP1_ROLE, "server=server1->db=" + DB1 + "->table=" + VIEW1)
+      .addRolesToGroup(USERGROUP1, GROUP1_ROLE)
+      .setUserGroupMapping(StaticUserGroup.getStaticMapping())
+      .write(context.getPolicyFile());
     dropDb(ADMIN1, DB1);
     createDb(ADMIN1, DB1);
     createTable(ADMIN1, DB1, dataFile, TBL1);
@@ -236,7 +236,7 @@ AbstractTestWithStaticLocalFS {
     positiveDescribeShowTests(ADMIN1, DB1, TBL1);
     statement.close();
     connection.close();
-    negativeDescribeShowTests(USER1, DB1, TBL1);
+    negativeDescribeShowTests(USER1_1, DB1, TBL1);
   }
 
   /**
@@ -257,15 +257,15 @@ AbstractTestWithStaticLocalFS {
   @Test
   public void testAllOnServerAndAllOnTable() throws Exception {
     policyFile
-    .addPermissionsToRole(GROUP1_ROLE, "server=server1->db=" + DB1 + "->table=" + TBL1)
-    .addRolesToGroup(GROUP1, GROUP1_ROLE)
-    .addGroupsToUser(USER1, GROUP1)
-    .write(context.getPolicyFile());
+      .addPermissionsToRole(GROUP1_ROLE, "server=server1->db=" + DB1 + "->table=" + TBL1)
+      .addRolesToGroup(USERGROUP1, GROUP1_ROLE)
+      .setUserGroupMapping(StaticUserGroup.getStaticMapping())
+      .write(context.getPolicyFile());
     dropDb(ADMIN1, DB1);
     createDb(ADMIN1, DB1);
     createTable(ADMIN1, DB1, dataFile, TBL1);
     positiveDescribeShowTests(ADMIN1, DB1, TBL1);
-    positiveDescribeShowTests(USER1, DB1, TBL1);
+    positiveDescribeShowTests(USER1_1, DB1, TBL1);
   }
 
 
@@ -278,10 +278,10 @@ AbstractTestWithStaticLocalFS {
   public void testDescribeDatabasesWithAllOnServerAndAllOnDb()
       throws Exception {
     policyFile
-    .addPermissionsToRole(GROUP1_ROLE, "server=server1->db=" + DB1)
-    .addRolesToGroup(GROUP1, GROUP1_ROLE)
-    .addGroupsToUser(USER1, GROUP1)
-    .write(context.getPolicyFile());
+      .addPermissionsToRole(GROUP1_ROLE, "server=server1->db=" + DB1)
+      .addRolesToGroup(USERGROUP1, GROUP1_ROLE)
+      .setUserGroupMapping(StaticUserGroup.getStaticMapping())
+      .write(context.getPolicyFile());
     dropDb(ADMIN1, DB1, DB2);
     createDb(ADMIN1, DB1, DB2);
     createTable(ADMIN1, DB1, dataFile, TBL1);
@@ -293,7 +293,7 @@ AbstractTestWithStaticLocalFS {
     statement.close();
     connection.close();
 
-    connection = context.createConnection(USER1, "password");
+    connection = context.createConnection(USER1_1, "password");
     statement = context.createStatement(connection);
     assertTrue(statement.executeQuery("DESCRIBE DATABASE " + DB1).next());
     assertTrue(statement.executeQuery("DESCRIBE DATABASE EXTENDED " + DB1).next());
@@ -313,11 +313,11 @@ AbstractTestWithStaticLocalFS {
   @Test
   public void testDescribeDefaultDatabase() throws Exception {
     policyFile
-    .addPermissionsToRole(GROUP1_ROLE, "server=server1->db=default->table=" + TBL1 + "->action=select",
+      .addPermissionsToRole(GROUP1_ROLE, "server=server1->db=default->table=" + TBL1 + "->action=select",
         "server=server1->db=" + DB1 + "->table=" + TBL1 + "->action=select")
-        .addRolesToGroup(GROUP1, GROUP1_ROLE)
-        .addGroupsToUser(USER1, GROUP1)
-        .write(context.getPolicyFile());
+      .addRolesToGroup(USERGROUP1, GROUP1_ROLE)
+      .setUserGroupMapping(StaticUserGroup.getStaticMapping())
+      .write(context.getPolicyFile());
     dropDb(ADMIN1, DB1, DB2);
     createDb(ADMIN1, DB1, DB2);
     Connection connection = context.createConnection(ADMIN1, "password");
@@ -330,7 +330,7 @@ AbstractTestWithStaticLocalFS {
     statement.close();
     connection.close();
 
-    connection = context.createConnection(USER1, "password");
+    connection = context.createConnection(USER1_1, "password");
     statement = context.createStatement(connection);
     context.assertAuthzException(statement, "DESCRIBE DATABASE default");
     context.assertAuthzException(statement, "DESCRIBE DATABASE " + DB1);
@@ -349,9 +349,9 @@ AbstractTestWithStaticLocalFS {
   public void testShowIndexes1() throws Exception {
     // grant privilege to non-existent table to allow use db1
     policyFile.addPermissionsToRole(GROUP1_ROLE, SELECT_DB1_NONTABLE)
-    .addRolesToGroup(GROUP1, GROUP1_ROLE)
-    .addGroupsToUser(USER1, GROUP1)
-    .write(context.getPolicyFile());
+      .addRolesToGroup(USERGROUP1, GROUP1_ROLE)
+      .setUserGroupMapping(StaticUserGroup.getStaticMapping())
+      .write(context.getPolicyFile());
     dropDb(ADMIN1, DB1);
     createDb(ADMIN1, DB1);
     createTable(ADMIN1, DB1, dataFile, TBL1);
@@ -369,7 +369,7 @@ AbstractTestWithStaticLocalFS {
     statement.execute("CREATE VIEW " + VIEW1 + " (value) AS SELECT value from " + TBL1 + " LIMIT 10");
     statement.close();
     connection.close();
-    connection = context.createConnection(USER1, "password");
+    connection = context.createConnection(USER1_1, "password");
     statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
     context.assertAuthzException(statement, "SHOW INDEX ON " + TBL1);
@@ -407,9 +407,9 @@ AbstractTestWithStaticLocalFS {
   public void testShowPartitions1() throws Exception {
     // grant privilege to non-existent table to allow use db1
     policyFile.addPermissionsToRole(GROUP1_ROLE, SELECT_DB1_NONTABLE)
-    .addRolesToGroup(GROUP1, GROUP1_ROLE)
-    .addGroupsToUser(USER1, GROUP1)
-    .write(context.getPolicyFile());
+      .addRolesToGroup(USERGROUP1, GROUP1_ROLE)
+      .setUserGroupMapping(StaticUserGroup.getStaticMapping())
+      .write(context.getPolicyFile());
     dropDb(ADMIN1, DB1);
     createDb(ADMIN1, DB1);
     Connection connection = context.createConnection(ADMIN1, "password");
@@ -424,7 +424,7 @@ AbstractTestWithStaticLocalFS {
     statement.execute("CREATE VIEW " + VIEW1 + " (value) AS SELECT value from " + TBL1 + " LIMIT 10");
     statement.close();
     connection.close();
-    connection = context.createConnection(USER1, "password");
+    connection = context.createConnection(USER1_1, "password");
     statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
     context.assertAuthzException(statement, "SHOW PARTITIONS " + TBL1);

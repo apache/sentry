@@ -47,7 +47,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticLocalFS
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
-    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
 
   }
 
@@ -70,18 +70,16 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticLocalFS
     String tableName1 = "tb_1";
 
     policyFile
-        .addRolesToGroup("group1", "db1_all", "UDF_JAR")
-        .addRolesToGroup("group2", "db1_tab1", "UDF_JAR")
-        .addRolesToGroup("group3", "db1_tab1")
+        .addRolesToGroup(USERGROUP1, "db1_all", "UDF_JAR")
+        .addRolesToGroup(USERGROUP2, "db1_tab1", "UDF_JAR")
+        .addRolesToGroup(USERGROUP3, "db1_tab1")
         .addPermissionsToRole("db1_all", "server=server1->db=" + dbName1)
         .addPermissionsToRole("db1_tab1", "server=server1->db=" + dbName1 + "->table=" + tableName1)
         .addPermissionsToRole("UDF_JAR", "server=server1->uri=file://${user.home}/.m2")
-        .addGroupsToUser("user1", "group1")
-        .addGroupsToUser("user2", "group2")
-        .addGroupsToUser("user3", "group3")
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
-    Connection connection = context.createConnection("admin1", "foo");
+    Connection connection = context.createConnection(ADMIN1, "foo");
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
     statement.execute("CREATE DATABASE " + dbName1);
@@ -96,7 +94,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticLocalFS
     context.close();
 
     // user1 should be able create/drop temp functions
-    connection = context.createConnection("user1", "foo");
+    connection = context.createConnection(USER1_1, "foo");
     statement = context.createStatement(connection);
     statement.execute("USE " + dbName1);
     statement.execute(
@@ -105,7 +103,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticLocalFS
     context.close();
 
     // user2 has select privilege on one of the tables in db2, should be able create/drop temp functions
-    connection = context.createConnection("user2", "foo");
+    connection = context.createConnection(USER2_1, "foo");
     statement = context.createStatement(connection);
     statement.execute("USE " + dbName1);
     statement.execute(
@@ -114,7 +112,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticLocalFS
     context.close();
 
     // user3 shouldn't be able to create/drop temp functions since it doesn't have permission for jar
-    connection = context.createConnection("user3", "foo");
+    connection = context.createConnection(USER3_1, "foo");
     statement = context.createStatement(connection);
     try {
       statement.execute("USE " + dbName1);
@@ -127,7 +125,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticLocalFS
     context.close();
 
     // user4 (not part of any group ) shouldn't be able to create/drop temp functions
-    connection = context.createConnection("user4", "foo");
+    connection = context.createConnection(USER4_1, "foo");
     statement = context.createStatement(connection);
     try {
       statement.execute("USE default");
@@ -147,16 +145,16 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticLocalFS
     String tableName1 = "tab1";
 
     policyFile
-        .addRolesToGroup("group1", "db1_all", "UDF_JAR")
-        .addRolesToGroup("group2", "db1_tab1", "UDF_JAR")
-        .addRolesToGroup("group3", "db1_tab1")
+        .addRolesToGroup(USERGROUP1, "db1_all", "UDF_JAR")
+        .addRolesToGroup(USERGROUP2, "db1_tab1", "UDF_JAR")
+        .addRolesToGroup(USERGROUP3, "db1_tab1")
         .addPermissionsToRole("db1_all", "server=server1->db=" + dbName1)
         .addPermissionsToRole("db1_tab1", "server=server1->db=" + dbName1 + "->table=" + tableName1)
         .addPermissionsToRole("UDF_JAR", "server=server1->uri=file://${user.home}/.m2")
-        .addGroupsToUser("user1", "group1")
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
-    Connection connection = context.createConnection("admin1", "password");
+    Connection connection = context.createConnection(ADMIN1, "password");
     Statement statement = connection.createStatement();
     statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
     statement.execute("CREATE DATABASE " + dbName1);

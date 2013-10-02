@@ -54,7 +54,7 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
   @Before
   public void setup() throws Exception {
     testProperties = new HashMap<String, String>();
-    policyFile = PolicyFile.createAdminOnServer1("admin1");
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
   }
 
   @After
@@ -79,17 +79,16 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
     to.close();
 
     policyFile
-        .addRolesToGroup("user_group1", "all_db1", "load_data")
-        .addRolesToGroup("user_group2", "all_db2")
+        .addRolesToGroup(USERGROUP1, "all_db1", "load_data")
+        .addRolesToGroup(USERGROUP2, "all_db2")
         .addPermissionsToRole("all_db1", "server=server1->db=DB_1")
         .addPermissionsToRole("all_db2", "server=server1->db=DB_2")
         .addPermissionsToRole("load_data", "server=server1->uri=file://" + dataFile.getPath())
-        .addGroupsToUser("user1", "user_group1")
-        .addGroupsToUser("user2", "user_group2")
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
     // setup db objects needed by the test
-    Connection connection = context.createConnection("admin1", "hive");
+    Connection connection = context.createConnection(ADMIN1, "hive");
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("DROP DATABASE IF EXISTS DB_2 CASCADE");
@@ -99,8 +98,8 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
     connection.close();
 
     // test execution
-    connection = context.createConnection("user1", "password");
-    statement = context.createStatement(connection);  
+    connection = context.createConnection(USER1_1, "password");
+    statement = context.createStatement(connection);
     // test user can create table
     statement.execute("CREATE TABLE DB_1.TAB_1(A STRING)");
     // test user can execute load
@@ -167,7 +166,7 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
     connection.close();
 
     //test cleanup
-    connection = context.createConnection("admin1", "hive");
+    connection = context.createConnection(ADMIN1, "hive");
     statement = context.createStatement(connection);
     statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.execute("DROP DATABASE DB_2 CASCADE");
@@ -192,18 +191,17 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
     to.close();
 
     policyFile
-        .addRolesToGroup("user_group1", "all_db1", "load_data", "exttab")
-        .addRolesToGroup("user_group2", "all_db2")
+        .addRolesToGroup(USERGROUP1, "all_db1", "load_data", "exttab")
+        .addRolesToGroup(USERGROUP2, "all_db2")
         .addPermissionsToRole("all_db1", "server=server1->db=DB_1")
         .addPermissionsToRole("all_db2", "server=server1->db=DB_2")
         .addPermissionsToRole("exttab", "server=server1->uri=file://" + dataDir.getPath())
         .addPermissionsToRole("load_data", "server=server1->uri=file://" + dataFile.getPath())
-        .addGroupsToUser("user1", "user_group1")
-        .addGroupsToUser("user2", "user_group2")
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
     // setup db objects needed by the test
-    Connection connection = context.createConnection("admin1", "hive");
+    Connection connection = context.createConnection(ADMIN1, "hive");
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("DROP DATABASE IF EXISTS DB_2 CASCADE");
@@ -219,7 +217,7 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
     connection.close();
 
     // test execution
-    connection = context.createConnection("user1", "password");
+    connection = context.createConnection(USER1_1, "password");
     statement = context.createStatement(connection);
     // test user can switch db
     statement.execute("USE DB_1");
@@ -275,7 +273,7 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
     statement.close();
     connection.close();
 
-    connection = context.createConnection("user2", "password");
+    connection = context.createConnection(USER2_1, "password");
     statement = context.createStatement(connection);
     try {
       statement.execute("CREATE EXTERNAL TABLE EXT_TAB_1(A STRING) STORED AS TEXTFILE LOCATION 'file:"+
@@ -289,7 +287,7 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
     connection.close();
 
     //test cleanup
-    connection = context.createConnection("admin1", "hive");
+    connection = context.createConnection(ADMIN1, "hive");
     statement = context.createStatement(connection);
     statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.execute("DROP DATABASE DB_2 CASCADE");
@@ -311,20 +309,18 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
     context = createContext(testProperties);
 
     policyFile
-        .addRolesToGroup("user_group1", "all_db1")
-        .addRolesToGroup("user_group2", "select_db2")
-        .addRolesToGroup("user_group3", "all_db3")
+        .addRolesToGroup(USERGROUP1, "all_db1")
+        .addRolesToGroup(USERGROUP2, "select_db2")
+        .addRolesToGroup(USERGROUP3, "all_db3")
         .addPermissionsToRole("all_db1", "server=server1->db=DB_1")
         .addPermissionsToRole("select_db2", "server=server1->db=DB_2->table=tab_2->action=select")
         .addPermissionsToRole("all_db3", "server=server1->db=DB_3")
-        .addGroupsToUser("user1", "user_group1")
-        .addGroupsToUser("user2", "user_group2")
-        .addGroupsToUser("user3", "user_group3")
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
 
     // setup db objects needed by the test
-    Connection connection = context.createConnection("admin1", "hive");
+    Connection connection = context.createConnection(ADMIN1, "hive");
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("CREATE DATABASE DB_1");
@@ -337,13 +333,13 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
     context.close();
 
     // user1 should be able to connect db_1
-    connection = context.createConnection("user1", "hive");
+    connection = context.createConnection(USER1_1, "hive");
     statement = context.createStatement(connection);
     statement.execute("use DB_1");
     context.close();
 
     // user2 should not be able to connect db_1
-    connection = context.createConnection("user2", "hive");
+    connection = context.createConnection(USER2_1, "hive");
     statement = context.createStatement(connection);
     try {
       statement.execute("use DB_1");
@@ -355,7 +351,7 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
     context.close();
 
     // user3 who is not listed in policy file should not be able to connect db_2
-    connection = context.createConnection("user3", "hive");
+    connection = context.createConnection(USER3_1, "hive");
     statement = context.createStatement(connection);
     try {
       statement.execute("use DB_2");
@@ -377,33 +373,31 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
     context = createContext(testProperties);
 
     policyFile
-        .addRolesToGroup("user_group1", "all_db1")
-        .addRolesToGroup("user_group2", "select_db2")
-        .addRolesToGroup("user_group3", "all_default")
+        .addRolesToGroup(USERGROUP1, "all_db1")
+        .addRolesToGroup(USERGROUP2, "select_db2")
+        .addRolesToGroup(USERGROUP3, "all_default")
         .addPermissionsToRole("all_db1", "server=server1->db=DB_1")
         .addPermissionsToRole("select_db2", "server=server1->db=DB_2->table=tab_2->action=select")
         .addPermissionsToRole("all_default", "server=server1->db=default")
-        .addGroupsToUser("user1", "user_group1")
-        .addGroupsToUser("user2", "user_group2")
-        .addGroupsToUser("user3", "user_group3")
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
-    Connection connection = context.createConnection("admin1", "hive");
+    Connection connection = context.createConnection(ADMIN1, "hive");
     Statement statement = context.createStatement(connection);
     statement.execute("use default");
     context.close();
 
-    connection = context.createConnection("user1", "hive");
+    connection = context.createConnection(USER1_1, "hive");
     statement = context.createStatement(connection);
     statement.execute("use default");
     context.close();
 
-    connection = context.createConnection("user2", "hive");
+    connection = context.createConnection(USER2_1, "hive");
     statement = context.createStatement(connection);
     statement.execute("use default");
     context.close();
 
-    connection = context.createConnection("user3", "hive");
+    connection = context.createConnection(USER3_1, "hive");
     statement = context.createStatement(connection);
     statement.execute("use default");
     context.close();
@@ -423,33 +417,31 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
     context = createContext(testProperties);
 
     policyFile
-        .addRolesToGroup("user_group1", "all_default")
-        .addRolesToGroup("user_group2", "select_default")
-        .addRolesToGroup("user_group3", "all_db1")
+        .addRolesToGroup(USERGROUP1, "all_default")
+        .addRolesToGroup(USERGROUP2, "select_default")
+        .addRolesToGroup(USERGROUP3, "all_db1")
         .addPermissionsToRole("all_default", "server=server1->db=default")
         .addPermissionsToRole("select_default", "server=server1->db=default->table=tab_2->action=select")
         .addPermissionsToRole("all_db1", "server=server1->db=DB_1")
-        .addGroupsToUser("user1", "user_group1")
-        .addGroupsToUser("user2", "user_group2")
-        .addGroupsToUser("user3", "user_group3")
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
-    Connection connection = context.createConnection("admin1", "hive");
+    Connection connection = context.createConnection(ADMIN1, "hive");
     Statement statement = context.createStatement(connection);
     statement.execute("use default");
     context.close();
 
-    connection = context.createConnection("user1", "hive");
+    connection = context.createConnection(USER1_1, "hive");
     statement = context.createStatement(connection);
     statement.execute("use default");
     context.close();
 
-    connection = context.createConnection("user2", "hive");
+    connection = context.createConnection(USER2_1, "hive");
     statement = context.createStatement(connection);
     statement.execute("use default");
     context.close();
 
-    connection = context.createConnection("user3", "hive");
+    connection = context.createConnection(USER3_1, "hive");
     statement = context.createStatement(connection);
     try {
       // user3 doesn't have any implicit permission for default

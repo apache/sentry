@@ -32,9 +32,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.common.base.Charsets;
-import com.google.common.base.Joiner;
-import com.google.common.io.Files;
 import com.google.common.io.Resources;
 
 /**
@@ -51,7 +48,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
   @Before
   public void setup() throws Exception {
     context = createContext();
-    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
 
     File dataDir = context.getDataDir();
     //copy data file to test dir
@@ -74,17 +71,16 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
     PolicyFile db2PolicyFile = new PolicyFile();
     File db2PolicyFileHandle = new File(context.getPolicyFile().getParent(), DB2_POLICY_FILE);
     db2PolicyFile
-        .addRolesToGroup("user_group2", "select_tbl2")
+        .addRolesToGroup(USERGROUP2, "select_tbl2")
         .addPermissionsToRole("select_tbl2", "server=server1->db=db2->table=tbl2->action=select")
         .write(db2PolicyFileHandle);
 
     policyFile
-        .addRolesToGroup("user_group1", "select_tbl1")
-        .addRolesToGroup("user_group2", "select_tbl2")
+        .addRolesToGroup(USERGROUP1, "select_tbl1")
+        .addRolesToGroup(USERGROUP2, "select_tbl2")
         .addPermissionsToRole("select_tbl1", "server=server1->db=db1->table=tbl1->action=select")
-        .addGroupsToUser("user1", "user_group1")
-        .addGroupsToUser("user2", "user_group2")
         .addDatabase("db2", db2PolicyFileHandle.getPath())
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
     // setup db objects needed by the test
@@ -108,7 +104,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // test execution
-    connection = context.createConnection("user1", "password");
+    connection = context.createConnection(USER1_1, "password");
     statement = context.createStatement(connection);
     statement.execute("USE db1");
     // test user1 can execute query on tbl1
@@ -122,7 +118,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
 
     // test per-db file for db2
 
-    connection = context.createConnection("user2", "password");
+    connection = context.createConnection(USER2_1, "password");
     statement = context.createStatement(connection);
     statement.execute("USE db2");
     // test user2 can execute query on tbl2
@@ -163,28 +159,25 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
     PolicyFile db3PolicyFile = new PolicyFile();
     PolicyFile db4PolicyFile = new PolicyFile();
     db2PolicyFile
-        .addRolesToGroup("user_group2", "select_tbl2")
+        .addRolesToGroup(USERGROUP2, "select_tbl2")
         .addPermissionsToRole("select_tbl2", "server=server1->db=db2->table=tbl2->action=select")
         .write(db2PolicyFileHandle);
     db3PolicyFile
-        .addRolesToGroup("user_group3", "select_tbl3_BAD")
+        .addRolesToGroup(USERGROUP3, "select_tbl3_BAD")
         .addPermissionsToRole("select_tbl3_BAD", "server=server1->db=db3------>table->action=select")
         .write(db3PolicyFileHandle);
     db4PolicyFile
-        .addRolesToGroup("user_group4", "select_tbl4")
+        .addRolesToGroup(USERGROUP4, "select_tbl4")
         .addPermissionsToRole("select_tbl4", "server=server1->db=db4->table=tbl4->action=select")
         .write(db4PolicyFileHandle);
     policyFile
-        .addRolesToGroup("user_group1", "select_tbl1")
-        .addRolesToGroup("user_group2", "select_tbl2")
+        .addRolesToGroup(USERGROUP1, "select_tbl1")
+        .addRolesToGroup(USERGROUP2, "select_tbl2")
         .addPermissionsToRole("select_tbl1", "server=server1->db=db1->table=tbl1->action=select")
-        .addGroupsToUser("user1", "user_group1")
-        .addGroupsToUser("user2", "user_group2")
-        .addGroupsToUser("user3", "user_group3")
-        .addGroupsToUser("user4", "user_group4")
         .addDatabase("db2", db2PolicyFileHandle.getPath())
         .addDatabase("db3", db3PolicyFileHandle.getPath())
         .addDatabase("db4", db4PolicyFileHandle.getPath())
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
     // setup db objects needed by the test
@@ -223,14 +216,14 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // test execution
-    connection = context.createConnection("user1", "password");
+    connection = context.createConnection(USER1_1, "password");
     statement = context.createStatement(connection);
     statement.execute("USE db1");
     // test user1 can execute query on tbl1
     verifyCount(statement, "SELECT COUNT(*) FROM tbl1");
     connection.close();
 
-    connection = context.createConnection("user2", "password");
+    connection = context.createConnection(USER2_1, "password");
     statement = context.createStatement(connection);
     statement.execute("USE db2");
     // test user1 can execute query on tbl1
@@ -238,14 +231,14 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // verify no access to db3 due to badly formatted rule in db3 policy file
-    connection = context.createConnection("user3", "password");
+    connection = context.createConnection(USER3_1, "password");
     statement = context.createStatement(connection);
     context.assertAuthzException(statement, "USE db3");
     // test user1 can execute query on tbl1
     context.assertAuthzException(statement, "SELECT COUNT(*) FROM db3.tbl3");
     connection.close();
 
-    connection = context.createConnection("user4", "password");
+    connection = context.createConnection(USER4_1, "password");
     statement = context.createStatement(connection);
     statement.execute("USE db4");
     // test user1 can execute query on tbl1
@@ -268,17 +261,16 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
     File db2PolicyFileHandle = new File(context.getPolicyFile().getParent(), DB2_POLICY_FILE);
 
     policyFile
-        .addRolesToGroup("user_group1", "select_tbl1")
-        .addRolesToGroup("user_group2", "select_tbl2")
+        .addRolesToGroup(USERGROUP1, "select_tbl1")
+        .addRolesToGroup(USERGROUP2, "select_tbl2")
         .addPermissionsToRole("select_tbl1", "server=server1->db=db1->table=tbl1->action=select")
-        .addGroupsToUser("user1", "user_group1")
-        .addGroupsToUser("user2", "user_group2")
         .addDatabase("db2", db2PolicyFileHandle.getPath())
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
     PolicyFile db2PolicyFile = new PolicyFile();
     db2PolicyFile
-        .addRolesToGroup("user_group2", "select_tbl2", "data_read", "insert_tbl2")
+        .addRolesToGroup(USERGROUP2, "select_tbl2", "data_read", "insert_tbl2")
         .addPermissionsToRole("select_tbl2", "server=server1->db=db2->table=tbl2->action=select")
         .addPermissionsToRole("insert_tbl2", "server=server1->db=db2->table=tbl2->action=insert")
         .addPermissionsToRole("data_read", "server=server1->URI=file://" + dataFile)
@@ -308,7 +300,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // test execution
-    connection = context.createConnection("user1", "password");
+    connection = context.createConnection(USER1_1, "password");
     statement = context.createStatement(connection);
     statement.execute("USE db1");
     // test user1 can execute query on tbl1
@@ -321,7 +313,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // test per-db file for db2
-    connection = context.createConnection("user2", "password");
+    connection = context.createConnection(USER2_1, "password");
     statement = context.createStatement(connection);
     statement.execute("USE db2");
     // test user2 can execute query on tbl2
@@ -354,10 +346,9 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
   @Test
   public void testDefaultDb() throws Exception {
     policyFile
-        .addRolesToGroup("user_group1", "select_tbl1")
+        .addRolesToGroup(USERGROUP1, "select_tbl1")
         .addPermissionsToRole("select_tbl1", "server=server1->db=db1->table=tbl1->action=select")
-        .addGroupsToUser("user_1", "user_group1")
-        .addGroupsToUser("user_2", "user_group2")
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
     // setup db objects needed by the test
@@ -376,14 +367,14 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // user_1 should be able to access default
-    connection = context.createConnection("user_1", "password");
+    connection = context.createConnection(USER1_1, "password");
     statement = context.createStatement(connection);
     statement.execute("USE default");
     statement.close();
     connection.close();
 
     // user_2 should NOT be able to access default since it does have access to any other object
-    connection = context.createConnection("user_2", "password");
+    connection = context.createConnection(USER2_1, "password");
     statement = context.createStatement(connection);
     context.assertAuthzException(statement, "USE default");
     statement.close();
@@ -397,25 +388,23 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
     File defaultPolicyFileHandle = new File(context.getPolicyFile().getParent(), "default.ini");
 
     policyFile
-        .addRolesToGroup("user_group1", "select_tbl1")
-        .addRolesToGroup("user_group2", "select_tbl2")
+        .addRolesToGroup(USERGROUP1, "select_tbl1")
+        .addRolesToGroup(USERGROUP2, "select_tbl2")
         .addPermissionsToRole("select_tbl1", "server=server1->db=db1->table=tbl1->action=select")
-        .addGroupsToUser("user_1", "user_group1")
-        .addGroupsToUser("user_2", "user_group2")
-        .addGroupsToUser("user_3", "user_group3")
         .addDatabase("db2", db2PolicyFileHandle.getPath())
         .addDatabase("default", defaultPolicyFileHandle.getPath())
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
     PolicyFile db2PolicyFile = new PolicyFile();
     db2PolicyFile
-        .addRolesToGroup("user_group2", "select_tbl2")
+        .addRolesToGroup(USERGROUP2, "select_tbl2")
         .addPermissionsToRole("select_tbl2", "server=server1->db=db2->table=tbl2->action=select")
         .write(db2PolicyFileHandle);
 
     PolicyFile defaultPolicyFile = new PolicyFile();
     defaultPolicyFile
-        .addRolesToGroup("user_group2", "select_def")
+        .addRolesToGroup(USERGROUP2, "select_def")
         .addPermissionsToRole("select_def", "server=server1->db=default->table=dtab->action=select")
         .write(defaultPolicyFileHandle);
 
@@ -441,7 +430,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // user_1 should be able to switch to default, but not the tables from default
-    connection = context.createConnection("user_1", "password");
+    connection = context.createConnection(USER1_1, "password");
     statement = context.createStatement(connection);
     statement.execute("USE db1");
     statement.execute("USE default");
@@ -453,7 +442,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // user_2 should be able to access default and select from default's tables
-    connection = context.createConnection("user_2", "password");
+    connection = context.createConnection(USER2_1, "password");
     statement = context.createStatement(connection);
     statement.execute("USE db2");
     statement.execute("USE default");
@@ -464,7 +453,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // user_3 should NOT be able to switch to default since it doesn't have access to any objects
-    connection = context.createConnection("user_3", "password");
+    connection = context.createConnection(USER3_1, "password");
     statement = context.createStatement(connection);
     context.assertAuthzException(statement, "USE default");
     statement.close();

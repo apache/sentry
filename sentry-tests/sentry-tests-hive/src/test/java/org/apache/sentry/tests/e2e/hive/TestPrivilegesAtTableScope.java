@@ -51,7 +51,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticLocalFS {
   @Before
   public void setup() throws Exception {
     context = createContext();
-    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
   }
 
   @After
@@ -76,15 +76,15 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticLocalFS {
     to.close();
 
     policyFile
-        .addRolesToGroup("user_group", "select_tab1", "insert_tab1", "select_tab2")
+        .addRolesToGroup(USERGROUP1, "select_tab1", "insert_tab1", "select_tab2")
         .addPermissionsToRole("select_tab1", "server=server1->db=DB_1->table=TAB_1->action=select")
         .addPermissionsToRole("insert_tab1", "server=server1->db=DB_1->table=TAB_1->action=insert")
         .addPermissionsToRole("select_tab2", "server=server1->db=DB_1->table=TAB_2->action=select")
-        .addGroupsToUser("user1", "user_group")
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
     // setup db objects needed by the test
-    Connection connection = context.createConnection("admin1", "hive");
+    Connection connection = context.createConnection(ADMIN1, "hive");
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("CREATE DATABASE DB_1");
@@ -99,7 +99,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // test execution
-    connection = context.createConnection("user1", "password");
+    connection = context.createConnection(USER1_1, "password");
     statement = context.createStatement(connection);
     statement.execute("USE DB_1");
     // test user can insert
@@ -128,7 +128,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // connect as admin and drop tab_1
-    connection = context.createConnection("admin1", "hive");
+    connection = context.createConnection(ADMIN1, "hive");
     statement = context.createStatement(connection);
     statement.execute("USE DB_1");
     statement.execute("DROP TABLE TAB_1");
@@ -136,7 +136,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // negative test: connect as user1 and try to recreate tab_1
-    connection = context.createConnection("user1", "password");
+    connection = context.createConnection(USER1_1, "password");
     statement = context.createStatement(connection);
     statement.execute("USE DB_1");
     try {
@@ -150,7 +150,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // test cleanup
-    connection = context.createConnection("admin1", "hive");
+    connection = context.createConnection(ADMIN1, "hive");
     statement = context.createStatement(connection);
     statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.close();
@@ -173,14 +173,14 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticLocalFS {
     to.close();
 
     policyFile
-        .addRolesToGroup("user_group", "insert_tab1", "select_tab2")
+        .addRolesToGroup(USERGROUP1, "insert_tab1", "select_tab2")
         .addPermissionsToRole("insert_tab1", "server=server1->db=DB_1->table=TAB_1->action=insert")
         .addPermissionsToRole("select_tab2", "server=server1->db=DB_1->table=TAB_2->action=select")
-        .addGroupsToUser("user1", "user_group")
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
     // setup db objects needed by the test
-    Connection connection = context.createConnection("admin1", "hive");
+    Connection connection = context.createConnection(ADMIN1, "hive");
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("CREATE DATABASE DB_1");
@@ -196,7 +196,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // test execution
-    connection = context.createConnection("user1", "password");
+    connection = context.createConnection(USER1_1, "password");
     statement = context.createStatement(connection);
     statement.execute("USE DB_1");
     // test user can execute insert on table
@@ -238,7 +238,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // test cleanup
-    connection = context.createConnection("admin1", "hive");
+    connection = context.createConnection(ADMIN1, "hive");
     statement = context.createStatement(connection);
     statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.close();
@@ -260,15 +260,15 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticLocalFS {
     to.close();
 
     policyFile
-        .addRolesToGroup("user_group", "select_tab1", "select_tab2")
+        .addRolesToGroup(USERGROUP1, "select_tab1", "select_tab2")
         .addPermissionsToRole("select_tab1", "server=server1->db=DB_1->table=TAB_1->action=select")
         .addPermissionsToRole("insert_tab1", "server=server1->db=DB_1->table=TAB_1->action=insert")
         .addPermissionsToRole("select_tab2", "server=server1->db=DB_1->table=TAB_2->action=select")
-        .addGroupsToUser("user1", "user_group")
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
     // setup db objects needed by the test
-    Connection connection = context.createConnection("admin1", "hive");
+    Connection connection = context.createConnection(ADMIN1, "hive");
     Statement statement = context.createStatement(connection);
 
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
@@ -285,7 +285,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // test execution
-    connection = context.createConnection("user1", "password");
+    connection = context.createConnection(USER1_1, "password");
     statement = context.createStatement(connection);
     statement.execute("USE DB_1");
     // test user can execute query on table
@@ -327,7 +327,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // test cleanup
-    connection = context.createConnection("admin1", "hive");
+    connection = context.createConnection(ADMIN1, "hive");
     statement = context.createStatement(connection);
     statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.close();
@@ -349,14 +349,14 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticLocalFS {
     to.close();
 
     policyFile
-        .addRolesToGroup("user_group", "select_tab1", "select_tab2")
+        .addRolesToGroup(USERGROUP1, "select_tab1", "select_tab2")
         .addPermissionsToRole("select_tab1", "server=server1->db=DB_1->table=TAB_1->action=select")
         .addPermissionsToRole("select_tab2", "server=server1->db=DB_1->table=TAB_2->action=select")
-        .addGroupsToUser("user1", "user_group")
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
     // setup db objects needed by the test
-    Connection connection = context.createConnection("admin1", "hive");
+    Connection connection = context.createConnection(ADMIN1, "hive");
     Statement statement = context.createStatement(connection);
 
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
@@ -375,7 +375,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // test execution
-    connection = context.createConnection("user1", "password");
+    connection = context.createConnection(USER1_1, "password");
     statement = context.createStatement(connection);
     statement.execute("USE DB_1");
     // test user can execute query TAB_1 JOIN TAB_2
@@ -404,7 +404,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // test cleanup
-    connection = context.createConnection("admin1", "hive");
+    connection = context.createConnection(ADMIN1, "hive");
     statement = context.createStatement(connection);
     statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.close();
@@ -427,14 +427,14 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticLocalFS {
     to.close();
 
     policyFile
-        .addRolesToGroup("user_group", "select_tab2")
+        .addRolesToGroup(USERGROUP1, "select_tab2")
         .addPermissionsToRole("select_tab1", "server=server1->db=DB_1->table=TAB_1->action=select")
         .addPermissionsToRole("select_tab2", "server=server1->db=DB_1->table=TAB_2->action=select")
-        .addGroupsToUser("user1", "user_group")
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
     // setup db objects needed by the test
-    Connection connection = context.createConnection("admin1", "hive");
+    Connection connection = context.createConnection(ADMIN1, "hive");
     Statement statement = context.createStatement(connection);
 
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
@@ -453,7 +453,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // test execution
-    connection = context.createConnection("user1", "password");
+    connection = context.createConnection(USER1_1, "password");
     statement = context.createStatement(connection);
     statement.execute("USE DB_1");
     // test user can execute query on TAB_2
@@ -490,7 +490,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // test cleanup
-    connection = context.createConnection("admin1", "hive");
+    connection = context.createConnection(ADMIN1, "hive");
     statement = context.createStatement(connection);
     statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.close();
@@ -512,14 +512,14 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticLocalFS {
     to.close();
 
     policyFile
-        .addRolesToGroup("user_group", "select_tab2", "select_view1")
+        .addRolesToGroup(USERGROUP1, "select_tab2", "select_view1")
         .addPermissionsToRole("select_view1", "server=server1->db=DB_1->table=VIEW_1->action=select")
         .addPermissionsToRole("select_tab2", "server=server1->db=DB_1->table=TAB_2->action=select")
-        .addGroupsToUser("user1", "user_group")
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
     // setup db objects needed by the test
-    Connection connection = context.createConnection("admin1", "hive");
+    Connection connection = context.createConnection(ADMIN1, "hive");
     Statement statement = context.createStatement(connection);
 
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
@@ -538,7 +538,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // test execution
-    connection = context.createConnection("user1", "password");
+    connection = context.createConnection(USER1_1, "password");
     statement = context.createStatement(connection);
     statement.execute("USE DB_1");
     // test user can execute query on TAB_2
@@ -591,7 +591,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // test cleanup
-    connection = context.createConnection("admin1", "hive");
+    connection = context.createConnection(ADMIN1, "hive");
     statement = context.createStatement(connection);
     statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.close();
@@ -613,14 +613,14 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticLocalFS {
     to.close();
 
     policyFile
-        .addRolesToGroup("user_group", "select_tab1", "select_view1")
+        .addRolesToGroup(USERGROUP1, "select_tab1", "select_view1")
         .addPermissionsToRole("select_view1", "server=server1->db=DB_1->table=VIEW_1->action=select")
         .addPermissionsToRole("select_tab1", "server=server1->db=DB_1->table=TAB_1->action=select")
-        .addGroupsToUser("user1", "user_group")
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
     // setup db objects needed by the test
-    Connection connection = context.createConnection("admin1", "hive");
+    Connection connection = context.createConnection(ADMIN1, "hive");
     Statement statement = context.createStatement(connection);
 
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
@@ -639,7 +639,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // test execution
-    connection = context.createConnection("user1", "password");
+    connection = context.createConnection(USER1_1, "password");
     statement = context.createStatement(connection);
     statement.execute("USE DB_1");
 
@@ -669,7 +669,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // test cleanup
-    connection = context.createConnection("admin1", "hive");
+    connection = context.createConnection(ADMIN1, "hive");
     statement = context.createStatement(connection);
     statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.close();

@@ -49,7 +49,7 @@ public class TestSentryOnFailureHookLoading extends AbstractTestWithHiveServer {
     testProperties = new HashMap<String, String>();
     testProperties.put(HiveAuthzConf.AuthzConfVars.AUTHZ_ONFAILURE_HOOKS.getVar(),
         DummySentryOnFailureHook.class.getName());
-    policyFile = PolicyFile.createAdminOnServer1("admin1");
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
   }
 
   @After
@@ -86,13 +86,13 @@ public class TestSentryOnFailureHookLoading extends AbstractTestWithHiveServer {
     to.close();
 
     policyFile
-        .addRolesToGroup("user_group1", "all_db1", "load_data")
+        .addRolesToGroup(USERGROUP1, "all_db1", "load_data")
         .addPermissionsToRole("all_db1", "server=server1->db=DB_1")
-        .addGroupsToUser("user1", "user_group1")
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
     // setup db objects needed by the test
-    Connection connection = context.createConnection("admin1", "hive");
+    Connection connection = context.createConnection(ADMIN1, "hive");
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("DROP DATABASE IF EXISTS DB_2 CASCADE");
@@ -102,7 +102,7 @@ public class TestSentryOnFailureHookLoading extends AbstractTestWithHiveServer {
     connection.close();
 
     // test execution
-    connection = context.createConnection("user1", "password");
+    connection = context.createConnection(USER1_1, "password");
     statement = context.createStatement(connection);
 
     //negative test case: user can't drop another user's database
@@ -118,7 +118,7 @@ public class TestSentryOnFailureHookLoading extends AbstractTestWithHiveServer {
     connection.close();
 
     //test cleanup
-    connection = context.createConnection("admin1", "hive");
+    connection = context.createConnection(ADMIN1, "hive");
     statement = context.createStatement(connection);
     statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.execute("DROP DATABASE DB_2 CASCADE");

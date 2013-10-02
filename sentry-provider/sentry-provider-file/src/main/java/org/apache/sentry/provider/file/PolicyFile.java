@@ -17,10 +17,6 @@
 
 package org.apache.sentry.provider.file;
 
-import static org.apache.sentry.provider.file.PolicyFileConstants.DATABASES;
-import static org.apache.sentry.provider.file.PolicyFileConstants.GROUPS;
-import static org.apache.sentry.provider.file.PolicyFileConstants.ROLES;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
@@ -38,6 +34,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.io.Files;
+
+import static org.apache.sentry.provider.file.PolicyFileConstants.*;
 
 /**
  * PolicyFile creator. Written specifically to be used with tests. Specifically
@@ -72,10 +70,18 @@ public class PolicyFile {
     return add(rolesToPermissions.get(roleName), allowDuplicates, permissionNames);
   }
   public PolicyFile addGroupsToUser(String userName, String... groupNames) {
+    LOGGER.warn("Static user:group mapping is not being used");
     return addGroupsToUser(userName, false, groupNames);
   }
   public PolicyFile addGroupsToUser(String userName, boolean allowDuplicates, String... groupNames) {
+    LOGGER.warn("Static user:group mapping is not being used");
     return add(usersToGroups.get(userName), allowDuplicates, groupNames);
+  }
+  public PolicyFile setUserGroupMapping(Map<String, String> mapping){
+    for(String key: mapping.keySet()){
+      usersToGroups.put(key, mapping.get(key));
+    }
+    return this;
   }
   public PolicyFile addDatabase(String databaseName, String path) {
     String oldPath;
@@ -93,6 +99,7 @@ public class PolicyFile {
     return remove(rolesToPermissions.get(roleName), permissionNames);
   }
   public PolicyFile removeGroupsFromUser(String userName, String... groupNames) {
+    LOGGER.warn("Static user:group mapping is not being used");
     return remove(usersToGroups.get(userName), groupNames);
   }
   public PolicyFile removeDatabase(String databaseName) {
@@ -117,7 +124,7 @@ public class PolicyFile {
     }
     String contents = Joiner.on(NL)
         .join(getSection(DATABASES, databasesToPolicyFiles),
-            getSection(PolicyFileConstants.USERS, usersToGroups),
+            getSection(USERS, usersToGroups),
             getSection(GROUPS, groupsToRoles),
             getSection(ROLES, rolesToPermissions),
             "");
@@ -168,10 +175,10 @@ public class PolicyFile {
     return this;
   }
 
-  public static PolicyFile createAdminOnServer1(String admin) {
+  //User:Group mapping for the admin user needs to be set separately
+  public static PolicyFile setAdminOnServer1(String admin) {
     return new PolicyFile()
-      .addGroupsToUser(admin, "admin")
-      .addRolesToGroup("admin", "admin_role")
+      .addRolesToGroup(admin, "admin_role")
       .addPermissionsToRole("admin_role", "server=server1");
   }
 }

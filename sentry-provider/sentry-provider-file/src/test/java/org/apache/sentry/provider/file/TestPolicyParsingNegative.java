@@ -26,9 +26,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.sentry.core.Authorizable;
 import org.apache.sentry.core.Database;
 import org.apache.sentry.core.Server;
-import org.apache.sentry.provider.file.PolicyEngine;
-import org.apache.sentry.provider.file.PolicyFile;
-import org.apache.sentry.provider.file.SimplePolicyEngine;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -90,7 +87,8 @@ public class TestPolicyParsingNegative {
     ImmutableSet<String> permissions;
     PolicyFile policyFile;
     // test sanity
-    policyFile = PolicyFile.createAdminOnServer1("admin1");
+    policyFile = PolicyFile.setAdminOnServer1("admin");
+    policyFile.addGroupsToUser("admin1", "admin");
     policyFile.write(globalPolicyFile);
     policyFile.write(otherPolicyFile);
     policy = new SimplePolicyEngine(globalPolicyFile.getPath(), "server1");

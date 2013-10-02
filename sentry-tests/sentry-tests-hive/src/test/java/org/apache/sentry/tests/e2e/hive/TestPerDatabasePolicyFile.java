@@ -33,7 +33,6 @@ import com.google.common.io.Resources;
 
 public class TestPerDatabasePolicyFile extends AbstractTestWithStaticLocalFS {
   private static final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
-  private static final String ADMIN1 = "admin1";
   private Context context;
   private PolicyFile policyFile;
   private File globalPolicyFile;
@@ -42,7 +41,7 @@ public class TestPerDatabasePolicyFile extends AbstractTestWithStaticLocalFS {
 
   @Before
   public void setup() throws Exception {
-    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
     context = createContext();
     globalPolicyFile = context.getPolicyFile();
     dataDir = context.getDataDir();
@@ -101,7 +100,9 @@ public class TestPerDatabasePolicyFile extends AbstractTestWithStaticLocalFS {
 
   public void doTestDbSpecificFileGrants(String grant) throws Exception {
 
-    policyFile.write(context.getPolicyFile());
+    policyFile
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
+        .write(context.getPolicyFile());
 
     // setup db objects needed by the test
     Connection connection = context.createConnection(ADMIN1, "password");
@@ -115,8 +116,7 @@ public class TestPerDatabasePolicyFile extends AbstractTestWithStaticLocalFS {
 
     PolicyFile specificPolicyFile = new PolicyFile()
     .addPermissionsToRole("db1_role", grant)
-    .addRolesToGroup("group1", "db1_role")
-    .addGroupsToUser("user1", "group1");
+    .addRolesToGroup("group1", "db1_role");
     specificPolicyFile.write(specificPolicyFileFile);
 
     policyFile.addDatabase("db2", specificPolicyFileFile.getPath());
@@ -125,7 +125,7 @@ public class TestPerDatabasePolicyFile extends AbstractTestWithStaticLocalFS {
 
 
     // test execution
-    connection = context.createConnection("user1", "password");
+    connection = context.createConnection(USER1_1, "password");
     statement = context.createStatement(connection);
     // test user can query table
     context.assertAuthzException(statement, "USE db1");

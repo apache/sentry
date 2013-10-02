@@ -53,7 +53,7 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
   @Before
   public void setup() throws Exception {
     properties = Maps.newHashMap();
-    policyFile = PolicyFile.createAdminOnServer1("admin1");
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
 
   }
 
@@ -72,8 +72,10 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
     properties.put(HiveServerFactory.ACCESS_TESTING_MODE, "false");
     properties.put("hive.server2.enable.impersonation", "true");
     context = createContext(properties);
-    policyFile.write(context.getPolicyFile());
-    Connection connection = context.createConnection("admin1", "hive");
+    policyFile
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
+        .write(context.getPolicyFile());
+    Connection connection = context.createConnection(ADMIN1, "hive");
     Statement statement = context.createStatement(connection);
     try {
       statement.execute("create table test (a string)");
@@ -91,9 +93,11 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
     properties.put(HiveServerFactory.ACCESS_TESTING_MODE, "false");
     properties.put("hive.server2.authentication", "NONE");
     context = createContext(properties);
-    policyFile.write(context.getPolicyFile());
+    policyFile
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
+        .write(context.getPolicyFile());
     System.out.println(Files.toString(context.getPolicyFile(), Charsets.UTF_8));
-    Connection connection = context.createConnection("admin1", "hive");
+    Connection connection = context.createConnection(ADMIN1, "hive");
     Statement statement = context.createStatement(connection);
     try {
       statement.execute("create table test (a string)");
@@ -111,7 +115,7 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
     context = createContext(properties);
     File policyFile = context.getPolicyFile();
     assertTrue("Could not delete " + policyFile, policyFile.delete());
-    Connection connection = context.createConnection("admin1", "hive");
+    Connection connection = context.createConnection(ADMIN1, "hive");
     Statement statement = context.createStatement(connection);
     try {
       statement.execute("create table test (a string)");
@@ -132,7 +136,7 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
     FileOutputStream out = new FileOutputStream(policyFile);
     out.write("this is not valid".getBytes(Charsets.UTF_8));
     out.close();
-    Connection connection = context.createConnection("admin1", "hive");
+    Connection connection = context.createConnection(ADMIN1, "hive");
     Statement statement = context.createStatement(connection);
     try {
       statement.execute("create table test (a string)");
@@ -147,14 +151,14 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
     context = createContext(properties);
 
     policyFile
-        .addRolesToGroup("group1", "all_db1")
-        .addRolesToGroup("group2", "select_tb1")
+        .addRolesToGroup(USERGROUP1, "all_db1")
+        .addRolesToGroup(USERGROUP2, "select_tb1")
         .addPermissionsToRole("select_tb1", "server=server1->db=db_1->table=tbl_1->action=select")
         .addPermissionsToRole("all_db1", "server=server1->db=db_1")
-        .addGroupsToUser("user1", "group1")
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
-    Connection connection = context.createConnection("user1", "password");
+    Connection connection = context.createConnection(USER1_1, "password");
     Statement statement = context.createStatement(connection);
 
     // disallow external executables. The external.exec is set to false by session hooks
@@ -173,9 +177,11 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
   @Test
   public void testAccessConfigRestrictions() throws Exception {
     context = createContext(properties);
-    policyFile.write(context.getPolicyFile());
+    policyFile
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
+        .write(context.getPolicyFile());
 
-    String testUser = "user1";
+    String testUser = USER1_1;
     // verify the config is set correctly by session hook
     verifyConfig(testUser, ConfVars.SEMANTIC_ANALYZER_HOOK.varname,
         HiveAuthzBindingSessionHook.SEMANTIC_HOOK);

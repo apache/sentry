@@ -86,6 +86,7 @@ public class TestSimplePolicyEngineDFS extends AbstractTestSimplePolicyEngine {
     PolicyFile dbPolicy = new PolicyFile()
       .addPermissionsToRole("db11_role", "server=server1->db=db11")
       .addRolesToGroup("group1", "db11_role");
+
     dbPolicy.write(dbPolicyFile);
     Path dbPolicyPath = new Path(etc, "db11-policy.ini");
 

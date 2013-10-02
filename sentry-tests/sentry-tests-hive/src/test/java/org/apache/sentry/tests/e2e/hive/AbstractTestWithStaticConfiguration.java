@@ -40,8 +40,7 @@ public abstract class AbstractTestWithStaticConfiguration {
   private static final Logger LOGGER = LoggerFactory
       .getLogger(AbstractTestWithStaticConfiguration.class);
   protected static final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
-  protected static final String ADMIN1 = "admin1";
-  protected static final String ALL_DB1 = "server=server1->db=db_1",      
+  protected static final String ALL_DB1 = "server=server1->db=db_1",
       ALL_DB2 = "server=server1->db=db_2",
       SELECT_DB1_TBL1 = "server=server1->db=db_1->table=tb_1->action=select",
       SELECT_DB1_TBL2 = "server=server1->db=db_1->table=tb_2->action=select",
@@ -51,9 +50,17 @@ public abstract class AbstractTestWithStaticConfiguration {
       SELECT_DB2_TBL2 = "server=server1->db=db_2->table=tb_2->action=select",
       INSERT_DB2_TBL1 = "server=server1->db=db_2->table=tb_1->action=insert",
       SELECT_DB1_VIEW1 = "server=server1->db=db_1->table=view_1->action=select",
-      USER1 = "user1",
-      USER2 = "user2",
-      GROUP1 = "group1",
+      ADMIN1 = StaticUserGroup.ADMIN1,
+      ADMINGROUP = StaticUserGroup.ADMINGROUP,
+      USER1_1 = StaticUserGroup.USER1_1,
+      USER1_2 = StaticUserGroup.USER1_2,
+      USER2_1 = StaticUserGroup.USER2_1,
+      USER3_1 = StaticUserGroup.USER3_1,
+      USER4_1 = StaticUserGroup.USER4_1,
+      USERGROUP1 = StaticUserGroup.USERGROUP1,
+      USERGROUP2 = StaticUserGroup.USERGROUP2,
+      USERGROUP3 = StaticUserGroup.USERGROUP3,
+      USERGROUP4 = StaticUserGroup.USERGROUP4,
       GROUP1_ROLE = "group1_role",
       DB1 = "db_1",
       DB2 = "db_2",

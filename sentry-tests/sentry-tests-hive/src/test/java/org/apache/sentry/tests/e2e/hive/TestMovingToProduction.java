@@ -26,8 +26,6 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
-import junit.framework.Assert;
-
 import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.After;
 import org.junit.Before;
@@ -48,7 +46,7 @@ public class TestMovingToProduction extends AbstractTestWithStaticLocalFS {
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
-    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
   }
 
   @After
@@ -77,11 +75,10 @@ public class TestMovingToProduction extends AbstractTestWithStaticLocalFS {
   @Test
   public void testMovingTable1() throws Exception {
     policyFile
-        .addRolesToGroup("group1", "all_db1", "load_data", "select_proddb_tbl1", "insert_proddb_tbl1")
+        .addRolesToGroup(USERGROUP1, "all_db1", "load_data", "select_proddb_tbl1", "insert_proddb_tbl1")
         .addPermissionsToRole("load_data", "server=server1->uri=file://" + dataDir.getPath())
         .addPermissionsToRole("all_db1", "server=server1->db=db_1")
-        .addGroupsToUser("user1", "group1")
-        .addGroupsToUser("user2", "group2")
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
     String dbName1 = "db_1";
@@ -101,7 +98,7 @@ public class TestMovingToProduction extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // a
-    connection = context.createConnection("user1", "foo");
+    connection = context.createConnection(USER1_1, "foo");
     statement = context.createStatement(connection);
     statement.execute("USE " + dbName1);
     statement.execute("DROP TABLE IF EXISTS " + tableName1);
@@ -131,7 +128,7 @@ public class TestMovingToProduction extends AbstractTestWithStaticLocalFS {
     statement.execute("DESCRIBE " + tableName1);
 
     // c
-    connection = context.createConnection("user2", "foo");
+    connection = context.createConnection(USER2_1, "foo");
     statement = context.createStatement(connection);
     context.assertAuthzException(statement, "USE " + dbName2);
     context.assertAuthzException(statement, "INSERT OVERWRITE TABLE "
@@ -142,7 +139,7 @@ public class TestMovingToProduction extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // d
-    connection = context.createConnection("user1", "foo");
+    connection = context.createConnection(USER1_1, "foo");
     statement = context.createStatement(connection);
     statement.execute("USE " + dbName2);
     context.assertAuthzException(statement, "DROP TABLE " + tableName1);
@@ -159,17 +156,16 @@ public class TestMovingToProduction extends AbstractTestWithStaticLocalFS {
   @Test
   public void testMovingTable2() throws Exception {
     policyFile
-        .addRolesToGroup("group1", "all_db1", "load_data", "select_proddb_tbl1", "insert_proddb_tbl1")
+        .addRolesToGroup(USERGROUP1, "all_db1", "load_data", "select_proddb_tbl1", "insert_proddb_tbl1")
         .addPermissionsToRole("all_db1", "server=server1->db=db_1")
         .addPermissionsToRole("load_data", "server=server1->uri=file://" + dataDir.getPath())
-        .addGroupsToUser("user1", "group1")
-        .addGroupsToUser("user2", "group2")
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
     String dbName1 = "db_1";
     String dbName2 = "proddb";
     String tableName1 = "tb_1";
-    Connection connection = context.createConnection("admin1", "foo");
+    Connection connection = context.createConnection(ADMIN1, "foo");
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
     statement.execute("DROP DATABASE IF EXISTS " + dbName2 + " CASCADE");
@@ -182,7 +178,7 @@ public class TestMovingToProduction extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // a
-    connection = context.createConnection("user1", "foo");
+    connection = context.createConnection(USER1_1, "foo");
     statement = context.createStatement(connection);
     statement.execute("DROP TABLE IF EXISTS " + dbName1 + "." + tableName1);
     statement.execute("create table " + dbName1 + "." + tableName1
@@ -208,7 +204,7 @@ public class TestMovingToProduction extends AbstractTestWithStaticLocalFS {
         statement.execute("DESCRIBE " + dbName2 + "." + tableName1));
 
     // c
-    connection = context.createConnection("user2", "foo");
+    connection = context.createConnection(USER2_1, "foo");
     statement = context.createStatement(connection);
 
     context.assertAuthzException(statement, "INSERT OVERWRITE TABLE "
@@ -221,7 +217,7 @@ public class TestMovingToProduction extends AbstractTestWithStaticLocalFS {
     connection.close();
 
     // d
-    connection = context.createConnection("user1", "foo");
+    connection = context.createConnection(USER1_1, "foo");
     statement = context.createStatement(connection);
     statement.execute("USE " + dbName2);
     context.assertAuthzException(statement, "DROP TABLE " + tableName1);

@@ -42,6 +42,14 @@ public abstract class AbstractTestWithHiveServer {
   protected File policyFile;
   protected HiveServer hiveServer;
   protected FileSystem fileSystem;
+  protected static final String ADMIN1 = StaticUserGroup.ADMIN1,
+      ADMINGROUP = StaticUserGroup.ADMINGROUP,
+      USER1_1 = StaticUserGroup.USER1_1,
+      USER2_1 = StaticUserGroup.USER2_1,
+      USER3_1 = StaticUserGroup.USER3_1,
+      USERGROUP1 = StaticUserGroup.USERGROUP1,
+      USERGROUP2 = StaticUserGroup.USERGROUP2,
+      USERGROUP3 = StaticUserGroup.USERGROUP3;
 
   public Context createContext(Map<String, String> properties)
       throws Exception {

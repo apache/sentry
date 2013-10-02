@@ -108,8 +108,10 @@ public class TestUserManagement extends AbstractTestWithStaticLocalFS {
    */
   @Test
   public void testSanity() throws Exception {
-    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
-    policyFile.write(context.getPolicyFile());
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    policyFile
+        .addGroupsToUser("admin1", ADMINGROUP)
+        .write(context.getPolicyFile());
     doCreateDbLoadDataDropDb("admin1", "admin1");
   }
 
@@ -118,10 +120,11 @@ public class TestUserManagement extends AbstractTestWithStaticLocalFS {
    **/
   @Test
   public void testAdmin1() throws Exception {
-    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
     policyFile
-        .addGroupsToUser("admin2", "admin")
-        .addGroupsToUser("admin3", "admin")
+        .addGroupsToUser("admin1", ADMINGROUP)
+        .addGroupsToUser("admin2", ADMINGROUP)
+        .addGroupsToUser("admin3", ADMINGROUP)
         .write(context.getPolicyFile());
 
     doCreateDbLoadDataDropDb("admin1", "admin1", "admin2", "admin3");
@@ -133,16 +136,17 @@ public class TestUserManagement extends AbstractTestWithStaticLocalFS {
    **/
   @Test
   public void testAdmin3() throws Exception {
-    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
     policyFile
-        .addGroupsToUser("admin2", "admin")
-        .addGroupsToUser("admin3", "admin")
+        .addGroupsToUser("admin1", ADMINGROUP)
+        .addGroupsToUser("admin2", ADMINGROUP)
+        .addGroupsToUser("admin3", ADMINGROUP)
         .write(context.getPolicyFile());
     doCreateDbLoadDataDropDb("admin1", "admin1", "admin2", "admin3");
 
     // remove admin1 from admin group
     policyFile
-        .removeGroupsFromUser("admin1", "admin")
+        .removeGroupsFromUser("admin1", ADMINGROUP)
         .write(context.getPolicyFile());
     // verify admin1 doesn't have admin privilege
     Connection connection = context.createConnection("admin1", "foo");
@@ -159,9 +163,9 @@ public class TestUserManagement extends AbstractTestWithStaticLocalFS {
   public void testAdmin5() throws Exception {
     policyFile = new PolicyFile();
     policyFile
-        .addRolesToGroup("admin_group1", "admin")
-        .addRolesToGroup("admin_group2", "admin")
-        .addPermissionsToRole("admin", "server=server1")
+        .addRolesToGroup("admin_group1", ADMINGROUP)
+        .addRolesToGroup("admin_group2", ADMINGROUP)
+        .addPermissionsToRole(ADMINGROUP, "server=server1")
         .addGroupsToUser("admin1", "admin_group1", "admin_group2")
         .addGroupsToUser("admin2", "admin_group1", "admin_group2")
         .addGroupsToUser("admin3", "admin_group1", "admin_group2")
@@ -174,8 +178,9 @@ public class TestUserManagement extends AbstractTestWithStaticLocalFS {
    **/
   @Test
   public void testAdmin6() throws Exception {
-    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
     policyFile
+        .addGroupsToUser("admin1", ADMINGROUP)
         .addRolesToGroup("group1", "non_admin_role")
         .addPermissionsToRole("non_admin_role", "server=server1->db=" + dbName)
         .addGroupsToUser("user1", "group1")
@@ -196,8 +201,8 @@ public class TestUserManagement extends AbstractTestWithStaticLocalFS {
   public void testGroup2() throws Exception {
     policyFile = new PolicyFile();
     policyFile
-        .addRolesToGroup("group1", "admin", "analytics")
-        .addPermissionsToRole("admin", "server=server1")
+        .addRolesToGroup("group1", ADMINGROUP, "analytics")
+        .addPermissionsToRole(ADMINGROUP, "server=server1")
         .addPermissionsToRole("analytics", "server=server1->db=" + dbName)
         .addGroupsToUser("user1", "group1")
         .addGroupsToUser("user2", "group1")
@@ -210,8 +215,9 @@ public class TestUserManagement extends AbstractTestWithStaticLocalFS {
    **/
   @Test
   public void testGroup4() throws Exception {
-    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
     policyFile
+        .addGroupsToUser("admin1", ADMINGROUP)
         .addRolesToGroup("group1", "non_admin_role", "load_data")
         .addPermissionsToRole("non_admin_role", "server=server1->db=" + dbName)
         .addGroupsToUser("user1", "group1")
@@ -242,8 +248,9 @@ public class TestUserManagement extends AbstractTestWithStaticLocalFS {
   @Test
   public void testGroup5() throws Exception {
 
-    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
     policyFile
+        .addGroupsToUser("admin1", ADMINGROUP)
         .addRolesToGroup("group1", "non_admin_role", "load_data")
         .addPermissionsToRole("non_admin_role", "server=server1->db=" + dbName)
         .addPermissionsToRole("load_data", "server=server1->URI=file://" + dataFile.getPath())
@@ -265,8 +272,9 @@ public class TestUserManagement extends AbstractTestWithStaticLocalFS {
    **/
   @Test
   public void testGroup6() throws Exception {
-    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
     policyFile
+        .addGroupsToUser("admin1", ADMINGROUP)
         .addRolesToGroup("group1~!@#$%^&*()+-", "analytics", "load_data")
         .addPermissionsToRole("analytics", "server=server1->db=" + dbName)
         .addPermissionsToRole("load_data", "server=server1->URI=file://" + dataFile.getPath())
@@ -290,8 +298,8 @@ public class TestUserManagement extends AbstractTestWithStaticLocalFS {
   public void testGroup7() throws Exception {
     policyFile = new PolicyFile();
     policyFile
-        .addRolesToGroup("group1", "admin")
-        .addPermissionsToRole("admin", "server=server1")
+        .addRolesToGroup("group1", ADMINGROUP)
+        .addPermissionsToRole(ADMINGROUP, "server=server1")
         .addGroupsToUser("user1~!@#$%^&*()+-", "group1")
         .addGroupsToUser("user2", "group1")
         .addGroupsToUser("user3", "group1")
@@ -304,8 +312,9 @@ public class TestUserManagement extends AbstractTestWithStaticLocalFS {
    **/
   @Test
   public void testGroup8() throws Exception {
-    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
     policyFile
+        .addGroupsToUser("admin1", ADMINGROUP)
         .addRolesToGroup("group1", "analytics")
         .addGroupsToUser("user1", "group1")
         .addGroupsToUser("user2", "group1")

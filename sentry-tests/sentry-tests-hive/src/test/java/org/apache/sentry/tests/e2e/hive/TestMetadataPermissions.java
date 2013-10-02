@@ -17,7 +17,6 @@
 package org.apache.sentry.tests.e2e.hive;
 
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.sql.Statement;
 
 import junit.framework.Assert;
@@ -35,32 +34,14 @@ public class TestMetadataPermissions extends AbstractTestWithStaticLocalFS {
   @Before
   public void setup() throws Exception {
     context = createContext();
-    policyFile = PolicyFile.createAdminOnServer1(ADMIN1);
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
 
-/*
-    String testPolicies[] = {
-        "[groups]",
-        "admin_group = admin_role",
-        "user_group1 = db1_all,db2_all",
-        "user_group2 = db1_all",
-        "[roles]",
-        "db1_all = server=server1->db=db1",
-        "db2_all = server=server1->db=db2",
-        "admin_role = server=server1",
-        "[users]",
-        "user1 = user_group1",
-        "user2 = user_group2",
-        "admin = admin_group"
-        };
-    context.makeNewPolicy(testPolicies);
-*/
     policyFile
-        .addRolesToGroup("user_group1", "db1_all", "db2_all")
-        .addRolesToGroup("user_group2", "db1_all")
+        .addRolesToGroup(USERGROUP1, "db1_all", "db2_all")
+        .addRolesToGroup(USERGROUP2, "db1_all")
         .addPermissionsToRole("db1_all", "server=server1->db=db1")
         .addPermissionsToRole("db2_all", "server=server1->db=db2")
-        .addGroupsToUser("user1", "user_group1")
-        .addGroupsToUser("user2", "user_group2")
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
     Connection adminCon = context.createConnection(ADMIN1, "foo");
@@ -91,7 +72,7 @@ public class TestMetadataPermissions extends AbstractTestWithStaticLocalFS {
   @Test
   public void testDescPrivilegesNegative() throws Exception {
     String dbName = "db2";
-    Connection connection = context.createConnection("user2", "password");
+    Connection connection = context.createConnection(USER2_1, "password");
     Statement statement = context.createStatement(connection);
     context.assertAuthzException(statement, "USE " + dbName);
 //    TODO when DESCRIBE db.table is supported tests should be uncommented
@@ -110,7 +91,7 @@ public class TestMetadataPermissions extends AbstractTestWithStaticLocalFS {
   @Test
   public void testDescDbPrivilegesNegative() throws Exception {
     String dbName = "db2";
-    Connection connection = context.createConnection("user2", "password");
+    Connection connection = context.createConnection(USER2_1, "password");
     Statement statement = context.createStatement(connection);
     context.assertAuthzException(statement, "DESCRIBE DATABASE " + dbName);
     context.assertAuthzException(statement, "DESCRIBE DATABASE EXTENDED " + dbName);
@@ -124,7 +105,7 @@ public class TestMetadataPermissions extends AbstractTestWithStaticLocalFS {
    */
   @Test
   public void testDescDbPrivilegesPositive() throws Exception {
-    Connection connection = context.createConnection("user1", "password");
+    Connection connection = context.createConnection(USER1_1, "password");
     Statement statement = context.createStatement(connection);
     for (String dbName : new String[] { "db1", "db2" }) {
       statement.execute("USE " + dbName);
@@ -140,7 +121,7 @@ public class TestMetadataPermissions extends AbstractTestWithStaticLocalFS {
    */
   @Test
   public void testDescPrivilegesPositive() throws Exception {
-    Connection connection = context.createConnection("user1", "password");
+    Connection connection = context.createConnection(USER1_1, "password");
     Statement statement = context.createStatement(connection);
     for (String dbName : new String[] { "db1", "db2" }) {
       statement.execute("USE " + dbName);
