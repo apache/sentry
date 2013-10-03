@@ -182,7 +182,7 @@ implements HiveDriverFilterHook {
           throw new SemanticException("Could not find the jar for UDF class " + udfClassName +
               "to validate privileges");
         }
-        udfURI = parseURI(udfJar, true);
+        udfURI = parseURI(udfSrc.getLocation().toString(), true);
       } catch (ClassNotFoundException e) {
         throw new SemanticException("Error retrieving udf class", e);
       }
