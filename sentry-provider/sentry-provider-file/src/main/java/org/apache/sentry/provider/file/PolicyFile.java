@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -118,7 +119,7 @@ public class PolicyFile {
     return other;
   }
 
-  public void write(File file) throws IOException {
+  public void write(File file) throws Exception {
     if(file.exists() && !file.delete()) {
       throw new IllegalStateException("Unable to delete " + file);
     }
@@ -130,7 +131,54 @@ public class PolicyFile {
             "");
     LOGGER.info("Writing policy file to " + file + ":\n" + contents);
     Files.write(contents, file, Charsets.UTF_8);
+
+    String hiveServer2 = System.getProperty("sentry.e2etest.hiveServer2Type", "InternalHiveServer2");
+    if(hiveServer2.equals("UnmanagedHiveServer2")){
+
+      String policyLocation = System.getProperty("sentry.e2etest.policyLocation", "/user/hive/sentry/sentry-provider.ini");
+      String policyOnHDFS = System.getProperty("sentry.e2etest.policyOnHDFS", "true");
+      LOGGER.info("Moving policy file to " + policyLocation);
+
+      if( policyOnHDFS.trim().equalsIgnoreCase("true")){
+        String userKeytab = System.getProperty("sentry.e2etest.policyOwnerKeytab");
+        String userPrincipal = System.getProperty("sentry.e2etest.policyOwnerPrincipal");
+        Preconditions.checkNotNull(userKeytab);
+        Preconditions.checkNotNull(userPrincipal);
+        hdfsPut(file, policyLocation, userKeytab, userPrincipal);
+      }else{
+        Files.copy(file,new File(policyLocation));
+      }
+    }
   }
+
+  private void hdfsPut(File file, String hdfsPath, String userKeytab, String userPrincipal) throws Exception {
+    String command, status;
+    Process p;
+
+    command = "kinit -kt " + userKeytab +  " " + userPrincipal;
+    p = Runtime.getRuntime().exec(command);
+    if(p.waitFor()!=0) {
+      throw new Exception("Setup incomplete. " + command + " FAILED");
+    }
+    else {
+      LOGGER.info("Command:" + command + " PASSED");
+    }
+
+    command = "hdfs dfs -rm " + hdfsPath;
+    p = Runtime.getRuntime().exec(command);
+    status = (p.waitFor()==0)?"PASSED":"FAILED";
+    LOGGER.warn("Command:" + command + " " + status);
+
+    command = "hdfs dfs -put " + file.getAbsolutePath() + " " + hdfsPath;
+    p = Runtime.getRuntime().exec(command);
+    if(p.waitFor()!=0) {
+      throw new Exception("Setup incomplete. " + command + " FAILED");
+    }
+    else {
+      LOGGER.info("Command:" + command + " PASSED");
+    }
+  }
+
   private String getSection(String name, Map<String, String> mapping) {
     if(mapping.isEmpty()) {
       return "";
