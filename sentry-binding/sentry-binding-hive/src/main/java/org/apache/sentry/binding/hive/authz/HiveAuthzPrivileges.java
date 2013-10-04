@@ -20,8 +20,8 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.sentry.core.Action;
-import org.apache.sentry.core.Authorizable.AuthorizableType;
+import org.apache.sentry.core.model.db.DBModelAction;
+import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
 
 /**
  * Hive objects with required access privileges mapped to auth provider privileges
@@ -61,24 +61,24 @@ public class HiveAuthzPrivileges {
   }
 
   public static class AuthzPrivilegeBuilder {
-    private final Map<AuthorizableType, EnumSet<Action>> inputPrivileges =
-        new HashMap<AuthorizableType ,EnumSet<Action>>();
-    private final Map<AuthorizableType,EnumSet<Action>> outputPrivileges =
-        new HashMap<AuthorizableType,EnumSet<Action>>();
+    private final Map<AuthorizableType, EnumSet<DBModelAction>> inputPrivileges =
+        new HashMap<AuthorizableType ,EnumSet<DBModelAction>>();
+    private final Map<AuthorizableType,EnumSet<DBModelAction>> outputPrivileges =
+        new HashMap<AuthorizableType,EnumSet<DBModelAction>>();
     private HiveOperationType operationType;
     private HiveOperationScope operationScope;
 
-    public AuthzPrivilegeBuilder addInputObjectPriviledge(AuthorizableType inputObjectType, EnumSet<Action> inputPrivilege) {
+    public AuthzPrivilegeBuilder addInputObjectPriviledge(AuthorizableType inputObjectType, EnumSet<DBModelAction> inputPrivilege) {
       inputPrivileges.put(inputObjectType, inputPrivilege);
       return this;
     }
 
-    public AuthzPrivilegeBuilder addOutputEntityPriviledge(AuthorizableType outputEntityType, EnumSet<Action> outputPrivilege) {
+    public AuthzPrivilegeBuilder addOutputEntityPriviledge(AuthorizableType outputEntityType, EnumSet<DBModelAction> outputPrivilege) {
       outputPrivileges.put(outputEntityType, outputPrivilege);
       return this;
     }
 
-    public AuthzPrivilegeBuilder addOutputObjectPriviledge(AuthorizableType outputObjectType, EnumSet<Action> outputPrivilege) {
+    public AuthzPrivilegeBuilder addOutputObjectPriviledge(AuthorizableType outputObjectType, EnumSet<DBModelAction> outputPrivilege) {
       outputPrivileges.put(outputObjectType, outputPrivilege);
       return this;
     }
@@ -106,15 +106,15 @@ public class HiveAuthzPrivileges {
     }
   }
 
-  private final Map<AuthorizableType,EnumSet<Action>> inputPrivileges =
-      new HashMap<AuthorizableType,EnumSet<Action>>();
-  private final Map<AuthorizableType,EnumSet<Action>>  outputPrivileges =
-      new HashMap<AuthorizableType,EnumSet<Action>>();
+  private final Map<AuthorizableType,EnumSet<DBModelAction>> inputPrivileges =
+      new HashMap<AuthorizableType,EnumSet<DBModelAction>>();
+  private final Map<AuthorizableType,EnumSet<DBModelAction>>  outputPrivileges =
+      new HashMap<AuthorizableType,EnumSet<DBModelAction>>();
   private final HiveOperationType operationType;
   private final HiveOperationScope operationScope;
 
-  protected HiveAuthzPrivileges(Map<AuthorizableType,EnumSet<Action>> inputPrivileges,
-      Map<AuthorizableType,EnumSet<Action>> outputPrivileges, HiveOperationType operationType,
+  protected HiveAuthzPrivileges(Map<AuthorizableType,EnumSet<DBModelAction>> inputPrivileges,
+      Map<AuthorizableType,EnumSet<DBModelAction>> outputPrivileges, HiveOperationType operationType,
       HiveOperationScope operationScope) {
     this.inputPrivileges.putAll(inputPrivileges);
     this.outputPrivileges.putAll(outputPrivileges);
@@ -125,14 +125,14 @@ public class HiveAuthzPrivileges {
   /**
    * @return the inputPrivileges
    */
-  public Map<AuthorizableType, EnumSet<Action>> getInputPrivileges() {
+  public Map<AuthorizableType, EnumSet<DBModelAction>> getInputPrivileges() {
     return inputPrivileges;
   }
 
   /**
    * @return the outputPrivileges
    */
-  public Map<AuthorizableType, EnumSet<Action>> getOutputPrivileges() {
+  public Map<AuthorizableType, EnumSet<DBModelAction>> getOutputPrivileges() {
     return outputPrivileges;
   }
 

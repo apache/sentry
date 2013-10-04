@@ -31,8 +31,8 @@ import java.net.URISyntaxException;
 import java.util.List;
 
 import org.apache.commons.lang.text.StrSubstitutor;
-import org.apache.sentry.core.AccessConstants;
-import org.apache.sentry.core.Authorizable.AuthorizableType;
+import org.apache.sentry.core.model.db.AccessConstants;
+import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
 import org.apache.sentry.provider.file.KeyValue;
 import org.apache.sentry.provider.file.PermissionFactory;
 import org.apache.sentry.provider.file.PolicyFileConstants;

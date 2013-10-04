@@ -20,9 +20,9 @@ import java.io.IOException;
 import java.util.List;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.sentry.core.AccessURI;
-import org.apache.sentry.core.Authorizable;
-import org.apache.sentry.core.Database;
+import org.apache.sentry.core.common.Authorizable;
+import org.apache.sentry.core.model.db.AccessURI;
+import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.provider.file.PolicyEngine;
 import org.apache.sentry.provider.file.SimplePolicyParser;
 import org.apache.sentry.provider.file.Roles;
@@ -60,7 +60,7 @@ public class SimpleDBPolicyEngine implements PolicyEngine {
    * {@inheritDoc}
    */
   @Override
-  public ImmutableSetMultimap<String, String> getPermissions(List<Authorizable> authorizables, List<String> groups) {
+  public ImmutableSetMultimap<String, String> getPermissions(List<? extends Authorizable> authorizables, List<String> groups) {
     String database = null;
     Boolean isURI = false;
     for(Authorizable authorizable : authorizables) {

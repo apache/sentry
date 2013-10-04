@@ -20,9 +20,9 @@ package org.apache.sentry.binding.hive;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
-import org.apache.sentry.core.AccessURI;
-import org.apache.sentry.core.Database;
-import org.apache.sentry.core.Table;
+import org.apache.sentry.core.model.db.AccessURI;
+import org.apache.sentry.core.model.db.Database;
+import org.apache.sentry.core.model.db.Table;
 import org.apache.hadoop.hive.ql.exec.Task;
 import org.apache.hadoop.hive.ql.hooks.ReadEntity;
 import org.apache.hadoop.hive.ql.hooks.WriteEntity;

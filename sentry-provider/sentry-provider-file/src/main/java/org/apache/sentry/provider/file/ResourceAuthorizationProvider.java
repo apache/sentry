@@ -21,17 +21,17 @@ import static org.apache.sentry.provider.file.PolicyFileConstants.KV_JOINER;
 import static org.apache.sentry.provider.file.PolicyFileConstants.PRIVILEGE_NAME;
 
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
-import org.apache.sentry.core.Action;
-import org.apache.sentry.core.Authorizable;
-import org.apache.sentry.core.AuthorizationProvider;
-import org.apache.sentry.core.Database;
-import org.apache.sentry.core.Server;
-import org.apache.sentry.core.ServerResource;
-import org.apache.sentry.core.Subject;
-import org.apache.sentry.core.Table;
+import org.apache.sentry.core.common.Action;
+import org.apache.sentry.core.common.Authorizable;
+import org.apache.sentry.core.common.AuthorizationProvider;
+import org.apache.sentry.core.common.Subject;
+import org.apache.sentry.core.model.db.Database;
+import org.apache.sentry.core.model.db.Server;
+import org.apache.sentry.core.model.db.ServerResource;
+import org.apache.sentry.core.model.db.Table;
 import org.apache.shiro.authz.Permission;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,22 +56,6 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
     this.permissionFactory = permissionFactory;
   }
 
-  @Override
-  public boolean hasAccess(Subject subject, Server server, Database database,
-      Table table, EnumSet<Action> actions) {
-    List<Authorizable> authorizables = Lists.newArrayList();
-    authorizables.add(server);
-    authorizables.add(database);
-    authorizables.add(table);
-    return hasAccess(subject, authorizables, actions);
-  }
-
-  @Override
-  public boolean hasAccess(Subject subject, Server server,
-      ServerResource serverResource, EnumSet<Action> actions) {
-    throw new UnsupportedOperationException("Deprecated");
-  }
-
   /***
    * @param subject: UserID to validate privileges
    * @param authorizableHierarchy : List of object according to namespace hierarchy.
@@ -82,8 +66,8 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
    *        True if the subject is authorized to perform requested action on the given object
    */
   @Override
-  public boolean hasAccess(Subject subject, List<Authorizable> authorizableHierarchy,
-      EnumSet<Action> actions) {
+  public boolean hasAccess(Subject subject, List<? extends Authorizable> authorizableHierarchy,
+      Set<? extends Action> actions) {
     if(LOGGER.isDebugEnabled()) {
       LOGGER.debug("Authorization Request for " + subject + " " +
           authorizableHierarchy + " and " + actions);
@@ -97,11 +81,11 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
   }
 
   private boolean doHasAccess(Subject subject,
-      List<Authorizable> authorizables, EnumSet<Action> actions) {
+      List<? extends Authorizable> authorizables, Set<? extends Action> actions) {
     List<String> groups = groupService.getGroups(subject.getName());
     List<String> hierarchy = new ArrayList<String>();
     for (Authorizable authorizable : authorizables) {
-      hierarchy.add(KV_JOINER.join(authorizable.getAuthzType().name(), authorizable.getName()));
+      hierarchy.add(KV_JOINER.join(authorizable.getTypeName(), authorizable.getName()));
     }
     Iterable<Permission> permissions = getPermissions(authorizables, groups);
     for (Action action : actions) {
@@ -125,7 +109,7 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
     return false;
   }
 
-  private Iterable<Permission> getPermissions(List<Authorizable> authorizables, List<String> groups) {
+  private Iterable<Permission> getPermissions(List<? extends Authorizable> authorizables, List<String> groups) {
     return Iterables.transform(policy.getPermissions(authorizables, groups).values(),
         new Function<String, Permission>() {
       @Override

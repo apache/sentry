@@ -26,8 +26,8 @@ import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.sentry.binding.hive.authz.HiveAuthzBinding;
 import org.apache.sentry.binding.hive.authz.HiveAuthzPrivilegesMap;
 import org.apache.sentry.binding.hive.authz.HiveAuthzPrivileges.HiveExtendedOperation;
-import org.apache.sentry.core.Authorizable;
-import org.apache.sentry.core.Subject;
+import org.apache.sentry.core.common.Subject;
+import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,9 +52,9 @@ public class HiveAuthzBindingPreExecHook implements ExecuteWithHookContext {
           LOG.warn("No authorization binding fund, skipping the authorization for transform");
           return;
         }
-        List<List<Authorizable>> inputHierarchy = new ArrayList<List<Authorizable>> ();
-        List<List<Authorizable>> outputHierarchy = new ArrayList<List<Authorizable>> ();
-        List<Authorizable> serverHierarchy = new ArrayList<Authorizable>();
+        List<List<DBModelAuthorizable>> inputHierarchy = new ArrayList<List<DBModelAuthorizable>> ();
+        List<List<DBModelAuthorizable>> outputHierarchy = new ArrayList<List<DBModelAuthorizable>> ();
+        List<DBModelAuthorizable> serverHierarchy = new ArrayList<DBModelAuthorizable>();
 
         serverHierarchy.add(hiveAuthzBinding.getAuthServer());
         outputHierarchy.add(serverHierarchy);

@@ -21,8 +21,8 @@ import static org.apache.sentry.provider.file.PolicyFileConstants.PRIVILEGE_PREF
 
 import java.util.List;
 
-import org.apache.sentry.core.Authorizable;
 import org.apache.sentry.provider.file.RoleValidator;
+import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.shiro.config.ConfigurationException;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -31,12 +31,12 @@ import com.google.common.collect.Lists;
 public abstract class AbstractDBRoleValidator implements RoleValidator {
 
   @VisibleForTesting
-  public static Iterable<Authorizable> parseRole(String string) {
-    List<Authorizable> result = Lists.newArrayList();
+  public static Iterable<DBModelAuthorizable> parseRole(String string) {
+    List<DBModelAuthorizable> result = Lists.newArrayList();
     for(String section : AUTHORIZABLE_SPLITTER.split(string)) {
       // XXX this ugly hack is because action is not an authorizeable
       if(!section.toLowerCase().startsWith(PRIVILEGE_PREFIX)) {
-        Authorizable authorizable = DBAuthorizables.from(section);
+        DBModelAuthorizable authorizable = DBModelAuthorizables.from(section);
         if(authorizable == null) {
           String msg = "No authorizable found for " + section;
           throw new ConfigurationException(msg);

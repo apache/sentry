@@ -1,4 +1,4 @@
-/*
+ /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,16 +20,18 @@ import java.io.File;
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.sentry.core.AccessURI;
-import org.apache.sentry.core.Action;
-import org.apache.sentry.core.Authorizable;
-import org.apache.sentry.core.AuthorizationProvider;
-import org.apache.sentry.core.Server;
-import org.apache.sentry.core.Subject;
+import org.apache.sentry.core.common.Authorizable;
+import org.apache.sentry.core.common.AuthorizationProvider;
+import org.apache.sentry.core.common.Action;
+import org.apache.sentry.core.common.Subject;
+import org.apache.sentry.core.model.db.AccessURI;
+import org.apache.sentry.core.model.db.DBModelAction;
+import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.provider.db.LocalGroupResourceAuthorizationProvider;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.After;
@@ -65,14 +67,14 @@ public class TestResourceAuthorizationProviderSpecialCases {
     Subject user1 = new Subject("user1");
     Server server1 = new Server("server1");
     AccessURI uri = new AccessURI("file:///path/to/");
-    EnumSet<Action> actions = EnumSet.of(Action.ALL, Action.SELECT, Action.INSERT);
+    Set<? extends Action> actions = EnumSet.of(DBModelAction.ALL, DBModelAction.SELECT, DBModelAction.INSERT);
     policyFile.addGroupsToUser(user1.getName(), true, "group1", "group1")
       .addRolesToGroup("group1",  true, "role1", "role1")
       .addPermissionsToRole("role1", true, "server=" + server1.getName() + "->uri=" + uri.getName(),
           "server=" + server1.getName() + "->uri=" + uri.getName());
     policyFile.write(iniFile);
     authzProvider = new LocalGroupResourceAuthorizationProvider(initResource, server1.getName());
-    List<Authorizable> authorizableHierarchy = ImmutableList.of(server1, uri);
+    List<? extends Authorizable> authorizableHierarchy = ImmutableList.of(server1, uri);
     Assert.assertTrue(authorizableHierarchy.toString(),
         authzProvider.hasAccess(user1, authorizableHierarchy, actions));
   }
@@ -81,14 +83,14 @@ public class TestResourceAuthorizationProviderSpecialCases {
     Subject user1 = new Subject("user1");
     Server server1 = new Server("server1");
     AccessURI uri = new AccessURI("file:///path/to/");
-    EnumSet<Action> actions = EnumSet.of(Action.ALL, Action.SELECT, Action.INSERT);
+    Set<? extends Action> actions = EnumSet.of(DBModelAction.ALL, DBModelAction.SELECT, DBModelAction.INSERT);
     policyFile.addGroupsToUser(user1.getName(), "group1")
       .addRolesToGroup("group1", "role1")
       .addPermissionsToRole("role1", "server=" + server1.getName() + "->uri=" + uri.getName());
     policyFile.write(iniFile);
     authzProvider = new LocalGroupResourceAuthorizationProvider(initResource, server1.getName());
     // positive test
-    List<Authorizable> authorizableHierarchy = ImmutableList.of(server1, uri);
+    List<? extends Authorizable> authorizableHierarchy = ImmutableList.of(server1, uri);
     Assert.assertTrue(authorizableHierarchy.toString(),
         authzProvider.hasAccess(user1, authorizableHierarchy, actions));
     // negative tests

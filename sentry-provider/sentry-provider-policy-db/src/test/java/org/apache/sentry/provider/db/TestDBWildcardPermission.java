@@ -24,7 +24,7 @@ import static org.apache.sentry.provider.file.PolicyFileConstants.AUTHORIZABLE_J
 import static org.apache.sentry.provider.file.PolicyFileConstants.KV_JOINER;
 import static org.apache.sentry.provider.file.PolicyFileConstants.KV_SEPARATOR;
 
-import org.apache.sentry.core.AccessConstants;
+import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.file.KeyValue;
 import org.apache.shiro.authz.Permission;
 import org.junit.Test;

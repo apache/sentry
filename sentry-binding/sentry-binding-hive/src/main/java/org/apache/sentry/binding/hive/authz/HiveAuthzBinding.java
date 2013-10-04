@@ -17,7 +17,6 @@
 package org.apache.sentry.binding.hive.authz;
 
 import java.lang.reflect.Constructor;
-
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -33,13 +32,14 @@ import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
-import org.apache.sentry.core.Action;
-import org.apache.sentry.core.Authorizable;
-import org.apache.sentry.core.AuthorizationProvider;
-import org.apache.sentry.core.NoAuthorizationProvider;
-import org.apache.sentry.core.Server;
-import org.apache.sentry.core.Subject;
-import org.apache.sentry.core.Authorizable.AuthorizableType;
+import org.apache.sentry.core.common.Action;
+import org.apache.sentry.core.common.AuthorizationProvider;
+import org.apache.sentry.core.common.NoAuthorizationProvider;
+import org.apache.sentry.core.common.Subject;
+import org.apache.sentry.core.model.db.DBModelAction;
+import org.apache.sentry.core.model.db.DBModelAuthorizable;
+import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
+import org.apache.sentry.core.model.db.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.sentry.binding.hive.conf.InvalidConfigurationException;
@@ -149,7 +149,7 @@ public class HiveAuthzBinding {
    * @throws AuthorizationException
    */
   public void authorize(HiveOperation hiveOp, HiveAuthzPrivileges stmtAuthPrivileges,
-      Subject subject, List<List<Authorizable>> inputHierarchyList, List<List<Authorizable>> outputHierarchyList )
+      Subject subject, List<List<DBModelAuthorizable>> inputHierarchyList, List<List<DBModelAuthorizable>> outputHierarchyList )
           throws AuthorizationException {
     boolean isDebug = LOG.isDebugEnabled();
     if(isDebug) {
@@ -166,16 +166,16 @@ public class HiveAuthzBinding {
        */
 
       // Check read entities
-      Map<AuthorizableType, EnumSet<Action>> requiredInputPrivileges =
+      Map<AuthorizableType, EnumSet<DBModelAction>> requiredInputPrivileges =
           stmtAuthPrivileges.getInputPrivileges();
-      for (List<Authorizable> inputHierarchy : inputHierarchyList) {
+      for (List<DBModelAuthorizable> inputHierarchy : inputHierarchyList) {
         if(isDebug) {
           LOG.debug("requiredInputPrivileges = " + requiredInputPrivileges);
           LOG.debug("inputHierarchy = " + inputHierarchy);
           LOG.debug("getAuthzType(inputHierarchy) = " + getAuthzType(inputHierarchy));
         }
         if (requiredInputPrivileges.containsKey(getAuthzType(inputHierarchy))) {
-          EnumSet<Action> inputPrivSet =
+          EnumSet<DBModelAction> inputPrivSet =
             requiredInputPrivileges.get(getAuthzType(inputHierarchy));
           if (!authProvider.hasAccess(subject, inputHierarchy, inputPrivSet)) {
             throw new AuthorizationException("User " + subject.getName() +
@@ -184,16 +184,16 @@ public class HiveAuthzBinding {
         }
       }
       // Check write entities
-      Map<AuthorizableType, EnumSet<Action>> requiredOutputPrivileges =
+      Map<AuthorizableType, EnumSet<DBModelAction>> requiredOutputPrivileges =
           stmtAuthPrivileges.getOutputPrivileges();
-      for (List<Authorizable> outputHierarchy : outputHierarchyList) {
+      for (List<DBModelAuthorizable> outputHierarchy : outputHierarchyList) {
         if(isDebug) {
           LOG.debug("requiredOutputPrivileges = " + requiredOutputPrivileges);
           LOG.debug("outputHierarchy = " + outputHierarchy);
           LOG.debug("getAuthzType(outputHierarchy) = " + getAuthzType(outputHierarchy));
         }
         if (requiredOutputPrivileges.containsKey(getAuthzType(outputHierarchy))) {
-          EnumSet<Action> outputPrivSet =
+          EnumSet<DBModelAction> outputPrivSet =
             requiredOutputPrivileges.get(getAuthzType(outputHierarchy));
           if (!authProvider.hasAccess(subject, outputHierarchy, outputPrivSet)) {
             throw new AuthorizationException("User " + subject.getName() +
@@ -207,7 +207,7 @@ public class HiveAuthzBinding {
     return authServer;
   }
 
-  private AuthorizableType getAuthzType (List<Authorizable> hierarchy){
+  private AuthorizableType getAuthzType (List<DBModelAuthorizable> hierarchy){
     return hierarchy.get(hierarchy.size() -1).getAuthzType();
   }
 }

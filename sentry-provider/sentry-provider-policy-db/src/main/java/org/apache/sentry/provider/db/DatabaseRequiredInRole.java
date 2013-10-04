@@ -18,9 +18,9 @@ package org.apache.sentry.provider.db;
 
 import javax.annotation.Nullable;
 
-import org.apache.sentry.core.AccessURI;
-import org.apache.sentry.core.Authorizable;
-import org.apache.sentry.core.Database;
+import org.apache.sentry.core.model.db.AccessURI;
+import org.apache.sentry.core.model.db.Database;
+import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.shiro.config.ConfigurationException;
 
 public class DatabaseRequiredInRole extends AbstractDBRoleValidator {
@@ -31,7 +31,7 @@ public class DatabaseRequiredInRole extends AbstractDBRoleValidator {
      *  Rule only applies to rules in per database policy file
      */
     if(database != null) {
-      Iterable<Authorizable> authorizables = parseRole(role);
+      Iterable<DBModelAuthorizable> authorizables = parseRole(role);
       /*
        * Each permission in a non-global file must have a database
        * object except for URIs.
@@ -49,7 +49,7 @@ public class DatabaseRequiredInRole extends AbstractDBRoleValidator {
         allowURIInAuthorizables = true;
       }
 
-      for(Authorizable authorizable : authorizables) {
+      for(DBModelAuthorizable authorizable : authorizables) {
         if(authorizable instanceof Database) {
           foundDatabaseInAuthorizables = true;
         }

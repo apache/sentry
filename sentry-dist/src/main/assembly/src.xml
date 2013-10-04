@@ -39,6 +39,8 @@
         <include>org.apache.sentry:sentry-binding</include>
         <include>org.apache.sentry:sentry-binding-hive</include>
         <include>org.apache.sentry:sentry-core</include>
+        <include>org.apache.sentry:sentry-core-common</include>
+        <include>org.apache.sentry:sentry-core-model-db</include>
         <include>org.apache.sentry:sentry-provider</include>
         <include>org.apache.sentry:sentry-provider-file</include>
         <include>org.apache.sentry:sentry-provider-policy-db</include>

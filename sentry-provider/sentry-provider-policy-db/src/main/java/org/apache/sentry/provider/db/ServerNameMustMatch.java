@@ -18,8 +18,8 @@ package org.apache.sentry.provider.db;
 
 import javax.annotation.Nullable;
 
-import org.apache.sentry.core.Authorizable;
-import org.apache.sentry.core.Server;
+import org.apache.sentry.core.model.db.DBModelAuthorizable;
+import org.apache.sentry.core.model.db.Server;
 import org.apache.shiro.config.ConfigurationException;
 
 public class ServerNameMustMatch extends AbstractDBRoleValidator {
@@ -30,8 +30,8 @@ public class ServerNameMustMatch extends AbstractDBRoleValidator {
   }
   @Override
   public void validate(@Nullable String database, String role) throws ConfigurationException {
-    Iterable<Authorizable> authorizables = parseRole(role);
-    for(Authorizable authorizable : authorizables) {
+    Iterable<DBModelAuthorizable> authorizables = parseRole(role);
+    for(DBModelAuthorizable authorizable : authorizables) {
       if(authorizable instanceof Server && !serverName.equalsIgnoreCase(authorizable.getName())) {
         String msg = "Server name " + authorizable.getName() + " in "
       + role + " is invalid. Expected " + serverName;

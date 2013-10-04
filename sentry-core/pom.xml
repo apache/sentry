@@ -26,13 +26,11 @@ limitations under the License.
 
   <artifactId>sentry-core</artifactId>
   <name>Sentry core</name>
+  <packaging>pom</packaging>
 
-  <dependencies>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
+  <modules>
+    <module>sentry-core-common</module>
+    <module>sentry-core-model-db</module>
+  </modules>
 
 </project>

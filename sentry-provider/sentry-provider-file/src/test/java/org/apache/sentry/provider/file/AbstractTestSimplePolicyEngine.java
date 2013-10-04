@@ -25,8 +25,8 @@ import java.util.TreeSet;
 import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.sentry.core.Authorizable;
-import org.apache.sentry.core.Database;
+import org.apache.sentry.core.common.Authorizable;
+import org.apache.sentry.core.model.db.Database;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;

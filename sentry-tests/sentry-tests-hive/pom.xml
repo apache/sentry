@@ -48,10 +48,6 @@ limitations under the License.
       <artifactId>derby</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.sentry</groupId>
-      <artifactId>sentry-core</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-service</artifactId>
       <scope>test</scope>

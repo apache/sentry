@@ -19,7 +19,7 @@ package org.apache.sentry.provider.file;
 
 import java.util.List;
 
-import org.apache.sentry.core.Authorizable;
+import org.apache.sentry.core.common.Authorizable;
 
 import com.google.common.collect.ImmutableSetMultimap;
 
@@ -34,6 +34,6 @@ public interface PolicyEngine {
    * @param group name
    * @return non-null immutable set of permissions
    */
-  public ImmutableSetMultimap<String, String> getPermissions(List<Authorizable> authorizables, List<String> groups);
+  public ImmutableSetMultimap<String, String> getPermissions(List<? extends Authorizable> authorizables, List<String> groups);
 
 }

@@ -34,13 +34,13 @@ import org.apache.sentry.binding.hive.authz.HiveAuthzPrivilegesMap;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
 import org.apache.sentry.binding.hive.conf.InvalidConfigurationException;
-import org.apache.sentry.core.AccessConstants;
-import org.apache.sentry.core.AccessURI;
-import org.apache.sentry.core.Authorizable;
-import org.apache.sentry.core.Database;
-import org.apache.sentry.core.Server;
-import org.apache.sentry.core.Subject;
-import org.apache.sentry.core.Table;
+import org.apache.sentry.core.common.Subject;
+import org.apache.sentry.core.model.db.AccessConstants;
+import org.apache.sentry.core.model.db.AccessURI;
+import org.apache.sentry.core.model.db.DBModelAuthorizable;
+import org.apache.sentry.core.model.db.Database;
+import org.apache.sentry.core.model.db.Server;
+import org.apache.sentry.core.model.db.Table;
 import org.apache.sentry.provider.file.PolicyFiles;
 import org.junit.After;
 import org.junit.Before;
@@ -76,8 +76,8 @@ public class TestHiveAuthzBindings {
   private static final String PAYMENT_TAB = "payments";
 
   // Entities
-  private List<List<Authorizable>> inputTabHierarcyList = new ArrayList<List<Authorizable>>();
-  private List<List<Authorizable>> outputTabHierarcyList = new ArrayList<List<Authorizable>>();
+  private List<List<DBModelAuthorizable>> inputTabHierarcyList = new ArrayList<List<DBModelAuthorizable>>();
+  private List<List<DBModelAuthorizable>> outputTabHierarcyList = new ArrayList<List<DBModelAuthorizable>>();
   private HiveConf hiveConf = new HiveConf();
   private HiveAuthzConf authzConf = new HiveAuthzConf(Resources.getResource("sentry-deprecated-site.xml"));
 
@@ -247,7 +247,7 @@ public class TestHiveAuthzBindings {
   @Test
   public void testValidateCreateFunctionForAdmin() throws Exception {
     inputTabHierarcyList.add(buildObjectHierarchy(SERVER1, null, null));
-    inputTabHierarcyList.add(Arrays.asList(new Authorizable[] {
+    inputTabHierarcyList.add(Arrays.asList(new DBModelAuthorizable[] {
         new Server(SERVER1), new AccessURI("file:///some/path/to/a/jar")
     }));
     testAuth.authorize(HiveOperation.CREATEFUNCTION, createFuncPrivileges, ADMIN_SUBJECT,
@@ -255,10 +255,10 @@ public class TestHiveAuthzBindings {
   }
   @Test
   public void testValidateCreateFunctionAppropiateURI() throws Exception {
-    inputTabHierarcyList.add(Arrays.asList(new Authorizable[] {
+    inputTabHierarcyList.add(Arrays.asList(new DBModelAuthorizable[] {
         new Server(SERVER1), new Database(CUSTOMER_DB), new Table(AccessConstants.ALL)
     }));
-    inputTabHierarcyList.add(Arrays.asList(new Authorizable[] {
+    inputTabHierarcyList.add(Arrays.asList(new DBModelAuthorizable[] {
         new Server(SERVER1), new AccessURI("file:///path/to/some/lib/dir/my.jar")
     }));
     testAuth.authorize(HiveOperation.CREATEFUNCTION, createFuncPrivileges, ANALYST_SUBJECT,
@@ -272,10 +272,10 @@ public class TestHiveAuthzBindings {
   }
   @Test(expected=AuthorizationException.class)
   public void testValidateCreateFunctionRejectionForUserWithoutURI() throws Exception {
-    inputTabHierarcyList.add(Arrays.asList(new Authorizable[] {
+    inputTabHierarcyList.add(Arrays.asList(new DBModelAuthorizable[] {
         new Server(SERVER1), new Database(CUSTOMER_DB), new Table(AccessConstants.ALL)
     }));
-    inputTabHierarcyList.add(Arrays.asList(new Authorizable[] {
+    inputTabHierarcyList.add(Arrays.asList(new DBModelAuthorizable[] {
         new Server(SERVER1), new AccessURI("file:///some/path/to/a.jar")
     }));
     testAuth.authorize(HiveOperation.CREATEFUNCTION, createFuncPrivileges, ANALYST_SUBJECT,
@@ -319,8 +319,8 @@ public class TestHiveAuthzBindings {
         inputTabHierarcyList, outputTabHierarcyList);
   }
 
-  private List <Authorizable>  buildObjectHierarchy(String server, String db, String table) {
-    List <Authorizable> authList = new ArrayList<Authorizable> ();
+  private List <DBModelAuthorizable>  buildObjectHierarchy(String server, String db, String table) {
+    List <DBModelAuthorizable> authList = new ArrayList<DBModelAuthorizable> ();
     authList.add(new Server(server));
     if (db != null) {
       authList.add(new Database(db));

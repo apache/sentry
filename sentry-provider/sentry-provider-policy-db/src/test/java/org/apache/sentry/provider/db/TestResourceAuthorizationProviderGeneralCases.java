@@ -21,17 +21,19 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.sentry.core.AccessConstants;
-import org.apache.sentry.core.Action;
-import org.apache.sentry.core.Authorizable;
-import org.apache.sentry.core.Database;
-import org.apache.sentry.core.Server;
-import org.apache.sentry.core.Subject;
-import org.apache.sentry.core.Table;
+import org.apache.sentry.core.common.Action;
+import org.apache.sentry.core.common.Authorizable;
+import org.apache.sentry.core.common.Subject;
+import org.apache.sentry.core.model.db.AccessConstants;
+import org.apache.sentry.core.model.db.DBModelAction;
+import org.apache.sentry.core.model.db.Database;
+import org.apache.sentry.core.model.db.Server;
+import org.apache.sentry.core.model.db.Table;
 import org.apache.sentry.provider.file.PolicyFiles;
 import org.apache.sentry.provider.file.MockGroupMappingServiceProvider;
 import org.apache.sentry.provider.file.ResourceAuthorizationProvider;
@@ -68,9 +70,9 @@ public class TestResourceAuthorizationProviderGeneralCases {
 
   private static final Table TBL_PURCHASES = new Table("purchases");
 
-  private static final EnumSet<Action> ALL = EnumSet.of(Action.ALL);
-  private static final EnumSet<Action> SELECT = EnumSet.of(Action.SELECT);
-  private static final EnumSet<Action> INSERT = EnumSet.of(Action.INSERT);
+  private static final Set<? extends Action> ALL = EnumSet.of(DBModelAction.ALL);
+  private static final Set<? extends Action> SELECT = EnumSet.of(DBModelAction.SELECT);
+  private static final Set<? extends Action> INSERT = EnumSet.of(DBModelAction.INSERT);
 
   static {
     USER_TO_GROUP_MAP.putAll(SUB_ADMIN.getName(), Arrays.asList("admin"));
@@ -100,7 +102,7 @@ public class TestResourceAuthorizationProviderGeneralCases {
   }
 
   private void doTestAuthorizables(
-      Subject subject, EnumSet<Action> privileges, boolean expected,
+      Subject subject, Set<? extends Action> privileges, boolean expected,
       Authorizable... authorizables) throws Exception {
     List<Authorizable> authzHierarchy = Arrays.asList(authorizables);
     Objects.ToStringHelper helper = Objects.toStringHelper("TestParameters");
@@ -113,7 +115,7 @@ public class TestResourceAuthorizationProviderGeneralCases {
 
   private void doTestResourceAuthorizationProvider(Subject subject,
       Server server, Database database, Table table,
-      EnumSet<Action> privileges, boolean expected) throws Exception {
+      Set<? extends Action> privileges, boolean expected) throws Exception {
     List<Authorizable> authzHierarchy = Arrays.asList(new Authorizable[] {
         server, database, table
     });

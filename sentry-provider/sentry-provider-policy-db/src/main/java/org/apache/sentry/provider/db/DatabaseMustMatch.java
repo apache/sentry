@@ -16,8 +16,8 @@
  */
 package org.apache.sentry.provider.db;
 
-import org.apache.sentry.core.Authorizable;
-import org.apache.sentry.core.Database;
+import org.apache.sentry.core.model.db.DBModelAuthorizable;
+import org.apache.sentry.core.model.db.Database;
 import org.apache.shiro.config.ConfigurationException;
 
 public class DatabaseMustMatch extends AbstractDBRoleValidator {
@@ -28,8 +28,8 @@ public class DatabaseMustMatch extends AbstractDBRoleValidator {
      *  Rule only applies to rules in per database policy file
      */
     if(database != null) {
-      Iterable<Authorizable> authorizables = parseRole(role);
-      for(Authorizable authorizable : authorizables) {
+      Iterable<DBModelAuthorizable> authorizables = parseRole(role);
+      for(DBModelAuthorizable authorizable : authorizables) {
         if(authorizable instanceof Database &&
             !database.equalsIgnoreCase(authorizable.getName())) {
           String msg = "Role " + role + " references db " +

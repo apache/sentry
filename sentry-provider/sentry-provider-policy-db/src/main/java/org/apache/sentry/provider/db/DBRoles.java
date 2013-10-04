@@ -20,7 +20,7 @@ import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
-import org.apache.sentry.core.Database;
+import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.provider.file.Roles;
 import org.apache.sentry.provider.file.RolesFactory;
 import org.slf4j.Logger;

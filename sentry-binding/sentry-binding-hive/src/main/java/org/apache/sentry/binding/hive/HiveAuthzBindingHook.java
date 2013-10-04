@@ -60,13 +60,14 @@ import org.apache.sentry.binding.hive.authz.HiveAuthzPrivileges.HiveOperationSco
 import org.apache.sentry.binding.hive.authz.HiveAuthzPrivileges.HiveOperationType;
 import org.apache.sentry.binding.hive.authz.HiveAuthzPrivilegesMap;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
-import org.apache.sentry.core.AccessURI;
-import org.apache.sentry.core.Action;
-import org.apache.sentry.core.Authorizable;
-import org.apache.sentry.core.Authorizable.AuthorizableType;
-import org.apache.sentry.core.Database;
-import org.apache.sentry.core.Subject;
-import org.apache.sentry.core.Table;
+import org.apache.sentry.core.common.Action;
+import org.apache.sentry.core.common.Subject;
+import org.apache.sentry.core.model.db.AccessURI;
+import org.apache.sentry.core.model.db.Database;
+import org.apache.sentry.core.model.db.DBModelAction;
+import org.apache.sentry.core.model.db.DBModelAuthorizable;
+import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
+import org.apache.sentry.core.model.db.Table;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -339,8 +340,8 @@ implements HiveDriverFilterHook {
       HiveAuthzPrivileges stmtAuthObject, HiveOperation stmtOperation) throws  AuthorizationException {
     Set<ReadEntity> inputs = context.getInputs();
     Set<WriteEntity> outputs = context.getOutputs();
-    List<List<Authorizable>> inputHierarchy = new ArrayList<List<Authorizable>>();
-    List<List<Authorizable>> outputHierarchy = new ArrayList<List<Authorizable>>();
+    List<List<DBModelAuthorizable>> inputHierarchy = new ArrayList<List<DBModelAuthorizable>>();
+    List<List<DBModelAuthorizable>> outputHierarchy = new ArrayList<List<DBModelAuthorizable>>();
 
     if(LOG.isDebugEnabled()) {
       LOG.debug("stmtAuthObject.getOperationScope() = " + stmtAuthObject.getOperationScope());
@@ -352,13 +353,13 @@ implements HiveDriverFilterHook {
 
     case SERVER :
       // validate server level privileges if applicable. Eg create UDF,register jar etc ..
-      List<Authorizable> serverHierarchy = new ArrayList<Authorizable>();
+      List<DBModelAuthorizable> serverHierarchy = new ArrayList<DBModelAuthorizable>();
       serverHierarchy.add(hiveAuthzBinding.getAuthServer());
       inputHierarchy.add(serverHierarchy);
       break;
     case DATABASE:
       // workaround for database scope statements (create/alter/drop db)
-      List<Authorizable> dbHierarchy = new ArrayList<Authorizable>();
+      List<DBModelAuthorizable> dbHierarchy = new ArrayList<DBModelAuthorizable>();
       dbHierarchy.add(hiveAuthzBinding.getAuthServer());
       dbHierarchy.add(currDB);
       inputHierarchy.add(dbHierarchy);
@@ -369,7 +370,7 @@ implements HiveDriverFilterHook {
       }
 
       for(ReadEntity readEntity:inputs) {
-        List<Authorizable> entityHierarchy = new ArrayList<Authorizable>();
+        List<DBModelAuthorizable> entityHierarchy = new ArrayList<DBModelAuthorizable>();
         entityHierarchy.add(hiveAuthzBinding.getAuthServer());
         entityHierarchy.addAll(getAuthzHierarchyFromEntity(readEntity));
         inputHierarchy.add(entityHierarchy);
@@ -387,7 +388,7 @@ implements HiveDriverFilterHook {
           checkUDFWhiteList(readEntity.getUDF().getDisplayName());
           continue;
         }
-        List<Authorizable> entityHierarchy = new ArrayList<Authorizable>();
+        List<DBModelAuthorizable> entityHierarchy = new ArrayList<DBModelAuthorizable>();
         entityHierarchy.add(hiveAuthzBinding.getAuthServer());
         entityHierarchy.addAll(getAuthzHierarchyFromEntity(readEntity));
         inputHierarchy.add(entityHierarchy);
@@ -396,7 +397,7 @@ implements HiveDriverFilterHook {
         if (filterWriteEntity(writeEntity)) {
           continue;
         }
-        List<Authorizable> entityHierarchy = new ArrayList<Authorizable>();
+        List<DBModelAuthorizable> entityHierarchy = new ArrayList<DBModelAuthorizable>();
         entityHierarchy.add(hiveAuthzBinding.getAuthServer());
         entityHierarchy.addAll(getAuthzHierarchyFromEntity(writeEntity));
         outputHierarchy.add(entityHierarchy);
@@ -404,7 +405,7 @@ implements HiveDriverFilterHook {
       // workaround for metadata queries.
       // Capture the table name in pre-analyze and include that in the entity list
       if (currTab != null) {
-        List<Authorizable> externalAuthorizableHierarchy = new ArrayList<Authorizable>();
+        List<DBModelAuthorizable> externalAuthorizableHierarchy = new ArrayList<DBModelAuthorizable>();
         externalAuthorizableHierarchy.add(hiveAuthzBinding.getAuthServer());
         externalAuthorizableHierarchy.add(currDB);
         externalAuthorizableHierarchy.add(currTab);
@@ -419,7 +420,7 @@ implements HiveDriverFilterHook {
        *  It's allowed when the user has any privilege on the current database. For application
        *  backward compatibility, we allow (optional) implicit connect permission on 'default' db.
        */
-      List<Authorizable> connectHierarchy = new ArrayList<Authorizable>();
+      List<DBModelAuthorizable> connectHierarchy = new ArrayList<DBModelAuthorizable>();
       connectHierarchy.add(hiveAuthzBinding.getAuthServer());
       // by default allow connect access to default db
       if (DEFAULT_DATABASE_NAME.equalsIgnoreCase(currDB.getName()) &&
@@ -433,7 +434,7 @@ implements HiveDriverFilterHook {
       inputHierarchy.add(connectHierarchy);
       // check if this is a create temp function and we need to validate URI
       if (udfURI != null) {
-        List<Authorizable> udfUriHierarchy = new ArrayList<Authorizable>();
+        List<DBModelAuthorizable> udfUriHierarchy = new ArrayList<DBModelAuthorizable>();
         udfUriHierarchy.add(hiveAuthzBinding.getAuthServer());
         udfUriHierarchy.add(udfURI);
         inputHierarchy.add(udfUriHierarchy);
@@ -488,8 +489,8 @@ implements HiveDriverFilterHook {
   }
 
   // Build the hierarchy of authorizable object for the given entity type.
-  private List<Authorizable> getAuthzHierarchyFromEntity(Entity entity) {
-    List<Authorizable> objectHierarchy = new ArrayList<Authorizable>();
+  private List<DBModelAuthorizable> getAuthzHierarchyFromEntity(Entity entity) {
+    List<DBModelAuthorizable> objectHierarchy = new ArrayList<DBModelAuthorizable>();
     switch (entity.getType()) {
     case TABLE:
       objectHierarchy.add(new Database(entity.getTable().getDbName()));
@@ -550,7 +551,7 @@ implements HiveDriverFilterHook {
     List<String> filteredResult = new ArrayList<String>();
     Subject subject = new Subject(userName);
     HiveAuthzPrivileges tableMetaDataPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
-        addInputObjectPriviledge(AuthorizableType.Table, EnumSet.of(Action.SELECT, Action.INSERT)).
+        addInputObjectPriviledge(AuthorizableType.Table, EnumSet.of(DBModelAction.SELECT, DBModelAction.INSERT)).
         setOperationScope(HiveOperationScope.TABLE).
         setOperationType(HiveOperationType.INFO).
         build();
@@ -561,9 +562,9 @@ implements HiveDriverFilterHook {
       Database database;
       database = new Database(dbName);
 
-      List<List<Authorizable>> inputHierarchy = new ArrayList<List<Authorizable>>();
-      List<List<Authorizable>> outputHierarchy = new ArrayList<List<Authorizable>>();
-      List<Authorizable> externalAuthorizableHierarchy = new ArrayList<Authorizable>();
+      List<List<DBModelAuthorizable>> inputHierarchy = new ArrayList<List<DBModelAuthorizable>>();
+      List<List<DBModelAuthorizable>> outputHierarchy = new ArrayList<List<DBModelAuthorizable>>();
+      List<DBModelAuthorizable> externalAuthorizableHierarchy = new ArrayList<DBModelAuthorizable>();
       externalAuthorizableHierarchy.add(hiveAuthzBinding.getAuthServer());
       externalAuthorizableHierarchy.add(database);
       externalAuthorizableHierarchy.add(table);
@@ -588,8 +589,8 @@ implements HiveDriverFilterHook {
     List<String> filteredResult = new ArrayList<String>();
     Subject subject = new Subject(userName);
     HiveAuthzPrivileges anyPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
-        addInputObjectPriviledge(AuthorizableType.Table, EnumSet.of(Action.SELECT, Action.INSERT)).
-        addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(Action.SELECT)).
+        addInputObjectPriviledge(AuthorizableType.Table, EnumSet.of(DBModelAction.SELECT, DBModelAction.INSERT)).
+        addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.SELECT)).
         setOperationScope(HiveOperationScope.CONNECT).
         setOperationType(HiveOperationType.QUERY).
         build();
@@ -608,9 +609,9 @@ implements HiveDriverFilterHook {
 
       database = new Database(dbName);
 
-      List<List<Authorizable>> inputHierarchy = new ArrayList<List<Authorizable>>();
-      List<List<Authorizable>> outputHierarchy = new ArrayList<List<Authorizable>>();
-      List<Authorizable> externalAuthorizableHierarchy = new ArrayList<Authorizable>();
+      List<List<DBModelAuthorizable>> inputHierarchy = new ArrayList<List<DBModelAuthorizable>>();
+      List<List<DBModelAuthorizable>> outputHierarchy = new ArrayList<List<DBModelAuthorizable>>();
+      List<DBModelAuthorizable> externalAuthorizableHierarchy = new ArrayList<DBModelAuthorizable>();
       externalAuthorizableHierarchy.add(hiveAuthzBinding.getAuthServer());
       externalAuthorizableHierarchy.add(database);
       externalAuthorizableHierarchy.add(Table.ALL);

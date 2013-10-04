@@ -66,7 +66,11 @@ limitations under the License.
     </dependency>
     <dependency>
       <groupId>org.apache.sentry</groupId>
-      <artifactId>sentry-core</artifactId>
+      <artifactId>sentry-core-common</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.sentry</groupId>
+      <artifactId>sentry-core-model-db</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.sentry</groupId>
