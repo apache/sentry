@@ -104,7 +104,9 @@ public class HiveAuthzConf extends Configuration {
     "stddev,stddev_pop,stddev_samp,str_to_map,struct,substr,substring,sum,tan,to_date," +
     "to_utc_timestamp,translate,trim,ucase,unhex,union_map,unix_timestamp,upper,var_pop,var_samp," +
     "variance,weekofyear,when,xpath,xpath_boolean,xpath_double,xpath_float,xpath_int,xpath_long," +
-    "xpath_number,xpath_short,xpath_string,year";
+    "xpath_number,xpath_short,xpath_string,year,base64,cume_dist, decode, dense_rank, first_value," +
+    "lag, last_value, lead, noop, noopwithmap, ntile, nvl, percent_rank, rank, to_unix_timestamp," +
+    "unbase64,windowingtablefunction";
 
   // map of current property names - > deprecated property names.
   // The binding layer code should work if the deprecated property names are provided,
