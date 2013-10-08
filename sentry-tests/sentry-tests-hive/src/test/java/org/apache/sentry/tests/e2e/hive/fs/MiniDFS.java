@@ -14,56 +14,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.tests.e2e.hive;
+package org.apache.sentry.tests.e2e.hive.fs;
+
+import junit.framework.Assert;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hdfs.MiniDFSCluster;
 
 import java.io.File;
 import java.io.IOException;
 
-import junit.framework.Assert;
+public class MiniDFS extends AbstractDFS {
+  private static MiniDFSCluster dfsCluster;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-
-public abstract class AbstractTestWithStaticDFS extends AbstractTestWithStaticConfiguration {
-
-  protected static MiniDFSCluster dfsCluster;
-  protected static Path dfsBaseDir;
-
-  @Before
-  public void setupTestWithDFS() throws IOException {
-    Assert.assertTrue(dfsBaseDir.toString(), fileSystem.delete(dfsBaseDir, true));
-    Assert.assertTrue(dfsBaseDir.toString(), fileSystem.mkdirs(dfsBaseDir));
-  }
-
-  protected static Path assertCreateDfsDir(Path dir) throws IOException {
-    if(!fileSystem.isDirectory(dir)) {
-      Assert.assertTrue("Failed creating " + dir, fileSystem.mkdirs(dir));
-    }
-    return dir;
-  }
-  @BeforeClass
-  public static void setupTestWithStaticDFS()
-      throws Exception {
+  MiniDFS(File baseDir) throws Exception {
     Configuration conf = new Configuration();
     File dfsDir = assertCreateDir(new File(baseDir, "dfs"));
     conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, dfsDir.getPath());
     dfsCluster = new MiniDFSCluster.Builder(conf).numDataNodes(2).build();
     fileSystem = dfsCluster.getFileSystem();
     dfsBaseDir = assertCreateDfsDir(new Path(new Path(fileSystem.getUri()), "/base"));
-    hiveServer = HiveServerFactory.create(properties, baseDir, confDir, logDir, policyFile, fileSystem);
-    hiveServer.start();
   }
 
-  @AfterClass
-  public static void tearDownTestWithStaticDFS() throws Exception {
+  @Override
+  public void tearDown() throws Exception {
     if(dfsCluster != null) {
       dfsCluster.shutdown();
       dfsCluster = null;
     }
+  }
+
+  //Utilities
+  private static File assertCreateDir(File dir) {
+    if(!dir.isDirectory()) {
+      Assert.assertTrue("Failed creating " + dir, dir.mkdirs());
+    }
+    return dir;
   }
 }

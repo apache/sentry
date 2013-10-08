@@ -33,7 +33,7 @@ import org.junit.Test;
 
 import com.google.common.io.Resources;
 
-public class TestUserManagement extends AbstractTestWithStaticLocalFS {
+public class TestUserManagement extends AbstractTestWithStaticConfiguration {
   private static final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private static final String dbName = "db1";
   private static final String tableName = "t1";

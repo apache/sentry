@@ -31,7 +31,7 @@ import org.junit.Test;
 
 import com.google.common.io.Resources;
 
-public class TestPrivilegeAtTransform extends AbstractTestWithStaticLocalFS {
+public class TestPrivilegeAtTransform extends AbstractTestWithStaticConfiguration {
   private Context context;
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private File dataDir;

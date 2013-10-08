@@ -26,9 +26,12 @@ import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.sentry.tests.e2e.hive.fs.DFSFactory;
+import org.apache.sentry.tests.e2e.hive.fs.DFS;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServer;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,15 +82,16 @@ public abstract class AbstractTestWithStaticConfiguration {
   protected static File logDir;
   protected static File confDir;
   protected static File dataDir;
-  protected static File policyFile;
+  protected static File policyFileLocation;
   protected static HiveServer hiveServer;
   protected static FileSystem fileSystem;
+  protected static DFS dfs;
   protected static Map<String, String> properties;
   protected Context context;
 
   public Context createContext() throws Exception {
     return new Context(hiveServer, fileSystem,
-        baseDir, confDir, dataDir, policyFile);
+        baseDir, confDir, dataDir, policyFileLocation);
   }
   protected void dropDb(String user, String...dbs) throws Exception {
     Connection connection = context.createConnection(user, "password");
@@ -133,9 +137,6 @@ public abstract class AbstractTestWithStaticConfiguration {
     return dir;
   }
 
-  protected FileSystem getFileSystem() {
-    return fileSystem;
-  }
   @BeforeClass
   public static void setupTestStaticConfiguration()
       throws Exception {
@@ -145,7 +146,19 @@ public abstract class AbstractTestWithStaticConfiguration {
     logDir = assertCreateDir(new File(baseDir, "log"));
     confDir = assertCreateDir(new File(baseDir, "etc"));
     dataDir = assertCreateDir(new File(baseDir, "data"));
-    policyFile = new File(confDir, HiveServerFactory.AUTHZ_PROVIDER_FILENAME);
+    policyFileLocation = new File(confDir, HiveServerFactory.AUTHZ_PROVIDER_FILENAME);
+
+    String dfsType = System.getProperty(DFSFactory.FS_TYPE);
+    dfs = DFSFactory.create(dfsType, baseDir);
+
+    fileSystem = dfs.getFileSystem();
+    hiveServer = HiveServerFactory.create(properties, baseDir, confDir, logDir, policyFileLocation, fileSystem);
+    hiveServer.start();
+  }
+
+  @Before
+  public void setup() throws Exception{
+    dfs.createBaseDir();
   }
 
   @AfterClass
@@ -160,5 +173,6 @@ public abstract class AbstractTestWithStaticConfiguration {
       }
       baseDir = null;
     }
+    dfs.tearDown();
   }
 }

@@ -28,7 +28,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class TestUriPermissions extends AbstractTestWithStaticLocalFS {
+public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
   private Context context;
   private PolicyFile policyFile;
 
@@ -104,7 +104,7 @@ public class TestUriPermissions extends AbstractTestWithStaticLocalFS {
     String dbName = "db1";
     String tabName = "tab1";
     String newPartitionDir = "foo";
-    String tabDir = "file://" + hiveServer.getProperty(HiveServerFactory.WAREHOUSE_DIR) +
+    String tabDir = hiveServer.getProperty(HiveServerFactory.WAREHOUSE_DIR) +
       "/" + tabName + "/" + newPartitionDir;
     Connection userConn = null;
     Statement userStmt = null;

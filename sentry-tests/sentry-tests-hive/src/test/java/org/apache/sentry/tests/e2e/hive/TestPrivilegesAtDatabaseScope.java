@@ -42,7 +42,7 @@ import com.google.common.io.Resources;
 /* Tests privileges at table scope within a single database.
  */
 
-public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
+public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfiguration {
 
   private Context context;
   private File dataFile;
@@ -54,7 +54,9 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
   @Before
   public void setup() throws Exception {
     testProperties = new HashMap<String, String>();
+
     policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    context = createContext();
   }
 
   @After
@@ -69,7 +71,6 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
    */
   @Test
   public void testAllPrivilege() throws Exception {
-    context = createContext(testProperties);
 
     //copy data file to test dir
     File dataDir = context.getDataDir();
@@ -180,7 +181,6 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
    */
   @Test
   public void testAllPrivilegeOnObjectOwnedByAdmin() throws Exception {
-    context = createContext(testProperties);
 
     //copy data file to test dir
     File dataDir = context.getDataDir();
@@ -306,7 +306,6 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
    */
   @Test
   public void testUseDbPrivilege() throws Exception {
-    context = createContext(testProperties);
 
     policyFile
         .addRolesToGroup(USERGROUP1, "all_db1")
@@ -370,7 +369,6 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
    */
   @Test
   public void testDefaultDbPrivilege() throws Exception {
-    context = createContext(testProperties);
 
     policyFile
         .addRolesToGroup(USERGROUP1, "all_db1")
@@ -400,56 +398,6 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithHiveServer {
     connection = context.createConnection(USER3_1, "hive");
     statement = context.createStatement(connection);
     statement.execute("use default");
-    context.close();
-  }
-
-  /**
-   * Test access to default DB with explicit privilege requirement
-   * Admin should be able to run use default with server level access
-   * User with db level access should be able to run use default
-   * User with table level access should be able to run use default
-   * User with no access to default db objects, should NOT be able run use default
-   * @throws Exception
-   */
-  @Test
-  public void testDefaultDbRestrictivePrivilege() throws Exception {
-    testProperties.put(AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), "true");
-    context = createContext(testProperties);
-
-    policyFile
-        .addRolesToGroup(USERGROUP1, "all_default")
-        .addRolesToGroup(USERGROUP2, "select_default")
-        .addRolesToGroup(USERGROUP3, "all_db1")
-        .addPermissionsToRole("all_default", "server=server1->db=default")
-        .addPermissionsToRole("select_default", "server=server1->db=default->table=tab_2->action=select")
-        .addPermissionsToRole("all_db1", "server=server1->db=DB_1")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
-
-    Connection connection = context.createConnection(ADMIN1, "hive");
-    Statement statement = context.createStatement(connection);
-    statement.execute("use default");
-    context.close();
-
-    connection = context.createConnection(USER1_1, "hive");
-    statement = context.createStatement(connection);
-    statement.execute("use default");
-    context.close();
-
-    connection = context.createConnection(USER2_1, "hive");
-    statement = context.createStatement(connection);
-    statement.execute("use default");
-    context.close();
-
-    connection = context.createConnection(USER3_1, "hive");
-    statement = context.createStatement(connection);
-    try {
-      // user3 doesn't have any implicit permission for default
-      statement.execute("use default");
-      assertFalse("user3 shouldn't be able switch to default", true);
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
     context.close();
   }
 

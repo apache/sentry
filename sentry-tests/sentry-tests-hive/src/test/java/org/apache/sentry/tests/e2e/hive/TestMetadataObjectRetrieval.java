@@ -34,7 +34,7 @@ import org.junit.Test;
 import com.google.common.io.Resources;
 
 public class TestMetadataObjectRetrieval extends
-AbstractTestWithStaticLocalFS {
+AbstractTestWithStaticConfiguration {
   private PolicyFile policyFile;
   private File dataFile;
 

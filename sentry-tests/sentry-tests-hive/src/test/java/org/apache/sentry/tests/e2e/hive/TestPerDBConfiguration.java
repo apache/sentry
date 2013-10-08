@@ -37,7 +37,7 @@ import com.google.common.io.Resources;
 /**
  * Test privileges per database policy files
  */
-public class TestPerDBConfiguration extends AbstractTestWithStaticLocalFS {
+public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration {
   private static final String MULTI_TYPE_DATA_FILE_NAME = "emp.dat";
   private static final String DB2_POLICY_FILE = "db2-policy-file.ini";
 

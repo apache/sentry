@@ -42,6 +42,7 @@ public abstract class AbstractTestWithHiveServer {
   protected File policyFile;
   protected HiveServer hiveServer;
   protected FileSystem fileSystem;
+
   protected static final String ADMIN1 = StaticUserGroup.ADMIN1,
       ADMINGROUP = StaticUserGroup.ADMINGROUP,
       USER1_1 = StaticUserGroup.USER1_1,

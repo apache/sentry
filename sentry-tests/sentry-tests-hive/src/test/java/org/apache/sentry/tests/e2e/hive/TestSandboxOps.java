@@ -35,7 +35,7 @@ import org.junit.Test;
 
 import com.google.common.io.Resources;
 
-public class TestSandboxOps  extends AbstractTestWithStaticDFS {
+public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
   private PolicyFile policyFile;
   private File dataFile;
   private String loadData;
@@ -452,8 +452,8 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
         "test-" + (counter++)));
     File restrictedDir = assertCreateDir(new File(baseDir,
         "test-" + (counter++)));
-    Path allowedDfsDir = assertCreateDfsDir(new Path(dfsBaseDir, "test-" + (counter++)));
-    Path restrictedDfsDir = assertCreateDfsDir(new Path(dfsBaseDir, "test-" + (counter++)));
+    Path allowedDfsDir = dfs.assertCreateDir("test-" + (counter++));
+    Path restrictedDfsDir = dfs.assertCreateDir("test-" + (counter++));
 
     policyFile
         .addRolesToGroup(USERGROUP1, "all_db1", "load_data")
@@ -524,8 +524,8 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
         .addRolesToGroup(USERGROUP1, "select_tbl1")
         .addRolesToGroup(USERGROUP2, "select_tbl2")
         .addPermissionsToRole("select_tbl1", "server=server1->db=db1->table=tbl1->action=select")
-        .addDatabase("db2", dfsBaseDir.toUri().toString() + "/" + DB2_POLICY_FILE)
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
+        .addDatabase("db2", dfs.getBaseDir().toUri().toString() + "/" + DB2_POLICY_FILE)
         .write(context.getPolicyFile());
 
     File db2PolicyFileHandle = new File(baseDir.getPath(), DB2_POLICY_FILE);
@@ -535,7 +535,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticDFS {
         .addRolesToGroup(USERGROUP2, "select_tbl2")
         .addPermissionsToRole("select_tbl2", "server=server1->db=db2->table=tbl2->action=select")
         .write(db2PolicyFileHandle);
-    PolicyFiles.copyFilesToDir(dfsCluster.getFileSystem(), dfsBaseDir, db2PolicyFileHandle);
+    PolicyFiles.copyFilesToDir(fileSystem, dfs.getBaseDir(), db2PolicyFileHandle);
 
     // setup db objects needed by the test
     Connection connection = context.createConnection(ADMIN1, "hive");

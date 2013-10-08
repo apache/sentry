@@ -33,7 +33,7 @@ import org.junit.Test;
 
 import com.google.common.io.Resources;
 
-public class TestMovingToProduction extends AbstractTestWithStaticLocalFS {
+public class TestMovingToProduction extends AbstractTestWithStaticConfiguration {
   private Context context;
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private PolicyFile policyFile;
@@ -104,7 +104,7 @@ public class TestMovingToProduction extends AbstractTestWithStaticLocalFS {
     statement.execute("DROP TABLE IF EXISTS " + tableName1);
     statement.execute("create table " + tableName1
         + " (under_col int comment 'the under column', value string)");
-    statement.execute("LOAD DATA INPATH 'file://" + dataDir.getPath()
+    statement.execute("LOAD DATA LOCAL INPATH 'file://" + dataDir.getPath()
         + "' INTO TABLE " + tableName1);
 
     policyFile
@@ -183,7 +183,7 @@ public class TestMovingToProduction extends AbstractTestWithStaticLocalFS {
     statement.execute("DROP TABLE IF EXISTS " + dbName1 + "." + tableName1);
     statement.execute("create table " + dbName1 + "." + tableName1
         + " (under_col int comment 'the under column', value string)");
-    statement.execute("LOAD DATA INPATH 'file://" + dataDir.getPath()
+    statement.execute("LOAD DATA LOCAL INPATH 'file://" + dataDir.getPath()
         + "' INTO TABLE " + dbName1 + "." + tableName1);
 
     policyFile

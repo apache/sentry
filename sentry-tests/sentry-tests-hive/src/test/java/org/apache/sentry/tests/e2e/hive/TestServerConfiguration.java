@@ -212,4 +212,55 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
     }
 
   }
+
+  /**
+   * Test access to default DB with explicit privilege requirement
+   * Admin should be able to run use default with server level access
+   * User with db level access should be able to run use default
+   * User with table level access should be able to run use default
+   * User with no access to default db objects, should NOT be able run use default
+   * @throws Exception
+   */
+  @Test
+  public void testDefaultDbRestrictivePrivilege() throws Exception {
+    properties.put(HiveAuthzConf.AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), "true");
+    context = createContext(properties);
+
+    policyFile
+        .addRolesToGroup(USERGROUP1, "all_default")
+        .addRolesToGroup(USERGROUP2, "select_default")
+        .addRolesToGroup(USERGROUP3, "all_db1")
+        .addPermissionsToRole("all_default", "server=server1->db=default")
+        .addPermissionsToRole("select_default", "server=server1->db=default->table=tab_2->action=select")
+        .addPermissionsToRole("all_db1", "server=server1->db=DB_1")
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
+        .write(context.getPolicyFile());
+
+    Connection connection = context.createConnection(ADMIN1, "hive");
+    Statement statement = context.createStatement(connection);
+    statement.execute("use default");
+    context.close();
+
+    connection = context.createConnection(USER1_1, "hive");
+    statement = context.createStatement(connection);
+    statement.execute("use default");
+    context.close();
+
+    connection = context.createConnection(USER2_1, "hive");
+    statement = context.createStatement(connection);
+    statement.execute("use default");
+    context.close();
+
+    connection = context.createConnection(USER3_1, "hive");
+    statement = context.createStatement(connection);
+    try {
+      // user3 doesn't have any implicit permission for default
+      statement.execute("use default");
+      assertFalse("user3 shouldn't be able switch to default", true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    context.close();
+  }
+
 }

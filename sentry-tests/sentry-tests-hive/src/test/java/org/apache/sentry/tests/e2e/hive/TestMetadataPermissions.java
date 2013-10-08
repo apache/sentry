@@ -27,7 +27,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 
-public class TestMetadataPermissions extends AbstractTestWithStaticLocalFS {
+public class TestMetadataPermissions extends AbstractTestWithStaticConfiguration {
   private Context context;
   private PolicyFile policyFile;
 
@@ -55,7 +55,6 @@ public class TestMetadataPermissions extends AbstractTestWithStaticLocalFS {
         adminStmt.execute("CREATE TABLE " + tabName + " (id int)");
       }
     }
-    context.close();
   }
 
   @After

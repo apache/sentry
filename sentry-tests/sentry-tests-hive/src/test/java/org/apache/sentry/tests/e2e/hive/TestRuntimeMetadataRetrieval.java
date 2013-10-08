@@ -41,7 +41,7 @@ import com.google.common.io.Resources;
  */
 public class TestRuntimeMetadataRetrieval
     extends
-      AbstractTestWithStaticLocalFS {
+      AbstractTestWithStaticConfiguration {
   private Context context;
   private PolicyFile policyFile;
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";

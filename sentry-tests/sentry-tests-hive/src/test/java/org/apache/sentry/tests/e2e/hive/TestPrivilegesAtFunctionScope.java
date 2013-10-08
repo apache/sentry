@@ -32,7 +32,7 @@ import org.junit.Test;
 
 import com.google.common.io.Resources;
 
-public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticLocalFS {
+public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfiguration {
   private Context context;
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private File dataDir;
@@ -87,7 +87,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticLocalFS
     statement.execute("DROP TABLE IF EXISTS " + dbName1 + "." + tableName1);
     statement.execute("create table " + dbName1 + "." + tableName1
         + " (under_col int comment 'the under column', value string)");
-    statement.execute("LOAD DATA INPATH '" + dataFile.getPath() + "' INTO TABLE "
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE "
         + dbName1 + "." + tableName1);
     statement.execute("DROP TEMPORARY FUNCTION IF EXISTS printf_test");
     statement.execute("DROP TEMPORARY FUNCTION IF EXISTS printf_test_2");
@@ -161,7 +161,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticLocalFS
     statement.execute("USE " + dbName1);
     statement.execute("create table " + tableName1
         + " (under_col int comment 'the under column', value string)");
-    statement.execute("LOAD DATA INPATH '" + dataFile.getPath() + "' INTO TABLE "
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE "
         + dbName1 + "." + tableName1);
     statement.execute("SELECT rand(), concat(value, '_foo') FROM " + tableName1);
 

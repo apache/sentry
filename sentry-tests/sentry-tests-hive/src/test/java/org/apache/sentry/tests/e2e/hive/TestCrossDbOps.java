@@ -41,7 +41,7 @@ import com.google.common.io.Resources;
 
 /* Tests privileges at table scope with cross database access */
 
-public class TestCrossDbOps extends AbstractTestWithStaticLocalFS {
+public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
   private File dataFile;
   private PolicyFile policyFile;
   private String loadData;

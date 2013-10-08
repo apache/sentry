@@ -31,7 +31,7 @@ import org.junit.Test;
 
 import com.google.common.io.Resources;
 
-public class TestExportImportPrivileges extends AbstractTestWithStaticDFS {
+public class TestExportImportPrivileges extends AbstractTestWithStaticConfiguration {
   private File dataFile;
   private PolicyFile policyFile;
 

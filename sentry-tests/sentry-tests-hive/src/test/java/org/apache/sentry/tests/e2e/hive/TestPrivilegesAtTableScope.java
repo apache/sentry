@@ -40,7 +40,7 @@ import com.google.common.io.Resources;
 /* Tests privileges at table scope within a single database.
  */
 
-public class TestPrivilegesAtTableScope extends AbstractTestWithStaticLocalFS {
+public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfiguration {
 
   private Context context;
   private PolicyFile policyFile;

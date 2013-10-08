@@ -135,7 +135,7 @@ public class HiveServerFactory {
     Assert.assertNotNull(hadoopBinPath, "Hadoop Bin");
     File hadoopBin = new File(hadoopBinPath);
     if(!hadoopBin.isFile()) {
-      Assert.fail("Path to hadoop bin " + hadoopBin.getPath() + "is invalid. "
+      Assert.fail("Path to hadoop bin " + hadoopBin.getPath() + " is invalid. "
           + "Perhaps you missed the download-hadoop profile.");
     }
     /*
