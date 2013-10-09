@@ -18,13 +18,33 @@ package org.apache.sentry.provider.file;
 
 import javax.annotation.Nullable;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
 
 /**
- * Interface for getting roles for a specific database/group.
- * Perhaps this should be abstracted out further; right now it is currently
- * very database-model specific.
+ * Class providing storage of roles
  */
-public interface Roles {
-  public ImmutableSet<String> getRoles(@Nullable String database, String group, Boolean isURI);
+public class Roles {
+  private final ImmutableSetMultimap<String, String> globalRoles;
+  private final ImmutableMap<String, ImmutableSetMultimap<String, String>> perDatabaseRoles;
+
+  public Roles() {
+    this(ImmutableSetMultimap.<String, String>of(),
+        ImmutableMap.<String, ImmutableSetMultimap<String, String>>of());
+  }
+
+  public Roles(ImmutableSetMultimap<String, String> globalRoles,
+      ImmutableMap<String, ImmutableSetMultimap<String, String>> perDatabaseRoles) {
+    this.globalRoles = globalRoles;
+    this.perDatabaseRoles = perDatabaseRoles;
+  }
+
+  public ImmutableSetMultimap<String, String> getGlobalRoles() {
+    return globalRoles;
+  }
+
+  public ImmutableMap<String, ImmutableSetMultimap<String, String>> getPerDatabaseRoles() {
+    return perDatabaseRoles;
+  }
 }

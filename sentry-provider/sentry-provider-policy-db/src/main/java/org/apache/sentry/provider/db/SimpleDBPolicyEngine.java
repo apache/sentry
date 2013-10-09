@@ -16,8 +16,11 @@
  */
 package org.apache.sentry.provider.db;
 
+import javax.annotation.Nullable;
+
 import java.io.IOException;
 import java.util.List;
+import java.util.Map.Entry;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.sentry.core.common.Authorizable;
@@ -32,6 +35,8 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Lists;
 
@@ -53,7 +58,7 @@ public class SimpleDBPolicyEngine implements PolicyEngine {
     List<? extends RoleValidator> validators =
       Lists.newArrayList(new ServersAllIsInvalid(), new DatabaseMustMatch(),
         new DatabaseRequiredInRole(), new ServerNameMustMatch(serverName));
-    parser = new SimplePolicyParser(conf, resourcePath, new DBRoles.DBRolesFactory(), validators);
+    parser = new SimplePolicyParser(conf, resourcePath, validators);
   }
 
   /**
@@ -77,11 +82,54 @@ public class SimpleDBPolicyEngine implements PolicyEngine {
     }
     ImmutableSetMultimap.Builder<String, String> resultBuilder = ImmutableSetMultimap.builder();
     for(String group : groups) {
-      resultBuilder.putAll(group, parser.getRoles(database, group, isURI));
+      resultBuilder.putAll(group, getDBRoles(database, group, isURI, parser.getRoles()));
     }
     ImmutableSetMultimap<String, String> result = resultBuilder.build();
     if(LOGGER.isDebugEnabled()) {
       LOGGER.debug("result = " + result);
+    }
+    return result;
+  }
+
+  private ImmutableSet<String> getDBRoles(@Nullable String database,
+      String group, Boolean isURI, Roles roles) {
+    ImmutableSetMultimap<String, String> globalRoles = roles.getGlobalRoles();
+    ImmutableMap<String, ImmutableSetMultimap<String, String>> perDatabaseRoles = roles.getPerDatabaseRoles();
+    ImmutableSet.Builder<String> resultBuilder = ImmutableSet.builder();
+    String allowURIPerDbFile =
+        System.getProperty(SimpleDBPolicyEngine.ACCESS_ALLOW_URI_PER_DB_POLICYFILE);
+    Boolean consultPerDbRolesForURI = isURI && ("true".equalsIgnoreCase(allowURIPerDbFile));
+
+    // handle Database.ALL
+    if (Database.ALL.getName().equals(database)) {
+      for(Entry<String, ImmutableSetMultimap<String, String>> dbListEntry : perDatabaseRoles.entrySet()) {
+        if (dbListEntry.getValue().containsKey(group)) {
+          resultBuilder.addAll(dbListEntry.getValue().get(group));
+        }
+      }
+    } else if(database != null) {
+      ImmutableSetMultimap<String, String> dbPolicies =  perDatabaseRoles.get(database);
+      if(dbPolicies != null && dbPolicies.containsKey(group)) {
+        resultBuilder.addAll(dbPolicies.get(group));
+      }
+    }
+
+    if (consultPerDbRolesForURI) {
+      for(String db : perDatabaseRoles.keySet()) {
+        ImmutableSetMultimap<String, String> dbPolicies =  perDatabaseRoles.get(db);
+        if(dbPolicies != null && dbPolicies.containsKey(group)) {
+          resultBuilder.addAll(dbPolicies.get(group));
+        }
+      }
+    }
+
+    if(globalRoles.containsKey(group)) {
+      resultBuilder.addAll(globalRoles.get(group));
+    }
+    ImmutableSet<String> result = resultBuilder.build();
+    if(LOGGER.isDebugEnabled()) {
+      LOGGER.debug("Database {}, Group {}, Result {}",
+          new Object[]{ database, group, result});
     }
     return result;
   }

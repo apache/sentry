@@ -68,22 +68,20 @@ public class SimplePolicyParser {
   private final Path resourcePath;
   private final List<Path> perDbResources = Lists.newArrayList();
   private final AtomicReference<Roles> rolesReference;
-  private final RolesFactory rolesFactory;
   private final Configuration conf;
   private final List<? extends RoleValidator> validators;
 
-  public SimplePolicyParser(String resourcePath, RolesFactory rolesFactory, List<? extends RoleValidator> validators) throws IOException {
-    this(new Configuration(), new Path(resourcePath), rolesFactory, validators);
+  public SimplePolicyParser(String resourcePath, List<? extends RoleValidator> validators) throws IOException {
+    this(new Configuration(), new Path(resourcePath),  validators);
   }
 
   @VisibleForTesting
-  public SimplePolicyParser(Configuration conf, Path resourcePath, RolesFactory rolesFactory, List<? extends RoleValidator> validators) throws IOException {
+  public SimplePolicyParser(Configuration conf, Path resourcePath, List<? extends RoleValidator> validators) throws IOException {
     this.resourcePath = resourcePath;
     this.fileSystem = resourcePath.getFileSystem(conf);
     this.rolesReference = new AtomicReference<Roles>();
-    this.rolesReference.set(rolesFactory.createRoles());
+    this.rolesReference.set(new Roles());
     this.conf = conf;
-    this.rolesFactory = rolesFactory;
     this.validators = validators;
     parse();
   }
@@ -93,7 +91,7 @@ public class SimplePolicyParser {
    */
   protected void parse() {
     LOGGER.info("Parsing " + resourcePath);
-    Roles roles = rolesFactory.createRoles();
+    Roles roles = new Roles();
     try {
       perDbResources.clear();
       Ini ini = PolicyFiles.loadFromPath(fileSystem, resourcePath);
@@ -137,7 +135,7 @@ public class SimplePolicyParser {
           }
         }
       }
-      roles = rolesFactory.createRoles(globalRoles, ImmutableMap.copyOf(perDatabaseRoles));
+      roles = new Roles(globalRoles, ImmutableMap.copyOf(perDatabaseRoles));
     } catch (Exception e) {
       LOGGER.error("Error processing file, ignoring " + resourcePath, e);
     }
@@ -235,7 +233,7 @@ public class SimplePolicyParser {
     return resultBuilder.build();
   }
 
-  public ImmutableSet<String> getRoles(@Nullable String database, String group, Boolean isURI) {
-    return rolesReference.get().getRoles(database, group, isURI);
+  public Roles getRoles() {
+    return rolesReference.get();
   }
 }
