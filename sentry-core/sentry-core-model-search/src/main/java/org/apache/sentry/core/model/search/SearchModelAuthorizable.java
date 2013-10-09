@@ -16,10 +16,13 @@
  */
 package org.apache.sentry.core.model.search;
 
-public class SolrConstants {
+import org.apache.sentry.core.common.Authorizable;
 
-  public static final String ALL = "*";
-  public static final String QUERY = "query";
-  public static final String UPDATE = "update";
+public interface SearchModelAuthorizable extends Authorizable {
 
+  public enum AuthorizableType {
+    Collection
+  };
+
+  public AuthorizableType getAuthzType();
 }

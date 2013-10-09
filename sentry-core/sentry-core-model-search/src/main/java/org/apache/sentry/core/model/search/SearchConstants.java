@@ -16,24 +16,10 @@
  */
 package org.apache.sentry.core.model.search;
 
-import org.apache.sentry.core.common.Action;
+public class SearchConstants {
 
-/**
- * Represents actions in the Solr model.
- */
-public enum SolrModelAction implements Action {
+  public static final String ALL = "*";
+  public static final String QUERY = "query";
+  public static final String UPDATE = "update";
 
-  UPDATE(SolrConstants.UPDATE),
-  QUERY(SolrConstants.QUERY),
-  ALL(SolrConstants.ALL);
-
-  private final String value;
-  private SolrModelAction(String value) {
-    this.value = value;
-  }
-
-  @Override
-  public String getValue() {
-    return value;
-  }
 }

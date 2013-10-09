@@ -16,12 +16,12 @@
  */
 package org.apache.sentry.core.model.search;
 
-public class Collection implements SolrModelAuthorizable {
+public class Collection implements SearchModelAuthorizable {
 
   /**
    * Represents all tables
    */
-  public static final Collection ALL = new Collection(SolrConstants.ALL);
+  public static final Collection ALL = new Collection(SearchConstants.ALL);
 
   private final String name;
 

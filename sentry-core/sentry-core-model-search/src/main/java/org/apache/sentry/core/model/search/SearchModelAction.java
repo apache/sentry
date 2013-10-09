@@ -16,13 +16,24 @@
  */
 package org.apache.sentry.core.model.search;
 
-import org.apache.sentry.core.common.Authorizable;
+import org.apache.sentry.core.common.Action;
 
-public interface SolrModelAuthorizable extends Authorizable {
+/**
+ * Represents actions in the Search model.
+ */
+public enum SearchModelAction implements Action {
 
-  public enum AuthorizableType {
-    Collection
-  };
+  UPDATE(SearchConstants.UPDATE),
+  QUERY(SearchConstants.QUERY),
+  ALL(SearchConstants.ALL);
 
-  public AuthorizableType getAuthzType();
+  private final String value;
+  private SearchModelAction(String value) {
+    this.value = value;
+  }
+
+  @Override
+  public String getValue() {
+    return value;
+  }
 }
