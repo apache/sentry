@@ -50,6 +50,10 @@ limitations under the License.
       <groupId>org.apache.sentry</groupId>
       <artifactId>sentry-provider-policy-db</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.apache.sentry</groupId>
+      <artifactId>sentry-provider-policy-search</artifactId>
+    </dependency>
   </dependencies>
   <build>
     <plugins>

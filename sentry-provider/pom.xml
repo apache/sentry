@@ -32,6 +32,7 @@ limitations under the License.
   <modules>
     <module>sentry-provider-file</module>
     <module>sentry-provider-policy-db</module>
+    <module>sentry-provider-policy-search</module>
   </modules>
 
 </project>
