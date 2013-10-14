@@ -14,13 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.provider.file;
+package org.apache.sentry.provider.common;
 
-import javax.annotation.Nullable;
+import java.util.List;
 
-import org.apache.shiro.config.ConfigurationException;
+/**
+ * Interface so the Groups class is easier to unit test with.
+ */
+public interface GroupMappingService {
 
-public interface RoleValidator {
-
-  public void validate(@Nullable String database, String role) throws ConfigurationException;
+  /**
+   * @return non-null list of groups for user
+   */
+  public List<String> getGroups(String user);
 }

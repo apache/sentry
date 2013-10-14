@@ -28,10 +28,9 @@ import org.apache.sentry.core.common.Action;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.AuthorizationProvider;
 import org.apache.sentry.core.common.Subject;
-import org.apache.sentry.core.model.db.Database;
-import org.apache.sentry.core.model.db.Server;
-import org.apache.sentry.core.model.db.ServerResource;
-import org.apache.sentry.core.model.db.Table;
+import org.apache.sentry.provider.common.GroupMappingService;
+import org.apache.sentry.provider.common.PermissionFactory;
+import org.apache.sentry.provider.common.PolicyEngine;
 import org.apache.shiro.authz.Permission;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,11 +48,10 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
   private final PermissionFactory permissionFactory;
 
   public ResourceAuthorizationProvider(PolicyEngine policy,
-      GroupMappingService groupService, PermissionFactory permissionFactory) {
-    Preconditions.checkNotNull(permissionFactory, "Permission factory cannot be null");
+      GroupMappingService groupService) {
     this.policy = policy;
     this.groupService = groupService;
-    this.permissionFactory = permissionFactory;
+    this.permissionFactory = policy.getPermissionFactory();
   }
 
   /***

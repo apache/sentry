@@ -243,7 +243,12 @@ limitations under the License.
         <artifactId>sentry-binding-hive</artifactId>
         <version>${project.version}</version>
         <scope>test</scope>
-       </dependency>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.sentry</groupId>
+        <artifactId>sentry-provider-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
       <dependency>
         <groupId>org.apache.sentry</groupId>
         <artifactId>sentry-provider-file</artifactId>

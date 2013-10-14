@@ -22,7 +22,6 @@ import java.io.IOException;
 import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.sentry.provider.file.AbstractTestSimplePolicyEngine;
 import org.apache.sentry.provider.file.PolicyFiles;
 
 public class TestSimpleDBPolicyEngineLocalFS extends AbstractTestSimplePolicyEngine {
@@ -33,7 +32,7 @@ public class TestSimpleDBPolicyEngineLocalFS extends AbstractTestSimplePolicyEng
     Assert.assertNotNull(baseDir);
     Assert.assertTrue(baseDir.isDirectory() || baseDir.mkdirs());
     PolicyFiles.copyToDir(baseDir, "test-authz-provider.ini", "test-authz-provider-other-group.ini");
-    setPolicy(new SimpleDBPolicyEngine(new File(baseDir, "test-authz-provider.ini").getPath(), "server1"));
+    setPolicy(new DBPolicyFileBackend(new File(baseDir, "test-authz-provider.ini").getPath(), "server1"));
   }
   @Override
   protected void beforeTeardown() throws IOException {

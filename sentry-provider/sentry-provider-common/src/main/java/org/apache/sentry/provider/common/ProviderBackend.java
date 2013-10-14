@@ -14,13 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.provider.file;
+package org.apache.sentry.provider.common;
 
-import org.apache.shiro.authz.Permission;
+import javax.annotation.Nullable;
+import java.util.List;
+import com.google.common.collect.ImmutableSet;
 
 /**
- * Factory for creating Shiro permissions
+ * Interface for getting roles from a specific provider backend.
  */
-public interface PermissionFactory {
-  Permission createPermission(String permission);
+public interface ProviderBackend {
+  /**
+   * Process roles from the backend.  Checks the validity of each role
+   * by running it through each validator passed via validators.
+   */
+  public void process(List<? extends RoleValidator> validators);
+
+  /**
+   * Get the roles from the backend.  Requires that process(...) is invoked at
+   * least once prior.
+   */
+  public Roles getRoles();
 }

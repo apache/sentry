@@ -26,10 +26,12 @@ import org.apache.hadoop.fs.Path;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.model.db.AccessURI;
 import org.apache.sentry.core.model.db.Database;
-import org.apache.sentry.provider.file.PolicyEngine;
-import org.apache.sentry.provider.file.SimplePolicyParser;
-import org.apache.sentry.provider.file.Roles;
-import org.apache.sentry.provider.file.RoleValidator;
+import org.apache.sentry.provider.common.PermissionFactory;
+import org.apache.sentry.provider.common.PolicyEngine;
+import org.apache.sentry.provider.common.ProviderBackend;
+import org.apache.sentry.provider.common.Roles;
+import org.apache.sentry.provider.common.RoleValidator;
+import org.apache.sentry.provider.file.SimpleFileProviderBackend;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,18 +49,22 @@ public class SimpleDBPolicyEngine implements PolicyEngine {
 
   public final static String ACCESS_ALLOW_URI_PER_DB_POLICYFILE = "sentry.allow.uri.db.policyfile";
 
-  private SimplePolicyParser parser;
+  private ProviderBackend providerBackend;
 
-  public SimpleDBPolicyEngine(String resourcePath, String serverName) throws IOException {
-    this(new Configuration(), new Path(resourcePath), serverName);
-  }
-
-  @VisibleForTesting
-  public SimpleDBPolicyEngine(Configuration conf, Path resourcePath, String serverName) throws IOException {
+  public SimpleDBPolicyEngine(String serverName, ProviderBackend providerBackend) {
     List<? extends RoleValidator> validators =
       Lists.newArrayList(new ServersAllIsInvalid(), new DatabaseMustMatch(),
         new DatabaseRequiredInRole(), new ServerNameMustMatch(serverName));
-    parser = new SimplePolicyParser(conf, resourcePath, validators);
+    this.providerBackend = providerBackend;
+    this.providerBackend.process(validators);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public PermissionFactory getPermissionFactory() {
+    return new DBWildcardPermission.DBWildcardPermissionFactory();
   }
 
   /**
@@ -82,7 +88,7 @@ public class SimpleDBPolicyEngine implements PolicyEngine {
     }
     ImmutableSetMultimap.Builder<String, String> resultBuilder = ImmutableSetMultimap.builder();
     for(String group : groups) {
-      resultBuilder.putAll(group, getDBRoles(database, group, isURI, parser.getRoles()));
+      resultBuilder.putAll(group, getDBRoles(database, group, isURI, providerBackend.getRoles()));
     }
     ImmutableSetMultimap<String, String> result = resultBuilder.build();
     if(LOGGER.isDebugEnabled()) {

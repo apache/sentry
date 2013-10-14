@@ -29,7 +29,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nullable;
 
@@ -37,8 +36,9 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.sentry.core.common.Authorizable;
-import org.apache.sentry.core.model.db.AccessURI;
-import org.apache.sentry.core.model.db.Database;
+import org.apache.sentry.provider.common.ProviderBackend;
+import org.apache.sentry.provider.common.Roles;
+import org.apache.sentry.provider.common.RoleValidator;
 import org.apache.shiro.config.ConfigurationException;
 import org.apache.shiro.config.Ini;
 import org.apache.shiro.util.PermissionUtils;
@@ -57,39 +57,37 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
-public class SimplePolicyParser {
+public class SimpleFileProviderBackend implements ProviderBackend {
 
   private static final Logger LOGGER = LoggerFactory
-      .getLogger(SimplePolicyParser.class);
+      .getLogger(SimpleFileProviderBackend.class);
 
 
 
   private final FileSystem fileSystem;
   private final Path resourcePath;
   private final List<Path> perDbResources = Lists.newArrayList();
-  private final AtomicReference<Roles> rolesReference;
+  private Roles rolesStorage;
   private final Configuration conf;
-  private final List<? extends RoleValidator> validators;
+  private boolean processed;
 
-  public SimplePolicyParser(String resourcePath, List<? extends RoleValidator> validators) throws IOException {
-    this(new Configuration(), new Path(resourcePath),  validators);
+  public SimpleFileProviderBackend(String resourcePath) throws IOException {
+    this(new Configuration(), new Path(resourcePath));
   }
 
   @VisibleForTesting
-  public SimplePolicyParser(Configuration conf, Path resourcePath, List<? extends RoleValidator> validators) throws IOException {
+  public SimpleFileProviderBackend(Configuration conf, Path resourcePath) throws IOException {
     this.resourcePath = resourcePath;
     this.fileSystem = resourcePath.getFileSystem(conf);
-    this.rolesReference = new AtomicReference<Roles>();
-    this.rolesReference.set(new Roles());
+    this.rolesStorage = new Roles();
     this.conf = conf;
-    this.validators = validators;
-    parse();
+    this.processed = false;
   }
 
   /**
-   * Parse the resource. Should not be used in the normal course
+   * {@inheritDoc}
    */
-  protected void parse() {
+  public void process(List<? extends RoleValidator> validators) {
     LOGGER.info("Parsing " + resourcePath);
     Roles roles = new Roles();
     try {
@@ -107,7 +105,7 @@ public class SimplePolicyParser {
       }
       ImmutableSetMultimap<String, String> globalRoles;
       Map<String, ImmutableSetMultimap<String, String>> perDatabaseRoles = Maps.newHashMap();
-      globalRoles = parseIni(null, ini);
+      globalRoles = parseIni(null, ini, validators);
       Ini.Section filesSection = ini.getSection(DATABASES);
       if(filesSection == null) {
         LOGGER.info("Section " + DATABASES + " needs no further processing");
@@ -127,7 +125,7 @@ public class SimplePolicyParser {
             if(perDbIni.containsKey(DATABASES)) {
               throw new ConfigurationException("Per-db policy files cannot contain " + DATABASES + " section");
             }
-            ImmutableSetMultimap<String, String> currentDbRoles = parseIni(database, perDbIni);
+            ImmutableSetMultimap<String, String> currentDbRoles = parseIni(database, perDbIni, validators);
             perDatabaseRoles.put(database, currentDbRoles);
             perDbResources.add(perDbPolicy);
           } catch (Exception e) {
@@ -139,7 +137,8 @@ public class SimplePolicyParser {
     } catch (Exception e) {
       LOGGER.error("Error processing file, ignoring " + resourcePath, e);
     }
-    rolesReference.set(roles);
+    rolesStorage = roles;
+    this.processed = true;
   }
   /**
    * Relative for our purposes is no scheme, no authority
@@ -164,7 +163,7 @@ public class SimplePolicyParser {
     return result;
   }
 
-  private ImmutableSetMultimap<String, String> parseIni(String database, Ini ini) {
+  private ImmutableSetMultimap<String, String> parseIni(String database, Ini ini, List<? extends RoleValidator> validators) {
     Ini.Section privilegesSection = ini.getSection(ROLES);
     boolean invalidConfiguration = false;
     if (privilegesSection == null) {
@@ -177,13 +176,13 @@ public class SimplePolicyParser {
       invalidConfiguration = true;
     }
     if (!invalidConfiguration) {
-      return parsePermissions(database, privilegesSection, groupsSection);
+      return parsePermissions(database, privilegesSection, groupsSection, validators);
     }
     return ImmutableSetMultimap.of();
   }
 
   private ImmutableSetMultimap<String, String> parsePermissions(@Nullable String database,
-      Ini.Section rolesSection, Ini.Section groupsSection) {
+      Ini.Section rolesSection, Ini.Section groupsSection, List<? extends RoleValidator> validators) {
     ImmutableSetMultimap.Builder<String, String> resultBuilder = ImmutableSetMultimap.builder();
     Multimap<String, String> roleNameToPrivilegeMap = HashMultimap
         .create();
@@ -233,7 +232,12 @@ public class SimplePolicyParser {
     return resultBuilder.build();
   }
 
+  /*
+   * {@inheritDoc}
+   */
   public Roles getRoles() {
-    return rolesReference.get();
+    if (!processed) throw new UnsupportedOperationException("Process has not been called");
+
+    return rolesStorage;
   }
 }

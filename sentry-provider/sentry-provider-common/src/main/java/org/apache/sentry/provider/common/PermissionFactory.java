@@ -14,22 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.sentry.provider.common;
 
-package org.apache.sentry.provider.db;
+import org.apache.shiro.authz.Permission;
 
-import org.apache.sentry.provider.file.LocalGroupMappingService;
-import org.apache.sentry.provider.file.ResourceAuthorizationProvider;
-import java.io.IOException;
-
-import org.apache.hadoop.fs.Path;
-
-
-public class LocalGroupResourceAuthorizationProvider extends
-  ResourceAuthorizationProvider {
-
-  public LocalGroupResourceAuthorizationProvider(String resource, String serverName) throws IOException {
-    super (new SimpleDBPolicyEngine(resource, serverName), new LocalGroupMappingService(new Path(resource)),
-      new DBWildcardPermission.DBWildcardPermissionFactory());
-  }
-
+/**
+ * Factory for creating Shiro permissions
+ */
+public interface PermissionFactory {
+  Permission createPermission(String permission);
 }

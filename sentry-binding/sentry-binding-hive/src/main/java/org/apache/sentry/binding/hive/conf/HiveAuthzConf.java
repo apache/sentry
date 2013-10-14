@@ -44,6 +44,8 @@ public class HiveAuthzConf extends Configuration {
     AUTHZ_PROVIDER("sentry.provider",
       "org.apache.sentry.provider.file.ResourceAuthorizationProvider"),
     AUTHZ_PROVIDER_RESOURCE("sentry.hive.provider.resource", ""),
+    AUTHZ_PROVIDER_BACKEND("sentry.hive.provider.backend", "org.apache.sentry.provider.file.SimpleFileProviderBackend"),
+    AUTHZ_POLICY_ENGINE("sentry.hive.policy.engine", "org.apache.sentry.provider.db.SimpleDBPolicyEngine"),
     AUTHZ_SERVER_NAME("sentry.hive.server", "HS2"),
     AUTHZ_RESTRICT_DEFAULT_DB("sentry.hive.restrict.defaultDB", "false"),
     SENTRY_TESTING_MODE("sentry.hive.testing.mode", "false"),

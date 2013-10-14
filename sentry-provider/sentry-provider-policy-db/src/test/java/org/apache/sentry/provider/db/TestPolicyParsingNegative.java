@@ -26,7 +26,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.core.model.db.Server;
-import org.apache.sentry.provider.file.PolicyEngine;
+import org.apache.sentry.provider.common.PolicyEngine;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.After;
 import org.junit.Before;
@@ -75,7 +75,7 @@ public class TestPolicyParsingNegative {
     append("other_group = malicious_role", otherPolicyFile);
     append("[roles]", otherPolicyFile);
     append("malicious_role = server=server1->db=customers->table=purchases->action=select", otherPolicyFile);
-    PolicyEngine policy = new SimpleDBPolicyEngine(globalPolicyFile.getPath(), "server1");
+    PolicyEngine policy = new DBPolicyFileBackend(globalPolicyFile.getPath(), "server1");
     ImmutableSet<String> permissions = policy.getPermissions(
         Arrays.asList(new Authorizable[] {
             new Server("server1"),
@@ -93,7 +93,7 @@ public class TestPolicyParsingNegative {
     policyFile.addGroupsToUser("admin1", "admin");
     policyFile.write(globalPolicyFile);
     policyFile.write(otherPolicyFile);
-    policy = new SimpleDBPolicyEngine(globalPolicyFile.getPath(), "server1");
+    policy = new DBPolicyFileBackend(globalPolicyFile.getPath(), "server1");
     permissions = policy.getPermissions(
         Arrays.asList(new Authorizable[] {
             new Server("server1")
@@ -103,7 +103,7 @@ public class TestPolicyParsingNegative {
     policyFile.addDatabase("other", otherPolicyFile.getPath());
     policyFile.write(globalPolicyFile);
     policyFile.write(otherPolicyFile);
-    policy = new SimpleDBPolicyEngine(globalPolicyFile.getPath(), "server1");
+    policy = new DBPolicyFileBackend(globalPolicyFile.getPath(), "server1");
     permissions = policy.getPermissions(
         Arrays.asList(new Authorizable[] {
             new Server("server1")
@@ -113,7 +113,7 @@ public class TestPolicyParsingNegative {
     // by removing the user mapping from the per-db policy file
     policyFile.removeGroupsFromUser("admin1", "admin")
       .write(otherPolicyFile);
-    policy = new SimpleDBPolicyEngine(globalPolicyFile.getPath(), "server1");
+    policy = new DBPolicyFileBackend(globalPolicyFile.getPath(), "server1");
     permissions = policy.getPermissions(
         Arrays.asList(new Authorizable[] {
             new Server("server1")
@@ -128,7 +128,7 @@ public class TestPolicyParsingNegative {
     append("other_group = malicious_role", otherPolicyFile);
     append("[roles]", otherPolicyFile);
     append("malicious_role = server=server1", otherPolicyFile);
-    PolicyEngine policy = new SimpleDBPolicyEngine(globalPolicyFile.getPath(), "server1");
+    PolicyEngine policy = new DBPolicyFileBackend(globalPolicyFile.getPath(), "server1");
     ImmutableSet<String> permissions = policy.getPermissions(
         Arrays.asList(new Authorizable[] {
             new Server("server1"),
@@ -142,7 +142,7 @@ public class TestPolicyParsingNegative {
     append("group = malicious_role", globalPolicyFile);
     append("[roles]", globalPolicyFile);
     append("malicious_role = server=*", globalPolicyFile);
-    PolicyEngine policy = new SimpleDBPolicyEngine(globalPolicyFile.getPath(), "server1");
+    PolicyEngine policy = new DBPolicyFileBackend(globalPolicyFile.getPath(), "server1");
     ImmutableSet<String> permissions = policy.getPermissions(
         Arrays.asList(new Authorizable[] {
             Server.ALL,
@@ -156,7 +156,7 @@ public class TestPolicyParsingNegative {
     append("group = malicious_role", globalPolicyFile);
     append("[roles]", globalPolicyFile);
     append("malicious_role = server=server2", globalPolicyFile);
-    PolicyEngine policy = new SimpleDBPolicyEngine(globalPolicyFile.getPath(), "server1");
+    PolicyEngine policy = new DBPolicyFileBackend(globalPolicyFile.getPath(), "server1");
     ImmutableSet<String> permissions = policy.getPermissions(
         Arrays.asList(new Authorizable[] {
             Server.ALL,
@@ -171,7 +171,7 @@ public class TestPolicyParsingNegative {
     append("group = malicious_role", globalPolicyFile);
     append("[roles]", globalPolicyFile);
     append("malicious_role = *", globalPolicyFile);
-    PolicyEngine policy = new SimpleDBPolicyEngine(globalPolicyFile.getPath(), "server1");
+    PolicyEngine policy = new DBPolicyFileBackend(globalPolicyFile.getPath(), "server1");
     ImmutableSet<String> permissions = policy.getPermissions(
         Arrays.asList(new Authorizable[] {
             Server.ALL,
@@ -211,7 +211,7 @@ public class TestPolicyParsingNegative {
     append("[roles]", db2PolicyFile);
     append("db2_rule = server=server1->db=db2->table=purchases->action=select", db2PolicyFile);
 
-    PolicyEngine policy = new SimpleDBPolicyEngine(globalPolicyFile.getPath(), "server1");
+    PolicyEngine policy = new DBPolicyFileBackend(globalPolicyFile.getPath(), "server1");
 
     // verify that the db1 rule is empty
     ImmutableSet<String> permissions = policy.getPermissions(

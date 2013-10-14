@@ -106,7 +106,7 @@ public class TestHiveAuthzBindings {
 
     // create auth configuration
     authzConf.set(AuthzConfVars.AUTHZ_PROVIDER.getVar(),
-        "org.apache.sentry.provider.db.LocalGroupResourceAuthorizationProvider");
+        "org.apache.sentry.provider.file.LocalGroupResourceAuthorizationProvider");
     authzConf.set(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar(),
         new File(baseDir, RESOURCE_PATH).getPath());
     authzConf.set(AuthzConfVars.AUTHZ_SERVER_NAME.getVar(), SERVER1);
@@ -341,5 +341,30 @@ public class TestHiveAuthzBindings {
     hiveConf.setVar(ConfVars.HIVE_SERVER2_AUTHENTICATION, "None");
     authzConf.set(AuthzConfVars.SENTRY_TESTING_MODE.getVar(), "false");
     testAuth = new HiveAuthzBinding(hiveConf, authzConf);
+  }
+
+  /**
+   * Verify that an existing definition of only the AuthorizationProvider
+   * (not ProviderBackend or PolicyEngine) still works.
+   */
+  @Test
+  public void testDeprecatedHiveAuthzConfs() throws Exception {
+    // verify that a non-existant AuthorizationProvider throws an Exception
+    authzConf.set(AuthzConfVars.AUTHZ_PROVIDER.getVar(),
+      "org.apache.sentry.provider.BogusProvider");
+    try {
+      new HiveAuthzBinding(hiveConf, authzConf);
+      Assert.fail("Expected exception");
+    } catch (ClassNotFoundException e) {}
+
+    // verify HadoopGroupResourceAuthorizationProvider
+    authzConf.set(AuthzConfVars.AUTHZ_PROVIDER.getVar(),
+      "org.apache.sentry.provider.file.HadoopGroupResourceAuthorizationProvider");
+    new HiveAuthzBinding(hiveConf, authzConf);
+
+    // verify LocalGroupResourceAuthorizationProvider
+    authzConf.set(AuthzConfVars.AUTHZ_PROVIDER.getVar(),
+      "org.apache.sentry.provider.file.LocalGroupResourceAuthorizationProvider");
+    new HiveAuthzBinding(hiveConf, authzConf);
   }
 }

@@ -17,23 +17,18 @@
 
 package org.apache.sentry.provider.file;
 
-import java.util.List;
+import org.apache.sentry.provider.common.PolicyEngine;
+import org.apache.sentry.provider.file.LocalGroupMappingService;
+import org.apache.sentry.provider.file.ResourceAuthorizationProvider;
+import java.io.IOException;
 
-import org.apache.sentry.core.common.Authorizable;
+import org.apache.hadoop.fs.Path;
 
-import com.google.common.collect.ImmutableSetMultimap;
 
-public interface PolicyEngine {
+public class LocalGroupResourceAuthorizationProvider extends
+  ResourceAuthorizationProvider {
 
-  /**
-   * Get permissions associated with a group. Returns Strings which can be resolved
-   * by the caller. Strings are returned to separate the PolicyFile class from the
-   * type of permissions used in a policy file. Additionally it's possible further
-   * processing of the permissions is needed before resolving to a permission object.
-   * @param authorizeable object
-   * @param group name
-   * @return non-null immutable set of permissions
-   */
-  public ImmutableSetMultimap<String, String> getPermissions(List<? extends Authorizable> authorizables, List<String> groups);
-
+  public LocalGroupResourceAuthorizationProvider(String resource, PolicyEngine policy) throws IOException {
+    super(policy, new LocalGroupMappingService(new Path(resource)));
+  }
 }

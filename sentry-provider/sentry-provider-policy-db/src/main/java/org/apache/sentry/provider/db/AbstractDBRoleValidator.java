@@ -21,7 +21,7 @@ import static org.apache.sentry.provider.file.PolicyFileConstants.PRIVILEGE_PREF
 
 import java.util.List;
 
-import org.apache.sentry.provider.file.RoleValidator;
+import org.apache.sentry.provider.common.RoleValidator;
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.shiro.config.ConfigurationException;
 

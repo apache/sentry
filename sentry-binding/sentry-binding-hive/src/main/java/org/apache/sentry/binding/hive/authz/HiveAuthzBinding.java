@@ -40,6 +40,8 @@ import org.apache.sentry.core.model.db.DBModelAction;
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
 import org.apache.sentry.core.model.db.Server;
+import org.apache.sentry.provider.common.PolicyEngine;
+import org.apache.sentry.provider.common.ProviderBackend;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.sentry.binding.hive.conf.InvalidConfigurationException;
@@ -127,14 +129,34 @@ public class HiveAuthzBinding {
     String authProviderName = authzConf.get(AuthzConfVars.AUTHZ_PROVIDER.getVar());
     String resourceName =
         authzConf.get(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar());
+    String providerBackendName =
+      authzConf.get(AuthzConfVars.AUTHZ_PROVIDER_BACKEND.getVar());
+    String policyEngineName =
+      authzConf.get(AuthzConfVars.AUTHZ_POLICY_ENGINE.getVar());
+
     LOG.debug("Using authorization provider " + authProviderName +
-        " with resource " + resourceName);
+      " with resource " + resourceName + ", policy engine "
+      + policyEngineName + ", provider backend " + providerBackendName);
+    // load the provider backend class
+    Constructor<?> providerBackendConstructor =
+      Class.forName(providerBackendName).getDeclaredConstructor(String.class);
+    providerBackendConstructor.setAccessible(true);
+    ProviderBackend providerBackend =
+      (ProviderBackend) providerBackendConstructor.newInstance(new Object[] {resourceName});
+
+    // load the policy engine class
+    Constructor<?> policyConstructor =
+      Class.forName(policyEngineName).getDeclaredConstructor(String.class, ProviderBackend.class);
+    policyConstructor.setAccessible(true);
+    PolicyEngine policyEngine =
+      (PolicyEngine) policyConstructor.newInstance(new Object[] {serverName, providerBackend});
+
 
     // load the authz provider class
     Constructor<?> constrctor =
-        Class.forName(authProviderName).getDeclaredConstructor(String.class, String.class);
+      Class.forName(authProviderName).getDeclaredConstructor(String.class, PolicyEngine.class);
     constrctor.setAccessible(true);
-    return (AuthorizationProvider) constrctor.newInstance(new Object[] {resourceName, serverName});
+    return (AuthorizationProvider) constrctor.newInstance(new Object[] {resourceName, policyEngine});
   }
 
 

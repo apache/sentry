@@ -14,21 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.sentry.provider.common;
 
-package org.apache.sentry.binding.hive;
+import javax.annotation.Nullable;
 
-import java.util.List;
+import org.apache.shiro.config.ConfigurationException;
 
-import org.apache.sentry.provider.common.GroupMappingService;
+public interface RoleValidator {
 
-import com.google.common.collect.Lists;
-
-public class MockUserToGroupMapping implements GroupMappingService {
-
-  // User to group 1-to-1 map
-  @Override
-  public List<String> getGroups(String user) {
-    return Lists.newArrayList(user);
-  }
-
+  public void validate(@Nullable String database, String role) throws ConfigurationException;
 }

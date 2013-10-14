@@ -30,6 +30,7 @@ limitations under the License.
   <packaging>pom</packaging>
 
   <modules>
+    <module>sentry-provider-common</module>
     <module>sentry-provider-file</module>
     <module>sentry-provider-policy-db</module>
     <module>sentry-provider-policy-search</module>

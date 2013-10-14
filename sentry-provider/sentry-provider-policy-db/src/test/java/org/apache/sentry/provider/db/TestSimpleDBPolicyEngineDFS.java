@@ -29,7 +29,6 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.core.model.db.Server;
-import org.apache.sentry.provider.file.AbstractTestSimplePolicyEngine;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.provider.file.PolicyFiles;
 import org.junit.AfterClass;
@@ -73,7 +72,7 @@ public class TestSimpleDBPolicyEngineDFS extends AbstractTestSimplePolicyEngine 
     fileSystem.delete(etc, true);
     fileSystem.mkdirs(etc);
     PolicyFiles.copyToDir(fileSystem, etc, "test-authz-provider.ini", "test-authz-provider-other-group.ini");
-    setPolicy(new SimpleDBPolicyEngine(new Path(etc, "test-authz-provider.ini").toString(), "server1"));
+    setPolicy(new DBPolicyFileBackend(new Path(etc, "test-authz-provider.ini").toString(), "server1"));
   }
   @Override
   protected void beforeTeardown() throws IOException {
@@ -104,8 +103,8 @@ public class TestSimpleDBPolicyEngineDFS extends AbstractTestSimplePolicyEngine 
 
     PolicyFiles.copyFilesToDir(fileSystem, etc, globalPolicyFile);
     PolicyFiles.copyFilesToDir(fileSystem, etc, dbPolicyFile);
-    SimpleDBPolicyEngine multiFSEngine =
-        new SimpleDBPolicyEngine(globalPolicyFile.getPath(), "server1");
+    DBPolicyFileBackend multiFSEngine =
+        new DBPolicyFileBackend(globalPolicyFile.getPath(), "server1");
 
     List<Authorizable> dbAuthorizables = Lists.newArrayList();
     dbAuthorizables.add(new Server("server1"));

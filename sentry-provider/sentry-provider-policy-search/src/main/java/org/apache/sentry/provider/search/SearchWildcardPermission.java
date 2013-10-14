@@ -28,8 +28,8 @@ import java.io.Serializable;
 import java.util.List;
 
 import org.apache.sentry.core.model.search.SearchConstants;
+import org.apache.sentry.provider.common.PermissionFactory;
 import org.apache.sentry.provider.file.KeyValue;
-import org.apache.sentry.provider.file.PermissionFactory;
 import org.apache.sentry.provider.file.PolicyFileConstants;
 import org.apache.shiro.authz.Permission;
 import org.slf4j.Logger;

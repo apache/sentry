@@ -34,8 +34,9 @@ import org.apache.sentry.core.model.db.DBModelAction;
 import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.core.model.db.Table;
+import org.apache.sentry.provider.common.MockGroupMappingServiceProvider;
+import org.apache.sentry.provider.file.HadoopGroupResourceAuthorizationProvider;
 import org.apache.sentry.provider.file.PolicyFiles;
-import org.apache.sentry.provider.file.MockGroupMappingServiceProvider;
 import org.apache.sentry.provider.file.ResourceAuthorizationProvider;
 import org.junit.After;
 import org.junit.Test;
@@ -89,7 +90,7 @@ public class TestResourceAuthorizationProviderGeneralCases {
     baseDir = Files.createTempDir();
     PolicyFiles.copyToDir(baseDir, "test-authz-provider.ini", "test-authz-provider-other-group.ini");
     authzProvider = new HadoopGroupResourceAuthorizationProvider(
-        new SimpleDBPolicyEngine(new File(baseDir, "test-authz-provider.ini").getPath(), "server1"),
+        new DBPolicyFileBackend(new File(baseDir, "test-authz-provider.ini").getPath(), "server1"),
         new MockGroupMappingServiceProvider(USER_TO_GROUP_MAP));
 
   }

@@ -30,7 +30,7 @@ import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
-import org.apache.sentry.provider.db.LocalGroupResourceAuthorizationProvider;
+import org.apache.sentry.provider.file.LocalGroupResourceAuthorizationProvider;
 import org.fest.reflect.core.Reflection;
 import org.junit.Assert;
 import org.slf4j.Logger;

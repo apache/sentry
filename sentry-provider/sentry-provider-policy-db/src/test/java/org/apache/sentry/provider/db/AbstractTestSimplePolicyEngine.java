@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.provider.file;
+package org.apache.sentry.provider.db;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,6 +27,7 @@ import junit.framework.Assert;
 import org.apache.commons.io.FileUtils;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.model.db.Database;
+import org.apache.sentry.provider.common.PolicyEngine;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;

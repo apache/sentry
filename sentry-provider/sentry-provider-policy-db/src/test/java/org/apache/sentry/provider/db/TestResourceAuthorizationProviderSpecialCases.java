@@ -32,7 +32,7 @@ import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.db.AccessURI;
 import org.apache.sentry.core.model.db.DBModelAction;
 import org.apache.sentry.core.model.db.Server;
-import org.apache.sentry.provider.db.LocalGroupResourceAuthorizationProvider;
+import org.apache.sentry.provider.file.LocalGroupResourceAuthorizationProvider;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.After;
 import org.junit.Before;
@@ -73,7 +73,8 @@ public class TestResourceAuthorizationProviderSpecialCases {
       .addPermissionsToRole("role1", true, "server=" + server1.getName() + "->uri=" + uri.getName(),
           "server=" + server1.getName() + "->uri=" + uri.getName());
     policyFile.write(iniFile);
-    authzProvider = new LocalGroupResourceAuthorizationProvider(initResource, server1.getName());
+    DBPolicyFileBackend policy = new DBPolicyFileBackend(initResource, server1.getName());
+    authzProvider = new LocalGroupResourceAuthorizationProvider(initResource, policy);
     List<? extends Authorizable> authorizableHierarchy = ImmutableList.of(server1, uri);
     Assert.assertTrue(authorizableHierarchy.toString(),
         authzProvider.hasAccess(user1, authorizableHierarchy, actions));
@@ -88,7 +89,8 @@ public class TestResourceAuthorizationProviderSpecialCases {
       .addRolesToGroup("group1", "role1")
       .addPermissionsToRole("role1", "server=" + server1.getName() + "->uri=" + uri.getName());
     policyFile.write(iniFile);
-    authzProvider = new LocalGroupResourceAuthorizationProvider(initResource, server1.getName());
+    DBPolicyFileBackend policy = new DBPolicyFileBackend(initResource, server1.getName());
+    authzProvider = new LocalGroupResourceAuthorizationProvider(initResource, policy);
     // positive test
     List<? extends Authorizable> authorizableHierarchy = ImmutableList.of(server1, uri);
     Assert.assertTrue(authorizableHierarchy.toString(),

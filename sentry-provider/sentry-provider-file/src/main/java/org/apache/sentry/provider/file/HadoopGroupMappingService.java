@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.hadoop.security.Groups;
+import org.apache.sentry.provider.common.GroupMappingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -14,12 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.provider.file;
+package org.apache.sentry.provider.common;
 
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.sentry.provider.file.GroupMappingService;
+import org.apache.sentry.provider.common.GroupMappingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
