@@ -74,7 +74,7 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
     Preconditions.checkNotNull(authorizableHierarchy, "Authorizable cannot be null");
     Preconditions.checkArgument(!authorizableHierarchy.isEmpty(), "Authorizable cannot be empty");
     Preconditions.checkNotNull(actions, "Actions cannot be null");
-    Preconditions.checkNotNull(!actions.isEmpty(), "Actions cannot be empty");
+    Preconditions.checkArgument(!actions.isEmpty(), "Actions cannot be empty");
     return doHasAccess(subject, authorizableHierarchy, actions);
   }
 
