@@ -53,8 +53,7 @@ limitations under the License.
     </dependency>
     <dependency>
       <groupId>org.apache.sentry</groupId>
-      <artifactId>sentry-provider-policy-search</artifactId>
-      <scope>test</scope>
+      <artifactId>sentry-policy-search</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>

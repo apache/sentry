@@ -26,11 +26,11 @@ import java.util.Set;
 
 import org.apache.sentry.core.common.Action;
 import org.apache.sentry.core.common.Authorizable;
-import org.apache.sentry.core.common.AuthorizationProvider;
 import org.apache.sentry.core.common.Subject;
+import org.apache.sentry.policy.common.PermissionFactory;
+import org.apache.sentry.policy.common.PolicyEngine;
+import org.apache.sentry.provider.common.AuthorizationProvider;
 import org.apache.sentry.provider.common.GroupMappingService;
-import org.apache.sentry.provider.common.PermissionFactory;
-import org.apache.sentry.provider.common.PolicyEngine;
 import org.apache.shiro.authz.Permission;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

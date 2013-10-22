@@ -17,7 +17,7 @@
 
 package org.apache.sentry.provider.file;
 
-import org.apache.sentry.provider.common.PolicyEngine;
+import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.file.LocalGroupMappingService;
 import org.apache.sentry.provider.file.ResourceAuthorizationProvider;
 import java.io.IOException;

@@ -46,8 +46,10 @@
         <include>org.apache.sentry:sentry-provider</include>
         <include>org.apache.sentry:sentry-provider-common</include>
         <include>org.apache.sentry:sentry-provider-file</include>
-        <include>org.apache.sentry:sentry-provider-policy-db</include>
-        <include>org.apache.sentry:sentry-provider-policy-search</include>
+        <include>org.apache.sentry:sentry-policy</include>
+        <include>org.apache.sentry:sentry-policy-common</include>
+        <include>org.apache.sentry:sentry-policy-db</include>
+        <include>org.apache.sentry:sentry-policy-search</include>
         <include>org.apache.sentry:sentry-tests</include>
         <include>org.apache.sentry:sentry-tests-hive</include>
         <include>org.apache.sentry:sentry-dist</include>
@@ -97,6 +99,7 @@
         <exclude>sentry-core/**</exclude>
         <exclude>sentry-dist/**</exclude>
         <exclude>sentry-provider/**</exclude>
+        <exclude>sentry-policy/**</exclude>
         <exclude>sentry-test/**</exclude>
         <exclude>**/target/**</exclude>
         <exclude>**/.classpath</exclude>

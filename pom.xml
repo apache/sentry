@@ -262,13 +262,18 @@ limitations under the License.
       </dependency>
       <dependency>
         <groupId>org.apache.sentry</groupId>
-        <artifactId>sentry-provider-policy-db</artifactId>
+        <artifactId>sentry-policy-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.sentry</groupId>
+        <artifactId>sentry-policy-db</artifactId>
         <version>${project.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.apache.sentry</groupId>
-        <artifactId>sentry-provider-policy-search</artifactId>
+        <artifactId>sentry-policy-search</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -283,6 +288,7 @@ limitations under the License.
     <module>sentry-core</module>
     <module>sentry-binding</module>
     <module>sentry-provider</module>
+    <module>sentry-policy</module>
     <module>sentry-tests</module>
     <module>sentry-dist</module>
   </modules>
@@ -328,6 +334,7 @@ limitations under the License.
                   <exclude>**.patch</exclude>
                   <exclude>README*</exclude>
                   <exclude>.project</exclude>
+                  <exclude>**/target/</exclude>
                   <exclude>.settings</exclude>
                   <exclude>.metadata/</exclude>
                   <exclude>.classpath</exclude>

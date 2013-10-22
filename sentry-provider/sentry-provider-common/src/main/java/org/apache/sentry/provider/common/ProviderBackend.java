@@ -18,6 +18,7 @@ package org.apache.sentry.provider.common;
 
 import javax.annotation.Nullable;
 import java.util.List;
+import org.apache.sentry.policy.common.RoleValidator;
 import com.google.common.collect.ImmutableSet;
 
 /**

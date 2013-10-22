@@ -27,7 +27,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 import org.apache.sentry.provider.file.PolicyFile;
-import org.apache.sentry.provider.db.SimpleDBPolicyEngine;
+import org.apache.sentry.policy.db.SimpleDBPolicyEngine;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

@@ -81,7 +81,7 @@ limitations under the License.
     </dependency>
     <dependency>
       <groupId>org.apache.sentry</groupId>
-      <artifactId>sentry-provider-policy-db</artifactId>
+      <artifactId>sentry-policy-db</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
