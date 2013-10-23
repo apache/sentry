@@ -133,20 +133,19 @@ public class PolicyFile {
     Files.write(contents, file, Charsets.UTF_8);
 
     String hiveServer2 = System.getProperty("sentry.e2etest.hiveServer2Type", "InternalHiveServer2");
-    if(hiveServer2.equals("UnmanagedHiveServer2")){
 
-      String policyLocation = System.getProperty("sentry.e2etest.policyLocation", "/user/hive/sentry/sentry-provider.ini");
-      String policyOnHDFS = System.getProperty("sentry.e2etest.policyOnHDFS", "true");
-      LOGGER.info("Moving policy file to " + policyLocation);
-
-      if( policyOnHDFS.trim().equalsIgnoreCase("true")){
-        String userKeytab = System.getProperty("sentry.e2etest.policyOwnerKeytab");
-        String userPrincipal = System.getProperty("sentry.e2etest.policyOwnerPrincipal");
+    //Currently policyOnHDFS is only supported for UnmanagedHiveServer, and global policy file is required to be on hdfs
+    if(hiveServer2.equals("UnmanagedHiveServer2")) {
+      String policyOnHDFS = System.getProperty("sentry.e2etest.hive.policyOnHDFS", "true");
+      if(policyOnHDFS.trim().equalsIgnoreCase("true") || file.getName().equalsIgnoreCase("sentry-provider.ini")){
+        String policyLocation = System.getProperty("sentry.e2etest.hive.policy.location", "/user/hive/sentry");
+        String policyFileLocation = policyLocation + "/" + file.getName();
+        LOGGER.info("Moving policy file to " + policyFileLocation);
+        String userKeytab = System.getProperty("sentry.e2etest.hive.policyOwnerKeytab");
+        String userPrincipal = System.getProperty("sentry.e2etest.hive.policyOwnerPrincipal");
         Preconditions.checkNotNull(userKeytab);
         Preconditions.checkNotNull(userPrincipal);
-        hdfsPut(file, policyLocation, userKeytab, userPrincipal);
-      }else{
-        Files.copy(file,new File(policyLocation));
+        hdfsPut(file, policyFileLocation, userKeytab, userPrincipal);
       }
     }
   }

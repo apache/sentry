@@ -112,7 +112,7 @@ public class TestPerDatabasePolicyFile extends AbstractTestWithStaticConfigurati
     statement.close();
     connection.close();
 
-    File specificPolicyFileFile = new File(context.getBaseDir(), "db2-policy.ini");
+    File specificPolicyFileFile = new File(baseDir, "db2-policy.ini");
 
     PolicyFile specificPolicyFile = new PolicyFile()
     .addPermissionsToRole("db1_role", grant)

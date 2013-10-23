@@ -56,7 +56,7 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticConfigurat
   public void testInsertToDirPrivileges() throws Exception {
     Connection connection = null;
     Statement statement = null;
-    String dumpDir = context.getDFSUri().toString() + "/hive_data_dump";
+    String dumpDir = dfs.getBaseDir() + "/hive_data_dump";
 
     policyFile
         .addRolesToGroup(USERGROUP1, "db1_read", "db1_write", "data_dump")
@@ -80,11 +80,12 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticConfigurat
     connection.close();
 
     // Negative test, user2 doesn't have access to dir that's similar to scratch dir
-    String scratchDumpDir = context.getProperty(HiveConf.ConfVars.SCRATCHDIR.varname) + "_foo" + "/bar";
+    String scratchLikeDir = context.getProperty(HiveConf.ConfVars.SCRATCHDIR.varname) + "_foo";
+    dfs.assertCreateDir(scratchLikeDir);
     connection = context.createConnection(USER2_1, "password");
     statement = context.createStatement(connection);
     statement.execute("use " + DB1);
-    context.assertAuthzException(statement, "INSERT OVERWRITE DIRECTORY '" + scratchDumpDir + "' SELECT * FROM " + TBL1);
+    context.assertAuthzException(statement, "INSERT OVERWRITE DIRECTORY '" + scratchLikeDir + "/bar' SELECT * FROM " + TBL1);
     statement.close();
     connection.close();
 
@@ -100,8 +101,7 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticConfigurat
   public void testExportImportPrivileges() throws Exception {
     Connection connection = null;
     Statement statement = null;
-    String exportDir = context.getDFSUri().toString() + "/hive_export1";
-
+    String exportDir = dfs.getBaseDir() + "/hive_export1";
     policyFile
         .addRolesToGroup(USERGROUP1, "tab1_read", "tab1_write", "db1_all", "data_read", "data_export")
         .addRolesToGroup(USERGROUP2, "tab1_write", "tab1_read")

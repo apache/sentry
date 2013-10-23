@@ -103,7 +103,6 @@ public class TestRuntimeMetadataRetrieval
 
     validateTables(rs, dbName1, tableNamesValidation);
     statement.close();
-    context.close();
 
     connection = context.createConnection(USER1_1, "foo");
     statement = context.createStatement(connection);
@@ -113,7 +112,6 @@ public class TestRuntimeMetadataRetrieval
     tableNamesValidation.addAll(Arrays.asList(user1TableNames));
     validateTables(rs, dbName1, tableNamesValidation);
     statement.close();
-    context.close();
   }
 
   /**
@@ -147,7 +145,6 @@ public class TestRuntimeMetadataRetrieval
     tableNamesValidation.addAll(Arrays.asList(tableNames));
     validateTables(rs, dbName1, tableNamesValidation);
     statement.close();
-    context.close();
 
     connection = context.createConnection(USER1_1, "foo");
     statement = context.createStatement(connection);
@@ -157,7 +154,6 @@ public class TestRuntimeMetadataRetrieval
     tableNamesValidation.addAll(Arrays.asList(user1TableNames));
     validateTables(rs, dbName1, tableNamesValidation);
     statement.close();
-    context.close();
   }
 
   /**
@@ -193,7 +189,6 @@ public class TestRuntimeMetadataRetrieval
     tableNamesValidation.addAll(Arrays.asList(adminTableNames));
     validateTables(rs, dbName1, tableNamesValidation);
     statement.close();
-    context.close();
 
     connection = context.createConnection(USER1_1, "foo");
     statement = context.createStatement(connection);
@@ -203,7 +198,6 @@ public class TestRuntimeMetadataRetrieval
     tableNamesValidation.addAll(Arrays.asList(user1TableNames));
     validateTables(rs, dbName1, tableNamesValidation);
     statement.close();
-    context.close();
   }
 
   /**
@@ -237,7 +231,6 @@ public class TestRuntimeMetadataRetrieval
     tableNamesValidation.addAll(Arrays.asList(adminTableNames));
     validateTables(rs, dbName1, tableNamesValidation);
     statement.close();
-    context.close();
 
     connection = context.createConnection(USER1_1, "foo");
     statement = context.createStatement(connection);
@@ -247,7 +240,6 @@ public class TestRuntimeMetadataRetrieval
     tableNamesValidation.addAll(Arrays.asList(user1TableNames));
     validateTables(rs, dbName1, tableNamesValidation);
     statement.close();
-    context.close();
   }
 
   /**
@@ -265,7 +257,6 @@ public class TestRuntimeMetadataRetrieval
     Connection connection = context.createConnection(ADMIN1, "foo");
     Statement statement = context.createStatement(connection);
     createTabs(statement, "default", tableNames);
-    context.close();
 
     connection = context.createConnection(USER1_1, "foo");
     statement = context.createStatement(connection);
@@ -274,7 +265,6 @@ public class TestRuntimeMetadataRetrieval
     // user1 doesn't have access to any tables in default db
     Assert.assertFalse(rs.next());
     statement.close();
-    context.close();
   }
 
   /**
@@ -304,7 +294,6 @@ public class TestRuntimeMetadataRetrieval
     // admin should see all dbs
     validateDBs(rs, dbNamesValidation);
     rs.close();
-    context.close();
 
     connection = context.createConnection(USER1_1, "foo");
     statement = context.createStatement(connection);
@@ -314,7 +303,6 @@ public class TestRuntimeMetadataRetrieval
     // user should see only dbs with access
     validateDBs(rs, dbNamesValidation);
     rs.close();
-    context.close();
   }
 
   /**
@@ -346,7 +334,6 @@ public class TestRuntimeMetadataRetrieval
     dbNamesValidation.add("default");
     validateDBs(rs, dbNamesValidation); // admin should see all dbs
     rs.close();
-    context.close();
 
     connection = context.createConnection(USER1_1, "foo");
     statement = context.createStatement(connection);
@@ -356,14 +343,32 @@ public class TestRuntimeMetadataRetrieval
     // user should see only dbs with access
     validateDBs(rs, dbNamesValidation);
     rs.close();
-    context.close();
+  }
+
+  private ArrayList<String> getAllDbs(Statement stmt) throws SQLException{
+    ArrayList<String> dbs = new ArrayList<String>();
+    ResultSet res = stmt.executeQuery("SHOW DATABASES");
+    while(res.next()) {
+      String db = res.getString(1);
+      dbs.add(db);
+    }
+    return dbs;
+  }
+  private void dropDBs(Statement stmt, ArrayList<String> dbs) throws SQLException{
+    for(String db:dbs) {
+      if(!db.equalsIgnoreCase("default")) {
+        stmt.execute("DROP DATABASE IF EXISTS " + db + " CASCADE");
+      }
+    }
   }
 
   // create given dbs
   private void createDBs(Statement statement, String dbNames[])
       throws SQLException {
+    //Clean up rest of the dbs TODO:We should really be cleaning up after each test
+    dropDBs(statement, getAllDbs(statement));
+
     for (String dbName : dbNames) {
-      statement.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
       statement.execute("CREATE DATABASE " + dbName);
     }
   }

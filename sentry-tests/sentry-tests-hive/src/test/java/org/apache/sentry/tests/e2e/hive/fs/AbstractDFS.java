@@ -53,7 +53,13 @@ public abstract class AbstractDFS implements DFS{
   }
 
   protected void cleanBaseDir() throws Exception {
-    Assert.assertTrue(dfsBaseDir.toString(), fileSystem.delete(dfsBaseDir, true));
+   cleanDir(dfsBaseDir);
+  }
+
+  protected void cleanDir(Path dir) throws Exception {
+    if(dir != null) {
+      Assert.assertTrue(dir.toString(), fileSystem.delete(dir, true));
+    }
   }
 
   protected Path assertCreateDfsDir(Path dir) throws IOException {

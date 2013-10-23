@@ -71,7 +71,7 @@ AbstractTestWithStaticConfiguration {
     statement.execute("USE " + db);
     ResultSet rs = statement.executeQuery("DESCRIBE " + table);
     assertTrue(rs.next());
-    
+
     assertTrue("describe table fail", rs.getString(1).trim().equals("under_col"));
     assertTrue("describe table fail", rs.getString(2).trim().equals("int"));
     assertTrue(rs.next());

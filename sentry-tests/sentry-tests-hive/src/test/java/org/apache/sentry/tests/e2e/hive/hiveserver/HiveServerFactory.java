@@ -49,7 +49,7 @@ public class HiveServerFactory {
   public static final String WAREHOUSE_DIR = HiveConf.ConfVars.METASTOREWAREHOUSE.varname;
   public static final String AUTHZ_PROVIDER = HiveAuthzConf.AuthzConfVars.AUTHZ_PROVIDER.getVar();
   public static final String AUTHZ_PROVIDER_RESOURCE = HiveAuthzConf.AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar();
-  public static final String AUTHZ_PROVIDER_FILENAME = "test-authz-provider.ini";
+  public static final String AUTHZ_PROVIDER_FILENAME = "sentry-provider.ini";
   public static final String AUTHZ_SERVER_NAME = HiveAuthzConf.AuthzConfVars.AUTHZ_SERVER_NAME.getVar();
   public static final String ACCESS_TESTING_MODE = HiveAuthzConf.AuthzConfVars.SENTRY_TESTING_MODE.getVar();
   public static final String HS2_PORT = ConfVars.HIVE_SERVER2_THRIFT_PORT.toString();
@@ -82,10 +82,22 @@ public class HiveServerFactory {
     return create(HiveServer2Type.valueOf(type.trim()), properties,
         baseDir, confDir, logDir, policyFile, fileSystem);
   }
-
   private static HiveServer create(HiveServer2Type type,
       Map<String, String> properties, File baseDir, File confDir,
       File logDir, File policyFile, FileSystem fileSystem) throws Exception {
+
+    if(policyFile.exists()) {
+      LOGGER.info("Policy file " + policyFile + " exists");
+    } else {
+      LOGGER.info("Creating policy file " + policyFile);
+      FileOutputStream to = new FileOutputStream(policyFile);
+      Resources.copy(Resources.getResource(AUTHZ_PROVIDER_FILENAME), to);
+      to.close();
+    }
+    if(type.equals(HiveServer2Type.UnmanagedHiveServer2)){
+      LOGGER.info("Creating UnmanagedHiveServer");
+      return new UnmanagedHiveServer();
+    }
     if(!properties.containsKey(WAREHOUSE_DIR)) {
       LOGGER.error("fileSystem " + fileSystem.getClass().getSimpleName());
       if (fileSystem instanceof DistributedFileSystem) {
@@ -101,14 +113,6 @@ public class HiveServerFactory {
       properties.put(METASTORE_CONNECTION_URL,
           String.format("jdbc:derby:;databaseName=%s;create=true",
               new File(baseDir, "metastore").getPath()));
-    }
-    if(policyFile.exists()) {
-      LOGGER.info("Policy file " + policyFile + " exists");
-    } else {
-      LOGGER.info("Creating policy file " + policyFile);
-      FileOutputStream to = new FileOutputStream(policyFile);
-      Resources.copy(Resources.getResource(AUTHZ_PROVIDER_FILENAME), to);
-      to.close();
     }
     if(!properties.containsKey(ACCESS_TESTING_MODE)) {
       properties.put(ACCESS_TESTING_MODE, "true");
@@ -187,9 +191,6 @@ public class HiveServerFactory {
     case ExternalHiveServer2:
       LOGGER.info("Creating ExternalHiveServer");
       return new ExternalHiveServer(hiveConf, confDir, logDir);
-    case UnmanagedHiveServer2:
-      LOGGER.info("Creating UnmanagedHiveServer");
-      return new UnmanagedHiveServer();
     default:
       throw new UnsupportedOperationException(type.name());
     }

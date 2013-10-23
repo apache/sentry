@@ -479,7 +479,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
    *
    * 2) verify users from GROUP_2 can't perform queries involving join between
    * TAB_1 and TAB_2.
-   * 
+   *
    * 3) verify users from GROUP_1 can't perform operations requiring ALL @
    * SERVER scope. Refer to list
    */
@@ -499,6 +499,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     Statement adminStmt = context.createStatement(adminCon);
     String dbName = "db1";
     adminStmt.execute("use default");
+    adminStmt.execute("drop table if exists table_def");
     adminStmt.execute("create table table_def (name string)");
     adminStmt
     .execute("load data local inpath '" + dataFile.getPath() + "' into table table_def");

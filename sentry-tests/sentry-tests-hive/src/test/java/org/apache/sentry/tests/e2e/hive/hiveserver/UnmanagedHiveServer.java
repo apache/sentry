@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.security.UserGroupInformation;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -28,24 +29,43 @@ import java.util.Properties;
 
 public class UnmanagedHiveServer implements HiveServer {
   private static final Logger LOGGER = LoggerFactory.getLogger(UnmanagedHiveServer.class);
-  public static String hostname;
-  public static int port;
-  public static final String hs2Host = System.getProperty("hs2Host");
-  public static final int hs2Port = Integer.parseInt(System.getProperty("hivePort", "10000"));
-  public static final String auth = System.getProperty("auth", "kerberos");
-  public static final String hivePrincipal = System.getProperty("hivePrincipal");
-  public static final String kerbRealm = System.getProperty("kerberosRealm");
+  private static final String HS2_HOST = HiveConf.ConfVars.HIVE_SERVER2_THRIFT_BIND_HOST.varname;
+  private static final String HS2_PORT = HiveConf.ConfVars.HIVE_SERVER2_THRIFT_PORT.varname;
+  private static final String HS2_AUTH = HiveConf.ConfVars.HIVE_SERVER2_AUTHENTICATION.varname;
+  private static final String HS2_PRINCIPAL = HiveConf.ConfVars.HIVE_SERVER2_KERBEROS_PRINCIPAL.varname;
+  private static final String KEYTAB_LOCATION = System.getProperty("sentry.e2e.hive.keytabs.location");
+  private static final String AUTHENTICATION_TYPE = System.getProperty(HS2_AUTH, "kerberos");
+
+  private String hostname;
+  private String port;
+
+  private String hivePrincipal;
   private HiveConf hiveConf;
 
   public UnmanagedHiveServer() {
-    Preconditions.checkNotNull(hs2Host);
-    if(auth.equalsIgnoreCase("kerberos")){
-      Preconditions.checkNotNull(kerbRealm);
-      Preconditions.checkNotNull(hivePrincipal);
-    }
-    this.hostname = hs2Host;
-    this.port = hs2Port;
     hiveConf = new HiveConf();
+    hostname = getSystemAndConfigProperties(HS2_HOST, null);
+    port = getSystemAndConfigProperties(HS2_PORT, "10000");
+    if(AUTHENTICATION_TYPE.equalsIgnoreCase("kerberos")){
+      hivePrincipal = getSystemAndConfigProperties(HS2_PRINCIPAL, null);
+    }
+  }
+
+  private String getSystemAndConfigProperties(String hiveVar, String defaultVal){
+    String val = hiveConf.get(hiveVar);
+    if(val == null || val.trim().equals("")){
+      LOGGER.warn(hiveVar + " not found in the client hive-site.xml");
+      if(defaultVal == null) {
+        val = System.getProperty(hiveVar);
+      }else {
+        val = System.getProperty(hiveVar, defaultVal);
+      }
+      Preconditions.checkNotNull(val, "Required system property missing: Provide it using -D"+ hiveVar);
+      LOGGER.info("Using from system property" + hiveVar + " = " + val );
+    }else {
+      LOGGER.info("Using from hive-site.xml" + hiveVar + " = " + val );
+    }
+    return val;
   }
 
   @Override
@@ -65,7 +85,10 @@ public class UnmanagedHiveServer implements HiveServer {
 
   @Override
   public String getProperty(String key) {
-   return hiveConf.get(key);
+    if(key.equalsIgnoreCase(HiveConf.ConfVars.METASTOREWAREHOUSE.varname)) {
+      return "hdfs://" + getSystemAndConfigProperties(key, null); //UnManagedHiveServer returns the warehouse directory without hdfs://
+    }
+   return getSystemAndConfigProperties(key, null);
   }
 
   @Override
@@ -73,18 +96,8 @@ public class UnmanagedHiveServer implements HiveServer {
     String url = getURL();
     Properties oProps = new Properties();
 
-    if(auth.equalsIgnoreCase("kerberos")){
-      String commandFormat = "kinit -kt /cdep/keytabs/%s.keytab %s@" + kerbRealm;
-      String command = String.format(commandFormat, user, user, user);
-      Process proc = Runtime.getRuntime().exec(command);
-      String status = (proc.waitFor()==0)?"passed":"failed";
-      LOGGER.info(command + ": " + status);
-
-      command = "kinit -R";
-      proc = Runtime.getRuntime().exec(command);
-      status = (proc.waitFor()==0)?"passed":"failed";
-      LOGGER.info(command + ": " + status);
-
+    if(AUTHENTICATION_TYPE.equalsIgnoreCase("kerberos")){
+      kinit(user);
       url += "principal=" + hivePrincipal;
     }else{
       oProps.setProperty("user",user);
@@ -92,5 +105,8 @@ public class UnmanagedHiveServer implements HiveServer {
     }
     LOGGER.info("url: " + url);
     return DriverManager.getConnection(url, oProps);
+  }
+  public void kinit(String user) throws Exception{
+    UserGroupInformation.loginUserFromKeytab(user, KEYTAB_LOCATION + "/" + user + ".keytab");
   }
 }

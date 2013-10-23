@@ -33,6 +33,8 @@ public class DFSFactory {
     switch (type) {
       case MiniDFS:
         return new MiniDFS(baseDir);
+      case ClusterDFS:
+        return new ClusterDFS();
       default:
         throw new UnsupportedOperationException(type.name());
     }
@@ -40,6 +42,7 @@ public class DFSFactory {
 
   @VisibleForTesting
   public static enum DFSType {
-    MiniDFS;
+    MiniDFS,
+    ClusterDFS;
   };
 }

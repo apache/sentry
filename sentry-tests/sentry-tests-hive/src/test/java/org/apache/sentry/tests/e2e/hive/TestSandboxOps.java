@@ -454,6 +454,8 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
         "test-" + (counter++)));
     Path allowedDfsDir = dfs.assertCreateDir("test-" + (counter++));
     Path restrictedDfsDir = dfs.assertCreateDir("test-" + (counter++));
+    //Hive needs write permissions on this local directory
+    baseDir.setWritable(true, false);
 
     policyFile
         .addRolesToGroup(USERGROUP1, "all_db1", "load_data")

@@ -173,6 +173,8 @@ public abstract class AbstractTestWithStaticConfiguration {
       }
       baseDir = null;
     }
-    dfs.tearDown();
+    if(dfs!=null) {
+      dfs.tearDown();
+    }
   }
 }

@@ -30,6 +30,7 @@ import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.policy.db.SimpleDBPolicyEngine;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.io.Resources;
@@ -44,6 +45,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
   private Context context;
   private File dataFile;
   private PolicyFile policyFile;
+  private static String prefix;
 
   @Before
   public void setup() throws Exception {
@@ -56,6 +58,15 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(MULTI_TYPE_DATA_FILE_NAME), to);
     to.close();
+
+    String hiveServer2 = System.getProperty("sentry.e2etest.hiveServer2Type", "InternalHiveServer2");
+    String policyOnHDFS = System.getProperty("sentry.e2etest.hive.policyOnHDFS", "true");
+    if(policyOnHDFS.trim().equalsIgnoreCase("true") && (hiveServer2.equals("UnmanagedHiveServer2") )){
+      String policyLocation = System.getProperty("sentry.e2etest.hive.policy.location", "/user/hive/sentry");
+      prefix = "hdfs://" + policyLocation + "/";
+    }else {
+      prefix = "file://" + context.getPolicyFile().getParent() + "/";
+    }
 
   }
 
@@ -79,7 +90,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
         .addRolesToGroup(USERGROUP1, "select_tbl1")
         .addRolesToGroup(USERGROUP2, "select_tbl2")
         .addPermissionsToRole("select_tbl1", "server=server1->db=db1->table=tbl1->action=select")
-        .addDatabase("db2", db2PolicyFileHandle.getPath())
+        .addDatabase("db2", prefix + db2PolicyFileHandle.getName())
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
@@ -174,9 +185,9 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
         .addRolesToGroup(USERGROUP1, "select_tbl1")
         .addRolesToGroup(USERGROUP2, "select_tbl2")
         .addPermissionsToRole("select_tbl1", "server=server1->db=db1->table=tbl1->action=select")
-        .addDatabase("db2", db2PolicyFileHandle.getPath())
-        .addDatabase("db3", db3PolicyFileHandle.getPath())
-        .addDatabase("db4", db4PolicyFileHandle.getPath())
+        .addDatabase("db2", prefix + db2PolicyFileHandle.getName())
+        .addDatabase("db3", prefix + db3PolicyFileHandle.getName())
+        .addDatabase("db4", prefix + db4PolicyFileHandle.getName())
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
@@ -264,7 +275,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
         .addRolesToGroup(USERGROUP1, "select_tbl1")
         .addRolesToGroup(USERGROUP2, "select_tbl2")
         .addPermissionsToRole("select_tbl1", "server=server1->db=db1->table=tbl1->action=select")
-        .addDatabase("db2", db2PolicyFileHandle.getPath())
+        .addDatabase("db2", prefix + db2PolicyFileHandle.getName())
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
@@ -391,8 +402,8 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
         .addRolesToGroup(USERGROUP1, "select_tbl1")
         .addRolesToGroup(USERGROUP2, "select_tbl2")
         .addPermissionsToRole("select_tbl1", "server=server1->db=db1->table=tbl1->action=select")
-        .addDatabase("db2", db2PolicyFileHandle.getPath())
-        .addDatabase("default", defaultPolicyFileHandle.getPath())
+        .addDatabase("db2", prefix + db2PolicyFileHandle.getName())
+        .addDatabase("default", prefix + defaultPolicyFileHandle.getName())
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
@@ -412,6 +423,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     Connection connection = context.createConnection(ADMIN1, "hive");
     Statement statement = context.createStatement(connection);
     statement.execute("USE default");
+    statement.execute("DROP TABLE IF EXISTS dtab");
     statement.execute("CREATE TABLE dtab(B INT, A STRING) " +
                       " row format delimited fields terminated by '|'  stored as textfile");
 
