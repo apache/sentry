@@ -21,6 +21,7 @@ import static org.junit.Assert.assertFalse;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.security.CodeSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -68,14 +69,15 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
   public void testFuncPrivileges1() throws Exception {
     String dbName1 = "db_1";
     String tableName1 = "tb_1";
-
+    String udfClassName = "org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf";
+    CodeSource udfSrc = Class.forName(udfClassName).getProtectionDomain().getCodeSource();
     policyFile
         .addRolesToGroup(USERGROUP1, "db1_all", "UDF_JAR")
         .addRolesToGroup(USERGROUP2, "db1_tab1", "UDF_JAR")
         .addRolesToGroup(USERGROUP3, "db1_tab1")
         .addPermissionsToRole("db1_all", "server=server1->db=" + dbName1)
         .addPermissionsToRole("db1_tab1", "server=server1->db=" + dbName1 + "->table=" + tableName1)
-        .addPermissionsToRole("UDF_JAR", "server=server1->uri=file://${user.home}/.m2")
+        .addPermissionsToRole("UDF_JAR", "server=server1->uri=file://" + udfSrc.getLocation().getPath())
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
