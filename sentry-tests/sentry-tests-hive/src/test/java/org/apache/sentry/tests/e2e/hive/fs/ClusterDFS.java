@@ -34,12 +34,12 @@ public class ClusterDFS extends AbstractDFS{
   private static final String testUser = System.getProperty(TEST_USER, "hive");
   private static final String KEYTAB_LOCATION = System.getProperty("sentry.e2e.hive.keytabs.location");
   private Path sentryDir;
+  private UserGroupInformation ugi;
 
   ClusterDFS() throws Exception{
-    Configuration conf = new Configuration();
-    fileSystem = FileSystem.get(conf);
+    ugi = UserGroupInformation.loginUserFromKeytabAndReturnUGI(testUser, KEYTAB_LOCATION + "/" + testUser + ".keytab");
+    fileSystem = getFS(ugi);
     LOGGER.info("Creating basedir as user : " + testUser);
-    kinit(testUser);
     String policyDir = System.getProperty("sentry.e2etest.hive.policy.location", "/user/hive/sentry");
     sentryDir = assertCreateDir(policyDir);
     dfsBaseDir = assertCreateDir("/tmp/" + (new Random()).nextInt());
@@ -47,7 +47,6 @@ public class ClusterDFS extends AbstractDFS{
 
   @Override
   public Path assertCreateDir(String path) throws Exception{
-    kinit(testUser);
     if(path.startsWith("/")){
       return super.assertCreateDfsDir(new Path(path));
     }else {
@@ -57,16 +56,15 @@ public class ClusterDFS extends AbstractDFS{
 
   @Override
   protected void cleanBaseDir() throws Exception {
-    kinit(testUser);
     super.cleanBaseDir();
     super.cleanDir(sentryDir);
   }
-  @Override
-  public void createBaseDir() throws Exception {
-    kinit(testUser);
-    super.createBaseDir();
-  }
-  public void kinit(String user) throws Exception{
-    UserGroupInformation.loginUserFromKeytab(user, KEYTAB_LOCATION + "/" + user + ".keytab");
+  private FileSystem getFS(UserGroupInformation ugi) throws Exception {
+    return ugi.doAs(new PrivilegedExceptionAction<FileSystem>() {
+      public FileSystem run() throws Exception {
+        Configuration conf = new Configuration();
+        return FileSystem.get(conf);
+      }
+    });
   }
 }
