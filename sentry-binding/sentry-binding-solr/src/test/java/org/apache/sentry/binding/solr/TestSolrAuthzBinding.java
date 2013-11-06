@@ -174,7 +174,7 @@ public class TestSolrAuthzBinding {
   private void expectAuthException(SolrAuthzBinding binding, Subject subject,
       Collection collection, EnumSet<SearchModelAction> action) throws Exception {
      try {
-       binding.authorizeCollection(new Subject("bogus"), infoCollection, querySet);
+       binding.authorizeCollection(subject, collection, action);
        Assert.fail("Expected SentrySolrAuthorizationException");
      } catch(SentrySolrAuthorizationException e) {
      }
