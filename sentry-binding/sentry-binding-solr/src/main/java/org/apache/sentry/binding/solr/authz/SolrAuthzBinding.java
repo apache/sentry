@@ -16,10 +16,12 @@
  */
 package org.apache.sentry.binding.solr.authz;
 
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
 import java.util.Set;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.search.Collection;
 import org.apache.sentry.core.model.search.SearchModelAction;
@@ -28,6 +30,9 @@ import org.apache.sentry.binding.solr.conf.SolrAuthzConf.AuthzConfVars;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.common.AuthorizationProvider;
 import org.apache.sentry.provider.common.ProviderBackend;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.core.HdfsDirectoryFactory;
+import org.apache.solr.util.HdfsUtil;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,10 +65,11 @@ public class SolrAuthzBinding {
       + policyEngineName + ", provider backend " + providerBackendName);
     // load the provider backend class
     Constructor<?> providerBackendConstructor =
-      Class.forName(providerBackendName).getDeclaredConstructor(String.class);
+      Class.forName(providerBackendName).getDeclaredConstructor(Configuration.class, String.class);
     providerBackendConstructor.setAccessible(true);
+    Configuration conf = getConf();
     ProviderBackend providerBackend =
-      (ProviderBackend) providerBackendConstructor.newInstance(new Object[] {resourceName});
+      (ProviderBackend) providerBackendConstructor.newInstance(new Object[] {conf, resourceName});
 
     // load the policy engine class
     Constructor<?> policyConstructor =
@@ -99,5 +105,16 @@ public class SolrAuthzBinding {
       throw new SentrySolrAuthorizationException("User " + subject.getName() +
         " does not have privileges for " + collection.getName());
     }
+  }
+
+  private Configuration getConf() throws IOException {
+    Configuration conf = new Configuration();
+    String confDir = System.getProperty(HdfsDirectoryFactory.CONFIG_DIRECTORY);
+    try {
+      HdfsUtil.addHdfsResources(conf, confDir);
+    } catch (SolrException se) {
+      throw new IOException("Sentry binding encountered an exception trying to create Configuration", se);
+    }
+    return conf;
   }
 }

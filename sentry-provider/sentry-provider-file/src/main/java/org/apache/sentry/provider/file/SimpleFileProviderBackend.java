@@ -72,7 +72,11 @@ public class SimpleFileProviderBackend implements ProviderBackend {
   private boolean processed;
 
   public SimpleFileProviderBackend(String resourcePath) throws IOException {
-    this(new Configuration(), new Path(resourcePath));
+    this(new Configuration(), resourcePath);
+  }
+
+  public SimpleFileProviderBackend(Configuration conf, String resourcePath) throws IOException {
+    this(conf, new Path(resourcePath));
   }
 
   @VisibleForTesting

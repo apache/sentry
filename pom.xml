@@ -53,6 +53,7 @@ limitations under the License.
     <maven.compile.source>1.6</maven.compile.source>
     <maven.compile.target>1.6</maven.compile.target>
     <hive.version>0.10.0-cdh4.4.0-SNAPSHOT</hive.version>
+    <solr.version>4.4.0-search-1.1.0-SNAPSHOT</solr.version>
     <hadoop.version>2.0.0-cdh4.4.0-SNAPSHOT</hadoop.version>
     <junit.version>4.9</junit.version>
     <fest.reflect.version>1.4.1</fest.reflect.version>
@@ -236,6 +237,12 @@ limitations under the License.
         <groupId>org.apache.hive</groupId>
         <artifactId>hive-anttasks</artifactId>
         <version>${hive.version}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.solr</groupId>
+        <artifactId>solr-core</artifactId>
+        <version>${solr.version}</version>
         <scope>provided</scope>
       </dependency>
       <dependency>
