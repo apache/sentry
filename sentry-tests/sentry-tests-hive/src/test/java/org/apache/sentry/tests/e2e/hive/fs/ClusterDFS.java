@@ -41,8 +41,8 @@ public class ClusterDFS extends AbstractDFS{
     fileSystem = getFS(ugi);
     LOGGER.info("Creating basedir as user : " + testUser);
     String policyDir = System.getProperty("sentry.e2etest.hive.policy.location", "/user/hive/sentry");
-    sentryDir = assertCreateDir(policyDir);
-    dfsBaseDir = assertCreateDir("/tmp/" + (new Random()).nextInt());
+    sentryDir = super.assertCreateDfsDir(new Path(fileSystem.getUri() + policyDir));
+    dfsBaseDir = super.assertCreateDfsDir(new Path(fileSystem.getUri() + "/tmp/" + (new Random()).nextInt()));
   }
 
   @Override
