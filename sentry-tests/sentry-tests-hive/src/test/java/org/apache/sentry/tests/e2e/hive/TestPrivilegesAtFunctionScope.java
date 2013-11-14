@@ -101,6 +101,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     statement.execute("USE " + dbName1);
     statement.execute(
         "CREATE TEMPORARY FUNCTION printf_test AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
+    statement.execute("SELECT printf_test(value) FROM " + tableName1);
     statement.execute("DROP TEMPORARY FUNCTION printf_test");
     context.close();
 
@@ -110,6 +111,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     statement.execute("USE " + dbName1);
     statement.execute(
         "CREATE TEMPORARY FUNCTION printf_test_2 AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
+    statement.execute("SELECT printf_test_2(value) FROM " + tableName1);
     statement.execute("DROP TEMPORARY FUNCTION printf_test");
     context.close();
 
