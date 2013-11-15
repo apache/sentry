@@ -16,12 +16,14 @@
  */
 package org.apache.sentry.binding.solr.authz;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
 import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.search.Collection;
 import org.apache.sentry.core.model.search.SearchModelAction;
@@ -30,9 +32,6 @@ import org.apache.sentry.binding.solr.conf.SolrAuthzConf.AuthzConfVars;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.common.AuthorizationProvider;
 import org.apache.sentry.provider.common.ProviderBackend;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.core.HdfsDirectoryFactory;
-import org.apache.solr.util.HdfsUtil;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +39,8 @@ import org.slf4j.LoggerFactory;
 public class SolrAuthzBinding {
   private static final Logger LOG = LoggerFactory
       .getLogger(SolrAuthzBinding.class);
+  private static final String[] HADOOP_CONF_FILES = {"core-site.xml",
+    "hdfs-site.xml", "mapred-site.xml", "yarn-site.xml", "hadoop-site.xml"};
 
   private final SolrAuthzConf authzConf;
   private final AuthorizationProvider authProvider;
@@ -109,11 +110,23 @@ public class SolrAuthzBinding {
 
   private Configuration getConf() throws IOException {
     Configuration conf = new Configuration();
-    String confDir = System.getProperty(HdfsDirectoryFactory.CONFIG_DIRECTORY);
-    try {
-      HdfsUtil.addHdfsResources(conf, confDir);
-    } catch (SolrException se) {
-      throw new IOException("Sentry binding encountered an exception trying to create Configuration", se);
+    String confDir = System.getProperty("solr.hdfs.confdir");
+    if (confDir != null && confDir.length() > 0) {
+      File confDirFile = new File(confDir);
+      if (!confDirFile.exists()) {
+        throw new IOException("Resource directory does not exist: " + confDirFile.getAbsolutePath());
+      }
+      if (!confDirFile.isDirectory()) {
+        throw new IOException("Specified resource directory is not a directory" + confDirFile.getAbsolutePath());
+      }
+      if (!confDirFile.canRead()) {
+        throw new IOException("Resource directory must be readable by the Solr process: " + confDirFile.getAbsolutePath());
+      }
+      for (String file : HADOOP_CONF_FILES) {
+        if (new File(confDirFile, file).exists()) {
+          conf.addResource(new Path(confDir, file));
+        }
+      }
     }
     return conf;
   }
