@@ -24,6 +24,7 @@ import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.search.Collection;
 import org.apache.sentry.core.model.search.SearchModelAction;
@@ -36,11 +37,20 @@ import org.apache.sentry.provider.common.ProviderBackend;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Strings;
+
 public class SolrAuthzBinding {
   private static final Logger LOG = LoggerFactory
       .getLogger(SolrAuthzBinding.class);
   private static final String[] HADOOP_CONF_FILES = {"core-site.xml",
     "hdfs-site.xml", "mapred-site.xml", "yarn-site.xml", "hadoop-site.xml"};
+  public static final String KERBEROS_ENABLED = "solr.hdfs.security.kerberos.enabled";
+  public static final String KERBEROS_KEYTAB = "solr.hdfs.security.kerberos.keytabfile";
+  public static final String KERBEROS_PRINCIPAL = "solr.hdfs.security.kerberos.principal";
+  private static final String kerberosEnabledProp = Strings.nullToEmpty(System.getProperty(KERBEROS_ENABLED)).trim();
+  private static final String keytabProp = Strings.nullToEmpty(System.getProperty(KERBEROS_KEYTAB)).trim();
+  private static final String principalProp = Strings.nullToEmpty(System.getProperty(KERBEROS_PRINCIPAL)).trim();
+  private static Boolean kerberosInit;
 
   private final SolrAuthzConf authzConf;
   private final AuthorizationProvider authProvider;
@@ -68,6 +78,10 @@ public class SolrAuthzBinding {
     Constructor<?> providerBackendConstructor =
       Class.forName(providerBackendName).getDeclaredConstructor(Configuration.class, String.class);
     providerBackendConstructor.setAccessible(true);
+
+    if (kerberosEnabledProp.equalsIgnoreCase("true")) {
+      initKerberos(keytabProp, principalProp);
+    }
     Configuration conf = getConf();
     ProviderBackend providerBackend =
       (ProviderBackend) providerBackendConstructor.newInstance(new Object[] {conf, resourceName});
@@ -129,5 +143,35 @@ public class SolrAuthzBinding {
       }
     }
     return conf;
+  }
+
+  /**
+   * Initialize kerberos via UserGroupInformation.  Will only attempt to login
+   * during the first request, subsequent calls will have no effect.
+   */
+  public static void initKerberos(String keytabFile, String principal) {
+    if (keytabFile == null || keytabFile.length() == 0) {
+      throw new IllegalArgumentException("keytabFile required because kerberos is enabled");
+    }
+    if (principal == null || principal.length() == 0) {
+      throw new IllegalArgumentException("principal required because kerberos is enabled");
+    }
+    synchronized (SolrAuthzBinding.class) {
+      if (kerberosInit == null) {
+        kerberosInit = new Boolean(true);
+        Configuration conf = new Configuration();
+        conf.set("hadoop.security.authentication", "kerberos");
+        UserGroupInformation.setConfiguration(conf);
+        LOG.info(
+            "Attempting to acquire kerberos ticket with keytab: {}, principal: {} ",
+            keytabFile, principal);
+        try {
+          UserGroupInformation.loginUserFromKeytab(principal, keytabFile);
+        } catch (IOException ioe) {
+          throw new RuntimeException(ioe);
+        }
+        LOG.info("Got Kerberos ticket");
+      }
+    }
   }
 }
