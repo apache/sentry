@@ -54,6 +54,7 @@ limitations under the License.
     <maven.compile.target>1.6</maven.compile.target>
     <hive.version>0.10.0-cdh4.4.0-SNAPSHOT</hive.version>
     <hadoop.version>2.0.0-cdh4.4.0-SNAPSHOT</hadoop.version>
+    <solr.version>4.4.0-cdh5.0.0-SNAPSHOT</solr.version>
     <junit.version>4.9</junit.version>
     <fest.reflect.version>1.4.1</fest.reflect.version>
     <log4j.version>1.2.16</log4j.version>
@@ -109,6 +110,18 @@ limitations under the License.
         <artifactId>hive-metastore</artifactId>
         <version>${hive.version}</version>
         <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.solr</groupId>
+        <artifactId>solr-test-framework</artifactId>
+        <version>${solr.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.solr</groupId>
+        <artifactId>solr-solrj</artifactId>
+        <version>${solr.version}</version>
+        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>junit</groupId>
@@ -341,6 +354,8 @@ limitations under the License.
                   <exclude>**/service.properties</exclude>
                   <exclude>**/kv1.dat</exclude>
                   <exclude>**/*.lck</exclude>
+                  <!-- exclude generated solr config files -->
+                  <exclude>**/solr/collection1/conf/**</exclude>
                 </excludes>
               </configuration>
             </execution>
