@@ -94,7 +94,7 @@ public abstract class AbstractTestWithStaticConfiguration {
         baseDir, confDir, dataDir, policyFileLocation);
   }
   protected void dropDb(String user, String...dbs) throws Exception {
-    Connection connection = context.createConnection(user, "password");
+    Connection connection = context.createConnection(user);
     Statement statement = connection.createStatement();
     for(String db : dbs) {
       statement.execute("DROP DATABASE IF EXISTS " + db + " CASCADE");
@@ -103,7 +103,7 @@ public abstract class AbstractTestWithStaticConfiguration {
     connection.close();
   }
   protected void createDb(String user, String...dbs) throws Exception {
-    Connection connection = context.createConnection(user, "password");
+    Connection connection = context.createConnection(user);
     Statement statement = connection.createStatement();
     for(String db : dbs) {
       statement.execute("CREATE DATABASE " + db);
@@ -113,7 +113,7 @@ public abstract class AbstractTestWithStaticConfiguration {
   }
   protected void createTable(String user, String db, File dataFile, String...tables)
       throws Exception {
-    Connection connection = context.createConnection(user, "password");
+    Connection connection = context.createConnection(user);
     Statement statement = connection.createStatement();
     statement.execute("USE " + db);
     for(String table : tables) {

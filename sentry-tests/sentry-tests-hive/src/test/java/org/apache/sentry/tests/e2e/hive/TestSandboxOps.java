@@ -81,7 +81,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
     }
     for (String user : new String[] { USER1_1, USER1_2 }) {
       for (String dbName : new String[] { "db1", "db2" }) {
-        Connection userConn = context.createConnection(user, "foo");
+        Connection userConn = context.createConnection(user);
         String tabName = user + "_tab1";
         Statement userStmt = context.createStatement(userConn);
         // Positive case: test user1 and user2 has
@@ -111,7 +111,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
     policyFile
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
-    Connection adminCon = context.createConnection(ADMIN1, "password");
+    Connection adminCon = context.createConnection(ADMIN1);
     Statement adminStmt = context.createStatement(adminCon);
     String dbName = "db1";
     adminStmt.execute("use default");
@@ -146,7 +146,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
         .addRolesToGroup(USERGROUP1, "db1_tab2_all")
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
-    Connection adminCon = context.createConnection(ADMIN1, "password");
+    Connection adminCon = context.createConnection(ADMIN1);
     Statement adminStmt = context.createStatement(adminCon);
     String dbName = "db1";
     adminStmt.execute("use default");
@@ -157,7 +157,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
     adminStmt.execute("create table table_2 (id int)");
     adminStmt.close();
     adminCon.close();
-    Connection userConn = context.createConnection(USER1_1, "password");
+    Connection userConn = context.createConnection(USER1_1);
     Statement userStmt = context.createStatement(userConn);
     userStmt.execute("use " + dbName);
     // user1 doesn't have select privilege on table_1, so insert/select should fail
@@ -193,7 +193,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
     // create dbs
-    Connection adminCon = context.createConnection(ADMIN1, "foo");
+    Connection adminCon = context.createConnection(ADMIN1);
     Statement adminStmt = context.createStatement(adminCon);
     String dbName = "db1";
     adminStmt.execute("use default");
@@ -211,7 +211,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
     adminStmt.close();
     adminCon.close();
 
-    Connection userConn = context.createConnection(USER2_1, "foo");
+    Connection userConn = context.createConnection(USER2_1);
     Statement userStmt = context.createStatement(userConn);
     userStmt.execute("use " + dbName);
 
@@ -271,7 +271,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
     dropDb(ADMIN1, DB1, DB2);
     createDb(ADMIN1, DB1, DB2);
 
-    Connection connection = context.createConnection(USER1_1, "password");
+    Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
 
     // a
@@ -343,7 +343,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
     dropDb(ADMIN1, DB1);
     createDb(ADMIN1, DB1);
     createTable(ADMIN1, DB1, dataFile, TBL1);
-    Connection connection = context.createConnection(ADMIN1, "password");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
     statement.execute("DROP INDEX IF EXISTS " + INDEX1 + " ON " + TBL1);
@@ -351,7 +351,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
         + " (under_col) as 'COMPACT' WITH DEFERRED REBUILD");
     statement.close();
     connection.close();
-    connection = context.createConnection(USER1_1, "password");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
     context.assertAuthzException(statement, "SELECT * FROM " + TBL1 + " WHERE under_col == 5");
@@ -405,7 +405,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
     createDb(ADMIN1, DB1);
 
     createTable(USER1_1, DB1, dataFile, TBL1, TBL2);
-    Connection connection = context.createConnection(USER1_1, "password");
+    Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
     // c
     statement.execute("USE " + DB1);
@@ -423,7 +423,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
     statement.close();
     connection.close();
 
-    connection = context.createConnection(USER2_1, "password");
+    connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
 
     // a
@@ -469,7 +469,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
     dropDb(ADMIN1, DB1);
     createDb(ADMIN1, DB1);
     createTable(ADMIN1, DB1, dataFile, TBL1);
-    Connection connection = context.createConnection(USER1_1, "password");
+    Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
     statement.execute("INSERT OVERWRITE LOCAL DIRECTORY 'file://" + allowedDir.getPath() + "' SELECT * FROM " + TBL1);
@@ -506,7 +506,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
     createTable(ADMIN1, DB2, dataFile, TBL2, TBL3);
 
     // a
-    Connection connection = context.createConnection(USER1_1, "password");
+    Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
     statement.execute("CREATE TABLE " + rTab1 + " AS SELECT * FROM " + DB2 + "." + TBL2);
@@ -540,7 +540,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
     PolicyFiles.copyFilesToDir(fileSystem, dfs.getBaseDir(), db2PolicyFileHandle);
 
     // setup db objects needed by the test
-    Connection connection = context.createConnection(ADMIN1, "hive");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
 
     statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
@@ -561,7 +561,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
 
     // test per-db file for db2
 
-    connection = context.createConnection(USER2_1, "password");
+    connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
     // test user2 can use db2
     statement.execute("USE db2");
@@ -571,7 +571,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
     connection.close();
 
     //test cleanup
-    connection = context.createConnection(ADMIN1, "hive");
+    connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
     statement.execute("DROP DATABASE db1 CASCADE");
     statement.execute("DROP DATABASE db2 CASCADE");

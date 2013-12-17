@@ -77,7 +77,7 @@ public class TestEndToEnd extends AbstractTestWithStaticConfiguration {
     String tableName1 = "tb_1";
     String tableName2 = "tb_2";
     String viewName1 = "view_1";
-    Connection connection = context.createConnection(ADMIN1, "foo");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     // 1
     statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
@@ -105,7 +105,7 @@ public class TestEndToEnd extends AbstractTestWithStaticConfiguration {
         .write(context.getPolicyFile());
 
     // 4
-    connection = context.createConnection(USER1_1, "foo");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("USE " + dbName1);
     statement.execute("DROP TABLE IF EXISTS " + dbName1 + "." + tableName1);
@@ -119,7 +119,7 @@ public class TestEndToEnd extends AbstractTestWithStaticConfiguration {
     connection.close();
 
     // 7
-    connection = context.createConnection(ADMIN1, "foo");
+    connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
     statement.execute("USE " + dbName2);
     statement.execute("DROP TABLE IF EXISTS " + dbName1 + "." + tableName1);
@@ -129,7 +129,7 @@ public class TestEndToEnd extends AbstractTestWithStaticConfiguration {
     connection.close();
 
     // 8
-    connection = context.createConnection(USER1_1, "foo");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("USE " + dbName2);
     statement.execute("INSERT OVERWRITE TABLE " +

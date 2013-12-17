@@ -85,7 +85,7 @@ public class TestMovingToProduction extends AbstractTestWithStaticConfiguration 
     String dbName2 = "proddb";
     String tableName1 = "tb_1";
 
-    Connection connection = context.createConnection(ADMIN1, "foo");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
     statement.execute("DROP DATABASE IF EXISTS " + dbName2 + " CASCADE");
@@ -98,7 +98,7 @@ public class TestMovingToProduction extends AbstractTestWithStaticConfiguration 
     connection.close();
 
     // a
-    connection = context.createConnection(USER1_1, "foo");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("USE " + dbName1);
     statement.execute("DROP TABLE IF EXISTS " + tableName1);
@@ -128,7 +128,7 @@ public class TestMovingToProduction extends AbstractTestWithStaticConfiguration 
     statement.execute("DESCRIBE " + tableName1);
 
     // c
-    connection = context.createConnection(USER2_1, "foo");
+    connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
     context.assertAuthzException(statement, "USE " + dbName2);
     context.assertAuthzException(statement, "INSERT OVERWRITE TABLE "
@@ -139,7 +139,7 @@ public class TestMovingToProduction extends AbstractTestWithStaticConfiguration 
     connection.close();
 
     // d
-    connection = context.createConnection(USER1_1, "foo");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("USE " + dbName2);
     context.assertAuthzException(statement, "DROP TABLE " + tableName1);
@@ -165,7 +165,7 @@ public class TestMovingToProduction extends AbstractTestWithStaticConfiguration 
     String dbName1 = "db_1";
     String dbName2 = "proddb";
     String tableName1 = "tb_1";
-    Connection connection = context.createConnection(ADMIN1, "foo");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
     statement.execute("DROP DATABASE IF EXISTS " + dbName2 + " CASCADE");
@@ -178,7 +178,7 @@ public class TestMovingToProduction extends AbstractTestWithStaticConfiguration 
     connection.close();
 
     // a
-    connection = context.createConnection(USER1_1, "foo");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("DROP TABLE IF EXISTS " + dbName1 + "." + tableName1);
     statement.execute("create table " + dbName1 + "." + tableName1
@@ -204,7 +204,7 @@ public class TestMovingToProduction extends AbstractTestWithStaticConfiguration 
         statement.execute("DESCRIBE " + dbName2 + "." + tableName1));
 
     // c
-    connection = context.createConnection(USER2_1, "foo");
+    connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
 
     context.assertAuthzException(statement, "INSERT OVERWRITE TABLE "
@@ -217,7 +217,7 @@ public class TestMovingToProduction extends AbstractTestWithStaticConfiguration 
     connection.close();
 
     // d
-    connection = context.createConnection(USER1_1, "foo");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("USE " + dbName2);
     context.assertAuthzException(statement, "DROP TABLE " + tableName1);

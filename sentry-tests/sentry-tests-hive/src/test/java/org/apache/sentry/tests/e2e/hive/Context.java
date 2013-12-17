@@ -73,7 +73,9 @@ public class Context {
     statements = Sets.newHashSet();
   }
 
-  public Connection createConnection(String username, String password) throws Exception {
+  public Connection createConnection(String username) throws Exception {
+
+    String password = username;
     Connection connection =  hiveServer.createConnection(username, password);
     connections.add(connection);
     assertNotNull("Connection is null", connection);

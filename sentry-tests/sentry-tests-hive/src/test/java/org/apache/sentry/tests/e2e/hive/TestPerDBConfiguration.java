@@ -30,7 +30,6 @@ import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.policy.db.SimpleDBPolicyEngine;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.io.Resources;
@@ -95,7 +94,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
         .write(context.getPolicyFile());
 
     // setup db objects needed by the test
-    Connection connection = context.createConnection(ADMIN1, "hive");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
 
     statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
@@ -115,7 +114,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     connection.close();
 
     // test execution
-    connection = context.createConnection(USER1_1, "password");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("USE db1");
     // test user1 can execute query on tbl1
@@ -129,7 +128,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
 
     // test per-db file for db2
 
-    connection = context.createConnection(USER2_1, "password");
+    connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
     statement.execute("USE db2");
     // test user2 can execute query on tbl2
@@ -143,7 +142,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     connection.close();
 
     //test cleanup
-    connection = context.createConnection(ADMIN1, "hive");
+    connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
     statement.execute("DROP DATABASE db1 CASCADE");
     statement.execute("DROP DATABASE db2 CASCADE");
@@ -192,7 +191,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
         .write(context.getPolicyFile());
 
     // setup db objects needed by the test
-    Connection connection = context.createConnection(ADMIN1, "hive");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
 
     statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
@@ -227,14 +226,14 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     connection.close();
 
     // test execution
-    connection = context.createConnection(USER1_1, "password");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("USE db1");
     // test user1 can execute query on tbl1
     verifyCount(statement, "SELECT COUNT(*) FROM tbl1");
     connection.close();
 
-    connection = context.createConnection(USER2_1, "password");
+    connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
     statement.execute("USE db2");
     // test user1 can execute query on tbl1
@@ -242,14 +241,14 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     connection.close();
 
     // verify no access to db3 due to badly formatted rule in db3 policy file
-    connection = context.createConnection(USER3_1, "password");
+    connection = context.createConnection(USER3_1);
     statement = context.createStatement(connection);
     context.assertAuthzException(statement, "USE db3");
     // test user1 can execute query on tbl1
     context.assertAuthzException(statement, "SELECT COUNT(*) FROM db3.tbl3");
     connection.close();
 
-    connection = context.createConnection(USER4_1, "password");
+    connection = context.createConnection(USER4_1);
     statement = context.createStatement(connection);
     statement.execute("USE db4");
     // test user1 can execute query on tbl1
@@ -257,7 +256,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     connection.close();
 
     //test cleanup
-    connection = context.createConnection(ADMIN1, "hive");
+    connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
     statement.execute("DROP DATABASE db1 CASCADE");
     statement.execute("DROP DATABASE db2 CASCADE");
@@ -291,7 +290,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     // by then.
     System.setProperty(SimpleDBPolicyEngine.ACCESS_ALLOW_URI_PER_DB_POLICYFILE, "true");
     // setup db objects needed by the test
-    Connection connection = context.createConnection(ADMIN1, "hive");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
 
     statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
@@ -311,7 +310,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     connection.close();
 
     // test execution
-    connection = context.createConnection(USER1_1, "password");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("USE db1");
     // test user1 can execute query on tbl1
@@ -324,7 +323,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     connection.close();
 
     // test per-db file for db2
-    connection = context.createConnection(USER2_1, "password");
+    connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
     statement.execute("USE db2");
     // test user2 can execute query on tbl2
@@ -341,7 +340,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     connection.close();
 
     //test cleanup
-    connection = context.createConnection(ADMIN1, "hive");
+    connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
     statement.execute("DROP DATABASE db1 CASCADE");
     statement.execute("DROP DATABASE db2 CASCADE");
@@ -363,7 +362,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
         .write(context.getPolicyFile());
 
     // setup db objects needed by the test
-    Connection connection = context.createConnection(ADMIN1, "hive");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
 
     statement.execute("USE default");
@@ -378,14 +377,14 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     connection.close();
 
     // user_1 should be able to access default
-    connection = context.createConnection(USER1_1, "password");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("USE default");
     statement.close();
     connection.close();
 
     // user_2 should NOT be able to access default since it does have access to any other object
-    connection = context.createConnection(USER2_1, "password");
+    connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
     context.assertAuthzException(statement, "USE default");
     statement.close();
@@ -420,7 +419,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
         .write(defaultPolicyFileHandle);
 
     // setup db objects needed by the test
-    Connection connection = context.createConnection(ADMIN1, "hive");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("USE default");
     statement.execute("DROP TABLE IF EXISTS dtab");
@@ -442,7 +441,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     connection.close();
 
     // user_1 should be able to switch to default, but not the tables from default
-    connection = context.createConnection(USER1_1, "password");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("USE db1");
     statement.execute("USE default");
@@ -454,7 +453,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     connection.close();
 
     // user_2 should be able to access default and select from default's tables
-    connection = context.createConnection(USER2_1, "password");
+    connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
     statement.execute("USE db2");
     statement.execute("USE default");
@@ -465,7 +464,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     connection.close();
 
     // user_3 should NOT be able to switch to default since it doesn't have access to any objects
-    connection = context.createConnection(USER3_1, "password");
+    connection = context.createConnection(USER3_1);
     statement = context.createStatement(connection);
     context.assertAuthzException(statement, "USE default");
     statement.close();

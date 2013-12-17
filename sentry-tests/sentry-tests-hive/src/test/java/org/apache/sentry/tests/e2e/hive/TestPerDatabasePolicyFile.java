@@ -105,7 +105,7 @@ public class TestPerDatabasePolicyFile extends AbstractTestWithStaticConfigurati
         .write(context.getPolicyFile());
 
     // setup db objects needed by the test
-    Connection connection = context.createConnection(ADMIN1, "password");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     createSampleDbTable(statement, "db1", "tbl1");
     createSampleDbTable(statement, "db2", "tbl1");
@@ -125,7 +125,7 @@ public class TestPerDatabasePolicyFile extends AbstractTestWithStaticConfigurati
 
 
     // test execution
-    connection = context.createConnection(USER1_1, "password");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     // test user can query table
     context.assertAuthzException(statement, "USE db1");

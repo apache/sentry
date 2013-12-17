@@ -66,7 +66,7 @@ AbstractTestWithStaticConfiguration {
    * The table is assumed to have two colums under_col int and value string.
    */
   private void positiveDescribeShowTests(String user, String db, String table) throws Exception {
-    Connection connection = context.createConnection(user, "password");
+    Connection connection = context.createConnection(user);
     Statement statement = context.createStatement(connection);
     statement.execute("USE " + db);
     ResultSet rs = statement.executeQuery("DESCRIBE " + table);
@@ -114,7 +114,7 @@ AbstractTestWithStaticConfiguration {
    * The table is assumed to have two columns under_col int and value string.
    */
   private void negativeDescribeShowTests(String user, String db, String table) throws Exception {
-    Connection connection = context.createConnection(user, "password");
+    Connection connection = context.createConnection(user);
     Statement statement = context.createStatement(connection);
     statement.execute("USE " + db);
     context.assertAuthzException(statement, "DESCRIBE " + table);
@@ -228,7 +228,7 @@ AbstractTestWithStaticConfiguration {
     dropDb(ADMIN1, DB1);
     createDb(ADMIN1, DB1);
     createTable(ADMIN1, DB1, dataFile, TBL1);
-    Connection connection = context.createConnection(ADMIN1, "password");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
     statement.execute("DROP VIEW IF EXISTS " + VIEW1);
@@ -286,14 +286,14 @@ AbstractTestWithStaticConfiguration {
     createDb(ADMIN1, DB1, DB2);
     createTable(ADMIN1, DB1, dataFile, TBL1);
 
-    Connection connection = context.createConnection(ADMIN1, "password");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     assertTrue(statement.executeQuery("DESCRIBE DATABASE " + DB1).next());
     assertTrue(statement.executeQuery("DESCRIBE DATABASE EXTENDED " + DB1).next());
     statement.close();
     connection.close();
 
-    connection = context.createConnection(USER1_1, "password");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     assertTrue(statement.executeQuery("DESCRIBE DATABASE " + DB1).next());
     assertTrue(statement.executeQuery("DESCRIBE DATABASE EXTENDED " + DB1).next());
@@ -320,7 +320,7 @@ AbstractTestWithStaticConfiguration {
       .write(context.getPolicyFile());
     dropDb(ADMIN1, DB1, DB2);
     createDb(ADMIN1, DB1, DB2);
-    Connection connection = context.createConnection(ADMIN1, "password");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     assertTrue(statement.executeQuery("DESCRIBE DATABASE default").next());
     statement.execute("USE " + DB1);
@@ -330,7 +330,7 @@ AbstractTestWithStaticConfiguration {
     statement.close();
     connection.close();
 
-    connection = context.createConnection(USER1_1, "password");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     context.assertAuthzException(statement, "DESCRIBE DATABASE default");
     context.assertAuthzException(statement, "DESCRIBE DATABASE " + DB1);
@@ -355,7 +355,7 @@ AbstractTestWithStaticConfiguration {
     dropDb(ADMIN1, DB1);
     createDb(ADMIN1, DB1);
     createTable(ADMIN1, DB1, dataFile, TBL1);
-    Connection connection = context.createConnection(ADMIN1, "password");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
     statement.execute("DROP INDEX IF EXISTS " + INDEX1 + " ON " + TBL1);
@@ -369,7 +369,7 @@ AbstractTestWithStaticConfiguration {
     statement.execute("CREATE VIEW " + VIEW1 + " (value) AS SELECT value from " + TBL1 + " LIMIT 10");
     statement.close();
     connection.close();
-    connection = context.createConnection(USER1_1, "password");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
     context.assertAuthzException(statement, "SHOW INDEX ON " + TBL1);
@@ -412,7 +412,7 @@ AbstractTestWithStaticConfiguration {
       .write(context.getPolicyFile());
     dropDb(ADMIN1, DB1);
     createDb(ADMIN1, DB1);
-    Connection connection = context.createConnection(ADMIN1, "password");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
     statement.execute("DROP TABLE IF EXISTS " + TBL1);
@@ -424,7 +424,7 @@ AbstractTestWithStaticConfiguration {
     statement.execute("CREATE VIEW " + VIEW1 + " (value) AS SELECT value from " + TBL1 + " LIMIT 10");
     statement.close();
     connection.close();
-    connection = context.createConnection(USER1_1, "password");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
     context.assertAuthzException(statement, "SHOW PARTITIONS " + TBL1);

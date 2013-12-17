@@ -75,7 +75,7 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
     policyFile
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
-    Connection connection = context.createConnection(ADMIN1, "hive");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     try {
       statement.execute("create table test (a string)");
@@ -97,7 +97,7 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
     System.out.println(Files.toString(context.getPolicyFile(), Charsets.UTF_8));
-    Connection connection = context.createConnection(ADMIN1, "hive");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     try {
       statement.execute("create table test (a string)");
@@ -115,7 +115,7 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
     context = createContext(properties);
     File policyFile = context.getPolicyFile();
     assertTrue("Could not delete " + policyFile, policyFile.delete());
-    Connection connection = context.createConnection(ADMIN1, "hive");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     try {
       statement.execute("create table test (a string)");
@@ -136,7 +136,7 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
     FileOutputStream out = new FileOutputStream(policyFile);
     out.write("this is not valid".getBytes(Charsets.UTF_8));
     out.close();
-    Connection connection = context.createConnection(ADMIN1, "hive");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     try {
       statement.execute("create table test (a string)");
@@ -158,7 +158,7 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
-    Connection connection = context.createConnection(USER1_1, "password");
+    Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
 
     // disallow external executables. The external.exec is set to false by session hooks
@@ -198,7 +198,7 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
    }
 
   private void verifyConfig(String userName, String confVar, String expectedValue) throws Exception {
-    Connection connection = context.createConnection(userName, "password");
+    Connection connection = context.createConnection(userName);
     Statement statement = context.createStatement(connection);
     statement.execute("set " + confVar);
     ResultSet res = statement.getResultSet();
@@ -236,22 +236,22 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
-    Connection connection = context.createConnection(ADMIN1, "hive");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("use default");
     context.close();
 
-    connection = context.createConnection(USER1_1, "hive");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("use default");
     context.close();
 
-    connection = context.createConnection(USER2_1, "hive");
+    connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
     statement.execute("use default");
     context.close();
 
-    connection = context.createConnection(USER3_1, "hive");
+    connection = context.createConnection(USER3_1);
     statement = context.createStatement(connection);
     try {
       // user3 doesn't have any implicit permission for default

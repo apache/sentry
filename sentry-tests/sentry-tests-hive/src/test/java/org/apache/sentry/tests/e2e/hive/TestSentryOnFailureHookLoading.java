@@ -92,7 +92,7 @@ public class TestSentryOnFailureHookLoading extends AbstractTestWithHiveServer {
         .write(context.getPolicyFile());
 
     // setup db objects needed by the test
-    Connection connection = context.createConnection(ADMIN1, "hive");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("DROP DATABASE IF EXISTS DB_2 CASCADE");
@@ -102,7 +102,7 @@ public class TestSentryOnFailureHookLoading extends AbstractTestWithHiveServer {
     connection.close();
 
     // test execution
-    connection = context.createConnection(USER1_1, "password");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
 
     //negative test case: user can't drop another user's database
@@ -118,7 +118,7 @@ public class TestSentryOnFailureHookLoading extends AbstractTestWithHiveServer {
     connection.close();
 
     //test cleanup
-    connection = context.createConnection(ADMIN1, "hive");
+    connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
     statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.execute("DROP DATABASE DB_2 CASCADE");

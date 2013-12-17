@@ -44,7 +44,7 @@ public class TestMetadataPermissions extends AbstractTestWithStaticConfiguration
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
-    Connection adminCon = context.createConnection(ADMIN1, "foo");
+    Connection adminCon = context.createConnection(ADMIN1);
     Statement adminStmt = context.createStatement(adminCon);
     for (String dbName : new String[] { "db1", "db2" }) {
       adminStmt.execute("USE default");
@@ -71,7 +71,7 @@ public class TestMetadataPermissions extends AbstractTestWithStaticConfiguration
   @Test
   public void testDescPrivilegesNegative() throws Exception {
     String dbName = "db2";
-    Connection connection = context.createConnection(USER2_1, "password");
+    Connection connection = context.createConnection(USER2_1);
     Statement statement = context.createStatement(connection);
     context.assertAuthzException(statement, "USE " + dbName);
 //    TODO when DESCRIBE db.table is supported tests should be uncommented
@@ -90,7 +90,7 @@ public class TestMetadataPermissions extends AbstractTestWithStaticConfiguration
   @Test
   public void testDescDbPrivilegesNegative() throws Exception {
     String dbName = "db2";
-    Connection connection = context.createConnection(USER2_1, "password");
+    Connection connection = context.createConnection(USER2_1);
     Statement statement = context.createStatement(connection);
     context.assertAuthzException(statement, "DESCRIBE DATABASE " + dbName);
     context.assertAuthzException(statement, "DESCRIBE DATABASE EXTENDED " + dbName);
@@ -104,7 +104,7 @@ public class TestMetadataPermissions extends AbstractTestWithStaticConfiguration
    */
   @Test
   public void testDescDbPrivilegesPositive() throws Exception {
-    Connection connection = context.createConnection(USER1_1, "password");
+    Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
     for (String dbName : new String[] { "db1", "db2" }) {
       statement.execute("USE " + dbName);
@@ -120,7 +120,7 @@ public class TestMetadataPermissions extends AbstractTestWithStaticConfiguration
    */
   @Test
   public void testDescPrivilegesPositive() throws Exception {
-    Connection connection = context.createConnection(USER1_1, "password");
+    Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
     for (String dbName : new String[] { "db1", "db2" }) {
       statement.execute("USE " + dbName);

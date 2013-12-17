@@ -81,7 +81,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
-    Connection connection = context.createConnection(ADMIN1, "foo");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
     statement.execute("CREATE DATABASE " + dbName1);
@@ -96,7 +96,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     context.close();
 
     // user1 should be able create/drop temp functions
-    connection = context.createConnection(USER1_1, "foo");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("USE " + dbName1);
     statement.execute(
@@ -106,7 +106,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     context.close();
 
     // user2 has select privilege on one of the tables in db2, should be able create/drop temp functions
-    connection = context.createConnection(USER2_1, "foo");
+    connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
     statement.execute("USE " + dbName1);
     statement.execute(
@@ -116,7 +116,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     context.close();
 
     // user3 shouldn't be able to create/drop temp functions since it doesn't have permission for jar
-    connection = context.createConnection(USER3_1, "foo");
+    connection = context.createConnection(USER3_1);
     statement = context.createStatement(connection);
     try {
       statement.execute("USE " + dbName1);
@@ -129,7 +129,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     context.close();
 
     // user4 (not part of any group ) shouldn't be able to create/drop temp functions
-    connection = context.createConnection(USER4_1, "foo");
+    connection = context.createConnection(USER4_1);
     statement = context.createStatement(connection);
     try {
       statement.execute("USE default");
@@ -158,7 +158,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
-    Connection connection = context.createConnection(ADMIN1, "password");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = connection.createStatement();
     statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
     statement.execute("CREATE DATABASE " + dbName1);

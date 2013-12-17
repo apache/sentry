@@ -72,7 +72,7 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticConfigurat
     createTable(ADMIN1, DB1, dataFile, TBL1);
 
     // Negative test, user2 doesn't have access to write to dir
-    connection = context.createConnection(USER2_1, "password");
+    connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
     statement.execute("use " + DB1);
     context.assertAuthzException(statement, "INSERT OVERWRITE DIRECTORY '" + dumpDir + "' SELECT * FROM " + TBL1);
@@ -82,7 +82,7 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticConfigurat
     // Negative test, user2 doesn't have access to dir that's similar to scratch dir
     String scratchLikeDir = context.getProperty(HiveConf.ConfVars.SCRATCHDIR.varname) + "_foo";
     dfs.assertCreateDir(scratchLikeDir);
-    connection = context.createConnection(USER2_1, "password");
+    connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
     statement.execute("use " + DB1);
     context.assertAuthzException(statement, "INSERT OVERWRITE DIRECTORY '" + scratchLikeDir + "/bar' SELECT * FROM " + TBL1);
@@ -90,7 +90,7 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticConfigurat
     connection.close();
 
     // positive test, user1 has access to write to dir
-    connection = context.createConnection(USER1_1, "password");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("use " + DB1);
     assertTrue(statement.executeQuery("SELECT * FROM " + TBL1).next());
@@ -118,7 +118,7 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticConfigurat
     createTable(ADMIN1, DB1, dataFile, TBL1);
 
     // Negative test, user2 doesn't have access to the file being loaded
-    connection = context.createConnection(USER2_1, "password");
+    connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
     statement.execute("use " + DB1);
     context.assertAuthzException(statement, "EXPORT TABLE " + TBL1 + " TO '" + exportDir + "'");
@@ -126,7 +126,7 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticConfigurat
     connection.close();
 
     // Positive test, user1 have access to the target directory
-    connection = context.createConnection(USER1_1, "password");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("use " + DB1);
     statement.execute("EXPORT TABLE " + TBL1 + " TO '" + exportDir + "'");
@@ -134,7 +134,7 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticConfigurat
     connection.close();
 
     // Negative test, user2 doesn't have access to the directory loading from
-    connection = context.createConnection(USER2_1, "password");
+    connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
     statement.execute("use " + DB1);
     context.assertAuthzException(statement, "IMPORT TABLE " + TBL2 + " FROM '" + exportDir + "'");
@@ -142,7 +142,7 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticConfigurat
     connection.close();
 
     // Positive test, user1 have access to the target directory
-    connection = context.createConnection(USER1_1, "password");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("use " + DB1);
     statement.execute("IMPORT TABLE " + TBL2 + " FROM '" + exportDir + "'");

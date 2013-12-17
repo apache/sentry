@@ -31,7 +31,6 @@ import java.util.Map;
 
 import junit.framework.Assert;
 
-import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.After;
 import org.junit.Before;
@@ -89,7 +88,7 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
         .write(context.getPolicyFile());
 
     // setup db objects needed by the test
-    Connection connection = context.createConnection(ADMIN1, "hive");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("DROP DATABASE IF EXISTS DB_2 CASCADE");
@@ -99,7 +98,7 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
     connection.close();
 
     // test execution
-    connection = context.createConnection(USER1_1, "password");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     // test user can create table
     statement.execute("CREATE TABLE DB_1.TAB_1(A STRING)");
@@ -167,7 +166,7 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
     connection.close();
 
     //test cleanup
-    connection = context.createConnection(ADMIN1, "hive");
+    connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
     statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.execute("DROP DATABASE DB_2 CASCADE");
@@ -201,7 +200,7 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
         .write(context.getPolicyFile());
 
     // setup db objects needed by the test
-    Connection connection = context.createConnection(ADMIN1, "hive");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("DROP DATABASE IF EXISTS DB_2 CASCADE");
@@ -217,7 +216,7 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
     connection.close();
 
     // test execution
-    connection = context.createConnection(USER1_1, "password");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     // test user can switch db
     statement.execute("USE DB_1");
@@ -273,7 +272,7 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
     statement.close();
     connection.close();
 
-    connection = context.createConnection(USER2_1, "password");
+    connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
     try {
       statement.execute("CREATE EXTERNAL TABLE EXT_TAB_1(A STRING) STORED AS TEXTFILE LOCATION 'file:"+
@@ -287,7 +286,7 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
     connection.close();
 
     //test cleanup
-    connection = context.createConnection(ADMIN1, "hive");
+    connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
     statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.execute("DROP DATABASE DB_2 CASCADE");
@@ -319,7 +318,7 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
 
 
     // setup db objects needed by the test
-    Connection connection = context.createConnection(ADMIN1, "hive");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("CREATE DATABASE DB_1");
@@ -332,13 +331,13 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
     context.close();
 
     // user1 should be able to connect db_1
-    connection = context.createConnection(USER1_1, "hive");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("use DB_1");
     context.close();
 
     // user2 should not be able to connect db_1
-    connection = context.createConnection(USER2_1, "hive");
+    connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
     try {
       statement.execute("use DB_1");
@@ -350,7 +349,7 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
     context.close();
 
     // user3 who is not listed in policy file should not be able to connect db_2
-    connection = context.createConnection(USER3_1, "hive");
+    connection = context.createConnection(USER3_1);
     statement = context.createStatement(connection);
     try {
       statement.execute("use DB_2");
@@ -380,22 +379,22 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
-    Connection connection = context.createConnection(ADMIN1, "hive");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("use default");
     context.close();
 
-    connection = context.createConnection(USER1_1, "hive");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("use default");
     context.close();
 
-    connection = context.createConnection(USER2_1, "hive");
+    connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
     statement.execute("use default");
     context.close();
 
-    connection = context.createConnection(USER3_1, "hive");
+    connection = context.createConnection(USER3_1);
     statement = context.createStatement(connection);
     statement.execute("use default");
     context.close();

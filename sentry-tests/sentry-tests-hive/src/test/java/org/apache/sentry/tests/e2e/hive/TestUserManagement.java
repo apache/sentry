@@ -61,7 +61,7 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
     doDropDb(admin);
     for (String user : users) {
       doCreateDb(user);
-      Connection connection = context.createConnection(user, "password");
+      Connection connection = context.createConnection(user);
       Statement statement = context.createStatement(connection);
       ResultSet res = statement.executeQuery("SHOW DATABASES");
       boolean created = false;
@@ -78,21 +78,21 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
     }
   }
   private void doDropDb(String user) throws Exception {
-    Connection connection = context.createConnection(user, "password");
+    Connection connection = context.createConnection(user);
     Statement statement = connection.createStatement();
     statement.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
     statement.close();
     connection.close();
   }
   private void doCreateDb(String user) throws Exception {
-    Connection connection = context.createConnection(user, "password");
+    Connection connection = context.createConnection(user);
     Statement statement = connection.createStatement();
     statement.execute("CREATE DATABASE " + dbName);
     statement.close();
     connection.close();
   }
   private void doCreateTableLoadData(String user) throws Exception {
-    Connection connection = context.createConnection(user, "password");
+    Connection connection = context.createConnection(user);
     Statement statement = context.createStatement(connection);
     statement.execute("USE " + dbName);
     statement.execute("CREATE TABLE " + tableName +
@@ -149,7 +149,7 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
         .removeGroupsFromUser("admin1", ADMINGROUP)
         .write(context.getPolicyFile());
     // verify admin1 doesn't have admin privilege
-    Connection connection = context.createConnection("admin1", "foo");
+    Connection connection = context.createConnection("admin1");
     Statement statement = connection.createStatement();
     context.assertAuthzException(statement, "CREATE DATABASE somedb");
     statement.close();
@@ -187,7 +187,7 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
         .write(context.getPolicyFile());
 
     doCreateDbLoadDataDropDb("admin1", "admin1");
-    Connection connection = context.createConnection("user1", "password");
+    Connection connection = context.createConnection("user1");
     Statement statement = connection.createStatement();
     context.assertAuthzException(statement, "CREATE DATABASE " + dbName);
     statement.close();
@@ -228,7 +228,7 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
     doDropDb("admin1");
     for(String user : new String[]{"user1", "user2", "user3"}) {
       doCreateDb("admin1");
-      Connection connection = context.createConnection(user, "password");
+      Connection connection = context.createConnection(user);
       Statement statement = context.createStatement(connection);
       statement.execute("USE " + dbName);
       statement.execute("CREATE TABLE " + tableName +
@@ -321,7 +321,7 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
         .addGroupsToUser("user3", "group1")
         .write(context.getPolicyFile());
 
-    Connection connection = context.createConnection("admin1", "password");
+    Connection connection = context.createConnection("admin1");
     Statement statement = connection.createStatement();
     statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
     statement.execute("CREATE DATABASE db1");
@@ -331,7 +331,7 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
     connection.close();
     String[] users = { "user1", "user2", "user3" };
     for (String user : users) {
-      connection = context.createConnection(user, "foo");
+      connection = context.createConnection(user);
       statement = context.createStatement(connection);
       assertFalse("No results should be returned",
           statement.executeQuery("SHOW TABLES").next());

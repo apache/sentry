@@ -91,7 +91,7 @@ public class TestRuntimeMetadataRetrieval
 
     String user1TableNames[] = {"tb_1", "tb_2", "tb_3"};
 
-    Connection connection = context.createConnection(ADMIN1, "foo");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
     statement.execute("CREATE DATABASE " + dbName1);
@@ -104,7 +104,7 @@ public class TestRuntimeMetadataRetrieval
     validateTables(rs, dbName1, tableNamesValidation);
     statement.close();
 
-    connection = context.createConnection(USER1_1, "foo");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("USE " + dbName1);
     // User1 should see tables with any level of access
@@ -134,7 +134,7 @@ public class TestRuntimeMetadataRetrieval
 
     String user1TableNames[] = {"tb_1", "tb_2", "tb_3", "tb_4"};
 
-    Connection connection = context.createConnection(ADMIN1, "foo");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
     statement.execute("CREATE DATABASE " + dbName1);
@@ -146,7 +146,7 @@ public class TestRuntimeMetadataRetrieval
     validateTables(rs, dbName1, tableNamesValidation);
     statement.close();
 
-    connection = context.createConnection(USER1_1, "foo");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("USE " + dbName1);
     // User1 should see tables with any level of access
@@ -178,7 +178,7 @@ public class TestRuntimeMetadataRetrieval
     String adminTableNames[] = {"tb_3", "newtab_3", "tb_2", "tb_1"};
     String user1TableNames[] = {"newtab_3"};
 
-    Connection connection = context.createConnection(ADMIN1, "foo");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
     statement.execute("CREATE DATABASE " + dbName1);
@@ -190,7 +190,7 @@ public class TestRuntimeMetadataRetrieval
     validateTables(rs, dbName1, tableNamesValidation);
     statement.close();
 
-    connection = context.createConnection(USER1_1, "foo");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("USE " + dbName1);
     // User1 should see tables with any level of access
@@ -220,7 +220,7 @@ public class TestRuntimeMetadataRetrieval
     String adminTableNames[] = {"tb_3", "newtab_3", "tb_1", "tb_2"};
     String user1TableNames[] = {"tb_3", "newtab_3", "tb_1", "tb_2"};
 
-    Connection connection = context.createConnection(ADMIN1, "foo");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
     statement.execute("CREATE DATABASE " + dbName1);
@@ -232,7 +232,7 @@ public class TestRuntimeMetadataRetrieval
     validateTables(rs, dbName1, tableNamesValidation);
     statement.close();
 
-    connection = context.createConnection(USER1_1, "foo");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("USE " + dbName1);
     // User1 should see tables with any level of access
@@ -254,11 +254,11 @@ public class TestRuntimeMetadataRetrieval
         .addRolesToGroup(USERGROUP1, "db_priv")
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
-    Connection connection = context.createConnection(ADMIN1, "foo");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     createTabs(statement, "default", tableNames);
 
-    connection = context.createConnection(USER1_1, "foo");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     // User1 should see tables with any level of access
     ResultSet rs = statement.executeQuery("SHOW TABLES");
@@ -284,7 +284,7 @@ public class TestRuntimeMetadataRetrieval
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
-    Connection connection = context.createConnection(ADMIN1, "foo");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     // create all dbs
     createDBs(statement, dbNames);
@@ -295,7 +295,7 @@ public class TestRuntimeMetadataRetrieval
     validateDBs(rs, dbNamesValidation);
     rs.close();
 
-    connection = context.createConnection(USER1_1, "foo");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     rs = statement.executeQuery("SHOW DATABASES");
     dbNamesValidation.addAll(Arrays.asList(user1DbNames));
@@ -326,7 +326,7 @@ public class TestRuntimeMetadataRetrieval
 
     // verify by SQL
     // 1, 2
-    Connection connection = context.createConnection(ADMIN1, "foo");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     createDBs(statement, dbNames); // create all dbs
     ResultSet rs = statement.executeQuery("SHOW DATABASES");
@@ -335,7 +335,7 @@ public class TestRuntimeMetadataRetrieval
     validateDBs(rs, dbNamesValidation); // admin should see all dbs
     rs.close();
 
-    connection = context.createConnection(USER1_1, "foo");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     rs = statement.executeQuery("SHOW DATABASES");
     dbNamesValidation.addAll(Arrays.asList(user1DbNames));

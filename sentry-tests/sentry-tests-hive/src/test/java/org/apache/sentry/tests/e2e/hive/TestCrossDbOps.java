@@ -86,7 +86,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     policyFile.write(context.getPolicyFile());
 
     // admin create two databases
-    Connection connection = context.createConnection(ADMIN1, "foo");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("DROP DATABASE IF EXISTS DB_2 CASCADE");
@@ -104,7 +104,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
 
     // test show databases
     // show databases shouldn't filter any of the dbs from the resultset
-    Connection conn = context.createConnection(USER1_1, "");
+    Connection conn = context.createConnection(USER1_1);
     Statement stmt = context.createStatement(conn);
     ResultSet res = stmt.executeQuery("SHOW DATABASES");
     List<String> result = new ArrayList<String>();
@@ -148,7 +148,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     conn.close();
 
     // test show databases and show tables for user2_1
-    conn = context.createConnection(USER2_1, "");
+    conn = context.createConnection(USER2_1);
     stmt = context.createStatement(conn);
     res = stmt.executeQuery("SHOW DATABASES");
     result.clear();
@@ -202,7 +202,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     policyFile.write(context.getPolicyFile());
 
     // admin create two databases
-    Connection connection = context.createConnection(ADMIN1, "foo");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("DROP DATABASE IF EXISTS DB_2 CASCADE");
@@ -220,7 +220,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
 
     // test show databases
     // show databases shouldn't filter any of the dbs from the resultset
-    Connection conn = context.createConnection(USER1_1, "");
+    Connection conn = context.createConnection(USER1_1);
     List<String> result = new ArrayList<String>();
 
     // test direct JDBC metadata API
@@ -289,7 +289,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     conn.close();
 
     // test show databases and show tables for user2
-    conn = context.createConnection(USER2_1, "");
+    conn = context.createConnection(USER2_1);
 
     // test direct JDBC metadata API
     res = conn.getMetaData().getSchemas();
@@ -363,7 +363,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     createDb(ADMIN1, DB1, DB2);
     for (String user : new String[]{USER1_1, USER1_2}) {
       for (String dbName : new String[]{DB1, DB2}) {
-        Connection userConn = context.createConnection(user, "foo");
+        Connection userConn = context.createConnection(user);
         String tabName = user + "_tab1";
         Statement userStmt = context.createStatement(userConn);
         // Positive case: test user1 and user2 has permissions to access
@@ -390,7 +390,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
         .write(context.getPolicyFile());
     dropDb(ADMIN1, DB1);
     createDb(ADMIN1, DB1);
-    Connection adminCon = context.createConnection(ADMIN1, "password");
+    Connection adminCon = context.createConnection(ADMIN1);
     Statement adminStmt = context.createStatement(adminCon);
     String tabName = DB1 + "." + "admin_tab1";
     adminStmt.execute("create table " + tabName + "(c1 string)");
@@ -418,7 +418,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     policyFile.write(context.getPolicyFile());
 
-    Connection adminCon = context.createConnection(ADMIN1, "foo");
+    Connection adminCon = context.createConnection(ADMIN1);
     Statement adminStmt = context.createStatement(adminCon);
     String dbName = "db1";
     adminStmt.execute("use default");
@@ -427,7 +427,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     adminStmt.execute("create table " + dbName + ".table_1 (id int)");
     adminStmt.close();
     adminCon.close();
-    Connection userConn = context.createConnection(USER1_1, "foo");
+    Connection userConn = context.createConnection(USER1_1);
     Statement userStmt = context.createStatement(userConn);
     context.assertAuthzException(userStmt, "select * from " + dbName + ".table_1");
     userConn.close();
@@ -450,13 +450,13 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
 
     dropDb(ADMIN1, DB1);
     createDb(ADMIN1, DB1);
-    Connection adminCon = context.createConnection(ADMIN1, "password");
+    Connection adminCon = context.createConnection(ADMIN1);
     Statement adminStmt = context.createStatement(adminCon);
     adminStmt.execute("create table " + DB1 + ".table_1 (id int)");
     adminStmt.execute("create table " + DB1 + ".table_2 (id int)");
     adminStmt.close();
     adminCon.close();
-    Connection userConn = context.createConnection(USER1_1, "foo");
+    Connection userConn = context.createConnection(USER1_1);
     Statement userStmt = context.createStatement(userConn);
     context.assertAuthzException(userStmt, "insert overwrite table  " + DB1
         + ".table_2 select * from " + DB1 + ".table_1");
@@ -495,7 +495,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
         .write(context.getPolicyFile());
 
     // create dbs
-    Connection adminCon = context.createConnection(ADMIN1, "foo");
+    Connection adminCon = context.createConnection(ADMIN1);
     Statement adminStmt = context.createStatement(adminCon);
     String dbName = "db1";
     adminStmt.execute("use default");
@@ -522,7 +522,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     adminStmt.close();
     adminCon.close();
 
-    Connection userConn = context.createConnection(USER2_1, "foo");
+    Connection userConn = context.createConnection(USER2_1);
     Statement userStmt = context.createStatement(userConn);
 
     context.assertAuthzException(userStmt, "drop database " + dbName);
@@ -574,7 +574,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     dropDb(ADMIN1, DB1, DB2);
     createDb(ADMIN1, DB1, DB2);
 
-    Connection connection = context.createConnection(USER1_1, "password");
+    Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
 
     // a
@@ -652,7 +652,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     // admin create two databases
     dropDb(ADMIN1, DB1, DB2);
     createDb(ADMIN1, DB1, DB2);
-    Connection connection = context.createConnection(ADMIN1, "password");
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement
     .execute("CREATE TABLE " + DB1 + "." + TBL1 + "(id int)");
@@ -662,7 +662,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     .execute("CREATE TABLE " + DB2 + "." + TBL2 + "(id int)");
     context.close();
 
-    connection = context.createConnection(USER1_1, "foo");
+    connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
 
     // d
