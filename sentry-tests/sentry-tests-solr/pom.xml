@@ -18,14 +18,22 @@ limitations under the License.
 <project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
+
   <parent>
     <groupId>org.apache.sentry</groupId>
     <artifactId>sentry-tests</artifactId>
     <version>1.3.0-incubating-SNAPSHOT</version>
   </parent>
+
   <artifactId>sentry-tests-solr</artifactId>
   <name>Sentry Solr Tests</name>
   <description>end to end tests for sentry-solr integration</description>
+
+  <properties>
+    <lucene-junit.version>4.10</lucene-junit.version>
+    <carrot-search.version>2.0.10</carrot-search.version>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.apache.solr</groupId>
@@ -46,7 +54,12 @@ limitations under the License.
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.10</version> <!-- required for LuceneTestCase -->
+      <version>${lucene-junit.version}</version> <!-- required for LuceneTestCase -->
+    </dependency>
+    <dependency>
+      <groupId>com.carrotsearch.randomizedtesting</groupId>
+      <artifactId>randomizedtesting-runner</artifactId>
+      <version>${carrot-search.version}</version>
     </dependency>
   </dependencies>
 </project>

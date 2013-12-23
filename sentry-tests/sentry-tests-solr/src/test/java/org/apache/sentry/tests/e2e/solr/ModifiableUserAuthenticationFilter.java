@@ -33,10 +33,14 @@ import org.slf4j.LoggerFactory;
 /**
  * Authentication Filter that authenticates any request as user "junit"
  */
-public class JunitAuthenticationFilter implements Filter {
+public class ModifiableUserAuthenticationFilter implements Filter {
   private static final Logger LOG = LoggerFactory
-    .getLogger(JunitAuthenticationFilter.class);
-  private static final String userName = "junit";
+    .getLogger(ModifiableUserAuthenticationFilter.class);
+
+  /**
+   * String that saves the user to be authenticated into Solr
+   */
+  private static String userName = "admin";
 
   @Override
   public void init(FilterConfig filterConfig) throws ServletException {
@@ -47,9 +51,18 @@ public class JunitAuthenticationFilter implements Filter {
   }
 
   @Override
-  public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
+  public void doFilter(ServletRequest request, ServletResponse response,
+                       FilterChain chain) throws IOException, ServletException {
     HttpServletRequest httpRequest = (HttpServletRequest) request;
     httpRequest.setAttribute(SolrHadoopAuthenticationFilter.USER_NAME, userName);
     chain.doFilter(request, response);
+  }
+
+  /**
+   * Function to set the userName with the corresponding user passed as parameter
+   * @param solrUser
+   */
+  public static void setUser(String solrUser) {
+    userName = solrUser;
   }
 }
