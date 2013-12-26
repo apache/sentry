@@ -107,6 +107,10 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
     statement.execute("CREATE TABLE DB_1.TAB_2(A STRING)");
     statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE DB_1.TAB_2");
 
+    // test CTAS can reference UDFs
+    statement.execute("USE DB_1");
+    statement.execute("create table table2 as select A, count(A) from TAB_1 GROUP BY A");
+    
     // test user can switch db
     statement.execute("USE DB_1");
     //test user can create view
