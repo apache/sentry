@@ -1122,7 +1122,7 @@
        RequestHandlers.  
     -->
   <requestHandler name="/admin/" 
-                  class="solr.admin.AdminHandlers" />
+                  class="solr.admin.SecureAdminHandlers" />
   <!-- This single handler is equivalent to the following... -->
   <!--
      <requestHandler name="/admin/luke"       class="solr.admin.LukeRequestHandler" />
