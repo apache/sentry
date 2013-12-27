@@ -32,6 +32,7 @@ limitations under the License.
   <modules>
     <module>sentry-provider-common</module>
     <module>sentry-provider-file</module>
+    <module>sentry-provider-db</module>
   </modules>
 
 </project>
