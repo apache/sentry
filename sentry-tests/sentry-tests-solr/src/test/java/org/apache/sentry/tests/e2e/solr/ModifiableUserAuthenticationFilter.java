@@ -25,7 +25,9 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
+
 import org.apache.solr.servlet.SolrHadoopAuthenticationFilter;
+import org.apache.solr.servlet.SolrRequestParsers;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +46,7 @@ public class ModifiableUserAuthenticationFilter implements Filter {
 
   @Override
   public void init(FilterConfig filterConfig) throws ServletException {
+    SolrRequestParsers.DEFAULT.setAddRequestHeadersToContext(true);
   }
 
   @Override
