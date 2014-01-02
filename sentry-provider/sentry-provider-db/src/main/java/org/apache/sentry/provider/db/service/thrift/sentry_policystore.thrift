@@ -32,6 +32,20 @@ enum TSentryPolicyServiceVersion {
 V1
 }
 
+enum TSentryStatus {
+OK,
+ALREADY_EXISTS,
+NO_SUCH_OBJECT,
+RUNTIME_ERROR
+}
+
+struct TSentryResponseStatus {
+1: required TSentryStatus value,
+// message will be set to empty string when status is OK
+2: required string message
+3: optional string stack
+}
+
 struct TSentryPrivilege {
 1: required string privilegeScope,
 2: required string privilegeName,
@@ -61,7 +75,7 @@ struct TCreateSentryRoleRequest {
 3: required TSentryRole role
 }
 struct TCreateSentryRoleResponse {
-1: required bool success
+1: required TSentryResponseStatus status
 }
 
 struct TCreateSentryPrivilegeRequest {
@@ -70,7 +84,7 @@ struct TCreateSentryPrivilegeRequest {
 3: required TSentryPrivilege privilege
 }
 struct TCreateSentryPrivilegeResponse {
-1: required bool success
+1: required TSentryResponseStatus status
 }
 
 struct TCreateSentryPrivilegeRequest {
@@ -79,7 +93,7 @@ struct TCreateSentryPrivilegeRequest {
 3: required TSentryPrivilege privilege
 }
 struct TCreateSentryPrivilegeResponse {
-1: required bool success
+1: required TSentryResponseStatus status
 }
 
 struct TAlterSentryRoleAddGroupsRequest {
@@ -89,7 +103,7 @@ struct TAlterSentryRoleAddGroupsRequest {
 4: required set<TSentryGroup> groups
 }
 struct TAlterSentryRoleAddGroupsResponse {
-1: required bool success
+1: required TSentryResponseStatus status
 }
 
 struct TAlterSentryRoleDeleteGroupsRequest {
@@ -97,7 +111,7 @@ struct TAlterSentryRoleDeleteGroupsRequest {
 2: required string userName,
 }
 struct TAlterSentryRoleDeleteGroupsResponse {
-1: required bool success
+1: required TSentryResponseStatus status
 }
 
 struct TListSentryRolesRequest {
@@ -107,28 +121,20 @@ struct TListSentryRolesRequest {
 4: optional string roleName
 }
 struct TListSentryRolesResponse {
-1: required bool success,
+1: required TSentryResponseStatus status
 2: required set<TSentryRole> roles
-}
-
-exception TSentryAlreadyExistsException {
-  1: string message
-}
-
-exception TSentryNoSuchObjectException {
-  1: string message
 }
 
 service SentryThriftPolicyService
 {
-  TCreateSentryRoleResponse create_sentry_role(1:TCreateSentryRoleRequest request) throws (1:TSentryAlreadyExistsException o1)
-  //TDropSentryRoleResponse drop_sentry_role(1:TDropSentryRoleRequest request) throws (1:TSentryNoSuchObjectException o1)
+  TCreateSentryRoleResponse create_sentry_role(1:TCreateSentryRoleRequest request)
+  //TDropSentryRoleResponse drop_sentry_role(1:TDropSentryRoleRequest request)
 
-  TCreateSentryPrivilegeResponse create_sentry_privilege(1:TCreateSentryPrivilegeRequest request) throws (1:TSentryAlreadyExistsException o1)
-  //TDropSentryPrivilegeResponse drop_sentry_privilege(1:TDropSentryPrivilegeRequest request) throws (1:TSentryNoSuchObjectException o1)
+  TCreateSentryPrivilegeResponse create_sentry_privilege(1:TCreateSentryPrivilegeRequest request)
+  //TDropSentryPrivilegeResponse drop_sentry_privilege(1:TDropSentryPrivilegeRequest request)
 
-  TAlterSentryRoleAddGroupsResponse alter_sentry_role_add_groups(1:TAlterSentryRoleAddGroupsRequest request) throws (1:TSentryNoSuchObjectException o1)
-  TAlterSentryRoleDeleteGroupsResponse alter_sentry_role_delete_groups(1:TAlterSentryRoleDeleteGroupsRequest request) throws (1:TSentryNoSuchObjectException o1)
+  TAlterSentryRoleAddGroupsResponse alter_sentry_role_add_groups(1:TAlterSentryRoleAddGroupsRequest request)
+  TAlterSentryRoleDeleteGroupsResponse alter_sentry_role_delete_groups(1:TAlterSentryRoleDeleteGroupsRequest request)
 
-  TListSentryRolesResponse list_sentry_roles(1:TListSentryRolesRequest request) throws (1:TSentryNoSuchObjectException o1)
+  TListSentryRolesResponse list_sentry_roles(1:TListSentryRolesRequest request)
 }

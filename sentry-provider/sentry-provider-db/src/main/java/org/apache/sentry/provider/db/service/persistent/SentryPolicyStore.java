@@ -27,8 +27,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.metastore.ObjectStore;
-import org.apache.sentry.policystore.api.TSentryAlreadyExistsException;
-import org.apache.sentry.policystore.api.TSentryNoSuchObjectException;
 import org.apache.sentry.policystore.api.TSentryPrivilege;
 import org.apache.sentry.policystore.api.TSentryRole;
 import org.apache.sentry.provider.db.service.model.*;
@@ -45,7 +43,7 @@ import javax.jdo.identity.IntIdentity;
 import org.apache.hadoop.hive.conf.HiveConf;
 
 public class SentryPolicyStore {
-	
+
 	  private static Properties prop = null;
 	  private static PersistenceManagerFactory pmf = null;
 
@@ -58,25 +56,24 @@ public class SentryPolicyStore {
 	  private Transaction currentTransaction = null;
 	  private TXN_STATUS transactionStatus = TXN_STATUS.NO_STATE;
 	  private final AtomicBoolean isSchemaVerified = new AtomicBoolean(false);
- 
+
 	  private static enum TXN_STATUS {
 	    NO_STATE, OPEN, COMMITED, ROLLBACK
     }
-	  
-	  	
+
+
 	public SentryPolicyStore () {
-		
+
 	}
-	
-	//FIXME: Cleanup this mess i.e., creating a new PM and PMF. 
+
+	//FIXME: Cleanup this mess i.e., creating a new PM and PMF.
 	@SuppressWarnings("nls")
   public void setConf() {
-    
+
   	pmfPropLock.lock();
     try {
       isInitialized = false;
       Properties propsFromConf = getDataSourceProps();
-      
       assert(!isActiveTransaction());
       shutdown();
       // Always want to re-create pm as we don't know if it were created by the
@@ -197,7 +194,7 @@ public class SentryPolicyStore {
 	      pm.evictAll();
 	    }
 	  }
-	
+
 	private static Properties getDataSourceProps() {
 	    Properties prop = new Properties();
 	    // FIXME: Read from configuration, don't hard-code everything
@@ -224,15 +221,15 @@ public class SentryPolicyStore {
 	   prop.setProperty("javax.jdo.option.DetachAllOnCommit", "true");
 	   prop.setProperty("javax.jdo.option.NonTransactionalRead", "true");
 	   prop.setProperty("javax.jdo.option.ConnectionUserName", "APP");
-	   
+
        prop.setProperty("javax.jdo.option.ConnectionPassword", "mine");
 	   prop.setProperty("javax.jdo.option.Multithreaded", "true");
 	   prop.setProperty("javax.jdo.option.ConnectionURL",
 	        "jdbc:derby:;databaseName=sentry_policy_db;create=true");
 	    return prop;
 	 }
-	
-	
+
+
 	private MSentryRole convertToMSentryRole(TSentryRole role) {
 	    MSentryRole mRole = new MSentryRole();
 	    mRole.setCreateTime(role.getCreateTime());
@@ -243,16 +240,16 @@ public class SentryPolicyStore {
 
 	  }
 
-	
-	  private void writeSentryRole(MSentryRole role) throws TSentryAlreadyExistsException{
+
+	  private void writeSentryRole(MSentryRole role) {
 
 	    // TODO: verify if the role exists, if it does throw an exception
 	      pm.makePersistent(role);
 
 	  }
 
-	
-	  public boolean createSentryRole(TSentryRole role) throws TSentryAlreadyExistsException {
+
+	  public boolean createSentryRole(TSentryRole role) {
 
 	    // TODO: add some logging
 
@@ -272,7 +269,7 @@ public class SentryPolicyStore {
 	    return committed;
 	  }
 
-	  private MSentryRole getMSentryRole (String roleName) throws TSentryNoSuchObjectException {
+	  private MSentryRole getMSentryRole (String roleName) {
 
 	    boolean committed = false;
 
@@ -312,7 +309,7 @@ public class SentryPolicyStore {
 
 	  }
 
-	  public boolean alterSentryRole(String roleName, TSentryPrivilege privilege) throws TSentryNoSuchObjectException {
+	  public boolean alterSentryRole(String roleName, TSentryPrivilege privilege) {
 
 	    boolean committed = false;
 
@@ -365,7 +362,7 @@ public class SentryPolicyStore {
 	    return role;
 	  }
 
-	  public TSentryRole getSentryRole(String roleName) throws TSentryNoSuchObjectException {
+	  public TSentryRole getSentryRole(String roleName) {
 	    TSentryRole role;
 	    MSentryRole mSentryRole = getMSentryRole(roleName);
 	    role = convertToSentryRole(mSentryRole);
@@ -373,7 +370,7 @@ public class SentryPolicyStore {
 
 	  }
 
-	  public boolean dropSentryRole(String roleName) throws TSentryNoSuchObjectException {
+	  public boolean dropSentryRole(String roleName) {
 
 	    boolean committed = false;
 	    try {

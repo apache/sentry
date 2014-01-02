@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 public class TCreateSentryPrivilegeResponse implements org.apache.thrift.TBase<TCreateSentryPrivilegeResponse, TCreateSentryPrivilegeResponse._Fields>, java.io.Serializable, Cloneable {
   private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("TCreateSentryPrivilegeResponse");
 
-  private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.BOOL, (short)1);
+  private static final org.apache.thrift.protocol.TField STATUS_FIELD_DESC = new org.apache.thrift.protocol.TField("status", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
@@ -42,11 +42,11 @@ public class TCreateSentryPrivilegeResponse implements org.apache.thrift.TBase<T
     schemes.put(TupleScheme.class, new TCreateSentryPrivilegeResponseTupleSchemeFactory());
   }
 
-  private boolean success; // required
+  private TSentryResponseStatus status; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-    SUCCESS((short)1, "success");
+    STATUS((short)1, "status");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -61,8 +61,8 @@ public class TCreateSentryPrivilegeResponse implements org.apache.thrift.TBase<T
      */
     public static _Fields findByThriftId(int fieldId) {
       switch(fieldId) {
-        case 1: // SUCCESS
-          return SUCCESS;
+        case 1: // STATUS
+          return STATUS;
         default:
           return null;
       }
@@ -103,13 +103,11 @@ public class TCreateSentryPrivilegeResponse implements org.apache.thrift.TBase<T
   }
 
   // isset id assignments
-  private static final int __SUCCESS_ISSET_ID = 0;
-  private byte __isset_bitfield = 0;
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-    tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.REQUIRED, 
-        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.BOOL)));
+    tmpMap.put(_Fields.STATUS, new org.apache.thrift.meta_data.FieldMetaData("status", org.apache.thrift.TFieldRequirementType.REQUIRED, 
+        new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TSentryResponseStatus.class)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(TCreateSentryPrivilegeResponse.class, metaDataMap);
   }
@@ -118,19 +116,19 @@ public class TCreateSentryPrivilegeResponse implements org.apache.thrift.TBase<T
   }
 
   public TCreateSentryPrivilegeResponse(
-    boolean success)
+    TSentryResponseStatus status)
   {
     this();
-    this.success = success;
-    setSuccessIsSet(true);
+    this.status = status;
   }
 
   /**
    * Performs a deep copy on <i>other</i>.
    */
   public TCreateSentryPrivilegeResponse(TCreateSentryPrivilegeResponse other) {
-    __isset_bitfield = other.__isset_bitfield;
-    this.success = other.success;
+    if (other.isSetStatus()) {
+      this.status = new TSentryResponseStatus(other.status);
+    }
   }
 
   public TCreateSentryPrivilegeResponse deepCopy() {
@@ -139,39 +137,39 @@ public class TCreateSentryPrivilegeResponse implements org.apache.thrift.TBase<T
 
   @Override
   public void clear() {
-    setSuccessIsSet(false);
-    this.success = false;
+    this.status = null;
   }
 
-  public boolean isSuccess() {
-    return this.success;
+  public TSentryResponseStatus getStatus() {
+    return this.status;
   }
 
-  public void setSuccess(boolean success) {
-    this.success = success;
-    setSuccessIsSet(true);
+  public void setStatus(TSentryResponseStatus status) {
+    this.status = status;
   }
 
-  public void unsetSuccess() {
-    __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __SUCCESS_ISSET_ID);
+  public void unsetStatus() {
+    this.status = null;
   }
 
-  /** Returns true if field success is set (has been assigned a value) and false otherwise */
-  public boolean isSetSuccess() {
-    return EncodingUtils.testBit(__isset_bitfield, __SUCCESS_ISSET_ID);
+  /** Returns true if field status is set (has been assigned a value) and false otherwise */
+  public boolean isSetStatus() {
+    return this.status != null;
   }
 
-  public void setSuccessIsSet(boolean value) {
-    __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __SUCCESS_ISSET_ID, value);
+  public void setStatusIsSet(boolean value) {
+    if (!value) {
+      this.status = null;
+    }
   }
 
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
-    case SUCCESS:
+    case STATUS:
       if (value == null) {
-        unsetSuccess();
+        unsetStatus();
       } else {
-        setSuccess((Boolean)value);
+        setStatus((TSentryResponseStatus)value);
       }
       break;
 
@@ -180,8 +178,8 @@ public class TCreateSentryPrivilegeResponse implements org.apache.thrift.TBase<T
 
   public Object getFieldValue(_Fields field) {
     switch (field) {
-    case SUCCESS:
-      return Boolean.valueOf(isSuccess());
+    case STATUS:
+      return getStatus();
 
     }
     throw new IllegalStateException();
@@ -194,8 +192,8 @@ public class TCreateSentryPrivilegeResponse implements org.apache.thrift.TBase<T
     }
 
     switch (field) {
-    case SUCCESS:
-      return isSetSuccess();
+    case STATUS:
+      return isSetStatus();
     }
     throw new IllegalStateException();
   }
@@ -213,12 +211,12 @@ public class TCreateSentryPrivilegeResponse implements org.apache.thrift.TBase<T
     if (that == null)
       return false;
 
-    boolean this_present_success = true;
-    boolean that_present_success = true;
-    if (this_present_success || that_present_success) {
-      if (!(this_present_success && that_present_success))
+    boolean this_present_status = true && this.isSetStatus();
+    boolean that_present_status = true && that.isSetStatus();
+    if (this_present_status || that_present_status) {
+      if (!(this_present_status && that_present_status))
         return false;
-      if (this.success != that.success)
+      if (!this.status.equals(that.status))
         return false;
     }
 
@@ -229,10 +227,10 @@ public class TCreateSentryPrivilegeResponse implements org.apache.thrift.TBase<T
   public int hashCode() {
     HashCodeBuilder builder = new HashCodeBuilder();
 
-    boolean present_success = true;
-    builder.append(present_success);
-    if (present_success)
-      builder.append(success);
+    boolean present_status = true && (isSetStatus());
+    builder.append(present_status);
+    if (present_status)
+      builder.append(status);
 
     return builder.toHashCode();
   }
@@ -245,12 +243,12 @@ public class TCreateSentryPrivilegeResponse implements org.apache.thrift.TBase<T
     int lastComparison = 0;
     TCreateSentryPrivilegeResponse typedOther = (TCreateSentryPrivilegeResponse)other;
 
-    lastComparison = Boolean.valueOf(isSetSuccess()).compareTo(typedOther.isSetSuccess());
+    lastComparison = Boolean.valueOf(isSetStatus()).compareTo(typedOther.isSetStatus());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetSuccess()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.success, typedOther.success);
+    if (isSetStatus()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.status, typedOther.status);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -275,8 +273,12 @@ public class TCreateSentryPrivilegeResponse implements org.apache.thrift.TBase<T
     StringBuilder sb = new StringBuilder("TCreateSentryPrivilegeResponse(");
     boolean first = true;
 
-    sb.append("success:");
-    sb.append(this.success);
+    sb.append("status:");
+    if (this.status == null) {
+      sb.append("null");
+    } else {
+      sb.append(this.status);
+    }
     first = false;
     sb.append(")");
     return sb.toString();
@@ -284,11 +286,14 @@ public class TCreateSentryPrivilegeResponse implements org.apache.thrift.TBase<T
 
   public void validate() throws org.apache.thrift.TException {
     // check for required fields
-    if (!isSetSuccess()) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'success' is unset! Struct:" + toString());
+    if (!isSetStatus()) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'status' is unset! Struct:" + toString());
     }
 
     // check for sub-struct validity
+    if (status != null) {
+      status.validate();
+    }
   }
 
   private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
@@ -301,8 +306,6 @@ public class TCreateSentryPrivilegeResponse implements org.apache.thrift.TBase<T
 
   private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
     try {
-      // it doesn't seem like you should have to do this, but java serialization is wacky, and doesn't call the default constructor.
-      __isset_bitfield = 0;
       read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
     } catch (org.apache.thrift.TException te) {
       throw new java.io.IOException(te);
@@ -327,10 +330,11 @@ public class TCreateSentryPrivilegeResponse implements org.apache.thrift.TBase<T
           break;
         }
         switch (schemeField.id) {
-          case 1: // SUCCESS
-            if (schemeField.type == org.apache.thrift.protocol.TType.BOOL) {
-              struct.success = iprot.readBool();
-              struct.setSuccessIsSet(true);
+          case 1: // STATUS
+            if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+              struct.status = new TSentryResponseStatus();
+              struct.status.read(iprot);
+              struct.setStatusIsSet(true);
             } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
@@ -348,9 +352,11 @@ public class TCreateSentryPrivilegeResponse implements org.apache.thrift.TBase<T
       struct.validate();
 
       oprot.writeStructBegin(STRUCT_DESC);
-      oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
-      oprot.writeBool(struct.success);
-      oprot.writeFieldEnd();
+      if (struct.status != null) {
+        oprot.writeFieldBegin(STATUS_FIELD_DESC);
+        struct.status.write(oprot);
+        oprot.writeFieldEnd();
+      }
       oprot.writeFieldStop();
       oprot.writeStructEnd();
     }
@@ -368,14 +374,15 @@ public class TCreateSentryPrivilegeResponse implements org.apache.thrift.TBase<T
     @Override
     public void write(org.apache.thrift.protocol.TProtocol prot, TCreateSentryPrivilegeResponse struct) throws org.apache.thrift.TException {
       TTupleProtocol oprot = (TTupleProtocol) prot;
-      oprot.writeBool(struct.success);
+      struct.status.write(oprot);
     }
 
     @Override
     public void read(org.apache.thrift.protocol.TProtocol prot, TCreateSentryPrivilegeResponse struct) throws org.apache.thrift.TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
-      struct.success = iprot.readBool();
-      struct.setSuccessIsSet(true);
+      struct.status = new TSentryResponseStatus();
+      struct.status.read(iprot);
+      struct.setStatusIsSet(true);
     }
   }
 

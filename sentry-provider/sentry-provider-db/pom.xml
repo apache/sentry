@@ -103,7 +103,6 @@ limitations under the License.
             </goals>
             <configuration>
               <sources>
-                <source>src/main/java/org/apache/sentry/provider/db/service/model</source>
                 <source>src/gen/thrift/gen-javabean</source>
               </sources>
             </configuration>

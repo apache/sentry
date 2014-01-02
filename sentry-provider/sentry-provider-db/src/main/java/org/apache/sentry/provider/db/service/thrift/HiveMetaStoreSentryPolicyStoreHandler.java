@@ -60,8 +60,6 @@ import org.apache.sentry.policystore.api.TCreateSentryRoleRequest;
 import org.apache.sentry.policystore.api.TCreateSentryRoleResponse;
 import org.apache.sentry.policystore.api.TListSentryRolesRequest;
 import org.apache.sentry.policystore.api.TListSentryRolesResponse;
-import org.apache.sentry.policystore.api.TSentryAlreadyExistsException;
-import org.apache.sentry.policystore.api.TSentryNoSuchObjectException;
 import org.apache.thrift.TException;
 
 import com.facebook.fb303.fb_status;
@@ -70,10 +68,10 @@ public class HiveMetaStoreSentryPolicyStoreHandler
   implements SentryThriftPolicyService.Iface, IHMSHandler {
   private final String name;
   private HiveConf conf;
-  
+
   private final SentryPolicyStoreHandler sentryPolicyStoreHander;
   private final IHMSHandler hiveMetaStoreHandler;
-  
+ 
   public HiveMetaStoreSentryPolicyStoreHandler(String name, HiveConf conf)
       throws MetaException {
     super();
@@ -85,32 +83,27 @@ public class HiveMetaStoreSentryPolicyStoreHandler
 
   @Override
   public TCreateSentryRoleResponse create_sentry_role(
-      TCreateSentryRoleRequest request) throws TSentryAlreadyExistsException,
-      TException {
+      TCreateSentryRoleRequest request) throws TException {
     return sentryPolicyStoreHander.create_sentry_role(request);
   }
   @Override
   public TCreateSentryPrivilegeResponse create_sentry_privilege(
-      TCreateSentryPrivilegeRequest request)
-      throws TSentryAlreadyExistsException, TException {
+      TCreateSentryPrivilegeRequest request) throws TException {
     return sentryPolicyStoreHander.create_sentry_privilege(request);
   }
   @Override
   public TAlterSentryRoleAddGroupsResponse alter_sentry_role_add_groups(
-      TAlterSentryRoleAddGroupsRequest request)
-      throws TSentryNoSuchObjectException, TException {
+      TAlterSentryRoleAddGroupsRequest request) throws TException {
     return sentryPolicyStoreHander.alter_sentry_role_add_groups(request);
   }
   @Override
   public TAlterSentryRoleDeleteGroupsResponse alter_sentry_role_delete_groups(
-      TAlterSentryRoleDeleteGroupsRequest request)
-      throws TSentryNoSuchObjectException, TException {
+      TAlterSentryRoleDeleteGroupsRequest request) throws TException {
     return sentryPolicyStoreHander.alter_sentry_role_delete_groups(request);
   }
   @Override
   public TListSentryRolesResponse list_sentry_roles(
-      TListSentryRolesRequest request) throws TSentryNoSuchObjectException,
-      TException {
+      TListSentryRolesRequest request) throws TException {
     return sentryPolicyStoreHander.list_sentry_roles(request);
   }
 

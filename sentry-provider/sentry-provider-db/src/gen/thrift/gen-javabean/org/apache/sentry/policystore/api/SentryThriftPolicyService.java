@@ -35,15 +35,15 @@ public class SentryThriftPolicyService {
 
   public interface Iface {
 
-    public TCreateSentryRoleResponse create_sentry_role(TCreateSentryRoleRequest request) throws TSentryAlreadyExistsException, org.apache.thrift.TException;
+    public TCreateSentryRoleResponse create_sentry_role(TCreateSentryRoleRequest request) throws org.apache.thrift.TException;
 
-    public TCreateSentryPrivilegeResponse create_sentry_privilege(TCreateSentryPrivilegeRequest request) throws TSentryAlreadyExistsException, org.apache.thrift.TException;
+    public TCreateSentryPrivilegeResponse create_sentry_privilege(TCreateSentryPrivilegeRequest request) throws org.apache.thrift.TException;
 
-    public TAlterSentryRoleAddGroupsResponse alter_sentry_role_add_groups(TAlterSentryRoleAddGroupsRequest request) throws TSentryNoSuchObjectException, org.apache.thrift.TException;
+    public TAlterSentryRoleAddGroupsResponse alter_sentry_role_add_groups(TAlterSentryRoleAddGroupsRequest request) throws org.apache.thrift.TException;
 
-    public TAlterSentryRoleDeleteGroupsResponse alter_sentry_role_delete_groups(TAlterSentryRoleDeleteGroupsRequest request) throws TSentryNoSuchObjectException, org.apache.thrift.TException;
+    public TAlterSentryRoleDeleteGroupsResponse alter_sentry_role_delete_groups(TAlterSentryRoleDeleteGroupsRequest request) throws org.apache.thrift.TException;
 
-    public TListSentryRolesResponse list_sentry_roles(TListSentryRolesRequest request) throws TSentryNoSuchObjectException, org.apache.thrift.TException;
+    public TListSentryRolesResponse list_sentry_roles(TListSentryRolesRequest request) throws org.apache.thrift.TException;
 
   }
 
@@ -81,7 +81,7 @@ public class SentryThriftPolicyService {
       super(iprot, oprot);
     }
 
-    public TCreateSentryRoleResponse create_sentry_role(TCreateSentryRoleRequest request) throws TSentryAlreadyExistsException, org.apache.thrift.TException
+    public TCreateSentryRoleResponse create_sentry_role(TCreateSentryRoleRequest request) throws org.apache.thrift.TException
     {
       send_create_sentry_role(request);
       return recv_create_sentry_role();
@@ -94,20 +94,17 @@ public class SentryThriftPolicyService {
       sendBase("create_sentry_role", args);
     }
 
-    public TCreateSentryRoleResponse recv_create_sentry_role() throws TSentryAlreadyExistsException, org.apache.thrift.TException
+    public TCreateSentryRoleResponse recv_create_sentry_role() throws org.apache.thrift.TException
     {
       create_sentry_role_result result = new create_sentry_role_result();
       receiveBase(result, "create_sentry_role");
       if (result.isSetSuccess()) {
         return result.success;
       }
-      if (result.o1 != null) {
-        throw result.o1;
-      }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "create_sentry_role failed: unknown result");
     }
 
-    public TCreateSentryPrivilegeResponse create_sentry_privilege(TCreateSentryPrivilegeRequest request) throws TSentryAlreadyExistsException, org.apache.thrift.TException
+    public TCreateSentryPrivilegeResponse create_sentry_privilege(TCreateSentryPrivilegeRequest request) throws org.apache.thrift.TException
     {
       send_create_sentry_privilege(request);
       return recv_create_sentry_privilege();
@@ -120,20 +117,17 @@ public class SentryThriftPolicyService {
       sendBase("create_sentry_privilege", args);
     }
 
-    public TCreateSentryPrivilegeResponse recv_create_sentry_privilege() throws TSentryAlreadyExistsException, org.apache.thrift.TException
+    public TCreateSentryPrivilegeResponse recv_create_sentry_privilege() throws org.apache.thrift.TException
     {
       create_sentry_privilege_result result = new create_sentry_privilege_result();
       receiveBase(result, "create_sentry_privilege");
       if (result.isSetSuccess()) {
         return result.success;
       }
-      if (result.o1 != null) {
-        throw result.o1;
-      }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "create_sentry_privilege failed: unknown result");
     }
 
-    public TAlterSentryRoleAddGroupsResponse alter_sentry_role_add_groups(TAlterSentryRoleAddGroupsRequest request) throws TSentryNoSuchObjectException, org.apache.thrift.TException
+    public TAlterSentryRoleAddGroupsResponse alter_sentry_role_add_groups(TAlterSentryRoleAddGroupsRequest request) throws org.apache.thrift.TException
     {
       send_alter_sentry_role_add_groups(request);
       return recv_alter_sentry_role_add_groups();
@@ -146,20 +140,17 @@ public class SentryThriftPolicyService {
       sendBase("alter_sentry_role_add_groups", args);
     }
 
-    public TAlterSentryRoleAddGroupsResponse recv_alter_sentry_role_add_groups() throws TSentryNoSuchObjectException, org.apache.thrift.TException
+    public TAlterSentryRoleAddGroupsResponse recv_alter_sentry_role_add_groups() throws org.apache.thrift.TException
     {
       alter_sentry_role_add_groups_result result = new alter_sentry_role_add_groups_result();
       receiveBase(result, "alter_sentry_role_add_groups");
       if (result.isSetSuccess()) {
         return result.success;
       }
-      if (result.o1 != null) {
-        throw result.o1;
-      }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "alter_sentry_role_add_groups failed: unknown result");
     }
 
-    public TAlterSentryRoleDeleteGroupsResponse alter_sentry_role_delete_groups(TAlterSentryRoleDeleteGroupsRequest request) throws TSentryNoSuchObjectException, org.apache.thrift.TException
+    public TAlterSentryRoleDeleteGroupsResponse alter_sentry_role_delete_groups(TAlterSentryRoleDeleteGroupsRequest request) throws org.apache.thrift.TException
     {
       send_alter_sentry_role_delete_groups(request);
       return recv_alter_sentry_role_delete_groups();
@@ -172,20 +163,17 @@ public class SentryThriftPolicyService {
       sendBase("alter_sentry_role_delete_groups", args);
     }
 
-    public TAlterSentryRoleDeleteGroupsResponse recv_alter_sentry_role_delete_groups() throws TSentryNoSuchObjectException, org.apache.thrift.TException
+    public TAlterSentryRoleDeleteGroupsResponse recv_alter_sentry_role_delete_groups() throws org.apache.thrift.TException
     {
       alter_sentry_role_delete_groups_result result = new alter_sentry_role_delete_groups_result();
       receiveBase(result, "alter_sentry_role_delete_groups");
       if (result.isSetSuccess()) {
         return result.success;
       }
-      if (result.o1 != null) {
-        throw result.o1;
-      }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "alter_sentry_role_delete_groups failed: unknown result");
     }
 
-    public TListSentryRolesResponse list_sentry_roles(TListSentryRolesRequest request) throws TSentryNoSuchObjectException, org.apache.thrift.TException
+    public TListSentryRolesResponse list_sentry_roles(TListSentryRolesRequest request) throws org.apache.thrift.TException
     {
       send_list_sentry_roles(request);
       return recv_list_sentry_roles();
@@ -198,15 +186,12 @@ public class SentryThriftPolicyService {
       sendBase("list_sentry_roles", args);
     }
 
-    public TListSentryRolesResponse recv_list_sentry_roles() throws TSentryNoSuchObjectException, org.apache.thrift.TException
+    public TListSentryRolesResponse recv_list_sentry_roles() throws org.apache.thrift.TException
     {
       list_sentry_roles_result result = new list_sentry_roles_result();
       receiveBase(result, "list_sentry_roles");
       if (result.isSetSuccess()) {
         return result.success;
-      }
-      if (result.o1 != null) {
-        throw result.o1;
       }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "list_sentry_roles failed: unknown result");
     }
@@ -251,7 +236,7 @@ public class SentryThriftPolicyService {
         prot.writeMessageEnd();
       }
 
-      public TCreateSentryRoleResponse getResult() throws TSentryAlreadyExistsException, org.apache.thrift.TException {
+      public TCreateSentryRoleResponse getResult() throws org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
@@ -283,7 +268,7 @@ public class SentryThriftPolicyService {
         prot.writeMessageEnd();
       }
 
-      public TCreateSentryPrivilegeResponse getResult() throws TSentryAlreadyExistsException, org.apache.thrift.TException {
+      public TCreateSentryPrivilegeResponse getResult() throws org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
@@ -315,7 +300,7 @@ public class SentryThriftPolicyService {
         prot.writeMessageEnd();
       }
 
-      public TAlterSentryRoleAddGroupsResponse getResult() throws TSentryNoSuchObjectException, org.apache.thrift.TException {
+      public TAlterSentryRoleAddGroupsResponse getResult() throws org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
@@ -347,7 +332,7 @@ public class SentryThriftPolicyService {
         prot.writeMessageEnd();
       }
 
-      public TAlterSentryRoleDeleteGroupsResponse getResult() throws TSentryNoSuchObjectException, org.apache.thrift.TException {
+      public TAlterSentryRoleDeleteGroupsResponse getResult() throws org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
@@ -379,7 +364,7 @@ public class SentryThriftPolicyService {
         prot.writeMessageEnd();
       }
 
-      public TListSentryRolesResponse getResult() throws TSentryNoSuchObjectException, org.apache.thrift.TException {
+      public TListSentryRolesResponse getResult() throws org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
@@ -425,11 +410,7 @@ public class SentryThriftPolicyService {
 
       public create_sentry_role_result getResult(I iface, create_sentry_role_args args) throws org.apache.thrift.TException {
         create_sentry_role_result result = new create_sentry_role_result();
-        try {
-          result.success = iface.create_sentry_role(args.request);
-        } catch (TSentryAlreadyExistsException o1) {
-          result.o1 = o1;
-        }
+        result.success = iface.create_sentry_role(args.request);
         return result;
       }
     }
@@ -449,11 +430,7 @@ public class SentryThriftPolicyService {
 
       public create_sentry_privilege_result getResult(I iface, create_sentry_privilege_args args) throws org.apache.thrift.TException {
         create_sentry_privilege_result result = new create_sentry_privilege_result();
-        try {
-          result.success = iface.create_sentry_privilege(args.request);
-        } catch (TSentryAlreadyExistsException o1) {
-          result.o1 = o1;
-        }
+        result.success = iface.create_sentry_privilege(args.request);
         return result;
       }
     }
@@ -473,11 +450,7 @@ public class SentryThriftPolicyService {
 
       public alter_sentry_role_add_groups_result getResult(I iface, alter_sentry_role_add_groups_args args) throws org.apache.thrift.TException {
         alter_sentry_role_add_groups_result result = new alter_sentry_role_add_groups_result();
-        try {
-          result.success = iface.alter_sentry_role_add_groups(args.request);
-        } catch (TSentryNoSuchObjectException o1) {
-          result.o1 = o1;
-        }
+        result.success = iface.alter_sentry_role_add_groups(args.request);
         return result;
       }
     }
@@ -497,11 +470,7 @@ public class SentryThriftPolicyService {
 
       public alter_sentry_role_delete_groups_result getResult(I iface, alter_sentry_role_delete_groups_args args) throws org.apache.thrift.TException {
         alter_sentry_role_delete_groups_result result = new alter_sentry_role_delete_groups_result();
-        try {
-          result.success = iface.alter_sentry_role_delete_groups(args.request);
-        } catch (TSentryNoSuchObjectException o1) {
-          result.o1 = o1;
-        }
+        result.success = iface.alter_sentry_role_delete_groups(args.request);
         return result;
       }
     }
@@ -521,11 +490,7 @@ public class SentryThriftPolicyService {
 
       public list_sentry_roles_result getResult(I iface, list_sentry_roles_args args) throws org.apache.thrift.TException {
         list_sentry_roles_result result = new list_sentry_roles_result();
-        try {
-          result.success = iface.list_sentry_roles(args.request);
-        } catch (TSentryNoSuchObjectException o1) {
-          result.o1 = o1;
-        }
+        result.success = iface.list_sentry_roles(args.request);
         return result;
       }
     }
@@ -899,7 +864,6 @@ public class SentryThriftPolicyService {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("create_sentry_role_result");
 
     private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRUCT, (short)0);
-    private static final org.apache.thrift.protocol.TField O1_FIELD_DESC = new org.apache.thrift.protocol.TField("o1", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -908,12 +872,10 @@ public class SentryThriftPolicyService {
     }
 
     private TCreateSentryRoleResponse success; // required
-    private TSentryAlreadyExistsException o1; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-      SUCCESS((short)0, "success"),
-      O1((short)1, "o1");
+      SUCCESS((short)0, "success");
 
       private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -930,8 +892,6 @@ public class SentryThriftPolicyService {
         switch(fieldId) {
           case 0: // SUCCESS
             return SUCCESS;
-          case 1: // O1
-            return O1;
           default:
             return null;
         }
@@ -977,8 +937,6 @@ public class SentryThriftPolicyService {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TCreateSentryRoleResponse.class)));
-      tmpMap.put(_Fields.O1, new org.apache.thrift.meta_data.FieldMetaData("o1", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(create_sentry_role_result.class, metaDataMap);
     }
@@ -987,12 +945,10 @@ public class SentryThriftPolicyService {
     }
 
     public create_sentry_role_result(
-      TCreateSentryRoleResponse success,
-      TSentryAlreadyExistsException o1)
+      TCreateSentryRoleResponse success)
     {
       this();
       this.success = success;
-      this.o1 = o1;
     }
 
     /**
@@ -1001,9 +957,6 @@ public class SentryThriftPolicyService {
     public create_sentry_role_result(create_sentry_role_result other) {
       if (other.isSetSuccess()) {
         this.success = new TCreateSentryRoleResponse(other.success);
-      }
-      if (other.isSetO1()) {
-        this.o1 = new TSentryAlreadyExistsException(other.o1);
       }
     }
 
@@ -1014,7 +967,6 @@ public class SentryThriftPolicyService {
     @Override
     public void clear() {
       this.success = null;
-      this.o1 = null;
     }
 
     public TCreateSentryRoleResponse getSuccess() {
@@ -1040,29 +992,6 @@ public class SentryThriftPolicyService {
       }
     }
 
-    public TSentryAlreadyExistsException getO1() {
-      return this.o1;
-    }
-
-    public void setO1(TSentryAlreadyExistsException o1) {
-      this.o1 = o1;
-    }
-
-    public void unsetO1() {
-      this.o1 = null;
-    }
-
-    /** Returns true if field o1 is set (has been assigned a value) and false otherwise */
-    public boolean isSetO1() {
-      return this.o1 != null;
-    }
-
-    public void setO1IsSet(boolean value) {
-      if (!value) {
-        this.o1 = null;
-      }
-    }
-
     public void setFieldValue(_Fields field, Object value) {
       switch (field) {
       case SUCCESS:
@@ -1073,14 +1002,6 @@ public class SentryThriftPolicyService {
         }
         break;
 
-      case O1:
-        if (value == null) {
-          unsetO1();
-        } else {
-          setO1((TSentryAlreadyExistsException)value);
-        }
-        break;
-
       }
     }
 
@@ -1088,9 +1009,6 @@ public class SentryThriftPolicyService {
       switch (field) {
       case SUCCESS:
         return getSuccess();
-
-      case O1:
-        return getO1();
 
       }
       throw new IllegalStateException();
@@ -1105,8 +1023,6 @@ public class SentryThriftPolicyService {
       switch (field) {
       case SUCCESS:
         return isSetSuccess();
-      case O1:
-        return isSetO1();
       }
       throw new IllegalStateException();
     }
@@ -1133,15 +1049,6 @@ public class SentryThriftPolicyService {
           return false;
       }
 
-      boolean this_present_o1 = true && this.isSetO1();
-      boolean that_present_o1 = true && that.isSetO1();
-      if (this_present_o1 || that_present_o1) {
-        if (!(this_present_o1 && that_present_o1))
-          return false;
-        if (!this.o1.equals(that.o1))
-          return false;
-      }
-
       return true;
     }
 
@@ -1153,11 +1060,6 @@ public class SentryThriftPolicyService {
       builder.append(present_success);
       if (present_success)
         builder.append(success);
-
-      boolean present_o1 = true && (isSetO1());
-      builder.append(present_o1);
-      if (present_o1)
-        builder.append(o1);
 
       return builder.toHashCode();
     }
@@ -1176,16 +1078,6 @@ public class SentryThriftPolicyService {
       }
       if (isSetSuccess()) {
         lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.success, typedOther.success);
-        if (lastComparison != 0) {
-          return lastComparison;
-        }
-      }
-      lastComparison = Boolean.valueOf(isSetO1()).compareTo(typedOther.isSetO1());
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-      if (isSetO1()) {
-        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.o1, typedOther.o1);
         if (lastComparison != 0) {
           return lastComparison;
         }
@@ -1215,14 +1107,6 @@ public class SentryThriftPolicyService {
         sb.append("null");
       } else {
         sb.append(this.success);
-      }
-      first = false;
-      if (!first) sb.append(", ");
-      sb.append("o1:");
-      if (this.o1 == null) {
-        sb.append("null");
-      } else {
-        sb.append(this.o1);
       }
       first = false;
       sb.append(")");
@@ -1280,15 +1164,6 @@ public class SentryThriftPolicyService {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
-            case 1: // O1
-              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
-                struct.o1 = new TSentryAlreadyExistsException();
-                struct.o1.read(iprot);
-                struct.setO1IsSet(true);
-              } else { 
-                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
-              }
-              break;
             default:
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
           }
@@ -1305,11 +1180,6 @@ public class SentryThriftPolicyService {
         if (struct.success != null) {
           oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
           struct.success.write(oprot);
-          oprot.writeFieldEnd();
-        }
-        if (struct.o1 != null) {
-          oprot.writeFieldBegin(O1_FIELD_DESC);
-          struct.o1.write(oprot);
           oprot.writeFieldEnd();
         }
         oprot.writeFieldStop();
@@ -1333,31 +1203,20 @@ public class SentryThriftPolicyService {
         if (struct.isSetSuccess()) {
           optionals.set(0);
         }
-        if (struct.isSetO1()) {
-          optionals.set(1);
-        }
-        oprot.writeBitSet(optionals, 2);
+        oprot.writeBitSet(optionals, 1);
         if (struct.isSetSuccess()) {
           struct.success.write(oprot);
-        }
-        if (struct.isSetO1()) {
-          struct.o1.write(oprot);
         }
       }
 
       @Override
       public void read(org.apache.thrift.protocol.TProtocol prot, create_sentry_role_result struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
-        BitSet incoming = iprot.readBitSet(2);
+        BitSet incoming = iprot.readBitSet(1);
         if (incoming.get(0)) {
           struct.success = new TCreateSentryRoleResponse();
           struct.success.read(iprot);
           struct.setSuccessIsSet(true);
-        }
-        if (incoming.get(1)) {
-          struct.o1 = new TSentryAlreadyExistsException();
-          struct.o1.read(iprot);
-          struct.setO1IsSet(true);
         }
       }
     }
@@ -1731,7 +1590,6 @@ public class SentryThriftPolicyService {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("create_sentry_privilege_result");
 
     private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRUCT, (short)0);
-    private static final org.apache.thrift.protocol.TField O1_FIELD_DESC = new org.apache.thrift.protocol.TField("o1", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -1740,12 +1598,10 @@ public class SentryThriftPolicyService {
     }
 
     private TCreateSentryPrivilegeResponse success; // required
-    private TSentryAlreadyExistsException o1; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-      SUCCESS((short)0, "success"),
-      O1((short)1, "o1");
+      SUCCESS((short)0, "success");
 
       private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -1762,8 +1618,6 @@ public class SentryThriftPolicyService {
         switch(fieldId) {
           case 0: // SUCCESS
             return SUCCESS;
-          case 1: // O1
-            return O1;
           default:
             return null;
         }
@@ -1809,8 +1663,6 @@ public class SentryThriftPolicyService {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TCreateSentryPrivilegeResponse.class)));
-      tmpMap.put(_Fields.O1, new org.apache.thrift.meta_data.FieldMetaData("o1", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(create_sentry_privilege_result.class, metaDataMap);
     }
@@ -1819,12 +1671,10 @@ public class SentryThriftPolicyService {
     }
 
     public create_sentry_privilege_result(
-      TCreateSentryPrivilegeResponse success,
-      TSentryAlreadyExistsException o1)
+      TCreateSentryPrivilegeResponse success)
     {
       this();
       this.success = success;
-      this.o1 = o1;
     }
 
     /**
@@ -1833,9 +1683,6 @@ public class SentryThriftPolicyService {
     public create_sentry_privilege_result(create_sentry_privilege_result other) {
       if (other.isSetSuccess()) {
         this.success = new TCreateSentryPrivilegeResponse(other.success);
-      }
-      if (other.isSetO1()) {
-        this.o1 = new TSentryAlreadyExistsException(other.o1);
       }
     }
 
@@ -1846,7 +1693,6 @@ public class SentryThriftPolicyService {
     @Override
     public void clear() {
       this.success = null;
-      this.o1 = null;
     }
 
     public TCreateSentryPrivilegeResponse getSuccess() {
@@ -1872,29 +1718,6 @@ public class SentryThriftPolicyService {
       }
     }
 
-    public TSentryAlreadyExistsException getO1() {
-      return this.o1;
-    }
-
-    public void setO1(TSentryAlreadyExistsException o1) {
-      this.o1 = o1;
-    }
-
-    public void unsetO1() {
-      this.o1 = null;
-    }
-
-    /** Returns true if field o1 is set (has been assigned a value) and false otherwise */
-    public boolean isSetO1() {
-      return this.o1 != null;
-    }
-
-    public void setO1IsSet(boolean value) {
-      if (!value) {
-        this.o1 = null;
-      }
-    }
-
     public void setFieldValue(_Fields field, Object value) {
       switch (field) {
       case SUCCESS:
@@ -1905,14 +1728,6 @@ public class SentryThriftPolicyService {
         }
         break;
 
-      case O1:
-        if (value == null) {
-          unsetO1();
-        } else {
-          setO1((TSentryAlreadyExistsException)value);
-        }
-        break;
-
       }
     }
 
@@ -1920,9 +1735,6 @@ public class SentryThriftPolicyService {
       switch (field) {
       case SUCCESS:
         return getSuccess();
-
-      case O1:
-        return getO1();
 
       }
       throw new IllegalStateException();
@@ -1937,8 +1749,6 @@ public class SentryThriftPolicyService {
       switch (field) {
       case SUCCESS:
         return isSetSuccess();
-      case O1:
-        return isSetO1();
       }
       throw new IllegalStateException();
     }
@@ -1965,15 +1775,6 @@ public class SentryThriftPolicyService {
           return false;
       }
 
-      boolean this_present_o1 = true && this.isSetO1();
-      boolean that_present_o1 = true && that.isSetO1();
-      if (this_present_o1 || that_present_o1) {
-        if (!(this_present_o1 && that_present_o1))
-          return false;
-        if (!this.o1.equals(that.o1))
-          return false;
-      }
-
       return true;
     }
 
@@ -1985,11 +1786,6 @@ public class SentryThriftPolicyService {
       builder.append(present_success);
       if (present_success)
         builder.append(success);
-
-      boolean present_o1 = true && (isSetO1());
-      builder.append(present_o1);
-      if (present_o1)
-        builder.append(o1);
 
       return builder.toHashCode();
     }
@@ -2008,16 +1804,6 @@ public class SentryThriftPolicyService {
       }
       if (isSetSuccess()) {
         lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.success, typedOther.success);
-        if (lastComparison != 0) {
-          return lastComparison;
-        }
-      }
-      lastComparison = Boolean.valueOf(isSetO1()).compareTo(typedOther.isSetO1());
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-      if (isSetO1()) {
-        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.o1, typedOther.o1);
         if (lastComparison != 0) {
           return lastComparison;
         }
@@ -2047,14 +1833,6 @@ public class SentryThriftPolicyService {
         sb.append("null");
       } else {
         sb.append(this.success);
-      }
-      first = false;
-      if (!first) sb.append(", ");
-      sb.append("o1:");
-      if (this.o1 == null) {
-        sb.append("null");
-      } else {
-        sb.append(this.o1);
       }
       first = false;
       sb.append(")");
@@ -2112,15 +1890,6 @@ public class SentryThriftPolicyService {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
-            case 1: // O1
-              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
-                struct.o1 = new TSentryAlreadyExistsException();
-                struct.o1.read(iprot);
-                struct.setO1IsSet(true);
-              } else { 
-                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
-              }
-              break;
             default:
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
           }
@@ -2137,11 +1906,6 @@ public class SentryThriftPolicyService {
         if (struct.success != null) {
           oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
           struct.success.write(oprot);
-          oprot.writeFieldEnd();
-        }
-        if (struct.o1 != null) {
-          oprot.writeFieldBegin(O1_FIELD_DESC);
-          struct.o1.write(oprot);
           oprot.writeFieldEnd();
         }
         oprot.writeFieldStop();
@@ -2165,31 +1929,20 @@ public class SentryThriftPolicyService {
         if (struct.isSetSuccess()) {
           optionals.set(0);
         }
-        if (struct.isSetO1()) {
-          optionals.set(1);
-        }
-        oprot.writeBitSet(optionals, 2);
+        oprot.writeBitSet(optionals, 1);
         if (struct.isSetSuccess()) {
           struct.success.write(oprot);
-        }
-        if (struct.isSetO1()) {
-          struct.o1.write(oprot);
         }
       }
 
       @Override
       public void read(org.apache.thrift.protocol.TProtocol prot, create_sentry_privilege_result struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
-        BitSet incoming = iprot.readBitSet(2);
+        BitSet incoming = iprot.readBitSet(1);
         if (incoming.get(0)) {
           struct.success = new TCreateSentryPrivilegeResponse();
           struct.success.read(iprot);
           struct.setSuccessIsSet(true);
-        }
-        if (incoming.get(1)) {
-          struct.o1 = new TSentryAlreadyExistsException();
-          struct.o1.read(iprot);
-          struct.setO1IsSet(true);
         }
       }
     }
@@ -2563,7 +2316,6 @@ public class SentryThriftPolicyService {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("alter_sentry_role_add_groups_result");
 
     private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRUCT, (short)0);
-    private static final org.apache.thrift.protocol.TField O1_FIELD_DESC = new org.apache.thrift.protocol.TField("o1", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -2572,12 +2324,10 @@ public class SentryThriftPolicyService {
     }
 
     private TAlterSentryRoleAddGroupsResponse success; // required
-    private TSentryNoSuchObjectException o1; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-      SUCCESS((short)0, "success"),
-      O1((short)1, "o1");
+      SUCCESS((short)0, "success");
 
       private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -2594,8 +2344,6 @@ public class SentryThriftPolicyService {
         switch(fieldId) {
           case 0: // SUCCESS
             return SUCCESS;
-          case 1: // O1
-            return O1;
           default:
             return null;
         }
@@ -2641,8 +2389,6 @@ public class SentryThriftPolicyService {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TAlterSentryRoleAddGroupsResponse.class)));
-      tmpMap.put(_Fields.O1, new org.apache.thrift.meta_data.FieldMetaData("o1", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(alter_sentry_role_add_groups_result.class, metaDataMap);
     }
@@ -2651,12 +2397,10 @@ public class SentryThriftPolicyService {
     }
 
     public alter_sentry_role_add_groups_result(
-      TAlterSentryRoleAddGroupsResponse success,
-      TSentryNoSuchObjectException o1)
+      TAlterSentryRoleAddGroupsResponse success)
     {
       this();
       this.success = success;
-      this.o1 = o1;
     }
 
     /**
@@ -2665,9 +2409,6 @@ public class SentryThriftPolicyService {
     public alter_sentry_role_add_groups_result(alter_sentry_role_add_groups_result other) {
       if (other.isSetSuccess()) {
         this.success = new TAlterSentryRoleAddGroupsResponse(other.success);
-      }
-      if (other.isSetO1()) {
-        this.o1 = new TSentryNoSuchObjectException(other.o1);
       }
     }
 
@@ -2678,7 +2419,6 @@ public class SentryThriftPolicyService {
     @Override
     public void clear() {
       this.success = null;
-      this.o1 = null;
     }
 
     public TAlterSentryRoleAddGroupsResponse getSuccess() {
@@ -2704,29 +2444,6 @@ public class SentryThriftPolicyService {
       }
     }
 
-    public TSentryNoSuchObjectException getO1() {
-      return this.o1;
-    }
-
-    public void setO1(TSentryNoSuchObjectException o1) {
-      this.o1 = o1;
-    }
-
-    public void unsetO1() {
-      this.o1 = null;
-    }
-
-    /** Returns true if field o1 is set (has been assigned a value) and false otherwise */
-    public boolean isSetO1() {
-      return this.o1 != null;
-    }
-
-    public void setO1IsSet(boolean value) {
-      if (!value) {
-        this.o1 = null;
-      }
-    }
-
     public void setFieldValue(_Fields field, Object value) {
       switch (field) {
       case SUCCESS:
@@ -2737,14 +2454,6 @@ public class SentryThriftPolicyService {
         }
         break;
 
-      case O1:
-        if (value == null) {
-          unsetO1();
-        } else {
-          setO1((TSentryNoSuchObjectException)value);
-        }
-        break;
-
       }
     }
 
@@ -2752,9 +2461,6 @@ public class SentryThriftPolicyService {
       switch (field) {
       case SUCCESS:
         return getSuccess();
-
-      case O1:
-        return getO1();
 
       }
       throw new IllegalStateException();
@@ -2769,8 +2475,6 @@ public class SentryThriftPolicyService {
       switch (field) {
       case SUCCESS:
         return isSetSuccess();
-      case O1:
-        return isSetO1();
       }
       throw new IllegalStateException();
     }
@@ -2797,15 +2501,6 @@ public class SentryThriftPolicyService {
           return false;
       }
 
-      boolean this_present_o1 = true && this.isSetO1();
-      boolean that_present_o1 = true && that.isSetO1();
-      if (this_present_o1 || that_present_o1) {
-        if (!(this_present_o1 && that_present_o1))
-          return false;
-        if (!this.o1.equals(that.o1))
-          return false;
-      }
-
       return true;
     }
 
@@ -2817,11 +2512,6 @@ public class SentryThriftPolicyService {
       builder.append(present_success);
       if (present_success)
         builder.append(success);
-
-      boolean present_o1 = true && (isSetO1());
-      builder.append(present_o1);
-      if (present_o1)
-        builder.append(o1);
 
       return builder.toHashCode();
     }
@@ -2840,16 +2530,6 @@ public class SentryThriftPolicyService {
       }
       if (isSetSuccess()) {
         lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.success, typedOther.success);
-        if (lastComparison != 0) {
-          return lastComparison;
-        }
-      }
-      lastComparison = Boolean.valueOf(isSetO1()).compareTo(typedOther.isSetO1());
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-      if (isSetO1()) {
-        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.o1, typedOther.o1);
         if (lastComparison != 0) {
           return lastComparison;
         }
@@ -2879,14 +2559,6 @@ public class SentryThriftPolicyService {
         sb.append("null");
       } else {
         sb.append(this.success);
-      }
-      first = false;
-      if (!first) sb.append(", ");
-      sb.append("o1:");
-      if (this.o1 == null) {
-        sb.append("null");
-      } else {
-        sb.append(this.o1);
       }
       first = false;
       sb.append(")");
@@ -2944,15 +2616,6 @@ public class SentryThriftPolicyService {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
-            case 1: // O1
-              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
-                struct.o1 = new TSentryNoSuchObjectException();
-                struct.o1.read(iprot);
-                struct.setO1IsSet(true);
-              } else { 
-                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
-              }
-              break;
             default:
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
           }
@@ -2969,11 +2632,6 @@ public class SentryThriftPolicyService {
         if (struct.success != null) {
           oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
           struct.success.write(oprot);
-          oprot.writeFieldEnd();
-        }
-        if (struct.o1 != null) {
-          oprot.writeFieldBegin(O1_FIELD_DESC);
-          struct.o1.write(oprot);
           oprot.writeFieldEnd();
         }
         oprot.writeFieldStop();
@@ -2997,31 +2655,20 @@ public class SentryThriftPolicyService {
         if (struct.isSetSuccess()) {
           optionals.set(0);
         }
-        if (struct.isSetO1()) {
-          optionals.set(1);
-        }
-        oprot.writeBitSet(optionals, 2);
+        oprot.writeBitSet(optionals, 1);
         if (struct.isSetSuccess()) {
           struct.success.write(oprot);
-        }
-        if (struct.isSetO1()) {
-          struct.o1.write(oprot);
         }
       }
 
       @Override
       public void read(org.apache.thrift.protocol.TProtocol prot, alter_sentry_role_add_groups_result struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
-        BitSet incoming = iprot.readBitSet(2);
+        BitSet incoming = iprot.readBitSet(1);
         if (incoming.get(0)) {
           struct.success = new TAlterSentryRoleAddGroupsResponse();
           struct.success.read(iprot);
           struct.setSuccessIsSet(true);
-        }
-        if (incoming.get(1)) {
-          struct.o1 = new TSentryNoSuchObjectException();
-          struct.o1.read(iprot);
-          struct.setO1IsSet(true);
         }
       }
     }
@@ -3395,7 +3042,6 @@ public class SentryThriftPolicyService {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("alter_sentry_role_delete_groups_result");
 
     private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRUCT, (short)0);
-    private static final org.apache.thrift.protocol.TField O1_FIELD_DESC = new org.apache.thrift.protocol.TField("o1", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -3404,12 +3050,10 @@ public class SentryThriftPolicyService {
     }
 
     private TAlterSentryRoleDeleteGroupsResponse success; // required
-    private TSentryNoSuchObjectException o1; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-      SUCCESS((short)0, "success"),
-      O1((short)1, "o1");
+      SUCCESS((short)0, "success");
 
       private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -3426,8 +3070,6 @@ public class SentryThriftPolicyService {
         switch(fieldId) {
           case 0: // SUCCESS
             return SUCCESS;
-          case 1: // O1
-            return O1;
           default:
             return null;
         }
@@ -3473,8 +3115,6 @@ public class SentryThriftPolicyService {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TAlterSentryRoleDeleteGroupsResponse.class)));
-      tmpMap.put(_Fields.O1, new org.apache.thrift.meta_data.FieldMetaData("o1", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(alter_sentry_role_delete_groups_result.class, metaDataMap);
     }
@@ -3483,12 +3123,10 @@ public class SentryThriftPolicyService {
     }
 
     public alter_sentry_role_delete_groups_result(
-      TAlterSentryRoleDeleteGroupsResponse success,
-      TSentryNoSuchObjectException o1)
+      TAlterSentryRoleDeleteGroupsResponse success)
     {
       this();
       this.success = success;
-      this.o1 = o1;
     }
 
     /**
@@ -3497,9 +3135,6 @@ public class SentryThriftPolicyService {
     public alter_sentry_role_delete_groups_result(alter_sentry_role_delete_groups_result other) {
       if (other.isSetSuccess()) {
         this.success = new TAlterSentryRoleDeleteGroupsResponse(other.success);
-      }
-      if (other.isSetO1()) {
-        this.o1 = new TSentryNoSuchObjectException(other.o1);
       }
     }
 
@@ -3510,7 +3145,6 @@ public class SentryThriftPolicyService {
     @Override
     public void clear() {
       this.success = null;
-      this.o1 = null;
     }
 
     public TAlterSentryRoleDeleteGroupsResponse getSuccess() {
@@ -3536,29 +3170,6 @@ public class SentryThriftPolicyService {
       }
     }
 
-    public TSentryNoSuchObjectException getO1() {
-      return this.o1;
-    }
-
-    public void setO1(TSentryNoSuchObjectException o1) {
-      this.o1 = o1;
-    }
-
-    public void unsetO1() {
-      this.o1 = null;
-    }
-
-    /** Returns true if field o1 is set (has been assigned a value) and false otherwise */
-    public boolean isSetO1() {
-      return this.o1 != null;
-    }
-
-    public void setO1IsSet(boolean value) {
-      if (!value) {
-        this.o1 = null;
-      }
-    }
-
     public void setFieldValue(_Fields field, Object value) {
       switch (field) {
       case SUCCESS:
@@ -3569,14 +3180,6 @@ public class SentryThriftPolicyService {
         }
         break;
 
-      case O1:
-        if (value == null) {
-          unsetO1();
-        } else {
-          setO1((TSentryNoSuchObjectException)value);
-        }
-        break;
-
       }
     }
 
@@ -3584,9 +3187,6 @@ public class SentryThriftPolicyService {
       switch (field) {
       case SUCCESS:
         return getSuccess();
-
-      case O1:
-        return getO1();
 
       }
       throw new IllegalStateException();
@@ -3601,8 +3201,6 @@ public class SentryThriftPolicyService {
       switch (field) {
       case SUCCESS:
         return isSetSuccess();
-      case O1:
-        return isSetO1();
       }
       throw new IllegalStateException();
     }
@@ -3629,15 +3227,6 @@ public class SentryThriftPolicyService {
           return false;
       }
 
-      boolean this_present_o1 = true && this.isSetO1();
-      boolean that_present_o1 = true && that.isSetO1();
-      if (this_present_o1 || that_present_o1) {
-        if (!(this_present_o1 && that_present_o1))
-          return false;
-        if (!this.o1.equals(that.o1))
-          return false;
-      }
-
       return true;
     }
 
@@ -3649,11 +3238,6 @@ public class SentryThriftPolicyService {
       builder.append(present_success);
       if (present_success)
         builder.append(success);
-
-      boolean present_o1 = true && (isSetO1());
-      builder.append(present_o1);
-      if (present_o1)
-        builder.append(o1);
 
       return builder.toHashCode();
     }
@@ -3672,16 +3256,6 @@ public class SentryThriftPolicyService {
       }
       if (isSetSuccess()) {
         lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.success, typedOther.success);
-        if (lastComparison != 0) {
-          return lastComparison;
-        }
-      }
-      lastComparison = Boolean.valueOf(isSetO1()).compareTo(typedOther.isSetO1());
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-      if (isSetO1()) {
-        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.o1, typedOther.o1);
         if (lastComparison != 0) {
           return lastComparison;
         }
@@ -3711,14 +3285,6 @@ public class SentryThriftPolicyService {
         sb.append("null");
       } else {
         sb.append(this.success);
-      }
-      first = false;
-      if (!first) sb.append(", ");
-      sb.append("o1:");
-      if (this.o1 == null) {
-        sb.append("null");
-      } else {
-        sb.append(this.o1);
       }
       first = false;
       sb.append(")");
@@ -3776,15 +3342,6 @@ public class SentryThriftPolicyService {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
-            case 1: // O1
-              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
-                struct.o1 = new TSentryNoSuchObjectException();
-                struct.o1.read(iprot);
-                struct.setO1IsSet(true);
-              } else { 
-                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
-              }
-              break;
             default:
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
           }
@@ -3801,11 +3358,6 @@ public class SentryThriftPolicyService {
         if (struct.success != null) {
           oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
           struct.success.write(oprot);
-          oprot.writeFieldEnd();
-        }
-        if (struct.o1 != null) {
-          oprot.writeFieldBegin(O1_FIELD_DESC);
-          struct.o1.write(oprot);
           oprot.writeFieldEnd();
         }
         oprot.writeFieldStop();
@@ -3829,31 +3381,20 @@ public class SentryThriftPolicyService {
         if (struct.isSetSuccess()) {
           optionals.set(0);
         }
-        if (struct.isSetO1()) {
-          optionals.set(1);
-        }
-        oprot.writeBitSet(optionals, 2);
+        oprot.writeBitSet(optionals, 1);
         if (struct.isSetSuccess()) {
           struct.success.write(oprot);
-        }
-        if (struct.isSetO1()) {
-          struct.o1.write(oprot);
         }
       }
 
       @Override
       public void read(org.apache.thrift.protocol.TProtocol prot, alter_sentry_role_delete_groups_result struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
-        BitSet incoming = iprot.readBitSet(2);
+        BitSet incoming = iprot.readBitSet(1);
         if (incoming.get(0)) {
           struct.success = new TAlterSentryRoleDeleteGroupsResponse();
           struct.success.read(iprot);
           struct.setSuccessIsSet(true);
-        }
-        if (incoming.get(1)) {
-          struct.o1 = new TSentryNoSuchObjectException();
-          struct.o1.read(iprot);
-          struct.setO1IsSet(true);
         }
       }
     }
@@ -4227,7 +3768,6 @@ public class SentryThriftPolicyService {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("list_sentry_roles_result");
 
     private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRUCT, (short)0);
-    private static final org.apache.thrift.protocol.TField O1_FIELD_DESC = new org.apache.thrift.protocol.TField("o1", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
@@ -4236,12 +3776,10 @@ public class SentryThriftPolicyService {
     }
 
     private TListSentryRolesResponse success; // required
-    private TSentryNoSuchObjectException o1; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-      SUCCESS((short)0, "success"),
-      O1((short)1, "o1");
+      SUCCESS((short)0, "success");
 
       private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -4258,8 +3796,6 @@ public class SentryThriftPolicyService {
         switch(fieldId) {
           case 0: // SUCCESS
             return SUCCESS;
-          case 1: // O1
-            return O1;
           default:
             return null;
         }
@@ -4305,8 +3841,6 @@ public class SentryThriftPolicyService {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TListSentryRolesResponse.class)));
-      tmpMap.put(_Fields.O1, new org.apache.thrift.meta_data.FieldMetaData("o1", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(list_sentry_roles_result.class, metaDataMap);
     }
@@ -4315,12 +3849,10 @@ public class SentryThriftPolicyService {
     }
 
     public list_sentry_roles_result(
-      TListSentryRolesResponse success,
-      TSentryNoSuchObjectException o1)
+      TListSentryRolesResponse success)
     {
       this();
       this.success = success;
-      this.o1 = o1;
     }
 
     /**
@@ -4329,9 +3861,6 @@ public class SentryThriftPolicyService {
     public list_sentry_roles_result(list_sentry_roles_result other) {
       if (other.isSetSuccess()) {
         this.success = new TListSentryRolesResponse(other.success);
-      }
-      if (other.isSetO1()) {
-        this.o1 = new TSentryNoSuchObjectException(other.o1);
       }
     }
 
@@ -4342,7 +3871,6 @@ public class SentryThriftPolicyService {
     @Override
     public void clear() {
       this.success = null;
-      this.o1 = null;
     }
 
     public TListSentryRolesResponse getSuccess() {
@@ -4368,29 +3896,6 @@ public class SentryThriftPolicyService {
       }
     }
 
-    public TSentryNoSuchObjectException getO1() {
-      return this.o1;
-    }
-
-    public void setO1(TSentryNoSuchObjectException o1) {
-      this.o1 = o1;
-    }
-
-    public void unsetO1() {
-      this.o1 = null;
-    }
-
-    /** Returns true if field o1 is set (has been assigned a value) and false otherwise */
-    public boolean isSetO1() {
-      return this.o1 != null;
-    }
-
-    public void setO1IsSet(boolean value) {
-      if (!value) {
-        this.o1 = null;
-      }
-    }
-
     public void setFieldValue(_Fields field, Object value) {
       switch (field) {
       case SUCCESS:
@@ -4401,14 +3906,6 @@ public class SentryThriftPolicyService {
         }
         break;
 
-      case O1:
-        if (value == null) {
-          unsetO1();
-        } else {
-          setO1((TSentryNoSuchObjectException)value);
-        }
-        break;
-
       }
     }
 
@@ -4416,9 +3913,6 @@ public class SentryThriftPolicyService {
       switch (field) {
       case SUCCESS:
         return getSuccess();
-
-      case O1:
-        return getO1();
 
       }
       throw new IllegalStateException();
@@ -4433,8 +3927,6 @@ public class SentryThriftPolicyService {
       switch (field) {
       case SUCCESS:
         return isSetSuccess();
-      case O1:
-        return isSetO1();
       }
       throw new IllegalStateException();
     }
@@ -4461,15 +3953,6 @@ public class SentryThriftPolicyService {
           return false;
       }
 
-      boolean this_present_o1 = true && this.isSetO1();
-      boolean that_present_o1 = true && that.isSetO1();
-      if (this_present_o1 || that_present_o1) {
-        if (!(this_present_o1 && that_present_o1))
-          return false;
-        if (!this.o1.equals(that.o1))
-          return false;
-      }
-
       return true;
     }
 
@@ -4481,11 +3964,6 @@ public class SentryThriftPolicyService {
       builder.append(present_success);
       if (present_success)
         builder.append(success);
-
-      boolean present_o1 = true && (isSetO1());
-      builder.append(present_o1);
-      if (present_o1)
-        builder.append(o1);
 
       return builder.toHashCode();
     }
@@ -4504,16 +3982,6 @@ public class SentryThriftPolicyService {
       }
       if (isSetSuccess()) {
         lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.success, typedOther.success);
-        if (lastComparison != 0) {
-          return lastComparison;
-        }
-      }
-      lastComparison = Boolean.valueOf(isSetO1()).compareTo(typedOther.isSetO1());
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-      if (isSetO1()) {
-        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.o1, typedOther.o1);
         if (lastComparison != 0) {
           return lastComparison;
         }
@@ -4543,14 +4011,6 @@ public class SentryThriftPolicyService {
         sb.append("null");
       } else {
         sb.append(this.success);
-      }
-      first = false;
-      if (!first) sb.append(", ");
-      sb.append("o1:");
-      if (this.o1 == null) {
-        sb.append("null");
-      } else {
-        sb.append(this.o1);
       }
       first = false;
       sb.append(")");
@@ -4608,15 +4068,6 @@ public class SentryThriftPolicyService {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
-            case 1: // O1
-              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
-                struct.o1 = new TSentryNoSuchObjectException();
-                struct.o1.read(iprot);
-                struct.setO1IsSet(true);
-              } else { 
-                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
-              }
-              break;
             default:
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
           }
@@ -4633,11 +4084,6 @@ public class SentryThriftPolicyService {
         if (struct.success != null) {
           oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
           struct.success.write(oprot);
-          oprot.writeFieldEnd();
-        }
-        if (struct.o1 != null) {
-          oprot.writeFieldBegin(O1_FIELD_DESC);
-          struct.o1.write(oprot);
           oprot.writeFieldEnd();
         }
         oprot.writeFieldStop();
@@ -4661,31 +4107,20 @@ public class SentryThriftPolicyService {
         if (struct.isSetSuccess()) {
           optionals.set(0);
         }
-        if (struct.isSetO1()) {
-          optionals.set(1);
-        }
-        oprot.writeBitSet(optionals, 2);
+        oprot.writeBitSet(optionals, 1);
         if (struct.isSetSuccess()) {
           struct.success.write(oprot);
-        }
-        if (struct.isSetO1()) {
-          struct.o1.write(oprot);
         }
       }
 
       @Override
       public void read(org.apache.thrift.protocol.TProtocol prot, list_sentry_roles_result struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
-        BitSet incoming = iprot.readBitSet(2);
+        BitSet incoming = iprot.readBitSet(1);
         if (incoming.get(0)) {
           struct.success = new TListSentryRolesResponse();
           struct.success.read(iprot);
           struct.setSuccessIsSet(true);
-        }
-        if (incoming.get(1)) {
-          struct.o1 = new TSentryNoSuchObjectException();
-          struct.o1.read(iprot);
-          struct.setO1IsSet(true);
         }
       }
     }
