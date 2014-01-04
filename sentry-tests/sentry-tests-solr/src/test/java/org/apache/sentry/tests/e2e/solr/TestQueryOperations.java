@@ -29,9 +29,9 @@ import java.util.List;
 import org.apache.solr.common.SolrInputDocument;
 
 @ThreadLeakScope(Scope.NONE) // hdfs client currently leaks thread(s)
-public class TestUpdateOperations extends AbstractSolrSentryTestBase {
+public class TestQueryOperations extends AbstractSolrSentryTestBase {
   private static final Logger LOG = LoggerFactory
-      .getLogger(TestUpdateOperations.class);
+      .getLogger(TestQueryOperations.class);
   private static final String COLLECTION_NAME = "sentryCollection";
   private static final List<Boolean> BOOLEAN_VALUES = Arrays.asList(new Boolean[]{true, false});
 
@@ -47,22 +47,13 @@ public class TestUpdateOperations extends AbstractSolrSentryTestBase {
           LOG.info("TEST_USER: " + test_user);
 
           try {
-            if (all || update) {
-              cleanSolrCollection(COLLECTION_NAME);
-              SolrInputDocument solrInputDoc = createSolrTestDoc();
-              verifyUpdatePass(test_user, COLLECTION_NAME, solrInputDoc);
-
-              cleanSolrCollection(COLLECTION_NAME);
-              uploadSolrDoc(COLLECTION_NAME, null);
-              verifyDeletedocsPass(test_user, COLLECTION_NAME, false);
+            cleanSolrCollection(COLLECTION_NAME);
+            SolrInputDocument solrInputDoc = createSolrTestDoc();
+            uploadSolrDoc(COLLECTION_NAME, solrInputDoc);
+            if (all || query) {
+              verifyQueryPass(test_user, COLLECTION_NAME, ALL_DOCS);
             } else {
-              cleanSolrCollection(COLLECTION_NAME);
-              SolrInputDocument solrInputDoc = createSolrTestDoc();
-              verifyUpdateFail(test_user, COLLECTION_NAME, solrInputDoc);
-
-              cleanSolrCollection(COLLECTION_NAME);
-              uploadSolrDoc(COLLECTION_NAME, null);
-              verifyDeletedocsFail(test_user, COLLECTION_NAME, false);
+              verifyQueryFail(test_user, COLLECTION_NAME, ALL_DOCS);
             }
           } catch (Throwable testException) {
             testFailures.add("\n\nTestFailure: User -> " + test_user + "\n"

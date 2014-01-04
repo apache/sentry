@@ -68,4 +68,12 @@ public class ModifiableUserAuthenticationFilter implements Filter {
   public static void setUser(String solrUser) {
     userName = solrUser;
   }
+
+  /**
+   * Function to return the authenticated user name defined.
+   * @param solrUser
+   */
+  public static String getUser() {
+    return userName;
+  }
 }

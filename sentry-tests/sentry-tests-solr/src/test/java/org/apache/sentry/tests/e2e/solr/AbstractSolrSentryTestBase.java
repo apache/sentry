@@ -19,9 +19,7 @@ package org.apache.sentry.tests.e2e.solr;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.util.Arrays;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Random;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -34,6 +32,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocument;
@@ -55,6 +54,7 @@ public abstract class AbstractSolrSentryTestBase extends AbstractFullDistribZkTe
   private static MiniDFSCluster dfsCluster;
   private static SortedMap<Class, String> extraRequestFilters;
   protected static final String ADMIN_USER = "admin";
+  protected static final String ALL_DOCS = "*:*";
   protected static final Random RANDOM = new Random();
 
   private static void addPropertyToSentry(StringBuilder builder, String name, String value) {
@@ -160,6 +160,15 @@ public abstract class AbstractSolrSentryTestBase extends AbstractFullDistribZkTe
   }
 
   /**
+   * Get the user defined in the Solr authentication filter
+   * @return - the username as String
+   * @throws Exception
+   */
+  private String getAuthenticatedUser() throws Exception {
+    return ModifiableUserAuthenticationFilter.getUser();
+  }
+
+  /**
    * Function to return the user name based on the permissions provided.
    * @param collectionName - Name of the solr collection.
    * @param isQuery - Boolean that specifies query permission.
@@ -199,22 +208,28 @@ public abstract class AbstractSolrSentryTestBase extends AbstractFullDistribZkTe
    * @throws Exception
    */
   protected void verifyUpdatePass(String solrUserName,
-                                   String collectionName,
-                                   SolrInputDocument solrInputDoc)
-                                   throws Exception {
-    int originalSolrDocCount = getSolrDocs(collectionName).size();
-    setAuthenticationUser(solrUserName);
-    CloudSolrServer cloudSolrServer = getCloudSolrServer(collectionName);
+                                  String collectionName,
+                                  SolrInputDocument solrInputDoc) throws Exception {
+    String originalUser = getAuthenticatedUser();
     try {
-      cloudSolrServer.add(solrInputDoc);
-      cloudSolrServer.commit();
-    } finally {
-      cloudSolrServer.shutdown();
-    }
+      SolrDocumentList orginalSolrDocs = getSolrDocs(collectionName, ALL_DOCS, true);
+      setAuthenticationUser(solrUserName);
+      CloudSolrServer cloudSolrServer = getCloudSolrServer(collectionName);
+      try {
+        cloudSolrServer.add(solrInputDoc);
+        cloudSolrServer.commit();
+      } finally {
+        cloudSolrServer.shutdown();
+      }
 
-    // Validate Solr content to check whether the update command went through.
-    // Authenticate as user "admin"
-    validateSolrDocCountAndContent(collectionName, originalSolrDocCount+1, solrInputDoc);
+      orginalSolrDocs.add(ClientUtils.toSolrDocument(solrInputDoc));
+      SolrDocumentList solrRespDocs = getSolrDocs(collectionName, ALL_DOCS, true);
+      // Validate Solr content to check whether the update command went through.
+      validateSolrDocCountAndContent(orginalSolrDocs, solrRespDocs);
+    }
+    finally {
+      setAuthenticationUser(originalUser);
+    }
   }
 
   /**
@@ -225,26 +240,30 @@ public abstract class AbstractSolrSentryTestBase extends AbstractFullDistribZkTe
    * @throws Exception
    */
   protected void verifyUpdateFail(String solrUserName,
-                                   String collectionName,
-                                   SolrInputDocument solrInputDoc)
-                                   throws Exception {
-    int originalSolrDocCount = getSolrDocs(collectionName).size();
-    setAuthenticationUser(solrUserName);
-    CloudSolrServer cloudSolrServer = getCloudSolrServer(collectionName);
+                                  String collectionName,
+                                  SolrInputDocument solrInputDoc) throws Exception {
+    String originalUser = getAuthenticatedUser();
     try {
-      cloudSolrServer.add(solrInputDoc);
-      cloudSolrServer.commit();
-      fail("The specified user: " + solrUserName + " shouldn't get update access!");
-    } catch (Exception exception) {
-      assertTrue("Expected " + SENTRY_ERROR_MSG + " in " + exception.toString(),
-          exception.toString().contains(SENTRY_ERROR_MSG));
-    } finally {
-      cloudSolrServer.shutdown();
-    }
+      SolrDocumentList orginalSolrDocs = getSolrDocs(collectionName, ALL_DOCS, true);
+      setAuthenticationUser(solrUserName);
+      CloudSolrServer cloudSolrServer = getCloudSolrServer(collectionName);
+      try {
+        cloudSolrServer.add(solrInputDoc);
+        cloudSolrServer.commit();
+        fail("The specified user: " + solrUserName + " shouldn't get update access!");
+      } catch (Exception exception) {
+        assertTrue("Expected " + SENTRY_ERROR_MSG + " in " + exception.toString(),
+            exception.toString().contains(SENTRY_ERROR_MSG));
+      } finally {
+        cloudSolrServer.shutdown();
+      }
 
-    // Validate Solr content to check whether the update command didn't go through.
-    // Authenticate as user "admin"
-    validateSolrDocCountAndContent(collectionName, originalSolrDocCount, null);
+      SolrDocumentList solrRespDocs = getSolrDocs(collectionName, ALL_DOCS, true);
+      // Validate Solr content to check whether the update command didn't go through.
+      validateSolrDocCountAndContent(orginalSolrDocs, solrRespDocs);
+    } finally {
+      setAuthenticationUser(originalUser);
+    }
   }
 
   /**
@@ -256,25 +275,30 @@ public abstract class AbstractSolrSentryTestBase extends AbstractFullDistribZkTe
    * @throws MalformedURLException, SolrServerException, IOException
    */
   protected void verifyDeletedocsPass(String solrUserName,
-                                   String collectionName, boolean allowZeroDocs)
-                                   throws Exception {
-    int originalSolrDocCount = getSolrDocs(collectionName).size();
-    if (allowZeroDocs == false) {
-      assertTrue("Solr should contain atleast one solr doc to run this test.", originalSolrDocCount > 0);
-    }
-
-    setAuthenticationUser(solrUserName);
-    CloudSolrServer cloudSolrServer = getCloudSolrServer(collectionName);
+                                      String collectionName,
+                                      boolean allowZeroDocs) throws Exception {
+    String originalUser = getAuthenticatedUser();
     try {
-      cloudSolrServer.deleteByQuery("*:*");
-      cloudSolrServer.commit();
-    } finally {
-      cloudSolrServer.shutdown();
-    }
+      SolrDocumentList orginalSolrDocs = getSolrDocs(collectionName, ALL_DOCS, true);
+      if (allowZeroDocs == false) {
+        assertTrue("Solr should contain atleast one solr doc to run this test.", orginalSolrDocs.size() > 0);
+      }
 
-    // Validate Solr content to check whether the update command didn't go through.
-    // Authenticate as user "admin"
-    validateSolrDocCountAndContent(collectionName, 0, null);
+      setAuthenticationUser(solrUserName);
+      CloudSolrServer cloudSolrServer = getCloudSolrServer(collectionName);
+      try {
+        cloudSolrServer.deleteByQuery(ALL_DOCS);
+        cloudSolrServer.commit();
+      } finally {
+        cloudSolrServer.shutdown();
+      }
+
+      // Validate Solr doc count is zero
+      SolrDocumentList solrRespDocs = getSolrDocs(collectionName, ALL_DOCS, true);
+      validateSolrDocCountAndContent(new SolrDocumentList(), solrRespDocs);
+    } finally {
+      setAuthenticationUser(originalUser);
+    }
   }
 
   /**
@@ -286,71 +310,132 @@ public abstract class AbstractSolrSentryTestBase extends AbstractFullDistribZkTe
    * @throws Exception
    */
   protected void verifyDeletedocsFail(String solrUserName,
-                                   String collectionName, boolean allowZeroDocs)
-                                   throws Exception {
-    int originalSolrDocCount = getSolrDocs(collectionName).size();
-    if (allowZeroDocs == false) {
-      assertTrue("Solr should contain atleast one solr doc to run this test.", originalSolrDocCount > 0);
-    }
-
-    setAuthenticationUser(solrUserName);
-    CloudSolrServer cloudSolrServer = getCloudSolrServer(collectionName);
+                                      String collectionName,
+                                      boolean allowZeroDocs) throws Exception {
+    String originalUser = getAuthenticatedUser();
     try {
-      cloudSolrServer.deleteByQuery("*:*");
-      cloudSolrServer.commit();
-      fail("The specified user: " + solrUserName + " shouldn't get deletedocs access!");
-    } catch (Exception exception) {
-      assertTrue("Expected " + SENTRY_ERROR_MSG + " in " + exception.toString(),
-          exception.toString().contains(SENTRY_ERROR_MSG));
-    } finally {
-      cloudSolrServer.shutdown();
-    }
+      SolrDocumentList orginalSolrDocs = getSolrDocs(collectionName, ALL_DOCS, true);
+      if (allowZeroDocs == false) {
+        assertTrue("Solr should contain atleast one solr doc to run this test.", orginalSolrDocs.size() > 0);
+      }
 
-    // Validate Solr content to check whether the deletedocs command didn't go through.
-    // Authenticate as user "admin"
-    validateSolrDocCountAndContent(collectionName, originalSolrDocCount, null);
+      setAuthenticationUser(solrUserName);
+      CloudSolrServer cloudSolrServer = getCloudSolrServer(collectionName);
+      try {
+        cloudSolrServer.deleteByQuery(ALL_DOCS);
+        cloudSolrServer.commit();
+        fail("The specified user: " + solrUserName + " shouldn't get deletedocs access!");
+      } catch (Exception exception) {
+        assertTrue("Expected " + SENTRY_ERROR_MSG + " in " + exception.toString(),
+            exception.toString().contains(SENTRY_ERROR_MSG));
+      } finally {
+        cloudSolrServer.shutdown();
+      }
+
+      // Validate Solr doc count and content is same as original set.
+      SolrDocumentList solrRespDocs = getSolrDocs(collectionName, ALL_DOCS, true);
+      validateSolrDocCountAndContent(orginalSolrDocs, solrRespDocs);
+    } finally {
+      setAuthenticationUser(originalUser);
+    }
   }
 
   /**
-   * Function to verify whether Solr doc count matches the expected number and
-   * also to verify if the Input document is present in present in the response.
-   * @param collectionName - Name of the Solr collection
-   * @param expectedDocCount - Count of expected Solr docs
-   * @param solrInputDoc - Solr doc inserted into Solr
+   * Method to validate Solr query passes
+   * @param solrUserName - User authenticated into Solr
+   * @param collectionName - Name of the collection to be queried
+   * @param solrQueryStr - Query string to be searched in Solr
    * @throws Exception
    */
-  public void validateSolrDocCountAndContent(String collectionName, int expectedDocCount, SolrInputDocument solrInputDoc)
-                                   throws Exception {
-    // Authenticate as user "admin"
-    setAuthenticationUser(ADMIN_USER);
-    SolrDocumentList solrRespDocs = getSolrDocs(collectionName);
-    assertEquals("Expected: " + expectedDocCount + " Solr docs; But, found "
-        + solrRespDocs.size() + " Solr docs.", solrRespDocs.size(), expectedDocCount);
-      if (solrInputDoc != null) {
-        validateSolrDocContent(solrInputDoc, solrRespDocs);
+  protected void verifyQueryPass(String solrUserName,
+                                 String collectionName,
+                                 String solrQueryStr) throws Exception {
+    String originalUser = getAuthenticatedUser();
+    try {
+      SolrDocumentList orginalSolrDocs = getSolrDocs(collectionName, solrQueryStr, true);
+      setAuthenticationUser(solrUserName);
+      SolrDocumentList solrRespDocs = null;
+      solrRespDocs = getSolrDocs(collectionName, solrQueryStr, false);
+
+      // Validate Solr content to check whether the query command went through.
+      validateSolrDocCountAndContent(orginalSolrDocs, solrRespDocs);
+    } finally {
+      setAuthenticationUser(originalUser);
+    }
+  }
+
+  /**
+   * Method to validate Solr query fails
+   * @param solrUserName - User authenticated into Solr
+   * @param collectionName - Name of the collection to be queried
+   * @param solrQueryStr - Query string to be searched in Solr
+   * @throws Exception
+   */
+  protected void verifyQueryFail(String solrUserName,
+                                 String collectionName,
+                                 String solrQueryStr) throws Exception {
+    String originalUser = getAuthenticatedUser();
+    try {
+      setAuthenticationUser(solrUserName);
+      try {
+        getSolrDocs(collectionName, solrQueryStr, false);
+        fail("The specified user: " + solrUserName + " shouldn't get query access!");
+      } catch (Exception exception) {
+        assertTrue("Expected " + SENTRY_ERROR_MSG + " in " + exception.toString(),
+            exception.toString().contains(SENTRY_ERROR_MSG));
       }
+    } finally {
+      setAuthenticationUser(originalUser);
+    }
+  }
+
+  /**
+   * Function to validate the count and content of two SolrDocumentList's.
+   * @param solrOriginalDocs - Instance of initial set of solr docs before processing
+   * @param solrResponseDocs - Instance of response solr docs after processing
+   */
+  protected void validateSolrDocCountAndContent(SolrDocumentList solrOriginalDocs,
+                                                SolrDocumentList solrResponseDocs) {
+    assertEquals("Expected number of Solr docs: " + solrOriginalDocs.size() + "; But found:" + solrResponseDocs.size(),
+        solrOriginalDocs.size(), solrResponseDocs.size());
+    for (SolrDocument solrDoc : solrOriginalDocs) {
+      SolrInputDocument solrInputDoc = ClientUtils.toSolrInputDocument(solrDoc);
+      validateSolrDocContent(solrInputDoc, solrResponseDocs);
+    }
   }
 
   /**
    * Function to query the collection and fetch the Solr docs
    * @param collectionName -  Name of the collection
+   * @param solrQueryStr - Query string to be searched in Solr
+   * @param runAsAdmin - Boolean to specify whether to execute the Solr query as admin user
    * @return -  Instance of SolrDocumentList
    * @throws Exception
    */
-  protected SolrDocumentList getSolrDocs(String collectionName) throws Exception {
-    // Authenticate as user "admin"
-    setAuthenticationUser(ADMIN_USER);
-    CloudSolrServer cloudSolrServer = getCloudSolrServer(collectionName);
-    SolrDocumentList solrDocs = null;
+  protected SolrDocumentList getSolrDocs(String collectionName,
+                                         String solrQueryStr,
+                                         boolean runAsAdmin) throws Exception {
+    String originalUser = getAuthenticatedUser();
     try {
-      SolrQuery query = new SolrQuery("*:*");
-      QueryResponse response = cloudSolrServer.query(query);
-      solrDocs = response.getResults();
-    } finally {
-      cloudSolrServer.shutdown();
-    }
+      if (runAsAdmin == true) {
+        // Authenticate as user "admin"
+        setAuthenticationUser(ADMIN_USER);
+      }
 
-    return solrDocs;
+      CloudSolrServer cloudSolrServer = getCloudSolrServer(collectionName);
+      assertNotNull("Solr query shouldn't be null.", solrQueryStr);
+      SolrDocumentList solrDocs = null;
+      try {
+        SolrQuery query = new SolrQuery(solrQueryStr);
+        QueryResponse response = cloudSolrServer.query(query);
+        solrDocs = response.getResults();
+        return solrDocs;
+      } finally {
+        cloudSolrServer.shutdown();
+      }
+    } finally {
+      setAuthenticationUser(originalUser);
+    }
   }
 
   /**
@@ -359,16 +444,27 @@ public abstract class AbstractSolrSentryTestBase extends AbstractFullDistribZkTe
    * @param solrRespDocs - List of Solr doc obtained as response
    * (NOTE: This function ignores "_version_" field in validating Solr doc content)
    */
-  public void validateSolrDocContent(SolrInputDocument solrInputDoc, SolrDocumentList solrRespDocs) {
-    solrInputDoc.removeField("_version_");
+  public void validateSolrDocContent(SolrInputDocument solrInputDoc,
+                                     SolrDocumentList solrRespDocs) {
     for (SolrDocument solrRespDoc : solrRespDocs) {
-      solrRespDoc.removeFields("_version_");
       String expFieldValue = (String) solrInputDoc.getFieldValue("id");
       String resFieldValue = (String) solrRespDoc.getFieldValue("id");
       if (expFieldValue.equals(resFieldValue)) {
-        assertEquals("Expected " + solrInputDoc.size() + " fields. But, found "
-            + solrRespDoc.size() + " fields", solrInputDoc.size() , solrRespDoc.size());
+        int expectedRespFieldCount = solrRespDoc.size();
+        if (solrRespDoc.containsKey("_version_")) {
+          expectedRespFieldCount = expectedRespFieldCount - 1;
+        }
+        int expectedOrigFieldCount = solrInputDoc.size();
+        if (solrInputDoc.containsKey("_version_")) {
+          expectedOrigFieldCount = expectedOrigFieldCount - 1;
+        }
+        assertEquals("Expected " + expectedOrigFieldCount + " fields. But, found "
+              + expectedRespFieldCount + " fields", expectedOrigFieldCount , expectedRespFieldCount);
         for (String field : solrInputDoc.getFieldNames()) {
+          if (field.equals("_version_") == true) {
+            continue;
+          }
+
           expFieldValue = (String) solrInputDoc.getFieldValue(field);
           resFieldValue = (String) solrRespDoc.getFieldValue(field);
           assertEquals("Expected value for field: " + field + " is " + expFieldValue
@@ -404,11 +500,16 @@ public abstract class AbstractSolrSentryTestBase extends AbstractFullDistribZkTe
    */
   protected void setupCollection(String collectionName) throws Exception {
     // Authenticate as user "admin"
-    setAuthenticationUser(ADMIN_USER);
-    uploadConfigDirToZk(getSolrHome() + File.separator + DEFAULT_COLLECTION
-      + File.separator + "conf");
-    createCollection(collectionName, 1, 1, 1);
-    waitForRecoveriesToFinish(collectionName, false);
+    String originalUser = getAuthenticatedUser();
+    try {
+      setAuthenticationUser(ADMIN_USER);
+      uploadConfigDirToZk(getSolrHome() + File.separator + DEFAULT_COLLECTION
+        + File.separator + "conf");
+      createCollection(collectionName, 1, 1, 1);
+      waitForRecoveriesToFinish(collectionName, false);
+    } finally {
+      setAuthenticationUser(originalUser);
+    }
   }
 
   /**
@@ -441,7 +542,7 @@ public abstract class AbstractSolrSentryTestBase extends AbstractFullDistribZkTe
    * @throws Exception
    */
   protected void uploadSolrDoc(String collectionName,
-                                       SolrInputDocument solrInputDoc) throws Exception {
+                               SolrInputDocument solrInputDoc) throws Exception {
     if (solrInputDoc == null) {
       solrInputDoc = createSolrTestDoc();
     }
