@@ -21,8 +21,10 @@ import org.slf4j.LoggerFactory;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
-import java.util.ArrayList;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -65,14 +67,17 @@ public class TestUpdateOperations extends AbstractSolrSentryTestBase {
               verifyDeletedocsFail(test_user, COLLECTION_NAME, false);
             }
           } catch (Throwable testException) {
+            StringWriter stringWriter = new StringWriter();
+            PrintWriter printWriter = new PrintWriter(stringWriter);
+            testException.printStackTrace(printWriter);
             testFailures.add("\n\nTestFailure: User -> " + test_user + "\n"
-                + testException.toString());
+                + stringWriter.toString());
           }
         }
       }
     }
 
     assertEquals("Total test failures: " + testFailures.size() + " \n\n"
-        + testFailures.toString(), 0, testFailures.size());
+        + testFailures.toString() + "\n\n\n", 0, testFailures.size());
   }
 }
