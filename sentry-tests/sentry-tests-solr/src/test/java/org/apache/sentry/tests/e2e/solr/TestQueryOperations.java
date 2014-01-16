@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
 
+import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -39,6 +40,9 @@ public class TestQueryOperations extends AbstractSolrSentryTestBase {
 
   @Override
   public void doTest() throws Exception {
+    // Upload configs to ZK
+    uploadConfigDirToZk(getSolrHome() + File.separator + DEFAULT_COLLECTION
+        + File.separator + "conf");
     setupCollection(COLLECTION_NAME);
     ArrayList<String> testFailures = new ArrayList<String>();
 

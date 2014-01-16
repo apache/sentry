@@ -19,6 +19,7 @@ package org.apache.sentry.tests.e2e.solr;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Random;
 import java.util.SortedMap;
@@ -30,7 +31,10 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
@@ -38,6 +42,10 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.servlet.SolrDispatchFilter;
 
 import org.junit.After;
@@ -390,6 +398,122 @@ public abstract class AbstractSolrSentryTestBase extends AbstractFullDistribZkTe
   }
 
   /**
+   * Method to validate collection Admin operation pass
+   * @param solrUserName - User authenticated into Solr
+   * @param adminOp - Admin operation to be performed
+   * @param collectionName - Name of the collection to be queried
+   * @param ignoreError - boolean to specify whether to ignore the error if any occurred.
+   *                      (We may need this attribute for running DELETE command on a collection which doesn't exist)
+   * @throws Exception
+   */
+  protected void verifyCollectionAdminOpPass(String solrUserName,
+                                             CollectionAction adminOp,
+                                             String collectionName) throws Exception {
+    String originalUser = getAuthenticatedUser();
+    try {
+      setAuthenticationUser(solrUserName);
+      QueryRequest request = populateCollectionAdminParams(adminOp, collectionName);
+      SolrServer solrServer = createNewSolrServer("", getBaseUrl((HttpSolrServer) clients.get(0)));
+      try {
+        NamedList<Object> result = solrServer.request(request);
+        if (adminOp.compareTo(CollectionAction.CREATE) == 0) {
+          // Wait for collection creation to complete.
+          waitForRecoveriesToFinish(collectionName, false);
+        }
+      } finally {
+        solrServer.shutdown();
+      }
+    } finally {
+      setAuthenticationUser(originalUser);
+    }
+  }
+
+  /**
+   * Method to validate collection Admin operation fail
+   * @param solrUserName - User authenticated into Solr
+   * @param adminOp - Admin operation to be performed
+   * @param collectionName - Name of the collection to be queried
+   * @throws Exception
+   */
+  protected void verifyCollectionAdminOpFail(String solrUserName,
+                                             CollectionAction adminOp,
+                                             String collectionName) throws Exception {
+
+    String originalUser = getAuthenticatedUser();
+    try {
+      setAuthenticationUser(solrUserName);
+      try {
+        QueryRequest request = populateCollectionAdminParams(adminOp, collectionName);
+        SolrServer solrServer = createNewSolrServer("", getBaseUrl((HttpSolrServer) clients.get(0)));
+        try {
+          NamedList<Object> result = solrServer.request(request);
+          if (adminOp.compareTo(CollectionAction.CREATE) == 0) {
+            // Wait for collection creation to complete.
+            waitForRecoveriesToFinish(collectionName, false);
+          }
+        } finally {
+          solrServer.shutdown();
+        }
+
+        fail("The specified user: " + solrUserName + " shouldn't get admin access for " + adminOp);
+      } catch (Exception exception) {
+        assertTrue("Expected " + SENTRY_ERROR_MSG + " in " + exception.toString(),
+            exception.toString().contains(SENTRY_ERROR_MSG));
+      }
+    } finally {
+      setAuthenticationUser(originalUser);
+    }
+  }
+
+  /**
+   * Method to populate the Solr params based on the collection admin being performed.
+   * @param adminOp - Collection admin operation
+   * @param collectionName - Name of the collection
+   * @return - instance of QueryRequest.
+   */
+  public QueryRequest populateCollectionAdminParams(CollectionAction adminOp,
+                                                            String collectionName) {
+    ModifiableSolrParams modParams = new ModifiableSolrParams();
+    modParams.set(CoreAdminParams.ACTION, adminOp.name());
+    switch (adminOp) {
+      case CREATE:
+        modParams.set("name", collectionName);
+        modParams.set("numShards", 2);
+        modParams.set("shards", "shard1,shard2");
+        modParams.set("replicationFactor", 1);
+        break;
+      case DELETE:
+        modParams.set("name", collectionName);
+        break;
+      case RELOAD:
+        modParams.set("name", collectionName);
+        break;
+      case SPLITSHARD:
+        modParams.set("collection", collectionName);
+        modParams.set("shard", "shard1");
+        break;
+      case DELETESHARD:
+        modParams.set("collection", collectionName);
+        modParams.set("shard", "shard1");
+        break;
+      case CREATEALIAS:
+        modParams.set("name", collectionName);
+        modParams.set("collections", collectionName + "_underlying1"
+            + "," + collectionName + "_underlying2");
+        break;
+      case DELETEALIAS:
+        modParams.set("name", collectionName);
+        break;
+      default:
+        throw new IllegalArgumentException("Admin operation: " + adminOp + " is not supported!");
+    }
+
+    QueryRequest request = new QueryRequest(modParams);
+    request.setPath("/admin/collections");
+    return request;
+  }
+
+  /**
    * Function to validate the count and content of two SolrDocumentList's.
    * @param solrOriginalDocs - Instance of initial set of solr docs before processing
    * @param solrResponseDocs - Instance of response solr docs after processing
@@ -499,16 +623,25 @@ public abstract class AbstractSolrSentryTestBase extends AbstractFullDistribZkTe
    * @throws Exception
    */
   protected void setupCollection(String collectionName) throws Exception {
-    // Authenticate as user "admin"
-    String originalUser = getAuthenticatedUser();
+    verifyCollectionAdminOpPass(ADMIN_USER,
+                                CollectionAction.CREATE,
+                                collectionName);
+  }
+
+  /**
+   * Function to delete a solr collection with the name passed as parameter
+   * (Runs commands as ADMIN user)
+   * @param collectionName - Name of the collection
+   * This function will simply ignore the errors raised in deleting the collections.
+   * e.g: As part of the clean up job, the tests can issue a DELETE command on the collection which doesn't exist.
+   */
+  protected void deleteCollection(String collectionName) {
     try {
-      setAuthenticationUser(ADMIN_USER);
-      uploadConfigDirToZk(getSolrHome() + File.separator + DEFAULT_COLLECTION
-        + File.separator + "conf");
-      createCollection(collectionName, 1, 1, 1);
-      waitForRecoveriesToFinish(collectionName, false);
-    } finally {
-      setAuthenticationUser(originalUser);
+      verifyCollectionAdminOpPass(ADMIN_USER,
+                                  CollectionAction.DELETE,
+                                  collectionName);
+    } catch (Exception e) {
+      LOG.warn("Ignoring errors raised while deleting the collection : " + e.toString());
     }
   }
 
