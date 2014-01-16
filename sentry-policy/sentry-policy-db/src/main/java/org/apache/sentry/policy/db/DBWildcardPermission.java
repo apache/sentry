@@ -154,8 +154,8 @@ public class DBWildcardPermission implements Permission, Serializable {
       // request path does not contain relative parts /a/../b &&
       // request path starts with policy path &&
       // authorities (nullable) are equal
-      String requestPath = requestURI.getPath() + File.separator;
-      String policyPath = policyURI.getPath() + File.separator;
+      String requestPath = ensureEndsWithSeparator(requestURI.getPath());
+      String policyPath = ensureEndsWithSeparator(policyURI.getPath());
       if(policyURI.getScheme().equals(requestURI.getScheme()) &&
           requestURI.getPath().equals(new URI(request).normalize().getPath()) &&
           requestPath.startsWith(policyPath) &&
@@ -167,6 +167,20 @@ public class DBWildcardPermission implements Permission, Serializable {
       LOGGER.warn("Request URI " + request + " is not a URI", e);
       return false;
     }
+  }
+
+  /**
+   * The URI must be a directory as opposed to a partial
+   * path entry name. To ensure this is true we add a /
+   * at the end of the path. Without this the admin might
+   * grant access to /dir1 but the user would be given access
+   * to /dir1* whereas the admin meant /dir1/
+   */
+  private static String ensureEndsWithSeparator(String path) {
+    if (path.endsWith(File.separator)) {
+      return path;
+    }
+    return path + File.separator;
   }
 
   @Override
