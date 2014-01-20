@@ -52,23 +52,28 @@ limitations under the License.
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compile.source>1.6</maven.compile.source>
     <maven.compile.target>1.6</maven.compile.target>
-    <hive.version>0.10.0-cdh4.4.0</hive.version>
-    <hadoop.version>2.0.0-cdh4.4.</hadoop.version>
-    <solr.version>4.4.0-cdh5.0.0-SNAPSHOT</solr.version>
-    <junit.version>4.9</junit.version>
+    <commons.lang.version>2.6</commons.lang.version>
+    <derby.version>10.4.2.0</derby.version>
     <fest.reflect.version>1.4.1</fest.reflect.version>
-    <log4j.version>1.2.16</log4j.version>
     <guava.version>11.0.2</guava.version>
+    <hadoop.version>2.0.0-cdh4.4.0</hadoop.version>
+    <hive.version>0.10.0-cdh4.4.0</hive.version>
+    <junit.version>4.9</junit.version>
+    <libthrift.version>0.9.0-cdh4-1</libthrift.version>
+    <log4j.version>1.2.16</log4j.version>
     <shiro.version>1.2.1</shiro.version>
     <slf4j.version>1.6.1</slf4j.version>
-    <derby.version>10.4.2.0</derby.version>
-    <libthrift.version>0.9.0-cdh4-1</libthrift.version>
-    <hadoop.version>2.0.0-cdh4.4.0</hadoop.version>
+    <solr.version>4.4.0-cdh5.0.0-SNAPSHOT</solr.version>
     <zookeeper.version>3.4.5-cdh4.4.0</zookeeper.version>
   </properties>
 
   <dependencyManagement>
     <dependencies>
+      <dependency>
+        <groupId>commons-lang</groupId>
+        <artifactId>commons-lang</artifactId>
+        <version>${commons.lang.version}</version>
+      </dependency>
       <dependency>
         <groupId>org.apache.derby</groupId>
         <artifactId>derby</artifactId>
@@ -352,11 +357,11 @@ limitations under the License.
                   <exclude>**/nb-configuration.xml</exclude>
                   <exclude>**.patch</exclude>
                   <exclude>README*</exclude>
-                  <exclude>.project</exclude>
+                  <exclude>**/.project</exclude>
                   <exclude>**/target/</exclude>
-                  <exclude>.settings</exclude>
-                  <exclude>.metadata/</exclude>
-                  <exclude>.classpath</exclude>
+                  <exclude>**/.settings/**</exclude>
+                  <exclude>**/.metadata/</exclude>
+                  <exclude>**/.classpath</exclude>
                   <exclude>**/service.properties</exclude>
                   <exclude>**/kv1.dat</exclude>
                   <exclude>**/*.lck</exclude>

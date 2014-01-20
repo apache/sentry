@@ -24,13 +24,13 @@ package org.apache.sentry.policy.db;
 import static org.apache.sentry.provider.file.PolicyFileConstants.AUTHORIZABLE_JOINER;
 import static org.apache.sentry.provider.file.PolicyFileConstants.AUTHORIZABLE_SPLITTER;
 
-import java.io.File;
 import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 
 import org.apache.commons.lang.text.StrSubstitutor;
+import org.apache.sentry.core.common.utils.PathUtils;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
 import org.apache.sentry.policy.common.PermissionFactory;
@@ -133,54 +133,24 @@ public class DBWildcardPermission implements Permission, Serializable {
     return false;
   }
 
-  /**
-   * URI is a a special case. For URI's, /a implies /a/b.
-   * Therefore the test is "/a/b".startsWith("/a");
-   */
   @VisibleForTesting
-  protected static boolean impliesURI(String policy, String request) {
+  protected static boolean impliesURI(String privilege, String request) {
     try {
-      URI policyURI = new URI(new StrSubstitutor(System.getProperties()).replace(policy));
-      URI requestURI = new URI(request);
-      if(policyURI.getScheme() == null || policyURI.getPath() == null) {
-        LOGGER.warn("Policy URI " + policy + " is not valid. Either no scheme or no path.");
-        return false;
-      }
-      if(requestURI.getScheme() == null || requestURI.getPath() == null) {
-        LOGGER.warn("Request URI " + request + " is not valid. Either no scheme or no path.");
-        return false;
-      }
-      // schemes are equal &&
-      // request path does not contain relative parts /a/../b &&
-      // request path starts with policy path &&
-      // authorities (nullable) are equal
-      String requestPath = ensureEndsWithSeparator(requestURI.getPath());
-      String policyPath = ensureEndsWithSeparator(policyURI.getPath());
-      if(policyURI.getScheme().equals(requestURI.getScheme()) &&
-          requestURI.getPath().equals(new URI(request).normalize().getPath()) &&
-          requestPath.startsWith(policyPath) &&
-          Strings.nullToEmpty(policyURI.getAuthority()).equals(Strings.nullToEmpty(requestURI.getAuthority()))) {
-        return true;
-      }
+    URI privilegeURI = new URI(new StrSubstitutor(System.getProperties()).replace(privilege));
+    URI requestURI = new URI(request);
+    if(privilegeURI.getScheme() == null || privilegeURI.getPath() == null) {
+      LOGGER.warn("Privilege URI " + request + " is not valid. Either no scheme or no path.");
       return false;
+    }
+    if(requestURI.getScheme() == null || requestURI.getPath() == null) {
+      LOGGER.warn("Request URI " + request + " is not valid. Either no scheme or no path.");
+      return false;
+    }
+      return PathUtils.impliesURI(privilegeURI, requestURI);
     } catch (URISyntaxException e) {
       LOGGER.warn("Request URI " + request + " is not a URI", e);
       return false;
     }
-  }
-
-  /**
-   * The URI must be a directory as opposed to a partial
-   * path entry name. To ensure this is true we add a /
-   * at the end of the path. Without this the admin might
-   * grant access to /dir1 but the user would be given access
-   * to /dir1* whereas the admin meant /dir1/
-   */
-  private static String ensureEndsWithSeparator(String path) {
-    if (path.endsWith(File.separator)) {
-      return path;
-    }
-    return path + File.separator;
   }
 
   @Override
