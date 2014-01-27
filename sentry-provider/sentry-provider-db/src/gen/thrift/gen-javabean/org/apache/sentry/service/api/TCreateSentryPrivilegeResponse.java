@@ -4,7 +4,7 @@
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  *  @generated
  */
-package org.apache.sentry.policystore.api;
+package org.apache.sentry.service.api;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.thrift.scheme.IScheme;
@@ -31,15 +31,15 @@ import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TAlterSentryRoleDeleteGroupsResponse implements org.apache.thrift.TBase<TAlterSentryRoleDeleteGroupsResponse, TAlterSentryRoleDeleteGroupsResponse._Fields>, java.io.Serializable, Cloneable {
-  private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("TAlterSentryRoleDeleteGroupsResponse");
+public class TCreateSentryPrivilegeResponse implements org.apache.thrift.TBase<TCreateSentryPrivilegeResponse, TCreateSentryPrivilegeResponse._Fields>, java.io.Serializable, Cloneable {
+  private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("TCreateSentryPrivilegeResponse");
 
   private static final org.apache.thrift.protocol.TField STATUS_FIELD_DESC = new org.apache.thrift.protocol.TField("status", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
-    schemes.put(StandardScheme.class, new TAlterSentryRoleDeleteGroupsResponseStandardSchemeFactory());
-    schemes.put(TupleScheme.class, new TAlterSentryRoleDeleteGroupsResponseTupleSchemeFactory());
+    schemes.put(StandardScheme.class, new TCreateSentryPrivilegeResponseStandardSchemeFactory());
+    schemes.put(TupleScheme.class, new TCreateSentryPrivilegeResponseTupleSchemeFactory());
   }
 
   private TSentryResponseStatus status; // required
@@ -109,13 +109,13 @@ public class TAlterSentryRoleDeleteGroupsResponse implements org.apache.thrift.T
     tmpMap.put(_Fields.STATUS, new org.apache.thrift.meta_data.FieldMetaData("status", org.apache.thrift.TFieldRequirementType.REQUIRED, 
         new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TSentryResponseStatus.class)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
-    org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(TAlterSentryRoleDeleteGroupsResponse.class, metaDataMap);
+    org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(TCreateSentryPrivilegeResponse.class, metaDataMap);
   }
 
-  public TAlterSentryRoleDeleteGroupsResponse() {
+  public TCreateSentryPrivilegeResponse() {
   }
 
-  public TAlterSentryRoleDeleteGroupsResponse(
+  public TCreateSentryPrivilegeResponse(
     TSentryResponseStatus status)
   {
     this();
@@ -125,14 +125,14 @@ public class TAlterSentryRoleDeleteGroupsResponse implements org.apache.thrift.T
   /**
    * Performs a deep copy on <i>other</i>.
    */
-  public TAlterSentryRoleDeleteGroupsResponse(TAlterSentryRoleDeleteGroupsResponse other) {
+  public TCreateSentryPrivilegeResponse(TCreateSentryPrivilegeResponse other) {
     if (other.isSetStatus()) {
       this.status = new TSentryResponseStatus(other.status);
     }
   }
 
-  public TAlterSentryRoleDeleteGroupsResponse deepCopy() {
-    return new TAlterSentryRoleDeleteGroupsResponse(this);
+  public TCreateSentryPrivilegeResponse deepCopy() {
+    return new TCreateSentryPrivilegeResponse(this);
   }
 
   @Override
@@ -202,12 +202,12 @@ public class TAlterSentryRoleDeleteGroupsResponse implements org.apache.thrift.T
   public boolean equals(Object that) {
     if (that == null)
       return false;
-    if (that instanceof TAlterSentryRoleDeleteGroupsResponse)
-      return this.equals((TAlterSentryRoleDeleteGroupsResponse)that);
+    if (that instanceof TCreateSentryPrivilegeResponse)
+      return this.equals((TCreateSentryPrivilegeResponse)that);
     return false;
   }
 
-  public boolean equals(TAlterSentryRoleDeleteGroupsResponse that) {
+  public boolean equals(TCreateSentryPrivilegeResponse that) {
     if (that == null)
       return false;
 
@@ -235,13 +235,13 @@ public class TAlterSentryRoleDeleteGroupsResponse implements org.apache.thrift.T
     return builder.toHashCode();
   }
 
-  public int compareTo(TAlterSentryRoleDeleteGroupsResponse other) {
+  public int compareTo(TCreateSentryPrivilegeResponse other) {
     if (!getClass().equals(other.getClass())) {
       return getClass().getName().compareTo(other.getClass().getName());
     }
 
     int lastComparison = 0;
-    TAlterSentryRoleDeleteGroupsResponse typedOther = (TAlterSentryRoleDeleteGroupsResponse)other;
+    TCreateSentryPrivilegeResponse typedOther = (TCreateSentryPrivilegeResponse)other;
 
     lastComparison = Boolean.valueOf(isSetStatus()).compareTo(typedOther.isSetStatus());
     if (lastComparison != 0) {
@@ -270,7 +270,7 @@ public class TAlterSentryRoleDeleteGroupsResponse implements org.apache.thrift.T
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder("TAlterSentryRoleDeleteGroupsResponse(");
+    StringBuilder sb = new StringBuilder("TCreateSentryPrivilegeResponse(");
     boolean first = true;
 
     sb.append("status:");
@@ -312,15 +312,15 @@ public class TAlterSentryRoleDeleteGroupsResponse implements org.apache.thrift.T
     }
   }
 
-  private static class TAlterSentryRoleDeleteGroupsResponseStandardSchemeFactory implements SchemeFactory {
-    public TAlterSentryRoleDeleteGroupsResponseStandardScheme getScheme() {
-      return new TAlterSentryRoleDeleteGroupsResponseStandardScheme();
+  private static class TCreateSentryPrivilegeResponseStandardSchemeFactory implements SchemeFactory {
+    public TCreateSentryPrivilegeResponseStandardScheme getScheme() {
+      return new TCreateSentryPrivilegeResponseStandardScheme();
     }
   }
 
-  private static class TAlterSentryRoleDeleteGroupsResponseStandardScheme extends StandardScheme<TAlterSentryRoleDeleteGroupsResponse> {
+  private static class TCreateSentryPrivilegeResponseStandardScheme extends StandardScheme<TCreateSentryPrivilegeResponse> {
 
-    public void read(org.apache.thrift.protocol.TProtocol iprot, TAlterSentryRoleDeleteGroupsResponse struct) throws org.apache.thrift.TException {
+    public void read(org.apache.thrift.protocol.TProtocol iprot, TCreateSentryPrivilegeResponse struct) throws org.apache.thrift.TException {
       org.apache.thrift.protocol.TField schemeField;
       iprot.readStructBegin();
       while (true)
@@ -348,7 +348,7 @@ public class TAlterSentryRoleDeleteGroupsResponse implements org.apache.thrift.T
       struct.validate();
     }
 
-    public void write(org.apache.thrift.protocol.TProtocol oprot, TAlterSentryRoleDeleteGroupsResponse struct) throws org.apache.thrift.TException {
+    public void write(org.apache.thrift.protocol.TProtocol oprot, TCreateSentryPrivilegeResponse struct) throws org.apache.thrift.TException {
       struct.validate();
 
       oprot.writeStructBegin(STRUCT_DESC);
@@ -363,22 +363,22 @@ public class TAlterSentryRoleDeleteGroupsResponse implements org.apache.thrift.T
 
   }
 
-  private static class TAlterSentryRoleDeleteGroupsResponseTupleSchemeFactory implements SchemeFactory {
-    public TAlterSentryRoleDeleteGroupsResponseTupleScheme getScheme() {
-      return new TAlterSentryRoleDeleteGroupsResponseTupleScheme();
+  private static class TCreateSentryPrivilegeResponseTupleSchemeFactory implements SchemeFactory {
+    public TCreateSentryPrivilegeResponseTupleScheme getScheme() {
+      return new TCreateSentryPrivilegeResponseTupleScheme();
     }
   }
 
-  private static class TAlterSentryRoleDeleteGroupsResponseTupleScheme extends TupleScheme<TAlterSentryRoleDeleteGroupsResponse> {
+  private static class TCreateSentryPrivilegeResponseTupleScheme extends TupleScheme<TCreateSentryPrivilegeResponse> {
 
     @Override
-    public void write(org.apache.thrift.protocol.TProtocol prot, TAlterSentryRoleDeleteGroupsResponse struct) throws org.apache.thrift.TException {
+    public void write(org.apache.thrift.protocol.TProtocol prot, TCreateSentryPrivilegeResponse struct) throws org.apache.thrift.TException {
       TTupleProtocol oprot = (TTupleProtocol) prot;
       struct.status.write(oprot);
     }
 
     @Override
-    public void read(org.apache.thrift.protocol.TProtocol prot, TAlterSentryRoleDeleteGroupsResponse struct) throws org.apache.thrift.TException {
+    public void read(org.apache.thrift.protocol.TProtocol prot, TCreateSentryPrivilegeResponse struct) throws org.apache.thrift.TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
       struct.status = new TSentryResponseStatus();
       struct.status.read(iprot);

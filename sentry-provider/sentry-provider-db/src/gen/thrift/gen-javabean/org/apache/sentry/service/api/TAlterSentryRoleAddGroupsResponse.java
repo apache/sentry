@@ -4,7 +4,7 @@
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  *  @generated
  */
-package org.apache.sentry.policystore.api;
+package org.apache.sentry.service.api;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.thrift.scheme.IScheme;
@@ -31,15 +31,15 @@ import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TCreateSentryRoleResponse implements org.apache.thrift.TBase<TCreateSentryRoleResponse, TCreateSentryRoleResponse._Fields>, java.io.Serializable, Cloneable {
-  private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("TCreateSentryRoleResponse");
+public class TAlterSentryRoleAddGroupsResponse implements org.apache.thrift.TBase<TAlterSentryRoleAddGroupsResponse, TAlterSentryRoleAddGroupsResponse._Fields>, java.io.Serializable, Cloneable {
+  private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("TAlterSentryRoleAddGroupsResponse");
 
   private static final org.apache.thrift.protocol.TField STATUS_FIELD_DESC = new org.apache.thrift.protocol.TField("status", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
-    schemes.put(StandardScheme.class, new TCreateSentryRoleResponseStandardSchemeFactory());
-    schemes.put(TupleScheme.class, new TCreateSentryRoleResponseTupleSchemeFactory());
+    schemes.put(StandardScheme.class, new TAlterSentryRoleAddGroupsResponseStandardSchemeFactory());
+    schemes.put(TupleScheme.class, new TAlterSentryRoleAddGroupsResponseTupleSchemeFactory());
   }
 
   private TSentryResponseStatus status; // required
@@ -109,13 +109,13 @@ public class TCreateSentryRoleResponse implements org.apache.thrift.TBase<TCreat
     tmpMap.put(_Fields.STATUS, new org.apache.thrift.meta_data.FieldMetaData("status", org.apache.thrift.TFieldRequirementType.REQUIRED, 
         new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TSentryResponseStatus.class)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
-    org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(TCreateSentryRoleResponse.class, metaDataMap);
+    org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(TAlterSentryRoleAddGroupsResponse.class, metaDataMap);
   }
 
-  public TCreateSentryRoleResponse() {
+  public TAlterSentryRoleAddGroupsResponse() {
   }
 
-  public TCreateSentryRoleResponse(
+  public TAlterSentryRoleAddGroupsResponse(
     TSentryResponseStatus status)
   {
     this();
@@ -125,14 +125,14 @@ public class TCreateSentryRoleResponse implements org.apache.thrift.TBase<TCreat
   /**
    * Performs a deep copy on <i>other</i>.
    */
-  public TCreateSentryRoleResponse(TCreateSentryRoleResponse other) {
+  public TAlterSentryRoleAddGroupsResponse(TAlterSentryRoleAddGroupsResponse other) {
     if (other.isSetStatus()) {
       this.status = new TSentryResponseStatus(other.status);
     }
   }
 
-  public TCreateSentryRoleResponse deepCopy() {
-    return new TCreateSentryRoleResponse(this);
+  public TAlterSentryRoleAddGroupsResponse deepCopy() {
+    return new TAlterSentryRoleAddGroupsResponse(this);
   }
 
   @Override
@@ -202,12 +202,12 @@ public class TCreateSentryRoleResponse implements org.apache.thrift.TBase<TCreat
   public boolean equals(Object that) {
     if (that == null)
       return false;
-    if (that instanceof TCreateSentryRoleResponse)
-      return this.equals((TCreateSentryRoleResponse)that);
+    if (that instanceof TAlterSentryRoleAddGroupsResponse)
+      return this.equals((TAlterSentryRoleAddGroupsResponse)that);
     return false;
   }
 
-  public boolean equals(TCreateSentryRoleResponse that) {
+  public boolean equals(TAlterSentryRoleAddGroupsResponse that) {
     if (that == null)
       return false;
 
@@ -235,13 +235,13 @@ public class TCreateSentryRoleResponse implements org.apache.thrift.TBase<TCreat
     return builder.toHashCode();
   }
 
-  public int compareTo(TCreateSentryRoleResponse other) {
+  public int compareTo(TAlterSentryRoleAddGroupsResponse other) {
     if (!getClass().equals(other.getClass())) {
       return getClass().getName().compareTo(other.getClass().getName());
     }
 
     int lastComparison = 0;
-    TCreateSentryRoleResponse typedOther = (TCreateSentryRoleResponse)other;
+    TAlterSentryRoleAddGroupsResponse typedOther = (TAlterSentryRoleAddGroupsResponse)other;
 
     lastComparison = Boolean.valueOf(isSetStatus()).compareTo(typedOther.isSetStatus());
     if (lastComparison != 0) {
@@ -270,7 +270,7 @@ public class TCreateSentryRoleResponse implements org.apache.thrift.TBase<TCreat
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder("TCreateSentryRoleResponse(");
+    StringBuilder sb = new StringBuilder("TAlterSentryRoleAddGroupsResponse(");
     boolean first = true;
 
     sb.append("status:");
@@ -312,15 +312,15 @@ public class TCreateSentryRoleResponse implements org.apache.thrift.TBase<TCreat
     }
   }
 
-  private static class TCreateSentryRoleResponseStandardSchemeFactory implements SchemeFactory {
-    public TCreateSentryRoleResponseStandardScheme getScheme() {
-      return new TCreateSentryRoleResponseStandardScheme();
+  private static class TAlterSentryRoleAddGroupsResponseStandardSchemeFactory implements SchemeFactory {
+    public TAlterSentryRoleAddGroupsResponseStandardScheme getScheme() {
+      return new TAlterSentryRoleAddGroupsResponseStandardScheme();
     }
   }
 
-  private static class TCreateSentryRoleResponseStandardScheme extends StandardScheme<TCreateSentryRoleResponse> {
+  private static class TAlterSentryRoleAddGroupsResponseStandardScheme extends StandardScheme<TAlterSentryRoleAddGroupsResponse> {
 
-    public void read(org.apache.thrift.protocol.TProtocol iprot, TCreateSentryRoleResponse struct) throws org.apache.thrift.TException {
+    public void read(org.apache.thrift.protocol.TProtocol iprot, TAlterSentryRoleAddGroupsResponse struct) throws org.apache.thrift.TException {
       org.apache.thrift.protocol.TField schemeField;
       iprot.readStructBegin();
       while (true)
@@ -348,7 +348,7 @@ public class TCreateSentryRoleResponse implements org.apache.thrift.TBase<TCreat
       struct.validate();
     }
 
-    public void write(org.apache.thrift.protocol.TProtocol oprot, TCreateSentryRoleResponse struct) throws org.apache.thrift.TException {
+    public void write(org.apache.thrift.protocol.TProtocol oprot, TAlterSentryRoleAddGroupsResponse struct) throws org.apache.thrift.TException {
       struct.validate();
 
       oprot.writeStructBegin(STRUCT_DESC);
@@ -363,22 +363,22 @@ public class TCreateSentryRoleResponse implements org.apache.thrift.TBase<TCreat
 
   }
 
-  private static class TCreateSentryRoleResponseTupleSchemeFactory implements SchemeFactory {
-    public TCreateSentryRoleResponseTupleScheme getScheme() {
-      return new TCreateSentryRoleResponseTupleScheme();
+  private static class TAlterSentryRoleAddGroupsResponseTupleSchemeFactory implements SchemeFactory {
+    public TAlterSentryRoleAddGroupsResponseTupleScheme getScheme() {
+      return new TAlterSentryRoleAddGroupsResponseTupleScheme();
     }
   }
 
-  private static class TCreateSentryRoleResponseTupleScheme extends TupleScheme<TCreateSentryRoleResponse> {
+  private static class TAlterSentryRoleAddGroupsResponseTupleScheme extends TupleScheme<TAlterSentryRoleAddGroupsResponse> {
 
     @Override
-    public void write(org.apache.thrift.protocol.TProtocol prot, TCreateSentryRoleResponse struct) throws org.apache.thrift.TException {
+    public void write(org.apache.thrift.protocol.TProtocol prot, TAlterSentryRoleAddGroupsResponse struct) throws org.apache.thrift.TException {
       TTupleProtocol oprot = (TTupleProtocol) prot;
       struct.status.write(oprot);
     }
 
     @Override
-    public void read(org.apache.thrift.protocol.TProtocol prot, TCreateSentryRoleResponse struct) throws org.apache.thrift.TException {
+    public void read(org.apache.thrift.protocol.TProtocol prot, TAlterSentryRoleAddGroupsResponse struct) throws org.apache.thrift.TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
       struct.status = new TSentryResponseStatus();
       struct.status.read(iprot);

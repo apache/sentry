@@ -4,19 +4,19 @@
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  *  @generated
  */
-package org.apache.sentry.policystore.api;
+package org.apache.sentry.service.api;
 
 
 import java.util.Map;
 import java.util.HashMap;
 import org.apache.thrift.TEnum;
 
-public enum TSentryPolicyServiceVersion implements org.apache.thrift.TEnum {
+public enum TSentryServiceVersion implements org.apache.thrift.TEnum {
   V1(0);
 
   private final int value;
 
-  private TSentryPolicyServiceVersion(int value) {
+  private TSentryServiceVersion(int value) {
     this.value = value;
   }
 
@@ -31,7 +31,7 @@ public enum TSentryPolicyServiceVersion implements org.apache.thrift.TEnum {
    * Find a the enum type by its integer value, as defined in the Thrift IDL.
    * @return null if the value is not found.
    */
-  public static TSentryPolicyServiceVersion findByValue(int value) { 
+  public static TSentryServiceVersion findByValue(int value) { 
     switch (value) {
       case 0:
         return V1;

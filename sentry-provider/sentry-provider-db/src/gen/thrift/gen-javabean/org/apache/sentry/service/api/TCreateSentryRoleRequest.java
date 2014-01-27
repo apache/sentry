@@ -4,7 +4,7 @@
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  *  @generated
  */
-package org.apache.sentry.policystore.api;
+package org.apache.sentry.service.api;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.thrift.scheme.IScheme;
@@ -31,29 +31,32 @@ import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TAlterSentryRoleDeleteGroupsRequest implements org.apache.thrift.TBase<TAlterSentryRoleDeleteGroupsRequest, TAlterSentryRoleDeleteGroupsRequest._Fields>, java.io.Serializable, Cloneable {
-  private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("TAlterSentryRoleDeleteGroupsRequest");
+public class TCreateSentryRoleRequest implements org.apache.thrift.TBase<TCreateSentryRoleRequest, TCreateSentryRoleRequest._Fields>, java.io.Serializable, Cloneable {
+  private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("TCreateSentryRoleRequest");
 
   private static final org.apache.thrift.protocol.TField PROTOCOL_VERSION_FIELD_DESC = new org.apache.thrift.protocol.TField("protocol_version", org.apache.thrift.protocol.TType.I32, (short)1);
   private static final org.apache.thrift.protocol.TField USER_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("userName", org.apache.thrift.protocol.TType.STRING, (short)2);
+  private static final org.apache.thrift.protocol.TField ROLE_FIELD_DESC = new org.apache.thrift.protocol.TField("role", org.apache.thrift.protocol.TType.STRUCT, (short)3);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
-    schemes.put(StandardScheme.class, new TAlterSentryRoleDeleteGroupsRequestStandardSchemeFactory());
-    schemes.put(TupleScheme.class, new TAlterSentryRoleDeleteGroupsRequestTupleSchemeFactory());
+    schemes.put(StandardScheme.class, new TCreateSentryRoleRequestStandardSchemeFactory());
+    schemes.put(TupleScheme.class, new TCreateSentryRoleRequestTupleSchemeFactory());
   }
 
-  private TSentryPolicyServiceVersion protocol_version; // required
+  private TSentryServiceVersion protocol_version; // required
   private String userName; // required
+  private TSentryRole role; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
     /**
      * 
-     * @see TSentryPolicyServiceVersion
+     * @see TSentryServiceVersion
      */
     PROTOCOL_VERSION((short)1, "protocol_version"),
-    USER_NAME((short)2, "userName");
+    USER_NAME((short)2, "userName"),
+    ROLE((short)3, "role");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -72,6 +75,8 @@ public class TAlterSentryRoleDeleteGroupsRequest implements org.apache.thrift.TB
           return PROTOCOL_VERSION;
         case 2: // USER_NAME
           return USER_NAME;
+        case 3: // ROLE
+          return ROLE;
         default:
           return null;
       }
@@ -116,63 +121,71 @@ public class TAlterSentryRoleDeleteGroupsRequest implements org.apache.thrift.TB
   static {
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
     tmpMap.put(_Fields.PROTOCOL_VERSION, new org.apache.thrift.meta_data.FieldMetaData("protocol_version", org.apache.thrift.TFieldRequirementType.REQUIRED, 
-        new org.apache.thrift.meta_data.EnumMetaData(org.apache.thrift.protocol.TType.ENUM, TSentryPolicyServiceVersion.class)));
+        new org.apache.thrift.meta_data.EnumMetaData(org.apache.thrift.protocol.TType.ENUM, TSentryServiceVersion.class)));
     tmpMap.put(_Fields.USER_NAME, new org.apache.thrift.meta_data.FieldMetaData("userName", org.apache.thrift.TFieldRequirementType.REQUIRED, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
+    tmpMap.put(_Fields.ROLE, new org.apache.thrift.meta_data.FieldMetaData("role", org.apache.thrift.TFieldRequirementType.REQUIRED, 
+        new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TSentryRole.class)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
-    org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(TAlterSentryRoleDeleteGroupsRequest.class, metaDataMap);
+    org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(TCreateSentryRoleRequest.class, metaDataMap);
   }
 
-  public TAlterSentryRoleDeleteGroupsRequest() {
-    this.protocol_version = org.apache.sentry.policystore.api.TSentryPolicyServiceVersion.V1;
+  public TCreateSentryRoleRequest() {
+    this.protocol_version = org.apache.sentry.service.api.TSentryServiceVersion.V1;
 
   }
 
-  public TAlterSentryRoleDeleteGroupsRequest(
-    TSentryPolicyServiceVersion protocol_version,
-    String userName)
+  public TCreateSentryRoleRequest(
+    TSentryServiceVersion protocol_version,
+    String userName,
+    TSentryRole role)
   {
     this();
     this.protocol_version = protocol_version;
     this.userName = userName;
+    this.role = role;
   }
 
   /**
    * Performs a deep copy on <i>other</i>.
    */
-  public TAlterSentryRoleDeleteGroupsRequest(TAlterSentryRoleDeleteGroupsRequest other) {
+  public TCreateSentryRoleRequest(TCreateSentryRoleRequest other) {
     if (other.isSetProtocol_version()) {
       this.protocol_version = other.protocol_version;
     }
     if (other.isSetUserName()) {
       this.userName = other.userName;
     }
+    if (other.isSetRole()) {
+      this.role = new TSentryRole(other.role);
+    }
   }
 
-  public TAlterSentryRoleDeleteGroupsRequest deepCopy() {
-    return new TAlterSentryRoleDeleteGroupsRequest(this);
+  public TCreateSentryRoleRequest deepCopy() {
+    return new TCreateSentryRoleRequest(this);
   }
 
   @Override
   public void clear() {
-    this.protocol_version = org.apache.sentry.policystore.api.TSentryPolicyServiceVersion.V1;
+    this.protocol_version = org.apache.sentry.service.api.TSentryServiceVersion.V1;
 
     this.userName = null;
+    this.role = null;
   }
 
   /**
    * 
-   * @see TSentryPolicyServiceVersion
+   * @see TSentryServiceVersion
    */
-  public TSentryPolicyServiceVersion getProtocol_version() {
+  public TSentryServiceVersion getProtocol_version() {
     return this.protocol_version;
   }
 
   /**
    * 
-   * @see TSentryPolicyServiceVersion
+   * @see TSentryServiceVersion
    */
-  public void setProtocol_version(TSentryPolicyServiceVersion protocol_version) {
+  public void setProtocol_version(TSentryServiceVersion protocol_version) {
     this.protocol_version = protocol_version;
   }
 
@@ -214,13 +227,36 @@ public class TAlterSentryRoleDeleteGroupsRequest implements org.apache.thrift.TB
     }
   }
 
+  public TSentryRole getRole() {
+    return this.role;
+  }
+
+  public void setRole(TSentryRole role) {
+    this.role = role;
+  }
+
+  public void unsetRole() {
+    this.role = null;
+  }
+
+  /** Returns true if field role is set (has been assigned a value) and false otherwise */
+  public boolean isSetRole() {
+    return this.role != null;
+  }
+
+  public void setRoleIsSet(boolean value) {
+    if (!value) {
+      this.role = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case PROTOCOL_VERSION:
       if (value == null) {
         unsetProtocol_version();
       } else {
-        setProtocol_version((TSentryPolicyServiceVersion)value);
+        setProtocol_version((TSentryServiceVersion)value);
       }
       break;
 
@@ -229,6 +265,14 @@ public class TAlterSentryRoleDeleteGroupsRequest implements org.apache.thrift.TB
         unsetUserName();
       } else {
         setUserName((String)value);
+      }
+      break;
+
+    case ROLE:
+      if (value == null) {
+        unsetRole();
+      } else {
+        setRole((TSentryRole)value);
       }
       break;
 
@@ -242,6 +286,9 @@ public class TAlterSentryRoleDeleteGroupsRequest implements org.apache.thrift.TB
 
     case USER_NAME:
       return getUserName();
+
+    case ROLE:
+      return getRole();
 
     }
     throw new IllegalStateException();
@@ -258,6 +305,8 @@ public class TAlterSentryRoleDeleteGroupsRequest implements org.apache.thrift.TB
       return isSetProtocol_version();
     case USER_NAME:
       return isSetUserName();
+    case ROLE:
+      return isSetRole();
     }
     throw new IllegalStateException();
   }
@@ -266,12 +315,12 @@ public class TAlterSentryRoleDeleteGroupsRequest implements org.apache.thrift.TB
   public boolean equals(Object that) {
     if (that == null)
       return false;
-    if (that instanceof TAlterSentryRoleDeleteGroupsRequest)
-      return this.equals((TAlterSentryRoleDeleteGroupsRequest)that);
+    if (that instanceof TCreateSentryRoleRequest)
+      return this.equals((TCreateSentryRoleRequest)that);
     return false;
   }
 
-  public boolean equals(TAlterSentryRoleDeleteGroupsRequest that) {
+  public boolean equals(TCreateSentryRoleRequest that) {
     if (that == null)
       return false;
 
@@ -293,6 +342,15 @@ public class TAlterSentryRoleDeleteGroupsRequest implements org.apache.thrift.TB
         return false;
     }
 
+    boolean this_present_role = true && this.isSetRole();
+    boolean that_present_role = true && that.isSetRole();
+    if (this_present_role || that_present_role) {
+      if (!(this_present_role && that_present_role))
+        return false;
+      if (!this.role.equals(that.role))
+        return false;
+    }
+
     return true;
   }
 
@@ -310,16 +368,21 @@ public class TAlterSentryRoleDeleteGroupsRequest implements org.apache.thrift.TB
     if (present_userName)
       builder.append(userName);
 
+    boolean present_role = true && (isSetRole());
+    builder.append(present_role);
+    if (present_role)
+      builder.append(role);
+
     return builder.toHashCode();
   }
 
-  public int compareTo(TAlterSentryRoleDeleteGroupsRequest other) {
+  public int compareTo(TCreateSentryRoleRequest other) {
     if (!getClass().equals(other.getClass())) {
       return getClass().getName().compareTo(other.getClass().getName());
     }
 
     int lastComparison = 0;
-    TAlterSentryRoleDeleteGroupsRequest typedOther = (TAlterSentryRoleDeleteGroupsRequest)other;
+    TCreateSentryRoleRequest typedOther = (TCreateSentryRoleRequest)other;
 
     lastComparison = Boolean.valueOf(isSetProtocol_version()).compareTo(typedOther.isSetProtocol_version());
     if (lastComparison != 0) {
@@ -341,6 +404,16 @@ public class TAlterSentryRoleDeleteGroupsRequest implements org.apache.thrift.TB
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetRole()).compareTo(typedOther.isSetRole());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetRole()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.role, typedOther.role);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -358,7 +431,7 @@ public class TAlterSentryRoleDeleteGroupsRequest implements org.apache.thrift.TB
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder("TAlterSentryRoleDeleteGroupsRequest(");
+    StringBuilder sb = new StringBuilder("TCreateSentryRoleRequest(");
     boolean first = true;
 
     sb.append("protocol_version:");
@@ -376,6 +449,14 @@ public class TAlterSentryRoleDeleteGroupsRequest implements org.apache.thrift.TB
       sb.append(this.userName);
     }
     first = false;
+    if (!first) sb.append(", ");
+    sb.append("role:");
+    if (this.role == null) {
+      sb.append("null");
+    } else {
+      sb.append(this.role);
+    }
+    first = false;
     sb.append(")");
     return sb.toString();
   }
@@ -390,7 +471,14 @@ public class TAlterSentryRoleDeleteGroupsRequest implements org.apache.thrift.TB
       throw new org.apache.thrift.protocol.TProtocolException("Required field 'userName' is unset! Struct:" + toString());
     }
 
+    if (!isSetRole()) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'role' is unset! Struct:" + toString());
+    }
+
     // check for sub-struct validity
+    if (role != null) {
+      role.validate();
+    }
   }
 
   private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
@@ -409,15 +497,15 @@ public class TAlterSentryRoleDeleteGroupsRequest implements org.apache.thrift.TB
     }
   }
 
-  private static class TAlterSentryRoleDeleteGroupsRequestStandardSchemeFactory implements SchemeFactory {
-    public TAlterSentryRoleDeleteGroupsRequestStandardScheme getScheme() {
-      return new TAlterSentryRoleDeleteGroupsRequestStandardScheme();
+  private static class TCreateSentryRoleRequestStandardSchemeFactory implements SchemeFactory {
+    public TCreateSentryRoleRequestStandardScheme getScheme() {
+      return new TCreateSentryRoleRequestStandardScheme();
     }
   }
 
-  private static class TAlterSentryRoleDeleteGroupsRequestStandardScheme extends StandardScheme<TAlterSentryRoleDeleteGroupsRequest> {
+  private static class TCreateSentryRoleRequestStandardScheme extends StandardScheme<TCreateSentryRoleRequest> {
 
-    public void read(org.apache.thrift.protocol.TProtocol iprot, TAlterSentryRoleDeleteGroupsRequest struct) throws org.apache.thrift.TException {
+    public void read(org.apache.thrift.protocol.TProtocol iprot, TCreateSentryRoleRequest struct) throws org.apache.thrift.TException {
       org.apache.thrift.protocol.TField schemeField;
       iprot.readStructBegin();
       while (true)
@@ -429,7 +517,7 @@ public class TAlterSentryRoleDeleteGroupsRequest implements org.apache.thrift.TB
         switch (schemeField.id) {
           case 1: // PROTOCOL_VERSION
             if (schemeField.type == org.apache.thrift.protocol.TType.I32) {
-              struct.protocol_version = TSentryPolicyServiceVersion.findByValue(iprot.readI32());
+              struct.protocol_version = TSentryServiceVersion.findByValue(iprot.readI32());
               struct.setProtocol_versionIsSet(true);
             } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
@@ -443,6 +531,15 @@ public class TAlterSentryRoleDeleteGroupsRequest implements org.apache.thrift.TB
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
+          case 3: // ROLE
+            if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+              struct.role = new TSentryRole();
+              struct.role.read(iprot);
+              struct.setRoleIsSet(true);
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+            }
+            break;
           default:
             org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
         }
@@ -452,7 +549,7 @@ public class TAlterSentryRoleDeleteGroupsRequest implements org.apache.thrift.TB
       struct.validate();
     }
 
-    public void write(org.apache.thrift.protocol.TProtocol oprot, TAlterSentryRoleDeleteGroupsRequest struct) throws org.apache.thrift.TException {
+    public void write(org.apache.thrift.protocol.TProtocol oprot, TCreateSentryRoleRequest struct) throws org.apache.thrift.TException {
       struct.validate();
 
       oprot.writeStructBegin(STRUCT_DESC);
@@ -466,34 +563,43 @@ public class TAlterSentryRoleDeleteGroupsRequest implements org.apache.thrift.TB
         oprot.writeString(struct.userName);
         oprot.writeFieldEnd();
       }
+      if (struct.role != null) {
+        oprot.writeFieldBegin(ROLE_FIELD_DESC);
+        struct.role.write(oprot);
+        oprot.writeFieldEnd();
+      }
       oprot.writeFieldStop();
       oprot.writeStructEnd();
     }
 
   }
 
-  private static class TAlterSentryRoleDeleteGroupsRequestTupleSchemeFactory implements SchemeFactory {
-    public TAlterSentryRoleDeleteGroupsRequestTupleScheme getScheme() {
-      return new TAlterSentryRoleDeleteGroupsRequestTupleScheme();
+  private static class TCreateSentryRoleRequestTupleSchemeFactory implements SchemeFactory {
+    public TCreateSentryRoleRequestTupleScheme getScheme() {
+      return new TCreateSentryRoleRequestTupleScheme();
     }
   }
 
-  private static class TAlterSentryRoleDeleteGroupsRequestTupleScheme extends TupleScheme<TAlterSentryRoleDeleteGroupsRequest> {
+  private static class TCreateSentryRoleRequestTupleScheme extends TupleScheme<TCreateSentryRoleRequest> {
 
     @Override
-    public void write(org.apache.thrift.protocol.TProtocol prot, TAlterSentryRoleDeleteGroupsRequest struct) throws org.apache.thrift.TException {
+    public void write(org.apache.thrift.protocol.TProtocol prot, TCreateSentryRoleRequest struct) throws org.apache.thrift.TException {
       TTupleProtocol oprot = (TTupleProtocol) prot;
       oprot.writeI32(struct.protocol_version.getValue());
       oprot.writeString(struct.userName);
+      struct.role.write(oprot);
     }
 
     @Override
-    public void read(org.apache.thrift.protocol.TProtocol prot, TAlterSentryRoleDeleteGroupsRequest struct) throws org.apache.thrift.TException {
+    public void read(org.apache.thrift.protocol.TProtocol prot, TCreateSentryRoleRequest struct) throws org.apache.thrift.TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
-      struct.protocol_version = TSentryPolicyServiceVersion.findByValue(iprot.readI32());
+      struct.protocol_version = TSentryServiceVersion.findByValue(iprot.readI32());
       struct.setProtocol_versionIsSet(true);
       struct.userName = iprot.readString();
       struct.setUserNameIsSet(true);
+      struct.role = new TSentryRole();
+      struct.role.read(iprot);
+      struct.setRoleIsSet(true);
     }
   }
 

@@ -24,11 +24,11 @@
 
 include "share/fb303/if/fb303.thrift"
 
-namespace java org.apache.sentry.policystore.api
-namespace php sentrypolicystore
+namespace java org.apache.sentry.service.api
+namespace php sentryservice
 namespace cpp Apache.Sentry
 
-enum TSentryPolicyServiceVersion {
+enum TSentryServiceVersion {
 V1
 }
 
@@ -70,7 +70,7 @@ struct TSentryGroup {
 }
 
 struct TCreateSentryRoleRequest {
-1: required TSentryPolicyServiceVersion protocol_version = TSentryPolicyServiceVersion.V1,
+1: required TSentryServiceVersion protocol_version = TSentryServiceVersion.V1,
 2: required string userName,
 3: required TSentryRole role
 }
@@ -79,7 +79,7 @@ struct TCreateSentryRoleResponse {
 }
 
 struct TCreateSentryPrivilegeRequest {
-1: required TSentryPolicyServiceVersion protocol_version = TSentryPolicyServiceVersion.V1,
+1: required TSentryServiceVersion protocol_version = TSentryServiceVersion.V1,
 2: required string userName,
 3: required TSentryPrivilege privilege
 }
@@ -88,7 +88,7 @@ struct TCreateSentryPrivilegeResponse {
 }
 
 struct TCreateSentryPrivilegeRequest {
-1: required TSentryPolicyServiceVersion protocol_version = TSentryPolicyServiceVersion.V1,
+1: required TSentryServiceVersion protocol_version = TSentryServiceVersion.V1,
 2: required string userName,
 3: required TSentryPrivilege privilege
 }
@@ -97,7 +97,7 @@ struct TCreateSentryPrivilegeResponse {
 }
 
 struct TAlterSentryRoleAddGroupsRequest {
-1: required TSentryPolicyServiceVersion protocol_version = TSentryPolicyServiceVersion.V1,
+1: required TSentryServiceVersion protocol_version = TSentryServiceVersion.V1,
 2: required string userName,
 3: required string roleName,
 4: required set<TSentryGroup> groups
@@ -107,7 +107,7 @@ struct TAlterSentryRoleAddGroupsResponse {
 }
 
 struct TAlterSentryRoleDeleteGroupsRequest {
-1: required TSentryPolicyServiceVersion protocol_version = TSentryPolicyServiceVersion.V1,
+1: required TSentryServiceVersion protocol_version = TSentryServiceVersion.V1,
 2: required string userName,
 }
 struct TAlterSentryRoleDeleteGroupsResponse {
@@ -115,7 +115,7 @@ struct TAlterSentryRoleDeleteGroupsResponse {
 }
 
 struct TListSentryRolesRequest {
-1: required TSentryPolicyServiceVersion protocol_version = TSentryPolicyServiceVersion.V1,
+1: required TSentryServiceVersion protocol_version = TSentryServiceVersion.V1,
 2: required string userName,
 3: optional string groupName,
 4: optional string roleName
@@ -125,7 +125,7 @@ struct TListSentryRolesResponse {
 2: required set<TSentryRole> roles
 }
 
-service SentryThriftPolicyService
+service SentryThriftService
 {
   TCreateSentryRoleResponse create_sentry_role(1:TCreateSentryRoleRequest request)
   //TDropSentryRoleResponse drop_sentry_role(1:TDropSentryRoleRequest request)

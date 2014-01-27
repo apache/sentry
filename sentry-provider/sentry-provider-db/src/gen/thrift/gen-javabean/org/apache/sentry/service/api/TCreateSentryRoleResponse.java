@@ -4,7 +4,7 @@
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  *  @generated
  */
-package org.apache.sentry.policystore.api;
+package org.apache.sentry.service.api;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.thrift.scheme.IScheme;
@@ -31,22 +31,22 @@ import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TSentryGroup implements org.apache.thrift.TBase<TSentryGroup, TSentryGroup._Fields>, java.io.Serializable, Cloneable {
-  private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("TSentryGroup");
+public class TCreateSentryRoleResponse implements org.apache.thrift.TBase<TCreateSentryRoleResponse, TCreateSentryRoleResponse._Fields>, java.io.Serializable, Cloneable {
+  private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("TCreateSentryRoleResponse");
 
-  private static final org.apache.thrift.protocol.TField GROUP_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("groupName", org.apache.thrift.protocol.TType.STRING, (short)1);
+  private static final org.apache.thrift.protocol.TField STATUS_FIELD_DESC = new org.apache.thrift.protocol.TField("status", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
-    schemes.put(StandardScheme.class, new TSentryGroupStandardSchemeFactory());
-    schemes.put(TupleScheme.class, new TSentryGroupTupleSchemeFactory());
+    schemes.put(StandardScheme.class, new TCreateSentryRoleResponseStandardSchemeFactory());
+    schemes.put(TupleScheme.class, new TCreateSentryRoleResponseTupleSchemeFactory());
   }
 
-  private String groupName; // required
+  private TSentryResponseStatus status; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-    GROUP_NAME((short)1, "groupName");
+    STATUS((short)1, "status");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -61,8 +61,8 @@ public class TSentryGroup implements org.apache.thrift.TBase<TSentryGroup, TSent
      */
     public static _Fields findByThriftId(int fieldId) {
       switch(fieldId) {
-        case 1: // GROUP_NAME
-          return GROUP_NAME;
+        case 1: // STATUS
+          return STATUS;
         default:
           return null;
       }
@@ -106,70 +106,70 @@ public class TSentryGroup implements org.apache.thrift.TBase<TSentryGroup, TSent
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-    tmpMap.put(_Fields.GROUP_NAME, new org.apache.thrift.meta_data.FieldMetaData("groupName", org.apache.thrift.TFieldRequirementType.REQUIRED, 
-        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
+    tmpMap.put(_Fields.STATUS, new org.apache.thrift.meta_data.FieldMetaData("status", org.apache.thrift.TFieldRequirementType.REQUIRED, 
+        new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TSentryResponseStatus.class)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
-    org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(TSentryGroup.class, metaDataMap);
+    org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(TCreateSentryRoleResponse.class, metaDataMap);
   }
 
-  public TSentryGroup() {
+  public TCreateSentryRoleResponse() {
   }
 
-  public TSentryGroup(
-    String groupName)
+  public TCreateSentryRoleResponse(
+    TSentryResponseStatus status)
   {
     this();
-    this.groupName = groupName;
+    this.status = status;
   }
 
   /**
    * Performs a deep copy on <i>other</i>.
    */
-  public TSentryGroup(TSentryGroup other) {
-    if (other.isSetGroupName()) {
-      this.groupName = other.groupName;
+  public TCreateSentryRoleResponse(TCreateSentryRoleResponse other) {
+    if (other.isSetStatus()) {
+      this.status = new TSentryResponseStatus(other.status);
     }
   }
 
-  public TSentryGroup deepCopy() {
-    return new TSentryGroup(this);
+  public TCreateSentryRoleResponse deepCopy() {
+    return new TCreateSentryRoleResponse(this);
   }
 
   @Override
   public void clear() {
-    this.groupName = null;
+    this.status = null;
   }
 
-  public String getGroupName() {
-    return this.groupName;
+  public TSentryResponseStatus getStatus() {
+    return this.status;
   }
 
-  public void setGroupName(String groupName) {
-    this.groupName = groupName;
+  public void setStatus(TSentryResponseStatus status) {
+    this.status = status;
   }
 
-  public void unsetGroupName() {
-    this.groupName = null;
+  public void unsetStatus() {
+    this.status = null;
   }
 
-  /** Returns true if field groupName is set (has been assigned a value) and false otherwise */
-  public boolean isSetGroupName() {
-    return this.groupName != null;
+  /** Returns true if field status is set (has been assigned a value) and false otherwise */
+  public boolean isSetStatus() {
+    return this.status != null;
   }
 
-  public void setGroupNameIsSet(boolean value) {
+  public void setStatusIsSet(boolean value) {
     if (!value) {
-      this.groupName = null;
+      this.status = null;
     }
   }
 
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
-    case GROUP_NAME:
+    case STATUS:
       if (value == null) {
-        unsetGroupName();
+        unsetStatus();
       } else {
-        setGroupName((String)value);
+        setStatus((TSentryResponseStatus)value);
       }
       break;
 
@@ -178,8 +178,8 @@ public class TSentryGroup implements org.apache.thrift.TBase<TSentryGroup, TSent
 
   public Object getFieldValue(_Fields field) {
     switch (field) {
-    case GROUP_NAME:
-      return getGroupName();
+    case STATUS:
+      return getStatus();
 
     }
     throw new IllegalStateException();
@@ -192,8 +192,8 @@ public class TSentryGroup implements org.apache.thrift.TBase<TSentryGroup, TSent
     }
 
     switch (field) {
-    case GROUP_NAME:
-      return isSetGroupName();
+    case STATUS:
+      return isSetStatus();
     }
     throw new IllegalStateException();
   }
@@ -202,21 +202,21 @@ public class TSentryGroup implements org.apache.thrift.TBase<TSentryGroup, TSent
   public boolean equals(Object that) {
     if (that == null)
       return false;
-    if (that instanceof TSentryGroup)
-      return this.equals((TSentryGroup)that);
+    if (that instanceof TCreateSentryRoleResponse)
+      return this.equals((TCreateSentryRoleResponse)that);
     return false;
   }
 
-  public boolean equals(TSentryGroup that) {
+  public boolean equals(TCreateSentryRoleResponse that) {
     if (that == null)
       return false;
 
-    boolean this_present_groupName = true && this.isSetGroupName();
-    boolean that_present_groupName = true && that.isSetGroupName();
-    if (this_present_groupName || that_present_groupName) {
-      if (!(this_present_groupName && that_present_groupName))
+    boolean this_present_status = true && this.isSetStatus();
+    boolean that_present_status = true && that.isSetStatus();
+    if (this_present_status || that_present_status) {
+      if (!(this_present_status && that_present_status))
         return false;
-      if (!this.groupName.equals(that.groupName))
+      if (!this.status.equals(that.status))
         return false;
     }
 
@@ -227,28 +227,28 @@ public class TSentryGroup implements org.apache.thrift.TBase<TSentryGroup, TSent
   public int hashCode() {
     HashCodeBuilder builder = new HashCodeBuilder();
 
-    boolean present_groupName = true && (isSetGroupName());
-    builder.append(present_groupName);
-    if (present_groupName)
-      builder.append(groupName);
+    boolean present_status = true && (isSetStatus());
+    builder.append(present_status);
+    if (present_status)
+      builder.append(status);
 
     return builder.toHashCode();
   }
 
-  public int compareTo(TSentryGroup other) {
+  public int compareTo(TCreateSentryRoleResponse other) {
     if (!getClass().equals(other.getClass())) {
       return getClass().getName().compareTo(other.getClass().getName());
     }
 
     int lastComparison = 0;
-    TSentryGroup typedOther = (TSentryGroup)other;
+    TCreateSentryRoleResponse typedOther = (TCreateSentryRoleResponse)other;
 
-    lastComparison = Boolean.valueOf(isSetGroupName()).compareTo(typedOther.isSetGroupName());
+    lastComparison = Boolean.valueOf(isSetStatus()).compareTo(typedOther.isSetStatus());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetGroupName()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.groupName, typedOther.groupName);
+    if (isSetStatus()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.status, typedOther.status);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -270,14 +270,14 @@ public class TSentryGroup implements org.apache.thrift.TBase<TSentryGroup, TSent
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder("TSentryGroup(");
+    StringBuilder sb = new StringBuilder("TCreateSentryRoleResponse(");
     boolean first = true;
 
-    sb.append("groupName:");
-    if (this.groupName == null) {
+    sb.append("status:");
+    if (this.status == null) {
       sb.append("null");
     } else {
-      sb.append(this.groupName);
+      sb.append(this.status);
     }
     first = false;
     sb.append(")");
@@ -286,11 +286,14 @@ public class TSentryGroup implements org.apache.thrift.TBase<TSentryGroup, TSent
 
   public void validate() throws org.apache.thrift.TException {
     // check for required fields
-    if (!isSetGroupName()) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'groupName' is unset! Struct:" + toString());
+    if (!isSetStatus()) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'status' is unset! Struct:" + toString());
     }
 
     // check for sub-struct validity
+    if (status != null) {
+      status.validate();
+    }
   }
 
   private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
@@ -309,15 +312,15 @@ public class TSentryGroup implements org.apache.thrift.TBase<TSentryGroup, TSent
     }
   }
 
-  private static class TSentryGroupStandardSchemeFactory implements SchemeFactory {
-    public TSentryGroupStandardScheme getScheme() {
-      return new TSentryGroupStandardScheme();
+  private static class TCreateSentryRoleResponseStandardSchemeFactory implements SchemeFactory {
+    public TCreateSentryRoleResponseStandardScheme getScheme() {
+      return new TCreateSentryRoleResponseStandardScheme();
     }
   }
 
-  private static class TSentryGroupStandardScheme extends StandardScheme<TSentryGroup> {
+  private static class TCreateSentryRoleResponseStandardScheme extends StandardScheme<TCreateSentryRoleResponse> {
 
-    public void read(org.apache.thrift.protocol.TProtocol iprot, TSentryGroup struct) throws org.apache.thrift.TException {
+    public void read(org.apache.thrift.protocol.TProtocol iprot, TCreateSentryRoleResponse struct) throws org.apache.thrift.TException {
       org.apache.thrift.protocol.TField schemeField;
       iprot.readStructBegin();
       while (true)
@@ -327,10 +330,11 @@ public class TSentryGroup implements org.apache.thrift.TBase<TSentryGroup, TSent
           break;
         }
         switch (schemeField.id) {
-          case 1: // GROUP_NAME
-            if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
-              struct.groupName = iprot.readString();
-              struct.setGroupNameIsSet(true);
+          case 1: // STATUS
+            if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+              struct.status = new TSentryResponseStatus();
+              struct.status.read(iprot);
+              struct.setStatusIsSet(true);
             } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
@@ -344,13 +348,13 @@ public class TSentryGroup implements org.apache.thrift.TBase<TSentryGroup, TSent
       struct.validate();
     }
 
-    public void write(org.apache.thrift.protocol.TProtocol oprot, TSentryGroup struct) throws org.apache.thrift.TException {
+    public void write(org.apache.thrift.protocol.TProtocol oprot, TCreateSentryRoleResponse struct) throws org.apache.thrift.TException {
       struct.validate();
 
       oprot.writeStructBegin(STRUCT_DESC);
-      if (struct.groupName != null) {
-        oprot.writeFieldBegin(GROUP_NAME_FIELD_DESC);
-        oprot.writeString(struct.groupName);
+      if (struct.status != null) {
+        oprot.writeFieldBegin(STATUS_FIELD_DESC);
+        struct.status.write(oprot);
         oprot.writeFieldEnd();
       }
       oprot.writeFieldStop();
@@ -359,25 +363,26 @@ public class TSentryGroup implements org.apache.thrift.TBase<TSentryGroup, TSent
 
   }
 
-  private static class TSentryGroupTupleSchemeFactory implements SchemeFactory {
-    public TSentryGroupTupleScheme getScheme() {
-      return new TSentryGroupTupleScheme();
+  private static class TCreateSentryRoleResponseTupleSchemeFactory implements SchemeFactory {
+    public TCreateSentryRoleResponseTupleScheme getScheme() {
+      return new TCreateSentryRoleResponseTupleScheme();
     }
   }
 
-  private static class TSentryGroupTupleScheme extends TupleScheme<TSentryGroup> {
+  private static class TCreateSentryRoleResponseTupleScheme extends TupleScheme<TCreateSentryRoleResponse> {
 
     @Override
-    public void write(org.apache.thrift.protocol.TProtocol prot, TSentryGroup struct) throws org.apache.thrift.TException {
+    public void write(org.apache.thrift.protocol.TProtocol prot, TCreateSentryRoleResponse struct) throws org.apache.thrift.TException {
       TTupleProtocol oprot = (TTupleProtocol) prot;
-      oprot.writeString(struct.groupName);
+      struct.status.write(oprot);
     }
 
     @Override
-    public void read(org.apache.thrift.protocol.TProtocol prot, TSentryGroup struct) throws org.apache.thrift.TException {
+    public void read(org.apache.thrift.protocol.TProtocol prot, TCreateSentryRoleResponse struct) throws org.apache.thrift.TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
-      struct.groupName = iprot.readString();
-      struct.setGroupNameIsSet(true);
+      struct.status = new TSentryResponseStatus();
+      struct.status.read(iprot);
+      struct.setStatusIsSet(true);
     }
   }
 

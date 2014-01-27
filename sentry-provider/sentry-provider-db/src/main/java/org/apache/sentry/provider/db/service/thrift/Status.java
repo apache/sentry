@@ -22,8 +22,8 @@ import java.io.StringWriter;
 
 import javax.annotation.Nullable;
 
-import org.apache.sentry.policystore.api.TSentryResponseStatus;
-import org.apache.sentry.policystore.api.TSentryStatus;
+import org.apache.sentry.service.api.TSentryResponseStatus;
+import org.apache.sentry.service.api.TSentryStatus;
 
 /**
  * Simple factory to make returning TSentryStatus objects easy
@@ -39,7 +39,7 @@ public class Status {
     return Create(TSentryStatus.NO_SUCH_OBJECT, message, t);
   }
   public static TSentryResponseStatus Create(TSentryStatus value, String message) {
-    return Create(value, null, null);
+    return Create(value, message, null);
   }
   public static TSentryResponseStatus Create(TSentryStatus value, String message, @Nullable Throwable t) {
     TSentryResponseStatus status = new TSentryResponseStatus();

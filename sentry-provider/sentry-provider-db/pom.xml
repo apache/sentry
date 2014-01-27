@@ -117,14 +117,14 @@ limitations under the License.
           <verbose>true</verbose>
           <metadataIncludes>**/*.jdo</metadataIncludes>
         </configuration>
-        <executions>
+        <!-- executions>
           <execution>
             <phase>process-classes</phase>
             <goals>
               <goal>enhance</goal>
             </goals>
           </execution>
-        </executions>
+        </executions -->
       </plugin>
     </plugins>
   </build>

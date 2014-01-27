@@ -27,8 +27,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.metastore.ObjectStore;
-import org.apache.sentry.policystore.api.TSentryPrivilege;
-import org.apache.sentry.policystore.api.TSentryRole;
+import org.apache.sentry.service.api.TSentryPrivilege;
+import org.apache.sentry.service.api.TSentryRole;
 import org.apache.sentry.provider.db.service.model.*;
 
 import javax.jdo.JDODataStoreException;
@@ -42,13 +42,13 @@ import javax.jdo.datastore.DataStoreCache;
 import javax.jdo.identity.IntIdentity;
 import org.apache.hadoop.hive.conf.HiveConf;
 
-public class SentryPolicyStore {
+public class SentryStore {
 
 	  private static Properties prop = null;
 	  private static PersistenceManagerFactory pmf = null;
 
 	  private static Lock pmfPropLock = new ReentrantLock();
-	  private static final Log LOG = LogFactory.getLog(SentryPolicyStore.class.getName());
+	  private static final Log LOG = LogFactory.getLog(SentryStore.class.getName());
 
 	  private boolean isInitialized = false;
 	  private PersistenceManager pm = null;
@@ -62,7 +62,7 @@ public class SentryPolicyStore {
     }
 
 
-	public SentryPolicyStore () {
+	public SentryStore () {
 
 	}
 
