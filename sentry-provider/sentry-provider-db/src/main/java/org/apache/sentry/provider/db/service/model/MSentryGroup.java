@@ -33,7 +33,7 @@ public class MSentryGroup {
 
 
   MSentryGroup(String groupName, long createTime, String grantorPrincipal,
-    Set<MSentryRole> roles) {
+      Set<MSentryRole> roles) {
     this.setGroupName(groupName);
     this.createTime = createTime;
     this.grantorPrincipal = grantorPrincipal;

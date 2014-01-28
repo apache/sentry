@@ -31,7 +31,6 @@ import org.apache.sentry.service.api.TCreateSentryRoleResponse;
 import org.apache.sentry.service.api.TListSentryRolesRequest;
 import org.apache.sentry.service.api.TListSentryRolesResponse;
 import org.apache.sentry.service.api.TSentryResponseStatus;
-import org.apache.sentry.service.api.TSentryStatus;
 import org.apache.thrift.TException;
 
 public class SentryServiceHandler implements SentryThriftService.Iface {
@@ -45,7 +44,7 @@ public class SentryServiceHandler implements SentryThriftService.Iface {
   }
   @Override
   public TCreateSentryRoleResponse create_sentry_role(
-    TCreateSentryRoleRequest request) throws TException {
+      TCreateSentryRoleRequest request) throws TException {
     TCreateSentryRoleResponse resp = new TCreateSentryRoleResponse();
     TSentryResponseStatus status = Status.OK();
     resp.setStatus(status);
@@ -53,22 +52,22 @@ public class SentryServiceHandler implements SentryThriftService.Iface {
   }
   @Override
   public TCreateSentryPrivilegeResponse create_sentry_privilege(
-    TCreateSentryPrivilegeRequest request) throws TException {
+      TCreateSentryPrivilegeRequest request) throws TException {
     return null;
   }
   @Override
   public TAlterSentryRoleAddGroupsResponse alter_sentry_role_add_groups(
-    TAlterSentryRoleAddGroupsRequest request) throws TException {
+      TAlterSentryRoleAddGroupsRequest request) throws TException {
     return null;
   }
   @Override
   public TAlterSentryRoleDeleteGroupsResponse alter_sentry_role_delete_groups(
-    TAlterSentryRoleDeleteGroupsRequest request) throws TException {
+      TAlterSentryRoleDeleteGroupsRequest request) throws TException {
     return null;
   }
   @Override
   public TListSentryRolesResponse list_sentry_roles(
-    TListSentryRolesRequest request) throws TException {
+      TListSentryRolesRequest request) throws TException {
     return null;
   }
 

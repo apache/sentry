@@ -17,58 +17,71 @@
  */
 
 package org.apache.sentry.provider.db.service.thrift;
+import java.net.InetSocketAddress;
 
-import java.net.URI;
-
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.net.NetUtils;
+import org.apache.hadoop.security.SaslRpcServer;
+import org.apache.hadoop.security.SaslRpcServer.AuthMethod;
+import org.apache.sentry.provider.db.service.thrift.Constants.ClientConfig;
+import org.apache.sentry.provider.db.service.thrift.Constants.ServerConfig;
 import org.apache.sentry.service.api.SentryThriftService;
 import org.apache.sentry.service.api.TCreateSentryRoleRequest;
 import org.apache.sentry.service.api.TCreateSentryRoleResponse;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
+import org.apache.thrift.transport.TSaslClientTransport;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
-import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Preconditions;
+
 public class SentryServiceClient {
 
+  @SuppressWarnings("unused")
+  private final Configuration conf;
+  private final InetSocketAddress serverAddress;
+  private final String[] serverPrincipalParts;
   private SentryThriftService.Client client;
   private TTransport transport;
-  private URI policyStoreURI;
   private int connectionTimeout;
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryServiceClient.class);
 
-  //TODO: Read connectionTimeout, policyStoreURI from conf
-  public SentryServiceClient() {
-    this.connectionTimeout = 20 * 1000;
-  }
-
-  private void init() throws TTransportException {
-    if (policyStoreURI == null) {
-      transport = new TSocket("localhost", 8038, connectionTimeout);
-    }
-    transport.open();
+  public SentryServiceClient(Configuration conf) throws Exception {
+    this.conf = conf;
+    this.serverAddress = NetUtils.createSocketAddr(Preconditions.checkNotNull(conf.
+        get(ClientConfig.SERVER_RPC_ADDRESS),
+        "Config key " + ClientConfig.SERVER_RPC_ADDRESS + " is required"),
+        conf.getInt(ClientConfig.SERVER_RPC_PORT, ClientConfig.SERVER_RPC_PORT_DEFAULT));
+    this.connectionTimeout = conf.getInt(ClientConfig.SERVER_RPC_CONN_TIMEOUT,
+        ClientConfig.SERVER_RPC_CONN_TIMEOUT_DEFAULT);
+    String serverPrincipal = Preconditions.checkNotNull(conf.get(ServerConfig.PRINCIPAL),
+        ServerConfig.PRINCIPAL + " is required");
+    serverPrincipalParts = SaslRpcServer.splitKerberosName(serverPrincipal);
+    Preconditions.checkArgument(serverPrincipalParts.length == 3,
+        "Kerberos principal should have 3 parts: " + serverPrincipal);
+    transport = new TSocket(serverAddress.getHostString(), serverAddress.getPort(),
+        connectionTimeout);
+    TTransport saslTransport = new TSaslClientTransport(
+        AuthMethod.KERBEROS.getMechanismName(),
+        null,
+        serverPrincipalParts[0], serverPrincipalParts[1],
+        ClientConfig.SASL_PROPERTIES,
+        null,
+        transport);
+    saslTransport.open();
     LOGGER.info("Successfully opened transport");
-    client = new SentryThriftService.Client(new TBinaryProtocol(transport));
+    client = new SentryThriftService.Client(new TBinaryProtocol(saslTransport));
     LOGGER.info("Successfully created client");
-  }
-
-  public static SentryServiceClient createClient() throws TTransportException {
-    SentryServiceClient c = new SentryServiceClient();
-    c.init();
-    return c;
-  }
-
-  public static void destroyClient(SentryServiceClient c) {
-    c.close();
   }
 
   public TCreateSentryRoleResponse createRole(TCreateSentryRoleRequest req) throws TException {
     return client.create_sentry_role(req);
   }
 
-  private void close() {
+  public void close() {
     if (transport != null) {
       transport.close();
     }

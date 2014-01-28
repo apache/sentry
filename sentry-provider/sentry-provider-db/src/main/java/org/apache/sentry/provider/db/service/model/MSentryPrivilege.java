@@ -47,8 +47,8 @@ public class MSentryPrivilege {
   public MSentryPrivilege() {this.roles = new HashSet<MSentryRole>();}
 
   public MSentryPrivilege(String privilegeName, String privilegeScope,
-    String serverName, String dbName, String tableName, String URI,
-    String action) {
+      String serverName, String dbName, String tableName, String URI,
+      String action) {
     this.privilegeName = privilegeName;
     this.privilegeScope = privilegeScope;
     this.serverName = serverName;

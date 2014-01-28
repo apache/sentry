@@ -219,12 +219,8 @@ implements HiveDriverFilterHook {
   }
 
   // Find the current database for session
-  private Database getCanonicalDb() throws SemanticException {
-    try {
-      return new Database(Hive.get().getCurrentDatabase());
-    } catch (HiveException e) {
-      throw new SemanticException("Error retrieving current db", e);
-    }
+  private Database getCanonicalDb() {
+    return new Database(SessionState.get().getCurrentDatabase());
   }
 
   private Database extractDatabase(ASTNode ast) throws SemanticException {

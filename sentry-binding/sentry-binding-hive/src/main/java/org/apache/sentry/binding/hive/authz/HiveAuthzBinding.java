@@ -111,7 +111,7 @@ public class HiveAuthzBinding {
       if("none".equalsIgnoreCase(authMethod)) {
         throw new InvalidConfigurationException("Authentication can't be NONE in non-testing mode");
       }
-      boolean impersonation = hiveConf.getBoolVar(ConfVars.HIVE_SERVER2_KERBEROS_IMPERSONATION);
+      boolean impersonation = hiveConf.getBoolVar(ConfVars.HIVE_SERVER2_ENABLE_DOAS);
       boolean allowImpersonation = Boolean.parseBoolean(Strings.nullToEmpty(
           authzConf.get(AuthzConfVars.AUTHZ_ALLOW_HIVE_IMPERSONATION.getVar())).trim());
 

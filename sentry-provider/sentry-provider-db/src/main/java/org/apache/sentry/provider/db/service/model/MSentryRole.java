@@ -38,7 +38,7 @@ public class MSentryRole {
   public MSentryRole() {privileges = new HashSet<MSentryPrivilege>();}
 
   MSentryRole(String roleName, long createTime, String grantorPrincipal,
-    Set<MSentryPrivilege> privileges, Set<MSentryGroup> groups) {
+      Set<MSentryPrivilege> privileges, Set<MSentryGroup> groups) {
     this.roleName = roleName;
     this.createTime = createTime;
     this.grantorPrincipal = grantorPrincipal;

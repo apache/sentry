@@ -76,17 +76,22 @@ limitations under the License.
       <scope>provided</scope>
     </dependency>
     <dependency>
-        <groupId>org.apache.thrift</groupId>
-        <artifactId>libfb303</artifactId>
+      <groupId>org.apache.thrift</groupId>
+      <artifactId>libfb303</artifactId>
     </dependency>
     <dependency>
-        <groupId>org.apache.thrift</groupId>
-        <artifactId>libthrift</artifactId>
+      <groupId>org.apache.thrift</groupId>
+      <artifactId>libthrift</artifactId>
     </dependency>
-      <dependency>
-        <groupId>ant-contrib</groupId>
-        <artifactId>ant-contrib</artifactId>
-      </dependency>
+    <dependency>
+      <groupId>ant-contrib</groupId>
+      <artifactId>ant-contrib</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-minikdc</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
