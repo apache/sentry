@@ -81,23 +81,23 @@ public class SentryService implements Runnable {
       port = findFreePort();
     }
     this.address = NetUtils.createSocketAddr(conf.
-        get(ServerConfig.RPC_ADDRESS, ServerConfig.RPC_ADDRESS_DEFAULT),
-        port);
+                   get(ServerConfig.RPC_ADDRESS, ServerConfig.RPC_ADDRESS_DEFAULT),
+                   port);
     LOGGER.info("Configured on address " + address);
     maxThreads = conf.getInt(ServerConfig.RPC_MAX_THREADS,
-        ServerConfig.RPC_MAX_THREADS_DEFAULT);
+                             ServerConfig.RPC_MAX_THREADS_DEFAULT);
     minThreads = conf.getInt(ServerConfig.RPC_MIN_THREADS,
-        ServerConfig.RPC_MIN_THREADS_DEFAULT);
+                             ServerConfig.RPC_MIN_THREADS_DEFAULT);
     principal = Preconditions.checkNotNull(conf.get(ServerConfig.PRINCIPAL),
-        ServerConfig.PRINCIPAL + " is required");
+                                           ServerConfig.PRINCIPAL + " is required");
     principalParts = SaslRpcServer.splitKerberosName(principal);
     Preconditions.checkArgument(principalParts.length == 3,
-        "Kerberos principal should have 3 parts: " + principal);
+                                "Kerberos principal should have 3 parts: " + principal);
     keytab = Preconditions.checkNotNull(conf.get(ServerConfig.KEY_TAB),
-        ServerConfig.KEY_TAB + " is required");
+                                        ServerConfig.KEY_TAB + " is required");
     File keytabFile = new File(keytab);
     Preconditions.checkState(keytabFile.isFile() && keytabFile.canRead(),
-        "Keytab " + keytab + " does not exist or is not readable.");
+                             "Keytab " + keytab + " does not exist or is not readable.");
     serviceExecutor = Executors.newSingleThreadExecutor(new ThreadFactory() {
       private int count = 0;
       @Override
@@ -113,10 +113,10 @@ public class SentryService implements Runnable {
     LoginContext loginContext = null;
     try {
       Subject subject = new Subject(false, Sets.newHashSet(
-          new KerberosPrincipal(principal)), new HashSet<Object>(),
-          new HashSet<Object>());
+                                      new KerberosPrincipal(principal)), new HashSet<Object>(),
+                                    new HashSet<Object>());
       loginContext = new LoginContext("", subject, null,
-          KerberosConfiguration.createClientConfig(principal, new File(keytab)));
+                                      KerberosConfiguration.createClientConfig(principal, new File(keytab)));
       loginContext.login();
       subject = loginContext.getSubject();
       Subject.doAs(subject, new PrivilegedExceptionAction<Void>() {
@@ -124,15 +124,15 @@ public class SentryService implements Runnable {
         public Void run() throws Exception {
           SentryServiceHandler sentryServiceHandler = new SentryServiceHandler("sentry-policy-service", null);
           TProcessor processor =
-              new SentryThriftService.Processor<SentryThriftService.Iface>(sentryServiceHandler);
+            new SentryThriftService.Processor<SentryThriftService.Iface>(sentryServiceHandler);
           TServerTransport serverTransport = new TServerSocket(address);
           TSaslServerTransport.Factory saslTransportFactory = new TSaslServerTransport.Factory();
           saslTransportFactory.addServerDefinition(
-              AuthMethod.KERBEROS.getMechanismName(),
-              principalParts[0],
-              principalParts[1],
-              ServerConfig.SASL_PROPERTIES,
-              new SaslRpcServer.SaslGssCallbackHandler());
+            AuthMethod.KERBEROS.getMechanismName(),
+            principalParts[0],
+            principalParts[1],
+            ServerConfig.SASL_PROPERTIES,
+            new GSSCallback(conf));
           TThreadPoolServer.Args args = new TThreadPoolServer.Args(serverTransport)
           .processor(processor)
           .transportFactory(saslTransportFactory)
@@ -210,7 +210,7 @@ public class SentryService implements Runnable {
     File configFile = null;
     if (args.length != 2 || !args[0].equalsIgnoreCase(Constants.ServerArgs.CONFIG_FILE)) {
       throw new IllegalArgumentException("Usage: " + Constants.ServerArgs.CONFIG_FILE
-          + " path/to/sentry-service.xml");
+                                         + " path/to/sentry-service.xml");
     } else if(!((configFile = new File(args[1])).isFile() && configFile.canRead())) {
       throw new IllegalArgumentException("Cannot read configuration file " + configFile);
     }

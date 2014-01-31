@@ -19,6 +19,7 @@
 package org.apache.sentry.provider.db.service.thrift;
 import java.util.HashSet;
 
+import org.apache.sentry.provider.db.service.thrift.Constants.ServerConfig;
 import org.apache.sentry.service.api.TCreateSentryRoleRequest;
 import org.apache.sentry.service.api.TCreateSentryRoleResponse;
 import org.apache.sentry.service.api.TSentryPrivilege;

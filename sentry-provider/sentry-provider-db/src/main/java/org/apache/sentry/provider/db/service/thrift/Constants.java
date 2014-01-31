@@ -50,6 +50,7 @@ public class Constants {
     public static final int RPC_MAX_THREADS_DEFAULT = 500;
     public static final String RPC_MIN_THREADS = "sentry.service.server-min-threads";
     public static final int RPC_MIN_THREADS_DEFAULT = 10;
+    public static final String ALLOW_CONNECT = "sentry.service.allow.connect";
   }
   public static class ClientConfig {
     public static final ImmutableMap<String, String> SASL_PROPERTIES = Constants.SASL_PROPERTIES;
@@ -57,7 +58,7 @@ public class Constants {
     public static final int SERVER_RPC_PORT_DEFAULT = ServerConfig.RPC_PORT_DEFAULT;
     public static final String SERVER_RPC_ADDRESS = "sentry.service.client.server.rpc-address";
     public static final String SERVER_RPC_CONN_TIMEOUT = "sentry.service.client.server.rpc-connection-timeout";
-    public static final int SERVER_RPC_CONN_TIMEOUT_DEFAULT = 20000;
+    public static final int SERVER_RPC_CONN_TIMEOUT_DEFAULT = 200000;
   }
 
 }

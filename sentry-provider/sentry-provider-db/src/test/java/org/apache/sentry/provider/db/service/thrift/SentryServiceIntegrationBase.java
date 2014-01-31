@@ -65,24 +65,18 @@ public abstract class SentryServiceIntegrationBase extends KerberosSecurityTestc
   protected File clientKeytab;
   protected Subject clientSubject;
   protected LoginContext clientLoginContext;
+  protected final Configuration conf = new Configuration(false);
 
   @Before
   public void setup() throws Exception {
     beforeSetup();
-    kdc = getKdc();
-    kdcWorkDir = getWorkDir();
-    serverKeytab = new File(kdcWorkDir, "server.keytab");
-    clientKeytab = new File(kdcWorkDir, "client.keytab");
-    kdc.createPrincipal(serverKeytab, SERVER_PRINCIPAL);
-    kdc.createPrincipal(clientKeytab, CLIENT_PRINCIPAL);
-    final Configuration conf = new Configuration(false);
-    conf.set(ServerConfig.PRINCIPAL, SERVER_KERBEROS_NAME);
-    conf.set(ServerConfig.KEY_TAB, serverKeytab.getPath());
-    conf.set(ServerConfig.RPC_ADDRESS, SERVER_HOST);
-    conf.set(ServerConfig.RPC_PORT, String.valueOf(0));
-    server = new SentryServiceFactory().create(conf);
-    conf.set(ClientConfig.SERVER_RPC_ADDRESS, server.getAddress().getHostString());
-    conf.set(ClientConfig.SERVER_RPC_PORT, String.valueOf(server.getAddress().getPort()));
+    setupConf();
+    startSentryService();
+    connectToSentryService();
+    afterSetup();
+  }
+
+  public void startSentryService() throws Exception {
     server.start();
     final long start = System.currentTimeMillis();
     while(!server.isRunning()) {
@@ -91,13 +85,34 @@ public abstract class SentryServiceIntegrationBase extends KerberosSecurityTestc
         throw new TimeoutException("Server did not start after 60 seconds");
       }
     }
+  }
+
+  public void setupConf() throws Exception {
+    kdc = getKdc();
+    kdcWorkDir = getWorkDir();
+    serverKeytab = new File(kdcWorkDir, "server.keytab");
+    clientKeytab = new File(kdcWorkDir, "client.keytab");
+    kdc.createPrincipal(serverKeytab, SERVER_PRINCIPAL);
+    kdc.createPrincipal(clientKeytab, CLIENT_PRINCIPAL);
+
+    conf.set(ServerConfig.PRINCIPAL, SERVER_KERBEROS_NAME);
+    conf.set(ServerConfig.KEY_TAB, serverKeytab.getPath());
+    conf.set(ServerConfig.RPC_ADDRESS, SERVER_HOST);
+    conf.set(ServerConfig.RPC_PORT, String.valueOf(0));
+    conf.set(ServerConfig.ALLOW_CONNECT, CLIENT_KERBEROS_NAME);
+    server = new SentryServiceFactory().create(conf);
+    conf.set(ClientConfig.SERVER_RPC_ADDRESS, server.getAddress().getHostString());
+    conf.set(ClientConfig.SERVER_RPC_PORT, String.valueOf(server.getAddress().getPort()));
+  }
+
+  public void connectToSentryService() throws Exception {
     // The client should already be logged in when running in hive/impala/solr
     // therefore we must manually login in the integration tests
     clientSubject = new Subject(false, Sets.newHashSet(
-        new KerberosPrincipal(CLIENT_KERBEROS_NAME)), new HashSet<Object>(),
-        new HashSet<Object>());
+                                  new KerberosPrincipal(CLIENT_KERBEROS_NAME)), new HashSet<Object>(),
+                                new HashSet<Object>());
     clientLoginContext = new LoginContext("", clientSubject, null,
-        KerberosConfiguration.createClientConfig(CLIENT_KERBEROS_NAME, clientKeytab));
+                                          KerberosConfiguration.createClientConfig(CLIENT_KERBEROS_NAME, clientKeytab));
     clientLoginContext.login();
     clientSubject = clientLoginContext.getSubject();
     client = Subject.doAs(clientSubject, new PrivilegedExceptionAction<SentryServiceClient>() {
@@ -106,7 +121,6 @@ public abstract class SentryServiceIntegrationBase extends KerberosSecurityTestc
         return new SentryServiceClientFactory().create(conf);
       }
     });
-    afterSetup();
   }
 
   @After
