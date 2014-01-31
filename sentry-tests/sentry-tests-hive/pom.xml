@@ -226,60 +226,54 @@ limitations under the License.
           </systemPropertyVariables>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <configuration>
+          <skipTests>false</skipTests>
+        </configuration>
+        <executions>
+          <execution>
+            <id>download-hadoop</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <echo file="target/download.sh">
+                  set -e
+                  set -x
+                  /bin/pwd
+                  BASE_DIR=./target
+                  DOWNLOAD_DIR=./thirdparty
+                  download() {
+                    url=$1;
+                    tarName=$2
+                    finalName=$3
+                    rm -rf $BASE_DIR/$finalName
+                    if [[ ! -f $DOWNLOAD_DIR/$tarName ]]
+                    then
+                      wget -nv -O $DOWNLOAD_DIR/$tarName $url
+                    fi
+                    tar -zxf $DOWNLOAD_DIR/$tarName -C $BASE_DIR
+                    mv $BASE_DIR/${finalName}* $BASE_DIR/$finalName
+                  }
+                  mkdir -p $DOWNLOAD_DIR
+                  download "http://repos.jenkins.cloudera.com/cdh5-nightly/cdh/5/hadoop-latest.tar.gz" hadoop.tar.gz hadoop
+                  download "http://repos.jenkins.cloudera.com/cdh5-nightly/cdh/5/hive-latest.tar.gz" hive.tar.gz hive
+                </echo>
+                <exec executable="bash" dir="${basedir}" failonerror="true">
+                  <arg line="target/download.sh"/>
+                </exec>
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
   <profiles>
-   <profile>
-     <id>download-hadoop</id>
-     <build>
-      <plugins>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-antrun-plugin</artifactId>
-          <configuration>
-            <skipTests>false</skipTests>
-          </configuration>
-          <executions>
-            <execution>
-              <id>download-hadoop</id>
-              <phase>generate-sources</phase>
-              <goals>
-                <goal>run</goal>
-              </goals>
-              <configuration>
-                <target>
-                  <echo file="target/download.sh">
-                    set -e
-                    set -x
-                    /bin/pwd
-                    BASE_DIR=./target
-                    DOWNLOAD_DIR=$BASE_DIR/downloads
-                    download() {
-                      url=$1;
-                      tarName=$2
-                      finalName=$3
-                      rm -rf $BASE_DIR/$finalName
-                      wget -nv -O $DOWNLOAD_DIR/$tarName $url
-                      tar -zxf $DOWNLOAD_DIR/$tarName -C $BASE_DIR
-                      rm $DOWNLOAD_DIR/$tarName
-                      mv $BASE_DIR/${finalName}* $BASE_DIR/$finalName
-                    }
-                    rm -rf $DOWNLOAD_DIR
-                    mkdir -p $DOWNLOAD_DIR
-                    download "http://repos.jenkins.cloudera.com/cdh5-nightly/cdh/5/hadoop-latest.tar.gz" hadoop.tar.gz hadoop
-                    download "http://repos.jenkins.cloudera.com/cdh5-nightly/cdh/5/hive-latest.tar.gz" hive.tar.gz hive
-                  </echo>
-                  <exec executable="sh" dir="${basedir}" failonerror="true">
-                    <arg line="target/download.sh"/>
-                  </exec>
-                </target>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
-      </plugins>
-     </build>
-   </profile>
    <profile>
      <id>link-hadoop</id>
      <build>
@@ -309,7 +303,7 @@ limitations under the License.
                     rm -f $BASE_DIR/hive
                     ln -s $2/hive $BASE_DIR/.
                   </echo>
-                  <exec executable="sh" dir="${basedir}" failonerror="true">
+                  <exec executable="bash" dir="${basedir}" failonerror="true">
                     <arg line="target/link_dist.sh ${hadoop-dist} ${hive-dist}"/>
                   </exec>
                 </target>
