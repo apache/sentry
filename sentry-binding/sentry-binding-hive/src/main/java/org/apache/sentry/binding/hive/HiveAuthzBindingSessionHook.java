@@ -39,7 +39,6 @@ public class HiveAuthzBindingSessionHook
     ConfVars.HIVE_EXTENDED_ENITITY_CAPTURE.varname + "," +
     ConfVars.SCRATCHDIR.varname + "," +
     ConfVars.LOCALSCRATCHDIR.varname + "," +
-    ConfVars.HIVE_SERVER2_AUTHZ_EXTERNAL_EXEC.varname + "," +
     ConfVars.METASTOREURIS.varname + "," +
     ConfVars.METASTORECONNECTURLKEY.varname + "," +
     ConfVars.HADOOPBIN.varname + "," +
@@ -47,6 +46,7 @@ public class HiveAuthzBindingSessionHook
     ConfVars.HIVEAUXJARS.varname + "," +
     ConfVars.HIVESTATSDBCONNECTIONSTRING.varname + "," +
     ConfVars.SCRATCHDIRPERMISSION.varname + "," +
+    ConfVars.HIVE_SECURITY_COMMAND_WHITELIST.varname + "," +
     HiveAuthzConf.HIVE_ACCESS_CONF_URL + "," +
     HiveAuthzConf.HIVE_SENTRY_CONF_URL + "," +
     HiveAuthzConf.HIVE_ACCESS_SUBJECT_NAME + "," +
@@ -58,7 +58,6 @@ public class HiveAuthzBindingSessionHook
    *    semantic, exec and filter hooks
    * 2. Set additional config properties required for auth
    *      set HIVE_EXTENDED_ENITITY_CAPTURE = true
-   *      set HIVE_SERVER2_AUTHZ_EXTERNAL_EXEC = false
    *      set SCRATCHDIRPERMISSION = 700
    * 3. Add sensetive config parameters to the config restrict list so that they can't be overridden by users
    */
@@ -73,7 +72,7 @@ public class HiveAuthzBindingSessionHook
 
     // setup config
     sessionConf.setBoolVar(ConfVars.HIVE_EXTENDED_ENITITY_CAPTURE, true);
-    sessionConf.setBoolVar(ConfVars.HIVE_SERVER2_AUTHZ_EXTERNAL_EXEC, false);
+    sessionConf.setVar(ConfVars.HIVE_SECURITY_COMMAND_WHITELIST, "set");
     sessionConf.setVar(ConfVars.SCRATCHDIRPERMISSION, SCRATCH_DIR_PERMISSIONS);
 
     // set user name

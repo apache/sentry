@@ -289,7 +289,7 @@ public class TestHiveAuthzBindings {
   @Test(expected=AuthorizationException.class)
   public void testImpersonationRestriction() throws Exception {
     // perpare the hive and auth configs
-    hiveConf.setBoolVar(ConfVars.HIVE_SERVER2_KERBEROS_IMPERSONATION, true);
+    hiveConf.setBoolVar(ConfVars.HIVE_SERVER2_ENABLE_DOAS, true);
     hiveConf.setVar(ConfVars.HIVE_SERVER2_AUTHENTICATION, "Kerberos");
     authzConf.set(AuthzConfVars.SENTRY_TESTING_MODE.getVar(), "false");
     testAuth = new HiveAuthzBinding(hiveConf, authzConf);
@@ -307,7 +307,7 @@ public class TestHiveAuthzBindings {
   @Test
   public void testImpersonationAllowed() throws Exception {
     // perpare the hive and auth configs
-    hiveConf.setBoolVar(ConfVars.HIVE_SERVER2_KERBEROS_IMPERSONATION, true);
+    hiveConf.setBoolVar(ConfVars.HIVE_SERVER2_ENABLE_DOAS, true);
     hiveConf.setVar(ConfVars.HIVE_SERVER2_AUTHENTICATION, "Kerberos");
     authzConf.set(AuthzConfVars.SENTRY_TESTING_MODE.getVar(), "false");
     authzConf.set(AuthzConfVars.AUTHZ_ALLOW_HIVE_IMPERSONATION.getVar(), "true");
@@ -330,7 +330,7 @@ public class TestHiveAuthzBindings {
     }
     return authList;
   }
-  
+
   /**
    * Turn off authentication and verify exception is raised in non-testing mode
    * @throws Exception

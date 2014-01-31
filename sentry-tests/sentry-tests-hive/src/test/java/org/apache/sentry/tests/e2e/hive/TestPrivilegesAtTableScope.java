@@ -200,7 +200,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     statement = context.createStatement(connection);
     statement.execute("USE DB_1");
     // test user can execute insert on table
-    statement.executeQuery("INSERT INTO TABLE TAB_1 SELECT A FROM TAB_2");
+    statement.execute("INSERT INTO TABLE TAB_1 SELECT A FROM TAB_2");
 
     // negative test: user can't query table
     try {

@@ -71,16 +71,6 @@ limitations under the License.
     </dependency>
     <dependency>
       <groupId>org.apache.hive</groupId>
-      <artifactId>hive-pdk</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.hive</groupId>
-      <artifactId>hive-hwi</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.hive</groupId>
       <artifactId>hive-jdbc</artifactId>
       <scope>test</scope>
     </dependency>
@@ -107,16 +97,6 @@ limitations under the License.
     <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-cli</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.hive</groupId>
-      <artifactId>hive-builtins</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.hive</groupId>
-      <artifactId>hive-anttasks</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -280,8 +260,8 @@ limitations under the License.
                     mv $BASE_DIR/${finalName}* $BASE_DIR/$finalName
                   }
                   mkdir -p $DOWNLOAD_DIR
-                  download "http://archive.cloudera.com/cdh4/cdh/4/hadoop-latest.tar.gz" hadoop.tar.gz hadoop
-                  download "http://archive.cloudera.com/cdh4/cdh/4/hive-latest.tar.gz" hive.tar.gz hive
+                  download "http://archive.cloudera.com/cdh5/cdh/5/hadoop-latest.tar.gz" hadoop.tar.gz hadoop
+                  download "http://archive.cloudera.com/cdh5/cdh/5/hive-latest.tar.gz" hive.tar.gz hive
                 </echo>
                 <exec executable="bash" dir="${basedir}" failonerror="true">
                   <arg line="target/download.sh"/>
