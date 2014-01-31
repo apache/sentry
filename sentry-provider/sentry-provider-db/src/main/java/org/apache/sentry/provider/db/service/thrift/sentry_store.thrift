@@ -28,9 +28,8 @@ namespace java org.apache.sentry.service.api
 namespace php sentryservice
 namespace cpp Apache.Sentry
 
-enum TSentryServiceVersion {
-V1
-}
+
+const i32 TSENTRY_SERVICE_V1 = 1;
 
 enum TSentryStatus {
 OK,
@@ -70,7 +69,7 @@ struct TSentryGroup {
 }
 
 struct TCreateSentryRoleRequest {
-1: required TSentryServiceVersion protocol_version = TSentryServiceVersion.V1,
+1: required i32 protocol_version = TSENTRY_SERVICE_V1,
 2: required string userName,
 3: required TSentryRole role
 }
@@ -79,7 +78,7 @@ struct TCreateSentryRoleResponse {
 }
 
 struct TCreateSentryPrivilegeRequest {
-1: required TSentryServiceVersion protocol_version = TSentryServiceVersion.V1,
+1: required i32 protocol_version = TSENTRY_SERVICE_V1,
 2: required string userName,
 3: required TSentryPrivilege privilege
 }
@@ -88,7 +87,7 @@ struct TCreateSentryPrivilegeResponse {
 }
 
 struct TCreateSentryPrivilegeRequest {
-1: required TSentryServiceVersion protocol_version = TSentryServiceVersion.V1,
+1: required i32 protocol_version = TSENTRY_SERVICE_V1,
 2: required string userName,
 3: required TSentryPrivilege privilege
 }
@@ -97,7 +96,7 @@ struct TCreateSentryPrivilegeResponse {
 }
 
 struct TAlterSentryRoleAddGroupsRequest {
-1: required TSentryServiceVersion protocol_version = TSentryServiceVersion.V1,
+1: required i32 protocol_version = TSENTRY_SERVICE_V1,
 2: required string userName,
 3: required string roleName,
 4: required set<TSentryGroup> groups
@@ -107,7 +106,7 @@ struct TAlterSentryRoleAddGroupsResponse {
 }
 
 struct TAlterSentryRoleDeleteGroupsRequest {
-1: required TSentryServiceVersion protocol_version = TSentryServiceVersion.V1,
+1: required i32 protocol_version = TSENTRY_SERVICE_V1,
 2: required string userName,
 }
 struct TAlterSentryRoleDeleteGroupsResponse {
@@ -115,7 +114,7 @@ struct TAlterSentryRoleDeleteGroupsResponse {
 }
 
 struct TListSentryRolesRequest {
-1: required TSentryServiceVersion protocol_version = TSentryServiceVersion.V1,
+1: required i32 protocol_version = TSENTRY_SERVICE_V1,
 2: required string userName,
 3: optional string groupName,
 4: optional string roleName

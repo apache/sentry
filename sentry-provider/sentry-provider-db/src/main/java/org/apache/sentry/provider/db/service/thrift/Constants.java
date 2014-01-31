@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.security.sasl.Sasl;
-
 import com.google.common.collect.ImmutableMap;
 
 public class Constants {
@@ -61,4 +60,10 @@ public class Constants {
     public static final int SERVER_RPC_CONN_TIMEOUT_DEFAULT = 200000;
   }
 
+  /**
+   * Thrift generates terrible constant class names
+   */
+  public static class ThriftConstants extends org.apache.sentry.service.api.sentry_storeConstants {
+    public static final int TSENTRY_SERVICE_VERSION_CURRENT = TSENTRY_SERVICE_V1;
+  }
 }

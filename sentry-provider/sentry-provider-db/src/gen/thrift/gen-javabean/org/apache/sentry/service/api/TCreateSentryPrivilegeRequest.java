@@ -44,16 +44,12 @@ public class TCreateSentryPrivilegeRequest implements org.apache.thrift.TBase<TC
     schemes.put(TupleScheme.class, new TCreateSentryPrivilegeRequestTupleSchemeFactory());
   }
 
-  private TSentryServiceVersion protocol_version; // required
+  private int protocol_version; // required
   private String userName; // required
   private TSentryPrivilege privilege; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-    /**
-     * 
-     * @see TSentryServiceVersion
-     */
     PROTOCOL_VERSION((short)1, "protocol_version"),
     USER_NAME((short)2, "userName"),
     PRIVILEGE((short)3, "privilege");
@@ -117,11 +113,13 @@ public class TCreateSentryPrivilegeRequest implements org.apache.thrift.TBase<TC
   }
 
   // isset id assignments
+  private static final int __PROTOCOL_VERSION_ISSET_ID = 0;
+  private byte __isset_bitfield = 0;
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
     tmpMap.put(_Fields.PROTOCOL_VERSION, new org.apache.thrift.meta_data.FieldMetaData("protocol_version", org.apache.thrift.TFieldRequirementType.REQUIRED, 
-        new org.apache.thrift.meta_data.EnumMetaData(org.apache.thrift.protocol.TType.ENUM, TSentryServiceVersion.class)));
+        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
     tmpMap.put(_Fields.USER_NAME, new org.apache.thrift.meta_data.FieldMetaData("userName", org.apache.thrift.TFieldRequirementType.REQUIRED, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
     tmpMap.put(_Fields.PRIVILEGE, new org.apache.thrift.meta_data.FieldMetaData("privilege", org.apache.thrift.TFieldRequirementType.REQUIRED, 
@@ -131,17 +129,18 @@ public class TCreateSentryPrivilegeRequest implements org.apache.thrift.TBase<TC
   }
 
   public TCreateSentryPrivilegeRequest() {
-    this.protocol_version = org.apache.sentry.service.api.TSentryServiceVersion.V1;
+    this.protocol_version = 1;
 
   }
 
   public TCreateSentryPrivilegeRequest(
-    TSentryServiceVersion protocol_version,
+    int protocol_version,
     String userName,
     TSentryPrivilege privilege)
   {
     this();
     this.protocol_version = protocol_version;
+    setProtocol_versionIsSet(true);
     this.userName = userName;
     this.privilege = privilege;
   }
@@ -150,9 +149,8 @@ public class TCreateSentryPrivilegeRequest implements org.apache.thrift.TBase<TC
    * Performs a deep copy on <i>other</i>.
    */
   public TCreateSentryPrivilegeRequest(TCreateSentryPrivilegeRequest other) {
-    if (other.isSetProtocol_version()) {
-      this.protocol_version = other.protocol_version;
-    }
+    __isset_bitfield = other.__isset_bitfield;
+    this.protocol_version = other.protocol_version;
     if (other.isSetUserName()) {
       this.userName = other.userName;
     }
@@ -167,41 +165,32 @@ public class TCreateSentryPrivilegeRequest implements org.apache.thrift.TBase<TC
 
   @Override
   public void clear() {
-    this.protocol_version = org.apache.sentry.service.api.TSentryServiceVersion.V1;
+    this.protocol_version = 1;
 
     this.userName = null;
     this.privilege = null;
   }
 
-  /**
-   * 
-   * @see TSentryServiceVersion
-   */
-  public TSentryServiceVersion getProtocol_version() {
+  public int getProtocol_version() {
     return this.protocol_version;
   }
 
-  /**
-   * 
-   * @see TSentryServiceVersion
-   */
-  public void setProtocol_version(TSentryServiceVersion protocol_version) {
+  public void setProtocol_version(int protocol_version) {
     this.protocol_version = protocol_version;
+    setProtocol_versionIsSet(true);
   }
 
   public void unsetProtocol_version() {
-    this.protocol_version = null;
+    __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __PROTOCOL_VERSION_ISSET_ID);
   }
 
   /** Returns true if field protocol_version is set (has been assigned a value) and false otherwise */
   public boolean isSetProtocol_version() {
-    return this.protocol_version != null;
+    return EncodingUtils.testBit(__isset_bitfield, __PROTOCOL_VERSION_ISSET_ID);
   }
 
   public void setProtocol_versionIsSet(boolean value) {
-    if (!value) {
-      this.protocol_version = null;
-    }
+    __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __PROTOCOL_VERSION_ISSET_ID, value);
   }
 
   public String getUserName() {
@@ -256,7 +245,7 @@ public class TCreateSentryPrivilegeRequest implements org.apache.thrift.TBase<TC
       if (value == null) {
         unsetProtocol_version();
       } else {
-        setProtocol_version((TSentryServiceVersion)value);
+        setProtocol_version((Integer)value);
       }
       break;
 
@@ -282,7 +271,7 @@ public class TCreateSentryPrivilegeRequest implements org.apache.thrift.TBase<TC
   public Object getFieldValue(_Fields field) {
     switch (field) {
     case PROTOCOL_VERSION:
-      return getProtocol_version();
+      return Integer.valueOf(getProtocol_version());
 
     case USER_NAME:
       return getUserName();
@@ -324,12 +313,12 @@ public class TCreateSentryPrivilegeRequest implements org.apache.thrift.TBase<TC
     if (that == null)
       return false;
 
-    boolean this_present_protocol_version = true && this.isSetProtocol_version();
-    boolean that_present_protocol_version = true && that.isSetProtocol_version();
+    boolean this_present_protocol_version = true;
+    boolean that_present_protocol_version = true;
     if (this_present_protocol_version || that_present_protocol_version) {
       if (!(this_present_protocol_version && that_present_protocol_version))
         return false;
-      if (!this.protocol_version.equals(that.protocol_version))
+      if (this.protocol_version != that.protocol_version)
         return false;
     }
 
@@ -358,10 +347,10 @@ public class TCreateSentryPrivilegeRequest implements org.apache.thrift.TBase<TC
   public int hashCode() {
     HashCodeBuilder builder = new HashCodeBuilder();
 
-    boolean present_protocol_version = true && (isSetProtocol_version());
+    boolean present_protocol_version = true;
     builder.append(present_protocol_version);
     if (present_protocol_version)
-      builder.append(protocol_version.getValue());
+      builder.append(protocol_version);
 
     boolean present_userName = true && (isSetUserName());
     builder.append(present_userName);
@@ -435,11 +424,7 @@ public class TCreateSentryPrivilegeRequest implements org.apache.thrift.TBase<TC
     boolean first = true;
 
     sb.append("protocol_version:");
-    if (this.protocol_version == null) {
-      sb.append("null");
-    } else {
-      sb.append(this.protocol_version);
-    }
+    sb.append(this.protocol_version);
     first = false;
     if (!first) sb.append(", ");
     sb.append("userName:");
@@ -491,6 +476,8 @@ public class TCreateSentryPrivilegeRequest implements org.apache.thrift.TBase<TC
 
   private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
     try {
+      // it doesn't seem like you should have to do this, but java serialization is wacky, and doesn't call the default constructor.
+      __isset_bitfield = 0;
       read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
     } catch (org.apache.thrift.TException te) {
       throw new java.io.IOException(te);
@@ -517,7 +504,7 @@ public class TCreateSentryPrivilegeRequest implements org.apache.thrift.TBase<TC
         switch (schemeField.id) {
           case 1: // PROTOCOL_VERSION
             if (schemeField.type == org.apache.thrift.protocol.TType.I32) {
-              struct.protocol_version = TSentryServiceVersion.findByValue(iprot.readI32());
+              struct.protocol_version = iprot.readI32();
               struct.setProtocol_versionIsSet(true);
             } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
@@ -553,11 +540,9 @@ public class TCreateSentryPrivilegeRequest implements org.apache.thrift.TBase<TC
       struct.validate();
 
       oprot.writeStructBegin(STRUCT_DESC);
-      if (struct.protocol_version != null) {
-        oprot.writeFieldBegin(PROTOCOL_VERSION_FIELD_DESC);
-        oprot.writeI32(struct.protocol_version.getValue());
-        oprot.writeFieldEnd();
-      }
+      oprot.writeFieldBegin(PROTOCOL_VERSION_FIELD_DESC);
+      oprot.writeI32(struct.protocol_version);
+      oprot.writeFieldEnd();
       if (struct.userName != null) {
         oprot.writeFieldBegin(USER_NAME_FIELD_DESC);
         oprot.writeString(struct.userName);
@@ -585,7 +570,7 @@ public class TCreateSentryPrivilegeRequest implements org.apache.thrift.TBase<TC
     @Override
     public void write(org.apache.thrift.protocol.TProtocol prot, TCreateSentryPrivilegeRequest struct) throws org.apache.thrift.TException {
       TTupleProtocol oprot = (TTupleProtocol) prot;
-      oprot.writeI32(struct.protocol_version.getValue());
+      oprot.writeI32(struct.protocol_version);
       oprot.writeString(struct.userName);
       struct.privilege.write(oprot);
     }
@@ -593,7 +578,7 @@ public class TCreateSentryPrivilegeRequest implements org.apache.thrift.TBase<TC
     @Override
     public void read(org.apache.thrift.protocol.TProtocol prot, TCreateSentryPrivilegeRequest struct) throws org.apache.thrift.TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
-      struct.protocol_version = TSentryServiceVersion.findByValue(iprot.readI32());
+      struct.protocol_version = iprot.readI32();
       struct.setProtocol_versionIsSet(true);
       struct.userName = iprot.readString();
       struct.setUserNameIsSet(true);
