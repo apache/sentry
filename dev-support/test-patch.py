@@ -88,7 +88,7 @@ def jira_post_comment(result, defect, branch, username, password):
 # hack (from hadoop) but REST api doesn't list attachments?
 def jira_get_attachment(result, defect, username, password):
   html = jira_get_defect_html(result, defect, username, password)
-  pattern = "(/secure/attachment/[0-9]+/%s[0-9\-]*\.(patch|txt|patch\.txt))" % (re.escape(defect))
+  pattern = "(/secure/attachment/[0-9]+/%s[0-9\.\-]*\.(patch|txt|patch\.txt))" % (re.escape(defect))
   matches = []
   for match in re.findall(pattern, html, re.IGNORECASE):
     matches += [ match[0] ]
@@ -118,26 +118,25 @@ def git_checkout(result, branch):
   if execute("git merge --ff-only origin/%s" % (branch)):
     result.fatal("git merge failed")
 
-def git_apply(result, cmd, patch_file, strip, output_dir):
+def git_apply(result, cmd, patch_file, output_dir):
   output_file = "%s/apply.txt" % (output_dir)
-  rc = execute("%s -p%s < %s 1>%s 2>&1" % (cmd, strip, patch_file, output_file))
+  rc = execute("%s %s 1>%s 2>&1" % (cmd, patch_file, output_file))
   output = ""
   if os.path.exists(output_file):
     with open(output_file) as fh:
       output = fh.read()
-  if rc == 0:
-    if output:
-      print output
-  else:
+  if output:
+    print output
+  if rc != 0:
     result.fatal("failed to apply patch (exit code %d):\n%s\n" % (rc, output))
 
-def mvn_clean(result, workspace, output_dir):
-  rc = execute("mvn clean -Dmaven.repo.local=%s 1>%s/clean.txt 2>&1" % (workspace, output_dir))
+def mvn_clean(result, mvn_repo, output_dir):
+  rc = execute("mvn clean -Dmaven.repo.local=%s 1>%s/clean.txt 2>&1" % (mvn_repo, output_dir))
   if rc != 0:
     result.fatal("failed to clean project (exit code %d)" % (rc))
 
-def mvn_install(result, workspace, output_dir):
-  rc = execute("mvn install -DskipTests -Dmaven.repo.local=%s 1>%s/install.txt 2>&1" % (workspace, output_dir))
+def mvn_install(result, mvn_repo, output_dir):
+  rc = execute("mvn install -DskipTests -Dmaven.repo.local=%s 1>%s/install.txt 2>&1" % (mvn_repo, output_dir))
   if rc != 0:
     result.fatal("failed to build with patch (exit code %d)" % (rc))
 
@@ -146,8 +145,8 @@ def find_all_files(top):
         for f in files:
             yield os.path.join(root, f)
 
-def mvn_test(result, workspace, output_dir):
-  rc = execute("mvn verify -Dmaven.repo.local=%s 1>%s/test.txt 2>&1" % (workspace, output_dir))
+def mvn_test(result, mvn_repo, output_dir):
+  rc = execute("mvn verify -Dmaven.repo.local=%s 1>%s/test.txt 2>&1" % (mvn_repo, output_dir))
   if rc == 0:
     result.success("all tests passed")
   else:
@@ -189,9 +188,10 @@ class Result(object):
     if self._fatal or self._error:
       if tmp_dir:
         print "INFO: output is located %s" % (tmp_dir)
+      sys.exit(1)
     elif tmp_dir:
       shutil.rmtree(tmp_dir)
-    sys.exit(0)
+      sys.exit(0)
 
 usage = "usage: %prog [options]"
 parser = OptionParser(usage)
@@ -205,16 +205,10 @@ parser.add_option("--run-tests", dest="run_tests",
                   help="Run Tests", action="store_true")
 parser.add_option("--username", dest="username",
                   help="JIRA Username", metavar="USERNAME", default="hiveqa")
-parser.add_option("--output", dest="output_dir",
-                  help="Directory to write output", metavar="DIRECTORY")
 parser.add_option("--post-results", dest="post_results",
                   help="Post results to JIRA (only works in defect mode)", action="store_true")
 parser.add_option("--password", dest="password",
                   help="JIRA Password", metavar="PASSWORD")
-parser.add_option("--patch-command", dest="patch_cmd", default="git apply",
-                  help="Patch command such as `git apply' or `patch'", metavar="COMMAND")
-parser.add_option("-p", "--strip", dest="strip", default="1",
-                  help="Remove <n> leading slashes from diff paths", metavar="N")
 parser.add_option("--workspace", dest="workspace",
                   help="Jenkins workspace directory", metavar="DIR")
 
@@ -227,10 +221,6 @@ if options.defect and options.filename:
   print "FATAL: Both --defect and --file cannot be specified."
   sys.exit(1)
 
-if options.output_dir and not os.path.isdir(options.output_dir):
-  print "FATAL: Output directory %s does not exist" % (options.output_dir)
-  sys.exit(1)
-
 if options.post_results and not options.password:
   print "FATAL: --post-results requires --password"
   sys.exit(1)
@@ -239,15 +229,13 @@ if not options.workspace:
   print "FATAL: --workspace is required"
   sys.exit(1)
 
+patch_cmd = "bash ./dev-support/smart-apply-patch.sh"
 branch = options.branch
-output_dir = options.output_dir
 defect = options.defect
 username = options.username
 password = options.password
 run_tests = options.run_tests
 post_results = options.post_results
-strip = options.strip
-patch_cmd = options.patch_cmd
 workspace = options.workspace
 result = Result()
 
@@ -270,12 +258,19 @@ if post_results:
     result.exit()
   result.exit_handler = post_jira_comment_and_exit
 
-if not output_dir:
-  tmp_dir = tempfile.mkdtemp()
-  output_dir = tmp_dir
-
-if output_dir.endswith("/"):
-  output_dir = output_dir[:-1]
+if workspace.endswith("/"):
+  workspace = workspace[:-1]
+mvn_repo = workspace + "/maven-repo"
+output_dir = workspace + "/test-output"
+if os.path.exists(mvn_repo):
+  if not os.path.isdir(mvn_repo):
+    shutil.rmtree(mvn_repo)
+    os.mkdir(mvn_repo)
+else:
+  os.mkdir(mvn_repo)
+if os.path.exists(output_dir):
+  shutil.rmtree(output_dir)
+os.mkdir(output_dir)
 
 if defect:
   jira_json = jira_get_defect(result, defect, username, password)
@@ -294,14 +289,16 @@ if defect:
 elif options.filename:
   patch_file = options.filename
 else:
-  raise Exception("Not reachable")
+  print "ERROR: Reached unreachable code. Please report."
+  sys.exit(1)
 
-mvn_clean(result, workspace, output_dir)
+
+mvn_clean(result, mvn_repo, output_dir)
 git_checkout(result, branch)
-git_apply(result, patch_cmd, patch_file, strip, output_dir)
-mvn_install(result, workspace, output_dir)
+git_apply(result, patch_cmd, patch_file, output_dir)
+mvn_install(result, mvn_repo, output_dir)
 if run_tests:
-  mvn_test(result, workspace, output_dir)
+  mvn_test(result, mvn_repo, output_dir)
 else:
   result.info("patch applied and built but tests did not execute")
 
