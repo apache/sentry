@@ -13,3 +13,4 @@ target/
 *.war
 *.ear
 test-output/
+maven-repo/

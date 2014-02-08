@@ -345,6 +345,8 @@ limitations under the License.
                   <exclude>.git/</exclude>
                   <exclude>.gitignore</exclude>
                   <exclude>.idea/</exclude>
+                  <exclude>maven-repo/</exclude>
+                  <exclude>test-output/</exclude>
                   <exclude>**/*.iml</exclude>
                   <exclude>*.log</exclude>
                   <exclude>**/nb-configuration.xml</exclude>
