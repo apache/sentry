@@ -19,13 +19,8 @@
 package org.apache.sentry.provider.db.service.thrift;
 import java.util.HashSet;
 
-import org.apache.sentry.provider.db.service.thrift.Constants.ServerConfig;
-import org.apache.sentry.service.api.TCreateSentryRoleRequest;
-import org.apache.sentry.service.api.TCreateSentryRoleResponse;
-import org.apache.sentry.service.api.TSentryPrivilege;
-import org.apache.sentry.service.api.TSentryRole;
-import org.apache.sentry.service.api.TSentryStatus;
-import org.junit.Assert;
+import org.apache.sentry.service.thrift.Constants.ThriftConstants;
+import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +31,7 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
   @Test
   public void testClientServerConnection() throws Exception {
     TCreateSentryRoleRequest req = new TCreateSentryRoleRequest();
+    req.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
     TSentryRole role = new TSentryRole();
     role.setRoleName("admin_r");
     role.setCreateTime(System.currentTimeMillis());
@@ -44,11 +40,7 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
     req.setUserName("admin");
     req.setRole(role);
     TCreateSentryRoleResponse resp = client.createRole(req);
-    if (resp.getStatus().getValue() == TSentryStatus.OK) {
-      LOGGER.info("Successfully opened connection");
-    } else {
-      Assert.fail("Received invalid status: " + resp.getStatus().getMessage()
-          + ":\nstack:" + resp.getStatus().getStack());
-    }
+    assertOK(resp.getStatus());
+    LOGGER.info("Successfully opened connection");
   }
 }

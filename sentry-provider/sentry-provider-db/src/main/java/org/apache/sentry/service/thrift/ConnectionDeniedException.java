@@ -15,31 +15,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.sentry.service.thrift;
 
-package org.apache.sentry.provider.db.service.thrift;
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.UnsupportedCallbackException;
 
-import java.security.PrivilegedActionException;
+public class ConnectionDeniedException extends UnsupportedCallbackException {
 
-import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
-import org.apache.sentry.service.thrift.Constants.ServerConfig;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+  private static final long serialVersionUID = 653174214903923178L;
+  private String connectionPrincipal;
 
-public class TestSentryServiceFailureCase extends SentryServiceIntegrationBase {
-
-  @Before @Override
-  public void setup() throws Exception {
-    beforeSetup();
-    setupConf();
-    conf.set(ServerConfig.ALLOW_CONNECT, "");
-    startSentryService();
-    afterSetup();
+  public ConnectionDeniedException(Callback callback, String message, String connectionPrincipal) {
+    super(callback, message);
+    this.connectionPrincipal = connectionPrincipal;
   }
 
-  @Test(expected = PrivilegedActionException.class)
-  public void testClientServerConnectionFailure()  throws Exception {
-    connectToSentryService();
-    Assert.fail("Failed to receive Exception");
+  public String getConnectionPrincipal() {
+    return connectionPrincipal;
   }
 }

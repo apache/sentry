@@ -15,31 +15,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.sentry.provider.db.service.thrift;
 
-import java.security.PrivilegedActionException;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.sentry.service.thrift.ProcessorFactory;
+import org.apache.thrift.TMultiplexedProcessor;
+import org.apache.thrift.TProcessor;
 
-import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
-import org.apache.sentry.service.thrift.Constants.ServerConfig;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
-public class TestSentryServiceFailureCase extends SentryServiceIntegrationBase {
-
-  @Before @Override
-  public void setup() throws Exception {
-    beforeSetup();
-    setupConf();
-    conf.set(ServerConfig.ALLOW_CONNECT, "");
-    startSentryService();
-    afterSetup();
+public class SentryPolicyStoreProcessorFactory extends ProcessorFactory {
+  public SentryPolicyStoreProcessorFactory(Configuration conf) {
+    super(conf);
   }
 
-  @Test(expected = PrivilegedActionException.class)
-  public void testClientServerConnectionFailure()  throws Exception {
-    connectToSentryService();
-    Assert.fail("Failed to receive Exception");
+  public boolean register(TMultiplexedProcessor multiplexedProcessor) {
+    SentryPolicyStoreProcessor sentryServiceHandler =
+        new SentryPolicyStoreProcessor(SentryPolicyStoreProcessor.SENTRY_POLICY_SERVICE_NAME, conf);
+    TProcessor processor =
+      new SentryPolicyService.Processor<SentryPolicyService.Iface>(sentryServiceHandler);
+    multiplexedProcessor.registerProcessor(SentryPolicyStoreProcessor.SENTRY_POLICY_SERVICE_NAME, processor);
+    return true;
   }
 }

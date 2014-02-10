@@ -15,31 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.sentry.service.thrift;
 
-package org.apache.sentry.provider.db.service.thrift;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.thrift.TMultiplexedProcessor;
 
-import java.security.PrivilegedActionException;
-
-import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
-import org.apache.sentry.service.thrift.Constants.ServerConfig;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
-public class TestSentryServiceFailureCase extends SentryServiceIntegrationBase {
-
-  @Before @Override
-  public void setup() throws Exception {
-    beforeSetup();
-    setupConf();
-    conf.set(ServerConfig.ALLOW_CONNECT, "");
-    startSentryService();
-    afterSetup();
+public abstract class ProcessorFactory {
+  protected final Configuration conf;
+  public ProcessorFactory(Configuration conf) {
+    this.conf = conf;
   }
 
-  @Test(expected = PrivilegedActionException.class)
-  public void testClientServerConnectionFailure()  throws Exception {
-    connectToSentryService();
-    Assert.fail("Failed to receive Exception");
-  }
+  public abstract boolean register(TMultiplexedProcessor processor);
 }

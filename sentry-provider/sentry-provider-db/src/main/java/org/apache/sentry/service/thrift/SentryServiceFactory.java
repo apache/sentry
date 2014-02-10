@@ -16,30 +16,14 @@
  * limitations under the License.
  */
 
-package org.apache.sentry.provider.db.service.thrift;
+package org.apache.sentry.service.thrift;
+import org.apache.hadoop.conf.Configuration;
 
-import java.security.PrivilegedActionException;
+public class SentryServiceFactory {
 
-import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
-import org.apache.sentry.service.thrift.Constants.ServerConfig;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
-public class TestSentryServiceFailureCase extends SentryServiceIntegrationBase {
-
-  @Before @Override
-  public void setup() throws Exception {
-    beforeSetup();
-    setupConf();
-    conf.set(ServerConfig.ALLOW_CONNECT, "");
-    startSentryService();
-    afterSetup();
+  public SentryService create(Configuration conf) throws Exception {
+    SentryService server = new SentryService(conf);
+    return server;
   }
 
-  @Test(expected = PrivilegedActionException.class)
-  public void testClientServerConnectionFailure()  throws Exception {
-    connectToSentryService();
-    Assert.fail("Failed to receive Exception");
-  }
 }

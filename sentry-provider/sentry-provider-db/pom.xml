@@ -155,12 +155,12 @@ limitations under the License.
                     <mkdir dir="${thrift.gen.dir}"/>
                     <for param="thrift.file">
                       <path>
-                        <fileset dir="." includes="**/*.thrift" />
+                        <fileset dir="${basedir}/src/main/resources/" includes="**/*.thrift" />
                       </path>
                       <sequential>
                         <echo message="Generating Thrift code for @{thrift.file}"/>
                         <exec executable="${thrift.home}/bin/thrift"  failonerror="true" dir=".">
-                          <arg line="${thrift.args} -I ${basedir}/include -I ${basedir}/.. -o ${thrift.gen.dir} @{thrift.file} " />
+                          <arg line="${thrift.args} -I ${basedir}/src/main/resources/ -o ${thrift.gen.dir} @{thrift.file} " />
                         </exec>
                       </sequential>
                     </for>

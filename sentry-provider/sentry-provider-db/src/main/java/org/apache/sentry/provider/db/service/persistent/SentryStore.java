@@ -37,8 +37,8 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.metastore.ObjectStore;
 import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
-import org.apache.sentry.service.api.TSentryPrivilege;
-import org.apache.sentry.service.api.TSentryRole;
+import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
+import org.apache.sentry.provider.db.service.thrift.TSentryRole;
 
 public class SentryStore {
 
@@ -50,9 +50,10 @@ public class SentryStore {
 
   private boolean isInitialized = false;
   private PersistenceManager pm = null;
-  int openTrasactionCalls = 0;
+  private int openTrasactionCalls = 0;
   private Transaction currentTransaction = null;
   private TXN_STATUS transactionStatus = TXN_STATUS.NO_STATE;
+  @SuppressWarnings("unused")
   private final AtomicBoolean isSchemaVerified = new AtomicBoolean(false);
 
   private static enum TXN_STATUS {

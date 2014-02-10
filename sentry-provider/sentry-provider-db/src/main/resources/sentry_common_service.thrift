@@ -1,3 +1,5 @@
+#!/usr/local/bin/thrift -java
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -16,30 +18,23 @@
  * limitations under the License.
  */
 
-package org.apache.sentry.provider.db.service.thrift;
+include "share/fb303/if/fb303.thrift"
 
-import java.security.PrivilegedActionException;
+namespace java org.apache.sentry.service.thrift
+namespace php sentry.service.thrift
+namespace cpp Apache.Sentry.Service.Thrift
 
-import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
-import org.apache.sentry.service.thrift.Constants.ServerConfig;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+const i32 TSENTRY_SERVICE_V1 = 1;
 
-public class TestSentryServiceFailureCase extends SentryServiceIntegrationBase {
+const i32 TSENTRY_STATUS_OK = 0;
+const i32 TSENTRY_STATUS_ALREADY_EXISTS = 1;
+const i32 TSENTRY_STATUS_NO_SUCH_OBJECT = 2;
+const i32 TSENTRY_STATUS_RUNTIME_ERROR = 3;
 
-  @Before @Override
-  public void setup() throws Exception {
-    beforeSetup();
-    setupConf();
-    conf.set(ServerConfig.ALLOW_CONNECT, "");
-    startSentryService();
-    afterSetup();
-  }
-
-  @Test(expected = PrivilegedActionException.class)
-  public void testClientServerConnectionFailure()  throws Exception {
-    connectToSentryService();
-    Assert.fail("Failed to receive Exception");
-  }
+struct TSentryResponseStatus {
+1: required i32 value,
+// message will be set to empty string when status is OK
+2: required string message
+3: optional string stack
 }
+
