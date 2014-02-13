@@ -25,6 +25,7 @@ import java.util.List;
 import java.lang.reflect.InvocationTargetException;
 
 import junit.framework.Assert;
+import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
 
 import org.apache.commons.io.FileUtils;
@@ -158,6 +159,33 @@ public class TestSolrAuthzBinding {
   @Test
   public void testAuthProviderOnlySolrAuthzConfs() throws Exception {
     new SolrAuthzBinding(authzConf);
+  }
+
+  /**
+   * Test for group mapping
+   */
+  @Test
+  public void testGroupMapping() throws Exception {
+    SolrAuthzConf solrAuthzConf =
+      new SolrAuthzConf(Resources.getResource("sentry-site.xml"));
+    setUsableAuthzConf(solrAuthzConf);
+    SolrAuthzBinding binding = new SolrAuthzBinding(solrAuthzConf);
+    List<String> emptyList = Arrays.asList();
+
+    // check non-existant users
+    assertEquals(binding.getGroups(null), emptyList);
+    assertEquals(binding.getGroups("nonExistantUser"), emptyList);
+
+    // check group names don't map to user names
+    assertEquals(binding.getGroups("corporal"), emptyList);
+    assertEquals(binding.getGroups("sergeant"), emptyList);
+    assertEquals(binding.getGroups("general"), emptyList);
+    assertEquals(binding.getGroups("othergeneralgroup"), emptyList);
+
+    // check valid group names
+    assertEquals(binding.getGroups("corporal1"), Arrays.asList("corporal"));
+    assertEquals(binding.getGroups("sergeant1"), Arrays.asList("sergeant"));
+    assertEquals(binding.getGroups("general1"), Arrays.asList("general", "othergeneralgroup"));
   }
 
   /**
