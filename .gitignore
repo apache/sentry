@@ -6,7 +6,8 @@ target/
 .metadata
 .idea/
 *.iml
-**/derby.log
+derby.log
+datanucleus.log
 **/TempStatsStore/
 # Package Files #
 *.jar

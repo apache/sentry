@@ -38,6 +38,10 @@ limitations under the License.
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.apache.derby</groupId>
+      <artifactId>derby</artifactId>
+    </dependency>
+    <dependency>
       <groupId>log4j</groupId>
       <artifactId>log4j</artifactId>
     </dependency>
@@ -92,9 +96,39 @@ limitations under the License.
       <artifactId>hadoop-minikdc</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>javax.jdo</groupId>
+      <artifactId>jdo-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.datanucleus</groupId>
+      <artifactId>datanucleus-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.datanucleus</groupId>
+      <artifactId>datanucleus-api-jdo</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.datanucleus</groupId>
+      <artifactId>datanucleus-rdbms</artifactId>
+    </dependency>
   </dependencies>
 
   <build>
+    <sourceDirectory>${basedir}/src/main/java</sourceDirectory>
+    <testSourceDirectory>${basedir}/src/test/java</testSourceDirectory>
+    <resources>
+      <resource>
+        <directory>${basedir}/src/main/java/org/apache/sentry/provider/db/service/model</directory>
+        <includes>
+          <include>package.jdo</include>
+        </includes>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
@@ -119,17 +153,17 @@ limitations under the License.
         <artifactId>datanucleus-maven-plugin</artifactId>
         <configuration>
           <api>JDO</api>
-          <verbose>true</verbose>
           <metadataIncludes>**/*.jdo</metadataIncludes>
+          <verbose>true</verbose>
         </configuration>
-        <!-- executions>
+        <executions>
           <execution>
             <phase>process-classes</phase>
             <goals>
               <goal>enhance</goal>
             </goals>
           </execution>
-        </executions -->
+        </executions>
       </plugin>
     </plugins>
   </build>

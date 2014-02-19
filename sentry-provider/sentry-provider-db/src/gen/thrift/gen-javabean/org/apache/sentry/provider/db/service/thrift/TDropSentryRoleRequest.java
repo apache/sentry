@@ -31,31 +31,28 @@ import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TListSentryRolesRequest implements org.apache.thrift.TBase<TListSentryRolesRequest, TListSentryRolesRequest._Fields>, java.io.Serializable, Cloneable {
-  private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("TListSentryRolesRequest");
+public class TDropSentryRoleRequest implements org.apache.thrift.TBase<TDropSentryRoleRequest, TDropSentryRoleRequest._Fields>, java.io.Serializable, Cloneable {
+  private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("TDropSentryRoleRequest");
 
   private static final org.apache.thrift.protocol.TField PROTOCOL_VERSION_FIELD_DESC = new org.apache.thrift.protocol.TField("protocol_version", org.apache.thrift.protocol.TType.I32, (short)1);
   private static final org.apache.thrift.protocol.TField USER_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("userName", org.apache.thrift.protocol.TType.STRING, (short)2);
-  private static final org.apache.thrift.protocol.TField GROUP_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("groupName", org.apache.thrift.protocol.TType.STRING, (short)3);
-  private static final org.apache.thrift.protocol.TField ROLE_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("roleName", org.apache.thrift.protocol.TType.STRING, (short)4);
+  private static final org.apache.thrift.protocol.TField ROLE_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("roleName", org.apache.thrift.protocol.TType.STRING, (short)3);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
-    schemes.put(StandardScheme.class, new TListSentryRolesRequestStandardSchemeFactory());
-    schemes.put(TupleScheme.class, new TListSentryRolesRequestTupleSchemeFactory());
+    schemes.put(StandardScheme.class, new TDropSentryRoleRequestStandardSchemeFactory());
+    schemes.put(TupleScheme.class, new TDropSentryRoleRequestTupleSchemeFactory());
   }
 
   private int protocol_version; // required
   private String userName; // optional
-  private String groupName; // optional
   private String roleName; // optional
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
     PROTOCOL_VERSION((short)1, "protocol_version"),
     USER_NAME((short)2, "userName"),
-    GROUP_NAME((short)3, "groupName"),
-    ROLE_NAME((short)4, "roleName");
+    ROLE_NAME((short)3, "roleName");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -74,9 +71,7 @@ public class TListSentryRolesRequest implements org.apache.thrift.TBase<TListSen
           return PROTOCOL_VERSION;
         case 2: // USER_NAME
           return USER_NAME;
-        case 3: // GROUP_NAME
-          return GROUP_NAME;
-        case 4: // ROLE_NAME
+        case 3: // ROLE_NAME
           return ROLE_NAME;
         default:
           return null;
@@ -120,7 +115,7 @@ public class TListSentryRolesRequest implements org.apache.thrift.TBase<TListSen
   // isset id assignments
   private static final int __PROTOCOL_VERSION_ISSET_ID = 0;
   private byte __isset_bitfield = 0;
-  private _Fields optionals[] = {_Fields.USER_NAME,_Fields.GROUP_NAME,_Fields.ROLE_NAME};
+  private _Fields optionals[] = {_Fields.USER_NAME,_Fields.ROLE_NAME};
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
@@ -128,20 +123,18 @@ public class TListSentryRolesRequest implements org.apache.thrift.TBase<TListSen
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
     tmpMap.put(_Fields.USER_NAME, new org.apache.thrift.meta_data.FieldMetaData("userName", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
-    tmpMap.put(_Fields.GROUP_NAME, new org.apache.thrift.meta_data.FieldMetaData("groupName", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
-        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
     tmpMap.put(_Fields.ROLE_NAME, new org.apache.thrift.meta_data.FieldMetaData("roleName", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
-    org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(TListSentryRolesRequest.class, metaDataMap);
+    org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(TDropSentryRoleRequest.class, metaDataMap);
   }
 
-  public TListSentryRolesRequest() {
+  public TDropSentryRoleRequest() {
     this.protocol_version = 1;
 
   }
 
-  public TListSentryRolesRequest(
+  public TDropSentryRoleRequest(
     int protocol_version)
   {
     this();
@@ -152,22 +145,19 @@ public class TListSentryRolesRequest implements org.apache.thrift.TBase<TListSen
   /**
    * Performs a deep copy on <i>other</i>.
    */
-  public TListSentryRolesRequest(TListSentryRolesRequest other) {
+  public TDropSentryRoleRequest(TDropSentryRoleRequest other) {
     __isset_bitfield = other.__isset_bitfield;
     this.protocol_version = other.protocol_version;
     if (other.isSetUserName()) {
       this.userName = other.userName;
-    }
-    if (other.isSetGroupName()) {
-      this.groupName = other.groupName;
     }
     if (other.isSetRoleName()) {
       this.roleName = other.roleName;
     }
   }
 
-  public TListSentryRolesRequest deepCopy() {
-    return new TListSentryRolesRequest(this);
+  public TDropSentryRoleRequest deepCopy() {
+    return new TDropSentryRoleRequest(this);
   }
 
   @Override
@@ -175,7 +165,6 @@ public class TListSentryRolesRequest implements org.apache.thrift.TBase<TListSen
     this.protocol_version = 1;
 
     this.userName = null;
-    this.groupName = null;
     this.roleName = null;
   }
 
@@ -224,29 +213,6 @@ public class TListSentryRolesRequest implements org.apache.thrift.TBase<TListSen
     }
   }
 
-  public String getGroupName() {
-    return this.groupName;
-  }
-
-  public void setGroupName(String groupName) {
-    this.groupName = groupName;
-  }
-
-  public void unsetGroupName() {
-    this.groupName = null;
-  }
-
-  /** Returns true if field groupName is set (has been assigned a value) and false otherwise */
-  public boolean isSetGroupName() {
-    return this.groupName != null;
-  }
-
-  public void setGroupNameIsSet(boolean value) {
-    if (!value) {
-      this.groupName = null;
-    }
-  }
-
   public String getRoleName() {
     return this.roleName;
   }
@@ -288,14 +254,6 @@ public class TListSentryRolesRequest implements org.apache.thrift.TBase<TListSen
       }
       break;
 
-    case GROUP_NAME:
-      if (value == null) {
-        unsetGroupName();
-      } else {
-        setGroupName((String)value);
-      }
-      break;
-
     case ROLE_NAME:
       if (value == null) {
         unsetRoleName();
@@ -315,9 +273,6 @@ public class TListSentryRolesRequest implements org.apache.thrift.TBase<TListSen
     case USER_NAME:
       return getUserName();
 
-    case GROUP_NAME:
-      return getGroupName();
-
     case ROLE_NAME:
       return getRoleName();
 
@@ -336,8 +291,6 @@ public class TListSentryRolesRequest implements org.apache.thrift.TBase<TListSen
       return isSetProtocol_version();
     case USER_NAME:
       return isSetUserName();
-    case GROUP_NAME:
-      return isSetGroupName();
     case ROLE_NAME:
       return isSetRoleName();
     }
@@ -348,12 +301,12 @@ public class TListSentryRolesRequest implements org.apache.thrift.TBase<TListSen
   public boolean equals(Object that) {
     if (that == null)
       return false;
-    if (that instanceof TListSentryRolesRequest)
-      return this.equals((TListSentryRolesRequest)that);
+    if (that instanceof TDropSentryRoleRequest)
+      return this.equals((TDropSentryRoleRequest)that);
     return false;
   }
 
-  public boolean equals(TListSentryRolesRequest that) {
+  public boolean equals(TDropSentryRoleRequest that) {
     if (that == null)
       return false;
 
@@ -372,15 +325,6 @@ public class TListSentryRolesRequest implements org.apache.thrift.TBase<TListSen
       if (!(this_present_userName && that_present_userName))
         return false;
       if (!this.userName.equals(that.userName))
-        return false;
-    }
-
-    boolean this_present_groupName = true && this.isSetGroupName();
-    boolean that_present_groupName = true && that.isSetGroupName();
-    if (this_present_groupName || that_present_groupName) {
-      if (!(this_present_groupName && that_present_groupName))
-        return false;
-      if (!this.groupName.equals(that.groupName))
         return false;
     }
 
@@ -410,11 +354,6 @@ public class TListSentryRolesRequest implements org.apache.thrift.TBase<TListSen
     if (present_userName)
       builder.append(userName);
 
-    boolean present_groupName = true && (isSetGroupName());
-    builder.append(present_groupName);
-    if (present_groupName)
-      builder.append(groupName);
-
     boolean present_roleName = true && (isSetRoleName());
     builder.append(present_roleName);
     if (present_roleName)
@@ -423,13 +362,13 @@ public class TListSentryRolesRequest implements org.apache.thrift.TBase<TListSen
     return builder.toHashCode();
   }
 
-  public int compareTo(TListSentryRolesRequest other) {
+  public int compareTo(TDropSentryRoleRequest other) {
     if (!getClass().equals(other.getClass())) {
       return getClass().getName().compareTo(other.getClass().getName());
     }
 
     int lastComparison = 0;
-    TListSentryRolesRequest typedOther = (TListSentryRolesRequest)other;
+    TDropSentryRoleRequest typedOther = (TDropSentryRoleRequest)other;
 
     lastComparison = Boolean.valueOf(isSetProtocol_version()).compareTo(typedOther.isSetProtocol_version());
     if (lastComparison != 0) {
@@ -447,16 +386,6 @@ public class TListSentryRolesRequest implements org.apache.thrift.TBase<TListSen
     }
     if (isSetUserName()) {
       lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.userName, typedOther.userName);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
-    lastComparison = Boolean.valueOf(isSetGroupName()).compareTo(typedOther.isSetGroupName());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetGroupName()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.groupName, typedOther.groupName);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -488,7 +417,7 @@ public class TListSentryRolesRequest implements org.apache.thrift.TBase<TListSen
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder("TListSentryRolesRequest(");
+    StringBuilder sb = new StringBuilder("TDropSentryRoleRequest(");
     boolean first = true;
 
     sb.append("protocol_version:");
@@ -501,16 +430,6 @@ public class TListSentryRolesRequest implements org.apache.thrift.TBase<TListSen
         sb.append("null");
       } else {
         sb.append(this.userName);
-      }
-      first = false;
-    }
-    if (isSetGroupName()) {
-      if (!first) sb.append(", ");
-      sb.append("groupName:");
-      if (this.groupName == null) {
-        sb.append("null");
-      } else {
-        sb.append(this.groupName);
       }
       first = false;
     }
@@ -555,15 +474,15 @@ public class TListSentryRolesRequest implements org.apache.thrift.TBase<TListSen
     }
   }
 
-  private static class TListSentryRolesRequestStandardSchemeFactory implements SchemeFactory {
-    public TListSentryRolesRequestStandardScheme getScheme() {
-      return new TListSentryRolesRequestStandardScheme();
+  private static class TDropSentryRoleRequestStandardSchemeFactory implements SchemeFactory {
+    public TDropSentryRoleRequestStandardScheme getScheme() {
+      return new TDropSentryRoleRequestStandardScheme();
     }
   }
 
-  private static class TListSentryRolesRequestStandardScheme extends StandardScheme<TListSentryRolesRequest> {
+  private static class TDropSentryRoleRequestStandardScheme extends StandardScheme<TDropSentryRoleRequest> {
 
-    public void read(org.apache.thrift.protocol.TProtocol iprot, TListSentryRolesRequest struct) throws org.apache.thrift.TException {
+    public void read(org.apache.thrift.protocol.TProtocol iprot, TDropSentryRoleRequest struct) throws org.apache.thrift.TException {
       org.apache.thrift.protocol.TField schemeField;
       iprot.readStructBegin();
       while (true)
@@ -589,15 +508,7 @@ public class TListSentryRolesRequest implements org.apache.thrift.TBase<TListSen
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
-          case 3: // GROUP_NAME
-            if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
-              struct.groupName = iprot.readString();
-              struct.setGroupNameIsSet(true);
-            } else { 
-              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
-            }
-            break;
-          case 4: // ROLE_NAME
+          case 3: // ROLE_NAME
             if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
               struct.roleName = iprot.readString();
               struct.setRoleNameIsSet(true);
@@ -614,7 +525,7 @@ public class TListSentryRolesRequest implements org.apache.thrift.TBase<TListSen
       struct.validate();
     }
 
-    public void write(org.apache.thrift.protocol.TProtocol oprot, TListSentryRolesRequest struct) throws org.apache.thrift.TException {
+    public void write(org.apache.thrift.protocol.TProtocol oprot, TDropSentryRoleRequest struct) throws org.apache.thrift.TException {
       struct.validate();
 
       oprot.writeStructBegin(STRUCT_DESC);
@@ -625,13 +536,6 @@ public class TListSentryRolesRequest implements org.apache.thrift.TBase<TListSen
         if (struct.isSetUserName()) {
           oprot.writeFieldBegin(USER_NAME_FIELD_DESC);
           oprot.writeString(struct.userName);
-          oprot.writeFieldEnd();
-        }
-      }
-      if (struct.groupName != null) {
-        if (struct.isSetGroupName()) {
-          oprot.writeFieldBegin(GROUP_NAME_FIELD_DESC);
-          oprot.writeString(struct.groupName);
           oprot.writeFieldEnd();
         }
       }
@@ -648,34 +552,28 @@ public class TListSentryRolesRequest implements org.apache.thrift.TBase<TListSen
 
   }
 
-  private static class TListSentryRolesRequestTupleSchemeFactory implements SchemeFactory {
-    public TListSentryRolesRequestTupleScheme getScheme() {
-      return new TListSentryRolesRequestTupleScheme();
+  private static class TDropSentryRoleRequestTupleSchemeFactory implements SchemeFactory {
+    public TDropSentryRoleRequestTupleScheme getScheme() {
+      return new TDropSentryRoleRequestTupleScheme();
     }
   }
 
-  private static class TListSentryRolesRequestTupleScheme extends TupleScheme<TListSentryRolesRequest> {
+  private static class TDropSentryRoleRequestTupleScheme extends TupleScheme<TDropSentryRoleRequest> {
 
     @Override
-    public void write(org.apache.thrift.protocol.TProtocol prot, TListSentryRolesRequest struct) throws org.apache.thrift.TException {
+    public void write(org.apache.thrift.protocol.TProtocol prot, TDropSentryRoleRequest struct) throws org.apache.thrift.TException {
       TTupleProtocol oprot = (TTupleProtocol) prot;
       oprot.writeI32(struct.protocol_version);
       BitSet optionals = new BitSet();
       if (struct.isSetUserName()) {
         optionals.set(0);
       }
-      if (struct.isSetGroupName()) {
+      if (struct.isSetRoleName()) {
         optionals.set(1);
       }
-      if (struct.isSetRoleName()) {
-        optionals.set(2);
-      }
-      oprot.writeBitSet(optionals, 3);
+      oprot.writeBitSet(optionals, 2);
       if (struct.isSetUserName()) {
         oprot.writeString(struct.userName);
-      }
-      if (struct.isSetGroupName()) {
-        oprot.writeString(struct.groupName);
       }
       if (struct.isSetRoleName()) {
         oprot.writeString(struct.roleName);
@@ -683,20 +581,16 @@ public class TListSentryRolesRequest implements org.apache.thrift.TBase<TListSen
     }
 
     @Override
-    public void read(org.apache.thrift.protocol.TProtocol prot, TListSentryRolesRequest struct) throws org.apache.thrift.TException {
+    public void read(org.apache.thrift.protocol.TProtocol prot, TDropSentryRoleRequest struct) throws org.apache.thrift.TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
       struct.protocol_version = iprot.readI32();
       struct.setProtocol_versionIsSet(true);
-      BitSet incoming = iprot.readBitSet(3);
+      BitSet incoming = iprot.readBitSet(2);
       if (incoming.get(0)) {
         struct.userName = iprot.readString();
         struct.setUserNameIsSet(true);
       }
       if (incoming.get(1)) {
-        struct.groupName = iprot.readString();
-        struct.setGroupNameIsSet(true);
-      }
-      if (incoming.get(2)) {
         struct.roleName = iprot.readString();
         struct.setRoleNameIsSet(true);
       }

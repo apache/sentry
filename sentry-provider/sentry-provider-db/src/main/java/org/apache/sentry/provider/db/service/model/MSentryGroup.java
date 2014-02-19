@@ -20,20 +20,19 @@ package org.apache.sentry.provider.db.service.model;
 
 import java.util.Set;
 
+import javax.jdo.annotations.PersistenceCapable;
+
+@PersistenceCapable
 public class MSentryGroup {
 
-  private String groupName;
-
+  String groupName;
   // set of roles granted to this group
-  private Set<MSentryRole> roles;
-
-  private long createTime;
-
-  private String grantorPrincipal;
-
+  Set<MSentryRole> roles;
+  long createTime;
+  String grantorPrincipal;
 
   MSentryGroup(String groupName, long createTime, String grantorPrincipal,
-      Set<MSentryRole> roles) {
+               Set<MSentryRole> roles) {
     this.setGroupName(groupName);
     this.createTime = createTime;
     this.grantorPrincipal = grantorPrincipal;

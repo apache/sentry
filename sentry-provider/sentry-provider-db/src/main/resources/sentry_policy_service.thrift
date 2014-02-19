@@ -99,19 +99,30 @@ struct TAlterSentryRoleDeleteGroupsResponse {
 
 struct TListSentryRolesRequest {
 1: required i32 protocol_version = sentry_common_service.TSENTRY_SERVICE_V1,
-2: required string userName,
+2: optional string userName,
 3: optional string groupName,
 4: optional string roleName
 }
+
 struct TListSentryRolesResponse {
 1: required sentry_common_service.TSentryResponseStatus status
 2: required set<TSentryRole> roles
 }
 
+struct TDropSentryRoleRequest {
+1: required i32 protocol_version = sentry_common_service.TSENTRY_SERVICE_V1,
+2: optional string userName,
+3: optional string roleName
+}
+
+struct TDropSentryRoleResponse {
+1: required sentry_common_service.TSentryResponseStatus status
+}
+
 service SentryPolicyService
 {
   TCreateSentryRoleResponse create_sentry_role(1:TCreateSentryRoleRequest request)
-  //TDropSentryRoleResponse drop_sentry_role(1:TDropSentryRoleRequest request)
+  TDropSentryRoleResponse drop_sentry_role(1:TDropSentryRoleRequest request)
 
   TCreateSentryPrivilegeResponse create_sentry_privilege(1:TCreateSentryPrivilegeRequest request)
   //TDropSentryPrivilegeResponse drop_sentry_privilege(1:TDropSentryPrivilegeRequest request)
@@ -119,5 +130,6 @@ service SentryPolicyService
   TAlterSentryRoleAddGroupsResponse alter_sentry_role_add_groups(1:TAlterSentryRoleAddGroupsRequest request)
   TAlterSentryRoleDeleteGroupsResponse alter_sentry_role_delete_groups(1:TAlterSentryRoleDeleteGroupsRequest request)
 
-  TListSentryRolesResponse list_sentry_roles(1:TListSentryRolesRequest request)
+  TListSentryRolesResponse list_sentry_roles_by_group(1:TListSentryRolesRequest request)
+  TListSentryRolesResponse list_sentry_roles_by_role_name(1:TListSentryRolesRequest request) 
 }

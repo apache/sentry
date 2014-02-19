@@ -55,12 +55,13 @@ import com.google.common.collect.Sets;
 
 public class SentryService implements Runnable {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(SentryService.class);
+  private static final Logger LOGGER = LoggerFactory
+      .getLogger(SentryService.class);
 
   private static enum Status {
-    NOT_STARTED(),
-    STARTED();
+    NOT_STARTED(), STARTED();
   }
+
   private final Configuration conf;
   private final InetSocketAddress address;
   private final int maxThreads;
@@ -75,12 +76,14 @@ public class SentryService implements Runnable {
 
   public SentryService(Configuration conf) {
     this.conf = conf;
-    int port = conf.getInt(ServerConfig.RPC_PORT, ServerConfig.RPC_PORT_DEFAULT);
+    int port = conf
+        .getInt(ServerConfig.RPC_PORT, ServerConfig.RPC_PORT_DEFAULT);
     if (port == 0) {
       port = findFreePort();
     }
-    this.address = NetUtils.createSocketAddr(conf.get(ServerConfig.RPC_ADDRESS,
-        ServerConfig.RPC_ADDRESS_DEFAULT), port);
+    this.address = NetUtils.createSocketAddr(
+        conf.get(ServerConfig.RPC_ADDRESS, ServerConfig.RPC_ADDRESS_DEFAULT),
+        port);
     LOGGER.info("Configured on address " + address);
     maxThreads = conf.getInt(ServerConfig.RPC_MAX_THREADS,
         ServerConfig.RPC_MAX_THREADS_DEFAULT);
@@ -98,9 +101,11 @@ public class SentryService implements Runnable {
         "Keytab " + keytab + " does not exist or is not readable.");
     serviceExecutor = Executors.newSingleThreadExecutor(new ThreadFactory() {
       private int count = 0;
+
       @Override
       public Thread newThread(Runnable r) {
-        return new Thread(r, SentryService.class.getSimpleName() + "-" + (count++));
+        return new Thread(r, SentryService.class.getSimpleName() + "-"
+            + (count++));
       }
     });
     status = Status.NOT_STARTED;
@@ -110,9 +115,9 @@ public class SentryService implements Runnable {
   public void run() {
     LoginContext loginContext = null;
     try {
-      Subject subject = new Subject(false, Sets.newHashSet(
-                                      new KerberosPrincipal(principal)), new HashSet<Object>(),
-                                    new HashSet<Object>());
+      Subject subject = new Subject(false,
+          Sets.newHashSet(new KerberosPrincipal(principal)),
+          new HashSet<Object>(), new HashSet<Object>());
       loginContext = new LoginContext("", subject, null,
           KerberosConfiguration.createClientConfig(principal, new File(keytab)));
       loginContext.login();
@@ -120,50 +125,51 @@ public class SentryService implements Runnable {
       Subject.doAs(subject, new PrivilegedExceptionAction<Void>() {
         @Override
         public Void run() throws Exception {
-          Iterable<String> processorFactories = ConfUtilties.CLASS_SPLITTER.split(conf.
-              get(ServerConfig.PROCESSOR_FACTORIES, ServerConfig.PROCESSOR_FACTORIES_DEFAULT)
-              .trim());
+          Iterable<String> processorFactories = ConfUtilties.CLASS_SPLITTER
+              .split(conf.get(ServerConfig.PROCESSOR_FACTORIES,
+                  ServerConfig.PROCESSOR_FACTORIES_DEFAULT).trim());
           TMultiplexedProcessor processor = new TMultiplexedProcessor();
           boolean registeredProcessor = false;
           for (String processorFactory : processorFactories) {
             Class<?> clazz = conf.getClassByName(processorFactory);
             if (!ProcessorFactory.class.isAssignableFrom(clazz)) {
-              throw new IllegalArgumentException("Processor Factory " + processorFactory +
-                  " is not a " + ProcessorFactory.class.getName());
+              throw new IllegalArgumentException("Processor Factory "
+                  + processorFactory + " is not a "
+                  + ProcessorFactory.class.getName());
             }
             try {
-              Constructor<?> constructor = clazz.getConstructor(Configuration.class);
-              ProcessorFactory factory = (ProcessorFactory)constructor.newInstance(conf);
-              registeredProcessor = registeredProcessor || factory.register(processor);
+              Constructor<?> constructor = clazz
+                  .getConstructor(Configuration.class);
+              ProcessorFactory factory = (ProcessorFactory) constructor
+                  .newInstance(conf);
+              registeredProcessor = registeredProcessor
+                  || factory.register(processor);
             } catch (Exception e) {
-              throw new IllegalStateException("Could not create " + processorFactory, e);
+              throw new IllegalStateException("Could not create "
+                  + processorFactory, e);
             }
           }
           if (!registeredProcessor) {
-            throw new IllegalStateException("Failed to register any processors from " +
-                processorFactories);
+            throw new IllegalStateException(
+                "Failed to register any processors from " + processorFactories);
           }
           TServerTransport serverTransport = new TServerSocket(address);
           TSaslServerTransport.Factory saslTransportFactory = new TSaslServerTransport.Factory();
-          saslTransportFactory.addServerDefinition(
-            AuthMethod.KERBEROS.getMechanismName(),
-            principalParts[0],
-            principalParts[1],
-            ServerConfig.SASL_PROPERTIES,
-            new GSSCallback(conf));
-          TThreadPoolServer.Args args = new TThreadPoolServer.Args(serverTransport)
-          .processor(processor)
-          .transportFactory(saslTransportFactory)
-          .protocolFactory(new TBinaryProtocol.Factory())
-          .minWorkerThreads(minThreads)
-          .maxWorkerThreads(maxThreads);
+          saslTransportFactory.addServerDefinition(AuthMethod.KERBEROS
+              .getMechanismName(), principalParts[0], principalParts[1],
+              ServerConfig.SASL_PROPERTIES, new GSSCallback(conf));
+          TThreadPoolServer.Args args = new TThreadPoolServer.Args(
+              serverTransport).processor(processor)
+              .transportFactory(saslTransportFactory)
+              .protocolFactory(new TBinaryProtocol.Factory())
+              .minWorkerThreads(minThreads).maxWorkerThreads(maxThreads);
           thriftServer = new TThreadPoolServer(args);
           LOGGER.info("Serving on " + address);
           thriftServer.serve();
           return null;
         }
       });
-    } catch(Throwable t) {
+    } catch (Throwable t) {
       LOGGER.error("Error starting server", t);
     } finally {
       status = Status.NOT_STARTED;
@@ -182,7 +188,8 @@ public class SentryService implements Runnable {
   }
 
   public synchronized boolean isRunning() {
-    return status == Status.STARTED && thriftServer != null && thriftServer.isServing();
+    return status == Status.STARTED && thriftServer != null
+        && thriftServer.isServing();
   }
 
   public synchronized void start() {
@@ -199,6 +206,7 @@ public class SentryService implements Runnable {
       return;
     }
     LOGGER.info("Attempting to stop...");
+
     if (thriftServer.isServing()) {
       thriftServer.stop();
     }
@@ -226,11 +234,14 @@ public class SentryService implements Runnable {
   public static void main(String[] args) throws Exception {
     // XXX if more more than one argument is handled here, use an options parser
     File configFile = null;
-    if (args.length != 2 || !args[0].equalsIgnoreCase(Constants.ServerArgs.CONFIG_FILE)) {
-      throw new IllegalArgumentException("Usage: " + Constants.ServerArgs.CONFIG_FILE +
-          " path/to/sentry-service.xml");
-    } else if(!((configFile = new File(args[1])).isFile() && configFile.canRead())) {
-      throw new IllegalArgumentException("Cannot read configuration file " + configFile);
+    if (args.length != 2
+        || !args[0].equalsIgnoreCase(Constants.ServerArgs.CONFIG_FILE)) {
+      throw new IllegalArgumentException("Usage: "
+          + Constants.ServerArgs.CONFIG_FILE + " path/to/sentry-service.xml");
+    } else if (!((configFile = new File(args[1])).isFile() && configFile
+        .canRead())) {
+      throw new IllegalArgumentException("Cannot read configuration file "
+          + configFile);
     }
     Configuration conf = new Configuration(false);
     conf.addResource(configFile.toURL());

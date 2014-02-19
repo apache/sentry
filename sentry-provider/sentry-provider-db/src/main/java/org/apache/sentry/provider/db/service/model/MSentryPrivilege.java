@@ -19,36 +19,33 @@
 package org.apache.sentry.provider.db.service.model;
 
 import java.util.HashSet;
+
 import java.util.Set;
 
+import javax.jdo.annotations.PersistenceCapable;
+
+@PersistenceCapable
 public class MSentryPrivilege {
 
-  private String privilegeScope;
-
-  private String privilegeName;
-
-  private String serverName;
-
-  private String dbName;
-
-  private String tableName;
-
-  private String URI;
-
-  private String action;
-
+  String privilegeScope;
+  String privilegeName;
+  String serverName;
+  String dbName;
+  String tableName;
+  String URI;
+  String action;
   // roles this privilege is a part of
   Set<MSentryRole> roles;
+  long createTime;
+  String grantorPrincipal;
 
-  private long createTime;
-
-  private String grantorPrincipal;
-
-  public MSentryPrivilege() {this.roles = new HashSet<MSentryRole>();}
+  public MSentryPrivilege() {
+    this.roles = new HashSet<MSentryRole>();
+  }
 
   public MSentryPrivilege(String privilegeName, String privilegeScope,
-      String serverName, String dbName, String tableName, String URI,
-      String action) {
+                          String serverName, String dbName, String tableName, String URI,
+                          String action) {
     this.privilegeName = privilegeName;
     this.privilegeScope = privilegeScope;
     this.serverName = serverName;

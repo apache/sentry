@@ -21,24 +21,25 @@ package org.apache.sentry.provider.db.service.model;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.jdo.annotations.PersistenceCapable;
+
+@PersistenceCapable
 public class MSentryRole {
 
-  private String roleName;
-
+  String roleName;
   // set of privileges granted to this role
   Set<MSentryPrivilege> privileges;
-
   // set of groups this role belongs to
   Set<MSentryGroup> groups;
+  long createTime;
+  String grantorPrincipal;
 
-  private long createTime;
-
-  private String grantorPrincipal;
-
-  public MSentryRole() {privileges = new HashSet<MSentryPrivilege>();}
+  public MSentryRole() {
+    privileges = new HashSet<MSentryPrivilege>();
+  }
 
   MSentryRole(String roleName, long createTime, String grantorPrincipal,
-      Set<MSentryPrivilege> privileges, Set<MSentryGroup> groups) {
+              Set<MSentryPrivilege> privileges, Set<MSentryGroup> groups) {
     this.roleName = roleName;
     this.createTime = createTime;
     this.grantorPrincipal = grantorPrincipal;

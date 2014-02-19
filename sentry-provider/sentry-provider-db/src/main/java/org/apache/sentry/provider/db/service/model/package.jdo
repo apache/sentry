@@ -26,7 +26,7 @@
 
 -->
 <jdo>  
-  <package name="org.apache.sentry.provider.db.service.persistent.model">  
+  <package name="org.apache.sentry.provider.db.service.model">  
     <class name="MSentryGroup" identity-type="datastore" table="SENTRY_GROUPS" detachable="true">  
       <datastore-identity>
         <column name="GROUP_ID"/>
@@ -43,7 +43,7 @@
       </field>
       
       <field name="roles" mapped-by="groups">
-         <collection element-type="org.apache.sentry.provider.db.service.persistent.model.MSentryRole"/>
+         <collection element-type="org.apache.sentry.provider.db.service.model.MSentryRole"/>
       </field>
         
     </class>
@@ -63,7 +63,7 @@
         <column name="GRANTOR_PRINCIPAL" length="4000" jdbc-type="VARCHAR"/>
       </field>
       <field name = "privileges" table="ROLES_PRIVILEGES" >
-        <collection element-type="org.apache.sentry.provider.db.service.persistent.model.MSentryPrivilege"/>
+        <collection element-type="org.apache.sentry.provider.db.service.model.MSentryPrivilege"/>
             <join>
                 <column name="ROLE_ID"/>
             </join>
@@ -73,7 +73,7 @@
       </field>  
       
       <field name = "groups" table="ROLES_GROUPS" >
-        <collection element-type="org.apache.sentry.provider.db.service.persistent.model.MSentryGroup"/>
+        <collection element-type="org.apache.sentry.provider.db.service.model.MSentryGroup"/>
             <join>
                 <column name="ROLE_ID"/>
             </join>
@@ -116,7 +116,7 @@
         <column name="GRANTOR_PRINCIPAL" length="4000" jdbc-type="VARCHAR"/>
       </field>
       <field name="roles" mapped-by="privileges">
-         <collection element-type="org.apache.sentry.provider.db.service.persistent.model.MSentryRole"/>
+         <collection element-type="org.apache.sentry.provider.db.service.model.MSentryRole"/>
       </field>  
     </class>
 

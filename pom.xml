@@ -62,6 +62,7 @@ limitations under the License.
     <datanucleus-api-jdo.version>3.2.1</datanucleus-api-jdo.version>
     <datanucleus-core.version>3.2.2</datanucleus-core.version>
     <datanucleus-rdbms.version>3.2.1</datanucleus-rdbms.version>
+    <jdo-api.version>3.0.1</jdo-api.version>
     <derby.version>10.4.2.0</derby.version>
     <hive.version>0.12.0-cdh5.0.0-beta-2-SNAPSHOT</hive.version>
     <hadoop.version>2.2.0-cdh5.0.0-beta-2-SNAPSHOT</hadoop.version>
@@ -269,6 +270,26 @@ limitations under the License.
         <artifactId>sentry-dist</artifactId>
         <version>${project.version}</version>
       </dependency>
+      <dependency>
+        <groupId>javax.jdo</groupId>
+        <artifactId>jdo-api</artifactId>
+        <version>${jdo-api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.datanucleus</groupId>
+        <artifactId>datanucleus-core</artifactId>
+        <version>${datanucleus-core.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.datanucleus</groupId>
+        <artifactId>datanucleus-api-jdo</artifactId>
+        <version>${datanucleus-api-jdo.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.datanucleus</groupId>
+        <artifactId>datanucleus-rdbms</artifactId>
+        <version>${datanucleus-rdbms.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -409,7 +430,7 @@ limitations under the License.
           <artifactId>build-helper-maven-plugin</artifactId>
           <version>${build.helper.maven.plugin.version}</version>
         </plugin>
-        <plugin>
+	<plugin>
           <groupId>org.datanucleus</groupId>
           <artifactId>datanucleus-maven-plugin</artifactId>
           <version>${datanucleus.maven.plugin.version}</version>
