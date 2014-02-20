@@ -22,7 +22,7 @@ import java.io.StringWriter;
 
 import javax.annotation.Nullable;
 
-import org.apache.sentry.service.thrift.Constants.ThriftConstants;
+import org.apache.sentry.service.thrift.ServiceConstants.ThriftConstants;
 
 /**
  * Simple factory to make returning TSentryStatus objects easy

@@ -25,7 +25,7 @@ import javax.security.sasl.Sasl;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 
-public class Constants {
+public class ServiceConstants {
 
   private static final ImmutableMap<String, String> SASL_PROPERTIES;
 
@@ -40,11 +40,11 @@ public class Constants {
     public static final Splitter CLASS_SPLITTER = Splitter.onPattern("[\\s,]")
         .trimResults().omitEmptyStrings();
   }
-  public static class ServerArgs {
+  public static class ServiceArgs {
     public static final String CONFIG_FILE = "--conf-file";
   }
   public static class ServerConfig {
-    public static final ImmutableMap<String, String> SASL_PROPERTIES = Constants.SASL_PROPERTIES;
+    public static final ImmutableMap<String, String> SASL_PROPERTIES = ServiceConstants.SASL_PROPERTIES;
     public static final String PRINCIPAL = "sentry.service.server.principal";
     public static final String KEY_TAB = "sentry.service.server.keytab";
     public static final String RPC_PORT = "sentry.service.server.rpc-port";
@@ -61,7 +61,7 @@ public class Constants {
         "org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessorFactory";
   }
   public static class ClientConfig {
-    public static final ImmutableMap<String, String> SASL_PROPERTIES = Constants.SASL_PROPERTIES;
+    public static final ImmutableMap<String, String> SASL_PROPERTIES = ServiceConstants.SASL_PROPERTIES;
     public static final String SERVER_RPC_PORT = "sentry.service.client.server.rpc-port";
     public static final int SERVER_RPC_PORT_DEFAULT = ServerConfig.RPC_PORT_DEFAULT;
     public static final String SERVER_RPC_ADDRESS = "sentry.service.client.server.rpc-address";

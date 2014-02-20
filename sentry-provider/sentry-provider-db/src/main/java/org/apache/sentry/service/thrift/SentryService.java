@@ -34,12 +34,17 @@ import javax.security.auth.kerberos.KerberosPrincipal;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.GnuParser;
+import org.apache.commons.cli.Options;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.SaslRpcServer;
 import org.apache.hadoop.security.SaslRpcServer.AuthMethod;
-import org.apache.sentry.service.thrift.Constants.ConfUtilties;
-import org.apache.sentry.service.thrift.Constants.ServerConfig;
+import org.apache.sentry.Command;
+import org.apache.sentry.service.thrift.ServiceConstants.ConfUtilties;
+import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.apache.thrift.TMultiplexedProcessor;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.server.TServer;
@@ -229,34 +234,39 @@ public class SentryService implements Runnable {
     }
     throw new IllegalStateException("Unable to find a port after 1000 attempts");
   }
-
-  @SuppressWarnings("deprecation")
-  public static void main(String[] args) throws Exception {
-    // XXX if more more than one argument is handled here, use an options parser
-    File configFile = null;
-    if (args.length != 2
-        || !args[0].equalsIgnoreCase(Constants.ServerArgs.CONFIG_FILE)) {
-      throw new IllegalArgumentException("Usage: "
-          + Constants.ServerArgs.CONFIG_FILE + " path/to/sentry-service.xml");
-    } else if (!((configFile = new File(args[1])).isFile() && configFile
-        .canRead())) {
-      throw new IllegalArgumentException("Cannot read configuration file "
-          + configFile);
-    }
-    Configuration conf = new Configuration(false);
-    conf.addResource(configFile.toURL());
-    final SentryService server = new SentryService(conf);
-    server.start();
-    Runtime.getRuntime().addShutdownHook(new Thread() {
-      @Override
-      public void run() {
-        LOGGER.info("ShutdownHook shutting down server");
-        try {
-          server.stop();
-        } catch (Throwable t) {
-          LOGGER.error("Error stopping SentryService", t);
-        }
+  public static class CommandImpl implements Command {
+    @Override
+    @SuppressWarnings("deprecation")
+    public void run(String[] args) throws Exception {
+      CommandLineParser parser = new GnuParser();
+      Options options = new Options();
+      options.addOption(null, ServiceConstants.ServiceArgs.CONFIG_FILE,
+          true, "Sentry Service configuration file");
+      CommandLine commandLine = parser.parse(options, args);
+      String configFileName = commandLine.getOptionValue(ServiceConstants.
+          ServiceArgs.CONFIG_FILE);
+      File configFile = null;
+      if (configFileName == null) {
+        throw new IllegalArgumentException("Usage: " + ServiceConstants.ServiceArgs.CONFIG_FILE +
+            " path/to/sentry-service.xml");
+      } else if(!((configFile = new File(configFileName)).isFile() && configFile.canRead())) {
+        throw new IllegalArgumentException("Cannot read configuration file " + configFile);
       }
-    });
+      Configuration conf = new Configuration(false);
+      conf.addResource(configFile.toURL());
+      final SentryService server = new SentryService(conf);
+      server.start();
+      Runtime.getRuntime().addShutdownHook(new Thread() {
+        @Override
+        public void run() {
+          LOGGER.info("ShutdownHook shutting down server");
+          try {
+            server.stop();
+          } catch (Throwable t) {
+            LOGGER.error("Error stopping SentryService", t);
+          }
+        }
+      });
+    }
   }
 }

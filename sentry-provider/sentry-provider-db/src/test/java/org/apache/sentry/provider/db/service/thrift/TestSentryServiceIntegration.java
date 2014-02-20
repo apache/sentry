@@ -22,8 +22,8 @@ import com.google.common.base.Preconditions;
 
 import java.util.Set;
 
-import org.apache.sentry.service.thrift.Constants.ThriftConstants;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
+import org.apache.sentry.service.thrift.ServiceConstants.ThriftConstants;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

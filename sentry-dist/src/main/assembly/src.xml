@@ -46,6 +46,7 @@
         <include>org.apache.sentry:sentry-provider</include>
         <include>org.apache.sentry:sentry-provider-common</include>
         <include>org.apache.sentry:sentry-provider-file</include>
+        <include>org.apache.sentry:sentry-provider-db</include>
         <include>org.apache.sentry:sentry-policy</include>
         <include>org.apache.sentry:sentry-policy-common</include>
         <include>org.apache.sentry:sentry-policy-db</include>
@@ -110,11 +111,17 @@
 
       <includes>
         <include>.gitignore</include>
-        <include>bin/**</include>
         <include>conf/**</include>
         <include>pom.xml</include>
         <include>LICENSE.txt</include>
         <include>NOTICE</include>
+      </includes>
+    </fileSet>
+    <fileSet>
+      <directory>../</directory>
+      <fileMode>755</fileMode>
+      <includes>
+        <include>bin/**</include>
       </includes>
     </fileSet>
   </fileSets>
