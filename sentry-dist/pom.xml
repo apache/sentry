@@ -81,7 +81,7 @@ limitations under the License.
             </goals>
             <inherited>false</inherited>
             <configuration>
-              <finalName>sentry-${project.version}</finalName>
+              <finalName>apache-sentry-${project.version}</finalName>
               <descriptors>
                 <descriptor>src/main/assembly/src.xml</descriptor>
               </descriptors>
