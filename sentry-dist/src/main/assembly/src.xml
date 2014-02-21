@@ -22,100 +22,45 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2 http://maven.apache.org/xsd/assembly-1.1.2.xsd">
 
-  <id>dist</id>
+  <id>src</id>
 
   <formats>
     <format>tar.gz</format>
   </formats>
 
-  <baseDirectory>sentry-${project.version}</baseDirectory>
+  <baseDirectory>apache-sentry-${project.version}-src</baseDirectory>
 
-  <moduleSets>
-
-    <moduleSet>
-      <useAllReactorProjects>true</useAllReactorProjects>
-
-      <includes>
-        <include>org.apache.sentry:sentry-binding</include>
-        <include>org.apache.sentry:sentry-binding-hive</include>
-        <include>org.apache.sentry:sentry-binding-solr</include>
-        <include>org.apache.sentry:sentry-core</include>
-        <include>org.apache.sentry:sentry-core-common</include>
-        <include>org.apache.sentry:sentry-core-model-db</include>
-        <include>org.apache.sentry:sentry-core-model-search</include>
-        <include>org.apache.sentry:sentry-provider</include>
-        <include>org.apache.sentry:sentry-provider-common</include>
-        <include>org.apache.sentry:sentry-provider-file</include>
-        <include>org.apache.sentry:sentry-policy</include>
-        <include>org.apache.sentry:sentry-policy-common</include>
-        <include>org.apache.sentry:sentry-policy-db</include>
-        <include>org.apache.sentry:sentry-policy-search</include>
-        <include>org.apache.sentry:sentry-tests</include>
-        <include>org.apache.sentry:sentry-tests-hive</include>
-        <include>org.apache.sentry:sentry-dist</include>
-      </includes>
-
-      <binaries>
-        <unpack>false</unpack>
-        <outputDirectory>lib</outputDirectory>
-
-        <dependencySets>
-          <dependencySet>
-            <useProjectArtifact>false</useProjectArtifact>
-            <outputDirectory>lib</outputDirectory>
-          </dependencySet>
-        </dependencySets>
-      </binaries>
-
-      <sources>
-        <includeModuleDirectory>true</includeModuleDirectory>
-        <excludeSubModuleDirectories>false</excludeSubModuleDirectories>
-
-        <fileSets>
-          <fileSet>
-            <excludes>
-              <exclude>target/**</exclude>
-              <exclude>*/target/**</exclude>
-              <exclude>.classpath</exclude>
-              <exclude>*/.classpath</exclude>
-              <exclude>.project</exclude>
-              <exclude>*/.project</exclude>
-              <exclude>.settings/**</exclude>
-              <exclude>*/.settings/**</exclude>
-            </excludes>
-          </fileSet>
-        </fileSets>
-      </sources>
-
-    </moduleSet>
-
-  </moduleSets>
   <fileSets>
     <fileSet>
-      <directory>../</directory>
+      <directory>${project.parent.basedir}</directory>
 
       <excludes>
-        <exclude>sentry-binding/**</exclude>
-        <exclude>sentry-core/**</exclude>
-        <exclude>sentry-dist/**</exclude>
-        <exclude>sentry-provider/**</exclude>
-        <exclude>sentry-policy/**</exclude>
-        <exclude>sentry-test/**</exclude>
         <exclude>**/target/**</exclude>
         <exclude>**/.classpath</exclude>
         <exclude>**/.project</exclude>
         <exclude>**/.settings/**</exclude>
-        <exclude>lib/**</exclude>
+        <exclude>sentry-tests/sentry-tests-hive/thirdparty/**</exclude>
       </excludes>
 
       <includes>
-        <include>.gitignore</include>
         <include>bin/**</include>
+        <include>**/.gitignore</include>
         <include>conf/**</include>
         <include>pom.xml</include>
-        <include>LICENSE.txt</include>
-        <include>NOTICE</include>
+        <include>CHANGELOG*</include>
+        <include>DISCLAIMER*</include>
+        <include>LICENSE*</include>
+        <include>NOTICE*</include>
+        <include>README*</include>
+        <include>dev-support/**</include>
+        <include>sentry-binding/**</include>
+        <include>sentry-core/**</include>
+        <include>sentry-dist/**</include>
+        <include>sentry-provider/**</include>
+        <include>sentry-policy/**</include>
+        <include>sentry-tests/**</include>
       </includes>
+      <outputDirectory>/</outputDirectory>
     </fileSet>
   </fileSets>
 
