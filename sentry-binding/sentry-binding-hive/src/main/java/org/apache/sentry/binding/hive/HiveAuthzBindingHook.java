@@ -62,6 +62,7 @@ import org.apache.sentry.binding.hive.authz.HiveAuthzPrivilegesMap;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.core.common.Action;
 import org.apache.sentry.core.common.Subject;
+import org.apache.sentry.core.common.utils.PathUtils;
 import org.apache.sentry.core.model.db.AccessURI;
 import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.core.model.db.DBModelAction;
@@ -247,41 +248,16 @@ implements HiveDriverFilterHook {
   @VisibleForTesting
   protected static AccessURI parseURI(String uri, boolean isLocal)
       throws SemanticException {
-    if (!(uri.startsWith("file://") || uri.startsWith("hdfs://"))) {
-      if (uri.startsWith("file:")) {
-        uri = uri.replace("file:", "file://");
-      } else if (uri.startsWith("/")) {
-        String wareHouseDir = SessionState.get().getConf()
-            .get(ConfVars.METASTOREWAREHOUSE.varname);
-        if (wareHouseDir.startsWith("hdfs:")) {
-          URI warehouse = toDFSURI(wareHouseDir);
-          uri = warehouse.getScheme() + "://" + warehouse.getAuthority() + uri;
-        } else if (wareHouseDir.startsWith("file:")) {
-          uri = "file://" + uri;
-        } else {
-          if (isLocal) {
-            uri = "file://" + uri;
-          } else {
-            uri = "hdfs://" + uri;
-          }
-        }
-      }
-      return new AccessURI(uri);
+    try {
+      HiveConf conf = SessionState.get().getConf();
+      String warehouseDir = conf.getVar(ConfVars.METASTOREWAREHOUSE);
+      return new AccessURI(PathUtils.parseDFSURI(warehouseDir, uri, isLocal));
+    } catch (Exception e) {
+      throw new SemanticException("Error parsing URI " + uri + ": " +
+        e.getMessage(), e);
     }
-    return new AccessURI(uri);
   }
 
-    private static URI toDFSURI(String s) throws SemanticException {
-    try {
-      URI uri = new URI(s);
-      if(uri.getScheme() == null || uri.getAuthority() == null) {
-        throw new SemanticException("Invalid URI " + s + ". No scheme or authority.");
-      }
-      return uri;
-    } catch (URISyntaxException e) {
-      throw new SemanticException("Invalid URI " + s, e);
-    }
-  }
   /**
    * Post analyze hook that invokes hive auth bindings
    */
@@ -366,6 +342,14 @@ implements HiveDriverFilterHook {
       }
 
       for(ReadEntity readEntity:inputs) {
+      	 // If this is a UDF, then check whether its allowed to be executed
+         // TODO: when we support execute privileges on UDF, this can be removed.
+        if (isUDF(readEntity)) {
+          if (isBuiltinUDF(readEntity)) {
+            checkUDFWhiteList(readEntity.getUDF().getDisplayName());
+          }
+          continue;
+        }
         List<DBModelAuthorizable> entityHierarchy = new ArrayList<DBModelAuthorizable>();
         entityHierarchy.add(hiveAuthzBinding.getAuthServer());
         entityHierarchy.addAll(getAuthzHierarchyFromEntity(readEntity));
@@ -456,7 +440,7 @@ implements HiveDriverFilterHook {
   private boolean isUDF(ReadEntity readEntity) {
     return readEntity.getType().equals(Type.UDF);
   }
-  
+
   private boolean isBuiltinUDF(ReadEntity readEntity) {
     return readEntity.getType().equals(Type.UDF) &&
         readEntity.getUDF().isNative();
@@ -525,19 +509,19 @@ implements HiveDriverFilterHook {
       if (writeEntity.getTyp().equals(Type.DFS_DIR)
           || writeEntity.getTyp().equals(Type.LOCAL_DIR)) {
         HiveConf conf = SessionState.get().getConf();
-        String scratchDirPath = conf.getVar(HiveConf.ConfVars.SCRATCHDIR);
-        if (!scratchDirPath.endsWith(File.pathSeparator)) {
-          scratchDirPath = scratchDirPath + File.pathSeparator;
-        }
-        if (writeEntity.getLocation().getPath().startsWith(scratchDirPath)) {
+        String warehouseDir = conf.getVar(ConfVars.METASTOREWAREHOUSE);
+        URI scratchURI = new URI(PathUtils.parseDFSURI(warehouseDir,
+          conf.getVar(HiveConf.ConfVars.SCRATCHDIR)));
+        URI requestURI = new URI(PathUtils.parseDFSURI(warehouseDir,
+          writeEntity.getLocation().getPath()));
+        LOG.debug("scratchURI = " + scratchURI + ", requestURI = " + requestURI);
+        if (PathUtils.impliesURI(scratchURI, requestURI)) {
           return true;
         }
-
-        String localScratchDirPath = conf.getVar(HiveConf.ConfVars.LOCALSCRATCHDIR);
-        if (!scratchDirPath.endsWith(File.pathSeparator)) {
-          localScratchDirPath = localScratchDirPath + File.pathSeparator;
-        }
-        if (writeEntity.getLocation().getPath().startsWith(localScratchDirPath)) {
+        URI localScratchURI = new URI(PathUtils.parseLocalURI(conf.getVar(HiveConf.ConfVars.LOCALSCRATCHDIR)));
+        URI localRequestURI = new URI(PathUtils.parseLocalURI(writeEntity.getLocation().getPath()));
+        LOG.debug("localScratchURI = " + localScratchURI + ", localRequestURI = " + localRequestURI);
+        if (PathUtils.impliesURI(localScratchURI, localRequestURI)) {
           return true;
         }
       }

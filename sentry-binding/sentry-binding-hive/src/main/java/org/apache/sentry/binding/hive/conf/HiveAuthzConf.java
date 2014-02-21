@@ -91,7 +91,7 @@ public class HiveAuthzConf extends Configuration {
 
   private static final String HIVE_UDF_WHITE_LIST =
     "abs,acos,and,array,array_contains,ascii,asin,assert_true,atan,avg," +
-    "between,bin,case,ceil,ceiling,coalesce,collect_set,compute_stats,concat,concat_ws," +
+    "between,bin,case,cast,ceil,ceiling,coalesce,collect_set,compute_stats,concat,concat_ws," +
     "context_ngrams,conv,corr,cos,count,covar_pop,covar_samp,create_union,date_add,date_sub," +
     "datediff,day,dayofmonth,degrees,div,e,elt,ewah_bitmap,ewah_bitmap_and,ewah_bitmap_empty," +
     "ewah_bitmap_or,exp,explode,field,find_in_set,floor,format_number,from_unixtime," +

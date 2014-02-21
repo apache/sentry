@@ -16,24 +16,18 @@
  */
 package org.apache.sentry.provider.common;
 
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
 
-import org.apache.sentry.core.common.Action;
-import org.apache.sentry.core.common.Authorizable;
-import org.apache.sentry.core.common.Subject;
+/**
+ * GroupMappingService that always returns an empty list of groups
+ */
+public class NoGroupMappingService implements GroupMappingService {
 
-public class NoAuthorizationProvider implements AuthorizationProvider {
-  private GroupMappingService noGroupMappingService = new NoGroupMappingService();
-
-  @Override
-  public boolean hasAccess(Subject subject, List<? extends Authorizable> authorizableHierarchy,
-      Set<? extends Action> actions) {
-    return false;
-  }
-
-  @Override
-  public GroupMappingService getGroupMapping() {
-    return noGroupMappingService;
+  /**
+   * @return empty list of groups for every user
+   */
+  public List<String> getGroups(String user) {
+    return new LinkedList<String>();
   }
 }

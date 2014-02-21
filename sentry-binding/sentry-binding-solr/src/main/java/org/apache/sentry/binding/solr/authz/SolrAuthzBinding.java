@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
@@ -32,6 +33,7 @@ import org.apache.sentry.binding.solr.conf.SolrAuthzConf;
 import org.apache.sentry.binding.solr.conf.SolrAuthzConf.AuthzConfVars;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.common.AuthorizationProvider;
+import org.apache.sentry.provider.common.GroupMappingService;
 import org.apache.sentry.provider.common.ProviderBackend;
 
 import org.slf4j.Logger;
@@ -54,10 +56,12 @@ public class SolrAuthzBinding {
 
   private final SolrAuthzConf authzConf;
   private final AuthorizationProvider authProvider;
+  private final GroupMappingService groupMapping;
 
   public SolrAuthzBinding (SolrAuthzConf authzConf) throws Exception {
     this.authzConf = authzConf;
     this.authProvider = getAuthProvider();
+    this.groupMapping = authProvider.getGroupMapping();
   }
 
   // Instantiate the configured authz provider
@@ -120,6 +124,15 @@ public class SolrAuthzBinding {
       throw new SentrySolrAuthorizationException("User " + subject.getName() +
         " does not have privileges for " + collection.getName());
     }
+  }
+
+  /**
+   * Get the list of groups the user belongs to
+   * @param user
+   * @return list of groups the user belongs to
+   */
+  public List<String> getGroups(String user) {
+    return groupMapping.getGroups(user);
   }
 
   private Configuration getConf() throws IOException {

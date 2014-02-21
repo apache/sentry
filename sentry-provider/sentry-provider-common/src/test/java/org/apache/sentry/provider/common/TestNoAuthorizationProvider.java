@@ -16,24 +16,24 @@
  */
 package org.apache.sentry.provider.common;
 
-import java.util.List;
-import java.util.Set;
+import org.junit.Test;
 
-import org.apache.sentry.core.common.Action;
-import org.apache.sentry.core.common.Authorizable;
-import org.apache.sentry.core.common.Subject;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
-public class NoAuthorizationProvider implements AuthorizationProvider {
-  private GroupMappingService noGroupMappingService = new NoGroupMappingService();
+/**
+ * Tests around the NoAuthorizationProvider
+ */
+public class TestNoAuthorizationProvider {
 
-  @Override
-  public boolean hasAccess(Subject subject, List<? extends Authorizable> authorizableHierarchy,
-      Set<? extends Action> actions) {
-    return false;
-  }
+  @Test
+  public void testNoAuthorizationProvider() {
+    NoAuthorizationProvider nap = new NoAuthorizationProvider();
+    assertFalse(nap.hasAccess(null, null, null));
 
-  @Override
-  public GroupMappingService getGroupMapping() {
-    return noGroupMappingService;
+    GroupMappingService gms = nap.getGroupMapping();
+    assertEquals(gms.getGroups(null).size(), 0);
+    assertEquals(gms.getGroups("").size(), 0);
+    assertEquals(gms.getGroups("a").size(), 0);
   }
 }

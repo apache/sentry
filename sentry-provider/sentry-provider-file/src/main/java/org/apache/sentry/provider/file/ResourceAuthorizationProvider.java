@@ -116,4 +116,9 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
       }
     });
   }
+
+  @Override
+  public GroupMappingService getGroupMapping() {
+    return groupService;
+  }
 }

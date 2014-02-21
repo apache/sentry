@@ -38,4 +38,10 @@ public interface AuthorizationProvider {
    */
   public boolean hasAccess(Subject subject, List<? extends Authorizable> authorizableHierarchy, Set<? extends Action> actions);
 
+  /***
+   * Get the GroupMappingService used by the AuthorizationProvider
+   *
+   * @return GroupMappingService used by the AuthorizationProvider
+   */
+  public GroupMappingService getGroupMapping();
 }
