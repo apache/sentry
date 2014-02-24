@@ -277,7 +277,17 @@ implements HiveDriverFilterHook {
       authorizeWithHiveBindings(context, stmtAuthObject, stmtOperation);
     } catch (AuthorizationException e) {
       executeOnFailureHooks(context, stmtOperation, e);
-      throw new SemanticException("No valid privileges", e);
+      String permsRequired = "";
+      for (String perm : hiveAuthzBinding.getLastQueryPermissionErrors()) {
+        permsRequired += perm + ";";
+      }
+      context.getConf().set(HiveAuthzConf.HIVE_SENTRY_AUTH_ERRORS, permsRequired);
+      throw new SemanticException(HiveAuthzConf.HIVE_SENTRY_PRIVILEGE_ERROR_MESSAGE, e);
+    }
+    if ("true".equalsIgnoreCase(context.getConf().
+        get(HiveAuthzConf.HIVE_SENTRY_MOCK_COMPILATION))) {
+      throw new SemanticException(HiveAuthzConf.HIVE_SENTRY_MOCK_ERROR + " Mock query compilation aborted. Set " +
+          HiveAuthzConf.HIVE_SENTRY_MOCK_COMPILATION + " to 'false' for normal query processing");
     }
     hiveAuthzBinding.set(context.getConf());
   }

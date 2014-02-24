@@ -17,8 +17,12 @@
 package org.apache.sentry.provider.common;
 
 import javax.annotation.Nullable;
+
 import java.util.List;
+
+import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.policy.common.RoleValidator;
+
 import com.google.common.collect.ImmutableSet;
 
 /**
@@ -36,4 +40,7 @@ public interface ProviderBackend {
    * least once prior.
    */
   public Roles getRoles();
+
+  public void validatePolicy(List<? extends RoleValidator> validators, boolean strictValidation)
+      throws SentryConfigurationException;
 }

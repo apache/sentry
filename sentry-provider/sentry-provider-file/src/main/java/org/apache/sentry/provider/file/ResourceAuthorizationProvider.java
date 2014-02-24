@@ -21,11 +21,13 @@ import static org.apache.sentry.provider.file.PolicyFileConstants.KV_JOINER;
 import static org.apache.sentry.provider.file.PolicyFileConstants.PRIVILEGE_NAME;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
 import org.apache.sentry.core.common.Action;
 import org.apache.sentry.core.common.Authorizable;
+import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.policy.common.PermissionFactory;
 import org.apache.sentry.policy.common.PolicyEngine;
@@ -46,6 +48,7 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
   private final GroupMappingService groupService;
   private final PolicyEngine policy;
   private final PermissionFactory permissionFactory;
+  private final List<String> lastFailedPermissions = new ArrayList<String>();
 
   public ResourceAuthorizationProvider(PolicyEngine policy,
       GroupMappingService groupService) {
@@ -80,16 +83,16 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
 
   private boolean doHasAccess(Subject subject,
       List<? extends Authorizable> authorizables, Set<? extends Action> actions) {
-    List<String> groups = groupService.getGroups(subject.getName());
+    List<String> groups =  getGroups(subject);
     List<String> hierarchy = new ArrayList<String>();
     for (Authorizable authorizable : authorizables) {
       hierarchy.add(KV_JOINER.join(authorizable.getTypeName(), authorizable.getName()));
     }
     Iterable<Permission> permissions = getPermissions(authorizables, groups);
-    for (Action action : actions) {
-      String requestPermission = AUTHORIZABLE_JOINER.join(hierarchy);
-      requestPermission = AUTHORIZABLE_JOINER.join(requestPermission,
-          KV_JOINER.join(PRIVILEGE_NAME, action.getValue()));
+    List<String> requestPermissions = buildPermissions(authorizables, actions);
+    lastFailedPermissions.clear();
+
+    for (String requestPermission : requestPermissions) {
       for (Permission permission : permissions) {
         /*
          * Does the permission granted in the policy file imply the requested action?
@@ -104,6 +107,7 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
         }
       }
     }
+    lastFailedPermissions.addAll(requestPermissions);
     return false;
   }
 
@@ -121,4 +125,47 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
   public GroupMappingService getGroupMapping() {
     return groupService;
   }
+
+  private List<String> getGroups(Subject subject) {
+    return groupService.getGroups(subject.getName());
+  }
+
+  @Override
+  public void validateResource(boolean strictValidation) throws SentryConfigurationException {
+    policy.validatePolicy(strictValidation);
+  }
+
+  @Override
+  public Set<String> listPermissionsForSubject(Subject subject) throws SentryConfigurationException {
+    return policy.listPermissions(getGroups(subject));
+  }
+
+  @Override
+  public Set<String> listPermissionsForGroup(String groupName) throws SentryConfigurationException {
+    return policy.listPermissions(groupName);
+  }
+
+  @Override
+  public List<String> getLastFailedPermissions() {
+    return lastFailedPermissions;
+  }
+
+  private List<String> buildPermissions(List<? extends Authorizable> authorizables,
+      Set<? extends Action> actions) {
+    List<String> hierarchy = new ArrayList<String>();
+    List<String> requestedPermissions = new ArrayList<String>();
+
+    for (Authorizable authorizable : authorizables) {
+      hierarchy.add(KV_JOINER.join(authorizable.getTypeName(), authorizable.getName()));
+    }
+
+    for (Action action : actions) {
+      String requestPermission = AUTHORIZABLE_JOINER.join(hierarchy);
+      requestPermission = AUTHORIZABLE_JOINER.join(requestPermission,
+          KV_JOINER.join(PRIVILEGE_NAME, action.getValue()));
+      requestedPermissions.add(requestPermission);
+    }
+    return requestedPermissions;
+  }
+
 }

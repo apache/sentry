@@ -209,4 +209,8 @@ public class Context {
   public String getProperty(String propName) {
     return hiveServer.getProperty(propName);
   }
+
+  public String getConnectionURL() {
+    return hiveServer.getURL();
+  }
 }

@@ -21,6 +21,7 @@ import java.util.Set;
 
 import org.apache.sentry.core.common.Action;
 import org.apache.sentry.core.common.Authorizable;
+import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.core.common.Subject;
 
 public interface AuthorizationProvider {
@@ -44,4 +45,33 @@ public interface AuthorizationProvider {
    * @return GroupMappingService used by the AuthorizationProvider
    */
   public GroupMappingService getGroupMapping();
+
+  /***
+   * Validate the policy file format for syntax and semantic errors
+   * @param strictValidation
+   * @throws SentryConfigurationException
+   */
+  public void validateResource(boolean strictValidation) throws SentryConfigurationException;
+
+  /***
+   * Returns the list privileges for the given subject
+   * @param subject
+   * @return
+   * @throws SentryConfigurationException
+   */
+  public Set<String> listPermissionsForSubject(Subject subject) throws SentryConfigurationException;
+
+  /**
+   * Returns the list privileges for the given group
+   * @param groupName
+   * @return
+   * @throws SentryConfigurationException
+   */
+  public Set<String> listPermissionsForGroup(String groupName) throws SentryConfigurationException;
+
+  /***
+   * Returns the list of missing privileges of the last access request
+   * @return
+   */
+  public List<String> getLastFailedPermissions();
 }

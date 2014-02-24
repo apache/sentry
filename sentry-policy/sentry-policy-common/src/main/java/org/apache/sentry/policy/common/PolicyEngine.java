@@ -20,7 +20,9 @@ package org.apache.sentry.policy.common;
 import java.util.List;
 
 import org.apache.sentry.core.common.Authorizable;
+import org.apache.sentry.core.common.SentryConfigurationException;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 
 public interface PolicyEngine {
@@ -41,6 +43,15 @@ public interface PolicyEngine {
    * @param group name
    * @return non-null immutable set of permissions
    */
-  public ImmutableSetMultimap<String, String> getPermissions(List<? extends Authorizable> authorizables, List<String> groups);
+  public ImmutableSetMultimap<String, String> getPermissions(
+      List<? extends Authorizable> authorizables, List<String> groups)
+      throws SentryConfigurationException;
 
+  public ImmutableSet<String> listPermissions(String groupName)
+    throws SentryConfigurationException;
+
+  public ImmutableSet<String> listPermissions(List<String> groupName)
+    throws SentryConfigurationException;
+
+  public void validatePolicy(boolean strictValidation) throws SentryConfigurationException;
 }

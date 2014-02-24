@@ -16,11 +16,14 @@
  */
 package org.apache.sentry.provider.common;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.apache.sentry.core.common.Action;
 import org.apache.sentry.core.common.Authorizable;
+import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.core.common.Subject;
 
 public class NoAuthorizationProvider implements AuthorizationProvider {
@@ -36,4 +39,27 @@ public class NoAuthorizationProvider implements AuthorizationProvider {
   public GroupMappingService getGroupMapping() {
     return noGroupMappingService;
   }
+
+  @Override
+  public void validateResource(boolean strictValidation) throws SentryConfigurationException {
+    return;
+  }
+
+  @Override
+  public Set<String> listPermissionsForSubject(Subject subject)
+      throws SentryConfigurationException {
+    return new HashSet<String>();
+  }
+
+  @Override
+  public Set<String> listPermissionsForGroup(String groupName)
+      throws SentryConfigurationException {
+    return new HashSet<String>();
+  }
+
+  @Override
+  public List<String> getLastFailedPermissions() {
+    return new ArrayList<String>();
+  }
+
 }
