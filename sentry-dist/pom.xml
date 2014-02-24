@@ -84,6 +84,7 @@ limitations under the License.
               <finalName>sentry-${project.version}</finalName>
               <descriptors>
                 <descriptor>src/main/assembly/src.xml</descriptor>
+                <descriptor>src/main/assembly/bin.xml</descriptor>
               </descriptors>
             </configuration>
           </execution>
