@@ -16,12 +16,14 @@
  */
 package org.apache.sentry.binding.hive.conf;
 
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hive.conf.HiveConf;
 import org.mortbay.log.Log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +38,10 @@ public class HiveAuthzConf extends Configuration {
   public static final String HIVE_SENTRY_CONF_URL = "hive.sentry.conf.url";
   public static final String HIVE_ACCESS_SUBJECT_NAME = "hive.access.subject.name";
   public static final String HIVE_SENTRY_SUBJECT_NAME = "hive.sentry.subject.name";
+  public static final String HIVE_SENTRY_AUTH_ERRORS = "sentry.hive.authorization.errors";
+  public static final String HIVE_SENTRY_MOCK_COMPILATION = "hive.sentry.mock.compilation";
+  public static final String HIVE_SENTRY_MOCK_ERROR = "hive.sentry.mock.error";
+  public static final String HIVE_SENTRY_PRIVILEGE_ERROR_MESSAGE = "No valid privileges";
 
   /**
    * Config setting definitions
@@ -132,11 +138,13 @@ public class HiveAuthzConf extends Configuration {
   private static final Logger LOG = LoggerFactory
       .getLogger(HiveAuthzConf.class);
   public static final String AUTHZ_SITE_FILE = "sentry-site.xml";
+  private final String hiveAuthzSiteFile;
 
   public HiveAuthzConf(URL hiveAuthzSiteURL) {
     super(false);
     addResource(hiveAuthzSiteURL);
     applySystemProperties();
+    this.hiveAuthzSiteFile = hiveAuthzSiteURL.toString();
   }
   /**
    * Apply system properties to this object if the property name is defined in ConfVars
@@ -181,5 +189,48 @@ public class HiveAuthzConf extends Configuration {
       }
     }
     return retVal;
+  }
+
+  public String getHiveAuthzSiteFile() {
+    return hiveAuthzSiteFile;
+  }
+
+  /**
+   * Extract the authz config file path from given hive conf and load the authz config
+   * @param hiveConf
+   * @return
+   * @throws IllegalArgumentException
+   */
+  public static HiveAuthzConf getAuthzConf(HiveConf hiveConf)
+    throws IllegalArgumentException {
+    boolean depreicatedConfigFile = false;
+
+    String hiveAuthzConf = hiveConf.get(HiveAuthzConf.HIVE_SENTRY_CONF_URL);
+    if (hiveAuthzConf == null
+        || (hiveAuthzConf = hiveAuthzConf.trim()).isEmpty()) {
+      hiveAuthzConf = hiveConf.get(HiveAuthzConf.HIVE_ACCESS_CONF_URL);
+      depreicatedConfigFile = true;
+    }
+
+    if (hiveAuthzConf == null
+        || (hiveAuthzConf = hiveAuthzConf.trim()).isEmpty()) {
+      throw new IllegalArgumentException("Configuration key "
+          + HiveAuthzConf.HIVE_SENTRY_CONF_URL + " value '" + hiveAuthzConf
+          + "' is invalid.");
+    }
+
+    try {
+      return new HiveAuthzConf(new URL(hiveAuthzConf));
+    } catch (MalformedURLException e) {
+      if (depreicatedConfigFile) {
+        throw new IllegalArgumentException("Configuration key "
+            + HiveAuthzConf.HIVE_ACCESS_CONF_URL
+            + " specifies a malformed URL '" + hiveAuthzConf + "'", e);
+      } else {
+        throw new IllegalArgumentException("Configuration key "
+            + HiveAuthzConf.HIVE_SENTRY_CONF_URL
+            + " specifies a malformed URL '" + hiveAuthzConf + "'", e);
+      }
+    }
   }
 }

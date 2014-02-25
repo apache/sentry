@@ -88,6 +88,7 @@ limitations under the License.
               <finalName>apache-sentry-${project.version}</finalName>
               <descriptors>
                 <descriptor>src/main/assembly/src.xml</descriptor>
+                <descriptor>src/main/assembly/bin.xml</descriptor>
               </descriptors>
             </configuration>
           </execution>

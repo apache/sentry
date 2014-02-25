@@ -25,6 +25,7 @@ import static org.apache.sentry.provider.file.PolicyFileConstants.USERS;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.sentry.core.common.Authorizable;
+import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.policy.common.RoleValidator;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.Roles;
@@ -70,6 +72,8 @@ public class SimpleFileProviderBackend implements ProviderBackend {
   private Roles rolesStorage;
   private final Configuration conf;
   private boolean processed;
+  private final List<String> configErrors = new ArrayList<String>();
+  private final List<String> configWarnings = new ArrayList<String>();
 
   public SimpleFileProviderBackend(String resourcePath) throws IOException {
     this(new Configuration(), resourcePath);
@@ -92,11 +96,26 @@ public class SimpleFileProviderBackend implements ProviderBackend {
    * {@inheritDoc}
    */
   public void process(List<? extends RoleValidator> validators) {
+    configErrors.clear();
+    perDbResources.clear();
+    Ini ini;
+
     LOGGER.info("Parsing " + resourcePath);
     Roles roles = new Roles();
     try {
       perDbResources.clear();
-      Ini ini = PolicyFiles.loadFromPath(fileSystem, resourcePath);
+      try {
+        ini = PolicyFiles.loadFromPath(fileSystem, resourcePath);
+      } catch (IOException e) {
+        configErrors.add("Failed to read policy file " + resourcePath +
+          " Error: " + e.getMessage());
+        throw new SentryConfigurationException("Error loading policy file " + resourcePath, e);
+      } catch (IllegalArgumentException e) {
+        configErrors.add("Failed to read policy file " + resourcePath +
+          " Error: " + e.getMessage());
+        throw new SentryConfigurationException("Error loading policy file " + resourcePath, e);
+      }
+
       if(LOGGER.isDebugEnabled()) {
         for(String sectionName : ini.getSectionNames()) {
           LOGGER.debug("Section: " + sectionName);
@@ -109,7 +128,7 @@ public class SimpleFileProviderBackend implements ProviderBackend {
       }
       ImmutableSetMultimap<String, String> globalRoles;
       Map<String, ImmutableSetMultimap<String, String>> perDatabaseRoles = Maps.newHashMap();
-      globalRoles = parseIni(null, ini, validators);
+      globalRoles = parseIni(null, ini, validators, resourcePath);
       Ini.Section filesSection = ini.getSection(DATABASES);
       if(filesSection == null) {
         LOGGER.info("Section " + DATABASES + " needs no further processing");
@@ -124,21 +143,27 @@ public class SimpleFileProviderBackend implements ProviderBackend {
             LOGGER.info("Parsing " + perDbPolicy);
             Ini perDbIni = PolicyFiles.loadFromPath(perDbPolicy.getFileSystem(conf), perDbPolicy);
             if(perDbIni.containsKey(USERS)) {
+              configErrors.add("Per-db policy file cannot contain " + USERS + " section in " +  perDbPolicy);
               throw new ConfigurationException("Per-db policy files cannot contain " + USERS + " section");
             }
             if(perDbIni.containsKey(DATABASES)) {
+              configErrors.add("Per-db policy files cannot contain " + DATABASES
+                  + " section in " + perDbPolicy);
               throw new ConfigurationException("Per-db policy files cannot contain " + DATABASES + " section");
             }
-            ImmutableSetMultimap<String, String> currentDbRoles = parseIni(database, perDbIni, validators);
+            ImmutableSetMultimap<String, String> currentDbRoles = parseIni(database, perDbIni, validators, perDbPolicy);
             perDatabaseRoles.put(database, currentDbRoles);
             perDbResources.add(perDbPolicy);
           } catch (Exception e) {
+            configErrors.add("Failed to read per-DB policy file " + perDbPolicy +
+               " Error: " + e.getMessage());
             LOGGER.error("Error processing key " + entry.getKey() + ", skipping " + entry.getValue(), e);
           }
         }
       }
       roles = new Roles(globalRoles, ImmutableMap.copyOf(perDatabaseRoles));
     } catch (Exception e) {
+      configErrors.add("Error processing file " + resourcePath + e.getMessage());
       LOGGER.error("Error processing file, ignoring " + resourcePath, e);
     }
     rolesStorage = roles;
@@ -167,26 +192,32 @@ public class SimpleFileProviderBackend implements ProviderBackend {
     return result;
   }
 
-  private ImmutableSetMultimap<String, String> parseIni(String database, Ini ini, List<? extends RoleValidator> validators) {
+  private ImmutableSetMultimap<String, String> parseIni(String database, Ini ini, List<? extends RoleValidator> validators,
+      Path policyPath) {
     Ini.Section privilegesSection = ini.getSection(ROLES);
     boolean invalidConfiguration = false;
     if (privilegesSection == null) {
-      LOGGER.warn("Section {} empty for {}", ROLES, resourcePath);
+      String errMsg = String.format("Section %s empty for %s", ROLES, policyPath);
+      LOGGER.warn(errMsg);
+      configErrors.add(errMsg);
       invalidConfiguration = true;
     }
     Ini.Section groupsSection = ini.getSection(GROUPS);
     if (groupsSection == null) {
-      LOGGER.warn("Section {} empty for {}", GROUPS, resourcePath);
+      String warnMsg = String.format("Section %s empty for %s", GROUPS, policyPath);
+      LOGGER.warn(warnMsg);
+      configErrors.add(warnMsg);
       invalidConfiguration = true;
     }
     if (!invalidConfiguration) {
-      return parsePermissions(database, privilegesSection, groupsSection, validators);
+      return parsePermissions(database, privilegesSection, groupsSection, validators, policyPath);
     }
     return ImmutableSetMultimap.of();
   }
 
   private ImmutableSetMultimap<String, String> parsePermissions(@Nullable String database,
-      Ini.Section rolesSection, Ini.Section groupsSection, List<? extends RoleValidator> validators) {
+      Ini.Section rolesSection, Ini.Section groupsSection, List<? extends RoleValidator> validators,
+      Path policyPath) {
     ImmutableSetMultimap.Builder<String, String> resultBuilder = ImmutableSetMultimap.builder();
     Multimap<String, String> roleNameToPrivilegeMap = HashMultimap
         .create();
@@ -195,16 +226,21 @@ public class SimpleFileProviderBackend implements ProviderBackend {
       String roleValue = Strings.nullToEmpty(entry.getValue()).trim();
       boolean invalidConfiguration = false;
       if (roleName.isEmpty()) {
-        LOGGER.warn("Empty role name encountered in {}", resourcePath);
+        String errMsg = String.format("Empty role name encountered in %s", policyPath);
+        LOGGER.warn(errMsg);
+        configErrors.add(errMsg);
         invalidConfiguration = true;
       }
       if (roleValue.isEmpty()) {
-        LOGGER.warn("Empty role value encountered in {}", resourcePath);
+        String errMsg = String.format("Empty role value encountered in %s", policyPath);
+        LOGGER.warn(errMsg);
+        configErrors.add(errMsg);
         invalidConfiguration = true;
       }
       if (roleNameToPrivilegeMap.containsKey(roleName)) {
-        LOGGER.warn("Role {} defined twice in {}", roleName,
-            resourcePath);
+        String warnMsg = String.format("Role %s defined twice in %s", roleName, policyPath);
+        LOGGER.warn(warnMsg);
+        configWarnings.add(warnMsg);
       }
       Set<String> roles = PermissionUtils
           .toPermissionStrings(roleValue);
@@ -227,8 +263,10 @@ public class SimpleFileProviderBackend implements ProviderBackend {
           resolvedGroupPrivileges.addAll(roleNameToPrivilegeMap
               .get(roleName));
         } else {
-          LOGGER.warn("Role {} for group {} does not exist in privileges section in {}",
-              new Object[] { roleName, groupName, resourcePath });
+          String warnMsg = String.format("Role %s for group %s does not exist in privileges section in %s",
+                  roleName, groupName, policyPath);
+          LOGGER.warn(warnMsg);
+          configWarnings.add(warnMsg);
         }
       }
       resultBuilder.putAll(groupName, resolvedGroupPrivileges);
@@ -244,4 +282,17 @@ public class SimpleFileProviderBackend implements ProviderBackend {
 
     return rolesStorage;
   }
+
+  @Override
+  public void validatePolicy(List<? extends RoleValidator> validators, boolean strictValidation)
+      throws SentryConfigurationException {
+    if ((strictValidation && !configWarnings.isEmpty()) || !configErrors.isEmpty()) {
+      configErrors.add("Failed to process global policy file " + resourcePath);
+      SentryConfigurationException e = new SentryConfigurationException("");
+      e.setConfigErrors(configErrors);
+      e.setConfigWarnings(configWarnings);
+      throw e;
+    }
+  }
+
 }

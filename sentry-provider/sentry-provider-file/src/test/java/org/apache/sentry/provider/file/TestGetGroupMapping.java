@@ -19,10 +19,12 @@ package org.apache.sentry.provider.file;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.sentry.core.common.Authorizable;
+import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.policy.common.PermissionFactory;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.common.GroupMappingService;
 import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 import static org.junit.Assert.assertSame;
 
@@ -45,6 +47,20 @@ public class TestGetGroupMapping {
       public PermissionFactory getPermissionFactory() { return null; }
 
       public ImmutableSetMultimap<String, String> getPermissions(List<? extends Authorizable> authorizables, List<String> groups) { return null; }
+      public ImmutableSet<String> listPermissions(String groupName)
+          throws SentryConfigurationException {
+        return null;
+      }
+
+      public ImmutableSet<String> listPermissions(List<String> groupName)
+          throws SentryConfigurationException {
+        return null;
+      }
+
+      public void validatePolicy(boolean strictValidation)
+          throws SentryConfigurationException {
+        return;
+      }
     };
 
     TestResourceAuthorizationProvider authProvider =

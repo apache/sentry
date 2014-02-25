@@ -19,11 +19,14 @@ package org.apache.sentry.policy.db;
 import javax.annotation.Nullable;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.sentry.core.common.Authorizable;
+import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.core.model.db.AccessURI;
 import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.policy.common.PermissionFactory;
@@ -36,7 +39,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
-
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
@@ -50,13 +52,15 @@ public class SimpleDBPolicyEngine implements PolicyEngine {
   public final static String ACCESS_ALLOW_URI_PER_DB_POLICYFILE = "sentry.allow.uri.db.policyfile";
 
   private ProviderBackend providerBackend;
+  private String serverName;
+  private List<? extends RoleValidator> validators;
 
   public SimpleDBPolicyEngine(String serverName, ProviderBackend providerBackend) {
-    List<? extends RoleValidator> validators =
-      Lists.newArrayList(new ServersAllIsInvalid(), new DatabaseMustMatch(),
-        new DatabaseRequiredInRole(), new ServerNameMustMatch(serverName));
+    validators = Lists.newArrayList(new ServersAllIsInvalid(), new DatabaseMustMatch(),
+          new DatabaseRequiredInRole(), new ServerNameMustMatch(serverName));
     this.providerBackend = providerBackend;
     this.providerBackend.process(validators);
+    this.serverName = serverName;
   }
 
   /**
@@ -71,7 +75,9 @@ public class SimpleDBPolicyEngine implements PolicyEngine {
    * {@inheritDoc}
    */
   @Override
-  public ImmutableSetMultimap<String, String> getPermissions(List<? extends Authorizable> authorizables, List<String> groups) {
+  public ImmutableSetMultimap<String, String> getPermissions(
+      List<? extends Authorizable> authorizables, List<String> groups)
+      throws SentryConfigurationException {
     String database = null;
     Boolean isURI = false;
     for(Authorizable authorizable : authorizables) {
@@ -139,4 +145,25 @@ public class SimpleDBPolicyEngine implements PolicyEngine {
     }
     return result;
   }
+
+  @Override
+  public void validatePolicy(boolean strictValidation) throws SentryConfigurationException {
+    this.providerBackend.validatePolicy(validators, strictValidation);
+  }
+
+  @Override
+  public ImmutableSet<String> listPermissions(String groupName) throws SentryConfigurationException {
+    return getDBRoles(Database.ALL.getName(), groupName, true, providerBackend.getRoles());
+  }
+
+  @Override
+  public ImmutableSet<String> listPermissions(List<String> groupNames)
+      throws SentryConfigurationException {
+    ImmutableSet.Builder<String> resultBuilder = ImmutableSet.builder();
+    for (String groupName : groupNames) {
+      resultBuilder.addAll(listPermissions(groupName));
+    }
+    return resultBuilder.build();
+  }
+
 }

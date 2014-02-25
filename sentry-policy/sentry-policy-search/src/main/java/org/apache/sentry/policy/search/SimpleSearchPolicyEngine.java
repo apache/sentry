@@ -21,8 +21,10 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map.Entry;
+
 import org.apache.shiro.config.ConfigurationException;
 import org.apache.sentry.core.common.Authorizable;
+import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.policy.common.PermissionFactory;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.policy.common.RoleValidator;
@@ -33,7 +35,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
-
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
@@ -110,5 +111,24 @@ public class SimpleSearchPolicyEngine implements PolicyEngine {
           new Object[]{ group, result});
     }
     return result;
+  }
+
+  @Override
+  public ImmutableSet<String> listPermissions(String groupName)
+      throws SentryConfigurationException {
+    // TODO: not supported yet
+    throw new SentryConfigurationException("Not implemented yet");
+  }
+
+  @Override
+  public ImmutableSet<String> listPermissions(List<String> groupName)
+      throws SentryConfigurationException {
+    throw new SentryConfigurationException("Not implemented yet");
+  }
+
+  @Override
+  public void validatePolicy(boolean strictValidation)
+      throws SentryConfigurationException {
+    throw new SentryConfigurationException("Not implemented yet");
   }
 }

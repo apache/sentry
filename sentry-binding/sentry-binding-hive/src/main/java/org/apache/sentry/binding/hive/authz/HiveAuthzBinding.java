@@ -63,7 +63,7 @@ public class HiveAuthzBinding {
   public HiveAuthzBinding (HiveConf hiveConf, HiveAuthzConf authzConf) throws Exception {
     this.authzConf = authzConf;
     this.authServer = new Server(authzConf.get(AuthzConfVars.AUTHZ_SERVER_NAME.getVar()));
-    this.authProvider = getAuthProvider(hiveConf, authServer.getName());
+    this.authProvider = getAuthProvider(hiveConf, authzConf, authServer.getName());
   }
 
   /**
@@ -102,7 +102,8 @@ public class HiveAuthzBinding {
   }
 
   // Instantiate the configured authz provider
-  private AuthorizationProvider getAuthProvider(HiveConf hiveConf, String serverName) throws Exception {
+  public static AuthorizationProvider getAuthProvider(HiveConf hiveConf, HiveAuthzConf authzConf,
+        String serverName) throws Exception {
     boolean isTestingMode = Boolean.parseBoolean(Strings.nullToEmpty(
         authzConf.get(AuthzConfVars.SENTRY_TESTING_MODE.getVar())).trim());
     LOG.debug("Testing mode is " + isTestingMode);
@@ -231,5 +232,9 @@ public class HiveAuthzBinding {
 
   private AuthorizableType getAuthzType (List<DBModelAuthorizable> hierarchy){
     return hierarchy.get(hierarchy.size() -1).getAuthzType();
+  }
+
+  public List<String> getLastQueryPermissionErrors() {
+    return authProvider.getLastFailedPermissions();
   }
 }
