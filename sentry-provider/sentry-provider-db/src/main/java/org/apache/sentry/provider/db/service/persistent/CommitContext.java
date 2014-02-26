@@ -15,16 +15,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.service.thrift;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.thrift.TMultiplexedProcessor;
+package org.apache.sentry.provider.db.service.persistent;
 
-public abstract class ProcessorFactory {
-  protected final Configuration conf;
-  public ProcessorFactory(Configuration conf) {
-    this.conf = conf;
+import java.util.UUID;
+
+/**
+ * Stores the UUID associated with the server who processed
+ * a commit and a commit order sequence id.
+ */
+public class CommitContext {
+
+  private final String serverUUID;
+  private final long sequenceId;
+
+  public CommitContext(UUID serverUUID, long sequenceId) {
+    this.serverUUID = serverUUID.toString();
+    this.sequenceId = sequenceId;
   }
-
-  public abstract boolean register(TMultiplexedProcessor processor) throws Exception;
+  public String getServerUUID() {
+    return serverUUID;
+  }
+  public long getSequenceId() {
+    return sequenceId;
+  }
 }

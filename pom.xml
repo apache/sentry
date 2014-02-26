@@ -74,6 +74,7 @@ limitations under the License.
     <libthrift.version>0.9.0-cdh4-1</libthrift.version>
     <libfb303.version>0.9.0</libfb303.version>
     <log4j.version>1.2.16</log4j.version>
+    <mockito.version>1.8.5</mockito.version>
     <shiro.version>1.2.1</shiro.version>
     <slf4j.version>1.6.1</slf4j.version>
     <solr.version>4.4.0-cdh5.0.0-beta-2-SNAPSHOT</solr.version>
@@ -312,6 +313,11 @@ limitations under the License.
         <groupId>org.datanucleus</groupId>
         <artifactId>datanucleus-rdbms</artifactId>
         <version>${datanucleus-rdbms.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-all</artifactId>
+        <version>${mockito.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

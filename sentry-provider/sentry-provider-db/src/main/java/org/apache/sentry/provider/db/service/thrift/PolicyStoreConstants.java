@@ -15,16 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.service.thrift;
+package org.apache.sentry.provider.db.service.thrift;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.thrift.TMultiplexedProcessor;
+public class PolicyStoreConstants {
 
-public abstract class ProcessorFactory {
-  protected final Configuration conf;
-  public ProcessorFactory(Configuration conf) {
-    this.conf = conf;
+  public static class PolicyStoreServerConfig {
+    public static final String NOTIFICATION_HANDLERS = "sentry.policy.store.notification.handlers";
   }
-
-  public abstract boolean register(TMultiplexedProcessor processor) throws Exception;
 }

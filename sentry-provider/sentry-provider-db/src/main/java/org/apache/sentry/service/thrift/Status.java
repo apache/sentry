@@ -58,6 +58,9 @@ public enum Status {
   public static TSentryResponseStatus NoSuchObject(String message, Throwable t) {
     return Create(Status.NO_SUCH_OBJECT, message, t);
   }
+  public static TSentryResponseStatus RuntimeError(String message, Throwable t) {
+    return Create(Status.RUNTIME_ERROR, message, t);
+  }
   public static TSentryResponseStatus Create(Status value, String message) {
     return Create(value, message, null);
   }

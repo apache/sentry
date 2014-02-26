@@ -15,16 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.service.thrift;
+package org.apache.sentry.provider.db.service.thrift;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.thrift.TMultiplexedProcessor;
+import org.apache.sentry.SentryUserException;
 
-public abstract class ProcessorFactory {
-  protected final Configuration conf;
-  public ProcessorFactory(Configuration conf) {
-    this.conf = conf;
+public class SentryConfigurationException extends SentryUserException {
+  private static final long serialVersionUID = 1298632655835L;
+  public SentryConfigurationException(String msg, Throwable t) {
+    super(msg, t);
   }
-
-  public abstract boolean register(TMultiplexedProcessor processor) throws Exception;
 }

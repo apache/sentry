@@ -27,9 +27,10 @@ public class SentryPolicyStoreProcessorFactory extends ProcessorFactory {
     super(conf);
   }
 
-  public boolean register(TMultiplexedProcessor multiplexedProcessor) {
+  public boolean register(TMultiplexedProcessor multiplexedProcessor) throws Exception {
     SentryPolicyStoreProcessor sentryServiceHandler =
-        new SentryPolicyStoreProcessor(SentryPolicyStoreProcessor.SENTRY_POLICY_SERVICE_NAME, conf);
+        new SentryPolicyStoreProcessor(SentryPolicyStoreProcessor.SENTRY_POLICY_SERVICE_NAME,
+            conf);
     TProcessor processor =
       new SentryPolicyService.Processor<SentryPolicyService.Iface>(sentryServiceHandler);
     multiplexedProcessor.registerProcessor(SentryPolicyStoreProcessor.SENTRY_POLICY_SERVICE_NAME, processor);

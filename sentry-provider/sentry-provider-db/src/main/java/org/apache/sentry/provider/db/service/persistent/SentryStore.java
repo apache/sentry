@@ -21,44 +21,146 @@ package org.apache.sentry.provider.db.service.persistent;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.UUID;
 
 import javax.jdo.JDOHelper;
 import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
 import javax.jdo.Query;
 import javax.jdo.Transaction;
-import javax.jdo.datastore.DataStoreCache;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
 
-public class SentryStore {
-  private static Properties prop;
-  private static PersistenceManagerFactory pmf = null;
-  private static final Log LOG = LogFactory.getLog(SentryStore.class.getName());
-  private boolean isReady;
-  private final AtomicBoolean isSchemaVerified = new AtomicBoolean(false);
+import com.google.common.base.Preconditions;
 
-  private static enum TXN_STATUS {
-    NO_STATE, OPEN, COMMITED, ROLLBACK
-  }
+public class SentryStore {
+  private static final UUID SERVER_UUID = UUID.randomUUID();
+  /**
+   * Commit order sequence id. This is used by notification handlers
+   * to know the order in which events where committed to the database.
+   * This instance variable is incremented in incrementGetSequenceId
+   * and read in commitUpdateTransaction. Synchronization on this
+   * is required to read commitSequenceId.
+   */
+  private long commitSequenceId;
+  private final Properties prop;
+  private final PersistenceManagerFactory pmf;
 
   public SentryStore () {
+    commitSequenceId = 0;
     prop = getDataSourceProperties();
-    pmf = getPMF(prop);
-    isReady = true;
+    pmf = JDOHelper.getPersistenceManagerFactory(prop);
   }
 
   public synchronized void stop() {
-    pmf.close();
-    isReady = false;
+    if (pmf != null) {
+      pmf.close();
+    }
+  }
+
+  public CommitContext createSentryRole(TSentryRole role)
+      throws SentryAlreadyExistsException {
+    boolean rollbackTransaction = true;
+    PersistenceManager pm = null;
+    try {
+      pm = openTransaction();
+      Query query = pm.newQuery(MSentryRole.class);
+      query.setFilter("roleName == t");
+      query.declareParameters("java.lang.String t");
+      query.setUnique(true);
+      MSentryRole sentryRole = (MSentryRole) query.execute(role.getRoleName());
+      if (sentryRole == null) {
+        MSentryRole mRole = convertToMSentryRole(role);
+        pm.makePersistent(mRole);
+        CommitContext commit = commitUpdateTransaction(pm);
+        rollbackTransaction = false;
+        return commit;
+      } else {
+        throw new SentryAlreadyExistsException("Role: " + role.getRoleName());
+      }
+    } finally {
+      if (rollbackTransaction) {
+        rollbackTransaction(pm);
+      }
+    }
+  }
+
+  public CommitContext createSentryPrivilege(TSentryPrivilege privilege)
+      throws SentryAlreadyExistsException {
+    // TODO implement
+    throw new RuntimeException("TODO");
+  }
+
+  public CommitContext alterSentryRoleAddGroups()
+      throws SentryNoSuchObjectException {
+    // TODO implement
+    throw new RuntimeException("TODO");
+  }
+
+  public CommitContext alterSentryRoleDeleteGroups()
+      throws SentryNoSuchObjectException {
+    // TODO implement
+    throw new RuntimeException("TODO");
+  }
+
+
+  public CommitContext dropSentryRole(String roleName)
+      throws SentryNoSuchObjectException {
+    boolean rollbackTransaction = true;
+    PersistenceManager pm = null;
+    roleName = roleName.trim();
+    try {
+      pm = openTransaction();
+      Query query = pm.newQuery(MSentryRole.class);
+      query.setFilter("roleName == t");
+      query.declareParameters("java.lang.String t");
+      query.setUnique(true);
+      MSentryRole sentryRole = (MSentryRole) query.execute(roleName);
+      if (sentryRole == null) {
+        throw new SentryNoSuchObjectException("Role " + roleName);
+      } else {
+        pm.retrieve(sentryRole);
+        sentryRole.removePrivileges();
+        pm.deletePersistent(sentryRole);
+      }
+      CommitContext commit = commitUpdateTransaction(pm);
+      rollbackTransaction = false;
+      return commit;
+    } finally {
+      if (rollbackTransaction) {
+        rollbackTransaction(pm);
+      }
+    }
+  }
+
+  public TSentryRole getSentryRoleByName(String roleName)
+      throws SentryNoSuchObjectException {
+    boolean rollbackTransaction = true;
+    PersistenceManager pm = null;
+    roleName = roleName.trim();
+    try {
+      pm = openTransaction();
+      Query query = pm.newQuery(MSentryRole.class);
+      query.setFilter("roleName == t");
+      query.declareParameters("java.lang.String t");
+      query.setUnique(true);
+      MSentryRole sentryRole = (MSentryRole) query.execute(roleName);
+      if (sentryRole == null) {
+        throw new SentryNoSuchObjectException("Role " + roleName);
+      } else {
+        pm.retrieve(sentryRole);
+      }
+      rollbackTransaction = false;
+      commitTransaction(pm);
+      return convertToSentryRole(sentryRole);
+    } finally {
+      if (rollbackTransaction) {
+        rollbackTransaction(pm);
+      }
+    }
   }
 
   private Properties getDataSourceProperties() {
@@ -79,9 +181,9 @@ public class SentryStore {
     prop.setProperty("datanucleus.rdbms.useLegacyNativeValueStrategy", "true");
     prop.setProperty("datanucleus.plugin.pluginRegistryBundleCheck", "LOG");
     prop.setProperty("javax.jdo.option.ConnectionDriverName",
-                     "org.apache.derby.jdbc.EmbeddedDriver");
+        "org.apache.derby.jdbc.EmbeddedDriver");
     prop.setProperty("javax.jdo.PersistenceManagerFactoryClass",
-                     "org.datanucleus.api.jdo.JDOPersistenceManagerFactory");
+        "org.datanucleus.api.jdo.JDOPersistenceManagerFactory");
     prop.setProperty("javax.jdo.option.DetachAllOnCommit", "true");
     prop.setProperty("javax.jdo.option.NonTransactionalRead", "false");
     prop.setProperty("javax.jdo.option.NonTransactionalWrite", "false");
@@ -89,22 +191,12 @@ public class SentryStore {
     prop.setProperty("javax.jdo.option.ConnectionPassword", "Sentry");
     prop.setProperty("javax.jdo.option.Multithreaded", "true");
     prop.setProperty("javax.jdo.option.ConnectionURL",
-                     "jdbc:derby:;databaseName=sentry_policy_db;create=true");
+        "jdbc:derby:;databaseName=sentry_policy_db;create=true");
     return prop;
   }
 
-  private synchronized PersistenceManagerFactory getPMF(Properties prop) {
-    if (pmf == null) {
-      pmf = JDOHelper.getPersistenceManagerFactory(prop);
-      DataStoreCache dsc = pmf.getDataStoreCache();
-      if (dsc == null) {
-        LOG.warn("PersistenceManagerFactory returned null DataStoreCache object. Unable to initialize object pin types defined by hive.metastore.cache.pinobjtypes");
-      }
-    }
-    return pmf;
-  }
-
-  /* PersistenceManager object and Transaction object have a one to one
+  /**
+   * PersistenceManager object and Transaction object have a one to one
    * correspondence. Each PersistenceManager object is associated with a
    * transaction object and vice versa. Hence we create a persistence manager
    * instance when we create a new transaction. We create a new transaction
@@ -121,27 +213,45 @@ public class SentryStore {
     return pm;
   }
 
-  private boolean commitTransaction(PersistenceManager pm) {
+  /**
+   * Synchronized due to sequence id generation
+   */
+  private synchronized CommitContext commitUpdateTransaction(PersistenceManager pm) {
+    commitTransaction(pm);
+    return new CommitContext(SERVER_UUID, incrementGetSequenceId());
+  }
+
+  /**
+   * Increments commitSequenceId which should not be modified outside
+   * this method.
+   *
+   * @return sequence id
+   */
+  private synchronized long incrementGetSequenceId() {
+    return ++commitSequenceId;
+  }
+  
+  private void commitTransaction(PersistenceManager pm) {
     Transaction currentTransaction = pm.currentTransaction();
-    if (currentTransaction.isActive()) {
+    try {
+      Preconditions.checkState(currentTransaction.isActive(), "Transaction is not active");
       currentTransaction.commit();
+    } finally {
       pm.close();
-      return true;
-    } else {
-      pm.close();
-      return false;
     }
   }
 
-  private boolean rollbackTransaction(PersistenceManager pm) {
+  private void rollbackTransaction(PersistenceManager pm) {
+    if (pm == null) {
+      return;
+    }
     Transaction currentTransaction = pm.currentTransaction();
     if (currentTransaction.isActive()) {
-      currentTransaction.rollback();
-      pm.close();
-      return true;
-    } else {
-      pm.close();
-      return false;
+      try {
+        currentTransaction.rollback();
+      } finally {
+        pm.close();
+      }
     }
   }
 
@@ -151,52 +261,6 @@ public class SentryStore {
     mRole.setRoleName(role.getRoleName());
     mRole.setGrantorPrincipal(role.getGrantorPrincipal());
     return mRole;
-  }
-
-  public boolean createSentryRole(TSentryRole role) {
-    boolean commit = false;
-    PersistenceManager pm = null;
-    try {
-      pm = openTransaction();
-      MSentryRole mRole = convertToMSentryRole(role);
-      pm.makePersistent(mRole);
-      commit = commitTransaction(pm);
-    } finally {
-      if (!commit) {
-        commit = rollbackTransaction(pm);
-      }
-    }
-    return commit;
-  }
-
-  public TSentryRole getSentryRoleByName(String roleName) {
-    TSentryRole role;
-    MSentryRole mSentryRole = getMSentryRoleByName(roleName);
-    role = convertToSentryRole(mSentryRole);
-    return role;
-  }
-
-  private MSentryRole getMSentryRoleByName (String roleName) {
-    boolean commit = false;
-    PersistenceManager pm = null;
-    try {
-      pm = openTransaction();
-      Query query = pm.newQuery(MSentryRole.class);
-      query.setFilter("roleName == t");
-      query
-      .declareParameters("java.lang.String t");
-      query.setUnique(true);
-
-      MSentryRole mSentryRole = (MSentryRole) query.execute(roleName.trim());
-      pm.retrieve(mSentryRole);
-      commit = commitTransaction(pm);
-      return mSentryRole;
-    } finally {
-      if (!commit) {
-        rollbackTransaction(pm);
-        return null;
-      }
-    }
   }
 
   private TSentryRole convertToSentryRole(MSentryRole mSentryRole) {
@@ -244,34 +308,5 @@ public class SentryStore {
     mSentryPrivilege.setPrivilegeName(privilege.getPrivilegeName());
     //MSentryRole mSentryRole = convertToMSentryRole(role);
     return mSentryPrivilege;
-
-  }
-
-  public boolean dropSentryRole(String roleName) {
-    boolean commit = false;
-    PersistenceManager pm = null;
-    try {
-      pm = openTransaction();
-      MSentryRole mSentryRole;
-      Query query = pm.newQuery(MSentryRole.class);
-      query.setFilter("roleName == t");
-      query
-      .declareParameters("java.lang.String t");
-      query.setUnique(true);
-
-      mSentryRole = (MSentryRole) query.execute(roleName.trim());
-      pm.retrieve(mSentryRole);
-
-      if (mSentryRole != null) {
-        mSentryRole.removePrivileges();
-        pm.deletePersistent(mSentryRole);
-      }
-      commit = commitTransaction(pm);
-    } finally {
-      if (!commit) {
-        commit = rollbackTransaction(pm);
-      }
-    }
-    return commit;
   }
 }
