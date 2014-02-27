@@ -74,7 +74,8 @@ limitations under the License.
     <log4j.version>1.2.16</log4j.version>
     <shiro.version>1.2.1</shiro.version>
     <slf4j.version>1.6.1</slf4j.version>
-    <solr.version>4.4.0-cdh5.0.0-beta-2-SNAPSHOT</solr.version>
+    <solr.version>4.7.0</solr.version>
+    <solr.sentry.handlers.version>4.4.0-cdh5.0.0-beta-2-SNAPSHOT</solr.sentry.handlers.version>
     <zookeeper.version>3.4.5-cdh5.0.0-beta-2-SNAPSHOT</zookeeper.version>
   </properties>
 
@@ -112,6 +113,11 @@ limitations under the License.
       </dependency>
       <dependency>
         <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-hdfs</artifactId>
+        <version>${hadoop.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
         <artifactId>hadoop-minicluster</artifactId>
         <version>${hadoop.version}</version>
       </dependency>
@@ -138,7 +144,7 @@ limitations under the License.
       <dependency>
         <groupId>org.apache.solr</groupId>
         <artifactId>solr-sentry-handlers</artifactId>
-        <version>${solr.version}</version>
+        <version>${solr.sentry.handlers.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -411,6 +417,10 @@ limitations under the License.
       <releases>
         <enabled>false</enabled>
       </releases>
+    </repository>
+    <repository>
+      <id>apache</id>
+      <url>https://repository.apache.org/content/repositories/</url>
     </repository>
   </repositories>
 

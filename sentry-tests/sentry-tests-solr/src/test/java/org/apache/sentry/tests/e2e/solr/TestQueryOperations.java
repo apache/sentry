@@ -33,6 +33,11 @@ import org.apache.solr.common.SolrInputDocument;
 
 @ThreadLeakScope(Scope.NONE) // hdfs client currently leaks thread(s)
 public class TestQueryOperations extends AbstractSolrSentryTestBase {
+  // Necessary until we pull in a solr version with SOLR-5771
+  static {
+    ALLOW_SSL = false;
+  }
+
   private static final Logger LOG = LoggerFactory
       .getLogger(TestQueryOperations.class);
   private static final String COLLECTION_NAME = "sentryCollection";

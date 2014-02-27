@@ -58,7 +58,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class AbstractSolrSentryTestBase extends AbstractFullDistribZkTestBase {
   private static final Logger LOG = LoggerFactory.getLogger(AbstractSolrSentryTestBase.class);
-  protected static final String SENTRY_ERROR_MSG = "401, message:Unauthorized";
+  protected static final String SENTRY_ERROR_MSG = "SentrySolrAuthorizationException";
   private static MiniDFSCluster dfsCluster;
   private static SortedMap<Class, String> extraRequestFilters;
   protected static final String ADMIN_USER = "admin";

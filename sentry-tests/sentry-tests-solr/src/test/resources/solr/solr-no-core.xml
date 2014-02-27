@@ -19,6 +19,9 @@
 <solr>
 
   <str name="shareSchema">${shareSchema:false}</str>
+  <str name="adminHandler">org.apache.solr.handler.admin.SecureCoreAdminHandler</str>
+  <str name="collectionsHandler">org.apache.solr.handler.admin.SecureCollectionsHandler</str>
+  <str name="infoHandler">org.apache.solr.handler.admin.SecureInfoHandler</str>
 
   <solrcloud>
     <str name="host">127.0.0.1</str>
