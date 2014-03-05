@@ -46,7 +46,7 @@ while [ $# -gt 0 ]; do    # Until you run out of parameters . . .
         case "$1" in
           config-tool)
              shift
-             $SENTRY_HOME/bin/config-tool.sh "$@"
+             $myhome/bin/config-tool.sh "$@"
              ;;
           *)
              echo Unknown option $1
