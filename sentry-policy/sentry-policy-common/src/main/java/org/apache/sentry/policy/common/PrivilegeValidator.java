@@ -14,31 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.policy.search;
+package org.apache.sentry.policy.common;
 
-import javax.annotation.Nullable;
-
-import org.apache.sentry.core.model.search.Collection;
-import org.apache.sentry.core.model.search.SearchModelAuthorizable;
 import org.apache.shiro.config.ConfigurationException;
 
-public class CollectionRequiredInRole extends AbstractSearchRoleValidator {
+public interface PrivilegeValidator {
 
-  @Override
-  public void validate(@Nullable String database, String role) throws ConfigurationException {
-    Iterable<SearchModelAuthorizable> authorizables = parseRole(role);
-    boolean foundCollectionInAuthorizables = false;
-
-    for(SearchModelAuthorizable authorizable : authorizables) {
-      if(authorizable instanceof Collection) {
-        foundCollectionInAuthorizables = true;
-        break;
-      }
-    }
-
-    if(!foundCollectionInAuthorizables) {
-      String msg = "Missing collection object in " + role;
-      throw new ConfigurationException(msg);
-    }
-  }
+  public void validate(PrivilegeValidatorContext context) throws ConfigurationException;
 }

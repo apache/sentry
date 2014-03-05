@@ -32,18 +32,18 @@ public class TestSentryPolicyStoreProcessor {
   public void setup() {
     conf = new Configuration(false);
   }
-  @Test(expected=IllegalArgumentException.class)
+  @Test(expected=SentryConfigurationException.class)
   public void testConfigNotNotificationHandler() throws Exception {
     conf.set(PolicyStoreServerConfig.NOTIFICATION_HANDLERS, Object.class.getName());
     SentryPolicyStoreProcessor.createHandlers(conf);
   }
-  @Test(expected=IllegalStateException.class)
+  @Test(expected=SentryConfigurationException.class)
   public void testConfigCannotCreateNotificationHandler() throws Exception {
     conf.set(PolicyStoreServerConfig.NOTIFICATION_HANDLERS,
         ExceptionInConstructorNotificationHandler.class.getName());
     SentryPolicyStoreProcessor.createHandlers(conf);
   }
-  @Test(expected=IllegalArgumentException.class)
+  @Test(expected=SentryConfigurationException.class)
   public void testConfigNotAClassNotificationHandler() throws Exception {
     conf.set(PolicyStoreServerConfig.NOTIFICATION_HANDLERS, "junk");
     SentryPolicyStoreProcessor.createHandlers(conf);

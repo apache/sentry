@@ -19,7 +19,6 @@
 package org.apache.sentry.provider.db.service.model;
 
 import java.util.HashSet;
-
 import java.util.Set;
 
 import javax.jdo.annotations.PersistenceCapable;

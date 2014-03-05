@@ -46,19 +46,19 @@ public class NoAuthorizationProvider implements AuthorizationProvider {
   }
 
   @Override
-  public Set<String> listPermissionsForSubject(Subject subject)
+  public Set<String> listPrivilegesForSubject(Subject subject)
       throws SentryConfigurationException {
     return new HashSet<String>();
   }
 
   @Override
-  public Set<String> listPermissionsForGroup(String groupName)
+  public Set<String> listPrivilegesForGroup(String groupName)
       throws SentryConfigurationException {
     return new HashSet<String>();
   }
 
   @Override
-  public List<String> getLastFailedPermissions() {
+  public List<String> getLastFailedPrivileges() {
     return new ArrayList<String>();
   }
 

@@ -18,11 +18,9 @@ package org.apache.sentry.binding.hive;
 
 import static org.apache.hadoop.hive.metastore.MetaStoreUtils.DEFAULT_DATABASE_NAME;
 
-import java.io.File;
 import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.CodeSource;
 import java.util.ArrayList;
@@ -44,8 +42,6 @@ import org.apache.hadoop.hive.ql.hooks.Hook;
 import org.apache.hadoop.hive.ql.hooks.ReadEntity;
 import org.apache.hadoop.hive.ql.hooks.WriteEntity;
 import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
-import org.apache.hadoop.hive.ql.metadata.Hive;
-import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
 import org.apache.hadoop.hive.ql.parse.AbstractSemanticAnalyzerHook;
 import org.apache.hadoop.hive.ql.parse.BaseSemanticAnalyzer;
@@ -60,14 +56,13 @@ import org.apache.sentry.binding.hive.authz.HiveAuthzPrivileges.HiveOperationSco
 import org.apache.sentry.binding.hive.authz.HiveAuthzPrivileges.HiveOperationType;
 import org.apache.sentry.binding.hive.authz.HiveAuthzPrivilegesMap;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
-import org.apache.sentry.core.common.Action;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.common.utils.PathUtils;
 import org.apache.sentry.core.model.db.AccessURI;
-import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.core.model.db.DBModelAction;
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
+import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.core.model.db.Table;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -278,7 +273,7 @@ implements HiveDriverFilterHook {
     } catch (AuthorizationException e) {
       executeOnFailureHooks(context, stmtOperation, e);
       String permsRequired = "";
-      for (String perm : hiveAuthzBinding.getLastQueryPermissionErrors()) {
+      for (String perm : hiveAuthzBinding.getLastQueryPrivilegeErrors()) {
         permsRequired += perm + ";";
       }
       context.getConf().set(HiveAuthzConf.HIVE_SENTRY_AUTH_ERRORS, permsRequired);
@@ -707,22 +702,15 @@ implements HiveDriverFilterHook {
       throws Exception {
 
     List<T> hooks = new ArrayList<T>();
-    String csHooks = authzConf.get(hookConfVar.getVar(), "");
-    if (csHooks == null) {
+    String csHooks = authzConf.get(hookConfVar.getVar(), "").trim();
+    if (csHooks.isEmpty()) {
       return hooks;
     }
-
-    csHooks = csHooks.trim();
-    if (csHooks.equals("")) {
-      return hooks;
-    }
-
-    String[] hookClasses = csHooks.split(",");
-
-    for (String hookClass : hookClasses) {
+    for (String hookClass : Splitter.on(",").omitEmptyStrings().trimResults().split(csHooks)) {
       try {
+        @SuppressWarnings("unchecked")
         T hook =
-            (T) Class.forName(hookClass.trim(), true, JavaUtils.getClassLoader()).newInstance();
+            (T) Class.forName(hookClass, true, JavaUtils.getClassLoader()).newInstance();
         hooks.add(hook);
       } catch (ClassNotFoundException e) {
         LOG.error(hookConfVar.getVar() + " Class not found:" + e.getMessage());

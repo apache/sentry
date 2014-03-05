@@ -17,18 +17,18 @@
 
 package org.apache.sentry.binding.hive;
 
-import java.util.List;
+import java.util.Set;
 
 import org.apache.sentry.provider.common.GroupMappingService;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 public class MockUserToGroupMapping implements GroupMappingService {
 
   // User to group 1-to-1 map
   @Override
-  public List<String> getGroups(String user) {
-    return Lists.newArrayList(user);
+  public Set<String> getGroups(String user) {
+    return Sets.newHashSet(user);
   }
 
 }

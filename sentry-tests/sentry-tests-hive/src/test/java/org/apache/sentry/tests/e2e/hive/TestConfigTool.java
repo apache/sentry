@@ -17,36 +17,25 @@
 
 package org.apache.sentry.tests.e2e.hive;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
-
-import junit.framework.Assert;
 
 import org.apache.sentry.binding.hive.authz.SentryConfigTool;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.provider.file.PolicyFile;
-
-import com.google.common.io.Resources;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 public class TestConfigTool extends AbstractTestWithStaticConfiguration {
   private static final String DB2_POLICY_FILE = "db2-policy-file.ini";
@@ -188,18 +177,18 @@ public class TestConfigTool extends AbstractTestWithStaticConfiguration {
     configTool.validatePolicy();
 
     Set<String> permList = configTool.getSentryProvider()
-        .listPermissionsForSubject(new Subject(USER1_1));
+        .listPrivilegesForSubject(new Subject(USER1_1));
     assertTrue(permList
         .contains("server=server1->db=db1->table=tab1->action=select"));
     assertTrue(permList
         .contains("server=server1->db=db1->table=tab2->action=insert"));
 
-    permList = configTool.getSentryProvider().listPermissionsForSubject(
+    permList = configTool.getSentryProvider().listPrivilegesForSubject(
         new Subject(USER2_1));
     assertTrue(permList
         .contains("server=server1->db=db1->table=tab3->action=select"));
 
-    permList = configTool.getSentryProvider().listPermissionsForSubject(
+    permList = configTool.getSentryProvider().listPrivilegesForSubject(
         new Subject(ADMIN1));
     assertTrue(permList.contains("server=server1"));
   }

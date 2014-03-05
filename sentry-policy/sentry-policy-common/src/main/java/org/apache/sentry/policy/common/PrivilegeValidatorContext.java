@@ -16,11 +16,23 @@
  */
 package org.apache.sentry.policy.common;
 
-import org.apache.shiro.authz.Permission;
+import javax.annotation.Nullable;
 
-/**
- * Factory for creating Shiro permissions
- */
-public interface PermissionFactory {
-  Permission createPermission(String permission);
+public class PrivilegeValidatorContext {
+  private final String database;
+  private final String privilege;
+  public PrivilegeValidatorContext(String privilege) {
+    this(null, privilege);
+  }
+  public PrivilegeValidatorContext(@Nullable String database, String privilege) {
+    super();
+    this.database = database;
+    this.privilege = privilege;
+  }
+  public @Nullable String getDatabase() {
+    return database;
+  }
+  public String getPrivilege() {
+    return privilege;
+  }
 }

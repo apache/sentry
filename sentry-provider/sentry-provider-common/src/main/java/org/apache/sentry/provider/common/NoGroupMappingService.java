@@ -16,8 +16,8 @@
  */
 package org.apache.sentry.provider.common;
 
-import java.util.LinkedList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * GroupMappingService that always returns an empty list of groups
@@ -27,7 +27,7 @@ public class NoGroupMappingService implements GroupMappingService {
   /**
    * @return empty list of groups for every user
    */
-  public List<String> getGroups(String user) {
-    return new LinkedList<String>();
+  public Set<String> getGroups(String user) {
+    return new HashSet<String>();
   }
 }

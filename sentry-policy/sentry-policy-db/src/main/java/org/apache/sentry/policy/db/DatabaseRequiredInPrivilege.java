@@ -16,22 +16,23 @@
  */
 package org.apache.sentry.policy.db;
 
-import javax.annotation.Nullable;
-
 import org.apache.sentry.core.model.db.AccessURI;
-import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
+import org.apache.sentry.core.model.db.Database;
+import org.apache.sentry.policy.common.PrivilegeValidatorContext;
 import org.apache.shiro.config.ConfigurationException;
 
-public class DatabaseRequiredInRole extends AbstractDBRoleValidator {
+public class DatabaseRequiredInPrivilege extends AbstractDBPrivilegeValidator {
 
   @Override
-  public void validate(@Nullable String database, String role) throws ConfigurationException {
+  public void validate(PrivilegeValidatorContext context) throws ConfigurationException {
+    String database = context.getDatabase();
+    String privilege = context.getPrivilege();
     /*
      *  Rule only applies to rules in per database policy file
      */
     if(database != null) {
-      Iterable<DBModelAuthorizable> authorizables = parseRole(role);
+      Iterable<DBModelAuthorizable> authorizables = parsePrivilege(privilege);
       /*
        * Each permission in a non-global file must have a database
        * object except for URIs.
@@ -55,14 +56,14 @@ public class DatabaseRequiredInRole extends AbstractDBRoleValidator {
         }
         if (authorizable instanceof AccessURI) {
           if (foundDatabaseInAuthorizables) {
-            String msg = "URI object is specified at DB scope in " + role;
+            String msg = "URI object is specified at DB scope in " + privilege;
             throw new ConfigurationException(msg);
           }
           foundURIInAuthorizables = true;
         }
       }
       if(!foundDatabaseInAuthorizables && !(foundURIInAuthorizables && allowURIInAuthorizables)) {
-        String msg = "Missing database object in " + role;
+        String msg = "Missing database object in " + privilege;
         throw new ConfigurationException(msg);
       }
     }

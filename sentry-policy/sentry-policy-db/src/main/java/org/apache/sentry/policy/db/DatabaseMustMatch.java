@@ -18,21 +18,24 @@ package org.apache.sentry.policy.db;
 
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.sentry.core.model.db.Database;
+import org.apache.sentry.policy.common.PrivilegeValidatorContext;
 import org.apache.shiro.config.ConfigurationException;
 
-public class DatabaseMustMatch extends AbstractDBRoleValidator {
+public class DatabaseMustMatch extends AbstractDBPrivilegeValidator {
 
   @Override
-  public void validate(String database, String role) throws ConfigurationException {
+  public void validate(PrivilegeValidatorContext context) throws ConfigurationException {
+    String database = context.getDatabase();
+    String privilege = context.getPrivilege();
     /*
      *  Rule only applies to rules in per database policy file
      */
     if(database != null) {
-      Iterable<DBModelAuthorizable> authorizables = parseRole(role);
+      Iterable<DBModelAuthorizable> authorizables = parsePrivilege(privilege);
       for(DBModelAuthorizable authorizable : authorizables) {
         if(authorizable instanceof Database &&
             !database.equalsIgnoreCase(authorizable.getName())) {
-          String msg = "Role " + role + " references db " +
+          String msg = "Privilege " + privilege + " references db " +
               authorizable.getName() + ", but is only allowed to reference "
               + database;
           throw new ConfigurationException(msg);

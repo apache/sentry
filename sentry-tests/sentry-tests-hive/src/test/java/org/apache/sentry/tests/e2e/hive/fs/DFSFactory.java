@@ -16,9 +16,9 @@
  */
 package org.apache.sentry.tests.e2e.hive.fs;
 
-import com.google.common.annotations.VisibleForTesting;
-
 import java.io.File;
+
+import com.google.common.annotations.VisibleForTesting;
 
 public class DFSFactory {
   public static final String FS_TYPE = "sentry.e2etest.DFSType";

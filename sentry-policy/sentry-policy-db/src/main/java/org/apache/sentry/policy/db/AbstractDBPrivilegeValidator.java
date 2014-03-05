@@ -21,17 +21,17 @@ import static org.apache.sentry.provider.file.PolicyFileConstants.PRIVILEGE_PREF
 
 import java.util.List;
 
-import org.apache.sentry.policy.common.RoleValidator;
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
+import org.apache.sentry.policy.common.PrivilegeValidator;
 import org.apache.shiro.config.ConfigurationException;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 
-public abstract class AbstractDBRoleValidator implements RoleValidator {
+public abstract class AbstractDBPrivilegeValidator implements PrivilegeValidator {
 
   @VisibleForTesting
-  public static Iterable<DBModelAuthorizable> parseRole(String string) {
+  public static Iterable<DBModelAuthorizable> parsePrivilege(String string) {
     List<DBModelAuthorizable> result = Lists.newArrayList();
     for(String section : AUTHORIZABLE_SPLITTER.split(string)) {
       // XXX this ugly hack is because action is not an authorizeable

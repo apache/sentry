@@ -16,21 +16,21 @@
  */
 package org.apache.sentry.policy.db;
 
-import javax.annotation.Nullable;
-
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.sentry.core.model.db.Server;
+import org.apache.sentry.policy.common.PrivilegeValidatorContext;
 import org.apache.shiro.config.ConfigurationException;
 
-public class ServersAllIsInvalid extends AbstractDBRoleValidator {
+public class ServersAllIsInvalid extends AbstractDBPrivilegeValidator {
 
   @Override
-  public void validate(@Nullable String database, String role) throws ConfigurationException {
-    Iterable<DBModelAuthorizable> authorizables = parseRole(role);
+  public void validate(PrivilegeValidatorContext context) throws ConfigurationException {
+    String privilege = context.getPrivilege();
+    Iterable<DBModelAuthorizable> authorizables = parsePrivilege(privilege);
     for(DBModelAuthorizable authorizable : authorizables) {
       if(authorizable instanceof Server &&
           authorizable.getName().equals(Server.ALL.getName())) {
-        String msg = "Invalid value for " + authorizable.getAuthzType() + " in " + role;
+        String msg = "Invalid value for " + authorizable.getAuthzType() + " in " + privilege;
         throw new ConfigurationException(msg);
       }
     }

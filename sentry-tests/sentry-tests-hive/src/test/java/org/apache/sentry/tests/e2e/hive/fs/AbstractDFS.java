@@ -16,11 +16,12 @@
  */
 package org.apache.sentry.tests.e2e.hive.fs;
 
+import java.io.IOException;
+
 import junit.framework.Assert;
+
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-
-import java.io.IOException;
 
 public abstract class AbstractDFS implements DFS{
   protected static FileSystem fileSystem;

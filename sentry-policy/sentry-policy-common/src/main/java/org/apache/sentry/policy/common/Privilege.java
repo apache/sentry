@@ -14,22 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.provider.common;
+package org.apache.sentry.policy.common;
 
-import java.util.Set;
-
-import javax.annotation.concurrent.ThreadSafe;
-
-/**
- * Interface so the Groups class is easier to unit test with.
- * Implementations of this class are expected to be thread safe
- * after construction.
- */
-@ThreadSafe
-public interface GroupMappingService {
-
-  /**
-   * @return non-null list of groups for user
-   */
-  public Set<String> getGroups(String user);
+public interface Privilege {
+  public boolean implies(Privilege p);
 }

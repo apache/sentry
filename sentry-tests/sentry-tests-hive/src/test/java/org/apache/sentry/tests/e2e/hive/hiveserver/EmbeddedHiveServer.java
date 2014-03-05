@@ -17,11 +17,11 @@
 
 package org.apache.sentry.tests.e2e.hive.hiveserver;
 
-import org.apache.hadoop.hive.metastore.HiveMetaStore;
-import org.fest.reflect.core.Reflection;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
+
+import org.apache.hadoop.hive.metastore.HiveMetaStore;
+import org.fest.reflect.core.Reflection;
 
 public class EmbeddedHiveServer implements HiveServer {
 

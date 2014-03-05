@@ -18,6 +18,7 @@
 package org.apache.sentry.tests.e2e.hive.hiveserver;
 
 import java.io.IOException;
+
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStore;
 import org.apache.hive.service.server.HiveServer2;

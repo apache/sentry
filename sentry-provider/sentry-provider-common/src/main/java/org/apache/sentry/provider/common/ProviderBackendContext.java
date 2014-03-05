@@ -16,29 +16,35 @@
  */
 package org.apache.sentry.provider.common;
 
-import java.util.Collection;
-import java.util.Set;
+import org.apache.sentry.policy.common.PrivilegeValidator;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.google.common.collect.ImmutableList;
 
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
+public class ProviderBackendContext {
 
-public class MockGroupMappingServiceProvider implements GroupMappingService {
-  private static final Logger LOGGER = LoggerFactory
-      .getLogger(MockGroupMappingServiceProvider.class);
-  private final Multimap<String, String> userToGroupMap;
+  private boolean allowPerDatabase;
+  private ImmutableList<PrivilegeValidator> validators;
 
-  public MockGroupMappingServiceProvider(Multimap<String, String> userToGroupMap) {
-    this.userToGroupMap = userToGroupMap;
+  public ProviderBackendContext() {
+    validators = ImmutableList.of();
   }
 
-  @Override
-  public Set<String> getGroups(String user) {
-    Collection<String> groups = userToGroupMap.get(user);
-    LOGGER.info("Mapping " + user + " to " + groups);
-    return Sets.newHashSet(groups);
+  public boolean isAllowPerDatabase() {
+    return allowPerDatabase;
   }
 
+  public void setAllowPerDatabase(boolean allowPerDatabase) {
+    this.allowPerDatabase = allowPerDatabase;
+  }
+
+  public ImmutableList<PrivilegeValidator> getValidators() {
+    return validators;
+  }
+
+  public void setValidators(ImmutableList<PrivilegeValidator> validators) {
+    if (validators == null) {
+      validators = ImmutableList.of();
+    }
+    this.validators = validators;
+  }
 }

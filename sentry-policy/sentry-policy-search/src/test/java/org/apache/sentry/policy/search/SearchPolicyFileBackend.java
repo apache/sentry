@@ -17,6 +17,7 @@
 package org.apache.sentry.policy.search;
 
 import java.io.IOException;
+
 import org.apache.sentry.provider.file.SimpleFileProviderBackend;
 
 public class SearchPolicyFileBackend extends SimpleSearchPolicyEngine {

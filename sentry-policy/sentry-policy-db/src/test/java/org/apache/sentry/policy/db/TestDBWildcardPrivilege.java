@@ -25,61 +25,61 @@ import static org.apache.sentry.provider.file.PolicyFileConstants.KV_JOINER;
 import static org.apache.sentry.provider.file.PolicyFileConstants.KV_SEPARATOR;
 
 import org.apache.sentry.core.model.db.AccessConstants;
+import org.apache.sentry.policy.common.Privilege;
 import org.apache.sentry.provider.file.KeyValue;
-import org.apache.shiro.authz.Permission;
 import org.junit.Test;
 
-public class TestDBWildcardPermission {
+public class TestDBWildcardPrivilege {
 
   private static final String ALL = AccessConstants.ALL;
 
-  private static final Permission ROLE_SERVER_SERVER1_DB_ALL =
+  private static final Privilege ROLE_SERVER_SERVER1_DB_ALL =
       create(new KeyValue("server", "server1"), new KeyValue("db", ALL));
-  private static final Permission ROLE_SERVER_SERVER1_DB_DB1 =
+  private static final Privilege ROLE_SERVER_SERVER1_DB_DB1 =
       create(new KeyValue("server", "server1"), new KeyValue("db", "db1"));
-  private static final Permission ROLE_SERVER_SERVER2_DB_ALL =
+  private static final Privilege ROLE_SERVER_SERVER2_DB_ALL =
       create(new KeyValue("server", "server2"), new KeyValue("db", ALL));
-  private static final Permission ROLE_SERVER_SERVER2_DB_DB1 =
+  private static final Privilege ROLE_SERVER_SERVER2_DB_DB1 =
       create(new KeyValue("server", "server2"), new KeyValue("db", "db1"));
-  private static final Permission ROLE_SERVER_ALL_DB_ALL =
+  private static final Privilege ROLE_SERVER_ALL_DB_ALL =
       create(new KeyValue("server", ALL), new KeyValue("db", ALL));
-  private static final Permission ROLE_SERVER_ALL_DB_DB1 =
+  private static final Privilege ROLE_SERVER_ALL_DB_DB1 =
       create(new KeyValue("server", ALL), new KeyValue("db", "db1"));
 
-  private static final Permission ROLE_SERVER_SERVER1_URI_URI1 =
+  private static final Privilege ROLE_SERVER_SERVER1_URI_URI1 =
       create(new KeyValue("server", "server1"), new KeyValue("uri",
           "hdfs://namenode:8020/path/to/uri1"));
-  private static final Permission ROLE_SERVER_SERVER1_URI_URI2 =
+  private static final Privilege ROLE_SERVER_SERVER1_URI_URI2 =
       create(new KeyValue("server", "server1"), new KeyValue("uri",
           "hdfs://namenode:8020/path/to/uri2/"));
-  private static final Permission ROLE_SERVER_SERVER1_URI_ALL =
+  private static final Privilege ROLE_SERVER_SERVER1_URI_ALL =
       create(new KeyValue("server", "server1"), new KeyValue("uri", ALL));
 
 
-  private static final Permission ROLE_SERVER_SERVER1 =
+  private static final Privilege ROLE_SERVER_SERVER1 =
       create(new KeyValue("server", "server1"));
 
 
-  private static final Permission REQUEST_SERVER1_DB1 =
+  private static final Privilege REQUEST_SERVER1_DB1 =
       create(new KeyValue("server", "server1"), new KeyValue("db", "db1"));
-  private static final Permission REQUEST_SERVER2_DB1 =
+  private static final Privilege REQUEST_SERVER2_DB1 =
       create(new KeyValue("server", "server2"), new KeyValue("db", "db1"));
-  private static final Permission REQUEST_SERVER1_DB2 =
+  private static final Privilege REQUEST_SERVER1_DB2 =
       create(new KeyValue("server", "server1"), new KeyValue("db", "db2"));
-  private static final Permission REQUEST_SERVER2_DB2 =
+  private static final Privilege REQUEST_SERVER2_DB2 =
       create(new KeyValue("server", "server2"), new KeyValue("db", "db2"));
 
-  private static final Permission REQUEST_SERVER1_URI1 =
+  private static final Privilege REQUEST_SERVER1_URI1 =
       create(new KeyValue("server", "server1"), new KeyValue("uri",
           "hdfs://namenode:8020/path/to/uri1/some/file"));
-  private static final Permission REQUEST_SERVER1_URI2 =
+  private static final Privilege REQUEST_SERVER1_URI2 =
       create(new KeyValue("server", "server1"), new KeyValue("uri",
           "hdfs://namenode:8020/path/to/uri2/some/other/file"));
 
-  private static final Permission REQUEST_SERVER1_OTHER =
+  private static final Privilege REQUEST_SERVER1_OTHER =
       create(new KeyValue("server", "server2"), new KeyValue("other", "thing"));
 
-  private static final Permission REQUEST_SERVER1 =
+  private static final Privilege REQUEST_SERVER1 =
       create(new KeyValue("server", "server2"));
 
   @Test
@@ -194,9 +194,9 @@ public class TestDBWildcardPermission {
   };
   @Test
   public void testUnexpected() throws Exception {
-    Permission p = new Permission() {
+    Privilege p = new Privilege() {
       @Override
-      public boolean implies(Permission p) {
+      public boolean implies(Privilege p) {
         return false;
       }
     };
@@ -236,51 +236,51 @@ public class TestDBWildcardPermission {
   }
   @Test
   public void testImpliesURIPositive() throws Exception {
-    assertTrue(DBWildcardPermission.impliesURI("hdfs://namenode:8020/path",
+    assertTrue(DBWildcardPrivilege.impliesURI("hdfs://namenode:8020/path",
         "hdfs://namenode:8020/path/to/some/dir"));
-    assertTrue(DBWildcardPermission.impliesURI("hdfs://namenode:8020/path",
+    assertTrue(DBWildcardPrivilege.impliesURI("hdfs://namenode:8020/path",
         "hdfs://namenode:8020/path"));
-    assertTrue(DBWildcardPermission.impliesURI("file:///path",
+    assertTrue(DBWildcardPrivilege.impliesURI("file:///path",
         "file:///path/to/some/dir"));
-    assertTrue(DBWildcardPermission.impliesURI("file:///path",
+    assertTrue(DBWildcardPrivilege.impliesURI("file:///path",
         "file:///path"));
   }
   @Test
   public void testImpliesURINegative() throws Exception {
     // relative path
-    assertFalse(DBWildcardPermission.impliesURI("hdfs://namenode:8020/path",
+    assertFalse(DBWildcardPrivilege.impliesURI("hdfs://namenode:8020/path",
         "hdfs://namenode:8020/path/to/../../other"));
-    assertFalse(DBWildcardPermission.impliesURI("file:///path",
+    assertFalse(DBWildcardPrivilege.impliesURI("file:///path",
         "file:///path/to/../../other"));
     // bad policy
-    assertFalse(DBWildcardPermission.impliesURI("blah",
+    assertFalse(DBWildcardPrivilege.impliesURI("blah",
         "hdfs://namenode:8020/path/to/some/dir"));
     // bad request
-    assertFalse(DBWildcardPermission.impliesURI("hdfs://namenode:8020/path",
+    assertFalse(DBWildcardPrivilege.impliesURI("hdfs://namenode:8020/path",
         "blah"));
     // scheme
-    assertFalse(DBWildcardPermission.impliesURI("hdfs://namenode:8020/path",
+    assertFalse(DBWildcardPrivilege.impliesURI("hdfs://namenode:8020/path",
         "file:///path/to/some/dir"));
-    assertFalse(DBWildcardPermission.impliesURI("hdfs://namenode:8020/path",
+    assertFalse(DBWildcardPrivilege.impliesURI("hdfs://namenode:8020/path",
         "file://namenode:8020/path/to/some/dir"));
     // hostname
-    assertFalse(DBWildcardPermission.impliesURI("hdfs://namenode1:8020/path",
+    assertFalse(DBWildcardPrivilege.impliesURI("hdfs://namenode1:8020/path",
         "hdfs://namenode2:8020/path/to/some/dir"));
     // port
-    assertFalse(DBWildcardPermission.impliesURI("hdfs://namenode:8020/path",
+    assertFalse(DBWildcardPrivilege.impliesURI("hdfs://namenode:8020/path",
         "hdfs://namenode:8021/path/to/some/dir"));
     // mangled path
-    assertFalse(DBWildcardPermission.impliesURI("hdfs://namenode:8020/path",
+    assertFalse(DBWildcardPrivilege.impliesURI("hdfs://namenode:8020/path",
         "hdfs://namenode:8020/pathFooBar"));
     // ends in /
-    assertTrue(DBWildcardPermission.impliesURI("hdfs://namenode:8020/path/",
+    assertTrue(DBWildcardPrivilege.impliesURI("hdfs://namenode:8020/path/",
         "hdfs://namenode:8020/path/FooBar"));
   }
-  static DBWildcardPermission create(KeyValue... keyValues) {
+  static DBWildcardPrivilege create(KeyValue... keyValues) {
     return create(AUTHORIZABLE_JOINER.join(keyValues));
 
   }
-  static DBWildcardPermission create(String s) {
-    return new DBWildcardPermission(s);
+  static DBWildcardPrivilege create(String s) {
+    return new DBWildcardPrivilege(s);
   }
 }

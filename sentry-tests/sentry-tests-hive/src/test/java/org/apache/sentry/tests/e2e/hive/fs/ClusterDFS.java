@@ -16,16 +16,15 @@
  */
 package org.apache.sentry.tests.e2e.hive.fs;
 
+import java.security.PrivilegedExceptionAction;
+import java.util.Random;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.mapred.JobClient;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.security.PrivilegedExceptionAction;
-import java.util.Random;
 
 public class ClusterDFS extends AbstractDFS{
   private static final Logger LOGGER = LoggerFactory

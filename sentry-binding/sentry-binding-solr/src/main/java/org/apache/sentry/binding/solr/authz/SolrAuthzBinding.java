@@ -20,22 +20,20 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.sentry.binding.solr.conf.SolrAuthzConf;
+import org.apache.sentry.binding.solr.conf.SolrAuthzConf.AuthzConfVars;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.search.Collection;
 import org.apache.sentry.core.model.search.SearchModelAction;
-import org.apache.sentry.binding.solr.conf.SolrAuthzConf;
-import org.apache.sentry.binding.solr.conf.SolrAuthzConf.AuthzConfVars;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.common.AuthorizationProvider;
 import org.apache.sentry.provider.common.GroupMappingService;
 import org.apache.sentry.provider.common.ProviderBackend;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,7 +129,7 @@ public class SolrAuthzBinding {
    * @param user
    * @return list of groups the user belongs to
    */
-  public List<String> getGroups(String user) {
+  public Set<String> getGroups(String user) {
     return groupMapping.getGroups(user);
   }
 

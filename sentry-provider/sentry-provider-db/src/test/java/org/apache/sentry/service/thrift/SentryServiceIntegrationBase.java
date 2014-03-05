@@ -155,9 +155,13 @@ public abstract class SentryServiceIntegrationBase extends KerberosSecurityTestc
 
   }
   protected static void assertOK(TSentryResponseStatus resp) {
-    if (resp.getValue() !=  Status.OK.getCode()) {
-      String message = "Response: " + Status.fromCode(resp.getValue()) + ", Code: "
-          + resp.getValue() + ", Message: " + resp.getMessage();
+    assertStatus(Status.OK, resp);
+  }
+
+  protected static void assertStatus(Status status, TSentryResponseStatus resp) {
+    if (resp.getValue() !=  status.getCode()) {
+      String message = "Expected: " + status + ", Response: " + Status.fromCode(resp.getValue())
+          + ", Code: " + resp.getValue() + ", Message: " + resp.getMessage();
       String stackTrace = Strings.nullToEmpty(resp.getStack()).trim();
       if (!stackTrace.isEmpty()) {
         message += ", StackTrace: " + stackTrace;

@@ -16,31 +16,32 @@
  */
 package org.apache.sentry.binding.solr;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.List;
-import java.lang.reflect.InvocationTargetException;
-
-import junit.framework.Assert;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.Set;
+
+import junit.framework.Assert;
+
 import org.apache.commons.io.FileUtils;
+import org.apache.sentry.binding.solr.authz.SentrySolrAuthorizationException;
+import org.apache.sentry.binding.solr.authz.SolrAuthzBinding;
+import org.apache.sentry.binding.solr.conf.SolrAuthzConf;
+import org.apache.sentry.binding.solr.conf.SolrAuthzConf.AuthzConfVars;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.search.Collection;
 import org.apache.sentry.core.model.search.SearchModelAction;
 import org.apache.sentry.provider.file.PolicyFiles;
-import org.apache.sentry.binding.solr.authz.SolrAuthzBinding;
-import org.apache.sentry.binding.solr.conf.SolrAuthzConf;
-import org.apache.sentry.binding.solr.conf.SolrAuthzConf.AuthzConfVars;
-import org.apache.sentry.binding.solr.authz.SentrySolrAuthorizationException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 
@@ -59,11 +60,11 @@ public class TestSolrAuthzBinding {
   private Subject sergeant1 = new Subject("sergeant1");
   private Subject general1 = new Subject("general1");
 
-  private EnumSet querySet = EnumSet.of(SearchModelAction.QUERY);
-  private EnumSet updateSet = EnumSet.of(SearchModelAction.UPDATE);
-  private EnumSet allSet = EnumSet.of(SearchModelAction.ALL);
-  private EnumSet allOfSet = EnumSet.allOf(SearchModelAction.class);
-  private EnumSet emptySet = EnumSet.noneOf(SearchModelAction.class);
+  private EnumSet<SearchModelAction> querySet = EnumSet.of(SearchModelAction.QUERY);
+  private EnumSet<SearchModelAction> updateSet = EnumSet.of(SearchModelAction.UPDATE);
+  private EnumSet<SearchModelAction> allSet = EnumSet.of(SearchModelAction.ALL);
+  private EnumSet<SearchModelAction> allOfSet = EnumSet.allOf(SearchModelAction.class);
+  private EnumSet<SearchModelAction> emptySet = EnumSet.noneOf(SearchModelAction.class);
 
   @Before
   public void setUp() throws Exception {
@@ -170,7 +171,7 @@ public class TestSolrAuthzBinding {
       new SolrAuthzConf(Resources.getResource("sentry-site.xml"));
     setUsableAuthzConf(solrAuthzConf);
     SolrAuthzBinding binding = new SolrAuthzBinding(solrAuthzConf);
-    List<String> emptyList = Arrays.asList();
+    Set<String> emptyList = Collections.emptySet();
 
     // check non-existant users
     assertEquals(binding.getGroups(null), emptyList);
@@ -183,9 +184,9 @@ public class TestSolrAuthzBinding {
     assertEquals(binding.getGroups("othergeneralgroup"), emptyList);
 
     // check valid group names
-    assertEquals(binding.getGroups("corporal1"), Arrays.asList("corporal"));
-    assertEquals(binding.getGroups("sergeant1"), Arrays.asList("sergeant"));
-    assertEquals(binding.getGroups("general1"), Arrays.asList("general", "othergeneralgroup"));
+    assertEquals(binding.getGroups("corporal1"), Sets.newHashSet("corporal"));
+    assertEquals(binding.getGroups("sergeant1"), Sets.newHashSet("sergeant"));
+    assertEquals(binding.getGroups("general1"), Sets.newHashSet("general", "othergeneralgroup"));
   }
 
   /**

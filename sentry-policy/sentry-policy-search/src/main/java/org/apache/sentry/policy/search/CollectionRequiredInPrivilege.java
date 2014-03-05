@@ -14,30 +14,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.policy.db;
+package org.apache.sentry.policy.search;
 
-import org.apache.sentry.core.model.db.DBModelAuthorizable;
-import org.apache.sentry.core.model.db.Server;
+import org.apache.sentry.core.common.SentryConfigurationException;
+import org.apache.sentry.core.model.search.Collection;
+import org.apache.sentry.core.model.search.SearchModelAuthorizable;
 import org.apache.sentry.policy.common.PrivilegeValidatorContext;
-import org.apache.shiro.config.ConfigurationException;
 
-public class ServerNameMustMatch extends AbstractDBPrivilegeValidator {
+public class CollectionRequiredInPrivilege extends AbstractSearchPrivilegeValidator {
 
-  private final String serverName;
-  public ServerNameMustMatch(String serverName) {
-    this.serverName = serverName;
-  }
   @Override
-  public void validate(PrivilegeValidatorContext context) throws ConfigurationException {
+  public void validate(PrivilegeValidatorContext context) throws SentryConfigurationException {
     String privilege = context.getPrivilege();
-    Iterable<DBModelAuthorizable> authorizables = parsePrivilege(privilege);
-    for(DBModelAuthorizable authorizable : authorizables) {
-      if(authorizable instanceof Server && !serverName.equalsIgnoreCase(authorizable.getName())) {
-        String msg = "Server name " + authorizable.getName() + " in "
-            + privilege + " is invalid. Expected " + serverName;
-        throw new ConfigurationException(msg);
+    Iterable<SearchModelAuthorizable> authorizables = parsePrivilege(privilege);
+    boolean foundCollectionInAuthorizables = false;
+
+    for(SearchModelAuthorizable authorizable : authorizables) {
+      if(authorizable instanceof Collection) {
+        foundCollectionInAuthorizables = true;
+        break;
       }
     }
+    if(!foundCollectionInAuthorizables) {
+      String msg = "Missing collection object in " + privilege;
+      throw new SentryConfigurationException(msg);
+    }
   }
-
 }

@@ -21,20 +21,21 @@ import static org.apache.sentry.provider.file.PolicyFileConstants.PRIVILEGE_PREF
 
 import java.util.List;
 
-import org.apache.sentry.policy.common.RoleValidator;
 import org.apache.sentry.core.model.search.SearchModelAuthorizable;
+import org.apache.sentry.policy.common.PrivilegeValidator;
 import org.apache.shiro.config.ConfigurationException;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 
-public abstract class AbstractSearchRoleValidator implements RoleValidator {
+public abstract class AbstractSearchPrivilegeValidator implements PrivilegeValidator {
 
   @VisibleForTesting
-  public static Iterable<SearchModelAuthorizable> parseRole(String string) {
+  public static Iterable<SearchModelAuthorizable> parsePrivilege(String string) {
     List<SearchModelAuthorizable> result = Lists.newArrayList();
+    System.err.println("privilege = " + string);
     for(String section : AUTHORIZABLE_SPLITTER.split(string)) {
-      // XXX this ugly hack is because action is not an authorizeable
+      // XXX this ugly hack is because action is not an authorizable
       if(!section.toLowerCase().startsWith(PRIVILEGE_PREFIX)) {
         SearchModelAuthorizable authorizable = SearchModelAuthorizables.from(section);
         if(authorizable == null) {

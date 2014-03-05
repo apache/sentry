@@ -18,15 +18,12 @@ package org.apache.sentry.policy.db;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
 import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.sentry.core.common.Authorizable;
-import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -34,7 +31,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 
@@ -49,7 +45,6 @@ public abstract class AbstractTestSimplePolicyEngine {
   private static final String PERM_SERVER1_ADMIN = "server=server1";
   private PolicyEngine policy;
   private static File baseDir;
-  private List<Authorizable> authorizables = Lists.newArrayList();
 
   @BeforeClass
   public static void setupClazz() throws IOException {
@@ -93,7 +88,7 @@ public abstract class AbstractTestSimplePolicyEngine {
         PERM_SERVER1_CUSTOMERS_DB_CUSTOMERS_PARTIAL_SELECT
         ));
     Assert.assertEquals(expected.toString(),
-        new TreeSet<String>(policy.getPermissions(authorizables, list("manager")).values())
+        new TreeSet<String>(policy.getPrivileges(set("manager")))
         .toString());
   }
 
@@ -103,7 +98,7 @@ public abstract class AbstractTestSimplePolicyEngine {
         PERM_SERVER1_CUSTOMERS_SELECT, PERM_SERVER1_ANALYST_ALL,
         PERM_SERVER1_JUNIOR_ANALYST_READ));
     Assert.assertEquals(expected.toString(),
-        new TreeSet<String>(policy.getPermissions(authorizables, list("analyst")).values())
+        new TreeSet<String>(policy.getPrivileges(set("analyst")))
         .toString());
   }
 
@@ -113,7 +108,7 @@ public abstract class AbstractTestSimplePolicyEngine {
         .newHashSet(PERM_SERVER1_JUNIOR_ANALYST_ALL,
             PERM_SERVER1_CUSTOMERS_DB_CUSTOMERS_PARTIAL_SELECT));
     Assert.assertEquals(expected.toString(),
-        new TreeSet<String>(policy.getPermissions(authorizables, list("jranalyst")).values())
+        new TreeSet<String>(policy.getPrivileges(set("jranalyst")))
         .toString());
   }
 
@@ -121,43 +116,40 @@ public abstract class AbstractTestSimplePolicyEngine {
   public void testAdmin() throws Exception {
     Set<String> expected = Sets.newTreeSet(Sets.newHashSet(PERM_SERVER1_ADMIN));
     Assert.assertEquals(expected.toString(),
-        new TreeSet<String>(policy.getPermissions(authorizables, list("admin")).values())
+        new TreeSet<String>(policy.getPrivileges(set("admin")))
         .toString());
   }
 
 
   @Test
   public void testOtherGroup() throws Exception {
-    authorizables.add(new Database("other_group_db"));
     Set<String> expected = Sets.newTreeSet(Sets.newHashSet(
         PERM_SERVER1_OTHER_GROUP_DB_CUSTOMERS_SELECT));
     Assert.assertEquals(expected.toString(),
-        new TreeSet<String>(policy.getPermissions(authorizables, list("other_group")).values())
+        new TreeSet<String>(policy.getPrivileges(set("other_group")))
         .toString());
   }
 
   @Test
   public void testDbAll() throws Exception {
-    authorizables.add(new Database(Database.ALL.getName()));
     Set<String> expected = Sets.newTreeSet(Sets
         .newHashSet(PERM_SERVER1_JUNIOR_ANALYST_ALL,
             PERM_SERVER1_CUSTOMERS_DB_CUSTOMERS_PARTIAL_SELECT));
     Assert.assertEquals(expected.toString(),
-        new TreeSet<String>(policy.getPermissions(authorizables, list("jranalyst")).values())
+        new TreeSet<String>(policy.getPrivileges(set("jranalyst")))
         .toString());
   }
 
   @Test
   public void testDbAllforOtherGroup() throws Exception {
-    authorizables.add(new Database(Database.ALL.getName()));
     Set<String> expected = Sets.newTreeSet(Sets.newHashSet(
         PERM_SERVER1_OTHER_GROUP_DB_CUSTOMERS_SELECT));
     Assert.assertEquals(expected.toString(),
-        new TreeSet<String>(policy.getPermissions(authorizables, list("other_group")).values())
+        new TreeSet<String>(policy.getPrivileges(set("other_group")))
         .toString());
   }
 
-  private static List<String> list(String... values) {
-    return Lists.newArrayList(values);
+  private static Set<String> set(String... values) {
+    return Sets.newHashSet(values);
   }
 }

@@ -21,6 +21,9 @@ import org.apache.sentry.SentryUserException;
 
 public class SentryConfigurationException extends SentryUserException {
   private static final long serialVersionUID = 1298632655835L;
+  public SentryConfigurationException(String msg) {
+    super(msg);
+  }
   public SentryConfigurationException(String msg, Throwable t) {
     super(msg, t);
   }

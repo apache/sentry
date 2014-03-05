@@ -71,7 +71,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
 
   @VisibleForTesting
   static List<NotificationHandler> createHandlers(Configuration conf)
-      throws Exception {
+      throws SentryConfigurationException {
     List<NotificationHandler> handlers = Lists.newArrayList();
     Iterable<String> notificationHandlers = Splitter.onPattern("[\\s,]").trimResults()
         .omitEmptyStrings().split(conf.get(PolicyStoreServerConfig.NOTIFICATION_HANDLERS, ""));
@@ -80,7 +80,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       try {
         clazz = Class.forName(notificationHandler);
         if (!NotificationHandler.class.isAssignableFrom(clazz)) {
-          throw new IllegalArgumentException("Class " + notificationHandler + " is not a " +
+          throw new SentryConfigurationException("Class " + notificationHandler + " is not a " +
               NotificationHandler.class.getName());
         }
       } catch (ClassNotFoundException e) {

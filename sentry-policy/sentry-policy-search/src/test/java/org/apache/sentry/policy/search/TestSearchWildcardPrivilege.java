@@ -17,7 +17,6 @@
  * under the License.
  */
 package org.apache.sentry.policy.search;
-import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertTrue;
 import static org.apache.sentry.provider.file.PolicyFileConstants.AUTHORIZABLE_JOINER;
@@ -25,19 +24,19 @@ import static org.apache.sentry.provider.file.PolicyFileConstants.KV_JOINER;
 import static org.apache.sentry.provider.file.PolicyFileConstants.KV_SEPARATOR;
 
 import org.apache.sentry.core.model.search.SearchConstants;
+import org.apache.sentry.policy.common.Privilege;
 import org.apache.sentry.provider.file.KeyValue;
-import org.apache.shiro.authz.Permission;
 import org.junit.Test;
 
-public class TestSearchWildcardPermission {
+public class TestSearchWildcardPrivilege {
 
   private static final String ALL = SearchConstants.ALL;
 
   @Test
   public void testSimpleNoAction() throws Exception {
-    Permission collection1 = create(new KeyValue("collection", "coll1"));
-    Permission collection2 = create(new KeyValue("collection", "coll2"));
-    Permission collection1Case = create(new KeyValue("colleCtIon", "coLl1"));
+    Privilege collection1 = create(new KeyValue("collection", "coll1"));
+    Privilege collection2 = create(new KeyValue("collection", "coll2"));
+    Privilege collection1Case = create(new KeyValue("colleCtIon", "coLl1"));
 
     assertTrue(collection1.implies(collection1));
     assertTrue(collection2.implies(collection2));
@@ -52,11 +51,11 @@ public class TestSearchWildcardPermission {
 
   @Test
   public void testSimpleAction() throws Exception {
-    Permission query =
+    Privilege query =
       create(new KeyValue("collection", "coll1"), new KeyValue("action", "query"));
-    Permission update =
+    Privilege update =
       create(new KeyValue("collection", "coll1"), new KeyValue("action", "update"));
-    Permission queryCase =
+    Privilege queryCase =
       create(new KeyValue("colleCtIon", "coLl1"), new KeyValue("AcTiOn", "QuERy"));
 
     assertTrue(query.implies(query));
@@ -72,12 +71,12 @@ public class TestSearchWildcardPermission {
 
   @Test
   public void testRoleShorterThanRequest() throws Exception {
-    Permission collection1 = create(new KeyValue("collection", "coll1"));
-    Permission query =
+    Privilege collection1 = create(new KeyValue("collection", "coll1"));
+    Privilege query =
       create(new KeyValue("collection", "coll1"), new KeyValue("action", "query"));
-    Permission update =
+    Privilege update =
       create(new KeyValue("collection", "coll1"), new KeyValue("action", "update"));
-    Permission all =
+    Privilege all =
       create(new KeyValue("collection", "coll1"), new KeyValue("action", ALL));
 
     assertTrue(collection1.implies(query));
@@ -91,18 +90,18 @@ public class TestSearchWildcardPermission {
 
   @Test
   public void testCollectionAll() throws Exception {
-    Permission collectionAll = create(new KeyValue("collection", ALL));
-    Permission collection1 = create(new KeyValue("collection", "coll1"));
+    Privilege collectionAll = create(new KeyValue("collection", ALL));
+    Privilege collection1 = create(new KeyValue("collection", "coll1"));
     assertTrue(collectionAll.implies(collection1));
     assertTrue(collection1.implies(collectionAll));
 
-    Permission allUpdate =
+    Privilege allUpdate =
       create(new KeyValue("collection", ALL), new KeyValue("action", "update"));
-    Permission allQuery =
+    Privilege allQuery =
       create(new KeyValue("collection", ALL), new KeyValue("action", "query"));
-    Permission coll1Update =
+    Privilege coll1Update =
       create(new KeyValue("collection", "coll1"), new KeyValue("action", "update"));
-    Permission coll1Query =
+    Privilege coll1Query =
       create(new KeyValue("collection", "coll1"), new KeyValue("action", "query"));
     assertTrue(allUpdate.implies(coll1Update));
     assertTrue(allQuery.implies(coll1Query));
@@ -130,11 +129,11 @@ public class TestSearchWildcardPermission {
 
   @Test
   public void testActionAll() throws Exception {
-    Permission coll1All =
+    Privilege coll1All =
        create(new KeyValue("collection", "coll1"), new KeyValue("action", ALL));
-    Permission coll1Update =
+    Privilege coll1Update =
       create(new KeyValue("collection", "coll1"), new KeyValue("action", "update"));
-    Permission coll1Query =
+    Privilege coll1Query =
       create(new KeyValue("collection", "coll1"), new KeyValue("action", "query"));
     assertTrue(coll1All.implies(coll1All));
     assertTrue(coll1All.implies(coll1Update));
@@ -143,7 +142,7 @@ public class TestSearchWildcardPermission {
     assertFalse(coll1Query.implies(coll1All));
 
     // test different lengths
-    Permission coll1 =
+    Privilege coll1 =
        create(new KeyValue("collection", "coll1"));
     assertTrue(coll1All.implies(coll1));
     assertTrue(coll1.implies(coll1All));
@@ -151,13 +150,13 @@ public class TestSearchWildcardPermission {
 
   @Test
   public void testUnexpected() throws Exception {
-    Permission p = new Permission() {
+    Privilege p = new Privilege() {
       @Override
-      public boolean implies(Permission p) {
+      public boolean implies(Privilege p) {
         return false;
       }
     };
-    Permission collection1 = create(new KeyValue("collection", "coll1"));
+    Privilege collection1 = create(new KeyValue("collection", "coll1"));
     assertFalse(collection1.implies(null));
     assertFalse(collection1.implies(p));
     assertFalse(collection1.equals(null));
@@ -196,11 +195,11 @@ public class TestSearchWildcardPermission {
         join(KV_SEPARATOR, KV_SEPARATOR, KV_SEPARATOR)));
   }
 
-  static SearchWildcardPermission create(KeyValue... keyValues) {
+  static SearchWildcardPrivilege create(KeyValue... keyValues) {
     return create(AUTHORIZABLE_JOINER.join(keyValues));
 
   }
-  static SearchWildcardPermission create(String s) {
-    return new SearchWildcardPermission(s);
+  static SearchWildcardPrivilege create(String s) {
+    return new SearchWildcardPrivilege(s);
   }
 }

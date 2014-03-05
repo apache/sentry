@@ -32,7 +32,8 @@ public class TestSimpleDBPolicyEngineLocalFS extends AbstractTestSimplePolicyEng
     Assert.assertNotNull(baseDir);
     Assert.assertTrue(baseDir.isDirectory() || baseDir.mkdirs());
     PolicyFiles.copyToDir(baseDir, "test-authz-provider.ini", "test-authz-provider-other-group.ini");
-    setPolicy(new DBPolicyFileBackend(new File(baseDir, "test-authz-provider.ini").getPath(), "server1"));
+    setPolicy(new DBPolicyFileBackend("server1",
+        new File(baseDir, "test-authz-provider.ini").getPath()));
   }
   @Override
   protected void beforeTeardown() throws IOException {

@@ -18,15 +18,16 @@
 
 package org.apache.sentry.provider.db.service.thrift;
 import java.util.HashSet;
-import com.google.common.base.Preconditions;
-
 import java.util.Set;
 
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
 import org.apache.sentry.service.thrift.ServiceConstants.ThriftConstants;
+import org.apache.sentry.service.thrift.Status;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Preconditions;
 
 public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
   private static final Logger LOGGER = LoggerFactory.getLogger(TestSentryServiceIntegration.class);
@@ -38,7 +39,7 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
     dropReq.setRoleName("admin_r");
     dropReq.setUserName("user_1");
     TDropSentryRoleResponse dropResp = client.dropRole(dropReq);
-    assertOK(dropResp.getStatus());
+    assertStatus(Status.NO_SUCH_OBJECT, dropResp.getStatus());
     LOGGER.info("Successfully dropped role: admin_r");
 
     TCreateSentryRoleRequest createReq = new TCreateSentryRoleRequest();

@@ -17,10 +17,11 @@
 package org.apache.sentry.policy.db;
 
 import java.io.IOException;
+
 import org.apache.sentry.provider.file.SimpleFileProviderBackend;
 
 public class DBPolicyFileBackend extends SimpleDBPolicyEngine {
-  public DBPolicyFileBackend(String resource, String server) throws IOException{
+  public DBPolicyFileBackend(String server, String resource) throws IOException{
     super(server, new SimpleFileProviderBackend(resource));
   }
 }

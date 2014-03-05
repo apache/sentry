@@ -14,31 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.provider.common;
+package org.apache.sentry.policy.common;
 
-import java.util.Collection;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.shiro.util.PermissionUtils;
 
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
-
-public class MockGroupMappingServiceProvider implements GroupMappingService {
-  private static final Logger LOGGER = LoggerFactory
-      .getLogger(MockGroupMappingServiceProvider.class);
-  private final Multimap<String, String> userToGroupMap;
-
-  public MockGroupMappingServiceProvider(Multimap<String, String> userToGroupMap) {
-    this.userToGroupMap = userToGroupMap;
+public class PrivilegeUtils {
+  public static Set<String> toPrivilegeStrings(String s) {
+    return PermissionUtils.toPermissionStrings(s);
   }
-
-  @Override
-  public Set<String> getGroups(String user) {
-    Collection<String> groups = userToGroupMap.get(user);
-    LOGGER.info("Mapping " + user + " to " + groups);
-    return Sets.newHashSet(groups);
-  }
-
 }

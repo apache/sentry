@@ -19,8 +19,6 @@ package org.apache.sentry.tests.e2e.hive.fs;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
-import java.io.IOException;
-
 public interface DFS {
   public FileSystem getFileSystem();
   public void tearDown() throws Exception;

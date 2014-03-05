@@ -18,19 +18,16 @@
 
 package org.apache.sentry.binding.hive;
 
+import java.util.Set;
+
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hive.ql.hooks.ReadEntity;
+import org.apache.hadoop.hive.ql.hooks.WriteEntity;
+import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.sentry.core.model.db.AccessURI;
 import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.core.model.db.Table;
-import org.apache.hadoop.hive.ql.exec.Task;
-import org.apache.hadoop.hive.ql.hooks.ReadEntity;
-import org.apache.hadoop.hive.ql.hooks.WriteEntity;
-import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
-
-import java.io.Serializable;
-import java.util.List;
-import java.util.Set;
 
 public class SentryOnFailureHookContextImpl implements SentryOnFailureHookContext {
 

@@ -20,9 +20,9 @@ package org.apache.sentry.provider.file;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
-import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 /**
  * Mapping users to groups
@@ -62,8 +62,8 @@ public class LocalGroupMappingService implements GroupMappingService {
   private static final Logger LOGGER = LoggerFactory
       .getLogger(LocalGroupMappingService.class);
 
-  private final Map <String, List<String>> groupMap =
-      new HashMap <String, List<String>> ();
+  private final Map <String, Set<String>> groupMap =
+      new HashMap <String, Set<String>> ();
 
   public LocalGroupMappingService(Path resourcePath) throws IOException {
     this(new Configuration(), resourcePath);
@@ -75,11 +75,11 @@ public class LocalGroupMappingService implements GroupMappingService {
   }
 
   @Override
-  public List<String> getGroups(String user) {
+  public Set<String> getGroups(String user) {
     if (groupMap.containsKey(user)) {
       return groupMap.get(user);
     } else {
-      return Collections.emptyList();
+      return Collections.emptySet();
     }
   }
 
@@ -102,7 +102,7 @@ public class LocalGroupMappingService implements GroupMappingService {
             " in the " + resourcePath);
         continue;
       }
-      List<String> groupList = Lists.newArrayList(
+      Set<String> groupList = Sets.newHashSet(
           PolicyFileConstants.ROLE_SPLITTER.trimResults().split(groupNames));
       LOGGER.debug("Got user mapping: " + userName + ", Groups: " + groupNames);
       groupMap.put(userName, groupList);

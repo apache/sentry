@@ -20,6 +20,7 @@ package org.apache.sentry.policy.db;
 
 import junit.framework.Assert;
 
+import org.apache.sentry.policy.common.PrivilegeValidatorContext;
 import org.apache.shiro.config.ConfigurationException;
 import org.junit.Test;
 
@@ -27,19 +28,19 @@ public class TestDatabaseRequiredInRole {
 
   @Test
   public void testURIInPerDbPolicyFile() throws Exception {
-    DatabaseRequiredInRole dbRequiredInRole = new DatabaseRequiredInRole();
+    DatabaseRequiredInPrivilege dbRequiredInRole = new DatabaseRequiredInPrivilege();
     System.setProperty("sentry.allow.uri.db.policyfile", "true");
-    dbRequiredInRole.validate("db1",
-      "server=server1->URI=file:///user/db/warehouse/tab1");
+    dbRequiredInRole.validate(new PrivilegeValidatorContext("db1",
+      "server=server1->URI=file:///user/db/warehouse/tab1"));
     System.setProperty("sentry.allow.uri.db.policyfile", "false");
   }
 
   @Test
   public void testURIWithDBInPerDbPolicyFile() throws Exception {
-    DatabaseRequiredInRole dbRequiredInRole = new DatabaseRequiredInRole();
+    DatabaseRequiredInPrivilege dbRequiredInRole = new DatabaseRequiredInPrivilege();
     try {
-      dbRequiredInRole.validate("db1",
-        "server=server1->db=db1->URI=file:///user/db/warehouse/tab1");
+      dbRequiredInRole.validate(new PrivilegeValidatorContext("db1",
+        "server=server1->db=db1->URI=file:///user/db/warehouse/tab1"));
       Assert.fail("Expected ConfigurationException");
     } catch (ConfigurationException e) {
       ;

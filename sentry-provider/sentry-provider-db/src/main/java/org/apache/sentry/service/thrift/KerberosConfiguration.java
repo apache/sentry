@@ -18,8 +18,9 @@
 package org.apache.sentry.service.thrift;
 
 import java.io.File;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
+
 import javax.security.auth.login.AppConfigurationEntry;
 
 public class KerberosConfiguration extends javax.security.auth.login.Configuration {

@@ -24,7 +24,6 @@ import java.net.ServerSocket;
 import java.net.URL;
 import java.util.Map;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -36,6 +35,7 @@ import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.io.Resources;
 
 public class HiveServerFactory {

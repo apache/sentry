@@ -16,12 +16,6 @@
  */
 package org.apache.sentry.tests.e2e.solr;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
-
 import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -29,10 +23,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Properties;
 import java.util.Random;
 
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
 
 @ThreadLeakScope(Scope.NONE) // hdfs client currently leaks thread(s)
 public class TestCollAdminCoreOperations extends AbstractSolrSentryTestBase {

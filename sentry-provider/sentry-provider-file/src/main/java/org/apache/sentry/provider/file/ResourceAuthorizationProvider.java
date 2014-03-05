@@ -21,7 +21,7 @@ import static org.apache.sentry.provider.file.PolicyFileConstants.KV_JOINER;
 import static org.apache.sentry.provider.file.PolicyFileConstants.PRIVILEGE_NAME;
 
 import java.util.ArrayList;
-import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -29,32 +29,38 @@ import org.apache.sentry.core.common.Action;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.core.common.Subject;
-import org.apache.sentry.policy.common.PermissionFactory;
+import org.apache.sentry.policy.common.Privilege;
+import org.apache.sentry.policy.common.PrivilegeFactory;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.common.AuthorizationProvider;
 import org.apache.sentry.provider.common.GroupMappingService;
-import org.apache.shiro.authz.Permission;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 public abstract class ResourceAuthorizationProvider implements AuthorizationProvider {
   private static final Logger LOGGER = LoggerFactory
       .getLogger(ResourceAuthorizationProvider.class);
   private final GroupMappingService groupService;
   private final PolicyEngine policy;
-  private final PermissionFactory permissionFactory;
-  private final List<String> lastFailedPermissions = new ArrayList<String>();
+  private final PrivilegeFactory privilegeFactory;
+  private final ThreadLocal<List<String>> lastFailedPrivileges;
 
   public ResourceAuthorizationProvider(PolicyEngine policy,
       GroupMappingService groupService) {
     this.policy = policy;
     this.groupService = groupService;
-    this.permissionFactory = policy.getPermissionFactory();
+    this.privilegeFactory = policy.getPrivilegeFactory();
+    this.lastFailedPrivileges = new ThreadLocal<List<String>>() {
+      @Override
+      protected List<String> initialValue() {
+        return new ArrayList<String>();
+      }
+    };
   }
 
   /***
@@ -83,40 +89,40 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
 
   private boolean doHasAccess(Subject subject,
       List<? extends Authorizable> authorizables, Set<? extends Action> actions) {
-    List<String> groups =  getGroups(subject);
-    List<String> hierarchy = new ArrayList<String>();
+    Set<String> groups =  getGroups(subject);
+    Set<String> hierarchy = new HashSet<String>();
     for (Authorizable authorizable : authorizables) {
       hierarchy.add(KV_JOINER.join(authorizable.getTypeName(), authorizable.getName()));
     }
-    Iterable<Permission> permissions = getPermissions(authorizables, groups);
-    List<String> requestPermissions = buildPermissions(authorizables, actions);
-    lastFailedPermissions.clear();
+    Iterable<Privilege> privileges = getPermissions(groups);
+    List<String> requestPrivileges = buildPermissions(authorizables, actions);
+    lastFailedPrivileges.get().clear();
 
-    for (String requestPermission : requestPermissions) {
-      for (Permission permission : permissions) {
+    for (String requestPrivilege : requestPrivileges) {
+      for (Privilege permission : privileges) {
         /*
          * Does the permission granted in the policy file imply the requested action?
          */
-        boolean result = permission.implies(permissionFactory.createPermission(requestPermission));
+        boolean result = permission.implies(privilegeFactory.createPrivilege(requestPrivilege));
         if(LOGGER.isDebugEnabled()) {
-          LOGGER.debug("FilePermission {}, RequestPermission {}, result {}",
-              new Object[]{ permission, requestPermission, result});
+          LOGGER.debug("ProviderPrivilege {}, RequestPrivilege {}, result {}",
+              new Object[]{ permission, requestPrivilege, result});
         }
         if (result) {
           return true;
         }
       }
     }
-    lastFailedPermissions.addAll(requestPermissions);
+    lastFailedPrivileges.get().addAll(requestPrivileges);
     return false;
   }
 
-  private Iterable<Permission> getPermissions(List<? extends Authorizable> authorizables, List<String> groups) {
-    return Iterables.transform(policy.getPermissions(authorizables, groups).values(),
-        new Function<String, Permission>() {
+  private Iterable<Privilege> getPermissions(Set<String> groups) {
+    return Iterables.transform(policy.getPrivileges(groups),
+        new Function<String, Privilege>() {
       @Override
-      public Permission apply(String permission) {
-        return permissionFactory.createPermission(permission);
+      public Privilege apply(String privilege) {
+        return privilegeFactory.createPrivilege(privilege);
       }
     });
   }
@@ -126,7 +132,7 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
     return groupService;
   }
 
-  private List<String> getGroups(Subject subject) {
+  private Set<String> getGroups(Subject subject) {
     return groupService.getGroups(subject.getName());
   }
 
@@ -136,18 +142,18 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
   }
 
   @Override
-  public Set<String> listPermissionsForSubject(Subject subject) throws SentryConfigurationException {
-    return policy.listPermissions(getGroups(subject));
+  public Set<String> listPrivilegesForSubject(Subject subject) throws SentryConfigurationException {
+    return policy.getPrivileges(getGroups(subject));
   }
 
   @Override
-  public Set<String> listPermissionsForGroup(String groupName) throws SentryConfigurationException {
-    return policy.listPermissions(groupName);
+  public Set<String> listPrivilegesForGroup(String groupName) throws SentryConfigurationException {
+    return policy.getPrivileges(Sets.newHashSet(groupName));
   }
 
   @Override
-  public List<String> getLastFailedPermissions() {
-    return lastFailedPermissions;
+  public List<String> getLastFailedPrivileges() {
+    return lastFailedPrivileges.get();
   }
 
   private List<String> buildPermissions(List<? extends Authorizable> authorizables,

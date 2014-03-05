@@ -18,7 +18,6 @@ package org.apache.sentry.policy.search;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 
 import junit.framework.Assert;
 
@@ -26,16 +25,9 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.apache.sentry.core.common.Authorizable;
-import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.provider.file.PolicyFiles;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Test;
-
-import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.io.Files;
 
 public class TestSearchPolicyEngineDFS extends AbstractTestSearchPolicyEngine {
 
@@ -71,7 +63,8 @@ public class TestSearchPolicyEngineDFS extends AbstractTestSearchPolicyEngine {
     fileSystem.delete(etc, true);
     fileSystem.mkdirs(etc);
     PolicyFiles.copyToDir(fileSystem, etc, "test-authz-provider.ini");
-    setPolicy(new SearchPolicyFileBackend(new Path(etc, "test-authz-provider.ini").toString()));
+    setPolicy(new SearchPolicyFileBackend(new Path(etc,
+        "test-authz-provider.ini").toString()));
   }
 
   @Override

@@ -25,8 +25,8 @@ import java.util.Set;
 import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.Action;
+import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.db.AccessURI;
 import org.apache.sentry.core.model.db.DBModelAction;
@@ -73,7 +73,7 @@ public class TestResourceAuthorizationProviderSpecialCases {
       .addPermissionsToRole("role1", true, "server=" + server1.getName() + "->uri=" + uri.getName(),
           "server=" + server1.getName() + "->uri=" + uri.getName());
     policyFile.write(iniFile);
-    DBPolicyFileBackend policy = new DBPolicyFileBackend(initResource, server1.getName());
+    DBPolicyFileBackend policy = new DBPolicyFileBackend(server1.getName(), initResource);
     authzProvider = new LocalGroupResourceAuthorizationProvider(initResource, policy);
     List<? extends Authorizable> authorizableHierarchy = ImmutableList.of(server1, uri);
     Assert.assertTrue(authorizableHierarchy.toString(),
@@ -89,7 +89,7 @@ public class TestResourceAuthorizationProviderSpecialCases {
       .addRolesToGroup("group1", "role1")
       .addPermissionsToRole("role1", "server=" + server1.getName() + "->uri=" + uri.getName());
     policyFile.write(iniFile);
-    DBPolicyFileBackend policy = new DBPolicyFileBackend(initResource, server1.getName());
+    DBPolicyFileBackend policy = new DBPolicyFileBackend(server1.getName(), initResource);
     authzProvider = new LocalGroupResourceAuthorizationProvider(initResource, policy);
     // positive test
     List<? extends Authorizable> authorizableHierarchy = ImmutableList.of(server1, uri);

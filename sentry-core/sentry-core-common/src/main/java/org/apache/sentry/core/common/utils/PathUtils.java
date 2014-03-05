@@ -43,8 +43,8 @@ public class PathUtils {
     // request path does not contain relative parts /a/../b &&
     // request path starts with privilege path &&
     // authorities (nullable) are equal
-    String requestPath = ensureEndsWithSeparator(requestURI.getPath());
-    String privilegePath = ensureEndsWithSeparator(privilegeURI.getPath());
+    String requestPath = ensureEndsWithSeparator(requestURI.getPath()).replace("//", "/");
+    String privilegePath = ensureEndsWithSeparator(privilegeURI.getPath()).replace("//", "/");
     if (requestURI.getPath().equals(requestURI.normalize().getPath()) &&
         requestPath.startsWith(privilegePath) &&
         Strings.nullToEmpty(privilegeURI.getAuthority()).equals(Strings.nullToEmpty(requestURI.getAuthority()))) {

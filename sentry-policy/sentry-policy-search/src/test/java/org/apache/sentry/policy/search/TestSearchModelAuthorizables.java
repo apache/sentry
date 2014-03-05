@@ -20,9 +20,7 @@ package org.apache.sentry.policy.search;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNull;
 
-
 import org.apache.sentry.core.model.search.Collection;
-import org.apache.sentry.policy.search.SearchModelAuthorizables;
 import org.junit.Test;
 
 public class TestSearchModelAuthorizables {

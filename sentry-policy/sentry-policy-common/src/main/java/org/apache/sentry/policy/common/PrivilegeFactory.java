@@ -16,11 +16,9 @@
  */
 package org.apache.sentry.policy.common;
 
-import javax.annotation.Nullable;
-
-import org.apache.shiro.config.ConfigurationException;
-
-public interface RoleValidator {
-
-  public void validate(@Nullable String database, String role) throws ConfigurationException;
+/**
+ * Factory for creating Privilege
+ */
+public interface PrivilegeFactory {
+  Privilege createPrivilege(String permission);
 }

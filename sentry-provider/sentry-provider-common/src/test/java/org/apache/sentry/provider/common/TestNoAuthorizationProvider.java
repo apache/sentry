@@ -16,10 +16,10 @@
  */
 package org.apache.sentry.provider.common;
 
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+
+import org.junit.Test;
 
 /**
  * Tests around the NoAuthorizationProvider
