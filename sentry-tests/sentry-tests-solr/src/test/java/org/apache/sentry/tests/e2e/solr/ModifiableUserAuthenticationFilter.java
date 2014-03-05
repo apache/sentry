@@ -26,7 +26,6 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 
-import org.apache.solr.servlet.SolrHadoopAuthenticationFilter;
 import org.apache.solr.servlet.SolrRequestParsers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +55,7 @@ public class ModifiableUserAuthenticationFilter implements Filter {
   public void doFilter(ServletRequest request, ServletResponse response,
                        FilterChain chain) throws IOException, ServletException {
     HttpServletRequest httpRequest = (HttpServletRequest) request;
-    httpRequest.setAttribute(SolrHadoopAuthenticationFilter.USER_NAME, userName);
+    httpRequest.setAttribute("solr.user.name", userName);
     chain.doFilter(request, response);
   }
 

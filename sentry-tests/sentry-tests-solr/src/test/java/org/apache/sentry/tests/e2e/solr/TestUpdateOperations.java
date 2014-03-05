@@ -32,6 +32,11 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
 
 @ThreadLeakScope(Scope.NONE) // hdfs client currently leaks thread(s)
 public class TestUpdateOperations extends AbstractSolrSentryTestBase {
+  // Necessary until we pull in a solr version with SOLR-5771
+  static {
+    ALLOW_SSL = false;
+  }
+
   private static final Logger LOG = LoggerFactory
       .getLogger(TestUpdateOperations.class);
   private static final String COLLECTION_NAME = "sentryCollection";
