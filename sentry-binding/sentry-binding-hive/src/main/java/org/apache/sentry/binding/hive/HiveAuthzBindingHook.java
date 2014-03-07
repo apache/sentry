@@ -232,10 +232,16 @@ implements HiveDriverFilterHook {
       return getCanonicalDb();
     }
   }
-  private AccessURI extractPartition(ASTNode ast) throws SemanticException {
-    if(ast.getChildCount() > 2) {
-      return parseURI(BaseSemanticAnalyzer.
-          unescapeSQLString(ast.getChild(2).getChild(0).getText()));
+
+  @VisibleForTesting
+  protected static AccessURI extractPartition(ASTNode ast) throws SemanticException {
+    for (int i = 0; i < ast.getChildCount(); i++) {
+      ASTNode child = (ASTNode)ast.getChild(i);
+      if (child.getToken().getType() == HiveParser.TOK_PARTITIONLOCATION &&
+          child.getChildCount() == 1) {
+        return parseURI(BaseSemanticAnalyzer.
+          unescapeSQLString(child.getChild(0).getText()));
+      }
     }
     return null;
   }
