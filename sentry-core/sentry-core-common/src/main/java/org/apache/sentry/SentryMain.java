@@ -22,7 +22,6 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
-import org.apache.sentry.service.thrift.SentryService;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -30,9 +29,10 @@ public class SentryMain {
   private static final String HELP_SHORT = "h";
   private static final String HELP_LONG = "help";
   private static final String COMMAND = "command";
-  private static final ImmutableMap<String, Command> COMMANDS = ImmutableMap
-      .<String, Command>builder()
-      .put("service", new SentryService.CommandImpl())
+  private static final ImmutableMap<String, String> COMMANDS = ImmutableMap
+      .<String, String>builder()
+      .put("service", "org.apache.sentry.service.thrift.SentryService$CommandImpl")
+      .put("config-tool", "org.apache.sentry.binding.hive.authz.SentryConfigTool$CommandImpl")
       .build();
   public static void main(String[] args)
       throws Exception {
@@ -42,17 +42,31 @@ public class SentryMain {
     options.addOption(null, COMMAND, true, "Command to run. Options: " + COMMANDS.keySet());
     CommandLine commandLine = parser.parse(options, args);
     String commandName = commandLine.getOptionValue(COMMAND);
-    if (commandName == null || options.hasOption(HELP_SHORT) || options.hasOption(HELP_LONG)) {
+    if (commandName == null || commandLine.hasOption(HELP_SHORT) ||
+        commandLine.hasOption(HELP_LONG)) {
       printHelp(options);
     }
-    Command command = COMMANDS.get(commandName);
-    if (command == null) {
-      printHelp(options);
+    String commandClazz = COMMANDS.get(commandName);
+    if (commandClazz == null) {
+      String msg = "Unknown command '" + commandName + "', options are: " + COMMANDS.keySet();
+      throw new IllegalArgumentException(msg);
     }
-    command.run(commandLine.getArgs());
+    Object command;
+    try {
+      command = Class.forName(commandClazz.trim()).newInstance();
+    } catch (Exception e) {
+      String msg = "Could not create instance of " + commandClazz + " for command " + commandName;
+      throw new IllegalStateException(msg, e);
+    }
+    if (!(command instanceof Command)) {
+      String msg = "Command " + command.getClass().getName() + " is not an instance of "
+          + Command.class.getName();
+      throw new IllegalStateException(msg);
+    }
+    ((Command)command).run(commandLine.getArgs());
   }
   private static void printHelp(Options options) {
-    (new HelpFormatter()).printHelp("sentry.sh --" + COMMAND + "=" + COMMANDS.keySet(),
+    (new HelpFormatter()).printHelp("sentry --" + COMMAND + "=" + COMMANDS.keySet(),
         options);
     System.exit(1);
   }

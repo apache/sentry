@@ -41,6 +41,7 @@ import org.apache.hadoop.hive.ql.processors.CommandProcessorResponse;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
+import org.apache.sentry.Command;
 import org.apache.sentry.binding.hive.HiveAuthzBindingHook;
 import org.apache.sentry.binding.hive.HiveAuthzBindingSessionHook;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
@@ -478,39 +479,41 @@ public class SentryConfigTool {
     }
   }
 
-  public static void main(String args[]) throws Exception {
-    SentryConfigTool sentryTool = new SentryConfigTool();
+  public static class CommandImpl implements Command {
+    @Override
+    public void run(String[] args) throws Exception {
+      SentryConfigTool sentryTool = new SentryConfigTool();
 
-    try {
-      // parse arguments
-      sentryTool.parseArgs(args);
+      try {
+        // parse arguments
+        sentryTool.parseArgs(args);
 
-      // load configuration
-      sentryTool.setupConfig();
+        // load configuration
+        sentryTool.setupConfig();
 
-      // validate configuration
-      if (sentryTool.isValidate()) {
-        sentryTool.validatePolicy();
-      }
-
-      // list permissions for give user
-      if (sentryTool.isListPrivs()) {
-        sentryTool.listPrivs();
-      }
-
-      // verify given query
-      if (sentryTool.getQuery() != null) {
-        if (sentryTool.getJdbcURL() != null) {
-          sentryTool.verifyRemoteQuery(sentryTool.getQuery());
-        } else {
-          sentryTool.verifyLocalQuery(sentryTool.getQuery());
+        // validate configuration
+        if (sentryTool.isValidate()) {
+          sentryTool.validatePolicy();
         }
-      }
-    } catch (Exception e) {
-      System.out.println("Sentry tool reported Errors: " + e.getMessage());
-      e.printStackTrace(System.out);
-      System.exit(1);
-    }
 
+        // list permissions for give user
+        if (sentryTool.isListPrivs()) {
+          sentryTool.listPrivs();
+        }
+
+        // verify given query
+        if (sentryTool.getQuery() != null) {
+          if (sentryTool.getJdbcURL() != null) {
+            sentryTool.verifyRemoteQuery(sentryTool.getQuery());
+          } else {
+            sentryTool.verifyLocalQuery(sentryTool.getQuery());
+          }
+        }
+      } catch (Exception e) {
+        System.out.println("Sentry tool reported Errors: " + e.getMessage());
+        e.printStackTrace(System.out);
+        System.exit(1);
+      }
+    }
   }
 }
