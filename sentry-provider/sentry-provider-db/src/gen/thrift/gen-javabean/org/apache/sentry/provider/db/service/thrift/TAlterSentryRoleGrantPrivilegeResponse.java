@@ -31,15 +31,15 @@ import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TCreateSentryPrivilegeResponse implements org.apache.thrift.TBase<TCreateSentryPrivilegeResponse, TCreateSentryPrivilegeResponse._Fields>, java.io.Serializable, Cloneable {
-  private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("TCreateSentryPrivilegeResponse");
+public class TAlterSentryRoleGrantPrivilegeResponse implements org.apache.thrift.TBase<TAlterSentryRoleGrantPrivilegeResponse, TAlterSentryRoleGrantPrivilegeResponse._Fields>, java.io.Serializable, Cloneable {
+  private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("TAlterSentryRoleGrantPrivilegeResponse");
 
   private static final org.apache.thrift.protocol.TField STATUS_FIELD_DESC = new org.apache.thrift.protocol.TField("status", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
-    schemes.put(StandardScheme.class, new TCreateSentryPrivilegeResponseStandardSchemeFactory());
-    schemes.put(TupleScheme.class, new TCreateSentryPrivilegeResponseTupleSchemeFactory());
+    schemes.put(StandardScheme.class, new TAlterSentryRoleGrantPrivilegeResponseStandardSchemeFactory());
+    schemes.put(TupleScheme.class, new TAlterSentryRoleGrantPrivilegeResponseTupleSchemeFactory());
   }
 
   private org.apache.sentry.service.thrift.TSentryResponseStatus status; // required
@@ -109,13 +109,13 @@ public class TCreateSentryPrivilegeResponse implements org.apache.thrift.TBase<T
     tmpMap.put(_Fields.STATUS, new org.apache.thrift.meta_data.FieldMetaData("status", org.apache.thrift.TFieldRequirementType.REQUIRED, 
         new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, org.apache.sentry.service.thrift.TSentryResponseStatus.class)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
-    org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(TCreateSentryPrivilegeResponse.class, metaDataMap);
+    org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(TAlterSentryRoleGrantPrivilegeResponse.class, metaDataMap);
   }
 
-  public TCreateSentryPrivilegeResponse() {
+  public TAlterSentryRoleGrantPrivilegeResponse() {
   }
 
-  public TCreateSentryPrivilegeResponse(
+  public TAlterSentryRoleGrantPrivilegeResponse(
     org.apache.sentry.service.thrift.TSentryResponseStatus status)
   {
     this();
@@ -125,14 +125,14 @@ public class TCreateSentryPrivilegeResponse implements org.apache.thrift.TBase<T
   /**
    * Performs a deep copy on <i>other</i>.
    */
-  public TCreateSentryPrivilegeResponse(TCreateSentryPrivilegeResponse other) {
+  public TAlterSentryRoleGrantPrivilegeResponse(TAlterSentryRoleGrantPrivilegeResponse other) {
     if (other.isSetStatus()) {
       this.status = new org.apache.sentry.service.thrift.TSentryResponseStatus(other.status);
     }
   }
 
-  public TCreateSentryPrivilegeResponse deepCopy() {
-    return new TCreateSentryPrivilegeResponse(this);
+  public TAlterSentryRoleGrantPrivilegeResponse deepCopy() {
+    return new TAlterSentryRoleGrantPrivilegeResponse(this);
   }
 
   @Override
@@ -202,12 +202,12 @@ public class TCreateSentryPrivilegeResponse implements org.apache.thrift.TBase<T
   public boolean equals(Object that) {
     if (that == null)
       return false;
-    if (that instanceof TCreateSentryPrivilegeResponse)
-      return this.equals((TCreateSentryPrivilegeResponse)that);
+    if (that instanceof TAlterSentryRoleGrantPrivilegeResponse)
+      return this.equals((TAlterSentryRoleGrantPrivilegeResponse)that);
     return false;
   }
 
-  public boolean equals(TCreateSentryPrivilegeResponse that) {
+  public boolean equals(TAlterSentryRoleGrantPrivilegeResponse that) {
     if (that == null)
       return false;
 
@@ -235,13 +235,13 @@ public class TCreateSentryPrivilegeResponse implements org.apache.thrift.TBase<T
     return builder.toHashCode();
   }
 
-  public int compareTo(TCreateSentryPrivilegeResponse other) {
+  public int compareTo(TAlterSentryRoleGrantPrivilegeResponse other) {
     if (!getClass().equals(other.getClass())) {
       return getClass().getName().compareTo(other.getClass().getName());
     }
 
     int lastComparison = 0;
-    TCreateSentryPrivilegeResponse typedOther = (TCreateSentryPrivilegeResponse)other;
+    TAlterSentryRoleGrantPrivilegeResponse typedOther = (TAlterSentryRoleGrantPrivilegeResponse)other;
 
     lastComparison = Boolean.valueOf(isSetStatus()).compareTo(typedOther.isSetStatus());
     if (lastComparison != 0) {
@@ -270,7 +270,7 @@ public class TCreateSentryPrivilegeResponse implements org.apache.thrift.TBase<T
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder("TCreateSentryPrivilegeResponse(");
+    StringBuilder sb = new StringBuilder("TAlterSentryRoleGrantPrivilegeResponse(");
     boolean first = true;
 
     sb.append("status:");
@@ -312,15 +312,15 @@ public class TCreateSentryPrivilegeResponse implements org.apache.thrift.TBase<T
     }
   }
 
-  private static class TCreateSentryPrivilegeResponseStandardSchemeFactory implements SchemeFactory {
-    public TCreateSentryPrivilegeResponseStandardScheme getScheme() {
-      return new TCreateSentryPrivilegeResponseStandardScheme();
+  private static class TAlterSentryRoleGrantPrivilegeResponseStandardSchemeFactory implements SchemeFactory {
+    public TAlterSentryRoleGrantPrivilegeResponseStandardScheme getScheme() {
+      return new TAlterSentryRoleGrantPrivilegeResponseStandardScheme();
     }
   }
 
-  private static class TCreateSentryPrivilegeResponseStandardScheme extends StandardScheme<TCreateSentryPrivilegeResponse> {
+  private static class TAlterSentryRoleGrantPrivilegeResponseStandardScheme extends StandardScheme<TAlterSentryRoleGrantPrivilegeResponse> {
 
-    public void read(org.apache.thrift.protocol.TProtocol iprot, TCreateSentryPrivilegeResponse struct) throws org.apache.thrift.TException {
+    public void read(org.apache.thrift.protocol.TProtocol iprot, TAlterSentryRoleGrantPrivilegeResponse struct) throws org.apache.thrift.TException {
       org.apache.thrift.protocol.TField schemeField;
       iprot.readStructBegin();
       while (true)
@@ -348,7 +348,7 @@ public class TCreateSentryPrivilegeResponse implements org.apache.thrift.TBase<T
       struct.validate();
     }
 
-    public void write(org.apache.thrift.protocol.TProtocol oprot, TCreateSentryPrivilegeResponse struct) throws org.apache.thrift.TException {
+    public void write(org.apache.thrift.protocol.TProtocol oprot, TAlterSentryRoleGrantPrivilegeResponse struct) throws org.apache.thrift.TException {
       struct.validate();
 
       oprot.writeStructBegin(STRUCT_DESC);
@@ -363,22 +363,22 @@ public class TCreateSentryPrivilegeResponse implements org.apache.thrift.TBase<T
 
   }
 
-  private static class TCreateSentryPrivilegeResponseTupleSchemeFactory implements SchemeFactory {
-    public TCreateSentryPrivilegeResponseTupleScheme getScheme() {
-      return new TCreateSentryPrivilegeResponseTupleScheme();
+  private static class TAlterSentryRoleGrantPrivilegeResponseTupleSchemeFactory implements SchemeFactory {
+    public TAlterSentryRoleGrantPrivilegeResponseTupleScheme getScheme() {
+      return new TAlterSentryRoleGrantPrivilegeResponseTupleScheme();
     }
   }
 
-  private static class TCreateSentryPrivilegeResponseTupleScheme extends TupleScheme<TCreateSentryPrivilegeResponse> {
+  private static class TAlterSentryRoleGrantPrivilegeResponseTupleScheme extends TupleScheme<TAlterSentryRoleGrantPrivilegeResponse> {
 
     @Override
-    public void write(org.apache.thrift.protocol.TProtocol prot, TCreateSentryPrivilegeResponse struct) throws org.apache.thrift.TException {
+    public void write(org.apache.thrift.protocol.TProtocol prot, TAlterSentryRoleGrantPrivilegeResponse struct) throws org.apache.thrift.TException {
       TTupleProtocol oprot = (TTupleProtocol) prot;
       struct.status.write(oprot);
     }
 
     @Override
-    public void read(org.apache.thrift.protocol.TProtocol prot, TCreateSentryPrivilegeResponse struct) throws org.apache.thrift.TException {
+    public void read(org.apache.thrift.protocol.TProtocol prot, TAlterSentryRoleGrantPrivilegeResponse struct) throws org.apache.thrift.TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
       struct.status = new org.apache.sentry.service.thrift.TSentryResponseStatus();
       struct.status.read(iprot);

@@ -19,20 +19,23 @@
 package org.apache.sentry.provider.db.service.model;
 
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 
 import javax.jdo.annotations.PersistenceCapable;
 
+import org.apache.sentry.provider.db.service.persistent.SentryNoSuchObjectException;
+
 @PersistenceCapable
 public class MSentryRole {
 
-  String roleName;
+  private String roleName;
   // set of privileges granted to this role
-  Set<MSentryPrivilege> privileges;
+  private Set<MSentryPrivilege> privileges;
   // set of groups this role belongs to
-  Set<MSentryGroup> groups;
-  long createTime;
-  String grantorPrincipal;
+  private Set<MSentryGroup> groups;
+  private long createTime;
+  private String grantorPrincipal;
 
   public MSentryRole() {
     privileges = new HashSet<MSentryPrivilege>();
@@ -87,12 +90,25 @@ public class MSentryRole {
     return groups;
   }
 
+  public void removePrivilege(MSentryPrivilege privilege) {
+    for (Iterator<MSentryPrivilege> iter = privileges.iterator(); iter.hasNext();) {
+      if (iter.next().getPrivilegeName().equalsIgnoreCase(privilege.getPrivilegeName())) {
+        iter.remove();
+        privilege.removeRole(this);
+        return;
+      }
+    }
+  }
+
   public void appendPrivileges(Set<MSentryPrivilege> privileges) {
     this.privileges.addAll(privileges);
   }
 
   public void appendPrivilege(MSentryPrivilege privilege) {
-    this.privileges.add(privilege);
+    if (!privileges.contains(privilege)) {
+      privileges.add(privilege);
+      privilege.appendRole(this);
+    }
   }
 
   public void appendGroups(Set<MSentryGroup> groups) {

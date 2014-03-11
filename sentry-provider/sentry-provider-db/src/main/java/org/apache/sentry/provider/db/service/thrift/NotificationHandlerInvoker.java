@@ -38,58 +38,76 @@ public class NotificationHandlerInvoker extends NotificationHandler {
   private final ImmutableList<NotificationHandler> handlers;
 
   public NotificationHandlerInvoker(Configuration conf, NotificationHandler handler)
-      throws Exception {
+  throws Exception {
     this(conf, ImmutableList.of(handler));
   }
 
   public NotificationHandlerInvoker(Configuration conf, List<NotificationHandler> handlers)
-      throws Exception {
+  throws Exception {
     super(conf);
     this.handlers = ImmutableList.copyOf(handlers);
   }
 
   @Override
   public void create_sentry_role(CommitContext context,
-      TCreateSentryRoleRequest request, TCreateSentryRoleResponse response) {
+                                 TCreateSentryRoleRequest request, TCreateSentryRoleResponse response) {
     for (NotificationHandler handler : handlers) {
       try {
         LOGGER.debug("Calling " + handler);
         handler.create_sentry_role(context,  new TCreateSentryRoleRequest(request),
-            new TCreateSentryRoleResponse(response));
+                                   new TCreateSentryRoleResponse(response));
       } catch (Exception ex) {
         LOGGER.error("Unexpected error in " + handler + ". Request: "
-            + request + ", Response: " + response, ex);
+                     + request + ", Response: " + response, ex);
       }
     }
   }
 
   @Override
   public void drop_sentry_role(CommitContext context, TDropSentryRoleRequest request,
-      TDropSentryRoleResponse response) {
+                               TDropSentryRoleResponse response) {
     for (NotificationHandler handler : handlers) {
       try {
         LOGGER.debug("Calling " + handler);
         handler.drop_sentry_role(context,  new TDropSentryRoleRequest(request),
-            new TDropSentryRoleResponse(response));
+                                 new TDropSentryRoleResponse(response));
       } catch (Exception ex) {
         LOGGER.error("Unexpected error in " + handler + ". Request: "
-            + request + ", Response: " + response, ex);
+                     + request + ", Response: " + response, ex);
       }
     }
   }
 
   @Override
-  public void create_sentry_privilege(CommitContext context,
-      TCreateSentryPrivilegeRequest request,
-      TCreateSentryPrivilegeResponse response) {
+  public void alter_sentry_role_grant_privilege(CommitContext context,
+      TAlterSentryRoleGrantPrivilegeRequest request,
+      TAlterSentryRoleGrantPrivilegeResponse response) {
     for (NotificationHandler handler : handlers) {
       try {
         LOGGER.debug("Calling " + handler);
-        handler.create_sentry_privilege(context, new TCreateSentryPrivilegeRequest(request),
-            new TCreateSentryPrivilegeResponse(response));
+        handler.alter_sentry_role_grant_privilege(context,
+            new TAlterSentryRoleGrantPrivilegeRequest(request),
+            new TAlterSentryRoleGrantPrivilegeResponse(response));
       } catch (Exception ex) {
         LOGGER.error("Unexpected error in " + handler + ". Request: "
-            + request + ", Response: " + response, ex);
+                     + request + ", Response: " + response, ex);
+      }
+    }
+  }
+
+  @Override
+  public void alter_sentry_role_revoke_privilege(CommitContext context,
+      TAlterSentryRoleRevokePrivilegeRequest request,
+      TAlterSentryRoleRevokePrivilegeResponse response) {
+    for (NotificationHandler handler : handlers) {
+      try {
+        LOGGER.debug("Calling " + handler);
+        handler.alter_sentry_role_revoke_privilege(context,
+            new TAlterSentryRoleRevokePrivilegeRequest(request),
+            new TAlterSentryRoleRevokePrivilegeResponse(response));
+      } catch (Exception ex) {
+        LOGGER.error("Unexpected error in " + handler + ". Request: "
+                     + request + ", Response: " + response, ex);
       }
     }
   }
@@ -102,26 +120,26 @@ public class NotificationHandlerInvoker extends NotificationHandler {
       try {
         LOGGER.debug("Calling " + handler);
         handler.alter_sentry_role_add_groups(context, new TAlterSentryRoleAddGroupsRequest(request),
-            new TAlterSentryRoleAddGroupsResponse(response));
+                                             new TAlterSentryRoleAddGroupsResponse(response));
       } catch (Exception ex) {
         LOGGER.error("Unexpected error in " + handler + ". Request: "
-            + request + ", Response: " + response, ex);
+                     + request + ", Response: " + response, ex);
       }
     }
   }
 
   @Override
   public void alter_sentry_role_delete_groups(
-      CommitContext context, TAlterSentryRoleDeleteGroupsRequest request,
-      TAlterSentryRoleDeleteGroupsResponse response) {
+    CommitContext context, TAlterSentryRoleDeleteGroupsRequest request,
+    TAlterSentryRoleDeleteGroupsResponse response) {
     for (NotificationHandler handler : handlers) {
       try {
         LOGGER.debug("Calling " + handler);
         handler.alter_sentry_role_delete_groups(context, new TAlterSentryRoleDeleteGroupsRequest(request),
-            new TAlterSentryRoleDeleteGroupsResponse(response));
+                                                new TAlterSentryRoleDeleteGroupsResponse(response));
       } catch (Exception ex) {
         LOGGER.error("Unexpected error in " + handler + ". Request: "
-            + request + ", Response: " + response, ex);
+                     + request + ", Response: " + response, ex);
       }
     }
   }

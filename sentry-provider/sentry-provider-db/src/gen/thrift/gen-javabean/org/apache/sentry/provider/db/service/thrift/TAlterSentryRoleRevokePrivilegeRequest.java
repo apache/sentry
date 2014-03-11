@@ -31,31 +31,31 @@ import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TAlterSentryRoleAddGroupsRequest implements org.apache.thrift.TBase<TAlterSentryRoleAddGroupsRequest, TAlterSentryRoleAddGroupsRequest._Fields>, java.io.Serializable, Cloneable {
-  private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("TAlterSentryRoleAddGroupsRequest");
+public class TAlterSentryRoleRevokePrivilegeRequest implements org.apache.thrift.TBase<TAlterSentryRoleRevokePrivilegeRequest, TAlterSentryRoleRevokePrivilegeRequest._Fields>, java.io.Serializable, Cloneable {
+  private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("TAlterSentryRoleRevokePrivilegeRequest");
 
   private static final org.apache.thrift.protocol.TField PROTOCOL_VERSION_FIELD_DESC = new org.apache.thrift.protocol.TField("protocol_version", org.apache.thrift.protocol.TType.I32, (short)1);
   private static final org.apache.thrift.protocol.TField USER_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("userName", org.apache.thrift.protocol.TType.STRING, (short)2);
   private static final org.apache.thrift.protocol.TField ROLE_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("roleName", org.apache.thrift.protocol.TType.STRING, (short)3);
-  private static final org.apache.thrift.protocol.TField GROUPS_FIELD_DESC = new org.apache.thrift.protocol.TField("groups", org.apache.thrift.protocol.TType.SET, (short)4);
+  private static final org.apache.thrift.protocol.TField PRIVILEGE_FIELD_DESC = new org.apache.thrift.protocol.TField("privilege", org.apache.thrift.protocol.TType.STRUCT, (short)4);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
-    schemes.put(StandardScheme.class, new TAlterSentryRoleAddGroupsRequestStandardSchemeFactory());
-    schemes.put(TupleScheme.class, new TAlterSentryRoleAddGroupsRequestTupleSchemeFactory());
+    schemes.put(StandardScheme.class, new TAlterSentryRoleRevokePrivilegeRequestStandardSchemeFactory());
+    schemes.put(TupleScheme.class, new TAlterSentryRoleRevokePrivilegeRequestTupleSchemeFactory());
   }
 
   private int protocol_version; // required
   private String userName; // required
   private String roleName; // required
-  private Set<TSentryGroup> groups; // required
+  private TSentryPrivilege privilege; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
     PROTOCOL_VERSION((short)1, "protocol_version"),
     USER_NAME((short)2, "userName"),
     ROLE_NAME((short)3, "roleName"),
-    GROUPS((short)4, "groups");
+    PRIVILEGE((short)4, "privilege");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -76,8 +76,8 @@ public class TAlterSentryRoleAddGroupsRequest implements org.apache.thrift.TBase
           return USER_NAME;
         case 3: // ROLE_NAME
           return ROLE_NAME;
-        case 4: // GROUPS
-          return GROUPS;
+        case 4: // PRIVILEGE
+          return PRIVILEGE;
         default:
           return null;
       }
@@ -129,36 +129,35 @@ public class TAlterSentryRoleAddGroupsRequest implements org.apache.thrift.TBase
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
     tmpMap.put(_Fields.ROLE_NAME, new org.apache.thrift.meta_data.FieldMetaData("roleName", org.apache.thrift.TFieldRequirementType.REQUIRED, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
-    tmpMap.put(_Fields.GROUPS, new org.apache.thrift.meta_data.FieldMetaData("groups", org.apache.thrift.TFieldRequirementType.REQUIRED, 
-        new org.apache.thrift.meta_data.SetMetaData(org.apache.thrift.protocol.TType.SET, 
-            new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TSentryGroup.class))));
+    tmpMap.put(_Fields.PRIVILEGE, new org.apache.thrift.meta_data.FieldMetaData("privilege", org.apache.thrift.TFieldRequirementType.REQUIRED, 
+        new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TSentryPrivilege.class)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
-    org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(TAlterSentryRoleAddGroupsRequest.class, metaDataMap);
+    org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(TAlterSentryRoleRevokePrivilegeRequest.class, metaDataMap);
   }
 
-  public TAlterSentryRoleAddGroupsRequest() {
+  public TAlterSentryRoleRevokePrivilegeRequest() {
     this.protocol_version = 1;
 
   }
 
-  public TAlterSentryRoleAddGroupsRequest(
+  public TAlterSentryRoleRevokePrivilegeRequest(
     int protocol_version,
     String userName,
     String roleName,
-    Set<TSentryGroup> groups)
+    TSentryPrivilege privilege)
   {
     this();
     this.protocol_version = protocol_version;
     setProtocol_versionIsSet(true);
     this.userName = userName;
     this.roleName = roleName;
-    this.groups = groups;
+    this.privilege = privilege;
   }
 
   /**
    * Performs a deep copy on <i>other</i>.
    */
-  public TAlterSentryRoleAddGroupsRequest(TAlterSentryRoleAddGroupsRequest other) {
+  public TAlterSentryRoleRevokePrivilegeRequest(TAlterSentryRoleRevokePrivilegeRequest other) {
     __isset_bitfield = other.__isset_bitfield;
     this.protocol_version = other.protocol_version;
     if (other.isSetUserName()) {
@@ -167,17 +166,13 @@ public class TAlterSentryRoleAddGroupsRequest implements org.apache.thrift.TBase
     if (other.isSetRoleName()) {
       this.roleName = other.roleName;
     }
-    if (other.isSetGroups()) {
-      Set<TSentryGroup> __this__groups = new HashSet<TSentryGroup>();
-      for (TSentryGroup other_element : other.groups) {
-        __this__groups.add(new TSentryGroup(other_element));
-      }
-      this.groups = __this__groups;
+    if (other.isSetPrivilege()) {
+      this.privilege = new TSentryPrivilege(other.privilege);
     }
   }
 
-  public TAlterSentryRoleAddGroupsRequest deepCopy() {
-    return new TAlterSentryRoleAddGroupsRequest(this);
+  public TAlterSentryRoleRevokePrivilegeRequest deepCopy() {
+    return new TAlterSentryRoleRevokePrivilegeRequest(this);
   }
 
   @Override
@@ -186,7 +181,7 @@ public class TAlterSentryRoleAddGroupsRequest implements org.apache.thrift.TBase
 
     this.userName = null;
     this.roleName = null;
-    this.groups = null;
+    this.privilege = null;
   }
 
   public int getProtocol_version() {
@@ -257,41 +252,26 @@ public class TAlterSentryRoleAddGroupsRequest implements org.apache.thrift.TBase
     }
   }
 
-  public int getGroupsSize() {
-    return (this.groups == null) ? 0 : this.groups.size();
+  public TSentryPrivilege getPrivilege() {
+    return this.privilege;
   }
 
-  public java.util.Iterator<TSentryGroup> getGroupsIterator() {
-    return (this.groups == null) ? null : this.groups.iterator();
+  public void setPrivilege(TSentryPrivilege privilege) {
+    this.privilege = privilege;
   }
 
-  public void addToGroups(TSentryGroup elem) {
-    if (this.groups == null) {
-      this.groups = new HashSet<TSentryGroup>();
-    }
-    this.groups.add(elem);
+  public void unsetPrivilege() {
+    this.privilege = null;
   }
 
-  public Set<TSentryGroup> getGroups() {
-    return this.groups;
+  /** Returns true if field privilege is set (has been assigned a value) and false otherwise */
+  public boolean isSetPrivilege() {
+    return this.privilege != null;
   }
 
-  public void setGroups(Set<TSentryGroup> groups) {
-    this.groups = groups;
-  }
-
-  public void unsetGroups() {
-    this.groups = null;
-  }
-
-  /** Returns true if field groups is set (has been assigned a value) and false otherwise */
-  public boolean isSetGroups() {
-    return this.groups != null;
-  }
-
-  public void setGroupsIsSet(boolean value) {
+  public void setPrivilegeIsSet(boolean value) {
     if (!value) {
-      this.groups = null;
+      this.privilege = null;
     }
   }
 
@@ -321,11 +301,11 @@ public class TAlterSentryRoleAddGroupsRequest implements org.apache.thrift.TBase
       }
       break;
 
-    case GROUPS:
+    case PRIVILEGE:
       if (value == null) {
-        unsetGroups();
+        unsetPrivilege();
       } else {
-        setGroups((Set<TSentryGroup>)value);
+        setPrivilege((TSentryPrivilege)value);
       }
       break;
 
@@ -343,8 +323,8 @@ public class TAlterSentryRoleAddGroupsRequest implements org.apache.thrift.TBase
     case ROLE_NAME:
       return getRoleName();
 
-    case GROUPS:
-      return getGroups();
+    case PRIVILEGE:
+      return getPrivilege();
 
     }
     throw new IllegalStateException();
@@ -363,8 +343,8 @@ public class TAlterSentryRoleAddGroupsRequest implements org.apache.thrift.TBase
       return isSetUserName();
     case ROLE_NAME:
       return isSetRoleName();
-    case GROUPS:
-      return isSetGroups();
+    case PRIVILEGE:
+      return isSetPrivilege();
     }
     throw new IllegalStateException();
   }
@@ -373,12 +353,12 @@ public class TAlterSentryRoleAddGroupsRequest implements org.apache.thrift.TBase
   public boolean equals(Object that) {
     if (that == null)
       return false;
-    if (that instanceof TAlterSentryRoleAddGroupsRequest)
-      return this.equals((TAlterSentryRoleAddGroupsRequest)that);
+    if (that instanceof TAlterSentryRoleRevokePrivilegeRequest)
+      return this.equals((TAlterSentryRoleRevokePrivilegeRequest)that);
     return false;
   }
 
-  public boolean equals(TAlterSentryRoleAddGroupsRequest that) {
+  public boolean equals(TAlterSentryRoleRevokePrivilegeRequest that) {
     if (that == null)
       return false;
 
@@ -409,12 +389,12 @@ public class TAlterSentryRoleAddGroupsRequest implements org.apache.thrift.TBase
         return false;
     }
 
-    boolean this_present_groups = true && this.isSetGroups();
-    boolean that_present_groups = true && that.isSetGroups();
-    if (this_present_groups || that_present_groups) {
-      if (!(this_present_groups && that_present_groups))
+    boolean this_present_privilege = true && this.isSetPrivilege();
+    boolean that_present_privilege = true && that.isSetPrivilege();
+    if (this_present_privilege || that_present_privilege) {
+      if (!(this_present_privilege && that_present_privilege))
         return false;
-      if (!this.groups.equals(that.groups))
+      if (!this.privilege.equals(that.privilege))
         return false;
     }
 
@@ -440,21 +420,21 @@ public class TAlterSentryRoleAddGroupsRequest implements org.apache.thrift.TBase
     if (present_roleName)
       builder.append(roleName);
 
-    boolean present_groups = true && (isSetGroups());
-    builder.append(present_groups);
-    if (present_groups)
-      builder.append(groups);
+    boolean present_privilege = true && (isSetPrivilege());
+    builder.append(present_privilege);
+    if (present_privilege)
+      builder.append(privilege);
 
     return builder.toHashCode();
   }
 
-  public int compareTo(TAlterSentryRoleAddGroupsRequest other) {
+  public int compareTo(TAlterSentryRoleRevokePrivilegeRequest other) {
     if (!getClass().equals(other.getClass())) {
       return getClass().getName().compareTo(other.getClass().getName());
     }
 
     int lastComparison = 0;
-    TAlterSentryRoleAddGroupsRequest typedOther = (TAlterSentryRoleAddGroupsRequest)other;
+    TAlterSentryRoleRevokePrivilegeRequest typedOther = (TAlterSentryRoleRevokePrivilegeRequest)other;
 
     lastComparison = Boolean.valueOf(isSetProtocol_version()).compareTo(typedOther.isSetProtocol_version());
     if (lastComparison != 0) {
@@ -486,12 +466,12 @@ public class TAlterSentryRoleAddGroupsRequest implements org.apache.thrift.TBase
         return lastComparison;
       }
     }
-    lastComparison = Boolean.valueOf(isSetGroups()).compareTo(typedOther.isSetGroups());
+    lastComparison = Boolean.valueOf(isSetPrivilege()).compareTo(typedOther.isSetPrivilege());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetGroups()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.groups, typedOther.groups);
+    if (isSetPrivilege()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.privilege, typedOther.privilege);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -513,7 +493,7 @@ public class TAlterSentryRoleAddGroupsRequest implements org.apache.thrift.TBase
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder("TAlterSentryRoleAddGroupsRequest(");
+    StringBuilder sb = new StringBuilder("TAlterSentryRoleRevokePrivilegeRequest(");
     boolean first = true;
 
     sb.append("protocol_version:");
@@ -536,11 +516,11 @@ public class TAlterSentryRoleAddGroupsRequest implements org.apache.thrift.TBase
     }
     first = false;
     if (!first) sb.append(", ");
-    sb.append("groups:");
-    if (this.groups == null) {
+    sb.append("privilege:");
+    if (this.privilege == null) {
       sb.append("null");
     } else {
-      sb.append(this.groups);
+      sb.append(this.privilege);
     }
     first = false;
     sb.append(")");
@@ -561,11 +541,14 @@ public class TAlterSentryRoleAddGroupsRequest implements org.apache.thrift.TBase
       throw new org.apache.thrift.protocol.TProtocolException("Required field 'roleName' is unset! Struct:" + toString());
     }
 
-    if (!isSetGroups()) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'groups' is unset! Struct:" + toString());
+    if (!isSetPrivilege()) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'privilege' is unset! Struct:" + toString());
     }
 
     // check for sub-struct validity
+    if (privilege != null) {
+      privilege.validate();
+    }
   }
 
   private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
@@ -586,15 +569,15 @@ public class TAlterSentryRoleAddGroupsRequest implements org.apache.thrift.TBase
     }
   }
 
-  private static class TAlterSentryRoleAddGroupsRequestStandardSchemeFactory implements SchemeFactory {
-    public TAlterSentryRoleAddGroupsRequestStandardScheme getScheme() {
-      return new TAlterSentryRoleAddGroupsRequestStandardScheme();
+  private static class TAlterSentryRoleRevokePrivilegeRequestStandardSchemeFactory implements SchemeFactory {
+    public TAlterSentryRoleRevokePrivilegeRequestStandardScheme getScheme() {
+      return new TAlterSentryRoleRevokePrivilegeRequestStandardScheme();
     }
   }
 
-  private static class TAlterSentryRoleAddGroupsRequestStandardScheme extends StandardScheme<TAlterSentryRoleAddGroupsRequest> {
+  private static class TAlterSentryRoleRevokePrivilegeRequestStandardScheme extends StandardScheme<TAlterSentryRoleRevokePrivilegeRequest> {
 
-    public void read(org.apache.thrift.protocol.TProtocol iprot, TAlterSentryRoleAddGroupsRequest struct) throws org.apache.thrift.TException {
+    public void read(org.apache.thrift.protocol.TProtocol iprot, TAlterSentryRoleRevokePrivilegeRequest struct) throws org.apache.thrift.TException {
       org.apache.thrift.protocol.TField schemeField;
       iprot.readStructBegin();
       while (true)
@@ -628,21 +611,11 @@ public class TAlterSentryRoleAddGroupsRequest implements org.apache.thrift.TBase
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
-          case 4: // GROUPS
-            if (schemeField.type == org.apache.thrift.protocol.TType.SET) {
-              {
-                org.apache.thrift.protocol.TSet _set16 = iprot.readSetBegin();
-                struct.groups = new HashSet<TSentryGroup>(2*_set16.size);
-                for (int _i17 = 0; _i17 < _set16.size; ++_i17)
-                {
-                  TSentryGroup _elem18; // required
-                  _elem18 = new TSentryGroup();
-                  _elem18.read(iprot);
-                  struct.groups.add(_elem18);
-                }
-                iprot.readSetEnd();
-              }
-              struct.setGroupsIsSet(true);
+          case 4: // PRIVILEGE
+            if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+              struct.privilege = new TSentryPrivilege();
+              struct.privilege.read(iprot);
+              struct.setPrivilegeIsSet(true);
             } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
@@ -656,7 +629,7 @@ public class TAlterSentryRoleAddGroupsRequest implements org.apache.thrift.TBase
       struct.validate();
     }
 
-    public void write(org.apache.thrift.protocol.TProtocol oprot, TAlterSentryRoleAddGroupsRequest struct) throws org.apache.thrift.TException {
+    public void write(org.apache.thrift.protocol.TProtocol oprot, TAlterSentryRoleRevokePrivilegeRequest struct) throws org.apache.thrift.TException {
       struct.validate();
 
       oprot.writeStructBegin(STRUCT_DESC);
@@ -673,16 +646,9 @@ public class TAlterSentryRoleAddGroupsRequest implements org.apache.thrift.TBase
         oprot.writeString(struct.roleName);
         oprot.writeFieldEnd();
       }
-      if (struct.groups != null) {
-        oprot.writeFieldBegin(GROUPS_FIELD_DESC);
-        {
-          oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, struct.groups.size()));
-          for (TSentryGroup _iter19 : struct.groups)
-          {
-            _iter19.write(oprot);
-          }
-          oprot.writeSetEnd();
-        }
+      if (struct.privilege != null) {
+        oprot.writeFieldBegin(PRIVILEGE_FIELD_DESC);
+        struct.privilege.write(oprot);
         oprot.writeFieldEnd();
       }
       oprot.writeFieldStop();
@@ -691,31 +657,25 @@ public class TAlterSentryRoleAddGroupsRequest implements org.apache.thrift.TBase
 
   }
 
-  private static class TAlterSentryRoleAddGroupsRequestTupleSchemeFactory implements SchemeFactory {
-    public TAlterSentryRoleAddGroupsRequestTupleScheme getScheme() {
-      return new TAlterSentryRoleAddGroupsRequestTupleScheme();
+  private static class TAlterSentryRoleRevokePrivilegeRequestTupleSchemeFactory implements SchemeFactory {
+    public TAlterSentryRoleRevokePrivilegeRequestTupleScheme getScheme() {
+      return new TAlterSentryRoleRevokePrivilegeRequestTupleScheme();
     }
   }
 
-  private static class TAlterSentryRoleAddGroupsRequestTupleScheme extends TupleScheme<TAlterSentryRoleAddGroupsRequest> {
+  private static class TAlterSentryRoleRevokePrivilegeRequestTupleScheme extends TupleScheme<TAlterSentryRoleRevokePrivilegeRequest> {
 
     @Override
-    public void write(org.apache.thrift.protocol.TProtocol prot, TAlterSentryRoleAddGroupsRequest struct) throws org.apache.thrift.TException {
+    public void write(org.apache.thrift.protocol.TProtocol prot, TAlterSentryRoleRevokePrivilegeRequest struct) throws org.apache.thrift.TException {
       TTupleProtocol oprot = (TTupleProtocol) prot;
       oprot.writeI32(struct.protocol_version);
       oprot.writeString(struct.userName);
       oprot.writeString(struct.roleName);
-      {
-        oprot.writeI32(struct.groups.size());
-        for (TSentryGroup _iter20 : struct.groups)
-        {
-          _iter20.write(oprot);
-        }
-      }
+      struct.privilege.write(oprot);
     }
 
     @Override
-    public void read(org.apache.thrift.protocol.TProtocol prot, TAlterSentryRoleAddGroupsRequest struct) throws org.apache.thrift.TException {
+    public void read(org.apache.thrift.protocol.TProtocol prot, TAlterSentryRoleRevokePrivilegeRequest struct) throws org.apache.thrift.TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
       struct.protocol_version = iprot.readI32();
       struct.setProtocol_versionIsSet(true);
@@ -723,18 +683,9 @@ public class TAlterSentryRoleAddGroupsRequest implements org.apache.thrift.TBase
       struct.setUserNameIsSet(true);
       struct.roleName = iprot.readString();
       struct.setRoleNameIsSet(true);
-      {
-        org.apache.thrift.protocol.TSet _set21 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
-        struct.groups = new HashSet<TSentryGroup>(2*_set21.size);
-        for (int _i22 = 0; _i22 < _set21.size; ++_i22)
-        {
-          TSentryGroup _elem23; // required
-          _elem23 = new TSentryGroup();
-          _elem23.read(iprot);
-          struct.groups.add(_elem23);
-        }
-      }
-      struct.setGroupsIsSet(true);
+      struct.privilege = new TSentryPrivilege();
+      struct.privilege.read(iprot);
+      struct.setPrivilegeIsSet(true);
     }
   }
 

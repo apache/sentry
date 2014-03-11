@@ -47,49 +47,59 @@ public class SentryPolicyServiceClient {
   private TTransport transport;
   private int connectionTimeout;
   private static final Logger LOGGER = LoggerFactory
-      .getLogger(SentryPolicyServiceClient.class);
+                                       .getLogger(SentryPolicyServiceClient.class);
 
   public SentryPolicyServiceClient(Configuration conf) throws Exception {
     this.conf = conf;
     this.serverAddress = NetUtils.createSocketAddr(Preconditions.checkNotNull(
-        conf.get(ClientConfig.SERVER_RPC_ADDRESS), "Config key "
-            + ClientConfig.SERVER_RPC_ADDRESS + " is required"), conf.getInt(
-        ClientConfig.SERVER_RPC_PORT, ClientConfig.SERVER_RPC_PORT_DEFAULT));
+                           conf.get(ClientConfig.SERVER_RPC_ADDRESS), "Config key "
+                           + ClientConfig.SERVER_RPC_ADDRESS + " is required"), conf.getInt(
+                           ClientConfig.SERVER_RPC_PORT, ClientConfig.SERVER_RPC_PORT_DEFAULT));
     this.connectionTimeout = conf.getInt(ClientConfig.SERVER_RPC_CONN_TIMEOUT,
-        ClientConfig.SERVER_RPC_CONN_TIMEOUT_DEFAULT);
+                                         ClientConfig.SERVER_RPC_CONN_TIMEOUT_DEFAULT);
     String serverPrincipal = Preconditions.checkNotNull(
-        conf.get(ServerConfig.PRINCIPAL), ServerConfig.PRINCIPAL
-            + " is required");
+                               conf.get(ServerConfig.PRINCIPAL), ServerConfig.PRINCIPAL
+                               + " is required");
     serverPrincipalParts = SaslRpcServer.splitKerberosName(serverPrincipal);
     Preconditions.checkArgument(serverPrincipalParts.length == 3,
-        "Kerberos principal should have 3 parts: " + serverPrincipal);
+                                "Kerberos principal should have 3 parts: " + serverPrincipal);
     transport = new TSocket(serverAddress.getHostString(),
-        serverAddress.getPort(), connectionTimeout);
+                            serverAddress.getPort(), connectionTimeout);
     TTransport saslTransport = new TSaslClientTransport(
-        AuthMethod.KERBEROS.getMechanismName(), null, serverPrincipalParts[0],
-        serverPrincipalParts[1], ClientConfig.SASL_PROPERTIES, null, transport);
+      AuthMethod.KERBEROS.getMechanismName(), null, serverPrincipalParts[0],
+      serverPrincipalParts[1], ClientConfig.SASL_PROPERTIES, null, transport);
     saslTransport.open();
     LOGGER.info("Successfully opened transport");
     TMultiplexedProtocol protocol = new TMultiplexedProtocol(
-        new TBinaryProtocol(saslTransport),
-        SentryPolicyStoreProcessor.SENTRY_POLICY_SERVICE_NAME);
+      new TBinaryProtocol(saslTransport),
+      SentryPolicyStoreProcessor.SENTRY_POLICY_SERVICE_NAME);
     client = new SentryPolicyService.Client(protocol);
     LOGGER.info("Successfully created client");
   }
 
   public TCreateSentryRoleResponse createRole(TCreateSentryRoleRequest req)
-      throws TException {
+  throws TException {
     return client.create_sentry_role(req);
   }
 
   public TListSentryRolesResponse listRoleByName(TListSentryRolesRequest req)
-      throws TException {
+  throws TException {
     return client.list_sentry_roles_by_role_name(req);
   }
 
   public TDropSentryRoleResponse dropRole(TDropSentryRoleRequest req)
-      throws TException {
+  throws TException {
     return client.drop_sentry_role(req);
+  }
+
+  public TAlterSentryRoleGrantPrivilegeResponse grantPrivilege(TAlterSentryRoleGrantPrivilegeRequest req)
+  throws TException {
+    return client.alter_sentry_role_grant_privilege(req);
+  }
+
+  public TAlterSentryRoleRevokePrivilegeResponse revokePrivilege(TAlterSentryRoleRevokePrivilegeRequest req)
+  throws TException {
+    return client.alter_sentry_role_revoke_privilege(req);
   }
 
   public void close() {

@@ -19,6 +19,7 @@
 package org.apache.sentry.provider.db.service.model;
 
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 
 import javax.jdo.annotations.PersistenceCapable;
@@ -132,6 +133,19 @@ public class MSentryPrivilege {
   }
 
   public void appendRole(MSentryRole role) {
-    this.roles.add(role);
+    if (!roles.contains(role)) {
+      roles.add(role);
+      role.appendPrivilege(this);
+    }
+  }
+
+  public void removeRole(MSentryRole role) {
+    for (Iterator<MSentryRole> iter = roles.iterator(); iter.hasNext();) {
+      if (iter.next().getRoleName().equalsIgnoreCase(role.getRoleName())) {
+        iter.remove();
+        role.removePrivilege(this);
+        return;
+      }
+    }
   }
 }

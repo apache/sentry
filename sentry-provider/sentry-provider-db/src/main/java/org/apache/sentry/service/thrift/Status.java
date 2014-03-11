@@ -32,6 +32,7 @@ public enum Status {
   ALREADY_EXISTS(ThriftConstants.TSENTRY_STATUS_ALREADY_EXISTS),
   NO_SUCH_OBJECT(ThriftConstants.TSENTRY_STATUS_NO_SUCH_OBJECT),
   RUNTIME_ERROR(ThriftConstants.TSENTRY_STATUS_RUNTIME_ERROR),
+  INVALID_INPUT(ThriftConstants.TSENTRY_STATUS_INVALID_INPUT),
   UNKNOWN(-1)
   ;
   private int code;
@@ -63,6 +64,9 @@ public enum Status {
   }
   public static TSentryResponseStatus Create(Status value, String message) {
     return Create(value, message, null);
+  }
+  public static TSentryResponseStatus InvalidInput(String message, Throwable t) {
+    return Create(Status.INVALID_INPUT, message, t);
   }
   public static TSentryResponseStatus Create(Status value, String message, @Nullable Throwable t) {
     TSentryResponseStatus status = new TSentryResponseStatus();

@@ -43,4 +43,6 @@ public class sentry_common_serviceConstants {
 
   public static final int TSENTRY_STATUS_RUNTIME_ERROR = 3;
 
+  public static final int TSENTRY_STATUS_INVALID_INPUT = 4;
+
 }

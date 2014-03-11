@@ -26,6 +26,7 @@ import java.util.Set;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.provider.db.service.persistent.CommitContext;
 import org.apache.sentry.provider.db.service.persistent.SentryAlreadyExistsException;
+import org.apache.sentry.provider.db.service.persistent.SentryInvalidInputException;
 import org.apache.sentry.provider.db.service.persistent.SentryNoSuchObjectException;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.provider.db.service.thrift.PolicyStoreConstants.PolicyStoreServerConfig;
@@ -71,21 +72,21 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
 
   @VisibleForTesting
   static List<NotificationHandler> createHandlers(Configuration conf)
-      throws SentryConfigurationException {
+  throws SentryConfigurationException {
     List<NotificationHandler> handlers = Lists.newArrayList();
     Iterable<String> notificationHandlers = Splitter.onPattern("[\\s,]").trimResults()
-        .omitEmptyStrings().split(conf.get(PolicyStoreServerConfig.NOTIFICATION_HANDLERS, ""));
+                                            .omitEmptyStrings().split(conf.get(PolicyStoreServerConfig.NOTIFICATION_HANDLERS, ""));
     for (String notificationHandler : notificationHandlers) {
       Class<?> clazz = null;
       try {
         clazz = Class.forName(notificationHandler);
         if (!NotificationHandler.class.isAssignableFrom(clazz)) {
           throw new SentryConfigurationException("Class " + notificationHandler + " is not a " +
-              NotificationHandler.class.getName());
+                                                 NotificationHandler.class.getName());
         }
       } catch (ClassNotFoundException e) {
         throw new SentryConfigurationException("Value " + notificationHandler +
-           " is not a class", e);
+                                               " is not a class", e);
       }
       Preconditions.checkNotNull(clazz, "Error class cannot be null");
       try {
@@ -96,6 +97,50 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       }
     }
     return handlers;
+  }
+
+  //TODO:Validate privilege scope?
+  private String constructPrivilegeName(TSentryPrivilege privilege) throws SentryInvalidInputException {
+    StringBuilder privilegeName = new StringBuilder();
+    String serverName = privilege.getServerName();
+    String dbName = privilege.getDbName();
+    String tableName = privilege.getTableName();
+    String uri = privilege.getURI();
+    String action = privilege.getAction();
+
+    if (serverName == null) {
+      throw new SentryInvalidInputException("Server name is null");
+    }
+
+    if (action.equalsIgnoreCase("SELECT") || action.equalsIgnoreCase("INSERT")) {
+      if (tableName == null || tableName.equals("")) {
+        throw new SentryInvalidInputException("Table name can't be null for SELECT/INSERT privilege");
+      }
+    }
+
+    if (dbName == null || dbName.equals("")) {
+      if (tableName != null && !tableName.equals("")) {
+        throw new SentryInvalidInputException("Db name can't be null");
+      }
+    }
+
+    if (uri == null || uri.equals("")) {
+      privilegeName.append(serverName);
+      privilegeName.append("+");
+      privilegeName.append(dbName);
+
+      if (tableName != null && !tableName.equals("")) {
+        privilegeName.append("+");
+        privilegeName.append(tableName);
+      }
+      privilegeName.append("+");
+      privilegeName.append(action);
+    } else {
+      privilegeName.append(serverName);
+      privilegeName.append("+");
+      privilegeName.append(uri);
+    }
+    return privilegeName.toString();
   }
 
   @Override
@@ -118,19 +163,57 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     }
     return response;
   }
+
   @Override
-  public TCreateSentryPrivilegeResponse create_sentry_privilege(
-    TCreateSentryPrivilegeRequest request) throws TException {
-    TCreateSentryPrivilegeResponse response = new TCreateSentryPrivilegeResponse();
+  public TAlterSentryRoleGrantPrivilegeResponse alter_sentry_role_grant_privilege
+  (TAlterSentryRoleGrantPrivilegeRequest request) throws TException {
+
+    TAlterSentryRoleGrantPrivilegeResponse response = new TAlterSentryRoleGrantPrivilegeResponse();
     try {
-      CommitContext commitContext = sentryStore.createSentryPrivilege(request.getPrivilege());
+      String privilegeName = constructPrivilegeName(request.getPrivilege());
+      request.getPrivilege().setPrivilegeName(privilegeName);
+      CommitContext commitContext = sentryStore.alterSentryRoleGrantPrivilege(request.getRoleName(),
+                                    request.getPrivilege());
       response.setStatus(Status.OK());
-      notificationHandlerInvoker.create_sentry_privilege(commitContext,
+      notificationHandlerInvoker.alter_sentry_role_grant_privilege(commitContext,
           request, response);
-    } catch (SentryAlreadyExistsException e) {
-      String msg = "Privilege: " + request + " already exists.";
+    } catch (SentryNoSuchObjectException e) {
+      String msg = "Role: " + request.getRoleName() + " doesn't exist.";
       LOGGER.error(msg, e);
-      response.setStatus(Status.AlreadyExists(msg, e));
+      response.setStatus(Status.NoSuchObject(msg, e));
+    } catch (SentryInvalidInputException e) {
+      String msg = "Invalid input privilege object";
+      LOGGER.error(msg, e);
+      response.setStatus(Status.InvalidInput(msg, e));
+    } catch (Exception e) {
+      String msg = "Unknown error for request: " + request + ", message: " + e.getMessage();
+      LOGGER.error(msg, e);
+      response.setStatus(Status.RuntimeError(msg, e));
+    }
+
+    return response;
+  }
+
+  @Override
+  public TAlterSentryRoleRevokePrivilegeResponse alter_sentry_role_revoke_privilege
+  (TAlterSentryRoleRevokePrivilegeRequest request) throws TException {
+    TAlterSentryRoleRevokePrivilegeResponse response = new TAlterSentryRoleRevokePrivilegeResponse();
+    try {
+      String privilegeName = constructPrivilegeName(request.getPrivilege());
+      request.getPrivilege().setPrivilegeName(privilegeName);
+      CommitContext commitContext = sentryStore.alterSentryRoleRevokePrivilege(request.getRoleName(),
+                                    request.getPrivilege().getPrivilegeName());
+      response.setStatus(Status.OK());
+      notificationHandlerInvoker.alter_sentry_role_revoke_privilege(commitContext,
+          request, response);
+    } catch (SentryNoSuchObjectException e) {
+      String msg = "Privilege: " + request.getPrivilege().getPrivilegeName() + " doesn't exist.";
+      LOGGER.error(msg, e);
+      response.setStatus(Status.NoSuchObject(msg, e));
+    } catch (SentryInvalidInputException e) {
+      String msg = "Invalid input privilege object";
+      LOGGER.error(msg, e);
+      response.setStatus(Status.InvalidInput(msg, e));
     } catch (Exception e) {
       String msg = "Unknown error for request: " + request + ", message: " + e.getMessage();
       LOGGER.error(msg, e);
@@ -139,6 +222,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     return response;
   }
 
+  @Override
   public TDropSentryRoleResponse drop_sentry_role(
     TDropSentryRoleRequest request)  throws TException {
     TDropSentryRoleResponse response = new TDropSentryRoleResponse();
@@ -180,9 +264,10 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     }
     return response;
   }
+
   @Override
   public TAlterSentryRoleDeleteGroupsResponse alter_sentry_role_delete_groups(
-      TAlterSentryRoleDeleteGroupsRequest request) throws TException {
+    TAlterSentryRoleDeleteGroupsRequest request) throws TException {
     // TODO implement
     TAlterSentryRoleDeleteGroupsResponse response = new TAlterSentryRoleDeleteGroupsResponse();
     try {

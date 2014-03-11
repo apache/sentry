@@ -62,14 +62,7 @@ public class TestNotificationHandlerInvoker {
         request, response);
   }
 
-  @Test
-  public void testCreateSentryPrivilege() throws Exception {
-    TCreateSentryPrivilegeRequest request = new TCreateSentryPrivilegeRequest();
-    TCreateSentryPrivilegeResponse response = new TCreateSentryPrivilegeResponse();
-    invoker.create_sentry_privilege(commitContext, request, response);
-    Mockito.verify(handler).create_sentry_privilege(commitContext,
-        request, response);
-  }
+
 
   @Test
   public void testAlterSentryRoleAddGroups() throws Exception {
@@ -95,18 +88,12 @@ public class TestNotificationHandlerInvoker {
     }
     @Override
     public void create_sentry_role(CommitContext args,
-        TCreateSentryRoleRequest request, TCreateSentryRoleResponse response) {
+                                   TCreateSentryRoleRequest request, TCreateSentryRoleResponse response) {
       throw new RuntimeException();
     }
     public void drop_sentry_role(CommitContext context,
-        TDropSentryRoleRequest request,
-        TDropSentryRoleResponse response) {
-      throw new RuntimeException();
-    }
-    @Override
-    public void create_sentry_privilege(CommitContext args,
-        TCreateSentryPrivilegeRequest request,
-        TCreateSentryPrivilegeResponse response) {
+                                 TDropSentryRoleRequest request,
+                                 TDropSentryRoleResponse response) {
       throw new RuntimeException();
     }
     @Override
@@ -117,8 +104,8 @@ public class TestNotificationHandlerInvoker {
     }
     @Override
     public void alter_sentry_role_delete_groups(
-        CommitContext args, TAlterSentryRoleDeleteGroupsRequest request,
-        TAlterSentryRoleDeleteGroupsResponse response) {
+      CommitContext args, TAlterSentryRoleDeleteGroupsRequest request,
+      TAlterSentryRoleDeleteGroupsResponse response) {
       throw new RuntimeException();
     }
   }

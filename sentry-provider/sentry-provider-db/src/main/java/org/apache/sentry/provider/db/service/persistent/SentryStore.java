@@ -61,108 +61,6 @@ public class SentryStore {
     }
   }
 
-  public CommitContext createSentryRole(TSentryRole role)
-      throws SentryAlreadyExistsException {
-    boolean rollbackTransaction = true;
-    PersistenceManager pm = null;
-    try {
-      pm = openTransaction();
-      Query query = pm.newQuery(MSentryRole.class);
-      query.setFilter("roleName == t");
-      query.declareParameters("java.lang.String t");
-      query.setUnique(true);
-      MSentryRole sentryRole = (MSentryRole) query.execute(role.getRoleName());
-      if (sentryRole == null) {
-        MSentryRole mRole = convertToMSentryRole(role);
-        pm.makePersistent(mRole);
-        CommitContext commit = commitUpdateTransaction(pm);
-        rollbackTransaction = false;
-        return commit;
-      } else {
-        throw new SentryAlreadyExistsException("Role: " + role.getRoleName());
-      }
-    } finally {
-      if (rollbackTransaction) {
-        rollbackTransaction(pm);
-      }
-    }
-  }
-
-  public CommitContext createSentryPrivilege(TSentryPrivilege privilege)
-      throws SentryAlreadyExistsException {
-    // TODO implement
-    throw new RuntimeException("TODO");
-  }
-
-  public CommitContext alterSentryRoleAddGroups()
-      throws SentryNoSuchObjectException {
-    // TODO implement
-    throw new RuntimeException("TODO");
-  }
-
-  public CommitContext alterSentryRoleDeleteGroups()
-      throws SentryNoSuchObjectException {
-    // TODO implement
-    throw new RuntimeException("TODO");
-  }
-
-
-  public CommitContext dropSentryRole(String roleName)
-      throws SentryNoSuchObjectException {
-    boolean rollbackTransaction = true;
-    PersistenceManager pm = null;
-    roleName = roleName.trim();
-    try {
-      pm = openTransaction();
-      Query query = pm.newQuery(MSentryRole.class);
-      query.setFilter("roleName == t");
-      query.declareParameters("java.lang.String t");
-      query.setUnique(true);
-      MSentryRole sentryRole = (MSentryRole) query.execute(roleName);
-      if (sentryRole == null) {
-        throw new SentryNoSuchObjectException("Role " + roleName);
-      } else {
-        pm.retrieve(sentryRole);
-        sentryRole.removePrivileges();
-        pm.deletePersistent(sentryRole);
-      }
-      CommitContext commit = commitUpdateTransaction(pm);
-      rollbackTransaction = false;
-      return commit;
-    } finally {
-      if (rollbackTransaction) {
-        rollbackTransaction(pm);
-      }
-    }
-  }
-
-  public TSentryRole getSentryRoleByName(String roleName)
-      throws SentryNoSuchObjectException {
-    boolean rollbackTransaction = true;
-    PersistenceManager pm = null;
-    roleName = roleName.trim();
-    try {
-      pm = openTransaction();
-      Query query = pm.newQuery(MSentryRole.class);
-      query.setFilter("roleName == t");
-      query.declareParameters("java.lang.String t");
-      query.setUnique(true);
-      MSentryRole sentryRole = (MSentryRole) query.execute(roleName);
-      if (sentryRole == null) {
-        throw new SentryNoSuchObjectException("Role " + roleName);
-      } else {
-        pm.retrieve(sentryRole);
-      }
-      rollbackTransaction = false;
-      commitTransaction(pm);
-      return convertToSentryRole(sentryRole);
-    } finally {
-      if (rollbackTransaction) {
-        rollbackTransaction(pm);
-      }
-    }
-  }
-
   private Properties getDataSourceProperties() {
     Properties prop = new Properties();
     // FIXME: Read from configuration, override the default
@@ -181,9 +79,9 @@ public class SentryStore {
     prop.setProperty("datanucleus.rdbms.useLegacyNativeValueStrategy", "true");
     prop.setProperty("datanucleus.plugin.pluginRegistryBundleCheck", "LOG");
     prop.setProperty("javax.jdo.option.ConnectionDriverName",
-        "org.apache.derby.jdbc.EmbeddedDriver");
+                     "org.apache.derby.jdbc.EmbeddedDriver");
     prop.setProperty("javax.jdo.PersistenceManagerFactoryClass",
-        "org.datanucleus.api.jdo.JDOPersistenceManagerFactory");
+                     "org.datanucleus.api.jdo.JDOPersistenceManagerFactory");
     prop.setProperty("javax.jdo.option.DetachAllOnCommit", "true");
     prop.setProperty("javax.jdo.option.NonTransactionalRead", "false");
     prop.setProperty("javax.jdo.option.NonTransactionalWrite", "false");
@@ -191,7 +89,7 @@ public class SentryStore {
     prop.setProperty("javax.jdo.option.ConnectionPassword", "Sentry");
     prop.setProperty("javax.jdo.option.Multithreaded", "true");
     prop.setProperty("javax.jdo.option.ConnectionURL",
-        "jdbc:derby:;databaseName=sentry_policy_db;create=true");
+                     "jdbc:derby:;databaseName=sentry_policy_db;create=true");
     return prop;
   }
 
@@ -205,6 +103,8 @@ public class SentryStore {
    *
    * Note that there's only one instance of PersistenceManagerFactory object
    * for the service.
+   *
+   * Synchronized because we obtain persistence manager
    */
   private synchronized PersistenceManager openTransaction() {
     PersistenceManager pm = pmf.getPersistenceManager();
@@ -230,7 +130,7 @@ public class SentryStore {
   private synchronized long incrementGetSequenceId() {
     return ++commitSequenceId;
   }
-  
+
   private void commitTransaction(PersistenceManager pm) {
     Transaction currentTransaction = pm.currentTransaction();
     try {
@@ -251,6 +151,170 @@ public class SentryStore {
         currentTransaction.rollback();
       } finally {
         pm.close();
+      }
+    }
+  }
+
+  public CommitContext createSentryRole(TSentryRole role)
+  throws SentryAlreadyExistsException {
+    boolean rollbackTransaction = true;
+    PersistenceManager pm = null;
+    try {
+      pm = openTransaction();
+      Query query = pm.newQuery(MSentryRole.class);
+      query.setFilter("this.roleName == t");
+      query.declareParameters("java.lang.String t");
+      query.setUnique(true);
+      MSentryRole sentryRole = (MSentryRole) query.execute(role.getRoleName());
+      if (sentryRole == null) {
+        MSentryRole mRole = convertToMSentryRole(role);
+        pm.makePersistent(mRole);
+        CommitContext commit = commitUpdateTransaction(pm);
+        rollbackTransaction = false;
+        return commit;
+      } else {
+        throw new SentryAlreadyExistsException("Role: " + role.getRoleName());
+      }
+    } finally {
+      if (rollbackTransaction) {
+        rollbackTransaction(pm);
+      }
+    }
+  }
+
+  //TODO: handle case where a) privilege already exists, b) role to privilege mapping already exists
+  public CommitContext alterSentryRoleGrantPrivilege(String roleName,
+      TSentryPrivilege privilege) throws SentryNoSuchObjectException {
+    boolean rollbackTransaction = true;
+    PersistenceManager pm = null;
+    try {
+      pm = openTransaction();
+      Query query = pm.newQuery(MSentryRole.class);
+      query.setFilter("this.roleName == t");
+      query.declareParameters("java.lang.String t");
+      query.setUnique(true);
+      MSentryRole mRole = (MSentryRole) query.execute(roleName);
+      if (mRole == null) {
+        throw new SentryNoSuchObjectException("Role: " + roleName);
+      } else {
+        MSentryPrivilege mPrivilege = convertToMSentryPrivilege(privilege);
+        // add privilege and role objects to each other. needed by datanucleus to model
+        // m:n relationships correctly through a join table.
+        mRole.appendPrivilege(mPrivilege);
+        pm.makePersistent(mRole);
+        pm.makePersistent(mPrivilege);
+        CommitContext commit = commitUpdateTransaction(pm);
+        rollbackTransaction = false;
+        return commit;
+      }
+    } finally {
+      if (rollbackTransaction) {
+        rollbackTransaction(pm);
+      }
+    }
+  }
+
+  public CommitContext alterSentryRoleRevokePrivilege(String roleName,
+      String privilegeName) throws SentryNoSuchObjectException {
+    boolean rollbackTransaction = true;
+    PersistenceManager pm = null;
+    try {
+      pm = openTransaction();
+      Query query = pm.newQuery(MSentryRole.class);
+      query.setFilter("this.roleName == t");
+      query.declareParameters("java.lang.String t");
+      query.setUnique(true);
+      MSentryRole mRole = (MSentryRole) query.execute(roleName);
+      if (mRole == null) {
+        throw new SentryNoSuchObjectException("Role: " + roleName);
+      } else {
+        query = pm.newQuery(MSentryPrivilege.class);
+        query.setFilter("this.privilegeName == t");
+        query.declareParameters("java.lang.String t");
+        query.setUnique(true);
+        MSentryPrivilege mPrivilege = (MSentryPrivilege) query.execute(privilegeName);
+        if (mPrivilege == null) {
+          throw new SentryNoSuchObjectException("Privilege: " + privilegeName);
+        } else {
+          // remove privilege and role objects from each other's set. needed by datanucleus to model
+          // m:n relationships correctly through a join table.
+          mRole.removePrivilege(mPrivilege);
+          CommitContext commit = commitUpdateTransaction(pm);
+          rollbackTransaction = false;
+          return commit;
+        }
+      }
+    } finally {
+      if (rollbackTransaction) {
+        rollbackTransaction(pm);
+      }
+    }
+  }
+
+  public CommitContext dropSentryRole(String roleName)
+  throws SentryNoSuchObjectException {
+    boolean rollbackTransaction = true;
+    PersistenceManager pm = null;
+    roleName = roleName.trim();
+    try {
+      pm = openTransaction();
+      Query query = pm.newQuery(MSentryRole.class);
+      query.setFilter("this.roleName == t");
+      query.declareParameters("java.lang.String t");
+      query.setUnique(true);
+      MSentryRole sentryRole = (MSentryRole) query.execute(roleName);
+      if (sentryRole == null) {
+        throw new SentryNoSuchObjectException("Role " + roleName);
+      } else {
+        pm.retrieve(sentryRole);
+        sentryRole.removePrivileges();
+        pm.deletePersistent(sentryRole);
+      }
+      CommitContext commit = commitUpdateTransaction(pm);
+      rollbackTransaction = false;
+      return commit;
+    } finally {
+      if (rollbackTransaction) {
+        rollbackTransaction(pm);
+      }
+    }
+  }
+
+  public CommitContext alterSentryRoleAddGroups()
+  throws SentryNoSuchObjectException {
+    // TODO implement
+    throw new RuntimeException("TODO");
+  }
+
+  public CommitContext alterSentryRoleDeleteGroups()
+  throws SentryNoSuchObjectException {
+    // TODO implement
+    throw new RuntimeException("TODO");
+  }
+
+  public TSentryRole getSentryRoleByName(String roleName)
+  throws SentryNoSuchObjectException {
+    boolean rollbackTransaction = true;
+    PersistenceManager pm = null;
+    roleName = roleName.trim();
+    try {
+      pm = openTransaction();
+      Query query = pm.newQuery(MSentryRole.class);
+      query.setFilter("this.roleName == t");
+      query.declareParameters("java.lang.String t");
+      query.setUnique(true);
+      MSentryRole sentryRole = (MSentryRole) query.execute(roleName);
+      if (sentryRole == null) {
+        throw new SentryNoSuchObjectException("Role " + roleName);
+      } else {
+        pm.retrieve(sentryRole);
+      }
+      rollbackTransaction = false;
+      commitTransaction(pm);
+      return convertToSentryRole(sentryRole);
+    } finally {
+      if (rollbackTransaction) {
+        rollbackTransaction(pm);
       }
     }
   }
@@ -290,11 +354,9 @@ public class SentryStore {
     privilege.setTableName(mSentryPrivilege.getTableName());
     privilege.setURI(mSentryPrivilege.getURI());
     privilege.setGrantorPrincipal(mSentryPrivilege.getGrantorPrincipal());
-
     return privilege;
   }
 
-  @SuppressWarnings("unused")
   private MSentryPrivilege convertToMSentryPrivilege(TSentryPrivilege privilege) {
     MSentryPrivilege mSentryPrivilege = new MSentryPrivilege();
     mSentryPrivilege.setServerName(privilege.getServerName());
@@ -306,7 +368,6 @@ public class SentryStore {
     mSentryPrivilege.setGrantorPrincipal(privilege.getGrantorPrincipal());
     mSentryPrivilege.setURI(privilege.getURI());
     mSentryPrivilege.setPrivilegeName(privilege.getPrivilegeName());
-    //MSentryRole mSentryRole = convertToMSentryRole(role);
     return mSentryPrivilege;
   }
 }

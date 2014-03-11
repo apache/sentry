@@ -31,14 +31,14 @@ namespace cpp Apache.Sentry.Provider.Db.Service.Thrift
 
 struct TSentryPrivilege {
 1: required string privilegeScope,
-2: required string privilegeName,
+2: optional string privilegeName,
 3: required string serverName,
 4: optional string dbName,
 5: optional string tableName,
 6: optional string URI,
 7: required string action,
 8: required i64 createTime,
-9: required string grantorPrincipal
+9: optional string grantorPrincipal
 }
 
 struct TSentryRole {
@@ -47,6 +47,7 @@ struct TSentryRole {
 3: required i64 createTime,
 4: required string grantorPrincipal
 }
+
 // TODO fill out
 struct TSentryGroup {
 1: required string groupName
@@ -61,21 +62,23 @@ struct TCreateSentryRoleResponse {
 1: required sentry_common_service.TSentryResponseStatus status
 }
 
-struct TCreateSentryPrivilegeRequest {
+struct TListSentryRolesRequest {
 1: required i32 protocol_version = sentry_common_service.TSENTRY_SERVICE_V1,
-2: required string userName,
-3: required TSentryPrivilege privilege
+2: optional string userName,
+3: optional string groupName,
+4: optional string roleName
 }
-struct TCreateSentryPrivilegeResponse {
+struct TListSentryRolesResponse {
 1: required sentry_common_service.TSentryResponseStatus status
+2: required set<TSentryRole> roles
 }
 
-struct TCreateSentryPrivilegeRequest {
+struct TDropSentryRoleRequest {
 1: required i32 protocol_version = sentry_common_service.TSENTRY_SERVICE_V1,
-2: required string userName,
-3: required TSentryPrivilege privilege
+2: optional string userName,
+3: optional string roleName
 }
-struct TCreateSentryPrivilegeResponse {
+struct TDropSentryRoleResponse {
 1: required sentry_common_service.TSentryResponseStatus status
 }
 
@@ -85,6 +88,7 @@ struct TAlterSentryRoleAddGroupsRequest {
 3: required string roleName,
 4: required set<TSentryGroup> groups
 }
+
 struct TAlterSentryRoleAddGroupsResponse {
 1: required sentry_common_service.TSentryResponseStatus status
 }
@@ -97,25 +101,25 @@ struct TAlterSentryRoleDeleteGroupsResponse {
 1: required sentry_common_service.TSentryResponseStatus status
 }
 
-struct TListSentryRolesRequest {
+struct TAlterSentryRoleGrantPrivilegeRequest {
 1: required i32 protocol_version = sentry_common_service.TSENTRY_SERVICE_V1,
-2: optional string userName,
-3: optional string groupName,
-4: optional string roleName
+2: required string userName,
+3: required string roleName,
+4: required TSentryPrivilege privilege
 }
 
-struct TListSentryRolesResponse {
+struct TAlterSentryRoleGrantPrivilegeResponse {
 1: required sentry_common_service.TSentryResponseStatus status
-2: required set<TSentryRole> roles
 }
 
-struct TDropSentryRoleRequest {
+struct TAlterSentryRoleRevokePrivilegeRequest {
 1: required i32 protocol_version = sentry_common_service.TSENTRY_SERVICE_V1,
-2: optional string userName,
-3: optional string roleName
+2: required string userName,
+3: required string roleName,
+4: required TSentryPrivilege privilege
 }
 
-struct TDropSentryRoleResponse {
+struct TAlterSentryRoleRevokePrivilegeResponse {
 1: required sentry_common_service.TSentryResponseStatus status
 }
 
@@ -123,10 +127,10 @@ service SentryPolicyService
 {
   TCreateSentryRoleResponse create_sentry_role(1:TCreateSentryRoleRequest request)
   TDropSentryRoleResponse drop_sentry_role(1:TDropSentryRoleRequest request)
-
-  TCreateSentryPrivilegeResponse create_sentry_privilege(1:TCreateSentryPrivilegeRequest request)
-  //TDropSentryPrivilegeResponse drop_sentry_privilege(1:TDropSentryPrivilegeRequest request)
-
+  
+  TAlterSentryRoleGrantPrivilegeResponse alter_sentry_role_grant_privilege(1:TAlterSentryRoleGrantPrivilegeRequest request)
+  TAlterSentryRoleRevokePrivilegeResponse alter_sentry_role_revoke_privilege(1:TAlterSentryRoleRevokePrivilegeRequest request)
+  
   TAlterSentryRoleAddGroupsResponse alter_sentry_role_add_groups(1:TAlterSentryRoleAddGroupsRequest request)
   TAlterSentryRoleDeleteGroupsResponse alter_sentry_role_delete_groups(1:TAlterSentryRoleDeleteGroupsRequest request)
 

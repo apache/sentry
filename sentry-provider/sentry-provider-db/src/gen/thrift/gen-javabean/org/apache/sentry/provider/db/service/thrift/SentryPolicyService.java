@@ -39,7 +39,9 @@ public class SentryPolicyService {
 
     public TDropSentryRoleResponse drop_sentry_role(TDropSentryRoleRequest request) throws org.apache.thrift.TException;
 
-    public TCreateSentryPrivilegeResponse create_sentry_privilege(TCreateSentryPrivilegeRequest request) throws org.apache.thrift.TException;
+    public TAlterSentryRoleGrantPrivilegeResponse alter_sentry_role_grant_privilege(TAlterSentryRoleGrantPrivilegeRequest request) throws org.apache.thrift.TException;
+
+    public TAlterSentryRoleRevokePrivilegeResponse alter_sentry_role_revoke_privilege(TAlterSentryRoleRevokePrivilegeRequest request) throws org.apache.thrift.TException;
 
     public TAlterSentryRoleAddGroupsResponse alter_sentry_role_add_groups(TAlterSentryRoleAddGroupsRequest request) throws org.apache.thrift.TException;
 
@@ -57,7 +59,9 @@ public class SentryPolicyService {
 
     public void drop_sentry_role(TDropSentryRoleRequest request, org.apache.thrift.async.AsyncMethodCallback<AsyncClient.drop_sentry_role_call> resultHandler) throws org.apache.thrift.TException;
 
-    public void create_sentry_privilege(TCreateSentryPrivilegeRequest request, org.apache.thrift.async.AsyncMethodCallback<AsyncClient.create_sentry_privilege_call> resultHandler) throws org.apache.thrift.TException;
+    public void alter_sentry_role_grant_privilege(TAlterSentryRoleGrantPrivilegeRequest request, org.apache.thrift.async.AsyncMethodCallback<AsyncClient.alter_sentry_role_grant_privilege_call> resultHandler) throws org.apache.thrift.TException;
+
+    public void alter_sentry_role_revoke_privilege(TAlterSentryRoleRevokePrivilegeRequest request, org.apache.thrift.async.AsyncMethodCallback<AsyncClient.alter_sentry_role_revoke_privilege_call> resultHandler) throws org.apache.thrift.TException;
 
     public void alter_sentry_role_add_groups(TAlterSentryRoleAddGroupsRequest request, org.apache.thrift.async.AsyncMethodCallback<AsyncClient.alter_sentry_role_add_groups_call> resultHandler) throws org.apache.thrift.TException;
 
@@ -135,27 +139,50 @@ public class SentryPolicyService {
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "drop_sentry_role failed: unknown result");
     }
 
-    public TCreateSentryPrivilegeResponse create_sentry_privilege(TCreateSentryPrivilegeRequest request) throws org.apache.thrift.TException
+    public TAlterSentryRoleGrantPrivilegeResponse alter_sentry_role_grant_privilege(TAlterSentryRoleGrantPrivilegeRequest request) throws org.apache.thrift.TException
     {
-      send_create_sentry_privilege(request);
-      return recv_create_sentry_privilege();
+      send_alter_sentry_role_grant_privilege(request);
+      return recv_alter_sentry_role_grant_privilege();
     }
 
-    public void send_create_sentry_privilege(TCreateSentryPrivilegeRequest request) throws org.apache.thrift.TException
+    public void send_alter_sentry_role_grant_privilege(TAlterSentryRoleGrantPrivilegeRequest request) throws org.apache.thrift.TException
     {
-      create_sentry_privilege_args args = new create_sentry_privilege_args();
+      alter_sentry_role_grant_privilege_args args = new alter_sentry_role_grant_privilege_args();
       args.setRequest(request);
-      sendBase("create_sentry_privilege", args);
+      sendBase("alter_sentry_role_grant_privilege", args);
     }
 
-    public TCreateSentryPrivilegeResponse recv_create_sentry_privilege() throws org.apache.thrift.TException
+    public TAlterSentryRoleGrantPrivilegeResponse recv_alter_sentry_role_grant_privilege() throws org.apache.thrift.TException
     {
-      create_sentry_privilege_result result = new create_sentry_privilege_result();
-      receiveBase(result, "create_sentry_privilege");
+      alter_sentry_role_grant_privilege_result result = new alter_sentry_role_grant_privilege_result();
+      receiveBase(result, "alter_sentry_role_grant_privilege");
       if (result.isSetSuccess()) {
         return result.success;
       }
-      throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "create_sentry_privilege failed: unknown result");
+      throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "alter_sentry_role_grant_privilege failed: unknown result");
+    }
+
+    public TAlterSentryRoleRevokePrivilegeResponse alter_sentry_role_revoke_privilege(TAlterSentryRoleRevokePrivilegeRequest request) throws org.apache.thrift.TException
+    {
+      send_alter_sentry_role_revoke_privilege(request);
+      return recv_alter_sentry_role_revoke_privilege();
+    }
+
+    public void send_alter_sentry_role_revoke_privilege(TAlterSentryRoleRevokePrivilegeRequest request) throws org.apache.thrift.TException
+    {
+      alter_sentry_role_revoke_privilege_args args = new alter_sentry_role_revoke_privilege_args();
+      args.setRequest(request);
+      sendBase("alter_sentry_role_revoke_privilege", args);
+    }
+
+    public TAlterSentryRoleRevokePrivilegeResponse recv_alter_sentry_role_revoke_privilege() throws org.apache.thrift.TException
+    {
+      alter_sentry_role_revoke_privilege_result result = new alter_sentry_role_revoke_privilege_result();
+      receiveBase(result, "alter_sentry_role_revoke_privilege");
+      if (result.isSetSuccess()) {
+        return result.success;
+      }
+      throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "alter_sentry_role_revoke_privilege failed: unknown result");
     }
 
     public TAlterSentryRoleAddGroupsResponse alter_sentry_role_add_groups(TAlterSentryRoleAddGroupsRequest request) throws org.apache.thrift.TException
@@ -332,35 +359,67 @@ public class SentryPolicyService {
       }
     }
 
-    public void create_sentry_privilege(TCreateSentryPrivilegeRequest request, org.apache.thrift.async.AsyncMethodCallback<create_sentry_privilege_call> resultHandler) throws org.apache.thrift.TException {
+    public void alter_sentry_role_grant_privilege(TAlterSentryRoleGrantPrivilegeRequest request, org.apache.thrift.async.AsyncMethodCallback<alter_sentry_role_grant_privilege_call> resultHandler) throws org.apache.thrift.TException {
       checkReady();
-      create_sentry_privilege_call method_call = new create_sentry_privilege_call(request, resultHandler, this, ___protocolFactory, ___transport);
+      alter_sentry_role_grant_privilege_call method_call = new alter_sentry_role_grant_privilege_call(request, resultHandler, this, ___protocolFactory, ___transport);
       this.___currentMethod = method_call;
       ___manager.call(method_call);
     }
 
-    public static class create_sentry_privilege_call extends org.apache.thrift.async.TAsyncMethodCall {
-      private TCreateSentryPrivilegeRequest request;
-      public create_sentry_privilege_call(TCreateSentryPrivilegeRequest request, org.apache.thrift.async.AsyncMethodCallback<create_sentry_privilege_call> resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+    public static class alter_sentry_role_grant_privilege_call extends org.apache.thrift.async.TAsyncMethodCall {
+      private TAlterSentryRoleGrantPrivilegeRequest request;
+      public alter_sentry_role_grant_privilege_call(TAlterSentryRoleGrantPrivilegeRequest request, org.apache.thrift.async.AsyncMethodCallback<alter_sentry_role_grant_privilege_call> resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
         super(client, protocolFactory, transport, resultHandler, false);
         this.request = request;
       }
 
       public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
-        prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("create_sentry_privilege", org.apache.thrift.protocol.TMessageType.CALL, 0));
-        create_sentry_privilege_args args = new create_sentry_privilege_args();
+        prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("alter_sentry_role_grant_privilege", org.apache.thrift.protocol.TMessageType.CALL, 0));
+        alter_sentry_role_grant_privilege_args args = new alter_sentry_role_grant_privilege_args();
         args.setRequest(request);
         args.write(prot);
         prot.writeMessageEnd();
       }
 
-      public TCreateSentryPrivilegeResponse getResult() throws org.apache.thrift.TException {
+      public TAlterSentryRoleGrantPrivilegeResponse getResult() throws org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
         org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
         org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
-        return (new Client(prot)).recv_create_sentry_privilege();
+        return (new Client(prot)).recv_alter_sentry_role_grant_privilege();
+      }
+    }
+
+    public void alter_sentry_role_revoke_privilege(TAlterSentryRoleRevokePrivilegeRequest request, org.apache.thrift.async.AsyncMethodCallback<alter_sentry_role_revoke_privilege_call> resultHandler) throws org.apache.thrift.TException {
+      checkReady();
+      alter_sentry_role_revoke_privilege_call method_call = new alter_sentry_role_revoke_privilege_call(request, resultHandler, this, ___protocolFactory, ___transport);
+      this.___currentMethod = method_call;
+      ___manager.call(method_call);
+    }
+
+    public static class alter_sentry_role_revoke_privilege_call extends org.apache.thrift.async.TAsyncMethodCall {
+      private TAlterSentryRoleRevokePrivilegeRequest request;
+      public alter_sentry_role_revoke_privilege_call(TAlterSentryRoleRevokePrivilegeRequest request, org.apache.thrift.async.AsyncMethodCallback<alter_sentry_role_revoke_privilege_call> resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+        super(client, protocolFactory, transport, resultHandler, false);
+        this.request = request;
+      }
+
+      public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
+        prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("alter_sentry_role_revoke_privilege", org.apache.thrift.protocol.TMessageType.CALL, 0));
+        alter_sentry_role_revoke_privilege_args args = new alter_sentry_role_revoke_privilege_args();
+        args.setRequest(request);
+        args.write(prot);
+        prot.writeMessageEnd();
+      }
+
+      public TAlterSentryRoleRevokePrivilegeResponse getResult() throws org.apache.thrift.TException {
+        if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
+          throw new IllegalStateException("Method call not finished!");
+        }
+        org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
+        org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
+        return (new Client(prot)).recv_alter_sentry_role_revoke_privilege();
       }
     }
 
@@ -507,7 +566,8 @@ public class SentryPolicyService {
     private static <I extends Iface> Map<String,  org.apache.thrift.ProcessFunction<I, ? extends  org.apache.thrift.TBase>> getProcessMap(Map<String,  org.apache.thrift.ProcessFunction<I, ? extends  org.apache.thrift.TBase>> processMap) {
       processMap.put("create_sentry_role", new create_sentry_role());
       processMap.put("drop_sentry_role", new drop_sentry_role());
-      processMap.put("create_sentry_privilege", new create_sentry_privilege());
+      processMap.put("alter_sentry_role_grant_privilege", new alter_sentry_role_grant_privilege());
+      processMap.put("alter_sentry_role_revoke_privilege", new alter_sentry_role_revoke_privilege());
       processMap.put("alter_sentry_role_add_groups", new alter_sentry_role_add_groups());
       processMap.put("alter_sentry_role_delete_groups", new alter_sentry_role_delete_groups());
       processMap.put("list_sentry_roles_by_group", new list_sentry_roles_by_group());
@@ -555,22 +615,42 @@ public class SentryPolicyService {
       }
     }
 
-    public static class create_sentry_privilege<I extends Iface> extends org.apache.thrift.ProcessFunction<I, create_sentry_privilege_args> {
-      public create_sentry_privilege() {
-        super("create_sentry_privilege");
+    public static class alter_sentry_role_grant_privilege<I extends Iface> extends org.apache.thrift.ProcessFunction<I, alter_sentry_role_grant_privilege_args> {
+      public alter_sentry_role_grant_privilege() {
+        super("alter_sentry_role_grant_privilege");
       }
 
-      public create_sentry_privilege_args getEmptyArgsInstance() {
-        return new create_sentry_privilege_args();
+      public alter_sentry_role_grant_privilege_args getEmptyArgsInstance() {
+        return new alter_sentry_role_grant_privilege_args();
       }
 
       protected boolean isOneway() {
         return false;
       }
 
-      public create_sentry_privilege_result getResult(I iface, create_sentry_privilege_args args) throws org.apache.thrift.TException {
-        create_sentry_privilege_result result = new create_sentry_privilege_result();
-        result.success = iface.create_sentry_privilege(args.request);
+      public alter_sentry_role_grant_privilege_result getResult(I iface, alter_sentry_role_grant_privilege_args args) throws org.apache.thrift.TException {
+        alter_sentry_role_grant_privilege_result result = new alter_sentry_role_grant_privilege_result();
+        result.success = iface.alter_sentry_role_grant_privilege(args.request);
+        return result;
+      }
+    }
+
+    public static class alter_sentry_role_revoke_privilege<I extends Iface> extends org.apache.thrift.ProcessFunction<I, alter_sentry_role_revoke_privilege_args> {
+      public alter_sentry_role_revoke_privilege() {
+        super("alter_sentry_role_revoke_privilege");
+      }
+
+      public alter_sentry_role_revoke_privilege_args getEmptyArgsInstance() {
+        return new alter_sentry_role_revoke_privilege_args();
+      }
+
+      protected boolean isOneway() {
+        return false;
+      }
+
+      public alter_sentry_role_revoke_privilege_result getResult(I iface, alter_sentry_role_revoke_privilege_args args) throws org.apache.thrift.TException {
+        alter_sentry_role_revoke_privilege_result result = new alter_sentry_role_revoke_privilege_result();
+        result.success = iface.alter_sentry_role_revoke_privilege(args.request);
         return result;
       }
     }
@@ -2109,18 +2189,18 @@ public class SentryPolicyService {
 
   }
 
-  public static class create_sentry_privilege_args implements org.apache.thrift.TBase<create_sentry_privilege_args, create_sentry_privilege_args._Fields>, java.io.Serializable, Cloneable   {
-    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("create_sentry_privilege_args");
+  public static class alter_sentry_role_grant_privilege_args implements org.apache.thrift.TBase<alter_sentry_role_grant_privilege_args, alter_sentry_role_grant_privilege_args._Fields>, java.io.Serializable, Cloneable   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("alter_sentry_role_grant_privilege_args");
 
     private static final org.apache.thrift.protocol.TField REQUEST_FIELD_DESC = new org.apache.thrift.protocol.TField("request", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
-      schemes.put(StandardScheme.class, new create_sentry_privilege_argsStandardSchemeFactory());
-      schemes.put(TupleScheme.class, new create_sentry_privilege_argsTupleSchemeFactory());
+      schemes.put(StandardScheme.class, new alter_sentry_role_grant_privilege_argsStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new alter_sentry_role_grant_privilege_argsTupleSchemeFactory());
     }
 
-    private TCreateSentryPrivilegeRequest request; // required
+    private TAlterSentryRoleGrantPrivilegeRequest request; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -2185,16 +2265,16 @@ public class SentryPolicyService {
     static {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.REQUEST, new org.apache.thrift.meta_data.FieldMetaData("request", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TCreateSentryPrivilegeRequest.class)));
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TAlterSentryRoleGrantPrivilegeRequest.class)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
-      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(create_sentry_privilege_args.class, metaDataMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(alter_sentry_role_grant_privilege_args.class, metaDataMap);
     }
 
-    public create_sentry_privilege_args() {
+    public alter_sentry_role_grant_privilege_args() {
     }
 
-    public create_sentry_privilege_args(
-      TCreateSentryPrivilegeRequest request)
+    public alter_sentry_role_grant_privilege_args(
+      TAlterSentryRoleGrantPrivilegeRequest request)
     {
       this();
       this.request = request;
@@ -2203,14 +2283,14 @@ public class SentryPolicyService {
     /**
      * Performs a deep copy on <i>other</i>.
      */
-    public create_sentry_privilege_args(create_sentry_privilege_args other) {
+    public alter_sentry_role_grant_privilege_args(alter_sentry_role_grant_privilege_args other) {
       if (other.isSetRequest()) {
-        this.request = new TCreateSentryPrivilegeRequest(other.request);
+        this.request = new TAlterSentryRoleGrantPrivilegeRequest(other.request);
       }
     }
 
-    public create_sentry_privilege_args deepCopy() {
-      return new create_sentry_privilege_args(this);
+    public alter_sentry_role_grant_privilege_args deepCopy() {
+      return new alter_sentry_role_grant_privilege_args(this);
     }
 
     @Override
@@ -2218,11 +2298,11 @@ public class SentryPolicyService {
       this.request = null;
     }
 
-    public TCreateSentryPrivilegeRequest getRequest() {
+    public TAlterSentryRoleGrantPrivilegeRequest getRequest() {
       return this.request;
     }
 
-    public void setRequest(TCreateSentryPrivilegeRequest request) {
+    public void setRequest(TAlterSentryRoleGrantPrivilegeRequest request) {
       this.request = request;
     }
 
@@ -2247,7 +2327,7 @@ public class SentryPolicyService {
         if (value == null) {
           unsetRequest();
         } else {
-          setRequest((TCreateSentryPrivilegeRequest)value);
+          setRequest((TAlterSentryRoleGrantPrivilegeRequest)value);
         }
         break;
 
@@ -2280,12 +2360,12 @@ public class SentryPolicyService {
     public boolean equals(Object that) {
       if (that == null)
         return false;
-      if (that instanceof create_sentry_privilege_args)
-        return this.equals((create_sentry_privilege_args)that);
+      if (that instanceof alter_sentry_role_grant_privilege_args)
+        return this.equals((alter_sentry_role_grant_privilege_args)that);
       return false;
     }
 
-    public boolean equals(create_sentry_privilege_args that) {
+    public boolean equals(alter_sentry_role_grant_privilege_args that) {
       if (that == null)
         return false;
 
@@ -2313,13 +2393,13 @@ public class SentryPolicyService {
       return builder.toHashCode();
     }
 
-    public int compareTo(create_sentry_privilege_args other) {
+    public int compareTo(alter_sentry_role_grant_privilege_args other) {
       if (!getClass().equals(other.getClass())) {
         return getClass().getName().compareTo(other.getClass().getName());
       }
 
       int lastComparison = 0;
-      create_sentry_privilege_args typedOther = (create_sentry_privilege_args)other;
+      alter_sentry_role_grant_privilege_args typedOther = (alter_sentry_role_grant_privilege_args)other;
 
       lastComparison = Boolean.valueOf(isSetRequest()).compareTo(typedOther.isSetRequest());
       if (lastComparison != 0) {
@@ -2348,7 +2428,7 @@ public class SentryPolicyService {
 
     @Override
     public String toString() {
-      StringBuilder sb = new StringBuilder("create_sentry_privilege_args(");
+      StringBuilder sb = new StringBuilder("alter_sentry_role_grant_privilege_args(");
       boolean first = true;
 
       sb.append("request:");
@@ -2386,15 +2466,15 @@ public class SentryPolicyService {
       }
     }
 
-    private static class create_sentry_privilege_argsStandardSchemeFactory implements SchemeFactory {
-      public create_sentry_privilege_argsStandardScheme getScheme() {
-        return new create_sentry_privilege_argsStandardScheme();
+    private static class alter_sentry_role_grant_privilege_argsStandardSchemeFactory implements SchemeFactory {
+      public alter_sentry_role_grant_privilege_argsStandardScheme getScheme() {
+        return new alter_sentry_role_grant_privilege_argsStandardScheme();
       }
     }
 
-    private static class create_sentry_privilege_argsStandardScheme extends StandardScheme<create_sentry_privilege_args> {
+    private static class alter_sentry_role_grant_privilege_argsStandardScheme extends StandardScheme<alter_sentry_role_grant_privilege_args> {
 
-      public void read(org.apache.thrift.protocol.TProtocol iprot, create_sentry_privilege_args struct) throws org.apache.thrift.TException {
+      public void read(org.apache.thrift.protocol.TProtocol iprot, alter_sentry_role_grant_privilege_args struct) throws org.apache.thrift.TException {
         org.apache.thrift.protocol.TField schemeField;
         iprot.readStructBegin();
         while (true)
@@ -2406,7 +2486,7 @@ public class SentryPolicyService {
           switch (schemeField.id) {
             case 1: // REQUEST
               if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
-                struct.request = new TCreateSentryPrivilegeRequest();
+                struct.request = new TAlterSentryRoleGrantPrivilegeRequest();
                 struct.request.read(iprot);
                 struct.setRequestIsSet(true);
               } else { 
@@ -2422,7 +2502,7 @@ public class SentryPolicyService {
         struct.validate();
       }
 
-      public void write(org.apache.thrift.protocol.TProtocol oprot, create_sentry_privilege_args struct) throws org.apache.thrift.TException {
+      public void write(org.apache.thrift.protocol.TProtocol oprot, alter_sentry_role_grant_privilege_args struct) throws org.apache.thrift.TException {
         struct.validate();
 
         oprot.writeStructBegin(STRUCT_DESC);
@@ -2437,16 +2517,16 @@ public class SentryPolicyService {
 
     }
 
-    private static class create_sentry_privilege_argsTupleSchemeFactory implements SchemeFactory {
-      public create_sentry_privilege_argsTupleScheme getScheme() {
-        return new create_sentry_privilege_argsTupleScheme();
+    private static class alter_sentry_role_grant_privilege_argsTupleSchemeFactory implements SchemeFactory {
+      public alter_sentry_role_grant_privilege_argsTupleScheme getScheme() {
+        return new alter_sentry_role_grant_privilege_argsTupleScheme();
       }
     }
 
-    private static class create_sentry_privilege_argsTupleScheme extends TupleScheme<create_sentry_privilege_args> {
+    private static class alter_sentry_role_grant_privilege_argsTupleScheme extends TupleScheme<alter_sentry_role_grant_privilege_args> {
 
       @Override
-      public void write(org.apache.thrift.protocol.TProtocol prot, create_sentry_privilege_args struct) throws org.apache.thrift.TException {
+      public void write(org.apache.thrift.protocol.TProtocol prot, alter_sentry_role_grant_privilege_args struct) throws org.apache.thrift.TException {
         TTupleProtocol oprot = (TTupleProtocol) prot;
         BitSet optionals = new BitSet();
         if (struct.isSetRequest()) {
@@ -2459,11 +2539,11 @@ public class SentryPolicyService {
       }
 
       @Override
-      public void read(org.apache.thrift.protocol.TProtocol prot, create_sentry_privilege_args struct) throws org.apache.thrift.TException {
+      public void read(org.apache.thrift.protocol.TProtocol prot, alter_sentry_role_grant_privilege_args struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
         BitSet incoming = iprot.readBitSet(1);
         if (incoming.get(0)) {
-          struct.request = new TCreateSentryPrivilegeRequest();
+          struct.request = new TAlterSentryRoleGrantPrivilegeRequest();
           struct.request.read(iprot);
           struct.setRequestIsSet(true);
         }
@@ -2472,18 +2552,18 @@ public class SentryPolicyService {
 
   }
 
-  public static class create_sentry_privilege_result implements org.apache.thrift.TBase<create_sentry_privilege_result, create_sentry_privilege_result._Fields>, java.io.Serializable, Cloneable   {
-    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("create_sentry_privilege_result");
+  public static class alter_sentry_role_grant_privilege_result implements org.apache.thrift.TBase<alter_sentry_role_grant_privilege_result, alter_sentry_role_grant_privilege_result._Fields>, java.io.Serializable, Cloneable   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("alter_sentry_role_grant_privilege_result");
 
     private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRUCT, (short)0);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
-      schemes.put(StandardScheme.class, new create_sentry_privilege_resultStandardSchemeFactory());
-      schemes.put(TupleScheme.class, new create_sentry_privilege_resultTupleSchemeFactory());
+      schemes.put(StandardScheme.class, new alter_sentry_role_grant_privilege_resultStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new alter_sentry_role_grant_privilege_resultTupleSchemeFactory());
     }
 
-    private TCreateSentryPrivilegeResponse success; // required
+    private TAlterSentryRoleGrantPrivilegeResponse success; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -2548,16 +2628,16 @@ public class SentryPolicyService {
     static {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TCreateSentryPrivilegeResponse.class)));
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TAlterSentryRoleGrantPrivilegeResponse.class)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
-      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(create_sentry_privilege_result.class, metaDataMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(alter_sentry_role_grant_privilege_result.class, metaDataMap);
     }
 
-    public create_sentry_privilege_result() {
+    public alter_sentry_role_grant_privilege_result() {
     }
 
-    public create_sentry_privilege_result(
-      TCreateSentryPrivilegeResponse success)
+    public alter_sentry_role_grant_privilege_result(
+      TAlterSentryRoleGrantPrivilegeResponse success)
     {
       this();
       this.success = success;
@@ -2566,14 +2646,14 @@ public class SentryPolicyService {
     /**
      * Performs a deep copy on <i>other</i>.
      */
-    public create_sentry_privilege_result(create_sentry_privilege_result other) {
+    public alter_sentry_role_grant_privilege_result(alter_sentry_role_grant_privilege_result other) {
       if (other.isSetSuccess()) {
-        this.success = new TCreateSentryPrivilegeResponse(other.success);
+        this.success = new TAlterSentryRoleGrantPrivilegeResponse(other.success);
       }
     }
 
-    public create_sentry_privilege_result deepCopy() {
-      return new create_sentry_privilege_result(this);
+    public alter_sentry_role_grant_privilege_result deepCopy() {
+      return new alter_sentry_role_grant_privilege_result(this);
     }
 
     @Override
@@ -2581,11 +2661,11 @@ public class SentryPolicyService {
       this.success = null;
     }
 
-    public TCreateSentryPrivilegeResponse getSuccess() {
+    public TAlterSentryRoleGrantPrivilegeResponse getSuccess() {
       return this.success;
     }
 
-    public void setSuccess(TCreateSentryPrivilegeResponse success) {
+    public void setSuccess(TAlterSentryRoleGrantPrivilegeResponse success) {
       this.success = success;
     }
 
@@ -2610,7 +2690,7 @@ public class SentryPolicyService {
         if (value == null) {
           unsetSuccess();
         } else {
-          setSuccess((TCreateSentryPrivilegeResponse)value);
+          setSuccess((TAlterSentryRoleGrantPrivilegeResponse)value);
         }
         break;
 
@@ -2643,12 +2723,12 @@ public class SentryPolicyService {
     public boolean equals(Object that) {
       if (that == null)
         return false;
-      if (that instanceof create_sentry_privilege_result)
-        return this.equals((create_sentry_privilege_result)that);
+      if (that instanceof alter_sentry_role_grant_privilege_result)
+        return this.equals((alter_sentry_role_grant_privilege_result)that);
       return false;
     }
 
-    public boolean equals(create_sentry_privilege_result that) {
+    public boolean equals(alter_sentry_role_grant_privilege_result that) {
       if (that == null)
         return false;
 
@@ -2676,13 +2756,13 @@ public class SentryPolicyService {
       return builder.toHashCode();
     }
 
-    public int compareTo(create_sentry_privilege_result other) {
+    public int compareTo(alter_sentry_role_grant_privilege_result other) {
       if (!getClass().equals(other.getClass())) {
         return getClass().getName().compareTo(other.getClass().getName());
       }
 
       int lastComparison = 0;
-      create_sentry_privilege_result typedOther = (create_sentry_privilege_result)other;
+      alter_sentry_role_grant_privilege_result typedOther = (alter_sentry_role_grant_privilege_result)other;
 
       lastComparison = Boolean.valueOf(isSetSuccess()).compareTo(typedOther.isSetSuccess());
       if (lastComparison != 0) {
@@ -2711,7 +2791,7 @@ public class SentryPolicyService {
 
     @Override
     public String toString() {
-      StringBuilder sb = new StringBuilder("create_sentry_privilege_result(");
+      StringBuilder sb = new StringBuilder("alter_sentry_role_grant_privilege_result(");
       boolean first = true;
 
       sb.append("success:");
@@ -2749,15 +2829,15 @@ public class SentryPolicyService {
       }
     }
 
-    private static class create_sentry_privilege_resultStandardSchemeFactory implements SchemeFactory {
-      public create_sentry_privilege_resultStandardScheme getScheme() {
-        return new create_sentry_privilege_resultStandardScheme();
+    private static class alter_sentry_role_grant_privilege_resultStandardSchemeFactory implements SchemeFactory {
+      public alter_sentry_role_grant_privilege_resultStandardScheme getScheme() {
+        return new alter_sentry_role_grant_privilege_resultStandardScheme();
       }
     }
 
-    private static class create_sentry_privilege_resultStandardScheme extends StandardScheme<create_sentry_privilege_result> {
+    private static class alter_sentry_role_grant_privilege_resultStandardScheme extends StandardScheme<alter_sentry_role_grant_privilege_result> {
 
-      public void read(org.apache.thrift.protocol.TProtocol iprot, create_sentry_privilege_result struct) throws org.apache.thrift.TException {
+      public void read(org.apache.thrift.protocol.TProtocol iprot, alter_sentry_role_grant_privilege_result struct) throws org.apache.thrift.TException {
         org.apache.thrift.protocol.TField schemeField;
         iprot.readStructBegin();
         while (true)
@@ -2769,7 +2849,7 @@ public class SentryPolicyService {
           switch (schemeField.id) {
             case 0: // SUCCESS
               if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
-                struct.success = new TCreateSentryPrivilegeResponse();
+                struct.success = new TAlterSentryRoleGrantPrivilegeResponse();
                 struct.success.read(iprot);
                 struct.setSuccessIsSet(true);
               } else { 
@@ -2785,7 +2865,7 @@ public class SentryPolicyService {
         struct.validate();
       }
 
-      public void write(org.apache.thrift.protocol.TProtocol oprot, create_sentry_privilege_result struct) throws org.apache.thrift.TException {
+      public void write(org.apache.thrift.protocol.TProtocol oprot, alter_sentry_role_grant_privilege_result struct) throws org.apache.thrift.TException {
         struct.validate();
 
         oprot.writeStructBegin(STRUCT_DESC);
@@ -2800,16 +2880,16 @@ public class SentryPolicyService {
 
     }
 
-    private static class create_sentry_privilege_resultTupleSchemeFactory implements SchemeFactory {
-      public create_sentry_privilege_resultTupleScheme getScheme() {
-        return new create_sentry_privilege_resultTupleScheme();
+    private static class alter_sentry_role_grant_privilege_resultTupleSchemeFactory implements SchemeFactory {
+      public alter_sentry_role_grant_privilege_resultTupleScheme getScheme() {
+        return new alter_sentry_role_grant_privilege_resultTupleScheme();
       }
     }
 
-    private static class create_sentry_privilege_resultTupleScheme extends TupleScheme<create_sentry_privilege_result> {
+    private static class alter_sentry_role_grant_privilege_resultTupleScheme extends TupleScheme<alter_sentry_role_grant_privilege_result> {
 
       @Override
-      public void write(org.apache.thrift.protocol.TProtocol prot, create_sentry_privilege_result struct) throws org.apache.thrift.TException {
+      public void write(org.apache.thrift.protocol.TProtocol prot, alter_sentry_role_grant_privilege_result struct) throws org.apache.thrift.TException {
         TTupleProtocol oprot = (TTupleProtocol) prot;
         BitSet optionals = new BitSet();
         if (struct.isSetSuccess()) {
@@ -2822,11 +2902,737 @@ public class SentryPolicyService {
       }
 
       @Override
-      public void read(org.apache.thrift.protocol.TProtocol prot, create_sentry_privilege_result struct) throws org.apache.thrift.TException {
+      public void read(org.apache.thrift.protocol.TProtocol prot, alter_sentry_role_grant_privilege_result struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
         BitSet incoming = iprot.readBitSet(1);
         if (incoming.get(0)) {
-          struct.success = new TCreateSentryPrivilegeResponse();
+          struct.success = new TAlterSentryRoleGrantPrivilegeResponse();
+          struct.success.read(iprot);
+          struct.setSuccessIsSet(true);
+        }
+      }
+    }
+
+  }
+
+  public static class alter_sentry_role_revoke_privilege_args implements org.apache.thrift.TBase<alter_sentry_role_revoke_privilege_args, alter_sentry_role_revoke_privilege_args._Fields>, java.io.Serializable, Cloneable   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("alter_sentry_role_revoke_privilege_args");
+
+    private static final org.apache.thrift.protocol.TField REQUEST_FIELD_DESC = new org.apache.thrift.protocol.TField("request", org.apache.thrift.protocol.TType.STRUCT, (short)1);
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new alter_sentry_role_revoke_privilege_argsStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new alter_sentry_role_revoke_privilege_argsTupleSchemeFactory());
+    }
+
+    private TAlterSentryRoleRevokePrivilegeRequest request; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      REQUEST((short)1, "request");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 1: // REQUEST
+            return REQUEST;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.REQUEST, new org.apache.thrift.meta_data.FieldMetaData("request", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TAlterSentryRoleRevokePrivilegeRequest.class)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(alter_sentry_role_revoke_privilege_args.class, metaDataMap);
+    }
+
+    public alter_sentry_role_revoke_privilege_args() {
+    }
+
+    public alter_sentry_role_revoke_privilege_args(
+      TAlterSentryRoleRevokePrivilegeRequest request)
+    {
+      this();
+      this.request = request;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public alter_sentry_role_revoke_privilege_args(alter_sentry_role_revoke_privilege_args other) {
+      if (other.isSetRequest()) {
+        this.request = new TAlterSentryRoleRevokePrivilegeRequest(other.request);
+      }
+    }
+
+    public alter_sentry_role_revoke_privilege_args deepCopy() {
+      return new alter_sentry_role_revoke_privilege_args(this);
+    }
+
+    @Override
+    public void clear() {
+      this.request = null;
+    }
+
+    public TAlterSentryRoleRevokePrivilegeRequest getRequest() {
+      return this.request;
+    }
+
+    public void setRequest(TAlterSentryRoleRevokePrivilegeRequest request) {
+      this.request = request;
+    }
+
+    public void unsetRequest() {
+      this.request = null;
+    }
+
+    /** Returns true if field request is set (has been assigned a value) and false otherwise */
+    public boolean isSetRequest() {
+      return this.request != null;
+    }
+
+    public void setRequestIsSet(boolean value) {
+      if (!value) {
+        this.request = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case REQUEST:
+        if (value == null) {
+          unsetRequest();
+        } else {
+          setRequest((TAlterSentryRoleRevokePrivilegeRequest)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case REQUEST:
+        return getRequest();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case REQUEST:
+        return isSetRequest();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof alter_sentry_role_revoke_privilege_args)
+        return this.equals((alter_sentry_role_revoke_privilege_args)that);
+      return false;
+    }
+
+    public boolean equals(alter_sentry_role_revoke_privilege_args that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_request = true && this.isSetRequest();
+      boolean that_present_request = true && that.isSetRequest();
+      if (this_present_request || that_present_request) {
+        if (!(this_present_request && that_present_request))
+          return false;
+        if (!this.request.equals(that.request))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      HashCodeBuilder builder = new HashCodeBuilder();
+
+      boolean present_request = true && (isSetRequest());
+      builder.append(present_request);
+      if (present_request)
+        builder.append(request);
+
+      return builder.toHashCode();
+    }
+
+    public int compareTo(alter_sentry_role_revoke_privilege_args other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+      alter_sentry_role_revoke_privilege_args typedOther = (alter_sentry_role_revoke_privilege_args)other;
+
+      lastComparison = Boolean.valueOf(isSetRequest()).compareTo(typedOther.isSetRequest());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetRequest()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.request, typedOther.request);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("alter_sentry_role_revoke_privilege_args(");
+      boolean first = true;
+
+      sb.append("request:");
+      if (this.request == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.request);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+      if (request != null) {
+        request.validate();
+      }
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class alter_sentry_role_revoke_privilege_argsStandardSchemeFactory implements SchemeFactory {
+      public alter_sentry_role_revoke_privilege_argsStandardScheme getScheme() {
+        return new alter_sentry_role_revoke_privilege_argsStandardScheme();
+      }
+    }
+
+    private static class alter_sentry_role_revoke_privilege_argsStandardScheme extends StandardScheme<alter_sentry_role_revoke_privilege_args> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, alter_sentry_role_revoke_privilege_args struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            case 1: // REQUEST
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.request = new TAlterSentryRoleRevokePrivilegeRequest();
+                struct.request.read(iprot);
+                struct.setRequestIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, alter_sentry_role_revoke_privilege_args struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.request != null) {
+          oprot.writeFieldBegin(REQUEST_FIELD_DESC);
+          struct.request.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class alter_sentry_role_revoke_privilege_argsTupleSchemeFactory implements SchemeFactory {
+      public alter_sentry_role_revoke_privilege_argsTupleScheme getScheme() {
+        return new alter_sentry_role_revoke_privilege_argsTupleScheme();
+      }
+    }
+
+    private static class alter_sentry_role_revoke_privilege_argsTupleScheme extends TupleScheme<alter_sentry_role_revoke_privilege_args> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, alter_sentry_role_revoke_privilege_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if (struct.isSetRequest()) {
+          optionals.set(0);
+        }
+        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetRequest()) {
+          struct.request.write(oprot);
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, alter_sentry_role_revoke_privilege_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(1);
+        if (incoming.get(0)) {
+          struct.request = new TAlterSentryRoleRevokePrivilegeRequest();
+          struct.request.read(iprot);
+          struct.setRequestIsSet(true);
+        }
+      }
+    }
+
+  }
+
+  public static class alter_sentry_role_revoke_privilege_result implements org.apache.thrift.TBase<alter_sentry_role_revoke_privilege_result, alter_sentry_role_revoke_privilege_result._Fields>, java.io.Serializable, Cloneable   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("alter_sentry_role_revoke_privilege_result");
+
+    private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRUCT, (short)0);
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new alter_sentry_role_revoke_privilege_resultStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new alter_sentry_role_revoke_privilege_resultTupleSchemeFactory());
+    }
+
+    private TAlterSentryRoleRevokePrivilegeResponse success; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      SUCCESS((short)0, "success");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 0: // SUCCESS
+            return SUCCESS;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TAlterSentryRoleRevokePrivilegeResponse.class)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(alter_sentry_role_revoke_privilege_result.class, metaDataMap);
+    }
+
+    public alter_sentry_role_revoke_privilege_result() {
+    }
+
+    public alter_sentry_role_revoke_privilege_result(
+      TAlterSentryRoleRevokePrivilegeResponse success)
+    {
+      this();
+      this.success = success;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public alter_sentry_role_revoke_privilege_result(alter_sentry_role_revoke_privilege_result other) {
+      if (other.isSetSuccess()) {
+        this.success = new TAlterSentryRoleRevokePrivilegeResponse(other.success);
+      }
+    }
+
+    public alter_sentry_role_revoke_privilege_result deepCopy() {
+      return new alter_sentry_role_revoke_privilege_result(this);
+    }
+
+    @Override
+    public void clear() {
+      this.success = null;
+    }
+
+    public TAlterSentryRoleRevokePrivilegeResponse getSuccess() {
+      return this.success;
+    }
+
+    public void setSuccess(TAlterSentryRoleRevokePrivilegeResponse success) {
+      this.success = success;
+    }
+
+    public void unsetSuccess() {
+      this.success = null;
+    }
+
+    /** Returns true if field success is set (has been assigned a value) and false otherwise */
+    public boolean isSetSuccess() {
+      return this.success != null;
+    }
+
+    public void setSuccessIsSet(boolean value) {
+      if (!value) {
+        this.success = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case SUCCESS:
+        if (value == null) {
+          unsetSuccess();
+        } else {
+          setSuccess((TAlterSentryRoleRevokePrivilegeResponse)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case SUCCESS:
+        return getSuccess();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case SUCCESS:
+        return isSetSuccess();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof alter_sentry_role_revoke_privilege_result)
+        return this.equals((alter_sentry_role_revoke_privilege_result)that);
+      return false;
+    }
+
+    public boolean equals(alter_sentry_role_revoke_privilege_result that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_success = true && this.isSetSuccess();
+      boolean that_present_success = true && that.isSetSuccess();
+      if (this_present_success || that_present_success) {
+        if (!(this_present_success && that_present_success))
+          return false;
+        if (!this.success.equals(that.success))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      HashCodeBuilder builder = new HashCodeBuilder();
+
+      boolean present_success = true && (isSetSuccess());
+      builder.append(present_success);
+      if (present_success)
+        builder.append(success);
+
+      return builder.toHashCode();
+    }
+
+    public int compareTo(alter_sentry_role_revoke_privilege_result other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+      alter_sentry_role_revoke_privilege_result typedOther = (alter_sentry_role_revoke_privilege_result)other;
+
+      lastComparison = Boolean.valueOf(isSetSuccess()).compareTo(typedOther.isSetSuccess());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetSuccess()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.success, typedOther.success);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+      }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("alter_sentry_role_revoke_privilege_result(");
+      boolean first = true;
+
+      sb.append("success:");
+      if (this.success == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.success);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+      if (success != null) {
+        success.validate();
+      }
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class alter_sentry_role_revoke_privilege_resultStandardSchemeFactory implements SchemeFactory {
+      public alter_sentry_role_revoke_privilege_resultStandardScheme getScheme() {
+        return new alter_sentry_role_revoke_privilege_resultStandardScheme();
+      }
+    }
+
+    private static class alter_sentry_role_revoke_privilege_resultStandardScheme extends StandardScheme<alter_sentry_role_revoke_privilege_result> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, alter_sentry_role_revoke_privilege_result struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            case 0: // SUCCESS
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.success = new TAlterSentryRoleRevokePrivilegeResponse();
+                struct.success.read(iprot);
+                struct.setSuccessIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, alter_sentry_role_revoke_privilege_result struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.success != null) {
+          oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
+          struct.success.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class alter_sentry_role_revoke_privilege_resultTupleSchemeFactory implements SchemeFactory {
+      public alter_sentry_role_revoke_privilege_resultTupleScheme getScheme() {
+        return new alter_sentry_role_revoke_privilege_resultTupleScheme();
+      }
+    }
+
+    private static class alter_sentry_role_revoke_privilege_resultTupleScheme extends TupleScheme<alter_sentry_role_revoke_privilege_result> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, alter_sentry_role_revoke_privilege_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if (struct.isSetSuccess()) {
+          optionals.set(0);
+        }
+        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetSuccess()) {
+          struct.success.write(oprot);
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, alter_sentry_role_revoke_privilege_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(1);
+        if (incoming.get(0)) {
+          struct.success = new TAlterSentryRoleRevokePrivilegeResponse();
           struct.success.read(iprot);
           struct.setSuccessIsSet(true);
         }

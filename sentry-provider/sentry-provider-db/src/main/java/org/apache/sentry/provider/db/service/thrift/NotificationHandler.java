@@ -44,16 +44,19 @@ public abstract class NotificationHandler {
   }
 
   public void create_sentry_role(CommitContext context,
-      TCreateSentryRoleRequest request, TCreateSentryRoleResponse response) {
+                                 TCreateSentryRoleRequest request, TCreateSentryRoleResponse response) {
   }
 
   public void drop_sentry_role(CommitContext context, TDropSentryRoleRequest request,
-      TDropSentryRoleResponse response) {
+                               TDropSentryRoleResponse response) {
   }
 
-  public void create_sentry_privilege(CommitContext context,
-      TCreateSentryPrivilegeRequest request,
-      TCreateSentryPrivilegeResponse response) {
+  public void alter_sentry_role_grant_privilege(CommitContext context, TAlterSentryRoleGrantPrivilegeRequest request,
+      TAlterSentryRoleGrantPrivilegeResponse response) {
+  }
+
+  public void alter_sentry_role_revoke_privilege(CommitContext context, TAlterSentryRoleRevokePrivilegeRequest request,
+      TAlterSentryRoleRevokePrivilegeResponse response) {
   }
 
   public void alter_sentry_role_add_groups(CommitContext context,
@@ -62,7 +65,7 @@ public abstract class NotificationHandler {
   }
 
   public void alter_sentry_role_delete_groups(
-      CommitContext context, TAlterSentryRoleDeleteGroupsRequest request,
-      TAlterSentryRoleDeleteGroupsResponse response) {
+    CommitContext context, TAlterSentryRoleDeleteGroupsRequest request,
+    TAlterSentryRoleDeleteGroupsResponse response) {
   }
 }
