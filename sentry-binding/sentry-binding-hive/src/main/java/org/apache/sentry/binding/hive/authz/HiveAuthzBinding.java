@@ -33,6 +33,7 @@ import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
 import org.apache.sentry.binding.hive.conf.InvalidConfigurationException;
+import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.db.DBModelAction;
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
@@ -195,7 +196,7 @@ public class HiveAuthzBinding {
         if (requiredInputPrivileges.containsKey(getAuthzType(inputHierarchy))) {
           EnumSet<DBModelAction> inputPrivSet =
             requiredInputPrivileges.get(getAuthzType(inputHierarchy));
-          if (!authProvider.hasAccess(subject, inputHierarchy, inputPrivSet)) {
+          if (!authProvider.hasAccess(subject, inputHierarchy, inputPrivSet, ActiveRoleSet.ALL)) {
             throw new AuthorizationException("User " + subject.getName() +
                 " does not have privileges for " + hiveOp.name());
           }
@@ -213,7 +214,7 @@ public class HiveAuthzBinding {
         if (requiredOutputPrivileges.containsKey(getAuthzType(outputHierarchy))) {
           EnumSet<DBModelAction> outputPrivSet =
             requiredOutputPrivileges.get(getAuthzType(outputHierarchy));
-          if (!authProvider.hasAccess(subject, outputHierarchy, outputPrivSet)) {
+          if (!authProvider.hasAccess(subject, outputHierarchy, outputPrivSet, ActiveRoleSet.ALL)) {
             throw new AuthorizationException("User " + subject.getName() +
                 " does not have priviliedges for " + hiveOp.name());
           }

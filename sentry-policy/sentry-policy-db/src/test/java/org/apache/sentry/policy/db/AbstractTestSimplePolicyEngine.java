@@ -24,6 +24,7 @@ import java.util.TreeSet;
 import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -88,7 +89,7 @@ public abstract class AbstractTestSimplePolicyEngine {
         PERM_SERVER1_CUSTOMERS_DB_CUSTOMERS_PARTIAL_SELECT
         ));
     Assert.assertEquals(expected.toString(),
-        new TreeSet<String>(policy.getPrivileges(set("manager")))
+        new TreeSet<String>(policy.getPrivileges(set("manager"), ActiveRoleSet.ALL))
         .toString());
   }
 
@@ -98,7 +99,7 @@ public abstract class AbstractTestSimplePolicyEngine {
         PERM_SERVER1_CUSTOMERS_SELECT, PERM_SERVER1_ANALYST_ALL,
         PERM_SERVER1_JUNIOR_ANALYST_READ));
     Assert.assertEquals(expected.toString(),
-        new TreeSet<String>(policy.getPrivileges(set("analyst")))
+        new TreeSet<String>(policy.getPrivileges(set("analyst"), ActiveRoleSet.ALL))
         .toString());
   }
 
@@ -108,7 +109,7 @@ public abstract class AbstractTestSimplePolicyEngine {
         .newHashSet(PERM_SERVER1_JUNIOR_ANALYST_ALL,
             PERM_SERVER1_CUSTOMERS_DB_CUSTOMERS_PARTIAL_SELECT));
     Assert.assertEquals(expected.toString(),
-        new TreeSet<String>(policy.getPrivileges(set("jranalyst")))
+        new TreeSet<String>(policy.getPrivileges(set("jranalyst"), ActiveRoleSet.ALL))
         .toString());
   }
 
@@ -116,7 +117,7 @@ public abstract class AbstractTestSimplePolicyEngine {
   public void testAdmin() throws Exception {
     Set<String> expected = Sets.newTreeSet(Sets.newHashSet(PERM_SERVER1_ADMIN));
     Assert.assertEquals(expected.toString(),
-        new TreeSet<String>(policy.getPrivileges(set("admin")))
+        new TreeSet<String>(policy.getPrivileges(set("admin"), ActiveRoleSet.ALL))
         .toString());
   }
 
@@ -126,7 +127,7 @@ public abstract class AbstractTestSimplePolicyEngine {
     Set<String> expected = Sets.newTreeSet(Sets.newHashSet(
         PERM_SERVER1_OTHER_GROUP_DB_CUSTOMERS_SELECT));
     Assert.assertEquals(expected.toString(),
-        new TreeSet<String>(policy.getPrivileges(set("other_group")))
+        new TreeSet<String>(policy.getPrivileges(set("other_group"), ActiveRoleSet.ALL))
         .toString());
   }
 
@@ -136,7 +137,7 @@ public abstract class AbstractTestSimplePolicyEngine {
         .newHashSet(PERM_SERVER1_JUNIOR_ANALYST_ALL,
             PERM_SERVER1_CUSTOMERS_DB_CUSTOMERS_PARTIAL_SELECT));
     Assert.assertEquals(expected.toString(),
-        new TreeSet<String>(policy.getPrivileges(set("jranalyst")))
+        new TreeSet<String>(policy.getPrivileges(set("jranalyst"), ActiveRoleSet.ALL))
         .toString());
   }
 
@@ -145,7 +146,7 @@ public abstract class AbstractTestSimplePolicyEngine {
     Set<String> expected = Sets.newTreeSet(Sets.newHashSet(
         PERM_SERVER1_OTHER_GROUP_DB_CUSTOMERS_SELECT));
     Assert.assertEquals(expected.toString(),
-        new TreeSet<String>(policy.getPrivileges(set("other_group")))
+        new TreeSet<String>(policy.getPrivileges(set("other_group"), ActiveRoleSet.ALL))
         .toString());
   }
 

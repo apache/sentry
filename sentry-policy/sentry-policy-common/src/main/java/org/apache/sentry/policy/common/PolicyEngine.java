@@ -21,6 +21,7 @@ import java.util.Set;
 
 import javax.annotation.concurrent.ThreadSafe;
 
+import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.SentryConfigurationException;
 
 import com.google.common.collect.ImmutableSet;
@@ -46,7 +47,7 @@ public interface PolicyEngine {
    * @param group name
    * @return non-null immutable set of privileges
    */
-  public ImmutableSet<String> getPrivileges(Set<String> groups)
+  public ImmutableSet<String> getPrivileges(Set<String> groups, ActiveRoleSet roleSet)
       throws SentryConfigurationException;
 
   public void validatePolicy(boolean strictValidation) throws SentryConfigurationException;

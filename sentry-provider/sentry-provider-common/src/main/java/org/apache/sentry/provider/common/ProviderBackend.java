@@ -20,6 +20,7 @@ import java.util.Set;
 
 import javax.annotation.concurrent.ThreadSafe;
 
+import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.SentryConfigurationException;
 
 import com.google.common.collect.ImmutableSet;
@@ -45,7 +46,7 @@ public interface ProviderBackend {
   /**
    * Get the privileges from the backend.
    */
-  public ImmutableSet<String> getPrivileges(Set<String> groups);
+  public ImmutableSet<String> getPrivileges(Set<String> groups, ActiveRoleSet roleSet);
 
   /**
    * If strictValidation is true then an error is thrown for warnings

@@ -26,6 +26,7 @@ import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.sentry.core.common.Action;
+import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.db.AccessURI;
@@ -77,7 +78,7 @@ public class TestResourceAuthorizationProviderSpecialCases {
     authzProvider = new LocalGroupResourceAuthorizationProvider(initResource, policy);
     List<? extends Authorizable> authorizableHierarchy = ImmutableList.of(server1, uri);
     Assert.assertTrue(authorizableHierarchy.toString(),
-        authzProvider.hasAccess(user1, authorizableHierarchy, actions));
+        authzProvider.hasAccess(user1, authorizableHierarchy, actions, ActiveRoleSet.ALL));
   }
   @Test
   public void testNonAbolutePath() throws Exception {
@@ -94,25 +95,25 @@ public class TestResourceAuthorizationProviderSpecialCases {
     // positive test
     List<? extends Authorizable> authorizableHierarchy = ImmutableList.of(server1, uri);
     Assert.assertTrue(authorizableHierarchy.toString(),
-        authzProvider.hasAccess(user1, authorizableHierarchy, actions));
+        authzProvider.hasAccess(user1, authorizableHierarchy, actions, ActiveRoleSet.ALL));
     // negative tests
     // TODO we should support the case of /path/to/./ but let's to that later
     uri = new AccessURI("file:///path/to/./");
     authorizableHierarchy = ImmutableList.of(server1, uri);
     Assert.assertFalse(authorizableHierarchy.toString(),
-        authzProvider.hasAccess(user1, authorizableHierarchy, actions));
+        authzProvider.hasAccess(user1, authorizableHierarchy, actions, ActiveRoleSet.ALL));
     uri = new AccessURI("file:///path/to/../");
     authorizableHierarchy = ImmutableList.of(server1, uri);
     Assert.assertFalse(authorizableHierarchy.toString(),
-        authzProvider.hasAccess(user1, authorizableHierarchy, actions));
+        authzProvider.hasAccess(user1, authorizableHierarchy, actions, ActiveRoleSet.ALL));
     uri = new AccessURI("file:///path/to/../../");
     authorizableHierarchy = ImmutableList.of(server1, uri);
     Assert.assertFalse(authorizableHierarchy.toString(),
-        authzProvider.hasAccess(user1, authorizableHierarchy, actions));
+        authzProvider.hasAccess(user1, authorizableHierarchy, actions, ActiveRoleSet.ALL));
     uri = new AccessURI("file:///path/to/dir/../../");
     authorizableHierarchy = ImmutableList.of(server1, uri);
     Assert.assertFalse(authorizableHierarchy.toString(),
-        authzProvider.hasAccess(user1, authorizableHierarchy, actions));
+        authzProvider.hasAccess(user1, authorizableHierarchy, actions, ActiveRoleSet.ALL));
   }
   @Test(expected=IllegalArgumentException.class)
   public void testInvalidPath() throws Exception {

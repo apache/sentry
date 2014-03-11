@@ -18,6 +18,7 @@ package org.apache.sentry.policy.search;
 
 import java.util.Set;
 
+import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.policy.common.PrivilegeFactory;
 import org.apache.sentry.policy.common.PolicyEngine;
@@ -60,11 +61,11 @@ public class SimpleSearchPolicyEngine implements PolicyEngine {
    * {@inheritDoc}
    */
   @Override
-  public ImmutableSet<String> getPrivileges(Set<String> groups) {
+  public ImmutableSet<String> getPrivileges(Set<String> groups, ActiveRoleSet roleSet) {
     if(LOGGER.isDebugEnabled()) {
       LOGGER.debug("Getting permissions for {}", groups);
     }
-    ImmutableSet<String> result = providerBackend.getPrivileges(groups);
+    ImmutableSet<String> result = providerBackend.getPrivileges(groups, roleSet);
     if(LOGGER.isDebugEnabled()) {
       LOGGER.debug("result = " + result);
     }

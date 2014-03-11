@@ -24,6 +24,7 @@ import java.util.TreeSet;
 import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -89,7 +90,7 @@ public abstract class AbstractTestSearchPolicyEngine {
         ANALYST_TMPCOLLECTION_QUERY, JRANALYST_JRANALYST1_ALL,
         JRANALYST_PURCHASES_PARTIAL_QUERY));
     Assert.assertEquals(expected.toString(),
-        new TreeSet<String>(policy.getPrivileges(set("manager")))
+        new TreeSet<String>(policy.getPrivileges(set("manager"), ActiveRoleSet.ALL))
         .toString());
   }
 
@@ -100,7 +101,7 @@ public abstract class AbstractTestSearchPolicyEngine {
         ANALYST_JRANALYST1_ACTION_ALL, ANALYST_TMPCOLLECTION_UPDATE,
         ANALYST_TMPCOLLECTION_QUERY));
     Assert.assertEquals(expected.toString(),
-        new TreeSet<String>(policy.getPrivileges(set("analyst")))
+        new TreeSet<String>(policy.getPrivileges(set("analyst"), ActiveRoleSet.ALL))
         .toString());
   }
 
@@ -110,7 +111,7 @@ public abstract class AbstractTestSearchPolicyEngine {
         .newHashSet(JRANALYST_JRANALYST1_ALL,
             JRANALYST_PURCHASES_PARTIAL_QUERY));
     Assert.assertEquals(expected.toString(),
-        new TreeSet<String>(policy.getPrivileges(set("jranalyst")))
+        new TreeSet<String>(policy.getPrivileges(set("jranalyst"), ActiveRoleSet.ALL))
         .toString());
   }
 
@@ -118,7 +119,7 @@ public abstract class AbstractTestSearchPolicyEngine {
   public void testAdmin() throws Exception {
     Set<String> expected = Sets.newTreeSet(Sets.newHashSet(ADMIN_COLLECTION_ALL));
     Assert.assertEquals(expected.toString(),
-        new TreeSet<String>(policy.getPrivileges(set("admin")))
+        new TreeSet<String>(policy.getPrivileges(set("admin"), ActiveRoleSet.ALL))
         .toString());
   }
 

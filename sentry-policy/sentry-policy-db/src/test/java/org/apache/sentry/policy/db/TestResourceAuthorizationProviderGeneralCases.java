@@ -27,6 +27,7 @@ import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.sentry.core.common.Action;
+import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.db.AccessConstants;
@@ -111,7 +112,7 @@ public class TestResourceAuthorizationProviderGeneralCases {
       helper.add("authorizables", authzHierarchy).add("Privileges", privileges);
     LOGGER.info("Running with " + helper.toString());
     Assert.assertEquals(helper.toString(), expected,
-        authzProvider.hasAccess(subject, authzHierarchy, privileges));
+        authzProvider.hasAccess(subject, authzHierarchy, privileges, ActiveRoleSet.ALL));
     LOGGER.info("Passed " + helper.toString());
   }
 
@@ -126,7 +127,7 @@ public class TestResourceAuthorizationProviderGeneralCases {
     .add("Table", table).add("Privileges", privileges).add("authzHierarchy", authzHierarchy);
     LOGGER.info("Running with " + helper.toString());
     Assert.assertEquals(helper.toString(), expected,
-        authzProvider.hasAccess(subject, authzHierarchy, privileges));
+        authzProvider.hasAccess(subject, authzHierarchy, privileges, ActiveRoleSet.ALL));
     LOGGER.info("Passed " + helper.toString());
   }
 

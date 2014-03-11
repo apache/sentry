@@ -26,6 +26,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.provider.file.PolicyFiles;
 import org.junit.AfterClass;
@@ -107,7 +108,7 @@ public class TestSimpleDBPolicyEngineDFS extends AbstractTestSimplePolicyEngine 
     Set<String> dbGroups = Sets.newHashSet();
     dbGroups.add("group1");
     ImmutableSet<String> dbPerms =
-        multiFSEngine.getPrivileges(dbGroups);
+        multiFSEngine.getPrivileges(dbGroups, ActiveRoleSet.ALL);
     Assert.assertEquals("No DB permissions found", 1, dbPerms.size());
   }
 }

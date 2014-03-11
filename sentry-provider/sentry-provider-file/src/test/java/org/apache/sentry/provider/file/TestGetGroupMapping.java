@@ -21,6 +21,7 @@ import static org.junit.Assert.assertSame;
 import java.util.Set;
 
 import org.apache.sentry.core.common.SentryConfigurationException;
+import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.policy.common.PrivilegeFactory;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.common.GroupMappingService;
@@ -47,7 +48,9 @@ public class TestGetGroupMapping {
     PolicyEngine policyEngine = new PolicyEngine() {
       public PrivilegeFactory getPrivilegeFactory() { return null; }
 
-      public ImmutableSet<String> getPrivileges(Set<String> groups) { return null; }
+      public ImmutableSet<String> getPrivileges(Set<String> groups, ActiveRoleSet roleSet) {
+        return ImmutableSet.of();
+      }
 
       public void validatePolicy(boolean strictValidation)
           throws SentryConfigurationException {

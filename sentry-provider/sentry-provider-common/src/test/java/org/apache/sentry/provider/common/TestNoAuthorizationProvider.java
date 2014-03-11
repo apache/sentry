@@ -29,7 +29,7 @@ public class TestNoAuthorizationProvider {
   @Test
   public void testNoAuthorizationProvider() {
     NoAuthorizationProvider nap = new NoAuthorizationProvider();
-    assertFalse(nap.hasAccess(null, null, null));
+    assertFalse(nap.hasAccess(null, null, null, null));
 
     GroupMappingService gms = nap.getGroupMapping();
     assertEquals(gms.getGroups(null).size(), 0);

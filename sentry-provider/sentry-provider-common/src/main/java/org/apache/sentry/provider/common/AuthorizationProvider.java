@@ -22,6 +22,7 @@ import java.util.Set;
 import javax.annotation.concurrent.ThreadSafe;
 
 import org.apache.sentry.core.common.Action;
+import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.core.common.Subject;
@@ -36,14 +37,16 @@ public interface AuthorizationProvider {
    * Returns validate subject privileges on given Authorizable object
    *
    * @param subject: UserID to validate privileges
-   * @param authorizableHierarchy : List of object accroding to namespace hierarchy.
+   * @param authorizableHierarchy : List of object according to namespace hierarchy.
    *        eg. Server->Db->Table or Server->Function
    *        The privileges will be validated from the higher to lower scope
    * @param actions : Privileges to validate
+   * @param roleSet : Roles which should be used when obtaining privileges
    * @return
    *        True if the subject is authorized to perform requested action on the given object
    */
-  public boolean hasAccess(Subject subject, List<? extends Authorizable> authorizableHierarchy, Set<? extends Action> actions);
+  public boolean hasAccess(Subject subject, List<? extends Authorizable> authorizableHierarchy,
+      Set<? extends Action> actions, ActiveRoleSet roleSet);
 
   /***
    * Get the GroupMappingService used by the AuthorizationProvider

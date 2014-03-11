@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.sentry.core.common.Action;
+import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.core.common.Subject;
@@ -74,7 +75,7 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
    */
   @Override
   public boolean hasAccess(Subject subject, List<? extends Authorizable> authorizableHierarchy,
-      Set<? extends Action> actions) {
+      Set<? extends Action> actions, ActiveRoleSet roleSet) {
     if(LOGGER.isDebugEnabled()) {
       LOGGER.debug("Authorization Request for " + subject + " " +
           authorizableHierarchy + " and " + actions);
@@ -84,17 +85,19 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
     Preconditions.checkArgument(!authorizableHierarchy.isEmpty(), "Authorizable cannot be empty");
     Preconditions.checkNotNull(actions, "Actions cannot be null");
     Preconditions.checkArgument(!actions.isEmpty(), "Actions cannot be empty");
-    return doHasAccess(subject, authorizableHierarchy, actions);
+    Preconditions.checkNotNull(roleSet, "ActiveRoleSet cannot be null");
+    return doHasAccess(subject, authorizableHierarchy, actions, roleSet);
   }
 
   private boolean doHasAccess(Subject subject,
-      List<? extends Authorizable> authorizables, Set<? extends Action> actions) {
+      List<? extends Authorizable> authorizables, Set<? extends Action> actions,
+      ActiveRoleSet roleSet) {
     Set<String> groups =  getGroups(subject);
     Set<String> hierarchy = new HashSet<String>();
     for (Authorizable authorizable : authorizables) {
       hierarchy.add(KV_JOINER.join(authorizable.getTypeName(), authorizable.getName()));
     }
-    Iterable<Privilege> privileges = getPermissions(groups);
+    Iterable<Privilege> privileges = getPrivileges(groups, roleSet);
     List<String> requestPrivileges = buildPermissions(authorizables, actions);
     lastFailedPrivileges.get().clear();
 
@@ -105,8 +108,8 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
          */
         boolean result = permission.implies(privilegeFactory.createPrivilege(requestPrivilege));
         if(LOGGER.isDebugEnabled()) {
-          LOGGER.debug("ProviderPrivilege {}, RequestPrivilege {}, result {}",
-              new Object[]{ permission, requestPrivilege, result});
+          LOGGER.debug("ProviderPrivilege {}, RequestPrivilege {}, RoleSet, {}, Result {}",
+              new Object[]{ permission, requestPrivilege, roleSet, result});
         }
         if (result) {
           return true;
@@ -117,8 +120,8 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
     return false;
   }
 
-  private Iterable<Privilege> getPermissions(Set<String> groups) {
-    return Iterables.transform(policy.getPrivileges(groups),
+  private Iterable<Privilege> getPrivileges(Set<String> groups, ActiveRoleSet roleSet) {
+    return Iterables.transform(policy.getPrivileges(groups, roleSet),
         new Function<String, Privilege>() {
       @Override
       public Privilege apply(String privilege) {
@@ -143,12 +146,12 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
 
   @Override
   public Set<String> listPrivilegesForSubject(Subject subject) throws SentryConfigurationException {
-    return policy.getPrivileges(getGroups(subject));
+    return policy.getPrivileges(getGroups(subject), ActiveRoleSet.ALL);
   }
 
   @Override
   public Set<String> listPrivilegesForGroup(String groupName) throws SentryConfigurationException {
-    return policy.getPrivileges(Sets.newHashSet(groupName));
+    return policy.getPrivileges(Sets.newHashSet(groupName), ActiveRoleSet.ALL);
   }
 
   @Override

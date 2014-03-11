@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.sentry.core.common.Action;
+import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.core.common.Subject;
@@ -31,7 +32,7 @@ public class NoAuthorizationProvider implements AuthorizationProvider {
 
   @Override
   public boolean hasAccess(Subject subject, List<? extends Authorizable> authorizableHierarchy,
-      Set<? extends Action> actions) {
+      Set<? extends Action> actions, ActiveRoleSet roleSet) {
     return false;
   }
 

@@ -27,6 +27,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.binding.solr.conf.SolrAuthzConf;
 import org.apache.sentry.binding.solr.conf.SolrAuthzConf.AuthzConfVars;
+import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.search.Collection;
 import org.apache.sentry.core.model.search.SearchModelAction;
@@ -118,7 +119,8 @@ public class SolrAuthzBinding {
       LOG.debug("Actions: " + actions);
     }
 
-    if (!authProvider.hasAccess(subject, Arrays.asList(new Collection[] {collection}), actions)) {
+    if (!authProvider.hasAccess(subject, Arrays.asList(new Collection[] {collection}), actions,
+        ActiveRoleSet.ALL)) {
       throw new SentrySolrAuthorizationException("User " + subject.getName() +
         " does not have privileges for " + collection.getName());
     }
