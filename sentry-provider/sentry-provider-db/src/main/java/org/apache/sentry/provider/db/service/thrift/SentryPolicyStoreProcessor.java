@@ -40,6 +40,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 @SuppressWarnings("unused")
 public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
@@ -100,7 +101,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   }
 
   //TODO:Validate privilege scope?
-  private String constructPrivilegeName(TSentryPrivilege privilege) throws SentryInvalidInputException {
+  @VisibleForTesting
+  public static String constructPrivilegeName(TSentryPrivilege privilege) throws SentryInvalidInputException {
     StringBuilder privilegeName = new StringBuilder();
     String serverName = privilege.getServerName();
     String dbName = privilege.getDbName();
@@ -219,6 +221,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       LOGGER.error(msg, e);
       response.setStatus(Status.RuntimeError(msg, e));
     }
+
     return response;
   }
 
@@ -249,7 +252,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     TAlterSentryRoleAddGroupsRequest request) throws TException {
     TAlterSentryRoleAddGroupsResponse response = new TAlterSentryRoleAddGroupsResponse();
     try {
-      CommitContext commitContext = sentryStore.alterSentryRoleAddGroups();
+      CommitContext commitContext = sentryStore.alterSentryRoleAddGroups(request.getUserName(),
+          request.getRoleName(), request.getGroups());
       response.setStatus(Status.OK());
       notificationHandlerInvoker.alter_sentry_role_add_groups(commitContext,
           request, response);
@@ -271,7 +275,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     // TODO implement
     TAlterSentryRoleDeleteGroupsResponse response = new TAlterSentryRoleDeleteGroupsResponse();
     try {
-      CommitContext commitContext = sentryStore.alterSentryRoleDeleteGroups();
+      CommitContext commitContext = sentryStore.alterSentryRoleDeleteGroups(null, null);
       response.setStatus(Status.OK());
       notificationHandlerInvoker.alter_sentry_role_delete_groups(commitContext,
           request, response);

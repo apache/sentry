@@ -24,28 +24,32 @@ import java.util.Set;
 
 import javax.jdo.annotations.PersistenceCapable;
 
+/**
+ * Database backed Sentry Privilege. Any changes to this object
+ * require re-running the maven build so DN an re-enhance.
+ */
 @PersistenceCapable
 public class MSentryPrivilege {
 
-  String privilegeScope;
-  String privilegeName;
-  String serverName;
-  String dbName;
-  String tableName;
-  String URI;
-  String action;
+  private String privilegeScope;
+  private String privilegeName;
+  private String serverName;
+  private String dbName;
+  private String tableName;
+  private String URI;
+  private String action;
   // roles this privilege is a part of
-  Set<MSentryRole> roles;
-  long createTime;
-  String grantorPrincipal;
+  private Set<MSentryRole> roles;
+  private long createTime;
+  private String grantorPrincipal;
 
   public MSentryPrivilege() {
     this.roles = new HashSet<MSentryRole>();
   }
 
   public MSentryPrivilege(String privilegeName, String privilegeScope,
-                          String serverName, String dbName, String tableName, String URI,
-                          String action) {
+      String serverName, String dbName, String tableName, String URI,
+      String action) {
     this.privilegeName = privilegeName;
     this.privilegeScope = privilegeScope;
     this.serverName = serverName;
@@ -147,5 +151,97 @@ public class MSentryPrivilege {
         return;
       }
     }
+  }
+
+  public void removeRole(String roleName) {
+    for (MSentryRole role: roles) {
+      if (role.getRoleName().equalsIgnoreCase(roleName)) {
+        roles.remove(role);
+        return;
+      }
+    }
+  }
+
+  @Override
+  public String toString() {
+    return "MSentryPrivilege [privilegeScope=" + privilegeScope
+        + ", privilegeName=" + privilegeName + ", serverName=" + serverName
+        + ", dbName=" + dbName + ", tableName=" + tableName + ", URI=" + URI
+        + ", action=" + action + ", roles=[...]" + ", createTime="
+        + createTime + ", grantorPrincipal=" + grantorPrincipal + "]";
+  }
+
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((URI == null) ? 0 : URI.hashCode());
+    result = prime * result + ((action == null) ? 0 : action.hashCode());
+    result = prime * result + (int) (createTime ^ (createTime >>> 32));
+    result = prime * result + ((dbName == null) ? 0 : dbName.hashCode());
+    result = prime * result
+        + ((grantorPrincipal == null) ? 0 : grantorPrincipal.hashCode());
+    result = prime * result
+        + ((privilegeName == null) ? 0 : privilegeName.hashCode());
+    result = prime * result
+        + ((privilegeScope == null) ? 0 : privilegeScope.hashCode());
+    result = prime * result
+        + ((serverName == null) ? 0 : serverName.hashCode());
+    result = prime * result + ((tableName == null) ? 0 : tableName.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    MSentryPrivilege other = (MSentryPrivilege) obj;
+    if (URI == null) {
+      if (other.URI != null)
+        return false;
+    } else if (!URI.equals(other.URI))
+      return false;
+    if (action == null) {
+      if (other.action != null)
+        return false;
+    } else if (!action.equals(other.action))
+      return false;
+    if (createTime != other.createTime)
+      return false;
+    if (dbName == null) {
+      if (other.dbName != null)
+        return false;
+    } else if (!dbName.equals(other.dbName))
+      return false;
+    if (grantorPrincipal == null) {
+      if (other.grantorPrincipal != null)
+        return false;
+    } else if (!grantorPrincipal.equals(other.grantorPrincipal))
+      return false;
+    if (privilegeName == null) {
+      if (other.privilegeName != null)
+        return false;
+    } else if (!privilegeName.equals(other.privilegeName))
+      return false;
+    if (privilegeScope == null) {
+      if (other.privilegeScope != null)
+        return false;
+    } else if (!privilegeScope.equals(other.privilegeScope))
+      return false;
+    if (serverName == null) {
+      if (other.serverName != null)
+        return false;
+    } else if (!serverName.equals(other.serverName))
+      return false;
+    if (tableName == null) {
+      if (other.tableName != null)
+        return false;
+    } else if (!tableName.equals(other.tableName))
+      return false;
+    return true;
   }
 }

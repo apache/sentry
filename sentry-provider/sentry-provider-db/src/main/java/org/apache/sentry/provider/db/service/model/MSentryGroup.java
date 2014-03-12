@@ -22,17 +22,21 @@ import java.util.Set;
 
 import javax.jdo.annotations.PersistenceCapable;
 
+/**
+ * Database backed Sentry Group. Any changes to this object
+ * require re-running the maven build so DN an re-enhance.
+ */
 @PersistenceCapable
 public class MSentryGroup {
 
-  String groupName;
+  private String groupName;
   // set of roles granted to this group
-  Set<MSentryRole> roles;
-  long createTime;
-  String grantorPrincipal;
+  private Set<MSentryRole> roles;
+  private long createTime;
+  private String grantorPrincipal;
 
-  MSentryGroup(String groupName, long createTime, String grantorPrincipal,
-               Set<MSentryRole> roles) {
+  public MSentryGroup(String groupName, long createTime, String grantorPrincipal,
+      Set<MSentryRole> roles) {
     this.setGroupName(groupName);
     this.createTime = createTime;
     this.grantorPrincipal = grantorPrincipal;
@@ -71,7 +75,57 @@ public class MSentryGroup {
     this.groupName = groupName;
   }
 
-  public void appendRoles(Set<MSentryRole> roles) {
-    this.roles.addAll(roles);
+  public void appendRole(MSentryRole role) {
+    if (roles.add(role)) {
+      role.appendGroup(this);
+    }
+  }
+
+  public void removeRole(MSentryRole role) {
+    if (roles.remove(role)) {
+      role.removeGroup(this);
+    }
+  }
+
+  @Override
+  public String toString() {
+    return "MSentryGroup [groupName=" + groupName + ", roles=[...]"
+        + ", createTime=" + createTime + ", grantorPrincipal="
+        + grantorPrincipal + "]";
+  }
+
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + (int) (createTime ^ (createTime >>> 32));
+    result = prime * result
+        + ((grantorPrincipal == null) ? 0 : grantorPrincipal.hashCode());
+    result = prime * result + ((groupName == null) ? 0 : groupName.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    MSentryGroup other = (MSentryGroup) obj;
+    if (createTime != other.createTime)
+      return false;
+    if (grantorPrincipal == null) {
+      if (other.grantorPrincipal != null)
+        return false;
+    } else if (!grantorPrincipal.equals(other.grantorPrincipal))
+      return false;
+    if (groupName == null) {
+      if (other.groupName != null)
+        return false;
+    } else if (!groupName.equals(other.groupName))
+      return false;
+    return true;
   }
 }

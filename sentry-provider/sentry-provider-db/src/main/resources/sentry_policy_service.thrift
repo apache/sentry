@@ -30,8 +30,8 @@ namespace php sentry.provider.db.service.thrift
 namespace cpp Apache.Sentry.Provider.Db.Service.Thrift
 
 struct TSentryPrivilege {
-1: required string privilegeScope,
-2: optional string privilegeName,
+1: required string privilegeScope, # Valid values are SERVER, DATABASE, TABLE
+2: optional string privilegeName, # Generated on server side
 3: required string serverName,
 4: optional string dbName,
 5: optional string tableName,
@@ -43,6 +43,8 @@ struct TSentryPrivilege {
 
 struct TSentryRole {
 1: required string roleName,
+# TODO privs should not be part of Sentry role as
+# they are created when a grant is executed
 2: required set<TSentryPrivilege> privileges,
 3: required i64 createTime,
 4: required string grantorPrincipal
