@@ -35,8 +35,9 @@ public class TCreateSentryRoleRequest implements org.apache.thrift.TBase<TCreate
   private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("TCreateSentryRoleRequest");
 
   private static final org.apache.thrift.protocol.TField PROTOCOL_VERSION_FIELD_DESC = new org.apache.thrift.protocol.TField("protocol_version", org.apache.thrift.protocol.TType.I32, (short)1);
-  private static final org.apache.thrift.protocol.TField USER_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("userName", org.apache.thrift.protocol.TType.STRING, (short)2);
+  private static final org.apache.thrift.protocol.TField REQUESTOR_USER_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("requestorUserName", org.apache.thrift.protocol.TType.STRING, (short)2);
   private static final org.apache.thrift.protocol.TField ROLE_FIELD_DESC = new org.apache.thrift.protocol.TField("role", org.apache.thrift.protocol.TType.STRUCT, (short)3);
+  private static final org.apache.thrift.protocol.TField REQUESTOR_GROUP_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("requestorGroupName", org.apache.thrift.protocol.TType.SET, (short)4);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
@@ -45,14 +46,16 @@ public class TCreateSentryRoleRequest implements org.apache.thrift.TBase<TCreate
   }
 
   private int protocol_version; // required
-  private String userName; // required
+  private String requestorUserName; // required
   private TSentryRole role; // required
+  private Set<String> requestorGroupName; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
     PROTOCOL_VERSION((short)1, "protocol_version"),
-    USER_NAME((short)2, "userName"),
-    ROLE((short)3, "role");
+    REQUESTOR_USER_NAME((short)2, "requestorUserName"),
+    ROLE((short)3, "role"),
+    REQUESTOR_GROUP_NAME((short)4, "requestorGroupName");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -69,10 +72,12 @@ public class TCreateSentryRoleRequest implements org.apache.thrift.TBase<TCreate
       switch(fieldId) {
         case 1: // PROTOCOL_VERSION
           return PROTOCOL_VERSION;
-        case 2: // USER_NAME
-          return USER_NAME;
+        case 2: // REQUESTOR_USER_NAME
+          return REQUESTOR_USER_NAME;
         case 3: // ROLE
           return ROLE;
+        case 4: // REQUESTOR_GROUP_NAME
+          return REQUESTOR_GROUP_NAME;
         default:
           return null;
       }
@@ -120,10 +125,13 @@ public class TCreateSentryRoleRequest implements org.apache.thrift.TBase<TCreate
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
     tmpMap.put(_Fields.PROTOCOL_VERSION, new org.apache.thrift.meta_data.FieldMetaData("protocol_version", org.apache.thrift.TFieldRequirementType.REQUIRED, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
-    tmpMap.put(_Fields.USER_NAME, new org.apache.thrift.meta_data.FieldMetaData("userName", org.apache.thrift.TFieldRequirementType.REQUIRED, 
+    tmpMap.put(_Fields.REQUESTOR_USER_NAME, new org.apache.thrift.meta_data.FieldMetaData("requestorUserName", org.apache.thrift.TFieldRequirementType.REQUIRED, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
     tmpMap.put(_Fields.ROLE, new org.apache.thrift.meta_data.FieldMetaData("role", org.apache.thrift.TFieldRequirementType.REQUIRED, 
         new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TSentryRole.class)));
+    tmpMap.put(_Fields.REQUESTOR_GROUP_NAME, new org.apache.thrift.meta_data.FieldMetaData("requestorGroupName", org.apache.thrift.TFieldRequirementType.REQUIRED, 
+        new org.apache.thrift.meta_data.SetMetaData(org.apache.thrift.protocol.TType.SET, 
+            new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING))));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(TCreateSentryRoleRequest.class, metaDataMap);
   }
@@ -135,14 +143,16 @@ public class TCreateSentryRoleRequest implements org.apache.thrift.TBase<TCreate
 
   public TCreateSentryRoleRequest(
     int protocol_version,
-    String userName,
-    TSentryRole role)
+    String requestorUserName,
+    TSentryRole role,
+    Set<String> requestorGroupName)
   {
     this();
     this.protocol_version = protocol_version;
     setProtocol_versionIsSet(true);
-    this.userName = userName;
+    this.requestorUserName = requestorUserName;
     this.role = role;
+    this.requestorGroupName = requestorGroupName;
   }
 
   /**
@@ -151,11 +161,18 @@ public class TCreateSentryRoleRequest implements org.apache.thrift.TBase<TCreate
   public TCreateSentryRoleRequest(TCreateSentryRoleRequest other) {
     __isset_bitfield = other.__isset_bitfield;
     this.protocol_version = other.protocol_version;
-    if (other.isSetUserName()) {
-      this.userName = other.userName;
+    if (other.isSetRequestorUserName()) {
+      this.requestorUserName = other.requestorUserName;
     }
     if (other.isSetRole()) {
       this.role = new TSentryRole(other.role);
+    }
+    if (other.isSetRequestorGroupName()) {
+      Set<String> __this__requestorGroupName = new HashSet<String>();
+      for (String other_element : other.requestorGroupName) {
+        __this__requestorGroupName.add(other_element);
+      }
+      this.requestorGroupName = __this__requestorGroupName;
     }
   }
 
@@ -167,8 +184,9 @@ public class TCreateSentryRoleRequest implements org.apache.thrift.TBase<TCreate
   public void clear() {
     this.protocol_version = 1;
 
-    this.userName = null;
+    this.requestorUserName = null;
     this.role = null;
+    this.requestorGroupName = null;
   }
 
   public int getProtocol_version() {
@@ -193,26 +211,26 @@ public class TCreateSentryRoleRequest implements org.apache.thrift.TBase<TCreate
     __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __PROTOCOL_VERSION_ISSET_ID, value);
   }
 
-  public String getUserName() {
-    return this.userName;
+  public String getRequestorUserName() {
+    return this.requestorUserName;
   }
 
-  public void setUserName(String userName) {
-    this.userName = userName;
+  public void setRequestorUserName(String requestorUserName) {
+    this.requestorUserName = requestorUserName;
   }
 
-  public void unsetUserName() {
-    this.userName = null;
+  public void unsetRequestorUserName() {
+    this.requestorUserName = null;
   }
 
-  /** Returns true if field userName is set (has been assigned a value) and false otherwise */
-  public boolean isSetUserName() {
-    return this.userName != null;
+  /** Returns true if field requestorUserName is set (has been assigned a value) and false otherwise */
+  public boolean isSetRequestorUserName() {
+    return this.requestorUserName != null;
   }
 
-  public void setUserNameIsSet(boolean value) {
+  public void setRequestorUserNameIsSet(boolean value) {
     if (!value) {
-      this.userName = null;
+      this.requestorUserName = null;
     }
   }
 
@@ -239,6 +257,44 @@ public class TCreateSentryRoleRequest implements org.apache.thrift.TBase<TCreate
     }
   }
 
+  public int getRequestorGroupNameSize() {
+    return (this.requestorGroupName == null) ? 0 : this.requestorGroupName.size();
+  }
+
+  public java.util.Iterator<String> getRequestorGroupNameIterator() {
+    return (this.requestorGroupName == null) ? null : this.requestorGroupName.iterator();
+  }
+
+  public void addToRequestorGroupName(String elem) {
+    if (this.requestorGroupName == null) {
+      this.requestorGroupName = new HashSet<String>();
+    }
+    this.requestorGroupName.add(elem);
+  }
+
+  public Set<String> getRequestorGroupName() {
+    return this.requestorGroupName;
+  }
+
+  public void setRequestorGroupName(Set<String> requestorGroupName) {
+    this.requestorGroupName = requestorGroupName;
+  }
+
+  public void unsetRequestorGroupName() {
+    this.requestorGroupName = null;
+  }
+
+  /** Returns true if field requestorGroupName is set (has been assigned a value) and false otherwise */
+  public boolean isSetRequestorGroupName() {
+    return this.requestorGroupName != null;
+  }
+
+  public void setRequestorGroupNameIsSet(boolean value) {
+    if (!value) {
+      this.requestorGroupName = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case PROTOCOL_VERSION:
@@ -249,11 +305,11 @@ public class TCreateSentryRoleRequest implements org.apache.thrift.TBase<TCreate
       }
       break;
 
-    case USER_NAME:
+    case REQUESTOR_USER_NAME:
       if (value == null) {
-        unsetUserName();
+        unsetRequestorUserName();
       } else {
-        setUserName((String)value);
+        setRequestorUserName((String)value);
       }
       break;
 
@@ -265,6 +321,14 @@ public class TCreateSentryRoleRequest implements org.apache.thrift.TBase<TCreate
       }
       break;
 
+    case REQUESTOR_GROUP_NAME:
+      if (value == null) {
+        unsetRequestorGroupName();
+      } else {
+        setRequestorGroupName((Set<String>)value);
+      }
+      break;
+
     }
   }
 
@@ -273,11 +337,14 @@ public class TCreateSentryRoleRequest implements org.apache.thrift.TBase<TCreate
     case PROTOCOL_VERSION:
       return Integer.valueOf(getProtocol_version());
 
-    case USER_NAME:
-      return getUserName();
+    case REQUESTOR_USER_NAME:
+      return getRequestorUserName();
 
     case ROLE:
       return getRole();
+
+    case REQUESTOR_GROUP_NAME:
+      return getRequestorGroupName();
 
     }
     throw new IllegalStateException();
@@ -292,10 +359,12 @@ public class TCreateSentryRoleRequest implements org.apache.thrift.TBase<TCreate
     switch (field) {
     case PROTOCOL_VERSION:
       return isSetProtocol_version();
-    case USER_NAME:
-      return isSetUserName();
+    case REQUESTOR_USER_NAME:
+      return isSetRequestorUserName();
     case ROLE:
       return isSetRole();
+    case REQUESTOR_GROUP_NAME:
+      return isSetRequestorGroupName();
     }
     throw new IllegalStateException();
   }
@@ -322,12 +391,12 @@ public class TCreateSentryRoleRequest implements org.apache.thrift.TBase<TCreate
         return false;
     }
 
-    boolean this_present_userName = true && this.isSetUserName();
-    boolean that_present_userName = true && that.isSetUserName();
-    if (this_present_userName || that_present_userName) {
-      if (!(this_present_userName && that_present_userName))
+    boolean this_present_requestorUserName = true && this.isSetRequestorUserName();
+    boolean that_present_requestorUserName = true && that.isSetRequestorUserName();
+    if (this_present_requestorUserName || that_present_requestorUserName) {
+      if (!(this_present_requestorUserName && that_present_requestorUserName))
         return false;
-      if (!this.userName.equals(that.userName))
+      if (!this.requestorUserName.equals(that.requestorUserName))
         return false;
     }
 
@@ -337,6 +406,15 @@ public class TCreateSentryRoleRequest implements org.apache.thrift.TBase<TCreate
       if (!(this_present_role && that_present_role))
         return false;
       if (!this.role.equals(that.role))
+        return false;
+    }
+
+    boolean this_present_requestorGroupName = true && this.isSetRequestorGroupName();
+    boolean that_present_requestorGroupName = true && that.isSetRequestorGroupName();
+    if (this_present_requestorGroupName || that_present_requestorGroupName) {
+      if (!(this_present_requestorGroupName && that_present_requestorGroupName))
+        return false;
+      if (!this.requestorGroupName.equals(that.requestorGroupName))
         return false;
     }
 
@@ -352,15 +430,20 @@ public class TCreateSentryRoleRequest implements org.apache.thrift.TBase<TCreate
     if (present_protocol_version)
       builder.append(protocol_version);
 
-    boolean present_userName = true && (isSetUserName());
-    builder.append(present_userName);
-    if (present_userName)
-      builder.append(userName);
+    boolean present_requestorUserName = true && (isSetRequestorUserName());
+    builder.append(present_requestorUserName);
+    if (present_requestorUserName)
+      builder.append(requestorUserName);
 
     boolean present_role = true && (isSetRole());
     builder.append(present_role);
     if (present_role)
       builder.append(role);
+
+    boolean present_requestorGroupName = true && (isSetRequestorGroupName());
+    builder.append(present_requestorGroupName);
+    if (present_requestorGroupName)
+      builder.append(requestorGroupName);
 
     return builder.toHashCode();
   }
@@ -383,12 +466,12 @@ public class TCreateSentryRoleRequest implements org.apache.thrift.TBase<TCreate
         return lastComparison;
       }
     }
-    lastComparison = Boolean.valueOf(isSetUserName()).compareTo(typedOther.isSetUserName());
+    lastComparison = Boolean.valueOf(isSetRequestorUserName()).compareTo(typedOther.isSetRequestorUserName());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetUserName()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.userName, typedOther.userName);
+    if (isSetRequestorUserName()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.requestorUserName, typedOther.requestorUserName);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -399,6 +482,16 @@ public class TCreateSentryRoleRequest implements org.apache.thrift.TBase<TCreate
     }
     if (isSetRole()) {
       lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.role, typedOther.role);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetRequestorGroupName()).compareTo(typedOther.isSetRequestorGroupName());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetRequestorGroupName()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.requestorGroupName, typedOther.requestorGroupName);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -427,11 +520,11 @@ public class TCreateSentryRoleRequest implements org.apache.thrift.TBase<TCreate
     sb.append(this.protocol_version);
     first = false;
     if (!first) sb.append(", ");
-    sb.append("userName:");
-    if (this.userName == null) {
+    sb.append("requestorUserName:");
+    if (this.requestorUserName == null) {
       sb.append("null");
     } else {
-      sb.append(this.userName);
+      sb.append(this.requestorUserName);
     }
     first = false;
     if (!first) sb.append(", ");
@@ -440,6 +533,14 @@ public class TCreateSentryRoleRequest implements org.apache.thrift.TBase<TCreate
       sb.append("null");
     } else {
       sb.append(this.role);
+    }
+    first = false;
+    if (!first) sb.append(", ");
+    sb.append("requestorGroupName:");
+    if (this.requestorGroupName == null) {
+      sb.append("null");
+    } else {
+      sb.append(this.requestorGroupName);
     }
     first = false;
     sb.append(")");
@@ -452,12 +553,16 @@ public class TCreateSentryRoleRequest implements org.apache.thrift.TBase<TCreate
       throw new org.apache.thrift.protocol.TProtocolException("Required field 'protocol_version' is unset! Struct:" + toString());
     }
 
-    if (!isSetUserName()) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'userName' is unset! Struct:" + toString());
+    if (!isSetRequestorUserName()) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'requestorUserName' is unset! Struct:" + toString());
     }
 
     if (!isSetRole()) {
       throw new org.apache.thrift.protocol.TProtocolException("Required field 'role' is unset! Struct:" + toString());
+    }
+
+    if (!isSetRequestorGroupName()) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'requestorGroupName' is unset! Struct:" + toString());
     }
 
     // check for sub-struct validity
@@ -510,10 +615,10 @@ public class TCreateSentryRoleRequest implements org.apache.thrift.TBase<TCreate
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
-          case 2: // USER_NAME
+          case 2: // REQUESTOR_USER_NAME
             if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
-              struct.userName = iprot.readString();
-              struct.setUserNameIsSet(true);
+              struct.requestorUserName = iprot.readString();
+              struct.setRequestorUserNameIsSet(true);
             } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
@@ -523,6 +628,24 @@ public class TCreateSentryRoleRequest implements org.apache.thrift.TBase<TCreate
               struct.role = new TSentryRole();
               struct.role.read(iprot);
               struct.setRoleIsSet(true);
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+            }
+            break;
+          case 4: // REQUESTOR_GROUP_NAME
+            if (schemeField.type == org.apache.thrift.protocol.TType.SET) {
+              {
+                org.apache.thrift.protocol.TSet _set8 = iprot.readSetBegin();
+                struct.requestorGroupName = new HashSet<String>(2*_set8.size);
+                for (int _i9 = 0; _i9 < _set8.size; ++_i9)
+                {
+                  String _elem10; // required
+                  _elem10 = iprot.readString();
+                  struct.requestorGroupName.add(_elem10);
+                }
+                iprot.readSetEnd();
+              }
+              struct.setRequestorGroupNameIsSet(true);
             } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
@@ -543,14 +666,26 @@ public class TCreateSentryRoleRequest implements org.apache.thrift.TBase<TCreate
       oprot.writeFieldBegin(PROTOCOL_VERSION_FIELD_DESC);
       oprot.writeI32(struct.protocol_version);
       oprot.writeFieldEnd();
-      if (struct.userName != null) {
-        oprot.writeFieldBegin(USER_NAME_FIELD_DESC);
-        oprot.writeString(struct.userName);
+      if (struct.requestorUserName != null) {
+        oprot.writeFieldBegin(REQUESTOR_USER_NAME_FIELD_DESC);
+        oprot.writeString(struct.requestorUserName);
         oprot.writeFieldEnd();
       }
       if (struct.role != null) {
         oprot.writeFieldBegin(ROLE_FIELD_DESC);
         struct.role.write(oprot);
+        oprot.writeFieldEnd();
+      }
+      if (struct.requestorGroupName != null) {
+        oprot.writeFieldBegin(REQUESTOR_GROUP_NAME_FIELD_DESC);
+        {
+          oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRING, struct.requestorGroupName.size()));
+          for (String _iter11 : struct.requestorGroupName)
+          {
+            oprot.writeString(_iter11);
+          }
+          oprot.writeSetEnd();
+        }
         oprot.writeFieldEnd();
       }
       oprot.writeFieldStop();
@@ -571,8 +706,15 @@ public class TCreateSentryRoleRequest implements org.apache.thrift.TBase<TCreate
     public void write(org.apache.thrift.protocol.TProtocol prot, TCreateSentryRoleRequest struct) throws org.apache.thrift.TException {
       TTupleProtocol oprot = (TTupleProtocol) prot;
       oprot.writeI32(struct.protocol_version);
-      oprot.writeString(struct.userName);
+      oprot.writeString(struct.requestorUserName);
       struct.role.write(oprot);
+      {
+        oprot.writeI32(struct.requestorGroupName.size());
+        for (String _iter12 : struct.requestorGroupName)
+        {
+          oprot.writeString(_iter12);
+        }
+      }
     }
 
     @Override
@@ -580,11 +722,22 @@ public class TCreateSentryRoleRequest implements org.apache.thrift.TBase<TCreate
       TTupleProtocol iprot = (TTupleProtocol) prot;
       struct.protocol_version = iprot.readI32();
       struct.setProtocol_versionIsSet(true);
-      struct.userName = iprot.readString();
-      struct.setUserNameIsSet(true);
+      struct.requestorUserName = iprot.readString();
+      struct.setRequestorUserNameIsSet(true);
       struct.role = new TSentryRole();
       struct.role.read(iprot);
       struct.setRoleIsSet(true);
+      {
+        org.apache.thrift.protocol.TSet _set13 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRING, iprot.readI32());
+        struct.requestorGroupName = new HashSet<String>(2*_set13.size);
+        for (int _i14 = 0; _i14 < _set13.size; ++_i14)
+        {
+          String _elem15; // required
+          _elem15 = iprot.readString();
+          struct.requestorGroupName.add(_elem15);
+        }
+      }
+      struct.setRequestorGroupNameIsSet(true);
     }
   }
 

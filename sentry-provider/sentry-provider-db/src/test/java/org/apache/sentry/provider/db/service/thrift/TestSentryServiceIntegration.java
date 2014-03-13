@@ -34,17 +34,23 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
 
   @Test
   public void testCreateRole() throws Exception {
+    Set<String> groupSet = new HashSet<String>();
     TDropSentryRoleRequest dropReq = new TDropSentryRoleRequest();
     dropReq.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
     dropReq.setRoleName("admin_r");
-    dropReq.setUserName("user_1");
+    dropReq.setRequestorUserName("user_1");
+    groupSet.add("admin");
+    dropReq.setRequestorGroupName(groupSet);
     TDropSentryRoleResponse dropResp = client.dropRole(dropReq);
     assertStatus(Status.NO_SUCH_OBJECT, dropResp.getStatus());
     LOGGER.info("Successfully dropped role: admin_r");
+    groupSet.clear();
 
     TCreateSentryRoleRequest createReq = new TCreateSentryRoleRequest();
     createReq.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
-    createReq.setUserName("user_1");
+    createReq.setRequestorUserName("user_1");
+    groupSet.add("admin");
+    createReq.setRequestorGroupName(groupSet);
     TSentryRole role = new TSentryRole();
     role.setRoleName("admin_r");
     role.setCreateTime(System.currentTimeMillis());
@@ -54,36 +60,49 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
     TCreateSentryRoleResponse createResp = client.createRole(createReq);
     assertOK(createResp.getStatus());
     LOGGER.info("Successfully create role: admin_r");
+    groupSet.clear();
 
     TListSentryRolesRequest listReq = new TListSentryRolesRequest();
     listReq.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
     listReq.setRoleName("admin_r");
-    listReq.setUserName("user_1");
+    listReq.setRequestorUserName("user_1");
+    groupSet.add("admin");
+    listReq.setRequestorGroupName(groupSet);
     TListSentryRolesResponse listResp = client.listRoleByName(listReq);
     Set<TSentryRole> roles = listResp.getRoles();
     Preconditions.checkArgument(roles.size() == 1, "Incorrect number of roles");
+    groupSet.clear();
 
     dropReq.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
     dropReq.setRoleName("admin_r");
-    dropReq.setUserName("user_1");
+    dropReq.setRequestorUserName("user_1");
+    groupSet.add("admin");
+    dropReq.setRequestorGroupName(groupSet);
     dropResp = client.dropRole(dropReq);
     assertOK(dropResp.getStatus());
     LOGGER.info("Successfully dropped role: admin_r");
+    groupSet.clear();
   }
 
   @Test
   public void testGrantRevokePrivilege() throws Exception {
+    Set<String> groupSet = new HashSet<String>();
     TDropSentryRoleRequest dropReq = new TDropSentryRoleRequest();
     dropReq.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
     dropReq.setRoleName("admin_testdb");
-    dropReq.setUserName("server_admin");
+    dropReq.setRequestorUserName("server_admin");
+    groupSet.add("admin");
+    dropReq.setRequestorGroupName(groupSet);
     TDropSentryRoleResponse dropResp = client.dropRole(dropReq);
     assertStatus(Status.NO_SUCH_OBJECT, dropResp.getStatus());
     LOGGER.info("Successfully dropped role: admin_testdb");
+    groupSet.clear();
 
     TCreateSentryRoleRequest createReq = new TCreateSentryRoleRequest();
     createReq.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
-    createReq.setUserName("server_admin");
+    createReq.setRequestorUserName("server_admin");
+    groupSet.add("admin");
+    createReq.setRequestorGroupName(groupSet);
     TSentryRole role = new TSentryRole();
     role.setRoleName("admin_testdb");
     role.setCreateTime(System.currentTimeMillis());
@@ -93,19 +112,25 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
     TCreateSentryRoleResponse createResp = client.createRole(createReq);
     assertOK(createResp.getStatus());
     LOGGER.info("Successfully create role: admin_testdb");
+    groupSet.clear();
 
     TListSentryRolesRequest listReq = new TListSentryRolesRequest();
     listReq.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
     listReq.setRoleName("admin_testdb");
-    listReq.setUserName("server_admin");
+    listReq.setRequestorUserName("server_admin");
+    groupSet.add("admin");
+    listReq.setRequestorGroupName(groupSet);
     TListSentryRolesResponse listResp = client.listRoleByName(listReq);
     Set<TSentryRole> roles = listResp.getRoles();
     Preconditions.checkArgument(roles.size() == 1, "Incorrect number of roles");
+    groupSet.clear();
 
     TAlterSentryRoleGrantPrivilegeRequest grantReq = new TAlterSentryRoleGrantPrivilegeRequest();
     grantReq.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
     grantReq.setRoleName("admin_testdb");
-    grantReq.setUserName("server_admin");
+    grantReq.setRequestorUserName("server_admin");
+    groupSet.add("admin");
+    grantReq.setRequestorGroupName(groupSet);
     TSentryPrivilege privilege = new TSentryPrivilege();
     privilege.setPrivilegeScope("DB");
     privilege.setServerName("server1");
@@ -117,22 +142,29 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
     TAlterSentryRoleGrantPrivilegeResponse grantResp = client.grantPrivilege(grantReq);
     assertOK(grantResp.getStatus());
     LOGGER.info("Successfully granted privilege: " + privilege.toString());
+    groupSet.clear();
 
     TAlterSentryRoleRevokePrivilegeRequest revokeReq = new TAlterSentryRoleRevokePrivilegeRequest();
     revokeReq.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
     revokeReq.setRoleName("admin_testdb");
-    revokeReq.setUserName("server_admin");
+    revokeReq.setRequestorUserName("server_admin");
+    groupSet.add("admin");
+    revokeReq.setRequestorGroupName(groupSet);
     revokeReq.setPrivilege(privilege);
     TAlterSentryRoleRevokePrivilegeResponse revokeResp = client.revokePrivilege(revokeReq);
     assertOK(revokeResp.getStatus());
     LOGGER.info("Successfully revoked privilege: " + privilege.toString());
+    groupSet.clear();
 
     dropReq.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
     dropReq.setRoleName("admin_testdb");
-    dropReq.setUserName("server_admin");
+    dropReq.setRequestorUserName("server_admin");
+    groupSet.add("admin");
+    dropReq.setRequestorGroupName(groupSet);
     dropResp = client.dropRole(dropReq);
     assertOK(dropResp.getStatus());
     LOGGER.info("Successfully dropped role: admin_testdb");
+    groupSet.clear();
   }
 
 }

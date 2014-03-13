@@ -252,8 +252,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     TAlterSentryRoleAddGroupsRequest request) throws TException {
     TAlterSentryRoleAddGroupsResponse response = new TAlterSentryRoleAddGroupsResponse();
     try {
-      CommitContext commitContext = sentryStore.alterSentryRoleAddGroups(request.getUserName(),
-          request.getRoleName(), request.getGroups());
+      CommitContext commitContext = sentryStore.alterSentryRoleAddGroups(request.getRequestorUserName(),
+                                    request.getRoleName(), request.getGroups());
       response.setStatus(Status.OK());
       notificationHandlerInvoker.alter_sentry_role_add_groups(commitContext,
           request, response);
