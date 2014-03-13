@@ -22,11 +22,9 @@ import static org.apache.sentry.provider.file.PolicyFileConstants.ROLES;
 import static org.apache.sentry.provider.file.PolicyFileConstants.ROLE_SPLITTER;
 import static org.apache.sentry.provider.file.PolicyFileConstants.USERS;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -36,74 +34,157 @@ import javax.annotation.Nullable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.sentry.core.common.Authorizable;
+import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.SentryConfigurationException;
-import org.apache.sentry.policy.common.RoleValidator;
+import org.apache.sentry.policy.common.PrivilegeUtils;
+import org.apache.sentry.policy.common.PrivilegeValidator;
+import org.apache.sentry.policy.common.PrivilegeValidatorContext;
 import org.apache.sentry.provider.common.ProviderBackend;
-import org.apache.sentry.provider.common.Roles;
-import org.apache.shiro.config.ConfigurationException;
+import org.apache.sentry.provider.common.ProviderBackendContext;
 import org.apache.shiro.config.Ini;
-import org.apache.shiro.util.PermissionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
+import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.Interner;
+import com.google.common.collect.Interners;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Table;
+import com.google.common.collect.Table.Cell;
 
 public class SimpleFileProviderBackend implements ProviderBackend {
 
   private static final Logger LOGGER = LoggerFactory
       .getLogger(SimpleFileProviderBackend.class);
 
-
-
   private final FileSystem fileSystem;
   private final Path resourcePath;
-  private final List<Path> perDbResources = Lists.newArrayList();
-  private Roles rolesStorage;
   private final Configuration conf;
-  private boolean processed;
-  private final List<String> configErrors = new ArrayList<String>();
-  private final List<String> configWarnings = new ArrayList<String>();
+  private final List<String> configErrors;
+  private final List<String> configWarnings;
+
+  /**
+   * Sparse table where group is the row key and role is the cell.
+   * The value is the set of privileges located in the cell. For example,
+   * the following table would be generated for a policy where Group 1
+   * has Role 1 and Role 2 while Group 2 has only Role 2.
+   * <table border="1">
+   *  <tbody>
+   *    <tr>
+   *      <td><!-- empty --></td>
+   *      <td>Role 1</td>
+   *      <td>Role 2</td>
+   *    </tr>
+   *    <tr>
+   *      <td>Group 1</td>
+   *      <td>Priv 1</td>
+   *      <td>Priv 2, Priv 3</td>
+   *    </tr>
+   *    <tr>
+   *      <td>Group 2</td>
+   *      <td><!-- empty --></td>
+   *      <td>Priv 2, Priv 3</td>
+   *    </tr>
+   *  </tbody>
+   * </table>
+   */
+  private final Table<String, String, Set<String>> groupRolePrivilegeTable;
+  /**
+   * Each group, role, and privilege in groupRolePrivilegeTable is
+   * interned using a weak interner so that we only store each string
+   * once.
+   */
+  private final Interner<String> stringInterner;
+
+  private ImmutableList<PrivilegeValidator> validators;
+  private boolean allowPerDatabaseSection;
+  private volatile boolean initialized;
 
   public SimpleFileProviderBackend(String resourcePath) throws IOException {
-    this(new Configuration(), resourcePath);
+    this(new Configuration(), new Path(resourcePath));
   }
 
   public SimpleFileProviderBackend(Configuration conf, String resourcePath) throws IOException {
     this(conf, new Path(resourcePath));
   }
 
-  @VisibleForTesting
   public SimpleFileProviderBackend(Configuration conf, Path resourcePath) throws IOException {
     this.resourcePath = resourcePath;
     this.fileSystem = resourcePath.getFileSystem(conf);
-    this.rolesStorage = new Roles();
+    this.groupRolePrivilegeTable = HashBasedTable.create();
     this.conf = conf;
-    this.processed = false;
+    this.configErrors = Lists.newArrayList();
+    this.configWarnings = Lists.newArrayList();
+    this.validators = ImmutableList.of();
+    this.allowPerDatabaseSection = true;
+    this.initialized = false;
+    this.stringInterner = Interners.newWeakInterner();
   }
 
   /**
    * {@inheritDoc}
    */
-  public void process(List<? extends RoleValidator> validators) {
-    configErrors.clear();
-    perDbResources.clear();
-    Ini ini;
+  @Override
+  public void initialize(ProviderBackendContext context) {
+    if (initialized) {
+      throw new IllegalStateException("Backend has already been initialized, cannot be initialized twice");
+    }
+    this.validators = context.getValidators();
+    this.allowPerDatabaseSection = context.isAllowPerDatabase();
+    parse();
+    this.initialized = true;
+  }
 
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public ImmutableSet<String> getPrivileges(Set<String> groups, ActiveRoleSet roleSet) {
+    if (!initialized) {
+      throw new IllegalStateException("Backend has not been properly initialized");
+    }
+    ImmutableSet.Builder<String> resultBuilder = ImmutableSet.builder();
+    for (String groupName : groups) {
+      for (Map.Entry<String, Set<String>> row : groupRolePrivilegeTable.row(groupName)
+          .entrySet()) {
+        if (roleSet.containsRole(row.getKey())) {
+          resultBuilder.addAll(row.getValue());
+        }
+      }
+    }
+    return resultBuilder.build();
+  }
+
+  @Override
+  public void validatePolicy(boolean strictValidation) throws SentryConfigurationException {
+    if (!initialized) {
+      throw new IllegalStateException("Backend has not been properly initialized");
+    }
+    List<String> localConfigErrors = Lists.newArrayList(configErrors);
+    List<String> localConfigWarnings = Lists.newArrayList(configWarnings);
+    if ((strictValidation && !localConfigWarnings.isEmpty()) || !localConfigErrors.isEmpty()) {
+      localConfigErrors.add("Failed to process global policy file " + resourcePath);
+      SentryConfigurationException e = new SentryConfigurationException("");
+      e.setConfigErrors(localConfigErrors);
+      e.setConfigWarnings(localConfigWarnings);
+      throw e;
+    }
+  }
+
+  private void parse() {
+    configErrors.clear();
+    configWarnings.clear();
+    Table<String, String, Set<String>> groupRolePrivilegeTableTemp = HashBasedTable.create();
+    Ini ini;
     LOGGER.info("Parsing " + resourcePath);
-    Roles roles = new Roles();
     try {
-      perDbResources.clear();
       try {
         ini = PolicyFiles.loadFromPath(fileSystem, resourcePath);
       } catch (IOException e) {
@@ -126,12 +207,15 @@ public class SimpleFileProviderBackend implements ProviderBackend {
           }
         }
       }
-      ImmutableSetMultimap<String, String> globalRoles;
-      Map<String, ImmutableSetMultimap<String, String>> perDatabaseRoles = Maps.newHashMap();
-      globalRoles = parseIni(null, ini, validators, resourcePath);
+      parseIni(null, ini, validators, resourcePath, groupRolePrivilegeTableTemp);
+      mergeResult(groupRolePrivilegeTableTemp);
+      groupRolePrivilegeTableTemp.clear();
       Ini.Section filesSection = ini.getSection(DATABASES);
       if(filesSection == null) {
         LOGGER.info("Section " + DATABASES + " needs no further processing");
+      } else if (!allowPerDatabaseSection) {
+        String msg = "Per-db policy file is not expected in this configuration.";
+        throw new SentryConfigurationException(msg);
       } else {
         for(Map.Entry<String, String> entry : filesSection.entrySet()) {
           String database = Strings.nullToEmpty(entry.getKey()).trim().toLowerCase();
@@ -144,16 +228,14 @@ public class SimpleFileProviderBackend implements ProviderBackend {
             Ini perDbIni = PolicyFiles.loadFromPath(perDbPolicy.getFileSystem(conf), perDbPolicy);
             if(perDbIni.containsKey(USERS)) {
               configErrors.add("Per-db policy file cannot contain " + USERS + " section in " +  perDbPolicy);
-              throw new ConfigurationException("Per-db policy files cannot contain " + USERS + " section");
+              throw new SentryConfigurationException("Per-db policy files cannot contain " + USERS + " section");
             }
             if(perDbIni.containsKey(DATABASES)) {
               configErrors.add("Per-db policy files cannot contain " + DATABASES
                   + " section in " + perDbPolicy);
-              throw new ConfigurationException("Per-db policy files cannot contain " + DATABASES + " section");
+              throw new SentryConfigurationException("Per-db policy files cannot contain " + DATABASES + " section");
             }
-            ImmutableSetMultimap<String, String> currentDbRoles = parseIni(database, perDbIni, validators, perDbPolicy);
-            perDatabaseRoles.put(database, currentDbRoles);
-            perDbResources.add(perDbPolicy);
+            parseIni(database, perDbIni, validators, perDbPolicy, groupRolePrivilegeTableTemp);
           } catch (Exception e) {
             configErrors.add("Failed to read per-DB policy file " + perDbPolicy +
                " Error: " + e.getMessage());
@@ -161,14 +243,14 @@ public class SimpleFileProviderBackend implements ProviderBackend {
           }
         }
       }
-      roles = new Roles(globalRoles, ImmutableMap.copyOf(perDatabaseRoles));
+      mergeResult(groupRolePrivilegeTableTemp);
+      groupRolePrivilegeTableTemp.clear();
     } catch (Exception e) {
       configErrors.add("Error processing file " + resourcePath + e.getMessage());
       LOGGER.error("Error processing file, ignoring " + resourcePath, e);
     }
-    rolesStorage = roles;
-    this.processed = true;
   }
+
   /**
    * Relative for our purposes is no scheme, no authority
    * and a non-absolute path portion.
@@ -178,22 +260,22 @@ public class SimpleFileProviderBackend implements ProviderBackend {
     return uri.getAuthority() == null && uri.getScheme() == null && !path.isUriPathAbsolute();
   }
 
-  protected long getModificationTime() throws IOException {
-    // if resource path has been deleted, throw all exceptions
-    long result = fileSystem.getFileStatus(resourcePath).getModificationTime();
-    for(Path perDbPolicy : perDbResources) {
-      try {
-        result = Math.max(result, fileSystem.getFileStatus(perDbPolicy).getModificationTime());
-      } catch (FileNotFoundException e) {
-        // if a per-db file has been deleted, wait until the main
-        // policy file has been updated before refreshing
+  private void mergeResult(Table<String, String, Set<String>> groupRolePrivilegeTableTemp) {
+    for (Cell<String, String, Set<String>> cell : groupRolePrivilegeTableTemp.cellSet()) {
+      String groupName = cell.getRowKey();
+      String roleName = cell.getColumnKey();
+      Set<String> privileges = groupRolePrivilegeTable.get(groupName, roleName);
+      if (privileges == null) {
+        privileges = new HashSet<>();
+        groupRolePrivilegeTable.put(groupName, roleName, privileges);
       }
+      privileges.addAll(cell.getValue());
     }
-    return result;
   }
 
-  private ImmutableSetMultimap<String, String> parseIni(String database, Ini ini, List<? extends RoleValidator> validators,
-      Path policyPath) {
+  private void parseIni(String database, Ini ini,
+      List<? extends PrivilegeValidator> validators, Path policyPath,
+      Table<String, String, Set<String>> groupRolePrivilegeTable) {
     Ini.Section privilegesSection = ini.getSection(ROLES);
     boolean invalidConfiguration = false;
     if (privilegesSection == null) {
@@ -210,19 +292,18 @@ public class SimpleFileProviderBackend implements ProviderBackend {
       invalidConfiguration = true;
     }
     if (!invalidConfiguration) {
-      return parsePermissions(database, privilegesSection, groupsSection, validators, policyPath);
+      parsePrivileges(database, privilegesSection, groupsSection, validators, policyPath,
+          groupRolePrivilegeTable);
     }
-    return ImmutableSetMultimap.of();
   }
 
-  private ImmutableSetMultimap<String, String> parsePermissions(@Nullable String database,
-      Ini.Section rolesSection, Ini.Section groupsSection, List<? extends RoleValidator> validators,
-      Path policyPath) {
-    ImmutableSetMultimap.Builder<String, String> resultBuilder = ImmutableSetMultimap.builder();
+  private void parsePrivileges(@Nullable String database, Ini.Section rolesSection,
+      Ini.Section groupsSection, List<? extends PrivilegeValidator> validators, Path policyPath,
+      Table<String, String, Set<String>> groupRolePrivilegeTable) {
     Multimap<String, String> roleNameToPrivilegeMap = HashMultimap
         .create();
     for (Map.Entry<String, String> entry : rolesSection.entrySet()) {
-      String roleName = Strings.nullToEmpty(entry.getKey()).trim();
+      String roleName = stringInterner.intern(Strings.nullToEmpty(entry.getKey()).trim());
       String roleValue = Strings.nullToEmpty(entry.getValue()).trim();
       boolean invalidConfiguration = false;
       if (roleName.isEmpty()) {
@@ -242,26 +323,31 @@ public class SimpleFileProviderBackend implements ProviderBackend {
         LOGGER.warn(warnMsg);
         configWarnings.add(warnMsg);
       }
-      Set<String> roles = PermissionUtils
-          .toPermissionStrings(roleValue);
-      if (!invalidConfiguration && roles != null) {
-        for(String role : roles) {
-          for(RoleValidator validator : validators) {
-            validator.validate(database, role.trim());
+      Set<String> privileges = PrivilegeUtils.toPrivilegeStrings(roleValue);
+      if (!invalidConfiguration && privileges != null) {
+        Set<String> internedPrivileges = Sets.newHashSet();
+        for(String privilege : privileges) {
+          for(PrivilegeValidator validator : validators) {
+            validator.validate(new PrivilegeValidatorContext(database, privilege.trim()));
           }
+          internedPrivileges.add(stringInterner.intern(privilege));
         }
-        roleNameToPrivilegeMap.putAll(roleName, roles);
+        roleNameToPrivilegeMap.putAll(roleName, internedPrivileges);
       }
     }
     Splitter roleSplitter = ROLE_SPLITTER.omitEmptyStrings().trimResults();
     for (Map.Entry<String, String> entry : groupsSection.entrySet()) {
-      String groupName = Strings.nullToEmpty(entry.getKey()).trim();
+      String groupName = stringInterner.intern(Strings.nullToEmpty(entry.getKey()).trim());
       String groupPrivileges = Strings.nullToEmpty(entry.getValue()).trim();
-      Collection<String> resolvedGroupPrivileges = Sets.newHashSet();
       for (String roleName : roleSplitter.split(groupPrivileges)) {
+        roleName = stringInterner.intern(roleName);
         if (roleNameToPrivilegeMap.containsKey(roleName)) {
-          resolvedGroupPrivileges.addAll(roleNameToPrivilegeMap
-              .get(roleName));
+          Set<String> privileges = groupRolePrivilegeTable.get(groupName, roleName);
+          if (privileges == null) {
+            privileges = new HashSet<>();
+            groupRolePrivilegeTable.put(groupName, roleName, privileges);
+          }
+          privileges.addAll(roleNameToPrivilegeMap.get(roleName));
         } else {
           String warnMsg = String.format("Role %s for group %s does not exist in privileges section in %s",
                   roleName, groupName, policyPath);
@@ -269,30 +355,6 @@ public class SimpleFileProviderBackend implements ProviderBackend {
           configWarnings.add(warnMsg);
         }
       }
-      resultBuilder.putAll(groupName, resolvedGroupPrivileges);
-    }
-    return resultBuilder.build();
-  }
-
-  /*
-   * {@inheritDoc}
-   */
-  public Roles getRoles() {
-    if (!processed) throw new UnsupportedOperationException("Process has not been called");
-
-    return rolesStorage;
-  }
-
-  @Override
-  public void validatePolicy(List<? extends RoleValidator> validators, boolean strictValidation)
-      throws SentryConfigurationException {
-    if ((strictValidation && !configWarnings.isEmpty()) || !configErrors.isEmpty()) {
-      configErrors.add("Failed to process global policy file " + resourcePath);
-      SentryConfigurationException e = new SentryConfigurationException("");
-      e.setConfigErrors(configErrors);
-      e.setConfigWarnings(configWarnings);
-      throw e;
     }
   }
-
 }

@@ -17,26 +17,28 @@
 
 package org.apache.sentry.provider.file;
 
+import static org.apache.sentry.provider.file.PolicyFileConstants.DATABASES;
+import static org.apache.sentry.provider.file.PolicyFileConstants.GROUPS;
+import static org.apache.sentry.provider.file.PolicyFileConstants.ROLES;
+import static org.apache.sentry.provider.file.PolicyFileConstants.USERS;
+
 import java.io.File;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.io.Files;
-
-import static org.apache.sentry.provider.file.PolicyFileConstants.*;
 
 /**
  * PolicyFile creator. Written specifically to be used with tests. Specifically

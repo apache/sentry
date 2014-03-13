@@ -32,7 +32,8 @@ import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
-import org.apache.sentry.core.common.Action;
+import org.apache.sentry.binding.hive.conf.InvalidConfigurationException;
+import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.db.DBModelAction;
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
@@ -44,7 +45,6 @@ import org.apache.sentry.provider.common.NoAuthorizationProvider;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.sentry.binding.hive.conf.InvalidConfigurationException;
 
 import com.google.common.base.Strings;
 
@@ -56,12 +56,10 @@ public class HiveAuthzBinding {
   private static final AtomicInteger queryID = new AtomicInteger();
   public static final String HIVE_BINDING_TAG = "hive.authz.bindings.tag";
 
-  private final HiveAuthzConf authzConf;
   private final Server authServer;
   private final AuthorizationProvider authProvider;
 
   public HiveAuthzBinding (HiveConf hiveConf, HiveAuthzConf authzConf) throws Exception {
-    this.authzConf = authzConf;
     this.authServer = new Server(authzConf.get(AuthzConfVars.AUTHZ_SERVER_NAME.getVar()));
     this.authProvider = getAuthProvider(hiveConf, authzConf, authServer.getName());
   }
@@ -130,27 +128,25 @@ public class HiveAuthzBinding {
     String authProviderName = authzConf.get(AuthzConfVars.AUTHZ_PROVIDER.getVar());
     String resourceName =
         authzConf.get(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar());
-    String providerBackendName =
-      authzConf.get(AuthzConfVars.AUTHZ_PROVIDER_BACKEND.getVar());
-    String policyEngineName =
-      authzConf.get(AuthzConfVars.AUTHZ_POLICY_ENGINE.getVar());
+    String providerBackendName = authzConf.get(AuthzConfVars.AUTHZ_PROVIDER_BACKEND.getVar());
+    String policyEngineName = authzConf.get(AuthzConfVars.AUTHZ_POLICY_ENGINE.getVar());
 
     LOG.debug("Using authorization provider " + authProviderName +
-      " with resource " + resourceName + ", policy engine "
-      + policyEngineName + ", provider backend " + providerBackendName);
-    // load the provider backend class
-    Constructor<?> providerBackendConstructor =
-      Class.forName(providerBackendName).getDeclaredConstructor(String.class);
-    providerBackendConstructor.setAccessible(true);
-    ProviderBackend providerBackend =
-      (ProviderBackend) providerBackendConstructor.newInstance(new Object[] {resourceName});
+        " with resource " + resourceName + ", policy engine "
+        + policyEngineName + ", provider backend " + providerBackendName);
+      // load the provider backend class
+      Constructor<?> providerBackendConstructor =
+        Class.forName(providerBackendName).getDeclaredConstructor(String.class);
+      providerBackendConstructor.setAccessible(true);
+    ProviderBackend providerBackend = (ProviderBackend) providerBackendConstructor.
+        newInstance(new Object[] {resourceName});
 
     // load the policy engine class
     Constructor<?> policyConstructor =
       Class.forName(policyEngineName).getDeclaredConstructor(String.class, ProviderBackend.class);
     policyConstructor.setAccessible(true);
-    PolicyEngine policyEngine =
-      (PolicyEngine) policyConstructor.newInstance(new Object[] {serverName, providerBackend});
+    PolicyEngine policyEngine = (PolicyEngine) policyConstructor.
+        newInstance(new Object[] {serverName, providerBackend});
 
 
     // load the authz provider class
@@ -200,7 +196,7 @@ public class HiveAuthzBinding {
         if (requiredInputPrivileges.containsKey(getAuthzType(inputHierarchy))) {
           EnumSet<DBModelAction> inputPrivSet =
             requiredInputPrivileges.get(getAuthzType(inputHierarchy));
-          if (!authProvider.hasAccess(subject, inputHierarchy, inputPrivSet)) {
+          if (!authProvider.hasAccess(subject, inputHierarchy, inputPrivSet, ActiveRoleSet.ALL)) {
             throw new AuthorizationException("User " + subject.getName() +
                 " does not have privileges for " + hiveOp.name());
           }
@@ -218,7 +214,7 @@ public class HiveAuthzBinding {
         if (requiredOutputPrivileges.containsKey(getAuthzType(outputHierarchy))) {
           EnumSet<DBModelAction> outputPrivSet =
             requiredOutputPrivileges.get(getAuthzType(outputHierarchy));
-          if (!authProvider.hasAccess(subject, outputHierarchy, outputPrivSet)) {
+          if (!authProvider.hasAccess(subject, outputHierarchy, outputPrivSet, ActiveRoleSet.ALL)) {
             throw new AuthorizationException("User " + subject.getName() +
                 " does not have priviliedges for " + hiveOp.name());
           }
@@ -234,7 +230,7 @@ public class HiveAuthzBinding {
     return hierarchy.get(hierarchy.size() -1).getAuthzType();
   }
 
-  public List<String> getLastQueryPermissionErrors() {
-    return authProvider.getLastFailedPermissions();
+  public List<String> getLastQueryPrivilegeErrors() {
+    return authProvider.getLastFailedPrivileges();
   }
 }

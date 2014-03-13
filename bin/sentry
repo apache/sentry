@@ -25,41 +25,40 @@ fi
 
 _HIVE_CMD=hive
 #check to see if the hive conf dir is given as an optional argument
+args=()
 while [ $# -gt 0 ]; do    # Until you run out of parameters . . .
   case "$1" in
     --hive-config)
-        shift
-        confdir=$1
-        shift
-        export HIVE_CONF_DIR=$confdir
-        echo Using hive-conf-dir $HIVE_CONF_DIR
-        ;;
+      shift
+      confdir=$1
+      shift
+      export HIVE_CONF_DIR=$confdir
+      echo Using hive-conf-dir $HIVE_CONF_DIR
+      ;;
     --hive-home)
-        shift
-        homedir=$1
-        shift
-        export HIVE_HOME=$homedir
-        echo Using hive-home $HIVE_HOME
-        ;;
-    --command)
-        shift
-        case "$1" in
-          config-tool)
-             shift
-             $myhome/bin/config-tool.sh "$@"
-             ;;
-          *)
-             echo Unknown option $1
-             echo "Usage sentry --command <config-tool [config-tool-options]>"
-             break
-             ;;
-        esac
-        break
-        ;;
+      shift
+      homedir=$1
+      shift
+      export HIVE_HOME=$homedir
+      echo Using hive-home $HIVE_HOME
+      ;;
     *)
-        echo "Usage sentry --command <config-tool [config-tool-options]>"
-        break
-        ;;
+      args+=($1)
+      shift
+      ;;
   esac
 done
 
+if [[ -z "$HIVE_HOME" ]]
+then
+  echo "HIVE_HOME must be defined either as an env variable or by the --hive-home argument"
+  exit 1
+fi
+
+_CMD_JAR=sentry-core-common-*.jar
+_HIVE_CMD=${HIVE_HOME}/bin/hive
+for f in ${SENTRY_HOME}/lib/*.jar; do
+  HADOOP_CLASSPATH=${HADOOP_CLASSPATH}:${f}
+done
+export HADOOP_CLASSPATH
+${_HIVE_CMD} --service jar ${SENTRY_HOME}/lib/${_CMD_JAR} org.apache.sentry.SentryMain "${args[@]}"

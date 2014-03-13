@@ -17,41 +17,38 @@
 
 package org.apache.sentry.policy.common;
 
-import java.util.List;
+import java.util.Set;
 
-import org.apache.sentry.core.common.Authorizable;
+import javax.annotation.concurrent.ThreadSafe;
+
+import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.SentryConfigurationException;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSetMultimap;
-
+/**
+ * Implementations of this interface are expected to be thread safe
+ * after construction.
+ */
+@ThreadSafe
 public interface PolicyEngine {
 
   /**
-   * The permission factory to use in order to compare permissions in {@link getPermission}.
-   * This is typically a factory that returns a permission used to evaluate wildcards.
-   * @return the permission factory
+   * The privilege factory to use in order to compare privileges in {@link getPermission}.
+   * This is typically a factory that returns a privilege used to evaluate wildcards.
+   * @return the privilege factory
    */
-  public PermissionFactory getPermissionFactory();
+  public PrivilegeFactory getPrivilegeFactory();
 
   /**
-   * Get permissions associated with a group. Returns Strings which can be resolved
+   * Get privileges associated with a group. Returns Strings which can be resolved
    * by the caller. Strings are returned to separate the PolicyFile class from the
-   * type of permissions used in a policy file. Additionally it is possible further
-   * processing of the permissions is needed before resolving to a permission object.
-   * @param authorizeable object
+   * type of privileges used in a policy file. Additionally it is possible further
+   * processing of the privileges is needed before resolving to a privilege object.
    * @param group name
-   * @return non-null immutable set of permissions
+   * @return non-null immutable set of privileges
    */
-  public ImmutableSetMultimap<String, String> getPermissions(
-      List<? extends Authorizable> authorizables, List<String> groups)
+  public ImmutableSet<String> getPrivileges(Set<String> groups, ActiveRoleSet roleSet)
       throws SentryConfigurationException;
-
-  public ImmutableSet<String> listPermissions(String groupName)
-    throws SentryConfigurationException;
-
-  public ImmutableSet<String> listPermissions(List<String> groupName)
-    throws SentryConfigurationException;
 
   public void validatePolicy(boolean strictValidation) throws SentryConfigurationException;
 }

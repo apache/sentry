@@ -50,8 +50,8 @@ limitations under the License.
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compile.source>1.6</maven.compile.source>
-    <maven.compile.target>1.6</maven.compile.target>
+    <maven.compile.source>1.7</maven.compile.source>
+    <maven.compile.target>1.7</maven.compile.target>
     <!-- versions are in alphabetical order -->
     <ant.contrib.version>1.0b3</ant.contrib.version>
     <maven.antrun.plugin.version>1.7</maven.antrun.plugin.version>
@@ -63,7 +63,9 @@ limitations under the License.
     <datanucleus-api-jdo.version>3.2.1</datanucleus-api-jdo.version>
     <datanucleus-core.version>3.2.2</datanucleus-core.version>
     <datanucleus-rdbms.version>3.2.1</datanucleus-rdbms.version>
+    <jdo-api.version>3.0.1</jdo-api.version>
     <derby.version>10.4.2.0</derby.version>
+    <commons-cli.version>1.2</commons-cli.version>
     <hive.version>0.12.0-cdh5.0.0-beta-2-SNAPSHOT</hive.version>
     <hadoop.version>2.2.0-cdh5.0.0-beta-2-SNAPSHOT</hadoop.version>
     <fest.reflect.version>1.4.1</fest.reflect.version>
@@ -72,6 +74,7 @@ limitations under the License.
     <libthrift.version>0.9.0-cdh4-1</libthrift.version>
     <libfb303.version>0.9.0</libfb303.version>
     <log4j.version>1.2.16</log4j.version>
+    <mockito.version>1.8.5</mockito.version>
     <shiro.version>1.2.1</shiro.version>
     <slf4j.version>1.6.1</slf4j.version>
     <solr.version>4.7.0</solr.version>
@@ -81,6 +84,16 @@ limitations under the License.
 
   <dependencyManagement>
     <dependencies>
+      <dependency>
+        <groupId>ant-contrib</groupId>
+        <artifactId>ant-contrib</artifactId>
+        <version>1.0b3</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-cli</groupId>
+        <artifactId>commons-cli</artifactId>
+        <version>${commons-cli.version}</version>
+      </dependency>
       <dependency>
         <groupId>commons-lang</groupId>
         <artifactId>commons-lang</artifactId>
@@ -264,6 +277,11 @@ limitations under the License.
       </dependency>
       <dependency>
         <groupId>org.apache.sentry</groupId>
+        <artifactId>sentry-provider-db</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.sentry</groupId>
         <artifactId>sentry-policy-common</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -281,6 +299,31 @@ limitations under the License.
         <groupId>org.apache.sentry</groupId>
         <artifactId>sentry-dist</artifactId>
         <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>javax.jdo</groupId>
+        <artifactId>jdo-api</artifactId>
+        <version>${jdo-api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.datanucleus</groupId>
+        <artifactId>datanucleus-core</artifactId>
+        <version>${datanucleus-core.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.datanucleus</groupId>
+        <artifactId>datanucleus-api-jdo</artifactId>
+        <version>${datanucleus-api-jdo.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.datanucleus</groupId>
+        <artifactId>datanucleus-rdbms</artifactId>
+        <version>${datanucleus-rdbms.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-all</artifactId>
+        <version>${mockito.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -328,11 +371,53 @@ limitations under the License.
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-antrun-plugin</artifactId>
+          <version>${maven.antrun.plugin.version}</version>
+          <dependencies>
+            <dependency>
+              <groupId>ant-contrib</groupId>
+              <artifactId>ant-contrib</artifactId>
+              <version>${ant.contrib.version}</version>
+              <exclusions>
+                <exclusion>
+                  <groupId>ant</groupId>
+                  <artifactId>ant</artifactId>
+                </exclusion>
+              </exclusions>
+            </dependency>
+          </dependencies>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
           <version>2.5.1</version>
           <configuration>
             <source>${maven.compile.source}</source>
             <target>${maven.compile.target}</target>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-enforcer-plugin</artifactId>
+          <version>${maven.enforcer.plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>2.4</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>2.16</version>
+          <configuration>
+            <forkMode>always</forkMode>
+            <environmentVariables>
+              <HADOOP_CLIENT_OPTS>-Xmx1000m -Dhive.log.dir=./target/</HADOOP_CLIENT_OPTS>
+            </environmentVariables>
+            <forkedProcessTimeoutInSeconds>900</forkedProcessTimeoutInSeconds>
+            <redirectTestOutputToFile>true</redirectTestOutputToFile>
+            <argLine>-Xms256m -Xmx1g</argLine>
           </configuration>
         </plugin>
         <plugin>
@@ -368,31 +453,29 @@ limitations under the License.
                   <exclude>**/*.lck</exclude>
                   <!-- exclude generated solr config files -->
                   <exclude>**/solr/collection1/conf/**</exclude>
+                  <!-- exclude generated thrift files -->
+                  <exclude>**/gen/**</exclude>
                 </excludes>
               </configuration>
             </execution>
           </executions>
         </plugin>
-
         <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-jar-plugin</artifactId>
-          <version>2.4</version>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>build-helper-maven-plugin</artifactId>
+          <version>${build.helper.maven.plugin.version}</version>
         </plugin>
-
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.16</version>
-          <configuration>
-            <forkMode>always</forkMode>
-            <environmentVariables>
-              <HADOOP_CLIENT_OPTS>-Xmx1000m -Dhive.log.dir=./target/</HADOOP_CLIENT_OPTS>
-            </environmentVariables>
-            <forkedProcessTimeoutInSeconds>900</forkedProcessTimeoutInSeconds>
-            <redirectTestOutputToFile>true</redirectTestOutputToFile>
-            <argLine>-Xms256m -Xmx1g</argLine>
-          </configuration>
+	<plugin>
+          <groupId>org.datanucleus</groupId>
+          <artifactId>datanucleus-maven-plugin</artifactId>
+          <version>${datanucleus.maven.plugin.version}</version>
+          <dependencies>
+            <dependency>
+              <groupId>org.datanucleus</groupId>
+              <artifactId>datanucleus-core</artifactId>
+              <version>${datanucleus-core.version}</version>
+            </dependency>
+          </dependencies>
         </plugin>
       </plugins>
     </pluginManagement>

@@ -19,25 +19,34 @@ package org.apache.sentry.provider.common;
 import java.util.List;
 import java.util.Set;
 
+import javax.annotation.concurrent.ThreadSafe;
+
 import org.apache.sentry.core.common.Action;
+import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.core.common.Subject;
 
+/**
+ * Implementations of AuthorizationProvider must be threadsafe.
+ */
+@ThreadSafe
 public interface AuthorizationProvider {
 
   /***
    * Returns validate subject privileges on given Authorizable object
    *
    * @param subject: UserID to validate privileges
-   * @param authorizableHierarchy : List of object accroding to namespace hierarchy.
+   * @param authorizableHierarchy : List of object according to namespace hierarchy.
    *        eg. Server->Db->Table or Server->Function
    *        The privileges will be validated from the higher to lower scope
    * @param actions : Privileges to validate
+   * @param roleSet : Roles which should be used when obtaining privileges
    * @return
    *        True if the subject is authorized to perform requested action on the given object
    */
-  public boolean hasAccess(Subject subject, List<? extends Authorizable> authorizableHierarchy, Set<? extends Action> actions);
+  public boolean hasAccess(Subject subject, List<? extends Authorizable> authorizableHierarchy,
+      Set<? extends Action> actions, ActiveRoleSet roleSet);
 
   /***
    * Get the GroupMappingService used by the AuthorizationProvider
@@ -59,7 +68,7 @@ public interface AuthorizationProvider {
    * @return
    * @throws SentryConfigurationException
    */
-  public Set<String> listPermissionsForSubject(Subject subject) throws SentryConfigurationException;
+  public Set<String> listPrivilegesForSubject(Subject subject) throws SentryConfigurationException;
 
   /**
    * Returns the list privileges for the given group
@@ -67,11 +76,11 @@ public interface AuthorizationProvider {
    * @return
    * @throws SentryConfigurationException
    */
-  public Set<String> listPermissionsForGroup(String groupName) throws SentryConfigurationException;
+  public Set<String> listPrivilegesForGroup(String groupName) throws SentryConfigurationException;
 
   /***
    * Returns the list of missing privileges of the last access request
    * @return
    */
-  public List<String> getLastFailedPermissions();
+  public List<String> getLastFailedPrivileges();
 }

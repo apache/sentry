@@ -16,33 +16,20 @@
  */
 package org.apache.sentry.policy.db;
 
-import javax.annotation.Nullable;
+import java.util.Set;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map.Entry;
-
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import org.apache.sentry.core.common.Authorizable;
+import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.SentryConfigurationException;
-import org.apache.sentry.core.model.db.AccessURI;
-import org.apache.sentry.core.model.db.Database;
-import org.apache.sentry.policy.common.PermissionFactory;
+import org.apache.sentry.policy.common.PrivilegeFactory;
 import org.apache.sentry.policy.common.PolicyEngine;
-import org.apache.sentry.policy.common.RoleValidator;
+import org.apache.sentry.policy.common.PrivilegeValidator;
 import org.apache.sentry.provider.common.ProviderBackend;
-import org.apache.sentry.provider.common.Roles;
-import org.apache.sentry.provider.file.SimpleFileProviderBackend;
+import org.apache.sentry.provider.common.ProviderBackendContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.Lists;
 
 public class SimpleDBPolicyEngine implements PolicyEngine {
 
@@ -51,119 +38,47 @@ public class SimpleDBPolicyEngine implements PolicyEngine {
 
   public final static String ACCESS_ALLOW_URI_PER_DB_POLICYFILE = "sentry.allow.uri.db.policyfile";
 
-  private ProviderBackend providerBackend;
-  private String serverName;
-  private List<? extends RoleValidator> validators;
+  private final ProviderBackend providerBackend;
 
   public SimpleDBPolicyEngine(String serverName, ProviderBackend providerBackend) {
-    validators = Lists.newArrayList(new ServersAllIsInvalid(), new DatabaseMustMatch(),
-          new DatabaseRequiredInRole(), new ServerNameMustMatch(serverName));
     this.providerBackend = providerBackend;
-    this.providerBackend.process(validators);
-    this.serverName = serverName;
+    ProviderBackendContext context = new ProviderBackendContext();
+    context.setAllowPerDatabase(true);
+    context.setValidators(createPrivilegeValidators(serverName));
+    this.providerBackend.initialize(context);
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public PermissionFactory getPermissionFactory() {
-    return new DBWildcardPermission.DBWildcardPermissionFactory();
+  public PrivilegeFactory getPrivilegeFactory() {
+    return new DBWildcardPrivilege.DBWildcardPrivilegeFactory();
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public ImmutableSetMultimap<String, String> getPermissions(
-      List<? extends Authorizable> authorizables, List<String> groups)
+  public ImmutableSet<String> getPrivileges(Set<String> groups, ActiveRoleSet roleSet)
       throws SentryConfigurationException {
-    String database = null;
-    Boolean isURI = false;
-    for(Authorizable authorizable : authorizables) {
-      if(authorizable instanceof Database) {
-        database = authorizable.getName();
-      }
-      if (authorizable instanceof AccessURI) {
-        isURI = true;
-      }
-    }
-
     if(LOGGER.isDebugEnabled()) {
-      LOGGER.debug("Getting permissions for {} via {}", groups, database);
+      LOGGER.debug("Getting permissions for {}", groups);
     }
-    ImmutableSetMultimap.Builder<String, String> resultBuilder = ImmutableSetMultimap.builder();
-    for(String group : groups) {
-      resultBuilder.putAll(group, getDBRoles(database, group, isURI, providerBackend.getRoles()));
-    }
-    ImmutableSetMultimap<String, String> result = resultBuilder.build();
+    ImmutableSet<String> result = providerBackend.getPrivileges(groups, roleSet);
     if(LOGGER.isDebugEnabled()) {
       LOGGER.debug("result = " + result);
     }
     return result;
   }
 
-  private ImmutableSet<String> getDBRoles(@Nullable String database,
-      String group, Boolean isURI, Roles roles) {
-    ImmutableSetMultimap<String, String> globalRoles = roles.getGlobalRoles();
-    ImmutableMap<String, ImmutableSetMultimap<String, String>> perDatabaseRoles = roles.getPerDatabaseRoles();
-    ImmutableSet.Builder<String> resultBuilder = ImmutableSet.builder();
-    String allowURIPerDbFile =
-        System.getProperty(SimpleDBPolicyEngine.ACCESS_ALLOW_URI_PER_DB_POLICYFILE);
-    Boolean consultPerDbRolesForURI = isURI && ("true".equalsIgnoreCase(allowURIPerDbFile));
-
-    // handle Database.ALL
-    if (Database.ALL.getName().equals(database)) {
-      for(Entry<String, ImmutableSetMultimap<String, String>> dbListEntry : perDatabaseRoles.entrySet()) {
-        if (dbListEntry.getValue().containsKey(group)) {
-          resultBuilder.addAll(dbListEntry.getValue().get(group));
-        }
-      }
-    } else if(database != null) {
-      ImmutableSetMultimap<String, String> dbPolicies =  perDatabaseRoles.get(database);
-      if(dbPolicies != null && dbPolicies.containsKey(group)) {
-        resultBuilder.addAll(dbPolicies.get(group));
-      }
-    }
-
-    if (consultPerDbRolesForURI) {
-      for(String db : perDatabaseRoles.keySet()) {
-        ImmutableSetMultimap<String, String> dbPolicies =  perDatabaseRoles.get(db);
-        if(dbPolicies != null && dbPolicies.containsKey(group)) {
-          resultBuilder.addAll(dbPolicies.get(group));
-        }
-      }
-    }
-
-    if(globalRoles.containsKey(group)) {
-      resultBuilder.addAll(globalRoles.get(group));
-    }
-    ImmutableSet<String> result = resultBuilder.build();
-    if(LOGGER.isDebugEnabled()) {
-      LOGGER.debug("Database {}, Group {}, Result {}",
-          new Object[]{ database, group, result});
-    }
-    return result;
-  }
-
   @Override
   public void validatePolicy(boolean strictValidation) throws SentryConfigurationException {
-    this.providerBackend.validatePolicy(validators, strictValidation);
+    this.providerBackend.validatePolicy(strictValidation);
   }
 
-  @Override
-  public ImmutableSet<String> listPermissions(String groupName) throws SentryConfigurationException {
-    return getDBRoles(Database.ALL.getName(), groupName, true, providerBackend.getRoles());
+  public static ImmutableList<PrivilegeValidator> createPrivilegeValidators(String serverName) {
+    return ImmutableList.<PrivilegeValidator>of(new ServersAllIsInvalid(), new DatabaseMustMatch(),
+        new DatabaseRequiredInPrivilege(), new ServerNameMustMatch(serverName));
   }
-
-  @Override
-  public ImmutableSet<String> listPermissions(List<String> groupNames)
-      throws SentryConfigurationException {
-    ImmutableSet.Builder<String> resultBuilder = ImmutableSet.builder();
-    for (String groupName : groupNames) {
-      resultBuilder.addAll(listPermissions(groupName));
-    }
-    return resultBuilder.build();
-  }
-
 }

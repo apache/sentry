@@ -25,7 +25,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Set;
 
-import org.apache.sentry.binding.hive.HiveAuthzBindingSessionHook;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -42,13 +41,15 @@ import org.apache.hadoop.hive.ql.processors.CommandProcessorResponse;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
+import org.apache.sentry.Command;
 import org.apache.sentry.binding.hive.HiveAuthzBindingHook;
+import org.apache.sentry.binding.hive.HiveAuthzBindingSessionHook;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
-import org.apache.sentry.provider.common.AuthorizationProvider;
 import org.apache.sentry.core.common.SentryConfigurationException;
-import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.core.common.Subject;
+import org.apache.sentry.core.model.db.Server;
+import org.apache.sentry.provider.common.AuthorizationProvider;
 
 public class SentryConfigTool {
   private String sentrySiteFile = null;
@@ -57,7 +58,7 @@ public class SentryConfigTool {
   private String jdbcURL = null;
   private String user = null;
   private String passWord = null;
-  private boolean listPerms = false;
+  private boolean listPrivs = false;
   private boolean validate = false;
   private HiveConf hiveConf = null;
   private HiveAuthzConf authzConf = null;
@@ -147,12 +148,12 @@ public class SentryConfigTool {
     this.passWord = passWord;
   }
 
-  public boolean isListPerms() {
-    return listPerms;
+  public boolean isListPrivs() {
+    return listPrivs;
   }
 
-  public void setListPerms(boolean listPerms) {
-    this.listPerms = listPerms;
+  public void setListPrivs(boolean listPrivs) {
+    this.listPrivs = listPrivs;
   }
 
   /**
@@ -229,10 +230,10 @@ public class SentryConfigTool {
   }
 
   // list permissions for given user
-  public void listPerms() throws Exception {
+  public void listPrivs() throws Exception {
     getSentryProvider().validateResource(true);
     System.out.println("Available privileges for user " + getUser() + ":");
-    Set<String> permList = getSentryProvider().listPermissionsForSubject(
+    Set<String> permList = getSentryProvider().listPrivilegesForSubject(
         new Subject(getUser()));
     for (String perms : permList) {
       System.out.println("\t" + perms);
@@ -359,17 +360,18 @@ public class SentryConfigTool {
 
   /**
    *  parse arguments
-   *
-   *   -d,--debug               enable debug output
-   *   -e,--query <arg>         Query privilege verification, requires -u
-   *    -h,--help                Print usage
-   *   -i,--policyIni <arg>     Policy file path
-   *   -j,--jdbcURL <arg>       JDBC URL
-   *   -l,--listPerms           list permissions for given user, requires -u
-   *   -p,--password <arg>      Password
-   *   -s,--sentry-site <arg>   sentry-site file path
-   *   -u,--user <arg>          user name
-   *   -v,--validate            Validate policy file
+   * <pre>
+   *   -d,--debug                  Enable debug output
+   *   -e,--query <arg>            Query privilege verification, requires -u
+   *    -h,--help                  Print usage
+   *   -i,--policyIni <arg>        Policy file path
+   *   -j,--jdbcURL <arg>          JDBC URL
+   *   -l,--listPrivs,--listPerms  List privilges for given user, requires -u
+   *   -p,--password <arg>         Password
+   *   -s,--sentry-site <arg>      sentry-site file path
+   *   -u,--user <arg>             user name
+   *   -v,--validate               Validate policy file
+   * </pre>
    * @param args
    */
   private void parseArgs(String[] args) {
@@ -391,6 +393,9 @@ public class SentryConfigTool {
     Option listPermsOpt = new Option("l", "listPerms", false,
         "list permissions for given user, requires -u");
     listPermsOpt.setRequired(false);
+    Option listPrivsOpt = new Option("listPrivs", false,
+        "list privileges for given user, requires -u");
+    listPrivsOpt.setRequired(false);
 
     // required args
     OptionGroup sentryOptGroup = new OptionGroup();
@@ -398,6 +403,7 @@ public class SentryConfigTool {
     sentryOptGroup.addOption(validateOpt);
     sentryOptGroup.addOption(queryOpt);
     sentryOptGroup.addOption(listPermsOpt);
+    sentryOptGroup.addOption(listPrivsOpt);
     sentryOptGroup.setRequired(true);
     sentryOptions.addOptionGroup(sentryOptGroup);
 
@@ -445,8 +451,8 @@ public class SentryConfigTool {
           setUser(opt.getValue());
         } else if (opt.getOpt().equals("p")) {
           setPassWord(opt.getValue());
-        } else if (opt.getOpt().equals("l")) {
-          setListPerms(true);
+        } else if (opt.getOpt().equals("l") || opt.getOpt().equals("listPrivs")) {
+          setListPrivs(true);
         } else if (opt.getOpt().equals("v")) {
           setValidate(true);
         } else if (opt.getOpt().equals("h")) {
@@ -456,7 +462,7 @@ public class SentryConfigTool {
         }
       }
 
-      if (isListPerms() && (getUser() == null)) {
+      if (isListPrivs() && (getUser() == null)) {
         throw new ParseException("Can't use -l without -u ");
       }
       if ((getQuery() != null) && (getUser() == null)) {
@@ -473,38 +479,41 @@ public class SentryConfigTool {
     }
   }
 
-  public static void main(String args[]) throws Exception {
-    SentryConfigTool sentryTool = new SentryConfigTool();
+  public static class CommandImpl implements Command {
+    @Override
+    public void run(String[] args) throws Exception {
+      SentryConfigTool sentryTool = new SentryConfigTool();
 
-    try {
-      // parse arguments
-      sentryTool.parseArgs(args);
+      try {
+        // parse arguments
+        sentryTool.parseArgs(args);
 
-      // load configuration
-      sentryTool.setupConfig();
+        // load configuration
+        sentryTool.setupConfig();
 
-      // validate configuration
-      if (sentryTool.isValidate()) {
-        sentryTool.validatePolicy();
-      }
-
-      // list permissions for give user
-      if (sentryTool.isListPerms()) {
-        sentryTool.listPerms();
-      }
-
-      // verify given query
-      if (sentryTool.getQuery() != null) {
-        if (sentryTool.getJdbcURL() != null) {
-          sentryTool.verifyRemoteQuery(sentryTool.getQuery());
-        } else {
-          sentryTool.verifyLocalQuery(sentryTool.getQuery());
+        // validate configuration
+        if (sentryTool.isValidate()) {
+          sentryTool.validatePolicy();
         }
-      }
-    } catch (Exception e) {
-      System.out.println("Sentry tool reported Errors: " + e.getMessage());
-      System.exit(1);
-    }
 
+        // list permissions for give user
+        if (sentryTool.isListPrivs()) {
+          sentryTool.listPrivs();
+        }
+
+        // verify given query
+        if (sentryTool.getQuery() != null) {
+          if (sentryTool.getJdbcURL() != null) {
+            sentryTool.verifyRemoteQuery(sentryTool.getQuery());
+          } else {
+            sentryTool.verifyLocalQuery(sentryTool.getQuery());
+          }
+        }
+      } catch (Exception e) {
+        System.out.println("Sentry tool reported Errors: " + e.getMessage());
+        e.printStackTrace(System.out);
+        System.exit(1);
+      }
+    }
   }
 }

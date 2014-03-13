@@ -21,7 +21,6 @@ import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertFalse;
 import static org.apache.sentry.provider.file.PolicyFileConstants.KV_JOINER;
 
-import org.apache.sentry.provider.file.KeyValue;
 import org.junit.Test;
 
 public class TestKeyValue {

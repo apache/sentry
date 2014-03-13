@@ -27,7 +27,6 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.solr.servlet.SolrRequestParsers;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

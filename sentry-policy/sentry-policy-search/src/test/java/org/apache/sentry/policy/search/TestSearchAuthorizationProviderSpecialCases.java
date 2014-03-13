@@ -25,8 +25,9 @@ import java.util.Set;
 import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.Action;
+import org.apache.sentry.core.common.ActiveRoleSet;
+import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.search.Collection;
 import org.apache.sentry.core.model.search.SearchModelAction;
@@ -75,7 +76,7 @@ public class TestSearchAuthorizationProviderSpecialCases {
     authzProvider = new LocalGroupResourceAuthorizationProvider(initResource, policy);
     List<? extends Authorizable> authorizableHierarchy = ImmutableList.of(collection1);
     Assert.assertTrue(authorizableHierarchy.toString(),
-        authzProvider.hasAccess(user1, authorizableHierarchy, actions));
+        authzProvider.hasAccess(user1, authorizableHierarchy, actions, ActiveRoleSet.ALL));
   }
 
 }

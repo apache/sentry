@@ -16,21 +16,19 @@
  */
 package org.apache.sentry.provider.file;
 
-import java.util.Arrays;
-import java.util.List;
+import static org.junit.Assert.assertSame;
 
-import org.apache.sentry.core.common.Authorizable;
+import java.util.Set;
+
 import org.apache.sentry.core.common.SentryConfigurationException;
-import org.apache.sentry.policy.common.PermissionFactory;
+import org.apache.sentry.core.common.ActiveRoleSet;
+import org.apache.sentry.policy.common.PrivilegeFactory;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.common.GroupMappingService;
-
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSetMultimap;
-
 import org.junit.Test;
 
-import static org.junit.Assert.assertSame;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
 public class TestGetGroupMapping {
 
@@ -43,23 +41,15 @@ public class TestGetGroupMapping {
 
   @Test
   public void testResourceAuthorizationProvider() {
-    final List<String> list = Arrays.asList("a", "b", "c");
+    final Set<String> set = Sets.newHashSet("a", "b", "c");
     GroupMappingService mappingService = new GroupMappingService() {
-      public List<String> getGroups(String user) { return list; }
+      public Set<String> getGroups(String user) { return set; }
     };
     PolicyEngine policyEngine = new PolicyEngine() {
-      public PermissionFactory getPermissionFactory() { return null; }
+      public PrivilegeFactory getPrivilegeFactory() { return null; }
 
-      public ImmutableSetMultimap<String, String> getPermissions(List<? extends Authorizable> authorizables, List<String> groups) { return null; }
-
-      public ImmutableSet<String> listPermissions(String groupName)
-          throws SentryConfigurationException {
-        return null;
-      }
-
-      public ImmutableSet<String> listPermissions(List<String> groupName)
-          throws SentryConfigurationException {
-        return null;
+      public ImmutableSet<String> getPrivileges(Set<String> groups, ActiveRoleSet roleSet) {
+        return ImmutableSet.of();
       }
 
       public void validatePolicy(boolean strictValidation)

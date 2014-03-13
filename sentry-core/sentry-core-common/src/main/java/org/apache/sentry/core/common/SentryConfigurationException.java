@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.shiro.config.ConfigurationException;
 
 public class SentryConfigurationException extends ConfigurationException {
+  private static final long serialVersionUID = -116202866086371884L;
   private List<String> configErrors = new ArrayList<String>();
   private List<String> configWarnings = new ArrayList<String>();
 

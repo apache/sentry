@@ -17,13 +17,9 @@
 
 package org.apache.sentry.tests.e2e.hive;
 
-import com.google.common.io.Resources;
-import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
-import org.apache.sentry.provider.file.PolicyFile;
-import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.sql.Connection;
@@ -31,10 +27,17 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
+
 import junit.framework.Assert;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertFalse;
+import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
+import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import com.google.common.io.Resources;
 
 public class TestSentryOnFailureHookLoading extends AbstractTestWithHiveServer {
 

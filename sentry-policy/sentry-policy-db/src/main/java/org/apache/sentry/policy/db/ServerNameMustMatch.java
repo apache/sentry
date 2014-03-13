@@ -16,25 +16,25 @@
  */
 package org.apache.sentry.policy.db;
 
-import javax.annotation.Nullable;
-
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.sentry.core.model.db.Server;
+import org.apache.sentry.policy.common.PrivilegeValidatorContext;
 import org.apache.shiro.config.ConfigurationException;
 
-public class ServerNameMustMatch extends AbstractDBRoleValidator {
+public class ServerNameMustMatch extends AbstractDBPrivilegeValidator {
 
   private final String serverName;
   public ServerNameMustMatch(String serverName) {
     this.serverName = serverName;
   }
   @Override
-  public void validate(@Nullable String database, String role) throws ConfigurationException {
-    Iterable<DBModelAuthorizable> authorizables = parseRole(role);
+  public void validate(PrivilegeValidatorContext context) throws ConfigurationException {
+    String privilege = context.getPrivilege();
+    Iterable<DBModelAuthorizable> authorizables = parsePrivilege(privilege);
     for(DBModelAuthorizable authorizable : authorizables) {
       if(authorizable instanceof Server && !serverName.equalsIgnoreCase(authorizable.getName())) {
         String msg = "Server name " + authorizable.getName() + " in "
-      + role + " is invalid. Expected " + serverName;
+            + privilege + " is invalid. Expected " + serverName;
         throw new ConfigurationException(msg);
       }
     }

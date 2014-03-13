@@ -63,7 +63,7 @@ public class PolicyFiles {
       throws IOException {
     InputStream input = new FileInputStream(inputFile.getPath());
     FSDataOutputStream out = fs.create(new Path(dest, inputFile.getName()));
-    long bytes = ByteStreams.copy(input, out);
+    ByteStreams.copy(input, out);
     input.close();
     out.hflush();
     out.close();

@@ -17,6 +17,8 @@
 package org.apache.sentry.binding.solr.authz;
 
 public class SentrySolrAuthorizationException extends Exception {
+  private static final long serialVersionUID = -263787088321897523L;
+
   public SentrySolrAuthorizationException(String message) {
     super(message);
   }

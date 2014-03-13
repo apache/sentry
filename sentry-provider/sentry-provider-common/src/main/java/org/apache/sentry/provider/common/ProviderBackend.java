@@ -16,31 +16,44 @@
  */
 package org.apache.sentry.provider.common;
 
-import javax.annotation.Nullable;
+import java.util.Set;
 
-import java.util.List;
+import javax.annotation.concurrent.ThreadSafe;
 
+import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.SentryConfigurationException;
-import org.apache.sentry.policy.common.RoleValidator;
 
 import com.google.common.collect.ImmutableSet;
 
 /**
- * Interface for getting roles from a specific provider backend.
+ * Interface for getting roles from a specific provider backend. Implementations
+ * are expected to be thread safe after initialize() has
+ * been called.
  */
+@ThreadSafe
 public interface ProviderBackend {
-  /**
-   * Process roles from the backend.  Checks the validity of each role
-   * by running it through each validator passed via validators.
-   */
-  public void process(List<? extends RoleValidator> validators);
 
   /**
-   * Get the roles from the backend.  Requires that process(...) is invoked at
-   * least once prior.
+   * Set the privilege validators to be used on the backend. This is required
+   * because the Backend must be created before the policy engine and only the
+   * policy engine knows the validators. Ideally we could change but since
+   * both the policy engine and backend are exposed via configuration properties
+   * that would be backwards incompatible.
+   * @param validators
    */
-  public Roles getRoles();
+  public void initialize(ProviderBackendContext context);
 
-  public void validatePolicy(List<? extends RoleValidator> validators, boolean strictValidation)
-      throws SentryConfigurationException;
+  /**
+   * Get the privileges from the backend.
+   */
+  public ImmutableSet<String> getPrivileges(Set<String> groups, ActiveRoleSet roleSet);
+
+  /**
+   * If strictValidation is true then an error is thrown for warnings
+   * as well as errors.
+   *
+   * @param strictValidation
+   * @throws SentryConfigurationException
+   */
+  public void validatePolicy(boolean strictValidation) throws SentryConfigurationException;
 }

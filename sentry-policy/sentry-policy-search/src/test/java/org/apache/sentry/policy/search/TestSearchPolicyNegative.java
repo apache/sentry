@@ -18,16 +18,13 @@ package org.apache.sentry.policy.search;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.Collections;
 
 import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.shiro.config.ConfigurationException;
-import org.apache.sentry.core.common.Authorizable;
-import org.apache.sentry.core.model.search.Collection;
+import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.policy.common.PolicyEngine;
-import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,7 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 
 public class TestSearchPolicyNegative {
@@ -72,26 +69,22 @@ public class TestSearchPolicyNegative {
     append("[databases]", globalPolicyFile);
     append("other_group_db = " + otherPolicyFile.getPath(), globalPolicyFile);
     append("[groups]", otherPolicyFile);
-    append("other_group = malicious_role", otherPolicyFile);
+    append("other_group = some_role", otherPolicyFile);
     append("[roles]", otherPolicyFile);
-    append("malicious_role = collection=*", otherPolicyFile);
-    try {
-      PolicyEngine policy = new SearchPolicyFileBackend(globalPolicyFile.getPath());
-      Assert.fail("Excepted ConfigurationException");
-    } catch (ConfigurationException ce) {}
+    append("some_role = collection=c1", otherPolicyFile);
+    SearchPolicyFileBackend policy = new SearchPolicyFileBackend(globalPolicyFile.getPath());
+    Assert.assertEquals(Collections.emptySet(),
+        policy.getPrivileges(Sets.newHashSet("other_group"), ActiveRoleSet.ALL));
   }
 
   @Test
   public void testCollectionRequiredInRole() throws Exception {
     append("[groups]", globalPolicyFile);
-    append("group = malicious_role", globalPolicyFile);
+    append("group = some_role", globalPolicyFile);
     append("[roles]", globalPolicyFile);
-    append("malicious_role = action=query", globalPolicyFile);
+    append("some_role = action=query", globalPolicyFile);
     PolicyEngine policy = new SearchPolicyFileBackend(globalPolicyFile.getPath());
-    ImmutableSet<String> permissions = policy.getPermissions(
-        Arrays.asList(new Authorizable[] {
-            new Collection("collection1"),
-    }), Lists.newArrayList("group")).get("group");
+    ImmutableSet<String> permissions = policy.getPrivileges(Sets.newHashSet("group"), ActiveRoleSet.ALL);
     Assert.assertTrue(permissions.toString(), permissions.isEmpty());
   }
 
@@ -102,10 +95,7 @@ public class TestSearchPolicyNegative {
     append("[roles]", globalPolicyFile);
     append("malicious_role = collection=*", globalPolicyFile);
     PolicyEngine policy = new SearchPolicyFileBackend(globalPolicyFile.getPath());
-    ImmutableSet<String> permissions = policy.getPermissions(
-        Arrays.asList(new Authorizable[] {
-            Collection.ALL
-    }), Lists.newArrayList("incorrectGroup")).get("incorrectGroup");
+    ImmutableSet<String> permissions = policy.getPrivileges(Sets.newHashSet("incorrectGroup"), ActiveRoleSet.ALL);
     Assert.assertTrue(permissions.toString(), permissions.isEmpty());
   }
 }

@@ -18,7 +18,8 @@ package org.apache.sentry.provider.file;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.hadoop.security.Groups;
 import org.apache.sentry.provider.common.GroupMappingService;
@@ -36,12 +37,12 @@ public class HadoopGroupMappingService implements GroupMappingService {
   }
 
   @Override
-  public List<String> getGroups(String user) {
+  public Set<String> getGroups(String user) {
     try {
-      return groups.getGroups(user);
+      return new HashSet<String>(groups.getGroups(user));
     } catch (IOException e) {
       LOGGER.warn("Unable to obtain groups for " + user, e);
     }
-    return Collections.emptyList();
+    return Collections.emptySet();
   }
 }

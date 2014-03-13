@@ -16,16 +16,16 @@
  */
 package org.apache.sentry.tests.e2e.hive.hiveserver;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.util.Properties;
+
+import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
-import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.hadoop.security.UserGroupInformation;
-
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.util.Properties;
 
 public class UnmanagedHiveServer implements HiveServer {
   private static final Logger LOGGER = LoggerFactory.getLogger(UnmanagedHiveServer.class);

@@ -19,25 +19,25 @@ package org.apache.sentry.provider.file;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.fs.Path;
-import org.apache.sentry.provider.file.LocalGroupMappingService;
-import org.apache.sentry.provider.file.PolicyFiles;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 
 public class TestLocalGroupMapping {
 
-  private String resourcePath = "test-authz-provider-local-group-mapping.ini";
+  private static final String resourcePath = "test-authz-provider-local-group-mapping.ini";
+  private static final Set<String> fooGroups = Sets.newHashSet("admin", "analyst");
+  private static final Set<String> barGroups = Sets.newHashSet("jranalyst");
+
   private LocalGroupMappingService localGroupMapping;
-  private String[] fooGroups = new String[] {"admin", "analyst" };
-  private String[] barGroups = new String[] {"jranalyst"};
 
   private File baseDir;
 
@@ -57,13 +57,13 @@ public class TestLocalGroupMapping {
 
   @Test
   public void testGroupMapping() {
-    List <String> fooGroupsFromResource = localGroupMapping.getGroups("foo");
-    Assert.assertArrayEquals(fooGroupsFromResource.toArray(), fooGroups);
+    Set<String> fooGroupsFromResource = localGroupMapping.getGroups("foo");
+    Assert.assertEquals(fooGroupsFromResource, fooGroups);
 
-    List <String> barGroupsFromResource = localGroupMapping.getGroups("bar");
-    Assert.assertArrayEquals(barGroupsFromResource.toArray(), barGroups);
+    Set<String> barGroupsFromResource = localGroupMapping.getGroups("bar");
+    Assert.assertEquals(barGroupsFromResource, barGroups);
 
-    List <String> unknownGroupsFromResource = localGroupMapping.getGroups("unknown");
+    Set<String> unknownGroupsFromResource = localGroupMapping.getGroups("unknown");
     Assert.assertTrue("List not empty " + unknownGroupsFromResource, unknownGroupsFromResource.isEmpty());
   }
 }

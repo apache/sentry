@@ -1,0 +1,125 @@
+<?xml version="1.0"?>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one
+  or more contributor license agreements.  See the NOTICE file
+  distributed with this work for additional information
+  regarding copyright ownership.  The ASF licenses this file
+  to you under the Apache License, Version 2.0 (the
+  "License"); you may not use this file except in compliance
+  with the License.  You may obtain a copy of the License at
+ 
+      http://www.apache.org/licenses/LICENSE-2.0
+ 
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+--> 
+<!DOCTYPE jdo PUBLIC "-//Sun Microsystems, Inc.//DTD Java Data Objects Metadata 2.0//EN"
+  "http://java.sun.com/dtd/jdo_2_0.dtd">
+<!--
+  Size Limitations:
+
+  Indexed VARCHAR: 767 bytes (MySQL running on InnoDB Engine http://bugs.mysql.com/bug.php?id=13315)
+  Non-indexed VARCHAR: 4000 bytes (max length on Oracle 9i/10g/11g)
+
+-->
+<jdo>  
+  <package name="org.apache.sentry.provider.db.service.model">  
+    <class name="MSentryGroup" identity-type="datastore" table="SENTRY_GROUPS" detachable="true">  
+      <datastore-identity>
+        <column name="GROUP_ID"/>
+      </datastore-identity>
+      <field name="groupName">  
+        <column name="GROUP_NAME" length="128" jdbc-type="VARCHAR"/>
+        <index name="SentryGroupName" unique="true"/>
+      </field>
+      <field name = "createTime">
+      	<column name = "CREATE_TIME" jdbc-type="BIGINT"/>
+      </field>
+      <field name="grantorPrincipal">  
+        <column name="GRANTOR_PRINCIPAL" length="4000" jdbc-type="VARCHAR"/>
+      </field>
+      
+      <field name="roles" mapped-by="groups">
+         <collection element-type="org.apache.sentry.provider.db.service.model.MSentryRole"/>
+      </field>
+        
+    </class>
+    
+    <class name="MSentryRole" identity-type="datastore" table="SENTRY_ROLES" detachable="true">  
+      <datastore-identity>
+        <column name="ROLE_ID"/>
+      </datastore-identity>
+      <field name="roleName">  
+        <column name="ROLE_NAME" length="128" jdbc-type="VARCHAR"/>
+        <index name="SentryRoleNaME" unique="true"/>
+      </field>
+      <field name = "createTime">
+      	<column name = "CREATE_TIME" jdbc-type="BIGINT"/>
+      </field>
+      <field name="grantorPrincipal">  
+        <column name="GRANTOR_PRINCIPAL" length="4000" jdbc-type="VARCHAR"/>
+      </field>
+      <field name = "privileges" table="ROLES_PRIVILEGES" >
+        <collection element-type="org.apache.sentry.provider.db.service.model.MSentryPrivilege"/>
+            <join>
+                <column name="ROLE_ID"/>
+            </join>
+            <element>
+                <column name="PRIVILEGE_ID"/>
+            </element>
+      </field>  
+      
+      <field name = "groups" table="ROLES_GROUPS" >
+        <collection element-type="org.apache.sentry.provider.db.service.model.MSentryGroup"/>
+            <join>
+                <column name="ROLE_ID"/>
+            </join>
+            <element>
+                <column name="GROUP_ID"/>
+            </element>
+      </field>  
+    </class>
+    
+    <class name="MSentryPrivilege" identity-type="datastore" table="SENTRY_PRIVILEGES" detachable="true">  
+      <datastore-identity>
+        <column name="PRIVILEGE_ID"/>
+      </datastore-identity>
+      <field name="privilegeName">  
+        <column name="PRIVILEGE_NAME" length="128" jdbc-type="VARCHAR"/>
+        <index name="SentryPrivilegeName" unique="true"/>
+      </field>
+      <field name="privilegeScope">  
+        <column name="PRIVILEGE_SCOPE" length="40" jdbc-type="VARCHAR"/>
+      </field>
+      <field name="serverName">  
+        <column name="SERVER_NAME" length="4000" jdbc-type="VARCHAR"/>
+      </field>
+      <field name="dbName">  
+        <column name="DB_NAME" length="4000" jdbc-type="VARCHAR"/>
+      </field>
+      <field name="tableName">  
+        <column name="TABLE_NAME" length="4000" jdbc-type="VARCHAR"/>
+      </field>
+      <field name="URI">  
+        <column name="URI" length="4000" jdbc-type="VARCHAR"/>
+      </field>
+      <field name="action">  
+        <column name="ACTION" length="40" jdbc-type="VARCHAR"/>
+      </field>
+      <field name = "createTime">
+      	<column name = "CREATE_TIME" jdbc-type="BIGINT"/>
+      </field>
+      <field name="grantorPrincipal">  
+        <column name="GRANTOR_PRINCIPAL" length="4000" jdbc-type="VARCHAR"/>
+      </field>
+      <field name="roles" mapped-by="privileges">
+         <collection element-type="org.apache.sentry.provider.db.service.model.MSentryRole"/>
+      </field>  
+    </class>
+
+  </package>
+</jdo>
+

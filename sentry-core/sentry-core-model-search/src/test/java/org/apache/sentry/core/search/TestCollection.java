@@ -16,9 +16,10 @@ package org.apache.sentry.core.search;
  * limitations under the License.
  */
 
+import junit.framework.Assert;
+
 import org.apache.sentry.core.model.search.Collection;
 import org.junit.Test;
-import junit.framework.Assert;
 
 public class TestCollection {
 

@@ -16,15 +16,20 @@
  */
 package org.apache.sentry.provider.common;
 
-import java.util.List;
+import java.util.Set;
+
+import javax.annotation.concurrent.ThreadSafe;
 
 /**
  * Interface so the Groups class is easier to unit test with.
+ * Implementations of this class are expected to be thread safe
+ * after construction.
  */
+@ThreadSafe
 public interface GroupMappingService {
 
   /**
    * @return non-null list of groups for user
    */
-  public List<String> getGroups(String user);
+  public Set<String> getGroups(String user);
 }

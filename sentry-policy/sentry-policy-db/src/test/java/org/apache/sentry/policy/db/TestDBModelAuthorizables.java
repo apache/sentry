@@ -20,13 +20,11 @@ package org.apache.sentry.policy.db;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNull;
 
-
 import org.apache.sentry.core.model.db.AccessURI;
 import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.core.model.db.Table;
 import org.apache.sentry.core.model.db.View;
-import org.apache.sentry.policy.db.DBModelAuthorizables;
 import org.junit.Test;
 
 public class TestDBModelAuthorizables {

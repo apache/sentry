@@ -1,3 +1,4 @@
 derby.log
 TempStatsStore/**
 thirdparty/*
+sentry_policy_db

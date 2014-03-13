@@ -18,7 +18,7 @@ package org.apache.sentry.policy.db;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
+import java.util.Set;
 
 import junit.framework.Assert;
 
@@ -26,17 +26,15 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.apache.sentry.core.common.Authorizable;
-import org.apache.sentry.core.model.db.Database;
-import org.apache.sentry.core.model.db.Server;
+import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.provider.file.PolicyFiles;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 
 public class TestSimpleDBPolicyEngineDFS extends AbstractTestSimplePolicyEngine {
@@ -72,7 +70,8 @@ public class TestSimpleDBPolicyEngineDFS extends AbstractTestSimplePolicyEngine 
     fileSystem.delete(etc, true);
     fileSystem.mkdirs(etc);
     PolicyFiles.copyToDir(fileSystem, etc, "test-authz-provider.ini", "test-authz-provider-other-group.ini");
-    setPolicy(new DBPolicyFileBackend(new Path(etc, "test-authz-provider.ini").toString(), "server1"));
+    setPolicy(new DBPolicyFileBackend("server1",
+        new Path(etc, "test-authz-provider.ini").toString()));
   }
   @Override
   protected void beforeTeardown() throws IOException {
@@ -104,15 +103,12 @@ public class TestSimpleDBPolicyEngineDFS extends AbstractTestSimplePolicyEngine 
     PolicyFiles.copyFilesToDir(fileSystem, etc, globalPolicyFile);
     PolicyFiles.copyFilesToDir(fileSystem, etc, dbPolicyFile);
     DBPolicyFileBackend multiFSEngine =
-        new DBPolicyFileBackend(globalPolicyFile.getPath(), "server1");
+        new DBPolicyFileBackend("server1", globalPolicyFile.getPath());
 
-    List<Authorizable> dbAuthorizables = Lists.newArrayList();
-    dbAuthorizables.add(new Server("server1"));
-    dbAuthorizables.add(new Database("db11"));
-    List<String> dbGroups = Lists.newArrayList();
+    Set<String> dbGroups = Sets.newHashSet();
     dbGroups.add("group1");
-    ImmutableSetMultimap <String, String> dbPerms =
-        multiFSEngine.getPermissions(dbAuthorizables, dbGroups);
+    ImmutableSet<String> dbPerms =
+        multiFSEngine.getPrivileges(dbGroups, ActiveRoleSet.ALL);
     Assert.assertEquals("No DB permissions found", 1, dbPerms.size());
   }
 }

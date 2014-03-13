@@ -26,8 +26,8 @@ import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.sentry.tests.e2e.hive.fs.DFSFactory;
 import org.apache.sentry.tests.e2e.hive.fs.DFS;
+import org.apache.sentry.tests.e2e.hive.fs.DFSFactory;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServer;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
 import org.junit.AfterClass;
@@ -173,8 +173,12 @@ public abstract class AbstractTestWithStaticConfiguration {
       }
       baseDir = null;
     }
-    if(dfs!=null) {
-      dfs.tearDown();
+    if(dfs != null) {
+      try {
+        dfs.tearDown();
+      } catch (Exception e) {
+        LOGGER.info("Exception shutting down dfs", e);
+      }
     }
   }
 }

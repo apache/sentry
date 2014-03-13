@@ -18,6 +18,7 @@ package org.apache.sentry.binding.hive;
 
 import java.util.Arrays;
 import java.util.List;
+
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
 import org.junit.Assert;

@@ -26,8 +26,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.policy.db.SimpleDBPolicyEngine;
+import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -71,6 +71,8 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
 
   @After
   public void teardown() throws Exception {
+    // one test turns this on so let's disable it in the teardown method
+    System.setProperty(SimpleDBPolicyEngine.ACCESS_ALLOW_URI_PER_DB_POLICYFILE, "false");
     if (context != null) {
       context.close();
     }
@@ -336,6 +338,13 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     context.assertAuthzException(statement, "SELECT COUNT(*) FROM db1.tbl1");
     context.assertAuthzException(statement, "USE db1");
 
+    // once we disable this property all queries should fail
+    System.setProperty(SimpleDBPolicyEngine.ACCESS_ALLOW_URI_PER_DB_POLICYFILE, "false");
+    context.assertAuthzException(statement, "USE db2");
+
+    // re-enable for clean
+    System.setProperty(SimpleDBPolicyEngine.ACCESS_ALLOW_URI_PER_DB_POLICYFILE, "true");
+
     statement.close();
     connection.close();
 
@@ -346,7 +355,6 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     statement.execute("DROP DATABASE db2 CASCADE");
     statement.close();
     connection.close();
-    System.setProperty(SimpleDBPolicyEngine.ACCESS_ALLOW_URI_PER_DB_POLICYFILE, "false");
   }
 
   /**

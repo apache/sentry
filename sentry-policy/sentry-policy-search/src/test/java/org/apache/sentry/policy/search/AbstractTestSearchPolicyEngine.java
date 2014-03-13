@@ -18,15 +18,13 @@ package org.apache.sentry.policy.search;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
 import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.sentry.core.common.Authorizable;
-import org.apache.sentry.core.model.search.Collection;
+import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -34,7 +32,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 
@@ -50,7 +47,6 @@ public abstract class AbstractTestSearchPolicyEngine {
 
   private PolicyEngine policy;
   private static File baseDir;
-  private List<Authorizable> authorizables = Lists.newArrayList();
 
   @BeforeClass
   public static void setupClazz() throws IOException {
@@ -94,7 +90,7 @@ public abstract class AbstractTestSearchPolicyEngine {
         ANALYST_TMPCOLLECTION_QUERY, JRANALYST_JRANALYST1_ALL,
         JRANALYST_PURCHASES_PARTIAL_QUERY));
     Assert.assertEquals(expected.toString(),
-        new TreeSet<String>(policy.getPermissions(authorizables, list("manager")).values())
+        new TreeSet<String>(policy.getPrivileges(set("manager"), ActiveRoleSet.ALL))
         .toString());
   }
 
@@ -105,7 +101,7 @@ public abstract class AbstractTestSearchPolicyEngine {
         ANALYST_JRANALYST1_ACTION_ALL, ANALYST_TMPCOLLECTION_UPDATE,
         ANALYST_TMPCOLLECTION_QUERY));
     Assert.assertEquals(expected.toString(),
-        new TreeSet<String>(policy.getPermissions(authorizables, list("analyst")).values())
+        new TreeSet<String>(policy.getPrivileges(set("analyst"), ActiveRoleSet.ALL))
         .toString());
   }
 
@@ -115,7 +111,7 @@ public abstract class AbstractTestSearchPolicyEngine {
         .newHashSet(JRANALYST_JRANALYST1_ALL,
             JRANALYST_PURCHASES_PARTIAL_QUERY));
     Assert.assertEquals(expected.toString(),
-        new TreeSet<String>(policy.getPermissions(authorizables, list("jranalyst")).values())
+        new TreeSet<String>(policy.getPrivileges(set("jranalyst"), ActiveRoleSet.ALL))
         .toString());
   }
 
@@ -123,11 +119,11 @@ public abstract class AbstractTestSearchPolicyEngine {
   public void testAdmin() throws Exception {
     Set<String> expected = Sets.newTreeSet(Sets.newHashSet(ADMIN_COLLECTION_ALL));
     Assert.assertEquals(expected.toString(),
-        new TreeSet<String>(policy.getPermissions(authorizables, list("admin")).values())
+        new TreeSet<String>(policy.getPrivileges(set("admin"), ActiveRoleSet.ALL))
         .toString());
   }
 
-  private static List<String> list(String... values) {
-    return Lists.newArrayList(values);
+  private static Set<String> set(String... values) {
+    return Sets.newHashSet(values);
   }
 }

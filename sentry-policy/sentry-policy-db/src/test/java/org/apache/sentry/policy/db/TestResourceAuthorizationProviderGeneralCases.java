@@ -27,6 +27,7 @@ import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.sentry.core.common.Action;
+import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.db.AccessConstants;
@@ -90,7 +91,8 @@ public class TestResourceAuthorizationProviderGeneralCases {
     baseDir = Files.createTempDir();
     PolicyFiles.copyToDir(baseDir, "test-authz-provider.ini", "test-authz-provider-other-group.ini");
     authzProvider = new HadoopGroupResourceAuthorizationProvider(
-        new DBPolicyFileBackend(new File(baseDir, "test-authz-provider.ini").getPath(), "server1"),
+        new DBPolicyFileBackend("server1",
+        new File(baseDir, "test-authz-provider.ini").getPath()),
         new MockGroupMappingServiceProvider(USER_TO_GROUP_MAP));
 
   }
@@ -110,7 +112,7 @@ public class TestResourceAuthorizationProviderGeneralCases {
       helper.add("authorizables", authzHierarchy).add("Privileges", privileges);
     LOGGER.info("Running with " + helper.toString());
     Assert.assertEquals(helper.toString(), expected,
-        authzProvider.hasAccess(subject, authzHierarchy, privileges));
+        authzProvider.hasAccess(subject, authzHierarchy, privileges, ActiveRoleSet.ALL));
     LOGGER.info("Passed " + helper.toString());
   }
 
@@ -125,7 +127,7 @@ public class TestResourceAuthorizationProviderGeneralCases {
     .add("Table", table).add("Privileges", privileges).add("authzHierarchy", authzHierarchy);
     LOGGER.info("Running with " + helper.toString());
     Assert.assertEquals(helper.toString(), expected,
-        authzProvider.hasAccess(subject, authzHierarchy, privileges));
+        authzProvider.hasAccess(subject, authzHierarchy, privileges, ActiveRoleSet.ALL));
     LOGGER.info("Passed " + helper.toString());
   }
 

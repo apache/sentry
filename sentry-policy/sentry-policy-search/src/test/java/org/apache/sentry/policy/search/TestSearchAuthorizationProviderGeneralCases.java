@@ -27,11 +27,11 @@ import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.sentry.core.common.Action;
+import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.Subject;
-import org.apache.sentry.core.model.search.SearchConstants;
-import org.apache.sentry.core.model.search.SearchModelAction;
 import org.apache.sentry.core.model.search.Collection;
+import org.apache.sentry.core.model.search.SearchModelAction;
 import org.apache.sentry.provider.common.MockGroupMappingServiceProvider;
 import org.apache.sentry.provider.file.HadoopGroupResourceAuthorizationProvider;
 import org.apache.sentry.provider.file.PolicyFiles;
@@ -117,7 +117,7 @@ public class TestSearchAuthorizationProviderGeneralCases {
       .add("Privileges", privileges).add("authzHierarchy", authzHierarchy);
     LOGGER.info("Running with " + helper.toString());
     Assert.assertEquals(helper.toString(), expected,
-        authzProvider.hasAccess(subject, authzHierarchy, privileges));
+        authzProvider.hasAccess(subject, authzHierarchy, privileges, ActiveRoleSet.ALL));
     LOGGER.info("Passed " + helper.toString());
   }
 

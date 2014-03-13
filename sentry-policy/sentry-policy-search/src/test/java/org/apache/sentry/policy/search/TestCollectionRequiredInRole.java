@@ -20,6 +20,7 @@ package org.apache.sentry.policy.search;
 
 import junit.framework.Assert;
 
+import org.apache.sentry.policy.common.PrivilegeValidatorContext;
 import org.apache.shiro.config.ConfigurationException;
 import org.junit.Test;
 
@@ -27,11 +28,11 @@ public class TestCollectionRequiredInRole {
 
   @Test
   public void testEmptyRole() throws Exception {
-    CollectionRequiredInRole collRequiredInRole = new CollectionRequiredInRole();
+    CollectionRequiredInPrivilege collRequiredInRole = new CollectionRequiredInPrivilege();
 
     // check no db
     try {
-      collRequiredInRole.validate(null,"index=index1");
+      collRequiredInRole.validate(new PrivilegeValidatorContext("index=index1"));
       Assert.fail("Expected ConfigurationException");
     } catch (ConfigurationException e) {
       ;
@@ -39,7 +40,7 @@ public class TestCollectionRequiredInRole {
 
     // check with db
     try {
-      collRequiredInRole.validate("db1","index=index2");
+      collRequiredInRole.validate(new PrivilegeValidatorContext("db1","index=index2"));
       Assert.fail("Expected ConfigurationException");
     } catch (ConfigurationException e) {
       ;
@@ -48,15 +49,15 @@ public class TestCollectionRequiredInRole {
 
   @Test
   public void testCollectionWithoutAction() throws Exception {
-    CollectionRequiredInRole collRequiredInRole = new CollectionRequiredInRole();
-    collRequiredInRole.validate(null,"collection=nodb");
-    collRequiredInRole.validate("db2","collection=db");
+    CollectionRequiredInPrivilege collRequiredInRole = new CollectionRequiredInPrivilege();
+    collRequiredInRole.validate(new PrivilegeValidatorContext("collection=nodb"));
+    collRequiredInRole.validate(new PrivilegeValidatorContext("db2","collection=db"));
   }
 
   @Test
   public void testCollectionWithAction() throws Exception {
-    CollectionRequiredInRole collRequiredInRole = new CollectionRequiredInRole();
-    collRequiredInRole.validate(null,"collection=nodb->action=query");
-    collRequiredInRole.validate("db2","collection=db->action=update");
+    CollectionRequiredInPrivilege collRequiredInRole = new CollectionRequiredInPrivilege();
+    collRequiredInRole.validate(new PrivilegeValidatorContext(null,"collection=nodb->action=query"));
+    collRequiredInRole.validate(new PrivilegeValidatorContext("db2","collection=db->action=update"));
   }
 }

@@ -17,14 +17,13 @@
 package org.apache.sentry.provider.common;
 
 import java.util.Collection;
-import java.util.List;
+import java.util.Set;
 
-import org.apache.sentry.provider.common.GroupMappingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 
 public class MockGroupMappingServiceProvider implements GroupMappingService {
   private static final Logger LOGGER = LoggerFactory
@@ -36,10 +35,10 @@ public class MockGroupMappingServiceProvider implements GroupMappingService {
   }
 
   @Override
-  public List<String> getGroups(String user) {
+  public Set<String> getGroups(String user) {
     Collection<String> groups = userToGroupMap.get(user);
     LOGGER.info("Mapping " + user + " to " + groups);
-    return Lists.newArrayList(groups);
+    return Sets.newHashSet(groups);
   }
 
 }

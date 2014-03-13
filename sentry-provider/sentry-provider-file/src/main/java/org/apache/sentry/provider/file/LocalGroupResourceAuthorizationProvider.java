@@ -17,12 +17,10 @@
 
 package org.apache.sentry.provider.file;
 
-import org.apache.sentry.policy.common.PolicyEngine;
-import org.apache.sentry.provider.file.LocalGroupMappingService;
-import org.apache.sentry.provider.file.ResourceAuthorizationProvider;
 import java.io.IOException;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.sentry.policy.common.PolicyEngine;
 
 
 public class LocalGroupResourceAuthorizationProvider extends
