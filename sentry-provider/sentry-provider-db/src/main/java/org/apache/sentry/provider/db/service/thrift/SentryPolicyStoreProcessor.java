@@ -24,10 +24,10 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.sentry.provider.db.SentryAlreadyExistsException;
+import org.apache.sentry.provider.db.SentryInvalidInputException;
+import org.apache.sentry.provider.db.SentryNoSuchObjectException;
 import org.apache.sentry.provider.db.service.persistent.CommitContext;
-import org.apache.sentry.provider.db.service.persistent.SentryAlreadyExistsException;
-import org.apache.sentry.provider.db.service.persistent.SentryInvalidInputException;
-import org.apache.sentry.provider.db.service.persistent.SentryNoSuchObjectException;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.provider.db.service.thrift.PolicyStoreConstants.PolicyStoreServerConfig;
 import org.apache.sentry.service.thrift.Status;
@@ -61,7 +61,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     this.notificationHandlerInvoker = new NotificationHandlerInvoker(conf,
         createHandlers(conf));
     isReady = false;
-    sentryStore = new SentryStore();
+    sentryStore = new SentryStore(conf);
     isReady = true;
   }
 
@@ -114,7 +114,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       throw new SentryInvalidInputException("Server name is null");
     }
 
-    if (action.equalsIgnoreCase("SELECT") || action.equalsIgnoreCase("INSERT")) {
+    if ("SELECT".equalsIgnoreCase(action) || "INSERT".equalsIgnoreCase(action)) {
       if (tableName == null || tableName.equals("")) {
         throw new SentryInvalidInputException("Table name can't be null for SELECT/INSERT privilege");
       }
@@ -150,7 +150,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     TCreateSentryRoleRequest request) throws TException {
     TCreateSentryRoleResponse response = new TCreateSentryRoleResponse();
     try {
-      CommitContext commitContext = sentryStore.createSentryRole(request.getRole());
+      CommitContext commitContext = sentryStore.createSentryRole(request.getRoleName(),
+          request.getRequestorUserName());
       response.setStatus(Status.OK());
       notificationHandlerInvoker.create_sentry_role(commitContext,
           request, response);
@@ -272,10 +273,10 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   @Override
   public TAlterSentryRoleDeleteGroupsResponse alter_sentry_role_delete_groups(
     TAlterSentryRoleDeleteGroupsRequest request) throws TException {
-    // TODO implement
     TAlterSentryRoleDeleteGroupsResponse response = new TAlterSentryRoleDeleteGroupsResponse();
     try {
-      CommitContext commitContext = sentryStore.alterSentryRoleDeleteGroups(null, null);
+      CommitContext commitContext = sentryStore.alterSentryRoleDeleteGroups(request.getRoleName(),
+          request.getGroups());
       response.setStatus(Status.OK());
       notificationHandlerInvoker.alter_sentry_role_delete_groups(commitContext,
           request, response);
@@ -321,7 +322,6 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   public TListSentryRolesResponse list_sentry_roles_by_role_name(
     TListSentryRolesRequest request) throws TException {
     TListSentryRolesResponse response = new TListSentryRolesResponse();
-    TSentryResponseStatus status;
     TSentryRole role = null;
     Set<TSentryRole> roleSet = new HashSet<TSentryRole>();
     try {
@@ -334,6 +334,27 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       String msg = "Role: " + request + " couldn't be retrieved.";
       LOGGER.error(msg, e);
       response.setStatus(Status.NoSuchObject(msg, e));
+    } catch (Exception e) {
+      String msg = "Unknown error for request: " + request + ", message: " + e.getMessage();
+      LOGGER.error(msg, e);
+      response.setStatus(Status.RuntimeError(msg, e));
+    }
+    return response;
+  }
+
+  /**
+   * This method was created specifically for ProviderBackend.getPrivileges() and is not meant
+   * to be used for general privilege retrieval. More details in the .thrift file.
+   */
+  @Override
+  public TListSentryPrivilegesForProviderResponse list_sentry_privileges_for_provider(
+      TListSentryPrivilegesForProviderRequest request) throws TException {
+    TListSentryPrivilegesForProviderResponse response = new TListSentryPrivilegesForProviderResponse();
+    response.setPrivileges(new HashSet<String>());
+    try {
+      response.setPrivileges(sentryStore.listSentryPrivilegesForProvider(
+          request.getGroups(), request.getRoleSet()));
+      response.setStatus(Status.OK());
     } catch (Exception e) {
       String msg = "Unknown error for request: " + request + ", message: " + e.getMessage();
       LOGGER.error(msg, e);

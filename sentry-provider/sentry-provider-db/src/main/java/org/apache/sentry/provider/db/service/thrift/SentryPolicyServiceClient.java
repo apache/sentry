@@ -18,24 +18,33 @@
 
 package org.apache.sentry.provider.db.service.thrift;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.SaslRpcServer;
 import org.apache.hadoop.security.SaslRpcServer.AuthMethod;
+import org.apache.sentry.SentryUserException;
+import org.apache.sentry.core.common.ActiveRoleSet;
+import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
+import org.apache.sentry.service.thrift.ServiceConstants.ThriftConstants;
+import org.apache.sentry.service.thrift.Status;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TMultiplexedProtocol;
 import org.apache.thrift.transport.TSaslClientTransport;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
+import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Sets;
 
 public class SentryPolicyServiceClient {
 
@@ -49,7 +58,7 @@ public class SentryPolicyServiceClient {
   private static final Logger LOGGER = LoggerFactory
                                        .getLogger(SentryPolicyServiceClient.class);
 
-  public SentryPolicyServiceClient(Configuration conf) throws Exception {
+  public SentryPolicyServiceClient(Configuration conf) throws IOException {
     this.conf = conf;
     this.serverAddress = NetUtils.createSocketAddr(Preconditions.checkNotNull(
                            conf.get(ClientConfig.SERVER_RPC_ADDRESS), "Config key "
@@ -68,7 +77,11 @@ public class SentryPolicyServiceClient {
     TTransport saslTransport = new TSaslClientTransport(
       AuthMethod.KERBEROS.getMechanismName(), null, serverPrincipalParts[0],
       serverPrincipalParts[1], ClientConfig.SASL_PROPERTIES, null, transport);
-    saslTransport.open();
+    try {
+      saslTransport.open();
+    } catch (TTransportException e) {
+      throw new IOException("Transport exception while opening transport: " + e.getMessage(), e);
+    }
     LOGGER.info("Successfully opened transport");
     TMultiplexedProtocol protocol = new TMultiplexedProtocol(
       new TBinaryProtocol(saslTransport),
@@ -77,9 +90,53 @@ public class SentryPolicyServiceClient {
     LOGGER.info("Successfully created client");
   }
 
-  public TCreateSentryRoleResponse createRole(TCreateSentryRoleRequest req)
-  throws TException {
-    return client.create_sentry_role(req);
+  public void createRole(String requestorUserName, Set<String> requestorUserGroupNames, String roleName)
+  throws SentryUserException {
+    TCreateSentryRoleRequest request = new TCreateSentryRoleRequest();
+    request.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
+    request.setRequestorUserName(requestorUserName);
+    request.setRequestorGroupNames(requestorUserGroupNames);
+    request.setRoleName(roleName);
+    try {
+      TCreateSentryRoleResponse response = client.create_sentry_role(request);
+      Status.throwIfNotOk(response.getStatus());
+    } catch (TException e) {
+      String msg = "Thrift exception occured: " + e.getMessage();
+      throw new SentryUserException(msg, e);
+    }
+  }
+
+  public void dropRole(String requestorUserName, Set<String> requestorUserGroupNames,
+      String roleName)
+  throws SentryUserException {
+    dropRole(requestorUserName, requestorUserGroupNames, roleName, false);
+  }
+
+  public void dropRoleIfExists(String requestorUserName, Set<String> requestorUserGroupNames,
+      String roleName)
+  throws SentryUserException {
+    dropRole(requestorUserName, requestorUserGroupNames, roleName, true);
+  }
+
+  private void dropRole(String requestorUserName, Set<String> requestorUserGroupNames,
+      String roleName, boolean ifExists)
+  throws SentryUserException {
+    TDropSentryRoleRequest request = new TDropSentryRoleRequest();
+    request.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
+    request.setRequestorUserName(requestorUserName);
+    request.setRequestorGroupNames(requestorUserGroupNames);
+    request.setRoleName(roleName);
+    try {
+      TDropSentryRoleResponse response = client.drop_sentry_role(request);
+      Status status = Status.fromCode(response.getStatus().getValue());
+      if (ifExists && status == Status.NO_SUCH_OBJECT) {
+        return;
+      }
+      Status.throwIfNotOk(response.getStatus());
+    } catch (TException e) {
+      String msg = "Thrift exception occured: " + e.getMessage();
+      throw new SentryUserException(msg, e);
+    }
   }
 
   public TListSentryRolesResponse listRoleByName(TListSentryRolesRequest req)
@@ -87,19 +144,143 @@ public class SentryPolicyServiceClient {
     return client.list_sentry_roles_by_role_name(req);
   }
 
-  public TDropSentryRoleResponse dropRole(TDropSentryRoleRequest req)
-  throws TException {
-    return client.drop_sentry_role(req);
+  public void grantURIPrivilege(String requestorUserName, Set<String> requestorUserGroupNames,
+      String roleName, String server, String uri)
+  throws SentryUserException {
+    grantPrivilege(requestorUserName, requestorUserGroupNames, roleName, "SERVER", server, uri,
+        null, null, AccessConstants.ALL);
   }
 
-  public TAlterSentryRoleGrantPrivilegeResponse grantPrivilege(TAlterSentryRoleGrantPrivilegeRequest req)
-  throws TException {
-    return client.alter_sentry_role_grant_privilege(req);
+  public void grantServerPrivilege(String requestorUserName, Set<String> requestorUserGroupNames,
+      String roleName, String server)
+  throws SentryUserException {
+    grantPrivilege(requestorUserName, requestorUserGroupNames, roleName, "SERVER", server, null,
+        null, null, AccessConstants.ALL);
   }
 
-  public TAlterSentryRoleRevokePrivilegeResponse revokePrivilege(TAlterSentryRoleRevokePrivilegeRequest req)
-  throws TException {
-    return client.alter_sentry_role_revoke_privilege(req);
+  public void grantDatabasePrivilege(String requestorUserName, Set<String> requestorUserGroupNames,
+      String roleName, String server, String db)
+  throws SentryUserException {
+    grantPrivilege(requestorUserName, requestorUserGroupNames, roleName, "DATABASE", server, null,
+        db, null, AccessConstants.ALL);
+  }
+
+  public void grantTablePrivilege(String requestorUserName, Set<String> requestorUserGroupNames,
+      String roleName, String server, String db, String table, String action)
+  throws SentryUserException {
+    grantPrivilege(requestorUserName, requestorUserGroupNames, roleName, "TABLE", server, null,
+        db, table, action);
+  }
+
+  private void grantPrivilege(String requestorUserName, Set<String> requestorUserGroupNames,
+      String roleName, String scope, String serverName, String uri, String db, String table, String action)
+  throws SentryUserException {
+    TAlterSentryRoleGrantPrivilegeRequest request = new TAlterSentryRoleGrantPrivilegeRequest();
+    request.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
+    request.setRequestorUserName(requestorUserName);
+    request.setRequestorGroupNames(requestorUserGroupNames);
+    request.setRoleName(roleName);
+    TSentryPrivilege privilege = new TSentryPrivilege();
+    privilege.setPrivilegeScope(scope);
+    privilege.setServerName(serverName);
+    privilege.setURI(uri);
+    privilege.setDbName(db);
+    privilege.setAction(action);
+    privilege.setGrantorPrincipal(requestorUserName);
+    privilege.setCreateTime(System.currentTimeMillis());
+    request.setPrivilege(privilege);
+    try {
+      TAlterSentryRoleGrantPrivilegeResponse response = client.alter_sentry_role_grant_privilege(request);
+      Status.throwIfNotOk(response.getStatus());
+    } catch (TException e) {
+      String msg = "Thrift exception occured: " + e.getMessage();
+      throw new SentryUserException(msg, e);
+    }
+  }
+
+  public void revokeURIPrivilege(String requestorUserName, Set<String> requestorUserGroupNames,
+      String roleName, String server, String uri)
+  throws SentryUserException {
+    revokePrivilege(requestorUserName, requestorUserGroupNames, roleName, "SERVER", server, uri,
+        null, null, AccessConstants.ALL);
+  }
+
+  public void revokeServerPrivilege(String requestorUserName, Set<String> requestorUserGroupNames,
+      String roleName, String server)
+  throws SentryUserException {
+    revokePrivilege(requestorUserName, requestorUserGroupNames, roleName, "SERVER", server, null,
+        null, null, AccessConstants.ALL);
+  }
+
+  public void revokeDatabasePrivilege(String requestorUserName, Set<String> requestorUserGroupNames,
+      String roleName, String server, String db)
+  throws SentryUserException {
+    revokePrivilege(requestorUserName, requestorUserGroupNames, roleName, "DATABASE", server, null,
+        db, null, AccessConstants.ALL);
+  }
+
+  public void revokeTablePrivilege(String requestorUserName, Set<String> requestorUserGroupNames,
+      String roleName, String server, String db, String table, String action)
+  throws SentryUserException {
+    revokePrivilege(requestorUserName, requestorUserGroupNames, roleName, "TABLE", server, null,
+        db, table, action);
+  }
+
+  private void revokePrivilege(String requestorUserName, Set<String> requestorUserGroupNames,
+      String roleName, String scope, String serverName, String uri, String db, String table, String action)
+  throws SentryUserException {
+    TAlterSentryRoleRevokePrivilegeRequest request = new TAlterSentryRoleRevokePrivilegeRequest();
+    request.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
+    request.setRequestorUserName(requestorUserName);
+    request.setRequestorGroupNames(requestorUserGroupNames);
+    request.setRoleName(roleName);
+    TSentryPrivilege privilege = new TSentryPrivilege();
+    privilege.setPrivilegeScope(scope);
+    privilege.setServerName(serverName);
+    privilege.setURI(uri);
+    privilege.setDbName(db);
+    privilege.setAction(action);
+    privilege.setGrantorPrincipal(requestorUserName);
+    privilege.setCreateTime(System.currentTimeMillis());
+    request.setPrivilege(privilege);
+    try {
+      TAlterSentryRoleRevokePrivilegeResponse response = client.alter_sentry_role_revoke_privilege(request);
+      Status.throwIfNotOk(response.getStatus());
+    } catch (TException e) {
+      String msg = "Thrift exception occured: " + e.getMessage();
+      throw new SentryUserException(msg, e);
+    }
+  }
+
+  public Set<String> listPrivileges(Set<String> groups, ActiveRoleSet roleSet)
+  throws SentryUserException {
+    TSentryActiveRoleSet thriftRoleSet = new TSentryActiveRoleSet(roleSet.isAll(), roleSet.getRoles());
+    TListSentryPrivilegesForProviderRequest request =
+        new TListSentryPrivilegesForProviderRequest(ThriftConstants.
+            TSENTRY_SERVICE_VERSION_CURRENT, groups, thriftRoleSet);
+    try {
+      TListSentryPrivilegesForProviderResponse response = client.list_sentry_privileges_for_provider(request);
+      Status.throwIfNotOk(response.getStatus());
+      return response.getPrivileges();
+    } catch (TException e) {
+      String msg = "Thrift exception occured: " + e.getMessage();
+      throw new SentryUserException(msg, e);
+    }
+  }
+
+  public void grantRoleToGroup(String requestorUserName, Set<String> requestorUserGroupName,
+      String groupName, String roleName)
+  throws SentryUserException {
+    TAlterSentryRoleAddGroupsRequest request = new TAlterSentryRoleAddGroupsRequest(ThriftConstants.
+        TSENTRY_SERVICE_VERSION_CURRENT, requestorUserName, requestorUserGroupName,
+        roleName, Sets.newHashSet(new TSentryGroup(groupName)));
+    try {
+      TAlterSentryRoleAddGroupsResponse response = client.alter_sentry_role_add_groups(request);
+      Status.throwIfNotOk(response.getStatus());
+    } catch (TException e) {
+      String msg = "Thrift exception occured: " + e.getMessage();
+      throw new SentryUserException(msg, e);
+    }
   }
 
   public void close() {

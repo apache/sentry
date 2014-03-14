@@ -19,21 +19,20 @@ package org.apache.sentry.provider.file;
 
 import java.io.IOException;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.security.Groups;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.common.GroupMappingService;
 
 import com.google.common.annotations.VisibleForTesting;
 
+/**
+ * Kept for backwards compatibility
+ */
+@Deprecated
 public class HadoopGroupResourceAuthorizationProvider extends
-  ResourceAuthorizationProvider {
+  org.apache.sentry.provider.common.HadoopGroupResourceAuthorizationProvider {
 
-  // resource parameter present so that other AuthorizationProviders (e.g.
-  // LocalGroupResourceAuthorizationProvider) has the same constructor params.
   public HadoopGroupResourceAuthorizationProvider(String resource, PolicyEngine policy) throws IOException {
-    this(policy, new HadoopGroupMappingService(
-        Groups.getUserToGroupsMappingService(new Configuration())));
+    super(resource, policy);
   }
 
   @VisibleForTesting

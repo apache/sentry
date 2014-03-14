@@ -16,28 +16,13 @@
  */
 package org.apache.sentry.provider.file;
 
-import com.google.common.base.Joiner;
-import com.google.common.base.Splitter;
+import org.apache.sentry.provider.common.ProviderConstants;
 
-public class PolicyFileConstants {
+public class PolicyFileConstants extends ProviderConstants {
 
   public static final String DATABASES = "databases";
   public static final String GROUPS = "groups";
   public static final String ROLES = "roles";
   public static final String USERS = "users";
 
-  public static final String ROLE_SEPARATOR = ",";
-  public static final String AUTHORIZABLE_SEPARATOR = "->";
-  public static final String KV_SEPARATOR = "=";
-
-  public static final Splitter ROLE_SPLITTER = Splitter.on(ROLE_SEPARATOR);
-  public static final Splitter AUTHORIZABLE_SPLITTER = Splitter.on(AUTHORIZABLE_SEPARATOR);
-  public static final Splitter KV_SPLITTER = Splitter.on(KV_SEPARATOR);
-  public static final Joiner ROLE_JOINER = Joiner.on(ROLE_SEPARATOR);
-  public static final Joiner AUTHORIZABLE_JOINER = Joiner.on(AUTHORIZABLE_SEPARATOR);
-  public static final Joiner KV_JOINER = Joiner.on(KV_SEPARATOR);
-
-  // TODO change to privilege
-  public static final String PRIVILEGE_NAME = "action";
-  public static final String PRIVILEGE_PREFIX = (PRIVILEGE_NAME + KV_SEPARATOR).toLowerCase();
 }

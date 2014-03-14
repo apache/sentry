@@ -14,20 +14,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.sentry.provider.file;
+package org.apache.sentry.provider.common;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
-import org.apache.hadoop.fs.Path;
-import org.apache.sentry.policy.common.PolicyEngine;
-import org.apache.sentry.provider.common.ResourceAuthorizationProvider;
+import org.apache.hadoop.security.Groups;
+import org.apache.sentry.provider.common.GroupMappingService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+public class HadoopGroupMappingService implements GroupMappingService {
 
-public class LocalGroupResourceAuthorizationProvider extends
-  ResourceAuthorizationProvider {
+  private static final Logger LOGGER = LoggerFactory
+      .getLogger(HadoopGroupMappingService.class);
+  private final Groups groups;
 
-  public LocalGroupResourceAuthorizationProvider(String resource, PolicyEngine policy) throws IOException {
-    super(policy, new LocalGroupMappingService(new Path(resource)));
+  public HadoopGroupMappingService(Groups groups) {
+    this.groups = groups;
+  }
+
+  @Override
+  public Set<String> getGroups(String user) {
+    try {
+      return new HashSet<String>(groups.getGroups(user));
+    } catch (IOException e) {
+      LOGGER.warn("Unable to obtain groups for " + user, e);
+    }
+    return Collections.emptySet();
   }
 }

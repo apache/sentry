@@ -56,4 +56,6 @@ public interface ProviderBackend {
    * @throws SentryConfigurationException
    */
   public void validatePolicy(boolean strictValidation) throws SentryConfigurationException;
+
+  public void close();
 }

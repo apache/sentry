@@ -81,4 +81,11 @@ public class SimpleSearchPolicyEngine implements PolicyEngine {
   public static ImmutableList<PrivilegeValidator> createPrivilegeValidators() {
     return ImmutableList.<PrivilegeValidator>of(new CollectionRequiredInPrivilege());
   }
+
+  @Override
+  public void close() {
+    if (providerBackend != null) {
+      providerBackend.close();
+    }
+  }
 }

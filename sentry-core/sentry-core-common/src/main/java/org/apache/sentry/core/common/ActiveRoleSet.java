@@ -58,6 +58,14 @@ public class ActiveRoleSet {
     return allRoles || roles.contains(role.toLowerCase());
   }
 
+  public boolean isAll() {
+    return allRoles;
+  }
+
+  public Set<String> getRoles() {
+    return roles;
+  }
+
   @Override
   public String toString() {
     StringBuilder builder = new StringBuilder("ActiveRoleSet = [ roles = ");

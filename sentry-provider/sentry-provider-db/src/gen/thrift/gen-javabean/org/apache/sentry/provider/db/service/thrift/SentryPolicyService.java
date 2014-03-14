@@ -51,6 +51,8 @@ public class SentryPolicyService {
 
     public TListSentryRolesResponse list_sentry_roles_by_role_name(TListSentryRolesRequest request) throws org.apache.thrift.TException;
 
+    public TListSentryPrivilegesForProviderResponse list_sentry_privileges_for_provider(TListSentryPrivilegesForProviderRequest request) throws org.apache.thrift.TException;
+
   }
 
   public interface AsyncIface {
@@ -70,6 +72,8 @@ public class SentryPolicyService {
     public void list_sentry_roles_by_group(TListSentryRolesRequest request, org.apache.thrift.async.AsyncMethodCallback<AsyncClient.list_sentry_roles_by_group_call> resultHandler) throws org.apache.thrift.TException;
 
     public void list_sentry_roles_by_role_name(TListSentryRolesRequest request, org.apache.thrift.async.AsyncMethodCallback<AsyncClient.list_sentry_roles_by_role_name_call> resultHandler) throws org.apache.thrift.TException;
+
+    public void list_sentry_privileges_for_provider(TListSentryPrivilegesForProviderRequest request, org.apache.thrift.async.AsyncMethodCallback<AsyncClient.list_sentry_privileges_for_provider_call> resultHandler) throws org.apache.thrift.TException;
 
   }
 
@@ -275,6 +279,29 @@ public class SentryPolicyService {
         return result.success;
       }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "list_sentry_roles_by_role_name failed: unknown result");
+    }
+
+    public TListSentryPrivilegesForProviderResponse list_sentry_privileges_for_provider(TListSentryPrivilegesForProviderRequest request) throws org.apache.thrift.TException
+    {
+      send_list_sentry_privileges_for_provider(request);
+      return recv_list_sentry_privileges_for_provider();
+    }
+
+    public void send_list_sentry_privileges_for_provider(TListSentryPrivilegesForProviderRequest request) throws org.apache.thrift.TException
+    {
+      list_sentry_privileges_for_provider_args args = new list_sentry_privileges_for_provider_args();
+      args.setRequest(request);
+      sendBase("list_sentry_privileges_for_provider", args);
+    }
+
+    public TListSentryPrivilegesForProviderResponse recv_list_sentry_privileges_for_provider() throws org.apache.thrift.TException
+    {
+      list_sentry_privileges_for_provider_result result = new list_sentry_privileges_for_provider_result();
+      receiveBase(result, "list_sentry_privileges_for_provider");
+      if (result.isSetSuccess()) {
+        return result.success;
+      }
+      throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "list_sentry_privileges_for_provider failed: unknown result");
     }
 
   }
@@ -551,6 +578,38 @@ public class SentryPolicyService {
       }
     }
 
+    public void list_sentry_privileges_for_provider(TListSentryPrivilegesForProviderRequest request, org.apache.thrift.async.AsyncMethodCallback<list_sentry_privileges_for_provider_call> resultHandler) throws org.apache.thrift.TException {
+      checkReady();
+      list_sentry_privileges_for_provider_call method_call = new list_sentry_privileges_for_provider_call(request, resultHandler, this, ___protocolFactory, ___transport);
+      this.___currentMethod = method_call;
+      ___manager.call(method_call);
+    }
+
+    public static class list_sentry_privileges_for_provider_call extends org.apache.thrift.async.TAsyncMethodCall {
+      private TListSentryPrivilegesForProviderRequest request;
+      public list_sentry_privileges_for_provider_call(TListSentryPrivilegesForProviderRequest request, org.apache.thrift.async.AsyncMethodCallback<list_sentry_privileges_for_provider_call> resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+        super(client, protocolFactory, transport, resultHandler, false);
+        this.request = request;
+      }
+
+      public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
+        prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("list_sentry_privileges_for_provider", org.apache.thrift.protocol.TMessageType.CALL, 0));
+        list_sentry_privileges_for_provider_args args = new list_sentry_privileges_for_provider_args();
+        args.setRequest(request);
+        args.write(prot);
+        prot.writeMessageEnd();
+      }
+
+      public TListSentryPrivilegesForProviderResponse getResult() throws org.apache.thrift.TException {
+        if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
+          throw new IllegalStateException("Method call not finished!");
+        }
+        org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
+        org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
+        return (new Client(prot)).recv_list_sentry_privileges_for_provider();
+      }
+    }
+
   }
 
   public static class Processor<I extends Iface> extends org.apache.thrift.TBaseProcessor<I> implements org.apache.thrift.TProcessor {
@@ -572,6 +631,7 @@ public class SentryPolicyService {
       processMap.put("alter_sentry_role_delete_groups", new alter_sentry_role_delete_groups());
       processMap.put("list_sentry_roles_by_group", new list_sentry_roles_by_group());
       processMap.put("list_sentry_roles_by_role_name", new list_sentry_roles_by_role_name());
+      processMap.put("list_sentry_privileges_for_provider", new list_sentry_privileges_for_provider());
       return processMap;
     }
 
@@ -731,6 +791,26 @@ public class SentryPolicyService {
       public list_sentry_roles_by_role_name_result getResult(I iface, list_sentry_roles_by_role_name_args args) throws org.apache.thrift.TException {
         list_sentry_roles_by_role_name_result result = new list_sentry_roles_by_role_name_result();
         result.success = iface.list_sentry_roles_by_role_name(args.request);
+        return result;
+      }
+    }
+
+    public static class list_sentry_privileges_for_provider<I extends Iface> extends org.apache.thrift.ProcessFunction<I, list_sentry_privileges_for_provider_args> {
+      public list_sentry_privileges_for_provider() {
+        super("list_sentry_privileges_for_provider");
+      }
+
+      public list_sentry_privileges_for_provider_args getEmptyArgsInstance() {
+        return new list_sentry_privileges_for_provider_args();
+      }
+
+      protected boolean isOneway() {
+        return false;
+      }
+
+      public list_sentry_privileges_for_provider_result getResult(I iface, list_sentry_privileges_for_provider_args args) throws org.apache.thrift.TException {
+        list_sentry_privileges_for_provider_result result = new list_sentry_privileges_for_provider_result();
+        result.success = iface.list_sentry_privileges_for_provider(args.request);
         return result;
       }
     }
@@ -6537,6 +6617,732 @@ public class SentryPolicyService {
         BitSet incoming = iprot.readBitSet(1);
         if (incoming.get(0)) {
           struct.success = new TListSentryRolesResponse();
+          struct.success.read(iprot);
+          struct.setSuccessIsSet(true);
+        }
+      }
+    }
+
+  }
+
+  public static class list_sentry_privileges_for_provider_args implements org.apache.thrift.TBase<list_sentry_privileges_for_provider_args, list_sentry_privileges_for_provider_args._Fields>, java.io.Serializable, Cloneable   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("list_sentry_privileges_for_provider_args");
+
+    private static final org.apache.thrift.protocol.TField REQUEST_FIELD_DESC = new org.apache.thrift.protocol.TField("request", org.apache.thrift.protocol.TType.STRUCT, (short)1);
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new list_sentry_privileges_for_provider_argsStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new list_sentry_privileges_for_provider_argsTupleSchemeFactory());
+    }
+
+    private TListSentryPrivilegesForProviderRequest request; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      REQUEST((short)1, "request");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 1: // REQUEST
+            return REQUEST;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.REQUEST, new org.apache.thrift.meta_data.FieldMetaData("request", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TListSentryPrivilegesForProviderRequest.class)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(list_sentry_privileges_for_provider_args.class, metaDataMap);
+    }
+
+    public list_sentry_privileges_for_provider_args() {
+    }
+
+    public list_sentry_privileges_for_provider_args(
+      TListSentryPrivilegesForProviderRequest request)
+    {
+      this();
+      this.request = request;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public list_sentry_privileges_for_provider_args(list_sentry_privileges_for_provider_args other) {
+      if (other.isSetRequest()) {
+        this.request = new TListSentryPrivilegesForProviderRequest(other.request);
+      }
+    }
+
+    public list_sentry_privileges_for_provider_args deepCopy() {
+      return new list_sentry_privileges_for_provider_args(this);
+    }
+
+    @Override
+    public void clear() {
+      this.request = null;
+    }
+
+    public TListSentryPrivilegesForProviderRequest getRequest() {
+      return this.request;
+    }
+
+    public void setRequest(TListSentryPrivilegesForProviderRequest request) {
+      this.request = request;
+    }
+
+    public void unsetRequest() {
+      this.request = null;
+    }
+
+    /** Returns true if field request is set (has been assigned a value) and false otherwise */
+    public boolean isSetRequest() {
+      return this.request != null;
+    }
+
+    public void setRequestIsSet(boolean value) {
+      if (!value) {
+        this.request = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case REQUEST:
+        if (value == null) {
+          unsetRequest();
+        } else {
+          setRequest((TListSentryPrivilegesForProviderRequest)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case REQUEST:
+        return getRequest();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case REQUEST:
+        return isSetRequest();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof list_sentry_privileges_for_provider_args)
+        return this.equals((list_sentry_privileges_for_provider_args)that);
+      return false;
+    }
+
+    public boolean equals(list_sentry_privileges_for_provider_args that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_request = true && this.isSetRequest();
+      boolean that_present_request = true && that.isSetRequest();
+      if (this_present_request || that_present_request) {
+        if (!(this_present_request && that_present_request))
+          return false;
+        if (!this.request.equals(that.request))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      HashCodeBuilder builder = new HashCodeBuilder();
+
+      boolean present_request = true && (isSetRequest());
+      builder.append(present_request);
+      if (present_request)
+        builder.append(request);
+
+      return builder.toHashCode();
+    }
+
+    public int compareTo(list_sentry_privileges_for_provider_args other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+      list_sentry_privileges_for_provider_args typedOther = (list_sentry_privileges_for_provider_args)other;
+
+      lastComparison = Boolean.valueOf(isSetRequest()).compareTo(typedOther.isSetRequest());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetRequest()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.request, typedOther.request);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("list_sentry_privileges_for_provider_args(");
+      boolean first = true;
+
+      sb.append("request:");
+      if (this.request == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.request);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+      if (request != null) {
+        request.validate();
+      }
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class list_sentry_privileges_for_provider_argsStandardSchemeFactory implements SchemeFactory {
+      public list_sentry_privileges_for_provider_argsStandardScheme getScheme() {
+        return new list_sentry_privileges_for_provider_argsStandardScheme();
+      }
+    }
+
+    private static class list_sentry_privileges_for_provider_argsStandardScheme extends StandardScheme<list_sentry_privileges_for_provider_args> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, list_sentry_privileges_for_provider_args struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            case 1: // REQUEST
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.request = new TListSentryPrivilegesForProviderRequest();
+                struct.request.read(iprot);
+                struct.setRequestIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, list_sentry_privileges_for_provider_args struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.request != null) {
+          oprot.writeFieldBegin(REQUEST_FIELD_DESC);
+          struct.request.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class list_sentry_privileges_for_provider_argsTupleSchemeFactory implements SchemeFactory {
+      public list_sentry_privileges_for_provider_argsTupleScheme getScheme() {
+        return new list_sentry_privileges_for_provider_argsTupleScheme();
+      }
+    }
+
+    private static class list_sentry_privileges_for_provider_argsTupleScheme extends TupleScheme<list_sentry_privileges_for_provider_args> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, list_sentry_privileges_for_provider_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if (struct.isSetRequest()) {
+          optionals.set(0);
+        }
+        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetRequest()) {
+          struct.request.write(oprot);
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, list_sentry_privileges_for_provider_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(1);
+        if (incoming.get(0)) {
+          struct.request = new TListSentryPrivilegesForProviderRequest();
+          struct.request.read(iprot);
+          struct.setRequestIsSet(true);
+        }
+      }
+    }
+
+  }
+
+  public static class list_sentry_privileges_for_provider_result implements org.apache.thrift.TBase<list_sentry_privileges_for_provider_result, list_sentry_privileges_for_provider_result._Fields>, java.io.Serializable, Cloneable   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("list_sentry_privileges_for_provider_result");
+
+    private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRUCT, (short)0);
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new list_sentry_privileges_for_provider_resultStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new list_sentry_privileges_for_provider_resultTupleSchemeFactory());
+    }
+
+    private TListSentryPrivilegesForProviderResponse success; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      SUCCESS((short)0, "success");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 0: // SUCCESS
+            return SUCCESS;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TListSentryPrivilegesForProviderResponse.class)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(list_sentry_privileges_for_provider_result.class, metaDataMap);
+    }
+
+    public list_sentry_privileges_for_provider_result() {
+    }
+
+    public list_sentry_privileges_for_provider_result(
+      TListSentryPrivilegesForProviderResponse success)
+    {
+      this();
+      this.success = success;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public list_sentry_privileges_for_provider_result(list_sentry_privileges_for_provider_result other) {
+      if (other.isSetSuccess()) {
+        this.success = new TListSentryPrivilegesForProviderResponse(other.success);
+      }
+    }
+
+    public list_sentry_privileges_for_provider_result deepCopy() {
+      return new list_sentry_privileges_for_provider_result(this);
+    }
+
+    @Override
+    public void clear() {
+      this.success = null;
+    }
+
+    public TListSentryPrivilegesForProviderResponse getSuccess() {
+      return this.success;
+    }
+
+    public void setSuccess(TListSentryPrivilegesForProviderResponse success) {
+      this.success = success;
+    }
+
+    public void unsetSuccess() {
+      this.success = null;
+    }
+
+    /** Returns true if field success is set (has been assigned a value) and false otherwise */
+    public boolean isSetSuccess() {
+      return this.success != null;
+    }
+
+    public void setSuccessIsSet(boolean value) {
+      if (!value) {
+        this.success = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case SUCCESS:
+        if (value == null) {
+          unsetSuccess();
+        } else {
+          setSuccess((TListSentryPrivilegesForProviderResponse)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case SUCCESS:
+        return getSuccess();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case SUCCESS:
+        return isSetSuccess();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof list_sentry_privileges_for_provider_result)
+        return this.equals((list_sentry_privileges_for_provider_result)that);
+      return false;
+    }
+
+    public boolean equals(list_sentry_privileges_for_provider_result that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_success = true && this.isSetSuccess();
+      boolean that_present_success = true && that.isSetSuccess();
+      if (this_present_success || that_present_success) {
+        if (!(this_present_success && that_present_success))
+          return false;
+        if (!this.success.equals(that.success))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      HashCodeBuilder builder = new HashCodeBuilder();
+
+      boolean present_success = true && (isSetSuccess());
+      builder.append(present_success);
+      if (present_success)
+        builder.append(success);
+
+      return builder.toHashCode();
+    }
+
+    public int compareTo(list_sentry_privileges_for_provider_result other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+      list_sentry_privileges_for_provider_result typedOther = (list_sentry_privileges_for_provider_result)other;
+
+      lastComparison = Boolean.valueOf(isSetSuccess()).compareTo(typedOther.isSetSuccess());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetSuccess()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.success, typedOther.success);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+      }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("list_sentry_privileges_for_provider_result(");
+      boolean first = true;
+
+      sb.append("success:");
+      if (this.success == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.success);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+      if (success != null) {
+        success.validate();
+      }
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class list_sentry_privileges_for_provider_resultStandardSchemeFactory implements SchemeFactory {
+      public list_sentry_privileges_for_provider_resultStandardScheme getScheme() {
+        return new list_sentry_privileges_for_provider_resultStandardScheme();
+      }
+    }
+
+    private static class list_sentry_privileges_for_provider_resultStandardScheme extends StandardScheme<list_sentry_privileges_for_provider_result> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, list_sentry_privileges_for_provider_result struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            case 0: // SUCCESS
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.success = new TListSentryPrivilegesForProviderResponse();
+                struct.success.read(iprot);
+                struct.setSuccessIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, list_sentry_privileges_for_provider_result struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.success != null) {
+          oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
+          struct.success.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class list_sentry_privileges_for_provider_resultTupleSchemeFactory implements SchemeFactory {
+      public list_sentry_privileges_for_provider_resultTupleScheme getScheme() {
+        return new list_sentry_privileges_for_provider_resultTupleScheme();
+      }
+    }
+
+    private static class list_sentry_privileges_for_provider_resultTupleScheme extends TupleScheme<list_sentry_privileges_for_provider_result> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, list_sentry_privileges_for_provider_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if (struct.isSetSuccess()) {
+          optionals.set(0);
+        }
+        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetSuccess()) {
+          struct.success.write(oprot);
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, list_sentry_privileges_for_provider_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(1);
+        if (incoming.get(0)) {
+          struct.success = new TListSentryPrivilegesForProviderResponse();
           struct.success.read(iprot);
           struct.setSuccessIsSet(true);
         }

@@ -14,35 +14,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.provider.file;
+
+package org.apache.sentry.provider.common;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.Groups;
+import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.common.GroupMappingService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.sentry.provider.common.HadoopGroupMappingService;
 
-public class HadoopGroupMappingService implements GroupMappingService {
+import com.google.common.annotations.VisibleForTesting;
 
-  private static final Logger LOGGER = LoggerFactory
-      .getLogger(HadoopGroupMappingService.class);
-  private final Groups groups;
+public class HadoopGroupResourceAuthorizationProvider extends
+  ResourceAuthorizationProvider {
 
-  public HadoopGroupMappingService(Groups groups) {
-    this.groups = groups;
+  // resource parameter present so that other AuthorizationProviders (e.g.
+  // LocalGroupResourceAuthorizationProvider) has the same constructor params.
+  public HadoopGroupResourceAuthorizationProvider(String resource, PolicyEngine policy) throws IOException {
+    this(policy, new HadoopGroupMappingService(
+        Groups.getUserToGroupsMappingService(new Configuration())));
   }
 
-  @Override
-  public Set<String> getGroups(String user) {
-    try {
-      return new HashSet<String>(groups.getGroups(user));
-    } catch (IOException e) {
-      LOGGER.warn("Unable to obtain groups for " + user, e);
-    }
-    return Collections.emptySet();
+  @VisibleForTesting
+  public HadoopGroupResourceAuthorizationProvider(PolicyEngine policy,
+      GroupMappingService groupService) {
+    super(policy, groupService);
   }
+
 }

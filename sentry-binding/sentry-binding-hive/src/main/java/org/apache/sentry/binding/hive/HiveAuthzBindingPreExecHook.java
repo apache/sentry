@@ -49,7 +49,7 @@ public class HiveAuthzBindingPreExecHook implements ExecuteWithHookContext {
       // validate server level permissions permission for transforms
       if (qPlan.getQueryProperties().usesScript()) {
         if (hiveAuthzBinding == null) {
-          LOG.warn("No authorization binding fund, skipping the authorization for transform");
+          LOG.warn("No authorization binding found, skipping the authorization for transform");
           return;
         }
         List<List<DBModelAuthorizable>> inputHierarchy = new ArrayList<List<DBModelAuthorizable>> ();

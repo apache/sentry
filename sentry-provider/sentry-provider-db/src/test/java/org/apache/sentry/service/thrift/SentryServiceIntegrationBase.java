@@ -26,6 +26,7 @@ import javax.security.auth.Subject;
 import javax.security.auth.kerberos.KerberosPrincipal;
 import javax.security.auth.login.LoginContext;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.minikdc.KerberosSecurityTestcase;
 import org.apache.hadoop.minikdc.MiniKdc;
@@ -40,6 +41,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
+import com.google.common.io.Files;
 
 public abstract class SentryServiceIntegrationBase extends KerberosSecurityTestcase {
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryServiceIntegrationBase.class);
@@ -61,6 +63,7 @@ public abstract class SentryServiceIntegrationBase extends KerberosSecurityTestc
   protected SentryPolicyServiceClient client;
   protected MiniKdc kdc;
   protected File kdcWorkDir;
+  protected File dbDir;
   protected File serverKeytab;
   protected File clientKeytab;
   protected Subject clientSubject;
@@ -100,6 +103,9 @@ public abstract class SentryServiceIntegrationBase extends KerberosSecurityTestc
     conf.set(ServerConfig.RPC_ADDRESS, SERVER_HOST);
     conf.set(ServerConfig.RPC_PORT, String.valueOf(0));
     conf.set(ServerConfig.ALLOW_CONNECT, CLIENT_KERBEROS_NAME);
+    dbDir = new File(Files.createTempDir(), "sentry_policy_db");
+    conf.set(ServerConfig.SENTRY_STORE_JDBC_URL,
+        "jdbc:derby:;databaseName=" + dbDir.getPath() + ";create=true");
     server = new SentryServiceFactory().create(conf);
     conf.set(ClientConfig.SERVER_RPC_ADDRESS, server.getAddress().getHostString());
     conf.set(ClientConfig.SERVER_RPC_PORT, String.valueOf(server.getAddress().getPort()));
@@ -138,6 +144,9 @@ public abstract class SentryServiceIntegrationBase extends KerberosSecurityTestc
     }
     if(server != null) {
       server.stop();
+    }
+    if (dbDir != null) {
+      FileUtils.deleteQuietly(dbDir);
     }
     afterTeardown();
   }

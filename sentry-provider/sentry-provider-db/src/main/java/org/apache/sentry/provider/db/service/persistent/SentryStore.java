@@ -18,8 +18,13 @@
 
 package org.apache.sentry.provider.db.service.persistent;
 
+import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_JOINER;
+import static org.apache.sentry.provider.common.ProviderConstants.KV_JOINER;
+
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
@@ -30,18 +35,33 @@ import javax.jdo.PersistenceManagerFactory;
 import javax.jdo.Query;
 import javax.jdo.Transaction;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
+import org.apache.sentry.provider.common.ProviderConstants;
+import org.apache.sentry.provider.db.SentryAlreadyExistsException;
+import org.apache.sentry.provider.db.SentryNoSuchObjectException;
 import org.apache.sentry.provider.db.service.model.MSentryGroup;
 import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
+import org.apache.sentry.provider.db.service.thrift.TSentryActiveRoleSet;
 import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
+import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 
+/**
+ * SentryStore is the data access object for Sentry data. Strings
+ * such as role and group names will be normalized to lowercase
+ * in addition to starting and ending whitespace.
+ */
 public class SentryStore {
   private static final UUID SERVER_UUID = UUID.randomUUID();
   static final String DEFAULT_DATA_DIR = "sentry_policy_db";
@@ -53,57 +73,23 @@ public class SentryStore {
    * is required to read commitSequenceId.
    */
   private long commitSequenceId;
-  private final Properties prop;
   private final PersistenceManagerFactory pmf;
-  private final String databaseName;
 
-  public SentryStore(String dataDir) {
+  public SentryStore(Configuration conf) {
     commitSequenceId = 0;
-    databaseName = (dataDir = dataDir.trim()).isEmpty() ? DEFAULT_DATA_DIR : dataDir;
-    prop = getDataSourceProperties();
+    Properties prop = new Properties();
+    prop.putAll(ServerConfig.SENTRY_STORE_DEFAULTS);
+    String jdbcUrl = conf.get(ServerConfig.SENTRY_STORE_JDBC_URL, "").trim();
+    Preconditions.checkArgument(!jdbcUrl.isEmpty(), "Required parameter " +
+        ServerConfig.SENTRY_STORE_JDBC_URL + " missing");
+    prop.setProperty("javax.jdo.option.ConnectionURL", jdbcUrl);
     pmf = JDOHelper.getPersistenceManagerFactory(prop);
-  }
-
-  public SentryStore() {
-    this("");
   }
 
   public synchronized void stop() {
     if (pmf != null) {
       pmf.close();
     }
-  }
-
-  private Properties getDataSourceProperties() {
-    Properties prop = new Properties();
-    // FIXME: Read from configuration, override the default
-    //prop.setProperty("datanucleus.connectionPoolingType", "BONECP");
-    prop.setProperty("datanucleus.validateTables", "false");
-    prop.setProperty("datanucleus.validateColumns", "false");
-    prop.setProperty("datanucleus.validateConstraints", "false");
-    prop.setProperty("datanucleus.storeManagerType", "rdbms");
-    prop.setProperty("datanucleus.autoCreateSchema", "true");
-    prop.setProperty("datanucleus.fixedDatastore", "false");
-    prop.setProperty("datanucleus.autoStartMechanismMode", "checked");
-    prop.setProperty("datanucleus.transactionIsolation", "read-committed");
-    prop.setProperty("datanucleus.cache.level2", "false");
-    prop.setProperty("datanucleus.cache.level2.type", "none");
-    prop.setProperty("datanucleus.identifierFactory", "datanucleus1");
-    prop.setProperty("datanucleus.rdbms.useLegacyNativeValueStrategy", "true");
-    prop.setProperty("datanucleus.plugin.pluginRegistryBundleCheck", "LOG");
-    prop.setProperty("javax.jdo.option.ConnectionDriverName",
-                     "org.apache.derby.jdbc.EmbeddedDriver");
-    prop.setProperty("javax.jdo.PersistenceManagerFactoryClass",
-                     "org.datanucleus.api.jdo.JDOPersistenceManagerFactory");
-    prop.setProperty("javax.jdo.option.DetachAllOnCommit", "true");
-    prop.setProperty("javax.jdo.option.NonTransactionalRead", "false");
-    prop.setProperty("javax.jdo.option.NonTransactionalWrite", "false");
-    prop.setProperty("javax.jdo.option.ConnectionUserName", "Sentry");
-    prop.setProperty("javax.jdo.option.ConnectionPassword", "Sentry");
-    prop.setProperty("javax.jdo.option.Multithreaded", "true");
-    prop.setProperty("javax.jdo.option.ConnectionURL",
-                     "jdbc:derby:;databaseName=" + databaseName + ";create=true");
-    return prop;
   }
 
   /**
@@ -168,25 +154,26 @@ public class SentryStore {
     }
   }
 
-  public CommitContext createSentryRole(TSentryRole role)
+  public CommitContext createSentryRole(String roleName, String grantorPrincipal)
   throws SentryAlreadyExistsException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
+    roleName = roleName.trim().toLowerCase();
     try {
       pm = openTransaction();
       Query query = pm.newQuery(MSentryRole.class);
       query.setFilter("this.roleName == t");
       query.declareParameters("java.lang.String t");
       query.setUnique(true);
-      MSentryRole sentryRole = (MSentryRole) query.execute(role.getRoleName());
+      MSentryRole sentryRole = (MSentryRole) query.execute(roleName);
       if (sentryRole == null) {
-        MSentryRole mRole = convertToMSentryRole(role);
+        MSentryRole mRole = convertToMSentryRole(roleName, grantorPrincipal);
         pm.makePersistent(mRole);
         CommitContext commit = commitUpdateTransaction(pm);
         rollbackTransaction = false;
         return commit;
       } else {
-        throw new SentryAlreadyExistsException("Role: " + role.getRoleName());
+        throw new SentryAlreadyExistsException("Role: " + roleName);
       }
     } finally {
       if (rollbackTransaction) {
@@ -200,6 +187,7 @@ public class SentryStore {
       TSentryPrivilege privilege) throws SentryNoSuchObjectException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
+    roleName = roleName.trim().toLowerCase();
     try {
       pm = openTransaction();
       Query query = pm.newQuery(MSentryRole.class);
@@ -269,7 +257,7 @@ public class SentryStore {
   throws SentryNoSuchObjectException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
-    roleName = roleName.trim();
+    roleName = roleName.trim().toLowerCase();
     try {
       pm = openTransaction();
       Query query = pm.newQuery(MSentryRole.class);
@@ -340,6 +328,7 @@ public class SentryStore {
   throws SentryNoSuchObjectException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
+    roleName = roleName.trim().toLowerCase();
     try {
       pm = openTransaction();
       Query query = pm.newQuery(MSentryRole.class);
@@ -356,7 +345,8 @@ public class SentryStore {
         query.setUnique(true);
         List<MSentryGroup> groups = Lists.newArrayList();
         for (TSentryGroup tGroup : groupNames) {
-          MSentryGroup group = (MSentryGroup) query.execute(tGroup.getGroupName());
+          String groupName = tGroup.getGroupName().trim().toLowerCase();
+          MSentryGroup group = (MSentryGroup) query.execute(groupName);
           if (group != null) {
             group.removeRole(role);
             groups.add(group);
@@ -379,7 +369,7 @@ public class SentryStore {
   throws SentryNoSuchObjectException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
-    roleName = roleName.trim();
+    roleName = roleName.trim().toLowerCase();
     try {
       pm = openTransaction();
       Query query = pm.newQuery(MSentryRole.class);
@@ -407,17 +397,98 @@ public class SentryStore {
     return convertToSentryRole(getMSentryRoleByName(roleName));
   }
 
-  private MSentryRole convertToMSentryRole(TSentryRole role) {
+  private SetMultimap<String, String> getRoleToPrivilegeMap(Set<String> groups) {
+    SetMultimap<String, String> result = HashMultimap.create();
+    boolean rollbackTransaction = true;
+    PersistenceManager pm = null;
+    try {
+      pm = openTransaction();
+      Query query = pm.newQuery(MSentryGroup.class);
+      query.setFilter("this.groupName == t");
+      query.declareParameters("java.lang.String t");
+      query.setUnique(true);
+      for (String group : toTrimedLower(groups)) {
+        MSentryGroup sentryGroup = (MSentryGroup) query.execute(group);
+        if (sentryGroup != null) {
+          for (MSentryRole role : sentryGroup.getRoles()) {
+            for (MSentryPrivilege privilege : role.getPrivileges()) {
+              result.put(role.getRoleName(), toAuthorizable(privilege));
+            }
+          }
+        }
+      }
+      rollbackTransaction = false;
+      commitTransaction(pm);
+      return result;
+    } finally {
+      if (rollbackTransaction) {
+        rollbackTransaction(pm);
+      }
+    }
+  }
+
+  public Set<String> listSentryPrivilegesForProvider(Set<String> groups,
+      TSentryActiveRoleSet roleSet) {
+   Set<String> result = Sets.newHashSet();
+   Set<String> activeRoleNames = toTrimedLower(roleSet.getRoles());
+   for (Map.Entry<String, String> entry : getRoleToPrivilegeMap(groups).entries()) {
+     if (roleSet.isAll()) {
+       result.add(entry.getValue());
+     } else if (activeRoleNames.contains(entry.getKey())) {
+       result.add(entry.getValue());
+     }
+   }
+   return result;
+  }
+
+  @VisibleForTesting
+  static String toAuthorizable(MSentryPrivilege privilege) {
+    List<String> authorizable = new ArrayList<>(4);
+    authorizable.add(KV_JOINER.join(AuthorizableType.Server.name().toLowerCase(),
+        privilege.getServerName()));
+    if (Strings.nullToEmpty(privilege.getURI()).isEmpty()) {
+      if (!Strings.nullToEmpty(privilege.getDbName()).isEmpty()) {
+        authorizable.add(KV_JOINER.join(AuthorizableType.Db.name().toLowerCase(),
+            privilege.getDbName()));
+        if (!Strings.nullToEmpty(privilege.getTableName()).isEmpty()) {
+          authorizable.add(KV_JOINER.join(AuthorizableType.Table.name().toLowerCase(),
+              privilege.getTableName()));
+        }
+      }
+    } else {
+      authorizable.add(KV_JOINER.join(AuthorizableType.URI.name().toLowerCase(),
+          privilege.getURI()));
+    }
+    if (!Strings.nullToEmpty(privilege.getAction()).isEmpty()) {
+      authorizable.add(KV_JOINER.join(ProviderConstants.PRIVILEGE_NAME.toLowerCase(),
+          privilege.getAction()));
+    }
+    return AUTHORIZABLE_JOINER.join(authorizable);
+  }
+
+  @VisibleForTesting
+  static Set<String> toTrimedLower(Set<String> s) {
+    Set<String> result = Sets.newHashSet();
+    for (String v : s) {
+      result.add(v.trim().toLowerCase());
+    }
+    return result;
+  }
+
+  /**
+   * Converts thrift object to model object. Additionally does normalization
+   * such as trimming whitespace and setting appropriate case.
+   */
+  private MSentryRole convertToMSentryRole(String roleName, String grantorPrincipal) {
     MSentryRole mRole = new MSentryRole();
-    mRole.setCreateTime(role.getCreateTime());
-    mRole.setRoleName(role.getRoleName());
-    mRole.setGrantorPrincipal(role.getGrantorPrincipal());
+    mRole.setCreateTime(System.currentTimeMillis());
+    mRole.setRoleName(roleName.trim().toLowerCase());
+    mRole.setGrantorPrincipal(grantorPrincipal.trim());
     return mRole;
   }
 
   private TSentryRole convertToSentryRole(MSentryRole mSentryRole) {
     TSentryRole role = new TSentryRole();
-    role.setCreateTime(mSentryRole.getCreateTime());
     role.setRoleName(mSentryRole.getRoleName());
     role.setGrantorPrincipal(mSentryRole.getGrantorPrincipal());
 
@@ -445,17 +516,27 @@ public class SentryStore {
     return privilege;
   }
 
+  /**
+   * Converts thrift object to model object. Additionally does normalization
+   * such as trimming whitespace and setting appropriate case.
+   */
   private MSentryPrivilege convertToMSentryPrivilege(TSentryPrivilege privilege) {
     MSentryPrivilege mSentryPrivilege = new MSentryPrivilege();
-    mSentryPrivilege.setServerName(privilege.getServerName());
-    mSentryPrivilege.setDbName(privilege.getDbName());
-    mSentryPrivilege.setTableName(privilege.getTableName());
-    mSentryPrivilege.setPrivilegeScope(privilege.getPrivilegeScope());
-    mSentryPrivilege.setAction(privilege.getAction());
+    mSentryPrivilege.setServerName(safeTrim(privilege.getServerName()));
+    mSentryPrivilege.setDbName(safeTrim(privilege.getDbName()));
+    mSentryPrivilege.setTableName(safeTrim(privilege.getTableName()));
+    mSentryPrivilege.setPrivilegeScope(safeTrim(privilege.getPrivilegeScope()));
+    mSentryPrivilege.setAction(safeTrim(privilege.getAction()));
     mSentryPrivilege.setCreateTime(privilege.getCreateTime());
-    mSentryPrivilege.setGrantorPrincipal(privilege.getGrantorPrincipal());
-    mSentryPrivilege.setURI(privilege.getURI());
-    mSentryPrivilege.setPrivilegeName(privilege.getPrivilegeName());
+    mSentryPrivilege.setGrantorPrincipal(safeTrim(privilege.getGrantorPrincipal()));
+    mSentryPrivilege.setURI(safeTrim(privilege.getURI()));
+    mSentryPrivilege.setPrivilegeName(safeTrim(privilege.getPrivilegeName()));
     return mSentryPrivilege;
+  }
+  private String safeTrim(String s) {
+    if (s == null) {
+      return null;
+    }
+    return s.trim();
   }
 }

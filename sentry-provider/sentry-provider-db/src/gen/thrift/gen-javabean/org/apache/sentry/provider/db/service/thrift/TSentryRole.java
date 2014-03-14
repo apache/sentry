@@ -36,8 +36,7 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
 
   private static final org.apache.thrift.protocol.TField ROLE_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("roleName", org.apache.thrift.protocol.TType.STRING, (short)1);
   private static final org.apache.thrift.protocol.TField PRIVILEGES_FIELD_DESC = new org.apache.thrift.protocol.TField("privileges", org.apache.thrift.protocol.TType.SET, (short)2);
-  private static final org.apache.thrift.protocol.TField CREATE_TIME_FIELD_DESC = new org.apache.thrift.protocol.TField("createTime", org.apache.thrift.protocol.TType.I64, (short)3);
-  private static final org.apache.thrift.protocol.TField GRANTOR_PRINCIPAL_FIELD_DESC = new org.apache.thrift.protocol.TField("grantorPrincipal", org.apache.thrift.protocol.TType.STRING, (short)4);
+  private static final org.apache.thrift.protocol.TField GRANTOR_PRINCIPAL_FIELD_DESC = new org.apache.thrift.protocol.TField("grantorPrincipal", org.apache.thrift.protocol.TType.STRING, (short)3);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
@@ -47,15 +46,13 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
 
   private String roleName; // required
   private Set<TSentryPrivilege> privileges; // required
-  private long createTime; // required
   private String grantorPrincipal; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
     ROLE_NAME((short)1, "roleName"),
     PRIVILEGES((short)2, "privileges"),
-    CREATE_TIME((short)3, "createTime"),
-    GRANTOR_PRINCIPAL((short)4, "grantorPrincipal");
+    GRANTOR_PRINCIPAL((short)3, "grantorPrincipal");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -74,9 +71,7 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
           return ROLE_NAME;
         case 2: // PRIVILEGES
           return PRIVILEGES;
-        case 3: // CREATE_TIME
-          return CREATE_TIME;
-        case 4: // GRANTOR_PRINCIPAL
+        case 3: // GRANTOR_PRINCIPAL
           return GRANTOR_PRINCIPAL;
         default:
           return null;
@@ -118,8 +113,6 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
   }
 
   // isset id assignments
-  private static final int __CREATETIME_ISSET_ID = 0;
-  private byte __isset_bitfield = 0;
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
@@ -128,8 +121,6 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
     tmpMap.put(_Fields.PRIVILEGES, new org.apache.thrift.meta_data.FieldMetaData("privileges", org.apache.thrift.TFieldRequirementType.REQUIRED, 
         new org.apache.thrift.meta_data.SetMetaData(org.apache.thrift.protocol.TType.SET, 
             new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TSentryPrivilege.class))));
-    tmpMap.put(_Fields.CREATE_TIME, new org.apache.thrift.meta_data.FieldMetaData("createTime", org.apache.thrift.TFieldRequirementType.REQUIRED, 
-        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64)));
     tmpMap.put(_Fields.GRANTOR_PRINCIPAL, new org.apache.thrift.meta_data.FieldMetaData("grantorPrincipal", org.apache.thrift.TFieldRequirementType.REQUIRED, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
@@ -142,14 +133,11 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
   public TSentryRole(
     String roleName,
     Set<TSentryPrivilege> privileges,
-    long createTime,
     String grantorPrincipal)
   {
     this();
     this.roleName = roleName;
     this.privileges = privileges;
-    this.createTime = createTime;
-    setCreateTimeIsSet(true);
     this.grantorPrincipal = grantorPrincipal;
   }
 
@@ -157,7 +145,6 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
    * Performs a deep copy on <i>other</i>.
    */
   public TSentryRole(TSentryRole other) {
-    __isset_bitfield = other.__isset_bitfield;
     if (other.isSetRoleName()) {
       this.roleName = other.roleName;
     }
@@ -168,7 +155,6 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
       }
       this.privileges = __this__privileges;
     }
-    this.createTime = other.createTime;
     if (other.isSetGrantorPrincipal()) {
       this.grantorPrincipal = other.grantorPrincipal;
     }
@@ -182,8 +168,6 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
   public void clear() {
     this.roleName = null;
     this.privileges = null;
-    setCreateTimeIsSet(false);
-    this.createTime = 0;
     this.grantorPrincipal = null;
   }
 
@@ -248,28 +232,6 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
     }
   }
 
-  public long getCreateTime() {
-    return this.createTime;
-  }
-
-  public void setCreateTime(long createTime) {
-    this.createTime = createTime;
-    setCreateTimeIsSet(true);
-  }
-
-  public void unsetCreateTime() {
-    __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __CREATETIME_ISSET_ID);
-  }
-
-  /** Returns true if field createTime is set (has been assigned a value) and false otherwise */
-  public boolean isSetCreateTime() {
-    return EncodingUtils.testBit(__isset_bitfield, __CREATETIME_ISSET_ID);
-  }
-
-  public void setCreateTimeIsSet(boolean value) {
-    __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __CREATETIME_ISSET_ID, value);
-  }
-
   public String getGrantorPrincipal() {
     return this.grantorPrincipal;
   }
@@ -311,14 +273,6 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
       }
       break;
 
-    case CREATE_TIME:
-      if (value == null) {
-        unsetCreateTime();
-      } else {
-        setCreateTime((Long)value);
-      }
-      break;
-
     case GRANTOR_PRINCIPAL:
       if (value == null) {
         unsetGrantorPrincipal();
@@ -338,9 +292,6 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
     case PRIVILEGES:
       return getPrivileges();
 
-    case CREATE_TIME:
-      return Long.valueOf(getCreateTime());
-
     case GRANTOR_PRINCIPAL:
       return getGrantorPrincipal();
 
@@ -359,8 +310,6 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
       return isSetRoleName();
     case PRIVILEGES:
       return isSetPrivileges();
-    case CREATE_TIME:
-      return isSetCreateTime();
     case GRANTOR_PRINCIPAL:
       return isSetGrantorPrincipal();
     }
@@ -398,15 +347,6 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
         return false;
     }
 
-    boolean this_present_createTime = true;
-    boolean that_present_createTime = true;
-    if (this_present_createTime || that_present_createTime) {
-      if (!(this_present_createTime && that_present_createTime))
-        return false;
-      if (this.createTime != that.createTime)
-        return false;
-    }
-
     boolean this_present_grantorPrincipal = true && this.isSetGrantorPrincipal();
     boolean that_present_grantorPrincipal = true && that.isSetGrantorPrincipal();
     if (this_present_grantorPrincipal || that_present_grantorPrincipal) {
@@ -432,11 +372,6 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
     builder.append(present_privileges);
     if (present_privileges)
       builder.append(privileges);
-
-    boolean present_createTime = true;
-    builder.append(present_createTime);
-    if (present_createTime)
-      builder.append(createTime);
 
     boolean present_grantorPrincipal = true && (isSetGrantorPrincipal());
     builder.append(present_grantorPrincipal);
@@ -470,16 +405,6 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
     }
     if (isSetPrivileges()) {
       lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.privileges, typedOther.privileges);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
-    lastComparison = Boolean.valueOf(isSetCreateTime()).compareTo(typedOther.isSetCreateTime());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetCreateTime()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.createTime, typedOther.createTime);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -530,10 +455,6 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
     }
     first = false;
     if (!first) sb.append(", ");
-    sb.append("createTime:");
-    sb.append(this.createTime);
-    first = false;
-    if (!first) sb.append(", ");
     sb.append("grantorPrincipal:");
     if (this.grantorPrincipal == null) {
       sb.append("null");
@@ -555,10 +476,6 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
       throw new org.apache.thrift.protocol.TProtocolException("Required field 'privileges' is unset! Struct:" + toString());
     }
 
-    if (!isSetCreateTime()) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'createTime' is unset! Struct:" + toString());
-    }
-
     if (!isSetGrantorPrincipal()) {
       throw new org.apache.thrift.protocol.TProtocolException("Required field 'grantorPrincipal' is unset! Struct:" + toString());
     }
@@ -576,8 +493,6 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
 
   private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
     try {
-      // it doesn't seem like you should have to do this, but java serialization is wacky, and doesn't call the default constructor.
-      __isset_bitfield = 0;
       read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
     } catch (org.apache.thrift.TException te) {
       throw new java.io.IOException(te);
@@ -613,14 +528,14 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
           case 2: // PRIVILEGES
             if (schemeField.type == org.apache.thrift.protocol.TType.SET) {
               {
-                org.apache.thrift.protocol.TSet _set0 = iprot.readSetBegin();
-                struct.privileges = new HashSet<TSentryPrivilege>(2*_set0.size);
-                for (int _i1 = 0; _i1 < _set0.size; ++_i1)
+                org.apache.thrift.protocol.TSet _set16 = iprot.readSetBegin();
+                struct.privileges = new HashSet<TSentryPrivilege>(2*_set16.size);
+                for (int _i17 = 0; _i17 < _set16.size; ++_i17)
                 {
-                  TSentryPrivilege _elem2; // required
-                  _elem2 = new TSentryPrivilege();
-                  _elem2.read(iprot);
-                  struct.privileges.add(_elem2);
+                  TSentryPrivilege _elem18; // required
+                  _elem18 = new TSentryPrivilege();
+                  _elem18.read(iprot);
+                  struct.privileges.add(_elem18);
                 }
                 iprot.readSetEnd();
               }
@@ -629,15 +544,7 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
-          case 3: // CREATE_TIME
-            if (schemeField.type == org.apache.thrift.protocol.TType.I64) {
-              struct.createTime = iprot.readI64();
-              struct.setCreateTimeIsSet(true);
-            } else { 
-              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
-            }
-            break;
-          case 4: // GRANTOR_PRINCIPAL
+          case 3: // GRANTOR_PRINCIPAL
             if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
               struct.grantorPrincipal = iprot.readString();
               struct.setGrantorPrincipalIsSet(true);
@@ -667,17 +574,14 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
         oprot.writeFieldBegin(PRIVILEGES_FIELD_DESC);
         {
           oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, struct.privileges.size()));
-          for (TSentryPrivilege _iter3 : struct.privileges)
+          for (TSentryPrivilege _iter19 : struct.privileges)
           {
-            _iter3.write(oprot);
+            _iter19.write(oprot);
           }
           oprot.writeSetEnd();
         }
         oprot.writeFieldEnd();
       }
-      oprot.writeFieldBegin(CREATE_TIME_FIELD_DESC);
-      oprot.writeI64(struct.createTime);
-      oprot.writeFieldEnd();
       if (struct.grantorPrincipal != null) {
         oprot.writeFieldBegin(GRANTOR_PRINCIPAL_FIELD_DESC);
         oprot.writeString(struct.grantorPrincipal);
@@ -703,12 +607,11 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
       oprot.writeString(struct.roleName);
       {
         oprot.writeI32(struct.privileges.size());
-        for (TSentryPrivilege _iter4 : struct.privileges)
+        for (TSentryPrivilege _iter20 : struct.privileges)
         {
-          _iter4.write(oprot);
+          _iter20.write(oprot);
         }
       }
-      oprot.writeI64(struct.createTime);
       oprot.writeString(struct.grantorPrincipal);
     }
 
@@ -718,19 +621,17 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
       struct.roleName = iprot.readString();
       struct.setRoleNameIsSet(true);
       {
-        org.apache.thrift.protocol.TSet _set5 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
-        struct.privileges = new HashSet<TSentryPrivilege>(2*_set5.size);
-        for (int _i6 = 0; _i6 < _set5.size; ++_i6)
+        org.apache.thrift.protocol.TSet _set21 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
+        struct.privileges = new HashSet<TSentryPrivilege>(2*_set21.size);
+        for (int _i22 = 0; _i22 < _set21.size; ++_i22)
         {
-          TSentryPrivilege _elem7; // required
-          _elem7 = new TSentryPrivilege();
-          _elem7.read(iprot);
-          struct.privileges.add(_elem7);
+          TSentryPrivilege _elem23; // required
+          _elem23 = new TSentryPrivilege();
+          _elem23.read(iprot);
+          struct.privileges.add(_elem23);
         }
       }
       struct.setPrivilegesIsSet(true);
-      struct.createTime = iprot.readI64();
-      struct.setCreateTimeIsSet(true);
       struct.grantorPrincipal = iprot.readString();
       struct.setGrantorPrincipalIsSet(true);
     }

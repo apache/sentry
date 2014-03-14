@@ -29,6 +29,9 @@ import javax.jdo.annotations.PersistenceCapable;
 @PersistenceCapable
 public class MSentryGroup {
 
+  /**
+   * Group name is unique
+   */
   private String groupName;
   // set of roles granted to this group
   private Set<MSentryRole> roles;
@@ -40,7 +43,7 @@ public class MSentryGroup {
     this.setGroupName(groupName);
     this.createTime = createTime;
     this.grantorPrincipal = grantorPrincipal;
-    this.setRoles(roles);
+    this.roles = roles;
   }
 
   public long getCreateTime() {
@@ -61,10 +64,6 @@ public class MSentryGroup {
 
   public Set<MSentryRole> getRoles() {
     return roles;
-  }
-
-  public void setRoles(Set<MSentryRole> roles) {
-    this.roles = roles;
   }
 
   public String getGroupName() {
@@ -98,9 +97,6 @@ public class MSentryGroup {
   public int hashCode() {
     final int prime = 31;
     int result = 1;
-    result = prime * result + (int) (createTime ^ (createTime >>> 32));
-    result = prime * result
-        + ((grantorPrincipal == null) ? 0 : grantorPrincipal.hashCode());
     result = prime * result + ((groupName == null) ? 0 : groupName.hashCode());
     return result;
   }
@@ -115,11 +111,6 @@ public class MSentryGroup {
       return false;
     MSentryGroup other = (MSentryGroup) obj;
     if (createTime != other.createTime)
-      return false;
-    if (grantorPrincipal == null) {
-      if (other.grantorPrincipal != null)
-        return false;
-    } else if (!grantorPrincipal.equals(other.grantorPrincipal))
       return false;
     if (groupName == null) {
       if (other.groupName != null)

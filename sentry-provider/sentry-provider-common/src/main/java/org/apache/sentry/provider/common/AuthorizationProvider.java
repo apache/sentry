@@ -83,4 +83,9 @@ public interface AuthorizationProvider {
    * @return
    */
   public List<String> getLastFailedPrivileges();
+
+  /**
+   * Frees any resources held by the the provider
+   */
+  public void close();
 }

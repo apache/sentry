@@ -58,10 +58,12 @@ public class HiveAuthzBinding {
 
   private final Server authServer;
   private final AuthorizationProvider authProvider;
+  private volatile boolean open;
 
   public HiveAuthzBinding (HiveConf hiveConf, HiveAuthzConf authzConf) throws Exception {
     this.authServer = new Server(authzConf.get(AuthzConfVars.AUTHZ_SERVER_NAME.getVar()));
     this.authProvider = getAuthProvider(hiveConf, authzConf, authServer.getName());
+    this.open = true;
   }
 
   /**
@@ -83,6 +85,9 @@ public class HiveAuthzBinding {
    * @param conf
    */
   public void set (Configuration conf) {
+    if (!open) {
+      throw new IllegalStateException("Binding has been closed");
+    }
     String tagName = SessionState.get().getSessionId() + "_" + queryID.incrementAndGet();
     authzBindingMap.put(tagName, this);
     conf.set(HIVE_BINDING_TAG, tagName);
@@ -93,10 +98,15 @@ public class HiveAuthzBinding {
    * @param conf
    */
   public void clear(Configuration conf) {
+    if (!open) {
+      throw new IllegalStateException("Binding has been closed");
+    }
     String tagName = conf.get(HIVE_BINDING_TAG);
-    if (tagName == null) {
+    if (tagName != null) {
       authzBindingMap.remove(tagName);
     }
+    open = false;
+    authProvider.close();
   }
 
   // Instantiate the configured authz provider
@@ -170,6 +180,9 @@ public class HiveAuthzBinding {
   public void authorize(HiveOperation hiveOp, HiveAuthzPrivileges stmtAuthPrivileges,
       Subject subject, List<List<DBModelAuthorizable>> inputHierarchyList, List<List<DBModelAuthorizable>> outputHierarchyList )
           throws AuthorizationException {
+    if (!open) {
+      throw new IllegalStateException("Binding has been closed");
+    }
     boolean isDebug = LOG.isDebugEnabled();
     if(isDebug) {
       LOG.debug("Going to authorize statement " + hiveOp.name() +
@@ -223,6 +236,9 @@ public class HiveAuthzBinding {
   }
 
   public Server getAuthServer() {
+    if (!open) {
+      throw new IllegalStateException("Binding has been closed");
+    }
     return authServer;
   }
 
@@ -231,6 +247,9 @@ public class HiveAuthzBinding {
   }
 
   public List<String> getLastQueryPrivilegeErrors() {
+    if (!open) {
+      throw new IllegalStateException("Binding has been closed");
+    }
     return authProvider.getLastFailedPrivileges();
   }
 }

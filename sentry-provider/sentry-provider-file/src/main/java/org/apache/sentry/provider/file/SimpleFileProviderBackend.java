@@ -163,6 +163,11 @@ public class SimpleFileProviderBackend implements ProviderBackend {
   }
 
   @Override
+  public void close() {
+    groupRolePrivilegeTable.clear();
+  }
+
+  @Override
   public void validatePolicy(boolean strictValidation) throws SentryConfigurationException {
     if (!initialized) {
       throw new IllegalStateException("Backend has not been properly initialized");

@@ -14,11 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.provider.file;
+package org.apache.sentry.provider.common;
 
-import static org.apache.sentry.provider.file.PolicyFileConstants.AUTHORIZABLE_JOINER;
-import static org.apache.sentry.provider.file.PolicyFileConstants.KV_JOINER;
-import static org.apache.sentry.provider.file.PolicyFileConstants.PRIVILEGE_NAME;
+import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_JOINER;
+import static org.apache.sentry.provider.common.ProviderConstants.KV_JOINER;
+import static org.apache.sentry.provider.common.ProviderConstants.PRIVILEGE_NAME;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -33,8 +33,6 @@ import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.policy.common.Privilege;
 import org.apache.sentry.policy.common.PrivilegeFactory;
 import org.apache.sentry.policy.common.PolicyEngine;
-import org.apache.sentry.provider.common.AuthorizationProvider;
-import org.apache.sentry.provider.common.GroupMappingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -157,6 +155,13 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
   @Override
   public List<String> getLastFailedPrivileges() {
     return lastFailedPrivileges.get();
+  }
+
+  @Override
+  public void close() {
+    if (policy != null) {
+      policy.close();
+    }
   }
 
   private List<String> buildPermissions(List<? extends Authorizable> authorizables,

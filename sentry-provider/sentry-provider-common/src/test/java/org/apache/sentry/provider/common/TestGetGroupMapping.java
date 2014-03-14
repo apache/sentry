@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.provider.file;
+package org.apache.sentry.provider.common;
 
 import static org.junit.Assert.assertSame;
 
@@ -25,6 +25,7 @@ import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.policy.common.PrivilegeFactory;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.common.GroupMappingService;
+import org.apache.sentry.provider.common.ResourceAuthorizationProvider;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableSet;
@@ -56,6 +57,9 @@ public class TestGetGroupMapping {
           throws SentryConfigurationException {
         return;
       }
+
+      @Override
+      public void close() {}
     };
 
     TestResourceAuthorizationProvider authProvider =

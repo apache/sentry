@@ -19,12 +19,12 @@
 package org.apache.sentry.provider.db.service.model;
 
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 
 import javax.jdo.annotations.PersistenceCapable;
 
-import org.apache.sentry.provider.db.service.persistent.SentryNoSuchObjectException;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 
 /**
  * Database backed Sentry Role. Any changes to this object
@@ -95,12 +95,8 @@ public class MSentryRole {
   }
 
   public void removePrivilege(MSentryPrivilege privilege) {
-    for (Iterator<MSentryPrivilege> iter = privileges.iterator(); iter.hasNext();) {
-      if (iter.next().getPrivilegeName().equalsIgnoreCase(privilege.getPrivilegeName())) {
-        iter.remove();
-        privilege.removeRole(this);
-        return;
-      }
+    if (privileges.remove(privilege)) {
+      privilege.removeRole(this);
     }
   }
 
@@ -132,7 +128,11 @@ public class MSentryRole {
   }
 
   public void removePrivileges() {
-    this.privileges.clear();
+    // copy is required since privilege.removeRole will call remotePrivilege
+    for (MSentryPrivilege privilege : ImmutableSet.copyOf(privileges)) {
+      privilege.removeRole(this);
+    }
+    Preconditions.checkState(privileges.isEmpty(), "Privileges should be empty: " + privileges);
   }
 
   @Override
@@ -146,9 +146,6 @@ public class MSentryRole {
   public int hashCode() {
     final int prime = 31;
     int result = 1;
-    result = prime * result + (int) (createTime ^ (createTime >>> 32));
-    result = prime * result
-        + ((grantorPrincipal == null) ? 0 : grantorPrincipal.hashCode());
     result = prime * result + ((roleName == null) ? 0 : roleName.hashCode());
     return result;
   }
@@ -162,13 +159,6 @@ public class MSentryRole {
     if (getClass() != obj.getClass())
       return false;
     MSentryRole other = (MSentryRole) obj;
-    if (createTime != other.createTime)
-      return false;
-    if (grantorPrincipal == null) {
-      if (other.grantorPrincipal != null)
-        return false;
-    } else if (!grantorPrincipal.equals(other.grantorPrincipal))
-      return false;
     if (roleName == null) {
       if (other.roleName != null)
         return false;

@@ -77,6 +77,13 @@ public class SimpleDBPolicyEngine implements PolicyEngine {
     this.providerBackend.validatePolicy(strictValidation);
   }
 
+  @Override
+  public void close() {
+    if (providerBackend != null) {
+      providerBackend.close();
+    }
+  }
+
   public static ImmutableList<PrivilegeValidator> createPrivilegeValidators(String serverName) {
     return ImmutableList.<PrivilegeValidator>of(new ServersAllIsInvalid(), new DatabaseMustMatch(),
         new DatabaseRequiredInPrivilege(), new ServerNameMustMatch(serverName));

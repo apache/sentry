@@ -19,7 +19,6 @@
 package org.apache.sentry.provider.db.service.model;
 
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 
 import javax.jdo.annotations.PersistenceCapable;
@@ -32,6 +31,9 @@ import javax.jdo.annotations.PersistenceCapable;
 public class MSentryPrivilege {
 
   private String privilegeScope;
+  /**
+   * Privilege name is unique
+   */
   private String privilegeName;
   private String serverName;
   private String dbName;
@@ -132,10 +134,6 @@ public class MSentryPrivilege {
     this.privilegeName = privilegeName;
   }
 
-  public void appendRoles(Set<MSentryRole> roles) {
-    this.roles.addAll(roles);
-  }
-
   public void appendRole(MSentryRole role) {
     if (!roles.contains(role)) {
       roles.add(role);
@@ -144,21 +142,8 @@ public class MSentryPrivilege {
   }
 
   public void removeRole(MSentryRole role) {
-    for (Iterator<MSentryRole> iter = roles.iterator(); iter.hasNext();) {
-      if (iter.next().getRoleName().equalsIgnoreCase(role.getRoleName())) {
-        iter.remove();
-        role.removePrivilege(this);
-        return;
-      }
-    }
-  }
-
-  public void removeRole(String roleName) {
-    for (MSentryRole role: roles) {
-      if (role.getRoleName().equalsIgnoreCase(roleName)) {
-        roles.remove(role);
-        return;
-      }
+    if (roles.remove(role)) {
+      role.removePrivilege(this);
     }
   }
 
@@ -175,19 +160,8 @@ public class MSentryPrivilege {
   public int hashCode() {
     final int prime = 31;
     int result = 1;
-    result = prime * result + ((URI == null) ? 0 : URI.hashCode());
-    result = prime * result + ((action == null) ? 0 : action.hashCode());
-    result = prime * result + (int) (createTime ^ (createTime >>> 32));
-    result = prime * result + ((dbName == null) ? 0 : dbName.hashCode());
-    result = prime * result
-        + ((grantorPrincipal == null) ? 0 : grantorPrincipal.hashCode());
     result = prime * result
         + ((privilegeName == null) ? 0 : privilegeName.hashCode());
-    result = prime * result
-        + ((privilegeScope == null) ? 0 : privilegeScope.hashCode());
-    result = prime * result
-        + ((serverName == null) ? 0 : serverName.hashCode());
-    result = prime * result + ((tableName == null) ? 0 : tableName.hashCode());
     return result;
   }
 
@@ -200,47 +174,10 @@ public class MSentryPrivilege {
     if (getClass() != obj.getClass())
       return false;
     MSentryPrivilege other = (MSentryPrivilege) obj;
-    if (URI == null) {
-      if (other.URI != null)
-        return false;
-    } else if (!URI.equals(other.URI))
-      return false;
-    if (action == null) {
-      if (other.action != null)
-        return false;
-    } else if (!action.equals(other.action))
-      return false;
-    if (createTime != other.createTime)
-      return false;
-    if (dbName == null) {
-      if (other.dbName != null)
-        return false;
-    } else if (!dbName.equals(other.dbName))
-      return false;
-    if (grantorPrincipal == null) {
-      if (other.grantorPrincipal != null)
-        return false;
-    } else if (!grantorPrincipal.equals(other.grantorPrincipal))
-      return false;
     if (privilegeName == null) {
       if (other.privilegeName != null)
         return false;
     } else if (!privilegeName.equals(other.privilegeName))
-      return false;
-    if (privilegeScope == null) {
-      if (other.privilegeScope != null)
-        return false;
-    } else if (!privilegeScope.equals(other.privilegeScope))
-      return false;
-    if (serverName == null) {
-      if (other.serverName != null)
-        return false;
-    } else if (!serverName.equals(other.serverName))
-      return false;
-    if (tableName == null) {
-      if (other.tableName != null)
-        return false;
-    } else if (!tableName.equals(other.tableName))
       return false;
     return true;
   }

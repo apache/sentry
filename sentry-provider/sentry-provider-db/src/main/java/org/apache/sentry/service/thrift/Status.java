@@ -22,6 +22,10 @@ import java.io.StringWriter;
 
 import javax.annotation.Nullable;
 
+import org.apache.sentry.SentryUserException;
+import org.apache.sentry.provider.db.SentryAlreadyExistsException;
+import org.apache.sentry.provider.db.SentryInvalidInputException;
+import org.apache.sentry.provider.db.SentryNoSuchObjectException;
 import org.apache.sentry.service.thrift.ServiceConstants.ThriftConstants;
 
 /**
@@ -80,5 +84,35 @@ public enum Status {
       status.setStack(stringWriter.toString());
     }
     return status;
+  }
+  public static void throwIfNotOk(TSentryResponseStatus thriftStatus)
+  throws SentryUserException {
+    Status status = Status.fromCode(thriftStatus.getValue());
+    switch(status) {
+    case OK:
+      break;
+    case ALREADY_EXISTS:
+      throw new SentryAlreadyExistsException(serverErrorToString(thriftStatus));
+    case NO_SUCH_OBJECT:
+      throw new SentryNoSuchObjectException(serverErrorToString(thriftStatus));
+    case RUNTIME_ERROR:
+      throw new RuntimeException(serverErrorToString(thriftStatus));
+    case INVALID_INPUT:
+      throw new SentryInvalidInputException(serverErrorToString(thriftStatus));
+    case UNKNOWN:
+      throw new AssertionError(serverErrorToString(thriftStatus));
+    default:
+      throw new AssertionError("Unknown status code: " + status + ". Msg: " +
+          serverErrorToString(thriftStatus));
+    }
+  }
+
+  private static String serverErrorToString(TSentryResponseStatus thriftStatus) {
+    String msg = thriftStatus.getMessage();
+    String stack = thriftStatus.getStack();
+    if (stack == null) {
+      return msg;
+    }
+    return msg + ". Server Stacktrace: " + stack;
   }
 }

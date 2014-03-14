@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.provider.db.service.persistent;
+package org.apache.sentry.provider.db;
 
 import org.apache.sentry.SentryUserException;
 

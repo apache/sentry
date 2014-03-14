@@ -50,5 +50,7 @@ public interface PolicyEngine {
   public ImmutableSet<String> getPrivileges(Set<String> groups, ActiveRoleSet roleSet)
       throws SentryConfigurationException;
 
+  public void close();
+
   public void validatePolicy(boolean strictValidation) throws SentryConfigurationException;
 }

@@ -59,6 +59,35 @@ public class ServiceConstants {
     public static final String PROCESSOR_FACTORIES = "sentry.service.processor.factories";
     public static final String PROCESSOR_FACTORIES_DEFAULT =
         "org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessorFactory";
+    public static final String SENTRY_STORE_JDBC_URL = "sentry.store.jdbc.url";
+
+    public static final ImmutableMap<String, String> SENTRY_STORE_DEFAULTS =
+        ImmutableMap.<String, String>builder()
+    .put("datanucleus.validateTables", "false")
+    .put("datanucleus.validateColumns", "false")
+    .put("datanucleus.validateConstraints", "false")
+    .put("datanucleus.storeManagerType", "rdbms")
+    .put("datanucleus.autoCreateSchema", "true")
+    .put("datanucleus.fixedDatastore", "false")
+    .put("datanucleus.autoStartMechanismMode", "checked")
+    .put("datanucleus.transactionIsolation", "read-committed")
+    .put("datanucleus.cache.level2", "false")
+    .put("datanucleus.cache.level2.type", "none")
+    .put("datanucleus.identifierFactory", "datanucleus1")
+    .put("datanucleus.rdbms.useLegacyNativeValueStrategy", "true")
+    .put("datanucleus.plugin.pluginRegistryBundleCheck", "LOG")
+    .put("javax.jdo.option.ConnectionDriverName",
+                     "org.apache.derby.jdbc.EmbeddedDriver")
+    .put("javax.jdo.PersistenceManagerFactoryClass",
+                     "org.datanucleus.api.jdo.JDOPersistenceManagerFactory")
+    .put("javax.jdo.option.DetachAllOnCommit", "true")
+    .put("javax.jdo.option.NonTransactionalRead", "false")
+    .put("javax.jdo.option.NonTransactionalWrite", "false")
+    .put("javax.jdo.option.ConnectionUserName", "Sentry")
+    .put("javax.jdo.option.ConnectionPassword", "Sentry")
+    .put("javax.jdo.option.Multithreaded", "true")
+    .build();
+
   }
   public static class ClientConfig {
     public static final ImmutableMap<String, String> SASL_PROPERTIES = ServiceConstants.SASL_PROPERTIES;

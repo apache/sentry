@@ -63,4 +63,8 @@ public class NoAuthorizationProvider implements AuthorizationProvider {
     return new ArrayList<String>();
   }
 
+  @Override
+  public void close() {
+
+  }
 }
