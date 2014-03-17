@@ -60,9 +60,22 @@ public class ServiceConstants {
     public static final String PROCESSOR_FACTORIES_DEFAULT =
         "org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessorFactory";
     public static final String SENTRY_STORE_JDBC_URL = "sentry.store.jdbc.url";
+    public static final String SENTRY_STORE_JDBC_USER = "sentry.store.jdbc.user";
+    public static final String SENTRY_STORE_JDBC_USER_DEFAULT = "Sentry";
+    public static final String SENTRY_STORE_JDBC_PASS = "sentry.store.jdbc.password";
+    public static final String SENTRY_STORE_JDBC_PASS_DEFAULT = "Sentry";
+
+    public static final String JAVAX_JDO_URL = "javax.jdo.option.ConnectionURL";
+    public static final String JAVAX_JDO_USER = "javax.jdo.option.ConnectionUserName";
+    public static final String JAVAX_JDO_PASS = "javax.jdo.option.ConnectionPassword";
+
+    public static final String SENTRY_DB_PROPERTY_PREFIX = "sentry.";
+    public static final String SENTRY_JAVAX_JDO_PROPERTY_PREFIX = SENTRY_DB_PROPERTY_PREFIX + "javax.jdo";
+    public static final String SENTRY_DATANUCLEUS_PROPERTY_PREFIX = SENTRY_DB_PROPERTY_PREFIX + "datanucleus";
 
     public static final ImmutableMap<String, String> SENTRY_STORE_DEFAULTS =
         ImmutableMap.<String, String>builder()
+    .put("datanucleus.connectionPoolingType", "BoneCP")
     .put("datanucleus.validateTables", "false")
     .put("datanucleus.validateColumns", "false")
     .put("datanucleus.validateConstraints", "false")
@@ -83,8 +96,6 @@ public class ServiceConstants {
     .put("javax.jdo.option.DetachAllOnCommit", "true")
     .put("javax.jdo.option.NonTransactionalRead", "false")
     .put("javax.jdo.option.NonTransactionalWrite", "false")
-    .put("javax.jdo.option.ConnectionUserName", "Sentry")
-    .put("javax.jdo.option.ConnectionPassword", "Sentry")
     .put("javax.jdo.option.Multithreaded", "true")
     .build();
 

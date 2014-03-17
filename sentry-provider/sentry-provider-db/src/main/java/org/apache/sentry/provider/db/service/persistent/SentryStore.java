@@ -35,6 +35,7 @@ import javax.jdo.PersistenceManagerFactory;
 import javax.jdo.Query;
 import javax.jdo.Transaction;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
 import org.apache.sentry.provider.common.ProviderConstants;
@@ -82,7 +83,21 @@ public class SentryStore {
     String jdbcUrl = conf.get(ServerConfig.SENTRY_STORE_JDBC_URL, "").trim();
     Preconditions.checkArgument(!jdbcUrl.isEmpty(), "Required parameter " +
         ServerConfig.SENTRY_STORE_JDBC_URL + " missing");
-    prop.setProperty("javax.jdo.option.ConnectionURL", jdbcUrl);
+    String user = conf.get(ServerConfig.SENTRY_STORE_JDBC_USER, ServerConfig.
+        SENTRY_STORE_JDBC_USER_DEFAULT).trim();
+    String pass = conf.get(ServerConfig.SENTRY_STORE_JDBC_PASS, ServerConfig.
+        SENTRY_STORE_JDBC_PASS_DEFAULT).trim();
+    prop.setProperty(ServerConfig.JAVAX_JDO_URL, jdbcUrl);
+    prop.setProperty(ServerConfig.JAVAX_JDO_USER, user);
+    prop.setProperty(ServerConfig.JAVAX_JDO_PASS, pass);
+    for (Map.Entry<String, String> entry : conf) {
+      String key = entry.getKey();
+      if (key.startsWith(ServerConfig.SENTRY_JAVAX_JDO_PROPERTY_PREFIX) ||
+          key.startsWith(ServerConfig.SENTRY_DATANUCLEUS_PROPERTY_PREFIX)) {
+        key = StringUtils.removeStart(key, ServerConfig.SENTRY_DB_PROPERTY_PREFIX);
+        prop.setProperty(key, entry.getValue());
+      }
+    }
     pmf = JDOHelper.getPersistenceManagerFactory(prop);
   }
 
