@@ -23,6 +23,7 @@ import java.io.StringWriter;
 import javax.annotation.Nullable;
 
 import org.apache.sentry.SentryUserException;
+import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.provider.db.SentryAlreadyExistsException;
 import org.apache.sentry.provider.db.SentryInvalidInputException;
 import org.apache.sentry.provider.db.SentryNoSuchObjectException;
@@ -37,6 +38,7 @@ public enum Status {
   NO_SUCH_OBJECT(ThriftConstants.TSENTRY_STATUS_NO_SUCH_OBJECT),
   RUNTIME_ERROR(ThriftConstants.TSENTRY_STATUS_RUNTIME_ERROR),
   INVALID_INPUT(ThriftConstants.TSENTRY_STATUS_INVALID_INPUT),
+  ACCESS_DENIED(ThriftConstants.TSENTRY_STATUS_ACCESS_DENIED),
   UNKNOWN(-1)
   ;
   private int code;
@@ -56,6 +58,9 @@ public enum Status {
   }
   public static TSentryResponseStatus OK() {
     return Create(Status.OK, "");
+  }
+  public static TSentryResponseStatus AccessDenied(String message, Throwable t) {
+    return Create(Status.ACCESS_DENIED, message, t);
   }
   public static TSentryResponseStatus AlreadyExists(String message, Throwable t) {
     return Create(Status.ALREADY_EXISTS, message, t);
@@ -99,6 +104,8 @@ public enum Status {
       throw new RuntimeException(serverErrorToString(thriftStatus));
     case INVALID_INPUT:
       throw new SentryInvalidInputException(serverErrorToString(thriftStatus));
+    case ACCESS_DENIED:
+      throw new SentryAccessDeniedException(serverErrorToString(thriftStatus));
     case UNKNOWN:
       throw new AssertionError(serverErrorToString(thriftStatus));
     default:

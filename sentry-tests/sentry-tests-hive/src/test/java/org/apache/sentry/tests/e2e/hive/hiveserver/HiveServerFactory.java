@@ -49,6 +49,7 @@ public class HiveServerFactory {
   public static final String WAREHOUSE_DIR = HiveConf.ConfVars.METASTOREWAREHOUSE.varname;
   public static final String AUTHZ_PROVIDER = HiveAuthzConf.AuthzConfVars.AUTHZ_PROVIDER.getVar();
   public static final String AUTHZ_PROVIDER_RESOURCE = HiveAuthzConf.AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar();
+  public static final String AUTHZ_PROVIDER_BACKEND = HiveAuthzConf.AuthzConfVars.AUTHZ_PROVIDER_BACKEND.getVar();
   public static final String AUTHZ_PROVIDER_FILENAME = "sentry-provider.ini";
   public static final String AUTHZ_SERVER_NAME = HiveAuthzConf.AuthzConfVars.AUTHZ_SERVER_NAME.getVar();
   public static final String ACCESS_TESTING_MODE = HiveAuthzConf.AuthzConfVars.SENTRY_TESTING_MODE.getVar();

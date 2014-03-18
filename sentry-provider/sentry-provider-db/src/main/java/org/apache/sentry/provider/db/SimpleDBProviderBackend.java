@@ -42,10 +42,6 @@ public class SimpleDBProviderBackend implements ProviderBackend {
 
   private volatile boolean initialized;
 
-  public SimpleDBProviderBackend(String resourcePath) throws IOException {
-    this(new Configuration(), new Path(resourcePath));
-  }
-
   public SimpleDBProviderBackend(Configuration conf, String resourcePath) throws IOException {
     this(conf, new Path(resourcePath));
   }

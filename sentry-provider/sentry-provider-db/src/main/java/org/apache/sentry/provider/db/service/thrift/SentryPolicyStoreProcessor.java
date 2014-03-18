@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.provider.db.SentryAlreadyExistsException;
 import org.apache.sentry.provider.db.SentryInvalidInputException;
 import org.apache.sentry.provider.db.SentryNoSuchObjectException;
@@ -32,6 +33,7 @@ import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.provider.db.service.thrift.PolicyStoreConstants.PolicyStoreServerConfig;
 import org.apache.sentry.service.thrift.Status;
 import org.apache.sentry.service.thrift.TSentryResponseStatus;
+import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -52,6 +55,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   private final Configuration conf;
   private final SentryStore sentryStore;
   private final NotificationHandlerInvoker notificationHandlerInvoker;
+  private final ImmutableSet<String> adminGroups;
   private boolean isReady;
 
   public SentryPolicyStoreProcessor(String name, Configuration conf) throws Exception {
@@ -63,6 +67,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     isReady = false;
     sentryStore = new SentryStore(conf);
     isReady = true;
+    adminGroups = ImmutableSet.copyOf(toTrimedLower(Sets.newHashSet(conf.getStrings(
+        ServerConfig.ADMIN_GROUPS, new String[]{}))));
   }
 
   public void stop() {
@@ -145,11 +151,31 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     return privilegeName.toString();
   }
 
+  private static Set<String> toTrimedLower(Set<String> s) {
+    Set<String> result = Sets.newHashSet();
+    for (String v : s) {
+      result.add(v.trim().toLowerCase());
+    }
+    return result;
+  }
+
+  private void authorize(String requestorUser, Set<String> requestorGroups)
+  throws SentryAccessDeniedException {
+    requestorGroups = toTrimedLower(requestorGroups);
+    if (Sets.intersection(adminGroups, requestorGroups).isEmpty()) {
+      String msg = "User: " + requestorUser + " is part of " + requestorGroups +
+          " which does not, intersect admin groups " + adminGroups;
+      LOGGER.warn(msg);
+      throw new SentryAccessDeniedException("Access denied to " + requestorUser);
+    }
+  }
+
   @Override
   public TCreateSentryRoleResponse create_sentry_role(
     TCreateSentryRoleRequest request) throws TException {
     TCreateSentryRoleResponse response = new TCreateSentryRoleResponse();
     try {
+      authorize(request.getRequestorUserName(), request.getRequestorGroupNames());
       CommitContext commitContext = sentryStore.createSentryRole(request.getRoleName(),
           request.getRequestorUserName());
       response.setStatus(Status.OK());
@@ -159,6 +185,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       String msg = "Role: " + request + " already exists.";
       LOGGER.error(msg, e);
       response.setStatus(Status.AlreadyExists(msg, e));
+    } catch (SentryAccessDeniedException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
     } catch (Exception e) {
       String msg = "Unknown error for request: " + request + ", message: " + e.getMessage();
       LOGGER.error(msg, e);
@@ -173,6 +202,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
 
     TAlterSentryRoleGrantPrivilegeResponse response = new TAlterSentryRoleGrantPrivilegeResponse();
     try {
+      authorize(request.getRequestorUserName(), request.getRequestorGroupNames());
       String privilegeName = constructPrivilegeName(request.getPrivilege());
       request.getPrivilege().setPrivilegeName(privilegeName);
       CommitContext commitContext = sentryStore.alterSentryRoleGrantPrivilege(request.getRoleName(),
@@ -188,6 +218,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       String msg = "Invalid input privilege object";
       LOGGER.error(msg, e);
       response.setStatus(Status.InvalidInput(msg, e));
+    } catch (SentryAccessDeniedException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
     } catch (Exception e) {
       String msg = "Unknown error for request: " + request + ", message: " + e.getMessage();
       LOGGER.error(msg, e);
@@ -202,6 +235,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   (TAlterSentryRoleRevokePrivilegeRequest request) throws TException {
     TAlterSentryRoleRevokePrivilegeResponse response = new TAlterSentryRoleRevokePrivilegeResponse();
     try {
+      authorize(request.getRequestorUserName(), request.getRequestorGroupNames());
       String privilegeName = constructPrivilegeName(request.getPrivilege());
       request.getPrivilege().setPrivilegeName(privilegeName);
       CommitContext commitContext = sentryStore.alterSentryRoleRevokePrivilege(request.getRoleName(),
@@ -217,6 +251,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       String msg = "Invalid input privilege object";
       LOGGER.error(msg, e);
       response.setStatus(Status.InvalidInput(msg, e));
+    } catch (SentryAccessDeniedException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
     } catch (Exception e) {
       String msg = "Unknown error for request: " + request + ", message: " + e.getMessage();
       LOGGER.error(msg, e);
@@ -232,6 +269,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     TDropSentryRoleResponse response = new TDropSentryRoleResponse();
     TSentryResponseStatus status;
     try {
+      authorize(request.getRequestorUserName(), request.getRequestorGroupNames());
       CommitContext commitContext = sentryStore.dropSentryRole(request.getRoleName());
       response.setStatus(Status.OK());
       notificationHandlerInvoker.drop_sentry_role(commitContext,
@@ -240,6 +278,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       String msg = "Role :" + request + " does not exist.";
       LOGGER.error(msg, e);
       response.setStatus(Status.NoSuchObject(msg, e));
+    } catch (SentryAccessDeniedException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
     } catch (Exception e) {
       String msg = "Unknown error for request: " + request + ", message: " + e.getMessage();
       LOGGER.error(msg, e);
@@ -253,6 +294,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     TAlterSentryRoleAddGroupsRequest request) throws TException {
     TAlterSentryRoleAddGroupsResponse response = new TAlterSentryRoleAddGroupsResponse();
     try {
+      authorize(request.getRequestorUserName(), request.getRequestorGroupNames());
       CommitContext commitContext = sentryStore.alterSentryRoleAddGroups(request.getRequestorUserName(),
                                     request.getRoleName(), request.getGroups());
       response.setStatus(Status.OK());
@@ -262,6 +304,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       String msg = "Role: " + request + " does not exist.";
       LOGGER.error(msg, e);
       response.setStatus(Status.NoSuchObject(msg, e));
+    } catch (SentryAccessDeniedException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
     } catch (Exception e) {
       String msg = "Unknown error for request: " + request + ", message: " + e.getMessage();
       LOGGER.error(msg, e);
@@ -275,6 +320,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     TAlterSentryRoleDeleteGroupsRequest request) throws TException {
     TAlterSentryRoleDeleteGroupsResponse response = new TAlterSentryRoleDeleteGroupsResponse();
     try {
+      authorize(request.getRequestorUserName(), request.getRequestorGroupNames());
       CommitContext commitContext = sentryStore.alterSentryRoleDeleteGroups(request.getRoleName(),
           request.getGroups());
       response.setStatus(Status.OK());
@@ -284,6 +330,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       String msg = "Role: " + request + " does not exist.";
       LOGGER.error(msg, e);
       response.setStatus(Status.NoSuchObject(msg, e));
+    } catch (SentryAccessDeniedException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
     } catch (Exception e) {
       String msg = "Unknown error adding groups to role: " + request;
       LOGGER.error(msg, e);

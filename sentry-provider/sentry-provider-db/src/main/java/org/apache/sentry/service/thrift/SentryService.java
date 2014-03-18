@@ -52,6 +52,7 @@ import org.apache.thrift.server.TThreadPoolServer;
 import org.apache.thrift.transport.TSaslServerTransport;
 import org.apache.thrift.transport.TServerSocket;
 import org.apache.thrift.transport.TServerTransport;
+import org.apache.thrift.transport.TTransportFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,6 +72,7 @@ public class SentryService implements Runnable {
   private final InetSocketAddress address;
   private final int maxThreads;
   private final int minThreads;
+  private boolean kerberos;
   private final String principal;
   private final String[] principalParts;
   private final String keytab;
@@ -90,20 +92,28 @@ public class SentryService implements Runnable {
         conf.get(ServerConfig.RPC_ADDRESS, ServerConfig.RPC_ADDRESS_DEFAULT),
         port);
     LOGGER.info("Configured on address " + address);
+    kerberos = ServerConfig.SECURITY_MODE_KERBEROS.equalsIgnoreCase(
+        conf.get(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_KERBEROS).trim());
     maxThreads = conf.getInt(ServerConfig.RPC_MAX_THREADS,
         ServerConfig.RPC_MAX_THREADS_DEFAULT);
     minThreads = conf.getInt(ServerConfig.RPC_MIN_THREADS,
         ServerConfig.RPC_MIN_THREADS_DEFAULT);
-    principal = Preconditions.checkNotNull(conf.get(ServerConfig.PRINCIPAL),
-        ServerConfig.PRINCIPAL + " is required");
-    principalParts = SaslRpcServer.splitKerberosName(principal);
-    Preconditions.checkArgument(principalParts.length == 3,
-        "Kerberos principal should have 3 parts: " + principal);
-    keytab = Preconditions.checkNotNull(conf.get(ServerConfig.KEY_TAB),
-        ServerConfig.KEY_TAB + " is required");
-    File keytabFile = new File(keytab);
-    Preconditions.checkState(keytabFile.isFile() && keytabFile.canRead(),
-        "Keytab " + keytab + " does not exist or is not readable.");
+    if (kerberos) {
+      principal = Preconditions.checkNotNull(conf.get(ServerConfig.PRINCIPAL),
+          ServerConfig.PRINCIPAL + " is required");
+      principalParts = SaslRpcServer.splitKerberosName(principal);
+      Preconditions.checkArgument(principalParts.length == 3,
+          "Kerberos principal should have 3 parts: " + principal);
+      keytab = Preconditions.checkNotNull(conf.get(ServerConfig.KEY_TAB),
+          ServerConfig.KEY_TAB + " is required");
+      File keytabFile = new File(keytab);
+      Preconditions.checkState(keytabFile.isFile() && keytabFile.canRead(),
+          "Keytab " + keytab + " does not exist or is not readable.");
+    } else {
+      principal = null;
+      principalParts = null;
+      keytab = null;
+    }
     serviceExecutor = Executors.newSingleThreadExecutor(new ThreadFactory() {
       private int count = 0;
 
@@ -120,60 +130,24 @@ public class SentryService implements Runnable {
   public void run() {
     LoginContext loginContext = null;
     try {
-      Subject subject = new Subject(false,
-          Sets.newHashSet(new KerberosPrincipal(principal)),
-          new HashSet<Object>(), new HashSet<Object>());
-      loginContext = new LoginContext("", subject, null,
-          KerberosConfiguration.createClientConfig(principal, new File(keytab)));
-      loginContext.login();
-      subject = loginContext.getSubject();
-      Subject.doAs(subject, new PrivilegedExceptionAction<Void>() {
-        @Override
-        public Void run() throws Exception {
-          Iterable<String> processorFactories = ConfUtilties.CLASS_SPLITTER
-              .split(conf.get(ServerConfig.PROCESSOR_FACTORIES,
-                  ServerConfig.PROCESSOR_FACTORIES_DEFAULT).trim());
-          TMultiplexedProcessor processor = new TMultiplexedProcessor();
-          boolean registeredProcessor = false;
-          for (String processorFactory : processorFactories) {
-            Class<?> clazz = conf.getClassByName(processorFactory);
-            if (!ProcessorFactory.class.isAssignableFrom(clazz)) {
-              throw new IllegalArgumentException("Processor Factory "
-                  + processorFactory + " is not a "
-                  + ProcessorFactory.class.getName());
-            }
-            try {
-              Constructor<?> constructor = clazz
-                  .getConstructor(Configuration.class);
-              ProcessorFactory factory = (ProcessorFactory) constructor
-                  .newInstance(conf);
-              registeredProcessor = registeredProcessor
-                  || factory.register(processor);
-            } catch (Exception e) {
-              throw new IllegalStateException("Could not create "
-                  + processorFactory, e);
-            }
+      if (kerberos) {
+        Subject subject = new Subject(false,
+            Sets.newHashSet(new KerberosPrincipal(principal)),
+            new HashSet<Object>(), new HashSet<Object>());
+        loginContext = new LoginContext("", subject, null,
+            KerberosConfiguration.createClientConfig(principal, new File(keytab)));
+        loginContext.login();
+        subject = loginContext.getSubject();
+        Subject.doAs(subject, new PrivilegedExceptionAction<Void>() {
+          @Override
+          public Void run() throws Exception {
+            runServer();
+            return null;
           }
-          if (!registeredProcessor) {
-            throw new IllegalStateException(
-                "Failed to register any processors from " + processorFactories);
-          }
-          TServerTransport serverTransport = new TServerSocket(address);
-          TSaslServerTransport.Factory saslTransportFactory = new TSaslServerTransport.Factory();
-          saslTransportFactory.addServerDefinition(AuthMethod.KERBEROS
-              .getMechanismName(), principalParts[0], principalParts[1],
-              ServerConfig.SASL_PROPERTIES, new GSSCallback(conf));
-          TThreadPoolServer.Args args = new TThreadPoolServer.Args(
-              serverTransport).processor(processor)
-              .transportFactory(saslTransportFactory)
-              .protocolFactory(new TBinaryProtocol.Factory())
-              .minWorkerThreads(minThreads).maxWorkerThreads(maxThreads);
-          thriftServer = new TThreadPoolServer(args);
-          LOGGER.info("Serving on " + address);
-          thriftServer.serve();
-          return null;
-        }
-      });
+        });
+      } else {
+        runServer();
+      }
     } catch (Throwable t) {
       LOGGER.error("Error starting server", t);
     } finally {
@@ -186,6 +160,56 @@ public class SentryService implements Runnable {
         }
       }
     }
+  }
+
+  private void runServer() throws Exception {
+    Iterable<String> processorFactories = ConfUtilties.CLASS_SPLITTER
+        .split(conf.get(ServerConfig.PROCESSOR_FACTORIES,
+            ServerConfig.PROCESSOR_FACTORIES_DEFAULT).trim());
+    TMultiplexedProcessor processor = new TMultiplexedProcessor();
+    boolean registeredProcessor = false;
+    for (String processorFactory : processorFactories) {
+      Class<?> clazz = conf.getClassByName(processorFactory);
+      if (!ProcessorFactory.class.isAssignableFrom(clazz)) {
+        throw new IllegalArgumentException("Processor Factory "
+            + processorFactory + " is not a "
+            + ProcessorFactory.class.getName());
+      }
+      try {
+        Constructor<?> constructor = clazz
+            .getConstructor(Configuration.class);
+        ProcessorFactory factory = (ProcessorFactory) constructor
+            .newInstance(conf);
+        registeredProcessor = registeredProcessor
+            || factory.register(processor);
+      } catch (Exception e) {
+        throw new IllegalStateException("Could not create "
+            + processorFactory, e);
+      }
+    }
+    if (!registeredProcessor) {
+      throw new IllegalStateException(
+          "Failed to register any processors from " + processorFactories);
+    }
+    TServerTransport serverTransport = new TServerSocket(address);
+    TTransportFactory transportFactory = null;
+    if (kerberos) {
+      TSaslServerTransport.Factory saslTransportFactory = new TSaslServerTransport.Factory();
+      saslTransportFactory.addServerDefinition(AuthMethod.KERBEROS
+          .getMechanismName(), principalParts[0], principalParts[1],
+          ServerConfig.SASL_PROPERTIES, new GSSCallback(conf));
+      transportFactory = saslTransportFactory;
+    } else {
+      transportFactory = new TTransportFactory();
+    }
+    TThreadPoolServer.Args args = new TThreadPoolServer.Args(
+        serverTransport).processor(processor)
+        .transportFactory(transportFactory)
+        .protocolFactory(new TBinaryProtocol.Factory())
+        .minWorkerThreads(minThreads).maxWorkerThreads(maxThreads);
+    thriftServer = new TThreadPoolServer(args);
+    LOGGER.info("Serving on " + address);
+    thriftServer.serve();
   }
 
   public InetSocketAddress getAddress() {

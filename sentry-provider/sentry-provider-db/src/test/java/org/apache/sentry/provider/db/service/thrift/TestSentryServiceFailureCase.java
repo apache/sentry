@@ -25,11 +25,17 @@ import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Strings;
 
 public class TestSentryServiceFailureCase extends SentryServiceIntegrationBase {
-
+  private static final Logger LOGGER = LoggerFactory.getLogger(TestSentryServiceFailureCase.class);
+  private static final String PEER_CALLBACK_FAILURE = "Peer indicated failure: Problem with callback handler";
   @Before @Override
   public void setup() throws Exception {
+    this.kerberos = true;
     beforeSetup();
     setupConf();
     conf.set(ServerConfig.ALLOW_CONNECT, "");
@@ -37,9 +43,21 @@ public class TestSentryServiceFailureCase extends SentryServiceIntegrationBase {
     afterSetup();
   }
 
-  @Test(expected = PrivilegedActionException.class)
+  @Test
   public void testClientServerConnectionFailure()  throws Exception {
-    connectToSentryService();
-    Assert.fail("Failed to receive Exception");
+    try {
+      connectToSentryService();
+      Assert.fail("Failed to receive Exception");
+    } catch(PrivilegedActionException e) {
+      LOGGER.info("Excepted exception", e);
+      Exception cause = e.getException();
+      if (cause == null) {
+        throw e;
+      }
+      String msg = "Exception message: " + cause.getMessage() + " to contain " +
+          PEER_CALLBACK_FAILURE;
+      Assert.assertTrue(msg, Strings.nullToEmpty(cause.getMessage())
+          .contains(PEER_CALLBACK_FAILURE));
+    }
   }
 }

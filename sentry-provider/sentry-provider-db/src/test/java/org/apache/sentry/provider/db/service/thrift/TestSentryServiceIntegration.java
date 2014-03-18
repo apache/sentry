@@ -36,8 +36,8 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
 
   @Test
   public void testCreateRole() throws Exception {
-    String requestorUserName = "user_1";
-    Set<String> requestorUserGroupNames = new HashSet<String>();
+    String requestorUserName = ADMIN_USER;
+    Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
     String roleName = "admin_r";
 
     client.dropRoleIfExists(requestorUserName, requestorUserGroupNames, roleName);
@@ -58,8 +58,8 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
   @Test
   public void testGrantRevokePrivilege() throws Exception {
     String server = "server1";
-    String requestorUserName = "server_admin";
-    Set<String> requestorUserGroupNames = new HashSet<String>();
+    String requestorUserName = ADMIN_USER;
+    Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
     String roleName = "admin_testdb";
     String db = "testDB";
     String group = "group1";

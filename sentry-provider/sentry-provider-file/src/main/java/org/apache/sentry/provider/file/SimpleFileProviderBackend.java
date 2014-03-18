@@ -107,10 +107,6 @@ public class SimpleFileProviderBackend implements ProviderBackend {
   private boolean allowPerDatabaseSection;
   private volatile boolean initialized;
 
-  public SimpleFileProviderBackend(String resourcePath) throws IOException {
-    this(new Configuration(), new Path(resourcePath));
-  }
-
   public SimpleFileProviderBackend(Configuration conf, String resourcePath) throws IOException {
     this(conf, new Path(resourcePath));
   }

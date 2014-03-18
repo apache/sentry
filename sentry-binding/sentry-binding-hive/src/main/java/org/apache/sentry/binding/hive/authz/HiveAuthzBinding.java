@@ -20,6 +20,7 @@ import java.lang.reflect.Constructor;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -146,10 +147,10 @@ public class HiveAuthzBinding {
         + policyEngineName + ", provider backend " + providerBackendName);
       // load the provider backend class
       Constructor<?> providerBackendConstructor =
-        Class.forName(providerBackendName).getDeclaredConstructor(String.class);
+        Class.forName(providerBackendName).getDeclaredConstructor(Configuration.class, String.class);
       providerBackendConstructor.setAccessible(true);
     ProviderBackend providerBackend = (ProviderBackend) providerBackendConstructor.
-        newInstance(new Object[] {resourceName});
+        newInstance(new Object[] {authzConf, resourceName});
 
     // load the policy engine class
     Constructor<?> policyConstructor =
@@ -233,6 +234,10 @@ public class HiveAuthzBinding {
           }
         }
       }
+  }
+
+  public Set<String> getGroups(Subject subject) {
+    return authProvider.getGroupMapping().getGroups(subject.getName());
   }
 
   public Server getAuthServer() {

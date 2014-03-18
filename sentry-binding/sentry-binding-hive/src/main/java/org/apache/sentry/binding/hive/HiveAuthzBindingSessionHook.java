@@ -22,6 +22,8 @@ import org.apache.hive.service.cli.HiveSQLException;
 import org.apache.hive.service.cli.session.HiveSessionHookContext;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 
+import com.google.common.base.Joiner;
+
 public class HiveAuthzBindingSessionHook
     implements org.apache.hive.service.cli.session.HiveSessionHook {
 
@@ -32,25 +34,26 @@ public class HiveAuthzBindingSessionHook
   public static final String FILTER_HOOK =
     "org.apache.sentry.binding.hive.HiveAuthzBindingHook";
   public static final String SCRATCH_DIR_PERMISSIONS = "700";
-  public static final String ACCESS_RESTRICT_LIST =
-    ConfVars.SEMANTIC_ANALYZER_HOOK.varname + "," +
-    ConfVars.PREEXECHOOKS.varname + "," +
-    ConfVars.HIVE_EXEC_FILTER_HOOK.varname + "," +
-    ConfVars.HIVE_EXTENDED_ENITITY_CAPTURE.varname + "," +
-    ConfVars.SCRATCHDIR.varname + "," +
-    ConfVars.LOCALSCRATCHDIR.varname + "," +
-    ConfVars.METASTOREURIS.varname + "," +
-    ConfVars.METASTORECONNECTURLKEY.varname + "," +
-    ConfVars.HADOOPBIN.varname + "," +
-    ConfVars.HIVESESSIONID.varname + "," +
-    ConfVars.HIVEAUXJARS.varname + "," +
-    ConfVars.HIVESTATSDBCONNECTIONSTRING.varname + "," +
-    ConfVars.SCRATCHDIRPERMISSION.varname + "," +
-    ConfVars.HIVE_SECURITY_COMMAND_WHITELIST.varname + "," +
-    HiveAuthzConf.HIVE_ACCESS_CONF_URL + "," +
-    HiveAuthzConf.HIVE_SENTRY_CONF_URL + "," +
-    HiveAuthzConf.HIVE_ACCESS_SUBJECT_NAME + "," +
-    HiveAuthzConf.HIVE_SENTRY_SUBJECT_NAME;
+  public static final String ACCESS_RESTRICT_LIST = Joiner.on(",").join(
+    ConfVars.SEMANTIC_ANALYZER_HOOK.varname,
+    ConfVars.PREEXECHOOKS.varname,
+    ConfVars.HIVE_EXEC_FILTER_HOOK.varname,
+    ConfVars.HIVE_EXTENDED_ENITITY_CAPTURE.varname,
+    ConfVars.SCRATCHDIR.varname,
+    ConfVars.LOCALSCRATCHDIR.varname,
+    ConfVars.METASTOREURIS.varname,
+    ConfVars.METASTORECONNECTURLKEY.varname,
+    ConfVars.HADOOPBIN.varname,
+    ConfVars.HIVESESSIONID.varname,
+    ConfVars.HIVEAUXJARS.varname,
+    ConfVars.HIVESTATSDBCONNECTIONSTRING.varname,
+    ConfVars.SCRATCHDIRPERMISSION.varname,
+    ConfVars.HIVE_SECURITY_COMMAND_WHITELIST.varname,
+    ConfVars.HIVE_AUTHORIZATION_TASK_FACTORY.varname,
+    HiveAuthzConf.HIVE_ACCESS_CONF_URL,
+    HiveAuthzConf.HIVE_SENTRY_CONF_URL,
+    HiveAuthzConf.HIVE_ACCESS_SUBJECT_NAME,
+    HiveAuthzConf.HIVE_SENTRY_SUBJECT_NAME);
 
   /**
    * The session hook for sentry authorization that sets the required session level configuration

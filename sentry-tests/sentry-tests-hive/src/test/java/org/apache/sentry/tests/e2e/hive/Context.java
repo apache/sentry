@@ -34,11 +34,13 @@ import java.util.Set;
 import junit.framework.Assert;
 
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 
@@ -48,7 +50,7 @@ public class Context {
       .getLogger(Context.class);
 
   public static final String AUTHZ_EXCEPTION_SQL_STATE = "42000";
-  public static final String AUTHZ_EXEC_HOOK_EXCEPTION_SQL_STATE = "08S01";
+  public static final String AUTHZ_LINK_FAILURE_SQL_STATE = "08S01";
   public static final String AUTHZ_EXCEPTION_ERROR_MSG = "No valid privileges";
 
   private final HiveServer hiveServer;
@@ -169,6 +171,18 @@ public class Context {
     }
   }
 
+  public void assertSentryServiceAccessDenied(Statement statement, String query)
+      throws SQLException {
+    try {
+      statement.execute(query);
+      Assert.fail("Expected SQLException for '" + query + "'");
+    } catch (SQLException e) {
+      verifyAuthzExceptionForState(e, AUTHZ_LINK_FAILURE_SQL_STATE);
+      Assert.assertTrue("Expected SentryAccessDeniedException in " + e.getMessage(),
+          Strings.nullToEmpty(e.getMessage()).contains(SentryAccessDeniedException.class
+              .getSimpleName()));
+    }
+  }
 
   // verify that the sqlexception is due to authorization failure
   public void verifyAuthzException(SQLException sqlException) throws SQLException{
@@ -177,7 +191,7 @@ public class Context {
 
   // verify that the sqlexception is due to authorization failure due to exec hooks
   public void verifyAuthzExecHookException(SQLException sqlException) throws SQLException{
-    verifyAuthzExceptionForState(sqlException, AUTHZ_EXEC_HOOK_EXCEPTION_SQL_STATE);
+    verifyAuthzExceptionForState(sqlException, AUTHZ_LINK_FAILURE_SQL_STATE);
   }
 
   // verify that the sqlexception is due to authorization failure

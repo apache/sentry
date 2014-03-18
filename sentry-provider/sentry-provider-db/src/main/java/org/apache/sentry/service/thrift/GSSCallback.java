@@ -26,6 +26,7 @@ import javax.security.sasl.AuthorizeCallback;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.SaslRpcServer;
+import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 
 public class GSSCallback extends SaslRpcServer.SaslGssCallbackHandler {
 
@@ -54,12 +55,12 @@ public class GSSCallback extends SaslRpcServer.SaslGssCallbackHandler {
   }
 
   boolean allowConnect(String principal) {
-    String allowedPrincipals = conf.get("sentry.service.allow.connect");
+    String allowedPrincipals = conf.get(ServerConfig.ALLOW_CONNECT);
     if (allowedPrincipals == null) {
       return false;
     }
     List<String> items = Arrays.asList(allowedPrincipals.split("\\s*,\\s*"));
-    for (String item:items) {
+    for (String item : items) {
       if(comparePrincipals(item, principal)) {
         return true;
       }

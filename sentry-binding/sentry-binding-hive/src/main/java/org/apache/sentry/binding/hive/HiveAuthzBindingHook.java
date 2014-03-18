@@ -35,6 +35,7 @@ import org.apache.hadoop.hive.ql.HiveDriverFilterHook;
 import org.apache.hadoop.hive.ql.HiveDriverFilterHookContext;
 import org.apache.hadoop.hive.ql.HiveDriverFilterHookResult;
 import org.apache.hadoop.hive.ql.HiveDriverFilterHookResultImpl;
+import org.apache.hadoop.hive.ql.exec.SentryGrantRevokeTask;
 import org.apache.hadoop.hive.ql.exec.Task;
 import org.apache.hadoop.hive.ql.hooks.Entity;
 import org.apache.hadoop.hive.ql.hooks.Entity.Type;
@@ -265,10 +266,22 @@ implements HiveDriverFilterHook {
   @Override
   public void postAnalyze(HiveSemanticAnalyzerHookContext context,
       List<Task<? extends Serializable>> rootTasks) throws SemanticException {
-
     HiveOperation stmtOperation = getCurrentHiveStmtOp();
     HiveAuthzPrivileges stmtAuthObject =
         HiveAuthzPrivilegesMap.getHiveAuthzPrivileges(stmtOperation);
+
+    // must occur above the null check on stmtAuthObject
+    // since GRANT/REVOKE/etc are not authorized by binding layer at present
+    Subject subject = getCurrentSubject(context);
+    Set<String> subjectGroups = hiveAuthzBinding.getGroups(subject);
+    for (Task<? extends Serializable> task : rootTasks) {
+      if (task instanceof SentryGrantRevokeTask) {
+        SentryGrantRevokeTask sentryTask = (SentryGrantRevokeTask)task;
+        sentryTask.setAuthzConf(authzConf);
+        sentryTask.setSubject(subject);
+        sentryTask.setSubjectGroups(subjectGroups);
+      }
+    }
 
     if (stmtAuthObject == null) {
       // We don't handle authorizing this statement

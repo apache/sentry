@@ -48,9 +48,9 @@ import com.google.common.collect.Sets;
 
 public class SentryPolicyServiceClient {
 
-  @SuppressWarnings("unused")
   private final Configuration conf;
   private final InetSocketAddress serverAddress;
+  private final boolean kerberos;
   private final String[] serverPrincipalParts;
   private SentryPolicyService.Client client;
   private TTransport transport;
@@ -60,31 +60,38 @@ public class SentryPolicyServiceClient {
 
   public SentryPolicyServiceClient(Configuration conf) throws IOException {
     this.conf = conf;
+    Preconditions.checkNotNull(this.conf, "Configuration object cannot be null");
     this.serverAddress = NetUtils.createSocketAddr(Preconditions.checkNotNull(
                            conf.get(ClientConfig.SERVER_RPC_ADDRESS), "Config key "
                            + ClientConfig.SERVER_RPC_ADDRESS + " is required"), conf.getInt(
                            ClientConfig.SERVER_RPC_PORT, ClientConfig.SERVER_RPC_PORT_DEFAULT));
     this.connectionTimeout = conf.getInt(ClientConfig.SERVER_RPC_CONN_TIMEOUT,
                                          ClientConfig.SERVER_RPC_CONN_TIMEOUT_DEFAULT);
-    String serverPrincipal = Preconditions.checkNotNull(
-                               conf.get(ServerConfig.PRINCIPAL), ServerConfig.PRINCIPAL
-                               + " is required");
-    serverPrincipalParts = SaslRpcServer.splitKerberosName(serverPrincipal);
-    Preconditions.checkArgument(serverPrincipalParts.length == 3,
-                                "Kerberos principal should have 3 parts: " + serverPrincipal);
+    kerberos = ServerConfig.SECURITY_MODE_KERBEROS.equalsIgnoreCase(
+        conf.get(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_KERBEROS).trim());
     transport = new TSocket(serverAddress.getHostString(),
-                            serverAddress.getPort(), connectionTimeout);
-    TTransport saslTransport = new TSaslClientTransport(
-      AuthMethod.KERBEROS.getMechanismName(), null, serverPrincipalParts[0],
-      serverPrincipalParts[1], ClientConfig.SASL_PROPERTIES, null, transport);
+        serverAddress.getPort(), connectionTimeout);
+    if (kerberos) {
+      String serverPrincipal = Preconditions.checkNotNull(
+          conf.get(ServerConfig.PRINCIPAL), ServerConfig.PRINCIPAL
+          + " is required");
+      serverPrincipalParts = SaslRpcServer.splitKerberosName(serverPrincipal);
+      Preconditions.checkArgument(serverPrincipalParts.length == 3,
+           "Kerberos principal should have 3 parts: " + serverPrincipal);
+      transport = new TSaslClientTransport(
+          AuthMethod.KERBEROS.getMechanismName(), null, serverPrincipalParts[0],
+          serverPrincipalParts[1], ClientConfig.SASL_PROPERTIES, null, transport);
+    } else {
+      serverPrincipalParts = null;
+    }
     try {
-      saslTransport.open();
+      transport.open();
     } catch (TTransportException e) {
       throw new IOException("Transport exception while opening transport: " + e.getMessage(), e);
     }
-    LOGGER.info("Successfully opened transport");
+    LOGGER.info("Successfully opened transport: " + transport + " to " + serverAddress);
     TMultiplexedProtocol protocol = new TMultiplexedProtocol(
-      new TBinaryProtocol(saslTransport),
+      new TBinaryProtocol(transport),
       SentryPolicyStoreProcessor.SENTRY_POLICY_SERVICE_NAME);
     client = new SentryPolicyService.Client(protocol);
     LOGGER.info("Successfully created client");
@@ -185,6 +192,7 @@ public class SentryPolicyServiceClient {
     privilege.setServerName(serverName);
     privilege.setURI(uri);
     privilege.setDbName(db);
+    privilege.setTableName(table);
     privilege.setAction(action);
     privilege.setGrantorPrincipal(requestorUserName);
     privilege.setCreateTime(System.currentTimeMillis());
@@ -276,6 +284,21 @@ public class SentryPolicyServiceClient {
         roleName, Sets.newHashSet(new TSentryGroup(groupName)));
     try {
       TAlterSentryRoleAddGroupsResponse response = client.alter_sentry_role_add_groups(request);
+      Status.throwIfNotOk(response.getStatus());
+    } catch (TException e) {
+      String msg = "Thrift exception occured: " + e.getMessage();
+      throw new SentryUserException(msg, e);
+    }
+  }
+
+  public void revokeRoleFromGroup(String requestorUserName, Set<String> requestorUserGroupName,
+      String groupName, String roleName)
+  throws SentryUserException {
+    TAlterSentryRoleDeleteGroupsRequest request = new TAlterSentryRoleDeleteGroupsRequest(ThriftConstants.
+        TSENTRY_SERVICE_VERSION_CURRENT, requestorUserName, requestorUserGroupName,
+        roleName, Sets.newHashSet(new TSentryGroup(groupName)));
+    try {
+      TAlterSentryRoleDeleteGroupsResponse response = client.alter_sentry_role_delete_groups(request);
       Status.throwIfNotOk(response.getStatus());
     } catch (TException e) {
       String msg = "Thrift exception occured: " + e.getMessage();

@@ -45,4 +45,6 @@ public class sentry_common_serviceConstants {
 
   public static final int TSENTRY_STATUS_INVALID_INPUT = 4;
 
+  public static final int TSENTRY_STATUS_ACCESS_DENIED = 5;
+
 }

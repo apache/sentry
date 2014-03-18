@@ -45,6 +45,13 @@ public class ServiceConstants {
   }
   public static class ServerConfig {
     public static final ImmutableMap<String, String> SASL_PROPERTIES = ServiceConstants.SASL_PROPERTIES;
+    /**
+     * This configuration parameter is only meant to be used for testing purposes.
+     */
+    public static final String SECURITY_MODE = "sentry.service.security.mode";
+    public static final String SECURITY_MODE_KERBEROS = "kerberos";
+    public static final String SECURITY_MODE_NONE = "none";
+    public static final String ADMIN_GROUPS = "sentry.service.admin.group";
     public static final String PRINCIPAL = "sentry.service.server.principal";
     public static final String KEY_TAB = "sentry.service.server.keytab";
     public static final String RPC_PORT = "sentry.service.server.rpc-port";

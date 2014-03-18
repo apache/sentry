@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.HashSet;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.provider.common.ProviderBackendContext;
 import org.junit.After;
@@ -46,7 +47,8 @@ public class TestSimpleFileProvderBackend {
   public void setup() throws IOException {
     baseDir = Files.createTempDir();
     PolicyFiles.copyToDir(baseDir, resourcePath);
-    backend = new SimpleFileProviderBackend(new File(baseDir, resourcePath).toString());
+    backend = new SimpleFileProviderBackend(new Configuration(), new File(baseDir, resourcePath)
+      .toString());
     context = new ProviderBackendContext();
   }
 

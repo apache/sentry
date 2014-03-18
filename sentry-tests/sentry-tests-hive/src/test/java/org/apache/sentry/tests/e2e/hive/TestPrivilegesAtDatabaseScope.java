@@ -44,7 +44,6 @@ import com.google.common.io.Resources;
 public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfiguration {
 
   private Context context;
-  private File dataFile;
   private PolicyFile policyFile;
 
   Map <String, String >testProperties;

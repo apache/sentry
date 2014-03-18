@@ -58,6 +58,8 @@ public abstract class SentryServiceIntegrationBase extends KerberosSecurityTestc
   protected static final String SERVER_KERBEROS_NAME = "sentry/" + SERVER_HOST + "@" + REALM;
   protected static final String CLIENT_PRINCIPAL = "hive/" + SERVER_HOST;
   protected static final String CLIENT_KERBEROS_NAME = "hive/" + SERVER_HOST + "@" + REALM;
+  protected static final String ADMIN_USER = "admin_user";
+  protected static final String ADMIN_GROUP = "admin_group";
 
   protected SentryService server;
   protected SentryPolicyServiceClient client;
@@ -68,10 +70,12 @@ public abstract class SentryServiceIntegrationBase extends KerberosSecurityTestc
   protected File clientKeytab;
   protected Subject clientSubject;
   protected LoginContext clientLoginContext;
+  protected boolean kerberos;
   protected final Configuration conf = new Configuration(false);
 
   @Before
   public void setup() throws Exception {
+    this.kerberos = true;
     beforeSetup();
     setupConf();
     startSentryService();
@@ -91,18 +95,23 @@ public abstract class SentryServiceIntegrationBase extends KerberosSecurityTestc
   }
 
   public void setupConf() throws Exception {
-    kdc = getKdc();
-    kdcWorkDir = getWorkDir();
-    serverKeytab = new File(kdcWorkDir, "server.keytab");
-    clientKeytab = new File(kdcWorkDir, "client.keytab");
-    kdc.createPrincipal(serverKeytab, SERVER_PRINCIPAL);
-    kdc.createPrincipal(clientKeytab, CLIENT_PRINCIPAL);
-
-    conf.set(ServerConfig.PRINCIPAL, SERVER_KERBEROS_NAME);
-    conf.set(ServerConfig.KEY_TAB, serverKeytab.getPath());
+    if (kerberos) {
+      kdc = getKdc();
+      kdcWorkDir = getWorkDir();
+      serverKeytab = new File(kdcWorkDir, "server.keytab");
+      clientKeytab = new File(kdcWorkDir, "client.keytab");
+      kdc.createPrincipal(serverKeytab, SERVER_PRINCIPAL);
+      kdc.createPrincipal(clientKeytab, CLIENT_PRINCIPAL);
+      conf.set(ServerConfig.PRINCIPAL, SERVER_KERBEROS_NAME);
+      conf.set(ServerConfig.KEY_TAB, serverKeytab.getPath());
+      conf.set(ServerConfig.ALLOW_CONNECT, CLIENT_KERBEROS_NAME);
+    } else {
+      LOGGER.info("Stopped KDC");
+      conf.set(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_NONE);
+    }
+    conf.set(ServerConfig.ADMIN_GROUPS, ADMIN_GROUP);
     conf.set(ServerConfig.RPC_ADDRESS, SERVER_HOST);
     conf.set(ServerConfig.RPC_PORT, String.valueOf(0));
-    conf.set(ServerConfig.ALLOW_CONNECT, CLIENT_KERBEROS_NAME);
     dbDir = new File(Files.createTempDir(), "sentry_policy_db");
     conf.set(ServerConfig.SENTRY_STORE_JDBC_URL,
         "jdbc:derby:;databaseName=" + dbDir.getPath() + ";create=true");
@@ -114,19 +123,24 @@ public abstract class SentryServiceIntegrationBase extends KerberosSecurityTestc
   public void connectToSentryService() throws Exception {
     // The client should already be logged in when running in hive/impala/solr
     // therefore we must manually login in the integration tests
-    clientSubject = new Subject(false, Sets.newHashSet(
-                                  new KerberosPrincipal(CLIENT_KERBEROS_NAME)), new HashSet<Object>(),
-                                new HashSet<Object>());
-    clientLoginContext = new LoginContext("", clientSubject, null,
-                                          KerberosConfiguration.createClientConfig(CLIENT_KERBEROS_NAME, clientKeytab));
-    clientLoginContext.login();
-    clientSubject = clientLoginContext.getSubject();
-    client = Subject.doAs(clientSubject, new PrivilegedExceptionAction<SentryPolicyServiceClient>() {
-      @Override
-      public SentryPolicyServiceClient run() throws Exception {
-        return new SentryServiceClientFactory().create(conf);
-      }
-    });
+    final SentryServiceClientFactory factory = new SentryServiceClientFactory();
+    if (kerberos) {
+      clientSubject = new Subject(false, Sets.newHashSet(
+          new KerberosPrincipal(CLIENT_KERBEROS_NAME)), new HashSet<Object>(),
+        new HashSet<Object>());
+      clientLoginContext = new LoginContext("", clientSubject, null,
+          KerberosConfiguration.createClientConfig(CLIENT_KERBEROS_NAME, clientKeytab));
+      clientLoginContext.login();
+      clientSubject = clientLoginContext.getSubject();
+      client = Subject.doAs(clientSubject, new PrivilegedExceptionAction<SentryPolicyServiceClient>() {
+        @Override
+        public SentryPolicyServiceClient run() throws Exception {
+          return factory.create(conf);
+        }
+      });
+    } else {
+      client = factory.create(conf);
+    }
   }
 
   @After
