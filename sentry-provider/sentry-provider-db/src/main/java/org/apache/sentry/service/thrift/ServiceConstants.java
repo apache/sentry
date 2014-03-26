@@ -122,4 +122,13 @@ public class ServiceConstants {
   public static class ThriftConstants extends org.apache.sentry.service.thrift.sentry_common_serviceConstants {
     public static final int TSENTRY_SERVICE_VERSION_CURRENT = TSENTRY_SERVICE_V1;
   }
+
+  /* Privilege operation scope */
+  public static enum PrivilegeScope {
+    SERVER,
+    URI,
+    DATABASE,
+    TABLE,
+    COLUMN
+  }
 }

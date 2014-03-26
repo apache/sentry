@@ -30,6 +30,7 @@ import org.apache.sentry.SentryUserException;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
+import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.apache.sentry.service.thrift.ServiceConstants.ThriftConstants;
 import org.apache.sentry.service.thrift.Status;
@@ -154,33 +155,33 @@ public class SentryPolicyServiceClient {
   public void grantURIPrivilege(String requestorUserName, Set<String> requestorUserGroupNames,
       String roleName, String server, String uri)
   throws SentryUserException {
-    grantPrivilege(requestorUserName, requestorUserGroupNames, roleName, "SERVER", server, uri,
-        null, null, AccessConstants.ALL);
+    grantPrivilege(requestorUserName, requestorUserGroupNames, roleName,
+        PrivilegeScope.URI, server, uri, null, null, AccessConstants.ALL);
   }
 
   public void grantServerPrivilege(String requestorUserName, Set<String> requestorUserGroupNames,
       String roleName, String server)
   throws SentryUserException {
-    grantPrivilege(requestorUserName, requestorUserGroupNames, roleName, "SERVER", server, null,
-        null, null, AccessConstants.ALL);
+    grantPrivilege(requestorUserName, requestorUserGroupNames, roleName,
+        PrivilegeScope.SERVER, server, null, null, null, AccessConstants.ALL);
   }
 
   public void grantDatabasePrivilege(String requestorUserName, Set<String> requestorUserGroupNames,
       String roleName, String server, String db)
   throws SentryUserException {
-    grantPrivilege(requestorUserName, requestorUserGroupNames, roleName, "DATABASE", server, null,
-        db, null, AccessConstants.ALL);
+    grantPrivilege(requestorUserName, requestorUserGroupNames, roleName,
+        PrivilegeScope.DATABASE, server, null, db, null, AccessConstants.ALL);
   }
 
   public void grantTablePrivilege(String requestorUserName, Set<String> requestorUserGroupNames,
       String roleName, String server, String db, String table, String action)
   throws SentryUserException {
-    grantPrivilege(requestorUserName, requestorUserGroupNames, roleName, "TABLE", server, null,
+    grantPrivilege(requestorUserName, requestorUserGroupNames, roleName, PrivilegeScope.TABLE, server, null,
         db, table, action);
   }
 
   private void grantPrivilege(String requestorUserName, Set<String> requestorUserGroupNames,
-      String roleName, String scope, String serverName, String uri, String db, String table, String action)
+      String roleName, PrivilegeScope scope, String serverName, String uri, String db, String table, String action)
   throws SentryUserException {
     TAlterSentryRoleGrantPrivilegeRequest request = new TAlterSentryRoleGrantPrivilegeRequest();
     request.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
@@ -188,7 +189,7 @@ public class SentryPolicyServiceClient {
     request.setRequestorGroupNames(requestorUserGroupNames);
     request.setRoleName(roleName);
     TSentryPrivilege privilege = new TSentryPrivilege();
-    privilege.setPrivilegeScope(scope);
+    privilege.setPrivilegeScope(scope.toString());
     privilege.setServerName(serverName);
     privilege.setURI(uri);
     privilege.setDbName(db);
@@ -209,33 +210,34 @@ public class SentryPolicyServiceClient {
   public void revokeURIPrivilege(String requestorUserName, Set<String> requestorUserGroupNames,
       String roleName, String server, String uri)
   throws SentryUserException {
-    revokePrivilege(requestorUserName, requestorUserGroupNames, roleName, "SERVER", server, uri,
-        null, null, AccessConstants.ALL);
+    revokePrivilege(requestorUserName, requestorUserGroupNames, roleName,
+        PrivilegeScope.URI, server, uri, null, null, AccessConstants.ALL);
   }
 
   public void revokeServerPrivilege(String requestorUserName, Set<String> requestorUserGroupNames,
       String roleName, String server)
   throws SentryUserException {
-    revokePrivilege(requestorUserName, requestorUserGroupNames, roleName, "SERVER", server, null,
-        null, null, AccessConstants.ALL);
+    revokePrivilege(requestorUserName, requestorUserGroupNames, roleName,
+        PrivilegeScope.SERVER, server, null, null, null, AccessConstants.ALL);
   }
 
   public void revokeDatabasePrivilege(String requestorUserName, Set<String> requestorUserGroupNames,
       String roleName, String server, String db)
   throws SentryUserException {
-    revokePrivilege(requestorUserName, requestorUserGroupNames, roleName, "DATABASE", server, null,
-        db, null, AccessConstants.ALL);
+    revokePrivilege(requestorUserName, requestorUserGroupNames, roleName,
+        PrivilegeScope.DATABASE, server, null, db, null, AccessConstants.ALL);
   }
 
   public void revokeTablePrivilege(String requestorUserName, Set<String> requestorUserGroupNames,
       String roleName, String server, String db, String table, String action)
   throws SentryUserException {
-    revokePrivilege(requestorUserName, requestorUserGroupNames, roleName, "TABLE", server, null,
+    revokePrivilege(requestorUserName, requestorUserGroupNames, roleName,
+        PrivilegeScope.TABLE, server, null,
         db, table, action);
   }
 
   private void revokePrivilege(String requestorUserName, Set<String> requestorUserGroupNames,
-      String roleName, String scope, String serverName, String uri, String db, String table, String action)
+      String roleName, PrivilegeScope scope, String serverName, String uri, String db, String table, String action)
   throws SentryUserException {
     TAlterSentryRoleRevokePrivilegeRequest request = new TAlterSentryRoleRevokePrivilegeRequest();
     request.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
@@ -243,7 +245,7 @@ public class SentryPolicyServiceClient {
     request.setRequestorGroupNames(requestorUserGroupNames);
     request.setRoleName(roleName);
     TSentryPrivilege privilege = new TSentryPrivilege();
-    privilege.setPrivilegeScope(scope);
+    privilege.setPrivilegeScope(scope.toString());
     privilege.setServerName(serverName);
     privilege.setURI(uri);
     privilege.setDbName(db);

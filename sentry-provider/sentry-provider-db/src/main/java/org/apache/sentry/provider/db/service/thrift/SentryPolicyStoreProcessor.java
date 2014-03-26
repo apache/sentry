@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.provider.db.SentryAlreadyExistsException;
@@ -31,6 +32,7 @@ import org.apache.sentry.provider.db.SentryNoSuchObjectException;
 import org.apache.sentry.provider.db.service.persistent.CommitContext;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.provider.db.service.thrift.PolicyStoreConstants.PolicyStoreServerConfig;
+import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
 import org.apache.sentry.service.thrift.Status;
 import org.apache.sentry.service.thrift.TSentryResponseStatus;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
@@ -106,7 +108,6 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     return handlers;
   }
 
-  //TODO:Validate privilege scope?
   @VisibleForTesting
   public static String constructPrivilegeName(TSentryPrivilege privilege) throws SentryInvalidInputException {
     StringBuilder privilegeName = new StringBuilder();
@@ -115,6 +116,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     String tableName = privilege.getTableName();
     String uri = privilege.getURI();
     String action = privilege.getAction();
+    PrivilegeScope scope;
 
     if (serverName == null) {
       throw new SentryInvalidInputException("Server name is null");
@@ -126,10 +128,38 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       }
     }
 
-    if (dbName == null || dbName.equals("")) {
-      if (tableName != null && !tableName.equals("")) {
-        throw new SentryInvalidInputException("Db name can't be null");
+    // Validate privilege scope
+    try {
+      scope = Enum.valueOf(PrivilegeScope.class, privilege.getPrivilegeScope());
+    } catch (IllegalArgumentException e) {
+      throw new SentryInvalidInputException("Invalid Privilege scope: " +
+          privilege.getPrivilegeScope());
+    }
+    if (PrivilegeScope.SERVER.equals(scope)) {
+      if (StringUtils.isNotEmpty(dbName) || StringUtils.isNotEmpty(tableName)) {
+        throw new SentryInvalidInputException("DB and TABLE names should not be "
+            + "set for SERVER scope");
       }
+    } else if (PrivilegeScope.DATABASE.equals(scope)) {
+      if (StringUtils.isEmpty(dbName)) {
+        throw new SentryInvalidInputException("DB name not set for DB scope");
+      }
+      if (StringUtils.isNotEmpty(tableName)) {
+        StringUtils.isNotEmpty("TABLE names should not be set for DB scope");
+      }
+    } else if (PrivilegeScope.TABLE.equals(scope)) {
+      if (StringUtils.isEmpty(dbName) || StringUtils.isEmpty(tableName)) {
+        throw new SentryInvalidInputException("TABLE or DB name not set for TABLE scope");
+      }
+    } else if (PrivilegeScope.URI.equals(scope)){
+      if (StringUtils.isEmpty(uri)) {
+        throw new SentryInvalidInputException("URI path not set for URI scope");
+      }
+      if (StringUtils.isNotEmpty(tableName)) {
+        throw new SentryInvalidInputException("TABLE should not be set for URI scope");
+      }
+    } else {
+      throw new SentryInvalidInputException("Unsupported operation scope: " + scope);
     }
 
     if (uri == null || uri.equals("")) {
