@@ -265,8 +265,8 @@ limitations under the License.
                     mv $BASE_DIR/${finalName}* $BASE_DIR/$finalName
                   }
                   mkdir -p $DOWNLOAD_DIR
-                  download "http://repos.jenkins.cloudera.com/cdh5-nightly/cdh/5/hadoop-latest.tar.gz" hadoop.tar.gz hadoop
-                  download "http://repos.jenkins.cloudera.com/cdh5-nightly/cdh/5/hive-latest.tar.gz" hive.tar.gz hive
+                  download "http://nightly.cloudera.com/cdh5/cdh/5/hadoop-latest.tar.gz" hadoop.tar.gz hadoop
+                  download "http://nightly.cloudera.com/cdh5/cdh/5/hive-latest.tar.gz" hive.tar.gz hive
                 </echo>
                 <exec executable="bash" dir="${basedir}" failonerror="true">
                   <arg line="target/download.sh"/>
