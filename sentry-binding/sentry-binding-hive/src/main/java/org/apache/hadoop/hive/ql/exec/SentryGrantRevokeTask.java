@@ -21,6 +21,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -45,9 +46,12 @@ import org.apache.hadoop.hive.ql.plan.api.StageType;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.hive.ql.session.SessionState.LogHelper;
 import org.apache.sentry.SentryUserException;
+import org.apache.sentry.binding.hive.authz.HiveAuthzBinding;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
+import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Subject;
+import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.service.thrift.SentryServiceClientFactory;
 import org.slf4j.Logger;
@@ -57,6 +61,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 
 // TODO remove this suppress
 @SuppressWarnings("unused")
@@ -73,6 +78,7 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
   private SentryServiceClientFactory sentryClientFactory;
   private SentryPolicyServiceClient sentryClient;
   private HiveConf conf;
+  private HiveAuthzBinding hiveAuthzBinding;
   private HiveAuthzConf authzConf;
   private String server;
   private Subject subject;
@@ -104,6 +110,7 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
         LOG.error(msg, e);
         throw new RuntimeException(msg, e);
       }
+      Preconditions.checkNotNull(hiveAuthzBinding, "HiveAuthzBinding cannot be null");
       Preconditions.checkNotNull(authzConf, "HiveAuthConf cannot be null");
       Preconditions.checkNotNull(subject, "Subject cannot be null");
       Preconditions.checkNotNull(subjectGroups, "Subject Groups cannot be null");
@@ -111,7 +118,7 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
           "Config " + AuthzConfVars.AUTHZ_SERVER_NAME.getVar() + " is required");
       if (work.getRoleDDLDesc() != null) {
         return processRoleDDL(conf, console, sentryClient, subject.getName(), subjectGroups,
-            work.getRoleDDLDesc());
+            hiveAuthzBinding, work.getRoleDDLDesc());
       }
       if (work.getGrantDesc() != null) {
         return processGrantDDL(conf, console, sentryClient, subject.getName(), subjectGroups,
@@ -148,6 +155,11 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
         "setAuthzConf should only be called once: " + this.authzConf);
     this.authzConf = authzConf;
   }
+  public void setHiveAuthzBinding(HiveAuthzBinding hiveAuthzBinding) {
+    Preconditions.checkState(this.hiveAuthzBinding == null,
+        "setHiveAuthzBinding should only be called once: " + this.hiveAuthzBinding);
+    this.hiveAuthzBinding = hiveAuthzBinding;
+  }
   public void setSubject(Subject subject) {
     Preconditions.checkState(this.subject == null,
         "setSubject should only be called once: " + this.subject);
@@ -162,13 +174,16 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
   @VisibleForTesting
   static int processRoleDDL(HiveConf conf, LogHelper console,
       SentryPolicyServiceClient sentryClient, String subject,
-      Set<String> subjectGroups, RoleDDLDesc desc) throws SentryUserException {
+      Set<String> subjectGroups, HiveAuthzBinding hiveAuthzBinding, RoleDDLDesc desc)
+          throws SentryUserException {
     RoleDDLDesc.RoleOperation operation = desc.getOperation();
     DataOutputStream outStream = null;
     String name = desc.getName();
     try {
-      if (operation.equals(RoleDDLDesc.RoleOperation.CREATE_ROLE)) {
-        SessionState.get().getAuthenticator();
+      if (operation.equals(RoleDDLDesc.RoleOperation.SET_ROLE)) {
+        hiveAuthzBinding.setActiveRoleSet(name);
+        return RETURN_CODE_SUCCESS;
+      } else if (operation.equals(RoleDDLDesc.RoleOperation.CREATE_ROLE)) {
         sentryClient.createRole(subject, subjectGroups, name);
         return RETURN_CODE_SUCCESS;
       } else if (operation.equals(RoleDDLDesc.RoleOperation.DROP_ROLE)) {

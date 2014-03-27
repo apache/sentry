@@ -277,6 +277,7 @@ implements HiveDriverFilterHook {
     for (Task<? extends Serializable> task : rootTasks) {
       if (task instanceof SentryGrantRevokeTask) {
         SentryGrantRevokeTask sentryTask = (SentryGrantRevokeTask)task;
+        sentryTask.setHiveAuthzBinding(hiveAuthzBinding);
         sentryTask.setAuthzConf(authzConf);
         sentryTask.setSubject(subject);
         sentryTask.setSubjectGroups(subjectGroups);

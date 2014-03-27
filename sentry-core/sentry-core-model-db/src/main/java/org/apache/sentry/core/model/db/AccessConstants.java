@@ -16,6 +16,8 @@
  */
 package org.apache.sentry.core.model.db;
 
+import com.google.common.collect.ImmutableSet;
+
 public class AccessConstants {
 
   /**
@@ -27,4 +29,8 @@ public class AccessConstants {
   public static final String SELECT = "select";
   public static final String INSERT = "insert";
 
+  public static final String ALL_ROLE = "ALL", DEFAULT_ROLE = "DEFAULT", NONE_ROLE = "NONE",
+      SUPERUSER_ROLE = "SUPERUSER", PUBLIC_ROLE = "PUBLIC";
+  public static final ImmutableSet<String> RESERVED_ROLE_NAMES = ImmutableSet.of(ALL_ROLE,
+      DEFAULT_ROLE, NONE_ROLE, SUPERUSER_ROLE, PUBLIC_ROLE);
 }

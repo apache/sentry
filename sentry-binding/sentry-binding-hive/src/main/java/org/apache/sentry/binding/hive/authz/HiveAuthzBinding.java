@@ -18,6 +18,7 @@ package org.apache.sentry.binding.hive.authz;
 
 import java.lang.reflect.Constructor;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -36,6 +37,7 @@ import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
 import org.apache.sentry.binding.hive.conf.InvalidConfigurationException;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Subject;
+import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.model.db.DBModelAction;
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
@@ -47,7 +49,9 @@ import org.apache.sentry.provider.common.ProviderBackend;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
+import com.google.common.collect.Sets;
 
 public class HiveAuthzBinding {
   private static final Logger LOG = LoggerFactory
@@ -55,16 +59,39 @@ public class HiveAuthzBinding {
   private static final Map<String, HiveAuthzBinding> authzBindingMap =
       new ConcurrentHashMap<String, HiveAuthzBinding>();
   private static final AtomicInteger queryID = new AtomicInteger();
+  private static final Splitter ROLE_SET_SPLITTER = Splitter.on(",").trimResults()
+      .omitEmptyStrings();
   public static final String HIVE_BINDING_TAG = "hive.authz.bindings.tag";
 
+  private final HiveConf hiveConf;
   private final Server authServer;
   private final AuthorizationProvider authProvider;
   private volatile boolean open;
+  private ActiveRoleSet activeRoleSet;
 
   public HiveAuthzBinding (HiveConf hiveConf, HiveAuthzConf authzConf) throws Exception {
+    this.hiveConf = hiveConf;
     this.authServer = new Server(authzConf.get(AuthzConfVars.AUTHZ_SERVER_NAME.getVar()));
     this.authProvider = getAuthProvider(hiveConf, authzConf, authServer.getName());
     this.open = true;
+    this.activeRoleSet = parseActiveRoleSet(hiveConf.get(HiveAuthzConf.SENTRY_ACTIVE_ROLE_SET,
+        authzConf.get(HiveAuthzConf.SENTRY_ACTIVE_ROLE_SET, "")).trim());
+  }
+
+  private static ActiveRoleSet parseActiveRoleSet(String name) {
+    // if unset, then we choose the default of ALL
+    if (name.isEmpty()) {
+      return ActiveRoleSet.ALL;
+    } else if (AccessConstants.NONE_ROLE.equalsIgnoreCase(name)) {
+      return new ActiveRoleSet(new HashSet<String>());
+    } else if (AccessConstants.ALL_ROLE.equalsIgnoreCase(name)) {
+      return ActiveRoleSet.ALL;
+    } else if (AccessConstants.RESERVED_ROLE_NAMES.contains(name.toUpperCase())) {
+      String msg = "Role " + name + " is reserved";
+      throw new IllegalArgumentException(msg);
+    } else {
+      return new ActiveRoleSet(Sets.newHashSet(ROLE_SET_SPLITTER.split(name)));
+    }
   }
 
   /**
@@ -179,7 +206,8 @@ public class HiveAuthzBinding {
    * @throws AuthorizationException
    */
   public void authorize(HiveOperation hiveOp, HiveAuthzPrivileges stmtAuthPrivileges,
-      Subject subject, List<List<DBModelAuthorizable>> inputHierarchyList, List<List<DBModelAuthorizable>> outputHierarchyList )
+      Subject subject, List<List<DBModelAuthorizable>> inputHierarchyList,
+      List<List<DBModelAuthorizable>> outputHierarchyList)
           throws AuthorizationException {
     if (!open) {
       throw new IllegalStateException("Binding has been closed");
@@ -210,7 +238,7 @@ public class HiveAuthzBinding {
         if (requiredInputPrivileges.containsKey(getAuthzType(inputHierarchy))) {
           EnumSet<DBModelAction> inputPrivSet =
             requiredInputPrivileges.get(getAuthzType(inputHierarchy));
-          if (!authProvider.hasAccess(subject, inputHierarchy, inputPrivSet, ActiveRoleSet.ALL)) {
+          if (!authProvider.hasAccess(subject, inputHierarchy, inputPrivSet, activeRoleSet)) {
             throw new AuthorizationException("User " + subject.getName() +
                 " does not have privileges for " + hiveOp.name());
           }
@@ -228,12 +256,17 @@ public class HiveAuthzBinding {
         if (requiredOutputPrivileges.containsKey(getAuthzType(outputHierarchy))) {
           EnumSet<DBModelAction> outputPrivSet =
             requiredOutputPrivileges.get(getAuthzType(outputHierarchy));
-          if (!authProvider.hasAccess(subject, outputHierarchy, outputPrivSet, ActiveRoleSet.ALL)) {
+          if (!authProvider.hasAccess(subject, outputHierarchy, outputPrivSet, activeRoleSet)) {
             throw new AuthorizationException("User " + subject.getName() +
                 " does not have priviliedges for " + hiveOp.name());
           }
         }
       }
+  }
+
+  public void setActiveRoleSet(String activeRoleSet) {
+    this.activeRoleSet = parseActiveRoleSet(activeRoleSet);
+    hiveConf.set(HiveAuthzConf.SENTRY_ACTIVE_ROLE_SET, activeRoleSet);
   }
 
   public Set<String> getGroups(Subject subject) {

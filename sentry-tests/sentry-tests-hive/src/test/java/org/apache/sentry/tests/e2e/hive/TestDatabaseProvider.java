@@ -116,9 +116,18 @@ public class TestDatabaseProvider extends AbstractTestWithHiveServer {
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     context.assertSentryServiceAccessDenied(statement, "CREATE ROLE r2");
+    // test default of ALL
+    statement.execute("SELECT * FROM t1");
+    // test a specific role
+    statement.execute("SET ROLE user_role");
+    statement.execute("SELECT * FROM t1");
+    // test NONE
+    statement.execute("SET ROLE NONE");
+    context.assertAuthzException(statement, "SELECT * FROM t1");
+    // test ALL
+    statement.execute("SET ROLE ALL");
     statement.execute("SELECT * FROM t1");
     statement.close();
     connection.close();
-
   }
 }

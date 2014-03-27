@@ -48,6 +48,9 @@ import org.apache.hadoop.hive.ql.plan.ShowGrantDesc;
 import org.apache.hadoop.hive.ql.security.authorization.Privilege;
 import org.apache.hadoop.hive.ql.security.authorization.PrivilegeRegistry;
 import org.apache.hadoop.hive.ql.session.SessionState;
+import org.apache.sentry.core.model.db.AccessConstants;
+
+import com.google.common.base.Preconditions;
 
 public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorizationTaskFactory {
 
@@ -58,15 +61,23 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
 
   @Override
   public Task<? extends Serializable> createCreateRoleTask(ASTNode ast, HashSet<ReadEntity> inputs,
-      HashSet<WriteEntity> outputs) {
+      HashSet<WriteEntity> outputs) throws SemanticException {
     String roleName = BaseSemanticAnalyzer.unescapeIdentifier(ast.getChild(0).getText());
+    if (AccessConstants.RESERVED_ROLE_NAMES.contains(roleName.toUpperCase())) {
+      String msg = "Roles cannot be one of the reserved roles: " + AccessConstants.RESERVED_ROLE_NAMES;
+      throw new SemanticException(msg);
+    }
     RoleDDLDesc roleDesc = new RoleDDLDesc(roleName, RoleDDLDesc.RoleOperation.CREATE_ROLE);
     return createTask(new DDLWork(inputs, outputs, roleDesc));
   }
   @Override
   public Task<? extends Serializable> createDropRoleTask(ASTNode ast, HashSet<ReadEntity> inputs,
-      HashSet<WriteEntity> outputs) {
+      HashSet<WriteEntity> outputs) throws SemanticException {
     String roleName = BaseSemanticAnalyzer.unescapeIdentifier(ast.getChild(0).getText());
+    if (AccessConstants.RESERVED_ROLE_NAMES.contains(roleName.toUpperCase())) {
+      String msg = "Roles cannot be one of the reserved roles: " + AccessConstants.RESERVED_ROLE_NAMES;
+      throw new SemanticException(msg);
+    }
     RoleDDLDesc roleDesc = new RoleDDLDesc(roleName, RoleDDLDesc.RoleOperation.DROP_ROLE);
     return createTask(new DDLWork(inputs, outputs, roleDesc));
   }
@@ -121,6 +132,7 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
         && SessionState.get().getAuthenticator() != null) {
       userName = SessionState.get().getAuthenticator().getUserName();
     }
+    Preconditions.checkNotNull(privilegeObj, "privilegeObj is null for " + ast.dump());
     if (privilegeObj.getPartSpec() != null) {
       throw new SemanticException(SentryHiveConstants.PARTITION_PRIVS_NOT_SUPPORTED);
     }
@@ -256,6 +268,19 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
     GrantRevokeRoleDDL grantRevokeRoleDDL = new GrantRevokeRoleDDL(isGrant,
         roles, principalDesc, roleOwnerName, PrincipalType.USER, false);
     return createTask(new DDLWork(inputs, outputs, grantRevokeRoleDDL));
+  }
+
+  @Override
+  public Task<? extends Serializable> createSetRoleTask(String role, HashSet<ReadEntity> inputs,
+      HashSet<WriteEntity> outputs) {
+    RoleDDLDesc roleDesc = new RoleDDLDesc(role, RoleDDLDesc.RoleOperation.SET_ROLE);
+    return createTask(new DDLWork(inputs, outputs, roleDesc));
+  }
+
+  @Override
+  public Task<? extends Serializable> createShowCurrentRoleTask(HashSet<ReadEntity> inputs,
+      HashSet<WriteEntity> outputs, Path resultFile) throws SemanticException {
+    throw new SemanticException("TODO IN FOLLOW ON");
   }
 
   private PrivilegeObjectDesc analyzePrivilegeObject(ASTNode ast)

@@ -55,7 +55,7 @@ import org.mockito.Mockito;
 
 public class TestSentryHiveAuthorizationTaskFactory {
 
-  private static final String SELECT = "SELECT";
+  private static final String ALL = "ALL";
   private static final String DB = "default";
   private static final String TABLE = "table1";
   private static final String GROUP = "group1";
@@ -124,7 +124,7 @@ public class TestSentryHiveAuthorizationTaskFactory {
    */
   @Test
   public void testGrantUserTable() throws Exception {
-    expectSemanticException("GRANT " + SELECT + " ON TABLE " + TABLE + " TO USER " + USER,
+    expectSemanticException("GRANT " + ALL + " ON TABLE " + TABLE + " TO USER " + USER,
         SentryHiveConstants.GRANT_REVOKE_NOT_SUPPORTED_FOR_PRINCIPAL + "USER");
   }
 
@@ -133,7 +133,7 @@ public class TestSentryHiveAuthorizationTaskFactory {
    */
   @Test
   public void testGrantRoleTable() throws Exception {
-    DDLWork work = analyze(parse("GRANT " + SELECT + " ON TABLE " + TABLE
+    DDLWork work = analyze(parse("GRANT " + ALL + " ON TABLE " + TABLE
         + " TO ROLE " + ROLE));
     GrantDesc grantDesc = work.getGrantDesc();
     Assert.assertNotNull("Grant should not be null", grantDesc);
@@ -142,7 +142,7 @@ public class TestSentryHiveAuthorizationTaskFactory {
       Assert.assertEquals(ROLE, principal.getName());
     }
     for (PrivilegeDesc privilege : assertSize(1, grantDesc.getPrivileges())) {
-      Assert.assertEquals(Privilege.SELECT, privilege.getPrivilege());
+      Assert.assertEquals(Privilege.ALL, privilege.getPrivilege());
     }
     Assert.assertTrue("Expected table", grantDesc.getPrivilegeSubjectDesc()
         .getTable());
@@ -153,7 +153,7 @@ public class TestSentryHiveAuthorizationTaskFactory {
    */
   @Test
   public void testGrantRoleTableWithGrantOption() throws Exception {
-    expectSemanticException("GRANT " + SELECT + " ON TABLE " + TABLE + " TO ROLE " + ROLE +
+    expectSemanticException("GRANT " + ALL + " ON TABLE " + TABLE + " TO ROLE " + ROLE +
         " WITH GRANT OPTION", "Sentry does not allow WITH GRANT OPTION");
   }
 
@@ -162,7 +162,7 @@ public class TestSentryHiveAuthorizationTaskFactory {
    */
   @Test
   public void testGrantGroupTable() throws Exception {
-    expectSemanticException("GRANT " + SELECT + " ON TABLE " + TABLE + " TO GROUP " + GROUP,
+    expectSemanticException("GRANT " + ALL + " ON TABLE " + TABLE + " TO GROUP " + GROUP,
         SentryHiveConstants.GRANT_REVOKE_NOT_SUPPORTED_FOR_PRINCIPAL + "GROUP");
   }
 
@@ -171,7 +171,7 @@ public class TestSentryHiveAuthorizationTaskFactory {
    */
   @Test
   public void testRevokeUserTable() throws Exception {
-    expectSemanticException("REVOKE " + SELECT + " ON TABLE " + TABLE + " FROM USER " + USER,
+    expectSemanticException("REVOKE " + ALL + " ON TABLE " + TABLE + " FROM USER " + USER,
         SentryHiveConstants.GRANT_REVOKE_NOT_SUPPORTED_FOR_PRINCIPAL + "USER");
   }
 
@@ -180,7 +180,7 @@ public class TestSentryHiveAuthorizationTaskFactory {
    */
   @Test
   public void testRevokeRoleTable() throws Exception {
-    DDLWork work = analyze(parse("REVOKE " + SELECT + " ON TABLE " + TABLE
+    DDLWork work = analyze(parse("REVOKE " + ALL + " ON TABLE " + TABLE
         + " FROM ROLE " + ROLE));
     RevokeDesc grantDesc = work.getRevokeDesc();
     Assert.assertNotNull("Revoke should not be null", grantDesc);
@@ -189,7 +189,7 @@ public class TestSentryHiveAuthorizationTaskFactory {
       Assert.assertEquals(ROLE, principal.getName());
     }
     for (PrivilegeDesc privilege : assertSize(1, grantDesc.getPrivileges())) {
-      Assert.assertEquals(Privilege.SELECT, privilege.getPrivilege());
+      Assert.assertEquals(Privilege.ALL, privilege.getPrivilege());
     }
     Assert.assertTrue("Expected table", grantDesc.getPrivilegeSubjectDesc()
         .getTable());
@@ -201,7 +201,7 @@ public class TestSentryHiveAuthorizationTaskFactory {
    */
   @Test
   public void testRevokeGroupTable() throws Exception {
-    expectSemanticException("REVOKE " + SELECT + " ON TABLE " + TABLE + " FROM GROUP " + GROUP,
+    expectSemanticException("REVOKE " + ALL + " ON TABLE " + TABLE + " FROM GROUP " + GROUP,
         SentryHiveConstants.GRANT_REVOKE_NOT_SUPPORTED_FOR_PRINCIPAL + "GROUP");
   }
 

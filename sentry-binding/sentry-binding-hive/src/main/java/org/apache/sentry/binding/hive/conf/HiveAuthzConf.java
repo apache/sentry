@@ -42,6 +42,11 @@ public class HiveAuthzConf extends Configuration {
   public static final String HIVE_SENTRY_MOCK_COMPILATION = "hive.sentry.mock.compilation";
   public static final String HIVE_SENTRY_MOCK_ERROR = "hive.sentry.mock.error";
   public static final String HIVE_SENTRY_PRIVILEGE_ERROR_MESSAGE = "No valid privileges";
+  /**
+   * Property used to persist the role set in the session. This is not public for now.
+   */
+  public static final String SENTRY_ACTIVE_ROLE_SET = "hive.sentry.active.role.set";
+
 
   /**
    * Config setting definitions
