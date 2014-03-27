@@ -28,11 +28,11 @@ import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.db.SentryAlreadyExistsException;
 import org.apache.sentry.provider.db.SentryNoSuchObjectException;
 import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
-import org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessor;
 import org.apache.sentry.provider.db.service.thrift.TSentryActiveRoleSet;
 import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
@@ -123,24 +123,37 @@ public class TestSentryStore {
   public void testGrantRevokePrivilege() throws Exception {
     String roleName = "test-privilege";
     String grantor = "g1";
+    String server = "server1";
+    String db = "db1";
+    String table = "tbl1";
     long seqId = sentryStore.createSentryRole(roleName, grantor).getSequenceId();
     TSentryPrivilege privilege = new TSentryPrivilege();
     privilege.setPrivilegeScope("TABLE");
-    privilege.setServerName("server1");
-    privilege.setDbName("db1");
-    privilege.setTableName("tbl1");
-    privilege.setAction("SELECT");
+    privilege.setServerName(server);
+    privilege.setDbName(db);
+    privilege.setTableName(table);
+    privilege.setAction(AccessConstants.ALL);
     privilege.setGrantorPrincipal(grantor);
     privilege.setCreateTime(System.currentTimeMillis());
-    privilege.setPrivilegeName(SentryPolicyStoreProcessor.constructPrivilegeName(privilege));
+    privilege.setPrivilegeName(SentryStore.constructPrivilegeName(privilege));
     assertEquals(seqId + 1, sentryStore.alterSentryRoleGrantPrivilege(roleName, privilege)
         .getSequenceId());
     MSentryRole role = sentryStore.getMSentryRoleByName(roleName);
     Set<MSentryPrivilege> privileges = role.getPrivileges();
     assertEquals(privileges.toString(), 1, privileges.size());
     assertEquals(privilege.getPrivilegeName(), Iterables.get(privileges, 0).getPrivilegeName());
-    assertEquals(seqId + 2, sentryStore.alterSentryRoleRevokePrivilege(roleName, privilege.getPrivilegeName())
+    privilege.setAction(AccessConstants.SELECT);
+    assertEquals(seqId + 2, sentryStore.alterSentryRoleRevokePrivilege(roleName, privilege)
         .getSequenceId());
+    // after having ALL and revoking SELECT, we should have INSERT
+    role = sentryStore.getMSentryRoleByName(roleName);
+    privileges = role.getPrivileges();
+    assertEquals(privileges.toString(), 1, privileges.size());
+    MSentryPrivilege mPrivilege = Iterables.get(privileges, 0);
+    assertEquals(server, mPrivilege.getServerName());
+    assertEquals(db, mPrivilege.getDbName());
+    assertEquals(table, mPrivilege.getTableName());
+    assertEquals(AccessConstants.INSERT, mPrivilege.getAction());
   }
 
   @Test
@@ -158,7 +171,7 @@ public class TestSentryStore {
     privilege1.setAction("SELECT");
     privilege1.setGrantorPrincipal(grantor);
     privilege1.setCreateTime(System.currentTimeMillis());
-    privilege1.setPrivilegeName(SentryPolicyStoreProcessor.constructPrivilegeName(privilege1));
+    privilege1.setPrivilegeName(SentryStore.constructPrivilegeName(privilege1));
     assertEquals(seqId + 2, sentryStore.alterSentryRoleGrantPrivilege(roleName1, privilege1)
         .getSequenceId());
     assertEquals(seqId + 3, sentryStore.alterSentryRoleGrantPrivilege(roleName2, privilege1)
@@ -168,7 +181,7 @@ public class TestSentryStore {
     privilege2.setServerName("server1");
     privilege2.setGrantorPrincipal(grantor);
     privilege2.setCreateTime(System.currentTimeMillis());
-    privilege2.setPrivilegeName(SentryPolicyStoreProcessor.constructPrivilegeName(privilege2));
+    privilege2.setPrivilegeName(SentryStore.constructPrivilegeName(privilege2));
     assertEquals(seqId + 4, sentryStore.alterSentryRoleGrantPrivilege(roleName2, privilege2)
         .getSequenceId());
     Set<TSentryGroup> groups = Sets.newHashSet();

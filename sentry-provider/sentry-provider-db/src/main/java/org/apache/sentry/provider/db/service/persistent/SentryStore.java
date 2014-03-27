@@ -37,9 +37,11 @@ import javax.jdo.Transaction;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
 import org.apache.sentry.provider.common.ProviderConstants;
 import org.apache.sentry.provider.db.SentryAlreadyExistsException;
+import org.apache.sentry.provider.db.SentryInvalidInputException;
 import org.apache.sentry.provider.db.SentryNoSuchObjectException;
 import org.apache.sentry.provider.db.service.model.MSentryGroup;
 import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
@@ -49,6 +51,7 @@ import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
+import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -199,7 +202,7 @@ public class SentryStore {
 
   //TODO: handle case where a) privilege already exists, b) role to privilege mapping already exists
   public CommitContext alterSentryRoleGrantPrivilege(String roleName,
-      TSentryPrivilege privilege) throws SentryNoSuchObjectException {
+      TSentryPrivilege privilege) throws SentryNoSuchObjectException, SentryInvalidInputException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
     roleName = roleName.trim().toLowerCase();
@@ -232,7 +235,7 @@ public class SentryStore {
   }
 
   public CommitContext alterSentryRoleRevokePrivilege(String roleName,
-      String privilegeName) throws SentryNoSuchObjectException {
+      TSentryPrivilege tPrivilege) throws SentryNoSuchObjectException, SentryInvalidInputException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
     try {
@@ -249,16 +252,21 @@ public class SentryStore {
         query.setFilter("this.privilegeName == t");
         query.declareParameters("java.lang.String t");
         query.setUnique(true);
+        String privilegeName = constructPrivilegeName(tPrivilege);
         MSentryPrivilege mPrivilege = (MSentryPrivilege) query.execute(privilegeName);
         if (mPrivilege == null) {
-          throw new SentryNoSuchObjectException("Privilege: " + privilegeName);
+          revokePartialPrivilege(pm, mRole, tPrivilege);
+          CommitContext commit = commitUpdateTransaction(pm);
+          rollbackTransaction = false;
+          return commit;
         } else {
-          // remove privilege and role objects from each other's set. needed by datanucleus to model
-          // m:n relationships correctly through a join table.
+          // remove privilege and role objects from each other's set. needed by
+          // datanucleus to model m:n relationships correctly through a join table.
           mRole.removePrivilege(mPrivilege);
           CommitContext commit = commitUpdateTransaction(pm);
           rollbackTransaction = false;
           return commit;
+
         }
       }
     } finally {
@@ -267,6 +275,120 @@ public class SentryStore {
       }
     }
   }
+
+  /**
+   * Our privilege model at present only allows ALL on server and databases.
+   * However, roles can be granted ALL, SELECT, and INSERT on tables. When
+   * a role has ALL and SELECT or INSERT are revoked, we need to remove the ALL
+   * privilege and add SELECT (INSERT was revoked) or INSERT (SELECT was revoked).
+   */
+  private void revokePartialPrivilege(PersistenceManager pm, MSentryRole role,
+      TSentryPrivilege tPrivilege)
+      throws SentryNoSuchObjectException, SentryInvalidInputException {
+    // only perform partial revoke if INSERT/SELECT were the action
+    // and the privilege being revoked is on a table
+    String action = tPrivilege.getAction();
+    if (AccessConstants.ALL.equalsIgnoreCase(action) ||
+        StringUtils.isEmpty(tPrivilege.getDbName()) || StringUtils.isEmpty(tPrivilege.getTableName())) {
+      throw new SentryNoSuchObjectException("Unknown privilege: " + tPrivilege);
+    }
+    TSentryPrivilege tPrivilegeAll = new TSentryPrivilege(tPrivilege);
+    tPrivilegeAll.setAction(AccessConstants.ALL);
+    String allPrivilegeName = constructPrivilegeName(tPrivilegeAll);
+    Query query = pm.newQuery(MSentryPrivilege.class);
+    query.setFilter("this.privilegeName == t");
+    query.declareParameters("java.lang.String t");
+    query.setUnique(true);
+    MSentryPrivilege allPrivilege = (MSentryPrivilege) query.execute(allPrivilegeName);
+    if (allPrivilege == null) {
+      throw new SentryNoSuchObjectException("Unknown privilege: " + tPrivilege);
+    }
+    role.removePrivilege(allPrivilege);
+    if (AccessConstants.SELECT.equalsIgnoreCase(action)) {
+      tPrivilege.setAction(AccessConstants.INSERT);
+    } else if (AccessConstants.INSERT.equalsIgnoreCase(action)) {
+      tPrivilege.setAction(AccessConstants.SELECT);
+    } else {
+      throw new IllegalStateException("Unexpected action: " + action);
+    }
+    role.appendPrivilege(convertToMSentryPrivilege(tPrivilege));
+  }
+
+  //TODO:Validate privilege scope?
+  @VisibleForTesting
+  public static String constructPrivilegeName(TSentryPrivilege privilege) throws SentryInvalidInputException {
+    StringBuilder privilegeName = new StringBuilder();
+    String serverName = privilege.getServerName();
+    String dbName = privilege.getDbName();
+    String tableName = privilege.getTableName();
+    String uri = privilege.getURI();
+    String action = privilege.getAction();
+    PrivilegeScope scope;
+
+    if (serverName == null) {
+      throw new SentryInvalidInputException("Server name is null");
+    }
+
+    if (AccessConstants.SELECT.equalsIgnoreCase(action) ||
+        AccessConstants.INSERT.equalsIgnoreCase(action)) {
+      if (Strings.nullToEmpty(tableName).trim().isEmpty()) {
+        throw new SentryInvalidInputException("Table name can't be null for SELECT/INSERT privilege");
+      }
+    }
+
+    // Validate privilege scope
+    try {
+      scope = Enum.valueOf(PrivilegeScope.class, privilege.getPrivilegeScope());
+    } catch (IllegalArgumentException e) {
+      throw new SentryInvalidInputException("Invalid Privilege scope: " +
+          privilege.getPrivilegeScope());
+    }
+    if (PrivilegeScope.SERVER.equals(scope)) {
+      if (StringUtils.isNotEmpty(dbName) || StringUtils.isNotEmpty(tableName)) {
+        throw new SentryInvalidInputException("DB and TABLE names should not be "
+            + "set for SERVER scope");
+      }
+    } else if (PrivilegeScope.DATABASE.equals(scope)) {
+      if (StringUtils.isEmpty(dbName)) {
+        throw new SentryInvalidInputException("DB name not set for DB scope");
+      }
+      if (StringUtils.isNotEmpty(tableName)) {
+        StringUtils.isNotEmpty("TABLE names should not be set for DB scope");
+      }
+    } else if (PrivilegeScope.TABLE.equals(scope)) {
+      if (StringUtils.isEmpty(dbName) || StringUtils.isEmpty(tableName)) {
+        throw new SentryInvalidInputException("TABLE or DB name not set for TABLE scope");
+      }
+    } else if (PrivilegeScope.URI.equals(scope)){
+      if (StringUtils.isEmpty(uri)) {
+        throw new SentryInvalidInputException("URI path not set for URI scope");
+      }
+      if (StringUtils.isNotEmpty(tableName)) {
+        throw new SentryInvalidInputException("TABLE should not be set for URI scope");
+      }
+    } else {
+      throw new SentryInvalidInputException("Unsupported operation scope: " + scope);
+    }
+
+    if (uri == null || uri.equals("")) {
+      privilegeName.append(serverName);
+      privilegeName.append("+");
+      privilegeName.append(dbName);
+
+      if (tableName != null && !tableName.equals("")) {
+        privilegeName.append("+");
+        privilegeName.append(tableName);
+      }
+      privilegeName.append("+");
+      privilegeName.append(action);
+    } else {
+      privilegeName.append(serverName);
+      privilegeName.append("+");
+      privilegeName.append(uri);
+    }
+    return privilegeName.toString();
+  }
+
 
   public CommitContext dropSentryRole(String roleName)
   throws SentryNoSuchObjectException {
@@ -534,8 +656,10 @@ public class SentryStore {
   /**
    * Converts thrift object to model object. Additionally does normalization
    * such as trimming whitespace and setting appropriate case.
+   * @throws SentryInvalidInputException
    */
-  private MSentryPrivilege convertToMSentryPrivilege(TSentryPrivilege privilege) {
+  private MSentryPrivilege convertToMSentryPrivilege(TSentryPrivilege privilege)
+      throws SentryInvalidInputException {
     MSentryPrivilege mSentryPrivilege = new MSentryPrivilege();
     mSentryPrivilege.setServerName(safeTrim(privilege.getServerName()));
     mSentryPrivilege.setDbName(safeTrim(privilege.getDbName()));
@@ -545,7 +669,7 @@ public class SentryStore {
     mSentryPrivilege.setCreateTime(privilege.getCreateTime());
     mSentryPrivilege.setGrantorPrincipal(safeTrim(privilege.getGrantorPrincipal()));
     mSentryPrivilege.setURI(safeTrim(privilege.getURI()));
-    mSentryPrivilege.setPrivilegeName(safeTrim(privilege.getPrivilegeName()));
+    mSentryPrivilege.setPrivilegeName(constructPrivilegeName(privilege));
     return mSentryPrivilege;
   }
   private String safeTrim(String s) {

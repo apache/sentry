@@ -32,7 +32,6 @@ import org.apache.sentry.provider.db.SentryNoSuchObjectException;
 import org.apache.sentry.provider.db.service.persistent.CommitContext;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.provider.db.service.thrift.PolicyStoreConstants.PolicyStoreServerConfig;
-import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
 import org.apache.sentry.service.thrift.Status;
 import org.apache.sentry.service.thrift.TSentryResponseStatus;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
@@ -108,79 +107,6 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     return handlers;
   }
 
-  @VisibleForTesting
-  public static String constructPrivilegeName(TSentryPrivilege privilege) throws SentryInvalidInputException {
-    StringBuilder privilegeName = new StringBuilder();
-    String serverName = privilege.getServerName();
-    String dbName = privilege.getDbName();
-    String tableName = privilege.getTableName();
-    String uri = privilege.getURI();
-    String action = privilege.getAction();
-    PrivilegeScope scope;
-
-    if (serverName == null) {
-      throw new SentryInvalidInputException("Server name is null");
-    }
-
-    if ("SELECT".equalsIgnoreCase(action) || "INSERT".equalsIgnoreCase(action)) {
-      if (tableName == null || tableName.equals("")) {
-        throw new SentryInvalidInputException("Table name can't be null for SELECT/INSERT privilege");
-      }
-    }
-
-    // Validate privilege scope
-    try {
-      scope = Enum.valueOf(PrivilegeScope.class, privilege.getPrivilegeScope());
-    } catch (IllegalArgumentException e) {
-      throw new SentryInvalidInputException("Invalid Privilege scope: " +
-          privilege.getPrivilegeScope());
-    }
-    if (PrivilegeScope.SERVER.equals(scope)) {
-      if (StringUtils.isNotEmpty(dbName) || StringUtils.isNotEmpty(tableName)) {
-        throw new SentryInvalidInputException("DB and TABLE names should not be "
-            + "set for SERVER scope");
-      }
-    } else if (PrivilegeScope.DATABASE.equals(scope)) {
-      if (StringUtils.isEmpty(dbName)) {
-        throw new SentryInvalidInputException("DB name not set for DB scope");
-      }
-      if (StringUtils.isNotEmpty(tableName)) {
-        StringUtils.isNotEmpty("TABLE names should not be set for DB scope");
-      }
-    } else if (PrivilegeScope.TABLE.equals(scope)) {
-      if (StringUtils.isEmpty(dbName) || StringUtils.isEmpty(tableName)) {
-        throw new SentryInvalidInputException("TABLE or DB name not set for TABLE scope");
-      }
-    } else if (PrivilegeScope.URI.equals(scope)){
-      if (StringUtils.isEmpty(uri)) {
-        throw new SentryInvalidInputException("URI path not set for URI scope");
-      }
-      if (StringUtils.isNotEmpty(tableName)) {
-        throw new SentryInvalidInputException("TABLE should not be set for URI scope");
-      }
-    } else {
-      throw new SentryInvalidInputException("Unsupported operation scope: " + scope);
-    }
-
-    if (uri == null || uri.equals("")) {
-      privilegeName.append(serverName);
-      privilegeName.append("+");
-      privilegeName.append(dbName);
-
-      if (tableName != null && !tableName.equals("")) {
-        privilegeName.append("+");
-        privilegeName.append(tableName);
-      }
-      privilegeName.append("+");
-      privilegeName.append(action);
-    } else {
-      privilegeName.append(serverName);
-      privilegeName.append("+");
-      privilegeName.append(uri);
-    }
-    return privilegeName.toString();
-  }
-
   private static Set<String> toTrimedLower(Set<String> s) {
     Set<String> result = Sets.newHashSet();
     for (String v : s) {
@@ -233,8 +159,6 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     TAlterSentryRoleGrantPrivilegeResponse response = new TAlterSentryRoleGrantPrivilegeResponse();
     try {
       authorize(request.getRequestorUserName(), request.getRequestorGroupNames());
-      String privilegeName = constructPrivilegeName(request.getPrivilege());
-      request.getPrivilege().setPrivilegeName(privilegeName);
       CommitContext commitContext = sentryStore.alterSentryRoleGrantPrivilege(request.getRoleName(),
                                     request.getPrivilege());
       response.setStatus(Status.OK());
@@ -266,10 +190,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     TAlterSentryRoleRevokePrivilegeResponse response = new TAlterSentryRoleRevokePrivilegeResponse();
     try {
       authorize(request.getRequestorUserName(), request.getRequestorGroupNames());
-      String privilegeName = constructPrivilegeName(request.getPrivilege());
-      request.getPrivilege().setPrivilegeName(privilegeName);
       CommitContext commitContext = sentryStore.alterSentryRoleRevokePrivilege(request.getRoleName(),
-                                    request.getPrivilege().getPrivilegeName());
+                                    request.getPrivilege());
       response.setStatus(Status.OK());
       notificationHandlerInvoker.alter_sentry_role_revoke_privilege(commitContext,
           request, response);
