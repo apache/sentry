@@ -614,7 +614,8 @@ public class SentryStore {
 
   /**
    * Converts thrift object to model object. Additionally does normalization
-   * such as trimming whitespace and setting appropriate case.
+   * such as trimming whitespace and setting appropriate case. Also sets the create
+   * time.
    */
   private MSentryRole convertToMSentryRole(String roleName, String grantorPrincipal) {
     MSentryRole mRole = new MSentryRole();
@@ -666,7 +667,7 @@ public class SentryStore {
     mSentryPrivilege.setTableName(safeTrim(privilege.getTableName()));
     mSentryPrivilege.setPrivilegeScope(safeTrim(privilege.getPrivilegeScope()));
     mSentryPrivilege.setAction(safeTrim(privilege.getAction()));
-    mSentryPrivilege.setCreateTime(privilege.getCreateTime());
+    mSentryPrivilege.setCreateTime(System.currentTimeMillis());
     mSentryPrivilege.setGrantorPrincipal(safeTrim(privilege.getGrantorPrincipal()));
     mSentryPrivilege.setURI(safeTrim(privilege.getURI()));
     mSentryPrivilege.setPrivilegeName(constructPrivilegeName(privilege));

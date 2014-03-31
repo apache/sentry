@@ -27,7 +27,7 @@
 -->
 <jdo>  
   <package name="org.apache.sentry.provider.db.service.model">  
-    <class name="MSentryGroup" identity-type="datastore" table="SENTRY_GROUPS" detachable="true">  
+    <class name="MSentryGroup" identity-type="datastore" table="SENTRY_GROUP" detachable="true">  
       <datastore-identity>
         <column name="GROUP_ID"/>
       </datastore-identity>
@@ -48,13 +48,13 @@
         
     </class>
     
-    <class name="MSentryRole" identity-type="datastore" table="SENTRY_ROLES" detachable="true">  
+    <class name="MSentryRole" identity-type="datastore" table="SENTRY_ROLE" detachable="true">  
       <datastore-identity>
         <column name="ROLE_ID"/>
       </datastore-identity>
       <field name="roleName">  
         <column name="ROLE_NAME" length="128" jdbc-type="VARCHAR"/>
-        <index name="SentryRoleNaME" unique="true"/>
+        <index name="SentryRoleName" unique="true"/>
       </field>
       <field name = "createTime">
       	<column name = "CREATE_TIME" jdbc-type="BIGINT"/>
@@ -62,17 +62,17 @@
       <field name="grantorPrincipal">  
         <column name="GRANTOR_PRINCIPAL" length="4000" jdbc-type="VARCHAR"/>
       </field>
-      <field name = "privileges" table="ROLES_PRIVILEGES" >
+      <field name = "privileges" table="SENTRY_ROLE_DB_PRIVILEGE_MAP" >
         <collection element-type="org.apache.sentry.provider.db.service.model.MSentryPrivilege"/>
             <join>
                 <column name="ROLE_ID"/>
             </join>
             <element>
-                <column name="PRIVILEGE_ID"/>
+                <column name="DB_PRIVILEGE_ID"/>
             </element>
       </field>  
       
-      <field name = "groups" table="ROLES_GROUPS" >
+      <field name = "groups" table="SENTRY_ROLE_GROUP_MAP" >
         <collection element-type="org.apache.sentry.provider.db.service.model.MSentryGroup"/>
             <join>
                 <column name="ROLE_ID"/>
@@ -83,9 +83,9 @@
       </field>  
     </class>
     
-    <class name="MSentryPrivilege" identity-type="datastore" table="SENTRY_PRIVILEGES" detachable="true">  
+    <class name="MSentryPrivilege" identity-type="datastore" table="SENTRY_DB_PRIVILEGE" detachable="true">  
       <datastore-identity>
-        <column name="PRIVILEGE_ID"/>
+        <column name="DB_PRIVILEGE_ID"/>
       </datastore-identity>
       <field name="privilegeName">  
         <column name="PRIVILEGE_NAME" length="128" jdbc-type="VARCHAR"/>
