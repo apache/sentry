@@ -1,53 +1,81 @@
-Release Notes - Sentry - Version v1.2.0
-
-** Bug
-    * [SENTRY-15] - log4j.properties file under sentry-tests references the old access package
-    * [SENTRY-1] - use default on HiveServer2 fails with invalid privileges exception
-    * [SENTRY-2] - Code cleanup in various poms
-    * [ACCESS-8] - Log warning if authorization is not used with strong authentication
-    * [ACCESS-49] - Modify test cases to restrict LOAD from specific locations
-    * [ACCESS-140] - malformatted policy is permitted conditionally
-    * [ACCESS-164] - policy file doesn't check non-exist entity mapping
-    * [ACCESS-174] - access only throw first error message in HiveServer2 log, and ignore the rest
-    * [ACCESS-180] - per DB policy file usability issues
-    * [ACCESS-197] - Child authorizeable objects are not inheriting permissions from parent
-    * [ACCESS-201] - Bad error message in HiveAuthzBinding
-    * [ACCESS-203] - Update trunk version to 1.1 and update dependencies
-    * [ACCESS-230] - CREATE TABLE AS works even if user does not have DB-level access
-    * [ACCESS-231] - ALTER TABLE SET TBLPROPERTIES allows updates to tables even when the user doesn't have the right privileges
-    * [ACCESS-232] - The per-db policy fies can't be accessed if they are not in the same file system as the global policy file.
-    * [ACCESS-233] - The URI permission checks should append path separator before checking the parent path
-    * [ACCESS-235] - Format unqualified URI as DFS uri by default
-
-
-** Improvement
-    * [SENTRY-5] - Normalize the usernames used in the end to end tests
-    * [ACCESS-100] - ResourceAuthzProvider should ensure the subject name is non-null before doing the group lookup
-    * [ACCESS-157] - Access hard codes hive authentication method none
-    * [ACCESS-211] - Add maven profile for compiling access with upstream Apache hadoop/hive
-    * [ACCESS-221] - Restrict the URI access granted from a per-database policy file
-
-
-
-** Task
-    * [ACCESS-16] - Implement the test cases in the test plan
-    * [ACCESS-34] - Analyze Path Security
-    * [ACCESS-115] - Format all files using a consistent code style formatter for the project
-    * [ACCESS-122] - Remove context.close() mid-test
-    * [ACCESS-123] - Fix confusing communication mechanism to request if ANY access is exists
-    * [ACCESS-125] - TestUserManagement major issues
-    * [ACCESS-127] - TestSandboxOps Major issues
-    * [ACCESS-130] - TestMovingToProduction major issues
-    * [ACCESS-136] - TestCrossDbOps major issues
-    * [ACCESS-145] - TestMetadataObjectRetrieval major issues
-    * [ACCESS-147] - TestPrivilegeAtTransform major issues
-    * [ACCESS-149] - TestPrivilegesAtDatabaseScope major issues
-    * [ACCESS-152] - TestPrivilegesAtTableScope minor issues
-    * [ACCESS-166] - Policy Engine should do expanded validation of policy file
-    * [ACCESS-194] - Explore options for metastore access restriction
-    * [ACCESS-195] - Support username mapping at access level
+Release Notes - Sentry - Version 1.3.0
 
 ** Sub-task
-    * [ACCESS-101] - Implement more test cases regarding subquery
-    * [ACCESS-209] - be able to run e2e test in cluster mode
-    * [ACCESS-225] - Update master branch version to 1.2.0-SNAPSHOT
+    * [SENTRY-16] - Move sentry-tests to sentry-tests-hive package
+    * [SENTRY-17] - Separate sentry-provider to hive specific and non-specific packages
+    * [SENTRY-26] - Separate sentry-core to hive specific and non-specific packages
+    * [SENTRY-27] - Refactor to be able to support different provider backends (e.g. db vs file)
+    * [SENTRY-33] - Add new Hive UDFs to Sentry whitelist
+    * [SENTRY-34] - Create  sentry-core-model-search module
+    * [SENTRY-35] - Create sentry-provider-policy-search module
+    * [SENTRY-36] - Create sentry-binding-solr module
+    * [SENTRY-38] - Cleanup Roles/DBRoles
+    * [SENTRY-42] - Create sentry-provider-policy-search module - RoleValidators, Permissions, Authorizables
+    * [SENTRY-43] - Refactor into policy specific modules
+    * [SENTRY-88] - Solr Collection Admin tests (CREATE,DELETE,RELOAD)
+
+** Bug
+    * [SENTRY-18] - Add sentry-tests-hive to assembly src
+    * [SENTRY-23] - CREATE TEMPORARY FUNCTION fails when Hive warehouse is on hdfs
+    * [SENTRY-29] - InvalidConfigurationException lacks license header, rat check fails
+    * [SENTRY-30] - StaticUserGroup lacks license header
+    * [SENTRY-45] - Sentry allows access to /tmp/hive-{user.name}_foo directory without permissions
+    * [SENTRY-51] - kinit before hdfs file system operations does not work in hive e2e tests
+    * [SENTRY-52] - E2E tests need to use fully qualified URI while creating test base directories
+    * [SENTRY-53] - Fix test failures caused by SENTRY-41
+    * [SENTRY-54] - Fix TestPrivilegesAtFunctionScope.testFuncPrivileges1
+    * [SENTRY-58] - Fix compilation error in TestURI.java
+    * [SENTRY-60] - TestSolrAuthzBinding does not properly test negative cases
+    * [SENTRY-63] - Hive queries with temporary UDF return error UnsupportedOperationException 
+    * [SENTRY-64] - Break Circular dependency between sentry-binding-solr and sentry-core
+    * [SENTRY-66] - Allow Sentry e2e tests to use HS2 LDAP authentication in cluster mode
+    * [SENTRY-73] - solrconfig.xml should specify SecureAdminHandlers
+    * [SENTRY-75] - Solr e2e tests don't log correctly
+    * [SENTRY-78] - UDFs can't be referenced in a CTAS when Sentry is enabled for Hive
+    * [SENTRY-79] - Solr/Sentry test filter should pass request headers
+    * [SENTRY-85] - The JDBC connection from hive test framework should use a userid that's supported by default test resource
+    * [SENTRY-87] - Sentry depends on SNAPSHOT release of Hadoop that is no longer available
+    * [SENTRY-89] - Sentry WildCardPermission always ends a / to the URI
+    * [SENTRY-90] - Normalize scratch path for comparison
+    * [SENTRY-91] - Use File Separator instead of File Path Separator
+    * [SENTRY-92] - Queries fail when hive.exec.scratchdir is not equal to hive.exec.local.scratchdir
+    * [SENTRY-93] - let sentry-solr-binding hand off to solr for hdfs authentication
+    * [SENTRY-108] - Add eclipse formatter to pom.xml
+    * [SENTRY-120] - Unit tests fail on Macs due to path comparision
+
+** Improvement
+    * [SENTRY-4] - Rename Configuration properties that mention hive but are sentry related
+    * [SENTRY-6] - Use one policy editor exclusively in all the end to end tests
+    * [SENTRY-10] - Change the inheritance model of Abstract FileSystem classes to composition along with a Factory class, which allows us to use different FS implementations.
+    * [SENTRY-11] - Normalize the user:group mapping for end to end tests
+    * [SENTRY-12] - Write the policy file to hdfs when using UnmanagedHiveServer
+    * [SENTRY-13] - Move createConnection to HiveServer Implementation (from Context)
+    * [SENTRY-20] - Sentry should throw an exception if testing.mode is not set on non-secure cluster
+    * [SENTRY-41] - Enable sentry end to end tests to run on a real cluster
+    * [SENTRY-49] - Fix spacing in InvalidConfigurationException
+    * [SENTRY-59] - Doc that ResourceAuthorizationProvider checks actions as ORs, add support for AND
+    * [SENTRY-62] - Solr binding should create a solr-usable Configuration to pass to the BackendProvider
+    * [SENTRY-68] - Give sentry-solr-binding the ability to authenticate via kerberos
+    * [SENTRY-70] - Solr Query authorization tests for Sentry
+    * [SENTRY-71] - Solr Update authorization tests for Sentry
+    * [SENTRY-72] - Solr Admin authorization tests for Sentry
+    * [SENTRY-83] - Sentry Solr Tests should have a dependency on solr-sentry-handlers
+    * [SENTRY-86] - Additional logging for Solr/Sentry end to end tests
+    * [SENTRY-102] - Remove download-hadoop profile requirement and cache downloads
+    * [SENTRY-104] - Require URI for all custom classes
+    * [SENTRY-111] - Setup automated patch testing
+    * [SENTRY-112] - Add test-output directory to .gitignore
+    * [SENTRY-113] - Fix Sentry Precommit tests
+    * [SENTRY-119] - Reduce tarball size by excluding third party directory
+    * [SENTRY-124] - Create bin packaging
+
+** New Feature
+    * [SENTRY-19] - Add support for solr index-level authorization
+
+** Task
+    * [SENTRY-9] - Refactoring to support search
+    * [SENTRY-39] - Rename class in "search" module to Search
+    * [SENTRY-107] - Upgrade hadoop on master
+
+** Test
+    * [SENTRY-69] - Solr Sentry e2e test framework and simple test
