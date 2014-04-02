@@ -352,4 +352,11 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
     task.setWork(work);
     return task;
   }
+
+  @Override
+  public Task<? extends Serializable> createShowRolesTask(ASTNode ast,
+      Path resFile, HashSet<ReadEntity> inputs, HashSet<WriteEntity> outputs) throws SemanticException {
+    /* TODO */
+    throw new SemanticException("TODO IN FOLLOW ON");
+  }
 }
