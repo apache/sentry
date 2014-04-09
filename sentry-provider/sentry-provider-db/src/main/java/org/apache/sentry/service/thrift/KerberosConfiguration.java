@@ -27,6 +27,7 @@ public class KerberosConfiguration extends javax.security.auth.login.Configurati
   private String principal;
   private String keytab;
   private boolean isInitiator;
+  private static final boolean IBM_JAVA =  System.getProperty("java.vendor").contains("IBM");
 
   private KerberosConfiguration(String principal, File keytab,
       boolean client) {
@@ -46,26 +47,54 @@ public class KerberosConfiguration extends javax.security.auth.login.Configurati
   }
 
   private static String getKrb5LoginModuleName() {
-    return System.getProperty("java.vendor").contains("IBM")
-        ? "com.ibm.security.auth.module.Krb5LoginModule"
-            : "com.sun.security.auth.module.Krb5LoginModule";
+    return (IBM_JAVA ? "com.ibm.security.auth.module.Krb5LoginModule"
+            : "com.sun.security.auth.module.Krb5LoginModule");
   }
 
   @Override
   public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
     Map<String, String> options = new HashMap<String, String>();
-    options.put("keyTab", keytab);
-    options.put("principal", principal);
-    options.put("useKeyTab", "true");
-    options.put("storeKey", "true");
-    options.put("doNotPrompt", "true");
-    options.put("useTicketCache", "true");
-    options.put("renewTGT", "true");
-    options.put("refreshKrb5Config", "true");
-    options.put("isInitiator", Boolean.toString(isInitiator));
+
+    if (IBM_JAVA) {
+      // IBM JAVA's UseKeytab covers both keyTab and useKeyTab options
+      options.put("useKeytab",keytab.startsWith("file://") ? keytab : "file://" + keytab);
+
+      options.put("principal", principal);
+      options.put("refreshKrb5Config", "true");
+
+      // Both "initiator" and "acceptor"
+      options.put("credsType", "both");
+    } else {
+      options.put("keyTab", keytab);
+      options.put("principal", principal);
+      options.put("useKeyTab", "true");
+      options.put("storeKey", "true");
+      options.put("doNotPrompt", "true");
+      options.put("useTicketCache", "true");
+      options.put("renewTGT", "true");
+      options.put("refreshKrb5Config", "true");
+      options.put("isInitiator", Boolean.toString(isInitiator));
+    }
+
     String ticketCache = System.getenv("KRB5CCNAME");
-    if (ticketCache != null) {
-      options.put("ticketCache", ticketCache);
+    if (IBM_JAVA) {
+      // If cache is specified via env variable, it takes priority
+      if (ticketCache != null) {
+        // IBM JAVA only respects system property so copy ticket cache to system property
+        // The first value searched when "useDefaultCcache" is true.
+        System.setProperty("KRB5CCNAME", ticketCache);
+      } else {
+    	ticketCache = System.getProperty("KRB5CCNAME");
+      }
+
+      if (ticketCache != null) {
+        options.put("useDefaultCcache", "true");
+        options.put("renewTGT", "true");
+      }
+    } else {
+      if (ticketCache != null) {
+        options.put("ticketCache", ticketCache);
+      }
     }
     options.put("debug", "true");
 
