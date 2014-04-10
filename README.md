@@ -17,9 +17,12 @@ Building Sentry requires the following tools:
 * Apache Maven 3.0+
 * Java JDK 1.6+
 
+Running hive end to end tests requires:
+* wget
+
 To compile Sentry, run:
 
-mvn compile
+mvn install -DskipTests
 
 To run Sentry tests, run:
 
@@ -29,4 +32,4 @@ To build a distribution, run:
 
 mvn install
 
-The final Sentry distribution artifacts will be in $project/sentry-dist/target/.  
+The final Sentry distribution artifacts will be in $project/sentry-dist/target/.
