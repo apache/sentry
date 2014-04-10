@@ -439,28 +439,35 @@ limitations under the License.
               </goals>
               <configuration>
                 <excludes>
+                  <!-- Git specific files -->
                   <exclude>.git/</exclude>
                   <exclude>.gitignore</exclude>
+                  <!--IDE specific files-->
                   <exclude>.idea/</exclude>
+                  <exclude>**/*.iml</exclude>
+                  <exclude>**/nb-configuration.xml</exclude>
+                  <exclude>**/.classpath</exclude>
+                  <exclude>**/.settings/**</exclude>
+                  <exclude>**/.project</exclude>
+                  <exclude>**/.metadata/</exclude>
+                  <!-- Maven working directory -->
+                  <exclude>**/target/</exclude>
+                  <!-- Pre commit testing generated files -->
                   <exclude>maven-repo/</exclude>
                   <exclude>test-output/</exclude>
-                  <exclude>**/*.iml</exclude>
-                  <exclude>*.log</exclude>
-                  <exclude>**/nb-configuration.xml</exclude>
-                  <exclude>**.patch</exclude>
-                  <exclude>README*</exclude>
-                  <exclude>**/.project</exclude>
-                  <exclude>**/target/</exclude>
-                  <exclude>**/.settings/**</exclude>
-                  <exclude>**/.metadata/</exclude>
-                  <exclude>**/.classpath</exclude>
+                  <!-- Derby files which are created after test run -->
+                  <exclude>**/derby.log</exclude>
                   <exclude>**/service.properties</exclude>
-                  <exclude>**/kv1.dat</exclude>
                   <exclude>**/*.lck</exclude>
-                  <!-- exclude generated solr config files -->
+                  <!-- Patch files which can be lying around -->
+                  <exclude>**.patch</exclude>
+                  <!-- Exclude generated solr config files -->
                   <exclude>**/solr/collection1/conf/**</exclude>
-                  <!-- exclude generated thrift files -->
+                  <!-- Exclude generated thrift files -->
                   <exclude>**/gen/**</exclude>
+                  <!-- README and test data with exact format -->
+                  <exclude>README*</exclude>
+                  <exclude>**/kv1.dat</exclude>
                 </excludes>
               </configuration>
             </execution>
