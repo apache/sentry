@@ -68,6 +68,8 @@ Release Notes - Sentry - Version 1.3.0
     * [SENTRY-113] - Fix Sentry Precommit tests
     * [SENTRY-119] - Reduce tarball size by excluding third party directory
     * [SENTRY-124] - Create bin packaging
+    * [SENTRY-168] - Sentry-168: Trivial fixes to README and pom.xml
+    * [SENTRY-171] - Bump up hive and hadoop versions from SNAPSHOT to released bits
 
 ** New Feature
     * [SENTRY-19] - Add support for solr index-level authorization
