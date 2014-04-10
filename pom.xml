@@ -64,8 +64,8 @@ limitations under the License.
     <datanucleus-core.version>3.2.2</datanucleus-core.version>
     <datanucleus-rdbms.version>3.2.1</datanucleus-rdbms.version>
     <derby.version>10.4.2.0</derby.version>
-    <hive.version>0.12.0-cdh5.0.0-beta-2-SNAPSHOT</hive.version>
-    <hadoop.version>2.2.0-cdh5.0.0-beta-2-SNAPSHOT</hadoop.version>
+    <hive.version>0.12.0-cdh5.0.0-beta-2</hive.version>
+    <hadoop.version>2.2.0-cdh5.0.0-beta-2</hadoop.version>
     <fest.reflect.version>1.4.1</fest.reflect.version>
     <guava.version>11.0.2</guava.version>
     <junit.version>4.9</junit.version>
@@ -74,8 +74,8 @@ limitations under the License.
     <log4j.version>1.2.16</log4j.version>
     <shiro.version>1.2.1</shiro.version>
     <slf4j.version>1.6.1</slf4j.version>
-    <solr.version>4.4.0-cdh5.0.0-beta-2-SNAPSHOT</solr.version>
-    <zookeeper.version>3.4.5-cdh5.0.0-beta-2-SNAPSHOT</zookeeper.version>
+    <solr.version>4.4.0-cdh5.0.0-beta-2</solr.version>
+    <zookeeper.version>3.4.5-cdh5.0.0-beta-2</zookeeper.version>
   </properties>
 
   <dependencyManagement>
