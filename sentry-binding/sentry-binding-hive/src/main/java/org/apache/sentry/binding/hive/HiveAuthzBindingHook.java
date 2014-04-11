@@ -680,7 +680,7 @@ implements HiveDriverFilterHook {
    */
   private boolean isChildTabForView(ReadEntity readEntity) {
     // If this is a table added for view, then we need to skip that
-    if (!readEntity.getType().equals(Type.TABLE)) {
+    if (!readEntity.getType().equals(Type.TABLE) && !readEntity.getType().equals(Type.PARTITION)) {
       return false;
     }
     if ((readEntity.getParents() != null) && (readEntity.getParents().size() > 0)) {
