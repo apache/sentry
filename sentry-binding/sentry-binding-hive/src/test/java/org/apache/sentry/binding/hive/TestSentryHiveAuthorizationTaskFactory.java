@@ -17,12 +17,7 @@
  */
 package org.apache.sentry.binding.hive;
 
-import java.io.Serializable;
-import java.util.HashMap;
-import java.util.List;
-
 import junit.framework.Assert;
-
 import org.apache.hadoop.hive.SentryHiveConstants;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
@@ -52,6 +47,10 @@ import org.apache.hadoop.hive.ql.session.SessionState;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
+
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.List;
 
 public class TestSentryHiveAuthorizationTaskFactory {
 
@@ -346,6 +345,27 @@ public class TestSentryHiveAuthorizationTaskFactory {
   public void testShowGrantGroupOnTable() throws Exception {
     expectSemanticException("SHOW GRANT GROUP " + GROUP + " ON TABLE " + TABLE,
         SentryHiveConstants.GRANT_REVOKE_NOT_SUPPORTED_FOR_PRINCIPAL + "GROUP");
+  }
+
+  /**
+   * SHOW ROLES
+   */
+  @Test
+  public void testShowRoles() throws Exception {
+    DDLWork work = analyze(parse("SHOW ROLES"));
+    RoleDDLDesc roleDDLDesc = work.getRoleDDLDesc();
+    Assert.assertEquals(RoleOperation.SHOW_ROLES, roleDDLDesc.getOperation());
+  }
+
+  /**
+   * SHOW CURRENT ROLE
+   */
+  @Test
+  public void testShowCurrentRole() throws Exception {
+    DDLWork work = analyze(parse("SHOW CURRENT ROLES"));
+    RoleDDLDesc roleDDLDesc = work.getRoleDDLDesc();
+    Assert.assertEquals(PrincipalType.USER, roleDDLDesc.getPrincipalType());
+    Assert.assertEquals(RoleOperation.SHOW_CURRENT_ROLE, roleDDLDesc.getOperation());
   }
 
   private void expectSemanticException(String command, String msg) throws Exception {

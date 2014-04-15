@@ -16,11 +16,7 @@
  */
 package org.apache.sentry.binding.hive;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-
+import com.google.common.base.Preconditions;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.SentryHiveConstants;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -50,7 +46,10 @@ import org.apache.hadoop.hive.ql.security.authorization.PrivilegeRegistry;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.sentry.core.model.db.AccessConstants;
 
-import com.google.common.base.Preconditions;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 
 public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorizationTaskFactory {
 
@@ -280,7 +279,18 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
   @Override
   public Task<? extends Serializable> createShowCurrentRoleTask(HashSet<ReadEntity> inputs,
       HashSet<WriteEntity> outputs, Path resultFile) throws SemanticException {
-    throw new SemanticException("TODO IN FOLLOW ON");
+    RoleDDLDesc ddlDesc = new RoleDDLDesc(null, RoleDDLDesc.RoleOperation.SHOW_CURRENT_ROLE);
+    ddlDesc.setResFile(resultFile.toString());
+    return createTask(new DDLWork(inputs, outputs, ddlDesc));
+  }
+
+  @Override
+  public Task<? extends Serializable> createShowRolesTask(ASTNode ast, Path resFile,
+      HashSet<ReadEntity> inputs, HashSet<WriteEntity> outputs) throws SemanticException {
+    RoleDDLDesc showRolesDesc = new RoleDDLDesc(null, null, RoleDDLDesc.RoleOperation.SHOW_ROLES,
+        null);
+    showRolesDesc.setResFile(resFile.toString());
+    return createTask(new DDLWork(inputs, outputs, showRolesDesc));
   }
 
   private PrivilegeObjectDesc analyzePrivilegeObject(ASTNode ast)
@@ -353,10 +363,5 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
     return task;
   }
 
-  @Override
-  public Task<? extends Serializable> createShowRolesTask(ASTNode ast,
-      Path resFile, HashSet<ReadEntity> inputs, HashSet<WriteEntity> outputs) throws SemanticException {
-    /* TODO */
-    throw new SemanticException("TODO IN FOLLOW ON");
-  }
+
 }
