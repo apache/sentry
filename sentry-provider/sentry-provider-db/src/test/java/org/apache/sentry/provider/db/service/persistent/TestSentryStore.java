@@ -18,14 +18,9 @@
 
 package org.apache.sentry.provider.db.service.persistent;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.fail;
-
-import java.io.File;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
+import com.google.common.io.Files;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.model.db.AccessConstants;
@@ -41,9 +36,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
-import com.google.common.io.Files;
+import java.io.File;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.fail;
 
 public class TestSentryStore {
 
@@ -67,6 +66,31 @@ public class TestSentryStore {
     if (dataDir != null) {
       FileUtils.deleteQuietly(dataDir);
     }
+  }
+  @Test
+  public void testCaseInsensitiveRoleAndGroups() throws Exception {
+    String roleName = "newRole";
+    String grantor = "g1";
+    Set<TSentryGroup> groups = Sets.newHashSet();
+    TSentryGroup group = new TSentryGroup();
+    group.setGroupName("test-groups-g1");
+    groups.add(group);
+
+    TSentryPrivilege privilege = new TSentryPrivilege();
+    privilege.setPrivilegeScope("TABLE");
+    privilege.setServerName("server1");
+    privilege.setDbName("default");
+    privilege.setTableName("table1");
+    privilege.setAction(AccessConstants.ALL);
+    privilege.setGrantorPrincipal(grantor);
+    privilege.setCreateTime(System.currentTimeMillis());
+    privilege.setPrivilegeName(SentryStore.constructPrivilegeName(privilege));
+
+    long seqId = sentryStore.createSentryRole(roleName, grantor).getSequenceId();
+    assertEquals(seqId + 1, sentryStore.alterSentryRoleAddGroups(grantor, roleName, groups).getSequenceId());
+    assertEquals(seqId + 2, sentryStore.alterSentryRoleDeleteGroups(roleName, groups).getSequenceId());
+    assertEquals(seqId + 3, sentryStore.alterSentryRoleGrantPrivilege(roleName, privilege).getSequenceId());
+    assertEquals(seqId + 4, sentryStore.alterSentryRoleRevokePrivilege(roleName, privilege).getSequenceId());
   }
 
   @Test

@@ -18,23 +18,13 @@
 
 package org.apache.sentry.provider.db.service.persistent;
 
-import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_JOINER;
-import static org.apache.sentry.provider.common.ProviderConstants.KV_JOINER;
-
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.UUID;
-
-import javax.jdo.JDOHelper;
-import javax.jdo.PersistenceManager;
-import javax.jdo.PersistenceManagerFactory;
-import javax.jdo.Query;
-import javax.jdo.Transaction;
-
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.SetMultimap;
+import com.google.common.collect.Sets;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.model.db.AccessConstants;
@@ -50,16 +40,24 @@ import org.apache.sentry.provider.db.service.thrift.TSentryActiveRoleSet;
 import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
-import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
+import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.SetMultimap;
-import com.google.common.collect.Sets;
+import javax.jdo.JDOHelper;
+import javax.jdo.PersistenceManager;
+import javax.jdo.PersistenceManagerFactory;
+import javax.jdo.Query;
+import javax.jdo.Transaction;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.UUID;
+
+import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_JOINER;
+import static org.apache.sentry.provider.common.ProviderConstants.KV_JOINER;
 
 /**
  * SentryStore is the data access object for Sentry data. Strings
@@ -238,6 +236,7 @@ public class SentryStore {
       TSentryPrivilege tPrivilege) throws SentryNoSuchObjectException, SentryInvalidInputException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
+    roleName = roleName.trim().toLowerCase();
     try {
       pm = openTransaction();
       Query query = pm.newQuery(MSentryRole.class);
@@ -424,6 +423,7 @@ public class SentryStore {
   throws SentryNoSuchObjectException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
+    roleName = roleName.trim().toLowerCase();
     try {
       pm = openTransaction();
       Query query = pm.newQuery(MSentryRole.class);
@@ -440,9 +440,10 @@ public class SentryStore {
         query.setUnique(true);
         List<MSentryGroup> groups = Lists.newArrayList();
         for (TSentryGroup tGroup : groupNames) {
-          MSentryGroup group = (MSentryGroup) query.execute(tGroup.getGroupName());
+          String groupName = tGroup.getGroupName().trim().toLowerCase();
+          MSentryGroup group = (MSentryGroup) query.execute(groupName);
           if (group == null) {
-            group = new MSentryGroup(tGroup.getGroupName(), System.currentTimeMillis(),
+            group = new MSentryGroup(groupName, System.currentTimeMillis(),
                 grantorPrincipal, Sets.newHashSet(role));
           }
           group.appendRole(role);
