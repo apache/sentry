@@ -16,16 +16,34 @@
  */
 package org.apache.sentry.tests.e2e.solr;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
 import com.google.common.io.Files;
+import org.apache.commons.io.IOUtils;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.util.EntityUtils;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -699,6 +717,68 @@ public class AbstractSolrSentryTestBase {
     CloudSolrServer css = new CloudSolrServer(miniSolrCloudCluster.getZkServer().getZkAddress());
     css.connect();
     return css;
+  }
+
+  /**
+   * Make a raw http request
+   */
+  protected String makeHttpRequest(CloudSolrServer server, String httpMethod,
+      String path, byte [] content, String contentType) throws Exception {
+    HttpClient httpClient = server.getLbServer().getHttpClient();
+    Set<String> liveNodes =
+      server.getZkStateReader().getClusterState().getLiveNodes();
+    assertTrue("Expected at least one live node", !liveNodes.isEmpty());
+    String firstServer = liveNodes.toArray(new String[0])[0].replace("_solr", "/solr");
+    URI uri = new URI("http://" + firstServer + path);
+    HttpRequestBase method = null;
+    if ("GET".equals(httpMethod)) {
+      method = new HttpGet(uri);
+    } else if ("HEAD".equals(httpMethod)) {
+      method = new HttpHead(uri);
+    } else if ("POST".equals(httpMethod)) {
+      method = new HttpPost(uri);
+    } else if ("PUT".equals(httpMethod)) {
+      method = new HttpPut(uri);
+    } else {
+      throw new IOException("Unsupported method: " + method);
+    }
+
+    if (method instanceof HttpEntityEnclosingRequestBase) {
+      HttpEntityEnclosingRequestBase entityEnclosing =
+        (HttpEntityEnclosingRequestBase)method;
+      ByteArrayEntity entityRequest = new ByteArrayEntity(content);
+      entityRequest.setContentType(contentType);
+      entityEnclosing.setEntity(entityRequest);
+    }
+
+    HttpEntity httpEntity = null;
+    boolean success = false;
+    String retValue = "";
+    try {
+      final HttpResponse response = httpClient.execute(method);
+      int httpStatus = response.getStatusLine().getStatusCode();
+      httpEntity = response.getEntity();
+
+      if (httpEntity != null) {
+        InputStream is = httpEntity.getContent();
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        try {
+          IOUtils.copyLarge(is, os);
+          os.flush();
+        } finally {
+          IOUtils.closeQuietly(os);
+          IOUtils.closeQuietly(is);
+        }
+        retValue = os.toString();
+      }
+      success = true;
+    } finally {
+      if (!success) {
+        EntityUtils.consumeQuietly(httpEntity);
+         method.abort();
+      }
+    }
+    return retValue;
   }
 
   protected static void waitForRecoveriesToFinish(String collection,

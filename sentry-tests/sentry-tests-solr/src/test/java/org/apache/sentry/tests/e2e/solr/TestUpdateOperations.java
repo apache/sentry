@@ -21,6 +21,9 @@ import org.slf4j.LoggerFactory;
 
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import org.apache.solr.client.solrj.impl.CloudSolrServer;
 
 import java.io.File;
 import java.io.PrintWriter;
@@ -84,5 +87,28 @@ public class TestUpdateOperations extends AbstractSolrSentryTestBase {
 
     assertEquals("Total test failures: " + testFailures.size() + " \n\n"
         + testFailures.toString() + "\n\n\n", 0, testFailures.size());
+  }
+
+  @Test
+  public void testInvariantProcessor() throws Exception {
+    String collectionName = "testInvariantCollection";
+    // Upload configs to ZK
+    uploadConfigDirToZk(RESOURCES_DIR + File.separator + DEFAULT_COLLECTION
+        + File.separator + "conf");
+    setupCollection(collectionName);
+
+    // Send a update request and try to set the update.chain to skip the
+    // index-authorization checks
+    setAuthenticationUser("junit");
+    CloudSolrServer server = getCloudSolrServer(collectionName);
+    try {
+      String path = "/" + collectionName + "/update?update.chain=skipUpdateIndexAuthorization&commit=true";
+      String body = "<add><doc><field name=\"id\">testInvariantDoc</field></doc></add>";
+      String ret = makeHttpRequest(server, "POST", path, body.getBytes("UTF-8"), "text/xml");
+      assertTrue("Expected sentry exception", ret.contains("SentrySolrAuthorizationException: User junit"
+        + " does not have privileges for testInvariantCollection"));
+    } finally {
+      server.shutdown();
+    }
   }
 }
