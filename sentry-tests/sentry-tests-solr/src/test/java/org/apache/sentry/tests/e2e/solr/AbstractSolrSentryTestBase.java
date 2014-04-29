@@ -75,6 +75,7 @@ public class AbstractSolrSentryTestBase {
   protected static final String ALL_DOCS = "*:*";
   protected static final Random RANDOM = new Random();
   protected static final String RESOURCES_DIR = "target" + File.separator + "test-classes" + File.separator + "solr";
+  protected static final String CONF_DIR_IN_ZK = "conf1";
   private static final int NUM_SERVERS = 4;
 
   private static void addPropertyToSentry(StringBuilder builder, String name, String value) {
@@ -164,7 +165,7 @@ public class AbstractSolrSentryTestBase {
    * @return - the username as String
    * @throws Exception
    */
-  private String getAuthenticatedUser() throws Exception {
+  protected String getAuthenticatedUser() throws Exception {
     return ModifiableUserAuthenticationFilter.getUser();
   }
 
@@ -675,12 +676,23 @@ public class AbstractSolrSentryTestBase {
     verifyUpdatePass(ADMIN_USER, collectionName, solrInputDoc);
   }
 
-  protected void uploadConfigDirToZk(String collectionConfigDir) throws Exception {
+  private ZkController getZkController() {
     SolrDispatchFilter dispatchFilter =
       (SolrDispatchFilter) miniSolrCloudCluster.getJettySolrRunners().get(0).getDispatchFilter().getFilter();
-    ZkController zkController = dispatchFilter.getCores().getZkController();
+    return dispatchFilter.getCores().getZkController();
+  }
+
+  protected void uploadConfigDirToZk(String collectionConfigDir) throws Exception {
+    ZkController zkController = getZkController();
     // conf1 is the config used by AbstractFullDistribZkTestBase
-    zkController.uploadConfigDir(new File(collectionConfigDir), "conf1");
+    zkController.uploadConfigDir(new File(collectionConfigDir),
+      CONF_DIR_IN_ZK);
+  }
+
+  protected void uploadConfigFileToZk(String file, String nameInZk) throws Exception {
+    ZkController zkController = getZkController();
+    zkController.getZkClient().makePath(ZkController.CONFIGS_ZKNODE + "/"
+      + CONF_DIR_IN_ZK + "/" + nameInZk, new File(file), false, true);
   }
 
   protected CloudSolrServer createNewCloudSolrServer() throws Exception {
