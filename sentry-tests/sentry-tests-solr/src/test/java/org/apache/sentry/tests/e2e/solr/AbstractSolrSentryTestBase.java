@@ -20,15 +20,22 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.Comparator;
+import java.util.Map;
 import java.util.Random;
 import java.util.SortedMap;
 import java.util.TreeMap;
+
+import com.google.common.io.Files;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
@@ -37,10 +44,15 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -53,14 +65,17 @@ import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class AbstractSolrSentryTestBase extends AbstractFullDistribZkTestBase {
+public class AbstractSolrSentryTestBase {
   private static final Logger LOG = LoggerFactory.getLogger(AbstractSolrSentryTestBase.class);
   protected static final String SENTRY_ERROR_MSG = "SentrySolrAuthorizationException";
   private static MiniDFSCluster dfsCluster;
+  private static MiniSolrCloudCluster miniSolrCloudCluster;
   private static SortedMap<Class, String> extraRequestFilters;
   protected static final String ADMIN_USER = "admin";
   protected static final String ALL_DOCS = "*:*";
   protected static final Random RANDOM = new Random();
+  protected static final String RESOURCES_DIR = "target" + File.separator + "test-classes" + File.separator + "solr";
+  private static final int NUM_SERVERS = 4;
 
   private static void addPropertyToSentry(StringBuilder builder, String name, String value) {
     builder.append("<property>\n");
@@ -72,7 +87,7 @@ public abstract class AbstractSolrSentryTestBase extends AbstractFullDistribZkTe
   public static File setupSentry() throws Exception {
     File sentrySite = File.createTempFile("sentry-site", "xml");
     sentrySite.deleteOnExit();
-    File authProviderDir = new File(SolrTestCaseJ4.TEST_HOME(), "sentry");
+    File authProviderDir = new File(RESOURCES_DIR, "sentry");
     String authProviderName = "test-authz-provider.ini";
     FileSystem clusterFs = dfsCluster.getFileSystem();
     clusterFs.copyFromLocalFile(false,
@@ -94,7 +109,7 @@ public abstract class AbstractSolrSentryTestBase extends AbstractFullDistribZkTe
 
   @BeforeClass
   public static void beforeTestSimpleSolrEndToEnd() throws Exception {
-    dfsCluster = HdfsTestUtil.setupClass(new File(TEMP_DIR,
+    dfsCluster = HdfsTestUtil.setupClass(new File(Files.createTempDir(),
       AbstractSolrSentryTestBase.class.getName() + "_"
         + System.currentTimeMillis()).getAbsolutePath());
     File sentrySite = setupSentry();
@@ -111,6 +126,9 @@ public abstract class AbstractSolrSentryTestBase extends AbstractFullDistribZkTe
       }
     });
     extraRequestFilters.put(ModifiableUserAuthenticationFilter.class, "*");
+    File solrXml = new File(RESOURCES_DIR, "solr-no-core.xml");
+    miniSolrCloudCluster = new MiniSolrCloudCluster(NUM_SERVERS, null, solrXml,
+      null, extraRequestFilters);
   }
 
   @AfterClass
@@ -120,40 +138,17 @@ public abstract class AbstractSolrSentryTestBase extends AbstractFullDistribZkTe
     System.clearProperty("solr.authorization.sentry.site");
     dfsCluster = null;
     extraRequestFilters = null;
+    miniSolrCloudCluster.shutdown();
   }
 
   @Before
   public void setupBeforeTest() throws Exception {
-    System.setProperty("numShards", Integer.toString(sliceCount));
     System.setProperty("solr.xml.persist", "true");
-    super.setUp();
   }
 
   @After
   public void tearDown() throws Exception {
-    super.tearDown();
-    System.clearProperty("numShards");
     System.clearProperty("solr.xml.persist");
-  }
-
-  @Override
-  protected String getDataDir(String dataDir) throws IOException {
-    return HdfsTestUtil.getDataDir(dfsCluster, dataDir);
-  }
-
-  @Override
-  protected String getSolrXml() {
-    return "solr-no-core.xml";
-  }
-
-  @Override
-  protected String getCloudSolrConfig() {
-    return "solrconfig.xml";
-  }
-
-  @Override
-  public SortedMap<Class,String> getExtraRequestFilters() {
-    return extraRequestFilters;
   }
 
   /**
@@ -410,12 +405,12 @@ public abstract class AbstractSolrSentryTestBase extends AbstractFullDistribZkTe
     try {
       setAuthenticationUser(solrUserName);
       QueryRequest request = populateCollectionAdminParams(adminOp, collectionName);
-      SolrServer solrServer = createNewSolrServer("", getBaseUrl((HttpSolrServer) clients.get(0)));
+      CloudSolrServer solrServer = createNewCloudSolrServer();
       try {
         NamedList<Object> result = solrServer.request(request);
         if (adminOp.compareTo(CollectionAction.CREATE) == 0) {
           // Wait for collection creation to complete.
-          waitForRecoveriesToFinish(collectionName, false);
+          waitForRecoveriesToFinish(collectionName, solrServer, false);
         }
       } finally {
         solrServer.shutdown();
@@ -441,12 +436,12 @@ public abstract class AbstractSolrSentryTestBase extends AbstractFullDistribZkTe
       setAuthenticationUser(solrUserName);
       try {
         QueryRequest request = populateCollectionAdminParams(adminOp, collectionName);
-        SolrServer solrServer = createNewSolrServer("", getBaseUrl((HttpSolrServer) clients.get(0)));
+        CloudSolrServer solrServer = createNewCloudSolrServer();
         try {
           NamedList<Object> result = solrServer.request(request);
           if (adminOp.compareTo(CollectionAction.CREATE) == 0) {
             // Wait for collection creation to complete.
-            waitForRecoveriesToFinish(collectionName, false);
+            waitForRecoveriesToFinish(collectionName, solrServer, false);
           }
         } finally {
           solrServer.shutdown();
@@ -606,8 +601,8 @@ public abstract class AbstractSolrSentryTestBase extends AbstractFullDistribZkTe
    * @throws MalformedURLException
    */
   protected CloudSolrServer getCloudSolrServer(String collectionName) throws MalformedURLException {
-    CloudSolrServer cloudSolrServer = new CloudSolrServer(zkServer.getZkAddress(),
-        random().nextBoolean());
+    CloudSolrServer cloudSolrServer = new CloudSolrServer(miniSolrCloudCluster.getZkServer().getZkAddress(),
+        RANDOM.nextBoolean());
     cloudSolrServer.setDefaultCollection(collectionName);
     cloudSolrServer.connect();
     return cloudSolrServer;
@@ -680,19 +675,80 @@ public abstract class AbstractSolrSentryTestBase extends AbstractFullDistribZkTe
     verifyUpdatePass(ADMIN_USER, collectionName, solrInputDoc);
   }
 
-  /**
-   * Subclasses can override this to change a test's solr home
-   * (default is in test-files)
-   */
-  public String getSolrHome() {
-    return SolrTestCaseJ4.TEST_HOME();
-  }
-
   protected void uploadConfigDirToZk(String collectionConfigDir) throws Exception {
     SolrDispatchFilter dispatchFilter =
-      (SolrDispatchFilter) jettys.get(0).getDispatchFilter().getFilter();
+      (SolrDispatchFilter) miniSolrCloudCluster.getJettySolrRunners().get(0).getDispatchFilter().getFilter();
     ZkController zkController = dispatchFilter.getCores().getZkController();
     // conf1 is the config used by AbstractFullDistribZkTestBase
     zkController.uploadConfigDir(new File(collectionConfigDir), "conf1");
+  }
+
+  protected CloudSolrServer createNewCloudSolrServer() throws Exception {
+    CloudSolrServer css = new CloudSolrServer(miniSolrCloudCluster.getZkServer().getZkAddress());
+    css.connect();
+    return css;
+  }
+
+  protected static void waitForRecoveriesToFinish(String collection,
+                                                  CloudSolrServer solrServer,
+                                                  boolean verbose) throws Exception {
+    waitForRecoveriesToFinish(collection, solrServer, verbose, true, 60);
+  }
+
+  protected static void waitForRecoveriesToFinish(String collection,
+                                                  CloudSolrServer solrServer,
+                                                  boolean verbose,
+                                                  boolean failOnTimeout,
+                                                  int timeoutSeconds) throws Exception {
+    LOG.info("Entering solr wait with timeout " + timeoutSeconds);
+    ZkStateReader zkStateReader = solrServer.getZkStateReader();
+    try {
+      boolean cont = true;
+      int cnt = 0;
+
+      while (cont) {
+        if (verbose) LOG.debug("-");
+        boolean sawLiveRecovering = false;
+        zkStateReader.updateClusterState(true);
+        ClusterState clusterState = zkStateReader.getClusterState();
+        Map<String, Slice> slices = clusterState.getSlicesMap(collection);
+        assertNotNull("Could not find collection:" + collection, slices);
+        for (Map.Entry<String, Slice> entry : slices.entrySet()) {
+          Map<String, Replica> shards = entry.getValue().getReplicasMap();
+          for (Map.Entry<String, Replica> shard : shards.entrySet()) {
+            if (verbose) LOG.debug("rstate:"
+                + shard.getValue().getStr(ZkStateReader.STATE_PROP) + " live:"
+                + clusterState.liveNodesContain(shard.getValue().getNodeName()));
+            String state = shard.getValue().getStr(ZkStateReader.STATE_PROP);
+            if ((state.equals(ZkStateReader.RECOVERING)
+                || state.equals(ZkStateReader.SYNC) || state
+                .equals(ZkStateReader.DOWN))
+                && clusterState.liveNodesContain(shard.getValue().getStr(
+                ZkStateReader.NODE_NAME_PROP))) {
+              sawLiveRecovering = true;
+            }
+          }
+        }
+        if (!sawLiveRecovering || cnt == timeoutSeconds) {
+          if (!sawLiveRecovering) {
+            if (verbose) LOG.debug("no one is recovering");
+          } else {
+            if (verbose) LOG.debug("Gave up waiting for recovery to finish..");
+            if (failOnTimeout) {
+              fail("There are still nodes recovering - waited for "
+                  + timeoutSeconds + " seconds");
+              // won't get here
+              return;
+            }
+          }
+          cont = false;
+        } else {
+          Thread.sleep(1000);
+        }
+        cnt++;
+      }
+    } finally {
+      LOG.info("Exiting solr wait");
+    }
   }
 }

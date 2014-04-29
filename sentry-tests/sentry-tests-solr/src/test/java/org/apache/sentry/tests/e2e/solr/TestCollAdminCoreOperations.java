@@ -16,6 +16,9 @@
  */
 package org.apache.sentry.tests.e2e.solr;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -26,24 +29,18 @@ import java.util.List;
 import java.util.Random;
 
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
+import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
-@ThreadLeakScope(Scope.NONE) // hdfs client currently leaks thread(s)
 public class TestCollAdminCoreOperations extends AbstractSolrSentryTestBase {
-  // Necessary until we pull in a solr version with SOLR-5771
-  static {
-    ALLOW_SSL = false;
-  }
 
   private static final Logger LOG = LoggerFactory
       .getLogger(TestCollAdminCoreOperations.class);
   private static final String ADMIN_COLLECTION_NAME = "admin";
   private static final String TEST_COLLECTION_NAME = "sentryCollection";
   private static final List<Boolean> BOOLEAN_VALUES = Arrays.asList(new Boolean[]{true, false});
+  private static final String DEFAULT_COLLECTION = "collection1";
 
   /**
    * Maximum number of combinations that will be tested by this class.
@@ -55,8 +52,8 @@ public class TestCollAdminCoreOperations extends AbstractSolrSentryTestBase {
    */
   private static int NUM_TESTS_TO_RUN = 15;
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  public void testCollAdminCoreOperations() throws Exception {
     String maxTestsToRun = System.getProperty("sentry.solr.e2e.maxTestsToRun");
     if (maxTestsToRun != null) {
       if (maxTestsToRun.compareToIgnoreCase("all") == 0) {
@@ -78,7 +75,7 @@ public class TestCollAdminCoreOperations extends AbstractSolrSentryTestBase {
 
     ArrayList<String> testFailures = new ArrayList<String>();
     // Upload configs to ZK
-    uploadConfigDirToZk(getSolrHome() + File.separator + DEFAULT_COLLECTION
+    uploadConfigDirToZk(RESOURCES_DIR + File.separator + DEFAULT_COLLECTION
         + File.separator + "conf");
     for (boolean admin_query : BOOLEAN_VALUES) {
       for (boolean admin_update : BOOLEAN_VALUES) {

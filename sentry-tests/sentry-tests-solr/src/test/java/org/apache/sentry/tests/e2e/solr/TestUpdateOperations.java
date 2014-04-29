@@ -16,6 +16,12 @@
  */
 package org.apache.sentry.tests.e2e.solr;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+
 import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -24,28 +30,19 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.solr.common.SolrInputDocument;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
-
-@ThreadLeakScope(Scope.NONE) // hdfs client currently leaks thread(s)
 public class TestUpdateOperations extends AbstractSolrSentryTestBase {
-  // Necessary until we pull in a solr version with SOLR-5771
-  static {
-    ALLOW_SSL = false;
-  }
 
   private static final Logger LOG = LoggerFactory
       .getLogger(TestUpdateOperations.class);
   private static final String COLLECTION_NAME = "sentryCollection";
   private static final List<Boolean> BOOLEAN_VALUES = Arrays.asList(new Boolean[]{true, false});
+  private static final String DEFAULT_COLLECTION = "collection1";
 
-  @Override
-  public void doTest() throws Exception {
+  @Test
+  public void testUpdateOperations() throws Exception {
     // Upload configs to ZK
-    uploadConfigDirToZk(getSolrHome() + File.separator + DEFAULT_COLLECTION
+    uploadConfigDirToZk(RESOURCES_DIR + File.separator + DEFAULT_COLLECTION
         + File.separator + "conf");
     setupCollection(COLLECTION_NAME);
     ArrayList<String> testFailures = new ArrayList<String>();
