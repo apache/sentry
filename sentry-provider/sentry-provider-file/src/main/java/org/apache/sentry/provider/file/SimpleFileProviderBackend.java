@@ -158,6 +158,28 @@ public class SimpleFileProviderBackend implements ProviderBackend {
     return resultBuilder.build();
   }
 
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public ImmutableSet<String> getRoles(Set<String> groups, ActiveRoleSet roleSet) {
+    if (!initialized) {
+      throw new IllegalStateException("Backend has not been properly initialized");
+    }
+    ImmutableSet.Builder<String> resultBuilder = ImmutableSet.builder();
+    if (groups != null) {
+      for (String groupName : groups) {
+        for (Map.Entry<String, Set<String>> row : groupRolePrivilegeTable.row(groupName)
+            .entrySet()) {
+          if (roleSet.containsRole(row.getKey())) {
+            resultBuilder.add(row.getKey());
+          }
+        }
+      }
+    }
+    return resultBuilder.build();
+  }
+
   @Override
   public void close() {
     groupRolePrivilegeTable.clear();

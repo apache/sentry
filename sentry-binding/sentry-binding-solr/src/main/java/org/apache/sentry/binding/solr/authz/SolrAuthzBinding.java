@@ -56,6 +56,7 @@ public class SolrAuthzBinding {
   private final SolrAuthzConf authzConf;
   private final AuthorizationProvider authProvider;
   private final GroupMappingService groupMapping;
+  private ProviderBackend providerBackend;
 
   public SolrAuthzBinding (SolrAuthzConf authzConf) throws Exception {
     this.authzConf = authzConf;
@@ -86,7 +87,7 @@ public class SolrAuthzBinding {
       initKerberos(keytabProp, principalProp);
     }
     Configuration conf = getConf();
-    ProviderBackend providerBackend =
+    providerBackend =
       (ProviderBackend) providerBackendConstructor.newInstance(new Object[] {conf, resourceName});
 
     // load the policy engine class
@@ -130,9 +131,20 @@ public class SolrAuthzBinding {
    * Get the list of groups the user belongs to
    * @param user
    * @return list of groups the user belongs to
+   * @deprecated use getRoles instead
    */
+  @Deprecated
   public Set<String> getGroups(String user) {
     return groupMapping.getGroups(user);
+  }
+
+  /**
+   * Get the roles associated with the user
+   * @param user
+   * @return The roles associated with the user
+   */
+  public Set<String> getRoles(String user) {
+    return providerBackend.getRoles(getGroups(user), ActiveRoleSet.ALL);
   }
 
   private Configuration getConf() throws IOException {

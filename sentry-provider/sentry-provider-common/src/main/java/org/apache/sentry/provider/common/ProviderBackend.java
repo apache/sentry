@@ -49,6 +49,11 @@ public interface ProviderBackend {
   public ImmutableSet<String> getPrivileges(Set<String> groups, ActiveRoleSet roleSet);
 
   /**
+   * Get the roles associated with the groups from the backend.
+   */
+  public ImmutableSet<String> getRoles(Set<String> groups, ActiveRoleSet roleSet);
+
+  /**
    * If strictValidation is true then an error is thrown for warnings
    * as well as errors.
    *

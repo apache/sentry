@@ -190,6 +190,40 @@ public class TestSolrAuthzBinding {
   }
 
   /**
+   * Test for role mapping
+   */
+  @Test
+  public void testGetRoles() throws Exception {
+    SolrAuthzConf solrAuthzConf =
+      new SolrAuthzConf(Resources.getResource("sentry-site.xml"));
+    setUsableAuthzConf(solrAuthzConf);
+    SolrAuthzBinding binding = new SolrAuthzBinding(solrAuthzConf);
+    Set<String> emptySet = Collections.emptySet();
+
+    // check non-existant users
+    assertEquals(binding.getRoles(null), emptySet);
+    assertEquals(binding.getRoles("nonExistantUser"), emptySet);
+
+    // check user with undefined group
+    assertEquals(binding.getRoles("undefinedGroupUser"), emptySet);
+    // check group with undefined role
+    assertEquals(binding.getRoles("undefinedRoleUser"), emptySet);
+
+    // check role names don't map in the other direction
+    assertEquals(binding.getRoles("corporal_role"), emptySet);
+    assertEquals(binding.getRoles("sergeant_role"), emptySet);
+    assertEquals(binding.getRoles("general_role"), emptySet);
+
+    // check valid users
+    assertEquals(binding.getRoles("corporal1"), Sets.newHashSet("corporal_role"));
+    assertEquals(binding.getRoles("sergeant1"), Sets.newHashSet("corporal_role", "sergeant_role"));
+    assertEquals(binding.getRoles("general1"), Sets.newHashSet("corporal_role", "sergeant_role", "general_role"));
+
+    // check user whos groups have overlapping roles
+    assertEquals(binding.getRoles("overlappingUser"), Sets.newHashSet("corporal_role", "sergeant_role", "general_role"));
+  }
+
+  /**
    * Test that a full sentry-site definition works.
    */
   @Test

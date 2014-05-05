@@ -17,6 +17,7 @@
 package org.apache.sentry.provider.db;
 
 import java.io.IOException;
+import java.lang.UnsupportedOperationException;
 import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
@@ -82,6 +83,14 @@ public class SimpleDBProviderBackend implements ProviderBackend {
       LOGGER.error(msg, e);
     }
     return ImmutableSet.of();
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public ImmutableSet<String> getRoles(Set<String> groups, ActiveRoleSet roleSet) {
+    throw new UnsupportedOperationException("Not yet implemented.");
   }
 
   @Override
