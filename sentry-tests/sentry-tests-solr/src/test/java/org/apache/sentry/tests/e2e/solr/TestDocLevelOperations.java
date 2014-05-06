@@ -91,13 +91,13 @@ public class TestDocLevelOperations extends AbstractSolrSentryTestBase {
       }
       // 50% of docs get "junit", 50% get "admin" as token
       if (i % 2 == 0) {
-        doc.addField(AUTH_FIELD, "junit");
+        doc.addField(AUTH_FIELD, "junit_role");
       } else {
-        doc.addField(AUTH_FIELD, "admin");
+        doc.addField(AUTH_FIELD, "admin_role");
       }
       // add a token to all docs so we can check that we can get all
       // documents returned
-      doc.addField(AUTH_FIELD, "docLevel");
+      doc.addField(AUTH_FIELD, "docLevel_role");
 
       docs.add(doc);
     }
@@ -138,20 +138,20 @@ public class TestDocLevelOperations extends AbstractSolrSentryTestBase {
       // test filter queries work as AND -- i.e. user can't avoid doc-level
       // checks by prefixing their own filterQuery
       setAuthenticationUser("junit");
-      String fq = URLEncoder.encode(" {!raw f=" + AUTH_FIELD + " v=docLevel}");
+      String fq = URLEncoder.encode(" {!raw f=" + AUTH_FIELD + " v=docLevel_role}");
       String path = "/" + collectionName + "/select?q=*:*&fq="+fq;
       String retValue = makeHttpRequest(server, "GET", path, null, null);
       assertTrue(retValue.contains("numFound=\"" + NUM_DOCS / 2 + "\" "));
 
       // test that user can't inject an "OR" into the query
       final String syntaxErrorMsg = "org.apache.solr.search.SyntaxError: Cannot parse";
-      fq = URLEncoder.encode(" {!raw f=" + AUTH_FIELD + " v=docLevel} OR ");
+      fq = URLEncoder.encode(" {!raw f=" + AUTH_FIELD + " v=docLevel_role} OR ");
       path = "/" + collectionName + "/select?q=*:*&fq="+fq;
       retValue = makeHttpRequest(server, "GET", path, null, null);
       assertTrue(retValue.contains(syntaxErrorMsg));
 
       // same test, prefix OR this time
-      fq = URLEncoder.encode(" OR {!raw f=" + AUTH_FIELD + " v=docLevel}");
+      fq = URLEncoder.encode(" OR {!raw f=" + AUTH_FIELD + " v=docLevel_role}");
       path = "/" + collectionName + "/select?q=*:*&fq="+fq;
       retValue = makeHttpRequest(server, "GET", path, null, null);
       assertTrue(retValue.contains(syntaxErrorMsg));
@@ -161,21 +161,21 @@ public class TestDocLevelOperations extends AbstractSolrSentryTestBase {
   }
 
   /**
-   * Test the allGroupsToken.  Make it a keyword in the query language ("OR")
+   * Test the allRolesToken.  Make it a keyword in the query language ("OR")
    * to make sure it is treated literally rather than interpreted.
    */
   @Test
-  public void testAllGroupsToken() throws Exception {
-    String allGroupsToken = "OR";
-    String collectionName = "allGroupsCollection";
+  public void testAllRolesToken() throws Exception {
+    String allRolesToken = "OR";
+    String collectionName = "allRolesCollection";
     setupCollectionWithDocSecurity(collectionName);
 
     int junitFactor = 2;
-    int allGroupsFactor  = 5;
+    int allRolesFactor  = 5;
 
     int totalJunitAdded = 0; // total docs added with junit token
-    int totalAllGroupsAdded = 0; // total number of docs with the allGroupsToken
-    int totalOnlyAllGroupsAdded = 0; // total number of docs with _only_ the allGroupsToken
+    int totalAllRolesAdded = 0; // total number of docs with the allRolesToken
+    int totalOnlyAllRolesAdded = 0; // total number of docs with _only_ the allRolesToken
 
     // create documents
     ArrayList<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
@@ -187,20 +187,20 @@ public class TestDocLevelOperations extends AbstractSolrSentryTestBase {
       doc.addField("description", "description" + iStr);
 
       if (i % junitFactor == 0) {
-        doc.addField(AUTH_FIELD, "junit");
+        doc.addField(AUTH_FIELD, "junit_role");
         addedViaJunit = true;
         ++totalJunitAdded;
-      } if (i % allGroupsFactor == 0) {
-        doc.addField(AUTH_FIELD, allGroupsToken);
-        ++totalAllGroupsAdded;
-        if (!addedViaJunit) ++totalOnlyAllGroupsAdded;
+      } if (i % allRolesFactor == 0) {
+        doc.addField(AUTH_FIELD, allRolesToken);
+        ++totalAllRolesAdded;
+        if (!addedViaJunit) ++totalOnlyAllRolesAdded;
       }
       docs.add(doc);
     }
     // make sure our factors give us interesting results --
-    // that some docs only have all groups and some only have junit
-    assert(totalOnlyAllGroupsAdded > 0);
-    assert(totalJunitAdded > totalAllGroupsAdded);
+    // that some docs only have all roles and some only have junit
+    assert(totalOnlyAllRolesAdded > 0);
+    assert(totalJunitAdded > totalAllRolesAdded);
 
     CloudSolrServer server = getCloudSolrServer(collectionName);
     try {
@@ -211,26 +211,26 @@ public class TestDocLevelOperations extends AbstractSolrSentryTestBase {
       SolrQuery query = new SolrQuery();
       query.setQuery("*:*");
 
-      // as admin  -- should only get all groups token documents
+      // as admin  -- should only get all roles token documents
       setAuthenticationUser("admin");
       QueryResponse rsp = server.query(query);
       SolrDocumentList docList = rsp.getResults();
-      assertEquals(totalAllGroupsAdded, docList.getNumFound());
+      assertEquals(totalAllRolesAdded, docList.getNumFound());
       for (SolrDocument doc : docList) {
         String id = doc.getFieldValue("id").toString();
-        assertEquals(0, Long.valueOf(id) % allGroupsFactor);
+        assertEquals(0, Long.valueOf(id) % allRolesFactor);
       }
 
-      // as junit -- should get junit added + onlyAllGroupsAdded
+      // as junit -- should get junit added + onlyAllRolesAdded
       setAuthenticationUser("junit");
       rsp = server.query(query);
       docList = rsp.getResults();
-      assertEquals(totalJunitAdded + totalOnlyAllGroupsAdded, docList.getNumFound());
+      assertEquals(totalJunitAdded + totalOnlyAllRolesAdded, docList.getNumFound());
       for (SolrDocument doc : docList) {
         String id = doc.getFieldValue("id").toString();
         boolean addedJunit = (Long.valueOf(id) % junitFactor) == 0;
-        boolean onlyAllGroups = !addedJunit && (Long.valueOf(id) % allGroupsFactor) == 0;
-        assertEquals(true, addedJunit || onlyAllGroups);
+        boolean onlyAllRoles = !addedJunit && (Long.valueOf(id) % allRolesFactor) == 0;
+        assertEquals(true, addedJunit || onlyAllRoles);
       }
     } finally {
       server.shutdown();

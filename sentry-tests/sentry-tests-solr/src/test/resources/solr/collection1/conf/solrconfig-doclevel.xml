@@ -1343,24 +1343,20 @@
       -->
   </searchComponent>
 
-    <searchComponent name="queryIndexAuthorization" class="org.apache.solr.handler.component.QueryIndexAuthorizationComponent" >
+  <searchComponent name="queryIndexAuthorization" class="org.apache.solr.handler.component.QueryIndexAuthorizationComponent" >
   </searchComponent>
 
-    <searchComponent name="queryDocAuthorization" class="org.apache.solr.handler.component.QueryDocAuthorizationComponent" >
+  <searchComponent name="queryDocAuthorization" class="org.apache.solr.handler.component.QueryDocAuthorizationComponent" >
     <!-- Set to true to enabled document-level authorization -->
     <bool name="enabled">true</bool>
 
     <!-- Field where the auth tokens are stored in the document -->
     <str name="sentryAuthField">sentry_auth</str>
 
-    <!-- Auth token defined to allow any group to access the document.
+    <!-- Auth token defined to allow any role to access the document.
          Uncomment to enable. -->
-    <str name="allGroupsToken">OR</str>
+    <str name="allRolesToken">OR</str>
   </searchComponent>
-  <!--<searchComponent name="queryDocAuthorization" class="org.apache.solr.handler.component.QueryDocAuthorizationComponent" >
-    <str name="sentryAuthField">sentry_auth</str>
-    <str name="allGroupsToken">OR</str>
-  </searchComponent>-->
 
   <!-- A request handler for demonstrating the spellcheck component.  
 

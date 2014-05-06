@@ -876,6 +876,7 @@
       -->
       <arr name="first-components">
         <str>queryIndexAuthorization</str>
+        <str>queryDocAuthorization</str>
       </arr>
 
     </requestHandler>
@@ -890,6 +891,7 @@
      </lst>
      <arr name="first-components">
         <str>queryIndexAuthorization</str>
+        <str>queryDocAuthorization</str>
       </arr>
   </requestHandler>
 
@@ -905,6 +907,7 @@
      </lst>
      <arr name="first-components">
         <str>queryIndexAuthorization</str>
+        <str>queryDocAuthorization</str>
      </arr>
   </requestHandler>
 
@@ -1002,6 +1005,7 @@
 
       <arr name="first-components">
         <str>queryIndexAuthorization</str>
+        <str>queryDocAuthorization</str>
       </arr>
 
      <!-- append spellchecking to our list of components -->
@@ -1339,9 +1343,20 @@
       -->
   </searchComponent>
 
-    <searchComponent name="queryIndexAuthorization" class="org.apache.solr.handler.component.QueryIndexAuthorizationComponent" >
+  <searchComponent name="queryIndexAuthorization" class="org.apache.solr.handler.component.QueryIndexAuthorizationComponent" >
   </searchComponent>
 
+  <searchComponent name="queryDocAuthorization" class="org.apache.solr.handler.component.QueryDocAuthorizationComponent" >
+    <!-- Set to true to enabled document-level authorization -->
+    <bool name="enabled">false</bool>
+
+    <!-- Field where the auth tokens are stored in the document -->
+    <str name="sentryAuthField">sentry_auth</str>
+
+    <!-- Auth token defined to allow any role to access the document.
+         Uncomment to enable. -->
+    <str name="allRolesToken">OR</str>
+  </searchComponent>
   <!-- A request handler for demonstrating the spellcheck component.  
 
        NOTE: This is purely as an example.  The whole purpose of the
@@ -1399,6 +1414,7 @@
     </lst>
     <arr name="first-components">
       <str>queryIndexAuthorization</str>
+      <str>queryDocAuthorization</str>
     </arr>
     <arr name="last-components">
       <str>tvComponent</str>
@@ -1510,6 +1526,7 @@
     </lst>     
     <arr name="first-components">
       <str>queryIndexAuthorization</str>
+      <str>queryDocAuthorization</str>
     </arr>
     <arr name="last-components">
       <str>clustering</str>
@@ -1533,6 +1550,7 @@
     </lst>
     <arr name="first-components">
       <str>queryIndexAuthorization</str>
+      <str>queryDocAuthorization</str>
     </arr>     
     <arr name="components">
       <str>terms</str>
@@ -1562,6 +1580,7 @@
     </lst>
     <arr name="first-components">
       <str>queryIndexAuthorization</str>
+      <str>queryDocAuthorization</str>
     </arr>
     <arr name="last-components">
       <str>elevator</str>
