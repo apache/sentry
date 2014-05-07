@@ -49,7 +49,7 @@ public class SentryPolicyService {
 
     public TListSentryRolesResponse list_sentry_roles_by_group(TListSentryRolesRequest request) throws org.apache.thrift.TException;
 
-    public TListSentryRolesResponse list_sentry_roles_by_role_name(TListSentryRolesRequest request) throws org.apache.thrift.TException;
+    public TListSentryPrivilegesResponse list_sentry_privileges_by_role(TListSentryPrivilegesRequest request) throws org.apache.thrift.TException;
 
     public TListSentryPrivilegesForProviderResponse list_sentry_privileges_for_provider(TListSentryPrivilegesForProviderRequest request) throws org.apache.thrift.TException;
 
@@ -71,7 +71,7 @@ public class SentryPolicyService {
 
     public void list_sentry_roles_by_group(TListSentryRolesRequest request, org.apache.thrift.async.AsyncMethodCallback<AsyncClient.list_sentry_roles_by_group_call> resultHandler) throws org.apache.thrift.TException;
 
-    public void list_sentry_roles_by_role_name(TListSentryRolesRequest request, org.apache.thrift.async.AsyncMethodCallback<AsyncClient.list_sentry_roles_by_role_name_call> resultHandler) throws org.apache.thrift.TException;
+    public void list_sentry_privileges_by_role(TListSentryPrivilegesRequest request, org.apache.thrift.async.AsyncMethodCallback<AsyncClient.list_sentry_privileges_by_role_call> resultHandler) throws org.apache.thrift.TException;
 
     public void list_sentry_privileges_for_provider(TListSentryPrivilegesForProviderRequest request, org.apache.thrift.async.AsyncMethodCallback<AsyncClient.list_sentry_privileges_for_provider_call> resultHandler) throws org.apache.thrift.TException;
 
@@ -258,27 +258,27 @@ public class SentryPolicyService {
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "list_sentry_roles_by_group failed: unknown result");
     }
 
-    public TListSentryRolesResponse list_sentry_roles_by_role_name(TListSentryRolesRequest request) throws org.apache.thrift.TException
+    public TListSentryPrivilegesResponse list_sentry_privileges_by_role(TListSentryPrivilegesRequest request) throws org.apache.thrift.TException
     {
-      send_list_sentry_roles_by_role_name(request);
-      return recv_list_sentry_roles_by_role_name();
+      send_list_sentry_privileges_by_role(request);
+      return recv_list_sentry_privileges_by_role();
     }
 
-    public void send_list_sentry_roles_by_role_name(TListSentryRolesRequest request) throws org.apache.thrift.TException
+    public void send_list_sentry_privileges_by_role(TListSentryPrivilegesRequest request) throws org.apache.thrift.TException
     {
-      list_sentry_roles_by_role_name_args args = new list_sentry_roles_by_role_name_args();
+      list_sentry_privileges_by_role_args args = new list_sentry_privileges_by_role_args();
       args.setRequest(request);
-      sendBase("list_sentry_roles_by_role_name", args);
+      sendBase("list_sentry_privileges_by_role", args);
     }
 
-    public TListSentryRolesResponse recv_list_sentry_roles_by_role_name() throws org.apache.thrift.TException
+    public TListSentryPrivilegesResponse recv_list_sentry_privileges_by_role() throws org.apache.thrift.TException
     {
-      list_sentry_roles_by_role_name_result result = new list_sentry_roles_by_role_name_result();
-      receiveBase(result, "list_sentry_roles_by_role_name");
+      list_sentry_privileges_by_role_result result = new list_sentry_privileges_by_role_result();
+      receiveBase(result, "list_sentry_privileges_by_role");
       if (result.isSetSuccess()) {
         return result.success;
       }
-      throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "list_sentry_roles_by_role_name failed: unknown result");
+      throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "list_sentry_privileges_by_role failed: unknown result");
     }
 
     public TListSentryPrivilegesForProviderResponse list_sentry_privileges_for_provider(TListSentryPrivilegesForProviderRequest request) throws org.apache.thrift.TException
@@ -546,35 +546,35 @@ public class SentryPolicyService {
       }
     }
 
-    public void list_sentry_roles_by_role_name(TListSentryRolesRequest request, org.apache.thrift.async.AsyncMethodCallback<list_sentry_roles_by_role_name_call> resultHandler) throws org.apache.thrift.TException {
+    public void list_sentry_privileges_by_role(TListSentryPrivilegesRequest request, org.apache.thrift.async.AsyncMethodCallback<list_sentry_privileges_by_role_call> resultHandler) throws org.apache.thrift.TException {
       checkReady();
-      list_sentry_roles_by_role_name_call method_call = new list_sentry_roles_by_role_name_call(request, resultHandler, this, ___protocolFactory, ___transport);
+      list_sentry_privileges_by_role_call method_call = new list_sentry_privileges_by_role_call(request, resultHandler, this, ___protocolFactory, ___transport);
       this.___currentMethod = method_call;
       ___manager.call(method_call);
     }
 
-    public static class list_sentry_roles_by_role_name_call extends org.apache.thrift.async.TAsyncMethodCall {
-      private TListSentryRolesRequest request;
-      public list_sentry_roles_by_role_name_call(TListSentryRolesRequest request, org.apache.thrift.async.AsyncMethodCallback<list_sentry_roles_by_role_name_call> resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+    public static class list_sentry_privileges_by_role_call extends org.apache.thrift.async.TAsyncMethodCall {
+      private TListSentryPrivilegesRequest request;
+      public list_sentry_privileges_by_role_call(TListSentryPrivilegesRequest request, org.apache.thrift.async.AsyncMethodCallback<list_sentry_privileges_by_role_call> resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
         super(client, protocolFactory, transport, resultHandler, false);
         this.request = request;
       }
 
       public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
-        prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("list_sentry_roles_by_role_name", org.apache.thrift.protocol.TMessageType.CALL, 0));
-        list_sentry_roles_by_role_name_args args = new list_sentry_roles_by_role_name_args();
+        prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("list_sentry_privileges_by_role", org.apache.thrift.protocol.TMessageType.CALL, 0));
+        list_sentry_privileges_by_role_args args = new list_sentry_privileges_by_role_args();
         args.setRequest(request);
         args.write(prot);
         prot.writeMessageEnd();
       }
 
-      public TListSentryRolesResponse getResult() throws org.apache.thrift.TException {
+      public TListSentryPrivilegesResponse getResult() throws org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
         org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
         org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
-        return (new Client(prot)).recv_list_sentry_roles_by_role_name();
+        return (new Client(prot)).recv_list_sentry_privileges_by_role();
       }
     }
 
@@ -630,7 +630,7 @@ public class SentryPolicyService {
       processMap.put("alter_sentry_role_add_groups", new alter_sentry_role_add_groups());
       processMap.put("alter_sentry_role_delete_groups", new alter_sentry_role_delete_groups());
       processMap.put("list_sentry_roles_by_group", new list_sentry_roles_by_group());
-      processMap.put("list_sentry_roles_by_role_name", new list_sentry_roles_by_role_name());
+      processMap.put("list_sentry_privileges_by_role", new list_sentry_privileges_by_role());
       processMap.put("list_sentry_privileges_for_provider", new list_sentry_privileges_for_provider());
       return processMap;
     }
@@ -775,22 +775,22 @@ public class SentryPolicyService {
       }
     }
 
-    public static class list_sentry_roles_by_role_name<I extends Iface> extends org.apache.thrift.ProcessFunction<I, list_sentry_roles_by_role_name_args> {
-      public list_sentry_roles_by_role_name() {
-        super("list_sentry_roles_by_role_name");
+    public static class list_sentry_privileges_by_role<I extends Iface> extends org.apache.thrift.ProcessFunction<I, list_sentry_privileges_by_role_args> {
+      public list_sentry_privileges_by_role() {
+        super("list_sentry_privileges_by_role");
       }
 
-      public list_sentry_roles_by_role_name_args getEmptyArgsInstance() {
-        return new list_sentry_roles_by_role_name_args();
+      public list_sentry_privileges_by_role_args getEmptyArgsInstance() {
+        return new list_sentry_privileges_by_role_args();
       }
 
       protected boolean isOneway() {
         return false;
       }
 
-      public list_sentry_roles_by_role_name_result getResult(I iface, list_sentry_roles_by_role_name_args args) throws org.apache.thrift.TException {
-        list_sentry_roles_by_role_name_result result = new list_sentry_roles_by_role_name_result();
-        result.success = iface.list_sentry_roles_by_role_name(args.request);
+      public list_sentry_privileges_by_role_result getResult(I iface, list_sentry_privileges_by_role_args args) throws org.apache.thrift.TException {
+        list_sentry_privileges_by_role_result result = new list_sentry_privileges_by_role_result();
+        result.success = iface.list_sentry_privileges_by_role(args.request);
         return result;
       }
     }
@@ -5899,18 +5899,18 @@ public class SentryPolicyService {
 
   }
 
-  public static class list_sentry_roles_by_role_name_args implements org.apache.thrift.TBase<list_sentry_roles_by_role_name_args, list_sentry_roles_by_role_name_args._Fields>, java.io.Serializable, Cloneable   {
-    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("list_sentry_roles_by_role_name_args");
+  public static class list_sentry_privileges_by_role_args implements org.apache.thrift.TBase<list_sentry_privileges_by_role_args, list_sentry_privileges_by_role_args._Fields>, java.io.Serializable, Cloneable   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("list_sentry_privileges_by_role_args");
 
     private static final org.apache.thrift.protocol.TField REQUEST_FIELD_DESC = new org.apache.thrift.protocol.TField("request", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
-      schemes.put(StandardScheme.class, new list_sentry_roles_by_role_name_argsStandardSchemeFactory());
-      schemes.put(TupleScheme.class, new list_sentry_roles_by_role_name_argsTupleSchemeFactory());
+      schemes.put(StandardScheme.class, new list_sentry_privileges_by_role_argsStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new list_sentry_privileges_by_role_argsTupleSchemeFactory());
     }
 
-    private TListSentryRolesRequest request; // required
+    private TListSentryPrivilegesRequest request; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -5975,16 +5975,16 @@ public class SentryPolicyService {
     static {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.REQUEST, new org.apache.thrift.meta_data.FieldMetaData("request", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TListSentryRolesRequest.class)));
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TListSentryPrivilegesRequest.class)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
-      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(list_sentry_roles_by_role_name_args.class, metaDataMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(list_sentry_privileges_by_role_args.class, metaDataMap);
     }
 
-    public list_sentry_roles_by_role_name_args() {
+    public list_sentry_privileges_by_role_args() {
     }
 
-    public list_sentry_roles_by_role_name_args(
-      TListSentryRolesRequest request)
+    public list_sentry_privileges_by_role_args(
+      TListSentryPrivilegesRequest request)
     {
       this();
       this.request = request;
@@ -5993,14 +5993,14 @@ public class SentryPolicyService {
     /**
      * Performs a deep copy on <i>other</i>.
      */
-    public list_sentry_roles_by_role_name_args(list_sentry_roles_by_role_name_args other) {
+    public list_sentry_privileges_by_role_args(list_sentry_privileges_by_role_args other) {
       if (other.isSetRequest()) {
-        this.request = new TListSentryRolesRequest(other.request);
+        this.request = new TListSentryPrivilegesRequest(other.request);
       }
     }
 
-    public list_sentry_roles_by_role_name_args deepCopy() {
-      return new list_sentry_roles_by_role_name_args(this);
+    public list_sentry_privileges_by_role_args deepCopy() {
+      return new list_sentry_privileges_by_role_args(this);
     }
 
     @Override
@@ -6008,11 +6008,11 @@ public class SentryPolicyService {
       this.request = null;
     }
 
-    public TListSentryRolesRequest getRequest() {
+    public TListSentryPrivilegesRequest getRequest() {
       return this.request;
     }
 
-    public void setRequest(TListSentryRolesRequest request) {
+    public void setRequest(TListSentryPrivilegesRequest request) {
       this.request = request;
     }
 
@@ -6037,7 +6037,7 @@ public class SentryPolicyService {
         if (value == null) {
           unsetRequest();
         } else {
-          setRequest((TListSentryRolesRequest)value);
+          setRequest((TListSentryPrivilegesRequest)value);
         }
         break;
 
@@ -6070,12 +6070,12 @@ public class SentryPolicyService {
     public boolean equals(Object that) {
       if (that == null)
         return false;
-      if (that instanceof list_sentry_roles_by_role_name_args)
-        return this.equals((list_sentry_roles_by_role_name_args)that);
+      if (that instanceof list_sentry_privileges_by_role_args)
+        return this.equals((list_sentry_privileges_by_role_args)that);
       return false;
     }
 
-    public boolean equals(list_sentry_roles_by_role_name_args that) {
+    public boolean equals(list_sentry_privileges_by_role_args that) {
       if (that == null)
         return false;
 
@@ -6103,13 +6103,13 @@ public class SentryPolicyService {
       return builder.toHashCode();
     }
 
-    public int compareTo(list_sentry_roles_by_role_name_args other) {
+    public int compareTo(list_sentry_privileges_by_role_args other) {
       if (!getClass().equals(other.getClass())) {
         return getClass().getName().compareTo(other.getClass().getName());
       }
 
       int lastComparison = 0;
-      list_sentry_roles_by_role_name_args typedOther = (list_sentry_roles_by_role_name_args)other;
+      list_sentry_privileges_by_role_args typedOther = (list_sentry_privileges_by_role_args)other;
 
       lastComparison = Boolean.valueOf(isSetRequest()).compareTo(typedOther.isSetRequest());
       if (lastComparison != 0) {
@@ -6138,7 +6138,7 @@ public class SentryPolicyService {
 
     @Override
     public String toString() {
-      StringBuilder sb = new StringBuilder("list_sentry_roles_by_role_name_args(");
+      StringBuilder sb = new StringBuilder("list_sentry_privileges_by_role_args(");
       boolean first = true;
 
       sb.append("request:");
@@ -6176,15 +6176,15 @@ public class SentryPolicyService {
       }
     }
 
-    private static class list_sentry_roles_by_role_name_argsStandardSchemeFactory implements SchemeFactory {
-      public list_sentry_roles_by_role_name_argsStandardScheme getScheme() {
-        return new list_sentry_roles_by_role_name_argsStandardScheme();
+    private static class list_sentry_privileges_by_role_argsStandardSchemeFactory implements SchemeFactory {
+      public list_sentry_privileges_by_role_argsStandardScheme getScheme() {
+        return new list_sentry_privileges_by_role_argsStandardScheme();
       }
     }
 
-    private static class list_sentry_roles_by_role_name_argsStandardScheme extends StandardScheme<list_sentry_roles_by_role_name_args> {
+    private static class list_sentry_privileges_by_role_argsStandardScheme extends StandardScheme<list_sentry_privileges_by_role_args> {
 
-      public void read(org.apache.thrift.protocol.TProtocol iprot, list_sentry_roles_by_role_name_args struct) throws org.apache.thrift.TException {
+      public void read(org.apache.thrift.protocol.TProtocol iprot, list_sentry_privileges_by_role_args struct) throws org.apache.thrift.TException {
         org.apache.thrift.protocol.TField schemeField;
         iprot.readStructBegin();
         while (true)
@@ -6196,7 +6196,7 @@ public class SentryPolicyService {
           switch (schemeField.id) {
             case 1: // REQUEST
               if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
-                struct.request = new TListSentryRolesRequest();
+                struct.request = new TListSentryPrivilegesRequest();
                 struct.request.read(iprot);
                 struct.setRequestIsSet(true);
               } else { 
@@ -6212,7 +6212,7 @@ public class SentryPolicyService {
         struct.validate();
       }
 
-      public void write(org.apache.thrift.protocol.TProtocol oprot, list_sentry_roles_by_role_name_args struct) throws org.apache.thrift.TException {
+      public void write(org.apache.thrift.protocol.TProtocol oprot, list_sentry_privileges_by_role_args struct) throws org.apache.thrift.TException {
         struct.validate();
 
         oprot.writeStructBegin(STRUCT_DESC);
@@ -6227,16 +6227,16 @@ public class SentryPolicyService {
 
     }
 
-    private static class list_sentry_roles_by_role_name_argsTupleSchemeFactory implements SchemeFactory {
-      public list_sentry_roles_by_role_name_argsTupleScheme getScheme() {
-        return new list_sentry_roles_by_role_name_argsTupleScheme();
+    private static class list_sentry_privileges_by_role_argsTupleSchemeFactory implements SchemeFactory {
+      public list_sentry_privileges_by_role_argsTupleScheme getScheme() {
+        return new list_sentry_privileges_by_role_argsTupleScheme();
       }
     }
 
-    private static class list_sentry_roles_by_role_name_argsTupleScheme extends TupleScheme<list_sentry_roles_by_role_name_args> {
+    private static class list_sentry_privileges_by_role_argsTupleScheme extends TupleScheme<list_sentry_privileges_by_role_args> {
 
       @Override
-      public void write(org.apache.thrift.protocol.TProtocol prot, list_sentry_roles_by_role_name_args struct) throws org.apache.thrift.TException {
+      public void write(org.apache.thrift.protocol.TProtocol prot, list_sentry_privileges_by_role_args struct) throws org.apache.thrift.TException {
         TTupleProtocol oprot = (TTupleProtocol) prot;
         BitSet optionals = new BitSet();
         if (struct.isSetRequest()) {
@@ -6249,11 +6249,11 @@ public class SentryPolicyService {
       }
 
       @Override
-      public void read(org.apache.thrift.protocol.TProtocol prot, list_sentry_roles_by_role_name_args struct) throws org.apache.thrift.TException {
+      public void read(org.apache.thrift.protocol.TProtocol prot, list_sentry_privileges_by_role_args struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
         BitSet incoming = iprot.readBitSet(1);
         if (incoming.get(0)) {
-          struct.request = new TListSentryRolesRequest();
+          struct.request = new TListSentryPrivilegesRequest();
           struct.request.read(iprot);
           struct.setRequestIsSet(true);
         }
@@ -6262,18 +6262,18 @@ public class SentryPolicyService {
 
   }
 
-  public static class list_sentry_roles_by_role_name_result implements org.apache.thrift.TBase<list_sentry_roles_by_role_name_result, list_sentry_roles_by_role_name_result._Fields>, java.io.Serializable, Cloneable   {
-    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("list_sentry_roles_by_role_name_result");
+  public static class list_sentry_privileges_by_role_result implements org.apache.thrift.TBase<list_sentry_privileges_by_role_result, list_sentry_privileges_by_role_result._Fields>, java.io.Serializable, Cloneable   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("list_sentry_privileges_by_role_result");
 
     private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRUCT, (short)0);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
     static {
-      schemes.put(StandardScheme.class, new list_sentry_roles_by_role_name_resultStandardSchemeFactory());
-      schemes.put(TupleScheme.class, new list_sentry_roles_by_role_name_resultTupleSchemeFactory());
+      schemes.put(StandardScheme.class, new list_sentry_privileges_by_role_resultStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new list_sentry_privileges_by_role_resultTupleSchemeFactory());
     }
 
-    private TListSentryRolesResponse success; // required
+    private TListSentryPrivilegesResponse success; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -6338,16 +6338,16 @@ public class SentryPolicyService {
     static {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TListSentryRolesResponse.class)));
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TListSentryPrivilegesResponse.class)));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
-      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(list_sentry_roles_by_role_name_result.class, metaDataMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(list_sentry_privileges_by_role_result.class, metaDataMap);
     }
 
-    public list_sentry_roles_by_role_name_result() {
+    public list_sentry_privileges_by_role_result() {
     }
 
-    public list_sentry_roles_by_role_name_result(
-      TListSentryRolesResponse success)
+    public list_sentry_privileges_by_role_result(
+      TListSentryPrivilegesResponse success)
     {
       this();
       this.success = success;
@@ -6356,14 +6356,14 @@ public class SentryPolicyService {
     /**
      * Performs a deep copy on <i>other</i>.
      */
-    public list_sentry_roles_by_role_name_result(list_sentry_roles_by_role_name_result other) {
+    public list_sentry_privileges_by_role_result(list_sentry_privileges_by_role_result other) {
       if (other.isSetSuccess()) {
-        this.success = new TListSentryRolesResponse(other.success);
+        this.success = new TListSentryPrivilegesResponse(other.success);
       }
     }
 
-    public list_sentry_roles_by_role_name_result deepCopy() {
-      return new list_sentry_roles_by_role_name_result(this);
+    public list_sentry_privileges_by_role_result deepCopy() {
+      return new list_sentry_privileges_by_role_result(this);
     }
 
     @Override
@@ -6371,11 +6371,11 @@ public class SentryPolicyService {
       this.success = null;
     }
 
-    public TListSentryRolesResponse getSuccess() {
+    public TListSentryPrivilegesResponse getSuccess() {
       return this.success;
     }
 
-    public void setSuccess(TListSentryRolesResponse success) {
+    public void setSuccess(TListSentryPrivilegesResponse success) {
       this.success = success;
     }
 
@@ -6400,7 +6400,7 @@ public class SentryPolicyService {
         if (value == null) {
           unsetSuccess();
         } else {
-          setSuccess((TListSentryRolesResponse)value);
+          setSuccess((TListSentryPrivilegesResponse)value);
         }
         break;
 
@@ -6433,12 +6433,12 @@ public class SentryPolicyService {
     public boolean equals(Object that) {
       if (that == null)
         return false;
-      if (that instanceof list_sentry_roles_by_role_name_result)
-        return this.equals((list_sentry_roles_by_role_name_result)that);
+      if (that instanceof list_sentry_privileges_by_role_result)
+        return this.equals((list_sentry_privileges_by_role_result)that);
       return false;
     }
 
-    public boolean equals(list_sentry_roles_by_role_name_result that) {
+    public boolean equals(list_sentry_privileges_by_role_result that) {
       if (that == null)
         return false;
 
@@ -6466,13 +6466,13 @@ public class SentryPolicyService {
       return builder.toHashCode();
     }
 
-    public int compareTo(list_sentry_roles_by_role_name_result other) {
+    public int compareTo(list_sentry_privileges_by_role_result other) {
       if (!getClass().equals(other.getClass())) {
         return getClass().getName().compareTo(other.getClass().getName());
       }
 
       int lastComparison = 0;
-      list_sentry_roles_by_role_name_result typedOther = (list_sentry_roles_by_role_name_result)other;
+      list_sentry_privileges_by_role_result typedOther = (list_sentry_privileges_by_role_result)other;
 
       lastComparison = Boolean.valueOf(isSetSuccess()).compareTo(typedOther.isSetSuccess());
       if (lastComparison != 0) {
@@ -6501,7 +6501,7 @@ public class SentryPolicyService {
 
     @Override
     public String toString() {
-      StringBuilder sb = new StringBuilder("list_sentry_roles_by_role_name_result(");
+      StringBuilder sb = new StringBuilder("list_sentry_privileges_by_role_result(");
       boolean first = true;
 
       sb.append("success:");
@@ -6539,15 +6539,15 @@ public class SentryPolicyService {
       }
     }
 
-    private static class list_sentry_roles_by_role_name_resultStandardSchemeFactory implements SchemeFactory {
-      public list_sentry_roles_by_role_name_resultStandardScheme getScheme() {
-        return new list_sentry_roles_by_role_name_resultStandardScheme();
+    private static class list_sentry_privileges_by_role_resultStandardSchemeFactory implements SchemeFactory {
+      public list_sentry_privileges_by_role_resultStandardScheme getScheme() {
+        return new list_sentry_privileges_by_role_resultStandardScheme();
       }
     }
 
-    private static class list_sentry_roles_by_role_name_resultStandardScheme extends StandardScheme<list_sentry_roles_by_role_name_result> {
+    private static class list_sentry_privileges_by_role_resultStandardScheme extends StandardScheme<list_sentry_privileges_by_role_result> {
 
-      public void read(org.apache.thrift.protocol.TProtocol iprot, list_sentry_roles_by_role_name_result struct) throws org.apache.thrift.TException {
+      public void read(org.apache.thrift.protocol.TProtocol iprot, list_sentry_privileges_by_role_result struct) throws org.apache.thrift.TException {
         org.apache.thrift.protocol.TField schemeField;
         iprot.readStructBegin();
         while (true)
@@ -6559,7 +6559,7 @@ public class SentryPolicyService {
           switch (schemeField.id) {
             case 0: // SUCCESS
               if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
-                struct.success = new TListSentryRolesResponse();
+                struct.success = new TListSentryPrivilegesResponse();
                 struct.success.read(iprot);
                 struct.setSuccessIsSet(true);
               } else { 
@@ -6575,7 +6575,7 @@ public class SentryPolicyService {
         struct.validate();
       }
 
-      public void write(org.apache.thrift.protocol.TProtocol oprot, list_sentry_roles_by_role_name_result struct) throws org.apache.thrift.TException {
+      public void write(org.apache.thrift.protocol.TProtocol oprot, list_sentry_privileges_by_role_result struct) throws org.apache.thrift.TException {
         struct.validate();
 
         oprot.writeStructBegin(STRUCT_DESC);
@@ -6590,16 +6590,16 @@ public class SentryPolicyService {
 
     }
 
-    private static class list_sentry_roles_by_role_name_resultTupleSchemeFactory implements SchemeFactory {
-      public list_sentry_roles_by_role_name_resultTupleScheme getScheme() {
-        return new list_sentry_roles_by_role_name_resultTupleScheme();
+    private static class list_sentry_privileges_by_role_resultTupleSchemeFactory implements SchemeFactory {
+      public list_sentry_privileges_by_role_resultTupleScheme getScheme() {
+        return new list_sentry_privileges_by_role_resultTupleScheme();
       }
     }
 
-    private static class list_sentry_roles_by_role_name_resultTupleScheme extends TupleScheme<list_sentry_roles_by_role_name_result> {
+    private static class list_sentry_privileges_by_role_resultTupleScheme extends TupleScheme<list_sentry_privileges_by_role_result> {
 
       @Override
-      public void write(org.apache.thrift.protocol.TProtocol prot, list_sentry_roles_by_role_name_result struct) throws org.apache.thrift.TException {
+      public void write(org.apache.thrift.protocol.TProtocol prot, list_sentry_privileges_by_role_result struct) throws org.apache.thrift.TException {
         TTupleProtocol oprot = (TTupleProtocol) prot;
         BitSet optionals = new BitSet();
         if (struct.isSetSuccess()) {
@@ -6612,11 +6612,11 @@ public class SentryPolicyService {
       }
 
       @Override
-      public void read(org.apache.thrift.protocol.TProtocol prot, list_sentry_roles_by_role_name_result struct) throws org.apache.thrift.TException {
+      public void read(org.apache.thrift.protocol.TProtocol prot, list_sentry_privileges_by_role_result struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
         BitSet incoming = iprot.readBitSet(1);
         if (incoming.get(0)) {
-          struct.success = new TListSentryRolesResponse();
+          struct.success = new TListSentryPrivilegesResponse();
           struct.success.read(iprot);
           struct.setSuccessIsSet(true);
         }

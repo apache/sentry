@@ -728,13 +728,13 @@ public class TAlterSentryRoleDeleteGroupsRequest implements org.apache.thrift.TB
           case 3: // REQUESTOR_GROUP_NAMES
             if (schemeField.type == org.apache.thrift.protocol.TType.SET) {
               {
-                org.apache.thrift.protocol.TSet _set48 = iprot.readSetBegin();
-                struct.requestorGroupNames = new HashSet<String>(2*_set48.size);
-                for (int _i49 = 0; _i49 < _set48.size; ++_i49)
+                org.apache.thrift.protocol.TSet _set32 = iprot.readSetBegin();
+                struct.requestorGroupNames = new HashSet<String>(2*_set32.size);
+                for (int _i33 = 0; _i33 < _set32.size; ++_i33)
                 {
-                  String _elem50; // required
-                  _elem50 = iprot.readString();
-                  struct.requestorGroupNames.add(_elem50);
+                  String _elem34; // required
+                  _elem34 = iprot.readString();
+                  struct.requestorGroupNames.add(_elem34);
                 }
                 iprot.readSetEnd();
               }
@@ -754,14 +754,14 @@ public class TAlterSentryRoleDeleteGroupsRequest implements org.apache.thrift.TB
           case 5: // GROUPS
             if (schemeField.type == org.apache.thrift.protocol.TType.SET) {
               {
-                org.apache.thrift.protocol.TSet _set51 = iprot.readSetBegin();
-                struct.groups = new HashSet<TSentryGroup>(2*_set51.size);
-                for (int _i52 = 0; _i52 < _set51.size; ++_i52)
+                org.apache.thrift.protocol.TSet _set35 = iprot.readSetBegin();
+                struct.groups = new HashSet<TSentryGroup>(2*_set35.size);
+                for (int _i36 = 0; _i36 < _set35.size; ++_i36)
                 {
-                  TSentryGroup _elem53; // required
-                  _elem53 = new TSentryGroup();
-                  _elem53.read(iprot);
-                  struct.groups.add(_elem53);
+                  TSentryGroup _elem37; // required
+                  _elem37 = new TSentryGroup();
+                  _elem37.read(iprot);
+                  struct.groups.add(_elem37);
                 }
                 iprot.readSetEnd();
               }
@@ -795,9 +795,9 @@ public class TAlterSentryRoleDeleteGroupsRequest implements org.apache.thrift.TB
         oprot.writeFieldBegin(REQUESTOR_GROUP_NAMES_FIELD_DESC);
         {
           oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRING, struct.requestorGroupNames.size()));
-          for (String _iter54 : struct.requestorGroupNames)
+          for (String _iter38 : struct.requestorGroupNames)
           {
-            oprot.writeString(_iter54);
+            oprot.writeString(_iter38);
           }
           oprot.writeSetEnd();
         }
@@ -812,9 +812,9 @@ public class TAlterSentryRoleDeleteGroupsRequest implements org.apache.thrift.TB
         oprot.writeFieldBegin(GROUPS_FIELD_DESC);
         {
           oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, struct.groups.size()));
-          for (TSentryGroup _iter55 : struct.groups)
+          for (TSentryGroup _iter39 : struct.groups)
           {
-            _iter55.write(oprot);
+            _iter39.write(oprot);
           }
           oprot.writeSetEnd();
         }
@@ -841,17 +841,17 @@ public class TAlterSentryRoleDeleteGroupsRequest implements org.apache.thrift.TB
       oprot.writeString(struct.requestorUserName);
       {
         oprot.writeI32(struct.requestorGroupNames.size());
-        for (String _iter56 : struct.requestorGroupNames)
+        for (String _iter40 : struct.requestorGroupNames)
         {
-          oprot.writeString(_iter56);
+          oprot.writeString(_iter40);
         }
       }
       oprot.writeString(struct.roleName);
       {
         oprot.writeI32(struct.groups.size());
-        for (TSentryGroup _iter57 : struct.groups)
+        for (TSentryGroup _iter41 : struct.groups)
         {
-          _iter57.write(oprot);
+          _iter41.write(oprot);
         }
       }
     }
@@ -864,27 +864,27 @@ public class TAlterSentryRoleDeleteGroupsRequest implements org.apache.thrift.TB
       struct.requestorUserName = iprot.readString();
       struct.setRequestorUserNameIsSet(true);
       {
-        org.apache.thrift.protocol.TSet _set58 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRING, iprot.readI32());
-        struct.requestorGroupNames = new HashSet<String>(2*_set58.size);
-        for (int _i59 = 0; _i59 < _set58.size; ++_i59)
+        org.apache.thrift.protocol.TSet _set42 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRING, iprot.readI32());
+        struct.requestorGroupNames = new HashSet<String>(2*_set42.size);
+        for (int _i43 = 0; _i43 < _set42.size; ++_i43)
         {
-          String _elem60; // required
-          _elem60 = iprot.readString();
-          struct.requestorGroupNames.add(_elem60);
+          String _elem44; // required
+          _elem44 = iprot.readString();
+          struct.requestorGroupNames.add(_elem44);
         }
       }
       struct.setRequestorGroupNamesIsSet(true);
       struct.roleName = iprot.readString();
       struct.setRoleNameIsSet(true);
       {
-        org.apache.thrift.protocol.TSet _set61 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
-        struct.groups = new HashSet<TSentryGroup>(2*_set61.size);
-        for (int _i62 = 0; _i62 < _set61.size; ++_i62)
+        org.apache.thrift.protocol.TSet _set45 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
+        struct.groups = new HashSet<TSentryGroup>(2*_set45.size);
+        for (int _i46 = 0; _i46 < _set45.size; ++_i46)
         {
-          TSentryGroup _elem63; // required
-          _elem63 = new TSentryGroup();
-          _elem63.read(iprot);
-          struct.groups.add(_elem63);
+          TSentryGroup _elem47; // required
+          _elem47 = new TSentryGroup();
+          _elem47.read(iprot);
+          struct.groups.add(_elem47);
         }
       }
       struct.setGroupsIsSet(true);

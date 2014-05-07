@@ -711,13 +711,13 @@ public class TAlterSentryRoleGrantPrivilegeRequest implements org.apache.thrift.
           case 3: // REQUESTOR_GROUP_NAMES
             if (schemeField.type == org.apache.thrift.protocol.TType.SET) {
               {
-                org.apache.thrift.protocol.TSet _set64 = iprot.readSetBegin();
-                struct.requestorGroupNames = new HashSet<String>(2*_set64.size);
-                for (int _i65 = 0; _i65 < _set64.size; ++_i65)
+                org.apache.thrift.protocol.TSet _set48 = iprot.readSetBegin();
+                struct.requestorGroupNames = new HashSet<String>(2*_set48.size);
+                for (int _i49 = 0; _i49 < _set48.size; ++_i49)
                 {
-                  String _elem66; // required
-                  _elem66 = iprot.readString();
-                  struct.requestorGroupNames.add(_elem66);
+                  String _elem50; // required
+                  _elem50 = iprot.readString();
+                  struct.requestorGroupNames.add(_elem50);
                 }
                 iprot.readSetEnd();
               }
@@ -768,9 +768,9 @@ public class TAlterSentryRoleGrantPrivilegeRequest implements org.apache.thrift.
         oprot.writeFieldBegin(REQUESTOR_GROUP_NAMES_FIELD_DESC);
         {
           oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRING, struct.requestorGroupNames.size()));
-          for (String _iter67 : struct.requestorGroupNames)
+          for (String _iter51 : struct.requestorGroupNames)
           {
-            oprot.writeString(_iter67);
+            oprot.writeString(_iter51);
           }
           oprot.writeSetEnd();
         }
@@ -807,9 +807,9 @@ public class TAlterSentryRoleGrantPrivilegeRequest implements org.apache.thrift.
       oprot.writeString(struct.requestorUserName);
       {
         oprot.writeI32(struct.requestorGroupNames.size());
-        for (String _iter68 : struct.requestorGroupNames)
+        for (String _iter52 : struct.requestorGroupNames)
         {
-          oprot.writeString(_iter68);
+          oprot.writeString(_iter52);
         }
       }
       oprot.writeString(struct.roleName);
@@ -824,13 +824,13 @@ public class TAlterSentryRoleGrantPrivilegeRequest implements org.apache.thrift.
       struct.requestorUserName = iprot.readString();
       struct.setRequestorUserNameIsSet(true);
       {
-        org.apache.thrift.protocol.TSet _set69 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRING, iprot.readI32());
-        struct.requestorGroupNames = new HashSet<String>(2*_set69.size);
-        for (int _i70 = 0; _i70 < _set69.size; ++_i70)
+        org.apache.thrift.protocol.TSet _set53 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRING, iprot.readI32());
+        struct.requestorGroupNames = new HashSet<String>(2*_set53.size);
+        for (int _i54 = 0; _i54 < _set53.size; ++_i54)
         {
-          String _elem71; // required
-          _elem71 = iprot.readString();
-          struct.requestorGroupNames.add(_elem71);
+          String _elem55; // required
+          _elem55 = iprot.readString();
+          struct.requestorGroupNames.add(_elem55);
         }
       }
       struct.setRequestorGroupNamesIsSet(true);

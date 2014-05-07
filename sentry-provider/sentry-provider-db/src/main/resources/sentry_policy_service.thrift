@@ -70,25 +70,6 @@ struct TDropSentryRoleResponse {
 1: required sentry_common_service.TSentryResponseStatus status
 }
 
-# TODO what is this implementing SHOW GRANT/SHOW ROLE GRANT?
-# We should have seperate requests for those commands
-struct TListSentryRolesRequest {
-1: required i32 protocol_version = sentry_common_service.TSENTRY_SERVICE_V1,
-2: required string requestorUserName, # user on whose behalf the request is issued
-3: optional string rolerequestorGroupNames, # list roles for this group
-4: required string roleName # role get prirvilges for
-}
-# used only for TListSentryRolesResponse
-struct TSentryRole {
-1: required string roleName,
-2: required set<TSentryPrivilege> privileges,
-3: required string grantorPrincipal
-}
-struct TListSentryRolesResponse {
-1: required sentry_common_service.TSentryResponseStatus status
-2: required set<TSentryRole> roles
-}
-
 # GRANT ROLE r1 TO GROUP g1
 struct TAlterSentryRoleAddGroupsRequest {
 1: required i32 protocol_version = sentry_common_service.TSENTRY_SERVICE_V1,
@@ -138,6 +119,36 @@ struct TAlterSentryRoleRevokePrivilegeResponse {
 1: required sentry_common_service.TSentryResponseStatus status
 }
 
+# SHOW ROLE GRANT
+struct TListSentryRolesRequest {
+1: required i32 protocol_version = sentry_common_service.TSENTRY_SERVICE_V1,
+2: required string requestorUserName, # user on whose behalf the request is issued
+3: required set<string> requestorGroupNames,# groups the requesting user belongs to
+4: optional string groupName # for this group, or all roles for all groups if null
+}
+# used only for TListSentryRolesResponse
+struct TSentryRole {
+1: required string roleName,
+2: required set<TSentryGroup> groups,
+3: required string grantorPrincipal
+}
+struct TListSentryRolesResponse {
+1: required sentry_common_service.TSentryResponseStatus status
+2: required set<TSentryRole> roles
+}
+
+# SHOW GRANT
+struct TListSentryPrivilegesRequest {
+1: required i32 protocol_version = sentry_common_service.TSENTRY_SERVICE_V1,
+2: required string requestorUserName, # user on whose behalf the request is issued
+3: required set<string> requestorGroupNames,# groups the requesting user belongs to
+4: required string roleName # get privileges assigned for this role
+}
+struct TListSentryPrivilegesResponse {
+1: required sentry_common_service.TSentryResponseStatus status
+2: required set<TSentryPrivilege> privileges
+}
+
 # This API was created specifically for ProviderBackend.getPrivileges
 # and is not mean for general purpose privilege retrieval.
 # This request/response pair are created specifically so we can
@@ -168,7 +179,8 @@ service SentryPolicyService
   TAlterSentryRoleDeleteGroupsResponse alter_sentry_role_delete_groups(1:TAlterSentryRoleDeleteGroupsRequest request)
 
   TListSentryRolesResponse list_sentry_roles_by_group(1:TListSentryRolesRequest request)
-  TListSentryRolesResponse list_sentry_roles_by_role_name(1:TListSentryRolesRequest request)
+
+  TListSentryPrivilegesResponse list_sentry_privileges_by_role(1:TListSentryPrivilegesRequest request)
 
   # For use with ProviderBackend.getPrivileges only
   TListSentryPrivilegesForProviderResponse list_sentry_privileges_for_provider(1:TListSentryPrivilegesForProviderRequest request)

@@ -31,25 +31,25 @@ import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TListSentryRolesResponse implements org.apache.thrift.TBase<TListSentryRolesResponse, TListSentryRolesResponse._Fields>, java.io.Serializable, Cloneable {
-  private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("TListSentryRolesResponse");
+public class TListSentryPrivilegesResponse implements org.apache.thrift.TBase<TListSentryPrivilegesResponse, TListSentryPrivilegesResponse._Fields>, java.io.Serializable, Cloneable {
+  private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("TListSentryPrivilegesResponse");
 
   private static final org.apache.thrift.protocol.TField STATUS_FIELD_DESC = new org.apache.thrift.protocol.TField("status", org.apache.thrift.protocol.TType.STRUCT, (short)1);
-  private static final org.apache.thrift.protocol.TField ROLES_FIELD_DESC = new org.apache.thrift.protocol.TField("roles", org.apache.thrift.protocol.TType.SET, (short)2);
+  private static final org.apache.thrift.protocol.TField PRIVILEGES_FIELD_DESC = new org.apache.thrift.protocol.TField("privileges", org.apache.thrift.protocol.TType.SET, (short)2);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
-    schemes.put(StandardScheme.class, new TListSentryRolesResponseStandardSchemeFactory());
-    schemes.put(TupleScheme.class, new TListSentryRolesResponseTupleSchemeFactory());
+    schemes.put(StandardScheme.class, new TListSentryPrivilegesResponseStandardSchemeFactory());
+    schemes.put(TupleScheme.class, new TListSentryPrivilegesResponseTupleSchemeFactory());
   }
 
   private org.apache.sentry.service.thrift.TSentryResponseStatus status; // required
-  private Set<TSentryRole> roles; // required
+  private Set<TSentryPrivilege> privileges; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
     STATUS((short)1, "status"),
-    ROLES((short)2, "roles");
+    PRIVILEGES((short)2, "privileges");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -66,8 +66,8 @@ public class TListSentryRolesResponse implements org.apache.thrift.TBase<TListSe
       switch(fieldId) {
         case 1: // STATUS
           return STATUS;
-        case 2: // ROLES
-          return ROLES;
+        case 2: // PRIVILEGES
+          return PRIVILEGES;
         default:
           return null;
       }
@@ -113,49 +113,49 @@ public class TListSentryRolesResponse implements org.apache.thrift.TBase<TListSe
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
     tmpMap.put(_Fields.STATUS, new org.apache.thrift.meta_data.FieldMetaData("status", org.apache.thrift.TFieldRequirementType.REQUIRED, 
         new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, org.apache.sentry.service.thrift.TSentryResponseStatus.class)));
-    tmpMap.put(_Fields.ROLES, new org.apache.thrift.meta_data.FieldMetaData("roles", org.apache.thrift.TFieldRequirementType.REQUIRED, 
+    tmpMap.put(_Fields.PRIVILEGES, new org.apache.thrift.meta_data.FieldMetaData("privileges", org.apache.thrift.TFieldRequirementType.REQUIRED, 
         new org.apache.thrift.meta_data.SetMetaData(org.apache.thrift.protocol.TType.SET, 
-            new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TSentryRole.class))));
+            new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TSentryPrivilege.class))));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
-    org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(TListSentryRolesResponse.class, metaDataMap);
+    org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(TListSentryPrivilegesResponse.class, metaDataMap);
   }
 
-  public TListSentryRolesResponse() {
+  public TListSentryPrivilegesResponse() {
   }
 
-  public TListSentryRolesResponse(
+  public TListSentryPrivilegesResponse(
     org.apache.sentry.service.thrift.TSentryResponseStatus status,
-    Set<TSentryRole> roles)
+    Set<TSentryPrivilege> privileges)
   {
     this();
     this.status = status;
-    this.roles = roles;
+    this.privileges = privileges;
   }
 
   /**
    * Performs a deep copy on <i>other</i>.
    */
-  public TListSentryRolesResponse(TListSentryRolesResponse other) {
+  public TListSentryPrivilegesResponse(TListSentryPrivilegesResponse other) {
     if (other.isSetStatus()) {
       this.status = new org.apache.sentry.service.thrift.TSentryResponseStatus(other.status);
     }
-    if (other.isSetRoles()) {
-      Set<TSentryRole> __this__roles = new HashSet<TSentryRole>();
-      for (TSentryRole other_element : other.roles) {
-        __this__roles.add(new TSentryRole(other_element));
+    if (other.isSetPrivileges()) {
+      Set<TSentryPrivilege> __this__privileges = new HashSet<TSentryPrivilege>();
+      for (TSentryPrivilege other_element : other.privileges) {
+        __this__privileges.add(new TSentryPrivilege(other_element));
       }
-      this.roles = __this__roles;
+      this.privileges = __this__privileges;
     }
   }
 
-  public TListSentryRolesResponse deepCopy() {
-    return new TListSentryRolesResponse(this);
+  public TListSentryPrivilegesResponse deepCopy() {
+    return new TListSentryPrivilegesResponse(this);
   }
 
   @Override
   public void clear() {
     this.status = null;
-    this.roles = null;
+    this.privileges = null;
   }
 
   public org.apache.sentry.service.thrift.TSentryResponseStatus getStatus() {
@@ -181,41 +181,41 @@ public class TListSentryRolesResponse implements org.apache.thrift.TBase<TListSe
     }
   }
 
-  public int getRolesSize() {
-    return (this.roles == null) ? 0 : this.roles.size();
+  public int getPrivilegesSize() {
+    return (this.privileges == null) ? 0 : this.privileges.size();
   }
 
-  public java.util.Iterator<TSentryRole> getRolesIterator() {
-    return (this.roles == null) ? null : this.roles.iterator();
+  public java.util.Iterator<TSentryPrivilege> getPrivilegesIterator() {
+    return (this.privileges == null) ? null : this.privileges.iterator();
   }
 
-  public void addToRoles(TSentryRole elem) {
-    if (this.roles == null) {
-      this.roles = new HashSet<TSentryRole>();
+  public void addToPrivileges(TSentryPrivilege elem) {
+    if (this.privileges == null) {
+      this.privileges = new HashSet<TSentryPrivilege>();
     }
-    this.roles.add(elem);
+    this.privileges.add(elem);
   }
 
-  public Set<TSentryRole> getRoles() {
-    return this.roles;
+  public Set<TSentryPrivilege> getPrivileges() {
+    return this.privileges;
   }
 
-  public void setRoles(Set<TSentryRole> roles) {
-    this.roles = roles;
+  public void setPrivileges(Set<TSentryPrivilege> privileges) {
+    this.privileges = privileges;
   }
 
-  public void unsetRoles() {
-    this.roles = null;
+  public void unsetPrivileges() {
+    this.privileges = null;
   }
 
-  /** Returns true if field roles is set (has been assigned a value) and false otherwise */
-  public boolean isSetRoles() {
-    return this.roles != null;
+  /** Returns true if field privileges is set (has been assigned a value) and false otherwise */
+  public boolean isSetPrivileges() {
+    return this.privileges != null;
   }
 
-  public void setRolesIsSet(boolean value) {
+  public void setPrivilegesIsSet(boolean value) {
     if (!value) {
-      this.roles = null;
+      this.privileges = null;
     }
   }
 
@@ -229,11 +229,11 @@ public class TListSentryRolesResponse implements org.apache.thrift.TBase<TListSe
       }
       break;
 
-    case ROLES:
+    case PRIVILEGES:
       if (value == null) {
-        unsetRoles();
+        unsetPrivileges();
       } else {
-        setRoles((Set<TSentryRole>)value);
+        setPrivileges((Set<TSentryPrivilege>)value);
       }
       break;
 
@@ -245,8 +245,8 @@ public class TListSentryRolesResponse implements org.apache.thrift.TBase<TListSe
     case STATUS:
       return getStatus();
 
-    case ROLES:
-      return getRoles();
+    case PRIVILEGES:
+      return getPrivileges();
 
     }
     throw new IllegalStateException();
@@ -261,8 +261,8 @@ public class TListSentryRolesResponse implements org.apache.thrift.TBase<TListSe
     switch (field) {
     case STATUS:
       return isSetStatus();
-    case ROLES:
-      return isSetRoles();
+    case PRIVILEGES:
+      return isSetPrivileges();
     }
     throw new IllegalStateException();
   }
@@ -271,12 +271,12 @@ public class TListSentryRolesResponse implements org.apache.thrift.TBase<TListSe
   public boolean equals(Object that) {
     if (that == null)
       return false;
-    if (that instanceof TListSentryRolesResponse)
-      return this.equals((TListSentryRolesResponse)that);
+    if (that instanceof TListSentryPrivilegesResponse)
+      return this.equals((TListSentryPrivilegesResponse)that);
     return false;
   }
 
-  public boolean equals(TListSentryRolesResponse that) {
+  public boolean equals(TListSentryPrivilegesResponse that) {
     if (that == null)
       return false;
 
@@ -289,12 +289,12 @@ public class TListSentryRolesResponse implements org.apache.thrift.TBase<TListSe
         return false;
     }
 
-    boolean this_present_roles = true && this.isSetRoles();
-    boolean that_present_roles = true && that.isSetRoles();
-    if (this_present_roles || that_present_roles) {
-      if (!(this_present_roles && that_present_roles))
+    boolean this_present_privileges = true && this.isSetPrivileges();
+    boolean that_present_privileges = true && that.isSetPrivileges();
+    if (this_present_privileges || that_present_privileges) {
+      if (!(this_present_privileges && that_present_privileges))
         return false;
-      if (!this.roles.equals(that.roles))
+      if (!this.privileges.equals(that.privileges))
         return false;
     }
 
@@ -310,21 +310,21 @@ public class TListSentryRolesResponse implements org.apache.thrift.TBase<TListSe
     if (present_status)
       builder.append(status);
 
-    boolean present_roles = true && (isSetRoles());
-    builder.append(present_roles);
-    if (present_roles)
-      builder.append(roles);
+    boolean present_privileges = true && (isSetPrivileges());
+    builder.append(present_privileges);
+    if (present_privileges)
+      builder.append(privileges);
 
     return builder.toHashCode();
   }
 
-  public int compareTo(TListSentryRolesResponse other) {
+  public int compareTo(TListSentryPrivilegesResponse other) {
     if (!getClass().equals(other.getClass())) {
       return getClass().getName().compareTo(other.getClass().getName());
     }
 
     int lastComparison = 0;
-    TListSentryRolesResponse typedOther = (TListSentryRolesResponse)other;
+    TListSentryPrivilegesResponse typedOther = (TListSentryPrivilegesResponse)other;
 
     lastComparison = Boolean.valueOf(isSetStatus()).compareTo(typedOther.isSetStatus());
     if (lastComparison != 0) {
@@ -336,12 +336,12 @@ public class TListSentryRolesResponse implements org.apache.thrift.TBase<TListSe
         return lastComparison;
       }
     }
-    lastComparison = Boolean.valueOf(isSetRoles()).compareTo(typedOther.isSetRoles());
+    lastComparison = Boolean.valueOf(isSetPrivileges()).compareTo(typedOther.isSetPrivileges());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetRoles()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.roles, typedOther.roles);
+    if (isSetPrivileges()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.privileges, typedOther.privileges);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -363,7 +363,7 @@ public class TListSentryRolesResponse implements org.apache.thrift.TBase<TListSe
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder("TListSentryRolesResponse(");
+    StringBuilder sb = new StringBuilder("TListSentryPrivilegesResponse(");
     boolean first = true;
 
     sb.append("status:");
@@ -374,11 +374,11 @@ public class TListSentryRolesResponse implements org.apache.thrift.TBase<TListSe
     }
     first = false;
     if (!first) sb.append(", ");
-    sb.append("roles:");
-    if (this.roles == null) {
+    sb.append("privileges:");
+    if (this.privileges == null) {
       sb.append("null");
     } else {
-      sb.append(this.roles);
+      sb.append(this.privileges);
     }
     first = false;
     sb.append(")");
@@ -391,8 +391,8 @@ public class TListSentryRolesResponse implements org.apache.thrift.TBase<TListSe
       throw new org.apache.thrift.protocol.TProtocolException("Required field 'status' is unset! Struct:" + toString());
     }
 
-    if (!isSetRoles()) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'roles' is unset! Struct:" + toString());
+    if (!isSetPrivileges()) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'privileges' is unset! Struct:" + toString());
     }
 
     // check for sub-struct validity
@@ -417,15 +417,15 @@ public class TListSentryRolesResponse implements org.apache.thrift.TBase<TListSe
     }
   }
 
-  private static class TListSentryRolesResponseStandardSchemeFactory implements SchemeFactory {
-    public TListSentryRolesResponseStandardScheme getScheme() {
-      return new TListSentryRolesResponseStandardScheme();
+  private static class TListSentryPrivilegesResponseStandardSchemeFactory implements SchemeFactory {
+    public TListSentryPrivilegesResponseStandardScheme getScheme() {
+      return new TListSentryPrivilegesResponseStandardScheme();
     }
   }
 
-  private static class TListSentryRolesResponseStandardScheme extends StandardScheme<TListSentryRolesResponse> {
+  private static class TListSentryPrivilegesResponseStandardScheme extends StandardScheme<TListSentryPrivilegesResponse> {
 
-    public void read(org.apache.thrift.protocol.TProtocol iprot, TListSentryRolesResponse struct) throws org.apache.thrift.TException {
+    public void read(org.apache.thrift.protocol.TProtocol iprot, TListSentryPrivilegesResponse struct) throws org.apache.thrift.TException {
       org.apache.thrift.protocol.TField schemeField;
       iprot.readStructBegin();
       while (true)
@@ -444,21 +444,21 @@ public class TListSentryRolesResponse implements org.apache.thrift.TBase<TListSe
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
-          case 2: // ROLES
+          case 2: // PRIVILEGES
             if (schemeField.type == org.apache.thrift.protocol.TType.SET) {
               {
-                org.apache.thrift.protocol.TSet _set80 = iprot.readSetBegin();
-                struct.roles = new HashSet<TSentryRole>(2*_set80.size);
-                for (int _i81 = 0; _i81 < _set80.size; ++_i81)
+                org.apache.thrift.protocol.TSet _set96 = iprot.readSetBegin();
+                struct.privileges = new HashSet<TSentryPrivilege>(2*_set96.size);
+                for (int _i97 = 0; _i97 < _set96.size; ++_i97)
                 {
-                  TSentryRole _elem82; // required
-                  _elem82 = new TSentryRole();
-                  _elem82.read(iprot);
-                  struct.roles.add(_elem82);
+                  TSentryPrivilege _elem98; // required
+                  _elem98 = new TSentryPrivilege();
+                  _elem98.read(iprot);
+                  struct.privileges.add(_elem98);
                 }
                 iprot.readSetEnd();
               }
-              struct.setRolesIsSet(true);
+              struct.setPrivilegesIsSet(true);
             } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
@@ -472,7 +472,7 @@ public class TListSentryRolesResponse implements org.apache.thrift.TBase<TListSe
       struct.validate();
     }
 
-    public void write(org.apache.thrift.protocol.TProtocol oprot, TListSentryRolesResponse struct) throws org.apache.thrift.TException {
+    public void write(org.apache.thrift.protocol.TProtocol oprot, TListSentryPrivilegesResponse struct) throws org.apache.thrift.TException {
       struct.validate();
 
       oprot.writeStructBegin(STRUCT_DESC);
@@ -481,13 +481,13 @@ public class TListSentryRolesResponse implements org.apache.thrift.TBase<TListSe
         struct.status.write(oprot);
         oprot.writeFieldEnd();
       }
-      if (struct.roles != null) {
-        oprot.writeFieldBegin(ROLES_FIELD_DESC);
+      if (struct.privileges != null) {
+        oprot.writeFieldBegin(PRIVILEGES_FIELD_DESC);
         {
-          oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, struct.roles.size()));
-          for (TSentryRole _iter83 : struct.roles)
+          oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, struct.privileges.size()));
+          for (TSentryPrivilege _iter99 : struct.privileges)
           {
-            _iter83.write(oprot);
+            _iter99.write(oprot);
           }
           oprot.writeSetEnd();
         }
@@ -499,45 +499,45 @@ public class TListSentryRolesResponse implements org.apache.thrift.TBase<TListSe
 
   }
 
-  private static class TListSentryRolesResponseTupleSchemeFactory implements SchemeFactory {
-    public TListSentryRolesResponseTupleScheme getScheme() {
-      return new TListSentryRolesResponseTupleScheme();
+  private static class TListSentryPrivilegesResponseTupleSchemeFactory implements SchemeFactory {
+    public TListSentryPrivilegesResponseTupleScheme getScheme() {
+      return new TListSentryPrivilegesResponseTupleScheme();
     }
   }
 
-  private static class TListSentryRolesResponseTupleScheme extends TupleScheme<TListSentryRolesResponse> {
+  private static class TListSentryPrivilegesResponseTupleScheme extends TupleScheme<TListSentryPrivilegesResponse> {
 
     @Override
-    public void write(org.apache.thrift.protocol.TProtocol prot, TListSentryRolesResponse struct) throws org.apache.thrift.TException {
+    public void write(org.apache.thrift.protocol.TProtocol prot, TListSentryPrivilegesResponse struct) throws org.apache.thrift.TException {
       TTupleProtocol oprot = (TTupleProtocol) prot;
       struct.status.write(oprot);
       {
-        oprot.writeI32(struct.roles.size());
-        for (TSentryRole _iter84 : struct.roles)
+        oprot.writeI32(struct.privileges.size());
+        for (TSentryPrivilege _iter100 : struct.privileges)
         {
-          _iter84.write(oprot);
+          _iter100.write(oprot);
         }
       }
     }
 
     @Override
-    public void read(org.apache.thrift.protocol.TProtocol prot, TListSentryRolesResponse struct) throws org.apache.thrift.TException {
+    public void read(org.apache.thrift.protocol.TProtocol prot, TListSentryPrivilegesResponse struct) throws org.apache.thrift.TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
       struct.status = new org.apache.sentry.service.thrift.TSentryResponseStatus();
       struct.status.read(iprot);
       struct.setStatusIsSet(true);
       {
-        org.apache.thrift.protocol.TSet _set85 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
-        struct.roles = new HashSet<TSentryRole>(2*_set85.size);
-        for (int _i86 = 0; _i86 < _set85.size; ++_i86)
+        org.apache.thrift.protocol.TSet _set101 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
+        struct.privileges = new HashSet<TSentryPrivilege>(2*_set101.size);
+        for (int _i102 = 0; _i102 < _set101.size; ++_i102)
         {
-          TSentryRole _elem87; // required
-          _elem87 = new TSentryRole();
-          _elem87.read(iprot);
-          struct.roles.add(_elem87);
+          TSentryPrivilege _elem103; // required
+          _elem103 = new TSentryPrivilege();
+          _elem103.read(iprot);
+          struct.privileges.add(_elem103);
         }
       }
-      struct.setRolesIsSet(true);
+      struct.setPrivilegesIsSet(true);
     }
   }
 

@@ -35,7 +35,7 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
   private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("TSentryRole");
 
   private static final org.apache.thrift.protocol.TField ROLE_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("roleName", org.apache.thrift.protocol.TType.STRING, (short)1);
-  private static final org.apache.thrift.protocol.TField PRIVILEGES_FIELD_DESC = new org.apache.thrift.protocol.TField("privileges", org.apache.thrift.protocol.TType.SET, (short)2);
+  private static final org.apache.thrift.protocol.TField GROUPS_FIELD_DESC = new org.apache.thrift.protocol.TField("groups", org.apache.thrift.protocol.TType.SET, (short)2);
   private static final org.apache.thrift.protocol.TField GRANTOR_PRINCIPAL_FIELD_DESC = new org.apache.thrift.protocol.TField("grantorPrincipal", org.apache.thrift.protocol.TType.STRING, (short)3);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
@@ -45,13 +45,13 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
   }
 
   private String roleName; // required
-  private Set<TSentryPrivilege> privileges; // required
+  private Set<TSentryGroup> groups; // required
   private String grantorPrincipal; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
     ROLE_NAME((short)1, "roleName"),
-    PRIVILEGES((short)2, "privileges"),
+    GROUPS((short)2, "groups"),
     GRANTOR_PRINCIPAL((short)3, "grantorPrincipal");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
@@ -69,8 +69,8 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
       switch(fieldId) {
         case 1: // ROLE_NAME
           return ROLE_NAME;
-        case 2: // PRIVILEGES
-          return PRIVILEGES;
+        case 2: // GROUPS
+          return GROUPS;
         case 3: // GRANTOR_PRINCIPAL
           return GRANTOR_PRINCIPAL;
         default:
@@ -118,9 +118,9 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
     tmpMap.put(_Fields.ROLE_NAME, new org.apache.thrift.meta_data.FieldMetaData("roleName", org.apache.thrift.TFieldRequirementType.REQUIRED, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
-    tmpMap.put(_Fields.PRIVILEGES, new org.apache.thrift.meta_data.FieldMetaData("privileges", org.apache.thrift.TFieldRequirementType.REQUIRED, 
+    tmpMap.put(_Fields.GROUPS, new org.apache.thrift.meta_data.FieldMetaData("groups", org.apache.thrift.TFieldRequirementType.REQUIRED, 
         new org.apache.thrift.meta_data.SetMetaData(org.apache.thrift.protocol.TType.SET, 
-            new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TSentryPrivilege.class))));
+            new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TSentryGroup.class))));
     tmpMap.put(_Fields.GRANTOR_PRINCIPAL, new org.apache.thrift.meta_data.FieldMetaData("grantorPrincipal", org.apache.thrift.TFieldRequirementType.REQUIRED, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
@@ -132,12 +132,12 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
 
   public TSentryRole(
     String roleName,
-    Set<TSentryPrivilege> privileges,
+    Set<TSentryGroup> groups,
     String grantorPrincipal)
   {
     this();
     this.roleName = roleName;
-    this.privileges = privileges;
+    this.groups = groups;
     this.grantorPrincipal = grantorPrincipal;
   }
 
@@ -148,12 +148,12 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
     if (other.isSetRoleName()) {
       this.roleName = other.roleName;
     }
-    if (other.isSetPrivileges()) {
-      Set<TSentryPrivilege> __this__privileges = new HashSet<TSentryPrivilege>();
-      for (TSentryPrivilege other_element : other.privileges) {
-        __this__privileges.add(new TSentryPrivilege(other_element));
+    if (other.isSetGroups()) {
+      Set<TSentryGroup> __this__groups = new HashSet<TSentryGroup>();
+      for (TSentryGroup other_element : other.groups) {
+        __this__groups.add(new TSentryGroup(other_element));
       }
-      this.privileges = __this__privileges;
+      this.groups = __this__groups;
     }
     if (other.isSetGrantorPrincipal()) {
       this.grantorPrincipal = other.grantorPrincipal;
@@ -167,7 +167,7 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
   @Override
   public void clear() {
     this.roleName = null;
-    this.privileges = null;
+    this.groups = null;
     this.grantorPrincipal = null;
   }
 
@@ -194,41 +194,41 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
     }
   }
 
-  public int getPrivilegesSize() {
-    return (this.privileges == null) ? 0 : this.privileges.size();
+  public int getGroupsSize() {
+    return (this.groups == null) ? 0 : this.groups.size();
   }
 
-  public java.util.Iterator<TSentryPrivilege> getPrivilegesIterator() {
-    return (this.privileges == null) ? null : this.privileges.iterator();
+  public java.util.Iterator<TSentryGroup> getGroupsIterator() {
+    return (this.groups == null) ? null : this.groups.iterator();
   }
 
-  public void addToPrivileges(TSentryPrivilege elem) {
-    if (this.privileges == null) {
-      this.privileges = new HashSet<TSentryPrivilege>();
+  public void addToGroups(TSentryGroup elem) {
+    if (this.groups == null) {
+      this.groups = new HashSet<TSentryGroup>();
     }
-    this.privileges.add(elem);
+    this.groups.add(elem);
   }
 
-  public Set<TSentryPrivilege> getPrivileges() {
-    return this.privileges;
+  public Set<TSentryGroup> getGroups() {
+    return this.groups;
   }
 
-  public void setPrivileges(Set<TSentryPrivilege> privileges) {
-    this.privileges = privileges;
+  public void setGroups(Set<TSentryGroup> groups) {
+    this.groups = groups;
   }
 
-  public void unsetPrivileges() {
-    this.privileges = null;
+  public void unsetGroups() {
+    this.groups = null;
   }
 
-  /** Returns true if field privileges is set (has been assigned a value) and false otherwise */
-  public boolean isSetPrivileges() {
-    return this.privileges != null;
+  /** Returns true if field groups is set (has been assigned a value) and false otherwise */
+  public boolean isSetGroups() {
+    return this.groups != null;
   }
 
-  public void setPrivilegesIsSet(boolean value) {
+  public void setGroupsIsSet(boolean value) {
     if (!value) {
-      this.privileges = null;
+      this.groups = null;
     }
   }
 
@@ -265,11 +265,11 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
       }
       break;
 
-    case PRIVILEGES:
+    case GROUPS:
       if (value == null) {
-        unsetPrivileges();
+        unsetGroups();
       } else {
-        setPrivileges((Set<TSentryPrivilege>)value);
+        setGroups((Set<TSentryGroup>)value);
       }
       break;
 
@@ -289,8 +289,8 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
     case ROLE_NAME:
       return getRoleName();
 
-    case PRIVILEGES:
-      return getPrivileges();
+    case GROUPS:
+      return getGroups();
 
     case GRANTOR_PRINCIPAL:
       return getGrantorPrincipal();
@@ -308,8 +308,8 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
     switch (field) {
     case ROLE_NAME:
       return isSetRoleName();
-    case PRIVILEGES:
-      return isSetPrivileges();
+    case GROUPS:
+      return isSetGroups();
     case GRANTOR_PRINCIPAL:
       return isSetGrantorPrincipal();
     }
@@ -338,12 +338,12 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
         return false;
     }
 
-    boolean this_present_privileges = true && this.isSetPrivileges();
-    boolean that_present_privileges = true && that.isSetPrivileges();
-    if (this_present_privileges || that_present_privileges) {
-      if (!(this_present_privileges && that_present_privileges))
+    boolean this_present_groups = true && this.isSetGroups();
+    boolean that_present_groups = true && that.isSetGroups();
+    if (this_present_groups || that_present_groups) {
+      if (!(this_present_groups && that_present_groups))
         return false;
-      if (!this.privileges.equals(that.privileges))
+      if (!this.groups.equals(that.groups))
         return false;
     }
 
@@ -368,10 +368,10 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
     if (present_roleName)
       builder.append(roleName);
 
-    boolean present_privileges = true && (isSetPrivileges());
-    builder.append(present_privileges);
-    if (present_privileges)
-      builder.append(privileges);
+    boolean present_groups = true && (isSetGroups());
+    builder.append(present_groups);
+    if (present_groups)
+      builder.append(groups);
 
     boolean present_grantorPrincipal = true && (isSetGrantorPrincipal());
     builder.append(present_grantorPrincipal);
@@ -399,12 +399,12 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
         return lastComparison;
       }
     }
-    lastComparison = Boolean.valueOf(isSetPrivileges()).compareTo(typedOther.isSetPrivileges());
+    lastComparison = Boolean.valueOf(isSetGroups()).compareTo(typedOther.isSetGroups());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetPrivileges()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.privileges, typedOther.privileges);
+    if (isSetGroups()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.groups, typedOther.groups);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -447,11 +447,11 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
     }
     first = false;
     if (!first) sb.append(", ");
-    sb.append("privileges:");
-    if (this.privileges == null) {
+    sb.append("groups:");
+    if (this.groups == null) {
       sb.append("null");
     } else {
-      sb.append(this.privileges);
+      sb.append(this.groups);
     }
     first = false;
     if (!first) sb.append(", ");
@@ -472,8 +472,8 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
       throw new org.apache.thrift.protocol.TProtocolException("Required field 'roleName' is unset! Struct:" + toString());
     }
 
-    if (!isSetPrivileges()) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'privileges' is unset! Struct:" + toString());
+    if (!isSetGroups()) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'groups' is unset! Struct:" + toString());
     }
 
     if (!isSetGrantorPrincipal()) {
@@ -525,21 +525,21 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
-          case 2: // PRIVILEGES
+          case 2: // GROUPS
             if (schemeField.type == org.apache.thrift.protocol.TType.SET) {
               {
-                org.apache.thrift.protocol.TSet _set16 = iprot.readSetBegin();
-                struct.privileges = new HashSet<TSentryPrivilege>(2*_set16.size);
-                for (int _i17 = 0; _i17 < _set16.size; ++_i17)
+                org.apache.thrift.protocol.TSet _set72 = iprot.readSetBegin();
+                struct.groups = new HashSet<TSentryGroup>(2*_set72.size);
+                for (int _i73 = 0; _i73 < _set72.size; ++_i73)
                 {
-                  TSentryPrivilege _elem18; // required
-                  _elem18 = new TSentryPrivilege();
-                  _elem18.read(iprot);
-                  struct.privileges.add(_elem18);
+                  TSentryGroup _elem74; // required
+                  _elem74 = new TSentryGroup();
+                  _elem74.read(iprot);
+                  struct.groups.add(_elem74);
                 }
                 iprot.readSetEnd();
               }
-              struct.setPrivilegesIsSet(true);
+              struct.setGroupsIsSet(true);
             } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
@@ -570,13 +570,13 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
         oprot.writeString(struct.roleName);
         oprot.writeFieldEnd();
       }
-      if (struct.privileges != null) {
-        oprot.writeFieldBegin(PRIVILEGES_FIELD_DESC);
+      if (struct.groups != null) {
+        oprot.writeFieldBegin(GROUPS_FIELD_DESC);
         {
-          oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, struct.privileges.size()));
-          for (TSentryPrivilege _iter19 : struct.privileges)
+          oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, struct.groups.size()));
+          for (TSentryGroup _iter75 : struct.groups)
           {
-            _iter19.write(oprot);
+            _iter75.write(oprot);
           }
           oprot.writeSetEnd();
         }
@@ -606,10 +606,10 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
       TTupleProtocol oprot = (TTupleProtocol) prot;
       oprot.writeString(struct.roleName);
       {
-        oprot.writeI32(struct.privileges.size());
-        for (TSentryPrivilege _iter20 : struct.privileges)
+        oprot.writeI32(struct.groups.size());
+        for (TSentryGroup _iter76 : struct.groups)
         {
-          _iter20.write(oprot);
+          _iter76.write(oprot);
         }
       }
       oprot.writeString(struct.grantorPrincipal);
@@ -621,17 +621,17 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
       struct.roleName = iprot.readString();
       struct.setRoleNameIsSet(true);
       {
-        org.apache.thrift.protocol.TSet _set21 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
-        struct.privileges = new HashSet<TSentryPrivilege>(2*_set21.size);
-        for (int _i22 = 0; _i22 < _set21.size; ++_i22)
+        org.apache.thrift.protocol.TSet _set77 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
+        struct.groups = new HashSet<TSentryGroup>(2*_set77.size);
+        for (int _i78 = 0; _i78 < _set77.size; ++_i78)
         {
-          TSentryPrivilege _elem23; // required
-          _elem23 = new TSentryPrivilege();
-          _elem23.read(iprot);
-          struct.privileges.add(_elem23);
+          TSentryGroup _elem79; // required
+          _elem79 = new TSentryGroup();
+          _elem79.read(iprot);
+          struct.groups.add(_elem79);
         }
       }
-      struct.setPrivilegesIsSet(true);
+      struct.setGroupsIsSet(true);
       struct.grantorPrincipal = iprot.readString();
       struct.setGrantorPrincipalIsSet(true);
     }

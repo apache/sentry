@@ -169,21 +169,42 @@ public class SentryStore {
       }
     }
   }
+  /**
+  Get the MSentry object from roleName
+  Note: Should be called inside a transaction
+   */
+  private MSentryRole getMSentryRole(PersistenceManager pm, String roleName) {
+    Query query = pm.newQuery(MSentryRole.class);
+    query.setFilter("this.roleName == t");
+    query.declareParameters("java.lang.String t");
+    query.setUnique(true);
+    MSentryRole sentryRole = (MSentryRole) query.execute(roleName);
+    return sentryRole;
+  }
 
+  /**
+   * Normalize the string values
+   */
+  private String trimAndLower(String input) {
+    return input.trim().toLowerCase();
+  }
+  /**
+   * Create a sentry role and persist it.
+   * @param roleName: Name of the role being persisted
+   * @param grantorPrincipal: TODO: Currently not used
+   * @returns commit context used for notification handlers
+   * @throws SentryAlreadyExistsException
+   */
   public CommitContext createSentryRole(String roleName, String grantorPrincipal)
   throws SentryAlreadyExistsException {
+    roleName = trimAndLower(roleName);
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
-    roleName = roleName.trim().toLowerCase();
     try {
       pm = openTransaction();
-      Query query = pm.newQuery(MSentryRole.class);
-      query.setFilter("this.roleName == t");
-      query.declareParameters("java.lang.String t");
-      query.setUnique(true);
-      MSentryRole sentryRole = (MSentryRole) query.execute(roleName);
-      if (sentryRole == null) {
-        MSentryRole mRole = convertToMSentryRole(roleName, grantorPrincipal);
+      MSentryRole mSentryRole = getMSentryRole(pm, roleName);
+      if (mSentryRole == null) {
+        MSentryRole mRole = new MSentryRole(roleName, System.currentTimeMillis(), grantorPrincipal);
         pm.makePersistent(mRole);
         CommitContext commit = commitUpdateTransaction(pm);
         rollbackTransaction = false;
@@ -199,23 +220,19 @@ public class SentryStore {
   }
 
   //TODO: handle case where a) privilege already exists, b) role to privilege mapping already exists
-  public CommitContext alterSentryRoleGrantPrivilege(String roleName,
-      TSentryPrivilege privilege) throws SentryNoSuchObjectException, SentryInvalidInputException {
+  public CommitContext alterSentryRoleGrantPrivilege(String roleName, TSentryPrivilege privilege)
+      throws SentryNoSuchObjectException, SentryInvalidInputException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
-    roleName = roleName.trim().toLowerCase();
+    roleName = trimAndLower(roleName);
     try {
       pm = openTransaction();
-      Query query = pm.newQuery(MSentryRole.class);
-      query.setFilter("this.roleName == t");
-      query.declareParameters("java.lang.String t");
-      query.setUnique(true);
-      MSentryRole mRole = (MSentryRole) query.execute(roleName);
+      MSentryRole mRole = getMSentryRole(pm, roleName);
       if (mRole == null) {
         throw new SentryNoSuchObjectException("Role: " + roleName);
       } else {
         MSentryPrivilege mPrivilege = convertToMSentryPrivilege(privilege);
-        // add privilege and role objects to each other. needed by datanucleus to model
+        // Add privilege and role objects to each other. needed by datanucleus to model
         // m:n relationships correctly through a join table.
         mPrivilege.appendRole(mRole);
         mRole.appendPrivilege(mPrivilege);
@@ -530,9 +547,73 @@ public class SentryStore {
     }
   }
 
-  public TSentryRole getSentryRoleByName(String roleName)
-  throws SentryNoSuchObjectException {
-    return convertToSentryRole(getMSentryRoleByName(roleName));
+  private Set<MSentryPrivilege> getMSentryPrivilegesByRoleName(String roleName)
+    throws SentryNoSuchObjectException {
+      MSentryRole mSentryRole = getMSentryRoleByName(roleName);
+      return mSentryRole.getPrivileges();
+    }
+
+  /**
+   * Gets sentry privilege objects for a given roleName from the persistence layer
+   * @param roleName : roleName to look up
+   * @return : Set of thrift sentry privilege objects
+   * @throws SentryNoSuchObjectException
+   */
+
+  public Set<TSentryPrivilege> getTSentryPrivilegesByRoleName(String roleName)
+      throws SentryNoSuchObjectException {
+    return convertToTSentryPrivileges(getMSentryPrivilegesByRoleName(roleName));
+  }
+
+  private Set<MSentryRole> getMSentryRolesByGroupName(String groupName)
+      throws SentryNoSuchObjectException {
+    boolean rollbackTransaction = true;
+    PersistenceManager pm = null;
+    try {
+      Set<MSentryRole> roles;
+      pm = openTransaction();
+
+      //If no group name was specified, return all roles
+      if (groupName == null) {
+        Query query = pm.newQuery(MSentryRole.class);
+        roles = new HashSet<MSentryRole>((List<MSentryRole>)query.execute());
+      } else {
+        Query query = pm.newQuery(MSentryGroup.class);
+        MSentryGroup sentryGroup;
+        groupName = groupName.trim().toLowerCase();
+        query.setFilter("this.groupName == t");
+        query.declareParameters("java.lang.String t");
+        query.setUnique(true);
+        sentryGroup = (MSentryGroup) query.execute(groupName);
+        if (sentryGroup == null) {
+          throw new SentryNoSuchObjectException("Group " + groupName);
+        } else {
+          pm.retrieve(sentryGroup);
+        }
+        roles = sentryGroup.getRoles();
+      }
+      for ( MSentryRole role: roles) {
+        pm.retrieve(role);
+      }
+      commitTransaction(pm);
+      rollbackTransaction = false;
+      return roles;
+    } finally {
+      if (rollbackTransaction) {
+        rollbackTransaction(pm);
+      }
+    }
+  }
+
+  /**
+   * Gets sentry role objects for a given groupName from the persistence layer
+   * @param groupName : groupName to look up ( if null returns all roles for all groups)
+   * @return : Set of thrift sentry role objects
+   * @throws SentryNoSuchObjectException
+   */
+  public Set<TSentryRole> getTSentryRolesByGroupName(String groupName)
+      throws SentryNoSuchObjectException {
+    return convertToTSentryRoles(getMSentryRolesByGroupName(groupName));
   }
 
   private SetMultimap<String, String> getRoleToPrivilegeMap(Set<String> groups) {
@@ -613,35 +694,52 @@ public class SentryStore {
     return result;
   }
 
+
   /**
-   * Converts thrift object to model object. Additionally does normalization
+   * Converts model object(s) to thrift object(s).
+   * Additionally does normalization
    * such as trimming whitespace and setting appropriate case. Also sets the create
    * time.
    */
-  private MSentryRole convertToMSentryRole(String roleName, String grantorPrincipal) {
-    MSentryRole mRole = new MSentryRole();
-    mRole.setCreateTime(System.currentTimeMillis());
-    mRole.setRoleName(roleName.trim().toLowerCase());
-    mRole.setGrantorPrincipal(grantorPrincipal.trim());
-    return mRole;
+
+  private Set<TSentryPrivilege> convertToTSentryPrivileges(Set<MSentryPrivilege> mSentryPrivileges) {
+    Set<TSentryPrivilege> privileges = new HashSet<TSentryPrivilege>();
+    for(MSentryPrivilege mSentryPrivilege:mSentryPrivileges) {
+      privileges.add(convertToTSentryPrivilege(mSentryPrivilege));
+    }
+    return privileges;
   }
 
-  private TSentryRole convertToSentryRole(MSentryRole mSentryRole) {
+  private Set<TSentryRole> convertToTSentryRoles(Set<MSentryRole> mSentryRoles) {
+    Set<TSentryRole> roles = new HashSet<TSentryRole>();
+    for(MSentryRole mSentryRole:mSentryRoles) {
+      roles.add(convertToTSentryRole(mSentryRole));
+    }
+    return roles;
+  }
+
+  private TSentryRole convertToTSentryRole(MSentryRole mSentryRole) {
     TSentryRole role = new TSentryRole();
     role.setRoleName(mSentryRole.getRoleName());
     role.setGrantorPrincipal(mSentryRole.getGrantorPrincipal());
 
-    Set<TSentryPrivilege> sentryPrivileges = new HashSet<TSentryPrivilege>();
-    for(MSentryPrivilege mSentryPrivilege:mSentryRole.getPrivileges()) {
-      TSentryPrivilege privilege = convertToSentryPrivilege(mSentryPrivilege);
-      sentryPrivileges.add(privilege);
+    Set<TSentryGroup> sentryGroups = new HashSet<TSentryGroup>();
+    for(MSentryGroup mSentryGroup:mSentryRole.getGroups()) {
+      TSentryGroup group = convertToTSentryGroup(mSentryGroup);
+      sentryGroups.add(group);
     }
 
-    role.setPrivileges(sentryPrivileges);
+    role.setGroups(sentryGroups);
     return role;
   }
 
-  private TSentryPrivilege convertToSentryPrivilege(MSentryPrivilege mSentryPrivilege) {
+  private TSentryGroup convertToTSentryGroup(MSentryGroup mSentryGroup) {
+    TSentryGroup group = new TSentryGroup();
+    group.setGroupName(mSentryGroup.getGroupName());
+    return group;
+  }
+
+  private TSentryPrivilege convertToTSentryPrivilege(MSentryPrivilege mSentryPrivilege) {
     TSentryPrivilege privilege = new TSentryPrivilege();
     privilege.setCreateTime(mSentryPrivilege.getCreateTime());
     privilege.setPrivilegeName(mSentryPrivilege.getPrivilegeName());

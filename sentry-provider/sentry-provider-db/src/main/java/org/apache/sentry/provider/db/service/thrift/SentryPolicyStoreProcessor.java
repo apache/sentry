@@ -18,12 +18,12 @@
 
 package org.apache.sentry.provider.db.service.thrift;
 
-import java.lang.reflect.Constructor;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import org.apache.commons.lang.StringUtils;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.provider.db.SentryAlreadyExistsException;
@@ -32,19 +32,17 @@ import org.apache.sentry.provider.db.SentryNoSuchObjectException;
 import org.apache.sentry.provider.db.service.persistent.CommitContext;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.provider.db.service.thrift.PolicyStoreConstants.PolicyStoreServerConfig;
+import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.apache.sentry.service.thrift.Status;
 import org.apache.sentry.service.thrift.TSentryResponseStatus;
-import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
+import java.lang.reflect.Constructor;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @SuppressWarnings("unused")
 public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
@@ -298,12 +296,11 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     TListSentryRolesRequest request) throws TException {
     TListSentryRolesResponse response = new TListSentryRolesResponse();
     TSentryResponseStatus status;
-    TSentryRole role = null;
     Set<TSentryRole> roleSet = new HashSet<TSentryRole>();
     try {
-      // TODO implement
-      role = sentryStore.getSentryRoleByName(request.getRoleName());
-      roleSet.add(role);
+      //TODO: Handle authorization for metadata queries
+      authorize(request.getRequestorUserName(), request.getRequestorGroupNames());
+      roleSet = sentryStore.getTSentryRolesByGroupName(request.getGroupName());
       response.setRoles(roleSet);
       response.setStatus(Status.OK());
     } catch (SentryNoSuchObjectException e) {
@@ -320,19 +317,22 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   }
 
   @Override
-  public TListSentryRolesResponse list_sentry_roles_by_role_name(
-    TListSentryRolesRequest request) throws TException {
-    TListSentryRolesResponse response = new TListSentryRolesResponse();
-    TSentryRole role = null;
-    Set<TSentryRole> roleSet = new HashSet<TSentryRole>();
+  public TListSentryPrivilegesResponse list_sentry_privileges_by_role(
+      TListSentryPrivilegesRequest request) throws TException {
+    TListSentryPrivilegesResponse response = new TListSentryPrivilegesResponse();
+    TSentryResponseStatus status;
+    Set<TSentryPrivilege> privilegeSet = new HashSet<TSentryPrivilege>();
     try {
-      role = sentryStore.getSentryRoleByName(request.getRoleName());
-      roleSet.add(role);
-      response.setRoles(roleSet);
+      //TODO: Handle authorization for metadata queries
+      // Shall we allow only admin users to list privileges
+      // or allow all users as long as user is granted this role?
+      authorize(request.getRequestorUserName(), request.getRequestorGroupNames());
+      privilegeSet = sentryStore.getTSentryPrivilegesByRoleName(request.getRoleName());
+      response.setPrivileges(privilegeSet);
       response.setStatus(Status.OK());
     } catch (SentryNoSuchObjectException e) {
-      response.setRoles(roleSet);
-      String msg = "Role: " + request + " couldn't be retrieved.";
+      response.setPrivileges(privilegeSet);
+      String msg = "Privilege: " + request + " couldn't be retrieved.";
       LOGGER.error(msg, e);
       response.setStatus(Status.NoSuchObject(msg, e));
     } catch (Exception e) {

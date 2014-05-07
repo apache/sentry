@@ -77,7 +77,7 @@ public class SimpleDBProviderBackend implements ProviderBackend {
       throw new IllegalStateException("Backend has not been properly initialized");
     }
     try {
-      return ImmutableSet.copyOf(policyServiceClient.listPrivileges(groups, roleSet));
+      return ImmutableSet.copyOf(policyServiceClient.listPrivilegesForProvider(groups, roleSet));
     } catch (SentryUserException e) {
       String msg = "Unable to obtain privileges from server: " + e.getMessage();
       LOGGER.error(msg, e);

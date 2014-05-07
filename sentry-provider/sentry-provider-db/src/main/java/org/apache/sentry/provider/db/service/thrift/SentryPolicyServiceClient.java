@@ -18,10 +18,8 @@
 
 package org.apache.sentry.provider.db.service.thrift;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.util.Set;
-
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.SaslRpcServer;
@@ -44,8 +42,10 @@ import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.HashSet;
+import java.util.Set;
 
 public class SentryPolicyServiceClient {
 
@@ -58,6 +58,7 @@ public class SentryPolicyServiceClient {
   private int connectionTimeout;
   private static final Logger LOGGER = LoggerFactory
                                        .getLogger(SentryPolicyServiceClient.class);
+  private static final String THRIFT_EXCEPTION_MESSAGE = "Thrift exception occured ";
 
   public SentryPolicyServiceClient(Configuration conf) throws IOException {
     this.conf = conf;
@@ -109,8 +110,7 @@ public class SentryPolicyServiceClient {
       TCreateSentryRoleResponse response = client.create_sentry_role(request);
       Status.throwIfNotOk(response.getStatus());
     } catch (TException e) {
-      String msg = "Thrift exception occured: " + e.getMessage();
-      throw new SentryUserException(msg, e);
+      throw new SentryUserException(THRIFT_EXCEPTION_MESSAGE, e);
     }
   }
 
@@ -142,14 +142,66 @@ public class SentryPolicyServiceClient {
       }
       Status.throwIfNotOk(response.getStatus());
     } catch (TException e) {
-      String msg = "Thrift exception occured: " + e.getMessage();
-      throw new SentryUserException(msg, e);
+      throw new SentryUserException(THRIFT_EXCEPTION_MESSAGE, e);
     }
   }
 
-  public TListSentryRolesResponse listRoleByName(TListSentryRolesRequest req)
-  throws TException {
-    return client.list_sentry_roles_by_role_name(req);
+  /**
+   * Gets sentry role objects for a given groupName using the Sentry service
+   * @param requestorUserName : user on whose behalf the request is issued
+   * @param requestorUserGroupNames :groups the requesting user belongs to
+   * @param groupName : groupName to look up ( if null returns all roles for all groups)
+   * @return Set of thrift sentry role objects
+   * @throws SentryUserException
+   */
+  public Set<TSentryRole> listRolesByGroupName(String requestorUserName,
+      Set<String> requestorUserGroupNames, String groupName)
+  throws SentryUserException {
+    TListSentryRolesRequest request = new TListSentryRolesRequest();
+    request.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
+    request.setRequestorUserName(requestorUserName);
+    request.setRequestorGroupNames(requestorUserGroupNames);
+    request.setGroupName(groupName);
+    TListSentryRolesResponse response;
+    Set<String> roles = new HashSet<String>();
+    try {
+      response = client.list_sentry_roles_by_group(request);
+      Status.throwIfNotOk(response.getStatus());
+      return response.getRoles();
+    } catch (TException e) {
+      throw new SentryUserException(THRIFT_EXCEPTION_MESSAGE, e);
+    }
+  }
+
+  /**
+   * Gets sentry privilege objects for a given roleName using the Sentry service
+   * @param requestorUserName : user on whose behalf the request is issued
+   * @param requestorUserGroupNames :groups the requesting user belongs to
+   * @param roleName : roleName to look up
+   * @return Set of thrift sentry privilege objects
+   * @throws SentryUserException
+   */
+  public Set<TSentryPrivilege> listPrivilegesByRoleName(String requestorUserName,
+      Set<String> requestorUserGroupNames, String roleName)
+  throws SentryUserException {
+    TListSentryPrivilegesRequest request = new TListSentryPrivilegesRequest();
+    request.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
+    request.setRequestorUserName(requestorUserName);
+    request.setRequestorGroupNames(requestorUserGroupNames);
+    request.setRoleName(roleName);
+    TListSentryPrivilegesResponse response;
+    try {
+      response = client.list_sentry_privileges_by_role(request);
+      Status.throwIfNotOk(response.getStatus());
+      return response.getPrivileges();
+    } catch (TException e) {
+      throw new SentryUserException(THRIFT_EXCEPTION_MESSAGE, e);
+    }
+  }
+
+  public Set<TSentryRole> listRoles(String requestorUserName, Set<String> requestorUserGroupNames)
+       throws SentryUserException {
+    return listRolesByGroupName(requestorUserName, requestorUserGroupNames, null);
   }
 
   public void grantURIPrivilege(String requestorUserName, Set<String> requestorUserGroupNames,
@@ -202,8 +254,7 @@ public class SentryPolicyServiceClient {
       TAlterSentryRoleGrantPrivilegeResponse response = client.alter_sentry_role_grant_privilege(request);
       Status.throwIfNotOk(response.getStatus());
     } catch (TException e) {
-      String msg = "Thrift exception occured: " + e.getMessage();
-      throw new SentryUserException(msg, e);
+      throw new SentryUserException(THRIFT_EXCEPTION_MESSAGE, e);
     }
   }
 
@@ -257,12 +308,11 @@ public class SentryPolicyServiceClient {
       TAlterSentryRoleRevokePrivilegeResponse response = client.alter_sentry_role_revoke_privilege(request);
       Status.throwIfNotOk(response.getStatus());
     } catch (TException e) {
-      String msg = "Thrift exception occured: " + e.getMessage();
-      throw new SentryUserException(msg, e);
+      throw new SentryUserException(THRIFT_EXCEPTION_MESSAGE, e);
     }
   }
 
-  public Set<String> listPrivileges(Set<String> groups, ActiveRoleSet roleSet)
+  public Set<String> listPrivilegesForProvider(Set<String> groups, ActiveRoleSet roleSet)
   throws SentryUserException {
     TSentryActiveRoleSet thriftRoleSet = new TSentryActiveRoleSet(roleSet.isAll(), roleSet.getRoles());
     TListSentryPrivilegesForProviderRequest request =
@@ -273,8 +323,7 @@ public class SentryPolicyServiceClient {
       Status.throwIfNotOk(response.getStatus());
       return response.getPrivileges();
     } catch (TException e) {
-      String msg = "Thrift exception occured: " + e.getMessage();
-      throw new SentryUserException(msg, e);
+      throw new SentryUserException(THRIFT_EXCEPTION_MESSAGE, e);
     }
   }
 
@@ -288,8 +337,7 @@ public class SentryPolicyServiceClient {
       TAlterSentryRoleAddGroupsResponse response = client.alter_sentry_role_add_groups(request);
       Status.throwIfNotOk(response.getStatus());
     } catch (TException e) {
-      String msg = "Thrift exception occured: " + e.getMessage();
-      throw new SentryUserException(msg, e);
+      throw new SentryUserException(THRIFT_EXCEPTION_MESSAGE, e);
     }
   }
 
@@ -303,8 +351,7 @@ public class SentryPolicyServiceClient {
       TAlterSentryRoleDeleteGroupsResponse response = client.alter_sentry_role_delete_groups(request);
       Status.throwIfNotOk(response.getStatus());
     } catch (TException e) {
-      String msg = "Thrift exception occured: " + e.getMessage();
-      throw new SentryUserException(msg, e);
+      throw new SentryUserException(THRIFT_EXCEPTION_MESSAGE, e);
     }
   }
 
