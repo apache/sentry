@@ -16,9 +16,6 @@
  */
 package org.apache.sentry.tests.e2e.hive.fs;
 
-import java.security.PrivilegedExceptionAction;
-import java.util.Random;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -26,13 +23,15 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.security.PrivilegedExceptionAction;
+import java.util.Random;
+
 public class ClusterDFS extends AbstractDFS{
   private static final Logger LOGGER = LoggerFactory
       .getLogger(ClusterDFS.class);
   public static final String TEST_USER = "sentry.e2etest.hive.test.user";
   private static final String testUser = System.getProperty(TEST_USER, "hive");
   private static final String KEYTAB_LOCATION = System.getProperty("sentry.e2e.hive.keytabs.location");
-  private Path sentryDir;
   private UserGroupInformation ugi;
 
   ClusterDFS() throws Exception{

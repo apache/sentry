@@ -17,8 +17,13 @@
 
 package org.apache.sentry.tests.e2e.hive;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import com.google.common.io.Resources;
+import junit.framework.Assert;
+import org.apache.sentry.provider.file.PolicyFile;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -30,14 +35,8 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-import junit.framework.Assert;
-
-import org.apache.sentry.provider.file.PolicyFile;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
-import com.google.common.io.Resources;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /* Tests privileges at table scope with cross database access */
 
@@ -46,6 +45,11 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
   private PolicyFile policyFile;
   private String loadData;
 
+  @BeforeClass
+  public static void setupTestStaticConfiguration() throws Exception{
+    policy_on_hdfs = true;
+    AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
+  }
   @Before
   public void setup() throws Exception {
     context = createContext();
@@ -84,6 +88,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
         .addPermissionsToRole("insert_tab2", "server=server1->db=db2->table=tab2->action=insert")
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     policyFile.write(context.getPolicyFile());
+    dfs.writePolicyFile(context.getPolicyFile());
 
     // admin create two databases
     Connection connection = context.createConnection(ADMIN1);
@@ -200,6 +205,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
         .addPermissionsToRole("insert_tab2", "server=server1->db=db2->table=tab2->action=insert")
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     policyFile.write(context.getPolicyFile());
+    dfs.writePolicyFile(context.getPolicyFile());
 
     // admin create two databases
     Connection connection = context.createConnection(ADMIN1);
@@ -358,6 +364,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
         .addPermissionsToRole("load_data", "server=server1->URI=file://" + dataFile.getPath())
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     policyFile.write(context.getPolicyFile());
+    dfs.writePolicyFile(context.getPolicyFile());
 
     dropDb(ADMIN1, DB1, DB2);
     createDb(ADMIN1, DB1, DB2);
@@ -388,6 +395,8 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     policyFile
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
+    dfs.writePolicyFile(context.getPolicyFile());
+
     dropDb(ADMIN1, DB1);
     createDb(ADMIN1, DB1);
     Connection adminCon = context.createConnection(ADMIN1);
@@ -417,6 +426,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
         .addPermissionsToRole("db1_tab1_insert", "server=server1->db=db1->table=table_1->action=insert")
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     policyFile.write(context.getPolicyFile());
+    dfs.writePolicyFile(context.getPolicyFile());
 
     Connection adminCon = context.createConnection(ADMIN1);
     Statement adminStmt = context.createStatement(adminCon);
@@ -447,6 +457,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
         .addRolesToGroup(USERGROUP1, "db1_tab2_all")
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     policyFile.write(context.getPolicyFile());
+    dfs.writePolicyFile(context.getPolicyFile());
 
     dropDb(ADMIN1, DB1);
     createDb(ADMIN1, DB1);
@@ -493,6 +504,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
         .addPermissionsToRole("db1_tab1_select", "server=server1->db=db1->table=table_1->action=select")
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
+    dfs.writePolicyFile(context.getPolicyFile());
 
     // create dbs
     Connection adminCon = context.createConnection(ADMIN1);
@@ -570,6 +582,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
         .addRolesToGroup(USERGROUP1, GROUP1_ROLE)
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
+    dfs.writePolicyFile(context.getPolicyFile());
 
     dropDb(ADMIN1, DB1, DB2);
     createDb(ADMIN1, DB1, DB2);
@@ -610,6 +623,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
 
     policyFile.removePermissionsFromRole(GROUP1_ROLE, ALL_DB2);
     policyFile.write(context.getPolicyFile());
+    dfs.writePolicyFile(context.getPolicyFile());
 
     // create db1.view1 as select from db2.tbl2
     statement.execute("DROP VIEW IF EXISTS " + DB1 + "." + VIEW2);
@@ -648,6 +662,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
         .addPermissionsToRole("load_data", "server=server1->URI=file://" + dataFile.getPath())
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
+    dfs.writePolicyFile(context.getPolicyFile());
 
     // admin create two databases
     dropDb(ADMIN1, DB1, DB2);

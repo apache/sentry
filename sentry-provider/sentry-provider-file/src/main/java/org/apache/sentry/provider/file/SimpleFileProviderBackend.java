@@ -16,21 +16,19 @@
  */
 package org.apache.sentry.provider.file;
 
-import static org.apache.sentry.provider.file.PolicyFileConstants.DATABASES;
-import static org.apache.sentry.provider.file.PolicyFileConstants.GROUPS;
-import static org.apache.sentry.provider.file.PolicyFileConstants.ROLES;
-import static org.apache.sentry.provider.file.PolicyFileConstants.ROLE_SPLITTER;
-import static org.apache.sentry.provider.file.PolicyFileConstants.USERS;
-
-import java.io.IOException;
-import java.net.URI;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import javax.annotation.Nullable;
-
+import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Interner;
+import com.google.common.collect.Interners;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
+import com.google.common.collect.Table;
+import com.google.common.collect.Table.Cell;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -45,19 +43,19 @@ import org.apache.shiro.config.Ini;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Splitter;
-import com.google.common.base.Strings;
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Interner;
-import com.google.common.collect.Interners;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
-import com.google.common.collect.Table;
-import com.google.common.collect.Table.Cell;
+import javax.annotation.Nullable;
+import java.io.IOException;
+import java.net.URI;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static org.apache.sentry.provider.file.PolicyFileConstants.DATABASES;
+import static org.apache.sentry.provider.file.PolicyFileConstants.GROUPS;
+import static org.apache.sentry.provider.file.PolicyFileConstants.ROLES;
+import static org.apache.sentry.provider.file.PolicyFileConstants.ROLE_SPLITTER;
+import static org.apache.sentry.provider.file.PolicyFileConstants.USERS;
 
 public class SimpleFileProviderBackend implements ProviderBackend {
 
@@ -207,6 +205,7 @@ public class SimpleFileProviderBackend implements ProviderBackend {
     Table<String, String, Set<String>> groupRolePrivilegeTableTemp = HashBasedTable.create();
     Ini ini;
     LOGGER.info("Parsing " + resourcePath);
+    LOGGER.info("Filesystem: " + fileSystem.getUri());
     try {
       try {
         ini = PolicyFiles.loadFromPath(fileSystem, resourcePath);

@@ -17,18 +17,9 @@
 
 package org.apache.sentry.tests.e2e.hive;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.Map;
-
+import com.google.common.base.Charsets;
+import com.google.common.collect.Maps;
+import com.google.common.io.Files;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.sentry.binding.hive.HiveAuthzBindingSessionHook;
@@ -40,9 +31,17 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.common.base.Charsets;
-import com.google.common.collect.Maps;
-import com.google.common.io.Files;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Map;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class TestServerConfiguration extends AbstractTestWithHiveServer {
 
@@ -113,8 +112,6 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
   @Test
   public void testRemovalOfPolicyFile() throws Exception {
     context = createContext(properties);
-    File policyFile = context.getPolicyFile();
-    assertTrue("Could not delete " + policyFile, policyFile.delete());
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     try {
@@ -132,7 +129,6 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
   public void testCorruptionOfPolicyFile() throws Exception {
     context = createContext(properties);
     File policyFile = context.getPolicyFile();
-    assertTrue("Could not delete " + policyFile, policyFile.delete());
     FileOutputStream out = new FileOutputStream(policyFile);
     out.write("this is not valid".getBytes(Charsets.UTF_8));
     out.close();

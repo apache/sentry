@@ -16,14 +16,9 @@
  */
 package org.apache.sentry.tests.e2e.hive;
 
-import java.io.File;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.Statement;
-import java.util.Map;
-
+import com.google.common.collect.Maps;
+import com.google.common.io.Files;
 import junit.framework.Assert;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.sentry.tests.e2e.hive.fs.DFS;
@@ -36,8 +31,11 @@ import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Maps;
-import com.google.common.io.Files;
+import java.io.File;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.Map;
 
 public abstract class AbstractTestWithStaticConfiguration {
   private static final Logger LOGGER = LoggerFactory
@@ -76,7 +74,7 @@ public abstract class AbstractTestWithStaticConfiguration {
       VIEW3 = "view_3",
       INDEX1 = "index_1",
       INDEX2 = "index_2";
-
+  protected static boolean policy_on_hdfs = false;
 
   protected static File baseDir;
   protected static File logDir;
@@ -150,9 +148,19 @@ public abstract class AbstractTestWithStaticConfiguration {
 
     String dfsType = System.getProperty(DFSFactory.FS_TYPE);
     dfs = DFSFactory.create(dfsType, baseDir);
-
     fileSystem = dfs.getFileSystem();
-    hiveServer = HiveServerFactory.create(properties, baseDir, confDir, logDir, policyFileLocation, fileSystem);
+
+    String policyURI;
+    if (policy_on_hdfs) {
+      String dfsUri = fileSystem.getDefaultUri(fileSystem.getConf()).toString();
+      LOGGER.error("dfsUri " + dfsUri);
+      policyURI = dfsUri + System.getProperty("sentry.e2etest.hive.policy.location", "/user/hive/sentry");
+      policyURI += "/" + HiveServerFactory.AUTHZ_PROVIDER_FILENAME;
+    } else {
+      policyURI = policyFileLocation.getPath();
+    }
+
+    hiveServer = HiveServerFactory.create(properties, baseDir, confDir, logDir, policyURI, fileSystem);
     hiveServer.start();
   }
 

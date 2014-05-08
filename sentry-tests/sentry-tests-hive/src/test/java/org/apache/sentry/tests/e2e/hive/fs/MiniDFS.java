@@ -16,13 +16,13 @@
  */
 package org.apache.sentry.tests.e2e.hive.fs;
 
-import java.io.File;
-
 import junit.framework.Assert;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+
+import java.io.File;
+import java.util.concurrent.TimeoutException;
 
 public class MiniDFS extends AbstractDFS {
   private static MiniDFSCluster dfsCluster;
@@ -33,6 +33,8 @@ public class MiniDFS extends AbstractDFS {
     conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, dfsDir.getPath());
     dfsCluster = new MiniDFSCluster.Builder(conf).numDataNodes(2).build();
     fileSystem = dfsCluster.getFileSystem();
+    String policyDir = System.getProperty("sentry.e2etest.hive.policy.location", "/user/hive/sentry");
+    sentryDir = super.assertCreateDfsDir(new Path(fileSystem.getUri() + policyDir));
     dfsBaseDir = assertCreateDfsDir(new Path(new Path(fileSystem.getUri()), "/base"));
   }
 

@@ -17,19 +17,16 @@
 
 package org.apache.sentry.tests.e2e.hive;
 
-import static org.junit.Assert.assertTrue;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.sql.Connection;
-import java.sql.Statement;
-
+import com.google.common.io.Resources;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.common.io.Resources;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.sql.Connection;
+import java.sql.Statement;
 
 public class TestPerDatabasePolicyFile extends AbstractTestWithStaticConfiguration {
   private static final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
@@ -45,7 +42,6 @@ public class TestPerDatabasePolicyFile extends AbstractTestWithStaticConfigurati
     context = createContext();
     globalPolicyFile = context.getPolicyFile();
     dataDir = context.getDataDir();
-    assertTrue("Could not delete " + globalPolicyFile, context.deletePolicyFile());
     dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);

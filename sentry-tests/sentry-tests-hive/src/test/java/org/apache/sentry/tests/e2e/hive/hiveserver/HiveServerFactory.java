@@ -16,14 +16,8 @@
  */
 package org.apache.sentry.tests.e2e.hive.hiveserver;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.ServerSocket;
-import java.net.URL;
-import java.util.Map;
-
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.io.Resources;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -35,8 +29,13 @@ import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.io.Resources;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.ServerSocket;
+import java.net.URL;
+import java.util.Map;
 
 public class HiveServerFactory {
   private static final Logger LOGGER = LoggerFactory
@@ -70,7 +69,7 @@ public class HiveServerFactory {
   }
 
   public static HiveServer create(Map<String, String> properties,
-      File baseDir, File confDir, File logDir, File policyFile,
+      File baseDir, File confDir, File logDir, String policyFile,
       FileSystem fileSystem)
           throws Exception {
     String type = properties.get(HIVESERVER2_TYPE);
@@ -85,16 +84,8 @@ public class HiveServerFactory {
   }
   private static HiveServer create(HiveServer2Type type,
       Map<String, String> properties, File baseDir, File confDir,
-      File logDir, File policyFile, FileSystem fileSystem) throws Exception {
+      File logDir, String policyFile, FileSystem fileSystem) throws Exception {
 
-    if(policyFile.exists()) {
-      LOGGER.info("Policy file " + policyFile + " exists");
-    } else {
-      LOGGER.info("Creating policy file " + policyFile);
-      FileOutputStream to = new FileOutputStream(policyFile);
-      Resources.copy(Resources.getResource(AUTHZ_PROVIDER_FILENAME), to);
-      to.close();
-    }
     if(type.equals(HiveServer2Type.UnmanagedHiveServer2)){
       LOGGER.info("Creating UnmanagedHiveServer");
       return new UnmanagedHiveServer();
@@ -119,7 +110,8 @@ public class HiveServerFactory {
       properties.put(ACCESS_TESTING_MODE, "true");
     }
     if(!properties.containsKey(AUTHZ_PROVIDER_RESOURCE)) {
-      properties.put(AUTHZ_PROVIDER_RESOURCE, policyFile.getPath());
+      LOGGER.info("Policy File location: " + policyFile);
+      properties.put(AUTHZ_PROVIDER_RESOURCE, policyFile);
     }
     if(!properties.containsKey(AUTHZ_PROVIDER)) {
       properties.put(AUTHZ_PROVIDER, LocalGroupResourceAuthorizationProvider.class.getName());

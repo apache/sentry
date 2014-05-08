@@ -16,11 +16,8 @@
  */
 package org.apache.sentry.tests.e2e.hive;
 
-import java.io.File;
-import java.util.Map;
-
+import com.google.common.io.Files;
 import junit.framework.Assert;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -30,7 +27,8 @@ import org.junit.After;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.io.Files;
+import java.io.File;
+import java.util.Map;
 
 public abstract class AbstractTestWithHiveServer {
   private static final Logger LOGGER = LoggerFactory
@@ -61,7 +59,7 @@ public abstract class AbstractTestWithHiveServer {
     confDir = assertCreateDir(new File(baseDir, "etc"));
     dataDir = assertCreateDir(new File(baseDir, "data"));
     policyFile = new File(confDir, HiveServerFactory.AUTHZ_PROVIDER_FILENAME);
-    hiveServer = HiveServerFactory.create(properties, baseDir, confDir, logDir, policyFile, fileSystem);
+    hiveServer = HiveServerFactory.create(properties, baseDir, confDir, logDir, policyFile.getPath(), fileSystem);
     hiveServer.start();
     return new Context(hiveServer, getFileSystem(),
         baseDir, confDir, dataDir, policyFile);

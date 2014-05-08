@@ -16,13 +16,8 @@
  */
 package org.apache.sentry.provider.file;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-
+import com.google.common.io.ByteStreams;
+import com.google.common.io.Resources;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -30,8 +25,12 @@ import org.apache.shiro.config.Ini;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.io.ByteStreams;
-import com.google.common.io.Resources;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 public class PolicyFiles {
 
@@ -74,6 +73,8 @@ public class PolicyFiles {
     InputStream inputStream = null;
     try {
       LOGGER.info("Opening " + path);
+      String dfsUri = fileSystem.getDefaultUri(fileSystem.getConf()).toString();
+      LOGGER.error("dfsUri " + dfsUri);
       inputStream = fileSystem.open(path);
       Ini ini = new Ini();
       ini.load(inputStream);

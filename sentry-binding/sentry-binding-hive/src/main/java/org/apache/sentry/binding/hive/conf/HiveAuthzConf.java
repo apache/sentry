@@ -16,17 +16,17 @@
  */
 package org.apache.sentry.binding.hive.conf;
 
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.mortbay.log.Log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 
 
 public class HiveAuthzConf extends Configuration {
@@ -146,9 +146,11 @@ public class HiveAuthzConf extends Configuration {
   private final String hiveAuthzSiteFile;
 
   public HiveAuthzConf(URL hiveAuthzSiteURL) {
-    super(false);
+    super();
+    LOG.info("DefaultFS: " + super.get("fs.defaultFS"));
     addResource(hiveAuthzSiteURL);
     applySystemProperties();
+    LOG.info("DefaultFS: " + super.get("fs.defaultFS"));
     this.hiveAuthzSiteFile = hiveAuthzSiteURL.toString();
   }
   /**

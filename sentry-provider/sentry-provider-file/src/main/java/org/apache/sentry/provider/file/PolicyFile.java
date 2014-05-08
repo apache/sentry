@@ -17,28 +17,26 @@
 
 package org.apache.sentry.provider.file;
 
-import static org.apache.sentry.provider.file.PolicyFileConstants.DATABASES;
-import static org.apache.sentry.provider.file.PolicyFileConstants.GROUPS;
-import static org.apache.sentry.provider.file.PolicyFileConstants.ROLES;
-import static org.apache.sentry.provider.file.PolicyFileConstants.USERS;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Charsets;
+import com.google.common.base.Joiner;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
+import com.google.common.io.Files;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Charsets;
-import com.google.common.base.Joiner;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
-import com.google.common.io.Files;
+import static org.apache.sentry.provider.file.PolicyFileConstants.DATABASES;
+import static org.apache.sentry.provider.file.PolicyFileConstants.GROUPS;
+import static org.apache.sentry.provider.file.PolicyFileConstants.ROLES;
+import static org.apache.sentry.provider.file.PolicyFileConstants.USERS;
 
 /**
  * PolicyFile creator. Written specifically to be used with tests. Specifically
@@ -134,50 +132,6 @@ public class PolicyFile {
     LOGGER.info("Writing policy file to " + file + ":\n" + contents);
     Files.write(contents, file, Charsets.UTF_8);
 
-    String hiveServer2 = System.getProperty("sentry.e2etest.hiveServer2Type", "InternalHiveServer2");
-
-    //Currently policyOnHDFS is only supported for UnmanagedHiveServer, and global policy file is required to be on hdfs
-    if(hiveServer2.equals("UnmanagedHiveServer2")) {
-      String policyOnHDFS = System.getProperty("sentry.e2etest.hive.policyOnHDFS", "true");
-      if(policyOnHDFS.trim().equalsIgnoreCase("true") || file.getName().equalsIgnoreCase("sentry-provider.ini")){
-        String policyLocation = System.getProperty("sentry.e2etest.hive.policy.location", "/user/hive/sentry");
-        String policyFileLocation = policyLocation + "/" + file.getName();
-        LOGGER.info("Moving policy file to " + policyFileLocation);
-        String userKeytab = System.getProperty("sentry.e2etest.hive.policyOwnerKeytab");
-        String userPrincipal = System.getProperty("sentry.e2etest.hive.policyOwnerPrincipal");
-        Preconditions.checkNotNull(userKeytab);
-        Preconditions.checkNotNull(userPrincipal);
-        hdfsPut(file, policyFileLocation, userKeytab, userPrincipal);
-      }
-    }
-  }
-
-  private void hdfsPut(File file, String hdfsPath, String userKeytab, String userPrincipal) throws Exception {
-    String command, status;
-    Process p;
-
-    command = "kinit -kt " + userKeytab +  " " + userPrincipal;
-    p = Runtime.getRuntime().exec(command);
-    if(p.waitFor()!=0) {
-      throw new Exception("Setup incomplete. " + command + " FAILED");
-    }
-    else {
-      LOGGER.info("Command:" + command + " PASSED");
-    }
-
-    command = "hdfs dfs -rm " + hdfsPath;
-    p = Runtime.getRuntime().exec(command);
-    status = (p.waitFor()==0)?"PASSED":"FAILED";
-    LOGGER.warn("Command:" + command + " " + status);
-
-    command = "hdfs dfs -put " + file.getAbsolutePath() + " " + hdfsPath;
-    p = Runtime.getRuntime().exec(command);
-    if(p.waitFor()!=0) {
-      throw new Exception("Setup incomplete. " + command + " FAILED");
-    }
-    else {
-      LOGGER.info("Command:" + command + " PASSED");
-    }
   }
 
   private String getSection(String name, Map<String, String> mapping) {
