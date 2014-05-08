@@ -43,7 +43,7 @@ while [ $# -gt 0 ]; do    # Until you run out of parameters . . .
       echo Using hive-home $HIVE_HOME
       ;;
     *)
-      args+=($1)
+      args+=" $1"
       shift
       ;;
   esac
@@ -61,4 +61,4 @@ for f in ${SENTRY_HOME}/lib/*.jar; do
   HADOOP_CLASSPATH=${HADOOP_CLASSPATH}:${f}
 done
 export HADOOP_CLASSPATH
-${_HIVE_CMD} --service jar ${SENTRY_HOME}/lib/${_CMD_JAR} org.apache.sentry.SentryMain "${args[@]}"
+${_HIVE_CMD} --service jar ${SENTRY_HOME}/lib/${_CMD_JAR} org.apache.sentry.SentryMain ${args[@]}

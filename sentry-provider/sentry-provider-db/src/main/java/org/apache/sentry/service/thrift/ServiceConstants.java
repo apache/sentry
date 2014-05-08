@@ -17,13 +17,12 @@
  */
 package org.apache.sentry.service.thrift;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.security.sasl.Sasl;
-
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
+
+import javax.security.sasl.Sasl;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ServiceConstants {
 
@@ -41,7 +40,8 @@ public class ServiceConstants {
         .trimResults().omitEmptyStrings();
   }
   public static class ServiceArgs {
-    public static final String CONFIG_FILE = "--conf-file";
+    public static final String CONFIG_FILE_SHORT = "c";
+    public static final String CONFIG_FILE_LONG = "conffile";
   }
   public static class ServerConfig {
     public static final ImmutableMap<String, String> SASL_PROPERTIES = ServiceConstants.SASL_PROPERTIES;

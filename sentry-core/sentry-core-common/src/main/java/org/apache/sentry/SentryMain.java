@@ -40,16 +40,20 @@ public class SentryMain {
     Options options = new Options();
     options.addOption(HELP_SHORT, HELP_LONG, false, "Print this help text");
     options.addOption(null, COMMAND, true, "Command to run. Options: " + COMMANDS.keySet());
-    CommandLine commandLine = parser.parse(options, args);
+    //Ignore unrecognized options: service and config-tool options
+    CommandLine commandLine = parser.parse(options, args, true);
+
+    //Print sentry help only if commandName was not given,
+    // otherwise we assume the help is for the sub command
     String commandName = commandLine.getOptionValue(COMMAND);
-    if (commandName == null || commandLine.hasOption(HELP_SHORT) ||
-        commandLine.hasOption(HELP_LONG)) {
-      printHelp(options);
+    if (commandName == null && (commandLine.hasOption(HELP_SHORT) ||
+        commandLine.hasOption(HELP_LONG))) {
+      printHelp(options, null);
     }
+
     String commandClazz = COMMANDS.get(commandName);
     if (commandClazz == null) {
-      String msg = "Unknown command '" + commandName + "', options are: " + COMMANDS.keySet();
-      throw new IllegalArgumentException(msg);
+      printHelp(options, "Unknown command " + commandName + "\n");
     }
     Object command;
     try {
@@ -65,9 +69,11 @@ public class SentryMain {
     }
     ((Command)command).run(commandLine.getArgs());
   }
-  private static void printHelp(Options options) {
-    (new HelpFormatter()).printHelp("sentry --" + COMMAND + "=" + COMMANDS.keySet(),
-        options);
+  private static void printHelp(Options options, String msg) {
+    String sentry = "sentry";
+    if(msg != null)
+      sentry = msg + sentry;
+    (new HelpFormatter()).printHelp(sentry, options);
     System.exit(1);
   }
 }

@@ -18,25 +18,12 @@
 
 package org.apache.sentry.service.thrift;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.security.PrivilegedExceptionAction;
-import java.util.HashSet;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-
-import javax.security.auth.Subject;
-import javax.security.auth.kerberos.KerberosPrincipal;
-import javax.security.auth.login.LoginContext;
-import javax.security.auth.login.LoginException;
-
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Sets;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.GnuParser;
+import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.net.NetUtils;
@@ -56,8 +43,20 @@ import org.apache.thrift.transport.TTransportFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
+import javax.security.auth.Subject;
+import javax.security.auth.kerberos.KerberosPrincipal;
+import javax.security.auth.login.LoginContext;
+import javax.security.auth.login.LoginException;
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.security.PrivilegedExceptionAction;
+import java.util.HashSet;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
 public class SentryService implements Runnable {
 
@@ -264,15 +263,18 @@ public class SentryService implements Runnable {
     public void run(String[] args) throws Exception {
       CommandLineParser parser = new GnuParser();
       Options options = new Options();
-      options.addOption(null, ServiceConstants.ServiceArgs.CONFIG_FILE,
+      options.addOption(ServiceConstants.ServiceArgs.CONFIG_FILE_SHORT,
+          ServiceConstants.ServiceArgs.CONFIG_FILE_LONG,
           true, "Sentry Service configuration file");
       CommandLine commandLine = parser.parse(options, args);
       String configFileName = commandLine.getOptionValue(ServiceConstants.
-          ServiceArgs.CONFIG_FILE);
+          ServiceArgs.CONFIG_FILE_LONG);
       File configFile = null;
-      if (configFileName == null) {
-        throw new IllegalArgumentException("Usage: " + ServiceConstants.ServiceArgs.CONFIG_FILE +
-            " path/to/sentry-service.xml");
+      if (configFileName == null || commandLine.hasOption("h") || commandLine.hasOption("help")) {
+        // print usage
+          HelpFormatter formatter = new HelpFormatter();
+          formatter.printHelp("sentry --command service", options);
+          System.exit(-1);
       } else if(!((configFile = new File(configFileName)).isFile() && configFile.canRead())) {
         throw new IllegalArgumentException("Cannot read configuration file " + configFile);
       }

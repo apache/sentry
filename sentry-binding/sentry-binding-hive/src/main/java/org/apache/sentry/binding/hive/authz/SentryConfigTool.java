@@ -17,14 +17,6 @@
 
 package org.apache.sentry.binding.hive.authz;
 
-import java.security.CodeSource;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.Set;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -50,6 +42,14 @@ import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.provider.common.AuthorizationProvider;
+
+import java.security.CodeSource;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Set;
 
 public class SentryConfigTool {
   private String sentrySiteFile = null;
@@ -354,7 +354,7 @@ public class SentryConfigTool {
   // print usage
   private void usage(Options sentryOptions) {
     HelpFormatter formatter = new HelpFormatter();
-    formatter.printHelp("Sentry", sentryOptions);
+    formatter.printHelp("sentry --command config-tool", sentryOptions);
     System.exit(-1);
   }
 
@@ -469,7 +469,6 @@ public class SentryConfigTool {
         throw new ParseException("Must use -u with -e ");
       }
     } catch (ParseException e1) {
-      System.out.println("Argument parsing error: " + e1.getMessage());
       usage(sentryOptions);
     }
 
