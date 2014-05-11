@@ -33,6 +33,8 @@ public class SentryMain {
       .<String, String>builder()
       .put("service", "org.apache.sentry.service.thrift.SentryService$CommandImpl")
       .put("config-tool", "org.apache.sentry.binding.hive.authz.SentryConfigTool$CommandImpl")
+      .put("schema-tool",
+          "org.apache.sentry.provider.db.tools.SentrySchemaTool$CommandImpl")
       .build();
   public static void main(String[] args)
       throws Exception {

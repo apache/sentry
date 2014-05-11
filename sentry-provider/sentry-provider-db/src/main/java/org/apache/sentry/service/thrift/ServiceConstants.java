@@ -17,12 +17,13 @@
  */
 package org.apache.sentry.service.thrift;
 
-import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableMap;
-
-import javax.security.sasl.Sasl;
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.security.sasl.Sasl;
+
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableMap;
 
 public class ServiceConstants {
 
@@ -43,6 +44,7 @@ public class ServiceConstants {
     public static final String CONFIG_FILE_SHORT = "c";
     public static final String CONFIG_FILE_LONG = "conffile";
   }
+
   public static class ServerConfig {
     public static final ImmutableMap<String, String> SASL_PROPERTIES = ServiceConstants.SASL_PROPERTIES;
     /**
@@ -80,6 +82,9 @@ public class ServiceConstants {
     public static final String SENTRY_JAVAX_JDO_PROPERTY_PREFIX = SENTRY_DB_PROPERTY_PREFIX + "javax.jdo";
     public static final String SENTRY_DATANUCLEUS_PROPERTY_PREFIX = SENTRY_DB_PROPERTY_PREFIX + "datanucleus";
 
+    public static final String SENTRY_VERIFY_SCHEM_VERSION = "sentry.verify.schema.version";
+    public static final String SENTRY_VERIFY_SCHEM_VERSION_DEFAULT = "true";
+
     public static final ImmutableMap<String, String> SENTRY_STORE_DEFAULTS =
         ImmutableMap.<String, String>builder()
     .put("datanucleus.connectionPoolingType", "BoneCP")
@@ -87,8 +92,8 @@ public class ServiceConstants {
     .put("datanucleus.validateColumns", "false")
     .put("datanucleus.validateConstraints", "false")
     .put("datanucleus.storeManagerType", "rdbms")
-    .put("datanucleus.autoCreateSchema", "true")
-    .put("datanucleus.fixedDatastore", "false")
+        .put("datanucleus.autoCreateSchema", "false")
+        .put("datanucleus.fixedDatastore", "true")
     .put("datanucleus.autoStartMechanismMode", "checked")
     .put("datanucleus.transactionIsolation", "read-committed")
     .put("datanucleus.cache.level2", "false")

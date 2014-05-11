@@ -18,9 +18,14 @@
 
 package org.apache.sentry.provider.db.service.persistent;
 
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
-import com.google.common.io.Files;
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.fail;
+
+import java.io.File;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.model.db.AccessConstants;
@@ -36,13 +41,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.File;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.fail;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
+import com.google.common.io.Files;
 
 public class TestSentryStore {
 
@@ -53,6 +54,7 @@ public class TestSentryStore {
   public void setup() throws Exception {
     dataDir = new File(Files.createTempDir(), "sentry_policy_db");
     Configuration conf = new Configuration(false);
+    conf.set(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "false");
     conf.set(ServerConfig.SENTRY_STORE_JDBC_URL,
         "jdbc:derby:;databaseName=" + dataDir.getPath() + ";create=true");
     sentryStore = new SentryStore(conf);
@@ -285,4 +287,5 @@ public class TestSentryStore {
             newHashSet(groupName1, groupName2),
             new TSentryActiveRoleSet(false, new HashSet<String>()))));
   }
+
 }

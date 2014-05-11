@@ -156,6 +156,33 @@ limitations under the License.
         <version>${hive.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.apache.hive</groupId>
+        <artifactId>hive-beeline</artifactId>
+        <version>${hive.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-metastore</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-serde</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-common</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-serde</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-shims</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
         <groupId>org.apache.solr</groupId>
         <artifactId>solr-test-framework</artifactId>
         <version>${solr.version}</version>
@@ -468,6 +495,9 @@ limitations under the License.
                   <!-- README and test data with exact format -->
                   <exclude>README*</exclude>
                   <exclude>**/kv1.dat</exclude>
+                  <exclude>**/*.sql</exclude>
+                  <exclude>**/upgrade.*</exclude>
+                  <exclude>**/datanucleus.log</exclude>
                 </excludes>
               </configuration>
             </execution>

@@ -18,36 +18,9 @@
 
 package org.apache.sentry.provider.db.service.persistent;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.SetMultimap;
-import com.google.common.collect.Sets;
-import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.core.model.db.AccessConstants;
-import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
-import org.apache.sentry.provider.common.ProviderConstants;
-import org.apache.sentry.provider.db.SentryAlreadyExistsException;
-import org.apache.sentry.provider.db.SentryInvalidInputException;
-import org.apache.sentry.provider.db.SentryNoSuchObjectException;
-import org.apache.sentry.provider.db.service.model.MSentryGroup;
-import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
-import org.apache.sentry.provider.db.service.model.MSentryRole;
-import org.apache.sentry.provider.db.service.thrift.TSentryActiveRoleSet;
-import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
-import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
-import org.apache.sentry.provider.db.service.thrift.TSentryRole;
-import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
-import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
+import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_JOINER;
+import static org.apache.sentry.provider.common.ProviderConstants.KV_JOINER;
 
-import javax.jdo.JDOHelper;
-import javax.jdo.PersistenceManager;
-import javax.jdo.PersistenceManagerFactory;
-import javax.jdo.Query;
-import javax.jdo.Transaction;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -56,8 +29,41 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_JOINER;
-import static org.apache.sentry.provider.common.ProviderConstants.KV_JOINER;
+import javax.jdo.JDODataStoreException;
+import javax.jdo.JDOHelper;
+import javax.jdo.PersistenceManager;
+import javax.jdo.PersistenceManagerFactory;
+import javax.jdo.Query;
+import javax.jdo.Transaction;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.sentry.core.model.db.AccessConstants;
+import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
+import org.apache.sentry.provider.common.ProviderConstants;
+import org.apache.sentry.provider.db.SentryAccessDeniedException;
+import org.apache.sentry.provider.db.SentryAlreadyExistsException;
+import org.apache.sentry.provider.db.SentryInvalidInputException;
+import org.apache.sentry.provider.db.SentryNoSuchObjectException;
+import org.apache.sentry.provider.db.service.model.MSentryGroup;
+import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
+import org.apache.sentry.provider.db.service.model.MSentryRole;
+import org.apache.sentry.provider.db.service.model.MSentryVersion;
+import org.apache.sentry.provider.db.service.thrift.TSentryActiveRoleSet;
+import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
+import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
+import org.apache.sentry.provider.db.service.thrift.TSentryRole;
+import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
+import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
+import org.datanucleus.store.rdbms.exceptions.MissingTableException;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.SetMultimap;
+import com.google.common.collect.Sets;
 
 /**
  * SentryStore is the data access object for Sentry data. Strings
@@ -77,7 +83,8 @@ public class SentryStore {
   private long commitSequenceId;
   private final PersistenceManagerFactory pmf;
 
-  public SentryStore(Configuration conf) {
+  public SentryStore(Configuration conf) throws SentryNoSuchObjectException,
+      SentryAccessDeniedException {
     commitSequenceId = 0;
     Properties prop = new Properties();
     prop.putAll(ServerConfig.SENTRY_STORE_DEFAULTS);
@@ -99,7 +106,35 @@ public class SentryStore {
         prop.setProperty(key, entry.getValue());
       }
     }
+
+    boolean checkSchemaVersion = conf.get(
+        ServerConfig.SENTRY_VERIFY_SCHEM_VERSION,
+        ServerConfig.SENTRY_VERIFY_SCHEM_VERSION_DEFAULT).equalsIgnoreCase(
+        "true");
+    if (!checkSchemaVersion) {
+      prop.setProperty("datanucleus.autoCreateSchema", "true");
+      prop.setProperty("datanucleus.fixedDatastore", "false");
+    }
     pmf = JDOHelper.getPersistenceManagerFactory(prop);
+    verifySentryStoreSchema(conf, checkSchemaVersion);
+  }
+
+  // ensure that the backend DB schema is set
+  private void verifySentryStoreSchema(Configuration serverConf,
+      boolean checkVersion)
+      throws SentryNoSuchObjectException, SentryAccessDeniedException {
+    if (!checkVersion) {
+      setSentryVersion(SentryStoreSchemaInfo.getSentryVersion(),
+          "Schema version set implicitly");
+    } else {
+      String currentVersion = getSentryVersion();
+      if (!SentryStoreSchemaInfo.getSentryVersion().equals(currentVersion)) {
+        throw new SentryAccessDeniedException(
+            "The Sentry store schema version " + currentVersion
+                + " is different from distribution version "
+                + SentryStoreSchemaInfo.getSentryVersion());
+      }
+    }
   }
 
   public synchronized void stop() {
@@ -777,5 +812,77 @@ public class SentryStore {
       return null;
     }
     return s.trim();
+  }
+
+  public String getSentryVersion() throws SentryNoSuchObjectException,
+      SentryAccessDeniedException {
+    MSentryVersion mVersion = getMSentryVersion();
+    return mVersion.getSchemaVersion();
+  }
+
+  public void setSentryVersion(String newVersion, String verComment)
+      throws SentryNoSuchObjectException, SentryAccessDeniedException {
+    MSentryVersion mVersion;
+    boolean rollbackTransaction = true;
+    PersistenceManager pm = null;
+
+    try {
+      mVersion = getMSentryVersion();
+      if (newVersion.equals(mVersion.getSchemaVersion())) {
+        // specified version already in there
+        return;
+      }
+    } catch (SentryNoSuchObjectException e) {
+      // if the version doesn't exist, then create it
+      mVersion = new MSentryVersion();
+    }
+    mVersion.setSchemaVersion(newVersion);
+    mVersion.setVersionComment(verComment);
+    try {
+      pm = openTransaction();
+      pm.makePersistent(mVersion);
+      rollbackTransaction = false;
+      commitTransaction(pm);
+    } finally {
+      if (rollbackTransaction) {
+        rollbackTransaction(pm);
+      }
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private MSentryVersion getMSentryVersion()
+      throws SentryNoSuchObjectException, SentryAccessDeniedException {
+    boolean rollbackTransaction = true;
+    PersistenceManager pm = null;
+    try {
+      pm = openTransaction();
+      Query query = pm.newQuery(MSentryVersion.class);
+      List<MSentryVersion> mSentryVersions = (List<MSentryVersion>) query
+          .execute();
+      pm.retrieveAll(mSentryVersions);
+      rollbackTransaction = false;
+      commitTransaction(pm);
+      if (mSentryVersions.isEmpty()) {
+        throw new SentryNoSuchObjectException("No matching version found");
+      }
+      if (mSentryVersions.size() > 1) {
+        throw new SentryAccessDeniedException(
+            "Metastore contains multiple versions");
+      }
+      return mSentryVersions.get(0);
+    } catch (JDODataStoreException e) {
+      if (e.getCause() instanceof MissingTableException) {
+        throw new SentryAccessDeniedException("Version table not found. "
+            + "The sentry store is not set or corrupt ");
+      } else {
+        throw e;
+      }
+    } finally {
+      if (rollbackTransaction) {
+        rollbackTransaction(pm);
+      }
+    }
+
   }
 }

@@ -18,8 +18,23 @@
 
 package org.apache.sentry.service.thrift;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
+import java.net.ServerSocket;
+import java.security.PrivilegedExceptionAction;
+import java.util.HashSet;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+
+import javax.security.auth.Subject;
+import javax.security.auth.kerberos.KerberosPrincipal;
+import javax.security.auth.login.LoginContext;
+import javax.security.auth.login.LoginException;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.GnuParser;
@@ -43,20 +58,8 @@ import org.apache.thrift.transport.TTransportFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.security.auth.Subject;
-import javax.security.auth.kerberos.KerberosPrincipal;
-import javax.security.auth.login.LoginContext;
-import javax.security.auth.login.LoginException;
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.security.PrivilegedExceptionAction;
-import java.util.HashSet;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Sets;
 
 public class SentryService implements Runnable {
 
@@ -257,9 +260,27 @@ public class SentryService implements Runnable {
     }
     throw new IllegalStateException("Unable to find a port after 1000 attempts");
   }
+
+  @SuppressWarnings("deprecation")
+  public static Configuration loadConfig(String configFileName)
+      throws MalformedURLException {
+    File configFile = null;
+    if (configFileName == null) {
+      throw new IllegalArgumentException("Usage: "
+          + ServiceConstants.ServiceArgs.CONFIG_FILE_LONG
+          + " path/to/sentry-service.xml");
+    } else if (!((configFile = new File(configFileName)).isFile() && configFile
+        .canRead())) {
+      throw new IllegalArgumentException("Cannot read configuration file "
+          + configFile);
+    }
+    Configuration conf = new Configuration(false);
+    conf.addResource(configFile.toURL());
+    return conf;
+  }
+
   public static class CommandImpl implements Command {
     @Override
-    @SuppressWarnings("deprecation")
     public void run(String[] args) throws Exception {
       CommandLineParser parser = new GnuParser();
       Options options = new Options();
@@ -278,9 +299,8 @@ public class SentryService implements Runnable {
       } else if(!((configFile = new File(configFileName)).isFile() && configFile.canRead())) {
         throw new IllegalArgumentException("Cannot read configuration file " + configFile);
       }
-      Configuration conf = new Configuration(false);
-      conf.addResource(configFile.toURL());
-      final SentryService server = new SentryService(conf);
+      Configuration serverConf = loadConfig(configFileName);
+      final SentryService server = new SentryService(serverConf);
       server.start();
       Runtime.getRuntime().addShutdownHook(new Thread() {
         @Override
