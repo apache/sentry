@@ -23,7 +23,24 @@ if [[ -z $SENTRY_HOME ]] ; then
   export SENTRY_HOME=$myhome
 fi
 
-_HIVE_CMD=hive
+# check for hadoop in the path
+HADOOP_IN_PATH=`which hadoop 2>/dev/null`
+if [ -f ${HADOOP_IN_PATH} ]; then
+  HADOOP_DIR=`dirname "$HADOOP_IN_PATH"`/..
+fi
+# HADOOP_HOME env variable overrides hadoop in the path
+HADOOP_HOME=${HADOOP_HOME:-${HADOOP_PREFIX:-$HADOOP_DIR}}
+if [ "$HADOOP_HOME" == "" ]; then
+  echo "Cannot find hadoop installation: \$HADOOP_HOME or \$HADOOP_PREFIX must be set or hadoop must be in the path";
+  exit 4;
+fi
+
+HADOOP=$HADOOP_HOME/bin/hadoop
+if [ ! -f ${HADOOP} ]; then
+  echo "Cannot find hadoop installation: \$HADOOP_HOME or \$HADOOP_PREFIX must be set or hadoop must be in the path";
+  exit 4;
+fi
+
 #check to see if the hive conf dir is given as an optional argument
 args=()
 while [ $# -gt 0 ]; do    # Until you run out of parameters . . .
@@ -49,16 +66,19 @@ while [ $# -gt 0 ]; do    # Until you run out of parameters . . .
   esac
 done
 
-if [[ -z "$HIVE_HOME" ]]
-then
-  echo "HIVE_HOME must be defined either as an env variable or by the --hive-home argument"
-  exit 1
-fi
-
 _CMD_JAR=sentry-core-common-*.jar
-_HIVE_CMD=${HIVE_HOME}/bin/hive
 for f in ${SENTRY_HOME}/lib/*.jar; do
   HADOOP_CLASSPATH=${HADOOP_CLASSPATH}:${f}
 done
 export HADOOP_CLASSPATH
-${_HIVE_CMD} --service jar ${SENTRY_HOME}/lib/${_CMD_JAR} org.apache.sentry.SentryMain ${args[@]}
+if [[ -z "$HIVE_HOME" ]]
+then
+  for f in ${SENTRY_HOME}/lib/server/*.jar; do
+    HADOOP_CLASSPATH=${HADOOP_CLASSPATH}:${f}
+  done
+  exec $HADOOP jar ${SENTRY_HOME}/lib/${_CMD_JAR} org.apache.sentry.SentryMain ${args[@]}
+else
+  _HIVE_CMD=${HIVE_HOME}/bin/hive
+  ${_HIVE_CMD} --service jar ${SENTRY_HOME}/lib/${_CMD_JAR} org.apache.sentry.SentryMain ${args[@]}
+fi
+

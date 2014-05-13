@@ -62,13 +62,6 @@
       </includes>
       <outputDirectory>/</outputDirectory>
     </fileSet>
-    <fileSet>
-      <directory>${project.parent.basedir}/sentry-provider/sentry-provider-db/src/main/resources</directory>
-      <includes>
-        <include>**/*</include>
-      </includes>
-      <outputDirectory>scripts/sentrystore/upgrade</outputDirectory>
-    </fileSet>
   </fileSets>
 
 </assembly>

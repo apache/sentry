@@ -31,7 +31,6 @@
 
   <baseDirectory>apache-sentry-${project.version}-bin</baseDirectory>
 
-
   <dependencySets>
     <dependencySet>
       <outputDirectory>lib</outputDirectory>
@@ -41,9 +40,28 @@
       <useTransitiveFiltering>true</useTransitiveFiltering>
       <excludes>
         <exclude>org.slf4j:*</exclude>
+        <exclude>org.datanucleus:*</exclude>
+        <exclude>com.jolbox:bonecp</exclude>
+        <exclude>org.apache.hive:hive-beeline</exclude>
+        <exclude>org.apache.derby:derby</exclude>
       </excludes>
     </dependencySet>
+    <dependencySet>
+      <outputDirectory>lib/server</outputDirectory>
+      <unpack>false</unpack>
+      <useProjectArtifact>false</useProjectArtifact>
+      <useStrictFiltering>true</useStrictFiltering>
+      <useTransitiveFiltering>true</useTransitiveFiltering>
+      <includes>
+        <include>org.datanucleus:*</include>
+        <include>com.jolbox:bonecp</include>
+        <include>org.apache.hive:hive-beeline</include>
+        <include>org.apache.derby:derby</include>
+        <include>org.apache.derby:derby</include>
+      </includes>
+    </dependencySet>
   </dependencySets>
+
   <fileSets>
     <fileSet>
       <directory>${project.parent.basedir}</directory>
