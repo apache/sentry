@@ -66,6 +66,7 @@ public class TestDatabaseProvider extends AbstractTestWithHiveServer {
     dbDir = new File(Files.createTempDir(), "sentry_policy_db");
     properties.put(ServerConfig.SENTRY_STORE_JDBC_URL,
         "jdbc:derby:;databaseName=" + dbDir.getPath() + ";create=true");
+    properties.put(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "false");
     for (Map.Entry<String, String> entry : properties.entrySet()) {
       conf.set(entry.getKey(), entry.getValue());
     }
