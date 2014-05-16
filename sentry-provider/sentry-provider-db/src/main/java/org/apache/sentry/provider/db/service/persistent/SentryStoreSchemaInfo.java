@@ -97,7 +97,7 @@ public class SentryStoreSchemaInfo {
   }
 
   /**
-   * Find the directory of metastore scripts
+   * Find the directory of sentry store scripts
    *
    * @return
    */

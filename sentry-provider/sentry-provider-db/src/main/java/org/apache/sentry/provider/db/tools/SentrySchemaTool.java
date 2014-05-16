@@ -46,7 +46,6 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.io.output.NullOutputStream;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hive.beeline.BeeLine;
 import org.apache.sentry.Command;
 import org.apache.sentry.SentryUserException;
@@ -127,15 +126,15 @@ public class SentrySchemaTool {
    * @throws MetaException
    */
   public void showInfo() throws SentryUserException {
-    Connection metastoreConn = getConnectionToMetastore(true);
+    Connection sentryStoreConn = getConnectionToMetastore(true);
     System.out.println("Sentry distribution version:\t "
         + SentryStoreSchemaInfo.getSentryVersion());
     System.out.println("SentryStore schema version:\t "
-        + getMetaStoreSchemaVersion(metastoreConn));
+        + getMetaStoreSchemaVersion(sentryStoreConn));
   }
 
-  // read schema version from metastore
-  private String getMetaStoreSchemaVersion(Connection metastoreConn)
+  // read schema version from sentry store
+  private String getMetaStoreSchemaVersion(Connection sentryStoreConn)
       throws SentryUserException {
     String versionQuery;
     if (SentrySchemaHelper.getDbCommandParser(dbType).needsQuotedIdentifier()) {
@@ -144,31 +143,31 @@ public class SentrySchemaTool {
       versionQuery = "select t.SCHEMA_VERSION from SENTRY_VERSION t";
     }
     try {
-      Statement stmt = metastoreConn.createStatement();
+      Statement stmt = sentryStoreConn.createStatement();
       ResultSet res = stmt.executeQuery(versionQuery);
       if (!res.next()) {
-        throw new SentryUserException("Didn't find version data in metastore");
+        throw new SentryUserException("Didn't find version data in sentry store");
       }
       String currentSchemaVersion = res.getString(1);
-      metastoreConn.close();
+      sentryStoreConn.close();
       return currentSchemaVersion;
     } catch (SQLException e) {
       throw new SentryUserException("Failed to get schema version.", e);
     }
   }
 
-  // test the connection metastore using the config property
+  // test the connection sentry store using the config property
   private void testConnectionToMetastore() throws SentryUserException {
     Connection conn = getConnectionToMetastore(true);
     try {
       conn.close();
     } catch (SQLException e) {
-      throw new SentryUserException("Failed to close metastore connection", e);
+      throw new SentryUserException("Failed to close sentry store connection", e);
     }
   }
 
   /***
-   * get JDBC connection to metastore db
+   * get JDBC connection to sentry store db
    *
    * @param printInfo print connection parameters
    * @return
@@ -203,7 +202,7 @@ public class SentrySchemaTool {
   }
 
   /**
-   * check if the current schema version in metastore matches the Hive version
+   * check if the current schema version in sentry store matches the Hive version
    * @throws MetaException
    */
   public void verifySchemaVersion() throws SentryUserException {
@@ -222,14 +221,14 @@ public class SentrySchemaTool {
   }
 
   /**
-   * Perform metastore schema upgrade. extract the current schema version from metastore
+   * Perform sentry store schema upgrade. extract the current schema version from sentry store
    * @throws MetaException
    */
   public void doUpgrade() throws SentryUserException {
     String fromVersion = getMetaStoreSchemaVersion(getConnectionToMetastore(false));
     if (fromVersion == null || fromVersion.isEmpty()) {
       throw new SentryUserException(
-          "Schema version not stored in the metastore. "
+          "Schema version not stored in the sentry store. "
               +
           "Metastore schema is too old or corrupt. Try specifying the version manually");
     }
@@ -237,10 +236,10 @@ public class SentrySchemaTool {
   }
 
   /**
-   * Perform metastore schema upgrade
+   * Perform sentry store schema upgrade
    *
    * @param fromSchemaVer
-   *          Existing version of the metastore. If null, then read from the metastore
+   *          Existing version of the sentry store. If null, then read from the sentry store
    * @throws MetaException
    */
   public void doUpgrade(String fromSchemaVer) throws SentryUserException {
@@ -252,7 +251,7 @@ public class SentrySchemaTool {
     List<String> upgradeScripts =
         SentryStoreSchemaInfo.getUpgradeScripts(fromSchemaVer);
     testConnectionToMetastore();
-    System.out.println("Starting upgrade metastore schema from version " +
+    System.out.println("Starting upgrade sentry store schema from version " +
  fromSchemaVer + " to "
         + SentryStoreSchemaInfo.getSentrySchemaVersion());
     String scriptDir = SentryStoreSchemaInfo.getSentryStoreScriptDir();
@@ -274,7 +273,7 @@ public class SentrySchemaTool {
   }
 
   /**
-   * Initialize the metastore schema to current version
+   * Initialize the sentry store schema to current version
    *
    * @throws MetaException
    */
@@ -286,7 +285,7 @@ public class SentrySchemaTool {
   }
 
   /**
-   * Initialize the metastore schema
+   * Initialize the sentry store schema
    *
    * @param toVersion
    *          If null then current hive version is used
@@ -294,7 +293,7 @@ public class SentrySchemaTool {
    */
   public void doInit(String toVersion) throws SentryUserException {
     testConnectionToMetastore();
-    System.out.println("Starting metastore schema initialization to " + toVersion);
+    System.out.println("Starting sentry store schema initialization to " + toVersion);
 
     String initScriptDir = SentryStoreSchemaInfo.getSentryStoreScriptDir();
     String initScriptFile = SentryStoreSchemaInfo.generateInitFileName(toVersion);
@@ -357,7 +356,7 @@ public class SentrySchemaTool {
     return sb.toString();
   }
 
-  // run beeline on the given metastore scrip, flatten the nested scripts into single file
+  // run beeline on the given sentry store scrip, flatten the nested scripts into single file
   private void runBeeLine(String scriptDir, String scriptFile) throws IOException {
     NestedScriptParser dbCommandParser =
         SentrySchemaHelper.getDbCommandParser(dbType);
