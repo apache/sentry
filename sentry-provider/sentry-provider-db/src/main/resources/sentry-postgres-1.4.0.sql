@@ -30,10 +30,10 @@ CREATE TABLE "SENTRY_DB_PRIVILEGE" (
   "PRIVILEGE_NAME" character varying(128) NOT NULL,
   "PRIVILEGE_SCOPE" character varying(32) NOT NULL,
   "SERVER_NAME" character varying(128) NOT NULL,
-  "DATABASE_NAME" character varying(128) DEFAULT NULL::character varying,
+  "DB_NAME" character varying(128) DEFAULT NULL::character varying,
   "TABLE_NAME" character varying(128) DEFAULT NULL::character varying,
   "URI" character varying(4000) DEFAULT NULL::character varying,
-  "PRIVILEGE" character varying(128) NOT NULL,
+  "ACTION" character varying(128) NOT NULL,
   "CREATE_TIME" BIGINT NOT NULL,
   "GRANTOR_PRINCIPAL" VARCHAR(128) NOT NULL
 );
@@ -42,7 +42,7 @@ CREATE TABLE "SENTRY_ROLE" (
   "ROLE_ID" BIGINT  NOT NULL,
   "ROLE_NAME" character varying(128) NOT NULL,
   "CREATE_TIME" BIGINT NOT NULL,
-  "ROLE_OWNER" character varying(128) NOT NULL
+  "GRANTOR_PRINCIPAL" character varying(128) NOT NULL
 );
 
 CREATE TABLE "SENTRY_GROUP" (
