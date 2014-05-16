@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.hadoop.hive.metastore.HiveMetaException;
 import org.apache.sentry.SentryUserException;
 
 public class SentryStoreSchemaInfo {

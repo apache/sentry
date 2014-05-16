@@ -24,6 +24,7 @@ public class ProviderBackendContext {
 
   private boolean allowPerDatabase;
   private ImmutableList<PrivilegeValidator> validators;
+  private Object bindingHandle;
 
   public ProviderBackendContext() {
     validators = ImmutableList.of();
@@ -47,4 +48,13 @@ public class ProviderBackendContext {
     }
     this.validators = validators;
   }
+
+  public Object getBindingHandle() {
+    return bindingHandle;
+  }
+
+  public void setBindingHandle(Object bindingHandle) {
+    this.bindingHandle = bindingHandle;
+  }
+
 }
