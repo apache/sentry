@@ -109,6 +109,7 @@ public abstract class SentryServiceIntegrationBase extends KerberosSecurityTestc
       LOGGER.info("Stopped KDC");
       conf.set(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_NONE);
     }
+    conf.set(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "false");
     conf.set(ServerConfig.ADMIN_GROUPS, ADMIN_GROUP);
     conf.set(ServerConfig.RPC_ADDRESS, SERVER_HOST);
     conf.set(ServerConfig.RPC_PORT, String.valueOf(0));
