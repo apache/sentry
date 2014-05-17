@@ -16,18 +16,21 @@
  */
 package org.apache.sentry.tests.e2e.hive.hiveserver;
 
+import com.google.common.base.Strings;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.concurrent.TimeoutException;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
-
-import com.google.common.base.Strings;
-
 public abstract class AbstractHiveServer implements HiveServer {
+  private static final Logger LOGGER = LoggerFactory.getLogger(InternalHiveServer.class);
+
 
   private static final String LINK_FAILURE_SQL_STATE = "08S01";
 
@@ -40,6 +43,7 @@ public abstract class AbstractHiveServer implements HiveServer {
     this.configuration = configuration;
     this.hostname = hostname;
     this.port = port;
+    LOGGER.info("Hive Server2 configured on host: " + hostname + " port:" + port);
   }
 
   @Override

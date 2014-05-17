@@ -17,14 +17,10 @@ package org.apache.hadoop.hive.ql.exec;
  * limitations under the License.
  */
 
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
+import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
+import com.google.common.collect.Iterables;
+import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.SentryHiveConstants;
@@ -49,22 +45,21 @@ import org.apache.sentry.SentryUserException;
 import org.apache.sentry.binding.hive.authz.HiveAuthzBinding;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
-import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Subject;
-import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
+import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
+import org.apache.sentry.provider.db.service.thrift.TSentryRole;
 import org.apache.sentry.service.thrift.SentryServiceClientFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Splitter;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Serializable;
+import java.util.List;
+import java.util.Set;
 
-// TODO remove this suppress
-@SuppressWarnings("unused")
 public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable {
   private static final Logger LOG = LoggerFactory
       .getLogger(SentryGrantRevokeTask.class);
@@ -129,7 +124,7 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
             server, work.getRevokeDesc());
       }
       if (work.getShowGrantDesc() != null) {
-        return processShowGrantDDL(conf, console, subject.getName(), subjectGroups,
+        return processShowGrantDDL(conf, console, sentryClient, subject.getName(), subjectGroups,
             work.getShowGrantDesc());
       }
       if (work.getGrantRevokeRoleDDL() != null) {
@@ -171,8 +166,7 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
     this.subjectGroups = subjectGroups;
   }
 
-  @VisibleForTesting
-  static int processRoleDDL(HiveConf conf, LogHelper console,
+  private int processRoleDDL(HiveConf conf, LogHelper console,
       SentryPolicyServiceClient sentryClient, String subject,
       Set<String> subjectGroups, HiveAuthzBinding hiveAuthzBinding, RoleDDLDesc desc)
           throws SentryUserException {
@@ -190,27 +184,21 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
         sentryClient.dropRole(subject, subjectGroups, name);
         return RETURN_CODE_SUCCESS;
       } else if (operation.equals(RoleDDLDesc.RoleOperation.SHOW_ROLE_GRANT)) {
+        Set<TSentryRole> roles;
         PrincipalType principalType = desc.getPrincipalType();
         if (principalType != PrincipalType.GROUP) {
           String msg = SentryHiveConstants.GRANT_REVOKE_NOT_SUPPORTED_FOR_PRINCIPAL + principalType;
           throw new HiveException(msg);
         }
-        throw new AssertionError("TODO");
-        // TODO once retrieval API is implemented this can be implemented
-//        List<String> roles = sentryClient.getRoles(name);
-//        if (!roles.isEmpty()) {
-//          Path resFile = new Path(desc.getResFile());
-//          FileSystem fs = resFile.getFileSystem(conf);
-//          outStream = fs.create(resFile);
-//          for (String role : roles) {
-//            outStream.writeBytes("role name:" + role);
-//            outStream.write(terminator);
-//          }
-//          outStream = close(outStream);
-//        }
-//        return RETURN_CODE_SUCCESS;
-      } else {
-        throw new HiveException("Unkown role operation "
+        roles = sentryClient.listRolesByGroupName(subject, subjectGroups, desc.getName() );
+        writeToFile(writeRoleGrantsInfo(roles), desc.getResFile());
+        return RETURN_CODE_SUCCESS;
+      } else if(operation.equals(RoleDDLDesc.RoleOperation.SHOW_ROLES)) {
+      Set<TSentryRole> roles = sentryClient.listRoles(subject, subjectGroups);
+      writeToFile(writeRolesInfo(roles), desc.getResFile());
+      return RETURN_CODE_SUCCESS;
+    } else {
+        throw new HiveException("Unknown role operation "
             + operation.getOperationName());
       }
     } catch (HiveException e) {
@@ -220,26 +208,25 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
       LOG.warn(msg, e);
       console.printError(msg);
       return RETURN_CODE_FAILURE;
-//    } catch (IOException e) {
-//      String msg = "IO Error in role operation " + e.getMessage();
-//      LOG.info(msg, e);
-//      console.printError(msg);
-//      return RETURN_CODE_FAILURE;
+    } catch (IOException e) {
+      String msg = "IO Error in role operation " + e.getMessage();
+      LOG.info(msg, e);
+      console.printError(msg);
+      return RETURN_CODE_FAILURE;
     } finally {
       closeQuiet(outStream);
     }
   }
 
-  @VisibleForTesting
-  static int processGrantDDL(HiveConf conf, LogHelper console,
+  private int processGrantDDL(HiveConf conf, LogHelper console,
       SentryPolicyServiceClient sentryClient, String subject,
       Set<String> subjectGroups, String server, GrantDesc desc) throws SentryUserException {
     return processGrantRevokeDDL(console, sentryClient, subject, subjectGroups,
         server, true, desc.getPrincipals(), desc.getPrivileges(), desc.getPrivilegeSubjectDesc());
   }
 
-  @VisibleForTesting
-  static int processRevokeDDL(HiveConf conf, LogHelper console,
+
+  private int processRevokeDDL(HiveConf conf, LogHelper console,
       SentryPolicyServiceClient sentryClient, String subject,
       Set<String> subjectGroups, String server, RevokeDesc desc) throws SentryUserException {
     return processGrantRevokeDDL(console, sentryClient, subject, subjectGroups,
@@ -247,103 +234,47 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
         desc.getPrivilegeSubjectDesc());
   }
 
-  @VisibleForTesting
-  static int processShowGrantDDL(HiveConf conf, LogHelper console, String subject,
-      Set<String> subjectGroups, ShowGrantDesc desc) {
-    DataOutputStream outStream = null;
+  private int processShowGrantDDL(HiveConf conf, LogHelper console, SentryPolicyServiceClient sentryClient,
+      String subject, Set<String> subjectGroups, ShowGrantDesc desc) throws SentryUserException{
+    PrincipalDesc principalDesc = desc.getPrincipalDesc();
+    PrivilegeObjectDesc hiveObjectDesc = desc.getHiveObj();
+    String principalName = principalDesc.getName();
+
+    Set<TSentryPrivilege> privileges;
+
     try {
-      Path resFile = new Path(desc.getResFile());
-      FileSystem fs = resFile.getFileSystem(conf);
-      outStream = fs.create(resFile);
-      PrincipalDesc principalDesc = desc.getPrincipalDesc();
-      PrivilegeObjectDesc hiveObjectDesc = desc.getHiveObj();
-      String principalName = principalDesc.getName();
-      List<String> columns = desc.getColumns();
-      if (columns != null && !columns.isEmpty()) {
-        throw new HiveException(SentryHiveConstants.COLUMN_PRIVS_NOT_SUPPORTED);
-      }
       if (hiveObjectDesc == null) {
-        // TDOD get users from somewhere?
-        List<String> users = Collections.emptyList();
-        if (users != null && users.size() > 0) {
-          boolean first = true;
-          Collections.sort(users);
-          for (String usr : users) {
-            if (!first) {
-              outStream.write(terminator);
-            } else {
-              first = false;
-            }
-            // TODO write grant info
-          }
-        }
+        privileges = sentryClient.listPrivilegesByRoleName(subject, subjectGroups, principalName);
+        writeToFile(writeGrantInfo(privileges, principalName), desc.getResFile());
+        return RETURN_CODE_SUCCESS;
       } else {
-        if (hiveObjectDesc.getPartSpec() != null) {
-          throw new HiveException(SentryHiveConstants.PARTITION_PRIVS_NOT_SUPPORTED);
-        }
-        String obj = hiveObjectDesc.getObject();
-        String dbName = null;
-        String tableName = null;
-        if (hiveObjectDesc.getTable()) {
-          DatabaseTable dbTable = parseDBTable(obj);
-          dbName = dbTable.getDatabase();
-          tableName = dbTable.getTable();
-        } else {
-          dbName = hiveObjectDesc.getObject();
-        }
-        if (hiveObjectDesc.getTable()) {
-          // show table level privileges
-          // TODO
-          List<String> tbls = Collections.emptyList();
-          if (tbls != null && tbls.size() > 0) {
-            boolean first = true;
-            Collections.sort(tbls);
-            for (String tbl : tbls) {
-              if (!first) {
-                outStream.write(terminator);
-              } else {
-                first = false;
-              }
-              // TODO write grant info
-            }
-          }
-        } else {
-          // show database level privileges
-          // TODO
-          List<String> dbs = Collections.emptyList();
-          if (dbs != null && dbs.size() > 0) {
-            boolean first = true;
-            Collections.sort(dbs);
-            for (String db : dbs) {
-              if (!first) {
-                outStream.write(terminator);
-              } else {
-                first = false;
-              }
-              // TODO write grant info
-            }
-          }
-        }
+        throw new AssertionError("TODO: SHOW GRANT role <roleName> on <objectType> <privilegeLevel>");
       }
-      outStream = close(outStream);
-    } catch (HiveException e) {
-      String msg = "Error in show grant operation " + e.getMessage();
-      LOG.warn(msg, e);
-      console.printError(msg);
-      return RETURN_CODE_FAILURE;
     } catch (IOException e) {
       String msg = "IO Error in show grant " + e.getMessage();
       LOG.info(msg, e);
       console.printError(msg);
       return RETURN_CODE_FAILURE;
-    } finally {
-      closeQuiet(outStream);
     }
-    return RETURN_CODE_SUCCESS;
+
+  }
+  private void writeToFile(String data, String file) throws IOException {
+    Path resFile = new Path(file);
+    FileSystem fs = resFile.getFileSystem(conf);
+    FSDataOutputStream out = fs.create(resFile);
+    try {
+      if (data != null && !data.isEmpty()) {
+        OutputStreamWriter writer = new OutputStreamWriter(out, "UTF-8");
+        writer.write(data);
+        writer.write((char) terminator);
+        writer.flush();
+      }
+    } finally {
+      closeQuiet(out);
+    }
   }
 
-  @VisibleForTesting
-  static int processGrantRevokeRoleDDL(HiveConf conf, LogHelper console,
+  private int processGrantRevokeRoleDDL(HiveConf conf, LogHelper console,
       SentryPolicyServiceClient sentryClient, String subject, Set<String> subjectGroups,
       GrantRevokeRoleDDL desc) throws SentryUserException {
     try {
@@ -372,6 +303,70 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
       return RETURN_CODE_FAILURE;
     }
     return RETURN_CODE_SUCCESS;
+  }
+
+  static String writeGrantInfo(Set<TSentryPrivilege> privileges, String roleName) {
+    if (privileges == null || privileges.isEmpty()) {
+      return "";
+    }
+    StringBuilder builder = new StringBuilder();
+
+    for (TSentryPrivilege privilege : privileges) {
+
+      appendNonNull(builder, privilege.getDbName(), true);
+      appendNonNull(builder, privilege.getTableName());
+      appendNonNull(builder, null);//getPartValues()
+      appendNonNull(builder, null);//getColumnName()
+      appendNonNull(builder, roleName);//getPrincipalName()
+      appendNonNull(builder, "ROLE");//getPrincipalType()
+      appendNonNull(builder, privilege.getAction());
+      appendNonNull(builder, false);//isGrantOption()
+      appendNonNull(builder, privilege.getCreateTime() * 1000L);
+      appendNonNull(builder, privilege.getGrantorPrincipal());
+    }
+    LOG.info("builder.toString(): " + builder.toString());
+    return builder.toString();
+  }
+
+  static String writeRoleGrantsInfo(Set<TSentryRole> roleGrants) {
+    if (roleGrants == null || roleGrants.isEmpty()) {
+      return "";
+    }
+    StringBuilder builder = new StringBuilder();
+    for (TSentryRole roleGrant : roleGrants) {
+      appendNonNull(builder, roleGrant.getRoleName(), true);
+      appendNonNull(builder, false);//isGrantOption()
+      appendNonNull(builder, null);//roleGrant.getGrantTime() * 1000L
+      appendNonNull(builder, roleGrant.getGrantorPrincipal());
+    }
+    return builder.toString();
+  }
+
+  static String writeRolesInfo(Set<TSentryRole> roles) {
+    if (roles == null || roles.isEmpty()) {
+      return "";
+    }
+    StringBuilder builder = new StringBuilder();
+    for (TSentryRole roleGrant : roles) {
+      appendNonNull(builder, roleGrant.getRoleName(), true);
+    }
+    return builder.toString();
+  }
+
+  static StringBuilder appendNonNull(StringBuilder builder, Object value) {
+    return appendNonNull(builder, value, false);
+  }
+
+  static StringBuilder appendNonNull(StringBuilder builder, Object value, boolean firstColumn) {
+    if (!firstColumn) {
+      builder.append((char)separator);
+    } else if (builder.length() > 0) {
+      builder.append((char)terminator);
+    }
+    if (value != null) {
+      builder.append(value);
+    }
+    return builder;
   }
 
   private static int processGrantRevokeDDL(LogHelper console,

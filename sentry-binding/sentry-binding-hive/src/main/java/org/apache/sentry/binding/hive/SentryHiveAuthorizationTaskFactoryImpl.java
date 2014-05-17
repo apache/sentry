@@ -210,6 +210,8 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
     }
     String principalName = BaseSemanticAnalyzer.unescapeIdentifier(principal.getChild(0).getText());
     PrincipalDesc principalDesc = new PrincipalDesc(principalName, type);
+
+    //Column privileges and Partition privileges are not supported by Sentry
     if (ast.getChildCount() > 1) {
       ASTNode child = (ASTNode) ast.getChild(1);
       if (child.getToken().getType() == HiveParser.TOK_PRIV_OBJECT_COL) {
@@ -228,10 +230,6 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
           }
         }
       }
-    }
-
-    if (privHiveObj == null) {
-      throw new SemanticException(SentryHiveConstants.COLUMN_PRIVS_NOT_SUPPORTED);
     }
 
     ShowGrantDesc showGrant = new ShowGrantDesc(resultFile.toString(),
