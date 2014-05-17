@@ -300,6 +300,7 @@ public class SentryPolicyServiceClient {
     privilege.setServerName(serverName);
     privilege.setURI(uri);
     privilege.setDbName(db);
+    privilege.setTableName(table);
     privilege.setAction(action);
     privilege.setGrantorPrincipal(requestorUserName);
     privilege.setCreateTime(System.currentTimeMillis());

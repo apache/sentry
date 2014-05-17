@@ -49,6 +49,24 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
     }
     client.dropRole(requestorUserName, requestorUserGroupNames, roleName);
   }
+  
+  @Test
+  public void testGranRevokePrivilegeOnTableForRole() throws Exception {
+    String requestorUserName = ADMIN_USER;
+    Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
+    String roleName = "admin_r";
+
+    client.dropRoleIfExists(requestorUserName, requestorUserGroupNames, roleName);
+    client.createRole(requestorUserName, requestorUserGroupNames, roleName);
+    
+    client.grantTablePrivilege(requestorUserName, requestorUserGroupNames, roleName, "server", "db", "table", "ALL");    
+    Set<TSentryPrivilege> listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, requestorUserGroupNames, roleName);
+    assertTrue("Privilege not assigned to role !!", listPrivilegesByRoleName.size() == 1);
+    
+    client.revokeTablePrivilege(requestorUserName, requestorUserGroupNames, roleName, "server", "db", "table", "ALL");
+    listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, requestorUserGroupNames, roleName);
+    assertTrue("Privilege not correctly revoked !!", listPrivilegesByRoleName.size() == 0);
+  }  
 
   @Test
   public void testShowRoleGrant() throws Exception {
