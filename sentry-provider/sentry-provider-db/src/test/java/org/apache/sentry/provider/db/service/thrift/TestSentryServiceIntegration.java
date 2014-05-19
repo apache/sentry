@@ -49,7 +49,7 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
     }
     client.dropRole(requestorUserName, requestorUserGroupNames, roleName);
   }
-  
+
   @Test
   public void testGranRevokePrivilegeOnTableForRole() throws Exception {
     String requestorUserName = ADMIN_USER;
@@ -58,15 +58,38 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
 
     client.dropRoleIfExists(requestorUserName, requestorUserGroupNames, roleName);
     client.createRole(requestorUserName, requestorUserGroupNames, roleName);
-    
-    client.grantTablePrivilege(requestorUserName, requestorUserGroupNames, roleName, "server", "db", "table", "ALL");    
+
+    client.grantTablePrivilege(requestorUserName, requestorUserGroupNames, roleName, "server", "db", "table", "ALL");
     Set<TSentryPrivilege> listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, requestorUserGroupNames, roleName);
     assertTrue("Privilege not assigned to role !!", listPrivilegesByRoleName.size() == 1);
-    
+
     client.revokeTablePrivilege(requestorUserName, requestorUserGroupNames, roleName, "server", "db", "table", "ALL");
     listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, requestorUserGroupNames, roleName);
     assertTrue("Privilege not correctly revoked !!", listPrivilegesByRoleName.size() == 0);
-  }  
+  }
+
+  @Test
+  public void testMultipleRolesSamePrivilege() throws Exception {
+    String requestorUserName = ADMIN_USER;
+    Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
+    String roleName1 = "admin_r1";
+    String roleName2 = "admin_r2";
+
+    client.dropRoleIfExists(requestorUserName, requestorUserGroupNames,roleName1);
+    client.createRole(requestorUserName, requestorUserGroupNames, roleName1);
+
+    client.dropRoleIfExists(requestorUserName, requestorUserGroupNames, roleName2);
+    client.createRole(requestorUserName, requestorUserGroupNames, roleName2);
+
+    client.grantTablePrivilege(requestorUserName, requestorUserGroupNames, roleName1, "server", "db", "table", "ALL");
+    Set<TSentryPrivilege> listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, requestorUserGroupNames, roleName1);
+    assertTrue("Privilege not assigned to role1 !!", listPrivilegesByRoleName.size() == 1);
+
+    client.grantTablePrivilege(requestorUserName, requestorUserGroupNames, roleName2, "server", "db", "table", "ALL");
+    listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, requestorUserGroupNames, roleName2);
+    assertTrue("Privilege not assigned to role2 !!", listPrivilegesByRoleName.size() == 1);
+  }
+
 
   @Test
   public void testShowRoleGrant() throws Exception {

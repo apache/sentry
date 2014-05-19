@@ -110,6 +110,7 @@ public class SentryStore {
       }
     }
 
+
     boolean checkSchemaVersion = conf.get(
         ServerConfig.SENTRY_VERIFY_SCHEM_VERSION,
         ServerConfig.SENTRY_VERIFY_SCHEM_VERSION_DEFAULT).equalsIgnoreCase(
@@ -269,7 +270,10 @@ public class SentryStore {
       if (mRole == null) {
         throw new SentryNoSuchObjectException("Role: " + roleName);
       } else {
-        MSentryPrivilege mPrivilege = convertToMSentryPrivilege(privilege);
+        MSentryPrivilege mPrivilege = getMSentryPrivilege(constructPrivilegeName(privilege), pm);
+        if (mPrivilege == null) {
+          mPrivilege = convertToMSentryPrivilege(privilege);
+        }
         // Add privilege and role objects to each other. needed by datanucleus to model
         // m:n relationships correctly through a join table.
         mPrivilege.appendRole(mRole);
@@ -287,6 +291,7 @@ public class SentryStore {
     }
   }
 
+
   public CommitContext alterSentryRoleRevokePrivilege(String roleName,
       TSentryPrivilege tPrivilege) throws SentryNoSuchObjectException, SentryInvalidInputException {
     boolean rollbackTransaction = true;
@@ -303,11 +308,7 @@ public class SentryStore {
         throw new SentryNoSuchObjectException("Role: " + roleName);
       } else {
         query = pm.newQuery(MSentryPrivilege.class);
-        query.setFilter("this.privilegeName == t");
-        query.declareParameters("java.lang.String t");
-        query.setUnique(true);
-        String privilegeName = constructPrivilegeName(tPrivilege);
-        MSentryPrivilege mPrivilege = (MSentryPrivilege) query.execute(privilegeName);
+        MSentryPrivilege mPrivilege = getMSentryPrivilege(constructPrivilegeName(tPrivilege), pm);
         if (mPrivilege == null) {
           revokePartialPrivilege(pm, mRole, tPrivilege);
           CommitContext commit = commitUpdateTransaction(pm);
@@ -317,6 +318,7 @@ public class SentryStore {
           // remove privilege and role objects from each other's set. needed by
           // datanucleus to model m:n relationships correctly through a join table.
           mRole.removePrivilege(mPrivilege);
+          mPrivilege.removeRole(mRole);
           CommitContext commit = commitUpdateTransaction(pm);
           rollbackTransaction = false;
           return commit;
@@ -349,11 +351,7 @@ public class SentryStore {
     TSentryPrivilege tPrivilegeAll = new TSentryPrivilege(tPrivilege);
     tPrivilegeAll.setAction(AccessConstants.ALL);
     String allPrivilegeName = constructPrivilegeName(tPrivilegeAll);
-    Query query = pm.newQuery(MSentryPrivilege.class);
-    query.setFilter("this.privilegeName == t");
-    query.declareParameters("java.lang.String t");
-    query.setUnique(true);
-    MSentryPrivilege allPrivilege = (MSentryPrivilege) query.execute(allPrivilegeName);
+    MSentryPrivilege allPrivilege = getMSentryPrivilege(allPrivilegeName, pm);
     if (allPrivilege == null) {
       throw new SentryNoSuchObjectException("Unknown privilege: " + tPrivilege);
     }
@@ -366,6 +364,17 @@ public class SentryStore {
       throw new IllegalStateException("Unexpected action: " + action);
     }
     role.appendPrivilege(convertToMSentryPrivilege(tPrivilege));
+  }
+
+  private MSentryPrivilege getMSentryPrivilege(String privilegeName, PersistenceManager pm) {
+    Query query = pm.newQuery(MSentryPrivilege.class);
+    query.setFilter("this.privilegeName == t");
+    query.declareParameters("java.lang.String t");
+    query.setUnique(true);
+    Object obj = query.execute(privilegeName);
+    if (obj != null)
+      return (MSentryPrivilege) obj;
+    return null;
   }
 
   //TODO:Validate privilege scope?
@@ -889,3 +898,4 @@ public class SentryStore {
 
   }
 }
+
