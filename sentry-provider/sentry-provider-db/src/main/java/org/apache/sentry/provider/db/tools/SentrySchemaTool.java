@@ -58,9 +58,11 @@ public class SentrySchemaTool {
       + File.separatorChar + "sentrystore" + File.separatorChar + "upgrade";
   private String userName = null;
   private String passWord = null;
+  private String connectionURL = null;
+  private String driver = null;
   private boolean dryRun = false;
-  private boolean verbose = false;
   private String dbOpts = null;
+  private boolean verbose = false;
   private final Configuration sentryConf;
   private final String dbType;
   private final SentryStoreSchemaInfo SentryStoreSchemaInfo;
@@ -79,10 +81,25 @@ public class SentrySchemaTool {
     this.dbType = dbType;
     this.SentryStoreSchemaInfo = new SentryStoreSchemaInfo(sentryScripPath,
         dbType);
-    userName = sentryConf
-        .get(ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_USER);
-    passWord = sentryConf
-        .get(ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_PASS);
+    userName = sentryConf.get(ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_USER,
+        ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_USER_DEFAULT);
+    passWord = sentryConf.get(ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_PASS,
+        ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_PASS_DEFAULT);
+    try {
+      connectionURL = getValidConfVar(ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_URL);
+      if(dbType == SentrySchemaHelper.DB_DERBY) {
+        driver = sentryConf.get(ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_DRIVER,
+            ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_DRIVER_DEFAULT);
+      } else {
+        driver = getValidConfVar(ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_DRIVER);
+      }
+      // load required JDBC driver
+      Class.forName(driver);
+    } catch (IOException e) {
+      throw new SentryUserException("Missing property", e);
+    } catch (ClassNotFoundException e) {
+      throw new SentryUserException("Failed to load driver", e);
+    }
   }
 
   public Configuration getConfiguration() {
@@ -121,7 +138,7 @@ public class SentrySchemaTool {
 
   /***
    * Print Hive version and schema version
-   * @throws MetaException
+   * @throws SentryUserException
    */
   public void showInfo() throws SentryUserException {
     Connection sentryStoreConn = getConnectionToMetastore(true);
@@ -169,39 +186,29 @@ public class SentrySchemaTool {
    *
    * @param printInfo print connection parameters
    * @return
-   * @throws MetaException
+   * @throws SentryUserException
    */
   private Connection getConnectionToMetastore(boolean printInfo)
       throws SentryUserException {
+    if (printInfo) {
+      System.out.println("Sentry store connection URL:\t " + connectionURL);
+      System.out.println("Sentry store Connection Driver :\t " + driver);
+      System.out.println("Sentry store connection User:\t " + userName);
+    }
+    if ((userName == null) || userName.isEmpty()) {
+      throw new SentryUserException("UserName empty ");
+    }
     try {
-      String connectionURL = getValidConfVar(ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_URL);
-      String driver = getValidConfVar(ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_DRIVER);
-      if (printInfo) {
-        System.out.println("Metastore connection URL:\t " + connectionURL);
-        System.out.println("Metastore Connection Driver :\t " + driver);
-        System.out.println("Metastore connection User:\t " + userName);
-      }
-      if ((userName == null) || userName.isEmpty()) {
-        throw new SentryUserException("UserName empty ");
-      }
-
-      // load required JDBC driver
-      Class.forName(driver);
-
       // Connect using the JDBC URL and user/pass from conf
       return DriverManager.getConnection(connectionURL, userName, passWord);
-    } catch (IOException e) {
-      throw new SentryUserException("Failed to get schema version.", e);
     } catch (SQLException e) {
-      throw new SentryUserException("Failed to get schema version.", e);
-    } catch (ClassNotFoundException e) {
-      throw new SentryUserException("Failed to load driver", e);
+      throw new SentryUserException("Failed to make connection to Sentry store.", e);
     }
   }
 
   /**
    * check if the current schema version in sentry store matches the Hive version
-   * @throws MetaException
+   * @throws SentryUserException
    */
   public void verifySchemaVersion() throws SentryUserException {
     // don't check version if its a dry run
@@ -220,7 +227,7 @@ public class SentrySchemaTool {
 
   /**
    * Perform sentry store schema upgrade. extract the current schema version from sentry store
-   * @throws MetaException
+   * @throws SentryUserException
    */
   public void doUpgrade() throws SentryUserException {
     String fromVersion = getMetaStoreSchemaVersion(getConnectionToMetastore(false));
@@ -238,7 +245,7 @@ public class SentrySchemaTool {
    *
    * @param fromSchemaVer
    *          Existing version of the sentry store. If null, then read from the sentry store
-   * @throws MetaException
+   * @throws SentryUserException
    */
   public void doUpgrade(String fromSchemaVer) throws SentryUserException {
     if (SentryStoreSchemaInfo.getSentrySchemaVersion().equals(fromSchemaVer)) {
@@ -273,7 +280,7 @@ public class SentrySchemaTool {
   /**
    * Initialize the sentry store schema to current version
    *
-   * @throws MetaException
+   * @throws SentryUserException
    */
   public void doInit() throws SentryUserException {
     doInit(SentryStoreSchemaInfo.getSentrySchemaVersion());
@@ -287,7 +294,7 @@ public class SentrySchemaTool {
    *
    * @param toVersion
    *          If null then current hive version is used
-   * @throws MetaException
+   * @throws SentryUserException
    */
   public void doInit(String toVersion) throws SentryUserException {
     testConnectionToMetastore();
@@ -384,10 +391,10 @@ public class SentrySchemaTool {
   public void runBeeLine(String sqlScriptFile) throws IOException {
     List<String> argList = new ArrayList<String>();
     argList.add("-u");
-    argList.add(getValidConfVar(ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_URL));
+    argList.add(connectionURL);
     argList.add("-d");
     argList
-        .add(getValidConfVar(ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_DRIVER));
+        .add(driver);
     argList.add("-n");
     argList.add(userName);
     argList.add("-p");
@@ -438,15 +445,19 @@ public class SentrySchemaTool {
     optGroup.setRequired(true);
 
     Option userNameOpt = OptionBuilder.withArgName("user")
-                .hasArgs()
+                .hasArg()
                 .withDescription("Override config file user name")
                 .create("userName");
     Option passwdOpt = OptionBuilder.withArgName("password")
-                .hasArgs()
+                .hasArg()
                  .withDescription("Override config file password")
                  .create("passWord");
     Option dbTypeOpt = OptionBuilder.withArgName("databaseType")
-                .hasArgs().withDescription("Metastore database type")
+                .hasArg().withDescription("Metastore database type [" +
+                SentrySchemaHelper.DB_DERBY + "," +
+                SentrySchemaHelper.DB_MYSQL + "," +
+                SentrySchemaHelper.DB_ORACLE + "," +
+                SentrySchemaHelper.DB_POSTGRACE + "]")
                 .create("dbType");
     Option dbOpts = OptionBuilder.withArgName("databaseOpts")
                 .hasArgs().withDescription("Backend DB specific options")
@@ -516,7 +527,6 @@ public class SentrySchemaTool {
         System.err.println("no config file specified");
         printAndExit(cmdLineOptions);
       }
-
       try {
         SentrySchemaTool schemaTool = new SentrySchemaTool(
             SentryService.loadConfig(configFileName), dbType);

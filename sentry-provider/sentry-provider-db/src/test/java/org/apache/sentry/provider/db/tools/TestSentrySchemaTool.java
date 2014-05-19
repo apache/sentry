@@ -34,19 +34,29 @@ public class TestSentrySchemaTool {
   private SentrySchemaTool schemaTool;
 
   @Before
-  public void setup() throws Exception {
+  public void defaultSetup() throws Exception {
     sentryConf = new Configuration();
     File dbDir = new File(Files.createTempDir(), "sentry_policy_db");
     sentryConf.set(ServerConfig.SENTRY_STORE_JDBC_URL,
         "jdbc:derby:;databaseName=" + dbDir.getPath() + ";create=true");
-    sentryConf.set(ServerConfig.SENTRY_STORE_JDBC_DRIVER,
-        ServerConfig.SENTRY_STORE_JDBC_DRIVER_DEFAULT);
-    sentryConf.set(ServerConfig.SENTRY_STORE_JDBC_USER,
-        ServerConfig.SENTRY_STORE_JDBC_USER_DEFAULT);
-    sentryConf.set(ServerConfig.SENTRY_STORE_JDBC_PASS,
-        ServerConfig.SENTRY_STORE_JDBC_PASS_DEFAULT);
     schemaTool = new SentrySchemaTool("./src/main/resources", sentryConf,
         "derby");
+  }
+
+  private void nonDefaultsetup() throws Exception {
+    sentryConf = new Configuration();
+    File dbDir = new File(Files.createTempDir(), "sentry_policy_db");
+    sentryConf.set(ServerConfig.SENTRY_STORE_JDBC_URL,
+        "jdbc:derby:;databaseName=" + dbDir.getPath() + ";create=true");
+    schemaTool = new SentrySchemaTool("./src/main/resources", sentryConf,
+        "derby");
+  }
+
+  @Test
+  public void testInitNonDefault() throws Exception {
+    nonDefaultsetup();
+    schemaTool.doInit();
+    schemaTool.verifySchemaVersion();
   }
 
   @Test

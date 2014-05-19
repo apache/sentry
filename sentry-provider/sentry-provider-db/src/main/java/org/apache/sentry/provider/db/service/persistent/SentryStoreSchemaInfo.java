@@ -78,7 +78,7 @@ public class SentryStoreSchemaInfo {
    *          Target version. If it's null, then the current server version is
    *          used
    * @return
-   * @throws HiveMetaException
+   * @throws SentryUserException
    */
   public String generateInitFileName(String toVersion)
       throws SentryUserException {
