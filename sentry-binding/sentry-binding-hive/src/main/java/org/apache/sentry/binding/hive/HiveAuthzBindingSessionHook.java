@@ -18,6 +18,7 @@ package org.apache.sentry.binding.hive;
 
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
+import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hive.service.cli.HiveSQLException;
 import org.apache.hive.service.cli.session.HiveSessionHookContext;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
@@ -69,9 +70,11 @@ public class HiveAuthzBindingSessionHook
     // Add sentry hooks to the session configuration
     HiveConf sessionConf = sessionHookContext.getSessionConf();
 
-    appendConfVar(sessionConf, ConfVars.SEMANTIC_ANALYZER_HOOK, SEMANTIC_HOOK);
-    appendConfVar(sessionConf, ConfVars.PREEXECHOOKS, PRE_EXEC_HOOK);
-    appendConfVar(sessionConf, ConfVars.HIVE_EXEC_FILTER_HOOK, FILTER_HOOK);
+    appendConfVar(sessionConf, ConfVars.SEMANTIC_ANALYZER_HOOK.varname,
+        SEMANTIC_HOOK);
+    appendConfVar(sessionConf, ConfVars.PREEXECHOOKS.varname, PRE_EXEC_HOOK);
+    appendConfVar(sessionConf, ConfVars.HIVE_EXEC_FILTER_HOOK.varname,
+        FILTER_HOOK);
 
     // setup config
     sessionConf.setBoolVar(ConfVars.HIVE_EXTENDED_ENITITY_CAPTURE, true);
@@ -82,18 +85,25 @@ public class HiveAuthzBindingSessionHook
     sessionConf.set(HiveAuthzConf.HIVE_ACCESS_SUBJECT_NAME, sessionHookContext.getSessionUser());
     sessionConf.set(HiveAuthzConf.HIVE_SENTRY_SUBJECT_NAME, sessionHookContext.getSessionUser());
 
+    // Set MR ACLs to session user
+    appendConfVar(sessionConf, JobContext.JOB_ACL_VIEW_JOB,
+        sessionHookContext.getSessionUser());
+    appendConfVar(sessionConf, JobContext.JOB_ACL_MODIFY_JOB,
+        sessionHookContext.getSessionUser());
+
     // setup restrict list
     sessionConf.addToRestrictList(ACCESS_RESTRICT_LIST);
   }
 
   // Setup given sentry hooks
-  private void appendConfVar(HiveConf sessionConf, ConfVars confVar, String sentryConfVal) {
-    String currentValue = sessionConf.getVar(confVar);
-    if ((currentValue == null) || currentValue.isEmpty()) {
+  private void appendConfVar(HiveConf sessionConf, String confVar,
+      String sentryConfVal) {
+    String currentValue = sessionConf.get(confVar, "").trim();
+    if (currentValue.isEmpty()) {
       currentValue = sentryConfVal;
     } else {
       currentValue = sentryConfVal + "," + currentValue;
     }
-    sessionConf.setVar(confVar, currentValue);
+    sessionConf.set(confVar, currentValue);
   }
 }

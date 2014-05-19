@@ -17,8 +17,10 @@
 
 package org.apache.sentry.tests.e2e.hive;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -27,6 +29,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URI;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Set;
@@ -225,5 +228,24 @@ public class Context {
 
   public String getConnectionURL() {
     return hiveServer.getURL();
+  }
+
+  /**
+   * Execute "set x" and extract value from key=val format result Verify the
+   * extracted value
+   * 
+   * @param stmt
+   * @return
+   * @throws Exception
+   */
+  public void verifySessionConf(Connection con, String key, String expectedVal)
+      throws Exception {
+    Statement stmt = con.createStatement();
+    ResultSet res = stmt.executeQuery("set " + key);
+    assertTrue(res.next());
+    String resultValues[] = res.getString(1).split("="); // "key=val"
+    assertEquals("Result not in key = val format", 2, resultValues.length);
+    assertEquals("Conf value should be set by execute()", expectedVal,
+        resultValues[1]);
   }
 }

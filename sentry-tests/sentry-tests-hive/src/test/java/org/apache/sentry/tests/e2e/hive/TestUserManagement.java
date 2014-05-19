@@ -26,6 +26,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
+import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.After;
 import org.junit.Before;
@@ -338,5 +339,14 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
       statement.close();
       connection.close();
     }
+  }
+
+  @Test
+  public void testMrAclsSetting() throws Exception {
+    Connection connection = context.createConnection("admin1");
+    context
+        .verifySessionConf(connection, JobContext.JOB_ACL_VIEW_JOB, "admin1");
+    context
+        .verifySessionConf(connection, JobContext.JOB_ACL_VIEW_JOB, "admin1");
   }
 }
