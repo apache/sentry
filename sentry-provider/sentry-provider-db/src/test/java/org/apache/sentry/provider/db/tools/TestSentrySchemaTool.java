@@ -39,8 +39,8 @@ public class TestSentrySchemaTool {
     File dbDir = new File(Files.createTempDir(), "sentry_policy_db");
     sentryConf.set(ServerConfig.SENTRY_STORE_JDBC_URL,
         "jdbc:derby:;databaseName=" + dbDir.getPath() + ";create=true");
-    sentryConf.set("javax.jdo.option.ConnectionDriverName",
-        "org.apache.derby.jdbc.EmbeddedDriver");
+    sentryConf.set(ServerConfig.SENTRY_STORE_JDBC_DRIVER,
+        ServerConfig.SENTRY_STORE_JDBC_DRIVER_DEFAULT);
     sentryConf.set(ServerConfig.SENTRY_STORE_JDBC_USER,
         ServerConfig.SENTRY_STORE_JDBC_USER_DEFAULT);
     sentryConf.set(ServerConfig.SENTRY_STORE_JDBC_PASS,

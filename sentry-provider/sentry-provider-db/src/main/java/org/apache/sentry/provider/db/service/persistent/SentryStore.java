@@ -95,9 +95,12 @@ public class SentryStore {
         SENTRY_STORE_JDBC_USER_DEFAULT).trim();
     String pass = conf.get(ServerConfig.SENTRY_STORE_JDBC_PASS, ServerConfig.
         SENTRY_STORE_JDBC_PASS_DEFAULT).trim();
+    String driverName = conf.get(ServerConfig.SENTRY_STORE_JDBC_DRIVER,
+        ServerConfig.SENTRY_STORE_JDBC_DRIVER_DEFAULT);
     prop.setProperty(ServerConfig.JAVAX_JDO_URL, jdbcUrl);
     prop.setProperty(ServerConfig.JAVAX_JDO_USER, user);
     prop.setProperty(ServerConfig.JAVAX_JDO_PASS, pass);
+    prop.setProperty(ServerConfig.JAVAX_JDO_DRIVER_NAME, driverName);
     for (Map.Entry<String, String> entry : conf) {
       String key = entry.getKey();
       if (key.startsWith(ServerConfig.SENTRY_JAVAX_JDO_PROPERTY_PREFIX) ||

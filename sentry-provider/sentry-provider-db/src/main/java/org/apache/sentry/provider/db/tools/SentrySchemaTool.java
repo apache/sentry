@@ -44,7 +44,6 @@ import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.io.output.NullOutputStream;
-import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hive.beeline.BeeLine;
 import org.apache.sentry.Command;
@@ -53,7 +52,6 @@ import org.apache.sentry.provider.db.service.persistent.SentryStoreSchemaInfo;
 import org.apache.sentry.provider.db.tools.SentrySchemaHelper.NestedScriptParser;
 import org.apache.sentry.service.thrift.SentryService;
 import org.apache.sentry.service.thrift.ServiceConstants;
-import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 
 public class SentrySchemaTool {
   private static final String SENTRY_SCRIP_DIR = File.separatorChar + "scripts"
@@ -177,7 +175,7 @@ public class SentrySchemaTool {
       throws SentryUserException {
     try {
       String connectionURL = getValidConfVar(ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_URL);
-      String driver = getValidConfVar("javax.jdo.option.ConnectionDriverName");
+      String driver = getValidConfVar(ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_DRIVER);
       if (printInfo) {
         System.out.println("Metastore connection URL:\t " + connectionURL);
         System.out.println("Metastore Connection Driver :\t " + driver);
@@ -388,7 +386,8 @@ public class SentrySchemaTool {
     argList.add("-u");
     argList.add(getValidConfVar(ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_URL));
     argList.add("-d");
-    argList.add(getValidConfVar("javax.jdo.option.ConnectionDriverName"));
+    argList
+        .add(getValidConfVar(ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_DRIVER));
     argList.add("-n");
     argList.add(userName);
     argList.add("-p");
@@ -411,10 +410,6 @@ public class SentrySchemaTool {
 
   private String getValidConfVar(String confVar) throws IOException {
     String confVarKey = confVar;
-    if (confVar.startsWith(ServerConfig.SENTRY_DATANUCLEUS_PROPERTY_PREFIX)) {
-      confVarKey = StringUtils.removeStart(confVar,
-          ServerConfig.SENTRY_DB_PROPERTY_PREFIX);
-    }
     String confVarValue = sentryConf.get(confVarKey);
     if (confVarValue == null || confVarValue.isEmpty()) {
       throw new IOException("Empty " + confVar);

@@ -73,10 +73,13 @@ public class ServiceConstants {
     public static final String SENTRY_STORE_JDBC_USER_DEFAULT = "Sentry";
     public static final String SENTRY_STORE_JDBC_PASS = "sentry.store.jdbc.password";
     public static final String SENTRY_STORE_JDBC_PASS_DEFAULT = "Sentry";
+    public static final String SENTRY_STORE_JDBC_DRIVER = "sentry.store.jdbc.driver";
+    public static final String SENTRY_STORE_JDBC_DRIVER_DEFAULT = "org.apache.derby.jdbc.EmbeddedDriver";
 
     public static final String JAVAX_JDO_URL = "javax.jdo.option.ConnectionURL";
     public static final String JAVAX_JDO_USER = "javax.jdo.option.ConnectionUserName";
     public static final String JAVAX_JDO_PASS = "javax.jdo.option.ConnectionPassword";
+    public static final String JAVAX_JDO_DRIVER_NAME = "javax.jdo.option.ConnectionDriverName";
 
     public static final String SENTRY_DB_PROPERTY_PREFIX = "sentry.";
     public static final String SENTRY_JAVAX_JDO_PROPERTY_PREFIX = SENTRY_DB_PROPERTY_PREFIX + "javax.jdo";
@@ -101,8 +104,6 @@ public class ServiceConstants {
     .put("datanucleus.identifierFactory", "datanucleus1")
     .put("datanucleus.rdbms.useLegacyNativeValueStrategy", "true")
     .put("datanucleus.plugin.pluginRegistryBundleCheck", "LOG")
-    .put("javax.jdo.option.ConnectionDriverName",
-                     "org.apache.derby.jdbc.EmbeddedDriver")
     .put("javax.jdo.PersistenceManagerFactoryClass",
                      "org.datanucleus.api.jdo.JDOPersistenceManagerFactory")
     .put("javax.jdo.option.DetachAllOnCommit", "true")
