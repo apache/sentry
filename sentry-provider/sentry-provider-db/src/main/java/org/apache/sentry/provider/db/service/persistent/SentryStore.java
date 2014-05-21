@@ -274,12 +274,10 @@ public class SentryStore {
         if (mPrivilege == null) {
           mPrivilege = convertToMSentryPrivilege(privilege);
         }
-        // Add privilege and role objects to each other. needed by datanucleus to model
-        // m:n relationships correctly through a join table.
         mPrivilege.appendRole(mRole);
-        mRole.appendPrivilege(mPrivilege);
         pm.makePersistent(mRole);
         pm.makePersistent(mPrivilege);
+
         CommitContext commit = commitUpdateTransaction(pm);
         rollbackTransaction = false;
         return commit;

@@ -41,7 +41,7 @@ public class MSentryPrivilege {
   private String URI;
   private String action;
   // roles this privilege is a part of
-  private Set<MSentryRole> roles;
+  private final Set<MSentryRole> roles;
   private long createTime;
   private String grantorPrincipal;
 
@@ -135,8 +135,7 @@ public class MSentryPrivilege {
   }
 
   public void appendRole(MSentryRole role) {
-    if (!roles.contains(role)) {
-      roles.add(role);
+    if (roles.add(role)) {
       role.appendPrivilege(this);
     }
   }

@@ -99,8 +99,7 @@ public class MSentryRole {
   }
 
   public void appendPrivilege(MSentryPrivilege privilege) {
-    if (!privileges.contains(privilege)) {
-      privileges.add(privilege);
+    if (privileges.add(privilege)) {
       privilege.appendRole(this);
     }
   }

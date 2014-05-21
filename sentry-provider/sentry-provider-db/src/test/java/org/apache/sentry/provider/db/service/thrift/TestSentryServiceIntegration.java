@@ -19,6 +19,8 @@
 package org.apache.sentry.provider.db.service.thrift;
 
 import com.google.common.collect.Sets;
+
+import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
 import org.junit.Test;
@@ -54,17 +56,55 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
   public void testGranRevokePrivilegeOnTableForRole() throws Exception {
     String requestorUserName = ADMIN_USER;
     Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
-    String roleName = "admin_r";
+    String roleName1 = "admin_r1";
+    String roleName2 = "admin_r2";
 
-    client.dropRoleIfExists(requestorUserName, requestorUserGroupNames, roleName);
-    client.createRole(requestorUserName, requestorUserGroupNames, roleName);
+    client.dropRoleIfExists(requestorUserName, requestorUserGroupNames, roleName1);
+    client.createRole(requestorUserName, requestorUserGroupNames, roleName1);
 
-    client.grantTablePrivilege(requestorUserName, requestorUserGroupNames, roleName, "server", "db", "table", "ALL");
-    Set<TSentryPrivilege> listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, requestorUserGroupNames, roleName);
-    assertTrue("Privilege not assigned to role !!", listPrivilegesByRoleName.size() == 1);
+    client.grantTablePrivilege(requestorUserName, requestorUserGroupNames, roleName1, "server", "db", "table1", "ALL");
+    client.grantTablePrivilege(requestorUserName, requestorUserGroupNames, roleName1, "server", "db", "table2", "ALL");
+    client.grantTablePrivilege(requestorUserName, requestorUserGroupNames, roleName1, "server", "db", "table3", "ALL");
+    client.grantTablePrivilege(requestorUserName, requestorUserGroupNames, roleName1, "server", "db", "table4", "ALL");
 
-    client.revokeTablePrivilege(requestorUserName, requestorUserGroupNames, roleName, "server", "db", "table", "ALL");
-    listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, requestorUserGroupNames, roleName);
+
+    client.dropRoleIfExists(requestorUserName, requestorUserGroupNames, roleName2);
+    client.createRole(requestorUserName, requestorUserGroupNames, roleName2);
+
+    client.grantTablePrivilege(requestorUserName, requestorUserGroupNames, roleName2, "server", "db", "table1", "ALL");
+    client.grantTablePrivilege(requestorUserName, requestorUserGroupNames, roleName2, "server", "db", "table2", "ALL");
+    client.grantTablePrivilege(requestorUserName, requestorUserGroupNames, roleName2, "server", "db", "table3", "ALL");
+    client.grantTablePrivilege(requestorUserName, requestorUserGroupNames, roleName2, "server", "db", "table4", "ALL");
+
+    Set<TSentryPrivilege> listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, requestorUserGroupNames, roleName1);
+    assertEquals("Privilege not assigned to role1 !!", 4, listPrivilegesByRoleName.size());
+
+    listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, requestorUserGroupNames, roleName2);
+    assertEquals("Privilege not assigned to role2 !!", 4, listPrivilegesByRoleName.size());
+
+
+    client.revokeTablePrivilege(requestorUserName, requestorUserGroupNames, roleName1, "server", "db", "table1", "ALL");
+    listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, requestorUserGroupNames, roleName1);
+    assertTrue("Privilege not correctly revoked !!", listPrivilegesByRoleName.size() == 3);
+    listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, requestorUserGroupNames, roleName2);
+    assertTrue("Privilege not correctly revoked !!", listPrivilegesByRoleName.size() == 4);
+
+    client.revokeTablePrivilege(requestorUserName, requestorUserGroupNames, roleName2, "server", "db", "table1", "ALL");
+    listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, requestorUserGroupNames, roleName2);
+    assertTrue("Privilege not correctly revoked !!", listPrivilegesByRoleName.size() == 3);
+    listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, requestorUserGroupNames, roleName1);
+    assertTrue("Privilege not correctly revoked !!", listPrivilegesByRoleName.size() == 3);
+
+    client.revokeTablePrivilege(requestorUserName, requestorUserGroupNames, roleName1, "server", "db", "table2", "ALL");
+    client.revokeTablePrivilege(requestorUserName, requestorUserGroupNames, roleName1, "server", "db", "table3", "ALL");
+    client.revokeTablePrivilege(requestorUserName, requestorUserGroupNames, roleName1, "server", "db", "table4", "ALL");
+    listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, requestorUserGroupNames, roleName1);
+    assertTrue("Privilege not correctly revoked !!", listPrivilegesByRoleName.size() == 0);
+
+    client.revokeTablePrivilege(requestorUserName, requestorUserGroupNames, roleName2, "server", "db", "table2", "ALL");
+    client.revokeTablePrivilege(requestorUserName, requestorUserGroupNames, roleName2, "server", "db", "table3", "ALL");
+    client.revokeTablePrivilege(requestorUserName, requestorUserGroupNames, roleName2, "server", "db", "table4", "ALL");
+    listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, requestorUserGroupNames, roleName2);
     assertTrue("Privilege not correctly revoked !!", listPrivilegesByRoleName.size() == 0);
   }
 
