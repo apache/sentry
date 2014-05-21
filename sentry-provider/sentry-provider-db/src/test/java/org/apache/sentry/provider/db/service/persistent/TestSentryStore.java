@@ -107,7 +107,15 @@ public class TestSentryStore {
       // expected
     }
   }
-
+  @Test
+  public void testCaseSensitiveScope() throws Exception {
+    String roleName = "role1";
+    String grantor = "g1";
+    long seqId = sentryStore.createSentryRole(roleName, grantor).getSequenceId();
+    TSentryPrivilege sentryPrivilege = new TSentryPrivilege("Database", "server1", "all");
+    sentryPrivilege.setDbName("db1");
+    assertEquals(seqId + 1, sentryStore.alterSentryRoleGrantPrivilege(roleName, sentryPrivilege).getSequenceId());
+  }
   @Test
   public void testCreateDropRole() throws Exception {
     String roleName = "test-drop-role";
