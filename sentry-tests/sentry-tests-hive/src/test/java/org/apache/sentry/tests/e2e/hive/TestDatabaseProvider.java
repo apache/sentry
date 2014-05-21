@@ -41,6 +41,7 @@ import static org.hamcrest.Matchers.*;
 import java.io.File;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashSet;
@@ -168,6 +169,10 @@ public class TestDatabaseProvider extends AbstractTestWithHiveServer {
     statement.execute("CREATE ROLE role1");
     statement.execute("CREATE ROLE role2");
     ResultSet resultSet = statement.executeQuery("SHOW ROLES");
+    ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+    assertThat(resultSetMetaData.getColumnCount(), is(1));
+    assertThat(resultSetMetaData.getColumnName(1), equalToIgnoringCase("role"));
+
     Set<String> roles = new HashSet<String>();
     while ( resultSet.next()) {
       roles.add(resultSet.getString(1));
@@ -196,7 +201,12 @@ public class TestDatabaseProvider extends AbstractTestWithHiveServer {
     statement.execute("GRANT ROLE role1 to GROUP " + ADMINGROUP);
 
     ResultSet resultSet = statement.executeQuery("SHOW ROLE GRANT GROUP " + ADMINGROUP);
-    Set<String> roles = new HashSet<String>();
+    ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+    assertThat(resultSetMetaData.getColumnCount(), is(4));
+    assertThat(resultSetMetaData.getColumnName(1), equalToIgnoringCase("role"));
+    assertThat(resultSetMetaData.getColumnName(2), equalToIgnoringCase("grant_option"));
+    assertThat(resultSetMetaData.getColumnName(3), equalToIgnoringCase("grant_time"));
+    assertThat(resultSetMetaData.getColumnName(4), equalToIgnoringCase("grantor"));
     while ( resultSet.next()) {
       assertThat(resultSet.getString(1), equalToIgnoringCase("role1"));
       assertThat(resultSet.getBoolean(2), is(new Boolean("False")));
@@ -224,6 +234,21 @@ public class TestDatabaseProvider extends AbstractTestWithHiveServer {
     statement.execute("GRANT SELECT ON TABLE t1 TO ROLE role1");
 
     ResultSet resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+    //| database  | table  | partition  | column  | principal_name  |
+    // principal_type | privilege  | grant_option  | grant_time  | grantor  |
+    assertThat(resultSetMetaData.getColumnCount(), is(10));
+    assertThat(resultSetMetaData.getColumnName(1), equalToIgnoringCase("database"));
+    assertThat(resultSetMetaData.getColumnName(2), equalToIgnoringCase("table"));
+    assertThat(resultSetMetaData.getColumnName(3), equalToIgnoringCase("partition"));
+    assertThat(resultSetMetaData.getColumnName(4), equalToIgnoringCase("column"));
+    assertThat(resultSetMetaData.getColumnName(5), equalToIgnoringCase("principal_name"));
+    assertThat(resultSetMetaData.getColumnName(6), equalToIgnoringCase("principal_type"));
+    assertThat(resultSetMetaData.getColumnName(7), equalToIgnoringCase("privilege"));
+    assertThat(resultSetMetaData.getColumnName(8), equalToIgnoringCase("grant_option"));
+    assertThat(resultSetMetaData.getColumnName(9), equalToIgnoringCase("grant_time"));
+    assertThat(resultSetMetaData.getColumnName(10), equalToIgnoringCase("grantor"));
+
     while ( resultSet.next()) {
       assertThat(resultSet.getString(1), equalToIgnoringCase("default"));
       assertThat(resultSet.getString(2), equalToIgnoringCase("t1"));
@@ -267,7 +292,6 @@ public class TestDatabaseProvider extends AbstractTestWithHiveServer {
    * SHOW CURRENT ROLE not supported yet
    * @throws Exception
    */
-  @Ignore
   @Test
   public void testShowCurrentRole() throws Exception {
     policyFile
@@ -277,13 +301,15 @@ public class TestDatabaseProvider extends AbstractTestWithHiveServer {
     Statement statement = context.createStatement(connection);
     statement.execute("CREATE ROLE role1");
     statement.execute("SET ROLE role1");
+    ResultSet resultSet = statement.executeQuery("SHOW CURRENT ROLES");
+    ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+    assertThat(resultSetMetaData.getColumnCount(), is(1));
+    assertThat(resultSetMetaData.getColumnName(1), equalToIgnoringCase("role"));
 
-    try {
-      ResultSet resultSet = statement.executeQuery("SHOW CURRENT ROLE");
-      assertTrue("Expected an exception", false);
-    } catch(SQLException e) {
-      statement.close();
-      connection.close();
+    while( resultSet.next()) {
+      assertThat(resultSet.getString(1), equalToIgnoringCase("role1"));
     }
+    statement.close();
+    connection.close();
   }
 }

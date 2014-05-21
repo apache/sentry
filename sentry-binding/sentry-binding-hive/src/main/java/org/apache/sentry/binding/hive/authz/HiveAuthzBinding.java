@@ -269,6 +269,10 @@ public class HiveAuthzBinding {
     hiveConf.set(HiveAuthzConf.SENTRY_ACTIVE_ROLE_SET, activeRoleSet);
   }
 
+  public ActiveRoleSet getActiveRoleSet() {
+    return activeRoleSet;
+  }
+
   public Set<String> getGroups(Subject subject) {
     return authProvider.getGroupMapping().getGroups(subject.getName());
   }

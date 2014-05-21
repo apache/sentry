@@ -49,6 +49,7 @@ import org.apache.sentry.SentryUserException;
 import org.apache.sentry.binding.hive.authz.HiveAuthzBinding;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
+import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
@@ -196,10 +197,21 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
         writeToFile(writeRoleGrantsInfo(roles), desc.getResFile());
         return RETURN_CODE_SUCCESS;
       } else if(operation.equals(RoleDDLDesc.RoleOperation.SHOW_ROLES)) {
-      Set<TSentryRole> roles = sentryClient.listRoles(subject, subjectGroups);
-      writeToFile(writeRolesInfo(roles), desc.getResFile());
-      return RETURN_CODE_SUCCESS;
-    } else {
+        Set<TSentryRole> roles = sentryClient.listRoles(subject, subjectGroups);
+        writeToFile(writeRolesInfo(roles), desc.getResFile());
+        return RETURN_CODE_SUCCESS;
+      } else if(operation.equals(RoleDDLDesc.RoleOperation.SHOW_CURRENT_ROLE)) {
+        ActiveRoleSet roleSet = hiveAuthzBinding.getActiveRoleSet();
+        if( roleSet.isAll()) {
+          Set<TSentryRole> roles = sentryClient.listRoles(subject, subjectGroups);
+          writeToFile(writeRolesInfo(roles), desc.getResFile());
+          return RETURN_CODE_SUCCESS;
+        } else {
+          Set<String> roles = roleSet.getRoles();
+          writeToFile(writeActiveRolesInfo(roles), desc.getResFile());
+          return RETURN_CODE_SUCCESS;
+        }
+      } else {
         throw new HiveException("Unknown role operation "
             + operation.getOperationName());
       }
@@ -356,6 +368,17 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
     StringBuilder builder = new StringBuilder();
     for (TSentryRole roleGrant : roles) {
       appendNonNull(builder, roleGrant.getRoleName(), true);
+    }
+    return builder.toString();
+  }
+
+  static String writeActiveRolesInfo(Set<String> roles) {
+    if (roles == null || roles.isEmpty()) {
+      return "";
+    }
+    StringBuilder builder = new StringBuilder();
+    for (String role : roles) {
+      appendNonNull(builder, role, true);
     }
     return builder.toString();
   }
