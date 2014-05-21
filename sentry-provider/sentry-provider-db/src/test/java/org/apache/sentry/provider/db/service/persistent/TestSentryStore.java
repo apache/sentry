@@ -258,7 +258,8 @@ public class TestSentryStore {
     assertEquals(Sets.newHashSet("server=server1->db=db1->table=tbl1->action=select"),
         SentryStore.toTrimedLower(sentryStore.listSentryPrivilegesForProvider(Sets.newHashSet(groupName2),
             new TSentryActiveRoleSet(false, Sets.newHashSet(roleName1)))));
-    assertEquals(Sets.newHashSet("server=server1"),
+    assertEquals(Sets.newHashSet(
+        "server=server1->db=db1->table=tbl1->action=select", "server=server1"),
         SentryStore.toTrimedLower(sentryStore.listSentryPrivilegesForProvider(Sets.newHashSet(groupName2),
             new TSentryActiveRoleSet(false, Sets.newHashSet(roleName2)))));
     // unknown active role
@@ -280,7 +281,8 @@ public class TestSentryStore {
         SentryStore.toTrimedLower(sentryStore.listSentryPrivilegesForProvider(Sets.
             newHashSet(groupName1, groupName2),
             new TSentryActiveRoleSet(false, Sets.newHashSet(roleName1)))));
-    assertEquals(Sets.newHashSet("server=server1"),
+    assertEquals(Sets.newHashSet(
+        "server=server1->db=db1->table=tbl1->action=select", "server=server1"),
         SentryStore.toTrimedLower(sentryStore.listSentryPrivilegesForProvider(Sets.
             newHashSet(groupName1, groupName2),
             new TSentryActiveRoleSet(false, Sets.newHashSet(roleName2)))));

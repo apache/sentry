@@ -17,9 +17,13 @@ package org.apache.hadoop.hive.ql.exec;
  * limitations under the License.
  */
 
-import com.google.common.base.Preconditions;
-import com.google.common.base.Splitter;
-import com.google.common.collect.Iterables;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Serializable;
+import java.util.List;
+import java.util.Set;
+
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -50,15 +54,13 @@ import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
 import org.apache.sentry.service.thrift.SentryServiceClientFactory;
+import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Serializable;
-import java.util.List;
-import java.util.Set;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
+import com.google.common.collect.Iterables;
 
 public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable {
   private static final Logger LOG = LoggerFactory
@@ -313,7 +315,12 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
 
     for (TSentryPrivilege privilege : privileges) {
 
-      appendNonNull(builder, privilege.getDbName(), true);
+      if (PrivilegeScope.URI.name().equalsIgnoreCase(
+          privilege.getPrivilegeScope())) {
+        appendNonNull(builder, privilege.getURI(), true);
+      } else {
+        appendNonNull(builder, privilege.getDbName(), true);
+      }
       appendNonNull(builder, privilege.getTableName());
       appendNonNull(builder, null);//getPartValues()
       appendNonNull(builder, null);//getColumnName()
@@ -373,14 +380,24 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
       SentryPolicyServiceClient sentryClient, String subject,
       Set<String> subjectGroups, String server,
       boolean isGrant, List<PrincipalDesc> principals,
-      List<PrivilegeDesc> privileges, PrivilegeObjectDesc privSubjectDesc) throws SentryUserException {
+ List<PrivilegeDesc> privileges,
+      PrivilegeObjectDesc privSubjectObjDesc) throws SentryUserException {
     if (privileges == null || privileges.size() == 0) {
       console.printError("No privilege found.");
       return RETURN_CODE_FAILURE;
     }
+
     String dbName = null;
     String tableName = null;
+    String uriPath = null;
+    String serverName = null;
     try {
+      if (!(privSubjectObjDesc instanceof SentryHivePrivilegeObjectDesc)) {
+        throw new HiveException(
+            "Privilege subject not parsed correctly by Sentry");
+      }
+      SentryHivePrivilegeObjectDesc privSubjectDesc = (SentryHivePrivilegeObjectDesc) privSubjectObjDesc;
+
       if (privSubjectDesc == null) {
         throw new HiveException("Privilege subject cannot be null");
       }
@@ -393,6 +410,10 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
         DatabaseTable dbTable = parseDBTable(obj);
         dbName = dbTable.getDatabase();
         tableName = dbTable.getTable();
+      } else if (privSubjectDesc.getUri()) {
+        uriPath = privSubjectDesc.getObject();
+      } else if (privSubjectDesc.getServer()) {
+        serverName = privSubjectDesc.getObject();
       } else {
         dbName = privSubjectDesc.getObject();
       }
@@ -413,7 +434,13 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
         }
         for (PrivilegeDesc privDesc : privileges) {
           if (isGrant) {
-            if (tableName == null) {
+            if (serverName != null) {
+              sentryClient.grantServerPrivilege(subject, subjectGroups,
+                  princ.getName(), serverName);
+            } else if (uriPath != null) {
+              sentryClient.grantURIPrivilege(subject, subjectGroups,
+                  princ.getName(), server, uriPath);
+            } else if (tableName == null) {
               sentryClient.grantDatabasePrivilege(subject, subjectGroups, princ.getName(), server, dbName);
             } else {
               sentryClient.grantTablePrivilege(subject, subjectGroups, princ.getName(), server, dbName,

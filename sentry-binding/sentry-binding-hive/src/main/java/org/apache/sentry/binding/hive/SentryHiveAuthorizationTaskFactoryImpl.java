@@ -22,6 +22,7 @@ import org.apache.hadoop.hive.SentryHiveConstants;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.api.PrincipalType;
 import org.apache.hadoop.hive.ql.exec.SentryGrantRevokeTask;
+import org.apache.hadoop.hive.ql.exec.SentryHivePrivilegeObjectDesc;
 import org.apache.hadoop.hive.ql.exec.Task;
 import org.apache.hadoop.hive.ql.exec.TaskFactory;
 import org.apache.hadoop.hive.ql.hooks.ReadEntity;
@@ -114,7 +115,7 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
         (ASTNode) ast.getChild(0));
     List<PrincipalDesc> principalDesc = analyzePrincipalListDef(
         (ASTNode) ast.getChild(1));
-    PrivilegeObjectDesc privilegeObj = null;
+    SentryHivePrivilegeObjectDesc privilegeObj = null;
 
     if (ast.getChildCount() > 2) {
       for (int i = 2; i < ast.getChildCount(); i++) {
@@ -291,20 +292,27 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
     return createTask(new DDLWork(inputs, outputs, showRolesDesc));
   }
 
-  private PrivilegeObjectDesc analyzePrivilegeObject(ASTNode ast)
+  private SentryHivePrivilegeObjectDesc analyzePrivilegeObject(ASTNode ast)
       throws SemanticException {
-    PrivilegeObjectDesc subject = new PrivilegeObjectDesc();
-    subject.setObject(BaseSemanticAnalyzer.unescapeIdentifier(ast.getChild(0).getText()));
+    SentryHivePrivilegeObjectDesc subject = new SentryHivePrivilegeObjectDesc();
+    String privilegeObject = BaseSemanticAnalyzer.unescapeIdentifier(ast
+        .getChild(0).getText());
     if (ast.getChildCount() > 1) {
-      for (int i = 0; i < ast.getChildCount(); i++) {
+      for (int i = 1; i < ast.getChildCount(); i++) {
         ASTNode astChild = (ASTNode) ast.getChild(i);
         if (astChild.getToken().getType() == HiveParser.TOK_PARTSPEC) {
           throw new SemanticException(SentryHiveConstants.PARTITION_PRIVS_NOT_SUPPORTED);
+        } else if (astChild.getToken().getType() == HiveParser.TOK_URI) {
+          privilegeObject = privilegeObject.replaceAll("'", "");
+          subject.setUri(true);
+        } else if (astChild.getToken().getType() == HiveParser.TOK_SERVER) {
+          subject.setServer(true);
         } else {
-          subject.setTable(ast.getChild(0) != null);
+          subject.setTable(true);
         }
       }
     }
+    subject.setObject(privilegeObject);
     return subject;
   }
 

@@ -27,8 +27,10 @@ limitations under the License.
   <name>Sentry Hive Tests</name>
   <description>end to end tests for sentry-hive integration</description>
   <properties>
-    <hadoop-dist></hadoop-dist>
+  <!--
+    <hadoop-dist>.</hadoop-dist>
     <hive-dist>${hadoop-dist}</hive-dist>
+  -->
     <HADOOP_CONF_DIR>${env.HADOOP_CONF_DIR}</HADOOP_CONF_DIR>
     <HIVE_CONF_DIR>${env.HIVE_CONF_DIR}</HIVE_CONF_DIR>
   </properties>
@@ -237,11 +239,51 @@ limitations under the License.
           </systemPropertyVariables>
         </configuration>
       </plugin>
+    </plugins>
+    <pluginManagement>
+      <plugins>
+        <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+        <plugin>
+          <groupId>org.eclipse.m2e</groupId>
+          <artifactId>lifecycle-mapping</artifactId>
+          <version>1.0.0</version>
+          <configuration>
+            <lifecycleMappingMetadata>
+              <pluginExecutions>
+                <pluginExecution>
+                  <pluginExecutionFilter>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-antrun-plugin</artifactId>
+                    <versionRange>[1.7,)</versionRange>
+                    <goals>
+                      <goal>run</goal>
+                    </goals>
+                  </pluginExecutionFilter>
+                  <action>
+                    <ignore></ignore>
+                  </action>
+                </pluginExecution>
+              </pluginExecutions>
+            </lifecycleMappingMetadata>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+  <profiles>
+   <profile>
+     <id>download-hadoop</id>
+     <activation>
+       <activeByDefault>false</activeByDefault>
+       <property><name>!skipTests</name></property>
+     </activation>
+     <build>
+     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-antrun-plugin</artifactId>
         <configuration>
-          <skipTests>false</skipTests>
+          <skipTests>true</skipTests>
         </configuration>
         <executions>
           <execution>
@@ -282,40 +324,15 @@ limitations under the License.
           </execution>
         </executions>
       </plugin>
-    </plugins>
-    <pluginManagement>
-      <plugins>
-        <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
-        <plugin>
-          <groupId>org.eclipse.m2e</groupId>
-          <artifactId>lifecycle-mapping</artifactId>
-          <version>1.0.0</version>
-          <configuration>
-            <lifecycleMappingMetadata>
-              <pluginExecutions>
-                <pluginExecution>
-                  <pluginExecutionFilter>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-antrun-plugin</artifactId>
-                    <versionRange>[1.7,)</versionRange>
-                    <goals>
-                      <goal>run</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <ignore></ignore>
-                  </action>
-                </pluginExecution>
-              </pluginExecutions>
-            </lifecycleMappingMetadata>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
-  </build>
-  <profiles>
+     </plugins>
+    </build>
+   </profile>
    <profile>
      <id>link-hadoop</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <property><name>hadoop-dist</name></property>
+      </activation>
      <build>
       <plugins>
         <plugin>
