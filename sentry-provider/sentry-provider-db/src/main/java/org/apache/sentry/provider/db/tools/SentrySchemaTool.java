@@ -87,7 +87,7 @@ public class SentrySchemaTool {
         ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_PASS_DEFAULT);
     try {
       connectionURL = getValidConfVar(ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_URL);
-      if(dbType == SentrySchemaHelper.DB_DERBY) {
+      if(dbType.equalsIgnoreCase(SentrySchemaHelper.DB_DERBY)) {
         driver = sentryConf.get(ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_DRIVER,
             ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_DRIVER_DEFAULT);
       } else {
@@ -96,7 +96,7 @@ public class SentrySchemaTool {
       // load required JDBC driver
       Class.forName(driver);
     } catch (IOException e) {
-      throw new SentryUserException("Missing property", e);
+      throw new SentryUserException("Missing property: " + e.getMessage());
     } catch (ClassNotFoundException e) {
       throw new SentryUserException("Failed to load driver", e);
     }
