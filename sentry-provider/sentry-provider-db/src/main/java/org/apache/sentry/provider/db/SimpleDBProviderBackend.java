@@ -17,11 +17,9 @@
 package org.apache.sentry.provider.db;
 
 import java.io.IOException;
-import java.lang.UnsupportedOperationException;
 import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
 import org.apache.sentry.SentryUserException;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.SentryConfigurationException;
@@ -44,10 +42,11 @@ public class SimpleDBProviderBackend implements ProviderBackend {
   private volatile boolean initialized;
 
   public SimpleDBProviderBackend(Configuration conf, String resourcePath) throws IOException {
-    this(conf, new Path(resourcePath));
+    // DB Provider doesn't use policy file path
+    this(conf);
   }
 
-  public SimpleDBProviderBackend(Configuration conf, Path resourcePath) throws IOException {
+  public SimpleDBProviderBackend(Configuration conf) throws IOException {
     this(new SentryPolicyServiceClient(conf));
   }
 
