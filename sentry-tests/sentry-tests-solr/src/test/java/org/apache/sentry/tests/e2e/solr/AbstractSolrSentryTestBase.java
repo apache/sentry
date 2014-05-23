@@ -163,10 +163,14 @@ public class AbstractSolrSentryTestBase {
   @Before
   public void setupBeforeTest() throws Exception {
     System.setProperty("solr.xml.persist", "true");
+    // Disable the block cache because we can run out of memory
+    // on a MiniCluster.
+    System.setProperty("solr.hdfs.blockcache.enabled", "false");
   }
 
   @After
   public void tearDown() throws Exception {
+    System.clearProperty("solr.hdfs.blockcache.enabled");
     System.clearProperty("solr.xml.persist");
   }
 
