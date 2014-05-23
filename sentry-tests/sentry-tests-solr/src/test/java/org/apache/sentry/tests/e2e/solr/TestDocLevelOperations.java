@@ -26,7 +26,6 @@ import static org.junit.Assert.assertTrue;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.client.solrj.response.UpdateResponse;
 
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -80,7 +79,7 @@ public class TestDocLevelOperations extends AbstractSolrSentryTestBase {
    * - all documents get some bogus auth tokens
    * - all documents get a docLevel_role auth token
    */
-  private void createDocsAndQuerySimple(String collectionName) throws Exception {
+  private void createDocsAndQuerySimple(String collectionName, boolean checkNonAdminUsers) throws Exception {
 
     // ensure no current documents
     verifyDeletedocsPass(ADMIN_USER, collectionName, true);
@@ -118,30 +117,32 @@ public class TestDocLevelOperations extends AbstractSolrSentryTestBase {
       SolrQuery query = new SolrQuery();
       query.setQuery("*:*");
 
-      // as junit -- should get half the documents
-      setAuthenticationUser("junit");
-      QueryResponse rsp = server.query(query);
-      SolrDocumentList docList = rsp.getResults();
-      assertEquals(NUM_DOCS / 2, docList.getNumFound());
-      for (SolrDocument doc : docList) {
-        String id = doc.getFieldValue("id").toString();
-        assertEquals(0, Long.valueOf(id) % 2);
-      }
-
       // as admin  -- should get the other half
       setAuthenticationUser("admin");
-      rsp = server.query(query);
-      docList = rsp.getResults();
+      QueryResponse  rsp = server.query(query);
+      SolrDocumentList docList = rsp.getResults();
       assertEquals(NUM_DOCS / 2, docList.getNumFound());
       for (SolrDocument doc : docList) {
         String id = doc.getFieldValue("id").toString();
         assertEquals(1, Long.valueOf(id) % 2);
       }
 
-      // as docLevel -- should get all
-      setAuthenticationUser("docLevel");
-      rsp = server.query(query);
-      assertEquals(NUM_DOCS, rsp.getResults().getNumFound());
+      if (checkNonAdminUsers) {
+        // as junit -- should get half the documents
+        setAuthenticationUser("junit");
+        rsp = server.query(query);
+        docList = rsp.getResults();
+        assertEquals(NUM_DOCS / 2, docList.getNumFound());
+        for (SolrDocument doc : docList) {
+          String id = doc.getFieldValue("id").toString();
+          assertEquals(0, Long.valueOf(id) % 2);
+        }
+
+        // as docLevel -- should get all
+        setAuthenticationUser("docLevel");
+        rsp = server.query(query);
+        assertEquals(NUM_DOCS, rsp.getResults().getNumFound());
+      }
     } finally {
       server.shutdown();
     }
@@ -156,7 +157,7 @@ public class TestDocLevelOperations extends AbstractSolrSentryTestBase {
     setupCollectionWithDocSecurity(collectionName);
 
     try {
-      createDocsAndQuerySimple(collectionName);
+      createDocsAndQuerySimple(collectionName, true);
       CloudSolrServer server = getCloudSolrServer(collectionName);
       try {
         // test filter queries work as AND -- i.e. user can't avoid doc-level
@@ -276,7 +277,7 @@ public class TestDocLevelOperations extends AbstractSolrSentryTestBase {
    */
   private void deleteByQueryTest(String collectionName, String deleteUser,
       String deleteByQueryStr, String queryUser, int expectedQueryDocs) throws Exception {
-    createDocsAndQuerySimple(collectionName);
+    createDocsAndQuerySimple(collectionName, true);
     CloudSolrServer server = getCloudSolrServer(collectionName);
     try {
       SolrQuery query = new SolrQuery();
@@ -299,7 +300,7 @@ public class TestDocLevelOperations extends AbstractSolrSentryTestBase {
   }
 
   private void deleteByIdTest(String collectionName) throws Exception {
-    createDocsAndQuerySimple(collectionName);
+    createDocsAndQuerySimple(collectionName, true);
     CloudSolrServer server = getCloudSolrServer(collectionName);
     try {
       SolrQuery query = new SolrQuery();
@@ -327,7 +328,7 @@ public class TestDocLevelOperations extends AbstractSolrSentryTestBase {
   }
 
   private void updateDocsTest(String collectionName) throws Exception {
-    createDocsAndQuerySimple(collectionName);
+    createDocsAndQuerySimple(collectionName, true);
     CloudSolrServer server = getCloudSolrServer(collectionName);
     try {
       setAuthenticationUser("junit");
@@ -363,7 +364,7 @@ public class TestDocLevelOperations extends AbstractSolrSentryTestBase {
 
     setupCollectionWithDocSecurity(collectionName);
     try {
-      createDocsAndQuerySimple(collectionName);
+      createDocsAndQuerySimple(collectionName, true);
 
       // test deleteByQuery "*:*"
       deleteByQueryTest(collectionName, "junit", "*:*", "docLevel", 0);
@@ -375,6 +376,29 @@ public class TestDocLevelOperations extends AbstractSolrSentryTestBase {
       deleteByIdTest(collectionName);
 
       updateDocsTest(collectionName);
+    } finally {
+      deleteCollection(collectionName);
+    }
+  }
+
+  /**
+   * Test to validate doc level security on collections without perm for Index level auth.
+   * @throws Exception
+   */
+  @Test
+  public void indexDocAuthTests() throws Exception {
+    String collectionName = "testIndexlevelDoclevelOperations";
+
+    setupCollectionWithDocSecurity(collectionName);
+    try {
+      createDocsAndQuerySimple(collectionName, false);
+
+      // test query for "*:*" fails as junit user (junit user doesn't have index level permissions but has doc level permissions set)
+      verifyQueryFail("junit", collectionName, ALL_DOCS);
+
+      // test query for "*:*" fails as docLevel user (docLevel user has neither index level permissions nor doc level permissions set)
+      verifyQueryFail("docLevel", collectionName, ALL_DOCS);
+
     } finally {
       deleteCollection(collectionName);
     }
