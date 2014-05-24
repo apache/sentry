@@ -227,6 +227,7 @@ public class SentrySchemaHelper {
   // Postgres specific parser
   public static class PostgresCommandParser extends AbstractCommandParser {
     public static String POSTGRES_STRING_COMMAND_FILTER = "SET standard_conforming_strings";
+    public static String POSTGRES_STRING_CLIENT_ENCODING = "SET client_encoding";
     public static String POSTGRES_SKIP_STANDARD_STRING = "postgres.filter.81";
     private static String POSTGRES_NESTING_TOKEN = "\\i";
 
@@ -254,7 +255,7 @@ public class SentrySchemaHelper {
     public boolean isNonExecCommand(String dbCommand) {
       // Skip "standard_conforming_strings" command which is not supported in older postgres
       if (POSTGRES_SKIP_STANDARD_STRING.equalsIgnoreCase(getDbOpts())) {
-        if (dbCommand.startsWith(POSTGRES_STRING_COMMAND_FILTER)) {
+        if (dbCommand.startsWith(POSTGRES_STRING_COMMAND_FILTER) || dbCommand.startsWith(POSTGRES_STRING_CLIENT_ENCODING)) {
           return true;
         }
       }
