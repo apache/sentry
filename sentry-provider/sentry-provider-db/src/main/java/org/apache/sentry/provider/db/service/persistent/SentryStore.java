@@ -726,7 +726,8 @@ public class SentryStore {
     }
     if (!Strings.nullToEmpty(privilege.getAction()).isEmpty()
         && !privilege.getAction().equalsIgnoreCase(AccessConstants.ALL)) {
-      authorizable.add(KV_JOINER.join(ProviderConstants.PRIVILEGE_NAME.toLowerCase(),
+      authorizable
+          .add(KV_JOINER.join(ProviderConstants.PRIVILEGE_NAME.toLowerCase(),
           privilege.getAction()));
     }
     return AUTHORIZABLE_JOINER.join(authorizable);

@@ -17,8 +17,11 @@
  */
 
 package org.apache.sentry.provider.db.service.thrift;
+import static org.junit.Assert.assertEquals;
+
 import java.util.Set;
 
+import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
 import org.junit.Test;
 
@@ -42,4 +45,56 @@ public class TestSentryServerWithoutKerberos extends SentryServiceIntegrationBas
     client.dropRole(requestorUserName, requestorUserGroupNames, roleName);
   }
 
+  /**
+   * Create role, add privileges and grant it to a group drop the role and
+   * verify the privileges are no longer visible recreate the role with same
+   * name and verify the privileges again.
+   * @throws Exception
+   */
+  @Test
+  public void testDropRole() throws Exception {
+    String requestorUserName = ADMIN_USER;
+    Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
+    String roleName = "admin_r";
+
+    // create role and add privileges
+    client.dropRoleIfExists(requestorUserName, requestorUserGroupNames,
+        roleName);
+    client.createRole(requestorUserName, requestorUserGroupNames, roleName);
+    client.grantRoleToGroup(requestorUserName, requestorUserGroupNames,
+        ADMIN_GROUP, roleName);
+    client.grantDatabasePrivilege(requestorUserName, requestorUserGroupNames,
+        roleName, "server1", "db2");
+    client.grantTablePrivilege(requestorUserName, requestorUserGroupNames,
+        roleName, "server1", "db3", "tab3", "ALL");
+    assertEquals(2, client.listPrivilegesForProvider(requestorUserGroupNames,
+            ActiveRoleSet.ALL).size());
+
+    // drop role and verify privileges
+    client.dropRole(requestorUserName, requestorUserGroupNames, roleName);
+    assertEquals(0, client.listPrivilegesForProvider(requestorUserGroupNames,
+            ActiveRoleSet.ALL).size());
+
+    // recreate the role
+    client.createRole(requestorUserName, requestorUserGroupNames, roleName);
+    client.grantRoleToGroup(requestorUserName, requestorUserGroupNames,
+        ADMIN_GROUP, roleName);
+    assertEquals(
+        0,
+        client.listPrivilegesForProvider(requestorUserGroupNames,
+            ActiveRoleSet.ALL).size());
+
+    // grant different privileges and verify
+    client.grantDatabasePrivilege(requestorUserName, requestorUserGroupNames,
+        roleName, "server1", "db2");
+    assertEquals(1, client.listPrivilegesForProvider(requestorUserGroupNames,
+            ActiveRoleSet.ALL).size());
+    client.dropRole(requestorUserName, requestorUserGroupNames, roleName);
+    assertEquals(0, client.listPrivilegesForProvider(requestorUserGroupNames,
+            ActiveRoleSet.ALL).size());
+    assertEquals(
+        0,
+        client.listPrivilegesForProvider(requestorUserGroupNames,
+            ActiveRoleSet.ALL).size());
+  }
 }

@@ -141,9 +141,8 @@ public class MSentryPrivilege {
   }
 
   public void removeRole(MSentryRole role) {
-    if (roles.remove(role)) {
-      role.removePrivilege(this);
-    }
+    roles.remove(role);
+    role.removePrivilege(this);
   }
 
   @Override

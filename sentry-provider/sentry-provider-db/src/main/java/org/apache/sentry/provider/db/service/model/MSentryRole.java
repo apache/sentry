@@ -18,12 +18,13 @@
 
 package org.apache.sentry.provider.db.service.model;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
-
-import javax.jdo.annotations.PersistenceCapable;
 import java.util.HashSet;
 import java.util.Set;
+
+import javax.jdo.annotations.PersistenceCapable;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 
 /**
  * Database backed Sentry Role. Any changes to this object
