@@ -52,8 +52,7 @@ struct TSentryGroup {
 struct TCreateSentryRoleRequest {
 1: required i32 protocol_version = sentry_common_service.TSENTRY_SERVICE_V1,
 2: required string requestorUserName, # user on whose behalf the request is issued
-3: required set<string> requestorGroupNames # groups the requesting user belongs to
-4: required string roleName, # TSentryRole is not required for this request
+3: required string roleName, # TSentryRole is not required for this request
 }
 struct TCreateSentryRoleResponse {
 1: required sentry_common_service.TSentryResponseStatus status
@@ -63,8 +62,7 @@ struct TCreateSentryRoleResponse {
 struct TDropSentryRoleRequest {
 1: required i32 protocol_version = sentry_common_service.TSENTRY_SERVICE_V1,
 2: required string requestorUserName, # user on whose behalf the request is issued
-3: required set<string> requestorGroupNames # groups the requesting user belongs to
-4: required string roleName # role to drop
+3: required string roleName # role to drop
 }
 struct TDropSentryRoleResponse {
 1: required sentry_common_service.TSentryResponseStatus status
@@ -74,8 +72,7 @@ struct TDropSentryRoleResponse {
 struct TAlterSentryRoleAddGroupsRequest {
 1: required i32 protocol_version = sentry_common_service.TSENTRY_SERVICE_V1,
 2: required string requestorUserName, # user on whose behalf the request is issued
-3: required set<string> requestorGroupNames # groups the requesting user belongs to
-4: required string roleName,
+3: required string roleName,
 5: required set<TSentryGroup> groups
 }
 
@@ -87,8 +84,7 @@ struct TAlterSentryRoleAddGroupsResponse {
 struct TAlterSentryRoleDeleteGroupsRequest {
 1: required i32 protocol_version = sentry_common_service.TSENTRY_SERVICE_V1,
 2: required string requestorUserName, # user on whose behalf the request is issued
-3: required set<string> requestorGroupNames # groups the requesting user belongs to
-4: required string roleName,
+3: required string roleName,
 5: required set<TSentryGroup> groups
 }
 struct TAlterSentryRoleDeleteGroupsResponse {
@@ -99,8 +95,7 @@ struct TAlterSentryRoleDeleteGroupsResponse {
 struct TAlterSentryRoleGrantPrivilegeRequest {
 1: required i32 protocol_version = sentry_common_service.TSENTRY_SERVICE_V1,
 2: required string requestorUserName, # user on whose behalf the request is issued
-3: required set<string> requestorGroupNames # groups the requesting user belongs to
-4: required string roleName,
+3: required string roleName,
 5: required TSentryPrivilege privilege
 }
 struct TAlterSentryRoleGrantPrivilegeResponse {
@@ -111,8 +106,7 @@ struct TAlterSentryRoleGrantPrivilegeResponse {
 struct TAlterSentryRoleRevokePrivilegeRequest {
 1: required i32 protocol_version = sentry_common_service.TSENTRY_SERVICE_V1,
 2: required string requestorUserName, # user on whose behalf the request is issued
-3: required set<string> requestorGroupNames # groups the requesting user belongs to
-4: required string roleName,
+3: required string roleName,
 5: required TSentryPrivilege privilege
 }
 struct TAlterSentryRoleRevokePrivilegeResponse {
@@ -123,8 +117,7 @@ struct TAlterSentryRoleRevokePrivilegeResponse {
 struct TListSentryRolesRequest {
 1: required i32 protocol_version = sentry_common_service.TSENTRY_SERVICE_V1,
 2: required string requestorUserName, # user on whose behalf the request is issued
-3: required set<string> requestorGroupNames,# groups the requesting user belongs to
-4: optional string groupName # for this group, or all roles for all groups if null
+3: optional string groupName # for this group, or all roles for all groups if null
 }
 # used only for TListSentryRolesResponse
 struct TSentryRole {
@@ -141,8 +134,7 @@ struct TListSentryRolesResponse {
 struct TListSentryPrivilegesRequest {
 1: required i32 protocol_version = sentry_common_service.TSENTRY_SERVICE_V1,
 2: required string requestorUserName, # user on whose behalf the request is issued
-3: required set<string> requestorGroupNames,# groups the requesting user belongs to
-4: required string roleName # get privileges assigned for this role
+3: required string roleName # get privileges assigned for this role
 }
 struct TListSentryPrivilegesResponse {
 1: required sentry_common_service.TSentryResponseStatus status

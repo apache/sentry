@@ -68,10 +68,17 @@ public class LocalGroupMappingService implements GroupMappingService {
   public LocalGroupMappingService(Path resourcePath) throws IOException {
     this(new Configuration(), resourcePath);
   }
+
   @VisibleForTesting
-  public LocalGroupMappingService(Configuration configuration, Path resourcePath) throws IOException {
+  public LocalGroupMappingService(Configuration configuration, Path resourcePath)
+      throws IOException {
     // parse user/group mapping
     parseGroups(resourcePath.getFileSystem(configuration), resourcePath);
+  }
+
+  public LocalGroupMappingService(Configuration configuration, String resource)
+      throws IOException {
+    this(configuration, new Path(resource));
   }
 
   @Override

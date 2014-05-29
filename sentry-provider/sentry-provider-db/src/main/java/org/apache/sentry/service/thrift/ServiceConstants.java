@@ -88,6 +88,12 @@ public class ServiceConstants {
     public static final String SENTRY_VERIFY_SCHEM_VERSION = "sentry.verify.schema.version";
     public static final String SENTRY_VERIFY_SCHEM_VERSION_DEFAULT = "true";
 
+    public static final String SENTRY_STORE_GROUP_MAPPING = "sentry.store.group.mapping";
+    public static final String SENTRY_STORE_GROUP_MAPPING_RESOURCE = "sentry.store.group.mapping.resource";
+    public static final String SENTRY_STORE_HADOOP_GROUP_MAPPING = "org.apache.sentry.provider.common.HadoopGroupMappingService";
+    public static final String SENTRY_STORE_LOCAL_GROUP_MAPPING = "org.apache.sentry.provider.file.LocalGroupMappingService";
+    public static final String SENTRY_STORE_GROUP_MAPPING_DEFAULT = SENTRY_STORE_HADOOP_GROUP_MAPPING;
+
     public static final ImmutableMap<String, String> SENTRY_STORE_DEFAULTS =
         ImmutableMap.<String, String>builder()
     .put("datanucleus.connectionPoolingType", "BoneCP")

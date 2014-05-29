@@ -33,6 +33,8 @@ import org.apache.sentry.core.common.Subject;
 @ThreadSafe
 public interface AuthorizationProvider {
 
+  public static String SENTRY_PROVIDER = "sentry.provider";
+
   /***
    * Returns validate subject privileges on given Authorizable object
    *

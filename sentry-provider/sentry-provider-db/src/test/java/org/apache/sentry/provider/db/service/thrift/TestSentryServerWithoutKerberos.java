@@ -39,10 +39,12 @@ public class TestSentryServerWithoutKerberos extends SentryServiceIntegrationBas
   public void testCreateRole() throws Exception {
     String requestorUserName = ADMIN_USER;
     Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
+    setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+    writePolicyFile();
     String roleName = "admin_r";
-    client.dropRoleIfExists(requestorUserName, requestorUserGroupNames, roleName);
-    client.createRole(requestorUserName, requestorUserGroupNames, roleName);
-    client.dropRole(requestorUserName, requestorUserGroupNames, roleName);
+    client.dropRoleIfExists(requestorUserName, roleName);
+    client.createRole(requestorUserName, roleName);
+    client.dropRole(requestorUserName, roleName);
   }
 
   /**

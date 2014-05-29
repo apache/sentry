@@ -18,8 +18,11 @@
 
 package org.apache.sentry.provider.db.service.thrift;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.SaslRpcServer;
@@ -42,10 +45,8 @@ import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.util.HashSet;
-import java.util.Set;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Sets;
 
 public class SentryPolicyServiceClient {
 
@@ -99,12 +100,11 @@ public class SentryPolicyServiceClient {
     LOGGER.info("Successfully created client");
   }
 
-  public void createRole(String requestorUserName, Set<String> requestorUserGroupNames, String roleName)
+  public void createRole(String requestorUserName, String roleName)
   throws SentryUserException {
     TCreateSentryRoleRequest request = new TCreateSentryRoleRequest();
     request.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
     request.setRequestorUserName(requestorUserName);
-    request.setRequestorGroupNames(requestorUserGroupNames);
     request.setRoleName(roleName);
     try {
       TCreateSentryRoleResponse response = client.create_sentry_role(request);
@@ -114,25 +114,24 @@ public class SentryPolicyServiceClient {
     }
   }
 
-  public void dropRole(String requestorUserName, Set<String> requestorUserGroupNames,
+  public void dropRole(String requestorUserName,
       String roleName)
   throws SentryUserException {
-    dropRole(requestorUserName, requestorUserGroupNames, roleName, false);
+    dropRole(requestorUserName, roleName, false);
   }
 
-  public void dropRoleIfExists(String requestorUserName, Set<String> requestorUserGroupNames,
+  public void dropRoleIfExists(String requestorUserName,
       String roleName)
   throws SentryUserException {
-    dropRole(requestorUserName, requestorUserGroupNames, roleName, true);
+    dropRole(requestorUserName, roleName, true);
   }
 
-  private void dropRole(String requestorUserName, Set<String> requestorUserGroupNames,
+  private void dropRole(String requestorUserName,
       String roleName, boolean ifExists)
   throws SentryUserException {
     TDropSentryRoleRequest request = new TDropSentryRoleRequest();
     request.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
     request.setRequestorUserName(requestorUserName);
-    request.setRequestorGroupNames(requestorUserGroupNames);
     request.setRoleName(roleName);
     try {
       TDropSentryRoleResponse response = client.drop_sentry_role(request);
@@ -155,12 +154,11 @@ public class SentryPolicyServiceClient {
    * @throws SentryUserException
    */
   public Set<TSentryRole> listRolesByGroupName(String requestorUserName,
-      Set<String> requestorUserGroupNames, String groupName)
+      String groupName)
   throws SentryUserException {
     TListSentryRolesRequest request = new TListSentryRolesRequest();
     request.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
     request.setRequestorUserName(requestorUserName);
-    request.setRequestorGroupNames(requestorUserGroupNames);
     request.setGroupName(groupName);
     TListSentryRolesResponse response;
     Set<String> roles = new HashSet<String>();
@@ -181,13 +179,12 @@ public class SentryPolicyServiceClient {
    * @return Set of thrift sentry privilege objects
    * @throws SentryUserException
    */
-  public Set<TSentryPrivilege> listPrivilegesByRoleName(String requestorUserName,
-      Set<String> requestorUserGroupNames, String roleName)
+  public Set<TSentryPrivilege> listPrivilegesByRoleName(
+      String requestorUserName, String roleName)
   throws SentryUserException {
     TListSentryPrivilegesRequest request = new TListSentryPrivilegesRequest();
     request.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
     request.setRequestorUserName(requestorUserName);
-    request.setRequestorGroupNames(requestorUserGroupNames);
     request.setRoleName(roleName);
     TListSentryPrivilegesResponse response;
     try {
@@ -201,44 +198,44 @@ public class SentryPolicyServiceClient {
 
   public Set<TSentryRole> listRoles(String requestorUserName, Set<String> requestorUserGroupNames)
        throws SentryUserException {
-    return listRolesByGroupName(requestorUserName, requestorUserGroupNames, null);
+    return listRolesByGroupName(requestorUserName, null);
   }
 
-  public void grantURIPrivilege(String requestorUserName, Set<String> requestorUserGroupNames,
+  public void grantURIPrivilege(String requestorUserName,
       String roleName, String server, String uri)
   throws SentryUserException {
-    grantPrivilege(requestorUserName, requestorUserGroupNames, roleName,
+    grantPrivilege(requestorUserName, roleName,
         PrivilegeScope.URI, server, uri, null, null, AccessConstants.ALL);
   }
 
-  public void grantServerPrivilege(String requestorUserName, Set<String> requestorUserGroupNames,
+  public void grantServerPrivilege(String requestorUserName,
       String roleName, String server)
   throws SentryUserException {
-    grantPrivilege(requestorUserName, requestorUserGroupNames, roleName,
+    grantPrivilege(requestorUserName, roleName,
         PrivilegeScope.SERVER, server, null, null, null, AccessConstants.ALL);
   }
 
-  public void grantDatabasePrivilege(String requestorUserName, Set<String> requestorUserGroupNames,
+  public void grantDatabasePrivilege(String requestorUserName,
       String roleName, String server, String db)
   throws SentryUserException {
-    grantPrivilege(requestorUserName, requestorUserGroupNames, roleName,
+    grantPrivilege(requestorUserName, roleName,
         PrivilegeScope.DATABASE, server, null, db, null, AccessConstants.ALL);
   }
 
-  public void grantTablePrivilege(String requestorUserName, Set<String> requestorUserGroupNames,
+  public void grantTablePrivilege(String requestorUserName,
       String roleName, String server, String db, String table, String action)
   throws SentryUserException {
-    grantPrivilege(requestorUserName, requestorUserGroupNames, roleName, PrivilegeScope.TABLE, server, null,
+    grantPrivilege(requestorUserName, roleName, PrivilegeScope.TABLE, server,
+        null,
         db, table, action);
   }
 
-  private void grantPrivilege(String requestorUserName, Set<String> requestorUserGroupNames,
+  private void grantPrivilege(String requestorUserName,
       String roleName, PrivilegeScope scope, String serverName, String uri, String db, String table, String action)
   throws SentryUserException {
     TAlterSentryRoleGrantPrivilegeRequest request = new TAlterSentryRoleGrantPrivilegeRequest();
     request.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
     request.setRequestorUserName(requestorUserName);
-    request.setRequestorGroupNames(requestorUserGroupNames);
     request.setRoleName(roleName);
     TSentryPrivilege privilege = new TSentryPrivilege();
     privilege.setPrivilegeScope(scope.toString());
@@ -258,42 +255,41 @@ public class SentryPolicyServiceClient {
     }
   }
 
-  public void revokeURIPrivilege(String requestorUserName, Set<String> requestorUserGroupNames,
+  public void revokeURIPrivilege(String requestorUserName,
       String roleName, String server, String uri)
   throws SentryUserException {
-    revokePrivilege(requestorUserName, requestorUserGroupNames, roleName,
+    revokePrivilege(requestorUserName, roleName,
         PrivilegeScope.URI, server, uri, null, null, AccessConstants.ALL);
   }
 
-  public void revokeServerPrivilege(String requestorUserName, Set<String> requestorUserGroupNames,
+  public void revokeServerPrivilege(String requestorUserName,
       String roleName, String server)
   throws SentryUserException {
-    revokePrivilege(requestorUserName, requestorUserGroupNames, roleName,
+    revokePrivilege(requestorUserName, roleName,
         PrivilegeScope.SERVER, server, null, null, null, AccessConstants.ALL);
   }
 
-  public void revokeDatabasePrivilege(String requestorUserName, Set<String> requestorUserGroupNames,
+  public void revokeDatabasePrivilege(String requestorUserName,
       String roleName, String server, String db)
   throws SentryUserException {
-    revokePrivilege(requestorUserName, requestorUserGroupNames, roleName,
+    revokePrivilege(requestorUserName, roleName,
         PrivilegeScope.DATABASE, server, null, db, null, AccessConstants.ALL);
   }
 
-  public void revokeTablePrivilege(String requestorUserName, Set<String> requestorUserGroupNames,
+  public void revokeTablePrivilege(String requestorUserName,
       String roleName, String server, String db, String table, String action)
   throws SentryUserException {
-    revokePrivilege(requestorUserName, requestorUserGroupNames, roleName,
+    revokePrivilege(requestorUserName, roleName,
         PrivilegeScope.TABLE, server, null,
         db, table, action);
   }
 
-  private void revokePrivilege(String requestorUserName, Set<String> requestorUserGroupNames,
+  private void revokePrivilege(String requestorUserName,
       String roleName, PrivilegeScope scope, String serverName, String uri, String db, String table, String action)
   throws SentryUserException {
     TAlterSentryRoleRevokePrivilegeRequest request = new TAlterSentryRoleRevokePrivilegeRequest();
     request.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
     request.setRequestorUserName(requestorUserName);
-    request.setRequestorGroupNames(requestorUserGroupNames);
     request.setRoleName(roleName);
     TSentryPrivilege privilege = new TSentryPrivilege();
     privilege.setPrivilegeScope(scope.toString());
@@ -328,11 +324,11 @@ public class SentryPolicyServiceClient {
     }
   }
 
-  public void grantRoleToGroup(String requestorUserName, Set<String> requestorUserGroupName,
+  public void grantRoleToGroup(String requestorUserName,
       String groupName, String roleName)
   throws SentryUserException {
     TAlterSentryRoleAddGroupsRequest request = new TAlterSentryRoleAddGroupsRequest(ThriftConstants.
-        TSENTRY_SERVICE_VERSION_CURRENT, requestorUserName, requestorUserGroupName,
+TSENTRY_SERVICE_VERSION_CURRENT, requestorUserName,
         roleName, Sets.newHashSet(new TSentryGroup(groupName)));
     try {
       TAlterSentryRoleAddGroupsResponse response = client.alter_sentry_role_add_groups(request);
@@ -342,11 +338,11 @@ public class SentryPolicyServiceClient {
     }
   }
 
-  public void revokeRoleFromGroup(String requestorUserName, Set<String> requestorUserGroupName,
+  public void revokeRoleFromGroup(String requestorUserName,
       String groupName, String roleName)
   throws SentryUserException {
     TAlterSentryRoleDeleteGroupsRequest request = new TAlterSentryRoleDeleteGroupsRequest(ThriftConstants.
-        TSENTRY_SERVICE_VERSION_CURRENT, requestorUserName, requestorUserGroupName,
+TSENTRY_SERVICE_VERSION_CURRENT, requestorUserName,
         roleName, Sets.newHashSet(new TSentryGroup(groupName)));
     try {
       TAlterSentryRoleDeleteGroupsResponse response = client.alter_sentry_role_delete_groups(request);

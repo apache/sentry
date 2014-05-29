@@ -20,6 +20,7 @@ package org.apache.sentry.service.thrift;
 import java.io.File;
 import java.security.PrivilegedExceptionAction;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeoutException;
 
 import javax.security.auth.Subject;
@@ -31,6 +32,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.minikdc.KerberosSecurityTestcase;
 import org.apache.hadoop.minikdc.MiniKdc;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
+import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.junit.After;
@@ -72,6 +74,8 @@ public abstract class SentryServiceIntegrationBase extends KerberosSecurityTestc
   protected LoginContext clientLoginContext;
   protected boolean kerberos;
   protected final Configuration conf = new Configuration(false);
+  protected PolicyFile policyFile;
+  protected File policyFilePath;
 
   @Before
   public void setup() throws Exception {
@@ -119,6 +123,12 @@ public abstract class SentryServiceIntegrationBase extends KerberosSecurityTestc
     server = new SentryServiceFactory().create(conf);
     conf.set(ClientConfig.SERVER_RPC_ADDRESS, server.getAddress().getHostString());
     conf.set(ClientConfig.SERVER_RPC_PORT, String.valueOf(server.getAddress().getPort()));
+    conf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING,
+        ServerConfig.SENTRY_STORE_LOCAL_GROUP_MAPPING);
+    policyFilePath = new File(dbDir, "local_policy_file.ini");
+    conf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE,
+        policyFilePath.getPath());
+    policyFile = new PolicyFile();
   }
 
   public void connectToSentryService() throws Exception {
@@ -192,5 +202,15 @@ public abstract class SentryServiceIntegrationBase extends KerberosSecurityTestc
       }
       Assert.fail(message);
     }
+  }
+
+  protected void setLocalGroupMapping(String user, Set<String> groupSet) {
+    for (String group : groupSet) {
+      policyFile.addGroupsToUser(user, group);
+    }
+  }
+
+  protected void writePolicyFile() throws Exception {
+    policyFile.write(policyFilePath);
   }
 }

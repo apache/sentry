@@ -83,6 +83,11 @@ limitations under the License.
       <artifactId>sentry-provider-common</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.apache.sentry</groupId>
+      <artifactId>sentry-provider-file</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-shims</artifactId>
       <scope>provided</scope>

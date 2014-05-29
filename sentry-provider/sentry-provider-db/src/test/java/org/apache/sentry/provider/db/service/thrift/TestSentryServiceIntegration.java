@@ -18,17 +18,17 @@
 
 package org.apache.sentry.provider.db.service.thrift;
 
-import com.google.common.collect.Sets;
-
 import org.apache.sentry.core.common.ActiveRoleSet;
+import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import java.util.Set;
+
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
 import org.junit.Test;
 
-import java.util.Set;
-
-import static junit.framework.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import com.google.common.collect.Sets;
 
 
 public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
@@ -38,10 +38,12 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
     String requestorUserName = ADMIN_USER;
     Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
     String roleName = "admin_r";
+    setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+    writePolicyFile();
 
-    client.dropRoleIfExists(requestorUserName, requestorUserGroupNames, roleName);
+    client.dropRoleIfExists(requestorUserName, roleName);
 
-    client.createRole(requestorUserName, requestorUserGroupNames, roleName);
+    client.createRole(requestorUserName, roleName);
 
     Set<TSentryRole> roles = client.listRoles(requestorUserName, requestorUserGroupNames);
     assertEquals("Incorrect number of roles", 1, roles.size());
@@ -49,62 +51,64 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
     for (TSentryRole role:roles) {
       assertTrue(role.getRoleName(), role.getRoleName().equalsIgnoreCase(roleName));
     }
-    client.dropRole(requestorUserName, requestorUserGroupNames, roleName);
+    client.dropRole(requestorUserName, roleName);
   }
 
   @Test
   public void testGranRevokePrivilegeOnTableForRole() throws Exception {
     String requestorUserName = ADMIN_USER;
     Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
+    setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+    writePolicyFile();
     String roleName1 = "admin_r1";
     String roleName2 = "admin_r2";
 
-    client.dropRoleIfExists(requestorUserName, requestorUserGroupNames, roleName1);
-    client.createRole(requestorUserName, requestorUserGroupNames, roleName1);
+    client.dropRoleIfExists(requestorUserName,  roleName1);
+    client.createRole(requestorUserName,  roleName1);
 
-    client.grantTablePrivilege(requestorUserName, requestorUserGroupNames, roleName1, "server", "db", "table1", "ALL");
-    client.grantTablePrivilege(requestorUserName, requestorUserGroupNames, roleName1, "server", "db", "table2", "ALL");
-    client.grantTablePrivilege(requestorUserName, requestorUserGroupNames, roleName1, "server", "db", "table3", "ALL");
-    client.grantTablePrivilege(requestorUserName, requestorUserGroupNames, roleName1, "server", "db", "table4", "ALL");
+    client.grantTablePrivilege(requestorUserName,  roleName1, "server", "db", "table1", "ALL");
+    client.grantTablePrivilege(requestorUserName,  roleName1, "server", "db", "table2", "ALL");
+    client.grantTablePrivilege(requestorUserName,  roleName1, "server", "db", "table3", "ALL");
+    client.grantTablePrivilege(requestorUserName,  roleName1, "server", "db", "table4", "ALL");
 
 
-    client.dropRoleIfExists(requestorUserName, requestorUserGroupNames, roleName2);
-    client.createRole(requestorUserName, requestorUserGroupNames, roleName2);
+    client.dropRoleIfExists(requestorUserName,  roleName2);
+    client.createRole(requestorUserName,  roleName2);
 
-    client.grantTablePrivilege(requestorUserName, requestorUserGroupNames, roleName2, "server", "db", "table1", "ALL");
-    client.grantTablePrivilege(requestorUserName, requestorUserGroupNames, roleName2, "server", "db", "table2", "ALL");
-    client.grantTablePrivilege(requestorUserName, requestorUserGroupNames, roleName2, "server", "db", "table3", "ALL");
-    client.grantTablePrivilege(requestorUserName, requestorUserGroupNames, roleName2, "server", "db", "table4", "ALL");
+    client.grantTablePrivilege(requestorUserName,  roleName2, "server", "db", "table1", "ALL");
+    client.grantTablePrivilege(requestorUserName,  roleName2, "server", "db", "table2", "ALL");
+    client.grantTablePrivilege(requestorUserName,  roleName2, "server", "db", "table3", "ALL");
+    client.grantTablePrivilege(requestorUserName,  roleName2, "server", "db", "table4", "ALL");
 
-    Set<TSentryPrivilege> listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, requestorUserGroupNames, roleName1);
+    Set<TSentryPrivilege> listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName,  roleName1);
     assertEquals("Privilege not assigned to role1 !!", 4, listPrivilegesByRoleName.size());
 
-    listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, requestorUserGroupNames, roleName2);
+    listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName,  roleName2);
     assertEquals("Privilege not assigned to role2 !!", 4, listPrivilegesByRoleName.size());
 
 
-    client.revokeTablePrivilege(requestorUserName, requestorUserGroupNames, roleName1, "server", "db", "table1", "ALL");
-    listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, requestorUserGroupNames, roleName1);
+    client.revokeTablePrivilege(requestorUserName,  roleName1, "server", "db", "table1", "ALL");
+    listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName,  roleName1);
     assertTrue("Privilege not correctly revoked !!", listPrivilegesByRoleName.size() == 3);
-    listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, requestorUserGroupNames, roleName2);
+    listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName,  roleName2);
     assertTrue("Privilege not correctly revoked !!", listPrivilegesByRoleName.size() == 4);
 
-    client.revokeTablePrivilege(requestorUserName, requestorUserGroupNames, roleName2, "server", "db", "table1", "ALL");
-    listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, requestorUserGroupNames, roleName2);
+    client.revokeTablePrivilege(requestorUserName,  roleName2, "server", "db", "table1", "ALL");
+    listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName,  roleName2);
     assertTrue("Privilege not correctly revoked !!", listPrivilegesByRoleName.size() == 3);
-    listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, requestorUserGroupNames, roleName1);
+    listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName,  roleName1);
     assertTrue("Privilege not correctly revoked !!", listPrivilegesByRoleName.size() == 3);
 
-    client.revokeTablePrivilege(requestorUserName, requestorUserGroupNames, roleName1, "server", "db", "table2", "ALL");
-    client.revokeTablePrivilege(requestorUserName, requestorUserGroupNames, roleName1, "server", "db", "table3", "ALL");
-    client.revokeTablePrivilege(requestorUserName, requestorUserGroupNames, roleName1, "server", "db", "table4", "ALL");
-    listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, requestorUserGroupNames, roleName1);
+    client.revokeTablePrivilege(requestorUserName,  roleName1, "server", "db", "table2", "ALL");
+    client.revokeTablePrivilege(requestorUserName,  roleName1, "server", "db", "table3", "ALL");
+    client.revokeTablePrivilege(requestorUserName,  roleName1, "server", "db", "table4", "ALL");
+    listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName,  roleName1);
     assertTrue("Privilege not correctly revoked !!", listPrivilegesByRoleName.size() == 0);
 
-    client.revokeTablePrivilege(requestorUserName, requestorUserGroupNames, roleName2, "server", "db", "table2", "ALL");
-    client.revokeTablePrivilege(requestorUserName, requestorUserGroupNames, roleName2, "server", "db", "table3", "ALL");
-    client.revokeTablePrivilege(requestorUserName, requestorUserGroupNames, roleName2, "server", "db", "table4", "ALL");
-    listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, requestorUserGroupNames, roleName2);
+    client.revokeTablePrivilege(requestorUserName,  roleName2, "server", "db", "table2", "ALL");
+    client.revokeTablePrivilege(requestorUserName,  roleName2, "server", "db", "table3", "ALL");
+    client.revokeTablePrivilege(requestorUserName,  roleName2, "server", "db", "table4", "ALL");
+    listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName,  roleName2);
     assertTrue("Privilege not correctly revoked !!", listPrivilegesByRoleName.size() == 0);
   }
 
@@ -112,21 +116,23 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
   public void testMultipleRolesSamePrivilege() throws Exception {
     String requestorUserName = ADMIN_USER;
     Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
+    setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+    writePolicyFile();
     String roleName1 = "admin_r1";
     String roleName2 = "admin_r2";
 
-    client.dropRoleIfExists(requestorUserName, requestorUserGroupNames,roleName1);
-    client.createRole(requestorUserName, requestorUserGroupNames, roleName1);
+    client.dropRoleIfExists(requestorUserName, roleName1);
+    client.createRole(requestorUserName,  roleName1);
 
-    client.dropRoleIfExists(requestorUserName, requestorUserGroupNames, roleName2);
-    client.createRole(requestorUserName, requestorUserGroupNames, roleName2);
+    client.dropRoleIfExists(requestorUserName,  roleName2);
+    client.createRole(requestorUserName,  roleName2);
 
-    client.grantTablePrivilege(requestorUserName, requestorUserGroupNames, roleName1, "server", "db", "table", "ALL");
-    Set<TSentryPrivilege> listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, requestorUserGroupNames, roleName1);
+    client.grantTablePrivilege(requestorUserName,  roleName1, "server", "db", "table", "ALL");
+    Set<TSentryPrivilege> listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName,  roleName1);
     assertTrue("Privilege not assigned to role1 !!", listPrivilegesByRoleName.size() == 1);
 
-    client.grantTablePrivilege(requestorUserName, requestorUserGroupNames, roleName2, "server", "db", "table", "ALL");
-    listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, requestorUserGroupNames, roleName2);
+    client.grantTablePrivilege(requestorUserName,  roleName2, "server", "db", "table", "ALL");
+    listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName,  roleName2);
     assertTrue("Privilege not assigned to role2 !!", listPrivilegesByRoleName.size() == 1);
   }
 
@@ -137,16 +143,17 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
     Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
     String roleName = "admin_testdb";
     String groupName = "group1";
+    setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+    writePolicyFile();
 
-    client.dropRoleIfExists(requestorUserName, requestorUserGroupNames, roleName);
-    client.createRole(requestorUserName, requestorUserGroupNames, roleName);
+    client.dropRoleIfExists(requestorUserName, roleName);
+    client.createRole(requestorUserName, roleName);
 
     Set<TSentryRole> roles = client.listRoles(requestorUserName, requestorUserGroupNames);
     assertEquals("Incorrect number of roles", 1, roles.size());
 
-    client.grantRoleToGroup(requestorUserName, requestorUserGroupNames, groupName, roleName);
-    Set<TSentryRole> groupRoles = client.listRolesByGroupName(requestorUserName,
-        requestorUserGroupNames, groupName);
+    client.grantRoleToGroup(requestorUserName, groupName, roleName);
+    Set<TSentryRole> groupRoles = client.listRolesByGroupName(requestorUserName, groupName);
     assertTrue(groupRoles.size() == 1);
     for (TSentryRole role:groupRoles) {
       assertTrue(role.getRoleName(), role.getRoleName().equalsIgnoreCase(roleName));
@@ -156,7 +163,7 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
       }
     }
 
-    client.dropRole(requestorUserName, requestorUserGroupNames, roleName);
+    client.dropRole(requestorUserName, roleName);
   }
 
   @Test
@@ -166,24 +173,26 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
     String roleName = "admin_testdb";
     String server = "server1";
     String db = "testDB";
+    setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+    writePolicyFile();
 
-    client.dropRoleIfExists(requestorUserName, requestorUserGroupNames, roleName);
-    client.createRole(requestorUserName, requestorUserGroupNames, roleName);
+    client.dropRoleIfExists(requestorUserName, roleName);
+    client.createRole(requestorUserName, roleName);
 
     Set<TSentryRole> roles = client.listRoles(requestorUserName, requestorUserGroupNames);
     assertEquals("Incorrect number of roles", 1, roles.size());
 
-    client.grantDatabasePrivilege(requestorUserName, requestorUserGroupNames, roleName, server, db);
+    client.grantDatabasePrivilege(requestorUserName, roleName, server, db);
     Set<TSentryPrivilege> privileges = client.listPrivilegesByRoleName(requestorUserName,
-        requestorUserGroupNames, roleName);
+ roleName);
     assertTrue(privileges.size() == 1);
     for (TSentryPrivilege privilege:privileges) {
       assertTrue(privilege.getPrivilegeName(),
         privilege.getPrivilegeName().equalsIgnoreCase(SentryStore.constructPrivilegeName(privilege)));
     }
 
-    client.revokeDatabasePrivilege(requestorUserName, requestorUserGroupNames, roleName, server, db);
-    client.dropRole(requestorUserName, requestorUserGroupNames, roleName);
+    client.revokeDatabasePrivilege(requestorUserName, roleName, server, db);
+    client.dropRole(requestorUserName, roleName);
   }
 
 }

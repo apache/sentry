@@ -21,8 +21,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.Groups;
-import org.apache.sentry.provider.common.GroupMappingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,6 +34,10 @@ public class HadoopGroupMappingService implements GroupMappingService {
 
   public HadoopGroupMappingService(Groups groups) {
     this.groups = groups;
+  }
+
+  public HadoopGroupMappingService(Configuration conf, String resource) {
+    this(Groups.getUserToGroupsMappingService(conf));
   }
 
   @Override

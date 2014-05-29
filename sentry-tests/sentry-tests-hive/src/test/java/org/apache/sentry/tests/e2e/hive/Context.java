@@ -61,7 +61,7 @@ public class Context {
   private final File baseDir;
   private final File dataDir;
 
-  private final File policyFile;
+  private File policyFile;
   private final Set<Connection> connections;
   private final Set<Statement> statements;
 
@@ -215,6 +215,10 @@ public class Context {
 
   public File getPolicyFile() {
     return policyFile;
+  }
+
+  public void setPolicyFile(File policyFile) {
+    this.policyFile = policyFile;
   }
 
   @SuppressWarnings("static-access")

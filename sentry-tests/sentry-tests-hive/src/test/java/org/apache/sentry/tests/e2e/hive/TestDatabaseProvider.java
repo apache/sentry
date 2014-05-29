@@ -17,26 +17,10 @@
 
 package org.apache.sentry.tests.e2e.hive;
 
-import com.google.common.collect.Maps;
-import com.google.common.io.Files;
-import org.apache.commons.io.FileUtils;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
-import org.apache.sentry.binding.hive.SentryHiveAuthorizationTaskFactoryImpl;
-import org.apache.sentry.provider.db.SimpleDBProviderBackend;
-import org.apache.sentry.provider.file.PolicyFile;
-import org.apache.sentry.service.thrift.SentryService;
-import org.apache.sentry.service.thrift.SentryServiceFactory;
-import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
-import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
-import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
-import org.junit.After;
+import static org.hamcrest.Matchers.equalToIgnoringCase;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-
-import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.sql.Connection;
@@ -49,7 +33,24 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 
-import static org.junit.Assert.assertTrue;
+import org.apache.commons.io.FileUtils;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
+import org.apache.sentry.binding.hive.SentryHiveAuthorizationTaskFactoryImpl;
+import org.apache.sentry.provider.db.SimpleDBProviderBackend;
+import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.service.thrift.SentryService;
+import org.apache.sentry.service.thrift.SentryServiceFactory;
+import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
+import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
+import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+
+import com.google.common.collect.Maps;
+import com.google.common.io.Files;
 
 public class TestDatabaseProvider extends AbstractTestWithHiveServer {
   protected static final String SERVER_HOST = "localhost";
@@ -60,12 +61,13 @@ public class TestDatabaseProvider extends AbstractTestWithHiveServer {
   private SentryService server;
   private Configuration conf;
   private PolicyFile policyFile;
+  private File policyFilePath;
 
   @Before
   public void setup() throws Exception {
     properties = Maps.newHashMap();
     conf = new Configuration(false);
-    policyFile = new PolicyFile();
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
     properties.put(HiveServerFactory.AUTHZ_PROVIDER_BACKEND, SimpleDBProviderBackend.class.getName());
     properties.put(ConfVars.HIVE_AUTHORIZATION_TASK_FACTORY.varname,
       SentryHiveAuthorizationTaskFactoryImpl.class.getName());
@@ -77,14 +79,25 @@ public class TestDatabaseProvider extends AbstractTestWithHiveServer {
     properties.put(ServerConfig.SENTRY_STORE_JDBC_URL,
         "jdbc:derby:;databaseName=" + dbDir.getPath() + ";create=true");
     properties.put(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "false");
+    properties.put(ServerConfig.SENTRY_STORE_GROUP_MAPPING,
+        ServerConfig.SENTRY_STORE_LOCAL_GROUP_MAPPING);
+    policyFilePath = new File(Files.createTempDir(), "sentry-policy-file.ini");
+    policyFile.write(policyFilePath);
+    properties.put(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE,
+        policyFilePath.getPath());
     for (Map.Entry<String, String> entry : properties.entrySet()) {
       conf.set(entry.getKey(), entry.getValue());
     }
     server = new SentryServiceFactory().create(conf);
-    properties.put(ClientConfig.SERVER_RPC_ADDRESS, server.getAddress().getHostString());
-    properties.put(ClientConfig.SERVER_RPC_PORT, String.valueOf(server.getAddress().getPort()));
-    startSentryService();
+
+    properties.put(ClientConfig.SERVER_RPC_ADDRESS, server.getAddress()
+        .getHostString());
+    properties.put(ClientConfig.SERVER_RPC_PORT,
+        String.valueOf(server.getAddress().getPort()));
+
     context = createContext(properties);
+    policyFile.write(context.getPolicyFile());
+    startSentryService();
   }
 
   @After
@@ -115,9 +128,8 @@ public class TestDatabaseProvider extends AbstractTestWithHiveServer {
   @Ignore
   @Test
   public void beelineTest() throws Exception{
-    policyFile
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+    policyFile.setUserGroupMapping(StaticUserGroup.getStaticMapping()).write(
+        context.getPolicyFile());
     while(true) {}
   }
 
@@ -125,7 +137,7 @@ public class TestDatabaseProvider extends AbstractTestWithHiveServer {
   public void testBasic() throws Exception {
     policyFile
       .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-      .write(context.getPolicyFile());
+      .write(context.getPolicyFile(), policyFilePath);
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("CREATE ROLE admin_role");
@@ -162,8 +174,8 @@ public class TestDatabaseProvider extends AbstractTestWithHiveServer {
   @Test
   public void testShowRoles() throws Exception {
     policyFile
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+      .setUserGroupMapping(StaticUserGroup.getStaticMapping())
+      .write(context.getPolicyFile(), policyFilePath);
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("CREATE ROLE role1");
@@ -191,8 +203,8 @@ public class TestDatabaseProvider extends AbstractTestWithHiveServer {
   @Test
   public void testShowRolesByGroup() throws Exception {
     policyFile
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+      .setUserGroupMapping(StaticUserGroup.getStaticMapping())
+      .write(context.getPolicyFile(), policyFilePath);
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("CREATE ROLE role1");
@@ -225,8 +237,8 @@ public class TestDatabaseProvider extends AbstractTestWithHiveServer {
   @Test
   public void testShowPrivilegesByRole() throws Exception {
     policyFile
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+      .setUserGroupMapping(StaticUserGroup.getStaticMapping())  
+      .write(context.getPolicyFile(), policyFilePath);
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("CREATE ROLE role1");
@@ -273,8 +285,8 @@ public class TestDatabaseProvider extends AbstractTestWithHiveServer {
   @Test
   public void testShowPrivilegesByRoleAndObject() throws Exception {
     policyFile
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+      .setUserGroupMapping(StaticUserGroup.getStaticMapping())
+      .write(context.getPolicyFile(), policyFilePath);
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("CREATE ROLE role1");
@@ -296,7 +308,8 @@ public class TestDatabaseProvider extends AbstractTestWithHiveServer {
   public void testShowCurrentRole() throws Exception {
     policyFile
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+.write(
+        policyFilePath);
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("CREATE ROLE role1");

@@ -111,27 +111,26 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
       Preconditions.checkNotNull(hiveAuthzBinding, "HiveAuthzBinding cannot be null");
       Preconditions.checkNotNull(authzConf, "HiveAuthConf cannot be null");
       Preconditions.checkNotNull(subject, "Subject cannot be null");
-      Preconditions.checkNotNull(subjectGroups, "Subject Groups cannot be null");
       server = Preconditions.checkNotNull(authzConf.get(AuthzConfVars.AUTHZ_SERVER_NAME.getVar()),
           "Config " + AuthzConfVars.AUTHZ_SERVER_NAME.getVar() + " is required");
       if (work.getRoleDDLDesc() != null) {
-        return processRoleDDL(conf, console, sentryClient, subject.getName(), subjectGroups,
+        return processRoleDDL(conf, console, sentryClient, subject.getName(),
             hiveAuthzBinding, work.getRoleDDLDesc());
       }
       if (work.getGrantDesc() != null) {
-        return processGrantDDL(conf, console, sentryClient, subject.getName(), subjectGroups,
+        return processGrantDDL(conf, console, sentryClient, subject.getName(),
             server, work.getGrantDesc());
       }
       if (work.getRevokeDesc() != null) {
-        return processRevokeDDL(conf, console, sentryClient, subject.getName(), subjectGroups,
+        return processRevokeDDL(conf, console, sentryClient, subject.getName(),
             server, work.getRevokeDesc());
       }
       if (work.getShowGrantDesc() != null) {
-        return processShowGrantDDL(conf, console, sentryClient, subject.getName(), subjectGroups,
+        return processShowGrantDDL(conf, console, sentryClient, subject.getName(),
             work.getShowGrantDesc());
       }
       if (work.getGrantRevokeRoleDDL() != null) {
-        return processGrantRevokeRoleDDL(conf, console, sentryClient, subject.getName(), subjectGroups,
+        return processGrantRevokeRoleDDL(conf, console, sentryClient, subject.getName(),
             work.getGrantRevokeRoleDDL());
       }
       throw new AssertionError("Unknown command passed to Sentry Grant/Revoke Task");
@@ -171,7 +170,7 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
 
   private int processRoleDDL(HiveConf conf, LogHelper console,
       SentryPolicyServiceClient sentryClient, String subject,
-      Set<String> subjectGroups, HiveAuthzBinding hiveAuthzBinding, RoleDDLDesc desc)
+      HiveAuthzBinding hiveAuthzBinding, RoleDDLDesc desc)
           throws SentryUserException {
     RoleDDLDesc.RoleOperation operation = desc.getOperation();
     DataOutputStream outStream = null;
@@ -181,10 +180,10 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
         hiveAuthzBinding.setActiveRoleSet(name);
         return RETURN_CODE_SUCCESS;
       } else if (operation.equals(RoleDDLDesc.RoleOperation.CREATE_ROLE)) {
-        sentryClient.createRole(subject, subjectGroups, name);
+        sentryClient.createRole(subject, name);
         return RETURN_CODE_SUCCESS;
       } else if (operation.equals(RoleDDLDesc.RoleOperation.DROP_ROLE)) {
-        sentryClient.dropRole(subject, subjectGroups, name);
+        sentryClient.dropRole(subject, name);
         return RETURN_CODE_SUCCESS;
       } else if (operation.equals(RoleDDLDesc.RoleOperation.SHOW_ROLE_GRANT)) {
         Set<TSentryRole> roles;
@@ -193,7 +192,7 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
           String msg = SentryHiveConstants.GRANT_REVOKE_NOT_SUPPORTED_FOR_PRINCIPAL + principalType;
           throw new HiveException(msg);
         }
-        roles = sentryClient.listRolesByGroupName(subject, subjectGroups, desc.getName() );
+        roles = sentryClient.listRolesByGroupName(subject, desc.getName() );
         writeToFile(writeRoleGrantsInfo(roles), desc.getResFile());
         return RETURN_CODE_SUCCESS;
       } else if(operation.equals(RoleDDLDesc.RoleOperation.SHOW_ROLES)) {
@@ -234,22 +233,22 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
 
   private int processGrantDDL(HiveConf conf, LogHelper console,
       SentryPolicyServiceClient sentryClient, String subject,
-      Set<String> subjectGroups, String server, GrantDesc desc) throws SentryUserException {
-    return processGrantRevokeDDL(console, sentryClient, subject, subjectGroups,
+      String server, GrantDesc desc) throws SentryUserException {
+    return processGrantRevokeDDL(console, sentryClient, subject, 
         server, true, desc.getPrincipals(), desc.getPrivileges(), desc.getPrivilegeSubjectDesc());
   }
 
 
   private int processRevokeDDL(HiveConf conf, LogHelper console,
       SentryPolicyServiceClient sentryClient, String subject,
-      Set<String> subjectGroups, String server, RevokeDesc desc) throws SentryUserException {
-    return processGrantRevokeDDL(console, sentryClient, subject, subjectGroups,
+      String server, RevokeDesc desc) throws SentryUserException {
+    return processGrantRevokeDDL(console, sentryClient, subject, 
         server, false, desc.getPrincipals(), desc.getPrivileges(),
         desc.getPrivilegeSubjectDesc());
   }
 
   private int processShowGrantDDL(HiveConf conf, LogHelper console, SentryPolicyServiceClient sentryClient,
-      String subject, Set<String> subjectGroups, ShowGrantDesc desc) throws SentryUserException{
+      String subject, ShowGrantDesc desc) throws SentryUserException{
     PrincipalDesc principalDesc = desc.getPrincipalDesc();
     PrivilegeObjectDesc hiveObjectDesc = desc.getHiveObj();
     String principalName = principalDesc.getName();
@@ -258,7 +257,7 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
 
     try {
       if (hiveObjectDesc == null) {
-        privileges = sentryClient.listPrivilegesByRoleName(subject, subjectGroups, principalName);
+        privileges = sentryClient.listPrivilegesByRoleName(subject, principalName);
         writeToFile(writeGrantInfo(privileges, principalName), desc.getResFile());
         return RETURN_CODE_SUCCESS;
       } else {
@@ -289,7 +288,7 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
   }
 
   private int processGrantRevokeRoleDDL(HiveConf conf, LogHelper console,
-      SentryPolicyServiceClient sentryClient, String subject, Set<String> subjectGroups,
+      SentryPolicyServiceClient sentryClient, String subject,
       GrantRevokeRoleDDL desc) throws SentryUserException {
     try {
       boolean grantRole = desc.getGrant();
@@ -304,9 +303,9 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
         String groupName = principal.getName();
         for (String roleName : roles) {
           if (grantRole) {
-            sentryClient.grantRoleToGroup(subject, subjectGroups, groupName, roleName);
+            sentryClient.grantRoleToGroup(subject, groupName, roleName);
           } else {
-            sentryClient.revokeRoleFromGroup(subject, subjectGroups, groupName, roleName);
+            sentryClient.revokeRoleFromGroup(subject, groupName, roleName);
           }
         }
       }
@@ -400,8 +399,7 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
   }
 
   private static int processGrantRevokeDDL(LogHelper console,
-      SentryPolicyServiceClient sentryClient, String subject,
-      Set<String> subjectGroups, String server,
+      SentryPolicyServiceClient sentryClient, String subject, String server,
       boolean isGrant, List<PrincipalDesc> principals,
  List<PrivilegeDesc> privileges,
       PrivilegeObjectDesc privSubjectObjDesc) throws SentryUserException {
@@ -458,22 +456,20 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
         for (PrivilegeDesc privDesc : privileges) {
           if (isGrant) {
             if (serverName != null) {
-              sentryClient.grantServerPrivilege(subject, subjectGroups,
-                  princ.getName(), serverName);
+              sentryClient.grantServerPrivilege(subject, princ.getName(), serverName);
             } else if (uriPath != null) {
-              sentryClient.grantURIPrivilege(subject, subjectGroups,
-                  princ.getName(), server, uriPath);
+              sentryClient.grantURIPrivilege(subject, princ.getName(), server, uriPath);
             } else if (tableName == null) {
-              sentryClient.grantDatabasePrivilege(subject, subjectGroups, princ.getName(), server, dbName);
+              sentryClient.grantDatabasePrivilege(subject, princ.getName(), server, dbName);
             } else {
-              sentryClient.grantTablePrivilege(subject, subjectGroups, princ.getName(), server, dbName,
+              sentryClient.grantTablePrivilege(subject, princ.getName(), server, dbName,
                   tableName, privDesc.getPrivilege().getPriv().name());
             }
           } else {
             if (tableName == null) {
-              sentryClient.revokeDatabasePrivilege(subject, subjectGroups, princ.getName(), server, dbName);
+              sentryClient.revokeDatabasePrivilege(subject, princ.getName(), server, dbName);
             } else {
-              sentryClient.revokeTablePrivilege(subject, subjectGroups, princ.getName(), server, dbName,
+              sentryClient.revokeTablePrivilege(subject, princ.getName(), server, dbName,
                   tableName, privDesc.getPrivilege().getPriv().name());
             }
           }

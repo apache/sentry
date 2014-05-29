@@ -19,11 +19,14 @@
 package org.apache.sentry.provider.db.service.thrift;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.sentry.SentryUserException;
+import org.apache.sentry.provider.common.GroupMappingService;
 import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.provider.db.SentryAlreadyExistsException;
 import org.apache.sentry.provider.db.SentryInvalidInputException;
@@ -106,6 +109,11 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     return handlers;
   }
 
+  @VisibleForTesting
+  public Configuration getSentryStoreConf() {
+    return conf;
+  }
+
   private static Set<String> toTrimedLower(Set<String> s) {
     Set<String> result = Sets.newHashSet();
     for (String v : s) {
@@ -130,7 +138,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     TCreateSentryRoleRequest request) throws TException {
     TCreateSentryRoleResponse response = new TCreateSentryRoleResponse();
     try {
-      authorize(request.getRequestorUserName(), request.getRequestorGroupNames());
+      authorize(request.getRequestorUserName(),
+          getRequestorGroups(request.getRequestorUserName()));
       CommitContext commitContext = sentryStore.createSentryRole(request.getRoleName(),
           request.getRequestorUserName());
       response.setStatus(Status.OK());
@@ -157,7 +166,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
 
     TAlterSentryRoleGrantPrivilegeResponse response = new TAlterSentryRoleGrantPrivilegeResponse();
     try {
-      authorize(request.getRequestorUserName(), request.getRequestorGroupNames());
+      authorize(request.getRequestorUserName(),
+          getRequestorGroups(request.getRequestorUserName()));
       CommitContext commitContext = sentryStore.alterSentryRoleGrantPrivilege(request.getRoleName(),
                                     request.getPrivilege());
       response.setStatus(Status.OK());
@@ -188,7 +198,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   (TAlterSentryRoleRevokePrivilegeRequest request) throws TException {
     TAlterSentryRoleRevokePrivilegeResponse response = new TAlterSentryRoleRevokePrivilegeResponse();
     try {
-      authorize(request.getRequestorUserName(), request.getRequestorGroupNames());
+      authorize(request.getRequestorUserName(),
+          getRequestorGroups(request.getRequestorUserName()));
       CommitContext commitContext = sentryStore.alterSentryRoleRevokePrivilege(request.getRoleName(),
                                     request.getPrivilege());
       response.setStatus(Status.OK());
@@ -220,7 +231,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     TDropSentryRoleResponse response = new TDropSentryRoleResponse();
     TSentryResponseStatus status;
     try {
-      authorize(request.getRequestorUserName(), request.getRequestorGroupNames());
+      authorize(request.getRequestorUserName(),
+          getRequestorGroups(request.getRequestorUserName()));
       CommitContext commitContext = sentryStore.dropSentryRole(request.getRoleName());
       response.setStatus(Status.OK());
       notificationHandlerInvoker.drop_sentry_role(commitContext,
@@ -245,7 +257,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     TAlterSentryRoleAddGroupsRequest request) throws TException {
     TAlterSentryRoleAddGroupsResponse response = new TAlterSentryRoleAddGroupsResponse();
     try {
-      authorize(request.getRequestorUserName(), request.getRequestorGroupNames());
+      authorize(request.getRequestorUserName(),
+          getRequestorGroups(request.getRequestorUserName()));
       CommitContext commitContext = sentryStore.alterSentryRoleAddGroups(request.getRequestorUserName(),
                                     request.getRoleName(), request.getGroups());
       response.setStatus(Status.OK());
@@ -271,7 +284,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     TAlterSentryRoleDeleteGroupsRequest request) throws TException {
     TAlterSentryRoleDeleteGroupsResponse response = new TAlterSentryRoleDeleteGroupsResponse();
     try {
-      authorize(request.getRequestorUserName(), request.getRequestorGroupNames());
+      authorize(request.getRequestorUserName(),
+          getRequestorGroups(request.getRequestorUserName()));
       CommitContext commitContext = sentryStore.alterSentryRoleDeleteGroups(request.getRoleName(),
           request.getGroups());
       response.setStatus(Status.OK());
@@ -300,7 +314,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     Set<TSentryRole> roleSet = new HashSet<TSentryRole>();
     try {
       //TODO: Handle authorization for metadata queries
-      authorize(request.getRequestorUserName(), request.getRequestorGroupNames());
+      authorize(request.getRequestorUserName(),
+          getRequestorGroups(request.getRequestorUserName()));
       roleSet = sentryStore.getTSentryRolesByGroupName(request.getGroupName());
       response.setRoles(roleSet);
       response.setStatus(Status.OK());
@@ -327,7 +342,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       //TODO: Handle authorization for metadata queries
       // Shall we allow only admin users to list privileges
       // or allow all users as long as user is granted this role?
-      authorize(request.getRequestorUserName(), request.getRequestorGroupNames());
+      authorize(request.getRequestorUserName(),
+          getRequestorGroups(request.getRequestorUserName()));
       privilegeSet = sentryStore.getTSentryPrivilegesByRoleName(request.getRoleName());
       response.setPrivileges(privilegeSet);
       response.setStatus(Status.OK());
@@ -363,5 +379,29 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       response.setStatus(Status.RuntimeError(msg, e));
     }
     return response;
+  }
+
+  // retrieve the group mapping for the given user name
+  private Set<String> getRequestorGroups(String userName)
+      throws SentryUserException {
+      String groupMapping = conf.get(ServerConfig.SENTRY_STORE_GROUP_MAPPING,
+          ServerConfig.SENTRY_STORE_GROUP_MAPPING_DEFAULT);
+      String authResoruce = conf
+          .get(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE);
+
+      // load the group mapping provider class
+      GroupMappingService groupMappingService;
+      try {
+        Constructor<?> constrctor = Class.forName(groupMapping).getDeclaredConstructor(
+            Configuration.class, String.class);
+        constrctor.setAccessible(true);
+        groupMappingService = (GroupMappingService) constrctor.newInstance(new Object[] { conf,
+            authResoruce });
+      } catch (NoSuchMethodException | SecurityException | ClassNotFoundException
+          | InstantiationException | IllegalAccessException
+          | IllegalArgumentException | InvocationTargetException e) {
+        throw new SentryUserException("Unable to instantiate group mapping", e);
+      }
+      return groupMappingService.getGroups(userName);
   }
 }
