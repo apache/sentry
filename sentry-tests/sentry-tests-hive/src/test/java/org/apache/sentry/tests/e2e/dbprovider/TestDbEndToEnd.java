@@ -35,25 +35,17 @@ import org.junit.Test;
 import com.google.common.io.Resources;
 
 public class TestDbEndToEnd extends AbstractTestWithDbProvider {
-  private Context context;
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private File dataFile;
 
   @Before
   public void setup() throws Exception {
-    context = createContext();
+    createContext();
     dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
     setupAdmin(context);
-  }
-
-  @After
-  public void tearDown() throws Exception {
-    if (context != null) {
-      context.close();
-    }
   }
 
   @Test
@@ -128,9 +120,6 @@ public class TestDbEndToEnd extends AbstractTestWithDbProvider {
    */
   @Test
   public void testEndToEnd1() throws Exception {
-    policyFile
-      .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-      .write(context.getPolicyFile());
 
     String dbName1 = "db_1";
     String dbName2 = "productionDB";

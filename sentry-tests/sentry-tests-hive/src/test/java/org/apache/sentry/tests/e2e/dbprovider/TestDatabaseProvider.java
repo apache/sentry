@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.sentry.tests.e2e.hive;
+package org.apache.sentry.tests.e2e.dbprovider;
 
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
@@ -52,10 +52,9 @@ import org.junit.Test;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 
-public class TestDatabaseProvider extends AbstractTestWithHiveServer {
+public class TestDatabaseProvider extends AbstractTestWithDbProvider {
   protected static final String SERVER_HOST = "localhost";
 
-  private Context context;
   private Map<String, String> properties;
   private File dbDir;
   private SentryService server;
@@ -65,60 +64,7 @@ public class TestDatabaseProvider extends AbstractTestWithHiveServer {
 
   @Before
   public void setup() throws Exception {
-    properties = Maps.newHashMap();
-    conf = new Configuration(false);
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
-    properties.put(HiveServerFactory.AUTHZ_PROVIDER_BACKEND, SimpleDBProviderBackend.class.getName());
-    properties.put(ConfVars.HIVE_AUTHORIZATION_TASK_FACTORY.varname,
-      SentryHiveAuthorizationTaskFactoryImpl.class.getName());
-    properties.put(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_NONE);
-    properties.put(ServerConfig.ADMIN_GROUPS, ADMINGROUP);
-    properties.put(ServerConfig.RPC_ADDRESS, SERVER_HOST);
-    properties.put(ServerConfig.RPC_PORT, String.valueOf(0));
-    dbDir = new File(Files.createTempDir(), "sentry_policy_db");
-    properties.put(ServerConfig.SENTRY_STORE_JDBC_URL,
-        "jdbc:derby:;databaseName=" + dbDir.getPath() + ";create=true");
-    properties.put(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "false");
-    properties.put(ServerConfig.SENTRY_STORE_GROUP_MAPPING,
-        ServerConfig.SENTRY_STORE_LOCAL_GROUP_MAPPING);
-    policyFilePath = new File(Files.createTempDir(), "sentry-policy-file.ini");
-    policyFile.write(policyFilePath);
-    properties.put(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE,
-        policyFilePath.getPath());
-    for (Map.Entry<String, String> entry : properties.entrySet()) {
-      conf.set(entry.getKey(), entry.getValue());
-    }
-    server = new SentryServiceFactory().create(conf);
-
-    properties.put(ClientConfig.SERVER_RPC_ADDRESS, server.getAddress()
-        .getHostString());
-    properties.put(ClientConfig.SERVER_RPC_PORT,
-        String.valueOf(server.getAddress().getPort()));
-
-    context = createContext(properties);
-    policyFile.write(context.getPolicyFile());
-    startSentryService();
-  }
-
-  @After
-  public void tearDown() throws Exception {
-    if(context != null) {
-      context.close();
-    }
-    if (dbDir != null) {
-      FileUtils.deleteQuietly(dbDir);
-    }
-  }
-
-  private void startSentryService() throws Exception {
-    server.start();
-    final long start = System.currentTimeMillis();
-    while(!server.isRunning()) {
-      Thread.sleep(1000);
-      if(System.currentTimeMillis() - start > 60000L) {
-        throw new TimeoutException("Server did not start after 60 seconds");
-      }
-    }
+    createContext();
   }
 
   /**
@@ -128,16 +74,11 @@ public class TestDatabaseProvider extends AbstractTestWithHiveServer {
   @Ignore
   @Test
   public void beelineTest() throws Exception{
-    policyFile.setUserGroupMapping(StaticUserGroup.getStaticMapping()).write(
-        context.getPolicyFile());
     while(true) {}
   }
 
   @Test
   public void testBasic() throws Exception {
-    policyFile
-      .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-      .write(context.getPolicyFile(), policyFilePath);
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("CREATE ROLE admin_role");
@@ -173,9 +114,6 @@ public class TestDatabaseProvider extends AbstractTestWithHiveServer {
    */
   @Test
   public void testShowRoles() throws Exception {
-    policyFile
-      .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-      .write(context.getPolicyFile(), policyFilePath);
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("CREATE ROLE role1");
@@ -202,9 +140,6 @@ public class TestDatabaseProvider extends AbstractTestWithHiveServer {
    */
   @Test
   public void testShowRolesByGroup() throws Exception {
-    policyFile
-      .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-      .write(context.getPolicyFile(), policyFilePath);
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("CREATE ROLE role1");
@@ -236,9 +171,6 @@ public class TestDatabaseProvider extends AbstractTestWithHiveServer {
    */
   @Test
   public void testShowPrivilegesByRole() throws Exception {
-    policyFile
-      .setUserGroupMapping(StaticUserGroup.getStaticMapping())  
-      .write(context.getPolicyFile(), policyFilePath);
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("CREATE ROLE role1");
@@ -284,9 +216,6 @@ public class TestDatabaseProvider extends AbstractTestWithHiveServer {
    */
   @Test
   public void testShowPrivilegesByRoleAndObject() throws Exception {
-    policyFile
-      .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-      .write(context.getPolicyFile(), policyFilePath);
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("CREATE ROLE role1");
@@ -306,10 +235,6 @@ public class TestDatabaseProvider extends AbstractTestWithHiveServer {
    */
   @Test
   public void testShowCurrentRole() throws Exception {
-    policyFile
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-.write(
-        policyFilePath);
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("CREATE ROLE role1");

@@ -52,19 +52,20 @@ public abstract class AbstractTestWithDbProvider extends AbstractTestWithHiveSer
 
   private Map<String, String> properties;
   private File dbDir;
-  private SentryService sentryServer;
+  private SentryService server;
   private Configuration conf;
-  protected PolicyFile policyFile;
+  private PolicyFile policyFile;
+  private File policyFilePath;
+  protected Context context;
 
   @BeforeClass
   public static void setupTest() throws Exception {
   }
 
-  public void setupSentryService() throws Exception {
+  public void createContext() throws Exception {
     properties = Maps.newHashMap();
     conf = new Configuration(false);
-    policyFile = new PolicyFile();
-
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
     properties.put(HiveServerFactory.AUTHZ_PROVIDER_BACKEND, SimpleDBProviderBackend.class.getName());
     properties.put(ConfVars.HIVE_AUTHORIZATION_TASK_FACTORY.varname,
         SentryHiveAuthorizationTaskFactoryImpl.class.getName());
@@ -72,37 +73,44 @@ public abstract class AbstractTestWithDbProvider extends AbstractTestWithHiveSer
     properties.put(ServerConfig.ADMIN_GROUPS, ADMINGROUP);
     properties.put(ServerConfig.RPC_ADDRESS, SERVER_HOST);
     properties.put(ServerConfig.RPC_PORT, String.valueOf(0));
-    properties.put(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "false");
     dbDir = new File(Files.createTempDir(), "sentry_policy_db");
     properties.put(ServerConfig.SENTRY_STORE_JDBC_URL,
         "jdbc:derby:;databaseName=" + dbDir.getPath() + ";create=true");
+    properties.put(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "false");
+    properties.put(ServerConfig.SENTRY_STORE_GROUP_MAPPING,
+        ServerConfig.SENTRY_STORE_LOCAL_GROUP_MAPPING);
+    policyFilePath = new File(Files.createTempDir(), "sentry-policy-file.ini");
+    properties.put(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE,
+        policyFilePath.getPath());
     for (Map.Entry<String, String> entry : properties.entrySet()) {
       conf.set(entry.getKey(), entry.getValue());
     }
-    sentryServer = new SentryServiceFactory().create(conf);
-    properties.put(ClientConfig.SERVER_RPC_ADDRESS, sentryServer.getAddress().getHostString());
+    server = new SentryServiceFactory().create(conf);
+
+    properties.put(ClientConfig.SERVER_RPC_ADDRESS, server.getAddress()
+        .getHostString());
     properties.put(ClientConfig.SERVER_RPC_PORT,
-        String.valueOf(sentryServer.getAddress().getPort()));
+        String.valueOf(server.getAddress().getPort()));
+
+    context = createContext(properties);
+    policyFile
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
+        .write(context.getPolicyFile(), policyFilePath);
+
     startSentryService();
   }
 
   @After
   public void tearDown() throws Exception {
-    if (sentryServer != null) {
-      sentryServer.stop();
+    if (server != null) {
+      server.stop();
+    }
+    if (context != null) {
+      context.close();
     }
     if (dbDir != null) {
       FileUtils.deleteQuietly(dbDir);
     }
-  }
-
-  public Context createContext() throws Exception {
-    setupSentryService();
-    Context context = createContext(properties);
-    policyFile
-    .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-    .write(context.getPolicyFile());
-    return context;
   }
 
   protected void setupAdmin(Context context) throws Exception {
@@ -142,9 +150,9 @@ public abstract class AbstractTestWithDbProvider extends AbstractTestWithHiveSer
   }
 
   private void startSentryService() throws Exception {
-    sentryServer.start();
+    server.start();
     final long start = System.currentTimeMillis();
-    while(!sentryServer.isRunning()) {
+    while(!server.isRunning()) {
       Thread.sleep(1000);
       if(System.currentTimeMillis() - start > 60000L) {
         throw new TimeoutException("Server did not start after 60 seconds");

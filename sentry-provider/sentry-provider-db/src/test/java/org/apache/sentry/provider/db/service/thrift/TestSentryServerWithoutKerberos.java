@@ -57,46 +57,38 @@ public class TestSentryServerWithoutKerberos extends SentryServiceIntegrationBas
   public void testDropRole() throws Exception {
     String requestorUserName = ADMIN_USER;
     Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
+    setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+    writePolicyFile();
     String roleName = "admin_r";
 
     // create role and add privileges
-    client.dropRoleIfExists(requestorUserName, requestorUserGroupNames,
-        roleName);
-    client.createRole(requestorUserName, requestorUserGroupNames, roleName);
-    client.grantRoleToGroup(requestorUserName, requestorUserGroupNames,
-        ADMIN_GROUP, roleName);
-    client.grantDatabasePrivilege(requestorUserName, requestorUserGroupNames,
-        roleName, "server1", "db2");
-    client.grantTablePrivilege(requestorUserName, requestorUserGroupNames,
-        roleName, "server1", "db3", "tab3", "ALL");
+    client.dropRoleIfExists(requestorUserName, roleName);
+    client.createRole(requestorUserName, roleName);
+    client.grantRoleToGroup(requestorUserName, ADMIN_GROUP, roleName);
+    client.grantDatabasePrivilege(requestorUserName, roleName, "server1", "db2");
+    client.grantTablePrivilege(requestorUserName, roleName, "server1", "db3", "tab3", "ALL");
     assertEquals(2, client.listPrivilegesForProvider(requestorUserGroupNames,
             ActiveRoleSet.ALL).size());
 
     // drop role and verify privileges
-    client.dropRole(requestorUserName, requestorUserGroupNames, roleName);
+    client.dropRole(requestorUserName, roleName);
     assertEquals(0, client.listPrivilegesForProvider(requestorUserGroupNames,
             ActiveRoleSet.ALL).size());
 
     // recreate the role
-    client.createRole(requestorUserName, requestorUserGroupNames, roleName);
-    client.grantRoleToGroup(requestorUserName, requestorUserGroupNames,
-        ADMIN_GROUP, roleName);
-    assertEquals(
-        0,
-        client.listPrivilegesForProvider(requestorUserGroupNames,
+    client.createRole(requestorUserName, roleName);
+    client.grantRoleToGroup(requestorUserName, ADMIN_GROUP, roleName);
+    assertEquals(0, client.listPrivilegesForProvider(requestorUserGroupNames,
             ActiveRoleSet.ALL).size());
 
     // grant different privileges and verify
-    client.grantDatabasePrivilege(requestorUserName, requestorUserGroupNames,
-        roleName, "server1", "db2");
+    client.grantDatabasePrivilege(requestorUserName, roleName, "server1", "db2");
     assertEquals(1, client.listPrivilegesForProvider(requestorUserGroupNames,
             ActiveRoleSet.ALL).size());
-    client.dropRole(requestorUserName, requestorUserGroupNames, roleName);
+    client.dropRole(requestorUserName, roleName);
     assertEquals(0, client.listPrivilegesForProvider(requestorUserGroupNames,
             ActiveRoleSet.ALL).size());
-    assertEquals(
-        0,
-        client.listPrivilegesForProvider(requestorUserGroupNames,
+    assertEquals(0, client.listPrivilegesForProvider(requestorUserGroupNames,
             ActiveRoleSet.ALL).size());
   }
 }
