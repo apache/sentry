@@ -32,7 +32,6 @@ import org.junit.Test;
 import com.google.common.io.Resources;
 
 public class TestPrivilegeAtTransform extends AbstractTestWithStaticConfiguration {
-  private Context context;
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private File dataDir;
   private File dataFile;
@@ -70,8 +69,8 @@ public class TestPrivilegeAtTransform extends AbstractTestWithStaticConfiguratio
     policyFile
       .addPermissionsToRole("all_db1", "server=server1->db=db_1")
       .addRolesToGroup(USERGROUP1, "all_db1")
-      .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-      .write(context.getPolicyFile());
+      .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     // verify by SQL
     // 1, 2
@@ -103,14 +102,14 @@ public class TestPrivilegeAtTransform extends AbstractTestWithStaticConfiguratio
       .addPermissionsToRole("select_tb1", "server=server1->db=db_1->table=tb_1->action=select")
       .addPermissionsToRole("insert_tb1", "server=server1->db=db_1->table=tb_1->action=insert")
       .addRolesToGroup(USERGROUP1, "select_tb1", "insert_tb1");
-    policyFile.write(context.getPolicyFile());
+    writePolicyFile(policyFile);
     context.assertAuthzExecHookException(statement, query);
 
     // 5
     policyFile
       .addPermissionsToRole("all_server1", "server=server1")
       .addRolesToGroup(USERGROUP1, "all_server1");
-    policyFile.write(context.getPolicyFile());
+    writePolicyFile(policyFile);
     assertTrue(query, statement.execute(query));
     statement.close();
     connection.close();

@@ -21,6 +21,7 @@ import com.google.common.io.Files;
 import junit.framework.Assert;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.tests.e2e.hive.fs.DFS;
 import org.apache.sentry.tests.e2e.hive.fs.DFSFactory;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServer;
@@ -138,6 +139,9 @@ public abstract class AbstractTestWithStaticConfiguration {
   @BeforeClass
   public static void setupTestStaticConfiguration()
       throws Exception {
+    if(!policy_on_hdfs) {
+      policy_on_hdfs = new Boolean(System.getProperty("sentry.e2etest.policyonhdfs", "false"));
+    }
     properties = Maps.newHashMap();
     baseDir = Files.createTempDir();
     LOGGER.info("BaseDir = " + baseDir);
@@ -162,6 +166,13 @@ public abstract class AbstractTestWithStaticConfiguration {
 
     hiveServer = HiveServerFactory.create(properties, baseDir, confDir, logDir, policyURI, fileSystem);
     hiveServer.start();
+  }
+  protected void writePolicyFile(PolicyFile policyFile) throws Exception{
+
+    policyFile.write(context.getPolicyFile());
+    if(policy_on_hdfs) {
+      dfs.writePolicyFile(context.getPolicyFile());
+    }
   }
 
   @Before

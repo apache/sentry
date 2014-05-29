@@ -34,7 +34,6 @@ import org.junit.Test;
 import com.google.common.io.Resources;
 
 public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfiguration {
-  private Context context;
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private File dataDir;
   private File dataFile;
@@ -78,8 +77,8 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
         .addPermissionsToRole("db1_all", "server=server1->db=" + dbName1)
         .addPermissionsToRole("db1_tab1", "server=server1->db=" + dbName1 + "->table=" + tableName1)
         .addPermissionsToRole("UDF_JAR", "server=server1->uri=file://" + udfSrc.getLocation().getPath())
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
@@ -155,8 +154,8 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
         .addPermissionsToRole("db1_all", "server=server1->db=" + dbName1)
         .addPermissionsToRole("db1_tab1", "server=server1->db=" + dbName1 + "->table=" + tableName1)
         .addPermissionsToRole("UDF_JAR", "server=server1->uri=file://${user.home}/.m2")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = connection.createStatement();

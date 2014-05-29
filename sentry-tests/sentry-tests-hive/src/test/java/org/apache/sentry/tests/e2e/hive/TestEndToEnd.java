@@ -30,7 +30,6 @@ import org.junit.Test;
 import com.google.common.io.Resources;
 
 public class TestEndToEnd extends AbstractTestWithStaticConfiguration {
-  private Context context;
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private File dataFile;
   private PolicyFile policyFile;
@@ -69,9 +68,8 @@ public class TestEndToEnd extends AbstractTestWithStaticConfiguration {
   @Test
   public void testEndToEnd1() throws Exception {
     policyFile
-      .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-      .write(context.getPolicyFile());
-
+      .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
     String dbName1 = "db_1";
     String dbName2 = "productionDB";
     String tableName1 = "tb_1";
@@ -101,8 +99,8 @@ public class TestEndToEnd extends AbstractTestWithStaticConfiguration {
         .addPermissionsToRole("select_tb1", "server=server1->db=productionDB->table=tb_1->action=select")
         .addPermissionsToRole("insert_tb2", "server=server1->db=productionDB->table=tb_2->action=insert")
         .addPermissionsToRole("insert_tb1", "server=server1->db=productionDB->table=tb_2->action=insert")
-        .addPermissionsToRole("data_uri", "server=server1->uri=file://" + dataDir.getPath())
-        .write(context.getPolicyFile());
+        .addPermissionsToRole("data_uri", "server=server1->uri=file://" + dataDir.getPath());
+    writePolicyFile(policyFile);
 
     // 4
     connection = context.createConnection(USER1_1);

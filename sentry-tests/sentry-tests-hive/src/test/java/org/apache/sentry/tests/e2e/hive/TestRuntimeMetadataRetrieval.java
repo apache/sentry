@@ -39,10 +39,7 @@ import com.google.common.io.Resources;
  * access privilege validation which is handled in semantic hooks, these
  * statements are validaed via a runtime fetch hook
  */
-public class TestRuntimeMetadataRetrieval
-    extends
-      AbstractTestWithStaticConfiguration {
-  private Context context;
+public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfiguration {
   private PolicyFile policyFile;
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private File dataDir;
@@ -86,8 +83,8 @@ public class TestRuntimeMetadataRetrieval
             + tableNames[1] + "->action=insert")
         .addPermissionsToRole("tab3_priv", "server=server1->db=" + dbName1 + "->table="
             + tableNames[2] + "->action=select")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     String user1TableNames[] = {"tb_1", "tb_2", "tb_3"};
 
@@ -129,8 +126,8 @@ public class TestRuntimeMetadataRetrieval
     policyFile
         .addRolesToGroup(USERGROUP1, "db_priv")
         .addPermissionsToRole("db_priv", "server=server1->db=" + dbName1)
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     String user1TableNames[] = {"tb_1", "tb_2", "tb_3", "tb_4"};
 
@@ -172,8 +169,8 @@ public class TestRuntimeMetadataRetrieval
         .addRolesToGroup(USERGROUP1, "tab_priv")
         .addPermissionsToRole("tab_priv", "server=server1->db=" + dbName1 + "->table="
             + tableNames[3] + "->action=insert")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     String adminTableNames[] = {"tb_3", "newtab_3", "tb_2", "tb_1"};
     String user1TableNames[] = {"newtab_3"};
@@ -214,8 +211,8 @@ public class TestRuntimeMetadataRetrieval
     policyFile
         .addRolesToGroup(USERGROUP1, "tab_priv")
         .addPermissionsToRole("tab_priv", "server=server1->db=" + dbName1)
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     String adminTableNames[] = {"tb_3", "newtab_3", "tb_1", "tb_2"};
     String user1TableNames[] = {"tb_3", "newtab_3", "tb_1", "tb_2"};
@@ -252,8 +249,8 @@ public class TestRuntimeMetadataRetrieval
 
     policyFile
         .addRolesToGroup(USERGROUP1, "db_priv")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     createTabs(statement, "default", tableNames);
@@ -281,8 +278,8 @@ public class TestRuntimeMetadataRetrieval
     policyFile
         .addRolesToGroup(USERGROUP1, "db1_all")
         .addPermissionsToRole("db1_all", "server=server1->db=db_1")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
@@ -321,8 +318,8 @@ public class TestRuntimeMetadataRetrieval
         .addRolesToGroup(USERGROUP1, "db1_tab,db2_tab")
         .addPermissionsToRole("db1_tab", "server=server1->db=db_1->table=tb_1->action=select")
         .addPermissionsToRole("db2_tab", "server=server1->db=db_2->table=tb_1->action=insert")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     // verify by SQL
     // 1, 2

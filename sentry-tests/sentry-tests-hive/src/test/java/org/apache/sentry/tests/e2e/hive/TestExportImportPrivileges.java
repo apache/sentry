@@ -64,8 +64,8 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticConfigurat
         .addPermissionsToRole("db1_write", "server=server1->db=" + DB1 + "->table=" + TBL1 + "->action=INSERT")
         .addPermissionsToRole("db1_read", "server=server1->db=" + DB1 + "->table=" + TBL1 + "->action=SELECT")
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .addPermissionsToRole("data_dump", "server=server1->URI=" + dumpDir)
-        .write(context.getPolicyFile());
+        .addPermissionsToRole("data_dump", "server=server1->URI=" + dumpDir);
+    writePolicyFile(policyFile);
 
     dropDb(ADMIN1, DB1);
     createDb(ADMIN1, DB1);
@@ -110,8 +110,8 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticConfigurat
         .addPermissionsToRole("db1_all", "server=server1->db=" + DB1)
         .addPermissionsToRole("data_read", "server=server1->URI=file://" + dataFile.getPath())
         .addPermissionsToRole("data_export", "server=server1->URI=" + exportDir)
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     dropDb(ADMIN1, DB1);
     createDb(ADMIN1, DB1);

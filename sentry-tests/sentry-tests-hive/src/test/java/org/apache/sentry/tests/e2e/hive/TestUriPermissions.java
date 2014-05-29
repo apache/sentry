@@ -29,7 +29,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
-  private Context context;
   private PolicyFile policyFile;
 
   private static final String dataFile = "/kv1.dat";
@@ -63,8 +62,8 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
         .addPermissionsToRole("db1_read", "server=server1->db=" + dbName + "->table=" + tabName + "->action=SELECT")
         .addPermissionsToRole("data_read", "server=server1->URI=file://" + dataFilePath
             + ", server=server1->URI=file://" + dataFilePath)
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     // create dbs
     Connection adminCon = context.createConnection(ADMIN1);
@@ -116,8 +115,8 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
         .addPermissionsToRole("db1_all", "server=server1->db=" + dbName)
         .addPermissionsToRole("db1_tab1_all", "server=server1->db=" + dbName + "->table=" + tabName)
         .addPermissionsToRole("data_read", "server=server1->URI=" + tabDir)
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     // create dbs
     Connection adminCon = context.createConnection(ADMIN1);
@@ -192,8 +191,8 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
         .addPermissionsToRole("db1_all", "server=server1->db=" + dbName)
         .addPermissionsToRole("data_read", "server=server1->URI=" + tabDir)
         .addPermissionsToRole("server1_all", "server=server1")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     // create dbs
     Connection adminCon = context.createConnection(ADMIN1);
@@ -234,8 +233,8 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
         .addRolesToGroup(USERGROUP2, "db1_all")
         .addPermissionsToRole("db1_all", "server=server1->db=" + dbName)
         .addPermissionsToRole("data_read", "server=server1->URI=" + tableDir)
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     // create dbs
     Connection adminCon = context.createConnection(ADMIN1);

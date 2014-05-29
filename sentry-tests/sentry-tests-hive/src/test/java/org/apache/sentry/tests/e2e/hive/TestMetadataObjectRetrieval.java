@@ -33,8 +33,7 @@ import org.junit.Test;
 
 import com.google.common.io.Resources;
 
-public class TestMetadataObjectRetrieval extends
-AbstractTestWithStaticConfiguration {
+public class TestMetadataObjectRetrieval extends AbstractTestWithStaticConfiguration {
   private PolicyFile policyFile;
   private File dataFile;
 
@@ -155,21 +154,22 @@ AbstractTestWithStaticConfiguration {
     policyFile
         .addPermissionsToRole(GROUP1_ROLE, "server=server1->db=" + DB1 + "->table=" + TBL2)
         .addRolesToGroup(USERGROUP1, GROUP1_ROLE)
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
     dropDb(ADMIN1, DB1);
     createDb(ADMIN1, DB1);
     createTable(ADMIN1, DB1, dataFile, TBL1);
     positiveDescribeShowTests(ADMIN1, DB1, TBL1);
     negativeDescribeShowTests(USER1_1, DB1, TBL1);
-    policyFile
-    .addPermissionsToRole(GROUP1_ROLE, SELECT_DB1_TBL1)
-    .write(context.getPolicyFile());
+
+    policyFile.addPermissionsToRole(GROUP1_ROLE, SELECT_DB1_TBL1);
+    writePolicyFile(policyFile);
     positiveDescribeShowTests(USER1_1, DB1, TBL1);
+
     policyFile.removePermissionsFromRole(GROUP1_ROLE, SELECT_DB1_TBL1);
     policyFile
-    .addPermissionsToRole(GROUP1_ROLE, INSERT_DB1_TBL1)
-    .write(context.getPolicyFile());
+    .addPermissionsToRole(GROUP1_ROLE, INSERT_DB1_TBL1);
+    writePolicyFile(policyFile);
     positiveDescribeShowTests(USER1_1, DB1, TBL1);
   }
 
@@ -193,8 +193,9 @@ AbstractTestWithStaticConfiguration {
     policyFile
       .addPermissionsToRole(GROUP1_ROLE, "server=server1->db=" + DB1)
       .addRolesToGroup(USERGROUP1, GROUP1_ROLE)
-      .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-      .write(context.getPolicyFile());
+      .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
+
     dropDb(ADMIN1, DB1);
     createDb(ADMIN1, DB1);
     createTable(ADMIN1, DB1, dataFile, TBL1);
@@ -223,8 +224,8 @@ AbstractTestWithStaticConfiguration {
     policyFile
       .addPermissionsToRole(GROUP1_ROLE, "server=server1->db=" + DB1 + "->table=" + VIEW1)
       .addRolesToGroup(USERGROUP1, GROUP1_ROLE)
-      .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-      .write(context.getPolicyFile());
+      .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
     dropDb(ADMIN1, DB1);
     createDb(ADMIN1, DB1);
     createTable(ADMIN1, DB1, dataFile, TBL1);
@@ -259,8 +260,8 @@ AbstractTestWithStaticConfiguration {
     policyFile
       .addPermissionsToRole(GROUP1_ROLE, "server=server1->db=" + DB1 + "->table=" + TBL1)
       .addRolesToGroup(USERGROUP1, GROUP1_ROLE)
-      .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-      .write(context.getPolicyFile());
+      .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
     dropDb(ADMIN1, DB1);
     createDb(ADMIN1, DB1);
     createTable(ADMIN1, DB1, dataFile, TBL1);
@@ -280,8 +281,8 @@ AbstractTestWithStaticConfiguration {
     policyFile
       .addPermissionsToRole(GROUP1_ROLE, "server=server1->db=" + DB1)
       .addRolesToGroup(USERGROUP1, GROUP1_ROLE)
-      .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-      .write(context.getPolicyFile());
+      .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
     dropDb(ADMIN1, DB1, DB2);
     createDb(ADMIN1, DB1, DB2);
     createTable(ADMIN1, DB1, dataFile, TBL1);
@@ -299,8 +300,9 @@ AbstractTestWithStaticConfiguration {
     assertTrue(statement.executeQuery("DESCRIBE DATABASE EXTENDED " + DB1).next());
     context.assertAuthzException(statement, "DESCRIBE DATABASE " + DB2);
     context.assertAuthzException(statement, "DESCRIBE DATABASE EXTENDED " + DB2);
-    policyFile.addPermissionsToRole(GROUP1_ROLE, INSERT_DB2_TBL1)
-    .write(context.getPolicyFile());
+
+    policyFile.addPermissionsToRole(GROUP1_ROLE, INSERT_DB2_TBL1);
+    writePolicyFile(policyFile);
     context.assertAuthzException(statement, "DESCRIBE DATABASE " + DB2);
     context.assertAuthzException(statement, "DESCRIBE DATABASE EXTENDED " + DB2);
     statement.close();
@@ -316,8 +318,8 @@ AbstractTestWithStaticConfiguration {
       .addPermissionsToRole(GROUP1_ROLE, "server=server1->db=default->table=" + TBL1 + "->action=select",
         "server=server1->db=" + DB1 + "->table=" + TBL1 + "->action=select")
       .addRolesToGroup(USERGROUP1, GROUP1_ROLE)
-      .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-      .write(context.getPolicyFile());
+      .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
     dropDb(ADMIN1, DB1, DB2);
     createDb(ADMIN1, DB1, DB2);
     Connection connection = context.createConnection(ADMIN1);
@@ -350,8 +352,8 @@ AbstractTestWithStaticConfiguration {
     // grant privilege to non-existent table to allow use db1
     policyFile.addPermissionsToRole(GROUP1_ROLE, SELECT_DB1_NONTABLE)
       .addRolesToGroup(USERGROUP1, GROUP1_ROLE)
-      .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-      .write(context.getPolicyFile());
+      .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
     dropDb(ADMIN1, DB1);
     createDb(ADMIN1, DB1);
     createTable(ADMIN1, DB1, dataFile, TBL1);
@@ -373,17 +375,20 @@ AbstractTestWithStaticConfiguration {
     statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
     context.assertAuthzException(statement, "SHOW INDEX ON " + TBL1);
+
     policyFile
-    .addPermissionsToRole(GROUP1_ROLE, SELECT_DB1_VIEW1)
-    .write(context.getPolicyFile());
+    .addPermissionsToRole(GROUP1_ROLE, SELECT_DB1_VIEW1);
+    writePolicyFile(policyFile);
     context.assertAuthzException(statement, "SHOW INDEX ON " + TBL1);
+
     policyFile.removePermissionsFromRole(GROUP1_ROLE, SELECT_DB1_VIEW1)
-    .addPermissionsToRole(GROUP1_ROLE, SELECT_DB1_TBL1)
-    .write(context.getPolicyFile());
+    .addPermissionsToRole(GROUP1_ROLE, SELECT_DB1_TBL1);
+    writePolicyFile(policyFile);
     verifyIndex(statement, TBL1, INDEX1);
+
     policyFile.removePermissionsFromRole(GROUP1_ROLE, SELECT_DB1_TBL1)
-    .addPermissionsToRole(GROUP1_ROLE, INSERT_DB1_TBL1)
-    .write(context.getPolicyFile());
+    .addPermissionsToRole(GROUP1_ROLE, INSERT_DB1_TBL1);
+    writePolicyFile(policyFile);
     verifyIndex(statement, TBL1, INDEX1);
     statement.close();
     connection.close();
@@ -408,8 +413,8 @@ AbstractTestWithStaticConfiguration {
     // grant privilege to non-existent table to allow use db1
     policyFile.addPermissionsToRole(GROUP1_ROLE, SELECT_DB1_NONTABLE)
       .addRolesToGroup(USERGROUP1, GROUP1_ROLE)
-      .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-      .write(context.getPolicyFile());
+      .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
     dropDb(ADMIN1, DB1);
     createDb(ADMIN1, DB1);
     Connection connection = context.createConnection(ADMIN1);
@@ -428,18 +433,21 @@ AbstractTestWithStaticConfiguration {
     statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
     context.assertAuthzException(statement, "SHOW PARTITIONS " + TBL1);
+
     policyFile
-    .addPermissionsToRole(GROUP1_ROLE, SELECT_DB1_VIEW1)
-    .write(context.getPolicyFile());
+    .addPermissionsToRole(GROUP1_ROLE, SELECT_DB1_VIEW1);
+    writePolicyFile(policyFile);
     context.assertAuthzException(statement, "SHOW PARTITIONS " + TBL1);
+
     policyFile
     .removePermissionsFromRole(GROUP1_ROLE, SELECT_DB1_VIEW1)
-    .addPermissionsToRole(GROUP1_ROLE, SELECT_DB1_TBL1)
-    .write(context.getPolicyFile());
+    .addPermissionsToRole(GROUP1_ROLE, SELECT_DB1_TBL1);
+    writePolicyFile(policyFile);
     verifyParition(statement, TBL1);
+
     policyFile.removePermissionsFromRole(GROUP1_ROLE, SELECT_DB1_TBL1)
-    .addPermissionsToRole(GROUP1_ROLE, INSERT_DB1_TBL1)
-    .write(context.getPolicyFile());
+    .addPermissionsToRole(GROUP1_ROLE, INSERT_DB1_TBL1);
+    writePolicyFile(policyFile);
     verifyParition(statement, TBL1);
     statement.close();
     connection.close();

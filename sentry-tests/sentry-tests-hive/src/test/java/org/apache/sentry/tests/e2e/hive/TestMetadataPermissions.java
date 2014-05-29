@@ -28,7 +28,6 @@ import org.junit.Test;
 
 
 public class TestMetadataPermissions extends AbstractTestWithStaticConfiguration {
-  private Context context;
   private PolicyFile policyFile;
 
   @Before
@@ -41,8 +40,8 @@ public class TestMetadataPermissions extends AbstractTestWithStaticConfiguration
         .addRolesToGroup(USERGROUP2, "db1_all")
         .addPermissionsToRole("db1_all", "server=server1->db=db1")
         .addPermissionsToRole("db2_all", "server=server1->db=db2")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     Connection adminCon = context.createConnection(ADMIN1);
     Statement adminStmt = context.createStatement(adminCon);

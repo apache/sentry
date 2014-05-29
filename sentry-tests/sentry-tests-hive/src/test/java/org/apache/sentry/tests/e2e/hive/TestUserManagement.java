@@ -40,7 +40,6 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
   private static final String tableName = "t1";
   private static final String tableComment = "Test table";
   private File dataFile;
-  private Context context;
   private PolicyFile policyFile;
 
   @Before
@@ -111,8 +110,8 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
   public void testSanity() throws Exception {
     policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
     policyFile
-        .addGroupsToUser("admin1", ADMINGROUP)
-        .write(context.getPolicyFile());
+        .addGroupsToUser("admin1", ADMINGROUP);
+    writePolicyFile(policyFile);
     doCreateDbLoadDataDropDb("admin1", "admin1");
   }
 
@@ -125,8 +124,8 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
     policyFile
         .addGroupsToUser("admin1", ADMINGROUP)
         .addGroupsToUser("admin2", ADMINGROUP)
-        .addGroupsToUser("admin3", ADMINGROUP)
-        .write(context.getPolicyFile());
+        .addGroupsToUser("admin3", ADMINGROUP);
+    writePolicyFile(policyFile);
 
     doCreateDbLoadDataDropDb("admin1", "admin1", "admin2", "admin3");
   }
@@ -141,8 +140,8 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
     policyFile
         .addGroupsToUser("admin1", ADMINGROUP)
         .addGroupsToUser("admin2", ADMINGROUP)
-        .addGroupsToUser("admin3", ADMINGROUP)
-        .write(context.getPolicyFile());
+        .addGroupsToUser("admin3", ADMINGROUP);
+    writePolicyFile(policyFile);
     doCreateDbLoadDataDropDb("admin1", "admin1", "admin2", "admin3");
 
     // remove admin1 from admin group
@@ -169,8 +168,8 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
         .addPermissionsToRole(ADMINGROUP, "server=server1")
         .addGroupsToUser("admin1", "admin_group1", "admin_group2")
         .addGroupsToUser("admin2", "admin_group1", "admin_group2")
-        .addGroupsToUser("admin3", "admin_group1", "admin_group2")
-        .write(context.getPolicyFile());
+        .addGroupsToUser("admin3", "admin_group1", "admin_group2");
+    writePolicyFile(policyFile);
     doCreateDbLoadDataDropDb("admin1", "admin1", "admin2", "admin3");
   }
 
@@ -184,8 +183,8 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
         .addGroupsToUser("admin1", ADMINGROUP)
         .addRolesToGroup("group1", "non_admin_role")
         .addPermissionsToRole("non_admin_role", "server=server1->db=" + dbName)
-        .addGroupsToUser("user1", "group1")
-        .write(context.getPolicyFile());
+        .addGroupsToUser("user1", "group1");
+    writePolicyFile(policyFile);
 
     doCreateDbLoadDataDropDb("admin1", "admin1");
     Connection connection = context.createConnection("user1");
@@ -207,8 +206,8 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
         .addPermissionsToRole("analytics", "server=server1->db=" + dbName)
         .addGroupsToUser("user1", "group1")
         .addGroupsToUser("user2", "group1")
-        .addGroupsToUser("user3", "group1")
-        .write(context.getPolicyFile());
+        .addGroupsToUser("user3", "group1");
+    writePolicyFile(policyFile);
     doCreateDbLoadDataDropDb("user1", "user1", "user2", "user3");
   }
   /**
@@ -223,8 +222,8 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
         .addPermissionsToRole("non_admin_role", "server=server1->db=" + dbName)
         .addGroupsToUser("user1", "group1")
         .addGroupsToUser("user2", "group1")
-        .addGroupsToUser("user3", "group1")
-        .write(context.getPolicyFile());
+        .addGroupsToUser("user3", "group1");
+    writePolicyFile(policyFile);
 
     doDropDb("admin1");
     for(String user : new String[]{"user1", "user2", "user3"}) {
@@ -257,8 +256,8 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
         .addPermissionsToRole("load_data", "server=server1->URI=file://" + dataFile.getPath())
         .addGroupsToUser("group1", "group1")
         .addGroupsToUser("user2", "group1")
-        .addGroupsToUser("user3", "group1")
-        .write(context.getPolicyFile());
+        .addGroupsToUser("user3", "group1");
+    writePolicyFile(policyFile);
 
     doDropDb("admin1");
     for(String user : new String[]{"group1", "user2", "user3"}) {
@@ -281,8 +280,8 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
         .addPermissionsToRole("load_data", "server=server1->URI=file://" + dataFile.getPath())
         .addGroupsToUser("user1", "group1~!@#$%^&*()+-")
         .addGroupsToUser("user2", "group1~!@#$%^&*()+-")
-        .addGroupsToUser("user3", "group1~!@#$%^&*()+-")
-        .write(context.getPolicyFile());
+        .addGroupsToUser("user3", "group1~!@#$%^&*()+-");
+    writePolicyFile(policyFile);
 
     doDropDb("admin1");
     for(String user : new String[]{"user1", "user2", "user3"}) {
@@ -303,8 +302,8 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
         .addPermissionsToRole(ADMINGROUP, "server=server1")
         .addGroupsToUser("user1~!@#$%^&*()+-", "group1")
         .addGroupsToUser("user2", "group1")
-        .addGroupsToUser("user3", "group1")
-        .write(context.getPolicyFile());
+        .addGroupsToUser("user3", "group1");
+    writePolicyFile(policyFile);
     doCreateDbLoadDataDropDb("user1~!@#$%^&*()+-", "user1~!@#$%^&*()+-", "user2", "user3");
   }
 
@@ -319,8 +318,8 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
         .addRolesToGroup("group1", "analytics")
         .addGroupsToUser("user1", "group1")
         .addGroupsToUser("user2", "group1")
-        .addGroupsToUser("user3", "group1")
-        .write(context.getPolicyFile());
+        .addGroupsToUser("user3", "group1");
+    writePolicyFile(policyFile);
 
     Connection connection = context.createConnection("admin1");
     Statement statement = connection.createStatement();

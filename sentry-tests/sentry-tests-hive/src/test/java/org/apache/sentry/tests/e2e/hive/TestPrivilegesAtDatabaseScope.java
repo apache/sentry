@@ -43,7 +43,6 @@ import com.google.common.io.Resources;
 
 public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfiguration {
 
-  private Context context;
   private PolicyFile policyFile;
 
   Map <String, String >testProperties;
@@ -83,8 +82,8 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
         .addPermissionsToRole("all_db1", "server=server1->db=DB_1")
         .addPermissionsToRole("all_db2", "server=server1->db=DB_2")
         .addPermissionsToRole("load_data", "server=server1->uri=file://" + dataFile.getPath())
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     // setup db objects needed by the test
     Connection connection = context.createConnection(ADMIN1);
@@ -199,8 +198,8 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
         .addPermissionsToRole("all_db2", "server=server1->db=DB_2")
         .addPermissionsToRole("exttab", "server=server1->uri=file://" + dataDir.getPath())
         .addPermissionsToRole("load_data", "server=server1->uri=file://" + dataFile.getPath())
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     // setup db objects needed by the test
     Connection connection = context.createConnection(ADMIN1);
@@ -316,8 +315,9 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
         .addPermissionsToRole("all_db1", "server=server1->db=DB_1")
         .addPermissionsToRole("select_db2", "server=server1->db=DB_2->table=tab_2->action=select")
         .addPermissionsToRole("all_db3", "server=server1->db=DB_3")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
+
 
 
     // setup db objects needed by the test
@@ -379,8 +379,9 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
         .addPermissionsToRole("all_db1", "server=server1->db=DB_1")
         .addPermissionsToRole("select_db2", "server=server1->db=DB_2->table=tab_2->action=select")
         .addPermissionsToRole("all_default", "server=server1->db=default")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
+
 
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);

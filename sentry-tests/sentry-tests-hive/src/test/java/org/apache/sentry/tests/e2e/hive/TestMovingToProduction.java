@@ -34,7 +34,6 @@ import org.junit.Test;
 import com.google.common.io.Resources;
 
 public class TestMovingToProduction extends AbstractTestWithStaticConfiguration {
-  private Context context;
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private PolicyFile policyFile;
 
@@ -78,8 +77,8 @@ public class TestMovingToProduction extends AbstractTestWithStaticConfiguration 
         .addRolesToGroup(USERGROUP1, "all_db1", "load_data", "select_proddb_tbl1", "insert_proddb_tbl1")
         .addPermissionsToRole("load_data", "server=server1->uri=file://" + dataDir.getPath())
         .addPermissionsToRole("all_db1", "server=server1->db=db_1")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     String dbName1 = "db_1";
     String dbName2 = "proddb";
@@ -108,8 +107,8 @@ public class TestMovingToProduction extends AbstractTestWithStaticConfiguration 
         + "' INTO TABLE " + tableName1);
 
     policyFile
-        .addPermissionsToRole("insert_proddb_tbl1", "server=server1->db=proddb->table=tb_1->action=insert")
-        .write(context.getPolicyFile());
+        .addPermissionsToRole("insert_proddb_tbl1", "server=server1->db=proddb->table=tb_1->action=insert");
+    writePolicyFile(policyFile);
     statement.execute("USE " + dbName2);
     statement.execute("INSERT OVERWRITE TABLE "
         + tableName1 + " SELECT * FROM " + dbName1
@@ -117,8 +116,9 @@ public class TestMovingToProduction extends AbstractTestWithStaticConfiguration 
 
     // b
     policyFile
-        .addPermissionsToRole("select_proddb_tbl1", "server=server1->db=proddb->table=tb_1->action=select")
-        .write(context.getPolicyFile());
+        .addPermissionsToRole("select_proddb_tbl1", "server=server1->db=proddb->table=tb_1->action=select");
+    writePolicyFile(policyFile);
+
     ResultSet resultSet = statement.executeQuery("SELECT * FROM " + tableName1 + " LIMIT 10");
     int count = 0;
     while(resultSet.next()) {
@@ -159,8 +159,8 @@ public class TestMovingToProduction extends AbstractTestWithStaticConfiguration 
         .addRolesToGroup(USERGROUP1, "all_db1", "load_data", "select_proddb_tbl1", "insert_proddb_tbl1")
         .addPermissionsToRole("all_db1", "server=server1->db=db_1")
         .addPermissionsToRole("load_data", "server=server1->uri=file://" + dataDir.getPath())
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     String dbName1 = "db_1";
     String dbName2 = "proddb";
@@ -187,16 +187,18 @@ public class TestMovingToProduction extends AbstractTestWithStaticConfiguration 
         + "' INTO TABLE " + dbName1 + "." + tableName1);
 
     policyFile
-        .addPermissionsToRole("insert_proddb_tbl1", "server=server1->db=proddb->table=tb_1->action=insert")
-        .write(context.getPolicyFile());
+        .addPermissionsToRole("insert_proddb_tbl1", "server=server1->db=proddb->table=tb_1->action=insert");
+    writePolicyFile(policyFile);
+
     statement.execute("INSERT OVERWRITE TABLE "
         + dbName2 + "." + tableName1 + " SELECT * FROM " + dbName1
         + "." + tableName1);
 
     // b
     policyFile
-        .addPermissionsToRole("select_proddb_tbl1", "server=server1->db=proddb->table=tb_1->action=select")
-        .write(context.getPolicyFile());
+        .addPermissionsToRole("select_proddb_tbl1", "server=server1->db=proddb->table=tb_1->action=select");
+    writePolicyFile(policyFile);
+
     assertTrue("user1 should be able to select data from "
         + dbName2 + "." + dbName2 + "." + tableName1, statement.execute("SELECT * FROM "
             + dbName2 + "." + tableName1 + " LIMIT 10"));

@@ -42,7 +42,6 @@ import com.google.common.io.Resources;
 
 public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfiguration {
 
-  private Context context;
   private PolicyFile policyFile;
 
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
@@ -80,8 +79,8 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
         .addPermissionsToRole("select_tab1", "server=server1->db=DB_1->table=TAB_1->action=select")
         .addPermissionsToRole("insert_tab1", "server=server1->db=DB_1->table=TAB_1->action=insert")
         .addPermissionsToRole("select_tab2", "server=server1->db=DB_1->table=TAB_2->action=select")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     // setup db objects needed by the test
     Connection connection = context.createConnection(ADMIN1);
@@ -176,8 +175,8 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
         .addRolesToGroup(USERGROUP1, "insert_tab1", "select_tab2")
         .addPermissionsToRole("insert_tab1", "server=server1->db=DB_1->table=TAB_1->action=insert")
         .addPermissionsToRole("select_tab2", "server=server1->db=DB_1->table=TAB_2->action=select")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     // setup db objects needed by the test
     Connection connection = context.createConnection(ADMIN1);
@@ -264,8 +263,8 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
         .addPermissionsToRole("select_tab1", "server=server1->db=DB_1->table=TAB_1->action=select")
         .addPermissionsToRole("insert_tab1", "server=server1->db=DB_1->table=TAB_1->action=insert")
         .addPermissionsToRole("select_tab2", "server=server1->db=DB_1->table=TAB_2->action=select")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     // setup db objects needed by the test
     Connection connection = context.createConnection(ADMIN1);
@@ -352,8 +351,8 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
         .addRolesToGroup(USERGROUP1, "select_tab1", "select_tab2")
         .addPermissionsToRole("select_tab1", "server=server1->db=DB_1->table=TAB_1->action=select")
         .addPermissionsToRole("select_tab2", "server=server1->db=DB_1->table=TAB_2->action=select")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     // setup db objects needed by the test
     Connection connection = context.createConnection(ADMIN1);
@@ -430,8 +429,8 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
         .addRolesToGroup(USERGROUP1, "select_tab2")
         .addPermissionsToRole("select_tab1", "server=server1->db=DB_1->table=TAB_1->action=select")
         .addPermissionsToRole("select_tab2", "server=server1->db=DB_1->table=TAB_2->action=select")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     // setup db objects needed by the test
     Connection connection = context.createConnection(ADMIN1);
@@ -515,8 +514,8 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
         .addRolesToGroup(USERGROUP1, "select_tab2", "select_view1")
         .addPermissionsToRole("select_view1", "server=server1->db=DB_1->table=VIEW_1->action=select")
         .addPermissionsToRole("select_tab2", "server=server1->db=DB_1->table=TAB_2->action=select")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     // setup db objects needed by the test
     Connection connection = context.createConnection(ADMIN1);
@@ -616,8 +615,8 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
         .addRolesToGroup(USERGROUP1, "select_tab1", "select_view1")
         .addPermissionsToRole("select_view1", "server=server1->db=DB_1->table=VIEW_1->action=select")
         .addPermissionsToRole("select_tab1", "server=server1->db=DB_1->table=TAB_1->action=select")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     // setup db objects needed by the test
     Connection connection = context.createConnection(ADMIN1);

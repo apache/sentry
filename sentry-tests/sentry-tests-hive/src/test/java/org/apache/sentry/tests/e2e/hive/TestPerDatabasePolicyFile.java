@@ -30,9 +30,7 @@ import java.sql.Statement;
 
 public class TestPerDatabasePolicyFile extends AbstractTestWithStaticConfiguration {
   private static final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
-  private Context context;
   private PolicyFile policyFile;
-  private File globalPolicyFile;
   private File dataDir;
   private File dataFile;
 
@@ -40,7 +38,6 @@ public class TestPerDatabasePolicyFile extends AbstractTestWithStaticConfigurati
   public void setup() throws Exception {
     policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
     context = createContext();
-    globalPolicyFile = context.getPolicyFile();
     dataDir = context.getDataDir();
     dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
@@ -97,8 +94,9 @@ public class TestPerDatabasePolicyFile extends AbstractTestWithStaticConfigurati
   public void doTestDbSpecificFileGrants(String grant) throws Exception {
 
     policyFile
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
+
 
     // setup db objects needed by the test
     Connection connection = context.createConnection(ADMIN1);
@@ -116,9 +114,7 @@ public class TestPerDatabasePolicyFile extends AbstractTestWithStaticConfigurati
     specificPolicyFile.write(specificPolicyFileFile);
 
     policyFile.addDatabase("db2", specificPolicyFileFile.getPath());
-    policyFile.write(context.getPolicyFile());
-
-
+    writePolicyFile(policyFile);
 
     // test execution
     connection = context.createConnection(USER1_1);
