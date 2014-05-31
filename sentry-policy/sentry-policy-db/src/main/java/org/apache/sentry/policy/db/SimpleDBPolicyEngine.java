@@ -16,9 +16,11 @@
  */
 package org.apache.sentry.policy.db;
 
+import java.util.List;
 import java.util.Set;
 
 import org.apache.sentry.core.common.ActiveRoleSet;
+import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.policy.common.PrivilegeFactory;
 import org.apache.sentry.policy.common.PolicyEngine;
@@ -56,16 +58,24 @@ public class SimpleDBPolicyEngine implements PolicyEngine {
     return new DBWildcardPrivilege.DBWildcardPrivilegeFactory();
   }
 
+
+
+  @Override
+  public ImmutableSet<String> getAllPrivileges(Set<String> groups,
+      ActiveRoleSet roleSet) throws SentryConfigurationException {
+    return getPrivileges(groups, roleSet, null);
+  }
+
   /**
    * {@inheritDoc}
    */
   @Override
-  public ImmutableSet<String> getPrivileges(Set<String> groups, ActiveRoleSet roleSet)
+  public ImmutableSet<String> getPrivileges(Set<String> groups, ActiveRoleSet roleSet, Authorizable... authorizableHierarchy)
       throws SentryConfigurationException {
     if(LOGGER.isDebugEnabled()) {
       LOGGER.debug("Getting permissions for {}", groups);
     }
-    ImmutableSet<String> result = providerBackend.getPrivileges(groups, roleSet);
+    ImmutableSet<String> result = providerBackend.getPrivileges(groups, roleSet, authorizableHierarchy);
     if(LOGGER.isDebugEnabled()) {
       LOGGER.debug("result = " + result);
     }

@@ -22,7 +22,9 @@ import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_J
 import static org.apache.sentry.provider.common.ProviderConstants.KV_JOINER;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -39,6 +41,7 @@ import javax.jdo.Transaction;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.model.db.AccessConstants;
+import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
 import org.apache.sentry.provider.common.ProviderConstants;
 import org.apache.sentry.provider.db.SentryAccessDeniedException;
@@ -50,6 +53,7 @@ import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
 import org.apache.sentry.provider.db.service.model.MSentryVersion;
 import org.apache.sentry.provider.db.service.thrift.TSentryActiveRoleSet;
+import org.apache.sentry.provider.db.service.thrift.TSentryAuthorizable;
 import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
@@ -58,7 +62,9 @@ import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.datanucleus.store.rdbms.exceptions.MissingTableException;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
@@ -84,7 +90,7 @@ public class SentryStore {
   private final PersistenceManagerFactory pmf;
 
   public SentryStore(Configuration conf) throws SentryNoSuchObjectException,
-      SentryAccessDeniedException {
+  SentryAccessDeniedException {
     commitSequenceId = 0;
     Properties prop = new Properties();
     prop.putAll(ServerConfig.SENTRY_STORE_DEFAULTS);
@@ -114,7 +120,7 @@ public class SentryStore {
     boolean checkSchemaVersion = conf.get(
         ServerConfig.SENTRY_VERIFY_SCHEM_VERSION,
         ServerConfig.SENTRY_VERIFY_SCHEM_VERSION_DEFAULT).equalsIgnoreCase(
-        "true");
+            "true");
     if (!checkSchemaVersion) {
       prop.setProperty("datanucleus.autoCreateSchema", "true");
       prop.setProperty("datanucleus.fixedDatastore", "false");
@@ -126,7 +132,7 @@ public class SentryStore {
   // ensure that the backend DB schema is set
   private void verifySentryStoreSchema(Configuration serverConf,
       boolean checkVersion)
-      throws SentryNoSuchObjectException, SentryAccessDeniedException {
+          throws SentryNoSuchObjectException, SentryAccessDeniedException {
     if (!checkVersion) {
       setSentryVersion(SentryStoreSchemaInfo.getSentryVersion(),
           "Schema version set implicitly");
@@ -135,8 +141,8 @@ public class SentryStore {
       if (!SentryStoreSchemaInfo.getSentryVersion().equals(currentVersion)) {
         throw new SentryAccessDeniedException(
             "The Sentry store schema version " + currentVersion
-                + " is different from distribution version "
-                + SentryStoreSchemaInfo.getSentryVersion());
+            + " is different from distribution version "
+            + SentryStoreSchemaInfo.getSentryVersion());
       }
     }
   }
@@ -235,7 +241,7 @@ public class SentryStore {
    * @throws SentryAlreadyExistsException
    */
   public CommitContext createSentryRole(String roleName, String grantorPrincipal)
-  throws SentryAlreadyExistsException {
+      throws SentryAlreadyExistsException {
     roleName = trimAndLower(roleName);
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
@@ -338,7 +344,7 @@ public class SentryStore {
    */
   private void revokePartialPrivilege(PersistenceManager pm, MSentryRole role,
       TSentryPrivilege tPrivilege)
-      throws SentryNoSuchObjectException, SentryInvalidInputException {
+          throws SentryNoSuchObjectException, SentryInvalidInputException {
     // only perform partial revoke if INSERT/SELECT were the action
     // and the privilege being revoked is on a table
     String action = tPrivilege.getAction();
@@ -452,7 +458,7 @@ public class SentryStore {
 
 
   public CommitContext dropSentryRole(String roleName)
-  throws SentryNoSuchObjectException {
+      throws SentryNoSuchObjectException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
     roleName = roleName.trim().toLowerCase();
@@ -483,7 +489,7 @@ public class SentryStore {
 
   public CommitContext alterSentryRoleAddGroups(String grantorPrincipal,
       String roleName, Set<TSentryGroup> groupNames)
-  throws SentryNoSuchObjectException {
+          throws SentryNoSuchObjectException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
     roleName = roleName.trim().toLowerCase();
@@ -526,7 +532,7 @@ public class SentryStore {
 
   public CommitContext alterSentryRoleDeleteGroups(String roleName,
       Set<TSentryGroup> groupNames)
-  throws SentryNoSuchObjectException {
+          throws SentryNoSuchObjectException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
     roleName = roleName.trim().toLowerCase();
@@ -567,7 +573,7 @@ public class SentryStore {
 
   @VisibleForTesting
   MSentryRole getMSentryRoleByName(String roleName)
-  throws SentryNoSuchObjectException {
+      throws SentryNoSuchObjectException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
     roleName = roleName.trim().toLowerCase();
@@ -593,11 +599,50 @@ public class SentryStore {
     }
   }
 
-  private Set<MSentryPrivilege> getMSentryPrivilegesByRoleName(String roleName)
-    throws SentryNoSuchObjectException {
-      MSentryRole mSentryRole = getMSentryRoleByName(roleName);
-      return mSentryRole.getPrivileges();
+  List<MSentryPrivilege> getMSentryPrivileges(Set<String> roleNames, TSentryAuthorizable authHierarchy) {
+    if ((roleNames.size() == 0)||(roleNames == null)) return new ArrayList<MSentryPrivilege>();
+    boolean rollbackTransaction = true;
+    PersistenceManager pm = null;
+    try {
+      pm = openTransaction();
+      Query query = pm.newQuery(MSentryPrivilege.class);
+      query.declareVariables("org.apache.sentry.provider.db.service.model.MSentryRole role");
+      List<String> rolesFiler = new LinkedList<String>();
+      for (String rName : roleNames) {
+        rolesFiler.add("role.roleName == \"" + rName.trim().toLowerCase() + "\"");
+      }
+      StringBuilder filters = new StringBuilder("roles.contains(role) "
+          + "&& (" + Joiner.on(" || ").join(rolesFiler) + ") ");
+      if ((authHierarchy != null) && (authHierarchy.getServer() != null)) {
+        filters.append("&& serverName == \"" + authHierarchy.getServer().toLowerCase() + "\"");
+        if (authHierarchy.getDb() != null) {
+          filters.append(" && ((dbName == \"" + authHierarchy.getDb().toLowerCase() + "\") || (dbName == null)) && (URI == null)");
+          if (authHierarchy.getTable() != null) {
+            filters.append(" && ((tableName == \"" + authHierarchy.getTable().toLowerCase() + "\") || (tableName == null)) && (URI == null)");
+          }
+        }
+        if (authHierarchy.getUri() != null) {
+          filters.append(" && ((\"" + authHierarchy.getUri() + "\".startsWith(URI)) || (URI == null)) && (dbName == null)");
+        }
+      }
+
+      query.setFilter(filters.toString());
+      List<MSentryPrivilege> privileges = (List<MSentryPrivilege>) query.execute();
+      rollbackTransaction = false;
+      commitTransaction(pm);
+      return privileges;
+    } finally {
+      if (rollbackTransaction) {
+        rollbackTransaction(pm);
+      }
     }
+  }
+
+  private Set<MSentryPrivilege> getMSentryPrivilegesByRoleName(String roleName)
+      throws SentryNoSuchObjectException {
+    MSentryRole mSentryRole = getMSentryRoleByName(roleName);
+    return mSentryRole.getPrivileges();
+  }
 
   /**
    * Gets sentry privilege objects for a given roleName from the persistence layer
@@ -606,10 +651,36 @@ public class SentryStore {
    * @throws SentryNoSuchObjectException
    */
 
-  public Set<TSentryPrivilege> getTSentryPrivilegesByRoleName(String roleName)
+  public Set<TSentryPrivilege> getAllTSentryPrivilegesByRoleName(String roleName)
       throws SentryNoSuchObjectException {
     return convertToTSentryPrivileges(getMSentryPrivilegesByRoleName(roleName));
   }
+
+
+  /**
+   * Gets sentry privilege objects for criteria from the persistence layer
+   * @param roleName : roleName to look up
+   * @param serverName : serverName (required)
+   * @param uri : URI (optional)
+   * @param dbName : dbName (optional if tableName is null else required)
+   * @param tableName : tableName (optional)
+   * @return : Set of thrift sentry privilege objects
+   * @throws SentryNoSuchObjectException
+   */
+
+  public Set<TSentryPrivilege> getTSentryPrivileges(Set<String> roleNames, TSentryAuthorizable authHierarchy) throws SentryInvalidInputException {
+    if (authHierarchy.getServer() == null) {
+      throw new SentryInvalidInputException("serverName cannot be null !!");
+    }
+    if ((authHierarchy.getTable() != null) && (authHierarchy.getDb() == null)) {
+      throw new SentryInvalidInputException("dbName cannot be null when tableName is present !!");
+    }
+    if ((authHierarchy.getUri() == null) && (authHierarchy.getDb() == null)) {
+      throw new SentryInvalidInputException("One of uri or dbName must not be null !!");
+    }
+    return convertToTSentryPrivileges(getMSentryPrivileges(roleNames, authHierarchy));
+  }
+
 
   private Set<MSentryRole> getMSentryRolesByGroupName(String groupName)
       throws SentryNoSuchObjectException {
@@ -692,18 +763,52 @@ public class SentryStore {
     }
   }
 
+  private Set<String> getRoleNamesForGroups(Set<String> groups) {
+    Set<String> result = new HashSet<String>();
+    boolean rollbackTransaction = true;
+    PersistenceManager pm = null;
+    try {
+      pm = openTransaction();
+      Query query = pm.newQuery(MSentryGroup.class);
+      query.setFilter("this.groupName == t");
+      query.declareParameters("java.lang.String t");
+      query.setUnique(true);
+      for (String group : toTrimedLower(groups)) {
+        MSentryGroup sentryGroup = (MSentryGroup) query.execute(group);
+        if (sentryGroup != null) {
+          for (MSentryRole role : sentryGroup.getRoles()) {
+            result.add(role.getRoleName());
+          }
+        }
+      }
+      rollbackTransaction = false;
+      commitTransaction(pm);
+      return result;
+    } finally {
+      if (rollbackTransaction) {
+        rollbackTransaction(pm);
+      }
+    }
+  }
+
+  public Set<String> listAllSentryPrivilegesForProvider(Set<String> groups, TSentryActiveRoleSet roleSet) throws SentryInvalidInputException {
+    return listSentryPrivilegesForProvider(groups, roleSet, null);
+  }
+
+
   public Set<String> listSentryPrivilegesForProvider(Set<String> groups,
-      TSentryActiveRoleSet roleSet) {
-   Set<String> result = Sets.newHashSet();
-   Set<String> activeRoleNames = toTrimedLower(roleSet.getRoles());
-   for (Map.Entry<String, String> entry : getRoleToPrivilegeMap(groups).entries()) {
-     if (roleSet.isAll()) {
-       result.add(entry.getValue());
-     } else if (activeRoleNames.contains(entry.getKey())) {
-       result.add(entry.getValue());
-     }
-   }
-   return result;
+      TSentryActiveRoleSet roleSet, TSentryAuthorizable authHierarchy) throws SentryInvalidInputException {
+    Set<String> result = Sets.newHashSet();
+    Set<String> activeRoleNames = toTrimedLower(roleSet.getRoles());
+
+    Set<String> roleNamesForGroups = toTrimedLower(getRoleNamesForGroups(groups));
+    Set<String> rolesToQuery = roleSet.isAll() ? roleNamesForGroups : Sets.intersection(activeRoleNames, roleNamesForGroups);
+    List<MSentryPrivilege> mSentryPrivileges = getMSentryPrivileges(rolesToQuery, authHierarchy);
+
+    for (MSentryPrivilege priv : mSentryPrivileges) {
+      result.add(toAuthorizable(priv));
+    }
+    return result;
   }
 
   @VisibleForTesting
@@ -727,7 +832,7 @@ public class SentryStore {
     if (!Strings.nullToEmpty(privilege.getAction()).isEmpty()
         && !privilege.getAction().equalsIgnoreCase(AccessConstants.ALL)) {
       authorizable
-          .add(KV_JOINER.join(ProviderConstants.PRIVILEGE_NAME.toLowerCase(),
+      .add(KV_JOINER.join(ProviderConstants.PRIVILEGE_NAME.toLowerCase(),
           privilege.getAction()));
     }
     return AUTHORIZABLE_JOINER.join(authorizable);
@@ -735,6 +840,7 @@ public class SentryStore {
 
   @VisibleForTesting
   static Set<String> toTrimedLower(Set<String> s) {
+    if (null == s) return new HashSet<String>();
     Set<String> result = Sets.newHashSet();
     for (String v : s) {
       result.add(v.trim().toLowerCase());
@@ -750,7 +856,7 @@ public class SentryStore {
    * time.
    */
 
-  private Set<TSentryPrivilege> convertToTSentryPrivileges(Set<MSentryPrivilege> mSentryPrivileges) {
+  private Set<TSentryPrivilege> convertToTSentryPrivileges(Collection<MSentryPrivilege> mSentryPrivileges) {
     Set<TSentryPrivilege> privileges = new HashSet<TSentryPrivilege>();
     for(MSentryPrivilege mSentryPrivilege:mSentryPrivileges) {
       privileges.add(convertToTSentryPrivilege(mSentryPrivilege));
@@ -809,9 +915,9 @@ public class SentryStore {
   private MSentryPrivilege convertToMSentryPrivilege(TSentryPrivilege privilege)
       throws SentryInvalidInputException {
     MSentryPrivilege mSentryPrivilege = new MSentryPrivilege();
-    mSentryPrivilege.setServerName(safeTrim(privilege.getServerName()));
-    mSentryPrivilege.setDbName(safeTrim(privilege.getDbName()));
-    mSentryPrivilege.setTableName(safeTrim(privilege.getTableName()));
+    mSentryPrivilege.setServerName(safeTrimLower(privilege.getServerName()));
+    mSentryPrivilege.setDbName(safeTrimLower(privilege.getDbName()));
+    mSentryPrivilege.setTableName(safeTrimLower(privilege.getTableName()));
     mSentryPrivilege.setPrivilegeScope(safeTrim(privilege.getPrivilegeScope()));
     mSentryPrivilege.setAction(safeTrim(privilege.getAction()));
     mSentryPrivilege.setCreateTime(System.currentTimeMillis());
@@ -826,9 +932,15 @@ public class SentryStore {
     }
     return s.trim();
   }
+  private String safeTrimLower(String s) {
+    if (s == null) {
+      return null;
+    }
+    return s.trim().toLowerCase();
+  }
 
   public String getSentryVersion() throws SentryNoSuchObjectException,
-      SentryAccessDeniedException {
+  SentryAccessDeniedException {
     MSentryVersion mVersion = getMSentryVersion();
     return mVersion.getSchemaVersion();
   }

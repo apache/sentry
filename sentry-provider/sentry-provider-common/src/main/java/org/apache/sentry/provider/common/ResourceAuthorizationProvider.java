@@ -95,7 +95,7 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
     for (Authorizable authorizable : authorizables) {
       hierarchy.add(KV_JOINER.join(authorizable.getTypeName(), authorizable.getName()));
     }
-    Iterable<Privilege> privileges = getPrivileges(groups, roleSet);
+    Iterable<Privilege> privileges = getPrivileges(groups, roleSet, authorizables.toArray(new Authorizable[0]));
     List<String> requestPrivileges = buildPermissions(authorizables, actions);
     lastFailedPrivileges.get().clear();
 
@@ -118,8 +118,8 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
     return false;
   }
 
-  private Iterable<Privilege> getPrivileges(Set<String> groups, ActiveRoleSet roleSet) {
-    return Iterables.transform(policy.getPrivileges(groups, roleSet),
+  private Iterable<Privilege> getPrivileges(Set<String> groups, ActiveRoleSet roleSet, Authorizable[] authorizables) {
+    return Iterables.transform(policy.getPrivileges(groups, roleSet, authorizables),
         new Function<String, Privilege>() {
       @Override
       public Privilege apply(String privilege) {
@@ -144,12 +144,12 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
 
   @Override
   public Set<String> listPrivilegesForSubject(Subject subject) throws SentryConfigurationException {
-    return policy.getPrivileges(getGroups(subject), ActiveRoleSet.ALL);
+    return policy.getPrivileges(getGroups(subject), ActiveRoleSet.ALL, null);
   }
 
   @Override
   public Set<String> listPrivilegesForGroup(String groupName) throws SentryConfigurationException {
-    return policy.getPrivileges(Sets.newHashSet(groupName), ActiveRoleSet.ALL);
+    return policy.getPrivileges(Sets.newHashSet(groupName), ActiveRoleSet.ALL, null);
   }
 
   @Override

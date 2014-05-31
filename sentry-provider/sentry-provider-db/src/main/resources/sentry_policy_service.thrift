@@ -130,11 +130,19 @@ struct TListSentryRolesResponse {
 2: required set<TSentryRole> roles
 }
 
+struct TSentryAuthorizable {
+1: required string server,
+2: optional string uri,
+3: optional string db,
+4: optional string table,
+}
+
 # SHOW GRANT
 struct TListSentryPrivilegesRequest {
 1: required i32 protocol_version = sentry_common_service.TSENTRY_SERVICE_V1,
 2: required string requestorUserName, # user on whose behalf the request is issued
-3: required string roleName # get privileges assigned for this role
+4: required string roleName, # get privileges assigned for this role
+5: optional TSentryAuthorizable authorizableHierarchy # get privileges assigned for this role
 }
 struct TListSentryPrivilegesResponse {
 1: required sentry_common_service.TSentryResponseStatus status
@@ -153,6 +161,7 @@ struct TListSentryPrivilegesForProviderRequest {
 1: required i32 protocol_version = sentry_common_service.TSENTRY_SERVICE_V1,
 2: required set<string> groups,
 3: required TSentryActiveRoleSet roleSet,
+4: optional TSentryAuthorizable authorizableHierarchy,
 }
 struct TListSentryPrivilegesForProviderResponse {
 1: required sentry_common_service.TSentryResponseStatus status

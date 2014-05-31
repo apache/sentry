@@ -257,7 +257,7 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
 
     try {
       if (hiveObjectDesc == null) {
-        privileges = sentryClient.listPrivilegesByRoleName(subject, principalName);
+        privileges = sentryClient.listAllPrivilegesByRoleName(subject, principalName);
         writeToFile(writeGrantInfo(privileges, principalName), desc.getResFile());
         return RETURN_CODE_SUCCESS;
       } else {

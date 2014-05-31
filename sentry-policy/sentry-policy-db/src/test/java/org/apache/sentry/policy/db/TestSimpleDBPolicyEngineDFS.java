@@ -108,7 +108,7 @@ public class TestSimpleDBPolicyEngineDFS extends AbstractTestSimplePolicyEngine 
     Set<String> dbGroups = Sets.newHashSet();
     dbGroups.add("group1");
     ImmutableSet<String> dbPerms =
-        multiFSEngine.getPrivileges(dbGroups, ActiveRoleSet.ALL);
+        multiFSEngine.getAllPrivileges(dbGroups, ActiveRoleSet.ALL);
     Assert.assertEquals("No DB permissions found", 1, dbPerms.size());
   }
 }

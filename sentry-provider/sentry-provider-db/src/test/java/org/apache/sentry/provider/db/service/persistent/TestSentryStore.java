@@ -235,65 +235,65 @@ public class TestSentryStore {
         roleName2, groups).getSequenceId());
     // group1 all roles
     assertEquals(Sets.newHashSet("server=server1->db=db1->table=tbl1->action=select"),
-        SentryStore.toTrimedLower(sentryStore.listSentryPrivilegesForProvider(Sets.newHashSet(groupName1),
+        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(Sets.newHashSet(groupName1),
             new TSentryActiveRoleSet(true, new HashSet<String>()))));
     // one active role
     assertEquals(Sets.newHashSet("server=server1->db=db1->table=tbl1->action=select"),
-        SentryStore.toTrimedLower(sentryStore.listSentryPrivilegesForProvider(Sets.newHashSet(groupName1),
+        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(Sets.newHashSet(groupName1),
             new TSentryActiveRoleSet(false, Sets.newHashSet(roleName1)))));
     // unknown active role
     assertEquals(Sets.newHashSet(),
-        SentryStore.toTrimedLower(sentryStore.listSentryPrivilegesForProvider(Sets.newHashSet(groupName1),
+        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(Sets.newHashSet(groupName1),
             new TSentryActiveRoleSet(false, Sets.newHashSet("not a role")))));
     // no active roles
     assertEquals(Sets.newHashSet(),
-        SentryStore.toTrimedLower(sentryStore.listSentryPrivilegesForProvider(Sets.newHashSet(groupName1),
+        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(Sets.newHashSet(groupName1),
             new TSentryActiveRoleSet(false, new HashSet<String>()))));
 
     // group2 all roles
     assertEquals(Sets.newHashSet("server=server1->db=db1->table=tbl1->action=select", "server=server1"),
-        SentryStore.toTrimedLower(sentryStore.listSentryPrivilegesForProvider(Sets.newHashSet(groupName2),
+        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(Sets.newHashSet(groupName2),
             new TSentryActiveRoleSet(true, new HashSet<String>()))));
     // one active role
     assertEquals(Sets.newHashSet("server=server1->db=db1->table=tbl1->action=select"),
-        SentryStore.toTrimedLower(sentryStore.listSentryPrivilegesForProvider(Sets.newHashSet(groupName2),
+        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(Sets.newHashSet(groupName2),
             new TSentryActiveRoleSet(false, Sets.newHashSet(roleName1)))));
     assertEquals(Sets.newHashSet(
         "server=server1->db=db1->table=tbl1->action=select", "server=server1"),
-        SentryStore.toTrimedLower(sentryStore.listSentryPrivilegesForProvider(Sets.newHashSet(groupName2),
+        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(Sets.newHashSet(groupName2),
             new TSentryActiveRoleSet(false, Sets.newHashSet(roleName2)))));
     // unknown active role
     assertEquals(Sets.newHashSet(),
-        SentryStore.toTrimedLower(sentryStore.listSentryPrivilegesForProvider(Sets.newHashSet(groupName2),
+        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(Sets.newHashSet(groupName2),
             new TSentryActiveRoleSet(false, Sets.newHashSet("not a role")))));
     // no active roles
     assertEquals(Sets.newHashSet(),
-        SentryStore.toTrimedLower(sentryStore.listSentryPrivilegesForProvider(Sets.newHashSet(groupName2),
+        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(Sets.newHashSet(groupName2),
             new TSentryActiveRoleSet(false, new HashSet<String>()))));
 
     // both groups, all active roles
     assertEquals(Sets.newHashSet("server=server1->db=db1->table=tbl1->action=select", "server=server1"),
-        SentryStore.toTrimedLower(sentryStore.listSentryPrivilegesForProvider(Sets.
+        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(Sets.
             newHashSet(groupName1, groupName2),
             new TSentryActiveRoleSet(true, new HashSet<String>()))));
     // one active role
     assertEquals(Sets.newHashSet("server=server1->db=db1->table=tbl1->action=select"),
-        SentryStore.toTrimedLower(sentryStore.listSentryPrivilegesForProvider(Sets.
+        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(Sets.
             newHashSet(groupName1, groupName2),
             new TSentryActiveRoleSet(false, Sets.newHashSet(roleName1)))));
     assertEquals(Sets.newHashSet(
         "server=server1->db=db1->table=tbl1->action=select", "server=server1"),
-        SentryStore.toTrimedLower(sentryStore.listSentryPrivilegesForProvider(Sets.
+        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(Sets.
             newHashSet(groupName1, groupName2),
             new TSentryActiveRoleSet(false, Sets.newHashSet(roleName2)))));
     // unknown active role
     assertEquals(Sets.newHashSet(),
-        SentryStore.toTrimedLower(sentryStore.listSentryPrivilegesForProvider(Sets.
+        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(Sets.
             newHashSet(groupName1, groupName2),
             new TSentryActiveRoleSet(false, Sets.newHashSet("not a role")))));
     // no active roles
     assertEquals(Sets.newHashSet(),
-        SentryStore.toTrimedLower(sentryStore.listSentryPrivilegesForProvider(Sets.
+        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(Sets.
             newHashSet(groupName1, groupName2),
             new TSentryActiveRoleSet(false, new HashSet<String>()))));
   }

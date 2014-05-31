@@ -139,7 +139,7 @@ public class TestDbEndToEnd extends AbstractTestWithDbProvider {
     statement.execute("create table " + dbName2 + "." + tableName2
         + " (under_col int comment 'the under column', value string)");
     statement.execute("load data local inpath '" + dataFile.getPath()
-            + "' into table " + tableName2);
+        + "' into table " + tableName2);
 
     // 3
     statement.execute("CREATE ROLE all_db1");
@@ -163,8 +163,8 @@ public class TestDbEndToEnd extends AbstractTestWithDbProvider {
         + " TO ROLE select_tb1");
 
     statement
-        .execute("GRANT ROLE all_db1, select_tb1, insert_tb1, insert_tb2, data_uri TO GROUP "
-            + USERGROUP1);
+    .execute("GRANT ROLE all_db1, select_tb1, insert_tb1, insert_tb2, data_uri TO GROUP "
+        + USERGROUP1);
 
     statement.close();
     connection.close();
@@ -177,7 +177,7 @@ public class TestDbEndToEnd extends AbstractTestWithDbProvider {
     statement.execute("create table " + dbName1 + "." + tableName1
         + " (under_col int comment 'the under column', value string)");
     statement.execute("load data local inpath '" + dataFile.getPath()
-            + "' into table " + tableName1);
+        + "' into table " + tableName1);
 
     // 5
     statement.execute("CREATE VIEW " + viewName1 + " (value) AS SELECT value from " + tableName1 + " LIMIT 10");
@@ -197,7 +197,30 @@ public class TestDbEndToEnd extends AbstractTestWithDbProvider {
     // 8
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
+    Exception ex = null;
+    try {
+      statement.execute("USE " + dbName2);
+    } catch (Exception e) {
+      ex = e;
+    } finally {
+      statement.close();
+      connection.close();
+    }
+    System.out.println("Message : " + ex.getMessage());
+    assertTrue("This should not be allowed !!", ex != null);
+
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    statement.execute("CREATE ROLE all_db2");
+    statement.execute("GRANT ALL ON DATABASE " + dbName2 + " TO ROLE all_db2");
+    statement.execute("GRANT ROLE all_db2 TO GROUP " + USERGROUP1);
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
     statement.execute("USE " + dbName2);
+
     statement.execute("INSERT OVERWRITE TABLE " +
         dbName2 + "." + tableName2 + " SELECT * FROM " + dbName1
         + "." + tableName1);

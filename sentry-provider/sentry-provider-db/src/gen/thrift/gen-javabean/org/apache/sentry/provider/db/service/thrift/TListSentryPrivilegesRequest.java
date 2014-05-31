@@ -36,7 +36,8 @@ public class TListSentryPrivilegesRequest implements org.apache.thrift.TBase<TLi
 
   private static final org.apache.thrift.protocol.TField PROTOCOL_VERSION_FIELD_DESC = new org.apache.thrift.protocol.TField("protocol_version", org.apache.thrift.protocol.TType.I32, (short)1);
   private static final org.apache.thrift.protocol.TField REQUESTOR_USER_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("requestorUserName", org.apache.thrift.protocol.TType.STRING, (short)2);
-  private static final org.apache.thrift.protocol.TField ROLE_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("roleName", org.apache.thrift.protocol.TType.STRING, (short)3);
+  private static final org.apache.thrift.protocol.TField ROLE_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("roleName", org.apache.thrift.protocol.TType.STRING, (short)4);
+  private static final org.apache.thrift.protocol.TField AUTHORIZABLE_HIERARCHY_FIELD_DESC = new org.apache.thrift.protocol.TField("authorizableHierarchy", org.apache.thrift.protocol.TType.STRUCT, (short)5);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
@@ -47,12 +48,14 @@ public class TListSentryPrivilegesRequest implements org.apache.thrift.TBase<TLi
   private int protocol_version; // required
   private String requestorUserName; // required
   private String roleName; // required
+  private TSentryAuthorizable authorizableHierarchy; // optional
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
     PROTOCOL_VERSION((short)1, "protocol_version"),
     REQUESTOR_USER_NAME((short)2, "requestorUserName"),
-    ROLE_NAME((short)3, "roleName");
+    ROLE_NAME((short)4, "roleName"),
+    AUTHORIZABLE_HIERARCHY((short)5, "authorizableHierarchy");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -71,8 +74,10 @@ public class TListSentryPrivilegesRequest implements org.apache.thrift.TBase<TLi
           return PROTOCOL_VERSION;
         case 2: // REQUESTOR_USER_NAME
           return REQUESTOR_USER_NAME;
-        case 3: // ROLE_NAME
+        case 4: // ROLE_NAME
           return ROLE_NAME;
+        case 5: // AUTHORIZABLE_HIERARCHY
+          return AUTHORIZABLE_HIERARCHY;
         default:
           return null;
       }
@@ -115,6 +120,7 @@ public class TListSentryPrivilegesRequest implements org.apache.thrift.TBase<TLi
   // isset id assignments
   private static final int __PROTOCOL_VERSION_ISSET_ID = 0;
   private byte __isset_bitfield = 0;
+  private _Fields optionals[] = {_Fields.AUTHORIZABLE_HIERARCHY};
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
@@ -124,6 +130,8 @@ public class TListSentryPrivilegesRequest implements org.apache.thrift.TBase<TLi
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
     tmpMap.put(_Fields.ROLE_NAME, new org.apache.thrift.meta_data.FieldMetaData("roleName", org.apache.thrift.TFieldRequirementType.REQUIRED, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
+    tmpMap.put(_Fields.AUTHORIZABLE_HIERARCHY, new org.apache.thrift.meta_data.FieldMetaData("authorizableHierarchy", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
+        new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TSentryAuthorizable.class)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(TListSentryPrivilegesRequest.class, metaDataMap);
   }
@@ -157,6 +165,9 @@ public class TListSentryPrivilegesRequest implements org.apache.thrift.TBase<TLi
     if (other.isSetRoleName()) {
       this.roleName = other.roleName;
     }
+    if (other.isSetAuthorizableHierarchy()) {
+      this.authorizableHierarchy = new TSentryAuthorizable(other.authorizableHierarchy);
+    }
   }
 
   public TListSentryPrivilegesRequest deepCopy() {
@@ -169,6 +180,7 @@ public class TListSentryPrivilegesRequest implements org.apache.thrift.TBase<TLi
 
     this.requestorUserName = null;
     this.roleName = null;
+    this.authorizableHierarchy = null;
   }
 
   public int getProtocol_version() {
@@ -239,6 +251,29 @@ public class TListSentryPrivilegesRequest implements org.apache.thrift.TBase<TLi
     }
   }
 
+  public TSentryAuthorizable getAuthorizableHierarchy() {
+    return this.authorizableHierarchy;
+  }
+
+  public void setAuthorizableHierarchy(TSentryAuthorizable authorizableHierarchy) {
+    this.authorizableHierarchy = authorizableHierarchy;
+  }
+
+  public void unsetAuthorizableHierarchy() {
+    this.authorizableHierarchy = null;
+  }
+
+  /** Returns true if field authorizableHierarchy is set (has been assigned a value) and false otherwise */
+  public boolean isSetAuthorizableHierarchy() {
+    return this.authorizableHierarchy != null;
+  }
+
+  public void setAuthorizableHierarchyIsSet(boolean value) {
+    if (!value) {
+      this.authorizableHierarchy = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case PROTOCOL_VERSION:
@@ -265,6 +300,14 @@ public class TListSentryPrivilegesRequest implements org.apache.thrift.TBase<TLi
       }
       break;
 
+    case AUTHORIZABLE_HIERARCHY:
+      if (value == null) {
+        unsetAuthorizableHierarchy();
+      } else {
+        setAuthorizableHierarchy((TSentryAuthorizable)value);
+      }
+      break;
+
     }
   }
 
@@ -278,6 +321,9 @@ public class TListSentryPrivilegesRequest implements org.apache.thrift.TBase<TLi
 
     case ROLE_NAME:
       return getRoleName();
+
+    case AUTHORIZABLE_HIERARCHY:
+      return getAuthorizableHierarchy();
 
     }
     throw new IllegalStateException();
@@ -296,6 +342,8 @@ public class TListSentryPrivilegesRequest implements org.apache.thrift.TBase<TLi
       return isSetRequestorUserName();
     case ROLE_NAME:
       return isSetRoleName();
+    case AUTHORIZABLE_HIERARCHY:
+      return isSetAuthorizableHierarchy();
     }
     throw new IllegalStateException();
   }
@@ -340,6 +388,15 @@ public class TListSentryPrivilegesRequest implements org.apache.thrift.TBase<TLi
         return false;
     }
 
+    boolean this_present_authorizableHierarchy = true && this.isSetAuthorizableHierarchy();
+    boolean that_present_authorizableHierarchy = true && that.isSetAuthorizableHierarchy();
+    if (this_present_authorizableHierarchy || that_present_authorizableHierarchy) {
+      if (!(this_present_authorizableHierarchy && that_present_authorizableHierarchy))
+        return false;
+      if (!this.authorizableHierarchy.equals(that.authorizableHierarchy))
+        return false;
+    }
+
     return true;
   }
 
@@ -361,6 +418,11 @@ public class TListSentryPrivilegesRequest implements org.apache.thrift.TBase<TLi
     builder.append(present_roleName);
     if (present_roleName)
       builder.append(roleName);
+
+    boolean present_authorizableHierarchy = true && (isSetAuthorizableHierarchy());
+    builder.append(present_authorizableHierarchy);
+    if (present_authorizableHierarchy)
+      builder.append(authorizableHierarchy);
 
     return builder.toHashCode();
   }
@@ -399,6 +461,16 @@ public class TListSentryPrivilegesRequest implements org.apache.thrift.TBase<TLi
     }
     if (isSetRoleName()) {
       lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.roleName, typedOther.roleName);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetAuthorizableHierarchy()).compareTo(typedOther.isSetAuthorizableHierarchy());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetAuthorizableHierarchy()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.authorizableHierarchy, typedOther.authorizableHierarchy);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -442,6 +514,16 @@ public class TListSentryPrivilegesRequest implements org.apache.thrift.TBase<TLi
       sb.append(this.roleName);
     }
     first = false;
+    if (isSetAuthorizableHierarchy()) {
+      if (!first) sb.append(", ");
+      sb.append("authorizableHierarchy:");
+      if (this.authorizableHierarchy == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.authorizableHierarchy);
+      }
+      first = false;
+    }
     sb.append(")");
     return sb.toString();
   }
@@ -461,6 +543,9 @@ public class TListSentryPrivilegesRequest implements org.apache.thrift.TBase<TLi
     }
 
     // check for sub-struct validity
+    if (authorizableHierarchy != null) {
+      authorizableHierarchy.validate();
+    }
   }
 
   private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
@@ -515,10 +600,19 @@ public class TListSentryPrivilegesRequest implements org.apache.thrift.TBase<TLi
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
-          case 3: // ROLE_NAME
+          case 4: // ROLE_NAME
             if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
               struct.roleName = iprot.readString();
               struct.setRoleNameIsSet(true);
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+            }
+            break;
+          case 5: // AUTHORIZABLE_HIERARCHY
+            if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+              struct.authorizableHierarchy = new TSentryAuthorizable();
+              struct.authorizableHierarchy.read(iprot);
+              struct.setAuthorizableHierarchyIsSet(true);
             } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
@@ -549,6 +643,13 @@ public class TListSentryPrivilegesRequest implements org.apache.thrift.TBase<TLi
         oprot.writeString(struct.roleName);
         oprot.writeFieldEnd();
       }
+      if (struct.authorizableHierarchy != null) {
+        if (struct.isSetAuthorizableHierarchy()) {
+          oprot.writeFieldBegin(AUTHORIZABLE_HIERARCHY_FIELD_DESC);
+          struct.authorizableHierarchy.write(oprot);
+          oprot.writeFieldEnd();
+        }
+      }
       oprot.writeFieldStop();
       oprot.writeStructEnd();
     }
@@ -569,6 +670,14 @@ public class TListSentryPrivilegesRequest implements org.apache.thrift.TBase<TLi
       oprot.writeI32(struct.protocol_version);
       oprot.writeString(struct.requestorUserName);
       oprot.writeString(struct.roleName);
+      BitSet optionals = new BitSet();
+      if (struct.isSetAuthorizableHierarchy()) {
+        optionals.set(0);
+      }
+      oprot.writeBitSet(optionals, 1);
+      if (struct.isSetAuthorizableHierarchy()) {
+        struct.authorizableHierarchy.write(oprot);
+      }
     }
 
     @Override
@@ -580,6 +689,12 @@ public class TListSentryPrivilegesRequest implements org.apache.thrift.TBase<TLi
       struct.setRequestorUserNameIsSet(true);
       struct.roleName = iprot.readString();
       struct.setRoleNameIsSet(true);
+      BitSet incoming = iprot.readBitSet(1);
+      if (incoming.get(0)) {
+        struct.authorizableHierarchy = new TSentryAuthorizable();
+        struct.authorizableHierarchy.read(iprot);
+        struct.setAuthorizableHierarchyIsSet(true);
+      }
     }
   }
 

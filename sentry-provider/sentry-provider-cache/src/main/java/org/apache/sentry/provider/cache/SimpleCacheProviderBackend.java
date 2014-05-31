@@ -21,6 +21,7 @@ import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.common.ActiveRoleSet;
+import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;
@@ -48,7 +49,7 @@ public class SimpleCacheProviderBackend implements ProviderBackend {
 
   @Override
   public ImmutableSet<String> getPrivileges(Set<String> groups,
-      ActiveRoleSet roleSet) {
+      ActiveRoleSet roleSet, Authorizable... authorizationhierarchy) {
     if (!initialized()) {
       throw new IllegalStateException(
           "Backend has not been properly initialized");

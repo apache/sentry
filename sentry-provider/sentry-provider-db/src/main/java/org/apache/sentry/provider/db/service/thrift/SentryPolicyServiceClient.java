@@ -18,6 +18,8 @@
 
 package org.apache.sentry.provider.db.service.thrift;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Sets;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.HashSet;
@@ -29,7 +31,9 @@ import org.apache.hadoop.security.SaslRpcServer;
 import org.apache.hadoop.security.SaslRpcServer.AuthMethod;
 import org.apache.sentry.SentryUserException;
 import org.apache.sentry.core.common.ActiveRoleSet;
+import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.model.db.AccessConstants;
+import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
 import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
@@ -45,8 +49,7 @@ import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
+import java.util.List;
 
 public class SentryPolicyServiceClient {
 
@@ -171,21 +174,43 @@ public class SentryPolicyServiceClient {
     }
   }
 
+  public Set<TSentryPrivilege> listAllPrivilegesByRoleName(String requestorUserName, String roleName) 
+		  throws SentryUserException {
+    return listPrivilegesByRoleName(requestorUserName, roleName, null);
+  }
+
   /**
    * Gets sentry privilege objects for a given roleName using the Sentry service
    * @param requestorUserName : user on whose behalf the request is issued
    * @param requestorUserGroupNames :groups the requesting user belongs to
    * @param roleName : roleName to look up
+   * @param authorizable : authorizable Hierarchy (server->db->table etc)
    * @return Set of thrift sentry privilege objects
    * @throws SentryUserException
    */
-  public Set<TSentryPrivilege> listPrivilegesByRoleName(
-      String requestorUserName, String roleName)
+  public Set<TSentryPrivilege> listPrivilegesByRoleName(String requestorUserName,
+      String roleName, List<? extends Authorizable> authorizable)
   throws SentryUserException {
     TListSentryPrivilegesRequest request = new TListSentryPrivilegesRequest();
     request.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
     request.setRequestorUserName(requestorUserName);
     request.setRoleName(roleName);
+    if (authorizable != null) {
+      TSentryAuthorizable tSentryAuthorizable = new TSentryAuthorizable();
+      // TODO : Needed to support SearchModelAuthorizable
+      for (Authorizable authzble : authorizable) {
+        if (authzble.getTypeName().equalsIgnoreCase(DBModelAuthorizable.AuthorizableType.Server.toString())) {
+          tSentryAuthorizable.setServer(authzble.getName());
+        } else if (authzble.getTypeName().equalsIgnoreCase(DBModelAuthorizable.AuthorizableType.URI.toString())) {
+          tSentryAuthorizable.setUri(authzble.getName());
+        } else if (authzble.getTypeName().equalsIgnoreCase(DBModelAuthorizable.AuthorizableType.Db.toString())) {
+          tSentryAuthorizable.setDb(authzble.getName());
+        } else if (authzble.getTypeName().equalsIgnoreCase(DBModelAuthorizable.AuthorizableType.Table.toString())) {
+          tSentryAuthorizable.setTable(authzble.getName());
+        }
+      }
+      request.setAuthorizableHierarchy(tSentryAuthorizable);
+    }
     TListSentryPrivilegesResponse response;
     try {
       response = client.list_sentry_privileges_by_role(request);
@@ -309,12 +334,28 @@ public class SentryPolicyServiceClient {
     }
   }
 
-  public Set<String> listPrivilegesForProvider(Set<String> groups, ActiveRoleSet roleSet)
+  public Set<String> listPrivilegesForProvider(Set<String> groups, ActiveRoleSet roleSet, Authorizable... authorizable)
   throws SentryUserException {
     TSentryActiveRoleSet thriftRoleSet = new TSentryActiveRoleSet(roleSet.isAll(), roleSet.getRoles());
     TListSentryPrivilegesForProviderRequest request =
         new TListSentryPrivilegesForProviderRequest(ThriftConstants.
             TSENTRY_SERVICE_VERSION_CURRENT, groups, thriftRoleSet);
+    if ((authorizable != null)&&(authorizable.length > 0)) {
+      TSentryAuthorizable tSentryAuthorizable = new TSentryAuthorizable();
+      // TODO : Needed to support SearchModelAuthorizable
+      for (Authorizable authzble : authorizable) {
+        if (authzble.getTypeName().equalsIgnoreCase(DBModelAuthorizable.AuthorizableType.Server.toString())) {
+          tSentryAuthorizable.setServer(authzble.getName());
+        } else if (authzble.getTypeName().equalsIgnoreCase(DBModelAuthorizable.AuthorizableType.URI.toString())) {
+          tSentryAuthorizable.setUri(authzble.getName());
+        } else if (authzble.getTypeName().equalsIgnoreCase(DBModelAuthorizable.AuthorizableType.Db.toString())) {
+          tSentryAuthorizable.setDb(authzble.getName());
+        } else if (authzble.getTypeName().equalsIgnoreCase(DBModelAuthorizable.AuthorizableType.Table.toString())) {
+          tSentryAuthorizable.setTable(authzble.getName());
+        }
+      }
+      request.setAuthorizableHierarchy(tSentryAuthorizable);
+    }
     try {
       TListSentryPrivilegesForProviderResponse response = client.list_sentry_privileges_for_provider(request);
       Status.throwIfNotOk(response.getStatus());

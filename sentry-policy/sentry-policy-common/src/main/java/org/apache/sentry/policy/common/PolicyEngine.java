@@ -17,11 +17,13 @@
 
 package org.apache.sentry.policy.common;
 
+import java.util.List;
 import java.util.Set;
 
 import javax.annotation.concurrent.ThreadSafe;
 
 import org.apache.sentry.core.common.ActiveRoleSet;
+import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.SentryConfigurationException;
 
 import com.google.common.collect.ImmutableSet;
@@ -45,9 +47,23 @@ public interface PolicyEngine {
    * type of privileges used in a policy file. Additionally it is possible further
    * processing of the privileges is needed before resolving to a privilege object.
    * @param group name
+   * @param active role-set
    * @return non-null immutable set of privileges
    */
-  public ImmutableSet<String> getPrivileges(Set<String> groups, ActiveRoleSet roleSet)
+  public ImmutableSet<String> getAllPrivileges(Set<String> groups, ActiveRoleSet roleSet)
+      throws SentryConfigurationException;
+
+  /**
+   * Get privileges associated with a group. Returns Strings which can be resolved
+   * by the caller. Strings are returned to separate the PolicyFile class from the
+   * type of privileges used in a policy file. Additionally it is possible further
+   * processing of the privileges is needed before resolving to a privilege object.
+   * @param group name
+   * @param active role-set
+   * @param authorizable Hierarchy (Can be null)
+   * @return non-null immutable set of privileges
+   */
+  public ImmutableSet<String> getPrivileges(Set<String> groups, ActiveRoleSet roleSet, Authorizable... authorizableHierarchy)
       throws SentryConfigurationException;
 
   public void close();

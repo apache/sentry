@@ -344,7 +344,12 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       // or allow all users as long as user is granted this role?
       authorize(request.getRequestorUserName(),
           getRequestorGroups(request.getRequestorUserName()));
-      privilegeSet = sentryStore.getTSentryPrivilegesByRoleName(request.getRoleName());
+      if (request.isSetAuthorizableHierarchy()) {
+        TSentryAuthorizable authorizableHierarchy = request.getAuthorizableHierarchy();
+        privilegeSet = sentryStore.getTSentryPrivileges(Sets.newHashSet(request.getRoleName()), authorizableHierarchy);
+      } else {
+        privilegeSet = sentryStore.getAllTSentryPrivilegesByRoleName(request.getRoleName());
+      }
       response.setPrivileges(privilegeSet);
       response.setStatus(Status.OK());
     } catch (SentryNoSuchObjectException e) {
@@ -371,7 +376,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     response.setPrivileges(new HashSet<String>());
     try {
       response.setPrivileges(sentryStore.listSentryPrivilegesForProvider(
-          request.getGroups(), request.getRoleSet()));
+          request.getGroups(), request.getRoleSet(), request.getAuthorizableHierarchy()));
       response.setStatus(Status.OK());
     } catch (Exception e) {
       String msg = "Unknown error for request: " + request + ", message: " + e.getMessage();

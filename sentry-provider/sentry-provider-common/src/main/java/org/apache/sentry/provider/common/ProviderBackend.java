@@ -21,6 +21,7 @@ import java.util.Set;
 import javax.annotation.concurrent.ThreadSafe;
 
 import org.apache.sentry.core.common.ActiveRoleSet;
+import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.SentryConfigurationException;
 
 import com.google.common.collect.ImmutableSet;
@@ -46,7 +47,7 @@ public interface ProviderBackend {
   /**
    * Get the privileges from the backend.
    */
-  public ImmutableSet<String> getPrivileges(Set<String> groups, ActiveRoleSet roleSet);
+  public ImmutableSet<String> getPrivileges(Set<String> groups, ActiveRoleSet roleSet, Authorizable... authorizableHierarchy);
 
   /**
    * Get the roles associated with the groups from the backend.

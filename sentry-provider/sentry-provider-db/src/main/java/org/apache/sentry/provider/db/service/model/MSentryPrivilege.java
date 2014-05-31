@@ -41,7 +41,7 @@ public class MSentryPrivilege {
   private String URI;
   private String action;
   // roles this privilege is a part of
-  private final Set<MSentryRole> roles;
+  private Set<MSentryRole> roles;
   private long createTime;
   private String grantorPrincipal;
 
