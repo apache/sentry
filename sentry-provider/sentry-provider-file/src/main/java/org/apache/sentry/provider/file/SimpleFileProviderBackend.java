@@ -249,7 +249,7 @@ public class SimpleFileProviderBackend implements ProviderBackend {
             perDbPolicy = new Path(resourcePath.getParent(), perDbPolicy);
           }
           try {
-            LOGGER.info("Parsing " + perDbPolicy);
+            LOGGER.debug("Parsing " + perDbPolicy);
             Ini perDbIni = PolicyFiles.loadFromPath(perDbPolicy.getFileSystem(conf), perDbPolicy);
             if(perDbIni.containsKey(USERS)) {
               configErrors.add("Per-db policy file cannot contain " + USERS + " section in " +  perDbPolicy);
