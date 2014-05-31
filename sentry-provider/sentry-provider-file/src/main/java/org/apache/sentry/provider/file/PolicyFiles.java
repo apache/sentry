@@ -74,7 +74,6 @@ public class PolicyFiles {
     try {
       LOGGER.info("Opening " + path);
       String dfsUri = fileSystem.getDefaultUri(fileSystem.getConf()).toString();
-      LOGGER.error("dfsUri " + dfsUri);
       inputStream = fileSystem.open(path);
       Ini ini = new Ini();
       ini.load(inputStream);
