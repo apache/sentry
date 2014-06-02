@@ -216,20 +216,9 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
     if (ast.getChildCount() > 1) {
       ASTNode child = (ASTNode) ast.getChild(1);
       if (child.getToken().getType() == HiveParser.TOK_PRIV_OBJECT_COL) {
-        privHiveObj = new PrivilegeObjectDesc();
-        privHiveObj.setObject(BaseSemanticAnalyzer.unescapeIdentifier(child.getChild(0).getText()));
-        if (child.getChildCount() > 1) {
-          for (int i = 1; i < child.getChildCount(); i++) {
-            ASTNode grandChild = (ASTNode) child.getChild(i);
-            if (grandChild.getToken().getType() == HiveParser.TOK_PARTSPEC) {
-              throw new SemanticException(SentryHiveConstants.PARTITION_PRIVS_NOT_SUPPORTED);
-            } else if (grandChild.getToken().getType() == HiveParser.TOK_TABCOLNAME) {
-              throw new SemanticException(SentryHiveConstants.COLUMN_PRIVS_NOT_SUPPORTED);
-            } else {
-              privHiveObj.setTable(child.getChild(i) != null);
-            }
-          }
-        }
+        privHiveObj = analyzePrivilegeObject(child);
+      }else {
+        throw new SemanticException("Unrecognized Token: " + child.getToken().getType());
       }
     }
 
@@ -302,7 +291,9 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
         ASTNode astChild = (ASTNode) ast.getChild(i);
         if (astChild.getToken().getType() == HiveParser.TOK_PARTSPEC) {
           throw new SemanticException(SentryHiveConstants.PARTITION_PRIVS_NOT_SUPPORTED);
-        } else if (astChild.getToken().getType() == HiveParser.TOK_URI) {
+        } else if (astChild.getToken().getType() == HiveParser.TOK_TABCOLNAME) {
+          throw new SemanticException(SentryHiveConstants.COLUMN_PRIVS_NOT_SUPPORTED);
+        }else if (astChild.getToken().getType() == HiveParser.TOK_URI) {
           privilegeObject = privilegeObject.replaceAll("'", "");
           subject.setUri(true);
         } else if (astChild.getToken().getType() == HiveParser.TOK_SERVER) {

@@ -17,6 +17,7 @@
 
 package org.apache.sentry.tests.e2e.dbprovider;
 
+import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -36,6 +37,8 @@ import java.util.concurrent.TimeoutException;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
+import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hive.service.cli.HiveSQLException;
 import org.apache.sentry.binding.hive.SentryHiveAuthorizationTaskFactoryImpl;
 import org.apache.sentry.provider.db.SimpleDBProviderBackend;
 import org.apache.sentry.provider.file.PolicyFile;
@@ -53,14 +56,6 @@ import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 
 public class TestDatabaseProvider extends AbstractTestWithDbProvider {
-  protected static final String SERVER_HOST = "localhost";
-
-  private Map<String, String> properties;
-  private File dbDir;
-  private SentryService server;
-  private Configuration conf;
-  private PolicyFile policyFile;
-  private File policyFilePath;
 
   @Before
   public void setup() throws Exception {
@@ -211,26 +206,181 @@ public class TestDatabaseProvider extends AbstractTestWithDbProvider {
   }
 
   /**
-   * SHOW GRANT ROLE roleName ON OBJECT PRIVILEGE not supported yet
+   * SHOW GRANT ROLE roleName ON TABLE tableName
    * @throws Exception
    */
   @Test
-  public void testShowPrivilegesByRoleAndObject() throws Exception {
+  public void testShowPrivilegesByRoleOnObjectGivenTable() throws Exception {
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("CREATE ROLE role1");
     statement.execute("GRANT SELECT ON TABLE t1 TO ROLE role1");
 
-    try {
-      ResultSet resultSet = statement.executeQuery("SHOW GRANT ROLE role1 ON TABLE tab1");
-      assertTrue("Expected an exception", false);
-    } catch(SQLException e) {
-      statement.close();
-      connection.close();
+    //On table - positive
+    ResultSet resultSet = statement.executeQuery("SHOW GRANT ROLE role1 ON TABLE t1");
+    int rowCount = 0 ;
+    while ( resultSet.next()) {
+      rowCount++;
+      assertThat(resultSet.getString(1), equalToIgnoringCase("default"));
+      assertThat(resultSet.getString(2), equalToIgnoringCase("t1"));
+      assertThat(resultSet.getString(3), equalToIgnoringCase(""));//partition
+      assertThat(resultSet.getString(4), equalToIgnoringCase(""));//column
+      assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
+      assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
+      assertThat(resultSet.getString(7), equalToIgnoringCase("select"));
+      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      //Create time is not tested
+      //assertThat(resultSet.getLong(9), is(new Long(0)));
+      assertThat(resultSet.getString(10), equalToIgnoringCase(ADMIN1));//grantor
     }
+    assertThat(rowCount, is(1));
+    //On table - negative
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1 ON TABLE tab1");
+    rowCount = 0 ;
+    while (resultSet.next()) {
+      rowCount++;
+    }
+    assertThat(rowCount, is(0));
+    statement.close();
+    connection.close();
   }
+
+    /**
+     * SHOW GRANT ROLE roleName ON TABLE tableName
+     * @throws Exception
+     */
+  @Test
+  public void testShowPrivilegesByRoleOnObjectGivenDatabase() throws Exception {
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("CREATE ROLE role1");
+    statement.execute("GRANT ALL ON DATABASE default TO ROLE role1");
+
+    //On Table - positive
+    ResultSet resultSet = statement.executeQuery("SHOW GRANT ROLE role1 ON TABLE tab1");
+    int rowCount = 0 ;
+    while ( resultSet.next()) {
+      rowCount++;
+      assertThat(resultSet.getString(1), equalToIgnoringCase("default"));
+      assertThat(resultSet.getString(2), equalToIgnoringCase(""));
+      assertThat(resultSet.getString(3), equalToIgnoringCase(""));//partition
+      assertThat(resultSet.getString(4), equalToIgnoringCase(""));//column
+      assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
+      assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
+      assertThat(resultSet.getString(7), equalToIgnoringCase("*"));
+      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      //Create time is not tested
+      //assertThat(resultSet.getLong(9), is(new Long(0)));
+      assertThat(resultSet.getString(10), equalToIgnoringCase(ADMIN1));//grantor
+    }
+
+    //On Database - positive
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1 ON DATABASE default");
+    while ( resultSet.next()) {
+      assertThat(resultSet.getString(1), equalToIgnoringCase("default"));
+      assertThat(resultSet.getString(2), equalToIgnoringCase(""));//table
+      assertThat(resultSet.getString(3), equalToIgnoringCase(""));//partition
+      assertThat(resultSet.getString(4), equalToIgnoringCase(""));//column
+      assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
+      assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
+      assertThat(resultSet.getString(7), equalToIgnoringCase("*"));
+      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      //Create time is not tested
+      //assertThat(resultSet.getLong(9), is(new Long(0)));
+      assertThat(resultSet.getString(10), equalToIgnoringCase(ADMIN1));//grantor
+    }
+
+    //On Database - negative
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1 ON DATABASE db1");
+    rowCount = 0 ;
+    while (resultSet.next()) {
+      rowCount++;
+    }
+    assertThat(rowCount, is(0));
+    statement.close();
+    connection.close();
+  }
+
   /**
-   * SHOW CURRENT ROLE not supported yet
+   * SHOW GRANT ROLE roleName ON TABLE tableName
+   * @throws Exception
+   */
+  @Test
+  public void testShowPrivilegesByRoleObObjectGivenServer() throws Exception {
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("CREATE ROLE role1");
+    statement.execute("GRANT ALL ON SERVER server1 TO ROLE role1");
+
+    //On table - positive
+    ResultSet resultSet = statement.executeQuery("SHOW GRANT ROLE role1 ON TABLE tab1");
+    while ( resultSet.next()) {
+      assertThat(resultSet.getString(1), equalToIgnoringCase("*"));
+      assertThat(resultSet.getString(2), equalToIgnoringCase(""));
+      assertThat(resultSet.getString(3), equalToIgnoringCase(""));//partition
+      assertThat(resultSet.getString(4), equalToIgnoringCase(""));//column
+      assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
+      assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
+      assertThat(resultSet.getString(7), equalToIgnoringCase("*"));
+      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      //Create time is not tested
+      //assertThat(resultSet.getLong(9), is(new Long(0)));
+      assertThat(resultSet.getString(10), equalToIgnoringCase(ADMIN1));//grantor
+    }
+
+    //On Database - postive
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1 ON DATABASE default");
+    while ( resultSet.next()) {
+      assertThat(resultSet.getString(1), equalToIgnoringCase("*"));
+      assertThat(resultSet.getString(2), equalToIgnoringCase(""));
+      assertThat(resultSet.getString(3), equalToIgnoringCase(""));//partition
+      assertThat(resultSet.getString(4), equalToIgnoringCase(""));//column
+      assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
+      assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
+      assertThat(resultSet.getString(7), equalToIgnoringCase("*"));
+      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      //Create time is not tested
+      //assertThat(resultSet.getLong(9), is(new Long(0)));
+      assertThat(resultSet.getString(10), equalToIgnoringCase(ADMIN1));//grantor
+    }
+
+    statement.close();
+    connection.close();
+  }
+
+  /**
+   * SHOW GRANT ROLE roleName ON DATABASE dbName: Needs Hive patch
+   * @throws Exception
+   */
+  @Ignore
+  @Test
+  public void testShowPrivilegesByRoleOnUri() throws Exception {
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("CREATE ROLE role1");
+    statement.execute("GRANT ALL ON URI 'file:///tmp/file.txt' TO ROLE role1");
+
+    ResultSet resultSet = statement.executeQuery("SHOW GRANT ROLE role1 ON URI 'file:///tmp/file.txt'");
+    assertTrue("Expecting SQL Exception", false);
+    while ( resultSet.next()) {
+      assertThat(resultSet.getString(1), equalToIgnoringCase("file:///tmp/file.txt"));
+      assertThat(resultSet.getString(2), equalToIgnoringCase(""));//table
+      assertThat(resultSet.getString(3), equalToIgnoringCase(""));//partition
+      assertThat(resultSet.getString(4), equalToIgnoringCase(""));//column
+      assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
+      assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
+      assertThat(resultSet.getString(7), equalToIgnoringCase("*"));
+      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      //Create time is not tested
+      //assertThat(resultSet.getLong(9), is(new Long(0)));
+      assertThat(resultSet.getString(10), equalToIgnoringCase(ADMIN1));//grantor
+    }
+    statement.close();
+    connection.close();
+  }
+
+  /**
+   * SHOW CURRENT ROLE
    * @throws Exception
    */
   @Test

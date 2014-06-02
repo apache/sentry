@@ -21,6 +21,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -50,7 +51,12 @@ import org.apache.sentry.binding.hive.authz.HiveAuthzBinding;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
 import org.apache.sentry.core.common.ActiveRoleSet;
+import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.Subject;
+import org.apache.sentry.core.model.db.AccessURI;
+import org.apache.sentry.core.model.db.Database;
+import org.apache.sentry.core.model.db.Server;
+import org.apache.sentry.core.model.db.Table;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
@@ -126,7 +132,7 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
             server, work.getRevokeDesc());
       }
       if (work.getShowGrantDesc() != null) {
-        return processShowGrantDDL(conf, console, sentryClient, subject.getName(),
+        return processShowGrantDDL(conf, console, sentryClient, subject.getName(), server,
             work.getShowGrantDesc());
       }
       if (work.getGrantRevokeRoleDDL() != null) {
@@ -248,29 +254,61 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
   }
 
   private int processShowGrantDDL(HiveConf conf, LogHelper console, SentryPolicyServiceClient sentryClient,
-      String subject, ShowGrantDesc desc) throws SentryUserException{
+      String subject, String server, ShowGrantDesc desc) throws SentryUserException{
     PrincipalDesc principalDesc = desc.getPrincipalDesc();
     PrivilegeObjectDesc hiveObjectDesc = desc.getHiveObj();
     String principalName = principalDesc.getName();
-
     Set<TSentryPrivilege> privileges;
 
     try {
-      if (hiveObjectDesc == null) {
-        privileges = sentryClient.listAllPrivilegesByRoleName(subject, principalName);
-        writeToFile(writeGrantInfo(privileges, principalName), desc.getResFile());
-        return RETURN_CODE_SUCCESS;
-      } else {
-        throw new AssertionError("TODO: SHOW GRANT role <roleName> on <objectType> <privilegeLevel>");
+      if (principalDesc.getType() != PrincipalType.ROLE) {
+        String msg = SentryHiveConstants.GRANT_REVOKE_NOT_SUPPORTED_FOR_PRINCIPAL + principalDesc.getType();
+        throw new HiveException(msg);
       }
+
+      if (hiveObjectDesc == null) {
+        privileges = sentryClient.listPrivilegesByRoleName(subject, principalName, null);
+      } else {
+        SentryHivePrivilegeObjectDesc privSubjectDesc = toSentryHivePrivilegeObjectDesc(hiveObjectDesc);
+        List<Authorizable> authorizableHeirarchy = toAuthorizable(privSubjectDesc);
+        privileges = sentryClient.listPrivilegesByRoleName(subject, principalName, authorizableHeirarchy);
+      }
+      writeToFile(writeGrantInfo(privileges, principalName), desc.getResFile());
+      return RETURN_CODE_SUCCESS;
     } catch (IOException e) {
       String msg = "IO Error in show grant " + e.getMessage();
       LOG.info(msg, e);
       console.printError(msg);
       return RETURN_CODE_FAILURE;
+    } catch (HiveException e) {
+      String msg = "Error in show grant operation, error message " + e.getMessage();
+      LOG.warn(msg, e);
+      console.printError(msg);
+      return RETURN_CODE_FAILURE;
     }
-
   }
+
+  private List<Authorizable> toAuthorizable(SentryHivePrivilegeObjectDesc privSubjectDesc) throws HiveException{
+    List<Authorizable> authorizableHeirarchy = new ArrayList<Authorizable>();
+    authorizableHeirarchy.add(new Server(server));
+    String dbName = null;
+    if (privSubjectDesc.getTable()) {
+      DatabaseTable dbTable = parseDBTable(privSubjectDesc.getObject());
+      dbName = dbTable.getDatabase();
+      String tableName = dbTable.getTable();
+      authorizableHeirarchy.add(new Table(tableName));
+      authorizableHeirarchy.add(new Database(dbName));
+
+    } else if (privSubjectDesc.getUri()) {
+      String uriPath = privSubjectDesc.getObject();
+      authorizableHeirarchy.add(new AccessURI(uriPath));
+    } else {
+      dbName = privSubjectDesc.getObject();
+      authorizableHeirarchy.add(new Database(dbName));
+    }
+    return authorizableHeirarchy;
+  }
+
   private void writeToFile(String data, String file) throws IOException {
     Path resFile = new Path(file);
     FileSystem fs = resFile.getFileSystem(conf);
@@ -329,6 +367,9 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
       if (PrivilegeScope.URI.name().equalsIgnoreCase(
           privilege.getPrivilegeScope())) {
         appendNonNull(builder, privilege.getURI(), true);
+      } else if(PrivilegeScope.SERVER.name().equalsIgnoreCase(
+          privilege.getPrivilegeScope())) {
+        appendNonNull(builder, "*", true);//Db column would show * if it is a server level privilege
       } else {
         appendNonNull(builder, privilege.getDbName(), true);
       }
@@ -401,7 +442,7 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
   private static int processGrantRevokeDDL(LogHelper console,
       SentryPolicyServiceClient sentryClient, String subject, String server,
       boolean isGrant, List<PrincipalDesc> principals,
- List<PrivilegeDesc> privileges,
+      List<PrivilegeDesc> privileges,
       PrivilegeObjectDesc privSubjectObjDesc) throws SentryUserException {
     if (privileges == null || privileges.size() == 0) {
       console.printError("No privilege found.");
@@ -413,11 +454,7 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
     String uriPath = null;
     String serverName = null;
     try {
-      if (!(privSubjectObjDesc instanceof SentryHivePrivilegeObjectDesc)) {
-        throw new HiveException(
-            "Privilege subject not parsed correctly by Sentry");
-      }
-      SentryHivePrivilegeObjectDesc privSubjectDesc = (SentryHivePrivilegeObjectDesc) privSubjectObjDesc;
+      SentryHivePrivilegeObjectDesc privSubjectDesc = toSentryHivePrivilegeObjectDesc(privSubjectObjDesc);
 
       if (privSubjectDesc == null) {
         throw new HiveException("Privilege subject cannot be null");
@@ -425,7 +462,6 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
       if (privSubjectDesc.getPartSpec() != null) {
         throw new HiveException(SentryHiveConstants.PARTITION_PRIVS_NOT_SUPPORTED);
       }
-      // TODO how to grant all on server
       String obj = privSubjectDesc.getObject();
       if (privSubjectDesc.getTable()) {
         DatabaseTable dbTable = parseDBTable(obj);
@@ -482,6 +518,15 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
       console.printError(msg);
       return RETURN_CODE_FAILURE;
     }
+  }
+
+  private static SentryHivePrivilegeObjectDesc toSentryHivePrivilegeObjectDesc(PrivilegeObjectDesc privSubjectObjDesc)
+    throws HiveException{
+    if (!(privSubjectObjDesc instanceof SentryHivePrivilegeObjectDesc)) {
+      throw new HiveException(
+          "Privilege subject not parsed correctly by Sentry");
+    }
+    return (SentryHivePrivilegeObjectDesc) privSubjectObjDesc;
   }
 
   private static DatabaseTable parseDBTable(String obj) throws HiveException {
