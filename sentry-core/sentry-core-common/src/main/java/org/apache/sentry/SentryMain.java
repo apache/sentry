@@ -22,6 +22,9 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
+import org.apache.log4j.PropertyConfigurator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -29,21 +32,31 @@ public class SentryMain {
   private static final String HELP_SHORT = "h";
   private static final String HELP_LONG = "help";
   private static final String COMMAND = "command";
+  private static final String LOG4J_CONF = "log4jConf";
   private static final ImmutableMap<String, String> COMMANDS = ImmutableMap
       .<String, String>builder()
       .put("service", "org.apache.sentry.service.thrift.SentryService$CommandImpl")
       .put("config-tool", "org.apache.sentry.binding.hive.authz.SentryConfigTool$CommandImpl")
       .put("schema-tool",
           "org.apache.sentry.provider.db.tools.SentrySchemaTool$CommandImpl")
-      .build();
+          .build();
   public static void main(String[] args)
       throws Exception {
     CommandLineParser parser = new GnuParser();
     Options options = new Options();
     options.addOption(HELP_SHORT, HELP_LONG, false, "Print this help text");
     options.addOption(null, COMMAND, true, "Command to run. Options: " + COMMANDS.keySet());
+    options.addOption(null, LOG4J_CONF, true, "Location of log4j properties file");
     //Ignore unrecognized options: service and config-tool options
     CommandLine commandLine = parser.parse(options, args, true);
+
+    String log4jconf = commandLine.getOptionValue(LOG4J_CONF);
+    if ((log4jconf != null)&&(log4jconf.length() > 0)) {
+      PropertyConfigurator.configure(log4jconf);
+      Logger sentryLogger = LoggerFactory.getLogger(SentryMain.class);
+      sentryLogger.info("Configuring log4j to use [" + log4jconf + "]");
+    }
+
 
     //Print sentry help only if commandName was not given,
     // otherwise we assume the help is for the sub command
