@@ -85,7 +85,6 @@ implements HiveDriverFilterHook {
 
   public HiveAuthzBindingHook() throws Exception {
     SessionState session = SessionState.get();
-    boolean depreicatedConfigFile = false;
     if(session == null) {
       throw new IllegalStateException("Session has not been started");
     }
@@ -93,6 +92,13 @@ implements HiveDriverFilterHook {
     if(hiveConf == null) {
       throw new IllegalStateException("Session HiveConf is null");
     }
+    authzConf = loadAuthzConf(hiveConf);
+    hiveAuthzBinding = new HiveAuthzBinding(hiveConf, authzConf);
+  }
+
+  public static HiveAuthzConf loadAuthzConf(HiveConf hiveConf) {
+    boolean depreicatedConfigFile = false;
+    HiveAuthzConf newAuthzConf = null;
     String hiveAuthzConf = hiveConf.get(HiveAuthzConf.HIVE_SENTRY_CONF_URL);
     if(hiveAuthzConf == null || (hiveAuthzConf = hiveAuthzConf.trim()).isEmpty()) {
       hiveAuthzConf = hiveConf.get(HiveAuthzConf.HIVE_ACCESS_CONF_URL);
@@ -104,7 +110,7 @@ implements HiveDriverFilterHook {
           + " value '" + hiveAuthzConf + "' is invalid.");
     }
     try {
-      authzConf = new HiveAuthzConf(new URL(hiveAuthzConf));
+      newAuthzConf = new HiveAuthzConf(new URL(hiveAuthzConf));
     } catch (MalformedURLException e) {
       if (depreicatedConfigFile) {
         throw new IllegalArgumentException("Configuration key " + HiveAuthzConf.HIVE_ACCESS_CONF_URL
@@ -114,7 +120,7 @@ implements HiveDriverFilterHook {
             + " specifies a malformed URL '" + hiveAuthzConf + "'", e);
       }
     }
-    hiveAuthzBinding = new HiveAuthzBinding(hiveConf, authzConf);
+    return newAuthzConf;
   }
 
   /**
@@ -281,6 +287,7 @@ implements HiveDriverFilterHook {
         sentryTask.setAuthzConf(authzConf);
         sentryTask.setSubject(subject);
         sentryTask.setSubjectGroups(subjectGroups);
+        sentryTask.setIpAddress(context.getIpAddress());
       }
     }
 
@@ -313,8 +320,11 @@ implements HiveDriverFilterHook {
         context.getCommand(), context.getInputs(), context.getOutputs(),
         hiveOp, currDB, currTab, udfURI, partitionURI, context.getUserName(),
         context.getIpAddress(), e, context.getConf());
+    String csHooks = authzConf.get(
+        HiveAuthzConf.AuthzConfVars.AUTHZ_ONFAILURE_HOOKS.getVar(), "").trim();
+
     try {
-      for (Hook aofh : getHooks(HiveAuthzConf.AuthzConfVars.AUTHZ_ONFAILURE_HOOKS)) {
+      for (Hook aofh : getHooks(csHooks)) {
         ((SentryOnFailureHook)aofh).run(hookCtx);
       }
     } catch (Exception ex) {
@@ -322,6 +332,16 @@ implements HiveDriverFilterHook {
     }
   }
 
+  public static void runFailureHook(SentryOnFailureHookContext hookContext,
+      String csHooks) {
+    try {
+      for (Hook aofh : getHooks(csHooks)) {
+        ((SentryOnFailureHook) aofh).run(hookContext);
+      }
+    } catch (Exception ex) {
+      LOG.error("Error executing hook:", ex);
+    }
+  }
   /**
    * Convert the input/output entities into authorizables. generate
    * authorizables for cases like Database and metadata operations where the
@@ -703,8 +723,8 @@ implements HiveDriverFilterHook {
    * @return
    * @throws Exception
    */
-  private List<Hook> getHooks(HiveAuthzConf.AuthzConfVars hookConfVar) throws Exception {
-    return getHooks(hookConfVar, Hook.class);
+  private static List<Hook> getHooks(String csHooks) throws Exception {
+    return getHooks(csHooks, Hook.class);
   }
 
   /**
@@ -718,11 +738,11 @@ implements HiveDriverFilterHook {
    *                    they are listed in the value of hookConfVar
    * @throws Exception
    */
-  private <T extends Hook> List<T> getHooks(HiveAuthzConf.AuthzConfVars hookConfVar, Class<T> clazz)
+  private static <T extends Hook> List<T> getHooks(String csHooks,
+      Class<T> clazz)
       throws Exception {
 
     List<T> hooks = new ArrayList<T>();
-    String csHooks = authzConf.get(hookConfVar.getVar(), "").trim();
     if (csHooks.isEmpty()) {
       return hooks;
     }
@@ -733,7 +753,7 @@ implements HiveDriverFilterHook {
             (T) Class.forName(hookClass, true, JavaUtils.getClassLoader()).newInstance();
         hooks.add(hook);
       } catch (ClassNotFoundException e) {
-        LOG.error(hookConfVar.getVar() + " Class not found:" + e.getMessage());
+        LOG.error(hookClass + " Class not found:" + e.getMessage());
         throw e;
       }
     }

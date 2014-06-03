@@ -17,16 +17,30 @@
 
 package org.apache.sentry.tests.e2e.hive;
 
+import junit.framework.Assert;
+
+import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.sentry.binding.hive.SentryOnFailureHook;
 import org.apache.sentry.binding.hive.SentryOnFailureHookContext;
 
 public class DummySentryOnFailureHook implements SentryOnFailureHook {
 
-  static boolean invoked = false;
+  public static boolean invoked = false;
+  public static boolean checkHiveOp = false;
+  public static HiveOperation hiveOp;
+
+  public static void setHiveOp(HiveOperation newHiveOp) {
+    checkHiveOp = true;
+    hiveOp = newHiveOp;
+  }
 
   @Override
   public void run(SentryOnFailureHookContext failureHookContext)
       throws Exception {
     invoked = true;
+    if (checkHiveOp) {
+      checkHiveOp = false;
+      Assert.assertTrue(hiveOp.equals(failureHookContext.getHiveOp()));
+    }
   }
 }

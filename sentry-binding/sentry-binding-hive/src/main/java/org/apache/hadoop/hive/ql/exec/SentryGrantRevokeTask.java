@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -33,6 +34,9 @@ import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.api.PrincipalType;
 import org.apache.hadoop.hive.ql.DriverContext;
 import org.apache.hadoop.hive.ql.QueryPlan;
+import org.apache.hadoop.hive.ql.hooks.ReadEntity;
+import org.apache.hadoop.hive.ql.hooks.WriteEntity;
+import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.plan.DDLWork;
 import org.apache.hadoop.hive.ql.plan.GrantDesc;
@@ -47,6 +51,9 @@ import org.apache.hadoop.hive.ql.plan.api.StageType;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.hive.ql.session.SessionState.LogHelper;
 import org.apache.sentry.SentryUserException;
+import org.apache.sentry.binding.hive.HiveAuthzBindingHook;
+import org.apache.sentry.binding.hive.SentryOnFailureHookContext;
+import org.apache.sentry.binding.hive.SentryOnFailureHookContextImpl;
 import org.apache.sentry.binding.hive.authz.HiveAuthzBinding;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
@@ -87,6 +94,7 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
   private String server;
   private Subject subject;
   private Set<String> subjectGroups;
+  private String ipAddress;
 
 
   public SentryGrantRevokeTask() {
@@ -95,6 +103,7 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
   public SentryGrantRevokeTask(SentryServiceClientFactory sentryClientFactory) {
     super();
     this.sentryClientFactory = sentryClientFactory;
+
   }
 
 
@@ -119,27 +128,41 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
       Preconditions.checkNotNull(subject, "Subject cannot be null");
       server = Preconditions.checkNotNull(authzConf.get(AuthzConfVars.AUTHZ_SERVER_NAME.getVar()),
           "Config " + AuthzConfVars.AUTHZ_SERVER_NAME.getVar() + " is required");
-      if (work.getRoleDDLDesc() != null) {
-        return processRoleDDL(conf, console, sentryClient, subject.getName(),
-            hiveAuthzBinding, work.getRoleDDLDesc());
+      try {
+        if (work.getRoleDDLDesc() != null) {
+          return processRoleDDL(conf, console, sentryClient, subject.getName(),
+              hiveAuthzBinding, work.getRoleDDLDesc());
+        }
+        if (work.getGrantDesc() != null) {
+          return processGrantDDL(conf, console, sentryClient,
+              subject.getName(), server, work.getGrantDesc());
+        }
+        if (work.getRevokeDesc() != null) {
+          return processRevokeDDL(conf, console, sentryClient,
+              subject.getName(), server, work.getRevokeDesc());
+        }
+        if (work.getShowGrantDesc() != null) {
+          return processShowGrantDDL(conf, console, sentryClient, subject.getName(), server,
+              work.getShowGrantDesc());
+        }
+        if (work.getGrantRevokeRoleDDL() != null) {
+          return processGrantRevokeRoleDDL(conf, console, sentryClient,
+              subject.getName(), work.getGrantRevokeRoleDDL());
+        }
+        throw new AssertionError(
+            "Unknown command passed to Sentry Grant/Revoke Task");
+      } catch (SentryUserException e) {
+        String csHooks = authzConf.get(
+            HiveAuthzConf.AuthzConfVars.AUTHZ_ONFAILURE_HOOKS.getVar(), "")
+            .trim();
+        SentryOnFailureHookContext hookContext = new SentryOnFailureHookContextImpl(
+            queryPlan.getQueryString(), new HashSet<ReadEntity>(),
+            new HashSet<WriteEntity>(), SessionState.get().getHiveOperation(),
+            null, null, null, null, subject.getName(), ipAddress,
+            new AuthorizationException(e), conf);
+        HiveAuthzBindingHook.runFailureHook(hookContext, csHooks);
+        throw e; // rethrow the exception for logging
       }
-      if (work.getGrantDesc() != null) {
-        return processGrantDDL(conf, console, sentryClient, subject.getName(),
-            server, work.getGrantDesc());
-      }
-      if (work.getRevokeDesc() != null) {
-        return processRevokeDDL(conf, console, sentryClient, subject.getName(),
-            server, work.getRevokeDesc());
-      }
-      if (work.getShowGrantDesc() != null) {
-        return processShowGrantDDL(conf, console, sentryClient, subject.getName(), server,
-            work.getShowGrantDesc());
-      }
-      if (work.getGrantRevokeRoleDDL() != null) {
-        return processGrantRevokeRoleDDL(conf, console, sentryClient, subject.getName(),
-            work.getGrantRevokeRoleDDL());
-      }
-      throw new AssertionError("Unknown command passed to Sentry Grant/Revoke Task");
     } catch(Throwable throwable) {
       setException(throwable);
       String msg = "Error processing Sentry command: " + throwable.getMessage();
@@ -172,6 +195,10 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
     Preconditions.checkState(this.subjectGroups == null,
         "setSubjectGroups should only be called once: " + this.subjectGroups);
     this.subjectGroups = subjectGroups;
+  }
+
+  public void setIpAddress(String ipAddress) {
+    this.ipAddress = ipAddress;
   }
 
   private int processRoleDDL(HiveConf conf, LogHelper console,

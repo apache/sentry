@@ -50,7 +50,7 @@ public abstract class AbstractTestWithDbProvider extends AbstractTestWithHiveSer
 
   protected static final String SERVER_HOST = "localhost";
 
-  private Map<String, String> properties;
+  private Map<String, String> properties = Maps.newHashMap();
   private File dbDir;
   private SentryService server;
   private Configuration conf;
@@ -62,8 +62,13 @@ public abstract class AbstractTestWithDbProvider extends AbstractTestWithHiveSer
   public static void setupTest() throws Exception {
   }
 
-  public void createContext() throws Exception {
-    properties = Maps.newHashMap();
+  @Override
+  public Context createContext(Map<String, String> properties) throws Exception {
+    this.properties = properties;
+    return createContext();
+  }
+
+  public Context createContext() throws Exception {
     conf = new Configuration(false);
     policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
     properties.put(HiveServerFactory.AUTHZ_PROVIDER_BACKEND, SimpleDBProviderBackend.class.getName());
@@ -92,12 +97,13 @@ public abstract class AbstractTestWithDbProvider extends AbstractTestWithHiveSer
     properties.put(ClientConfig.SERVER_RPC_PORT,
         String.valueOf(server.getAddress().getPort()));
 
-    context = createContext(properties);
+    context = super.createContext(properties);
     policyFile
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile(), policyFilePath);
 
     startSentryService();
+    return context;
   }
 
   @After
