@@ -32,19 +32,26 @@ public class SimpleCacheProviderBackend implements ProviderBackend {
 
   private PrivilegeCache cacheHandle;
   private Configuration conf;
+  private boolean isInitialized = false;
 
   public SimpleCacheProviderBackend(Configuration conf, String resourcePath) {
     this.conf = conf;
   }
 
+  /**
+   * Initializes the SimpleCacheProviderBackend. Can be called multiple times, subsequent
+   * calls will be a no-op.
+   */
   @Override
   public void initialize(ProviderBackendContext context) {
+    if (isInitialized) return;
+    isInitialized = true;
     cacheHandle = (PrivilegeCache) context.getBindingHandle();
     assert cacheHandle != null;
   }
 
   private boolean initialized() {
-    return cacheHandle != null;
+    return isInitialized;
   }
 
   @Override
