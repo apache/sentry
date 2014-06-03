@@ -41,7 +41,6 @@ import javax.jdo.Transaction;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.model.db.AccessConstants;
-import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
 import org.apache.sentry.provider.common.ProviderConstants;
 import org.apache.sentry.provider.db.SentryAccessDeniedException;
@@ -64,7 +63,6 @@ import org.datanucleus.store.rdbms.exceptions.MissingTableException;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
@@ -617,7 +615,9 @@ public class SentryStore {
         filters.append("&& serverName == \"" + authHierarchy.getServer().toLowerCase() + "\"");
         if (authHierarchy.getDb() != null) {
           filters.append(" && ((dbName == \"" + authHierarchy.getDb().toLowerCase() + "\") || (dbName == null)) && (URI == null)");
-          if (authHierarchy.getTable() != null) {
+          if ((authHierarchy.getTable() != null)
+              && !AccessConstants.ALL
+                  .equalsIgnoreCase(authHierarchy.getTable())) {
             filters.append(" && ((tableName == \"" + authHierarchy.getTable().toLowerCase() + "\") || (tableName == null)) && (URI == null)");
           }
         }
@@ -625,7 +625,7 @@ public class SentryStore {
           filters.append(" && ((\"" + authHierarchy.getUri() + "\".startsWith(URI)) || (URI == null)) && (dbName == null)");
         }
       }
-
+      System.out.println("Filter String: " + filters.toString());
       query.setFilter(filters.toString());
       List<MSentryPrivilege> privileges = (List<MSentryPrivilege>) query.execute();
       rollbackTransaction = false;

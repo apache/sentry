@@ -65,7 +65,6 @@ public class Context {
   private final Set<Connection> connections;
   private final Set<Statement> statements;
 
-
   public Context(HiveServer hiveServer, FileSystem fileSystem,
       File baseDir, File confDir, File dataDir, File policyFile) throws Exception {
     this.hiveServer = hiveServer;
@@ -138,7 +137,7 @@ public class Context {
     for(Statement statement : statements) {
       try {
         statement.close();
-      } catch (SQLException exception) {
+      } catch (Exception exception) {
         LOGGER.warn("Error closing " + statement, exception);
       }
     }
@@ -147,7 +146,7 @@ public class Context {
     for(Connection connection : connections) {
       try {
         connection.close();
-      } catch (SQLException exception) {
+      } catch (Exception exception) {
         LOGGER.warn("Error closing " + connection, exception);
       }
     }

@@ -26,7 +26,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
-import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.tests.e2e.dbprovider.PolicyProviderForTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,12 +34,12 @@ import org.junit.Test;
 import com.google.common.io.Resources;
 
 public class TestMetadataObjectRetrieval extends AbstractTestWithStaticConfiguration {
-  private PolicyFile policyFile;
+  private PolicyProviderForTest policyFile;
   private File dataFile;
 
   @Before
   public void setup() throws Exception {
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    policyFile = PolicyProviderForTest.setAdminOnServer1(ADMINGROUP);
     context = createContext();
     dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);

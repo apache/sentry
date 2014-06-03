@@ -22,14 +22,15 @@ import java.sql.Statement;
 
 import junit.framework.Assert;
 
-import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.tests.e2e.dbprovider.PolicyProviderForTest;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
-  private PolicyFile policyFile;
+  private Context context;
+  private PolicyProviderForTest policyFile;
 
   private static final String dataFile = "/kv1.dat";
   private String dataFilePath = this.getClass().getResource(dataFile).getFile();
@@ -37,7 +38,7 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
   @Before
   public void setup() throws Exception {
     context = createContext();
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    policyFile = PolicyProviderForTest.setAdminOnServer1(ADMINGROUP);
   }
 
   @After

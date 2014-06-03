@@ -56,10 +56,13 @@ public class PolicyFile {
 
   private final Map<String, String> databasesToPolicyFiles = Maps.newHashMap();
   private final Multimap<String, String> usersToGroups = ArrayListMultimap.create();
-  private final Multimap<String, String> groupsToRoles = ArrayListMultimap.create();
-  private final Multimap<String, String> rolesToPermissions = ArrayListMultimap.create();
+  protected final Multimap<String, String> groupsToRoles = ArrayListMultimap
+      .create();
+  protected final Multimap<String, String> rolesToPermissions = ArrayListMultimap
+      .create();
 
-  public PolicyFile addRolesToGroup(String groupName, String... roleNames) {
+  public PolicyFile addRolesToGroup(String groupName, String... roleNames)
+      throws Exception {
     return addRolesToGroup(groupName, false, roleNames);
   }
   public PolicyFile addRolesToGroup(String groupName, boolean allowDuplicates, String... roleNames) {
@@ -185,7 +188,7 @@ public class PolicyFile {
   }
 
   //User:Group mapping for the admin user needs to be set separately
-  public static PolicyFile setAdminOnServer1(String admin) {
+  public static PolicyFile setAdminOnServer1(String admin) throws Exception {
     return new PolicyFile()
       .addRolesToGroup(admin, "admin_role")
       .addPermissionsToRole("admin_role", "server=server1");

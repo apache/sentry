@@ -30,7 +30,7 @@ import java.sql.Statement;
 
 import junit.framework.Assert;
 
-import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.tests.e2e.dbprovider.PolicyProviderForTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,7 +42,8 @@ import com.google.common.io.Resources;
 
 public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfiguration {
 
-  private PolicyFile policyFile;
+  private Context context;
+  private PolicyProviderForTest policyFile;
 
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private final String MULTI_TYPE_DATA_FILE_NAME = "emp.dat";
@@ -50,7 +51,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
   @Before
   public void setup() throws Exception {
     context = createContext();
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    policyFile = PolicyProviderForTest.setAdminOnServer1(ADMINGROUP);
   }
 
   @After

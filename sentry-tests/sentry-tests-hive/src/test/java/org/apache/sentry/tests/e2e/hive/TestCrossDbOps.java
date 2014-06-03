@@ -17,13 +17,8 @@
 
 package org.apache.sentry.tests.e2e.hive;
 
-import com.google.common.io.Resources;
-import junit.framework.Assert;
-import org.apache.sentry.provider.file.PolicyFile;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -35,14 +30,21 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import junit.framework.Assert;
+
+import org.apache.sentry.tests.e2e.dbprovider.PolicyProviderForTest;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import com.google.common.io.Resources;
 
 /* Tests privileges at table scope with cross database access */
 
 public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
   private File dataFile;
-  private PolicyFile policyFile;
+  private PolicyProviderForTest policyFile;
   private String loadData;
 
   @BeforeClass
@@ -60,7 +62,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    policyFile = PolicyProviderForTest.setAdminOnServer1(ADMINGROUP);
     loadData = "server=server1->uri=file://" + dataFile.getPath();
 
   }
@@ -375,10 +377,11 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
         // Positive case: test user1 and user2 has permissions to access
         // db1 and
         // db2
+        userStmt.execute("Use " + dbName);
         userStmt
         .execute("create table " + dbName + "." + tabName + " (id int)");
         userStmt.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
-            + "' INTO TABLE " + dbName + "." + tabName);
+            + "' INTO TABLE " + tabName);
         userStmt.execute("select * from " + dbName + "." + tabName);
         context.close();
       }

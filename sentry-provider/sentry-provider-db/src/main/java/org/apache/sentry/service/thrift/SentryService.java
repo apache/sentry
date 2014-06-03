@@ -315,4 +315,8 @@ public class SentryService implements Runnable {
       });
     }
   }
+
+  public Configuration getConf() {
+    return conf;
+  }
 }

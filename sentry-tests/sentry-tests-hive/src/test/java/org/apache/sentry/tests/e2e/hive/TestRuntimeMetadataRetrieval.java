@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.tests.e2e.dbprovider.PolicyProviderForTest;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -40,7 +40,8 @@ import com.google.common.io.Resources;
  * statements are validaed via a runtime fetch hook
  */
 public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfiguration {
-  private PolicyFile policyFile;
+  private Context context;
+  private PolicyProviderForTest policyFile;
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private File dataDir;
   private File dataFile;
@@ -53,7 +54,7 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    policyFile = PolicyProviderForTest.setAdminOnServer1(ADMINGROUP);
   }
 
   @After

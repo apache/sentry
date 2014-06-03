@@ -31,7 +31,7 @@ import java.util.Map;
 
 import junit.framework.Assert;
 
-import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.tests.e2e.dbprovider.PolicyProviderForTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -43,7 +43,8 @@ import com.google.common.io.Resources;
 
 public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfiguration {
 
-  private PolicyFile policyFile;
+  private Context context;
+  private PolicyProviderForTest policyFile;
 
   Map <String, String >testProperties;
   private static final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
@@ -52,7 +53,7 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
   public void setup() throws Exception {
     testProperties = new HashMap<String, String>();
 
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    policyFile = PolicyProviderForTest.setAdminOnServer1(ADMINGROUP);
     context = createContext();
   }
 

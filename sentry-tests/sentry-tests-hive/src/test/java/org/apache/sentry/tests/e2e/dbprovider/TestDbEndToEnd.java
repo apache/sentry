@@ -26,9 +26,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
-import org.apache.sentry.tests.e2e.hive.Context;
-import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
-import org.junit.After;
+import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -37,6 +35,7 @@ import com.google.common.io.Resources;
 public class TestDbEndToEnd extends AbstractTestWithDbProvider {
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private File dataFile;
+  private PolicyFile policyFile;
 
   @Before
   public void setup() throws Exception {
@@ -45,6 +44,7 @@ public class TestDbEndToEnd extends AbstractTestWithDbProvider {
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
     setupAdmin(context);
   }
 

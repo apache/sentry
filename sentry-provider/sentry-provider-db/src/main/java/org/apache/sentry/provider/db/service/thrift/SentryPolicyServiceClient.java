@@ -103,7 +103,7 @@ public class SentryPolicyServiceClient {
     LOGGER.info("Successfully created client");
   }
 
-  public void createRole(String requestorUserName, String roleName)
+  public synchronized void createRole(String requestorUserName, String roleName)
   throws SentryUserException {
     TCreateSentryRoleRequest request = new TCreateSentryRoleRequest();
     request.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
@@ -156,7 +156,8 @@ public class SentryPolicyServiceClient {
    * @return Set of thrift sentry role objects
    * @throws SentryUserException
    */
-  public Set<TSentryRole> listRolesByGroupName(String requestorUserName,
+  public synchronized Set<TSentryRole> listRolesByGroupName(
+      String requestorUserName,
       String groupName)
   throws SentryUserException {
     TListSentryRolesRequest request = new TListSentryRolesRequest();
@@ -365,7 +366,7 @@ public class SentryPolicyServiceClient {
     }
   }
 
-  public void grantRoleToGroup(String requestorUserName,
+  public synchronized void grantRoleToGroup(String requestorUserName,
       String groupName, String roleName)
   throws SentryUserException {
     TAlterSentryRoleAddGroupsRequest request = new TAlterSentryRoleAddGroupsRequest(ThriftConstants.
@@ -379,7 +380,7 @@ TSENTRY_SERVICE_VERSION_CURRENT, requestorUserName,
     }
   }
 
-  public void revokeRoleFromGroup(String requestorUserName,
+  public synchronized void revokeRoleFromGroup(String requestorUserName,
       String groupName, String roleName)
   throws SentryUserException {
     TAlterSentryRoleDeleteGroupsRequest request = new TAlterSentryRoleDeleteGroupsRequest(ThriftConstants.

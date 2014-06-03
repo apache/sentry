@@ -48,6 +48,7 @@ import org.apache.hadoop.hive.ql.plan.RevokeDesc;
 import org.apache.hadoop.hive.ql.plan.RoleDDLDesc;
 import org.apache.hadoop.hive.ql.plan.ShowGrantDesc;
 import org.apache.hadoop.hive.ql.plan.api.StageType;
+import org.apache.hadoop.hive.ql.security.authorization.Privilege.PrivilegeType;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.hive.ql.session.SessionState.LogHelper;
 import org.apache.sentry.SentryUserException;
@@ -64,6 +65,7 @@ import org.apache.sentry.core.model.db.AccessURI;
 import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.core.model.db.Table;
+import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
@@ -526,14 +528,14 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
               sentryClient.grantDatabasePrivilege(subject, princ.getName(), server, dbName);
             } else {
               sentryClient.grantTablePrivilege(subject, princ.getName(), server, dbName,
-                  tableName, privDesc.getPrivilege().getPriv().name());
+                  tableName, toSentryAction(privDesc.getPrivilege().getPriv()));
             }
           } else {
             if (tableName == null) {
               sentryClient.revokeDatabasePrivilege(subject, princ.getName(), server, dbName);
             } else {
               sentryClient.revokeTablePrivilege(subject, princ.getName(), server, dbName,
-                  tableName, privDesc.getPrivilege().getPriv().name());
+                  tableName, toSentryAction(privDesc.getPrivilege().getPriv()));
             }
           }
         }
@@ -554,6 +556,14 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
           "Privilege subject not parsed correctly by Sentry");
     }
     return (SentryHivePrivilegeObjectDesc) privSubjectObjDesc;
+  }
+
+  private static String toSentryAction(PrivilegeType privilegeType) {
+    if (PrivilegeType.ALL.equals(privilegeType)) {
+      return AccessConstants.ALL;
+    } else {
+      return privilegeType.name();
+    }
   }
 
   private static DatabaseTable parseDBTable(String obj) throws HiveException {

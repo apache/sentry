@@ -26,7 +26,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.tests.e2e.dbprovider.PolicyProviderForTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,7 +37,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private File dataDir;
   private File dataFile;
-  private PolicyFile policyFile;
+  private PolicyProviderForTest policyFile;
 
   @Before
   public void setup() throws Exception {
@@ -47,7 +47,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    policyFile = PolicyProviderForTest.setAdminOnServer1(ADMINGROUP);
 
   }
 

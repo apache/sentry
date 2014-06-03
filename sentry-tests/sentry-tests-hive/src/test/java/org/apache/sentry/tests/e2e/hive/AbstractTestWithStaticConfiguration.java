@@ -16,12 +16,29 @@
  */
 package org.apache.sentry.tests.e2e.hive;
 
-import com.google.common.collect.Maps;
-import com.google.common.io.Files;
+import java.io.File;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.Map;
+import java.util.concurrent.TimeoutException;
+
 import junit.framework.Assert;
+
 import org.apache.commons.io.FileUtils;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
+import org.apache.sentry.binding.hive.SentryHiveAuthorizationTaskFactoryImpl;
+import org.apache.sentry.provider.db.SimpleDBProviderBackend;
+import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.service.thrift.SentryService;
+import org.apache.sentry.service.thrift.SentryServiceClientFactory;
+import org.apache.sentry.service.thrift.SentryServiceFactory;
+import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
+import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
+import org.apache.sentry.tests.e2e.dbprovider.PolicyProviderForTest;
 import org.apache.sentry.tests.e2e.hive.fs.DFS;
 import org.apache.sentry.tests.e2e.hive.fs.DFSFactory;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServer;
@@ -32,11 +49,8 @@ import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.Statement;
-import java.util.Map;
+import com.google.common.collect.Maps;
+import com.google.common.io.Files;
 
 public abstract class AbstractTestWithStaticConfiguration {
   private static final Logger LOGGER = LoggerFactory
@@ -75,7 +89,10 @@ public abstract class AbstractTestWithStaticConfiguration {
       VIEW3 = "view_3",
       INDEX1 = "index_1",
       INDEX2 = "index_2";
+  protected static final String SERVER_HOST = "localhost";
+
   protected static boolean policy_on_hdfs = false;
+  protected static boolean useSentryService = false;
 
   protected static File baseDir;
   protected static File logDir;
@@ -86,11 +103,15 @@ public abstract class AbstractTestWithStaticConfiguration {
   protected static FileSystem fileSystem;
   protected static DFS dfs;
   protected static Map<String, String> properties;
+  protected static SentryService sentryServer;
+  protected static Configuration sentryConf;
+  protected static SentryPolicyServiceClient sentryClient;
   protected Context context;
 
   public Context createContext() throws Exception {
-    return new Context(hiveServer, fileSystem,
+    context = new Context(hiveServer, fileSystem,
         baseDir, confDir, dataDir, policyFileLocation);
+    return context;
   }
   protected void dropDb(String user, String...dbs) throws Exception {
     Connection connection = context.createConnection(user);
@@ -164,6 +185,10 @@ public abstract class AbstractTestWithStaticConfiguration {
       policyURI = policyFileLocation.getPath();
     }
 
+    if (useSentryService) {
+      setupSentryService();
+    }
+
     hiveServer = HiveServerFactory.create(properties, baseDir, confDir, logDir, policyURI, fileSystem);
     hiveServer.start();
   }
@@ -172,6 +197,55 @@ public abstract class AbstractTestWithStaticConfiguration {
     policyFile.write(context.getPolicyFile());
     if(policy_on_hdfs) {
       dfs.writePolicyFile(context.getPolicyFile());
+    }
+  }
+
+  private static void setupSentryService() throws Exception {
+    properties = Maps.newHashMap();
+    sentryConf = new Configuration(false);
+    PolicyFile policyFile = new PolicyFile();
+
+    properties.put(HiveServerFactory.AUTHZ_PROVIDER_BACKEND,
+        SimpleDBProviderBackend.class.getName());
+    properties.put(ConfVars.HIVE_AUTHORIZATION_TASK_FACTORY.varname,
+        SentryHiveAuthorizationTaskFactoryImpl.class.getName());
+    properties
+        .put(ConfVars.HIVE_SERVER2_THRIFT_MIN_WORKER_THREADS.varname, "2");
+    properties.put(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_NONE);
+    properties.put(ServerConfig.ADMIN_GROUPS, ADMINGROUP);
+    properties.put(ServerConfig.RPC_ADDRESS, SERVER_HOST);
+    properties.put(ServerConfig.RPC_PORT, String.valueOf(0));
+    properties.put(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "false");
+
+    properties.put(ServerConfig.SENTRY_STORE_JDBC_URL,
+        "jdbc:derby:;databaseName=" + baseDir.getPath()
+            + "/sentrystore_db;create=true");
+    properties.put(ServerConfig.SENTRY_STORE_GROUP_MAPPING, ServerConfig.SENTRY_STORE_LOCAL_GROUP_MAPPING);
+    properties.put(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE, policyFileLocation.getPath());
+    properties.put(ServerConfig.RPC_MIN_THREADS, "3");
+    for (Map.Entry<String, String> entry : properties.entrySet()) {
+      sentryConf.set(entry.getKey(), entry.getValue());
+    }
+    sentryServer = new SentryServiceFactory().create(sentryConf);
+    properties.put(ClientConfig.SERVER_RPC_ADDRESS, sentryServer.getAddress()
+        .getHostString());
+    sentryConf.set(ClientConfig.SERVER_RPC_ADDRESS, sentryServer.getAddress()
+        .getHostString());
+    properties.put(ClientConfig.SERVER_RPC_PORT,
+        String.valueOf(sentryServer.getAddress().getPort()));
+    sentryConf.set(ClientConfig.SERVER_RPC_PORT,
+        String.valueOf(sentryServer.getAddress().getPort()));
+    startSentryService();
+  }
+
+  private static void startSentryService() throws Exception {
+    sentryServer.start();
+    final long start = System.currentTimeMillis();
+    while (!sentryServer.isRunning()) {
+      Thread.sleep(1000);
+      if (System.currentTimeMillis() - start > 60000L) {
+        throw new TimeoutException("Server did not start after 60 seconds");
+      }
     }
   }
 
@@ -186,6 +260,17 @@ public abstract class AbstractTestWithStaticConfiguration {
       hiveServer.shutdown();
       hiveServer = null;
     }
+
+    if (sentryServer != null) {
+      if (sentryClient != null) {
+        sentryClient.close();
+      }
+      sentryClient = null;
+      sentryServer.stop();
+      sentryServer = null;
+      PolicyProviderForTest.clearSentryClient();
+    }
+
     if(baseDir != null) {
       if(System.getProperty(HiveServerFactory.KEEP_BASEDIR) == null) {
         FileUtils.deleteQuietly(baseDir);
@@ -199,5 +284,13 @@ public abstract class AbstractTestWithStaticConfiguration {
         LOGGER.info("Exception shutting down dfs", e);
       }
     }
+  }
+
+  public static SentryPolicyServiceClient getSentryClient() throws Exception {
+    if (sentryServer == null) {
+      throw new IllegalAccessException("Sentry service not initialized");
+    }
+    SentryServiceClientFactory factory = new SentryServiceClientFactory();
+    return factory.create(sentryServer.getConf());
   }
 }

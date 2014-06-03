@@ -16,8 +16,14 @@
  */
 package org.apache.sentry.tests.e2e.hive.hiveserver;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.io.Resources;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.ServerSocket;
+import java.net.URL;
+import java.util.Map;
+
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -29,13 +35,8 @@ import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.ServerSocket;
-import java.net.URL;
-import java.util.Map;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.io.Resources;
 
 public class HiveServerFactory {
   private static final Logger LOGGER = LoggerFactory
@@ -128,6 +129,7 @@ public class HiveServerFactory {
     if(!properties.containsKey(HADOOPBIN)) {
       properties.put(HADOOPBIN, "./target/hadoop/bin/hadoop");
     }
+    properties.put(ConfVars.HIVESTATSAUTOGATHER.varname, "false");
     String hadoopBinPath = properties.get(HADOOPBIN);
     Assert.assertNotNull(hadoopBinPath, "Hadoop Bin");
     File hadoopBin = new File(hadoopBinPath);

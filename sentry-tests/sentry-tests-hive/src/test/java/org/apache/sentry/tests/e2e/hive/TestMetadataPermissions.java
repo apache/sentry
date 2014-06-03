@@ -21,19 +21,20 @@ import java.sql.Statement;
 
 import junit.framework.Assert;
 
-import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.tests.e2e.dbprovider.PolicyProviderForTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 
 public class TestMetadataPermissions extends AbstractTestWithStaticConfiguration {
-  private PolicyFile policyFile;
+  private Context context;
+  private PolicyProviderForTest policyFile;
 
   @Before
   public void setup() throws Exception {
     context = createContext();
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    policyFile = PolicyProviderForTest.setAdminOnServer1(ADMINGROUP);
 
     policyFile
         .addRolesToGroup(USERGROUP1, "db1_all", "db2_all")

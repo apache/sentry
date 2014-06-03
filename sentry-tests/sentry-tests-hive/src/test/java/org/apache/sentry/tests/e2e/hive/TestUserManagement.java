@@ -27,7 +27,7 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 
 import org.apache.hadoop.mapreduce.JobContext;
-import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.tests.e2e.dbprovider.PolicyProviderForTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -40,7 +40,8 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
   private static final String tableName = "t1";
   private static final String tableComment = "Test table";
   private File dataFile;
-  private PolicyFile policyFile;
+  private Context context;
+  private PolicyProviderForTest policyFile;
 
   @Before
   public void setUp() throws Exception {
@@ -108,7 +109,7 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
    */
   @Test
   public void testSanity() throws Exception {
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    policyFile = PolicyProviderForTest.setAdminOnServer1(ADMINGROUP);
     policyFile
         .addGroupsToUser("admin1", ADMINGROUP);
     writePolicyFile(policyFile);
@@ -120,7 +121,7 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
    **/
   @Test
   public void testAdmin1() throws Exception {
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    policyFile = PolicyProviderForTest.setAdminOnServer1(ADMINGROUP);
     policyFile
         .addGroupsToUser("admin1", ADMINGROUP)
         .addGroupsToUser("admin2", ADMINGROUP)
@@ -136,7 +137,7 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
    **/
   @Test
   public void testAdmin3() throws Exception {
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    policyFile = PolicyProviderForTest.setAdminOnServer1(ADMINGROUP);
     policyFile
         .addGroupsToUser("admin1", ADMINGROUP)
         .addGroupsToUser("admin2", ADMINGROUP)
@@ -161,7 +162,7 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
    **/
   @Test
   public void testAdmin5() throws Exception {
-    policyFile = new PolicyFile();
+    policyFile = new PolicyProviderForTest();
     policyFile
         .addRolesToGroup("admin_group1", ADMINGROUP)
         .addRolesToGroup("admin_group2", ADMINGROUP)
@@ -178,7 +179,7 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
    **/
   @Test
   public void testAdmin6() throws Exception {
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    policyFile = PolicyProviderForTest.setAdminOnServer1(ADMINGROUP);
     policyFile
         .addGroupsToUser("admin1", ADMINGROUP)
         .addRolesToGroup("group1", "non_admin_role")
@@ -199,7 +200,7 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
    **/
   @Test
   public void testGroup2() throws Exception {
-    policyFile = new PolicyFile();
+    policyFile = new PolicyProviderForTest();
     policyFile
         .addRolesToGroup("group1", ADMINGROUP, "analytics")
         .addPermissionsToRole(ADMINGROUP, "server=server1")
@@ -215,7 +216,7 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
    **/
   @Test
   public void testGroup4() throws Exception {
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    policyFile = PolicyProviderForTest.setAdminOnServer1(ADMINGROUP);
     policyFile
         .addGroupsToUser("admin1", ADMINGROUP)
         .addRolesToGroup("group1", "non_admin_role", "load_data")
@@ -248,7 +249,7 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
   @Test
   public void testGroup5() throws Exception {
 
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    policyFile = PolicyProviderForTest.setAdminOnServer1(ADMINGROUP);
     policyFile
         .addGroupsToUser("admin1", ADMINGROUP)
         .addRolesToGroup("group1", "non_admin_role", "load_data")
@@ -272,7 +273,7 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
    **/
   @Test
   public void testGroup6() throws Exception {
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    policyFile = PolicyProviderForTest.setAdminOnServer1(ADMINGROUP);
     policyFile
         .addGroupsToUser("admin1", ADMINGROUP)
         .addRolesToGroup("group1~!@#$%^&*()+-", "analytics", "load_data")
@@ -296,7 +297,7 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
    **/
   @Test
   public void testGroup7() throws Exception {
-    policyFile = new PolicyFile();
+    policyFile = new PolicyProviderForTest();
     policyFile
         .addRolesToGroup("group1", ADMINGROUP)
         .addPermissionsToRole(ADMINGROUP, "server=server1")
@@ -312,7 +313,7 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
    **/
   @Test
   public void testGroup8() throws Exception {
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    policyFile = PolicyProviderForTest.setAdminOnServer1(ADMINGROUP);
     policyFile
         .addGroupsToUser("admin1", ADMINGROUP)
         .addRolesToGroup("group1", "analytics")
