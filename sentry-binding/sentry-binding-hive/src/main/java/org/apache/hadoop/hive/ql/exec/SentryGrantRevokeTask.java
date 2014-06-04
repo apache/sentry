@@ -531,7 +531,11 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
                   tableName, toSentryAction(privDesc.getPrivilege().getPriv()));
             }
           } else {
-            if (tableName == null) {
+            if (serverName != null) {
+              sentryClient.revokeServerPrivilege(subject, princ.getName(), serverName);
+            } else if (uriPath != null) {
+              sentryClient.revokeURIPrivilege(subject, princ.getName(), server, uriPath);
+            } else if (tableName == null) {
               sentryClient.revokeDatabasePrivilege(subject, princ.getName(), server, dbName);
             } else {
               sentryClient.revokeTablePrivilege(subject, princ.getName(), server, dbName,

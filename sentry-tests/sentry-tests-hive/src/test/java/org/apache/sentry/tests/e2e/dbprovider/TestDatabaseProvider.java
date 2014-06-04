@@ -17,6 +17,8 @@
 
 package org.apache.sentry.tests.e2e.dbprovider;
 
+import org.apache.sentry.SentryUserException;
+import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
@@ -101,6 +103,125 @@ public class TestDatabaseProvider extends AbstractTestWithDbProvider {
     statement.execute("SELECT * FROM t1");
     statement.close();
     connection.close();
+  }
+
+
+  /**
+   * Revoke privilege
+   * @throws Exception
+   */
+  @Test
+  public void testRevokePrivileges() throws Exception {
+    Connection connection;
+    Statement statement;
+    ResultSet resultSet;
+
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    statement.execute("CREATE ROLE role1");
+
+    //Revoke All on server by admin
+    statement.execute("GRANT ALL ON SERVER server1 to role role1");
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    assertResultSize(resultSet, 1);
+    statement.execute("REVOKE ALL ON SERVER server1 from role role1");
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    assertResultSize(resultSet, 0);
+
+    //Revoke All on database by admin
+    statement.execute("GRANT ALL ON DATABASE default to role role1");
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    assertResultSize(resultSet, 1);
+    statement.execute("REVOKE ALL ON DATABASE default from role role1");
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    assertResultSize(resultSet, 0);
+
+    //Revoke All on URI by admin
+    statement.execute("GRANT ALL ON URI 'file:///path' to role role1");
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    assertResultSize(resultSet, 1);
+    statement.execute("REVOKE ALL ON URI 'file:///path' from role role1");
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    assertResultSize(resultSet, 0);
+
+    //Revoke All on table by admin
+    statement.execute("GRANT ALL ON TABLE tab1 to role role1");
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    assertResultSize(resultSet, 1);
+    statement.execute("REVOKE ALL ON TABLE tab1 from role role1");
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    assertResultSize(resultSet, 0);
+
+    //Revoke INSERT on table by admin
+    statement.execute("GRANT INSERT ON TABLE tab1 to role role1");
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    assertResultSize(resultSet, 1);
+    statement.execute("REVOKE INSERT ON TABLE tab1 from role role1");
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    assertResultSize(resultSet, 0);
+
+    //Revoke SELECT on table by admin
+    statement.execute("GRANT SELECT ON TABLE tab1 to role role1");
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    assertResultSize(resultSet, 1);
+    statement.execute("REVOKE SELECT ON TABLE tab1 from role role1");
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    assertResultSize(resultSet, 0);
+
+    //Revoke Partial privilege on table by admin
+    statement.execute("GRANT ALL ON TABLE tab1 to role role1");
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    assertResultSize(resultSet, 1);
+    statement.execute("REVOKE INSERT ON TABLE tab1 from role role1");
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    assertResultSize(resultSet, 1);
+    while(resultSet.next()) {
+      assertThat(resultSet.getString(1), equalToIgnoringCase("default"));
+      assertThat(resultSet.getString(2), equalToIgnoringCase("tab1"));
+      assertThat(resultSet.getString(3), equalToIgnoringCase(""));//partition
+      assertThat(resultSet.getString(4), equalToIgnoringCase(""));//column
+      assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
+      assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
+      assertThat(resultSet.getString(7), equalToIgnoringCase("select"));
+      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      //Create time is not tested
+      //assertThat(resultSet.getLong(9), is(new Long(0)));
+      assertThat(resultSet.getString(10), equalToIgnoringCase(ADMIN1));//grantor
+
+    }
+
+    //Revoke Partial privilege on table by admin
+    statement.execute("GRANT ALL ON TABLE tab1 to role role1");
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    assertResultSize(resultSet, 1);
+    statement.execute("REVOKE SELECT ON TABLE tab1 from role role1");
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    assertResultSize(resultSet, 1);
+    while(resultSet.next()) {
+      assertThat(resultSet.getString(1), equalToIgnoringCase("default"));
+      assertThat(resultSet.getString(2), equalToIgnoringCase("tab1"));
+      assertThat(resultSet.getString(3), equalToIgnoringCase(""));//partition
+      assertThat(resultSet.getString(4), equalToIgnoringCase(""));//column
+      assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
+      assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
+      assertThat(resultSet.getString(7), equalToIgnoringCase("insert"));
+      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      //Create time is not tested
+      //assertThat(resultSet.getLong(9), is(new Long(0)));
+      assertThat(resultSet.getString(10), equalToIgnoringCase(ADMIN1));//grantor
+
+    }
+
+    statement.close();
+    connection.close();
+  }
+
+  private void assertResultSize(ResultSet resultSet, int expected) throws SQLException{
+    int count = 0;
+    while(resultSet.next()) {
+      count++;
+    }
+    assertThat(count, is(expected));
   }
 
   /**
