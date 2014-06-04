@@ -157,21 +157,60 @@ public class TestDbSentryOnFailureHookLoading extends AbstractTestWithDbProvider
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
-    Connection connection = context.createConnection(USER1_1);
+    // setup db objects needed by the test
+    Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
+    statement.execute("CREATE ROLE admin_role");
+    statement.execute("GRANT ALL ON SERVER "
+        + HiveServerFactory.DEFAULT_AUTHZ_SERVER_NAME + " TO ROLE admin_role");
+    statement.execute("GRANT ROLE admin_role TO GROUP " + ADMINGROUP);
+    statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
+    statement.execute("DROP DATABASE IF EXISTS DB_2 CASCADE");
+    statement.execute("CREATE DATABASE DB_1");
+    statement.execute("CREATE ROLE all_db1");
+    statement.execute("GRANT ALL ON DATABASE DB_1 TO ROLE all_db1");
+    statement.execute("GRANT ROLE all_db1 TO GROUP " + USERGROUP1);
+    connection.close();
 
-    // negative test case: non admin user can't create role
-    assertFalse(DummySentryOnFailureHook.invoked);
-    DummySentryOnFailureHook.setHiveOp(HiveOperation.CREATEROLE);
-    try {
-      statement.execute("CREATE ROLE fooTest");
-      Assert.fail("Expected SQL exception");
-    } catch (SQLException e) {
-      assertTrue(DummySentryOnFailureHook.invoked);
-    }
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+
+    statement.execute("USE DB_1");
+    statement.execute("CREATE TABLE foo (id int)");
+
+    verifyFailureHook(statement, "CREATE ROLE fooTest",
+        HiveOperation.CREATEROLE);
+    verifyFailureHook(statement, "DROP ROLE fooTest", HiveOperation.DROPROLE);
+    verifyFailureHook(statement,
+        "GRANT ALL ON SERVER server1 TO ROLE admin_role",
+        HiveOperation.GRANT_PRIVILEGE);
+    verifyFailureHook(statement,
+        "REVOKE ALL ON SERVER server1 FROM ROLE admin_role",
+        HiveOperation.REVOKE_PRIVILEGE);
+    verifyFailureHook(statement, "GRANT ROLE all_db1 TO GROUP " + USERGROUP1,
+        HiveOperation.GRANT_ROLE);
+    verifyFailureHook(statement,
+        "REVOKE ROLE all_db1 FROM GROUP " + USERGROUP1,
+        HiveOperation.GRANT_ROLE);
 
     statement.close();
     connection.close();
     context.close();
+  }
+
+  // run the given statement and verify that failure hook is invoked as expected
+  private void verifyFailureHook(Statement statement, String sqlStr,
+      HiveOperation expectedOp) throws Exception {
+    // negative test case: non admin user can't create role
+    assertFalse(DummySentryOnFailureHook.invoked);
+    DummySentryOnFailureHook.setHiveOp(HiveOperation.CREATEROLE);
+    try {
+      statement.execute(sqlStr);
+      Assert.fail("Expected SQL exception for " + sqlStr);
+    } catch (SQLException e) {
+      assertTrue(DummySentryOnFailureHook.invoked);
+    } finally {
+      DummySentryOnFailureHook.invoked = false;
+    }
   }
 }

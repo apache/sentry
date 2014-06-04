@@ -288,6 +288,7 @@ implements HiveDriverFilterHook {
         sentryTask.setSubject(subject);
         sentryTask.setSubjectGroups(subjectGroups);
         sentryTask.setIpAddress(context.getIpAddress());
+        sentryTask.setOperation(stmtOperation);
       }
     }
 

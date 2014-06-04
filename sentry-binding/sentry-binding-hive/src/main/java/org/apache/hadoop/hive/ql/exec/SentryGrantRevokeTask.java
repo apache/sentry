@@ -41,6 +41,7 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.plan.DDLWork;
 import org.apache.hadoop.hive.ql.plan.GrantDesc;
 import org.apache.hadoop.hive.ql.plan.GrantRevokeRoleDDL;
+import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.ql.plan.PrincipalDesc;
 import org.apache.hadoop.hive.ql.plan.PrivilegeDesc;
 import org.apache.hadoop.hive.ql.plan.PrivilegeObjectDesc;
@@ -66,6 +67,7 @@ import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.core.model.db.Table;
 import org.apache.sentry.core.model.db.AccessConstants;
+import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
@@ -97,6 +99,7 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
   private Subject subject;
   private Set<String> subjectGroups;
   private String ipAddress;
+  private HiveOperation stmtOperation;
 
 
   public SentryGrantRevokeTask() {
@@ -153,13 +156,13 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
         }
         throw new AssertionError(
             "Unknown command passed to Sentry Grant/Revoke Task");
-      } catch (SentryUserException e) {
+      } catch (SentryAccessDeniedException e) {
         String csHooks = authzConf.get(
             HiveAuthzConf.AuthzConfVars.AUTHZ_ONFAILURE_HOOKS.getVar(), "")
             .trim();
         SentryOnFailureHookContext hookContext = new SentryOnFailureHookContextImpl(
             queryPlan.getQueryString(), new HashSet<ReadEntity>(),
-            new HashSet<WriteEntity>(), SessionState.get().getHiveOperation(),
+            new HashSet<WriteEntity>(), stmtOperation,
             null, null, null, null, subject.getName(), ipAddress,
             new AuthorizationException(e), conf);
         HiveAuthzBindingHook.runFailureHook(hookContext, csHooks);
@@ -201,6 +204,10 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
 
   public void setIpAddress(String ipAddress) {
     this.ipAddress = ipAddress;
+  }
+
+  public void setOperation(HiveOperation stmtOperation) {
+    this.stmtOperation = stmtOperation;
   }
 
   private int processRoleDDL(HiveConf conf, LogHelper console,
