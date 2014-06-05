@@ -291,7 +291,7 @@ public class SimpleFileProviderBackend implements ProviderBackend {
       String roleName = cell.getColumnKey();
       Set<String> privileges = groupRolePrivilegeTable.get(groupName, roleName);
       if (privileges == null) {
-        privileges = new HashSet<>();
+        privileges = new HashSet<String>();
         groupRolePrivilegeTable.put(groupName, roleName, privileges);
       }
       privileges.addAll(cell.getValue());
@@ -369,7 +369,7 @@ public class SimpleFileProviderBackend implements ProviderBackend {
         if (roleNameToPrivilegeMap.containsKey(roleName)) {
           Set<String> privileges = groupRolePrivilegeTable.get(groupName, roleName);
           if (privileges == null) {
-            privileges = new HashSet<>();
+            privileges = new HashSet<String>();
             groupRolePrivilegeTable.put(groupName, roleName, privileges);
           }
           privileges.addAll(roleNameToPrivilegeMap.get(roleName));

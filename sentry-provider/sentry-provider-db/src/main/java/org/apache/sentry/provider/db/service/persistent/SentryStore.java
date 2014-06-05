@@ -813,7 +813,7 @@ public class SentryStore {
 
   @VisibleForTesting
   static String toAuthorizable(MSentryPrivilege privilege) {
-    List<String> authorizable = new ArrayList<>(4);
+    List<String> authorizable = new ArrayList<String>(4);
     authorizable.add(KV_JOINER.join(AuthorizableType.Server.name().toLowerCase(),
         privilege.getServerName()));
     if (Strings.nullToEmpty(privilege.getURI()).isEmpty()) {

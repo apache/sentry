@@ -402,9 +402,19 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
         constrctor.setAccessible(true);
         groupMappingService = (GroupMappingService) constrctor.newInstance(new Object[] { conf,
             authResoruce });
-      } catch (NoSuchMethodException | SecurityException | ClassNotFoundException
-          | InstantiationException | IllegalAccessException
-          | IllegalArgumentException | InvocationTargetException e) {
+      } catch (NoSuchMethodException e) {
+        throw new SentryUserException("Unable to instantiate group mapping", e);
+      } catch (SecurityException e) {
+        throw new SentryUserException("Unable to instantiate group mapping", e);
+      } catch (ClassNotFoundException e) {
+        throw new SentryUserException("Unable to instantiate group mapping", e);
+      } catch (InstantiationException e) {
+        throw new SentryUserException("Unable to instantiate group mapping", e);
+      } catch (IllegalAccessException e) {
+        throw new SentryUserException("Unable to instantiate group mapping", e);
+      } catch (IllegalArgumentException e) {
+        throw new SentryUserException("Unable to instantiate group mapping", e);
+      } catch (InvocationTargetException e) {
         throw new SentryUserException("Unable to instantiate group mapping", e);
       }
       return groupMappingService.getGroups(userName);

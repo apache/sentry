@@ -121,7 +121,7 @@ public abstract class SentryServiceIntegrationBase extends KerberosSecurityTestc
     conf.set(ServerConfig.SENTRY_STORE_JDBC_URL,
         "jdbc:derby:;databaseName=" + dbDir.getPath() + ";create=true");
     server = new SentryServiceFactory().create(conf);
-    conf.set(ClientConfig.SERVER_RPC_ADDRESS, server.getAddress().getHostString());
+    conf.set(ClientConfig.SERVER_RPC_ADDRESS, server.getAddress().getHostName());
     conf.set(ClientConfig.SERVER_RPC_PORT, String.valueOf(server.getAddress().getPort()));
     conf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING,
         ServerConfig.SENTRY_STORE_LOCAL_GROUP_MAPPING);

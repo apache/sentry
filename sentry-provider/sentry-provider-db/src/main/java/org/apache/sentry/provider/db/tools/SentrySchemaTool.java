@@ -563,7 +563,14 @@ public class SentrySchemaTool {
           System.err.println("no valid option supplied");
           printAndExit(cmdLineOptions);
         }
-      } catch (SentryUserException | MalformedURLException e) {
+      } catch (SentryUserException e) {
+        System.err.println(e);
+        if (line.hasOption("verbose")) {
+          e.printStackTrace();
+        }
+        System.err.println("*** Sentry schemaTool failed ***");
+        System.exit(1);
+      } catch (MalformedURLException e) {
         System.err.println(e);
         if (line.hasOption("verbose")) {
           e.printStackTrace();

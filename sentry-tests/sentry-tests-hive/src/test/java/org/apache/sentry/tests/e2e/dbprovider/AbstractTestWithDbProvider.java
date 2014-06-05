@@ -93,7 +93,7 @@ public abstract class AbstractTestWithDbProvider extends AbstractTestWithHiveSer
     server = new SentryServiceFactory().create(conf);
 
     properties.put(ClientConfig.SERVER_RPC_ADDRESS, server.getAddress()
-        .getHostString());
+        .getHostName());
     properties.put(ClientConfig.SERVER_RPC_PORT,
         String.valueOf(server.getAddress().getPort()));
 

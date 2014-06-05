@@ -75,7 +75,7 @@ public class SentryPolicyServiceClient {
                                          ClientConfig.SERVER_RPC_CONN_TIMEOUT_DEFAULT);
     kerberos = ServerConfig.SECURITY_MODE_KERBEROS.equalsIgnoreCase(
         conf.get(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_KERBEROS).trim());
-    transport = new TSocket(serverAddress.getHostString(),
+    transport = new TSocket(serverAddress.getHostName(),
         serverAddress.getPort(), connectionTimeout);
     if (kerberos) {
       String serverPrincipal = Preconditions.checkNotNull(
