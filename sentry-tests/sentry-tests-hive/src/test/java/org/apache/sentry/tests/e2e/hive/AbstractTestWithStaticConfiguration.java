@@ -228,9 +228,9 @@ public abstract class AbstractTestWithStaticConfiguration {
     }
     sentryServer = new SentryServiceFactory().create(sentryConf);
     properties.put(ClientConfig.SERVER_RPC_ADDRESS, sentryServer.getAddress()
-        .getHostString());
+        .getHostName());
     sentryConf.set(ClientConfig.SERVER_RPC_ADDRESS, sentryServer.getAddress()
-        .getHostString());
+        .getHostName());
     properties.put(ClientConfig.SERVER_RPC_PORT,
         String.valueOf(sentryServer.getAddress().getPort()));
     sentryConf.set(ClientConfig.SERVER_RPC_PORT,
