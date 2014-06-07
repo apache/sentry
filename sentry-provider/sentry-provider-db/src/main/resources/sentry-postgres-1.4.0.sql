@@ -27,7 +27,7 @@ SET default_with_oids = false;
 
 CREATE TABLE "SENTRY_DB_PRIVILEGE" (
   "DB_PRIVILEGE_ID" BIGINT NOT NULL,
-  "PRIVILEGE_NAME" character varying(128) NOT NULL,
+  "PRIVILEGE_NAME" character varying(4000) NOT NULL,
   "PRIVILEGE_SCOPE" character varying(32) NOT NULL,
   "SERVER_NAME" character varying(128) NOT NULL,
   "DB_NAME" character varying(128) DEFAULT NULL::character varying,

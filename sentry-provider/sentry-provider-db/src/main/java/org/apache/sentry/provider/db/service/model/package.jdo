@@ -88,7 +88,7 @@
         <column name="DB_PRIVILEGE_ID"/>
       </datastore-identity>
       <field name="privilegeName">  
-        <column name="PRIVILEGE_NAME" length="128" jdbc-type="VARCHAR"/>
+        <column name="PRIVILEGE_NAME" length="4000" jdbc-type="VARCHAR"/>
         <index name="SentryPrivilegeName" unique="true"/>
       </field>
       <field name="privilegeScope">  
