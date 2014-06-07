@@ -44,7 +44,7 @@ public class TListSentryPrivilegesResponse implements org.apache.thrift.TBase<TL
   }
 
   private org.apache.sentry.service.thrift.TSentryResponseStatus status; // required
-  private Set<TSentryPrivilege> privileges; // required
+  private Set<TSentryPrivilege> privileges; // optional
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -108,12 +108,13 @@ public class TListSentryPrivilegesResponse implements org.apache.thrift.TBase<TL
   }
 
   // isset id assignments
+  private _Fields optionals[] = {_Fields.PRIVILEGES};
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
     tmpMap.put(_Fields.STATUS, new org.apache.thrift.meta_data.FieldMetaData("status", org.apache.thrift.TFieldRequirementType.REQUIRED, 
         new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, org.apache.sentry.service.thrift.TSentryResponseStatus.class)));
-    tmpMap.put(_Fields.PRIVILEGES, new org.apache.thrift.meta_data.FieldMetaData("privileges", org.apache.thrift.TFieldRequirementType.REQUIRED, 
+    tmpMap.put(_Fields.PRIVILEGES, new org.apache.thrift.meta_data.FieldMetaData("privileges", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
         new org.apache.thrift.meta_data.SetMetaData(org.apache.thrift.protocol.TType.SET, 
             new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TSentryPrivilege.class))));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
@@ -124,12 +125,10 @@ public class TListSentryPrivilegesResponse implements org.apache.thrift.TBase<TL
   }
 
   public TListSentryPrivilegesResponse(
-    org.apache.sentry.service.thrift.TSentryResponseStatus status,
-    Set<TSentryPrivilege> privileges)
+    org.apache.sentry.service.thrift.TSentryResponseStatus status)
   {
     this();
     this.status = status;
-    this.privileges = privileges;
   }
 
   /**
@@ -373,14 +372,16 @@ public class TListSentryPrivilegesResponse implements org.apache.thrift.TBase<TL
       sb.append(this.status);
     }
     first = false;
-    if (!first) sb.append(", ");
-    sb.append("privileges:");
-    if (this.privileges == null) {
-      sb.append("null");
-    } else {
-      sb.append(this.privileges);
+    if (isSetPrivileges()) {
+      if (!first) sb.append(", ");
+      sb.append("privileges:");
+      if (this.privileges == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.privileges);
+      }
+      first = false;
     }
-    first = false;
     sb.append(")");
     return sb.toString();
   }
@@ -389,10 +390,6 @@ public class TListSentryPrivilegesResponse implements org.apache.thrift.TBase<TL
     // check for required fields
     if (!isSetStatus()) {
       throw new org.apache.thrift.protocol.TProtocolException("Required field 'status' is unset! Struct:" + toString());
-    }
-
-    if (!isSetPrivileges()) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'privileges' is unset! Struct:" + toString());
     }
 
     // check for sub-struct validity
@@ -482,16 +479,18 @@ public class TListSentryPrivilegesResponse implements org.apache.thrift.TBase<TL
         oprot.writeFieldEnd();
       }
       if (struct.privileges != null) {
-        oprot.writeFieldBegin(PRIVILEGES_FIELD_DESC);
-        {
-          oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, struct.privileges.size()));
-          for (TSentryPrivilege _iter35 : struct.privileges)
+        if (struct.isSetPrivileges()) {
+          oprot.writeFieldBegin(PRIVILEGES_FIELD_DESC);
           {
-            _iter35.write(oprot);
+            oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, struct.privileges.size()));
+            for (TSentryPrivilege _iter35 : struct.privileges)
+            {
+              _iter35.write(oprot);
+            }
+            oprot.writeSetEnd();
           }
-          oprot.writeSetEnd();
+          oprot.writeFieldEnd();
         }
-        oprot.writeFieldEnd();
       }
       oprot.writeFieldStop();
       oprot.writeStructEnd();
@@ -511,11 +510,18 @@ public class TListSentryPrivilegesResponse implements org.apache.thrift.TBase<TL
     public void write(org.apache.thrift.protocol.TProtocol prot, TListSentryPrivilegesResponse struct) throws org.apache.thrift.TException {
       TTupleProtocol oprot = (TTupleProtocol) prot;
       struct.status.write(oprot);
-      {
-        oprot.writeI32(struct.privileges.size());
-        for (TSentryPrivilege _iter36 : struct.privileges)
+      BitSet optionals = new BitSet();
+      if (struct.isSetPrivileges()) {
+        optionals.set(0);
+      }
+      oprot.writeBitSet(optionals, 1);
+      if (struct.isSetPrivileges()) {
         {
-          _iter36.write(oprot);
+          oprot.writeI32(struct.privileges.size());
+          for (TSentryPrivilege _iter36 : struct.privileges)
+          {
+            _iter36.write(oprot);
+          }
         }
       }
     }
@@ -526,18 +532,21 @@ public class TListSentryPrivilegesResponse implements org.apache.thrift.TBase<TL
       struct.status = new org.apache.sentry.service.thrift.TSentryResponseStatus();
       struct.status.read(iprot);
       struct.setStatusIsSet(true);
-      {
-        org.apache.thrift.protocol.TSet _set37 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
-        struct.privileges = new HashSet<TSentryPrivilege>(2*_set37.size);
-        for (int _i38 = 0; _i38 < _set37.size; ++_i38)
+      BitSet incoming = iprot.readBitSet(1);
+      if (incoming.get(0)) {
         {
-          TSentryPrivilege _elem39; // required
-          _elem39 = new TSentryPrivilege();
-          _elem39.read(iprot);
-          struct.privileges.add(_elem39);
+          org.apache.thrift.protocol.TSet _set37 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
+          struct.privileges = new HashSet<TSentryPrivilege>(2*_set37.size);
+          for (int _i38 = 0; _i38 < _set37.size; ++_i38)
+          {
+            TSentryPrivilege _elem39; // required
+            _elem39 = new TSentryPrivilege();
+            _elem39.read(iprot);
+            struct.privileges.add(_elem39);
+          }
         }
+        struct.setPrivilegesIsSet(true);
       }
-      struct.setPrivilegesIsSet(true);
     }
   }
 

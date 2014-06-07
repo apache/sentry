@@ -324,6 +324,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       String msg = "Role: " + request + " couldn't be retrieved.";
       LOGGER.error(msg, e);
       response.setStatus(Status.NoSuchObject(msg, e));
+    } catch (SentryAccessDeniedException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
     } catch (Exception e) {
       String msg = "Unknown error for request: " + request + ", message: " + e.getMessage();
       LOGGER.error(msg, e);
@@ -357,6 +360,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       String msg = "Privilege: " + request + " couldn't be retrieved.";
       LOGGER.error(msg, e);
       response.setStatus(Status.NoSuchObject(msg, e));
+    } catch (SentryAccessDeniedException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
     } catch (Exception e) {
       String msg = "Unknown error for request: " + request + ", message: " + e.getMessage();
       LOGGER.error(msg, e);

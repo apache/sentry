@@ -127,7 +127,7 @@ struct TSentryRole {
 }
 struct TListSentryRolesResponse {
 1: required sentry_common_service.TSentryResponseStatus status
-2: required set<TSentryRole> roles
+2: optional set<TSentryRole> roles
 }
 
 struct TSentryAuthorizable {
@@ -146,7 +146,7 @@ struct TListSentryPrivilegesRequest {
 }
 struct TListSentryPrivilegesResponse {
 1: required sentry_common_service.TSentryResponseStatus status
-2: required set<TSentryPrivilege> privileges
+2: optional set<TSentryPrivilege> privileges
 }
 
 # This API was created specifically for ProviderBackend.getPrivileges

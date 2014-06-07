@@ -17,45 +17,25 @@
 
 package org.apache.sentry.tests.e2e.dbprovider;
 
-import org.apache.sentry.SentryUserException;
 import org.apache.sentry.provider.db.SentryAccessDeniedException;
-import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
+import org.apache.sentry.provider.db.SentryAlreadyExistsException;
+import org.apache.sentry.provider.db.SentryNoSuchObjectException;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-import java.io.File;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeoutException;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
-import org.apache.hadoop.hive.ql.metadata.HiveException;
-import org.apache.hive.service.cli.HiveSQLException;
-import org.apache.sentry.binding.hive.SentryHiveAuthorizationTaskFactoryImpl;
-import org.apache.sentry.provider.db.SimpleDBProviderBackend;
-import org.apache.sentry.provider.file.PolicyFile;
-import org.apache.sentry.service.thrift.SentryService;
-import org.apache.sentry.service.thrift.SentryServiceFactory;
-import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
-import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
-import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import com.google.common.collect.Maps;
-import com.google.common.io.Files;
 
 public class TestDatabaseProvider extends AbstractTestWithDbProvider {
 
@@ -89,7 +69,8 @@ public class TestDatabaseProvider extends AbstractTestWithDbProvider {
     connection.close();
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    context.assertSentryServiceAccessDenied(statement, "CREATE ROLE r2");
+    context.assertSentryException(statement, "CREATE ROLE r2",
+        SentryAccessDeniedException.class.getSimpleName());
     // test default of ALL
     statement.execute("SELECT * FROM t1");
     // test a specific role
@@ -107,11 +88,11 @@ public class TestDatabaseProvider extends AbstractTestWithDbProvider {
 
 
   /**
-   * Revoke privilege
+   * Grant/Revoke privilege - Positive cases
    * @throws Exception
    */
   @Test
-  public void testRevokePrivileges() throws Exception {
+  public void testGrantRevokePrivileges() throws Exception {
     Connection connection;
     Statement statement;
     ResultSet resultSet;
@@ -120,50 +101,133 @@ public class TestDatabaseProvider extends AbstractTestWithDbProvider {
     statement = context.createStatement(connection);
     statement.execute("CREATE ROLE role1");
 
-    //Revoke All on server by admin
+    //Grant/Revoke All on server by admin
     statement.execute("GRANT ALL ON SERVER server1 to role role1");
     resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
     assertResultSize(resultSet, 1);
+    while(resultSet.next()) {
+      assertThat(resultSet.getString(1), equalToIgnoringCase("*"));
+      assertThat(resultSet.getString(2), equalToIgnoringCase(""));
+      assertThat(resultSet.getString(3), equalToIgnoringCase(""));//partition
+      assertThat(resultSet.getString(4), equalToIgnoringCase(""));//column
+      assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
+      assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
+      assertThat(resultSet.getString(7), equalToIgnoringCase("*"));
+      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      //Create time is not tested
+      //assertThat(resultSet.getLong(9), is(new Long(0)));
+      assertThat(resultSet.getString(10), equalToIgnoringCase(ADMIN1));//grantor
+    }
+
     statement.execute("REVOKE ALL ON SERVER server1 from role role1");
     resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
     assertResultSize(resultSet, 0);
 
-    //Revoke All on database by admin
+    //Grant/Revoke All on database by admin
     statement.execute("GRANT ALL ON DATABASE default to role role1");
     resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
     assertResultSize(resultSet, 1);
+    while(resultSet.next()) {
+      assertThat(resultSet.getString(1), equalToIgnoringCase("default"));
+      assertThat(resultSet.getString(2), equalToIgnoringCase(""));
+      assertThat(resultSet.getString(3), equalToIgnoringCase(""));//partition
+      assertThat(resultSet.getString(4), equalToIgnoringCase(""));//column
+      assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
+      assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
+      assertThat(resultSet.getString(7), equalToIgnoringCase("*"));
+      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      //Create time is not tested
+      //assertThat(resultSet.getLong(9), is(new Long(0)));
+      assertThat(resultSet.getString(10), equalToIgnoringCase(ADMIN1));//grantor
+    }
+
     statement.execute("REVOKE ALL ON DATABASE default from role role1");
     resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
     assertResultSize(resultSet, 0);
 
-    //Revoke All on URI by admin
+    //Grant/Revoke All on URI by admin
     statement.execute("GRANT ALL ON URI 'file:///path' to role role1");
     resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
     assertResultSize(resultSet, 1);
+    while(resultSet.next()) {
+      assertThat(resultSet.getString(1), equalToIgnoringCase("file://path"));
+      assertThat(resultSet.getString(2), equalToIgnoringCase(""));
+      assertThat(resultSet.getString(3), equalToIgnoringCase(""));//partition
+      assertThat(resultSet.getString(4), equalToIgnoringCase(""));//column
+      assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
+      assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
+      assertThat(resultSet.getString(7), equalToIgnoringCase("*"));
+      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      //Create time is not tested
+      //assertThat(resultSet.getLong(9), is(new Long(0)));
+      assertThat(resultSet.getString(10), equalToIgnoringCase(ADMIN1));//grantor
+    }
     statement.execute("REVOKE ALL ON URI 'file:///path' from role role1");
     resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
     assertResultSize(resultSet, 0);
 
-    //Revoke All on table by admin
+    //Grant/Revoke All on table by admin
     statement.execute("GRANT ALL ON TABLE tab1 to role role1");
     resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
     assertResultSize(resultSet, 1);
+    while(resultSet.next()) {
+      assertThat(resultSet.getString(1), equalToIgnoringCase("default"));
+      assertThat(resultSet.getString(2), equalToIgnoringCase("tab1"));
+      assertThat(resultSet.getString(3), equalToIgnoringCase(""));//partition
+      assertThat(resultSet.getString(4), equalToIgnoringCase(""));//column
+      assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
+      assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
+      assertThat(resultSet.getString(7), equalToIgnoringCase("*"));
+      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      //Create time is not tested
+      //assertThat(resultSet.getLong(9), is(new Long(0)));
+      assertThat(resultSet.getString(10), equalToIgnoringCase(ADMIN1));//grantor
+    }
+
     statement.execute("REVOKE ALL ON TABLE tab1 from role role1");
     resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
     assertResultSize(resultSet, 0);
 
-    //Revoke INSERT on table by admin
+    //Grant/Revoke INSERT on table by admin
     statement.execute("GRANT INSERT ON TABLE tab1 to role role1");
     resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
     assertResultSize(resultSet, 1);
+    while(resultSet.next()) {
+      assertThat(resultSet.getString(1), equalToIgnoringCase("default"));
+      assertThat(resultSet.getString(2), equalToIgnoringCase("tab1"));
+      assertThat(resultSet.getString(3), equalToIgnoringCase(""));//partition
+      assertThat(resultSet.getString(4), equalToIgnoringCase(""));//column
+      assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
+      assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
+      assertThat(resultSet.getString(7), equalToIgnoringCase("insert"));
+      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      //Create time is not tested
+      //assertThat(resultSet.getLong(9), is(new Long(0)));
+      assertThat(resultSet.getString(10), equalToIgnoringCase(ADMIN1));//grantor
+    }
+
     statement.execute("REVOKE INSERT ON TABLE tab1 from role role1");
     resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
     assertResultSize(resultSet, 0);
 
-    //Revoke SELECT on table by admin
+    //Grant/Revoke SELECT on table by admin
     statement.execute("GRANT SELECT ON TABLE tab1 to role role1");
     resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
     assertResultSize(resultSet, 1);
+    while(resultSet.next()) {
+      assertThat(resultSet.getString(1), equalToIgnoringCase("default"));
+      assertThat(resultSet.getString(2), equalToIgnoringCase("tab1"));
+      assertThat(resultSet.getString(3), equalToIgnoringCase(""));//partition
+      assertThat(resultSet.getString(4), equalToIgnoringCase(""));//column
+      assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
+      assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
+      assertThat(resultSet.getString(7), equalToIgnoringCase("select"));
+      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      //Create time is not tested
+      //assertThat(resultSet.getLong(9), is(new Long(0)));
+      assertThat(resultSet.getString(10), equalToIgnoringCase(ADMIN1));//grantor
+    }
+
     statement.execute("REVOKE SELECT ON TABLE tab1 from role role1");
     resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
     assertResultSize(resultSet, 0);
@@ -187,7 +251,6 @@ public class TestDatabaseProvider extends AbstractTestWithDbProvider {
       //Create time is not tested
       //assertThat(resultSet.getLong(9), is(new Long(0)));
       assertThat(resultSet.getString(10), equalToIgnoringCase(ADMIN1));//grantor
-
     }
 
     //Revoke Partial privilege on table by admin
@@ -225,6 +288,129 @@ public class TestDatabaseProvider extends AbstractTestWithDbProvider {
   }
 
   /**
+   * Create and Drop role by admin
+   * @throws Exception
+   */
+  @Test
+  public void testCreateDropRole() throws Exception {
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("CREATE ROLE role1");
+    ResultSet resultSet = statement.executeQuery("SHOW roles");
+    assertResultSize(resultSet, 1);
+    statement.execute("DROP ROLE role1");
+    resultSet = statement.executeQuery("SHOW roles");
+    assertResultSize(resultSet, 0);
+  }
+
+  /**
+   * Corner cases
+   * @throws Exception
+   */
+  @Test
+  public void testCornerCases() throws Exception {
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+
+    //Drop a role which does not exist
+    context.assertSentryException(statement, "DROP ROLE role1",
+        SentryNoSuchObjectException.class.getSimpleName());
+
+    //Create a role which already exists
+    statement.execute("CREATE ROLE role1");
+    context.assertSentryException(statement, "CREATE ROLE role1",
+        SentryAlreadyExistsException.class.getSimpleName());
+
+    //Drop role when privileges mapping exists and create role with same name, old mappings should not exist
+    //state: role1
+    statement.execute("GRANT ROLE role1 TO GROUP " + USERGROUP1);
+    statement.execute("GRANT ALL ON SERVER server1 TO ROLE role1");
+    ResultSet resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    assertResultSize(resultSet, 1);
+    statement.execute("DROP ROLE role1");
+    statement.execute("CREATE ROLE role1");
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    assertResultSize(resultSet, 0);
+
+
+    //Grant role, when role doesn't exist
+    //state: role1
+    context.assertSentryException(statement, "GRANT role role2 TO GROUP " + USERGROUP1,
+        SentryNoSuchObjectException.class.getSimpleName());
+
+
+    //Grant multiple roles to a group
+    //state: role1
+    statement.execute("CREATE ROLE role2");
+    statement.execute("GRANT ROLE role2 to GROUP " + USERGROUP1);
+    statement.execute("GRANT ROLE role1 to GROUP " + USERGROUP1);
+    resultSet = statement.executeQuery("SHOW ROLE GRANT GROUP " + USERGROUP1);
+    assertResultSize(resultSet, 2);
+
+    //Grant role when mapping exists
+    //state: role1, role2 -> usergroup1
+    statement.execute("GRANT ROLE role1 to GROUP " + USERGROUP1);
+
+    //Revoke role after role has been dropped
+    //state: role1, role2 -> usergroup1
+    statement.execute("DROP ROLE role2");
+    context.assertSentryException(statement, "REVOKE role role2 from group " + USERGROUP1,
+        SentryNoSuchObjectException.class.getSimpleName());
+
+    //Revoke role from a group when mapping doesnt exist
+    //state: role1 -> usergroup1
+    statement.execute("REVOKE ROLE role1 from GROUP " + USERGROUP1);
+    statement.execute("REVOKE ROLE role1 from GROUP " + USERGROUP1);
+
+    //Grant privilege to a role, privilege already exists, mapping already exists
+    //state: role1
+    //TODO: Remove this comment SENTRY-181
+    statement.execute("CREATE ROLE role2");
+    statement.execute("GRANT ALL ON SERVER server1 TO ROLE role1");
+    statement.execute("GRANT ALL ON SERVER server1 TO ROLE role1");
+    statement.execute("GRANT ALL ON SERVER server1 TO ROLE role2");
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    assertResultSize(resultSet, 1);
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role2");
+    assertResultSize(resultSet, 1);
+
+    //Multiple privileges to a role
+    //state: role1,role2 -> grant all on server
+    statement.execute("GRANT ALL ON TABLE tab1 to ROLE role2");
+    statement.execute("GRANT ALL,INSERT ON TABLE tab1 to ROLE role2");
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role2");
+    assertResultSize(resultSet, 3);
+    statement.execute("DROP role role2");
+
+    //Revoke privilege when privilege doesnt exist
+    //state: role1 -> grant all on server
+    statement.execute("REVOKE ALL ON TABLE tab1 from role role1");
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    int count = 0;
+    //Verify we still have all on server
+    while(resultSet.next()) {
+      count++;
+      assertThat(resultSet.getString(1), equalToIgnoringCase("*"));
+      assertThat(resultSet.getString(2), equalToIgnoringCase(""));
+      assertThat(resultSet.getString(7), equalToIgnoringCase("*"));
+
+    }
+    assertThat(count, is(1));
+
+    //Revoke privilege, when role doesnt exist
+    //state: role1 -> grant all on server
+    context.assertSentryException(statement, "REVOKE ALL ON SERVER server1 from role role2",
+        SentryNoSuchObjectException.class.getSimpleName());
+
+    //Revoke privilege when privilege exists but mapping doesnt exist
+    //state: role1 -> grant all on server
+    statement.execute("CREATE ROLE role2");
+    statement.execute("GRANT ALL on TABLE tab1 to ROLE role2");
+    statement.execute("REVOKE ALL on TABLE tab1 from Role role1");
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    assertResultSize(resultSet, 1);
+  }
+  /**
    * SHOW ROLES
    * @throws Exception
    */
@@ -232,9 +418,11 @@ public class TestDatabaseProvider extends AbstractTestWithDbProvider {
   public void testShowRoles() throws Exception {
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
+    ResultSet resultSet = statement.executeQuery("SHOW ROLES");
+    assertResultSize(resultSet, 0);
     statement.execute("CREATE ROLE role1");
     statement.execute("CREATE ROLE role2");
-    ResultSet resultSet = statement.executeQuery("SHOW ROLES");
+    resultSet = statement.executeQuery("SHOW ROLES");
     ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
     assertThat(resultSetMetaData.getColumnCount(), is(1));
     assertThat(resultSetMetaData.getColumnName(1), equalToIgnoringCase("role"));
@@ -243,7 +431,7 @@ public class TestDatabaseProvider extends AbstractTestWithDbProvider {
     while ( resultSet.next()) {
       roles.add(resultSet.getString(1));
     }
-    assertThat(roles.size(), is(new Integer(2)));
+    assertThat(roles.size(), is(2));
     assertTrue(roles.contains("role1"));
     assertTrue(roles.contains("role2"));
     statement.close();
@@ -258,6 +446,8 @@ public class TestDatabaseProvider extends AbstractTestWithDbProvider {
   public void testShowRolesByGroup() throws Exception {
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
+    context.assertSentryException(statement,"SHOW ROLE GRANT GROUP " + ADMINGROUP,
+        SentryNoSuchObjectException.class.getSimpleName());
     statement.execute("CREATE ROLE role1");
     statement.execute("CREATE ROLE role2");
     statement.execute("CREATE ROLE role3");
@@ -290,10 +480,12 @@ public class TestDatabaseProvider extends AbstractTestWithDbProvider {
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("CREATE ROLE role1");
+    ResultSet resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    assertResultSize(resultSet, 0);
     statement.execute("CREATE ROLE role2");
     statement.execute("GRANT SELECT ON TABLE t1 TO ROLE role1");
 
-    ResultSet resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
     ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
     //| database  | table  | partition  | column  | principal_name  |
     // principal_type | privilege  | grant_option  | grant_time  | grantor  |
@@ -506,6 +698,7 @@ public class TestDatabaseProvider extends AbstractTestWithDbProvider {
    */
   @Test
   public void testShowCurrentRole() throws Exception {
+    //TODO: Add more test cases once we fix SENTRY-268
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("CREATE ROLE role1");

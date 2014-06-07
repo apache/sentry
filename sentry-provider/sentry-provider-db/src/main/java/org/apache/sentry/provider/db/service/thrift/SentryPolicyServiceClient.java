@@ -222,7 +222,7 @@ public class SentryPolicyServiceClient {
     }
   }
 
-  public Set<TSentryRole> listRoles(String requestorUserName, Set<String> requestorUserGroupNames)
+  public Set<TSentryRole> listRoles(String requestorUserName)
        throws SentryUserException {
     return listRolesByGroupName(requestorUserName, null);
   }

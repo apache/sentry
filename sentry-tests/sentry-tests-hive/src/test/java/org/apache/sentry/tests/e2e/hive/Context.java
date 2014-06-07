@@ -173,16 +173,15 @@ public class Context {
     }
   }
 
-  public void assertSentryServiceAccessDenied(Statement statement, String query)
+  public void assertSentryException(Statement statement, String query, String exceptionType)
       throws SQLException {
     try {
       statement.execute(query);
       Assert.fail("Expected SQLException for '" + query + "'");
     } catch (SQLException e) {
       verifyAuthzExceptionForState(e, AUTHZ_LINK_FAILURE_SQL_STATE);
-      Assert.assertTrue("Expected SentryAccessDeniedException in " + e.getMessage(),
-          Strings.nullToEmpty(e.getMessage()).contains(SentryAccessDeniedException.class
-              .getSimpleName()));
+      Assert.assertTrue("Expected " + exceptionType + " : " + e.getMessage(),
+          Strings.nullToEmpty(e.getMessage()).contains(exceptionType));
     }
   }
 

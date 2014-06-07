@@ -19,28 +19,29 @@ package org.apache.sentry.tests.e2e.hive;
 
 import junit.framework.Assert;
 
+import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.sentry.binding.hive.SentryOnFailureHook;
 import org.apache.sentry.binding.hive.SentryOnFailureHookContext;
+import org.apache.sentry.core.model.db.Database;
+import org.apache.sentry.core.model.db.Table;
+import org.apache.sentry.provider.db.SentryAccessDeniedException;
 
 public class DummySentryOnFailureHook implements SentryOnFailureHook {
 
   public static boolean invoked = false;
-  public static boolean checkHiveOp = false;
   public static HiveOperation hiveOp;
-
-  public static void setHiveOp(HiveOperation newHiveOp) {
-    checkHiveOp = true;
-    hiveOp = newHiveOp;
-  }
+  public static Database db;
+  public static Table table;
+  public static AuthorizationException exception;
 
   @Override
   public void run(SentryOnFailureHookContext failureHookContext)
       throws Exception {
     invoked = true;
-    if (checkHiveOp) {
-      checkHiveOp = false;
-      Assert.assertTrue(hiveOp.equals(failureHookContext.getHiveOp()));
-    }
+    hiveOp = failureHookContext.getHiveOp();
+    db = failureHookContext.getDatabase();
+    table = failureHookContext.getTable();
+    exception = failureHookContext.getException();
   }
 }

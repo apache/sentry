@@ -17,6 +17,7 @@
 
 package org.apache.sentry.tests.e2e.dbprovider;
 
+import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -60,7 +61,8 @@ public class TestDbEndToEnd extends AbstractTestWithDbProvider {
     connection.close();
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    context.assertSentryServiceAccessDenied(statement, "CREATE ROLE r2");
+    context.assertSentryException(statement, "CREATE ROLE r2",
+        SentryAccessDeniedException.class.getSimpleName());
     // test default of ALL
     statement.execute("SELECT * FROM t1");
     // test a specific role

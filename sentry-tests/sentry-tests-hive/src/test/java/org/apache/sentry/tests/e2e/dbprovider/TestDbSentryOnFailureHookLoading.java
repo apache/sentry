@@ -17,6 +17,9 @@
 
 package org.apache.sentry.tests.e2e.dbprovider;
 
+import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
+import org.apache.hadoop.hive.ql.parse.SemanticException;
+import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -36,6 +39,7 @@ import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.tests.e2e.hive.DummySentryOnFailureHook;
 import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -56,6 +60,16 @@ public class TestDbSentryOnFailureHookLoading extends AbstractTestWithDbProvider
     policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
     createContext(testProperties);
     DummySentryOnFailureHook.invoked = false;
+
+    // Do not run these tests if run with external HiveServer2
+    // This test checks for a static member, which will not
+    // be set if HiveServer2 and the test run in different JVMs
+    String hiveServer2Type = System
+        .getProperty(HiveServerFactory.HIVESERVER2_TYPE);
+    if(hiveServer2Type != null) {
+      Assume.assumeTrue(HiveServerFactory.HiveServer2Type.valueOf(hiveServer2Type.trim()) ==
+              HiveServerFactory.HiveServer2Type.InternalHiveServer2);
+    }
   }
 
   /* Admin creates database DB_2
@@ -63,30 +77,6 @@ public class TestDbSentryOnFailureHookLoading extends AbstractTestWithDbProvider
    */
   @Test
   public void testOnFailureHookLoading() throws Exception {
-
-    // Do not run this test if run with external HiveServer2
-    // This test checks for a static member, which will not
-    // be set if HiveServer2 and the test run in different JVMs
-    String hiveServer2Type = System.getProperty(
-        HiveServerFactory.HIVESERVER2_TYPE);
-    if (hiveServer2Type != null &&
-        HiveServerFactory.HiveServer2Type.valueOf(hiveServer2Type.trim()) !=
-        HiveServerFactory.HiveServer2Type.InternalHiveServer2) {
-      return;
-    }
-
-    File dataDir = context.getDataDir();
-    //copy data file to test dir
-    File dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
-    FileOutputStream to = new FileOutputStream(dataFile);
-    Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
-    to.close();
-
-    policyFile
-.addRolesToGroup(USERGROUP1, "all_db1")
-        .addPermissionsToRole("all_db1", "server=server1->db=DB_1")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
 
     // setup db objects needed by the test
     Connection connection = context.createConnection(ADMIN1);
@@ -104,6 +94,7 @@ public class TestDbSentryOnFailureHookLoading extends AbstractTestWithDbProvider
     statement.execute("DROP DATABASE IF EXISTS DB_2 CASCADE");
     statement.execute("CREATE DATABASE DB_1");
     statement.execute("CREATE DATABASE DB_2");
+    statement.execute("CREATE TABLE db_2.tab1(a int )");
     statement.close();
     connection.close();
 
@@ -111,15 +102,19 @@ public class TestDbSentryOnFailureHookLoading extends AbstractTestWithDbProvider
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
 
-    // negative test case: user can't create table in other user's database
-    assertFalse(DummySentryOnFailureHook.invoked);
-    DummySentryOnFailureHook.setHiveOp(HiveOperation.CREATETABLE);
-      try {
-      statement.execute("CREATE TABLE DB2.TAB2(id INT)");
-      Assert.fail("Expected SQL exception");
-    } catch (SQLException e) {
-      assertTrue(DummySentryOnFailureHook.invoked);
-    }
+    // Failure hook for create table when table doesnt exist
+    verifyFailureHook(statement, "CREATE TABLE DB_2.TAB2(id INT)", HiveOperation.CREATETABLE, "db_2", null, false);
+
+    // Failure hook for create table when table exist
+    verifyFailureHook(statement, "CREATE TABLE DB_2.TAB1(id INT)", HiveOperation.CREATETABLE, "db_2", null, false);
+
+    // Failure hook for select * from table when table exist
+    verifyFailureHook(statement, "select * from db_2.tab1", HiveOperation.QUERY,
+        null, null, false);
+
+    //Denied alter table is not invoking failurehook: SENTRY-269
+    //verifyFailureHook(statement, "ALTER TABLE db_2.tab1 CHANGE id id1 INT", HiveOperation.ALTERTABLE_RENAMECOL,
+    //    "db_2", "tab1", false);
 
     statement.close();
     connection.close();
@@ -141,17 +136,6 @@ public class TestDbSentryOnFailureHookLoading extends AbstractTestWithDbProvider
   @Test
   public void testOnFailureHookForAuthDDL() throws Exception {
 
-    // Do not run this test if run with external HiveServer2
-    // This test checks for a static member, which will not
-    // be set if HiveServer2 and the test run in different JVMs
-    String hiveServer2Type = System
-        .getProperty(HiveServerFactory.HIVESERVER2_TYPE);
-    if (hiveServer2Type != null
-        && HiveServerFactory.HiveServer2Type.valueOf(hiveServer2Type.trim()) != HiveServerFactory.HiveServer2Type.InternalHiveServer2) {
-      return;
-    }
-
-    File dataDir = context.getDataDir();
     policyFile.addRolesToGroup(USERGROUP1, "all_db1")
         .addPermissionsToRole("all_db1", "server=server1->db=DB_1")
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
@@ -179,19 +163,54 @@ public class TestDbSentryOnFailureHookLoading extends AbstractTestWithDbProvider
     statement.execute("CREATE TABLE foo (id int)");
 
     verifyFailureHook(statement, "CREATE ROLE fooTest",
-        HiveOperation.CREATEROLE);
-    verifyFailureHook(statement, "DROP ROLE fooTest", HiveOperation.DROPROLE);
+        HiveOperation.CREATEROLE, null, null, true);
+
+    verifyFailureHook(statement, "DROP ROLE fooTest",
+        HiveOperation.DROPROLE, null, null, true);
+
     verifyFailureHook(statement,
         "GRANT ALL ON SERVER server1 TO ROLE admin_role",
-        HiveOperation.GRANT_PRIVILEGE);
+        HiveOperation.GRANT_PRIVILEGE, null, null, true);
+
     verifyFailureHook(statement,
         "REVOKE ALL ON SERVER server1 FROM ROLE admin_role",
-        HiveOperation.REVOKE_PRIVILEGE);
+        HiveOperation.REVOKE_PRIVILEGE, null, null, true);
+
     verifyFailureHook(statement, "GRANT ROLE all_db1 TO GROUP " + USERGROUP1,
-        HiveOperation.GRANT_ROLE);
+        HiveOperation.GRANT_ROLE, null, null, true);
+
     verifyFailureHook(statement,
         "REVOKE ROLE all_db1 FROM GROUP " + USERGROUP1,
-        HiveOperation.GRANT_ROLE);
+        HiveOperation.REVOKE_ROLE, null, null, true);
+
+    verifyFailureHook(statement, "SHOW ROLES",
+        HiveOperation.SHOW_ROLES, null, null, true);
+
+    verifyFailureHook(statement, "SHOW ROLE GRANT group group1",
+        HiveOperation.SHOW_ROLE_GRANT, null, null, true);
+
+    verifyFailureHook(statement, "SHOW GRANT role role1",
+        HiveOperation.SHOW_GRANT, null, null, true);
+
+    //Grant privilege on table doesnt expose db and table objects
+    verifyFailureHook(statement,
+        "GRANT ALL ON TABLE tab1 TO ROLE admin_role",
+        HiveOperation.GRANT_PRIVILEGE, null, null, true);
+
+    //Revoke privilege on table doesnt expose db and table objects
+    verifyFailureHook(statement,
+        "REVOKE ALL ON TABLE server1 FROM ROLE admin_role",
+        HiveOperation.REVOKE_PRIVILEGE, null, null, true);
+
+    //Grant privilege on database doesnt expose db and table objects
+    verifyFailureHook(statement,
+        "GRANT ALL ON Database db_1 TO ROLE admin_role",
+        HiveOperation.GRANT_PRIVILEGE, null, null, true);
+
+    //Revoke privilege on database doesnt expose db and table objects
+    verifyFailureHook(statement,
+        "REVOKE ALL ON Database db_1 FROM ROLE admin_role",
+        HiveOperation.REVOKE_PRIVILEGE, null, null, true);
 
     statement.close();
     connection.close();
@@ -199,11 +218,10 @@ public class TestDbSentryOnFailureHookLoading extends AbstractTestWithDbProvider
   }
 
   // run the given statement and verify that failure hook is invoked as expected
-  private void verifyFailureHook(Statement statement, String sqlStr,
-      HiveOperation expectedOp) throws Exception {
+  private void verifyFailureHook(Statement statement, String sqlStr, HiveOperation expectedOp,
+       String dbName, String tableName, boolean checkSentryAccessDeniedException) throws Exception {
     // negative test case: non admin user can't create role
     assertFalse(DummySentryOnFailureHook.invoked);
-    DummySentryOnFailureHook.setHiveOp(HiveOperation.CREATEROLE);
     try {
       statement.execute(sqlStr);
       Assert.fail("Expected SQL exception for " + sqlStr);
@@ -211,6 +229,22 @@ public class TestDbSentryOnFailureHookLoading extends AbstractTestWithDbProvider
       assertTrue(DummySentryOnFailureHook.invoked);
     } finally {
       DummySentryOnFailureHook.invoked = false;
+    }
+    if (expectedOp != null) {
+      Assert.assertNotNull("Hive op is null for op: " + expectedOp, DummySentryOnFailureHook.hiveOp);
+      Assert.assertTrue(expectedOp.equals(DummySentryOnFailureHook.hiveOp));
+    }
+    if (checkSentryAccessDeniedException) {
+      Assert.assertTrue("Expected SentryDeniedException for op: " + expectedOp,
+          DummySentryOnFailureHook.exception.getCause() instanceof SentryAccessDeniedException);
+    }
+    if(tableName != null) {
+      Assert.assertNotNull("Table object is null for op: " + expectedOp, DummySentryOnFailureHook.table);
+      Assert.assertTrue(tableName.equalsIgnoreCase(DummySentryOnFailureHook.table.getName()));
+    }
+    if(dbName != null) {
+      Assert.assertNotNull("Database object is null for op: " + expectedOp, DummySentryOnFailureHook.db);
+      Assert.assertTrue(dbName.equalsIgnoreCase(DummySentryOnFailureHook.db.getName()));
     }
   }
 }

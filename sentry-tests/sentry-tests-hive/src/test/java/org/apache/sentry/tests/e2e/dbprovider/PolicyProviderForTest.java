@@ -74,7 +74,7 @@ public class PolicyProviderForTest extends PolicyFile {
     }
 
     // remove existing metadata
-    for (TSentryRole tRole : sentryClient.listRoles(ADMIN1, ADMIN_GROUP_SET)) {
+    for (TSentryRole tRole : sentryClient.listRoles(ADMIN1)) {
       sentryClient.dropRole(ADMIN1, tRole.getRoleName());
     }
 
