@@ -18,6 +18,7 @@
 
 package org.apache.sentry.service.thrift;
 import java.io.File;
+import java.net.UnknownHostException;
 import java.security.PrivilegedExceptionAction;
 import java.util.HashSet;
 import java.util.Set;
@@ -54,7 +55,18 @@ public abstract class SentryServiceIntegrationBase extends KerberosSecurityTestc
     }
   }
 
-  protected static final String SERVER_HOST = "localhost";
+  protected static final String SERVER_HOST;
+  static {
+    String serverHost;
+    try {
+      // Dynamically find name of local interface
+      serverHost = java.net.InetAddress.getLocalHost().getHostName().toLowerCase();
+    } catch (UnknownHostException e) {
+      LOGGER.error("Can't get localhost proper hostname, missing /etc/hosts configuration? Using 'localhost'.", e);
+      serverHost = "localhost"; // default value is simply localhost
+    }
+    SERVER_HOST = serverHost;
+  }
   protected static final String REALM = "EXAMPLE.COM";
   protected static final String SERVER_PRINCIPAL = "sentry/" + SERVER_HOST;
   protected static final String SERVER_KERBEROS_NAME = "sentry/" + SERVER_HOST + "@" + REALM;
