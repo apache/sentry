@@ -135,9 +135,7 @@ public class MSentryPrivilege {
   }
 
   public void appendRole(MSentryRole role) {
-    if (roles.add(role)) {
-      role.appendPrivilege(this);
-    }
+    roles.add(role);
   }
 
   public void removeRole(MSentryRole role) {
