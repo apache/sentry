@@ -19,21 +19,30 @@
 package org.apache.sentry.provider.db.service.persistent;
 
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.sentry.core.common.ActiveRoleSet;
+import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.model.db.AccessConstants;
+import org.apache.sentry.core.model.db.AccessURI;
+import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.provider.db.SentryAlreadyExistsException;
 import org.apache.sentry.provider.db.SentryNoSuchObjectException;
 import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
 import org.apache.sentry.provider.db.service.thrift.TSentryActiveRoleSet;
+import org.apache.sentry.provider.db.service.thrift.TSentryAuthorizable;
 import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
@@ -93,6 +102,39 @@ public class TestSentryStore {
     assertEquals(seqId + 2, sentryStore.alterSentryRoleDeleteGroups(roleName, groups).getSequenceId());
     assertEquals(seqId + 3, sentryStore.alterSentryRoleGrantPrivilege(roleName, privilege).getSequenceId());
     assertEquals(seqId + 4, sentryStore.alterSentryRoleRevokePrivilege(roleName, privilege).getSequenceId());
+  }
+  @Test
+  public void testURI() throws Exception {
+    String roleName = "test-dup-role";
+    String grantor = "g1";
+    String uri = "file:///var/folders/dt/9zm44z9s6bjfxbrm4v36lzdc0000gp/T/1401860678102-0/data/kv1.dat";
+    sentryStore.createSentryRole(roleName, grantor);
+    TSentryPrivilege tSentryPrivilege = new TSentryPrivilege("URI", "server1", "ALL");
+    tSentryPrivilege.setURI(uri);
+    tSentryPrivilege.setPrivilegeName(SentryStore.constructPrivilegeName(tSentryPrivilege));
+    sentryStore.alterSentryRoleGrantPrivilege(roleName, tSentryPrivilege);
+
+    TSentryAuthorizable tSentryAuthorizable = new TSentryAuthorizable();
+    tSentryAuthorizable.setUri(uri);
+    tSentryAuthorizable.setServer("server1");
+
+
+    Set<TSentryPrivilege> privileges =
+        sentryStore.getTSentryPrivileges(new HashSet<String>(Arrays.asList(roleName)), tSentryAuthorizable);
+
+    assertTrue(privileges.size() == 1);
+
+    Set<TSentryGroup> tSentryGroups = new HashSet<TSentryGroup>();
+    tSentryGroups.add(new TSentryGroup("group1"));
+    sentryStore.alterSentryRoleAddGroups(grantor, roleName, tSentryGroups);
+
+    TSentryActiveRoleSet thriftRoleSet = new TSentryActiveRoleSet(true, new HashSet<String>(Arrays.asList(roleName)));
+
+    Set<String> privs =
+        sentryStore.listSentryPrivilegesForProvider(new HashSet<String>(Arrays.asList("group1")), thriftRoleSet, tSentryAuthorizable);
+
+    assertTrue(privs.size()==1);
+    assertTrue(privs.contains("server=server1->URI=" + uri + "->action=ALL"));
   }
 
   @Test
