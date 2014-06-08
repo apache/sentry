@@ -29,6 +29,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.SaslRpcServer;
 import org.apache.hadoop.security.SaslRpcServer.AuthMethod;
+import org.apache.hadoop.security.SecurityUtil;
 import org.apache.sentry.SentryUserException;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
@@ -78,9 +79,12 @@ public class SentryPolicyServiceClient {
     transport = new TSocket(serverAddress.getHostName(),
         serverAddress.getPort(), connectionTimeout);
     if (kerberos) {
-      String serverPrincipal = Preconditions.checkNotNull(
-          conf.get(ServerConfig.PRINCIPAL), ServerConfig.PRINCIPAL
-          + " is required");
+      String serverPrincipal = Preconditions.checkNotNull(conf.get(ServerConfig.PRINCIPAL), ServerConfig.PRINCIPAL + " is required");
+
+      // Resolve server host in the same way as we are doing on server side
+      serverPrincipal = SecurityUtil.getServerPrincipal(serverPrincipal, serverAddress.getAddress());
+      LOGGER.info("Using server kerberos principal: " + serverPrincipal);
+
       serverPrincipalParts = SaslRpcServer.splitKerberosName(serverPrincipal);
       Preconditions.checkArgument(serverPrincipalParts.length == 3,
            "Kerberos principal should have 3 parts: " + serverPrincipal);

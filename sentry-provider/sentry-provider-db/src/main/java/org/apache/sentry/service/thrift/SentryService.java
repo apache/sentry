@@ -46,6 +46,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.SaslRpcServer;
 import org.apache.hadoop.security.SaslRpcServer.AuthMethod;
+import org.apache.hadoop.security.SecurityUtil;
 import org.apache.sentry.Command;
 import org.apache.sentry.service.thrift.ServiceConstants.ConfUtilties;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
@@ -103,8 +104,15 @@ public class SentryService implements Callable {
     minThreads = conf.getInt(ServerConfig.RPC_MIN_THREADS,
         ServerConfig.RPC_MIN_THREADS_DEFAULT);
     if (kerberos) {
-      principal = Preconditions.checkNotNull(conf.get(ServerConfig.PRINCIPAL),
-          ServerConfig.PRINCIPAL + " is required");
+      // Use Hadoop libraries to translate the _HOST placeholder with actual hostname
+      try {
+        String rawPrincipal = Preconditions.checkNotNull(conf.get(ServerConfig.PRINCIPAL), ServerConfig.PRINCIPAL + " is required");
+        principal = SecurityUtil.getServerPrincipal(rawPrincipal, address.getAddress());
+      } catch(IOException io) {
+        throw new RuntimeException("Can't translate kerberos principal'", io);
+      }
+      LOGGER.info("Using kerberos principal: " + principal);
+
       principalParts = SaslRpcServer.splitKerberosName(principal);
       Preconditions.checkArgument(principalParts.length == 3,
           "Kerberos principal should have 3 parts: " + principal);

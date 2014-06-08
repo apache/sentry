@@ -32,6 +32,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.minikdc.KerberosSecurityTestcase;
 import org.apache.hadoop.minikdc.MiniKdc;
+import org.apache.hadoop.net.NetUtils;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
@@ -55,18 +56,7 @@ public abstract class SentryServiceIntegrationBase extends KerberosSecurityTestc
     }
   }
 
-  protected static final String SERVER_HOST;
-  static {
-    String serverHost;
-    try {
-      // Dynamically find name of local interface
-      serverHost = java.net.InetAddress.getLocalHost().getHostName().toLowerCase();
-    } catch (UnknownHostException e) {
-      LOGGER.error("Can't get localhost proper hostname, missing /etc/hosts configuration? Using 'localhost'.", e);
-      serverHost = "localhost"; // default value is simply localhost
-    }
-    SERVER_HOST = serverHost;
-  }
+  protected static final String SERVER_HOST = NetUtils.createSocketAddr("localhost:80").getAddress().getCanonicalHostName();
   protected static final String REALM = "EXAMPLE.COM";
   protected static final String SERVER_PRINCIPAL = "sentry/" + SERVER_HOST;
   protected static final String SERVER_KERBEROS_NAME = "sentry/" + SERVER_HOST + "@" + REALM;
@@ -118,7 +108,7 @@ public abstract class SentryServiceIntegrationBase extends KerberosSecurityTestc
       clientKeytab = new File(kdcWorkDir, "client.keytab");
       kdc.createPrincipal(serverKeytab, SERVER_PRINCIPAL);
       kdc.createPrincipal(clientKeytab, CLIENT_PRINCIPAL);
-      conf.set(ServerConfig.PRINCIPAL, SERVER_KERBEROS_NAME);
+      conf.set(ServerConfig.PRINCIPAL, getServerKerberosName());
       conf.set(ServerConfig.KEY_TAB, serverKeytab.getPath());
       conf.set(ServerConfig.ALLOW_CONNECT, CLIENT_KERBEROS_NAME);
     } else {
@@ -186,6 +176,10 @@ public abstract class SentryServiceIntegrationBase extends KerberosSecurityTestc
       FileUtils.deleteQuietly(dbDir);
     }
     afterTeardown();
+  }
+
+  public String getServerKerberosName() {
+    return SERVER_KERBEROS_NAME;
   }
 
   public void beforeSetup() throws Exception {
