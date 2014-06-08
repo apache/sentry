@@ -61,8 +61,7 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
         .addRolesToGroup(USERGROUP2, "db1_write")
         .addPermissionsToRole("db1_write", "server=server1->db=" + dbName + "->table=" + tabName + "->action=INSERT")
         .addPermissionsToRole("db1_read", "server=server1->db=" + dbName + "->table=" + tabName + "->action=SELECT")
-        .addPermissionsToRole("data_read", "server=server1->URI=file://" + dataFilePath
-            + ", server=server1->URI=file://" + dataFilePath)
+        .addPermissionsToRole("data_read", "server=server1->URI=file://" + dataFilePath)
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
