@@ -82,6 +82,7 @@ public class SentryService implements Callable {
   private final String[] principalParts;
   private final String keytab;
   private final ExecutorService serviceExecutor;
+  private Future future;
 
   private TServer thriftServer;
   private Status status;
@@ -241,12 +242,7 @@ public class SentryService implements Callable {
     }
     LOGGER.info("Attempting to start...");
     status = Status.STARTED;
-    Future future = serviceExecutor.submit(this);
-    try{
-      future.get();
-    }finally{
-      serviceExecutor.shutdown();
-    }
+    future = serviceExecutor.submit(this);
   }
 
   public synchronized void stop() {
@@ -330,6 +326,14 @@ public class SentryService implements Callable {
           }
         }
       });
+
+      // Let's wait on the service to stop
+      try {
+        LOGGER.info("Waiting on future.get()");
+        server.future.get();
+      } finally {
+        server.serviceExecutor.shutdown();
+      }
     }
   }
 
