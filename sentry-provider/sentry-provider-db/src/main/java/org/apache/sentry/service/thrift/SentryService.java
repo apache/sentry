@@ -131,7 +131,7 @@ public class SentryService implements Callable {
   }
 
   @Override
-  public String call() throws Exception{
+  public String call() throws Exception {
     LoginContext loginContext = null;
     try {
       if (kerberos) {
@@ -152,7 +152,7 @@ public class SentryService implements Callable {
       } else {
         runServer();
       }
-    } catch (Throwable t) {
+    } catch (Exception t) {
       LOGGER.error("Error starting server", t);
       throw t;
     }finally {
