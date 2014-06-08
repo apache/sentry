@@ -714,4 +714,32 @@ public class TestDatabaseProvider extends AbstractTestWithDbProvider {
     statement.close();
     connection.close();
   }
+
+  // See SENTRY-166
+  @Test
+  public void testUriWithEquals() throws Exception {
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("CREATE ROLE role1");
+    statement.execute("GRANT ALL ON URI 'file:///tmp/partition=value/file.txt' TO ROLE role1");
+
+    ResultSet resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    assertResultSize(resultSet, 1);
+    while ( resultSet.next()) {
+      assertThat(resultSet.getString(1), equalToIgnoringCase("file:///tmp/partition=value/file.txt"));
+      assertThat(resultSet.getString(2), equalToIgnoringCase(""));//table
+      assertThat(resultSet.getString(3), equalToIgnoringCase(""));//partition
+      assertThat(resultSet.getString(4), equalToIgnoringCase(""));//column
+      assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
+      assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
+      assertThat(resultSet.getString(7), equalToIgnoringCase("*"));
+      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      //Create time is not tested
+      //assertThat(resultSet.getLong(9), is(new Long(0)));
+      assertThat(resultSet.getString(10), equalToIgnoringCase(ADMIN1));//grantor
+    }
+    statement.close();
+    connection.close();
+  }
+
 }

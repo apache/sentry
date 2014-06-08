@@ -259,4 +259,33 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
     client.dropRole(requestorUserName, roleName);
   }
 
+  // See SENTRY-166
+  @Test
+  public void testUriWithEquals() throws Exception {
+    String requestorUserName = ADMIN_USER;
+    Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
+    String roleName = "admin_testdb";
+    String server = "server1";
+    String uri = "file://u/w/h/t/partition=value/";
+    setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+    writePolicyFile();
+
+    // Creating associated role
+    client.dropRoleIfExists(requestorUserName, roleName);
+    client.createRole(requestorUserName, roleName);
+    Set<TSentryRole> roles = client.listRoles(requestorUserName);
+    assertEquals("Incorrect number of roles", 1, roles.size());
+
+    client.grantURIPrivilege(requestorUserName, roleName, server, uri);
+    Set<TSentryPrivilege> privileges = client.listAllPrivilegesByRoleName(requestorUserName, roleName);
+    assertTrue(privileges.size() == 1);
+
+    // Revoking the same privilege
+    client.revokeURIPrivilege(requestorUserName, roleName, server, uri);
+    privileges = client.listAllPrivilegesByRoleName(requestorUserName, roleName);
+    assertTrue(privileges.size() == 0);
+
+    // Clean up
+    client.dropRole(requestorUserName, roleName);
+  }
 }

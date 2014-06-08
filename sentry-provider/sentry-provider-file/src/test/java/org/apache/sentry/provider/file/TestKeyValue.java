@@ -25,18 +25,23 @@ import org.junit.Test;
 
 public class TestKeyValue {
 
-  @Test(expected=IllegalArgumentException.class)
-  public void testKeyValueValue() throws Exception {
-    new KeyValue(KV_JOINER.join("a", "b", "c"));
+  @Test
+  public void testWithSeparators() throws Exception {
+    KeyValue kv = new KeyValue("URI=/u/h/w/t/partition=value/");
+    assertEquals("URI", kv.getKey());
+    assertEquals("/u/h/w/t/partition=value/", kv.getValue());
   }
+
   @Test(expected=IllegalArgumentException.class)
   public void testEmptyKey() throws Exception {
     new KeyValue(KV_JOINER.join("", "b"));
   }
+
   @Test(expected=IllegalArgumentException.class)
   public void testEmptyValue() throws Exception {
     new KeyValue(KV_JOINER.join("a", ""));
   }
+
   @Test
   public void testOneParameterConstructor() throws Exception {
     KeyValue kv1 = new KeyValue(KV_JOINER.join("k1", "v1"));
