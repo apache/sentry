@@ -26,8 +26,10 @@ import java.net.MalformedURLException;
 import java.net.ServerSocket;
 import java.security.PrivilegedExceptionAction;
 import java.util.HashSet;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 
 import javax.security.auth.Subject;
@@ -61,7 +63,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 
-public class SentryService implements Runnable {
+public class SentryService implements Callable {
 
   private static final Logger LOGGER = LoggerFactory
       .getLogger(SentryService.class);
@@ -129,7 +131,7 @@ public class SentryService implements Runnable {
   }
 
   @Override
-  public void run() {
+  public String call() throws Exception{
     LoginContext loginContext = null;
     try {
       if (kerberos) {
@@ -152,7 +154,8 @@ public class SentryService implements Runnable {
       }
     } catch (Throwable t) {
       LOGGER.error("Error starting server", t);
-    } finally {
+      throw t;
+    }finally {
       status = Status.NOT_STARTED;
       if (loginContext != null) {
         try {
@@ -162,6 +165,7 @@ public class SentryService implements Runnable {
         }
       }
     }
+    return null;
   }
 
   private void runServer() throws Exception {
@@ -223,13 +227,18 @@ public class SentryService implements Runnable {
         && thriftServer.isServing();
   }
 
-  public synchronized void start() {
+  public synchronized void start() throws Exception{
     if (status != Status.NOT_STARTED) {
       throw new IllegalStateException("Cannot start when " + status);
     }
     LOGGER.info("Attempting to start...");
     status = Status.STARTED;
-    serviceExecutor.submit(this);
+    Future future = serviceExecutor.submit(this);
+    try{
+      future.get();
+    }finally{
+      serviceExecutor.shutdown();
+    }
   }
 
   public synchronized void stop() {
