@@ -51,7 +51,7 @@ public class PolicyProviderForTest extends PolicyFile {
     return sentryClient;
   }
 
-  protected static void setSentryClient(
+  public static void setSentryClient(
       SentryPolicyServiceClient newSentryClient) {
     sentryClient = newSentryClient;
   }

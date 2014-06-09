@@ -258,7 +258,7 @@ public class HiveAuthzBinding {
             requiredOutputPrivileges.get(getAuthzType(outputHierarchy));
           if (!authProvider.hasAccess(subject, outputHierarchy, outputPrivSet, activeRoleSet)) {
             throw new AuthorizationException("User " + subject.getName() +
-                " does not have priviliedges for " + hiveOp.name());
+                " does not have privileges for " + hiveOp.name());
           }
         }
       }

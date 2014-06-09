@@ -163,7 +163,7 @@ public class SentryService implements Callable {
       }
     } catch (Exception t) {
       LOGGER.error("Error starting server", t);
-      throw t;
+      throw new Exception("Error starting server", t);
     }finally {
       status = Status.NOT_STARTED;
       if (loginContext != null) {

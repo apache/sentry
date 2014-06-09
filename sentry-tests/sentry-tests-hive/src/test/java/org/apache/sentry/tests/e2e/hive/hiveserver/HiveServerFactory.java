@@ -25,10 +25,13 @@ import java.net.URL;
 import java.util.Map;
 
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
+import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
 import org.apache.sentry.provider.file.LocalGroupResourceAuthorizationProvider;
 import org.fest.reflect.core.Reflection;
 import org.junit.Assert;
@@ -58,7 +61,11 @@ public class HiveServerFactory {
   public static final String HADOOPBIN = ConfVars.HADOOPBIN.toString();
   public static final String DEFAULT_AUTHZ_SERVER_NAME = "server1";
   public static final String HIVESERVER2_IMPERSONATION = "hive.server2.enable.doAs";
-
+  public static final String METASTORE_URI = HiveConf.ConfVars.METASTOREURIS.varname;
+  public static final String METASTORE_HOOK = HiveConf.ConfVars.METASTORE_PRE_EVENT_LISTENERS.varname;
+  public static final String METASTORE_SETUGI = HiveConf.ConfVars.METASTORE_EXECUTE_SET_UGI.varname;
+  public static final String METASTORE_BYPASS = AuthzConfVars.AUTHZ_METASTORE_SERVICE_USERS.getVar();
+  public static final String METASTORE_CLIENT_TIMEOUT = HiveConf.ConfVars.METASTORE_CLIENT_SOCKET_TIMEOUT.varname;
 
   static {
     try {
@@ -71,8 +78,7 @@ public class HiveServerFactory {
 
   public static HiveServer create(Map<String, String> properties,
       File baseDir, File confDir, File logDir, String policyFile,
-      FileSystem fileSystem)
-          throws Exception {
+      FileSystem fileSystem) throws Exception {
     String type = properties.get(HIVESERVER2_TYPE);
     if(type == null) {
       type = System.getProperty(HIVESERVER2_TYPE);
@@ -98,8 +104,10 @@ public class HiveServerFactory {
         String dfsUri = fileSystem.getDefaultUri(fileSystem.getConf()).toString();
         LOGGER.error("dfsUri " + dfsUri);
         properties.put(WAREHOUSE_DIR, dfsUri + "/data");
+        fileSystem.mkdirs(new Path("/data/"), new FsPermission((short) 0777));
       } else {
         properties.put(WAREHOUSE_DIR, new File(baseDir, "warehouse").getPath());
+        fileSystem.mkdirs(new Path("/", "warehouse"), new FsPermission((short) 0777));
       }
     }
     if(!properties.containsKey(METASTORE_CONNECTION_URL)) {
@@ -129,6 +137,24 @@ public class HiveServerFactory {
     if(!properties.containsKey(HADOOPBIN)) {
       properties.put(HADOOPBIN, "./target/hadoop/bin/hadoop");
     }
+    if (!properties.containsKey(METASTORE_URI)) {
+      if (HiveServer2Type.InternalMetastore.equals(type)) {
+        properties.put(METASTORE_URI,
+          "thrift://localhost:" + String.valueOf(findPort()));
+      }
+    }
+    if (!properties.containsKey(METASTORE_HOOK)) {
+      properties.put(METASTORE_HOOK,
+          "org.apache.sentry.binding.metastore.MetastoreAuthzBinding");
+    }
+    if (!properties.containsKey(METASTORE_BYPASS)) {
+      properties.put(METASTORE_BYPASS,
+          "hive,impala," + System.getProperty("user.name", ""));
+    }
+    properties.put(METASTORE_SETUGI, "true");
+    properties.put(METASTORE_CLIENT_TIMEOUT, "100");
+    properties.put(ConfVars.HIVE_WAREHOUSE_SUBDIR_INHERIT_PERMS.varname, "true");
+
     properties.put(ConfVars.HIVESTATSAUTOGATHER.varname, "false");
     String hadoopBinPath = properties.get(HADOOPBIN);
     Assert.assertNotNull(hadoopBinPath, "Hadoop Bin");
@@ -161,7 +187,8 @@ public class HiveServerFactory {
     authzConf.writeXml(out);
     out.close();
     // points hive-site.xml at access-site.xml
-    hiveConf.set(HiveAuthzConf.HIVE_ACCESS_CONF_URL, accessSite.toURI().toURL().toExternalForm());
+    hiveConf.set(HiveAuthzConf.HIVE_SENTRY_CONF_URL, accessSite.toURI().toURL()
+        .toExternalForm());
     if(!properties.containsKey(HiveConf.ConfVars.HIVE_SERVER2_SESSION_HOOK.varname)) {
       hiveConf.set(HiveConf.ConfVars.HIVE_SERVER2_SESSION_HOOK.varname,
         "org.apache.sentry.binding.hive.HiveAuthzBindingSessionHook");
@@ -183,6 +210,9 @@ public class HiveServerFactory {
     case InternalHiveServer2:
       LOGGER.info("Creating InternalHiveServer");
       return new InternalHiveServer(hiveConf);
+    case InternalMetastore:
+      LOGGER.info("Creating InternalHiveServer");
+      return new InternalMetastoreServer(hiveConf);
     case ExternalHiveServer2:
       LOGGER.info("Creating ExternalHiveServer");
       return new ExternalHiveServer(hiveConf, confDir, logDir);
@@ -201,8 +231,14 @@ public class HiveServerFactory {
   public static enum HiveServer2Type {
     EmbeddedHiveServer2,           // Embedded HS2, directly executed by JDBC, without thrift
     InternalHiveServer2,        // Start a thrift HS2 in the same process
+    InternalMetastore, // Start a thrift HS2 in the same process
     ExternalHiveServer2,   // start a remote thrift HS2
     UnmanagedHiveServer2      // Use a remote thrift HS2 already running
     ;
+  }
+
+  public static boolean isInternalServer(HiveServer2Type hs2Type) {
+    return (HiveServer2Type.InternalHiveServer2.equals(hs2Type) || HiveServer2Type.InternalMetastore
+        .equals(hs2Type));
   }
 }

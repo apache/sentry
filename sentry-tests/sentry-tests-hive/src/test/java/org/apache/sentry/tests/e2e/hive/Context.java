@@ -28,6 +28,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URI;
+import java.security.PrivilegedExceptionAction;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -37,7 +38,11 @@ import java.util.Set;
 import junit.framework.Assert;
 
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.sentry.provider.db.SentryAccessDeniedException;
+import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
+import org.apache.hadoop.hive.metastore.api.MetaException;
+import org.apache.hadoop.hive.shims.ShimLoader;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,6 +60,7 @@ public class Context {
   public static final String AUTHZ_EXCEPTION_SQL_STATE = "42000";
   public static final String AUTHZ_LINK_FAILURE_SQL_STATE = "08S01";
   public static final String AUTHZ_EXCEPTION_ERROR_MSG = "No valid privileges";
+  private static final String METASTORE_AUTH_ERROR_MSG = "does not have privileges";
 
   private final HiveServer hiveServer;
   private final FileSystem fileSystem;
@@ -232,6 +238,19 @@ public class Context {
     return hiveServer.getURL();
   }
 
+  // TODO: Handle kerberos login
+  public HiveMetaStoreClient getMetaStoreClient(String userName) throws Exception {
+    UserGroupInformation clientUgi = UserGroupInformation.createRemoteUser(userName);
+    HiveMetaStoreClient client = (HiveMetaStoreClient)ShimLoader.getHadoopShims()
+        .doAs(clientUgi, new PrivilegedExceptionAction<Object> () {
+          @Override
+          public HiveMetaStoreClient run() throws Exception {
+            return new HiveMetaStoreClient(new HiveConf());
+          }
+        });
+    return client;
+  }
+
   /**
    * Execute "set x" and extract value from key=val format result Verify the
    * extracted value
@@ -249,5 +268,10 @@ public class Context {
     assertEquals("Result not in key = val format", 2, resultValues.length);
     assertEquals("Conf value should be set by execute()", expectedVal,
         resultValues[1]);
+  }
+
+  public static void verifyMetastoreAuthException(MetaException e)
+      throws Exception {
+    assertTrue(e.getMessage().contains(METASTORE_AUTH_ERROR_MSG));
   }
 }

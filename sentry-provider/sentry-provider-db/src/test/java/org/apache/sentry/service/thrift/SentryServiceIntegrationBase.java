@@ -18,7 +18,6 @@
 
 package org.apache.sentry.service.thrift;
 import java.io.File;
-import java.net.UnknownHostException;
 import java.security.PrivilegedExceptionAction;
 import java.util.HashSet;
 import java.util.Set;

@@ -17,14 +17,9 @@
 
 package org.apache.sentry.tests.e2e.dbprovider;
 
-import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
-import org.apache.hadoop.hive.ql.parse.SemanticException;
-import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -35,6 +30,7 @@ import junit.framework.Assert;
 
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
+import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.tests.e2e.hive.DummySentryOnFailureHook;
 import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
@@ -42,8 +38,6 @@ import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
-
-import com.google.common.io.Resources;
 
 public class TestDbSentryOnFailureHookLoading extends AbstractTestWithDbProvider {
 
@@ -67,8 +61,8 @@ public class TestDbSentryOnFailureHookLoading extends AbstractTestWithDbProvider
     String hiveServer2Type = System
         .getProperty(HiveServerFactory.HIVESERVER2_TYPE);
     if(hiveServer2Type != null) {
-      Assume.assumeTrue(HiveServerFactory.HiveServer2Type.valueOf(hiveServer2Type.trim()) ==
-              HiveServerFactory.HiveServer2Type.InternalHiveServer2);
+      Assume.assumeTrue(HiveServerFactory.isInternalServer(
+          HiveServerFactory.HiveServer2Type.valueOf(hiveServer2Type.trim())));
     }
   }
 

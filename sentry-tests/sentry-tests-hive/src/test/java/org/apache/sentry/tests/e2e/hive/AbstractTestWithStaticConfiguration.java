@@ -93,6 +93,7 @@ public abstract class AbstractTestWithStaticConfiguration {
 
   protected static boolean policy_on_hdfs = false;
   protected static boolean useSentryService = false;
+  protected static String testServerType = null;
 
   protected static File baseDir;
   protected static File logDir;
@@ -158,12 +159,14 @@ public abstract class AbstractTestWithStaticConfiguration {
   }
 
   @BeforeClass
-  public static void setupTestStaticConfiguration()
-      throws Exception {
+  public static void setupTestStaticConfiguration() throws Exception {
+    properties = Maps.newHashMap();
     if(!policy_on_hdfs) {
       policy_on_hdfs = new Boolean(System.getProperty("sentry.e2etest.policyonhdfs", "false"));
     }
-    properties = Maps.newHashMap();
+    if (testServerType != null) {
+      properties.put("sentry.e2etest.hiveServer2Type", testServerType);
+    }
     baseDir = Files.createTempDir();
     LOGGER.info("BaseDir = " + baseDir);
     logDir = assertCreateDir(new File(baseDir, "log"));
@@ -176,11 +179,14 @@ public abstract class AbstractTestWithStaticConfiguration {
     fileSystem = dfs.getFileSystem();
 
     String policyURI;
+    PolicyFile policyFile = PolicyFile.setAdminOnServer1(ADMIN1);
+    policyFile.write(policyFileLocation);
     if (policy_on_hdfs) {
       String dfsUri = fileSystem.getDefaultUri(fileSystem.getConf()).toString();
       LOGGER.error("dfsUri " + dfsUri);
       policyURI = dfsUri + System.getProperty("sentry.e2etest.hive.policy.location", "/user/hive/sentry");
       policyURI += "/" + HiveServerFactory.AUTHZ_PROVIDER_FILENAME;
+      dfs.writePolicyFile(policyFileLocation);
     } else {
       policyURI = policyFileLocation.getPath();
     }
@@ -201,7 +207,6 @@ public abstract class AbstractTestWithStaticConfiguration {
   }
 
   private static void setupSentryService() throws Exception {
-    properties = Maps.newHashMap();
     sentryConf = new Configuration(false);
     PolicyFile policyFile = new PolicyFile();
 

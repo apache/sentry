@@ -74,8 +74,8 @@ public class TestSentryOnFailureHookLoading extends AbstractTestWithHiveServer {
     String hiveServer2Type = System.getProperty(
         HiveServerFactory.HIVESERVER2_TYPE);
     if (hiveServer2Type != null &&
-        HiveServerFactory.HiveServer2Type.valueOf(hiveServer2Type.trim()) !=
-        HiveServerFactory.HiveServer2Type.InternalHiveServer2) {
+        !HiveServerFactory.isInternalServer(HiveServerFactory.HiveServer2Type
+            .valueOf(hiveServer2Type.trim()))) {
       return;
     }
 

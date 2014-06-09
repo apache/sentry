@@ -63,6 +63,7 @@ public class HiveAuthzConf extends Configuration {
     AUTHZ_UDF_WHITELIST("sentry.hive.udf.whitelist", HIVE_UDF_WHITE_LIST),
     AUTHZ_ALLOW_HIVE_IMPERSONATION("sentry.hive.allow.hive.impersonation", "false"),
     AUTHZ_ONFAILURE_HOOKS("sentry.hive.failure.hooks", ""),
+    AUTHZ_METASTORE_SERVICE_USERS("sentry.metastore.service.users", ""),
 
     AUTHZ_PROVIDER_DEPRECATED("hive.sentry.provider",
       "org.apache.sentry.provider.file.ResourceAuthorizationProvider"),
