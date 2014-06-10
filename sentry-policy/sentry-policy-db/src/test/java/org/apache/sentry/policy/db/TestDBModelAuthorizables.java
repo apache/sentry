@@ -61,10 +61,6 @@ public class TestDBModelAuthorizables {
   }
 
   @Test(expected=IllegalArgumentException.class)
-  public void testTooManyKV() throws Exception {
-    System.out.println(DBModelAuthorizables.from("k=v1=v2"));
-  }
-  @Test(expected=IllegalArgumentException.class)
   public void testEmptyKey() throws Exception {
     System.out.println(DBModelAuthorizables.from("=v"));
   }

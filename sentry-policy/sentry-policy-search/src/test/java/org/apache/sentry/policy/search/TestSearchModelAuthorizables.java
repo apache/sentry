@@ -37,11 +37,6 @@ public class TestSearchModelAuthorizables {
   }
 
   @Test(expected=IllegalArgumentException.class)
-  public void testTooManyKV() throws Exception {
-    System.out.println(SearchModelAuthorizables.from("k=v1=v2"));
-  }
-
-  @Test(expected=IllegalArgumentException.class)
   public void testEmptyKey() throws Exception {
     System.out.println(SearchModelAuthorizables.from("=v"));
   }
