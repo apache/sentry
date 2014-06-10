@@ -24,6 +24,10 @@ import java.util.Map;
 import javax.security.auth.login.AppConfigurationEntry;
 
 public class KerberosConfiguration extends javax.security.auth.login.Configuration {
+  static {
+    System.setProperty("javax.security.auth.useSubjectCredsOnly", "false");
+  }
+
   private String principal;
   private String keytab;
   private boolean isInitiator;

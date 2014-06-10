@@ -59,13 +59,19 @@ public class GSSCallback extends SaslRpcServer.SaslGssCallbackHandler {
     if (allowedPrincipals == null) {
       return false;
     }
+    String principalShortName = getShortName(principal);
     List<String> items = Arrays.asList(allowedPrincipals.split("\\s*,\\s*"));
     for (String item : items) {
-      if(comparePrincipals(item, principal)) {
+      if (comparePrincipals(item, principalShortName)) {
         return true;
       }
     }
     return false;
+  }
+
+  private String getShortName(String principal) {
+    String parts[] = SaslRpcServer.splitKerberosName(principal);
+    return parts[0];
   }
 
   @Override
