@@ -240,13 +240,21 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
   }
 
   private void authorizeAddPartition(PreAddPartitionEvent context)
-      throws InvalidOperationException, MetaException {
-    // check if we need to validate URI permissions when storage location is
-    // non-default
+      throws InvalidOperationException, MetaException, NoSuchObjectException {
     HierarcyBuilder inputBuilder = new HierarcyBuilder();
-    if (!StringUtils.isEmpty(context.getPartition().getSd().getLocation())) {
-      inputBuilder.addUriToOutput(getAuthServer(), context.getPartition()
+
+    // check if we need to validate URI permissions when storage location is
+    // non-default, ie something not under the parent table
+    String partitionLocation = context.getPartition().getSd().getLocation();
+    if (!StringUtils.isEmpty(partitionLocation)) {
+      String tableLocation = context
+          .getHandler()
+          .get_table(context.getPartition().getDbName(),
+              context.getPartition().getTableName()).getSd().getLocation();
+      if (!partitionLocation.startsWith(tableLocation)) {
+        inputBuilder.addUriToOutput(getAuthServer(), context.getPartition()
           .getSd().getLocation());
+      }
     }
     authorizeMetastoreAccess(HiveOperation.ALTERTABLE_ADDPARTS,
         inputBuilder.build(),

@@ -43,6 +43,8 @@ import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.shims.ShimLoader;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.pig.ExecType;
+import org.apache.pig.PigServer;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -251,6 +253,20 @@ public class Context {
     return client;
   }
 
+  public PigServer getPigServer(String userName, final ExecType exType)
+      throws Exception {
+    UserGroupInformation clientUgi = UserGroupInformation
+        .createRemoteUser(userName);
+    PigServer pigServer = (PigServer) ShimLoader.getHadoopShims().doAs(
+        clientUgi, new PrivilegedExceptionAction<Object>() {
+          @Override
+          public PigServer run() throws Exception {
+            return new PigServer(exType, new HiveConf());
+          }
+        });
+    return pigServer;
+  }
+
   /**
    * Execute "set x" and extract value from key=val format result Verify the
    * extracted value
@@ -270,8 +286,13 @@ public class Context {
         resultValues[1]);
   }
 
-  public static void verifyMetastoreAuthException(MetaException e)
+  public static void verifyMetastoreAuthException(Throwable e)
       throws Exception {
-    assertTrue(e.getMessage().contains(METASTORE_AUTH_ERROR_MSG));
+    if (e instanceof MetaException) {
+      assertTrue(e.getMessage().contains(METASTORE_AUTH_ERROR_MSG));
+    } else {
+      throw new Exception("Excepted MetaException but got "
+          + e.getClass().getName(), e);
+    }
   }
 }

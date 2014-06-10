@@ -17,10 +17,13 @@
  */
 package org.apache.sentry.tests.e2e.metastore;
 
+import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import org.apache.hadoop.hive.cli.CliSessionState;
+import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
@@ -29,7 +32,12 @@ import org.apache.hadoop.hive.metastore.api.Partition;
 import org.apache.hadoop.hive.metastore.api.SerDeInfo;
 import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
 import org.apache.hadoop.hive.metastore.api.Table;
+import org.apache.hadoop.hive.ql.Driver;
+import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.hive.serde.serdeConstants;
+import org.apache.hadoop.hive.shims.ShimLoader;
+import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.pig.PigServer;
 import org.apache.sentry.tests.e2e.dbprovider.PolicyProviderForTest;
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory.HiveServer2Type;
@@ -151,6 +159,29 @@ public abstract class AbstractMetastoreTestWithStaticConfiguration extends
     Database db = new Database();
     db.setName(dbName);
     client.createDatabase(db);
+  }
+
+  public void execHiveSQL(String sqlStmt, String userName) throws Exception {
+    HiveConf hiveConf = new HiveConf();
+    Driver driver = new Driver(hiveConf);
+    SessionState.start(new CliSessionState(hiveConf));
+    driver.run(sqlStmt);
+    driver.close();
+    SessionState.get().close();
+  }
+
+  public void execPigLatin(String userName, final PigServer pigServer,
+      final String pigLatin) throws Exception {
+    UserGroupInformation clientUgi = UserGroupInformation
+        .createRemoteUser(userName);
+    ShimLoader.getHadoopShims().doAs(clientUgi,
+        new PrivilegedExceptionAction<Object>() {
+          @Override
+          public Void run() throws Exception {
+            pigServer.registerQuery(pigLatin);
+            return null;
+          }
+        });
   }
 
 }
