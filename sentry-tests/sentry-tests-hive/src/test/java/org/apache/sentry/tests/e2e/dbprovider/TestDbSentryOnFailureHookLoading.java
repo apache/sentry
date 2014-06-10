@@ -41,17 +41,13 @@ import org.junit.Test;
 
 public class TestDbSentryOnFailureHookLoading extends AbstractTestWithDbProvider {
 
-  private PolicyFile policyFile;
-
   Map<String, String > testProperties;
-  private static final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
 
   @Before
   public void setup() throws Exception {
     testProperties = new HashMap<String, String>();
     testProperties.put(HiveAuthzConf.AuthzConfVars.AUTHZ_ONFAILURE_HOOKS.getVar(),
         DummySentryOnFailureHook.class.getName());
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
     createContext(testProperties);
     DummySentryOnFailureHook.invoked = false;
 
@@ -84,11 +80,17 @@ public class TestDbSentryOnFailureHookLoading extends AbstractTestWithDbProvider
     statement.execute("GRANT ALL ON DATABASE DB_1 TO ROLE all_db1");
     statement.execute("GRANT ROLE all_db1 TO GROUP " + USERGROUP1);
 
+    statement.execute("CREATE ROLE read_db2_tab2");
+    statement.execute("GRANT ROLE read_db2_tab2 TO GROUP " + USERGROUP1);
+
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("DROP DATABASE IF EXISTS DB_2 CASCADE");
     statement.execute("CREATE DATABASE DB_1");
     statement.execute("CREATE DATABASE DB_2");
     statement.execute("CREATE TABLE db_2.tab1(a int )");
+
+    statement.execute("USE db_2");
+    statement.execute("GRANT SELECT ON TABLE tab2 TO ROLE read_db2_tab2");// To give user1 privilege to do USE db_2
     statement.close();
     connection.close();
 
@@ -106,9 +108,10 @@ public class TestDbSentryOnFailureHookLoading extends AbstractTestWithDbProvider
     verifyFailureHook(statement, "select * from db_2.tab1", HiveOperation.QUERY,
         null, null, false);
 
-    //Denied alter table is not invoking failurehook: SENTRY-269
-    //verifyFailureHook(statement, "ALTER TABLE db_2.tab1 CHANGE id id1 INT", HiveOperation.ALTERTABLE_RENAMECOL,
-    //    "db_2", "tab1", false);
+    //Denied alter table invokes failure hook
+    statement.execute("USE DB_2");
+    verifyFailureHook(statement, "ALTER TABLE tab1 CHANGE id id1 INT", HiveOperation.ALTERTABLE_RENAMECOL,
+        "db_2", null, false);
 
     statement.close();
     connection.close();
@@ -129,11 +132,6 @@ public class TestDbSentryOnFailureHookLoading extends AbstractTestWithDbProvider
    */
   @Test
   public void testOnFailureHookForAuthDDL() throws Exception {
-
-    policyFile.addRolesToGroup(USERGROUP1, "all_db1")
-        .addPermissionsToRole("all_db1", "server=server1->db=DB_1")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
 
     // setup db objects needed by the test
     Connection connection = context.createConnection(ADMIN1);
