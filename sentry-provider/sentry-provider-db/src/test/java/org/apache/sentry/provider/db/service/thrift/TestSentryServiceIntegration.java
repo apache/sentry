@@ -65,7 +65,7 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
     Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
     setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
     writePolicyFile();
-    
+
     String roleName1 = "admin_r1";
     String roleName2 = "admin_r2";
 
@@ -287,5 +287,20 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
 
     // Clean up
     client.dropRole(requestorUserName, roleName);
+  }
+
+  // See SENTRY-181
+  @Test
+  public void testSameGrantTwice() throws Exception {
+    String requestorUserName = ADMIN_USER;
+    Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
+    setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+    writePolicyFile();
+    String roleName = "admin_r1";
+
+    client.createRole(requestorUserName, roleName);
+    client.grantTablePrivilege(requestorUserName, roleName, "server", "db1", "table1", "ALL");
+    client.grantTablePrivilege(requestorUserName, roleName, "server", "db1", "table1", "ALL");
+    assertEquals(1, client.listAllPrivilegesByRoleName(requestorUserName, roleName).size());
   }
 }

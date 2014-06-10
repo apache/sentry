@@ -75,7 +75,8 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
    */
   @Test
   public void testDbPrivileges() throws Exception {
-    addTwoUsersWithAllDb().write(context.getPolicyFile());
+    addTwoUsersWithAllDb();
+    writePolicyFile(policyFile);
     String[] dbs = new String[] { "db1", "db2" };
     for (String dbName : dbs) {
       dropDb(ADMIN1, dbName);
@@ -111,8 +112,8 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
   @Test
   public void testAdminDbPrivileges() throws Exception {
     policyFile
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
     Connection adminCon = context.createConnection(ADMIN1);
     Statement adminStmt = context.createStatement(adminCon);
     String dbName = "db1";
@@ -146,8 +147,8 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
     policyFile
         .addPermissionsToRole("db1_tab2_all", "server=server1->db=db1->table=table_2")
         .addRolesToGroup(USERGROUP1, "db1_tab2_all")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
     Connection adminCon = context.createConnection(ADMIN1);
     Statement adminStmt = context.createStatement(adminCon);
     String dbName = "db1";
@@ -192,8 +193,8 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
         .addRolesToGroup(USERGROUP2, "db1_tab1_select")
         .addPermissionsToRole("db1_tab1_select", "server=server1->db=db1->table=table_1->action=select")
         .addPermissionsToRole("db1_all", "server=server1->db=db1")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
     // create dbs
     Connection adminCon = context.createConnection(ADMIN1);
     Statement adminStmt = context.createStatement(adminCon);
@@ -267,8 +268,8 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
     policyFile
         .addPermissionsToRole(GROUP1_ROLE, ALL_DB1, ALL_DB2, loadData)
         .addRolesToGroup(USERGROUP1, GROUP1_ROLE)
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     dropDb(ADMIN1, DB1, DB2);
     createDb(ADMIN1, DB1, DB2);
@@ -289,7 +290,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
     // d
     statement.execute("USE " + DB1);
     policyFile.removePermissionsFromRole(GROUP1_ROLE, ALL_DB2);
-    policyFile.write(context.getPolicyFile());
+    writePolicyFile(policyFile);
     // e
     // create db1.view1 as select from db2.tbl2
     statement.execute("DROP VIEW IF EXISTS " + VIEW2);
@@ -304,7 +305,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
 
     // f
     policyFile.addPermissionsToRole(GROUP1_ROLE, SELECT_DB2_TBL2);
-    policyFile.write(context.getPolicyFile());
+    writePolicyFile(policyFile);
     statement.execute("DROP VIEW IF EXISTS " + VIEW2);
     statement.execute("CREATE VIEW " + VIEW2
         + " (value) AS SELECT value from " + DB2 + "." + TBL2 + " LIMIT 10");
@@ -340,8 +341,8 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
     policyFile
         .addPermissionsToRole(GROUP1_ROLE, SELECT_DB1_TBL2)
         .addRolesToGroup(USERGROUP1, GROUP1_ROLE)
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
     dropDb(ADMIN1, DB1);
     createDb(ADMIN1, DB1);
     createTable(ADMIN1, DB1, dataFile, TBL1);
@@ -359,11 +360,10 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
     context.assertAuthzException(statement, "SELECT * FROM " + TBL1 + " WHERE under_col == 5");
     context.assertAuthzException(statement, "SHOW INDEXES ON " + TBL1);
     policyFile.addPermissionsToRole(GROUP1_ROLE, SELECT_DB1_TBL1, INSERT_DB1_TBL1, loadData);
-    policyFile.write(context.getPolicyFile());
+    writePolicyFile(policyFile);
     statement.execute("USE " + DB1);
     assertTrue(statement.execute("SELECT * FROM " + TBL1 + " WHERE under_col == 5"));
     assertTrue(statement.execute("SHOW INDEXES ON " + TBL1));
-    policyFile.write(context.getPolicyFile());
     dropDb(ADMIN1, DB1, DB2);
   }
 
@@ -401,8 +401,8 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
         .addPermissionsToRole("select_tb1", "server=server1->db=db_1->table=tbl_1->action=select")
         .addPermissionsToRole("all_db1", "server=server1->db=db_1")
         .addPermissionsToRole("load_data", "server=server1->uri=file://" + dataFile.toString())
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
     dropDb(ADMIN1, DB1);
     createDb(ADMIN1, DB1);
 
@@ -465,8 +465,8 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
         .addPermissionsToRole("load_data", "server=server1->uri=file://" + allowedDir.getPath() +
             ", server=server1->uri=file://" + allowedDir.getPath() +
             ", server=server1->uri=" + allowedDfsDir.toString())
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     dropDb(ADMIN1, DB1);
     createDb(ADMIN1, DB1);
@@ -499,8 +499,8 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
     policyFile
         .addPermissionsToRole(GROUP1_ROLE, ALL_DB1, SELECT_DB2_TBL2, loadData)
         .addRolesToGroup(USERGROUP1, GROUP1_ROLE)
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     dropDb(ADMIN1, DB1, DB2);
     createDb(ADMIN1, DB1, DB2);
@@ -529,8 +529,8 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
         .addRolesToGroup(USERGROUP2, "select_tbl2")
         .addPermissionsToRole("select_tbl1", "server=server1->db=db1->table=tbl1->action=select")
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .addDatabase("db2", dfs.getBaseDir().toUri().toString() + "/" + DB2_POLICY_FILE)
-        .write(context.getPolicyFile());
+        .addDatabase("db2", dfs.getBaseDir().toUri().toString() + "/" + DB2_POLICY_FILE);
+    writePolicyFile(policyFile);
 
     File db2PolicyFileHandle = new File(baseDir.getPath(), DB2_POLICY_FILE);
 

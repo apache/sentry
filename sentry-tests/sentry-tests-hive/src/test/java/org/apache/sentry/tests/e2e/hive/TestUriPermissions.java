@@ -16,10 +16,13 @@
  */
 package org.apache.sentry.tests.e2e.hive;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
+import com.google.common.io.Resources;
 import junit.framework.Assert;
 
 import org.apache.sentry.tests.e2e.dbprovider.PolicyProviderForTest;
@@ -31,14 +34,20 @@ import org.junit.Test;
 public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
   private Context context;
   private PolicyProviderForTest policyFile;
-
-  private static final String dataFile = "/kv1.dat";
-  private String dataFilePath = this.getClass().getResource(dataFile).getFile();
+  private File dataFile;
+  private String loadData;
 
   @Before
   public void setup() throws Exception {
     context = createContext();
     policyFile = PolicyProviderForTest.setAdminOnServer1(ADMINGROUP);
+    dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
+    FileOutputStream to = new FileOutputStream(dataFile);
+    Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
+    to.close();
+    policyFile = PolicyProviderForTest.setAdminOnServer1(ADMINGROUP);
+    loadData = "server=server1->uri=file://" + dataFile.getPath();
+
   }
 
   @After
@@ -61,7 +70,7 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
         .addRolesToGroup(USERGROUP2, "db1_write")
         .addPermissionsToRole("db1_write", "server=server1->db=" + dbName + "->table=" + tabName + "->action=INSERT")
         .addPermissionsToRole("db1_read", "server=server1->db=" + dbName + "->table=" + tabName + "->action=SELECT")
-        .addPermissionsToRole("data_read", "server=server1->URI=file://" + dataFilePath)
+        .addPermissionsToRole("data_read", loadData)
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
@@ -79,7 +88,7 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
     userConn = context.createConnection(USER1_1);
     userStmt = context.createStatement(userConn);
     userStmt.execute("use " + dbName);
-    userStmt.execute("load data local inpath '" + dataFilePath +
+    userStmt.execute("load data local inpath 'file://" + dataFile.toString() +
         "' into table " + tabName);
     userStmt.execute("select * from " + tabName + " limit 1");
     ResultSet res = userStmt.getResultSet();
@@ -91,7 +100,7 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
     userConn = context.createConnection(USER2_1);
     userStmt = context.createStatement(userConn);
     userStmt.execute("use " + dbName);
-    context.assertAuthzException(userStmt, "load data local inpath '" + dataFilePath +
+    context.assertAuthzException(userStmt, "load data local inpath '" + dataFile.toString() +
         "' into table " + tabName);
     userStmt.close();
     userConn.close();
