@@ -29,10 +29,14 @@ public class DBModelAuthorizables {
 
   public static DBModelAuthorizable from(KeyValue keyValue) {
     String prefix = keyValue.getKey().toLowerCase();
-    String name = keyValue.getValue().toLowerCase();
+    String name = keyValue.getValue();
     for(AuthorizableType type : AuthorizableType.values()) {
       if(prefix.equalsIgnoreCase(type.name())) {
-        return from(type, name);
+        if (prefix.equalsIgnoreCase(AuthorizableType.URI.toString())) {
+          return from(type, name);
+        } else {
+          return from(type, name.toLowerCase());
+        }
       }
     }
     return null;

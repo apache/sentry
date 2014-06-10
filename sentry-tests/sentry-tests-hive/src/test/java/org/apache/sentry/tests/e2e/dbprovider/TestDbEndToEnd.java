@@ -68,9 +68,13 @@ public class TestDbEndToEnd extends AbstractTestWithDbProvider {
     // test a specific role
     statement.execute("SET ROLE user_role");
     statement.execute("SELECT * FROM t1");
+
+    /** Dissabling test : see https://issues.apache.org/jira/browse/HIVE-6629
     // test NONE
     statement.execute("SET ROLE NONE");
     context.assertAuthzException(statement, "SELECT * FROM t1");
+    */
+
     // test ALL
     statement.execute("SET ROLE ALL");
     statement.execute("SELECT * FROM t1");
@@ -197,28 +201,6 @@ public class TestDbEndToEnd extends AbstractTestWithDbProvider {
     connection.close();
 
     // 8
-    connection = context.createConnection(USER1_1);
-    statement = context.createStatement(connection);
-    Exception ex = null;
-    try {
-      statement.execute("USE " + dbName2);
-    } catch (Exception e) {
-      ex = e;
-    } finally {
-      statement.close();
-      connection.close();
-    }
-    System.out.println("Message : " + ex.getMessage());
-    assertTrue("This should not be allowed !!", ex != null);
-
-    connection = context.createConnection(ADMIN1);
-    statement = context.createStatement(connection);
-    statement.execute("CREATE ROLE all_db2");
-    statement.execute("GRANT ALL ON DATABASE " + dbName2 + " TO ROLE all_db2");
-    statement.execute("GRANT ROLE all_db2 TO GROUP " + USERGROUP1);
-    statement.close();
-    connection.close();
-
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("USE " + dbName2);

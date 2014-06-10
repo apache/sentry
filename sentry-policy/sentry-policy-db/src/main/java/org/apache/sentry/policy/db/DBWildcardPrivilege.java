@@ -125,6 +125,10 @@ public class DBWildcardPrivilege implements Privilege {
         && AccessConstants.ALL.equalsIgnoreCase(requestPart.getValue())) {
       /* privilege request is to match with any object of given type */
       return true;
+    } else if (!PolicyFileConstants.PRIVILEGE_NAME.equalsIgnoreCase(policyPart.getKey())
+        && AccessConstants.SOME.equalsIgnoreCase(requestPart.getValue())) {
+      /* privilege request is to match with any object of given type */
+      return true;
     } else if(policyPart.getKey().equalsIgnoreCase(AuthorizableType.URI.name())) {
       return impliesURI(policyPart.getValue(), requestPart.getValue());
     }

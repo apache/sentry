@@ -16,9 +16,13 @@
  */
 package org.apache.sentry.tests.e2e.dbprovider;
 
+import static org.junit.Assert.assertTrue;
+
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 import org.apache.sentry.tests.e2e.hive.TestSandboxOps;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
 
 public class TestDbSandboxOps extends TestSandboxOps {
   @BeforeClass
@@ -27,6 +31,14 @@ public class TestDbSandboxOps extends TestSandboxOps {
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
     PolicyProviderForTest.setSentryClient(AbstractTestWithStaticConfiguration
         .getSentryClient());
+  }
+
+  @Ignore
+  @Test
+  public void testPerDbPolicyOnDFS() throws Exception {
+    // TODO : Looks like the test in the base class is specifically meant for
+    // File based providers... Since it is assuming that multiple policy files
+    // in DFS would be handled by the provider..
   }
 
 }

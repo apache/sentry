@@ -49,6 +49,7 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
   Map <String, String >testProperties;
   private static final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
 
+  @Override
   @Before
   public void setup() throws Exception {
     testProperties = new HashMap<String, String>();
@@ -109,7 +110,7 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
     // test CTAS can reference UDFs
     statement.execute("USE DB_1");
     statement.execute("create table table2 as select A, count(A) from TAB_1 GROUP BY A");
-    
+
     // test user can switch db
     statement.execute("USE DB_1");
     //test user can create view
@@ -387,11 +388,18 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("use default");
+    statement.execute("create table tab1(a int)");
     context.close();
 
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("use default");
+    try {
+      statement.execute("select * from tab1");
+      assertTrue("Should not be allowed !!", false);
+    } catch (Exception e) {
+      // Ignore
+    }
     context.close();
 
     connection = context.createConnection(USER2_1);

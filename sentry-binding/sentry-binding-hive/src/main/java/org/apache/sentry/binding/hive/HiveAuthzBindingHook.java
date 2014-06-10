@@ -451,13 +451,18 @@ implements HiveDriverFilterHook {
       List<DBModelAuthorizable> connectHierarchy = new ArrayList<DBModelAuthorizable>();
       connectHierarchy.add(hiveAuthzBinding.getAuthServer());
       // by default allow connect access to default db
-      if (DEFAULT_DATABASE_NAME.equalsIgnoreCase(currDB.getName()) &&
+      Table currTbl = Table.ALL;
+      if ((DEFAULT_DATABASE_NAME.equalsIgnoreCase(currDB.getName()) &&
           "false".equalsIgnoreCase(authzConf.
-              get(HiveAuthzConf.AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), "false"))) {
+              get(HiveAuthzConf.AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), "false")))
+              ||stmtOperation.equals(HiveOperation.CREATEFUNCTION)
+              ||stmtOperation.equals(HiveOperation.DROPFUNCTION)) {
         currDB = Database.ALL;
+        currTbl = Table.SOME;
       }
+
       connectHierarchy.add(currDB);
-      connectHierarchy.add(Table.ALL);
+      connectHierarchy.add(currTbl);
 
       inputHierarchy.add(connectHierarchy);
       // check if this is a create temp function and we need to validate URI

@@ -22,6 +22,7 @@ public class Table implements TableOrView {
    * Represents all tables
    */
   public static final Table ALL = new Table(AccessConstants.ALL);
+  public static final Table SOME = new Table(AccessConstants.SOME);
 
   private final String name;
 

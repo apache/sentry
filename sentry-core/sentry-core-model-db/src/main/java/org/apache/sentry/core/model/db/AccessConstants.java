@@ -25,6 +25,7 @@ public class AccessConstants {
    * represents all Servers, Databases, or Tables.
    */
   public static final String ALL = "*";
+  public static final String SOME = "+";
 
   public static final String SELECT = "select";
   public static final String INSERT = "insert";

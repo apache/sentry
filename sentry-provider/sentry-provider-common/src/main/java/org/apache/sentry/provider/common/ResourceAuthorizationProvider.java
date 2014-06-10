@@ -17,6 +17,7 @@
 package org.apache.sentry.provider.common;
 
 import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_JOINER;
+import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_SPLITTER;
 import static org.apache.sentry.provider.common.ProviderConstants.KV_JOINER;
 import static org.apache.sentry.provider.common.ProviderConstants.PRIVILEGE_NAME;
 
@@ -30,20 +31,23 @@ import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.core.common.Subject;
+import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.policy.common.Privilege;
 import org.apache.sentry.policy.common.PrivilegeFactory;
-import org.apache.sentry.policy.common.PolicyEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 public abstract class ResourceAuthorizationProvider implements AuthorizationProvider {
   private static final Logger LOGGER = LoggerFactory
       .getLogger(ResourceAuthorizationProvider.class);
+
   private final GroupMappingService groupService;
   private final PolicyEngine policy;
   private final PrivilegeFactory privilegeFactory;
@@ -95,8 +99,8 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
     for (Authorizable authorizable : authorizables) {
       hierarchy.add(KV_JOINER.join(authorizable.getTypeName(), authorizable.getName()));
     }
-    Iterable<Privilege> privileges = getPrivileges(groups, roleSet, authorizables.toArray(new Authorizable[0]));
     List<String> requestPrivileges = buildPermissions(authorizables, actions);
+    Iterable<Privilege> privileges = getPrivileges(groups, roleSet, authorizables.toArray(new Authorizable[0]));
     lastFailedPrivileges.get().clear();
 
     for (String requestPrivilege : requestPrivileges) {
@@ -114,18 +118,42 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
         }
       }
     }
+
     lastFailedPrivileges.get().addAll(requestPrivileges);
     return false;
   }
 
   private Iterable<Privilege> getPrivileges(Set<String> groups, ActiveRoleSet roleSet, Authorizable[] authorizables) {
-    return Iterables.transform(policy.getPrivileges(groups, roleSet, authorizables),
+    return Iterables.transform(appendDefaultDBPriv(policy.getPrivileges(groups, roleSet, authorizables), authorizables),
         new Function<String, Privilege>() {
       @Override
       public Privilege apply(String privilege) {
         return privilegeFactory.createPrivilege(privilege);
       }
     });
+  }
+
+  private ImmutableSet<String> appendDefaultDBPriv(ImmutableSet<String> privileges, Authorizable[] authorizables) {
+    // Only for switch db
+    if ((authorizables != null)&&(authorizables.length == 3)&&(authorizables[2].getName().equals("+"))) {
+      if ((privileges.size() == 1) && hasOnlyServerPrivilege(privileges.asList().get(0))) {
+        // Assuming authorizable[0] will always be the server
+        // This Code is only reachable only when user fires a 'use default'
+        // and the user has a privilege on atleast 1 privilized Object
+        String defaultPriv = "Server=" + authorizables[0].getName() + "->Db=default->Table=*->action=select";
+        HashSet<String> newPrivs = Sets.newHashSet(defaultPriv);
+        return ImmutableSet.copyOf(newPrivs);
+      }
+    }
+    return privileges;
+  }
+
+  private boolean hasOnlyServerPrivilege(String priv) {
+    ArrayList<String> l = Lists.newArrayList(AUTHORIZABLE_SPLITTER.split(priv));
+    if ((l.size() == 1)&&(l.get(0).toLowerCase().startsWith("server"))) {
+      return l.get(0).toLowerCase().split("=")[1].endsWith("+");
+    }
+    return false;
   }
 
   @Override

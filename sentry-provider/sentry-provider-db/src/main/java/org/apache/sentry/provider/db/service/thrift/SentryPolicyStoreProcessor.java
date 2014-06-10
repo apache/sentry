@@ -381,8 +381,23 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     TListSentryPrivilegesForProviderResponse response = new TListSentryPrivilegesForProviderResponse();
     response.setPrivileges(new HashSet<String>());
     try {
-      response.setPrivileges(sentryStore.listSentryPrivilegesForProvider(
-          request.getGroups(), request.getRoleSet(), request.getAuthorizableHierarchy()));
+      Set<String> privilegesForProvider = sentryStore.listSentryPrivilegesForProvider(
+          request.getGroups(), request.getRoleSet(), request.getAuthorizableHierarchy());
+      response.setPrivileges(privilegesForProvider);
+      if ((privilegesForProvider == null)||(privilegesForProvider.size() == 0)) {
+        if (sentryStore.hasAnyServerPrivileges(
+            request.getGroups(), request.getRoleSet(), request.getAuthorizableHierarchy().getServer())) {
+
+          // REQUIRED for ensuring 'default' Db is accessible by any user
+          // with privileges to atleast 1 object with the specific server as root
+
+          // Need some way to specify that even though user has no privilege
+          // For the specific AuthorizableHierarchy.. he has privilege on
+          // atleast 1 object in the server hierarchy
+          HashSet<String> serverPriv = Sets.newHashSet("server=+");
+          response.setPrivileges(serverPriv);
+        }
+      }
       response.setStatus(Status.OK());
     } catch (Exception e) {
       String msg = "Unknown error for request: " + request + ", message: " + e.getMessage();

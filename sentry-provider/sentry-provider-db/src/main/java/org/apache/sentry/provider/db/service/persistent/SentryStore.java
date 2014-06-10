@@ -41,6 +41,7 @@ import javax.jdo.Transaction;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.model.db.AccessConstants;
+import org.apache.sentry.core.model.db.DBModelAction;
 import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
 import org.apache.sentry.provider.common.ProviderConstants;
 import org.apache.sentry.provider.db.SentryAccessDeniedException;
@@ -597,6 +598,36 @@ public class SentryStore {
     }
   }
 
+  private boolean hasAnyServerPrivileges(Set<String> roleNames, String serverName) {
+    if ((roleNames.size() == 0)||(roleNames == null)) return false;
+    boolean rollbackTransaction = true;
+    PersistenceManager pm = null;
+    try {
+      pm = openTransaction();
+      Query query = pm.newQuery(MSentryPrivilege.class);
+      query.declareVariables("org.apache.sentry.provider.db.service.model.MSentryRole role");
+      List<String> rolesFiler = new LinkedList<String>();
+      for (String rName : roleNames) {
+        rolesFiler.add("role.roleName == \"" + rName.trim().toLowerCase() + "\"");
+      }
+      StringBuilder filters = new StringBuilder("roles.contains(role) "
+          + "&& (" + Joiner.on(" || ").join(rolesFiler) + ") ");
+      filters.append("&& serverName == \"" + serverName + "\"");
+      query.setFilter(filters.toString());
+      query.setResult("count(this)");
+
+      Long numPrivs = (Long) query.execute();
+      rollbackTransaction = false;
+      commitTransaction(pm);
+      return (numPrivs > 0);
+    } finally {
+      if (rollbackTransaction) {
+        rollbackTransaction(pm);
+      }
+    }
+  }
+
+
   List<MSentryPrivilege> getMSentryPrivileges(Set<String> roleNames, TSentryAuthorizable authHierarchy) {
     if ((roleNames.size() == 0)||(roleNames == null)) return new ArrayList<MSentryPrivilege>();
     boolean rollbackTransaction = true;
@@ -625,7 +656,6 @@ public class SentryStore {
           filters.append(" && ((\"" + authHierarchy.getUri() + "\".startsWith(URI)) || (URI == null)) && (dbName == null)");
         }
       }
-      System.out.println("Filter String: " + filters.toString());
       query.setFilter(filters.toString());
       List<MSentryPrivilege> privileges = (List<MSentryPrivilege>) query.execute();
       rollbackTransaction = false;
@@ -799,16 +829,31 @@ public class SentryStore {
   public Set<String> listSentryPrivilegesForProvider(Set<String> groups,
       TSentryActiveRoleSet roleSet, TSentryAuthorizable authHierarchy) throws SentryInvalidInputException {
     Set<String> result = Sets.newHashSet();
-    Set<String> activeRoleNames = toTrimedLower(roleSet.getRoles());
-
-    Set<String> roleNamesForGroups = toTrimedLower(getRoleNamesForGroups(groups));
-    Set<String> rolesToQuery = roleSet.isAll() ? roleNamesForGroups : Sets.intersection(activeRoleNames, roleNamesForGroups);
+    Set<String> rolesToQuery = getRolesToQuery(groups, roleSet);
     List<MSentryPrivilege> mSentryPrivileges = getMSentryPrivileges(rolesToQuery, authHierarchy);
 
     for (MSentryPrivilege priv : mSentryPrivileges) {
       result.add(toAuthorizable(priv));
     }
+
     return result;
+  }
+
+
+  public boolean hasAnyServerPrivileges(Set<String> groups, TSentryActiveRoleSet roleSet, String server) {
+    Set<String> rolesToQuery = getRolesToQuery(groups, roleSet);
+    return hasAnyServerPrivileges(rolesToQuery, server);
+  }
+
+
+
+  private Set<String> getRolesToQuery(Set<String> groups,
+      TSentryActiveRoleSet roleSet) {
+    Set<String> activeRoleNames = toTrimedLower(roleSet.getRoles());
+
+    Set<String> roleNamesForGroups = toTrimedLower(getRoleNamesForGroups(groups));
+    Set<String> rolesToQuery = roleSet.isAll() ? roleNamesForGroups : Sets.intersection(activeRoleNames, roleNamesForGroups);
+    return rolesToQuery;
   }
 
   @VisibleForTesting
@@ -1010,4 +1055,6 @@ public class SentryStore {
     }
 
   }
+
+
 }
