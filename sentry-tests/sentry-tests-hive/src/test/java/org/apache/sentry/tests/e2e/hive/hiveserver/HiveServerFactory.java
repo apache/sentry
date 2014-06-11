@@ -141,11 +141,11 @@ public class HiveServerFactory {
       if (HiveServer2Type.InternalMetastore.equals(type)) {
         properties.put(METASTORE_URI,
           "thrift://localhost:" + String.valueOf(findPort()));
+        if (!properties.containsKey(METASTORE_HOOK)) {
+          properties.put(METASTORE_HOOK,
+              "org.apache.sentry.binding.metastore.MetastoreAuthzBinding");
+        }
       }
-    }
-    if (!properties.containsKey(METASTORE_HOOK)) {
-      properties.put(METASTORE_HOOK,
-          "org.apache.sentry.binding.metastore.MetastoreAuthzBinding");
     }
     if (!properties.containsKey(METASTORE_BYPASS)) {
       properties.put(METASTORE_BYPASS,
