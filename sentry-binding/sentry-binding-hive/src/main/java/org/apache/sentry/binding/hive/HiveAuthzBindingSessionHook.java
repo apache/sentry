@@ -54,7 +54,9 @@ public class HiveAuthzBindingSessionHook
     HiveAuthzConf.HIVE_ACCESS_CONF_URL,
     HiveAuthzConf.HIVE_SENTRY_CONF_URL,
     HiveAuthzConf.HIVE_ACCESS_SUBJECT_NAME,
-    HiveAuthzConf.HIVE_SENTRY_SUBJECT_NAME);
+    HiveAuthzConf.HIVE_SENTRY_SUBJECT_NAME,
+    HiveAuthzConf.SENTRY_ACTIVE_ROLE_SET
+    );
 
   /**
    * The session hook for sentry authorization that sets the required session level configuration
