@@ -53,6 +53,7 @@ public class ServiceConstants {
     public static final String SECURITY_MODE = "sentry.service.security.mode";
     public static final String SECURITY_MODE_KERBEROS = "kerberos";
     public static final String SECURITY_MODE_NONE = "none";
+    public static final String SECURITY_USE_UGI_TRANSPORT = "true";
     public static final String ADMIN_GROUPS = "sentry.service.admin.group";
     public static final String PRINCIPAL = "sentry.service.server.principal";
     public static final String KEY_TAB = "sentry.service.server.keytab";

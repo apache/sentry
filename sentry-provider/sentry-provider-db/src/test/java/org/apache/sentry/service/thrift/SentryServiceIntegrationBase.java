@@ -60,7 +60,9 @@ public abstract class SentryServiceIntegrationBase extends KerberosSecurityTestc
   protected static final String SERVER_PRINCIPAL = "sentry/" + SERVER_HOST;
   protected static final String SERVER_KERBEROS_NAME = "sentry/" + SERVER_HOST + "@" + REALM;
   protected static final String CLIENT_PRINCIPAL = "hive/" + SERVER_HOST;
-  protected static final String CLIENT_KERBEROS_NAME = "hive/" + SERVER_HOST + "@" + REALM;
+  protected static final String CLIENT_KERBEROS_SHORT_NAME = "hive";
+  protected static final String CLIENT_KERBEROS_NAME = CLIENT_KERBEROS_SHORT_NAME
+      + "/" + SERVER_HOST + "@" + REALM;
   protected static final String ADMIN_USER = "admin_user";
   protected static final String ADMIN_GROUP = "admin_group";
 
@@ -109,7 +111,7 @@ public abstract class SentryServiceIntegrationBase extends KerberosSecurityTestc
       kdc.createPrincipal(clientKeytab, CLIENT_PRINCIPAL);
       conf.set(ServerConfig.PRINCIPAL, getServerKerberosName());
       conf.set(ServerConfig.KEY_TAB, serverKeytab.getPath());
-      conf.set(ServerConfig.ALLOW_CONNECT, CLIENT_KERBEROS_NAME);
+      conf.set(ServerConfig.ALLOW_CONNECT, CLIENT_KERBEROS_SHORT_NAME);
     } else {
       LOGGER.info("Stopped KDC");
       conf.set(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_NONE);

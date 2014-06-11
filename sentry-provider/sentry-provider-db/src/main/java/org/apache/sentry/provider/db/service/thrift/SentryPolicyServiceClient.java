@@ -18,18 +18,22 @@
 
 package org.apache.sentry.provider.db.service.thrift;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.security.PrivilegedExceptionAction;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+
+import javax.security.auth.callback.CallbackHandler;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.SaslRpcServer;
 import org.apache.hadoop.security.SaslRpcServer.AuthMethod;
 import org.apache.hadoop.security.SecurityUtil;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.SentryUserException;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
@@ -50,7 +54,8 @@ import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Sets;
 
 public class SentryPolicyServiceClient {
 
@@ -64,6 +69,51 @@ public class SentryPolicyServiceClient {
   private static final Logger LOGGER = LoggerFactory
                                        .getLogger(SentryPolicyServiceClient.class);
   private static final String THRIFT_EXCEPTION_MESSAGE = "Thrift exception occured ";
+
+  /**
+   * This transport wraps the Sasl transports to set up the right UGI context for open().
+   */
+  public static class UgiSaslClientTransport extends TSaslClientTransport {
+    protected UserGroupInformation ugi = null;
+
+    public UgiSaslClientTransport(String mechanism, String authorizationId,
+        String protocol, String serverName, Map<String, String> props,
+        CallbackHandler cbh, TTransport transport, boolean wrapUgi)
+        throws IOException {
+      super(mechanism, authorizationId, protocol, serverName, props, cbh,
+          transport);
+      if (wrapUgi) {
+        ugi = UserGroupInformation.getCurrentUser();
+      }
+    }
+
+    // open the SASL transport with using the current UserGroupInformation
+    // This is needed to get the current login context stored
+    @Override
+    public void open() throws TTransportException {
+      if (ugi == null) {
+        baseOpen();
+      } else {
+        try {
+          ugi.doAs(new PrivilegedExceptionAction<Void>() {
+            public Void run() throws TTransportException {
+              baseOpen();
+              return null;
+            }
+          });
+        } catch (IOException e) {
+          throw new TTransportException("Failed to open SASL transport", e);
+        } catch (InterruptedException e) {
+          throw new TTransportException(
+              "Interrupted while opening underlying transport", e);
+        }
+      }
+    }
+
+    private void baseOpen() throws TTransportException {
+      super.open();
+    }
+  }
 
   public SentryPolicyServiceClient(Configuration conf) throws IOException {
     this.conf = conf;
@@ -88,9 +138,11 @@ public class SentryPolicyServiceClient {
       serverPrincipalParts = SaslRpcServer.splitKerberosName(serverPrincipal);
       Preconditions.checkArgument(serverPrincipalParts.length == 3,
            "Kerberos principal should have 3 parts: " + serverPrincipal);
-      transport = new TSaslClientTransport(
-          AuthMethod.KERBEROS.getMechanismName(), null, serverPrincipalParts[0],
-          serverPrincipalParts[1], ClientConfig.SASL_PROPERTIES, null, transport);
+      boolean wrapUgi = "true".equalsIgnoreCase(conf
+          .get(ServerConfig.SECURITY_USE_UGI_TRANSPORT));
+      transport = new UgiSaslClientTransport(AuthMethod.KERBEROS.getMechanismName(),
+          null, serverPrincipalParts[0], serverPrincipalParts[1],
+          ClientConfig.SASL_PROPERTIES, null, transport, wrapUgi);
     } else {
       serverPrincipalParts = null;
     }
