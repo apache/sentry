@@ -83,6 +83,26 @@ public class TestDbEndToEnd extends AbstractTestWithDbProvider {
   }
 
   @Test
+  public void testNonDefault() throws Exception {
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("CREATE database db1");
+    statement.execute("USE db1");
+    statement.execute("CREATE TABLE t1 (c1 string)");
+    statement.execute("CREATE ROLE user_role");
+    statement.execute("GRANT SELECT ON TABLE t1 TO ROLE user_role");
+    statement.execute("GRANT ROLE user_role TO GROUP " + USERGROUP1);
+    statement.close();
+    connection.close();
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+
+    statement.execute("SELECT * FROM db1.t1");
+    statement.close();
+    connection.close();
+  }
+
+  @Test
   public void testUPrivileges() throws Exception {
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
