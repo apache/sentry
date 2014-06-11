@@ -238,4 +238,19 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
     client.grantTablePrivilege(requestorUserName, roleName, "server", "db1", "table1", "ALL");
     assertEquals(1, client.listAllPrivilegesByRoleName(requestorUserName, roleName).size());
   }
+
+  // See SENTRY-181
+  @Test
+  public void testSameGrantTwice() throws Exception {
+    String requestorUserName = ADMIN_USER;
+    Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
+    setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+    writePolicyFile();
+    String roleName = "admin_r1";
+
+    client.createRole(requestorUserName, roleName);
+    client.grantTablePrivilege(requestorUserName, roleName, "server", "db1", "table1", "ALL");
+    client.grantTablePrivilege(requestorUserName, roleName, "server", "db1", "table1", "ALL");
+    assertEquals(1, client.listAllPrivilegesByRoleName(requestorUserName, roleName).size());
+  }
 }
