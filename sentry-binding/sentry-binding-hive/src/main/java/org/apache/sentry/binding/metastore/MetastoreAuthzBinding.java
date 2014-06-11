@@ -17,6 +17,7 @@
  */
 package org.apache.sentry.binding.metastore;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -251,7 +252,7 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
           .getHandler()
           .get_table(context.getPartition().getDbName(),
               context.getPartition().getTableName()).getSd().getLocation();
-      if (!partitionLocation.startsWith(tableLocation)) {
+      if (!partitionLocation.startsWith(tableLocation + File.separator)) {
         inputBuilder.addUriToOutput(getAuthServer(), context.getPartition()
           .getSd().getLocation());
       }
