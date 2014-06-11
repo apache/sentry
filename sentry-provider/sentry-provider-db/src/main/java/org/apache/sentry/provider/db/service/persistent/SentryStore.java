@@ -871,7 +871,7 @@ public class SentryStore {
         }
       }
     } else {
-      authorizable.add(KV_JOINER.join(AuthorizableType.URI.name(),
+      authorizable.add(KV_JOINER.join(AuthorizableType.URI.name().toLowerCase(),
           privilege.getURI()));
     }
     if (!Strings.nullToEmpty(privilege.getAction()).isEmpty()

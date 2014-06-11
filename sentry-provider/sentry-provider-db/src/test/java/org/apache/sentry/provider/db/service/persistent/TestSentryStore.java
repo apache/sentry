@@ -134,7 +134,7 @@ public class TestSentryStore {
         sentryStore.listSentryPrivilegesForProvider(new HashSet<String>(Arrays.asList("group1")), thriftRoleSet, tSentryAuthorizable);
 
     assertTrue(privs.size()==1);
-    assertTrue(privs.contains("server=server1->URI=" + uri + "->action=ALL"));
+    assertTrue(privs.contains("server=server1->uri=" + uri + "->action=ALL"));
   }
 
   @Test
