@@ -139,6 +139,7 @@ public abstract class SentryServiceIntegrationBase extends KerberosSecurityTestc
     // therefore we must manually login in the integration tests
     final SentryServiceClientFactory factory = new SentryServiceClientFactory();
     if (kerberos) {
+      conf.set(ServerConfig.SECURITY_USE_UGI_TRANSPORT, "false");
       clientSubject = new Subject(false, Sets.newHashSet(
           new KerberosPrincipal(CLIENT_KERBEROS_NAME)), new HashSet<Object>(),
         new HashSet<Object>());

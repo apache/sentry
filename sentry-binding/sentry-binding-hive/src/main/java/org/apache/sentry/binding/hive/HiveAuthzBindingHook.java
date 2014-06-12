@@ -65,7 +65,6 @@ import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
 import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.core.model.db.Table;
-import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -121,7 +120,6 @@ implements HiveDriverFilterHook {
             + " specifies a malformed URL '" + hiveAuthzConf + "'", e);
       }
     }
-    newAuthzConf.set(ServerConfig.SECURITY_USE_UGI_TRANSPORT, "true");
     return newAuthzConf;
   }
 

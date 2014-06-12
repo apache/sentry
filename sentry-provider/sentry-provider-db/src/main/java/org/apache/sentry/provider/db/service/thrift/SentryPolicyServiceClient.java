@@ -139,7 +139,7 @@ public class SentryPolicyServiceClient {
       Preconditions.checkArgument(serverPrincipalParts.length == 3,
            "Kerberos principal should have 3 parts: " + serverPrincipal);
       boolean wrapUgi = "true".equalsIgnoreCase(conf
-          .get(ServerConfig.SECURITY_USE_UGI_TRANSPORT));
+          .get(ServerConfig.SECURITY_USE_UGI_TRANSPORT, "true"));
       transport = new UgiSaslClientTransport(AuthMethod.KERBEROS.getMechanismName(),
           null, serverPrincipalParts[0], serverPrincipalParts[1],
           ClientConfig.SASL_PROPERTIES, null, transport, wrapUgi);
