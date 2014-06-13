@@ -18,6 +18,7 @@
 
 package org.apache.sentry.tests.e2e.metastore;
 
+import org.apache.sentry.provider.file.PolicyFile;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -29,7 +30,6 @@ import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.Partition;
 import org.apache.hadoop.hive.metastore.api.Table;
-import org.apache.sentry.tests.e2e.dbprovider.PolicyProviderForTest;
 import org.apache.sentry.tests.e2e.hive.Context;
 import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
@@ -42,15 +42,14 @@ import com.google.common.collect.Lists;
 public class TestMetastoreEndToEnd extends
     AbstractMetastoreTestWithStaticConfiguration {
 
-  private PolicyProviderForTest policyFile;
+  private PolicyFile policyFile;
   private static final String dbName = "db_1";
   private static final String db_all_role = "all_db1";
   private static final String uri_role = "uri_role";
 
   @Before
   public void setup() throws Exception {
-    context = createContext();
-    policyFile = PolicyProviderForTest.setAdminOnServer1(ADMINGROUP);
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
     policyFile
         .addRolesToGroup(USERGROUP1, db_all_role)
         .addRolesToGroup(USERGROUP2, "read_db_role")

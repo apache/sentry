@@ -20,8 +20,10 @@ package org.apache.sentry.tests.e2e.dbprovider;
 import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.provider.db.SentryAlreadyExistsException;
 import org.apache.sentry.provider.db.SentryNoSuchObjectException;
+import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
+import org.junit.After;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -30,24 +32,52 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-public class TestDatabaseProvider extends AbstractTestWithDbProvider {
+public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
 
-  @Before
-  public void setup() throws Exception {
-    createContext();
+  @BeforeClass
+  public static void setupTestStaticConfiguration() throws Exception{
+    useSentryService = true;
+    AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
   }
 
   /**
    * This test is only used for manual testing of beeline with Sentry Service
    * @throws Exception
    */
+  @Override
+  @After
+  public void clearDB() throws Exception {
+    Connection connection;
+    Statement statement;
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    ResultSet resultSet;
+    resultSet = statement.executeQuery("SHOW roles");
+    List<String> roles = new ArrayList<String>();
+    while ( resultSet.next()) {
+      roles.add(resultSet.getString(1));
+    }
+    for(String role:roles) {
+      statement.execute("DROP Role " + role);
+    }
+
+    statement.close();
+    connection.close();
+    if (context != null) {
+      context.close();
+    }
+  }
+
   @Ignore
   @Test
   public void beelineTest() throws Exception{
@@ -90,7 +120,16 @@ public class TestDatabaseProvider extends AbstractTestWithDbProvider {
   /**
    * Grant/Revoke privilege - Positive cases
    * @throws Exception
-   */
+    1.1. All on server
+    1.2. All on database
+    1.3. All on URI
+    1.4. All on table
+    1.5. Insert on table
+    1.6. Select on table
+    1.7. Partial privileges on table
+    1.7.1. Grant all, revoke insert leads to select on table
+    1.7.2. Grant all, revoke select leads to select on table
+     */
   @Test
   public void testGrantRevokePrivileges() throws Exception {
     Connection connection;
@@ -274,7 +313,6 @@ public class TestDatabaseProvider extends AbstractTestWithDbProvider {
       assertThat(resultSet.getString(10), equalToIgnoringCase(ADMIN1));//grantor
 
     }
-
     statement.close();
     connection.close();
   }
@@ -306,6 +344,22 @@ public class TestDatabaseProvider extends AbstractTestWithDbProvider {
   /**
    * Corner cases
    * @throws Exception
+    7.1. Drop role which doesn't exist, throws SentryNoSuchObjectException
+    7.2. Create role which already exists, throws SentryAlreadyExitsException
+    7.3. Drop role when privileges mapping exists and create role with same name, old
+    mappings should not exist
+    7.4. Grant role, when role doesn't exist, throws SentryNoSuchObjectException
+    7.5. Grant role when mapping exists, silently allows
+    7.6. Grant multiple roles to a group
+    7.7. Revoke role after role has been dropped, SentryNoSuchObjectException
+    7.8. Revoke role from a group when mapping doesn't exist, silently allows
+    7.9. Grant privilege to a role, privilege already exists, silently allows
+    7.10. Grant privilege to a role, mapping already exists, silently allows
+    7.11. Multiple privileges to a role
+    7.12. Revoke privilege when privilege doesn't exist, silently allows
+    7.13. Revoke privilege, when role doesn't exist, SentryNoSuchObjectException
+    7.14. Revoke privilege when mapping doesn't exist, silently allows
+    7.15. Drop role should remove role-group mapping
    */
   @Test
   public void testCornerCases() throws Exception {
@@ -409,10 +463,20 @@ public class TestDatabaseProvider extends AbstractTestWithDbProvider {
     statement.execute("REVOKE ALL on TABLE tab1 from Role role1");
     resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
     assertResultSize(resultSet, 1);
+    statement.execute("DROP role role2");
+
+    //Drop role should remove role-group mapping
+    //state: role1 -> grant all on server
+    statement.execute("GRANT ROLE role1 to GROUP " + USERGROUP1);
+    statement.execute("DROP ROLE role1");
+    resultSet = statement.executeQuery("SHOW ROLE GRANT GROUP " + USERGROUP1);
+    assertResultSize(resultSet, 0);
   }
   /**
    * SHOW ROLES
    * @throws Exception
+   3.1. When there are no roles, returns empty list
+   3.2. When there are roles, returns correct list with correct schema.
    */
   @Test
   public void testShowRoles() throws Exception {
@@ -441,13 +505,17 @@ public class TestDatabaseProvider extends AbstractTestWithDbProvider {
   /**
    * SHOW ROLE GRANT GROUP groupName
    * @throws Exception
+   4.1. When there are no roles and group, throws SentryNoSuchObjectException
+   4.2. When there are roles, returns correct list with correct schema.
    */
   @Test
   public void testShowRolesByGroup() throws Exception {
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    context.assertSentryException(statement,"SHOW ROLE GRANT GROUP " + ADMINGROUP,
-        SentryNoSuchObjectException.class.getSimpleName());
+    //This is non deterministic as we are now using same sentry service across the tests
+    // and orphan groups are not cleaned up.
+    //context.assertSentryException(statement,"SHOW ROLE GRANT GROUP " + ADMINGROUP,
+    //    SentryNoSuchObjectException.class.getSimpleName());
     statement.execute("CREATE ROLE role1");
     statement.execute("CREATE ROLE role2");
     statement.execute("CREATE ROLE role3");
@@ -474,7 +542,18 @@ public class TestDatabaseProvider extends AbstractTestWithDbProvider {
   /**
    * SHOW GRANT ROLE roleName
    * @throws Exception
-   */
+    5.1. When there are no privileges granted to a role, returns an empty list
+    5.2. When there are privileges, returns correct list with correct schema.
+    5.3. Given privileges on table, show grant on table should return table privilege.
+    5.4. Privileges on database
+    5.4.1. Show grant on database should return correct priv
+    5.4.2. Show grant on table should return correct priv
+    5.5. Privileges on server
+    5.5.1. Show grant on database should return correct priv
+    5.5.2. Show grant on table should return correct priv
+    5.5.3. Show grant on server should return correct priv (sql not supported yet in hive)
+    5.6. Show grant on uri (sql not supported yet in hive)
+  */
   @Test
   public void testShowPrivilegesByRole() throws Exception {
     Connection connection = context.createConnection(ADMIN1);

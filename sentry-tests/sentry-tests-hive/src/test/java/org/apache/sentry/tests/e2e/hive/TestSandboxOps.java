@@ -29,15 +29,13 @@ import java.sql.Statement;
 import org.apache.hadoop.fs.Path;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.provider.file.PolicyFiles;
-import org.apache.sentry.tests.e2e.dbprovider.PolicyProviderForTest;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.io.Resources;
 
 public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
-  private PolicyProviderForTest policyFile;
+  private PolicyFile policyFile;
   private File dataFile;
   private String loadData;
   private static final String DB2_POLICY_FILE = "db2-policy-file.ini";
@@ -45,20 +43,12 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
 
   @Before
   public void setup() throws Exception {
-    context = createContext();
     dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
-    policyFile = PolicyProviderForTest.setAdminOnServer1(ADMINGROUP);
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
     loadData = "server=server1->uri=file://" + dataFile.getPath();
-  }
-
-  @After
-  public void tearDown() throws Exception {
-    if (context != null) {
-      context.close();
-    }
   }
 
   private PolicyFile addTwoUsersWithAllDb() throws Exception {

@@ -61,6 +61,12 @@ public class PolicyFile {
   protected final Multimap<String, String> rolesToPermissions = ArrayListMultimap
       .create();
 
+  public Multimap<String, String> getGroupsToRoles() {
+    return groupsToRoles;
+  }
+  public Multimap<String, String> getRolesToPermissions() {
+    return rolesToPermissions;
+  }
   public PolicyFile addRolesToGroup(String groupName, String... roleNames)
       throws Exception {
     return addRolesToGroup(groupName, false, roleNames);

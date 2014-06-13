@@ -449,5 +449,68 @@ limitations under the License.
       </plugins>
      </build>
    </profile>
+   <profile>
+     <id>cluster-hadoop-provider-db</id>
+     <build>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-enforcer-plugin</artifactId>
+          <version>1.0</version>
+          <executions>
+            <execution>
+              <id>enforce-property</id>
+              <goals>
+                <goal>enforce</goal>
+              </goals>
+              <configuration>
+                <rules>
+                  <requireProperty>
+                    <property>HADOOP_CONF_DIR</property>
+                    <message>HADOOP_CONF_DIR env. variable has to be set</message>
+                  </requireProperty>
+                  <requireProperty>
+                    <property>HIVE_CONF_DIR</property>
+                    <message>HIVE_CONF_DIR env. variable has to be set</message>
+                  </requireProperty>
+                </rules>
+                <fail>true</fail>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <buildDirectory>${project.build.directory}</buildDirectory>
+          </systemPropertyVariables>
+        <additionalClasspathElements>
+          <additionalClasspathElement>${HIVE_CONF_DIR}</additionalClasspathElement>
+          <additionalClasspathElement>${HADOOP_CONF_DIR}</additionalClasspathElement>
+        </additionalClasspathElements>
+        <includes>
+          <include>**/TestDbCrossDbOps.java</include>
+          <include>**/TestDbEndToEnd.java</include>
+          <include>**/TestDbMetadataObjectRetrieval.java</include>
+          <include>**/TestDbMetadataPermissions.java</include>
+          <include>**/TestDbMovingToProduction.java</include>
+          <include>**/TestDbPerDatabasePolicyFile.java</include>
+          <include>**/TestDbPrivilegeAtTransform.java</include>
+          <include>**/TestDbPrivilegesAtDatabaseScope.java</include>
+          <include>**/TestDbPrivilegesAtTableScope.java</include>
+          <include>**/TestDbSandboxOps.java</include>
+          <include>**/TestDbExportImportPrivileges.java</include>
+          <include>**/TestDbUriPermissions.java</include>
+          <include>**/TestDbRuntimeMetadataRetrieval.java</include>
+          <include>**/TestDbPrivilegesAtFunctionScope.java</include>
+        </includes>
+        <argLine>-Dsentry.e2etest.hiveServer2Type=UnmanagedHiveServer2 -Dsentry.e2etest.DFSType=ClusterDFS -Dsentry.e2etest.external.sentry=true</argLine>
+       </configuration>
+      </plugin>
+      </plugins>
+     </build>
+   </profile>
   </profiles>
 </project>

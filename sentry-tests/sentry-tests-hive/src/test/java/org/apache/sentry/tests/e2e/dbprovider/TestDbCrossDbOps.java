@@ -19,18 +19,23 @@ package org.apache.sentry.tests.e2e.dbprovider;
 
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 import org.apache.sentry.tests.e2e.hive.TestCrossDbOps;
+import org.junit.Before;
 import org.junit.BeforeClass;
 
 /* Tests privileges at table scope with cross database access */
 
 public class TestDbCrossDbOps extends TestCrossDbOps {
 
+  @Override
+  @Before
+  public void setup() throws Exception {
+    super.setupAdmin();
+    super.setup();
+  }
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception{
-    policy_on_hdfs = true;
+    //policy_on_hdfs = true;
     useSentryService = true;
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
-    PolicyProviderForTest.setSentryClient(AbstractTestWithStaticConfiguration
-        .getSentryClient());
   }
 }

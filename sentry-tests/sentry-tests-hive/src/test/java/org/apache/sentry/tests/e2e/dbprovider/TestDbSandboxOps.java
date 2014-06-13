@@ -20,17 +20,24 @@ import static org.junit.Assert.assertTrue;
 
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 import org.apache.sentry.tests.e2e.hive.TestSandboxOps;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
 public class TestDbSandboxOps extends TestSandboxOps {
+  @Override
+  @Before
+  public void setup() throws Exception {
+    super.setupAdmin();
+    super.setup();
+  }
+
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception {
     useSentryService = true;
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
-    PolicyProviderForTest.setSentryClient(AbstractTestWithStaticConfiguration
-        .getSentryClient());
+
   }
 
   @Ignore

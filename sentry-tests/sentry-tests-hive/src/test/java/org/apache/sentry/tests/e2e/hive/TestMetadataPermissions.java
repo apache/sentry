@@ -21,20 +21,17 @@ import java.sql.Statement;
 
 import junit.framework.Assert;
 
-import org.apache.sentry.tests.e2e.dbprovider.PolicyProviderForTest;
-import org.junit.After;
+import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.Before;
 import org.junit.Test;
 
 
 public class TestMetadataPermissions extends AbstractTestWithStaticConfiguration {
-  private Context context;
-  private PolicyProviderForTest policyFile;
+  private PolicyFile policyFile;
 
   @Before
   public void setup() throws Exception {
-    context = createContext();
-    policyFile = PolicyProviderForTest.setAdminOnServer1(ADMINGROUP);
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
 
     policyFile
         .addRolesToGroup(USERGROUP1, "db1_all", "db2_all")
@@ -54,13 +51,6 @@ public class TestMetadataPermissions extends AbstractTestWithStaticConfiguration
       for (String tabName : new String[] { "tab1", "tab2" }) {
         adminStmt.execute("CREATE TABLE " + tabName + " (id int)");
       }
-    }
-  }
-
-  @After
-  public void tearDown() throws Exception {
-    if (context != null) {
-      context.close();
     }
   }
 

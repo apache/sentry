@@ -25,36 +25,25 @@ import java.sql.Statement;
 import com.google.common.io.Resources;
 import junit.framework.Assert;
 
-import org.apache.sentry.tests.e2e.dbprovider.PolicyProviderForTest;
+import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
-  private Context context;
-  private PolicyProviderForTest policyFile;
+  private PolicyFile policyFile;
   private File dataFile;
   private String loadData;
 
   @Before
   public void setup() throws Exception {
-    context = createContext();
-    policyFile = PolicyProviderForTest.setAdminOnServer1(ADMINGROUP);
     dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
-    policyFile = PolicyProviderForTest.setAdminOnServer1(ADMINGROUP);
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
     loadData = "server=server1->uri=file://" + dataFile.getPath();
 
-  }
-
-  @After
-  public void tearDown() throws Exception {
-    if (context != null) {
-      context.close();
-    }
   }
 
   // test load data into table
@@ -88,7 +77,7 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
     userConn = context.createConnection(USER1_1);
     userStmt = context.createStatement(userConn);
     userStmt.execute("use " + dbName);
-    userStmt.execute("load data local inpath 'file://" + dataFile.toString() +
+    userStmt.execute("load data local inpath 'file://" + dataFile.getPath() +
         "' into table " + tabName);
     userStmt.execute("select * from " + tabName + " limit 1");
     ResultSet res = userStmt.getResultSet();
@@ -100,7 +89,7 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
     userConn = context.createConnection(USER2_1);
     userStmt = context.createStatement(userConn);
     userStmt.execute("use " + dbName);
-    context.assertAuthzException(userStmt, "load data local inpath '" + dataFile.toString() +
+    context.assertAuthzException(userStmt, "load data local inpath 'file://" + dataFile.getPath() +
         "' into table " + tabName);
     userStmt.close();
     userConn.close();

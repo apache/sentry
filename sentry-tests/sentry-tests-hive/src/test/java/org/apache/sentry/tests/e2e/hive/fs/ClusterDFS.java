@@ -37,6 +37,7 @@ public class ClusterDFS extends AbstractDFS{
   ClusterDFS() throws Exception{
     ugi = UserGroupInformation.loginUserFromKeytabAndReturnUGI(testUser, KEYTAB_LOCATION + "/" + testUser + ".keytab");
     fileSystem = getFS(ugi);
+    LOGGER.info("File system uri for policy files: " + fileSystem.getUri());
     LOGGER.info("Creating basedir as user : " + testUser);
     String policyDir = System.getProperty("sentry.e2etest.hive.policy.location", "/user/hive/sentry");
     sentryDir = super.assertCreateDfsDir(new Path(fileSystem.getUri() + policyDir));

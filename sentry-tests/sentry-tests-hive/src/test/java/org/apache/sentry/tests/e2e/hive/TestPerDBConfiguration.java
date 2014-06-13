@@ -41,14 +41,12 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
   private static final String MULTI_TYPE_DATA_FILE_NAME = "emp.dat";
   private static final String DB2_POLICY_FILE = "db2-policy-file.ini";
 
-  private Context context;
   private File dataFile;
   private PolicyFile policyFile;
   private static String prefix;
 
   @Before
   public void setup() throws Exception {
-    context = createContext();
     policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
 
     File dataDir = context.getDataDir();
@@ -73,9 +71,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
   public void teardown() throws Exception {
     // one test turns this on so let's disable it in the teardown method
     System.setProperty(SimpleDBPolicyEngine.ACCESS_ALLOW_URI_PER_DB_POLICYFILE, "false");
-    if (context != null) {
-      context.close();
-    }
+    clearDB();
   }
 
   @Test

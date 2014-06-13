@@ -25,8 +25,6 @@ import java.sql.Connection;
 import java.sql.Statement;
 
 import org.apache.sentry.provider.file.PolicyFile;
-import org.apache.sentry.tests.e2e.dbprovider.PolicyProviderForTest;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -41,20 +39,12 @@ public class TestPrivilegeAtTransform extends AbstractTestWithStaticConfiguratio
   @Override
   @Before
   public void setup() throws Exception {
-    context = createContext();
     dataDir = context.getDataDir();
     dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
-    policyFile = PolicyProviderForTest.setAdminOnServer1(ADMINGROUP);
-  }
-
-  @After
-  public void tearDown() throws Exception {
-    if (context != null) {
-      context.close();
-    }
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
   }
 
   /**

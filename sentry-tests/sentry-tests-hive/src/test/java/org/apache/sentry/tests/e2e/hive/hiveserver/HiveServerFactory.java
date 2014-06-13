@@ -163,6 +163,7 @@ public class HiveServerFactory {
       Assert.fail("Path to hadoop bin " + hadoopBin.getPath() + " is invalid. "
           + "Perhaps you missed the download-hadoop profile.");
     }
+
     /*
      * This hack, setting the hiveSiteURL field removes a previous hack involving
      * setting of system properties for each property. Although both are hacks,

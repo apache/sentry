@@ -17,6 +17,7 @@ printf_test_3 * Licensed to the Apache Software Foundation (ASF) under one or mo
 
 package org.apache.sentry.tests.e2e.hive;
 
+import org.apache.sentry.provider.file.PolicyFile;
 import static org.junit.Assert.assertFalse;
 
 import java.io.File;
@@ -26,8 +27,6 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import org.apache.sentry.tests.e2e.dbprovider.PolicyProviderForTest;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -37,25 +36,17 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private File dataDir;
   private File dataFile;
-  private PolicyProviderForTest policyFile;
+  private PolicyFile policyFile;
 
   @Before
   public void setup() throws Exception {
-    context = createContext();
     dataDir = context.getDataDir();
     dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
-    policyFile = PolicyProviderForTest.setAdminOnServer1(ADMINGROUP);
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
 
-  }
-
-  @After
-  public void tearDown() throws Exception {
-    if (context != null) {
-      context.close();
-    }
   }
 
   /**

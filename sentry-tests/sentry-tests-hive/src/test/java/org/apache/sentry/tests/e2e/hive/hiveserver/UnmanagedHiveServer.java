@@ -108,5 +108,6 @@ public class UnmanagedHiveServer implements HiveServer {
   }
   public void kinit(String user) throws Exception{
     UserGroupInformation.loginUserFromKeytab(user, KEYTAB_LOCATION + "/" + user + ".keytab");
+    LOGGER.info("Kinited user: "+ user+" keytab: "+KEYTAB_LOCATION+"/"+user+".keytab");
   }
 }

@@ -18,16 +18,22 @@ package org.apache.sentry.tests.e2e.dbprovider;
 
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 import org.apache.sentry.tests.e2e.hive.TestPrivilegesAtFunctionScope;
+import org.junit.Before;
 import org.junit.BeforeClass;
 
 public class TestDbPrivilegesAtFunctionScope extends
     TestPrivilegesAtFunctionScope {
+  @Override
+  @Before
+  public void setup() throws Exception {
+    super.setupAdmin();
+    super.setup();
+  }
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception {
     useSentryService = true;
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
-    PolicyProviderForTest.setSentryClient(AbstractTestWithStaticConfiguration
-        .getSentryClient());
+
   }
 
 }

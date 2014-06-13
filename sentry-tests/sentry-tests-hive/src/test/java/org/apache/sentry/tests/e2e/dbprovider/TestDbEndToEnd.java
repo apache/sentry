@@ -18,6 +18,7 @@
 package org.apache.sentry.tests.e2e.dbprovider;
 
 import org.apache.sentry.provider.db.SentryAccessDeniedException;
+import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -29,24 +30,32 @@ import java.sql.Statement;
 
 import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.io.Resources;
 
-public class TestDbEndToEnd extends AbstractTestWithDbProvider {
+public class TestDbEndToEnd extends AbstractTestWithStaticConfiguration {
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private File dataFile;
   private PolicyFile policyFile;
 
+  @BeforeClass
+  public static void setupTestStaticConfiguration() throws Exception{
+    useSentryService = true;
+    AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
+  }
+
+  @Override
   @Before
   public void setup() throws Exception {
-    createContext();
+    super.setupAdmin();
+    super.setup();
     dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
     policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
-    setupAdmin(context);
   }
 
   @Test

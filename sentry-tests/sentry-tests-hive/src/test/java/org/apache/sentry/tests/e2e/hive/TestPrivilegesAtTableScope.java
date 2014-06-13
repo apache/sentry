@@ -17,6 +17,7 @@
 
 package org.apache.sentry.tests.e2e.hive;
 
+import org.apache.sentry.provider.file.PolicyFile;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -30,8 +31,6 @@ import java.sql.Statement;
 
 import junit.framework.Assert;
 
-import org.apache.sentry.tests.e2e.dbprovider.PolicyProviderForTest;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -42,23 +41,14 @@ import com.google.common.io.Resources;
 
 public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfiguration {
 
-  private Context context;
-  private PolicyProviderForTest policyFile;
+  private PolicyFile policyFile;
 
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private final String MULTI_TYPE_DATA_FILE_NAME = "emp.dat";
 
   @Before
   public void setup() throws Exception {
-    context = createContext();
-    policyFile = PolicyProviderForTest.setAdminOnServer1(ADMINGROUP);
-  }
-
-  @After
-  public void teardown() throws Exception {
-    if (context != null) {
-      context.close();
-    }
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
   }
 
   /*

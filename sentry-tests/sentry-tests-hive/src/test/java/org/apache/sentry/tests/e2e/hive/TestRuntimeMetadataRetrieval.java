@@ -26,8 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.sentry.tests.e2e.dbprovider.PolicyProviderForTest;
-import org.junit.After;
+import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -40,28 +39,19 @@ import com.google.common.io.Resources;
  * statements are validaed via a runtime fetch hook
  */
 public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfiguration {
-  private Context context;
-  private PolicyProviderForTest policyFile;
+  private PolicyFile policyFile;
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private File dataDir;
   private File dataFile;
 
   @Before
   public void setup() throws Exception {
-    context = createContext();
     dataDir = context.getDataDir();
     dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
-    policyFile = PolicyProviderForTest.setAdminOnServer1(ADMINGROUP);
-  }
-
-  @After
-  public void tearDown() throws Exception {
-    if (context != null) {
-      context.close();
-    }
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
   }
 
   /**
@@ -249,7 +239,6 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
     String tableNames[] = {"tb_1", "tb_2", "tb_3", "tb_4"};
 
     policyFile
-        .addRolesToGroup(USERGROUP1, "db_priv")
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
     Connection connection = context.createConnection(ADMIN1);

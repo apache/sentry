@@ -16,6 +16,7 @@
  */
 package org.apache.sentry.tests.e2e.hive;
 
+import org.apache.sentry.provider.file.PolicyFile;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -24,8 +25,6 @@ import java.sql.Connection;
 import java.sql.Statement;
 
 import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.sentry.tests.e2e.dbprovider.PolicyProviderForTest;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -33,23 +32,15 @@ import com.google.common.io.Resources;
 
 public class TestExportImportPrivileges extends AbstractTestWithStaticConfiguration {
   private File dataFile;
-  private PolicyProviderForTest policyFile;
+  private PolicyFile policyFile;
 
   @Before
   public void setup() throws Exception {
-    context = createContext();
     dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
-    policyFile = PolicyProviderForTest.setAdminOnServer1(ADMINGROUP);
-  }
-
-  @After
-  public void tearDown() throws Exception {
-    if (context != null) {
-      context.close();
-    }
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
   }
 
   @Test

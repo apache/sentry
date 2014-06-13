@@ -19,7 +19,6 @@ package org.apache.sentry.tests.e2e.hive;
 
 import com.google.common.io.Resources;
 import org.apache.sentry.provider.file.PolicyFile;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -37,19 +36,12 @@ public class TestPerDatabasePolicyFile extends AbstractTestWithStaticConfigurati
   @Before
   public void setup() throws Exception {
     policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
-    context = createContext();
+    writePolicyFile(policyFile);
     dataDir = context.getDataDir();
     dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
-  }
-
-  @After
-  public void teardown() throws Exception {
-    if (context != null) {
-      context.close();
-    }
   }
 
   private void createSampleDbTable(Statement statement, String db, String table)

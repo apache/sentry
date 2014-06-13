@@ -17,6 +17,7 @@
 
 package org.apache.sentry.tests.e2e.hive;
 
+import org.apache.sentry.provider.file.PolicyFile;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -26,8 +27,6 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
-import org.apache.sentry.tests.e2e.dbprovider.PolicyProviderForTest;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -35,24 +34,16 @@ import com.google.common.io.Resources;
 
 public class TestMovingToProduction extends AbstractTestWithStaticConfiguration {
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
-  private PolicyProviderForTest policyFile;
+  private PolicyFile policyFile;
 
 
   @Before
   public void setUp() throws Exception {
-    context = createContext();
     File dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
-    policyFile = PolicyProviderForTest.setAdminOnServer1(ADMINGROUP);
-  }
-
-  @After
-  public void tearDown() throws Exception {
-    if (context != null) {
-      context.close();
-    }
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
   }
 
   /**
@@ -74,7 +65,7 @@ public class TestMovingToProduction extends AbstractTestWithStaticConfiguration 
   @Test
   public void testMovingTable1() throws Exception {
     policyFile
-        .addRolesToGroup(USERGROUP1, "all_db1", "load_data", "select_proddb_tbl1", "insert_proddb_tbl1")
+        .addRolesToGroup(USERGROUP1, "all_db1", "load_data")
         .addPermissionsToRole("load_data", "server=server1->uri=file://" + dataDir.getPath())
         .addPermissionsToRole("all_db1", "server=server1->db=db_1")
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
@@ -107,6 +98,7 @@ public class TestMovingToProduction extends AbstractTestWithStaticConfiguration 
         + "' INTO TABLE " + tableName1);
 
     policyFile
+        .addRolesToGroup(USERGROUP1, "insert_proddb_tbl1")
         .addPermissionsToRole("insert_proddb_tbl1", "server=server1->db=proddb->table=tb_1->action=insert");
     writePolicyFile(policyFile);
     statement.execute("USE " + dbName2);
@@ -116,6 +108,7 @@ public class TestMovingToProduction extends AbstractTestWithStaticConfiguration 
 
     // b
     policyFile
+        .addRolesToGroup(USERGROUP1, "select_proddb_tbl1")
         .addPermissionsToRole("select_proddb_tbl1", "server=server1->db=proddb->table=tb_1->action=select");
     writePolicyFile(policyFile);
 
@@ -156,7 +149,7 @@ public class TestMovingToProduction extends AbstractTestWithStaticConfiguration 
   @Test
   public void testMovingTable2() throws Exception {
     policyFile
-        .addRolesToGroup(USERGROUP1, "all_db1", "load_data", "select_proddb_tbl1", "insert_proddb_tbl1")
+        .addRolesToGroup(USERGROUP1, "all_db1", "load_data")
         .addPermissionsToRole("all_db1", "server=server1->db=db_1")
         .addPermissionsToRole("load_data", "server=server1->uri=file://" + dataDir.getPath())
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
@@ -187,6 +180,7 @@ public class TestMovingToProduction extends AbstractTestWithStaticConfiguration 
         + "' INTO TABLE " + dbName1 + "." + tableName1);
 
     policyFile
+        .addRolesToGroup(USERGROUP1, "insert_proddb_tbl1")
         .addPermissionsToRole("insert_proddb_tbl1", "server=server1->db=proddb->table=tb_1->action=insert");
     writePolicyFile(policyFile);
 
@@ -196,6 +190,7 @@ public class TestMovingToProduction extends AbstractTestWithStaticConfiguration 
 
     // b
     policyFile
+        .addRolesToGroup(USERGROUP1, "select_proddb_tbl1")
         .addPermissionsToRole("select_proddb_tbl1", "server=server1->db=proddb->table=tb_1->action=select");
     writePolicyFile(policyFile);
 

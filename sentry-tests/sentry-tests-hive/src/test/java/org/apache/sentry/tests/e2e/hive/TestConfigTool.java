@@ -46,7 +46,6 @@ public class TestConfigTool extends AbstractTestWithStaticConfiguration {
 
   @Before
   public void setup() throws Exception {
-    context = createContext();
     policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
     configTool = new SentryConfigTool();
     String hiveServer2 = System.getProperty("sentry.e2etest.hiveServer2Type",
@@ -62,13 +61,6 @@ public class TestConfigTool extends AbstractTestWithStaticConfiguration {
       prefix = "file://" + context.getPolicyFile().getParent() + "/";
     }
 
-  }
-
-  @After
-  public void tearDown() throws Exception {
-    if (context != null) {
-      context.close();
-    }
   }
 
   /**

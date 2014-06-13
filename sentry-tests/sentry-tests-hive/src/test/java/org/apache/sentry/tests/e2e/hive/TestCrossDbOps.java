@@ -17,6 +17,7 @@
 
 package org.apache.sentry.tests.e2e.hive;
 
+import org.apache.sentry.provider.file.PolicyFile;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -32,8 +33,6 @@ import java.util.List;
 
 import junit.framework.Assert;
 
-import org.apache.sentry.tests.e2e.dbprovider.PolicyProviderForTest;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -44,7 +43,7 @@ import com.google.common.io.Resources;
 
 public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
   private File dataFile;
-  private PolicyProviderForTest policyFile;
+  private PolicyFile policyFile;
   private String loadData;
 
   @BeforeClass
@@ -55,23 +54,15 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
 
   @Before
   public void setup() throws Exception {
-    context = createContext();
     File dataDir = context.getDataDir();
     // copy data file to test dir
     dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
-    policyFile = PolicyProviderForTest.setAdminOnServer1(ADMINGROUP);
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
     loadData = "server=server1->uri=file://" + dataFile.getPath();
 
-  }
-
-  @After
-  public void tearDown() throws Exception {
-    if (context != null) {
-      context.close();
-    }
   }
 
   /*

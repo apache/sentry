@@ -18,6 +18,7 @@
 
 package org.apache.sentry.tests.e2e.metastore;
 
+import org.apache.sentry.provider.file.PolicyFile;
 import static org.junit.Assert.assertEquals;
 
 import java.io.File;
@@ -28,7 +29,6 @@ import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hive.hcatalog.pig.HCatStorer;
 import org.apache.pig.ExecType;
 import org.apache.pig.PigServer;
-import org.apache.sentry.tests.e2e.dbprovider.PolicyProviderForTest;
 import org.apache.sentry.tests.e2e.hive.Context;
 import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 import org.junit.Before;
@@ -38,7 +38,7 @@ import com.google.common.io.Resources;
 
 public class TestMetaStoreWithPigHCat extends
     AbstractMetastoreTestWithStaticConfiguration {
-  private PolicyProviderForTest policyFile;
+  private PolicyFile policyFile;
   private File dataFile;
   private static final String dbName = "db_1";
   private static final String db_all_role = "all_db1";
@@ -46,13 +46,12 @@ public class TestMetaStoreWithPigHCat extends
 
   @Before
   public void setup() throws Exception {
-    context = createContext();
     dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
 
-    policyFile = PolicyProviderForTest.setAdminOnServer1(ADMINGROUP);
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
     policyFile
         .addRolesToGroup(USERGROUP1, db_all_role)
         .addRolesToGroup(USERGROUP2, "read_db_role")
