@@ -83,7 +83,7 @@ public class SentryPolicyServiceClient {
       super(mechanism, authorizationId, protocol, serverName, props, cbh,
           transport);
       if (wrapUgi) {
-        ugi = UserGroupInformation.getCurrentUser();
+        ugi = UserGroupInformation.getLoginUser();
       }
     }
 
