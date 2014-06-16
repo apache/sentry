@@ -70,18 +70,7 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
   public void testImpersonationIsDisabled() throws Exception {
     properties.put(HiveServerFactory.ACCESS_TESTING_MODE, "false");
     properties.put("hive.server2.enable.impersonation", "true");
-    context = createContext(properties);
-    policyFile
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
-        .write(context.getPolicyFile());
-    Connection connection = context.createConnection(ADMIN1);
-    Statement statement = context.createStatement(connection);
-    try {
-      statement.execute("create table test (a string)");
-      Assert.fail("Expected SQLException");
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
+    verifyInvalidConfigurationException();
   }
 
   /**
@@ -91,18 +80,21 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
   public void testAuthenticationIsStrong() throws Exception {
     properties.put(HiveServerFactory.ACCESS_TESTING_MODE, "false");
     properties.put("hive.server2.authentication", "NONE");
+    verifyInvalidConfigurationException();
+  }
+
+  private void verifyInvalidConfigurationException() throws Exception{
     context = createContext(properties);
     policyFile
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
-    System.out.println(Files.toString(context.getPolicyFile(), Charsets.UTF_8));
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     try {
       statement.execute("create table test (a string)");
       Assert.fail("Expected SQLException");
     } catch (SQLException e) {
-      context.verifyAuthzException(e);
+      context.verifyInvalidConfigurationException(e);
     }
   }
 

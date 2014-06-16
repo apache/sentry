@@ -17,6 +17,7 @@
 
 package org.apache.sentry.tests.e2e.hive;
 
+import org.apache.sentry.binding.hive.conf.InvalidConfigurationException;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -63,6 +64,7 @@ public class Context {
   public static final String AUTHZ_LINK_FAILURE_SQL_STATE = "08S01";
   public static final String AUTHZ_EXCEPTION_ERROR_MSG = "No valid privileges";
   private static final String METASTORE_AUTH_ERROR_MSG = "does not have privileges";
+  private static final String INVALID_CONFIG_ERROR_MSG = InvalidConfigurationException.class.getSimpleName();
 
   private final HiveServer hiveServer;
   private final FileSystem fileSystem;
@@ -259,11 +261,11 @@ public class Context {
         .createRemoteUser(userName);
     PigServer pigServer = (PigServer) ShimLoader.getHadoopShims().doAs(
         clientUgi, new PrivilegedExceptionAction<Object>() {
-          @Override
-          public PigServer run() throws Exception {
-            return new PigServer(exType, new HiveConf());
-          }
-        });
+      @Override
+      public PigServer run() throws Exception {
+        return new PigServer(exType, new HiveConf());
+      }
+    });
     return pigServer;
   }
 
@@ -292,6 +294,15 @@ public class Context {
       assertTrue(e.getMessage().contains(METASTORE_AUTH_ERROR_MSG));
     } else {
       throw new Exception("Excepted MetaException but got "
+          + e.getClass().getName(), e);
+    }
+  }
+  public void verifyInvalidConfigurationException(Throwable e)
+      throws Exception {
+    if (e instanceof SQLException) {
+      assertTrue(e.getMessage().contains(INVALID_CONFIG_ERROR_MSG));
+    } else {
+      throw new Exception("Excepted " + INVALID_CONFIG_ERROR_MSG + " but got: "
           + e.getClass().getName(), e);
     }
   }

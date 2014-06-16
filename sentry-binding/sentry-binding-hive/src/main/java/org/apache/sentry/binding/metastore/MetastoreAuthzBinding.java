@@ -339,7 +339,7 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
 
   private HiveAuthzBinding getHiveAuthzBinding() throws Exception {
     if (hiveAuthzBinding == null) {
-      hiveAuthzBinding = new HiveAuthzBinding(hiveConf, authzConf);
+      hiveAuthzBinding = new HiveAuthzBinding(HiveAuthzBinding.HiveHook.HiveMetaStore, hiveConf, authzConf);
     }
     return hiveAuthzBinding;
   }

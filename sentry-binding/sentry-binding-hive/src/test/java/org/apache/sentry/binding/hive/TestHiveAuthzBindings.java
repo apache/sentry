@@ -283,21 +283,54 @@ public class TestHiveAuthzBindings {
   }
 
   /**
-   * Turn on impersonation and make sure that the authorization fails.
+   * Turn on impersonation and make sure InvalidConfigurationException is thrown.
    * @throws Exception
    */
-  @Test(expected=AuthorizationException.class)
+  @Test(expected=InvalidConfigurationException.class)
   public void testImpersonationRestriction() throws Exception {
     // perpare the hive and auth configs
     hiveConf.setBoolVar(ConfVars.HIVE_SERVER2_ENABLE_DOAS, true);
     hiveConf.setVar(ConfVars.HIVE_SERVER2_AUTHENTICATION, "Kerberos");
     authzConf.set(AuthzConfVars.SENTRY_TESTING_MODE.getVar(), "false");
     testAuth = new HiveAuthzBinding(hiveConf, authzConf);
+  }
 
-    // following check should pass, but with impersonation it will fail with due to NoAuthorizationProvider
-    inputTabHierarcyList.add(buildObjectHierarchy(SERVER1, CUSTOMER_DB, PURCHASES_TAB));
-    testAuth.authorize(HiveOperation.QUERY, queryPrivileges, ADMIN_SUBJECT,
-        inputTabHierarcyList, outputTabHierarcyList);
+  /**
+   * HiveServer2 not using string authentication, make sure InvalidConfigurationException is thrown.
+   * @throws Exception
+   */
+  @Test(expected=InvalidConfigurationException.class)
+  public void testHiveServer2AuthRestriction() throws Exception {
+    // prepare the hive and auth configs
+    hiveConf.setBoolVar(ConfVars.HIVE_SERVER2_ENABLE_DOAS, false);
+    hiveConf.setVar(ConfVars.HIVE_SERVER2_AUTHENTICATION, "none");
+    authzConf.set(AuthzConfVars.SENTRY_TESTING_MODE.getVar(), "false");
+    testAuth = new HiveAuthzBinding(hiveConf, authzConf);
+  }
+
+  /**
+   * hive.metastore.sasl.enabled != true, make sure InvalidConfigurationException is thrown.
+   * @throws Exception
+   */
+  @Test(expected=InvalidConfigurationException.class)
+  public void testHiveMetaStoreSSLConfig() throws Exception {
+    // prepare the hive and auth configs
+    hiveConf.setBoolVar(ConfVars.METASTORE_USE_THRIFT_SASL, false);
+    hiveConf.setBoolVar(ConfVars.METASTORE_EXECUTE_SET_UGI, true);
+    authzConf.set(AuthzConfVars.SENTRY_TESTING_MODE.getVar(), "false");
+    testAuth = new HiveAuthzBinding(HiveAuthzBinding.HiveHook.HiveMetaStore, hiveConf, authzConf);
+  }
+  /**
+   * hive.metastore.execute.setugi != true, make sure InvalidConfigurationException is thrown.
+   * @throws Exception
+   */
+  @Test(expected=InvalidConfigurationException.class)
+  public void testHiveMetaStoreUGIConfig() throws Exception {
+    // prepare the hive and auth configs
+    hiveConf.setBoolVar(ConfVars.METASTORE_USE_THRIFT_SASL, true);
+    hiveConf.setBoolVar(ConfVars.METASTORE_EXECUTE_SET_UGI, false);
+    authzConf.set(AuthzConfVars.SENTRY_TESTING_MODE.getVar(), "true");
+    testAuth = new HiveAuthzBinding(HiveAuthzBinding.HiveHook.HiveMetaStore, hiveConf, authzConf);
   }
 
   /**

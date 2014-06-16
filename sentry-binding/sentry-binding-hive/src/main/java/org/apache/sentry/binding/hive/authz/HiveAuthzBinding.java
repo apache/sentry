@@ -69,13 +69,25 @@ public class HiveAuthzBinding {
   private volatile boolean open;
   private ActiveRoleSet activeRoleSet;
 
+  public static enum HiveHook {
+    HiveServer2,
+    HiveMetaStore
+    ;
+  }
+
   public HiveAuthzBinding (HiveConf hiveConf, HiveAuthzConf authzConf) throws Exception {
+    this(HiveHook.HiveServer2, hiveConf, authzConf);
+  }
+
+  public HiveAuthzBinding (HiveHook hiveHook, HiveConf hiveConf, HiveAuthzConf authzConf) throws Exception {
+    validateHiveConfig(hiveHook, hiveConf, authzConf);
     this.hiveConf = hiveConf;
     this.authServer = new Server(authzConf.get(AuthzConfVars.AUTHZ_SERVER_NAME.getVar()));
     this.authProvider = getAuthProvider(hiveConf, authzConf, authServer.getName());
     this.open = true;
     this.activeRoleSet = parseActiveRoleSet(hiveConf.get(HiveAuthzConf.SENTRY_ACTIVE_ROLE_SET,
         authzConf.get(HiveAuthzConf.SENTRY_ACTIVE_ROLE_SET, "")).trim());
+
   }
 
   private static ActiveRoleSet parseActiveRoleSet(String name) {
@@ -137,16 +149,45 @@ public class HiveAuthzBinding {
     authProvider.close();
   }
 
-  // Instantiate the configured authz provider
-  public static AuthorizationProvider getAuthProvider(HiveConf hiveConf, HiveAuthzConf authzConf,
-        String serverName) throws Exception {
+  private void validateHiveConfig(HiveHook hiveHook, HiveConf hiveConf, HiveAuthzConf authzConf)
+      throws InvalidConfigurationException{
+    if(hiveHook.equals(HiveHook.HiveMetaStore)) {
+      validateHiveMetaStoreConfig(hiveConf, authzConf);
+    }else if(hiveHook.equals(HiveHook.HiveServer2)) {
+      validateHiveServer2Config(hiveConf, authzConf);
+    }
+  }
+
+  private void validateHiveMetaStoreConfig(HiveConf hiveConf, HiveAuthzConf authzConf)
+      throws InvalidConfigurationException{
+    boolean isTestingMode = Boolean.parseBoolean(Strings.nullToEmpty(
+        authzConf.get(AuthzConfVars.SENTRY_TESTING_MODE.getVar())).trim());
+    LOG.debug("Testing mode is " + isTestingMode);
+    if(!isTestingMode) {
+      boolean sasl = hiveConf.getBoolVar(ConfVars.METASTORE_USE_THRIFT_SASL);
+      if(!sasl) {
+        throw new InvalidConfigurationException(
+            ConfVars.METASTORE_USE_THRIFT_SASL + " can't be false in non-testing mode");
+      }
+    } else {
+      boolean setUgi = hiveConf.getBoolVar(ConfVars.METASTORE_EXECUTE_SET_UGI);
+      if(!setUgi) {
+        throw new InvalidConfigurationException(
+            ConfVars.METASTORE_EXECUTE_SET_UGI.toString() + " can't be false in non secure mode");
+      }
+    }
+  }
+
+  private void validateHiveServer2Config(HiveConf hiveConf, HiveAuthzConf authzConf)
+      throws InvalidConfigurationException{
     boolean isTestingMode = Boolean.parseBoolean(Strings.nullToEmpty(
         authzConf.get(AuthzConfVars.SENTRY_TESTING_MODE.getVar())).trim());
     LOG.debug("Testing mode is " + isTestingMode);
     if(!isTestingMode) {
       String authMethod = Strings.nullToEmpty(hiveConf.getVar(ConfVars.HIVE_SERVER2_AUTHENTICATION)).trim();
       if("none".equalsIgnoreCase(authMethod)) {
-        throw new InvalidConfigurationException("Authentication can't be NONE in non-testing mode");
+        throw new InvalidConfigurationException(ConfVars.HIVE_SERVER2_AUTHENTICATION +
+            " can't be none in non-testing mode");
       }
       boolean impersonation = hiveConf.getBoolVar(ConfVars.HIVE_SERVER2_ENABLE_DOAS);
       boolean allowImpersonation = Boolean.parseBoolean(Strings.nullToEmpty(
@@ -154,14 +195,21 @@ public class HiveAuthzBinding {
 
       if(impersonation && !allowImpersonation) {
         LOG.error("Role based authorization does not work with HiveServer2 impersonation");
-        return new NoAuthorizationProvider();
+        throw new InvalidConfigurationException(ConfVars.HIVE_SERVER2_ENABLE_DOAS +
+            " can't be set to true in non-testing mode");
       }
     }
     String defaultUmask = hiveConf.get(CommonConfigurationKeys.FS_PERMISSIONS_UMASK_KEY);
     if("077".equalsIgnoreCase(defaultUmask)) {
       LOG.error("HiveServer2 required a default umask of 077");
-      return new NoAuthorizationProvider();
+      throw new InvalidConfigurationException(CommonConfigurationKeys.FS_PERMISSIONS_UMASK_KEY +
+          " should be 077 in non-testing mode");
     }
+  }
+
+  // Instantiate the configured authz provider
+  public static AuthorizationProvider getAuthProvider(HiveConf hiveConf, HiveAuthzConf authzConf,
+        String serverName) throws Exception {
     // get the provider class and resources from the authz config
     String authProviderName = authzConf.get(AuthzConfVars.AUTHZ_PROVIDER.getVar());
     String resourceName =
