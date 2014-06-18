@@ -21,6 +21,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Serializable;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -62,6 +63,7 @@ import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.Subject;
+import org.apache.sentry.core.common.utils.PathUtils;
 import org.apache.sentry.core.model.db.AccessURI;
 import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.core.model.db.Server;
@@ -337,7 +339,12 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
 
     } else if (privSubjectDesc.getUri()) {
       String uriPath = privSubjectDesc.getObject();
-      authorizableHeirarchy.add(new AccessURI(uriPath));
+      String warehouseDir = conf.getVar(HiveConf.ConfVars.METASTOREWAREHOUSE);
+      try {
+      authorizableHeirarchy.add(new AccessURI(PathUtils.parseDFSURI(warehouseDir, uriPath)));
+      } catch(URISyntaxException e) {
+        throw new HiveException(e.getMessage());
+      }
     } else {
       dbName = privSubjectDesc.getObject();
       authorizableHeirarchy.add(new Database(dbName));

@@ -20,6 +20,7 @@ package org.apache.sentry.binding.metastore;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,6 +45,7 @@ import org.apache.hadoop.hive.metastore.events.PreDropPartitionEvent;
 import org.apache.hadoop.hive.metastore.events.PreDropTableEvent;
 import org.apache.hadoop.hive.metastore.events.PreEventContext;
 import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
+import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.shims.ShimLoader;
 import org.apache.sentry.binding.hive.authz.HiveAuthzBinding;
@@ -51,6 +53,7 @@ import org.apache.sentry.binding.hive.authz.HiveAuthzPrivilegesMap;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
 import org.apache.sentry.core.common.Subject;
+import org.apache.sentry.core.common.utils.PathUtils;
 import org.apache.sentry.core.model.db.AccessURI;
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.sentry.core.model.db.Database;
@@ -207,8 +210,15 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
       throws InvalidOperationException, MetaException {
     HierarcyBuilder inputBuilder = new HierarcyBuilder();
     if (!StringUtils.isEmpty(context.getTable().getSd().getLocation())) {
-      inputBuilder.addUriToOutput(getAuthServer(), context.getTable().getSd()
-          .getLocation());
+      String warehouseDir = hiveConf.getVar(HiveConf.ConfVars.METASTOREWAREHOUSE);
+      String uriPath;
+      try {
+        uriPath = PathUtils.parseDFSURI(warehouseDir, context.getTable().getSd()
+            .getLocation());
+      } catch(URISyntaxException e) {
+        throw new MetaException(e.getMessage());
+      }
+      inputBuilder.addUriToOutput(getAuthServer(), uriPath);
     }
     authorizeMetastoreAccess(HiveOperation.CREATETABLE, inputBuilder.build(),
         new HierarcyBuilder().addDbToOutput(
