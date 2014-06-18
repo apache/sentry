@@ -17,8 +17,6 @@
 
 package org.apache.sentry.tests.e2e.dbprovider;
 
-import org.apache.sentry.provider.db.SentryAccessDeniedException;
-import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -26,9 +24,12 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 
+import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -141,7 +142,9 @@ public class TestDbEndToEnd extends AbstractTestWithStaticConfiguration {
 
   }
 
-  /**
+
+
+/**
    * Steps:
    * 1. admin create a new experimental database
    * 2. admin create a new production database, create table, load data

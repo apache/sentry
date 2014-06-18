@@ -17,16 +17,13 @@
 
 package org.apache.sentry.tests.e2e.dbprovider;
 
-import org.apache.sentry.provider.db.SentryAccessDeniedException;
-import org.apache.sentry.provider.db.SentryAlreadyExistsException;
-import org.apache.sentry.provider.db.SentryNoSuchObjectException;
-import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
-import org.junit.After;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -37,10 +34,16 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.junit.Before;
+import org.apache.sentry.provider.db.SentryAccessDeniedException;
+import org.apache.sentry.provider.db.SentryAlreadyExistsException;
+import org.apache.sentry.provider.db.SentryNoSuchObjectException;
+import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
+import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import com.google.common.io.Resources;
 
 public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
 
@@ -91,6 +94,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     statement.execute("CREATE ROLE admin_role");
     statement.execute("GRANT ALL ON DATABASE default TO ROLE admin_role");
     statement.execute("GRANT ROLE admin_role TO GROUP " + ADMINGROUP);
+    statement.execute("DROP TABLE t1");
     statement.execute("CREATE TABLE t1 (c1 string)");
     statement.execute("CREATE ROLE user_role");
     statement.execute("GRANT SELECT ON TABLE t1 TO ROLE user_role");
@@ -115,6 +119,719 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     statement.close();
     connection.close();
   }
+
+
+  @Test
+  public void testRevokeDbALLAfterGrantTable() throws Exception {
+    doSetup();
+
+    // Revoke ALL on Db
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("REVOKE ALL ON DATABASE db1 from ROLE user_role");
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    statement.execute("SELECT * FROM t1");
+    try {
+      statement.execute("SELECT * FROM db1.t2");
+      assertTrue("SELECT should not be allowed after revoke on parent!!", false);
+    } catch (Exception e) {
+      // Ignore
+    }
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    ResultSet resultSet = statement.executeQuery("SHOW GRANT ROLE user_role");
+    assertResultSize(resultSet, 1);
+    statement.close();
+    connection.close();
+  }
+
+  @Test
+  public void testRevokeServerAfterGrantTable() throws Exception {
+    doSetup();
+
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    ResultSet resultSet = statement.executeQuery("SHOW GRANT ROLE user_role");
+    assertResultSize(resultSet, 2);
+    statement.close();
+    connection.close();;
+
+    // Revoke on Server
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    statement.execute("REVOKE ALL ON SERVER server1 from ROLE user_role");
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    try {
+      statement.execute("SELECT * FROM t1");
+      assertTrue("SELECT should not be allowed after revoke on parent!!", false);
+    } catch (Exception e) {
+      // Ignore
+    }
+    try {
+      statement.execute("SELECT * FROM db1.t2");
+      assertTrue("SELECT should not be allowed after revoke on parent!!", false);
+    } catch (Exception e) {
+      // Ignore
+    }
+
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    resultSet = statement.executeQuery("SHOW GRANT ROLE user_role");
+    assertResultSize(resultSet, 0);
+    statement.close();
+    connection.close();
+  }
+
+
+  /**
+   * - Create db db1
+   * - Create role user_role
+   * - Create tables (t1, db1.t2)
+   * - Grant all on table t2 to user_role
+   * @throws Exception
+   */
+  private void doSetup() throws Exception {
+    super.setupAdmin();
+
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("DROP TABLE IF EXISTS t1");
+    statement.execute("CREATE TABLE t1 (c1 string)");
+    statement.execute("CREATE ROLE user_role");
+
+    statement.execute("GRANT SELECT ON TABLE t1 TO ROLE user_role");
+    statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
+    statement.execute("CREATE DATABASE db1");
+    statement.execute("USE db1");
+    statement.execute("DROP TABLE IF EXISTS t2");
+    statement.execute("CREATE TABLE t2 (c1 string)");
+    statement.execute("GRANT ALL ON TABLE t2 TO ROLE user_role");
+    statement.execute("GRANT ROLE user_role TO GROUP " + USERGROUP1);
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    statement.execute("SELECT * FROM t1");
+    statement.execute("SELECT * FROM db1.t2");
+
+    statement.close();
+    connection.close();
+  }
+
+  /**
+   * SENTRY-299
+   *
+   * 1. Create 2 Roles (user_role & user_role2)
+   * 2. Create a Table t1
+   * 3. grant ALL on t1 to user_role
+   * 4. grant INSERT on t1 to user_role2
+   * 5. Revoke INSERT on t1 from user_role
+   *     - This would imply user_role can still SELECT
+   *     - But user_role should NOT be allowed to LOAD
+   * 6. Ensure Presense of another role will still enforce the revoke
+   * @throws Exception
+   */
+
+  @Test
+  public void testRevokeFailAnotherRoleExist() throws Exception {
+    super.setupAdmin();
+
+    //copy data file to test dir
+    File dataDir = context.getDataDir();
+    File dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
+    FileOutputStream to = new FileOutputStream(dataFile);
+    Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
+    to.close();
+
+
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("CREATE ROLE user_role");
+    statement.execute("CREATE ROLE user_role2");
+
+    statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
+    statement.execute("CREATE DATABASE db1");
+    statement.execute("USE db1");
+    statement.execute("DROP TABLE IF EXISTS t1");
+    statement.execute("CREATE TABLE t1 (c1 string)");
+    statement.execute("GRANT ALL ON TABLE t1 TO ROLE user_role");
+    statement.execute("GRANT ALL ON TABLE t1 TO ROLE user_role2");
+    statement.execute("GRANT ALL ON URI 'file://" + dataFile.getPath() + "' TO ROLE user_role");
+    statement.execute("GRANT ALL ON URI 'file://" + dataFile.getPath() + "' TO ROLE user_role2");
+    statement.execute("GRANT INSERT ON TABLE t1 TO ROLE user_role2");
+    statement.execute("GRANT ROLE user_role TO GROUP " + USERGROUP1);
+    statement.execute("GRANT ROLE user_role2 TO GROUP " + USERGROUP2);
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    statement.execute("SELECT * FROM db1.t1");
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    ResultSet resultSet = statement.executeQuery("SHOW GRANT ROLE user_role");
+    assertResultSize(resultSet, 2);
+    statement.close();
+    connection.close();
+
+    // Revoke ALL on Db
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    statement.execute("USE db1");
+    statement.execute("REVOKE INSERT ON TABLE t1 from ROLE user_role");
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    // This Should pass
+    statement.execute("SELECT * FROM db1.t1");
+
+    try {
+      statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t1");
+      assertTrue("INSERT Should Not be allowed since we Revoked INSERT privileges on the table !!", false);
+    } catch (Exception e) {
+
+    } finally {
+      statement.close();
+      connection.close();
+    }
+
+    // user_role2 can still insert into table
+    connection = context.createConnection(USER2_1);
+    statement = context.createStatement(connection);
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t1");
+    statement.close();
+    connection.close();
+
+    // Grant changed from ALL to SELECT
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    resultSet = statement.executeQuery("SHOW GRANT ROLE user_role");
+    assertResultSize(resultSet, 2);
+    statement.close();
+    connection.close();
+
+  }
+
+
+  /**
+   * SENTRY-302
+   *
+   * 1. Create Role user_role
+   * 2. Create a Table t1
+   * 3. grant ALL on t1 to user_role
+   * 4. grant INSERT on t1 to user_role
+   * 5. Revoke INSERT on t1 from user_role
+   *     - This would imply user_role can still SELECT
+   *     - But user_role should NOT be allowed to LOAD
+   * 6. Ensure INSERT is revoked on table
+   * @throws Exception
+   */
+
+  @Test
+  public void testRevokeFailMultipleGrantsExist() throws Exception {
+    super.setupAdmin();
+
+    //copy data file to test dir
+    File dataDir = context.getDataDir();
+    File dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
+    FileOutputStream to = new FileOutputStream(dataFile);
+    Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
+    to.close();
+
+
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("CREATE ROLE user_role");
+
+    statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
+    statement.execute("CREATE DATABASE db1");
+    statement.execute("USE db1");
+    statement.execute("DROP TABLE IF EXISTS t1");
+    statement.execute("CREATE TABLE t1 (c1 string)");
+    statement.execute("GRANT ALL ON TABLE t1 TO ROLE user_role");
+    statement.execute("GRANT INSERT ON TABLE t1 TO ROLE user_role");
+    statement.execute("GRANT ALL ON URI 'file://" + dataFile.getPath() + "' TO ROLE user_role");
+    statement.execute("GRANT ROLE user_role TO GROUP " + USERGROUP1);
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    statement.execute("SELECT * FROM db1.t1");
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    assertResultSize(statement.executeQuery("SHOW GRANT ROLE user_role"), 2);
+    statement.close();
+    connection.close();
+
+    // Revoke INSERT on Db
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    statement.execute("USE db1");
+    statement.execute("REVOKE INSERT ON TABLE t1 from ROLE user_role");
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    // This Should pass
+    statement.execute("SELECT * FROM db1.t1");
+
+    try {
+      statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t1");
+      assertTrue("INSERT Should Not be allowed since we Revoked INSERT privileges on the table !!", false);
+    } catch (Exception e) {
+
+    } finally {
+      statement.close();
+      connection.close();
+    }
+
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    assertResultSize(statement.executeQuery("SHOW GRANT ROLE user_role"), 2);
+    statement.close();
+    connection.close();
+
+  }
+
+
+  /**
+   * Revoke all on server after:
+   *  - grant all on db
+   *  - grant all on table
+   *  - grant select on table
+   *  - grant insert on table
+   *  - grant all on URI
+   *  - grant select on URI
+   *  - grant insert on URI
+   */
+  @Test
+  public void testRevokeAllOnServer() throws Exception{
+    super.setupAdmin();
+
+    //copy data file to test dir
+    File dataDir = context.getDataDir();
+    File dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
+    FileOutputStream to = new FileOutputStream(dataFile);
+    Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
+    to.close();
+
+
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("CREATE ROLE user_role");
+
+    statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
+    statement.execute("CREATE DATABASE db1");
+    statement.execute("USE db1");
+
+    statement.execute("DROP TABLE IF EXISTS t1");
+    statement.execute("CREATE TABLE t1 (c1 string)");
+
+    statement.execute("GRANT ALL ON DATABASE db1 TO ROLE user_role");
+    statement.execute("GRANT ALL ON TABLE t1 TO ROLE user_role");
+    statement.execute("GRANT SELECT ON TABLE t1 TO ROLE user_role");
+    statement.execute("GRANT INSERT ON TABLE t1 TO ROLE user_role");
+    statement.execute("GRANT ALL ON URI 'file://" + dataFile.getPath() + "' TO ROLE user_role");
+    statement.execute("GRANT SELECT ON URI 'file://" + dataFile.getPath() + "' TO ROLE user_role");
+    statement.execute("GRANT INSERT ON URI 'file://" + dataFile.getPath() + "' TO ROLE user_role");
+    statement.execute("GRANT ROLE user_role TO GROUP " + USERGROUP1);
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    // Ensure everything works
+    statement.execute("SELECT * FROM db1.t1");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t1");
+
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    assertResultSize(statement.executeQuery("SHOW GRANT ROLE user_role"), 3);
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    statement.execute("USE db1");
+    statement.execute("REVOKE ALL ON SERVER server1 from ROLE user_role");
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    // Ensure nothing works
+    try {
+      statement.execute("SELECT * FROM db1.t1");
+      assertTrue("SELECT should not be allowed !!", false);
+    } catch (SQLException se) {
+      // Ignore
+    }
+
+    try {
+      statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t1");
+      assertTrue("INSERT should not be allowed !!", false);
+    } catch (SQLException se) {
+      // Ignore
+    }
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    assertResultSize(statement.executeQuery("SHOW GRANT ROLE user_role"), 0);
+    statement.close();
+    connection.close();
+  }
+
+
+  /**
+   * Revoke all on database after:
+   *  - grant all on db
+   *  - grant all on table
+   *  - grant select on table
+   *  - grant insert on table
+   */
+  @Test
+  public void testRevokeAllOnDb() throws Exception{
+    super.setupAdmin();
+
+    //copy data file to test dir
+    File dataDir = context.getDataDir();
+    File dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
+    FileOutputStream to = new FileOutputStream(dataFile);
+    Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
+    to.close();
+
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("CREATE ROLE user_role");
+
+    statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
+    statement.execute("CREATE DATABASE db1");
+    statement.execute("USE db1");
+
+    statement.execute("DROP TABLE IF EXISTS t1");
+    statement.execute("CREATE TABLE t1 (c1 string)");
+
+    statement.execute("GRANT ALL ON DATABASE db1 TO ROLE user_role");
+    statement.execute("GRANT ALL ON TABLE t1 TO ROLE user_role");
+    statement.execute("GRANT SELECT ON TABLE t1 TO ROLE user_role");
+    statement.execute("GRANT INSERT ON TABLE t1 TO ROLE user_role");
+    statement.execute("GRANT ALL ON URI 'file://" + dataFile.getPath() + "' TO ROLE user_role");
+    statement.execute("GRANT ROLE user_role TO GROUP " + USERGROUP1);
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    assertResultSize(statement.executeQuery("SHOW GRANT ROLE user_role"), 3);
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    // Ensure everything works
+    statement.execute("SELECT * FROM db1.t1");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t1");
+
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    statement.execute("USE db1");
+    statement.execute("REVOKE ALL ON DATABASE db1 from ROLE user_role");
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    // Ensure nothing works
+    try {
+      statement.execute("SELECT * FROM db1.t1");
+      assertTrue("SELECT should not be allowed !!", false);
+    } catch (SQLException se) {
+      // Ignore
+    }
+
+    try {
+      statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t1");
+      assertTrue("INSERT should not be allowed !!", false);
+    } catch (SQLException se) {
+      // Ignore
+    }
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    assertResultSize(statement.executeQuery("SHOW GRANT ROLE user_role"), 1);
+    statement.close();
+    connection.close();
+  }
+
+  /**
+   * Revoke all on table after:
+   *  - grant all on table
+   *  - grant select on table
+   *  - grant insert on table
+   */
+  @Test
+  public void testRevokeAllOnTable() throws Exception{
+    super.setupAdmin();
+
+    //copy data file to test dir
+    File dataDir = context.getDataDir();
+    File dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
+    FileOutputStream to = new FileOutputStream(dataFile);
+    Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
+    to.close();
+
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("CREATE ROLE user_role");
+
+    statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
+    statement.execute("CREATE DATABASE db1");
+    statement.execute("USE db1");
+
+    statement.execute("DROP TABLE IF EXISTS t1");
+    statement.execute("CREATE TABLE t1 (c1 string)");
+
+    statement.execute("GRANT ALL ON TABLE t1 TO ROLE user_role");
+    statement.execute("GRANT SELECT ON TABLE t1 TO ROLE user_role");
+    statement.execute("GRANT INSERT ON TABLE t1 TO ROLE user_role");
+    statement.execute("GRANT ALL ON URI 'file://" + dataFile.getPath() + "' TO ROLE user_role");
+    statement.execute("GRANT ROLE user_role TO GROUP " + USERGROUP1);
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    // Ensure everything works
+    statement.execute("SELECT * FROM db1.t1");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t1");
+
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    assertResultSize(statement.executeQuery("SHOW GRANT ROLE user_role"), 2);
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    statement.execute("USE db1");
+    statement.execute("REVOKE ALL ON TABLE t1 from ROLE user_role");
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    // Ensure nothing works
+    try {
+      statement.execute("SELECT * FROM db1.t1");
+      assertTrue("SELECT should not be allowed !!", false);
+    } catch (SQLException se) {
+      // Ignore
+    }
+
+    try {
+      statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t1");
+      assertTrue("INSERT should not be allowed !!", false);
+    } catch (SQLException se) {
+      // Ignore
+    }
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    assertResultSize(statement.executeQuery("SHOW GRANT ROLE user_role"), 1);
+    statement.close();
+    connection.close();
+  }
+
+  /**
+   * Revoke select on table after:
+   *  - grant all on table
+   *  - grant select on table
+   *  - grant insert on table
+   */
+  @Test
+  public void testRevokeSELECTOnTable() throws Exception{
+    super.setupAdmin();
+
+    //copy data file to test dir
+    File dataDir = context.getDataDir();
+    File dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
+    FileOutputStream to = new FileOutputStream(dataFile);
+    Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
+    to.close();
+
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("CREATE ROLE user_role");
+
+    statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
+    statement.execute("CREATE DATABASE db1");
+    statement.execute("USE db1");
+
+    statement.execute("DROP TABLE IF EXISTS t1");
+    statement.execute("CREATE TABLE t1 (c1 string)");
+
+    statement.execute("GRANT ALL ON TABLE t1 TO ROLE user_role");
+    statement.execute("GRANT SELECT ON TABLE t1 TO ROLE user_role");
+    statement.execute("GRANT INSERT ON TABLE t1 TO ROLE user_role");
+    statement.execute("GRANT ALL ON URI 'file://" + dataFile.getPath() + "' TO ROLE user_role");
+    statement.execute("GRANT ROLE user_role TO GROUP " + USERGROUP1);
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    // Ensure everything works
+    statement.execute("SELECT * FROM db1.t1");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t1");
+
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    assertResultSize(statement.executeQuery("SHOW GRANT ROLE user_role"), 2);
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    statement.execute("USE db1");
+    statement.execute("REVOKE SELECT ON TABLE t1 from ROLE user_role");
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    // Ensure select not allowed
+    try {
+      statement.execute("SELECT * FROM db1.t1");
+      assertTrue("SELECT should not be allowed !!", false);
+    } catch (SQLException se) {
+      // Ignore
+    }
+
+    // Ensure insert allowed
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t1");
+    statement.close();
+    connection.close();
+
+    // This removes the ALL and SELECT privileges
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    assertResultSize(statement.executeQuery("SHOW GRANT ROLE user_role"), 2);
+    statement.close();
+    connection.close();
+
+  }
+
+
+  /**
+   * Revoke insert on table after:
+   *  - grant all on table
+   *  - grant select on table
+   *  - grant insert on table
+   */
+  @Test
+  public void testRevokeINSERTOnTable() throws Exception{
+    super.setupAdmin();
+
+    //copy data file to test dir
+    File dataDir = context.getDataDir();
+    File dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
+    FileOutputStream to = new FileOutputStream(dataFile);
+    Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
+    to.close();
+
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("CREATE ROLE user_role");
+
+    statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
+    statement.execute("CREATE DATABASE db1");
+    statement.execute("USE db1");
+
+    statement.execute("DROP TABLE IF EXISTS t1");
+    statement.execute("CREATE TABLE t1 (c1 string)");
+
+    statement.execute("GRANT ALL ON TABLE t1 TO ROLE user_role");
+    statement.execute("GRANT SELECT ON TABLE t1 TO ROLE user_role");
+    statement.execute("GRANT INSERT ON TABLE t1 TO ROLE user_role");
+    statement.execute("GRANT ALL ON URI 'file://" + dataFile.getPath() + "' TO ROLE user_role");
+    statement.execute("GRANT ROLE user_role TO GROUP " + USERGROUP1);
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    // Ensure everything works
+    statement.execute("SELECT * FROM db1.t1");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t1");
+
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    assertResultSize(statement.executeQuery("SHOW GRANT ROLE user_role"), 2);
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    statement.execute("USE db1");
+    statement.execute("REVOKE INSERT ON TABLE t1 from ROLE user_role");
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    // Ensure insert not allowed
+    try {
+      statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t1");
+      assertTrue("INSERT should not be allowed !!", false);
+    } catch (SQLException se) {
+      // Ignore
+    }
+
+    // Ensure select allowed
+    statement.execute("SELECT * FROM db1.t1");
+    statement.close();
+    connection.close();
+
+    // This removes the INSERT and ALL privileges
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    assertResultSize(statement.executeQuery("SHOW GRANT ROLE user_role"), 2);
+    statement.close();
+    connection.close();
+  }
+
+
 
 
   /**
@@ -433,7 +1150,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     statement.execute("GRANT ALL ON TABLE tab1 to ROLE role2");
     statement.execute("GRANT ALL,INSERT ON TABLE tab1 to ROLE role2");
     resultSet = statement.executeQuery("SHOW GRANT ROLE role2");
-    assertResultSize(resultSet, 3);
+    assertResultSize(resultSet, 2);
     statement.execute("DROP role role2");
 
     //Revoke privilege when privilege doesnt exist
