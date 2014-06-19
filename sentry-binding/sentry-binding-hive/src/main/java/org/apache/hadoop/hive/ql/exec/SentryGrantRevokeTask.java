@@ -278,7 +278,7 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
   private int processGrantDDL(HiveConf conf, LogHelper console,
       SentryPolicyServiceClient sentryClient, String subject,
       String server, GrantDesc desc) throws SentryUserException {
-    return processGrantRevokeDDL(console, sentryClient, subject, 
+    return processGrantRevokeDDL(console, sentryClient, subject,
         server, true, desc.getPrincipals(), desc.getPrivileges(), desc.getPrivilegeSubjectDesc());
   }
 
@@ -286,7 +286,7 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
   private int processRevokeDDL(HiveConf conf, LogHelper console,
       SentryPolicyServiceClient sentryClient, String subject,
       String server, RevokeDesc desc) throws SentryUserException {
-    return processGrantRevokeDDL(console, sentryClient, subject, 
+    return processGrantRevokeDDL(console, sentryClient, subject,
         server, false, desc.getPrincipals(), desc.getPrivileges(),
         desc.getPrivilegeSubjectDesc());
   }
@@ -539,7 +539,8 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
             } else if (uriPath != null) {
               sentryClient.grantURIPrivilege(subject, princ.getName(), server, uriPath);
             } else if (tableName == null) {
-              sentryClient.grantDatabasePrivilege(subject, princ.getName(), server, dbName);
+              sentryClient.grantDatabasePrivilege(subject, princ.getName(), server, dbName,
+                  toDbSentryAction(privDesc.getPrivilege().getPriv()));
             } else {
               sentryClient.grantTablePrivilege(subject, princ.getName(), server, dbName,
                   tableName, toSentryAction(privDesc.getPrivilege().getPriv()));
@@ -550,7 +551,8 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
             } else if (uriPath != null) {
               sentryClient.revokeURIPrivilege(subject, princ.getName(), server, uriPath);
             } else if (tableName == null) {
-              sentryClient.revokeDatabasePrivilege(subject, princ.getName(), server, dbName);
+              sentryClient.revokeDatabasePrivilege(subject, princ.getName(), server, dbName,
+                  toDbSentryAction(privDesc.getPrivilege().getPriv()));
             } else {
               sentryClient.revokeTablePrivilege(subject, princ.getName(), server, dbName,
                   tableName, toSentryAction(privDesc.getPrivilege().getPriv()));
@@ -564,6 +566,25 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
       LOG.warn(msg, e);
       console.printError(msg);
       return RETURN_CODE_FAILURE;
+    }
+  }
+
+  private static String toDbSentryAction(PrivilegeType privilegeType) {
+    if (PrivilegeType.ALL.equals(privilegeType)) {
+      return AccessConstants.ALL;
+    } else {
+      if (PrivilegeType.SELECT.equals(privilegeType)) {
+        return AccessConstants.SELECT;
+      } else if (PrivilegeType.INSERT.equals(privilegeType)) {
+        return AccessConstants.INSERT;
+      } else {
+        // Should we throw an Exception here ?
+        // On second thought... I don't think we should..
+        // Earlier, we were sending everything as ALL..
+        // So with the patch, it should default to old
+        // behavior for something other than INSERT or SELECT
+        return AccessConstants.ALL;
+      }
     }
   }
 

@@ -23,6 +23,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Set;
 
+import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
 import org.junit.Test;
@@ -182,7 +183,7 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
     Set<TSentryRole> roles = client.listRoles(requestorUserName);
     assertEquals("Incorrect number of roles", 1, roles.size());
 
-    client.grantDatabasePrivilege(requestorUserName, roleName, server, db);
+    client.grantDatabasePrivilege(requestorUserName, roleName, server, db, AccessConstants.ALL);
     Set<TSentryPrivilege> privileges = client.listAllPrivilegesByRoleName(requestorUserName, roleName);
     assertTrue(privileges.size() == 1);
     for (TSentryPrivilege privilege:privileges) {
@@ -190,7 +191,7 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
         privilege.getPrivilegeName().equalsIgnoreCase(SentryStore.constructPrivilegeName(privilege)));
     }
 
-    client.revokeDatabasePrivilege(requestorUserName, roleName, server, db);
+    client.revokeDatabasePrivilege(requestorUserName, roleName, server, db, AccessConstants.ALL);
     client.dropRole(requestorUserName, roleName);
   }
 

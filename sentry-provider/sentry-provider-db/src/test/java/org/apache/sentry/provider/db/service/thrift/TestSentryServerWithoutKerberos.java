@@ -26,6 +26,7 @@ import java.util.Set;
 import junit.framework.Assert;
 
 import org.apache.sentry.core.common.ActiveRoleSet;
+import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.core.model.db.Table;
@@ -53,7 +54,7 @@ public class TestSentryServerWithoutKerberos extends SentryServiceIntegrationBas
     client.createRole(requestorUserName, roleName);
     client.dropRole(requestorUserName, roleName);
   }
-  
+
   @Test
   public void testQueryPushDown() throws Exception {
     String requestorUserName = ADMIN_USER;
@@ -115,7 +116,7 @@ public class TestSentryServerWithoutKerberos extends SentryServiceIntegrationBas
     Assert.assertEquals("Privilege not correctly assigned to roles !!", new HashSet<String>(), listPrivilegesForProvider);
   }
 
-  
+
 
   /**
    * Create role, add privileges and grant it to a group drop the role and
@@ -135,7 +136,7 @@ public class TestSentryServerWithoutKerberos extends SentryServiceIntegrationBas
     client.dropRoleIfExists(requestorUserName, roleName);
     client.createRole(requestorUserName, roleName);
     client.grantRoleToGroup(requestorUserName, ADMIN_GROUP, roleName);
-    client.grantDatabasePrivilege(requestorUserName, roleName, "server1", "db2");
+    client.grantDatabasePrivilege(requestorUserName, roleName, "server1", "db2", AccessConstants.ALL);
     client.grantTablePrivilege(requestorUserName, roleName, "server1", "db3", "tab3", "ALL");
     assertEquals(2, client.listPrivilegesForProvider(requestorUserGroupNames,
             ActiveRoleSet.ALL).size());
@@ -152,7 +153,7 @@ public class TestSentryServerWithoutKerberos extends SentryServiceIntegrationBas
             ActiveRoleSet.ALL).size());
 
     // grant different privileges and verify
-    client.grantDatabasePrivilege(requestorUserName, roleName, "server1", "db2");
+    client.grantDatabasePrivilege(requestorUserName, roleName, "server1", "db2", AccessConstants.ALL);
     assertEquals(1, client.listPrivilegesForProvider(requestorUserGroupNames,
             ActiveRoleSet.ALL).size());
     client.dropRole(requestorUserName, roleName);

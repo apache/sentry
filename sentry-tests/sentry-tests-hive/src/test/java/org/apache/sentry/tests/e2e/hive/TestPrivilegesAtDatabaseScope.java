@@ -55,6 +55,35 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
     policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
   }
 
+  // SENTRY-285 test
+  @Test
+  public void testAllOnDb() throws Exception {
+
+    policyFile
+        .addRolesToGroup(USERGROUP1, "all_db1")
+        .addPermissionsToRole("all_db1", "server=server1->db=DB_1->action=all")
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
+
+    // setup db objects needed by the test
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("create database db_1");
+    statement.execute("create table db_1.tab1(a int)");
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    statement.execute("use db_1");
+    statement.execute("select * from tab1");
+
+    policyFile
+        .addPermissionsToRole("all_db1", "server=server1->db=DB_1");
+    writePolicyFile(policyFile);
+    statement.execute("use db_1");
+    statement.execute("select * from tab1");
+  }
+
+
   /* Admin creates database DB_1
    * Admin grants ALL to USER_GROUP of which user1 is a member.
    */

@@ -231,7 +231,7 @@ public class SentryPolicyServiceClient {
     }
   }
 
-  public Set<TSentryPrivilege> listAllPrivilegesByRoleName(String requestorUserName, String roleName) 
+  public Set<TSentryPrivilege> listAllPrivilegesByRoleName(String requestorUserName, String roleName)
 		  throws SentryUserException {
     return listPrivilegesByRoleName(requestorUserName, roleName, null);
   }
@@ -298,10 +298,10 @@ public class SentryPolicyServiceClient {
   }
 
   public void grantDatabasePrivilege(String requestorUserName,
-      String roleName, String server, String db)
+      String roleName, String server, String db, String action)
   throws SentryUserException {
     grantPrivilege(requestorUserName, roleName,
-        PrivilegeScope.DATABASE, server, null, db, null, AccessConstants.ALL);
+        PrivilegeScope.DATABASE, server, null, db, null, action);
   }
 
   public void grantTablePrivilege(String requestorUserName,
@@ -352,10 +352,10 @@ public class SentryPolicyServiceClient {
   }
 
   public void revokeDatabasePrivilege(String requestorUserName,
-      String roleName, String server, String db)
+      String roleName, String server, String db, String action)
   throws SentryUserException {
     revokePrivilege(requestorUserName, roleName,
-        PrivilegeScope.DATABASE, server, null, db, null, AccessConstants.ALL);
+        PrivilegeScope.DATABASE, server, null, db, null, action);
   }
 
   public void revokeTablePrivilege(String requestorUserName,

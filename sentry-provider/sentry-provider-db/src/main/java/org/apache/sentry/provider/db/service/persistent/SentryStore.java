@@ -276,7 +276,7 @@ public class SentryStore {
         throw new SentryNoSuchObjectException("Role: " + roleName);
       } else {
 
-        if (privilege.getTableName() != null) {
+        if ((privilege.getTableName() != null)||(privilege.getDbName() != null)) {
           // If Grant is for ALL and Either INSERT/SELECT already exists..
           // need to remove it and GRANT ALL..
           if (privilege.getAction().equalsIgnoreCase("*")) {
@@ -516,8 +516,9 @@ public class SentryStore {
 
     if (AccessConstants.SELECT.equalsIgnoreCase(action) ||
         AccessConstants.INSERT.equalsIgnoreCase(action)) {
-      if (Strings.nullToEmpty(tableName).trim().isEmpty()) {
-        throw new SentryInvalidInputException("Table name can't be null for SELECT/INSERT privilege");
+      if (Strings.nullToEmpty(tableName).trim().isEmpty()
+          &&Strings.nullToEmpty(dbName).trim().isEmpty()) {
+        throw new SentryInvalidInputException("Either Table name or Db name must be NON-NULL for SELECT/INSERT privilege");
       }
     }
 

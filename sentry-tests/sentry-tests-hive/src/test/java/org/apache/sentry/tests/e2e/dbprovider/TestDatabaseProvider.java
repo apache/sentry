@@ -121,6 +121,116 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
   }
 
 
+  // SENTRY-303 tests
+  @Test
+  public void testGrantSELECTonDb() throws Exception {
+    File dataFile = doSetupForGrantDbTests();
+
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+
+    // Grant only SELECT on Database
+    statement.execute("GRANT SELECT ON DATABASE db1 TO ROLE user_role");
+    statement.execute("GRANT ALL ON URI 'file://" + dataFile.getPath() + "' TO ROLE user_role");
+    statement.execute("GRANT ROLE user_role TO GROUP " + USERGROUP1);
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    // SELECT is allowed
+    statement.execute("SELECT * FROM db1.t1");
+    statement.execute("SELECT * FROM db1.t2");
+    try {
+      // INSERT is not allowed
+      statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t1");
+      assertTrue("only SELECT allowed on t1!!", false);
+    } catch (Exception e) {
+      // Ignore
+    }
+    try {
+      // INSERT is not allowed
+      statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t2");
+      assertTrue("only SELECT allowed on t2!!", false);
+    } catch (Exception e) {
+      // Ignore
+    }
+    statement.close();
+    connection.close();
+  }
+
+  @Test
+  public void testGrantINSERTonDb() throws Exception {
+    File dataFile = doSetupForGrantDbTests();
+
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+
+    // Grant only INSERT on Database
+    statement.execute("GRANT INSERT ON DATABASE db1 TO ROLE user_role");
+    statement.execute("GRANT ALL ON URI 'file://" + dataFile.getPath() + "' TO ROLE user_role");
+    statement.execute("GRANT ROLE user_role TO GROUP " + USERGROUP1);
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    // INSERT is allowed
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t1");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t2");
+    try {
+      // SELECT is not allowed
+      statement.execute("SELECT * FROM db1.t1");
+      assertTrue("only SELECT allowed on t1!!", false);
+    } catch (Exception e) {
+      // Ignore
+    }
+    try {
+      // SELECT is not allowed
+      statement.execute("SELECT * FROM db1.t2");
+      assertTrue("only INSERT allowed on t2!!", false);
+    } catch (Exception e) {
+      // Ignore
+    }
+    statement.close();
+    connection.close();
+  }
+
+  private File doSetupForGrantDbTests() throws Exception {
+    super.setupAdmin();
+
+    //copy data file to test dir
+    File dataDir = context.getDataDir();
+    File dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
+    FileOutputStream to = new FileOutputStream(dataFile);
+    Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
+    to.close();
+
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    try {
+      statement.execute("DROP ROLE user_role");
+    } catch (Exception e) {
+      // Ignore
+    }
+    try {
+      statement.execute("CREATE ROLE user_role");
+    } catch (Exception e) {
+      // Ignore
+    }
+    statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
+    statement.execute("CREATE DATABASE db1");
+    statement.execute("USE db1");
+    statement.execute("DROP TABLE IF EXISTS t1");
+    statement.execute("CREATE TABLE t1 (c1 string)");
+    statement.execute("DROP TABLE IF EXISTS t2");
+    statement.execute("CREATE TABLE t2 (c2 string)");
+    statement.close();
+    connection.close();
+
+    return dataFile;
+  }
+
   @Test
   public void testRevokeDbALLAfterGrantTable() throws Exception {
     doSetup();

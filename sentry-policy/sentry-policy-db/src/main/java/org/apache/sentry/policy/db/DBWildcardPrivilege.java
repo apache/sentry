@@ -93,6 +93,10 @@ public class DBWildcardPrivilege implements Privilege {
         return true;
       } else {
         KeyValue part = parts.get(index);
+        // Support for action inheritance from parent to child (eg. Db -> Table)
+        if (part.getKey().equalsIgnoreCase("action") && !(otherPart.getKey().equalsIgnoreCase("action"))) {
+          continue;
+        }
         // are the keys even equal
         if(!part.getKey().equalsIgnoreCase(otherPart.getKey())) {
           return false;
@@ -119,7 +123,8 @@ public class DBWildcardPrivilege implements Privilege {
   private boolean impliesKeyValue(KeyValue policyPart, KeyValue requestPart) {
     Preconditions.checkState(policyPart.getKey().equalsIgnoreCase(requestPart.getKey()),
         "Please report, this method should not be called with two different keys");
-    if(policyPart.getValue().equals(AccessConstants.ALL) || policyPart.equals(requestPart)) {
+    if(policyPart.getValue().equals(AccessConstants.ALL) ||
+        policyPart.getValue().equalsIgnoreCase("ALL") || policyPart.equals(requestPart)) {
       return true;
     } else if (!PolicyFileConstants.PRIVILEGE_NAME.equalsIgnoreCase(policyPart.getKey())
         && AccessConstants.ALL.equalsIgnoreCase(requestPart.getValue())) {
