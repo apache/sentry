@@ -32,6 +32,7 @@ import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.ql.session.SessionState;
+import org.apache.sentry.SentryUserException;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
 import org.apache.sentry.binding.hive.conf.InvalidConfigurationException;
@@ -44,8 +45,8 @@ import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
 import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.common.AuthorizationProvider;
-import org.apache.sentry.provider.common.NoAuthorizationProvider;
 import org.apache.sentry.provider.common.ProviderBackend;
+import org.apache.sentry.provider.db.service.thrift.TSentryRole;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,10 +88,15 @@ public class HiveAuthzBinding {
     this.open = true;
     this.activeRoleSet = parseActiveRoleSet(hiveConf.get(HiveAuthzConf.SENTRY_ACTIVE_ROLE_SET,
         authzConf.get(HiveAuthzConf.SENTRY_ACTIVE_ROLE_SET, "")).trim());
-
   }
 
-  private static ActiveRoleSet parseActiveRoleSet(String name) {
+  private static ActiveRoleSet parseActiveRoleSet(String name)
+      throws SentryUserException {
+    return parseActiveRoleSet(name, null);
+  }
+
+  private static ActiveRoleSet parseActiveRoleSet(String name,
+      Set<TSentryRole> allowedRoles) throws SentryUserException {
     // if unset, then we choose the default of ALL
     if (name.isEmpty()) {
       return ActiveRoleSet.ALL;
@@ -102,6 +108,19 @@ public class HiveAuthzBinding {
       String msg = "Role " + name + " is reserved";
       throw new IllegalArgumentException(msg);
     } else {
+      if (allowedRoles != null) {
+        // check if the user has been granted the role
+        boolean foundRole = false;
+        for (TSentryRole role : allowedRoles) {
+          if (role.getRoleName().equalsIgnoreCase(name)) {
+            foundRole = true;
+            break;
+          }
+        }
+        if (!foundRole) {
+          throw new SentryUserException("Not authorized to set role " + name);
+        }
+      }
       return new ActiveRoleSet(Sets.newHashSet(ROLE_SET_SPLITTER.split(name)));
     }
   }
@@ -312,8 +331,9 @@ public class HiveAuthzBinding {
       }
   }
 
-  public void setActiveRoleSet(String activeRoleSet) {
-    this.activeRoleSet = parseActiveRoleSet(activeRoleSet);
+  public void setActiveRoleSet(String activeRoleSet,
+      Set<TSentryRole> allowedRoles) throws SentryUserException {
+    this.activeRoleSet = parseActiveRoleSet(activeRoleSet, allowedRoles);
     hiveConf.set(HiveAuthzConf.SENTRY_ACTIVE_ROLE_SET, activeRoleSet);
   }
 

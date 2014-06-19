@@ -279,8 +279,13 @@ public class SentryPolicyServiceClient {
   }
 
   public Set<TSentryRole> listRoles(String requestorUserName)
-       throws SentryUserException {
+      throws SentryUserException {
     return listRolesByGroupName(requestorUserName, null);
+  }
+
+  public Set<TSentryRole> listUserRoles(String requestorUserName)
+      throws SentryUserException {
+    return listRolesByGroupName(requestorUserName, AccessConstants.ALL);
   }
 
   public void grantURIPrivilege(String requestorUserName,

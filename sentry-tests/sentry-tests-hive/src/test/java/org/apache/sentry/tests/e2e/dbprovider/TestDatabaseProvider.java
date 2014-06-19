@@ -21,6 +21,7 @@ import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -1608,6 +1609,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("CREATE ROLE role1");
+    statement.execute("GRANT ROLE role1 TO GROUP " + ADMINGROUP);
     statement.execute("SET ROLE role1");
     ResultSet resultSet = statement.executeQuery("SHOW CURRENT ROLES");
     ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
@@ -1619,6 +1621,82 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     }
     statement.close();
     connection.close();
+  }
+
+  /***
+   * Verify 'SHOW CURRENT ROLES' show all roles for the give user when there no
+   * 'SET ROLE' called
+   * @throws Exception
+   */
+  @Test
+  public void testShowAllCurrentRoles() throws Exception {
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    String testRole1 = "testRole1", testRole2 = "testRole2";
+    statement.execute("CREATE ROLE " + testRole1);
+    statement.execute("CREATE ROLE " + testRole2);
+    statement.execute("GRANT ROLE " + testRole1 + " TO GROUP " + ADMINGROUP);
+    statement.execute("GRANT ROLE " + testRole2 + " TO GROUP " + ADMINGROUP);
+    statement.execute("GRANT ROLE " + testRole1 + " TO GROUP " + USERGROUP1);
+    statement.execute("GRANT ROLE " + testRole2 + " TO GROUP " + USERGROUP1);
+
+    ResultSet resultSet = statement.executeQuery("SHOW CURRENT ROLES");
+    assertResultSize(resultSet, 2);
+
+    statement.execute("SET ROLE " + testRole1);
+    resultSet = statement.executeQuery("SHOW CURRENT ROLES");
+    assertResultSize(resultSet, 1);
+
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+
+    resultSet = statement.executeQuery("SHOW CURRENT ROLES");
+    assertResultSize(resultSet, 2);
+
+    statement.execute("SET ROLE " + testRole2);
+    resultSet = statement.executeQuery("SHOW CURRENT ROLES");
+    assertResultSize(resultSet, 1);
+
+    statement.close();
+    connection.close();
+  }
+
+  @Test
+  public void testSetRole() throws Exception {
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    String testRole0 = "testRole1", testRole1 = "testRole2";
+    statement.execute("CREATE ROLE " + testRole0);
+    statement.execute("CREATE ROLE " + testRole1);
+
+    statement.execute("GRANT ROLE " + testRole0 + " TO GROUP " + ADMINGROUP);
+    statement.execute("GRANT ROLE " + testRole1 + " TO GROUP " + USERGROUP1);
+
+    statement.execute("SET ROLE " + testRole0);
+    try {
+      statement.execute("SET ROLE " + testRole1);
+      fail("User " + ADMIN1 + " shouldn't be able to set " + testRole1);
+    } catch (SQLException e) {
+      assertTrue(e.getMessage().contains("Not authorized to set role"));
+    }
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    statement.execute("SET ROLE " + testRole1);
+    try {
+      statement.execute("SET ROLE " + testRole0);
+      fail("User " + USER1_1 + " shouldn't be able to set " + testRole0);
+    } catch (SQLException e) {
+      assertTrue(e.getMessage().contains("Not authorized to set role"));
+    }
+    statement.close();
+    connection.close();
+
   }
 
   // See SENTRY-166

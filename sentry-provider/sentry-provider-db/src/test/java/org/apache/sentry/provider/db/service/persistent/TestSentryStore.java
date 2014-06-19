@@ -23,20 +23,14 @@ import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.core.common.ActiveRoleSet;
-import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.model.db.AccessConstants;
-import org.apache.sentry.core.model.db.AccessURI;
-import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.provider.db.SentryAlreadyExistsException;
 import org.apache.sentry.provider.db.SentryNoSuchObjectException;
 import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
@@ -340,4 +334,23 @@ public class TestSentryStore {
             new TSentryActiveRoleSet(false, new HashSet<String>()))));
   }
 
+  @Test
+  public void testListRole() throws Exception {
+    String roleName1 = "role1", roleName2 = "role2", roleName3 = "role3";
+    String group1 = "group1", group2 = "group2";
+    String grantor = "g1";
+
+    sentryStore.createSentryRole(roleName1, grantor);
+    sentryStore.createSentryRole(roleName2, grantor);
+    sentryStore.createSentryRole(roleName3, grantor);
+
+    sentryStore.alterSentryRoleAddGroups(grantor, roleName1, Sets.newHashSet(new TSentryGroup(group1)));
+    sentryStore.alterSentryRoleAddGroups(grantor, roleName2, Sets.newHashSet(new TSentryGroup(group2)));
+    sentryStore.alterSentryRoleAddGroups(grantor, roleName3,
+        Sets.newHashSet(new TSentryGroup(group1), new TSentryGroup(group2)));
+
+    assertEquals(2, sentryStore.getTSentryRolesByGroupName(Sets.newHashSet(group1)).size());
+    assertEquals(2, sentryStore.getTSentryRolesByGroupName(Sets.newHashSet(group2)).size());
+    assertEquals(3, sentryStore.getTSentryRolesByGroupName(Sets.newHashSet(group1,group2)).size());
+  }
 }

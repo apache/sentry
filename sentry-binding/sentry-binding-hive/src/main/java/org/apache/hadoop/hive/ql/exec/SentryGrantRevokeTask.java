@@ -64,11 +64,11 @@ import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.common.utils.PathUtils;
+import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.model.db.AccessURI;
 import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.core.model.db.Table;
-import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
@@ -221,7 +221,7 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
     String name = desc.getName();
     try {
       if (operation.equals(RoleDDLDesc.RoleOperation.SET_ROLE)) {
-        hiveAuthzBinding.setActiveRoleSet(name);
+        hiveAuthzBinding.setActiveRoleSet(name, sentryClient.listUserRoles(subject));
         return RETURN_CODE_SUCCESS;
       } else if (operation.equals(RoleDDLDesc.RoleOperation.CREATE_ROLE)) {
         sentryClient.createRole(subject, name);
@@ -246,7 +246,7 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
       } else if(operation.equals(RoleDDLDesc.RoleOperation.SHOW_CURRENT_ROLE)) {
         ActiveRoleSet roleSet = hiveAuthzBinding.getActiveRoleSet();
         if( roleSet.isAll()) {
-          Set<TSentryRole> roles = sentryClient.listRoles(subject);
+          Set<TSentryRole> roles = sentryClient.listUserRoles(subject);
           writeToFile(writeRolesInfo(roles), desc.getResFile());
           return RETURN_CODE_SUCCESS;
         } else {

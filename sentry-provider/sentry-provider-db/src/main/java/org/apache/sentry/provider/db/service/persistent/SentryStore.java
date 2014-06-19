@@ -41,7 +41,6 @@ import javax.jdo.Transaction;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.model.db.AccessConstants;
-import org.apache.sentry.core.model.db.DBModelAction;
 import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
 import org.apache.sentry.provider.common.ProviderConstants;
 import org.apache.sentry.provider.db.SentryAccessDeniedException;
@@ -878,9 +877,13 @@ public class SentryStore {
    * @return : Set of thrift sentry role objects
    * @throws SentryNoSuchObjectException
    */
-  public Set<TSentryRole> getTSentryRolesByGroupName(String groupName)
+  public Set<TSentryRole> getTSentryRolesByGroupName(Set<String> groupNames)
       throws SentryNoSuchObjectException {
-    return convertToTSentryRoles(getMSentryRolesByGroupName(groupName));
+    Set<MSentryRole> roleSet = Sets.newHashSet();
+    for (String groupName : groupNames) {
+      roleSet.addAll(getMSentryRolesByGroupName(groupName));
+    }
+    return convertToTSentryRoles(roleSet);
   }
 
   private SetMultimap<String, String> getRoleToPrivilegeMap(Set<String> groups) {

@@ -26,6 +26,7 @@ import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.SentryUserException;
+import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.common.GroupMappingService;
 import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.provider.db.SentryAlreadyExistsException;
@@ -312,11 +313,17 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     TListSentryRolesResponse response = new TListSentryRolesResponse();
     TSentryResponseStatus status;
     Set<TSentryRole> roleSet = new HashSet<TSentryRole>();
+    Set<String> groups = new HashSet<String>();
     try {
-      //TODO: Handle authorization for metadata queries
-      authorize(request.getRequestorUserName(),
+      // Don't check admin permissions for listing requestor's own roles
+      if (AccessConstants.ALL.equalsIgnoreCase(request.getGroupName())) {
+        groups = getRequestorGroups(request.getRequestorUserName());
+      } else {
+        authorize(request.getRequestorUserName(),
           getRequestorGroups(request.getRequestorUserName()));
-      roleSet = sentryStore.getTSentryRolesByGroupName(request.getGroupName());
+        groups.add(request.getGroupName());
+      }
+      roleSet = sentryStore.getTSentryRolesByGroupName(groups);
       response.setRoles(roleSet);
       response.setStatus(Status.OK());
     } catch (SentryNoSuchObjectException e) {
