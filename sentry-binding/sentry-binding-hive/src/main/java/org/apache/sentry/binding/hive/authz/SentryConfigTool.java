@@ -17,6 +17,8 @@
 
 package org.apache.sentry.binding.hive.authz;
 
+import com.google.common.collect.Table;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -38,10 +40,20 @@ import org.apache.sentry.binding.hive.HiveAuthzBindingHook;
 import org.apache.sentry.binding.hive.HiveAuthzBindingSessionHook;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
+
 import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.core.common.Subject;
+import org.apache.sentry.core.model.db.AccessConstants;
+import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.sentry.core.model.db.Server;
+import org.apache.sentry.policy.db.DBModelAuthorizables;
 import org.apache.sentry.provider.common.AuthorizationProvider;
+import org.apache.sentry.provider.common.ProviderBackendContext;
+import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
+import org.apache.sentry.provider.db.service.thrift.TSentryRole;
+import org.apache.sentry.provider.file.KeyValue;
+import org.apache.sentry.provider.file.PolicyFileConstants;
+import org.apache.sentry.provider.file.SimpleFileProviderBackend;
 
 import java.security.CodeSource;
 import java.sql.Connection;
@@ -49,6 +61,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.HashSet;
 import java.util.Set;
 
 public class SentryConfigTool {
@@ -60,6 +73,7 @@ public class SentryConfigTool {
   private String passWord = null;
   private boolean listPrivs = false;
   private boolean validate = false;
+  private boolean importPolicy = false;
   private HiveConf hiveConf = null;
   private HiveAuthzConf authzConf = null;
   private AuthorizationProvider sentryProvider = null;
@@ -98,6 +112,14 @@ public class SentryConfigTool {
 
   public void setValidate(boolean validate) {
     this.validate = validate;
+  }
+
+  public boolean isImportPolicy() {
+    return importPolicy;
+  }
+
+  public void setImportPolicy(boolean importPolicy) {
+    this.importPolicy = importPolicy;
   }
 
   public String getSentrySiteFile() {
@@ -227,6 +249,111 @@ public class SentryConfigTool {
       printConfigErrors(e);
     }
     System.out.println("No errors found in the policy file");
+  }
+
+  // import policy files
+  public void importPolicy() throws Exception {
+    final String requestorUserName = "hive";
+    SimpleFileProviderBackend policyFileBackend;
+    SentryPolicyServiceClient client;
+
+    policyFileBackend = new SimpleFileProviderBackend(getAuthzConf(),
+        getAuthzConf().get(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar()));
+    ProviderBackendContext context = new ProviderBackendContext();
+    context.setAllowPerDatabase(true);
+    policyFileBackend.initialize(context);
+    client = new SentryPolicyServiceClient(getAuthzConf());
+    Set<String> roles = new HashSet<String>();
+    for (TSentryRole sentryRole : client.listRoles(requestorUserName)) {
+      roles.add(sentryRole.getRoleName());
+    }
+
+    Table<String, String, Set<String>> groupRolePrivilegeTable =
+        policyFileBackend.getGroupRolePrivilegeTable();
+    for(String groupName : groupRolePrivilegeTable.rowKeySet()) {
+      for(String roleName : groupRolePrivilegeTable.columnKeySet()) {
+        if (!roles.contains(roleName)) {
+          client.createRole(requestorUserName, roleName);
+          System.out.println(String.format("CREATE ROLE %s;", roleName));
+          roles.add(roleName);
+        }
+
+        Set<String> privileges = groupRolePrivilegeTable.get(groupName, roleName);
+        if (privileges == null) {
+          continue;
+        }
+        client.grantRoleToGroup(requestorUserName, groupName, roleName);
+        System.out.println(String.format("GRANT ROLE %s TO GROUP %s;",
+            roleName, groupName));
+
+        for (String permission : privileges) {
+          String server = null;
+          String database = null;
+          String table = null;
+          String uri = null;
+          String action = AccessConstants.ALL;
+          for (String authorizable : PolicyFileConstants.AUTHORIZABLE_SPLITTER.
+              trimResults().split(permission)) {
+            KeyValue kv = new KeyValue(authorizable);
+            DBModelAuthorizable a = DBModelAuthorizables.from(kv);
+            if (a == null) {
+              action = kv.getValue();
+              continue;
+            }
+
+            switch (a.getAuthzType()) {
+              case Server:
+                server = a.getName();
+                break;
+              case Db:
+                database = a.getName();
+                break;
+              case Table:
+              case View:
+                table = a.getName();
+                break;
+              case URI:
+                uri = a.getName();
+                break;
+              default:
+                break;
+            }
+          }
+
+          if (uri != null) {
+            System.out.println(String.format(
+                "GRANT ALL ON URI %s TO ROLE %s; # server=%s",
+                uri, roleName, server));
+
+            client.grantURIPrivilege(requestorUserName, roleName, server, uri);
+          } else if (table != null && !AccessConstants.ALL.equals(table)) {
+            System.out.println(String.format(
+                "GRANT %s ON TABLE %s TO ROLE %s; # server=%s, database=%s",
+                "*".equals(action) ? "ALL" : action.toUpperCase(), table,
+                roleName, server, database));
+
+            client.grantTablePrivilege(requestorUserName, roleName, server,
+                database, table, action);
+          } else if (database != null && !AccessConstants.ALL.equals(database)) {
+            System.out.println(String.format(
+                "GRANT %s ON DATABASE %s TO ROLE %s; # server=%s",
+                "*".equals(action) ? "ALL" : action.toUpperCase(),
+                database, roleName, server));
+
+            client.grantDatabasePrivilege(requestorUserName, roleName, server,
+                database, action);
+          } else if (server != null) {
+            System.out.println(String.format("GRANT ALL ON SERVER %s TO ROLE %s;",
+                server, roleName));
+
+            client.grantServerPrivilege(requestorUserName, roleName, server);
+          } else {
+            System.out.println(String.format("No grant for permission %s",
+                permission));
+          }
+        }
+      }
+    }
   }
 
   // list permissions for given user
@@ -363,7 +490,7 @@ public class SentryConfigTool {
    * <pre>
    *   -d,--debug                  Enable debug output
    *   -e,--query <arg>            Query privilege verification, requires -u
-   *    -h,--help                  Print usage
+   *   -h,--help                   Print usage
    *   -i,--policyIni <arg>        Policy file path
    *   -j,--jdbcURL <arg>          JDBC URL
    *   -l,--listPrivs,--listPerms  List privilges for given user, requires -u
@@ -371,6 +498,7 @@ public class SentryConfigTool {
    *   -s,--sentry-site <arg>      sentry-site file path
    *   -u,--user <arg>             user name
    *   -v,--validate               Validate policy file
+   *   -I,--import                 Import policy file
    * </pre>
    * @param args
    */
@@ -397,6 +525,9 @@ public class SentryConfigTool {
         "list privileges for given user, requires -u");
     listPrivsOpt.setRequired(false);
 
+    Option importOpt = new Option("I", "import", false,
+        "Import policy file");
+
     // required args
     OptionGroup sentryOptGroup = new OptionGroup();
     sentryOptGroup.addOption(helpOpt);
@@ -404,6 +535,7 @@ public class SentryConfigTool {
     sentryOptGroup.addOption(queryOpt);
     sentryOptGroup.addOption(listPermsOpt);
     sentryOptGroup.addOption(listPrivsOpt);
+    sentryOptGroup.addOption(importOpt);
     sentryOptGroup.setRequired(true);
     sentryOptions.addOptionGroup(sentryOptGroup);
 
@@ -455,6 +587,8 @@ public class SentryConfigTool {
           setListPrivs(true);
         } else if (opt.getOpt().equals("v")) {
           setValidate(true);
+        } else if (opt.getOpt().equals("I")) {
+          setImportPolicy(true);
         } else if (opt.getOpt().equals("h")) {
           usage(sentryOptions);
         } else if (opt.getOpt().equals("d")) {
@@ -493,6 +627,10 @@ public class SentryConfigTool {
         // validate configuration
         if (sentryTool.isValidate()) {
           sentryTool.validatePolicy();
+        }
+
+        if (sentryTool.isImportPolicy()) {
+          sentryTool.importPolicy();
         }
 
         // list permissions for give user

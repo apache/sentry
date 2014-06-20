@@ -32,6 +32,7 @@ public class SentryMain {
   private static final String HELP_SHORT = "h";
   private static final String HELP_LONG = "help";
   private static final String COMMAND = "command";
+  private static final String HIVE_CONF = "hiveconf";
   private static final String LOG4J_CONF = "log4jConf";
   private static final ImmutableMap<String, String> COMMANDS = ImmutableMap
       .<String, String>builder()
@@ -45,6 +46,7 @@ public class SentryMain {
     CommandLineParser parser = new GnuParser();
     Options options = new Options();
     options.addOption(HELP_SHORT, HELP_LONG, false, "Print this help text");
+    options.addOption(HIVE_CONF, true, "Set hive configuration variables");
     options.addOption(null, COMMAND, true, "Command to run. Options: " + COMMANDS.keySet());
     options.addOption(null, LOG4J_CONF, true, "Location of log4j properties file");
     //Ignore unrecognized options: service and config-tool options

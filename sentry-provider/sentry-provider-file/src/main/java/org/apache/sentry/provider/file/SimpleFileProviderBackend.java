@@ -382,4 +382,8 @@ public class SimpleFileProviderBackend implements ProviderBackend {
       }
     }
   }
+
+  public Table<String, String, Set<String>> getGroupRolePrivilegeTable() {
+    return groupRolePrivilegeTable;
+  }
 }
