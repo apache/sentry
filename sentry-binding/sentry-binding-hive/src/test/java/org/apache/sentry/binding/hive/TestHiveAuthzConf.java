@@ -60,6 +60,8 @@ public class TestHiveAuthzConf {
   public void testDeprecatedConfig() {
     for (AuthzConfVars currentVar : currentProps) {
       Assert.assertEquals("deprecated", authzDepConf.get(currentVar.getVar()));
+      Assert.assertEquals("deprecated",
+          authzDepConf.get(currentVar.getVar(), "foobar"));
     }
   }
 

@@ -183,6 +183,11 @@ public class HiveAuthzConf extends Configuration {
 
   @Override
   public String get(String varName) {
+    return get(varName, null);
+  }
+
+  @Override
+  public String get(String varName, String defaultVal) {
     String retVal = super.get(varName);
     if (retVal == null) {
       // check if the deprecated value is set here
@@ -195,6 +200,9 @@ public class HiveAuthzConf extends Configuration {
         Log.warn("Using the deprecated config setting " + currentToDeprecatedProps.get(varName).getVar() +
             " instead of " + varName);
       }
+    }
+    if (retVal == null) {
+      retVal = defaultVal;
     }
     return retVal;
   }
