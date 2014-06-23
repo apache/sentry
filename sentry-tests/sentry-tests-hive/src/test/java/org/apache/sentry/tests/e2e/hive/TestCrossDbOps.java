@@ -605,10 +605,6 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     statement.execute("load data local inpath '" + dataFile.getPath()
         + "' into table " + DB2 + "." + TBL3);
 
-    // c
-    context.assertAuthzException(statement, "DROP DATABASE IF EXISTS " + DB1);
-    context.assertAuthzException(statement, "DROP DATABASE IF EXISTS " + DB2);
-
     policyFile.removePermissionsFromRole(GROUP1_ROLE, ALL_DB2);
     writePolicyFile(policyFile);
     // create db1.view1 as select from db2.tbl2

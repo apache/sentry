@@ -177,13 +177,8 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
       context.verifyAuthzException(e);
     }
 
-    //negative test case: user can't drop own database
-    try {
-      statement.execute("DROP DATABASE DB_1 CASCADE");
-      Assert.fail("Expected SQL exception");
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
+    //User can drop own database
+    statement.execute("DROP DATABASE DB_1 CASCADE");
 
     statement.close();
     connection.close();
@@ -191,7 +186,6 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
     //test cleanup
     connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.execute("DROP DATABASE DB_2 CASCADE");
     statement.close();
     connection.close();
@@ -270,14 +264,6 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
 
     // test user can drop table
     statement.execute("DROP TABLE TAB_3");
-
-    //negative test case: user can't drop db
-    try {
-      statement.execute("DROP DATABASE DB_1 CASCADE");
-      Assert.fail("Expected SQL exception");
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
 
     //negative test case: user can't create external tables
     assertTrue("Unable to create directory for external table test" , externalTblDir.mkdir());

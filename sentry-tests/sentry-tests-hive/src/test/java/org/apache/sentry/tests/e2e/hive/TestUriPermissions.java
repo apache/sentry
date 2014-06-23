@@ -135,8 +135,7 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
     userStmt.execute("ALTER TABLE " + tabName + " DROP PARTITION (dt = '21-Dec-2012')");
     userStmt.execute("ALTER TABLE " + tabName + " ADD PARTITION (dt = '21-Dec-2012') " +
         " LOCATION '" + tabDir + "'");
-    // negative test user1 cannot alter partition location
-    context.assertAuthzException(userStmt,
+    userStmt.execute(
         "ALTER TABLE " + tabName + " PARTITION (dt = '21-Dec-2012') " + " SET LOCATION '" + tabDir + "'");
     userConn.close();
 
@@ -154,22 +153,17 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
     userStmt.execute("ALTER TABLE " + tabName + " DROP PARTITION (dt = '22-Dec-2012')");
     userConn.close();
 
-    // negative test: user3 doesn't have privilege to add/drop partitions
+    // positive test: user3 has privilege to add/drop partitions
     userConn = context.createConnection(USER3_1);
     userStmt = context.createStatement(userConn);
     userStmt.execute("use " + dbName);
-    context.assertAuthzException(userStmt,
+    userStmt.execute(
         "ALTER TABLE " + tabName + " ADD PARTITION (dt = '22-Dec-2012') " +
           " LOCATION '" + tabDir + "/foo'");
-    context.assertAuthzException(userStmt,
+    userStmt.execute(
         "ALTER TABLE " + tabName + " DROP PARTITION (dt = '21-Dec-2012')");
     userConn.close();
 
-    // positive test: user1 has privilege to alter drop partition
-    userConn = context.createConnection(USER1_1);
-    userStmt = context.createStatement(userConn);
-    userStmt.execute("use " + dbName);
-    userStmt.execute("ALTER TABLE " + tabName + " DROP PARTITION (dt = '21-Dec-2012')");
     userStmt.close();
     userConn.close();
   }
@@ -202,11 +196,11 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
     adminStmt.execute("CREATE TABLE " + tabName + " (id int)  PARTITIONED BY (dt string)");
     adminCon.close();
 
-    // negative test: user2 doesn't have privilege to alter table set partition
+    // positive test: user2 has privilege to alter table set partition
     userConn = context.createConnection(USER2_1);
     userStmt = context.createStatement(userConn);
     userStmt.execute("use " + dbName);
-    context.assertAuthzException(userStmt,
+    userStmt.execute(
         "ALTER TABLE " + tabName + " SET LOCATION '" + tabDir +  "'");
     userConn.close();
 

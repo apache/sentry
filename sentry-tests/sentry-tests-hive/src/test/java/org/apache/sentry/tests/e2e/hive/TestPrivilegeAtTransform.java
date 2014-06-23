@@ -76,7 +76,7 @@ public class TestPrivilegeAtTransform extends AbstractTestWithStaticConfiguratio
     statement.execute("DROP TABLE IF EXISTS " + dbName1 + "." + tableName1);
     statement.execute("create table " + dbName1 + "." + tableName1
         + " (under_col int, value string)");
-     statement.execute("load data local inpath '" + dataFile.getPath()
+    statement.execute("load data local inpath '" + dataFile.getPath()
             + "' into table " + dbName1 + "." + tableName1);
     assertTrue(query, statement.execute(query));
 

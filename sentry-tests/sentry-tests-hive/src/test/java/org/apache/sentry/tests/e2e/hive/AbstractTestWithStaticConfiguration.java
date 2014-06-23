@@ -154,11 +154,13 @@ public abstract class AbstractTestWithStaticConfiguration {
       statement.execute("DROP TABLE IF EXISTS " + table);
       statement.execute("create table " + table
           + " (under_col int comment 'the under column', value string)");
-      statement.execute("load data local inpath '" + dataFile.getPath()
-          + "' into table " + table);
-      ResultSet res = statement.executeQuery("select * from " + table);
-      Assert.assertTrue("Table should have data after load", res.next());
-      res.close();
+      if(dataFile != null) {
+        statement.execute("load data local inpath '" + dataFile.getPath()
+            + "' into table " + table);
+        ResultSet res = statement.executeQuery("select * from " + table);
+        Assert.assertTrue("Table should have data after load", res.next());
+        res.close();
+      }
     }
     statement.close();
     connection.close();

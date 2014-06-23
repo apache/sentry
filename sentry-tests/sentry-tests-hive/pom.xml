@@ -442,6 +442,7 @@ limitations under the License.
           <include>**/TestUriPermissions.java</include>
           <include>**/TestRuntimeMetadataRetrieval.java</include>
           <include>**/TestPrivilegesAtFunctionScope.java</include>
+          <include>**/TestOperations.java</include>
         </includes>
         <argLine>-Dsentry.e2etest.hiveServer2Type=UnmanagedHiveServer2 -Dsentry.e2etest.DFSType=ClusterDFS</argLine>
        </configuration>
@@ -506,6 +507,7 @@ limitations under the License.
           <include>**/TestDbRuntimeMetadataRetrieval.java</include>
           <include>**/TestDbPrivilegesAtFunctionScope.java</include>
           <include>**/TestDatabaseProvider.java</include>
+          <include>**/TestDbOperations.java</include>
         </includes>
         <argLine>-Dsentry.e2etest.hiveServer2Type=UnmanagedHiveServer2 -Dsentry.e2etest.DFSType=ClusterDFS -Dsentry.e2etest.external.sentry=true</argLine>
        </configuration>

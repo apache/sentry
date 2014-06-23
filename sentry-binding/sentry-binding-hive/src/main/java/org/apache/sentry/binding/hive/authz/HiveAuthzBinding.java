@@ -16,6 +16,7 @@
  */
 package org.apache.sentry.binding.hive.authz;
 
+import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -285,50 +286,71 @@ public class HiveAuthzBinding {
           " for subject " + subject.getName());
     }
 
-      /* for each read and write entity captured by the compiler -
-       *    check if that object type is part of the input/output privilege list
-       *    If it is, then validate the access.
-       * Note the hive compiler gathers information on additional entities like partitions,
-       * etc which are not of our interest at this point. Hence its very
-       * much possible that the we won't be validating all the entities in the given list
-       */
+    /* for each read and write entity captured by the compiler -
+     *    check if that object type is part of the input/output privilege list
+     *    If it is, then validate the access.
+     * Note the hive compiler gathers information on additional entities like partitions,
+     * etc which are not of our interest at this point. Hence its very
+     * much possible that the we won't be validating all the entities in the given list
+     */
 
-      // Check read entities
-      Map<AuthorizableType, EnumSet<DBModelAction>> requiredInputPrivileges =
-          stmtAuthPrivileges.getInputPrivileges();
+    // Check read entities
+    Map<AuthorizableType, EnumSet<DBModelAction>> requiredInputPrivileges =
+        stmtAuthPrivileges.getInputPrivileges();
+    if(isDebug) {
+      LOG.debug("requiredInputPrivileges = " + requiredInputPrivileges);
+      LOG.debug("inputHierarchyList = " + inputHierarchyList);
+    }
+    Map<AuthorizableType, EnumSet<DBModelAction>> requiredOutputPrivileges =
+        stmtAuthPrivileges.getOutputPrivileges();
+    if(isDebug) {
+      LOG.debug("requiredOuputPrivileges = " + requiredOutputPrivileges);
+      LOG.debug("outputHierarchyList = " + outputHierarchyList);
+    }
+
+    boolean found = false;
+    for(AuthorizableType key: requiredInputPrivileges.keySet()) {
       for (List<DBModelAuthorizable> inputHierarchy : inputHierarchyList) {
-        if(isDebug) {
-          LOG.debug("requiredInputPrivileges = " + requiredInputPrivileges);
-          LOG.debug("inputHierarchy = " + inputHierarchy);
-          LOG.debug("getAuthzType(inputHierarchy) = " + getAuthzType(inputHierarchy));
-        }
-        if (requiredInputPrivileges.containsKey(getAuthzType(inputHierarchy))) {
-          EnumSet<DBModelAction> inputPrivSet =
-            requiredInputPrivileges.get(getAuthzType(inputHierarchy));
-          if (!authProvider.hasAccess(subject, inputHierarchy, inputPrivSet, activeRoleSet)) {
+        if (getAuthzType(inputHierarchy).equals(key)) {
+          found = true;
+          if (!authProvider.hasAccess(subject, inputHierarchy, requiredInputPrivileges.get(key), activeRoleSet)) {
             throw new AuthorizationException("User " + subject.getName() +
                 " does not have privileges for " + hiveOp.name());
           }
         }
       }
-      // Check write entities
-      Map<AuthorizableType, EnumSet<DBModelAction>> requiredOutputPrivileges =
-          stmtAuthPrivileges.getOutputPrivileges();
+      if(!found && !(key.equals(AuthorizableType.URI)) &&  !(hiveOp.equals(HiveOperation.QUERY))) {
+        //URI privileges are optional for some privileges: anyPrivilege, tableDDLAndOptionalUriPrivilege
+        //Query can mean select/insert/analyze where all of them have different required privileges.
+        //For these alone we skip if there is no equivalent input privilege
+        //TODO: Even this case should be handled to make sure we do not skip the privilege check if we did not build
+        //the input privileges correctly
+        throw new AuthorizationException("Required privilege( " + key.name() + ") not available in input privileges");
+      }
+      found = false;
+    }
+
+    for(AuthorizableType key: requiredOutputPrivileges.keySet()) {
       for (List<DBModelAuthorizable> outputHierarchy : outputHierarchyList) {
-        if(isDebug) {
-          LOG.debug("requiredOutputPrivileges = " + requiredOutputPrivileges);
-          LOG.debug("outputHierarchy = " + outputHierarchy);
-          LOG.debug("getAuthzType(outputHierarchy) = " + getAuthzType(outputHierarchy));
-        }
-        if (requiredOutputPrivileges.containsKey(getAuthzType(outputHierarchy))) {
-          EnumSet<DBModelAction> outputPrivSet =
-            requiredOutputPrivileges.get(getAuthzType(outputHierarchy));
-          if (!authProvider.hasAccess(subject, outputHierarchy, outputPrivSet, activeRoleSet)) {
+        if (getAuthzType(outputHierarchy).equals(key)) {
+          found = true;
+          if (!authProvider.hasAccess(subject, outputHierarchy, requiredOutputPrivileges.get(key), activeRoleSet)) {
             throw new AuthorizationException("User " + subject.getName() +
                 " does not have privileges for " + hiveOp.name());
           }
         }
       }
+      if(!found && !(key.equals(AuthorizableType.URI)) &&  !(hiveOp.equals(HiveOperation.QUERY))) {
+        //URI privileges are optional for some privileges: tableInsertPrivilege
+        //Query can mean select/insert/analyze where all of them have different required privileges.
+        //For these alone we skip if there is no equivalent output privilege
+        //TODO: Even this case should be handled to make sure we do not skip the privilege check if we did not build
+        //the output privileges correctly
+        throw new AuthorizationException("Required privilege( " + key.name() + ") not available in output privileges");
+      }
+      found = false;
+    }
+
   }
 
   public void setActiveRoleSet(String activeRoleSet,

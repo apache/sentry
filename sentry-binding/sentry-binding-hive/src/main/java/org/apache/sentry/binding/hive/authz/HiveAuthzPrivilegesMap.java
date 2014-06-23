@@ -32,26 +32,40 @@ public class HiveAuthzPrivilegesMap {
     new HashMap<HiveOperation, HiveAuthzPrivileges>();
   private static final Map <HiveExtendedOperation, HiveAuthzPrivileges> hiveAuthzExtendedPrivMap =
     new HashMap<HiveExtendedOperation, HiveAuthzPrivileges>();
-
   static {
     HiveAuthzPrivileges tableDDLPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
-        addOutputObjectPriviledge(AuthorizableType.Table, EnumSet.of(DBModelAction.ALL)).
+        addInputObjectPriviledge(AuthorizableType.Table, EnumSet.of(DBModelAction.ALL)).
+        setOperationScope(HiveOperationScope.TABLE).
+        setOperationType(HiveOperationType.DDL).
+        build();
+    HiveAuthzPrivileges tableDDLAndUriPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
+        addInputObjectPriviledge(AuthorizableType.Table, EnumSet.of(DBModelAction.ALL)).
         addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.SELECT)).
         setOperationScope(HiveOperationScope.TABLE).
         setOperationType(HiveOperationType.DDL).
         build();
-    /* Currently Hive treats both select and insert as Query
-     * The difference is that the insert also has output table entities
+    HiveAuthzPrivileges tableDDLAndOptionalUriPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
+        addInputObjectPriviledge(AuthorizableType.Table, EnumSet.of(DBModelAction.ALL)).
+        addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.SELECT)).//TODO: make it optional
+        setOperationScope(HiveOperationScope.TABLE).
+        setOperationType(HiveOperationType.DDL).
+        build();
+
+    /* Currently Hive treats select/insert/analyze as Query
+     * select = select on table
+     * insert = insert on table /all on uri
+     * analyze = select + insert on table
      */
     HiveAuthzPrivileges tableQueryPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
         addInputObjectPriviledge(AuthorizableType.Table, EnumSet.of(DBModelAction.SELECT)).
         addOutputObjectPriviledge(AuthorizableType.Table, EnumSet.of(DBModelAction.INSERT)).
-        addOutputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.INSERT)).
+        addOutputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.ALL)).
         setOperationScope(HiveOperationScope.TABLE).
         setOperationType(HiveOperationType.QUERY).
         build();
+
     HiveAuthzPrivileges tableLoadPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
-        addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.SELECT)).
+        addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.ALL)).
         addOutputObjectPriviledge(AuthorizableType.Table, EnumSet.of(DBModelAction.INSERT)).
         setOperationScope(HiveOperationScope.TABLE).
         setOperationType(HiveOperationType.DATA_LOAD).
@@ -59,7 +73,7 @@ public class HiveAuthzPrivilegesMap {
 
     HiveAuthzPrivileges tableExportPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
         addInputObjectPriviledge(AuthorizableType.Table, EnumSet.of(DBModelAction.SELECT)).
-        addOutputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.INSERT)).
+        addOutputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.ALL)).
         setOperationScope(HiveOperationScope.TABLE).
         setOperationType(HiveOperationType.DATA_UNLOAD).
         build();
@@ -71,15 +85,21 @@ public class HiveAuthzPrivilegesMap {
         build();
 
     HiveAuthzPrivileges dbDDLPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
-        addOutputObjectPriviledge(AuthorizableType.Db, EnumSet.of(DBModelAction.ALL)).
-        addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.ALL)).
+        addInputObjectPriviledge(AuthorizableType.Db, EnumSet.of(DBModelAction.ALL)).
+        setOperationScope(HiveOperationScope.DATABASE).
+        setOperationType(HiveOperationType.DDL).
+        build();
+
+    HiveAuthzPrivileges createTablePrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
+        addInputObjectPriviledge(AuthorizableType.Db, EnumSet.of(DBModelAction.ALL)).
+        addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.ALL)).//TODO: make it optional
         setOperationScope(HiveOperationScope.DATABASE).
         setOperationType(HiveOperationType.DDL).
         build();
 
     HiveAuthzPrivileges dbImportPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
         addOutputObjectPriviledge(AuthorizableType.Db, EnumSet.of(DBModelAction.ALL)).
-        addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.SELECT)).
+        addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.ALL)).
         setOperationScope(HiveOperationScope.DATABASE).
         setOperationType(HiveOperationType.DDL).
         build();
@@ -87,13 +107,13 @@ public class HiveAuthzPrivilegesMap {
     HiveAuthzPrivileges createViewPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
     addOutputObjectPriviledge(AuthorizableType.Db, EnumSet.of(DBModelAction.ALL)).
     addInputObjectPriviledge(AuthorizableType.Table, EnumSet.of(DBModelAction.SELECT)).
-    addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.SELECT)).
+    addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.ALL)).//TODO: This should not be required
     setOperationScope(HiveOperationScope.DATABASE).
     setOperationType(HiveOperationType.DDL).
     build();
 
     HiveAuthzPrivileges dbMetaDataPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
-      addInputObjectPriviledge(AuthorizableType.Db, EnumSet.of(DBModelAction.SELECT)).
+      addInputObjectPriviledge(AuthorizableType.Db, EnumSet.of(DBModelAction.SELECT, DBModelAction.INSERT)).
       setOperationScope(HiveOperationScope.DATABASE).
       setOperationType(HiveOperationType.INFO).
       build();
@@ -105,36 +125,73 @@ public class HiveAuthzPrivilegesMap {
         build();
     HiveAuthzPrivileges serverPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
         addInputObjectPriviledge(AuthorizableType.Server, EnumSet.of(DBModelAction.ALL)).
-        addOutputObjectPriviledge(AuthorizableType.Server, EnumSet.of(DBModelAction.ALL)).
         setOperationScope(HiveOperationScope.SERVER).
         setOperationType(HiveOperationType.DDL).
         build();
 
+
     HiveAuthzPrivileges anyPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
         addInputObjectPriviledge(AuthorizableType.Table, EnumSet.of(DBModelAction.SELECT, DBModelAction.INSERT)).
-        addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.SELECT)).
+        addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.ALL)). //TODO: make them ||
         setOperationScope(HiveOperationScope.CONNECT).
         setOperationType(HiveOperationType.QUERY).
         build();
 
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_ADDCOLS, dbDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_REPLACECOLS, dbDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_RENAMECOL, dbDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_RENAMEPART, dbDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_RENAME, dbDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_DROPPARTS, dbDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_ADDPARTS, dbDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_TOUCH, dbDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_ARCHIVE, dbDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_UNARCHIVE, dbDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_SERIALIZER, dbDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_PROPERTIES, dbDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_SERIALIZER, dbDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_SERDEPROPERTIES, dbDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_SERDEPROPERTIES, dbDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_CLUSTER_SORT, dbDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.CREATEDATABASE, serverPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.DROPDATABASE, dbDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.CREATETABLE, createTablePrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.DROPTABLE, tableDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.CREATEVIEW, createViewPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.DROPVIEW, tableDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.CREATEINDEX, tableDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.DROPINDEX, tableDDLPrivilege);
+
+
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_RENAME, tableDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_PROPERTIES, tableDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_SERDEPROPERTIES, tableDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_CLUSTER_SORT, tableDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_FILEFORMAT, tableDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_TOUCH, tableDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_PROTECTMODE, tableDDLPrivilege);
+
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_RENAMECOL, tableDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_ADDCOLS, tableDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_REPLACECOLS, tableDDLPrivilege);
+
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_ADDPARTS, tableDDLAndOptionalUriPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_RENAMEPART, tableDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_DROPPARTS, tableDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_ARCHIVE, tableDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_UNARCHIVE, tableDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_FILEFORMAT, tableDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_PROTECTMODE, tableDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_SERDEPROPERTIES, tableDDLPrivilege);
+
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_SERIALIZER, tableDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_MERGEFILES, tableDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_SKEWED, tableDDLPrivilege);
+
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_SERIALIZER, tableDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_MERGEFILES, tableDDLPrivilege);
+
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERINDEX_PROPS, tableDDLPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERINDEX_REBUILD, tableDDLPrivilege);
+
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERVIEW_PROPERTIES, tableDDLPrivilege);
+
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_LOCATION, tableDDLAndUriPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_LOCATION, tableDDLAndUriPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTBLPART_SKEWED_LOCATION, tableDDLAndUriPrivilege);
+
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERDATABASE, dbDDLPrivilege);
+
     hiveAuthzStmtPrivMap.put(HiveOperation.ANALYZE_TABLE, tableQueryPrivilege);
+
     hiveAuthzStmtPrivMap.put(HiveOperation.SWITCHDATABASE, anyPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.CREATEFUNCTION, anyPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.DROPFUNCTION, anyPrivilege);
+
     // SHOWDATABASES
     // SHOWTABLES
     hiveAuthzStmtPrivMap.put(HiveOperation.SHOWCOLUMNS, tableMetaDataPrivilege);
@@ -145,19 +202,9 @@ public class HiveAuthzPrivilegesMap {
     hiveAuthzStmtPrivMap.put(HiveOperation.SHOWINDEXES, tableMetaDataPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.SHOWPARTITIONS, tableMetaDataPrivilege);
     // SHOWLOCKS
-    hiveAuthzStmtPrivMap.put(HiveOperation.CREATEFUNCTION, anyPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.DROPFUNCTION, anyPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.CREATEVIEW, createViewPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.DROPVIEW, dbDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.CREATEINDEX, dbDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.DROPINDEX, dbDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.DROPDATABASE, serverPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.DROPTABLE, dbDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.EXPORT, tableExportPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.IMPORT, dbImportPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.LOAD, tableLoadPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERINDEX_REBUILD, tableDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERVIEW_PROPERTIES, tableDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.LOCKTABLE, tableDMLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.UNLOCKTABLE, tableDMLPrivilege);
     // CREATEROLE
@@ -168,14 +215,6 @@ public class HiveAuthzPrivilegesMap {
     // GRANT_ROLE
     // REVOKE_ROLE
     // SHOW_ROLE_GRANT
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_PROTECTMODE, dbDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_PROTECTMODE, dbDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_FILEFORMAT, dbDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_FILEFORMAT, dbDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_LOCATION, serverPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_LOCATION, serverPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.CREATEDATABASE, serverPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.CREATETABLE, dbDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.CREATETABLE_AS_SELECT,
         new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
         addInputObjectPriviledge(AuthorizableType.Table, EnumSet.of(DBModelAction.SELECT)).
@@ -184,14 +223,8 @@ public class HiveAuthzPrivilegesMap {
         setOperationType(HiveOperationType.DDL).
         build());
     hiveAuthzStmtPrivMap.put(HiveOperation.QUERY, tableQueryPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERINDEX_PROPS, dbDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERDATABASE, dbDDLPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.DESCDATABASE, dbMetaDataPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.DESCTABLE, tableMetaDataPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_MERGEFILES, dbDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_MERGEFILES, dbDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_SKEWED, dbDDLPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTBLPART_SKEWED_LOCATION, dbDDLPrivilege);
 
     hiveAuthzExtendedPrivMap.put(HiveExtendedOperation.TRANSFORM, serverPrivilege);
   }

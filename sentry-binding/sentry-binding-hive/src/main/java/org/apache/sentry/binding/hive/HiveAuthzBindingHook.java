@@ -16,6 +16,7 @@
  */
 package org.apache.sentry.binding.hive;
 
+import org.apache.commons.lang.StringUtils;
 import static org.apache.hadoop.hive.metastore.MetaStoreUtils.DEFAULT_DATABASE_NAME;
 
 import java.io.Serializable;
@@ -42,6 +43,7 @@ import org.apache.hadoop.hive.ql.hooks.Entity.Type;
 import org.apache.hadoop.hive.ql.hooks.Hook;
 import org.apache.hadoop.hive.ql.hooks.ReadEntity;
 import org.apache.hadoop.hive.ql.hooks.WriteEntity;
+import org.apache.hadoop.hive.ql.lib.Node;
 import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
 import org.apache.hadoop.hive.ql.parse.AbstractSemanticAnalyzerHook;
@@ -136,87 +138,88 @@ implements HiveDriverFilterHook {
 
     switch (ast.getToken().getType()) {
     // Hive parser doesn't capture the database name in output entity, so we store it here for now
-    case HiveParser.TOK_CREATEDATABASE:
-    case HiveParser.TOK_ALTERDATABASE_PROPERTIES:
-    case HiveParser.TOK_DROPDATABASE:
-    case HiveParser.TOK_SWITCHDATABASE:
-      currDB = new Database(BaseSemanticAnalyzer.unescapeIdentifier(ast.getChild(0).getText()));
-      break;
-    case HiveParser.TOK_DESCDATABASE:
-      currDB = new Database(BaseSemanticAnalyzer.unescapeIdentifier(ast.getChild(0).getText()));
-      break;
-    case HiveParser.TOK_CREATETABLE:
-    case HiveParser.TOK_DROPTABLE:
-    case HiveParser.TOK_ALTERTABLE_ADDCOLS:
-    case HiveParser.TOK_ALTERTABLE_RENAMECOL:
-    case HiveParser.TOK_ALTERTABLE_REPLACECOLS:
-    case HiveParser.TOK_ALTERTABLE_RENAME:
-    case HiveParser.TOK_ALTERTABLE_DROPPARTS:
-    case HiveParser.TOK_ALTERTABLE_PROPERTIES:
-    case HiveParser.TOK_ALTERTABLE_SERIALIZER:
-    case HiveParser.TOK_CREATEVIEW:
-    case HiveParser.TOK_DROPVIEW:
-    case HiveParser.TOK_ALTERVIEW_ADDPARTS:
-    case HiveParser.TOK_ALTERVIEW_DROPPARTS:
-    case HiveParser.TOK_ALTERVIEW_PROPERTIES:
-    case HiveParser.TOK_ALTERVIEW_RENAME:
-      /*
-       * Compiler doesn't create read/write entities for create table.
-       * Hence we need extract dbname from db.tab format, if applicable
-       */
-      currDB = extractDatabase(ast);
-      break;
-    case HiveParser.TOK_ALTERTABLE_ADDPARTS:
-      /*
-       * Compiler doesn't create read/write entities for create table.
-       * Hence we need extract dbname from db.tab format, if applicable
-       */
-      currDB = extractDatabase(ast);
-      partitionURI = extractPartition(ast);
-      break;
-    case HiveParser.TOK_CREATEFUNCTION:
-      String udfClassName = BaseSemanticAnalyzer.unescapeSQLString(ast.getChild(1).getText());
-      try {
-        CodeSource udfSrc = Class.forName(udfClassName).getProtectionDomain().getCodeSource();
-        if (udfSrc == null) {
-          throw new SemanticException("Could not resolve the jar for UDF class " + udfClassName);
+      case HiveParser.TOK_CREATEDATABASE:
+      case HiveParser.TOK_ALTERDATABASE_PROPERTIES:
+      case HiveParser.TOK_DROPDATABASE:
+      case HiveParser.TOK_SWITCHDATABASE:
+      case HiveParser.TOK_DESCDATABASE:
+        currDB = new Database(BaseSemanticAnalyzer.unescapeIdentifier(ast.getChild(0).getText()));
+        break;
+      case HiveParser.TOK_CREATETABLE:
+      case HiveParser.TOK_CREATEVIEW:
+        /*
+         * Compiler doesn't create read/write entities for create table.
+         * Hence we need extract dbname from db.tab format, if applicable
+         */
+        currDB = extractDatabase((ASTNode)ast.getChild(0));
+        break;
+      case HiveParser.TOK_DROPTABLE:
+      case HiveParser.TOK_DROPVIEW:
+      case HiveParser.TOK_SHOW_TABLESTATUS:
+      case HiveParser.TOK_SHOW_CREATETABLE:
+      case HiveParser.TOK_ALTERTABLE_SERIALIZER:
+      case HiveParser.TOK_ALTERVIEW_ADDPARTS:
+      case HiveParser.TOK_ALTERVIEW_DROPPARTS:
+      case HiveParser.TOK_ALTERVIEW_PROPERTIES:
+      case HiveParser.TOK_ALTERVIEW_RENAME:
+      case HiveParser.TOK_CREATEINDEX:
+      case HiveParser.TOK_DROPINDEX:
+        currTab = extractTable((ASTNode)ast.getFirstChildWithType(HiveParser.TOK_TABNAME));
+        currDB = extractDatabase((ASTNode) ast.getChild(0));
+        break;
+      case HiveParser.TOK_ALTERTABLE_RENAME:
+      case HiveParser.TOK_ALTERTABLE_PROPERTIES:
+      case HiveParser.TOK_ALTERTABLE_DROPPARTS:
+      case HiveParser.TOK_ALTERTABLE_RENAMECOL:
+      case HiveParser.TOK_ALTERTABLE_ADDCOLS:
+      case HiveParser.TOK_ALTERTABLE_REPLACECOLS:
+      case HiveParser.TOK_SHOW_TBLPROPERTIES:
+      case HiveParser.TOK_SHOWINDEXES:
+      case HiveParser.TOK_SHOWPARTITIONS:
+        //token name TOK_TABNAME is not properly set in this case
+        currTab = extractTable((ASTNode)ast.getChild(0));
+        currDB = extractDatabase((ASTNode)ast.getChild(0));
+        break;
+      case HiveParser.TOK_ALTERTABLE_ADDPARTS:
+        /*
+         * Compiler doesn't create read/write entities for create table.
+         * Hence we need extract dbname from db.tab format, if applicable
+         */
+        currTab = extractTable((ASTNode)ast.getChild(0));
+        currDB = extractDatabase((ASTNode)ast.getChild(0));
+        partitionURI = extractPartition(ast);
+        break;
+      case HiveParser.TOK_CREATEFUNCTION:
+        String udfClassName = BaseSemanticAnalyzer.unescapeSQLString(ast.getChild(1).getText());
+        try {
+          CodeSource udfSrc = Class.forName(udfClassName).getProtectionDomain().getCodeSource();
+          if (udfSrc == null) {
+            throw new SemanticException("Could not resolve the jar for UDF class " + udfClassName);
+          }
+          String udfJar = udfSrc.getLocation().getPath();
+          if (udfJar == null || udfJar.isEmpty()) {
+            throw new SemanticException("Could not find the jar for UDF class " + udfClassName +
+                "to validate privileges");
+          }
+          udfURI = parseURI(udfSrc.getLocation().toString(), true);
+        } catch (ClassNotFoundException e) {
+          throw new SemanticException("Error retrieving udf class", e);
         }
-        String udfJar = udfSrc.getLocation().getPath();
-        if (udfJar == null || udfJar.isEmpty()) {
-          throw new SemanticException("Could not find the jar for UDF class " + udfClassName +
-              "to validate privileges");
-        }
-        udfURI = parseURI(udfSrc.getLocation().toString(), true);
-      } catch (ClassNotFoundException e) {
-        throw new SemanticException("Error retrieving udf class", e);
-      }
-      // create/drop function is allowed with any database
-      currDB = Database.ALL;
-      break;
-    case HiveParser.TOK_DROPFUNCTION:
-      // create/drop function is allowed with any database
-      currDB = Database.ALL;
-      break;
-    case HiveParser.TOK_SHOW_TABLESTATUS:
-    case HiveParser.TOK_SHOW_CREATETABLE:
-    case HiveParser.TOK_SHOWINDEXES:
-    case HiveParser.TOK_SHOWPARTITIONS:
-      // Find the target table for metadata operations, these are not covered in the read entities by the compiler
-      currTab = new Table(BaseSemanticAnalyzer.getUnescapedName((ASTNode) ast.getChild(0)));
-      currDB = getCanonicalDb();
-      break;
-    case HiveParser.TOK_SHOW_TBLPROPERTIES:
-      currTab = new Table(BaseSemanticAnalyzer.
-          getUnescapedName((ASTNode) ast.getChild(0)));
-      currDB = getCanonicalDb();
-      break;
-    case HiveParser.TOK_LOAD:
-      String dbName = BaseSemanticAnalyzer.unescapeIdentifier(ast.getChild(1).getChild(0).getChild(0).getText());
-      currDB = new Database(dbName);
-      break;
-    default:
-      currDB = getCanonicalDb();
-      break;
+        // create/drop function is allowed with any database
+        currDB = Database.ALL;
+        break;
+      case HiveParser.TOK_DROPFUNCTION:
+        // create/drop function is allowed with any database
+        currDB = Database.ALL;
+        break;
+
+      case HiveParser.TOK_LOAD:
+        String dbName = BaseSemanticAnalyzer.unescapeIdentifier(ast.getChild(1).getChild(0).getChild(0).getText());
+        currDB = new Database(dbName);
+        break;
+      default:
+        currDB = getCanonicalDb();
+        break;
     }
     return ast;
   }
@@ -227,11 +230,19 @@ implements HiveDriverFilterHook {
   }
 
   private Database extractDatabase(ASTNode ast) throws SemanticException {
-    String tableName = BaseSemanticAnalyzer.getUnescapedName((ASTNode)ast.getChild(0));
+    String tableName = BaseSemanticAnalyzer.getUnescapedName(ast);
     if (tableName.contains(".")) {
       return new Database((tableName.split("\\."))[0]);
     } else {
       return getCanonicalDb();
+    }
+  }
+  private Table extractTable(ASTNode ast) throws SemanticException {
+    String tableName = BaseSemanticAnalyzer.getUnescapedName(ast);
+    if (tableName.contains(".")) {
+      return new Table((tableName.split("\\."))[1]);
+    } else {
+      return new Table(tableName);
     }
   }
 
@@ -273,8 +284,9 @@ implements HiveDriverFilterHook {
   public void postAnalyze(HiveSemanticAnalyzerHookContext context,
       List<Task<? extends Serializable>> rootTasks) throws SemanticException {
     HiveOperation stmtOperation = getCurrentHiveStmtOp();
-    HiveAuthzPrivileges stmtAuthObject =
-        HiveAuthzPrivilegesMap.getHiveAuthzPrivileges(stmtOperation);
+    HiveAuthzPrivileges stmtAuthObject;
+
+    stmtAuthObject = HiveAuthzPrivilegesMap.getHiveAuthzPrivileges(stmtOperation);
 
     // must occur above the null check on stmtAuthObject
     // since GRANT/REVOKE/etc are not authorized by binding layer at present
@@ -382,10 +394,6 @@ implements HiveDriverFilterHook {
       dbHierarchy.add(currDB);
       inputHierarchy.add(dbHierarchy);
       outputHierarchy.add(dbHierarchy);
-      // workaround for add partitions
-      if(partitionURI != null) {
-        inputHierarchy.add(ImmutableList.of(hiveAuthzBinding.getAuthServer(), partitionURI));
-      }
 
       for(ReadEntity readEntity:inputs) {
       	 // If this is a UDF, then check whether its allowed to be executed
@@ -403,6 +411,11 @@ implements HiveDriverFilterHook {
       }
       break;
     case TABLE:
+      // workaround for add partitions
+      if(partitionURI != null) {
+        inputHierarchy.add(ImmutableList.of(hiveAuthzBinding.getAuthServer(), partitionURI));
+      }
+
       for (ReadEntity readEntity: inputs) {
         // skip the tables/view that are part of expanded view definition.
         if (isChildTabForView(readEntity)) {

@@ -195,6 +195,17 @@ public class Context {
     }
   }
 
+  public void assertSentrySemanticException(Statement statement, String query, String exceptionType)
+      throws SQLException {
+    try {
+      statement.execute(query);
+      Assert.fail("Expected SQLException for '" + query + "'");
+    } catch (SQLException e) {
+      verifyAuthzExceptionForState(e, AUTHZ_EXCEPTION_SQL_STATE);
+      Assert.assertTrue("Expected " + exceptionType + " : " + e.getMessage(),
+          Strings.nullToEmpty(e.getMessage()).contains(exceptionType));
+    }
+  }
   // verify that the sqlexception is due to authorization failure
   public void verifyAuthzException(SQLException sqlException) throws SQLException{
     verifyAuthzExceptionForState(sqlException, AUTHZ_EXCEPTION_SQL_STATE);

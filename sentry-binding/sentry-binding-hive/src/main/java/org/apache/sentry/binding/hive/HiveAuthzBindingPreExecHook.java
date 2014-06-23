@@ -57,7 +57,7 @@ public class HiveAuthzBindingPreExecHook implements ExecuteWithHookContext {
         List<DBModelAuthorizable> serverHierarchy = new ArrayList<DBModelAuthorizable>();
 
         serverHierarchy.add(hiveAuthzBinding.getAuthServer());
-        outputHierarchy.add(serverHierarchy);
+        inputHierarchy.add(serverHierarchy);
         hiveAuthzBinding.authorize(HiveOperation.QUERY,
           HiveAuthzPrivilegesMap.getHiveExtendedAuthzPrivileges(HiveExtendedOperation.TRANSFORM),
           new Subject(hookContext.getUserName()), inputHierarchy, outputHierarchy);

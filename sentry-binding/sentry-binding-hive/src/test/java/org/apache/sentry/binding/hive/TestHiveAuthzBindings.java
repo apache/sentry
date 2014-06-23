@@ -156,7 +156,7 @@ public class TestHiveAuthzBindings {
    */
   @Test
   public void testValidateCreateTabPrivilegesForAdmin() throws Exception {
-    outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, CUSTOMER_DB, PAYMENT_TAB));
+    inputTabHierarcyList.add(buildObjectHierarchy(SERVER1, CUSTOMER_DB, null));
     testAuth.authorize(HiveOperation.CREATETABLE, createTabPrivileges, ADMIN_SUBJECT,
         inputTabHierarcyList, outputTabHierarcyList);
   }
@@ -166,7 +166,7 @@ public class TestHiveAuthzBindings {
    */
   @Test
   public void testValidateCreateTabPrivilegesForUser() throws Exception {
-    outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, JUNIOR_ANALYST_DB, PAYMENT_TAB));
+    inputTabHierarcyList.add(buildObjectHierarchy(SERVER1, JUNIOR_ANALYST_DB, null));
     testAuth.authorize(HiveOperation.CREATETABLE, createTabPrivileges, MANAGER_SUBJECT,
         inputTabHierarcyList, outputTabHierarcyList);
   }
@@ -225,7 +225,7 @@ public class TestHiveAuthzBindings {
    */
   @Test
   public void testValidateCreateDbForAdmin() throws Exception {
-    outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, null, null));
+    inputTabHierarcyList.add(buildObjectHierarchy(SERVER1, null, null));
     testAuth.authorize(HiveOperation.CREATEDATABASE, createDbPrivileges, ADMIN_SUBJECT,
         inputTabHierarcyList, outputTabHierarcyList);
   }
@@ -246,7 +246,7 @@ public class TestHiveAuthzBindings {
    */
   @Test
   public void testValidateCreateFunctionForAdmin() throws Exception {
-    inputTabHierarcyList.add(buildObjectHierarchy(SERVER1, null, null));
+    inputTabHierarcyList.add(buildObjectHierarchy(SERVER1, CUSTOMER_DB, PURCHASES_TAB));
     inputTabHierarcyList.add(Arrays.asList(new DBModelAuthorizable[] {
         new Server(SERVER1), new AccessURI("file:///some/path/to/a/jar")
     }));

@@ -274,9 +274,6 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
     statement.execute("CREATE VIEW " + VIEW1 + " (value) AS SELECT value from " + TBL1 + " LIMIT 10");
 
     createTable(USER1_1, DB2, dataFile, TBL2, TBL3);
-    // c
-    context.assertAuthzException(statement, "DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
-    context.assertAuthzException(statement, "DROP DATABASE IF EXISTS " + DB2 + " CASCADE");
     // d
     statement.execute("USE " + DB1);
     policyFile.removePermissionsFromRole(GROUP1_ROLE, ALL_DB2);
@@ -402,7 +399,6 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
     // c
     statement.execute("USE " + DB1);
     context.assertAuthzException(statement, "CREATE DATABASE " + DB3);
-    context.assertAuthzException(statement, "DROP DATABASE " + DB1);
     ResultSet rs = statement.executeQuery("SHOW DATABASES");
     assertTrue(rs.next());
     assertEquals(DB1, rs.getString(1));
