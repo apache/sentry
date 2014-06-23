@@ -382,7 +382,8 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     statement.execute("CREATE TABLE t1 (c1 string)");
     statement.execute("GRANT ALL ON TABLE t1 TO ROLE user_role");
     statement.execute("GRANT ALL ON TABLE t1 TO ROLE user_role2");
-    statement.execute("GRANT ALL ON URI 'file://" + dataFile.getPath() + "' TO ROLE user_role");
+    statement.execute("GRANT ALL ON URI \"file://" + dataFile.getPath()
+        + "\" TO ROLE user_role");
     statement.execute("GRANT ALL ON URI 'file://" + dataFile.getPath() + "' TO ROLE user_role2");
     statement.execute("GRANT INSERT ON TABLE t1 TO ROLE user_role2");
     statement.execute("GRANT ROLE user_role TO GROUP " + USERGROUP1);

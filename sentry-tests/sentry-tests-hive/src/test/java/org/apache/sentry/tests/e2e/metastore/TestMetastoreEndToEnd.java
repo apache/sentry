@@ -18,7 +18,6 @@
 
 package org.apache.sentry.tests.e2e.metastore;
 
-import org.apache.sentry.provider.file.PolicyFile;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -30,6 +29,7 @@ import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.Partition;
 import org.apache.hadoop.hive.metastore.api.Table;
+import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.tests.e2e.hive.Context;
 import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
@@ -49,7 +49,7 @@ public class TestMetastoreEndToEnd extends
 
   @Before
   public void setup() throws Exception {
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    policyFile = setAdminOnServer1(ADMINGROUP); // PolicyFile.setAdminOnServer1(ADMINGROUP);
     policyFile
         .addRolesToGroup(USERGROUP1, db_all_role)
         .addRolesToGroup(USERGROUP2, "read_db_role")
@@ -341,6 +341,7 @@ public class TestMetastoreEndToEnd extends
       tbl1 = client.getTable(dbName, tabName1);
       addPartitionWithLocation(client, dbName, tabName1, partVals3,
           tbl1, tabDir2);
+      fail("Add partition with location should have failed");
     } catch (MetaException e) {
       Context.verifyMetastoreAuthException(e);
     }
@@ -376,6 +377,7 @@ public class TestMetastoreEndToEnd extends
     newPartition = client.getPartition(dbName, tabName1, partVals1);
     try {
       client.alter_partition(dbName, tabName1, newPartition);
+      fail("alter partition with location should have failed");
     } catch (MetaException e) {
       Context.verifyMetastoreAuthException(e);
     }

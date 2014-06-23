@@ -18,12 +18,15 @@ package org.apache.sentry.tests.e2e.hive.fs;
 
 import java.io.File;
 
+import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory.HiveServer2Type;
+
 import com.google.common.annotations.VisibleForTesting;
 
 public class DFSFactory {
   public static final String FS_TYPE = "sentry.e2etest.DFSType";
 
-  public static DFS create(String dfsType, File baseDir) throws Exception{
+  public static DFS create(String dfsType, File baseDir,
+      String serverType) throws Exception {
     DFSType type;
     if(dfsType!=null) {
       type = DFSType.valueOf(dfsType.trim());
@@ -32,7 +35,7 @@ public class DFSFactory {
     }
     switch (type) {
       case MiniDFS:
-        return new MiniDFS(baseDir);
+        return new MiniDFS(baseDir, serverType);
       case ClusterDFS:
         return new ClusterDFS();
       default:

@@ -38,8 +38,10 @@ import org.apache.hadoop.hive.serde.serdeConstants;
 import org.apache.hadoop.hive.shims.ShimLoader;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.pig.PigServer;
+import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory.HiveServer2Type;
+import org.junit.After;
 import org.junit.BeforeClass;
 
 public abstract class AbstractMetastoreTestWithStaticConfiguration extends
@@ -52,6 +54,22 @@ public abstract class AbstractMetastoreTestWithStaticConfiguration extends
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
   }
 
+  @Override
+  @After
+  public void clearDB() throws Exception {
+
+  }
+
+  @Override
+  protected void writePolicyFile(PolicyFile policyFile) throws Exception {
+    policyFile.write(context.getPolicyFile());
+  }
+
+  public static PolicyFile setAdminOnServer1(String adminGroup)
+      throws Exception {
+    return SentryPolicyProviderForDb.setAdminOnServer1(adminGroup,
+        getSentryClient());
+  }
   /**
    * create a metastore table using the given attributes
    * @param client

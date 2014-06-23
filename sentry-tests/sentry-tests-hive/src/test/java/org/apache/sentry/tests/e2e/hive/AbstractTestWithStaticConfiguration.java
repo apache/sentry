@@ -45,8 +45,10 @@ import org.apache.sentry.core.model.db.DBModelAction;
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.sentry.policy.db.DBModelAuthorizables;
 import org.apache.sentry.provider.db.SimpleDBProviderBackend;
+import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.service.thrift.SentryService;
+import org.apache.sentry.service.thrift.SentryServiceClientFactory;
 import org.apache.sentry.service.thrift.SentryServiceFactory;
 import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
@@ -190,7 +192,7 @@ public abstract class AbstractTestWithStaticConfiguration {
     policyFileLocation = new File(confDir, HiveServerFactory.AUTHZ_PROVIDER_FILENAME);
 
     String dfsType = System.getProperty(DFSFactory.FS_TYPE);
-    dfs = DFSFactory.create(dfsType, baseDir);
+    dfs = DFSFactory.create(dfsType, baseDir, testServerType);
     fileSystem = dfs.getFileSystem();
 
     String policyURI;
@@ -356,6 +358,14 @@ public abstract class AbstractTestWithStaticConfiguration {
         throw new TimeoutException("Server did not start after 60 seconds");
       }
     }
+  }
+
+  public static SentryPolicyServiceClient getSentryClient() throws Exception {
+    if (sentryServer == null) {
+      throw new IllegalAccessException("Sentry service not initialized");
+    }
+    SentryServiceClientFactory factory = new SentryServiceClientFactory();
+    return factory.create(sentryServer.getConf());
   }
 
   @Before

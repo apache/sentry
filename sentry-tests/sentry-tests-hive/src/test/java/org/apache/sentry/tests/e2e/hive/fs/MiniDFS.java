@@ -26,6 +26,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.security.GroupMappingServiceProvider;
+import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory.HiveServer2Type;
 
 import com.google.common.collect.Lists;
 
@@ -52,7 +53,10 @@ public class MiniDFS extends AbstractDFS {
 
   private static MiniDFSCluster dfsCluster;
 
-  MiniDFS(File baseDir) throws Exception {
+  MiniDFS(File baseDir, String serverType) throws Exception {
+    if (HiveServer2Type.InternalMetastore.name().equalsIgnoreCase(serverType)) {
+      Configuration.addDefaultResource("core-site-for-sentry-test.xml");
+    }
     Configuration conf = new Configuration();
     File dfsDir = assertCreateDir(new File(baseDir, "dfs"));
     conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, dfsDir.getPath());

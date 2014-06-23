@@ -44,6 +44,11 @@ public class InternalMetastoreServer extends AbstractHiveServer {
   }
 
   @Override
+  public String getURL() {
+    return "jdbc:hive2://";
+  }
+
+  @Override
   public void start() throws Exception {
     startMetastore();
   }

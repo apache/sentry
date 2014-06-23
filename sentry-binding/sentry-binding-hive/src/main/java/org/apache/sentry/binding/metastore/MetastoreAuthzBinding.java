@@ -45,7 +45,6 @@ import org.apache.hadoop.hive.metastore.events.PreDropPartitionEvent;
 import org.apache.hadoop.hive.metastore.events.PreDropTableEvent;
 import org.apache.hadoop.hive.metastore.events.PreEventContext;
 import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
-import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.shims.ShimLoader;
 import org.apache.sentry.binding.hive.authz.HiveAuthzBinding;
@@ -127,6 +126,7 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
   private final HiveConf hiveConf;
   private final ImmutableSet<String> serviceUsers;
   private HiveAuthzBinding hiveAuthzBinding;
+  private String warehouseDir;
 
   public MetastoreAuthzBinding(Configuration config) throws Exception {
     super(config);
@@ -150,6 +150,8 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
     serviceUsers = ImmutableSet.copyOf(toTrimedLower(Sets.newHashSet(authzConf
         .getStrings(AuthzConfVars.AUTHZ_METASTORE_SERVICE_USERS.getVar(),
             new String[] { "" }))));
+    warehouseDir = hiveConf.getVar(HiveConf.ConfVars.METASTOREWAREHOUSE);
+
   }
 
   /**
@@ -210,7 +212,6 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
       throws InvalidOperationException, MetaException {
     HierarcyBuilder inputBuilder = new HierarcyBuilder();
     if (!StringUtils.isEmpty(context.getTable().getSd().getLocation())) {
-      String warehouseDir = hiveConf.getVar(HiveConf.ConfVars.METASTOREWAREHOUSE);
       String uriPath;
       try {
         uriPath = PathUtils.parseDFSURI(warehouseDir, context.getTable().getSd()
@@ -239,10 +240,18 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
 
     HierarcyBuilder inputBuilder = new HierarcyBuilder();
     // if the operation requires location change, then add URI privilege check
-    if (context.getOldTable().getSd().getLocation()
-        .compareTo(context.getNewTable().getSd().getLocation()) != 0) {
-      inputBuilder.addUriToOutput(getAuthServer(), context.getNewTable()
-          .getSd().getLocation());
+    String oldLocationUri;
+    String newLocationUri;
+    try {
+      oldLocationUri = PathUtils.parseDFSURI(warehouseDir, context
+          .getOldTable().getSd().getLocation());
+      newLocationUri = PathUtils.parseDFSURI(warehouseDir, context
+          .getNewTable().getSd().getLocation());
+    } catch (URISyntaxException e) {
+      throw new MetaException(e.getMessage());
+    }
+    if (oldLocationUri.compareTo(newLocationUri) != 0) {
+      inputBuilder.addUriToOutput(getAuthServer(), newLocationUri);
     }
     authorizeMetastoreAccess(
         HiveOperation.ALTERTABLE_ADDCOLS, inputBuilder.build(),
@@ -262,9 +271,16 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
           .getHandler()
           .get_table(context.getPartition().getDbName(),
               context.getPartition().getTableName()).getSd().getLocation();
+
+      String uriPath;
+      try {
+        uriPath = PathUtils.parseDFSURI(warehouseDir, context.getPartition()
+            .getSd().getLocation());
+      } catch (URISyntaxException e) {
+        throw new MetaException(e.getMessage());
+      }
       if (!partitionLocation.startsWith(tableLocation + File.separator)) {
-        inputBuilder.addUriToOutput(getAuthServer(), context.getPartition()
-          .getSd().getLocation());
+        inputBuilder.addUriToOutput(getAuthServer(), uriPath);
       }
     }
     authorizeMetastoreAccess(HiveOperation.ALTERTABLE_ADDPARTS,
@@ -287,9 +303,7 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
     authorizeMetastoreAccess(
         HiveOperation.ALTERPARTITION_LOCATION,
         new HierarcyBuilder().build(),
-        new HierarcyBuilder()
-            .addDbToOutput(getAuthServer(),
-            context.getNewPartition().getDbName()).build());
+        new HierarcyBuilder().addServerToOutput(getAuthServer()).build());
   }
 
   private InvalidOperationException invalidOperationException(Exception e) {

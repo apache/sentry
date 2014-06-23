@@ -145,6 +145,7 @@ public class HiveServerFactory {
           properties.put(METASTORE_HOOK,
               "org.apache.sentry.binding.metastore.MetastoreAuthzBinding");
         }
+        properties.put(ConfVars.METASTORESERVERMINTHREADS.varname, "5");
       }
     }
     if (!properties.containsKey(METASTORE_BYPASS)) {

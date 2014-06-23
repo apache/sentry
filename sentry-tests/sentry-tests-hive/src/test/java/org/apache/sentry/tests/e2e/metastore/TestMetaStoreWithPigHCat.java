@@ -51,7 +51,7 @@ public class TestMetaStoreWithPigHCat extends
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
 
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    policyFile = setAdminOnServer1(ADMINGROUP);
     policyFile
         .addRolesToGroup(USERGROUP1, db_all_role)
         .addRolesToGroup(USERGROUP2, "read_db_role")

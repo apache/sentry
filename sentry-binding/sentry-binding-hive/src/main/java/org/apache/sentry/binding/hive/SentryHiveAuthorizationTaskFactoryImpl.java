@@ -294,7 +294,7 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
         } else if (astChild.getToken().getType() == HiveParser.TOK_TABCOLNAME) {
           throw new SemanticException(SentryHiveConstants.COLUMN_PRIVS_NOT_SUPPORTED);
         }else if (astChild.getToken().getType() == HiveParser.TOK_URI) {
-          privilegeObject = privilegeObject.replaceAll("'", "");
+          privilegeObject = privilegeObject.replaceAll("'", "").replaceAll("\"", "");
           subject.setUri(true);
         } else if (astChild.getToken().getType() == HiveParser.TOK_SERVER) {
           subject.setServer(true);
