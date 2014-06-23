@@ -92,6 +92,7 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
 
     public HierarcyBuilder addDbToOutput(Server server, String dbName) {
       List<DBModelAuthorizable> dbHierarchy = new ArrayList<DBModelAuthorizable>();
+      addServerToOutput(server);
       dbHierarchy.add(server);
       dbHierarchy.add(new Database(dbName));
       authHierarchy.add(dbHierarchy);
@@ -100,6 +101,7 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
 
     public HierarcyBuilder addUriToOutput(Server server, String uriPath) {
       List<DBModelAuthorizable> uriHierarchy = new ArrayList<DBModelAuthorizable>();
+      addServerToOutput(server);
       uriHierarchy.add(server);
       uriHierarchy.add(new AccessURI(uriPath));
       authHierarchy.add(uriHierarchy);
@@ -109,6 +111,7 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
     public HierarcyBuilder addTableToOutput(Server server, String dbName,
         String tableName) {
       List<DBModelAuthorizable> tableHierarchy = new ArrayList<DBModelAuthorizable>();
+      addDbToOutput(server, dbName);
       tableHierarchy.add(server);
       tableHierarchy.add(new Database(dbName));
       tableHierarchy.add(new Table(tableName));
@@ -197,20 +200,24 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
   private void authorizeCreateDatabase(PreCreateDatabaseEvent context)
       throws InvalidOperationException, MetaException {
     authorizeMetastoreAccess(HiveOperation.CREATEDATABASE,
-        new HierarcyBuilder().build(),
+        new HierarcyBuilder().addServerToOutput(getAuthServer()).build(),
         new HierarcyBuilder().addServerToOutput(getAuthServer()).build());
   }
 
   private void authorizeDropDatabase(PreDropDatabaseEvent context)
       throws InvalidOperationException, MetaException {
     authorizeMetastoreAccess(HiveOperation.DROPDATABASE,
-        new HierarcyBuilder().build(),
-        new HierarcyBuilder().addServerToOutput(getAuthServer()).build());
+ new HierarcyBuilder()
+.addDbToOutput(getAuthServer(),
+            context.getDatabase().getName()).build(),
+        new HierarcyBuilder().addDbToOutput(getAuthServer(),
+            context.getDatabase().getName()).build());
   }
 
   private void authorizeCreateTable(PreCreateTableEvent context)
       throws InvalidOperationException, MetaException {
     HierarcyBuilder inputBuilder = new HierarcyBuilder();
+    inputBuilder.addDbToOutput(getAuthServer(), context.getTable().getDbName());
     if (!StringUtils.isEmpty(context.getTable().getSd().getLocation())) {
       String uriPath;
       try {
@@ -230,15 +237,27 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
       throws InvalidOperationException, MetaException {
     authorizeMetastoreAccess(
         HiveOperation.DROPTABLE,
-        new HierarcyBuilder().build(),
-        new HierarcyBuilder().addDbToOutput(getAuthServer(),
-            context.getTable().getDbName()).build());
+        new HierarcyBuilder().addTableToOutput(getAuthServer(),
+            context.getTable().getDbName(), context.getTable().getTableName())
+            .build(),
+        new HierarcyBuilder().addTableToOutput(getAuthServer(),
+            context.getTable().getDbName(), context.getTable().getTableName())
+            .build());
   }
 
   private void authorizeAlterTable(PreAlterTableEvent context)
       throws InvalidOperationException, MetaException {
-
+    /*
+     * There are multiple alter table options and it's tricky to figure which is
+     * attempted here. Currently all alter table needs full level privilege
+     * except the for setting location which also needs a privile on URI. Hence
+     * we set initially set the operation to ALTERTABLE_ADDCOLS. If the client
+     * has specified the location, then change to ALTERTABLE_LOCATION
+     */
+    HiveOperation operation = HiveOperation.ALTERTABLE_ADDCOLS;
     HierarcyBuilder inputBuilder = new HierarcyBuilder();
+    inputBuilder.addTableToOutput(getAuthServer(), context.getOldTable()
+        .getDbName(), context.getOldTable().getTableName());
     // if the operation requires location change, then add URI privilege check
     String oldLocationUri;
     String newLocationUri;
@@ -252,17 +271,21 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
     }
     if (oldLocationUri.compareTo(newLocationUri) != 0) {
       inputBuilder.addUriToOutput(getAuthServer(), newLocationUri);
+      operation = HiveOperation.ALTERTABLE_LOCATION;
     }
     authorizeMetastoreAccess(
-        HiveOperation.ALTERTABLE_ADDCOLS, inputBuilder.build(),
-        new HierarcyBuilder().addDbToOutput(getAuthServer(),
-            context.getOldTable().getDbName()).build());
+        operation,
+        inputBuilder.build(),
+        new HierarcyBuilder().addTableToOutput(getAuthServer(),
+            context.getOldTable().getDbName(),
+            context.getOldTable().getTableName()).build());
   }
 
   private void authorizeAddPartition(PreAddPartitionEvent context)
       throws InvalidOperationException, MetaException, NoSuchObjectException {
     HierarcyBuilder inputBuilder = new HierarcyBuilder();
-
+    inputBuilder.addTableToOutput(getAuthServer(), context.getPartition()
+        .getDbName(), context.getPartition().getTableName());
     // check if we need to validate URI permissions when storage location is
     // non-default, ie something not under the parent table
     String partitionLocation = context.getPartition().getSd().getLocation();
@@ -271,7 +294,6 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
           .getHandler()
           .get_table(context.getPartition().getDbName(),
               context.getPartition().getTableName()).getSd().getLocation();
-
       String uriPath;
       try {
         uriPath = PathUtils.parseDFSURI(warehouseDir, context.getPartition()
@@ -285,25 +307,49 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
     }
     authorizeMetastoreAccess(HiveOperation.ALTERTABLE_ADDPARTS,
         inputBuilder.build(),
-        new HierarcyBuilder().addDbToOutput(getAuthServer(),
-            context.getPartition().getDbName()).build());
+        new HierarcyBuilder().addTableToOutput(getAuthServer(),
+            context.getPartition().getDbName(),
+            context.getPartition().getTableName()).build());
   }
 
   private void authorizeDropPartition(PreDropPartitionEvent context)
       throws InvalidOperationException, MetaException {
     authorizeMetastoreAccess(
         HiveOperation.ALTERTABLE_DROPPARTS,
-        new HierarcyBuilder().build(),
-        new HierarcyBuilder().addDbToOutput(getAuthServer(),
-            context.getPartition().getDbName()).build());
+        new HierarcyBuilder().addTableToOutput(getAuthServer(),
+            context.getPartition().getDbName(),
+            context.getPartition().getTableName()).build(),
+        new HierarcyBuilder().addTableToOutput(getAuthServer(),
+            context.getPartition().getDbName(),
+            context.getPartition().getTableName()).build());
   }
 
   private void authorizeAlterPartition(PreAlterPartitionEvent context)
       throws InvalidOperationException, MetaException {
+    /*
+     * There are multiple alter partition options and it's tricky to figure out
+     * which is attempted here. Currently all alter partition need full level
+     * privilege except the for setting location which also needs a privilege on
+     * URI. Currently we don't try to distinguish the operation type. All alter
+     * partitions are treated as set-location
+     */
+    HierarcyBuilder inputBuilder = new HierarcyBuilder().addTableToOutput(
+        getAuthServer(), context.getDbName(), context.getTableName());
+    String partitionLocation = context.getNewPartition().getSd().getLocation();
+    if (!StringUtils.isEmpty(partitionLocation)) {
+      String uriPath;
+      try {
+        uriPath = PathUtils.parseDFSURI(warehouseDir, partitionLocation);
+      } catch (URISyntaxException e) {
+        throw new MetaException(e.getMessage());
+      }
+      inputBuilder.addUriToOutput(getAuthServer(), uriPath);
+    }
     authorizeMetastoreAccess(
         HiveOperation.ALTERPARTITION_LOCATION,
-        new HierarcyBuilder().build(),
-        new HierarcyBuilder().addServerToOutput(getAuthServer()).build());
+        inputBuilder.build(),
+        new HierarcyBuilder().addTableToOutput(getAuthServer(),
+            context.getDbName(), context.getTableName()).build());
   }
 
   private InvalidOperationException invalidOperationException(Exception e) {
