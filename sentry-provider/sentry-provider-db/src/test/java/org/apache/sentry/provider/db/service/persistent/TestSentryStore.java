@@ -353,4 +353,193 @@ public class TestSentryStore {
     assertEquals(2, sentryStore.getTSentryRolesByGroupName(Sets.newHashSet(group2)).size());
     assertEquals(3, sentryStore.getTSentryRolesByGroupName(Sets.newHashSet(group1,group2)).size());
   }
+
+  /**
+   * Assign multiple table and SERVER privileges to roles
+   * drop privilege for the object verify that it's removed correctl
+   * @throws Exception
+   */
+  @Test
+  public void testDropDbObject() throws Exception {
+    String roleName1 = "list-privs-r1", roleName2 = "list-privs-r2", roleName3 = "list-privs-r3";
+    String grantor = "g1";
+    sentryStore.createSentryRole(roleName1, grantor);
+    sentryStore.createSentryRole(roleName2, grantor);
+    sentryStore.createSentryRole(roleName3, grantor);
+
+    TSentryPrivilege privilege_tbl1 = new TSentryPrivilege();
+    privilege_tbl1.setPrivilegeScope("TABLE");
+    privilege_tbl1.setServerName("server1");
+    privilege_tbl1.setDbName("db1");
+    privilege_tbl1.setTableName("tbl1");
+    privilege_tbl1.setGrantorPrincipal(grantor);
+    privilege_tbl1.setCreateTime(System.currentTimeMillis());
+    privilege_tbl1.setPrivilegeName(SentryStore.constructPrivilegeName(privilege_tbl1));
+
+    TSentryPrivilege privilege1 = new TSentryPrivilege(privilege_tbl1);
+    privilege1.setAction("SELECT");
+    privilege1.setPrivilegeName(SentryStore.constructPrivilegeName(privilege1));
+
+    TSentryPrivilege privilege2_1 = new TSentryPrivilege(privilege_tbl1);
+    privilege2_1.setAction("INSERT");
+    privilege2_1.setPrivilegeName(SentryStore.constructPrivilegeName(privilege2_1));
+    TSentryPrivilege privilege3_1 = new TSentryPrivilege(privilege_tbl1);
+    privilege3_1.setAction("*");
+    privilege3_1.setPrivilegeName(SentryStore.constructPrivilegeName(privilege3_1));
+
+    TSentryPrivilege privilege_server = new TSentryPrivilege();
+    privilege_server.setPrivilegeScope("SERVER");
+    privilege_server.setServerName("server1");
+    privilege_server.setGrantorPrincipal(grantor);
+    privilege_server.setCreateTime(System.currentTimeMillis());
+    privilege_server.setPrivilegeName(SentryStore.constructPrivilegeName(privilege_server));
+
+    TSentryPrivilege privilege_tbl2 = new TSentryPrivilege();
+    privilege_tbl2.setPrivilegeScope("TABLE");
+    privilege_tbl2.setServerName("server1");
+    privilege_tbl2.setDbName("db1");
+    privilege_tbl2.setTableName("tbl2");
+    privilege_tbl2.setGrantorPrincipal(grantor);
+    privilege_tbl2.setCreateTime(System.currentTimeMillis());
+
+    TSentryPrivilege privilege2_3 = new TSentryPrivilege(privilege_tbl2);
+    privilege2_3.setAction("SELECT");
+    privilege2_3.setPrivilegeName(SentryStore
+        .constructPrivilegeName(privilege2_3));
+
+    TSentryPrivilege privilege3_2 = new TSentryPrivilege(privilege_tbl2);
+    privilege3_2.setAction("INSERT");
+    privilege2_3.setPrivilegeName(SentryStore.constructPrivilegeName(privilege2_3));
+
+    sentryStore.alterSentryRoleGrantPrivilege(roleName1, privilege1);
+
+    sentryStore.alterSentryRoleGrantPrivilege(roleName2, privilege2_1);
+    sentryStore.alterSentryRoleGrantPrivilege(roleName2, privilege_server);
+    sentryStore.alterSentryRoleGrantPrivilege(roleName2, privilege2_3);
+
+    sentryStore.alterSentryRoleGrantPrivilege(roleName3, privilege3_1);
+    sentryStore.alterSentryRoleGrantPrivilege(roleName3, privilege3_2);
+
+    sentryStore.dropPrivilege(toTSentryAuthorizable(privilege_tbl1));
+    assertEquals(0, sentryStore.getAllTSentryPrivilegesByRoleName(roleName1)
+        .size());
+    assertEquals(2, sentryStore.getAllTSentryPrivilegesByRoleName(roleName2)
+        .size());
+    assertEquals(1, sentryStore.getAllTSentryPrivilegesByRoleName(roleName3)
+        .size());
+
+    sentryStore.dropPrivilege(toTSentryAuthorizable(privilege_tbl2));
+    assertEquals(0, sentryStore.getAllTSentryPrivilegesByRoleName(roleName1)
+        .size());
+    assertEquals(1, sentryStore.getAllTSentryPrivilegesByRoleName(roleName2)
+        .size());
+    assertEquals(0, sentryStore.getAllTSentryPrivilegesByRoleName(roleName3)
+        .size());
+  }
+
+  @Test
+  public void testDropOverlappedPrivileges() throws Exception {
+    String roleName1 = "list-privs-r1";
+    String grantor = "g1";
+    sentryStore.createSentryRole(roleName1, grantor);
+
+    TSentryPrivilege privilege_tbl1 = new TSentryPrivilege();
+    privilege_tbl1.setPrivilegeScope("TABLE");
+    privilege_tbl1.setServerName("server1");
+    privilege_tbl1.setDbName("db1");
+    privilege_tbl1.setTableName("tbl1");
+    privilege_tbl1.setGrantorPrincipal(grantor);
+    privilege_tbl1.setCreateTime(System.currentTimeMillis());
+    privilege_tbl1.setPrivilegeName(SentryStore
+        .constructPrivilegeName(privilege_tbl1));
+
+    TSentryPrivilege privilege_tbl1_insert = new TSentryPrivilege(
+        privilege_tbl1);
+    privilege_tbl1_insert.setAction("INSERT");
+    privilege_tbl1_insert.setPrivilegeName(SentryStore
+        .constructPrivilegeName(privilege_tbl1_insert));
+
+    TSentryPrivilege privilege_tbl1_all = new TSentryPrivilege(privilege_tbl1);
+    privilege_tbl1_all.setAction("*");
+    privilege_tbl1_all.setPrivilegeName(SentryStore
+        .constructPrivilegeName(privilege_tbl1_all));
+
+    sentryStore.alterSentryRoleGrantPrivilege(roleName1, privilege_tbl1_insert);
+    sentryStore.alterSentryRoleGrantPrivilege(roleName1, privilege_tbl1_all);
+
+    sentryStore.dropPrivilege(toTSentryAuthorizable(privilege_tbl1));
+    assertEquals(0, sentryStore.getAllTSentryPrivilegesByRoleName(roleName1)
+        .size());
+  }
+
+  private TSentryAuthorizable toTSentryAuthorizable(
+      TSentryPrivilege tSentryPrivilege) {
+    TSentryAuthorizable tSentryAuthorizable = new TSentryAuthorizable();
+    tSentryAuthorizable.setServer(tSentryPrivilege.getServerName());
+    tSentryAuthorizable.setDb(tSentryPrivilege.getDbName());
+    tSentryAuthorizable.setTable(tSentryPrivilege.getTableName());
+    tSentryAuthorizable.setUri(tSentryPrivilege.getURI());
+    return tSentryAuthorizable;
+  }
+
+  /***
+   * Create roles and assign privileges for same table rename the privileges for
+   * the table and verify the new privileges
+   * @throws Exception
+   */
+  @Test
+  public void testRenameTable() throws Exception {
+    String roleName1 = "role1", roleName2 = "role2", roleName3 = "role3";
+    String grantor = "g1";
+    String table1 = "tbl1", table2 = "tbl2";
+
+    sentryStore.createSentryRole(roleName1, grantor);
+    sentryStore.createSentryRole(roleName2, grantor);
+    sentryStore.createSentryRole(roleName3, grantor);
+
+    TSentryPrivilege privilege_tbl1 = new TSentryPrivilege();
+    privilege_tbl1.setPrivilegeScope("TABLE");
+    privilege_tbl1.setServerName("server1");
+    privilege_tbl1.setDbName("db1");
+    privilege_tbl1.setTableName(table1);
+    privilege_tbl1.setGrantorPrincipal(grantor);
+    privilege_tbl1.setCreateTime(System.currentTimeMillis());
+    privilege_tbl1.setPrivilegeName(SentryStore
+        .constructPrivilegeName(privilege_tbl1));
+
+    TSentryPrivilege privilege_tbl1_insert = new TSentryPrivilege(
+        privilege_tbl1);
+    privilege_tbl1_insert.setAction(AccessConstants.INSERT);
+    privilege_tbl1_insert.setPrivilegeName(SentryStore
+        .constructPrivilegeName(privilege_tbl1_insert));
+
+    TSentryPrivilege privilege_tbl1_select = new TSentryPrivilege(
+        privilege_tbl1);
+    privilege_tbl1_select.setAction(AccessConstants.SELECT);
+    privilege_tbl1_select.setPrivilegeName(SentryStore
+        .constructPrivilegeName(privilege_tbl1_select));
+
+    TSentryPrivilege privilege_tbl1_all = new TSentryPrivilege(privilege_tbl1);
+    privilege_tbl1_all.setAction(AccessConstants.ALL);
+    privilege_tbl1_all.setPrivilegeName(SentryStore
+        .constructPrivilegeName(privilege_tbl1_all));
+
+    sentryStore.alterSentryRoleGrantPrivilege(roleName1, privilege_tbl1_insert);
+    sentryStore.alterSentryRoleGrantPrivilege(roleName2, privilege_tbl1_select);
+    sentryStore.alterSentryRoleGrantPrivilege(roleName3, privilege_tbl1_all);
+
+    TSentryAuthorizable oldTable = toTSentryAuthorizable(privilege_tbl1);
+    TSentryAuthorizable newTable = toTSentryAuthorizable(privilege_tbl1);
+    newTable.setTable(table2);
+    sentryStore.renamePrivilege(oldTable, newTable);
+
+    for (String roleName : Sets.newHashSet(roleName1, roleName2, roleName3)) {
+      Set<TSentryPrivilege> privilegeSet = sentryStore
+          .getAllTSentryPrivilegesByRoleName(roleName);
+      assertEquals(1, privilegeSet.size());
+      for (TSentryPrivilege privilege : privilegeSet) {
+        assertTrue(table2.equalsIgnoreCase(privilege.getTableName()));
+      }
+    }
+  }
 }

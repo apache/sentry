@@ -64,6 +64,9 @@ public class HiveAuthzConf extends Configuration {
     AUTHZ_ALLOW_HIVE_IMPERSONATION("sentry.hive.allow.hive.impersonation", "false"),
     AUTHZ_ONFAILURE_HOOKS("sentry.hive.failure.hooks", ""),
     AUTHZ_METASTORE_SERVICE_USERS("sentry.metastore.service.users", ""),
+    AUTHZ_SYNC_ALTER_WITH_POLICY_STORE("sentry.hive.sync.alter", "true"),
+    AUTHZ_SYNC_CREATE_WITH_POLICY_STORE("sentry.hive.sync.create", "false"),
+    AUTHZ_SYNC_DROP_WITH_POLICY_STORE("sentry.hive.sync.drop", "true"),
 
     AUTHZ_PROVIDER_DEPRECATED("hive.sentry.provider",
       "org.apache.sentry.provider.file.ResourceAuthorizationProvider"),

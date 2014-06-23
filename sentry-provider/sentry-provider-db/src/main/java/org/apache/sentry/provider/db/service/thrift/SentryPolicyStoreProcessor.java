@@ -447,4 +447,46 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       }
       return groupMappingService.getGroups(userName);
   }
+
+  @Override
+  public TDropPrivilegesResponse drop_sentry_privilege(
+      TDropPrivilegesRequest request) throws TException {
+    TDropPrivilegesResponse response = new TDropPrivilegesResponse();
+    try {
+      authorize(request.getRequestorUserName(), adminGroups);
+      sentryStore.dropPrivilege(request.getAuthorizable());
+      response.setStatus(Status.OK());
+    } catch (SentryAccessDeniedException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
+    } catch (Exception e) {
+      String msg = "Unknown error for request: " + request + ", message: "
+          + e.getMessage();
+      LOGGER.error(msg, e);
+      response.setStatus(Status.RuntimeError(msg, e));
+    }
+    return response;
+  }
+
+  @Override
+  public TRenamePrivilegesResponse rename_sentry_privilege(
+      TRenamePrivilegesRequest request) throws TException {
+    TRenamePrivilegesResponse response = new TRenamePrivilegesResponse();
+    try {
+      authorize(request.getRequestorUserName(), adminGroups);
+      sentryStore.renamePrivilege(request.getOldAuthorizable(),
+          request.getNewAuthorizable());
+      response.setStatus(Status.OK());
+    } catch (SentryAccessDeniedException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
+    } catch (Exception e) {
+      String msg = "Unknown error for request: " + request + ", message: "
+          + e.getMessage();
+      LOGGER.error(msg, e);
+      response.setStatus(Status.RuntimeError(msg, e));
+    }
+    return response;
+  }
+
 }

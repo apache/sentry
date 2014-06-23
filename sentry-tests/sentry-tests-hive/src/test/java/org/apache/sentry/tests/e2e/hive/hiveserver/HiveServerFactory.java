@@ -151,6 +151,7 @@ public class HiveServerFactory {
       properties.put(METASTORE_BYPASS,
           "hive,impala," + System.getProperty("user.name", ""));
     }
+
     properties.put(METASTORE_SETUGI, "true");
     properties.put(METASTORE_CLIENT_TIMEOUT, "100");
     properties.put(ConfVars.HIVE_WAREHOUSE_SUBDIR_INHERIT_PERMS.varname, "true");

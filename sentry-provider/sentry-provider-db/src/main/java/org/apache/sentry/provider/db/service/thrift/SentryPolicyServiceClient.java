@@ -55,6 +55,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 public class SentryPolicyServiceClient {
@@ -253,19 +254,7 @@ public class SentryPolicyServiceClient {
     request.setRequestorUserName(requestorUserName);
     request.setRoleName(roleName);
     if (authorizable != null) {
-      TSentryAuthorizable tSentryAuthorizable = new TSentryAuthorizable();
-      // TODO : Needed to support SearchModelAuthorizable
-      for (Authorizable authzble : authorizable) {
-        if (authzble.getTypeName().equalsIgnoreCase(DBModelAuthorizable.AuthorizableType.Server.toString())) {
-          tSentryAuthorizable.setServer(authzble.getName());
-        } else if (authzble.getTypeName().equalsIgnoreCase(DBModelAuthorizable.AuthorizableType.URI.toString())) {
-          tSentryAuthorizable.setUri(authzble.getName());
-        } else if (authzble.getTypeName().equalsIgnoreCase(DBModelAuthorizable.AuthorizableType.Db.toString())) {
-          tSentryAuthorizable.setDb(authzble.getName());
-        } else if (authzble.getTypeName().equalsIgnoreCase(DBModelAuthorizable.AuthorizableType.Table.toString())) {
-          tSentryAuthorizable.setTable(authzble.getName());
-        }
-      }
+      TSentryAuthorizable tSentryAuthorizable = setupSentryAuthorizable(authorizable);
       request.setAuthorizableHierarchy(tSentryAuthorizable);
     }
     TListSentryPrivilegesResponse response;
@@ -316,6 +305,29 @@ public class SentryPolicyServiceClient {
         null,
         db, table, action);
   }
+
+  private TSentryAuthorizable setupSentryAuthorizable(
+      List<? extends Authorizable> authorizable) {
+    TSentryAuthorizable tSentryAuthorizable = new TSentryAuthorizable();
+
+    for (Authorizable authzble : authorizable) {
+      if (authzble.getTypeName().equalsIgnoreCase(
+          DBModelAuthorizable.AuthorizableType.Server.toString())) {
+        tSentryAuthorizable.setServer(authzble.getName());
+      } else if (authzble.getTypeName().equalsIgnoreCase(
+          DBModelAuthorizable.AuthorizableType.URI.toString())) {
+        tSentryAuthorizable.setUri(authzble.getName());
+      } else if (authzble.getTypeName().equalsIgnoreCase(
+          DBModelAuthorizable.AuthorizableType.Db.toString())) {
+        tSentryAuthorizable.setDb(authzble.getName());
+      } else if (authzble.getTypeName().equalsIgnoreCase(
+          DBModelAuthorizable.AuthorizableType.Table.toString())) {
+        tSentryAuthorizable.setTable(authzble.getName());
+      }
+    }
+    return tSentryAuthorizable;
+  }
+
 
   private void grantPrivilege(String requestorUserName,
       String roleName, PrivilegeScope scope, String serverName, String uri, String db, String table, String action)
@@ -403,19 +415,8 @@ public class SentryPolicyServiceClient {
         new TListSentryPrivilegesForProviderRequest(ThriftConstants.
             TSENTRY_SERVICE_VERSION_CURRENT, groups, thriftRoleSet);
     if ((authorizable != null)&&(authorizable.length > 0)) {
-      TSentryAuthorizable tSentryAuthorizable = new TSentryAuthorizable();
-      // TODO : Needed to support SearchModelAuthorizable
-      for (Authorizable authzble : authorizable) {
-        if (authzble.getTypeName().equalsIgnoreCase(DBModelAuthorizable.AuthorizableType.Server.toString())) {
-          tSentryAuthorizable.setServer(authzble.getName());
-        } else if (authzble.getTypeName().equalsIgnoreCase(DBModelAuthorizable.AuthorizableType.URI.toString())) {
-          tSentryAuthorizable.setUri(authzble.getName());
-        } else if (authzble.getTypeName().equalsIgnoreCase(DBModelAuthorizable.AuthorizableType.Db.toString())) {
-          tSentryAuthorizable.setDb(authzble.getName());
-        } else if (authzble.getTypeName().equalsIgnoreCase(DBModelAuthorizable.AuthorizableType.Table.toString())) {
-          tSentryAuthorizable.setTable(authzble.getName());
-        }
-      }
+      TSentryAuthorizable tSentryAuthorizable = setupSentryAuthorizable(Lists
+          .newArrayList(authorizable));
       request.setAuthorizableHierarchy(tSentryAuthorizable);
     }
     try {
@@ -449,6 +450,40 @@ TSENTRY_SERVICE_VERSION_CURRENT, requestorUserName,
         roleName, Sets.newHashSet(new TSentryGroup(groupName)));
     try {
       TAlterSentryRoleDeleteGroupsResponse response = client.alter_sentry_role_delete_groups(request);
+      Status.throwIfNotOk(response.getStatus());
+    } catch (TException e) {
+      throw new SentryUserException(THRIFT_EXCEPTION_MESSAGE, e);
+    }
+  }
+
+  public synchronized void dropPrivileges(String requestorUserName,
+      List<? extends Authorizable> authorizableObjects)
+      throws SentryUserException {
+    TSentryAuthorizable tSentryAuthorizable = setupSentryAuthorizable(authorizableObjects);
+
+    TDropPrivilegesRequest request = new TDropPrivilegesRequest(
+        ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT, requestorUserName,
+        tSentryAuthorizable);
+    try {
+      TDropPrivilegesResponse response = client.drop_sentry_privilege(request);
+      Status.throwIfNotOk(response.getStatus());
+    } catch (TException e) {
+      throw new SentryUserException(THRIFT_EXCEPTION_MESSAGE, e);
+    }
+  }
+
+  public synchronized void renamePrivileges(String requestorUserName,
+      List<? extends Authorizable> oldAuthorizables,
+      List<? extends Authorizable> newAuthorizables) throws SentryUserException {
+    TSentryAuthorizable tOldSentryAuthorizable = setupSentryAuthorizable(oldAuthorizables);
+    TSentryAuthorizable tNewSentryAuthorizable = setupSentryAuthorizable(newAuthorizables);
+
+    TRenamePrivilegesRequest request = new TRenamePrivilegesRequest(
+        ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT, requestorUserName,
+        tOldSentryAuthorizable, tNewSentryAuthorizable);
+    try {
+      TRenamePrivilegesResponse response = client
+          .rename_sentry_privilege(request);
       Status.throwIfNotOk(response.getStatus());
     } catch (TException e) {
       throw new SentryUserException(THRIFT_EXCEPTION_MESSAGE, e);

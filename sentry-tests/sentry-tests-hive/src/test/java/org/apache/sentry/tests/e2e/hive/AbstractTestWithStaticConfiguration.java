@@ -16,6 +16,10 @@
  */
 package org.apache.sentry.tests.e2e.hive;
 
+import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_SPLITTER;
+import static org.apache.sentry.provider.common.ProviderConstants.PRIVILEGE_PREFIX;
+import static org.apache.sentry.provider.common.ProviderConstants.ROLE_SPLITTER;
+
 import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
@@ -33,14 +37,13 @@ import junit.framework.Assert;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.sentry.binding.hive.SentryHiveAuthorizationTaskFactoryImpl;
+import org.apache.sentry.binding.metastore.SentryMetastorePostEventListener;
 import org.apache.sentry.core.model.db.DBModelAction;
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.sentry.policy.db.DBModelAuthorizables;
-import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_SPLITTER;
-import static org.apache.sentry.provider.common.ProviderConstants.PRIVILEGE_PREFIX;
-import static org.apache.sentry.provider.common.ProviderConstants.ROLE_SPLITTER;
 import org.apache.sentry.provider.db.SimpleDBProviderBackend;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.service.thrift.SentryService;
@@ -103,7 +106,9 @@ public abstract class AbstractTestWithStaticConfiguration {
 
   protected static boolean policy_on_hdfs = false;
   protected static boolean useSentryService = false;
+  protected static boolean setMetastoreListener = false;
   protected static String testServerType = null;
+
 
   protected static File baseDir;
   protected static File logDir;
@@ -334,6 +339,10 @@ public abstract class AbstractTestWithStaticConfiguration {
     sentryConf.set(ClientConfig.SERVER_RPC_PORT,
         String.valueOf(sentryServer.getAddress().getPort()));
     startSentryService();
+    if (setMetastoreListener) {
+      properties.put(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS.varname,
+          SentryMetastorePostEventListener.class.getName());
+    }
   }
 
   private static void startSentryService() throws Exception {

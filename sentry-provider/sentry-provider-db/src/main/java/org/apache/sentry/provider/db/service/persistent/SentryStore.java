@@ -65,6 +65,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
@@ -262,7 +263,6 @@ public class SentryStore {
     }
   }
 
-  //TODO: handle case where a) privilege already exists, b) role to privilege mapping already exists
   public CommitContext alterSentryRoleGrantPrivilege(String roleName, TSentryPrivilege privilege)
       throws SentryNoSuchObjectException, SentryInvalidInputException {
     boolean rollbackTransaction = true;
@@ -270,54 +270,10 @@ public class SentryStore {
     roleName = trimAndLower(roleName);
     try {
       pm = openTransaction();
-      MSentryRole mRole = getMSentryRole(pm, roleName);
-      if (mRole == null) {
-        throw new SentryNoSuchObjectException("Role: " + roleName);
-      } else {
-
-        if ((privilege.getTableName() != null)||(privilege.getDbName() != null)) {
-          // If Grant is for ALL and Either INSERT/SELECT already exists..
-          // need to remove it and GRANT ALL..
-          if (privilege.getAction().equalsIgnoreCase("*")) {
-            TSentryPrivilege tNotAll = new TSentryPrivilege(privilege);
-            tNotAll.setAction(AccessConstants.SELECT);
-            MSentryPrivilege mSelect = getMSentryPrivilege(constructPrivilegeName(tNotAll), pm);
-            tNotAll.setAction(AccessConstants.INSERT);
-            MSentryPrivilege mInsert = getMSentryPrivilege(constructPrivilegeName(tNotAll), pm);
-            if ((mSelect != null)&&(mRole.getPrivileges().contains(mSelect))) {
-              mSelect.removeRole(mRole);
-              pm.makePersistent(mSelect);
-            }
-            if ((mInsert != null)&&(mRole.getPrivileges().contains(mInsert))) {
-              mInsert.removeRole(mRole);
-              pm.makePersistent(mInsert);
-            }
-          } else {
-            // If Grant is for Either INSERT/SELECT and ALL already exists..
-            // do nothing..
-            TSentryPrivilege tAll = new TSentryPrivilege(privilege);
-            tAll.setAction(AccessConstants.ALL);
-            MSentryPrivilege mAll = getMSentryPrivilege(constructPrivilegeName(tAll), pm);
-            if ((mAll != null)&&(mRole.getPrivileges().contains(mAll))) {
-              CommitContext commit = commitUpdateTransaction(pm);
-              rollbackTransaction = false;
-              return commit;
-            }
-          }
-        }
-
-        MSentryPrivilege mPrivilege = getMSentryPrivilege(constructPrivilegeName(privilege), pm);
-        if (mPrivilege == null) {
-          mPrivilege = convertToMSentryPrivilege(privilege);
-        }
-        mPrivilege.appendRole(mRole);
-        pm.makePersistent(mRole);
-        pm.makePersistent(mPrivilege);
-
-        CommitContext commit = commitUpdateTransaction(pm);
-        rollbackTransaction = false;
-        return commit;
-      }
+      alterSentryRoleGrantPrivilegeCore(pm, roleName, privilege);
+      CommitContext commit = commitUpdateTransaction(pm);
+      rollbackTransaction = false;
+      return commit;
     } finally {
       if (rollbackTransaction) {
         rollbackTransaction(pm);
@@ -325,41 +281,70 @@ public class SentryStore {
     }
   }
 
+  private void alterSentryRoleGrantPrivilegeCore(PersistenceManager pm,
+      String roleName, TSentryPrivilege privilege)
+      throws SentryNoSuchObjectException, SentryInvalidInputException {
+    MSentryRole mRole = getMSentryRole(pm, roleName);
+    if (mRole == null) {
+      throw new SentryNoSuchObjectException("Role: " + roleName);
+    } else {
+
+      if ((privilege.getTableName() != null) || (privilege.getDbName() != null)) {
+        // If Grant is for ALL and Either INSERT/SELECT already exists..
+        // need to remove it and GRANT ALL..
+        if (privilege.getAction().equalsIgnoreCase("*")) {
+          TSentryPrivilege tNotAll = new TSentryPrivilege(privilege);
+          tNotAll.setAction(AccessConstants.SELECT);
+          MSentryPrivilege mSelect = getMSentryPrivilege(
+              constructPrivilegeName(tNotAll), pm);
+          tNotAll.setAction(AccessConstants.INSERT);
+          MSentryPrivilege mInsert = getMSentryPrivilege(
+              constructPrivilegeName(tNotAll), pm);
+          if ((mSelect != null) && (mRole.getPrivileges().contains(mSelect))) {
+            mSelect.removeRole(mRole);
+            pm.makePersistent(mSelect);
+          }
+          if ((mInsert != null) && (mRole.getPrivileges().contains(mInsert))) {
+            mInsert.removeRole(mRole);
+            pm.makePersistent(mInsert);
+          }
+        } else {
+          // If Grant is for Either INSERT/SELECT and ALL already exists..
+          // do nothing..
+          TSentryPrivilege tAll = new TSentryPrivilege(privilege);
+          tAll.setAction(AccessConstants.ALL);
+          MSentryPrivilege mAll = getMSentryPrivilege(
+              constructPrivilegeName(tAll), pm);
+          if ((mAll != null) && (mRole.getPrivileges().contains(mAll))) {
+            return;
+          }
+        }
+      }
+
+      MSentryPrivilege mPrivilege = getMSentryPrivilege(
+          constructPrivilegeName(privilege), pm);
+      if (mPrivilege == null) {
+        mPrivilege = convertToMSentryPrivilege(privilege);
+      }
+      mPrivilege.appendRole(mRole);
+      pm.makePersistent(mRole);
+      pm.makePersistent(mPrivilege);
+    }
+    return;
+  }
 
   public CommitContext alterSentryRoleRevokePrivilege(String roleName,
       TSentryPrivilege tPrivilege) throws SentryNoSuchObjectException, SentryInvalidInputException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
-    roleName = roleName.trim().toLowerCase();
+    roleName = safeTrimLower(roleName);
     try {
       pm = openTransaction();
-      Query query = pm.newQuery(MSentryRole.class);
-      query.setFilter("this.roleName == t");
-      query.declareParameters("java.lang.String t");
-      query.setUnique(true);
-      MSentryRole mRole = (MSentryRole) query.execute(roleName);
-      if (mRole == null) {
-        throw new SentryNoSuchObjectException("Role: " + roleName);
-      } else {
-        query = pm.newQuery(MSentryPrivilege.class);
-        MSentryPrivilege mPrivilege = getMSentryPrivilege(constructPrivilegeName(tPrivilege), pm);
-        if (mPrivilege == null) {
-          mPrivilege = convertToMSentryPrivilege(tPrivilege);
-        } else {
-          mPrivilege = (MSentryPrivilege)pm.detachCopy(mPrivilege);
-        }
+      alterSentryRoleRevokePrivilegeCore(pm, roleName, tPrivilege);
 
-        Set<MSentryPrivilege> privilegeGraph = Sets.newHashSet(mPrivilege);
-        // Get the privilege graph
-        populateChildren(Sets.newHashSet(roleName), mPrivilege, privilegeGraph);
-        for (MSentryPrivilege childPriv : privilegeGraph) {
-          revokePartial(pm, tPrivilege, mRole, childPriv);
-        }
-        pm.makePersistent(mRole);
-        CommitContext commit = commitUpdateTransaction(pm);
-        rollbackTransaction = false;
-        return commit;
-      }
+      CommitContext commit = commitUpdateTransaction(pm);
+      rollbackTransaction = false;
+      return commit;
     } finally {
       if (rollbackTransaction) {
         rollbackTransaction(pm);
@@ -367,6 +352,35 @@ public class SentryStore {
     }
   }
 
+  private void alterSentryRoleRevokePrivilegeCore(PersistenceManager pm,
+      String roleName, TSentryPrivilege tPrivilege)
+      throws SentryNoSuchObjectException, SentryInvalidInputException {
+    Query query = pm.newQuery(MSentryRole.class);
+    query.setFilter("this.roleName == t");
+    query.declareParameters("java.lang.String t");
+    query.setUnique(true);
+    MSentryRole mRole = (MSentryRole) query.execute(roleName);
+    if (mRole == null) {
+      throw new SentryNoSuchObjectException("Role: " + roleName);
+    } else {
+      query = pm.newQuery(MSentryPrivilege.class);
+      MSentryPrivilege mPrivilege = getMSentryPrivilege(
+          constructPrivilegeName(tPrivilege), pm);
+      if (mPrivilege == null) {
+        mPrivilege = convertToMSentryPrivilege(tPrivilege);
+      } else {
+        mPrivilege = (MSentryPrivilege) pm.detachCopy(mPrivilege);
+      }
+
+      Set<MSentryPrivilege> privilegeGraph = Sets.newHashSet(mPrivilege);
+      // Get the privilege graph
+      populateChildren(Sets.newHashSet(roleName), mPrivilege, privilegeGraph);
+      for (MSentryPrivilege childPriv : privilegeGraph) {
+        revokePartial(pm, tPrivilege, mRole, childPriv);
+      }
+      pm.makePersistent(mRole);
+    }
+  }
 
   /**
    * Roles can be granted ALL, SELECT, and INSERT on tables. When
@@ -506,7 +520,7 @@ public class SentryStore {
     String dbName = safeTrimLower(privilege.getDbName());
     String tableName = safeTrimLower(privilege.getTableName());
     String uri = privilege.getURI();
-    String action = privilege.getAction();
+    String action = safeTrimLower(privilege.getAction());
     PrivilegeScope scope;
 
     if (serverName == null) {
@@ -519,6 +533,9 @@ public class SentryStore {
           &&Strings.nullToEmpty(dbName).trim().isEmpty()) {
         throw new SentryInvalidInputException("Either Table name or Db name must be NON-NULL for SELECT/INSERT privilege");
       }
+    }
+    if (action == null) {
+      action = AccessConstants.ALL;
     }
 
     // Validate privilege scope
@@ -1175,8 +1192,153 @@ public class SentryStore {
         rollbackTransaction(pm);
       }
     }
-
   }
 
+  /**
+   * Drop given privilege from all roles
+   */
+  public void dropPrivilege(TSentryAuthorizable tAuthorizable)
+      throws SentryNoSuchObjectException, SentryInvalidInputException {
+    PersistenceManager pm = null;
+    boolean rollbackTransaction = true;
 
+    TSentryPrivilege tPrivilege = toSentryPrivilege(tAuthorizable);
+    try {
+      pm = openTransaction();
+
+      if (isMultiActionsSupported(tPrivilege)) {
+        for (String privilegeAction : Sets.newHashSet(AccessConstants.ALL,
+            AccessConstants.SELECT, AccessConstants.INSERT)) {
+          tPrivilege.setAction(privilegeAction);
+          dropPrivilegeForAllRoles(pm, new TSentryPrivilege(tPrivilege));
+        }
+      } else {
+        dropPrivilegeForAllRoles(pm, new TSentryPrivilege(tPrivilege));
+      }
+      rollbackTransaction = false;
+      commitTransaction(pm);
+    } catch (JDODataStoreException e) {
+      throw new SentryInvalidInputException("Failed to get privileges: "
+          + e.getMessage());
+    } finally {
+      if (rollbackTransaction) {
+        rollbackTransaction(pm);
+      }
+    }
+  }
+
+  /**
+   * Rename given privilege from all roles drop the old privilege and create the new one
+   * @param tAuthorizable
+   * @param newTAuthorizable
+   * @throws SentryNoSuchObjectException
+   * @throws SentryInvalidInputException
+   */
+  public void renamePrivilege(TSentryAuthorizable tAuthorizable,
+      TSentryAuthorizable newTAuthorizable) throws SentryNoSuchObjectException,
+      SentryInvalidInputException {
+    PersistenceManager pm = null;
+    boolean rollbackTransaction = true;
+
+    TSentryPrivilege tPrivilege = toSentryPrivilege(tAuthorizable);
+    TSentryPrivilege newPrivilege = toSentryPrivilege(newTAuthorizable);
+    try {
+      pm = openTransaction();
+      // In case of tables or DBs, check all actions
+      if (isMultiActionsSupported(tPrivilege)) {
+        for (String privilegeAction : Sets.newHashSet(AccessConstants.ALL,
+            AccessConstants.SELECT, AccessConstants.INSERT)) {
+          tPrivilege.setAction(privilegeAction);
+          newPrivilege.setAction(privilegeAction);
+          renamePrivilegeForAllRoles(pm, tPrivilege, newPrivilege);
+        }
+      } else {
+        renamePrivilegeForAllRoles(pm, tPrivilege, newPrivilege);
+      }
+      rollbackTransaction = false;
+      commitTransaction(pm);
+    } catch (JDODataStoreException e) {
+      throw new SentryInvalidInputException("Failed to get privileges: "
+          + e.getMessage());
+    } finally {
+      if (rollbackTransaction) {
+        rollbackTransaction(pm);
+      }
+    }
+  }
+
+  // Currently INSERT/SELECT/ALL are supported for Table and DB level privileges
+  private boolean isMultiActionsSupported(TSentryPrivilege tPrivilege) {
+    return tPrivilege.getDbName() != null;
+
+  }
+  // wrapper for dropOrRename
+  private void renamePrivilegeForAllRoles(PersistenceManager pm,
+      TSentryPrivilege tPrivilege,
+      TSentryPrivilege newPrivilege) throws SentryNoSuchObjectException,
+      SentryInvalidInputException {
+    dropOrRenamePrivilegeForAllRoles(pm, tPrivilege, newPrivilege);
+  }
+
+  /**
+   * Drop given privilege from all roles
+   * @param tPrivilege
+   * @throws SentryNoSuchObjectException
+   * @throws SentryInvalidInputException
+   */
+  private void dropPrivilegeForAllRoles(PersistenceManager pm,
+      TSentryPrivilege tPrivilege)
+      throws SentryNoSuchObjectException, SentryInvalidInputException {
+    dropOrRenamePrivilegeForAllRoles(pm, tPrivilege, null);
+  }
+
+  /**
+   * Drop given privilege from all roles Create the new privilege if asked
+   * @param tPrivilege
+   * @param pm
+   * @throws SentryNoSuchObjectException
+   * @throws SentryInvalidInputException
+   */
+  private void dropOrRenamePrivilegeForAllRoles(PersistenceManager pm,
+      TSentryPrivilege tPrivilege,
+      TSentryPrivilege newTPrivilege) throws SentryNoSuchObjectException,
+      SentryInvalidInputException {
+    HashSet<MSentryRole> roleSet = Sets.newHashSet();
+    tPrivilege.setPrivilegeName(constructPrivilegeName(tPrivilege));
+
+    MSentryPrivilege mPrivilege = getMSentryPrivilege(
+        tPrivilege.getPrivilegeName(), pm);
+    if (mPrivilege != null) {
+      roleSet.addAll(ImmutableSet.copyOf((mPrivilege.getRoles())));
+    }
+    for (MSentryRole role : roleSet) {
+      alterSentryRoleRevokePrivilegeCore(pm, role.getRoleName(), tPrivilege);
+      if (newTPrivilege != null) {
+        alterSentryRoleGrantPrivilegeCore(pm, role.getRoleName(), newTPrivilege);
+      }
+    }
+  }
+
+  // convert TSentryAuthorizable to TSentryPrivilege
+  private TSentryPrivilege toSentryPrivilege(TSentryAuthorizable tAuthorizable)
+      throws SentryInvalidInputException {
+    TSentryPrivilege tSentryPrivilege = new TSentryPrivilege();
+    tSentryPrivilege.setDbName(tAuthorizable.getDb());
+    tSentryPrivilege.setServerName(tAuthorizable.getServer());
+    tSentryPrivilege.setTableName(tAuthorizable.getTable());
+    tSentryPrivilege.setURI(tAuthorizable.getUri());
+    PrivilegeScope scope;
+    if (tSentryPrivilege.getTableName() != null) {
+      scope = PrivilegeScope.TABLE;
+    } else if (tSentryPrivilege.getDbName() != null) {
+      scope = PrivilegeScope.DATABASE;
+    } else if (tSentryPrivilege.getURI() != null) {
+      scope = PrivilegeScope.URI;
+    } else {
+      scope = PrivilegeScope.SERVER;
+    }
+    tSentryPrivilege.setPrivilegeScope(scope.name());
+    tSentryPrivilege.setAction(AccessConstants.ALL);
+    return tSentryPrivilege;
+  }
 }

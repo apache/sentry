@@ -138,6 +138,10 @@ public class MSentryPrivilege {
     roles.add(role);
   }
 
+  public Set<MSentryRole> getRoles() {
+    return roles;
+  }
+
   public void removeRole(MSentryRole role) {
     roles.remove(role);
     role.removePrivilege(this);
