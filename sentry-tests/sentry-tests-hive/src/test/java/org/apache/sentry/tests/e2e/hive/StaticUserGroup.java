@@ -20,9 +20,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class StaticUserGroup {
+  public static String ADMIN1,ADMINGROUP;
   public static final String
-      ADMIN1 = "admin1",
-      ADMINGROUP = "admin",
       USER1_1 = "user1_1",
       USER1_2 = "user1_2",
       USER2_1 = "user2_1",
@@ -35,6 +34,9 @@ public class StaticUserGroup {
   private static final Map<String, String> staticMapping;
 
   static {
+
+    ADMIN1 = System.getProperty("sentry.e2etest.admin.user", "admin1");
+    ADMINGROUP = System.getProperty("sentry.e2etest.admin.group", "admin");
     staticMapping = new HashMap<String, String>();
     staticMapping.put(ADMIN1, ADMINGROUP);
     staticMapping.put(USER1_1, USERGROUP1);

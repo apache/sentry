@@ -21,6 +21,7 @@ import java.io.FileOutputStream;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.Random;
 
 import com.google.common.io.Resources;
 import junit.framework.Assert;
@@ -37,18 +38,19 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
 
   @Before
   public void setup() throws Exception {
-    dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
-    FileOutputStream to = new FileOutputStream(dataFile);
-    Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
-    to.close();
     policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
-    loadData = "server=server1->uri=file://" + dataFile.getPath();
 
   }
 
   // test load data into table
   @Test
   public void testLoadPrivileges() throws Exception {
+    dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
+    FileOutputStream to = new FileOutputStream(dataFile);
+    Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
+    to.close();
+    loadData = "server=server1->uri=file://" + dataFile.getPath();
+
     String dbName = "db1";
     String tabName = "tab1";
     Connection userConn = null;
@@ -162,7 +164,6 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
           " LOCATION '" + tabDir + "/foo'");
     userStmt.execute(
         "ALTER TABLE " + tabName + " DROP PARTITION (dt = '21-Dec-2012')");
-    userConn.close();
 
     userStmt.close();
     userConn.close();
@@ -218,7 +219,7 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
     String dbName = "db1";
     Connection userConn = null;
     Statement userStmt = null;
-    String tableDir = "file://" + context.getDataDir();
+    String tableDir = "file://" + context.getDataDir() + "/" + Math.random();
 
     policyFile
         .addRolesToGroup(USERGROUP1, "db1_all", "data_read")

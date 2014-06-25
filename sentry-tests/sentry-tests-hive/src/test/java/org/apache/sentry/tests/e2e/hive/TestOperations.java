@@ -36,10 +36,9 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
   private PolicyFile policyFile;
   final String dbName = "db1";
   final String tableName = "tb1";
-  static String warehouseDir = hiveServer.getProperty(HiveServerFactory.WAREHOUSE_DIR);
   final String semanticException = "SemanticException No valid privileges";
 
-  static final Map<String, String> privileges = new HashMap<String, String>();
+  static Map<String, String> privileges = new HashMap<String, String>();
   static {
     privileges.put("all_server", "server=server1->action=all");
     privileges.put("all_db1", "server=server1->db=db1->action=all");
@@ -58,6 +57,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP)
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
+
   }
 
   private void adminCreate(String db, String table) throws Exception{
@@ -426,7 +426,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
   @Test
   public void testAlterAllOnTableAndURI() throws Exception {
     adminCreate(dbName, tableName, true);
-    String tabLocation = warehouseDir + "/blah";
+    String tabLocation = dfs.getBaseDir() + "/" + Math.random();
     policyFile
         .addPermissionsToRole("all_db1_tb1", privileges.get("all_db1_tb1"))
         .addPermissionsToRole("all_uri", "server=server1->uri=" + tabLocation)
@@ -515,7 +515,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     dropDb(ADMIN1, dbName);
     createDb(ADMIN1, dbName);
     createTable(ADMIN1, dbName, dataFile, tableName);
-    String location = warehouseDir + "/loc";
+    String location = dfs.getBaseDir() + "/" + Math.random();
     policyFile
         .addPermissionsToRole("all_db1", privileges.get("all_db1"))
         .addPermissionsToRole("all_uri", "server=server1->uri="+ location)
@@ -630,7 +630,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     createDb(ADMIN1, "db2");
     createTable(ADMIN1, dbName, dataFile, tableName);
     createTable(ADMIN1, "db2", null, "tb2");
-    String location = warehouseDir + "/loc";
+    String location = dfs.getBaseDir() + "/" + Math.random();
 
     policyFile
         .addPermissionsToRole("select_db1_tb1", privileges.get("select_db1_tb1"))
