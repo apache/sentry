@@ -22,7 +22,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
+
+import junit.framework.Assert;
 
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
@@ -38,11 +41,13 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
+import com.google.common.io.Resources;
 
 public class TestMetastoreEndToEnd extends
     AbstractMetastoreTestWithStaticConfiguration {
 
   private PolicyFile policyFile;
+  private File dataFile;
   private static final String dbName = "db_1";
   private static final String db_all_role = "all_db1";
   private static final String uri_role = "uri_role";
@@ -76,6 +81,11 @@ public class TestMetastoreEndToEnd extends
             "server=server1->db=" + dbName + "->table=" + tabName2 + "->action=SELECT")
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
+
+    dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
+    FileOutputStream to = new FileOutputStream(dataFile);
+    Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
+    to.close();
 
     HiveMetaStoreClient client = context.getMetaStoreClient(ADMIN1);
     client.dropDatabase(dbName, true, true, true);
@@ -462,4 +472,43 @@ public class TestMetastoreEndToEnd extends
 
   }
 
+  /**
+   * Verify data load into new partition using INSERT .. PARTITION statement
+   */
+  @Test
+  public void testPartionInsert() throws Exception {
+    String partVal1 = "part1", partVal2 = "part2", partVal3 = "part3";
+
+    policyFile.addRolesToGroup(USERGROUP1, uri_role).addPermissionsToRole(
+        uri_role, "server=server1->uri=file://" + dataFile.getPath());
+    writePolicyFile(policyFile);
+
+    execHiveSQL("CREATE TABLE " + dbName + "." + tabName1
+        + " (id int) PARTITIONED BY (part_col string)", USER1_1);
+    execHiveSQL("CREATE TABLE " + dbName + "." + tabName2 + " (id int)",
+        USER1_1);
+    execHiveSQL("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
+        + "' INTO TABLE " + dbName + "." + tabName2, USER1_1);
+
+    // verify that user with DB all can add partition using INSERT .. PARTITION
+    execHiveSQL("INSERT OVERWRITE TABLE " + dbName + "." + tabName1
+        + " PARTITION (part_col='" + partVal1 + "') SELECT * FROM " + dbName
+        + "." + tabName2, USER1_1);
+    verifyPartitionExists(dbName, tabName1, partVal1);
+
+    // verify that user with Table all can add partition using INSERT
+    execHiveSQL("INSERT OVERWRITE TABLE " + dbName + "." + tabName1
+        + " PARTITION (part_col='" + partVal2 + "') SELECT * FROM " + dbName
+        + "." + tabName2, USER2_1);
+    verifyPartitionExists(dbName, tabName1, partVal2);
+  }
+
+  private void verifyPartitionExists(String dbName, String tabName,
+      String partVal) throws Exception {
+    HiveMetaStoreClient client = context.getMetaStoreClient(ADMIN1);
+    Partition newPartition = client.getPartition(dbName, tabName,
+        Lists.newArrayList(partVal));
+    Assert.assertNotNull(newPartition);
+    client.close();
+  }
 }

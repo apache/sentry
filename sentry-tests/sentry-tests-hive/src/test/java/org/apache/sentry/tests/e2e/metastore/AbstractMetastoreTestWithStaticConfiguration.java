@@ -152,7 +152,7 @@ public abstract class AbstractMetastoreTestWithStaticConfiguration extends
       List<String> ptnVals, Table tbl) {
     Partition part = makeMetastoreBasePartitionObject(dbName, tblName, ptnVals,
         tbl);
-    part.getSd().setLocation("");
+    part.getSd().setLocation(null);
     return part;
   }
 

@@ -35,6 +35,7 @@ import org.apache.hadoop.hive.metastore.MetaStorePreEventListener;
 import org.apache.hadoop.hive.metastore.api.InvalidOperationException;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.NoSuchObjectException;
+import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
 import org.apache.hadoop.hive.metastore.events.PreAddPartitionEvent;
 import org.apache.hadoop.hive.metastore.events.PreAlterPartitionEvent;
 import org.apache.hadoop.hive.metastore.events.PreAlterTableEvent;
@@ -164,6 +165,9 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
   public void onEvent(PreEventContext context) throws MetaException,
       NoSuchObjectException, InvalidOperationException {
 
+    if (!needsAuthorization(getUserName())) {
+      return;
+    }
     switch (context.getEventType()) {
     case CREATE_TABLE:
       authorizeCreateTable((PreCreateTableEvent) context);
@@ -221,8 +225,8 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
     if (!StringUtils.isEmpty(context.getTable().getSd().getLocation())) {
       String uriPath;
       try {
-        uriPath = PathUtils.parseDFSURI(warehouseDir, context.getTable().getSd()
-            .getLocation());
+        uriPath = PathUtils.parseDFSURI(warehouseDir,
+            getSdLocation(context.getTable().getSd()));
       } catch(URISyntaxException e) {
         throw new MetaException(e.getMessage());
       }
@@ -262,10 +266,10 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
     String oldLocationUri;
     String newLocationUri;
     try {
-      oldLocationUri = PathUtils.parseDFSURI(warehouseDir, context
-          .getOldTable().getSd().getLocation());
-      newLocationUri = PathUtils.parseDFSURI(warehouseDir, context
-          .getNewTable().getSd().getLocation());
+      oldLocationUri = PathUtils.parseDFSURI(warehouseDir,
+          getSdLocation(context.getOldTable().getSd()));
+      newLocationUri = PathUtils.parseDFSURI(warehouseDir,
+          getSdLocation(context.getNewTable().getSd()));
     } catch (URISyntaxException e) {
       throw new MetaException(e.getMessage());
     }
@@ -288,7 +292,7 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
         .getDbName(), context.getPartition().getTableName());
     // check if we need to validate URI permissions when storage location is
     // non-default, ie something not under the parent table
-    String partitionLocation = context.getPartition().getSd().getLocation();
+    String partitionLocation = getSdLocation(context.getPartition().getSd());
     if (!StringUtils.isEmpty(partitionLocation)) {
       String tableLocation = context
           .getHandler()
@@ -335,7 +339,7 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
      */
     HierarcyBuilder inputBuilder = new HierarcyBuilder().addTableToOutput(
         getAuthServer(), context.getDbName(), context.getTableName());
-    String partitionLocation = context.getNewPartition().getSd().getLocation();
+    String partitionLocation = getSdLocation(context.getNewPartition().getSd());
     if (!StringUtils.isEmpty(partitionLocation)) {
       String uriPath;
       try {
@@ -372,13 +376,9 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
       throws InvalidOperationException {
     try {
       HiveAuthzBinding hiveAuthzBinding = getHiveAuthzBinding();
-      String userName = ShimLoader.getHadoopShims().getUGIForConf(hiveConf)
-          .getShortUserName();
-      if (needsAuthorization(userName)) {
-        hiveAuthzBinding.authorize(hiveOp, HiveAuthzPrivilegesMap
-            .getHiveAuthzPrivileges(hiveOp), new Subject(userName),
-        inputHierarchy, outputHierarchy);
-      }
+      hiveAuthzBinding.authorize(hiveOp, HiveAuthzPrivilegesMap
+          .getHiveAuthzPrivileges(hiveOp), new Subject(getUserName()),
+          inputHierarchy, outputHierarchy);
     } catch (AuthorizationException e1) {
       throw invalidOperationException(e1);
     } catch (LoginException e1) {
@@ -414,4 +414,22 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
     return hiveAuthzBinding;
   }
 
+  private String getUserName() throws MetaException {
+    try {
+      return ShimLoader.getHadoopShims().getUGIForConf(hiveConf)
+          .getShortUserName();
+    } catch (LoginException e) {
+      throw new MetaException("Failed to get username " + e.getMessage());
+    } catch (IOException e) {
+      throw new MetaException("Failed to get username " + e.getMessage());
+    }
+  }
+
+  private String getSdLocation(StorageDescriptor sd) {
+    if (sd == null) {
+      return "";
+    } else {
+      return sd.getLocation();
+    }
+  }
 }
