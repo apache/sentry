@@ -349,9 +349,12 @@ public class TestSentryStore {
     sentryStore.alterSentryRoleAddGroups(grantor, roleName3,
         Sets.newHashSet(new TSentryGroup(group1), new TSentryGroup(group2)));
 
-    assertEquals(2, sentryStore.getTSentryRolesByGroupName(Sets.newHashSet(group1)).size());
-    assertEquals(2, sentryStore.getTSentryRolesByGroupName(Sets.newHashSet(group2)).size());
-    assertEquals(3, sentryStore.getTSentryRolesByGroupName(Sets.newHashSet(group1,group2)).size());
+    assertEquals(2, sentryStore.getTSentryRolesByGroupName(Sets.newHashSet(group1), false).size());
+    assertEquals(2, sentryStore.getTSentryRolesByGroupName(Sets.newHashSet(group2), false).size());
+    assertEquals(3, sentryStore.getTSentryRolesByGroupName(Sets.newHashSet(group1,group2), false).size());
+    assertEquals(0,
+        sentryStore.getTSentryRolesByGroupName(Sets.newHashSet("foo"), true)
+            .size());
   }
 
   /**

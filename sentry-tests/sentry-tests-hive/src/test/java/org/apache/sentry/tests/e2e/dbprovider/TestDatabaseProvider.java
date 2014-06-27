@@ -1651,6 +1651,13 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     statement.close();
     connection.close();
 
+    connection = context.createConnection(USER2_1);
+    statement = context.createStatement(connection);
+    resultSet = statement.executeQuery("SHOW CURRENT ROLES");
+    assertResultSize(resultSet, 0);
+    statement.close();
+    connection.close();
+
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
 

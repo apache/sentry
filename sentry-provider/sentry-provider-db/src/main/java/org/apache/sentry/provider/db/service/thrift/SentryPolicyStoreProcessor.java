@@ -314,16 +314,18 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     TSentryResponseStatus status;
     Set<TSentryRole> roleSet = new HashSet<TSentryRole>();
     Set<String> groups = new HashSet<String>();
+    boolean checkAllGroups = false;
     try {
       // Don't check admin permissions for listing requestor's own roles
       if (AccessConstants.ALL.equalsIgnoreCase(request.getGroupName())) {
         groups = getRequestorGroups(request.getRequestorUserName());
+        checkAllGroups = true;
       } else {
         authorize(request.getRequestorUserName(),
           getRequestorGroups(request.getRequestorUserName()));
         groups.add(request.getGroupName());
       }
-      roleSet = sentryStore.getTSentryRolesByGroupName(groups);
+      roleSet = sentryStore.getTSentryRolesByGroupName(groups, checkAllGroups);
       response.setRoles(roleSet);
       response.setStatus(Status.OK());
     } catch (SentryNoSuchObjectException e) {

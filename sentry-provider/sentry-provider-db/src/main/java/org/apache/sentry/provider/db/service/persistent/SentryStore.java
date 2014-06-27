@@ -894,11 +894,18 @@ public class SentryStore {
    * @return : Set of thrift sentry role objects
    * @throws SentryNoSuchObjectException
    */
-  public Set<TSentryRole> getTSentryRolesByGroupName(Set<String> groupNames)
-      throws SentryNoSuchObjectException {
+  public Set<TSentryRole> getTSentryRolesByGroupName(Set<String> groupNames,
+      boolean checkAllGroups) throws SentryNoSuchObjectException {
     Set<MSentryRole> roleSet = Sets.newHashSet();
     for (String groupName : groupNames) {
-      roleSet.addAll(getMSentryRolesByGroupName(groupName));
+      try {
+        roleSet.addAll(getMSentryRolesByGroupName(groupName));
+      } catch (SentryNoSuchObjectException e) {
+        // if we are checking for all the given groups, then continue searching
+        if (!checkAllGroups) {
+          throw e;
+        }
+      }
     }
     return convertToTSentryRoles(roleSet);
   }
