@@ -579,7 +579,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
 
     policyFile
         .addPermissionsToRole("insert_db1_tb1", privileges.get("insert_db1_tb1"))
-        .addPermissionsToRole("all_uri", "server=server1->uri=file:///" + dataDir)
+        .addPermissionsToRole("all_uri", "server=server1->uri=file://" + dataDir)
         .addRolesToGroup(USERGROUP1, "insert_db1_tb1", "all_uri");
     writePolicyFile(policyFile);
 
