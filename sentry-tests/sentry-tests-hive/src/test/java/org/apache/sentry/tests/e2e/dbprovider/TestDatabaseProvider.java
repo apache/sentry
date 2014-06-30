@@ -1734,4 +1734,24 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     connection.close();
   }
 
+  @Test
+  public void caseSensitiveGroupNames() throws Exception {
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    String testRole1 = "testRole1";
+    statement.execute("CREATE ROLE " + testRole1);
+    statement.execute("GRANT ROLE " + testRole1 + " TO GROUP " + ADMINGROUP);
+
+    ResultSet resultSet;
+    resultSet = statement.executeQuery("SHOW ROLE GRANT GROUP " + ADMINGROUP);
+    assertResultSize(resultSet, 1);
+
+    context.assertSentryException(statement, "SHOW ROLE GRANT GROUP Admin",
+        SentryNoSuchObjectException.class.getSimpleName());
+
+    statement.close();
+    connection.close();
+
+  }
+
 }

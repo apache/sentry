@@ -644,7 +644,7 @@ public class SentryStore {
         query.setUnique(true);
         List<MSentryGroup> groups = Lists.newArrayList();
         for (TSentryGroup tGroup : groupNames) {
-          String groupName = tGroup.getGroupName().trim().toLowerCase();
+          String groupName = tGroup.getGroupName().trim();
           MSentryGroup group = (MSentryGroup) query.execute(groupName);
           if (group == null) {
             group = new MSentryGroup(groupName, System.currentTimeMillis(),
@@ -687,7 +687,7 @@ public class SentryStore {
         query.setUnique(true);
         List<MSentryGroup> groups = Lists.newArrayList();
         for (TSentryGroup tGroup : groupNames) {
-          String groupName = tGroup.getGroupName().trim().toLowerCase();
+          String groupName = tGroup.getGroupName().trim();
           MSentryGroup group = (MSentryGroup) query.execute(groupName);
           if (group != null) {
             group.removeRole(role);
@@ -863,7 +863,7 @@ public class SentryStore {
       } else {
         Query query = pm.newQuery(MSentryGroup.class);
         MSentryGroup sentryGroup;
-        groupName = groupName.trim().toLowerCase();
+        groupName = groupName.trim();
         query.setFilter("this.groupName == t");
         query.declareParameters("java.lang.String t");
         query.setUnique(true);
@@ -920,8 +920,8 @@ public class SentryStore {
       query.setFilter("this.groupName == t");
       query.declareParameters("java.lang.String t");
       query.setUnique(true);
-      for (String group : toTrimedLower(groups)) {
-        MSentryGroup sentryGroup = (MSentryGroup) query.execute(group);
+      for (String group : groups) {
+        MSentryGroup sentryGroup = (MSentryGroup) query.execute(group.trim());
         if (sentryGroup != null) {
           for (MSentryRole role : sentryGroup.getRoles()) {
             for (MSentryPrivilege privilege : role.getPrivileges()) {
@@ -950,8 +950,8 @@ public class SentryStore {
       query.setFilter("this.groupName == t");
       query.declareParameters("java.lang.String t");
       query.setUnique(true);
-      for (String group : toTrimedLower(groups)) {
-        MSentryGroup sentryGroup = (MSentryGroup) query.execute(group);
+      for (String group : groups) {
+        MSentryGroup sentryGroup = (MSentryGroup) query.execute(group.trim());
         if (sentryGroup != null) {
           for (MSentryRole role : sentryGroup.getRoles()) {
             result.add(role.getRoleName());

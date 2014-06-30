@@ -73,7 +73,7 @@ public class TestSentryStore {
     }
   }
   @Test
-  public void testCaseInsensitiveRoleAndGroups() throws Exception {
+  public void testCaseInsensitiveRole() throws Exception {
     String roleName = "newRole";
     String grantor = "g1";
     Set<TSentryGroup> groups = Sets.newHashSet();
