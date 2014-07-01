@@ -32,6 +32,7 @@ import org.apache.hadoop.hive.metastore.events.DropDatabaseEvent;
 import org.apache.hadoop.hive.metastore.events.DropTableEvent;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.SentryUserException;
+import org.apache.sentry.binding.hive.HiveAuthzBindingHook;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
 import org.apache.sentry.core.common.Authorizable;
@@ -49,6 +50,7 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
   public SentryMetastorePostEventListener(Configuration config) {
     super(config);
     sentryClientFactory = new SentryServiceClientFactory();
+
     authzConf = HiveAuthzConf.getAuthzConf(new HiveConf());
     server = new Server(authzConf.get(AuthzConfVars.AUTHZ_SERVER_NAME.getVar()));
   }
@@ -122,7 +124,7 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
   private SentryPolicyServiceClient getSentryServiceClient()
       throws MetaException {
     try {
-      return sentryClientFactory.create(getConf());
+      return sentryClientFactory.create(authzConf);
     } catch (Exception e) {
       throw new MetaException("Failed to connect to Sentry service "
           + e.getMessage());
