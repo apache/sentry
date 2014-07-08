@@ -457,7 +457,8 @@ public class SentrySchemaTool {
                 SentrySchemaHelper.DB_DERBY + "," +
                 SentrySchemaHelper.DB_MYSQL + "," +
                 SentrySchemaHelper.DB_ORACLE + "," +
-                SentrySchemaHelper.DB_POSTGRACE + "]")
+                SentrySchemaHelper.DB_POSTGRACE + "," +
+                SentrySchemaHelper.DB_DB2 + "]")
                 .create("dbType");
     Option dbOpts = OptionBuilder.withArgName("databaseOpts")
                 .hasArgs().withDescription("Backend DB specific options")
@@ -511,8 +512,9 @@ public class SentrySchemaTool {
         dbType = line.getOptionValue("dbType");
         if ((!dbType.equalsIgnoreCase(SentrySchemaHelper.DB_DERBY)
             && !dbType.equalsIgnoreCase(SentrySchemaHelper.DB_MYSQL)
-            && !dbType.equalsIgnoreCase(SentrySchemaHelper.DB_POSTGRACE) && !dbType
-              .equalsIgnoreCase(SentrySchemaHelper.DB_ORACLE))) {
+            && !dbType.equalsIgnoreCase(SentrySchemaHelper.DB_POSTGRACE)
+            && !dbType.equalsIgnoreCase(SentrySchemaHelper.DB_ORACLE)
+            && !dbType.equalsIgnoreCase(SentrySchemaHelper.DB_DB2))) {
           System.err.println("Unsupported dbType " + dbType);
           printAndExit(cmdLineOptions);
         }

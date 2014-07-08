@@ -24,6 +24,7 @@ public class SentrySchemaHelper {
   public static final String DB_MYSQL = "mysql";
   public static final String DB_POSTGRACE = "postgres";
   public static final String DB_ORACLE = "oracle";
+  public static final String DB_DB2 = "db2";
 
   public interface NestedScriptParser {
 
@@ -281,6 +282,22 @@ public class SentrySchemaHelper {
     }
   }
 
+  // DB2 commandline parser
+  public static class DB2CommandParser extends AbstractCommandParser {
+
+    @Override
+    public String getScriptName(String dbCommand) throws IllegalArgumentException {
+        //DB2 does not support nesting script
+        throw new IllegalArgumentException("DB2 does not support nesting script " + dbCommand);
+    }
+
+    @Override
+    public boolean isNestedScript(String dbCommand) {
+        //DB2 does not support nesting script
+     return false;
+    }
+  }
+
   public static NestedScriptParser getDbCommandParser(String dbName) {
     if (dbName.equalsIgnoreCase(DB_DERBY)) {
       return new DerbyCommandParser();
@@ -289,7 +306,9 @@ public class SentrySchemaHelper {
     } else if (dbName.equalsIgnoreCase(DB_POSTGRACE)) {
       return new PostgresCommandParser();
     } else if (dbName.equalsIgnoreCase(DB_ORACLE)) {
-      return new OracleCommandParser();
+        return new OracleCommandParser();
+    } else if (dbName.equalsIgnoreCase(DB_DB2)) {
+      return new DB2CommandParser();
     } else {
       throw new IllegalArgumentException("Unknown dbType " + dbName);
     }
