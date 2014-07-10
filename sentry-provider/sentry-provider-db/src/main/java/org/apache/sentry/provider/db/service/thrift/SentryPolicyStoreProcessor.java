@@ -477,7 +477,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     try {
       authorize(request.getRequestorUserName(), adminGroups);
       sentryStore.renamePrivilege(request.getOldAuthorizable(),
-          request.getNewAuthorizable());
+          request.getNewAuthorizable(), request.getRequestorUserName());
       response.setStatus(Status.OK());
     } catch (SentryAccessDeniedException e) {
       LOGGER.error(e.getMessage(), e);

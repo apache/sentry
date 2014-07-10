@@ -1242,13 +1242,14 @@ public class SentryStore {
    * @throws SentryInvalidInputException
    */
   public void renamePrivilege(TSentryAuthorizable tAuthorizable,
-      TSentryAuthorizable newTAuthorizable) throws SentryNoSuchObjectException,
-      SentryInvalidInputException {
+      TSentryAuthorizable newTAuthorizable, String grantorPrincipal)
+      throws SentryNoSuchObjectException, SentryInvalidInputException {
     PersistenceManager pm = null;
     boolean rollbackTransaction = true;
 
     TSentryPrivilege tPrivilege = toSentryPrivilege(tAuthorizable);
-    TSentryPrivilege newPrivilege = toSentryPrivilege(newTAuthorizable);
+    TSentryPrivilege newPrivilege = toSentryPrivilege(newTAuthorizable,
+        grantorPrincipal);
     try {
       pm = openTransaction();
       // In case of tables or DBs, check all actions
@@ -1329,11 +1330,17 @@ public class SentryStore {
   // convert TSentryAuthorizable to TSentryPrivilege
   private TSentryPrivilege toSentryPrivilege(TSentryAuthorizable tAuthorizable)
       throws SentryInvalidInputException {
+    return toSentryPrivilege(tAuthorizable, null);
+  }
+
+  private TSentryPrivilege toSentryPrivilege(TSentryAuthorizable tAuthorizable,
+      String grantorPrincipal) throws SentryInvalidInputException {
     TSentryPrivilege tSentryPrivilege = new TSentryPrivilege();
     tSentryPrivilege.setDbName(tAuthorizable.getDb());
     tSentryPrivilege.setServerName(tAuthorizable.getServer());
     tSentryPrivilege.setTableName(tAuthorizable.getTable());
     tSentryPrivilege.setURI(tAuthorizable.getUri());
+    tSentryPrivilege.setGrantorPrincipal(grantorPrincipal);
     PrivilegeScope scope;
     if (tSentryPrivilege.getTableName() != null) {
       scope = PrivilegeScope.TABLE;

@@ -534,7 +534,7 @@ public class TestSentryStore {
     TSentryAuthorizable oldTable = toTSentryAuthorizable(privilege_tbl1);
     TSentryAuthorizable newTable = toTSentryAuthorizable(privilege_tbl1);
     newTable.setTable(table2);
-    sentryStore.renamePrivilege(oldTable, newTable);
+    sentryStore.renamePrivilege(oldTable, newTable, System.getProperty("user.name"));
 
     for (String roleName : Sets.newHashSet(roleName1, roleName2, roleName3)) {
       Set<TSentryPrivilege> privilegeSet = sentryStore
@@ -542,6 +542,8 @@ public class TestSentryStore {
       assertEquals(1, privilegeSet.size());
       for (TSentryPrivilege privilege : privilegeSet) {
         assertTrue(table2.equalsIgnoreCase(privilege.getTableName()));
+        assertEquals(System.getProperty("user.name"),
+            privilege.getGrantorPrincipal());
       }
     }
   }
