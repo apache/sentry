@@ -62,7 +62,7 @@
       <field name="grantorPrincipal">  
         <column name="GRANTOR_PRINCIPAL" length="4000" jdbc-type="VARCHAR"/>
       </field>
-      <field name = "privileges" table="SENTRY_ROLE_DB_PRIVILEGE_MAP" >
+      <field name = "privileges" table="SENTRY_ROLE_DB_PRIVILEGE_MAP" default-fetch-group="true">
         <collection element-type="org.apache.sentry.provider.db.service.model.MSentryPrivilege"/>
             <join>
                 <column name="ROLE_ID"/>
