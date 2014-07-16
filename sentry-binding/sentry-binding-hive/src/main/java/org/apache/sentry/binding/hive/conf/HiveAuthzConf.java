@@ -63,7 +63,7 @@ public class HiveAuthzConf extends Configuration {
     AUTHZ_UDF_WHITELIST("sentry.hive.udf.whitelist", HIVE_UDF_WHITE_LIST),
     AUTHZ_ALLOW_HIVE_IMPERSONATION("sentry.hive.allow.hive.impersonation", "false"),
     AUTHZ_ONFAILURE_HOOKS("sentry.hive.failure.hooks", ""),
-    AUTHZ_METASTORE_SERVICE_USERS("sentry.metastore.service.users", ""),
+    AUTHZ_METASTORE_SERVICE_USERS("sentry.metastore.service.users", null),
     AUTHZ_SYNC_ALTER_WITH_POLICY_STORE("sentry.hive.sync.alter", "true"),
     AUTHZ_SYNC_CREATE_WITH_POLICY_STORE("sentry.hive.sync.create", "false"),
     AUTHZ_SYNC_DROP_WITH_POLICY_STORE("sentry.hive.sync.drop", "true"),
