@@ -21,7 +21,7 @@ limitations under the License.
   <parent>
     <groupId>org.apache.sentry</groupId>
     <artifactId>sentry-core</artifactId>
-    <version>1.3.0-incubating-SNAPSHOT</version>
+    <version>1.4.0-incubating-SNAPSHOT</version>
   </parent>
 
   <artifactId>sentry-core-model-db</artifactId>
