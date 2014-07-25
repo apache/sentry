@@ -21,9 +21,13 @@ import org.slf4j.LoggerFactory;
 
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.Slice;
 
 import java.io.File;
 import java.io.PrintWriter;
@@ -107,6 +111,56 @@ public class TestUpdateOperations extends AbstractSolrSentryTestBase {
       String ret = makeHttpRequest(server, "POST", path, body.getBytes("UTF-8"), "text/xml");
       assertTrue("Expected sentry exception", ret.contains("SentrySolrAuthorizationException: User junit"
         + " does not have privileges for testInvariantCollection"));
+    } finally {
+      server.shutdown();
+    }
+  }
+
+  private void checkUpdateDistribPhase(CloudSolrServer server, String collectionName,
+      String userName, DistribPhase distribPhase) throws Exception {
+    String path = "/" + collectionName + "/update?commit=true";
+    String updateDistribParam="";
+    if (distribPhase != null) {
+      updateDistribParam = distribPhase.toString();
+      path += "&update.distrib="+updateDistribParam;
+    }
+    String docId = "testUpdateDistribDoc"+updateDistribParam;
+    String body = "<add><doc><field name=\"id\">"+docId+"</field></doc></add>";
+
+    String node = null;
+    ClusterState clusterState = server.getZkStateReader().getClusterState();
+    for (Slice slice : clusterState.getActiveSlices(collectionName)) {
+      if(slice.getRange().includes(docId.hashCode())) {
+        node = slice.getLeader().getNodeName().replace("_solr", "/solr");
+      }
+    }
+    assertNotNull("Expected to find leader node for document", node);
+
+    String ret = makeHttpRequest(server, node, "POST", path, body.getBytes("UTF-8"), "text/xml");
+    assertTrue("Expected sentry exception",
+      ret.contains("SentrySolrAuthorizationException: " +
+        "User " + userName + " does not have privileges for " + collectionName));
+  }
+
+  @Test
+  public void testUpdateDistribPhase() throws Exception {
+    final String collectionName = "testUpdateDistribPhase";
+    final String userName = "junit";
+    // Upload configs to ZK
+    uploadConfigDirToZk(RESOURCES_DIR + File.separator + DEFAULT_COLLECTION
+        + File.separator + "conf");
+    setupCollection(collectionName);
+
+    setAuthenticationUser(userName);
+    CloudSolrServer server = getCloudSolrServer(collectionName);
+    try {
+      // ensure user can't update collection
+      checkUpdateDistribPhase(server, collectionName, userName, null);
+
+      // now, try to update collection, setting update.distrib to possible values
+      for ( DistribPhase phase : DistribPhase.values() ) {
+        checkUpdateDistribPhase(server, collectionName, userName, phase);
+      }
     } finally {
       server.shutdown();
     }

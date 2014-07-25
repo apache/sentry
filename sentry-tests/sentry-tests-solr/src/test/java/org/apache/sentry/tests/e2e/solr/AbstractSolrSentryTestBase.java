@@ -724,16 +724,13 @@ public class AbstractSolrSentryTestBase {
   }
 
   /**
-   * Make a raw http request
+   * Make a raw http request to specific cluster node.  Node is of the format
+   * host:port/context, i.e. "localhost:8983/solr"
    */
-  protected String makeHttpRequest(CloudSolrServer server, String httpMethod,
+  protected String makeHttpRequest(CloudSolrServer server, String node, String httpMethod,
       String path, byte [] content, String contentType) throws Exception {
     HttpClient httpClient = server.getLbServer().getHttpClient();
-    Set<String> liveNodes =
-      server.getZkStateReader().getClusterState().getLiveNodes();
-    assertTrue("Expected at least one live node", !liveNodes.isEmpty());
-    String firstServer = liveNodes.toArray(new String[0])[0].replace("_solr", "/solr");
-    URI uri = new URI("http://" + firstServer + path);
+    URI uri = new URI("http://" + node + path);
     HttpRequestBase method = null;
     if ("GET".equals(httpMethod)) {
       method = new HttpGet(uri);
@@ -783,6 +780,18 @@ public class AbstractSolrSentryTestBase {
       }
     }
     return retValue;
+  }
+
+  /**
+   * Make a raw http request (not specifying cluster node)
+   */
+  protected String makeHttpRequest(CloudSolrServer server, String httpMethod,
+      String path, byte [] content, String contentType) throws Exception {
+    Set<String> liveNodes =
+      server.getZkStateReader().getClusterState().getLiveNodes();
+    assertTrue("Expected at least one live node", !liveNodes.isEmpty());
+    String firstServer = liveNodes.toArray(new String[0])[0].replace("_solr", "/solr");
+    return makeHttpRequest(server, firstServer, httpMethod, path, content, contentType);
   }
 
   protected static void waitForRecoveriesToFinish(String collection,
