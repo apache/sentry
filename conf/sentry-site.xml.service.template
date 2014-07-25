@@ -1,0 +1,126 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<!--
+   Licensed to the Apache Software Foundation (ASF) under one or more
+   contributor license agreements.  See the NOTICE file distributed with
+   this work for additional information regarding copyright ownership.
+   The ASF licenses this file to You under the Apache License, Version 2.0
+   (the "License"); you may not use this file except in compliance with
+   the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+
+<!-- WARNING!!! This file is provided for documentation purposes ONLY!              -->
+<!-- WARNING!!! You should copy to sentry-site.xml and make modification instead.   -->
+
+<configuration>
+
+  <property>
+    <name>sentry.verify.schema.version</name>
+    <value> </value>
+    <description> 
+    value: true, false
+    true Sentry store will verify the schema version in backed DB with expected version in jar.
+    The service won't start if there's a mismatch
+    </description>
+  </property>
+
+  <property>
+    <name>sentry.service.server-max-threads</name>
+    <value> </value>
+    <description> Number of threads 500 Max worker threads to serve client requests</description>
+  </property>
+
+  <property>
+    <name>sentry.service.server-min-threads</name>
+    <value> </value>
+    <description>Number of threads 10 Min worker threads to serve client requests</description>
+  </property>
+
+  <property>
+    <name>sentry.service.allow.connect</name>
+    <value> </value>
+    <description>comma separated list of users - List of users that are allowed to connect to the service (eg Hive, Impala) </description>
+  </property>
+
+  <property>
+    <name>sentry.store.jdbc.url</name>
+    <value> </value>
+    <description>JDBC connection URL for the backed DB</description>
+  </property>
+
+  <property>
+    <name>sentry.store.jdbc.user</name>
+    <value>Setnry</value>
+    <description>Userid for connecting to backend db </description>
+  </property>
+
+  <property>
+    <name>sentry.store.jdbc.password</name>
+    <value>Sentry</value>
+    <description>Sentry password for backend JDBC user </description>
+  </property>
+
+  <property>
+    <name>sentry.service.server.keytab</name>
+    <value></value>
+    <description>Keytab for service principal</description>
+  </property>
+
+  <property>
+    <name>sentry.service.server.rpcport</name>
+    <value>8038</value>
+    <description> TCP port number for service</description>
+  </property>
+
+  <property>
+    <name>sentry.service.server.rpcaddress</name>
+    <value>0.0.0.0</value>
+    <description> TCP interface for service to bind to</description>
+  </property>
+
+  <property>
+    <name>sentry.store.jdbc.driver</name>
+    <value>org.apache.derby.jdbc.EmbeddedDriver</value>
+    <description>Backend JDBC driver - org.apache.derby.jdbc.EmbeddedDriver (only when dbtype = derby) JDBC Driver class for the backed DB</description>
+  </property>
+ 
+  <property>
+    <name>sentry.service.admin.group</name>
+    <value> </value>
+    <description>Comma separates list of groups.  List of groups allowed to make policy updates</description>
+  </property>
+
+  <property>
+    <name>sentry.store.group.mapping</name>
+    <value>org.apache.sentry.provider.common.HadoopGroupMappingService</value>
+    <description>
+	Group mapping class for Sentry service. org.apache.sentry.provider.file.LocalGroupMapping service can be used for local group mapping. </description>
+  </property>
+
+  <property>
+    <name>sentry.store.group.mapping.resource</name>
+    <value> </value>
+    <description> Policy file for group mapping. Policy file path for local group mapping, when sentry.store.group.mapping is set to LocalGroupMapping Service class.</description>
+  </property>
+
+  <property>
+    <name>sentry.service.security.mode</name>
+    <value>kerberos</value>
+    <description>Options: kerberos, none.  Authentication mode for Sentry service. Currently supports Kerberos and trusted mode </description>
+  </property>
+ 
+  <property>
+    <name>sentry.service.server.principal</name>
+    <value> </value>
+    <description>Service Kerberos principal</description>
+  </property>
+
+</configuration>
