@@ -89,7 +89,7 @@ public class HiveServerFactory {
     return create(HiveServer2Type.valueOf(type.trim()), properties,
         baseDir, confDir, logDir, policyFile, fileSystem);
   }
-  private static HiveServer create(HiveServer2Type type,
+  public static HiveServer create(HiveServer2Type type,
       Map<String, String> properties, File baseDir, File confDir,
       File logDir, String policyFile, FileSystem fileSystem) throws Exception {
 

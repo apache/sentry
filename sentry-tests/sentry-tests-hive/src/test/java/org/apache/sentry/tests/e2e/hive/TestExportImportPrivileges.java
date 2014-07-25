@@ -41,6 +41,8 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticConfigurat
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
     policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    policyFile.setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
   }
 
   @Test
@@ -54,7 +56,6 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticConfigurat
         .addRolesToGroup(USERGROUP2, "db1_read", "db1_write")
         .addPermissionsToRole("db1_write", "server=server1->db=" + DB1 + "->table=" + TBL1 + "->action=INSERT")
         .addPermissionsToRole("db1_read", "server=server1->db=" + DB1 + "->table=" + TBL1 + "->action=SELECT")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .addPermissionsToRole("data_dump", "server=server1->URI=" + dumpDir);
     writePolicyFile(policyFile);
 
@@ -93,6 +94,10 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticConfigurat
     Connection connection = null;
     Statement statement = null;
     String exportDir = dfs.getBaseDir() + "/hive_export1";
+    dropDb(ADMIN1, DB1);
+    createDb(ADMIN1, DB1);
+    createTable(ADMIN1, DB1, dataFile, TBL1);
+
     policyFile
         .addRolesToGroup(USERGROUP1, "tab1_read", "tab1_write", "db1_all", "data_read", "data_export")
         .addRolesToGroup(USERGROUP2, "tab1_write", "tab1_read")
@@ -100,13 +105,8 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticConfigurat
         .addPermissionsToRole("tab1_read", "server=server1->db=" + DB1 + "->table=" + TBL1 + "->action=SELECT")
         .addPermissionsToRole("db1_all", "server=server1->db=" + DB1)
         .addPermissionsToRole("data_read", "server=server1->URI=file://" + dataFile.getPath())
-        .addPermissionsToRole("data_export", "server=server1->URI=" + exportDir)
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+        .addPermissionsToRole("data_export", "server=server1->URI=" + exportDir);
     writePolicyFile(policyFile);
-
-    dropDb(ADMIN1, DB1);
-    createDb(ADMIN1, DB1);
-    createTable(ADMIN1, DB1, dataFile, TBL1);
 
     // Negative test, user2 doesn't have access to the file being loaded
     connection = context.createConnection(USER2_1);

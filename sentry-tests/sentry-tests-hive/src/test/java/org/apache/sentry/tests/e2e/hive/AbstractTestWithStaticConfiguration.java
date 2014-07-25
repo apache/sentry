@@ -105,6 +105,7 @@ public abstract class AbstractTestWithStaticConfiguration {
 
   protected static final String SERVER_HOST = "localhost";
   private static final String EXTERNAL_SENTRY_SERVICE = "sentry.e2etest.external.sentry";
+  protected static final String EXTERNAL_HIVE_LIB = "sentry.e2etest.hive.lib";
 
   protected static boolean policy_on_hdfs = false;
   protected static boolean useSentryService = false;
@@ -119,6 +120,7 @@ public abstract class AbstractTestWithStaticConfiguration {
   protected static File policyFileLocation;
   protected static HiveServer hiveServer;
   protected static FileSystem fileSystem;
+  protected static HiveServerFactory.HiveServer2Type hiveServer2Type;
   protected static DFS dfs;
   protected static Map<String, String> properties;
   protected static SentryService sentryServer;
@@ -196,9 +198,12 @@ public abstract class AbstractTestWithStaticConfiguration {
     fileSystem = dfs.getFileSystem();
 
     String policyURI;
+
+    //TODO: We can probably get rid of this.
     PolicyFile policyFile = PolicyFile.setAdminOnServer1(ADMIN1)
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     policyFile.write(policyFileLocation);
+
     if (policy_on_hdfs) {
       String dfsUri = fileSystem.getDefaultUri(fileSystem.getConf()).toString();
       LOGGER.error("dfsUri " + dfsUri);
@@ -213,9 +218,24 @@ public abstract class AbstractTestWithStaticConfiguration {
       setupSentryService();
     }
 
-    hiveServer = HiveServerFactory.create(properties, baseDir, confDir, logDir, policyURI, fileSystem);
+    hiveServer = create(properties, baseDir, confDir, logDir, policyURI, fileSystem);
     hiveServer.start();
     createContext();
+  }
+
+  public static HiveServer create(Map<String, String> properties,
+                                  File baseDir, File confDir, File logDir, String policyFile,
+                                  FileSystem fileSystem) throws Exception {
+    String type = properties.get(HiveServerFactory.HIVESERVER2_TYPE);
+    if(type == null) {
+      type = System.getProperty(HiveServerFactory.HIVESERVER2_TYPE);
+    }
+    if(type == null) {
+      type = HiveServerFactory.HiveServer2Type.InternalHiveServer2.name();
+    }
+    hiveServer2Type = HiveServerFactory.HiveServer2Type.valueOf(type.trim());
+    return HiveServerFactory.create(hiveServer2Type, properties,
+        baseDir, confDir, logDir, policyFile, fileSystem);
   }
 
   protected void writePolicyFile(PolicyFile policyFile) throws Exception{

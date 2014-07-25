@@ -39,6 +39,8 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
   @Before
   public void setup() throws Exception {
     policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    policyFile.setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
   }
 
@@ -61,8 +63,7 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
         .addRolesToGroup(USERGROUP2, "db1_write")
         .addPermissionsToRole("db1_write", "server=server1->db=" + dbName + "->table=" + tabName + "->action=INSERT")
         .addPermissionsToRole("db1_read", "server=server1->db=" + dbName + "->table=" + tabName + "->action=SELECT")
-        .addPermissionsToRole("data_read", loadData)
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+        .addPermissionsToRole("data_read", loadData);
     writePolicyFile(policyFile);
 
     // create dbs
@@ -108,16 +109,6 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
     Connection userConn = null;
     Statement userStmt = null;
 
-    policyFile
-        .addRolesToGroup(USERGROUP1, "db1_all", "data_read")
-        .addRolesToGroup(USERGROUP2, "db1_all")
-        .addRolesToGroup(USERGROUP3, "db1_tab1_all", "data_read")
-        .addPermissionsToRole("db1_all", "server=server1->db=" + dbName)
-        .addPermissionsToRole("db1_tab1_all", "server=server1->db=" + dbName + "->table=" + tabName)
-        .addPermissionsToRole("data_read", "server=server1->uri=" + tabDir)
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
-    writePolicyFile(policyFile);
-
     // create dbs
     Connection adminCon = context.createConnection(ADMIN1);
     Statement adminStmt = context.createStatement(adminCon);
@@ -127,6 +118,16 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
     adminStmt.execute("use " + dbName);
     adminStmt.execute("CREATE TABLE " + tabName + " (id int) PARTITIONED BY (dt string)");
     adminCon.close();
+
+    policyFile
+        .addRolesToGroup(USERGROUP1, "db1_all", "data_read")
+        .addRolesToGroup(USERGROUP2, "db1_all")
+        .addRolesToGroup(USERGROUP3, "db1_tab1_all", "data_read")
+        .addPermissionsToRole("db1_all", "server=server1->db=" + dbName)
+        .addPermissionsToRole("db1_tab1_all", "server=server1->db=" + dbName + "->table=" + tabName)
+        .addPermissionsToRole("data_read", "server=server1->uri=" + tabDir);
+    writePolicyFile(policyFile);
+
 
     // positive test: user1 has privilege to alter table add partition but not set location
     userConn = context.createConnection(USER1_1);
@@ -183,8 +184,7 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
         .addRolesToGroup(USERGROUP2, "db1_all, data_read")
         .addPermissionsToRole("db1_all", "server=server1->db=" + dbName)
         .addPermissionsToRole("data_read", "server=server1->URI=" + tabDir)
-        .addPermissionsToRole("server1_all", "server=server1")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+        .addPermissionsToRole("server1_all", "server=server1");
     writePolicyFile(policyFile);
 
     // create dbs
@@ -219,14 +219,19 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
     String dbName = "db1";
     Connection userConn = null;
     Statement userStmt = null;
-    String tableDir = "file://" + context.getDataDir() + "/" + Math.random();
+
+    String dataDirPath = "file://" + dataDir;
+    String tableDir = dataDirPath + "/" + Math.random();
+
+    //Hive needs write permissions on this local directory
+    baseDir.setWritable(true, false);
+    dataDir.setWritable(true, false);
 
     policyFile
         .addRolesToGroup(USERGROUP1, "db1_all", "data_read")
         .addRolesToGroup(USERGROUP2, "db1_all")
         .addPermissionsToRole("db1_all", "server=server1->db=" + dbName)
-        .addPermissionsToRole("data_read", "server=server1->URI=" + tableDir)
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+        .addPermissionsToRole("data_read", "server=server1->URI=" + dataDirPath);
     writePolicyFile(policyFile);
 
     // create dbs

@@ -46,7 +46,8 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
     policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
-
+    policyFile.setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
   }
 
   /**
@@ -61,22 +62,15 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     String tableName1 = "tb_1";
     String udfClassName = "org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf";
     CodeSource udfSrc = Class.forName(udfClassName).getProtectionDomain().getCodeSource();
-    policyFile
-        .addRolesToGroup(USERGROUP1, "db1_all", "UDF_JAR")
-        .addRolesToGroup(USERGROUP2, "db1_tab1", "UDF_JAR")
-        .addRolesToGroup(USERGROUP3, "db1_tab1")
-        .addPermissionsToRole("db1_all", "server=server1->db=" + dbName1)
-        .addPermissionsToRole("db1_tab1", "server=server1->db=" + dbName1 + "->table=" + tableName1)
-        .addPermissionsToRole("UDF_JAR", "server=server1->uri=file://" + udfSrc.getLocation().getPath())
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
-    writePolicyFile(policyFile);
-
+    String udfLocation = System.getProperty(EXTERNAL_HIVE_LIB);
+    if(udfLocation == null) {
+      udfLocation = udfSrc.getLocation().getPath();
+    }
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
     statement.execute("CREATE DATABASE " + dbName1);
     statement.execute("USE " + dbName1);
-    statement.execute("DROP TABLE IF EXISTS " + dbName1 + "." + tableName1);
     statement.execute("create table " + dbName1 + "." + tableName1
         + " (under_col int comment 'the under column', value string)");
     statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE "
@@ -84,6 +78,15 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     statement.execute("DROP TEMPORARY FUNCTION IF EXISTS printf_test");
     statement.execute("DROP TEMPORARY FUNCTION IF EXISTS printf_test_2");
     context.close();
+
+    policyFile
+        .addRolesToGroup(USERGROUP1, "db1_all", "UDF_JAR")
+        .addRolesToGroup(USERGROUP2, "db1_tab1", "UDF_JAR")
+        .addRolesToGroup(USERGROUP3, "db1_tab1")
+        .addPermissionsToRole("db1_all", "server=server1->db=" + dbName1)
+        .addPermissionsToRole("db1_tab1", "server=server1->db=" + dbName1 + "->table=" + tableName1)
+        .addPermissionsToRole("UDF_JAR", "server=server1->uri=file://" + udfLocation);
+    writePolicyFile(policyFile);
 
     // user1 should be able create/drop temp functions
     connection = context.createConnection(USER1_1);
@@ -144,8 +147,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
         .addRolesToGroup(USERGROUP3, "db1_tab1")
         .addPermissionsToRole("db1_all", "server=server1->db=" + dbName1)
         .addPermissionsToRole("db1_tab1", "server=server1->db=" + dbName1 + "->table=" + tableName1)
-        .addPermissionsToRole("UDF_JAR", "server=server1->uri=file://${user.home}/.m2")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+        .addPermissionsToRole("UDF_JAR", "server=server1->uri=file://${user.home}/.m2");
     writePolicyFile(policyFile);
 
     Connection connection = context.createConnection(ADMIN1);
