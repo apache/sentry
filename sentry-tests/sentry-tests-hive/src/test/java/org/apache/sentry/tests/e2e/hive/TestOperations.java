@@ -270,6 +270,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     statement.execute("ALTER TABLE tb1 CLUSTERED BY (a) SORTED BY (a) INTO 1 BUCKETS");
     statement.execute("ALTER TABLE tb1 TOUCH");
     statement.execute("ALTER TABLE tb1 ENABLE NO_DROP");
+    statement.execute("ALTER TABLE tb1 DISABLE NO_DROP");
     statement.execute("ALTER TABLE tb1 DISABLE OFFLINE");
     statement.execute("ALTER TABLE tb1 SET FILEFORMAT RCFILE");
 
@@ -292,7 +293,14 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     statement.execute("CREATE INDEX tb1_index ON TABLE tb1 (a) AS 'COMPACT' WITH DEFERRED REBUILD");
     //statement.execute("ALTER INDEX tb1_index ON tb1 REBUILD");
     statement.execute("ALTER TABLE tb1 RENAME TO tb2");
-    statement.execute("DROP TABLE db1.tb1");
+
+    //Drop of the new tablename works only when Hive meta store syncs the alters with the sentry privileges.
+    //This is currently not set for pseudo cluster runs
+    if( hiveServer2Type.equals(HiveServerFactory.HiveServer2Type.UnmanagedHiveServer2)) {
+      statement.execute("DROP TABLE db1.tb2");
+    } else {
+      statement.execute("DROP TABLE db1.tb1");
+    }
 
     statement.close();
     connection.close();
