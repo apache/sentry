@@ -49,6 +49,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     privileges.put("select_db1_tb1", "server=server1->db=db1->table=tb1->action=select");
     privileges.put("insert_db1_tb1", "server=server1->db=db1->table=tb1->action=insert");
     privileges.put("insert_db2_tb2", "server=server1->db=db2->table=tb2->action=insert");
+    privileges.put("select_db1_view1", "server=server1->db=db1->table=view1->action=select");
 
   }
 
@@ -607,16 +608,37 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     adminCreate(dbName, tableName);
     adminCreate("db2", null);
 
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("Use db1");
+    statement.execute("create view view1 as select a from db1.tb1");
+    statement.close();
+    connection.close();
+
     policyFile
         .addPermissionsToRole("select_db1_tb1", privileges.get("select_db1_tb1"))
+        .addPermissionsToRole("select_db1_view1", privileges.get("select_db1_view1"))
         .addPermissionsToRole("all_db2", privileges.get("all_db2"))
-        .addRolesToGroup(USERGROUP1, "select_db1_tb1", "all_db2");
+        .addRolesToGroup(USERGROUP1, "select_db1_tb1", "all_db2")
+        .addRolesToGroup(USERGROUP2, "select_db1_view1", "all_db2");
     writePolicyFile(policyFile);
 
-    Connection connection = context.createConnection(USER1_1);
-    Statement statement = context.createStatement(connection);
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
     statement.execute("Use db2");
     statement.execute("create table tb2 as select a from db1.tb1" );
+    context.assertSentrySemanticException(statement, "create table tb3 as select a from db1.view1",
+        semanticException);
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER2_1);
+    statement = context.createStatement(connection);
+    statement.execute("Use db2");
+    statement.execute("create table tb3 as select a from db1.view1" );
+    context.assertSentrySemanticException(statement, "create table tb4 as select a from db1.tb1",
+        semanticException);
+
     statement.close();
     connection.close();
   }
