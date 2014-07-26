@@ -396,7 +396,11 @@ implements HiveDriverFilterHook {
       outputHierarchy.add(dbHierarchy);
 
       for(ReadEntity readEntity:inputs) {
-      	 // If this is a UDF, then check whether its allowed to be executed
+        // skip the tables/view that are part of expanded view definition.
+        if (isChildTabForView(readEntity)) {
+          continue;
+        }
+        // If this is a UDF, then check whether its allowed to be executed
          // TODO: when we support execute privileges on UDF, this can be removed.
         if (isUDF(readEntity)) {
           if (isBuiltinUDF(readEntity)) {
