@@ -59,7 +59,7 @@ public class SolrAuthzBinding {
   private ProviderBackend providerBackend;
 
   public SolrAuthzBinding (SolrAuthzConf authzConf) throws Exception {
-    this.authzConf = authzConf;
+    this.authzConf = addHdfsPropsToConf(authzConf);
     this.authProvider = getAuthProvider();
     this.groupMapping = authProvider.getGroupMapping();
   }
@@ -86,9 +86,8 @@ public class SolrAuthzBinding {
     if (kerberosEnabledProp.equalsIgnoreCase("true")) {
       initKerberos(keytabProp, principalProp);
     }
-    Configuration conf = getConf();
     providerBackend =
-      (ProviderBackend) providerBackendConstructor.newInstance(new Object[] {conf, resourceName});
+      (ProviderBackend) providerBackendConstructor.newInstance(new Object[] {authzConf, resourceName});
 
     // load the policy engine class
     Constructor<?> policyConstructor =
@@ -147,8 +146,7 @@ public class SolrAuthzBinding {
     return providerBackend.getRoles(getGroups(user), ActiveRoleSet.ALL);
   }
 
-  private Configuration getConf() throws IOException {
-    Configuration conf = new Configuration();
+  private SolrAuthzConf addHdfsPropsToConf(SolrAuthzConf conf) throws IOException {
     String confDir = System.getProperty("solr.hdfs.confdir");
     if (confDir != null && confDir.length() > 0) {
       File confDirFile = new File(confDir);

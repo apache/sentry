@@ -67,7 +67,7 @@ public class SolrAuthzConf extends Configuration {
   public static final String AUTHZ_SITE_FILE = "sentry-site.xml";
 
   public SolrAuthzConf(URL solrAuthzSiteURL) {
-    super(false);
+    super(true);
     addResource(solrAuthzSiteURL);
   }
 
