@@ -17,9 +17,18 @@
 
 package org.apache.sentry.tests.e2e.hive;
 
-import com.google.common.base.Charsets;
-import com.google.common.collect.Maps;
-import com.google.common.io.Files;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Map;
+
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.sentry.binding.hive.HiveAuthzBindingSessionHook;
@@ -31,17 +40,8 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.Map;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import com.google.common.base.Charsets;
+import com.google.common.collect.Maps;
 
 public class TestServerConfiguration extends AbstractTestWithHiveServer {
 
@@ -175,9 +175,6 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
         HiveAuthzBindingSessionHook.SEMANTIC_HOOK);
     verifyConfig(testUser, ConfVars.PREEXECHOOKS.varname,
         HiveAuthzBindingSessionHook.PRE_EXEC_HOOK);
-    verifyConfig(testUser, ConfVars.HIVE_EXEC_FILTER_HOOK.varname,
-        HiveAuthzBindingSessionHook.FILTER_HOOK);
-    verifyConfig(testUser, ConfVars.HIVE_EXTENDED_ENITITY_CAPTURE.varname, "true");
     verifyConfig(testUser, ConfVars.HIVE_SECURITY_COMMAND_WHITELIST.varname, "set");
     verifyConfig(testUser, ConfVars.SCRATCHDIRPERMISSION.varname, HiveAuthzBindingSessionHook.SCRATCH_DIR_PERMISSIONS);
     verifyConfig(testUser, HiveConf.ConfVars.HIVE_CONF_RESTRICTED_LIST.varname,

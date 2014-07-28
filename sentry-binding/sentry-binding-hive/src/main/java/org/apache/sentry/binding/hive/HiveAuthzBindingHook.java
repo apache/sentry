@@ -16,7 +16,6 @@
  */
 package org.apache.sentry.binding.hive;
 
-import org.apache.commons.lang.StringUtils;
 import static org.apache.hadoop.hive.metastore.MetaStoreUtils.DEFAULT_DATABASE_NAME;
 
 import java.io.Serializable;
@@ -32,10 +31,6 @@ import java.util.Set;
 import org.apache.hadoop.hive.common.JavaUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
-import org.apache.hadoop.hive.ql.HiveDriverFilterHook;
-import org.apache.hadoop.hive.ql.HiveDriverFilterHookContext;
-import org.apache.hadoop.hive.ql.HiveDriverFilterHookResult;
-import org.apache.hadoop.hive.ql.HiveDriverFilterHookResultImpl;
 import org.apache.hadoop.hive.ql.exec.SentryGrantRevokeTask;
 import org.apache.hadoop.hive.ql.exec.Task;
 import org.apache.hadoop.hive.ql.hooks.Entity;
@@ -43,7 +38,6 @@ import org.apache.hadoop.hive.ql.hooks.Entity.Type;
 import org.apache.hadoop.hive.ql.hooks.Hook;
 import org.apache.hadoop.hive.ql.hooks.ReadEntity;
 import org.apache.hadoop.hive.ql.hooks.WriteEntity;
-import org.apache.hadoop.hive.ql.lib.Node;
 import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
 import org.apache.hadoop.hive.ql.parse.AbstractSemanticAnalyzerHook;
@@ -74,8 +68,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 
-public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook
-implements HiveDriverFilterHook {
+public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
   private static final Logger LOG = LoggerFactory
       .getLogger(HiveAuthzBindingHook.class);
   private final HiveAuthzBinding hiveAuthzBinding;
@@ -90,6 +83,9 @@ implements HiveDriverFilterHook {
     if(session == null) {
       throw new IllegalStateException("Session has not been started");
     }
+    // HACK: set a random classname to force the Auth V2 in Hive
+    SessionState.get().setAuthorizer(null);
+
     HiveConf hiveConf = session.getConf();
     if(hiveConf == null) {
       throw new IllegalStateException("Session HiveConf is null");
@@ -562,6 +558,9 @@ implements HiveDriverFilterHook {
         throw new AuthorizationException("Failed to get File URI", e);
       }
       break;
+    case DATABASE:
+      // TODO use database entities from compiler instead of capturing from AST
+      break;
     default:
       throw new UnsupportedOperationException("Unsupported entity type " +
           entity.getType().name());
@@ -599,7 +598,8 @@ implements HiveDriverFilterHook {
     return false;
   }
 
-  private List<String> filterShowTables(List<String> queryResult,
+  public static List<String> filterShowTables(
+      HiveAuthzBinding hiveAuthzBinding, List<String> queryResult,
       HiveOperation operation, String userName, String dbName)
           throws SemanticException {
     List<String> filteredResult = new ArrayList<String>();
@@ -638,7 +638,8 @@ implements HiveDriverFilterHook {
     return filteredResult;
   }
 
-  private List<String> filterShowDatabases(List<String> queryResult,
+  public static List<String> filterShowDatabases(
+      HiveAuthzBinding hiveAuthzBinding, List<String> queryResult,
       HiveOperation operation, String userName) throws SemanticException {
     List<String> filteredResult = new ArrayList<String>();
     Subject subject = new Subject(userName);
@@ -655,8 +656,10 @@ implements HiveDriverFilterHook {
 
       // if default is not restricted, continue
       if (DEFAULT_DATABASE_NAME.equalsIgnoreCase(dbName) &&
-          "false".equalsIgnoreCase(authzConf.
-              get(HiveAuthzConf.AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), "false"))) {
+ "false".equalsIgnoreCase(
+hiveAuthzBinding.getAuthzConf().get(
+              HiveAuthzConf.AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(),
+              "false"))) {
         filteredResult.add(DEFAULT_DATABASE_NAME);
         continue;
       }
@@ -684,33 +687,6 @@ implements HiveDriverFilterHook {
     }
 
     return filteredResult;
-  }
-
-  @Override
-  public HiveDriverFilterHookResult postDriverFetch( HiveDriverFilterHookContext hookContext)
-      throws Exception {
-    HiveDriverFilterHookResult hookResult = new HiveDriverFilterHookResultImpl();
-    HiveOperation hiveOperation = hookContext.getHiveOperation();
-    List<String> queryResult = new ArrayList<String>();
-    queryResult = hookContext.getResult();
-    List<String> filteredResult = null;
-    String userName = hookContext.getUserName();
-    String operationName = hiveOperation.getOperationName();
-
-    if ("SHOWTABLES".equalsIgnoreCase(operationName)) {
-      filteredResult = filterShowTables(queryResult, hiveOperation, userName,
-          hookContext.getDbName());
-    } else if ("SHOWDATABASES".equalsIgnoreCase(operationName)) {
-      filteredResult = filterShowDatabases(queryResult, hiveOperation, userName);
-    }
-
-    hookResult.setHiveOperation(hiveOperation);
-    hookResult.setResult(filteredResult);
-    hookResult.setUserName(userName);
-    hookResult.setConf(hookContext.getConf());
-
-
-    return hookResult;
   }
 
   /**

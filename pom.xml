@@ -67,7 +67,7 @@ limitations under the License.
     <jdo-api.version>3.0.1</jdo-api.version>
     <derby.version>10.4.2.0</derby.version>
     <commons-cli.version>1.2</commons-cli.version>
-    <hive.version>0.12.0-cdh5.1.0-SNAPSHOT</hive.version>
+    <hive.version>0.13.1-cdh5.2.0-SNAPSHOT</hive.version>
     <hadoop.version>2.3.0-cdh5.1.0-SNAPSHOT</hadoop.version>
     <fest.reflect.version>1.4.1</fest.reflect.version>
     <guava.version>11.0.2</guava.version>

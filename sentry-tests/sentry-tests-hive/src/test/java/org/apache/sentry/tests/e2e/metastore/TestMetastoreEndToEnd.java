@@ -211,7 +211,7 @@ public class TestMetastoreEndToEnd extends
         Lists.newArrayList(new FieldSchema("col2", "double", "")));
     client.alter_table(dbName, tabName1, metaTable2);
     Table metaTable3 = client.getTable(dbName, tabName1);
-    assertEquals(metaTable2, metaTable3);
+    assertEquals(metaTable2.getSd().getCols(), metaTable3.getSd().getCols());
 
     // verify group1 users with DDL privileges can alter tables in db_1
     client = context.getMetaStoreClient(USER2_1);
@@ -220,7 +220,7 @@ public class TestMetastoreEndToEnd extends
         Lists.newArrayList(new FieldSchema("col3", "string", "")));
     client.alter_table(dbName, tabName1, metaTable2);
     metaTable3 = client.getTable(dbName, tabName1);
-    assertEquals(metaTable2, metaTable3);
+    assertEquals(metaTable2.getSd().getCols(), metaTable3.getSd().getCols());
 
     // verify group3 users can't alter tables in db_1
     client = context.getMetaStoreClient(USER3_1);

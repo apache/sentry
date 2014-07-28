@@ -17,8 +17,6 @@
 
 package org.apache.sentry.tests.e2e.hive.hiveserver;
 
-import java.io.IOException;
-
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStore;
 import org.apache.hive.service.server.HiveServer2;
@@ -29,7 +27,7 @@ public class InternalHiveServer extends AbstractHiveServer {
   private final HiveServer2 hiveServer2;
   private final HiveConf conf;
 
-  public InternalHiveServer(HiveConf conf) throws IOException {
+  public InternalHiveServer(HiveConf conf) throws Exception {
     super(conf, getHostname(conf), getPort(conf));
     // Fix for ACCESS-148. Resets a static field
     // so the default database is created even
@@ -50,7 +48,7 @@ public class InternalHiveServer extends AbstractHiveServer {
   }
 
   @Override
-  public synchronized void shutdown() {
+  public synchronized void shutdown() throws Exception {
     hiveServer2.stop();
   }
 }

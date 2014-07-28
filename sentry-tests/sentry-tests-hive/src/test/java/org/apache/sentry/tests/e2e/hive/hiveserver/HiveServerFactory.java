@@ -66,6 +66,7 @@ public class HiveServerFactory {
   public static final String METASTORE_SETUGI = HiveConf.ConfVars.METASTORE_EXECUTE_SET_UGI.varname;
   public static final String METASTORE_BYPASS = AuthzConfVars.AUTHZ_METASTORE_SERVICE_USERS.getVar();
   public static final String METASTORE_CLIENT_TIMEOUT = HiveConf.ConfVars.METASTORE_CLIENT_SOCKET_TIMEOUT.varname;
+  public static final String METASTORE_CLIENT_IMPL = HiveConf.ConfVars.METASTORE_CLIENT_IMPL.varname;
 
   static {
     try {
@@ -156,6 +157,8 @@ public class HiveServerFactory {
     properties.put(METASTORE_SETUGI, "true");
     properties.put(METASTORE_CLIENT_TIMEOUT, "100");
     properties.put(ConfVars.HIVE_WAREHOUSE_SUBDIR_INHERIT_PERMS.varname, "true");
+    properties.put(METASTORE_CLIENT_IMPL,
+        "org.apache.sentry.binding.metastore.SentryHiveMetaStoreClient");
 
     properties.put(ConfVars.HIVESTATSAUTOGATHER.varname, "false");
     String hadoopBinPath = properties.get(HADOOPBIN);

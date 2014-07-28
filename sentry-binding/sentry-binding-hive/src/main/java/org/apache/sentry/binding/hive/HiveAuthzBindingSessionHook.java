@@ -18,6 +18,14 @@ package org.apache.sentry.binding.hive;
 
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
+import org.apache.hadoop.hive.ql.security.HiveAuthenticationProvider;
+import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveAccessController;
+import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveAuthorizationValidator;
+import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveAuthorizer;
+import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveAuthorizerFactory;
+import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveAuthorizerImpl;
+import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveAuthzPluginException;
+import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveMetastoreClientFactory;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hive.service.cli.HiveSQLException;
 import org.apache.hive.service.cli.session.HiveSessionHookContext;
@@ -38,8 +46,6 @@ public class HiveAuthzBindingSessionHook
   public static final String ACCESS_RESTRICT_LIST = Joiner.on(",").join(
     ConfVars.SEMANTIC_ANALYZER_HOOK.varname,
     ConfVars.PREEXECHOOKS.varname,
-    ConfVars.HIVE_EXEC_FILTER_HOOK.varname,
-    ConfVars.HIVE_EXTENDED_ENITITY_CAPTURE.varname,
     ConfVars.SCRATCHDIR.varname,
     ConfVars.LOCALSCRATCHDIR.varname,
     ConfVars.METASTOREURIS.varname,
@@ -58,6 +64,32 @@ public class HiveAuthzBindingSessionHook
     HiveAuthzConf.SENTRY_ACTIVE_ROLE_SET
     );
 
+  public static class SentryHiveAuthorizerFactory implements
+      HiveAuthorizerFactory {
+
+    @Override
+    public HiveAuthorizer createHiveAuthorizer(
+        HiveMetastoreClientFactory metastoreClientFactory, HiveConf conf,
+        HiveAuthenticationProvider hiveAuthenticator)
+        throws HiveAuthzPluginException {
+      // TODO Auto-generated method stub
+      return new SentryHiveAuthorizerImpl(null, null);
+    }
+  }
+
+  public static class SentryHiveAuthorizerImpl extends HiveAuthorizerImpl {
+
+    public SentryHiveAuthorizerImpl(HiveAccessController accessController,
+        HiveAuthorizationValidator authValidator) {
+      super(accessController, authValidator);
+    }
+
+    @Override
+    public void applyAuthorizationConfigPolicy(HiveConf conf) {
+      return;
+    }
+  }
+
   /**
    * The session hook for sentry authorization that sets the required session level configuration
    * 1. Setup the sentry hooks -
@@ -75,17 +107,14 @@ public class HiveAuthzBindingSessionHook
     appendConfVar(sessionConf, ConfVars.SEMANTIC_ANALYZER_HOOK.varname,
         SEMANTIC_HOOK);
     appendConfVar(sessionConf, ConfVars.PREEXECHOOKS.varname, PRE_EXEC_HOOK);
-    appendConfVar(sessionConf, ConfVars.HIVE_EXEC_FILTER_HOOK.varname,
-        FILTER_HOOK);
-
-    // setup config
-    sessionConf.setBoolVar(ConfVars.HIVE_EXTENDED_ENITITY_CAPTURE, true);
     sessionConf.setVar(ConfVars.HIVE_SECURITY_COMMAND_WHITELIST, "set");
     sessionConf.setVar(ConfVars.SCRATCHDIRPERMISSION, SCRATCH_DIR_PERMISSIONS);
 
     // set user name
     sessionConf.set(HiveAuthzConf.HIVE_ACCESS_SUBJECT_NAME, sessionHookContext.getSessionUser());
     sessionConf.set(HiveAuthzConf.HIVE_SENTRY_SUBJECT_NAME, sessionHookContext.getSessionUser());
+    sessionConf.setVar(ConfVars.HIVE_AUTHORIZATION_MANAGER,
+            "org.apache.sentry.binding.hive.HiveAuthzBindingSessionHook$SentryHiveAuthorizerFactory");
 
     // Set MR ACLs to session user
     appendConfVar(sessionConf, JobContext.JOB_ACL_VIEW_JOB,

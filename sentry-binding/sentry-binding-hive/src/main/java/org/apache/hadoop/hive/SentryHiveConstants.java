@@ -19,7 +19,7 @@ package org.apache.hadoop.hive;
 
 import java.util.EnumSet;
 
-import org.apache.hadoop.hive.ql.security.authorization.Privilege.PrivilegeType;
+import org.apache.hadoop.hive.ql.security.authorization.PrivilegeType;
 
 public class SentryHiveConstants {
   public static final EnumSet<PrivilegeType> ALLOWED_PRIVS = EnumSet.of(

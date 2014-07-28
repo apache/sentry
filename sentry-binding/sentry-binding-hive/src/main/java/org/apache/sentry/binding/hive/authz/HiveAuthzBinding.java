@@ -16,7 +16,6 @@
  */
 package org.apache.sentry.binding.hive.authz;
 
-import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -70,6 +69,7 @@ public class HiveAuthzBinding {
   private final AuthorizationProvider authProvider;
   private volatile boolean open;
   private ActiveRoleSet activeRoleSet;
+  private HiveAuthzConf authzConf;
 
   public static enum HiveHook {
     HiveServer2,
@@ -84,6 +84,7 @@ public class HiveAuthzBinding {
   public HiveAuthzBinding (HiveHook hiveHook, HiveConf hiveConf, HiveAuthzConf authzConf) throws Exception {
     validateHiveConfig(hiveHook, hiveConf, authzConf);
     this.hiveConf = hiveConf;
+    this.authzConf = authzConf;
     this.authServer = new Server(authzConf.get(AuthzConfVars.AUTHZ_SERVER_NAME.getVar()));
     this.authProvider = getAuthProvider(hiveConf, authzConf, authServer.getName());
     this.open = true;
@@ -372,6 +373,10 @@ public class HiveAuthzBinding {
       throw new IllegalStateException("Binding has been closed");
     }
     return authServer;
+  }
+
+  public HiveAuthzConf getAuthzConf() {
+    return authzConf;
   }
 
   private AuthorizableType getAuthzType (List<DBModelAuthorizable> hierarchy){

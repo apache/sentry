@@ -287,33 +287,35 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
 
   private void authorizeAddPartition(PreAddPartitionEvent context)
       throws InvalidOperationException, MetaException, NoSuchObjectException {
-    HierarcyBuilder inputBuilder = new HierarcyBuilder();
-    inputBuilder.addTableToOutput(getAuthServer(), context.getPartition()
-        .getDbName(), context.getPartition().getTableName());
-    // check if we need to validate URI permissions when storage location is
-    // non-default, ie something not under the parent table
-    String partitionLocation = getSdLocation(context.getPartition().getSd());
-    if (!StringUtils.isEmpty(partitionLocation)) {
-      String tableLocation = context
-          .getHandler()
-          .get_table(context.getPartition().getDbName(),
-              context.getPartition().getTableName()).getSd().getLocation();
-      String uriPath;
-      try {
-        uriPath = PathUtils.parseDFSURI(warehouseDir, context.getPartition()
-            .getSd().getLocation());
-      } catch (URISyntaxException e) {
-        throw new MetaException(e.getMessage());
-      }
-      if (!partitionLocation.startsWith(tableLocation + File.separator)) {
-        inputBuilder.addUriToOutput(getAuthServer(), uriPath);
-      }
+    for (org.apache.hadoop.hive.metastore.api.Partition mapiPart : context.getPartitions()) {
+	    HierarcyBuilder inputBuilder = new HierarcyBuilder();
+	    inputBuilder.addTableToOutput(getAuthServer(), mapiPart
+	        .getDbName(), mapiPart.getTableName());
+	    // check if we need to validate URI permissions when storage location is
+	    // non-default, ie something not under the parent table
+	    String partitionLocation = mapiPart.getSd().getLocation();
+	    if (!StringUtils.isEmpty(partitionLocation)) {
+	      String tableLocation = context
+	          .getHandler()
+	          .get_table(mapiPart.getDbName(),
+	              mapiPart.getTableName()).getSd().getLocation();
+	      String uriPath;
+	      try {
+	        uriPath = PathUtils.parseDFSURI(warehouseDir, mapiPart
+	            .getSd().getLocation());
+	      } catch (URISyntaxException e) {
+	        throw new MetaException(e.getMessage());
+	      }
+	      if (!partitionLocation.startsWith(tableLocation + File.separator)) {
+	        inputBuilder.addUriToOutput(getAuthServer(), uriPath);
+	      }
+	    }
+	    authorizeMetastoreAccess(HiveOperation.ALTERTABLE_ADDPARTS,
+	        inputBuilder.build(),
+	        new HierarcyBuilder().addTableToOutput(getAuthServer(),
+	            mapiPart.getDbName(),
+	            mapiPart.getTableName()).build());
     }
-    authorizeMetastoreAccess(HiveOperation.ALTERTABLE_ADDPARTS,
-        inputBuilder.build(),
-        new HierarcyBuilder().addTableToOutput(getAuthServer(),
-            context.getPartition().getDbName(),
-            context.getPartition().getTableName()).build());
   }
 
   private void authorizeDropPartition(PreDropPartitionEvent context)

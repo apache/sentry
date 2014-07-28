@@ -23,6 +23,11 @@ public class SentryHivePrivilegeObjectDesc extends PrivilegeObjectDesc {
   private boolean isUri;
   private boolean isServer;
 
+  public SentryHivePrivilegeObjectDesc() {
+    // reset table type which is on by default
+    super.setTable(false);
+  }
+
   public boolean getUri() {
     return isUri;
   }

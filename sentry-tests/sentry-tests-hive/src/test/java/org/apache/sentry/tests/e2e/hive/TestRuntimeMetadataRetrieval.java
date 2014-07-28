@@ -368,7 +368,6 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
       Assert.assertTrue(dbName, dbNames.remove(dbName.toLowerCase()));
     }
     Assert.assertTrue(dbNames.toString(), dbNames.isEmpty());
-    rs.close();
   }
 
   // Create the give tables

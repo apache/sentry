@@ -16,7 +16,11 @@
  */
 package org.apache.sentry.binding.hive;
 
-import com.google.common.base.Preconditions;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.SentryHiveConstants;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -47,10 +51,7 @@ import org.apache.hadoop.hive.ql.security.authorization.PrivilegeRegistry;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.sentry.core.model.db.AccessConstants;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
+import com.google.common.base.Preconditions;
 
 public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorizationTaskFactory {
 
@@ -298,7 +299,7 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
           subject.setUri(true);
         } else if (astChild.getToken().getType() == HiveParser.TOK_SERVER) {
           subject.setServer(true);
-        } else {
+        } else if (astChild.getToken().getType() == HiveParser.TOK_TABLE_TYPE) {
           subject.setTable(true);
         }
       }
@@ -358,6 +359,26 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
     task.setId("Stage-" + Integer.toString(TaskFactory.getAndIncrementId()));
     task.setWork(work);
     return task;
+  }
+
+  //TODO temp workaround and copied from HiveAuthorizationTaskFactoryImpl and modified
+  @Override
+  public Task<? extends Serializable> createShowRolePrincipalsTask(ASTNode ast, Path resFile,
+      HashSet<ReadEntity> inputs, HashSet<WriteEntity> outputs) throws SemanticException {
+    String roleName;
+
+    if (ast.getChildCount() == 1) {
+      roleName = ast.getChild(0).getText();
+    } else {
+      // the parser should not allow this
+      throw new AssertionError("Unexpected Tokens in SHOW ROLE PRINCIPALS");
+    }
+
+    RoleDDLDesc roleDDLDesc = new RoleDDLDesc(roleName, PrincipalType.ROLE,
+     RoleDDLDesc.RoleOperation.SHOW_ROLE_PRINCIPALS, null);
+    roleDDLDesc.setResFile(resFile.toString());
+    return createTask(new DDLWork(inputs, outputs, roleDDLDesc));
+    //return TaskFactory.get(new DDLWork(inputs, outputs, roleDDLDesc), conf);
   }
 
 
