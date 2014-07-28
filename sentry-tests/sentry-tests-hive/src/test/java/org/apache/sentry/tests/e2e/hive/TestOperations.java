@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
 import org.junit.Before;
 import org.junit.Test;
 
