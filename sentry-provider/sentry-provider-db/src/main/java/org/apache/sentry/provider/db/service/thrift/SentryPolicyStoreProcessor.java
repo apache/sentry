@@ -207,7 +207,11 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       notificationHandlerInvoker.alter_sentry_role_revoke_privilege(commitContext,
           request, response);
     } catch (SentryNoSuchObjectException e) {
-      String msg = "Privilege: " + request.getPrivilege().getPrivilegeName() + " doesn't exist.";
+      String msg = "Privilege: [server=" + request.getPrivilege().getServerName() + 
+    		  ",db=" + request.getPrivilege().getDbName() + 
+    		  ",table=" + request.getPrivilege().getTableName() + 
+    		  ",URI=" + request.getPrivilege().getURI() + 
+    		  ",action=" + request.getPrivilege().getAction() + "] doesn't exist.";
       LOGGER.error(msg, e);
       response.setStatus(Status.NoSuchObject(msg, e));
     } catch (SentryInvalidInputException e) {

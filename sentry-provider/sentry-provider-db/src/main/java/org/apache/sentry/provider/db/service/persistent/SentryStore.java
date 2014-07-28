@@ -77,6 +77,8 @@ import com.google.common.collect.Sets;
  */
 public class SentryStore {
   private static final UUID SERVER_UUID = UUID.randomUUID();
+
+  public static String NULL_COL = "__NULL__";
   static final String DEFAULT_DATA_DIR = "sentry_policy_db";
   /**
    * Commit order sequence id. This is used by notification handlers
@@ -289,17 +291,15 @@ public class SentryStore {
       throw new SentryNoSuchObjectException("Role: " + roleName);
     } else {
 
-      if ((privilege.getTableName() != null) || (privilege.getDbName() != null)) {
+      if ((!isNULL(privilege.getTableName())) || (!isNULL(privilege.getDbName()))) {
         // If Grant is for ALL and Either INSERT/SELECT already exists..
         // need to remove it and GRANT ALL..
         if (privilege.getAction().equalsIgnoreCase("*")) {
           TSentryPrivilege tNotAll = new TSentryPrivilege(privilege);
           tNotAll.setAction(AccessConstants.SELECT);
-          MSentryPrivilege mSelect = getMSentryPrivilege(
-              constructPrivilegeName(tNotAll), pm);
+          MSentryPrivilege mSelect = getMSentryPrivilege(tNotAll, pm);
           tNotAll.setAction(AccessConstants.INSERT);
-          MSentryPrivilege mInsert = getMSentryPrivilege(
-              constructPrivilegeName(tNotAll), pm);
+          MSentryPrivilege mInsert = getMSentryPrivilege(tNotAll, pm);
           if ((mSelect != null) && (mRole.getPrivileges().contains(mSelect))) {
             mSelect.removeRole(mRole);
             pm.makePersistent(mSelect);
@@ -313,16 +313,14 @@ public class SentryStore {
           // do nothing..
           TSentryPrivilege tAll = new TSentryPrivilege(privilege);
           tAll.setAction(AccessConstants.ALL);
-          MSentryPrivilege mAll = getMSentryPrivilege(
-              constructPrivilegeName(tAll), pm);
+          MSentryPrivilege mAll = getMSentryPrivilege(tAll, pm);
           if ((mAll != null) && (mRole.getPrivileges().contains(mAll))) {
             return;
           }
         }
       }
 
-      MSentryPrivilege mPrivilege = getMSentryPrivilege(
-          constructPrivilegeName(privilege), pm);
+      MSentryPrivilege mPrivilege = getMSentryPrivilege(privilege, pm);
       if (mPrivilege == null) {
         mPrivilege = convertToMSentryPrivilege(privilege);
       }
@@ -364,8 +362,7 @@ public class SentryStore {
       throw new SentryNoSuchObjectException("Role: " + roleName);
     } else {
       query = pm.newQuery(MSentryPrivilege.class);
-      MSentryPrivilege mPrivilege = getMSentryPrivilege(
-          constructPrivilegeName(tPrivilege), pm);
+      MSentryPrivilege mPrivilege = getMSentryPrivilege(tPrivilege, pm);
       if (mPrivilege == null) {
         mPrivilege = convertToMSentryPrivilege(tPrivilege);
       } else {
@@ -390,7 +387,7 @@ public class SentryStore {
   private void revokePartial(PersistenceManager pm,
       TSentryPrivilege requestedPrivToRevoke, MSentryRole mRole,
       MSentryPrivilege currentPrivilege) throws SentryInvalidInputException {
-    MSentryPrivilege persistedPriv = getMSentryPrivilege(constructPrivilegeName(convertToTSentryPrivilege(currentPrivilege)), pm);
+    MSentryPrivilege persistedPriv = getMSentryPrivilege(convertToTSentryPrivilege(currentPrivilege), pm);
     if (persistedPriv == null) {
       persistedPriv = convertToMSentryPrivilege(convertToTSentryPrivilege(currentPrivilege));
     }
@@ -415,13 +412,13 @@ public class SentryStore {
     pm.makePersistent(persistedPriv);
 
     currentPrivilege.setAction(AccessConstants.ALL);
-    persistedPriv = getMSentryPrivilege(constructPrivilegeName(convertToTSentryPrivilege(currentPrivilege)), pm);
+    persistedPriv = getMSentryPrivilege(convertToTSentryPrivilege(currentPrivilege), pm);
     if ((persistedPriv != null)&&(mRole.getPrivileges().contains(persistedPriv))) {
       persistedPriv.removeRole(mRole);
       pm.makePersistent(persistedPriv);
 
       currentPrivilege.setAction(addAction);
-      persistedPriv = getMSentryPrivilege(constructPrivilegeName(convertToTSentryPrivilege(currentPrivilege)), pm);
+      persistedPriv = getMSentryPrivilege(convertToTSentryPrivilege(currentPrivilege), pm);
       if (persistedPriv == null) {
         persistedPriv = convertToMSentryPrivilege(convertToTSentryPrivilege(currentPrivilege));
         mRole.appendPrivilege(persistedPriv);
@@ -438,12 +435,12 @@ public class SentryStore {
    */
   private void populateChildren(Set<String> roleNames, MSentryPrivilege priv,
       Set<MSentryPrivilege> children) throws SentryInvalidInputException {
-    if ((priv.getServerName() != null) || (priv.getDbName() != null)) {
+    if ((!isNULL(priv.getServerName())) || (!isNULL(priv.getDbName()))) {
       // Get all DBLevel Privs
       Set<MSentryPrivilege> childPrivs = getChildPrivileges(roleNames, priv);
       for (MSentryPrivilege childPriv : childPrivs) {
         // Only recurse for db level privs..
-        if ((childPriv.getDbName() != null) && (childPriv.getTableName() == null)) {
+        if ((!isNULL(childPriv.getDbName())) && (!isNULL(childPriv.getTableName()))) {
           populateChildren(roleNames, childPriv, children);
         }
         children.add(childPriv);
@@ -454,7 +451,7 @@ public class SentryStore {
   private Set<MSentryPrivilege> getChildPrivileges(Set<String> roleNames,
       MSentryPrivilege parent) throws SentryInvalidInputException {
     // Table and URI do not have children
-    if ((parent.getTableName() != null)||(parent.getURI() != null)) return new HashSet<MSentryPrivilege>();
+    if ((!isNULL(parent.getTableName()))||(!isNULL(parent.getURI()))) return new HashSet<MSentryPrivilege>();
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
     try {
@@ -469,11 +466,11 @@ public class SentryStore {
       StringBuilder filters = new StringBuilder("roles.contains(role) "
           + "&& (" + Joiner.on(" || ").join(rolesFiler) + ")");
       filters.append(" && serverName == \"" + parent.getServerName() + "\"");
-      if (parent.getDbName() != null) {
+      if (!isNULL(parent.getDbName())) {
         filters.append(" && dbName == \"" + parent.getDbName() + "\"");
-        filters.append(" && tableName != null");
+        filters.append(" && tableName != \"__NULL__\"");
       } else {
-        filters.append(" && (dbName != null || URI != null)");
+        filters.append(" && (dbName != \"__NULL__\" || URI != \"__NULL__\")");
       }
       query.setFilter(filters.toString());
       query
@@ -488,7 +485,6 @@ public class SentryStore {
         priv.setURI((String) privObj[4]);
         priv.setAction((String) privObj[5]);
         priv.setGrantorPrincipal((String) privObj[6]);
-        priv.setPrivilegeName(constructPrivilegeName(convertToTSentryPrivilege(priv)));
         privileges.add(priv);
       }
       rollbackTransaction = false;
@@ -501,96 +497,19 @@ public class SentryStore {
     }
   }
 
-  private MSentryPrivilege getMSentryPrivilege(String privilegeName, PersistenceManager pm) {
-    Query query = pm.newQuery(MSentryPrivilege.class);
-    query.setFilter("this.privilegeName == t");
-    query.declareParameters("java.lang.String t");
+  private MSentryPrivilege getMSentryPrivilege(TSentryPrivilege tPriv, PersistenceManager pm) {
+    Query query = pm.newQuery(MSentryPrivilege.class);    
+    query.setFilter("this.serverName == \"" + toNULLCol(tPriv.getServerName()) + "\" "
+				+ "&& this.dbName == \"" + toNULLCol(tPriv.getDbName()) + "\" "
+				+ "&& this.tableName == \"" + toNULLCol(tPriv.getTableName()) + "\" "
+				+ "&& this.URI == \"" + toNULLCol(tPriv.getURI()) + "\" "
+				+ "&& this.action == \"" + toNULLCol(tPriv.getAction().toLowerCase()) + "\"");
     query.setUnique(true);
-    Object obj = query.execute(privilegeName);
+    Object obj = query.execute();
     if (obj != null)
       return (MSentryPrivilege) obj;
     return null;
   }
-
-  //TODO:Validate privilege scope?
-  @VisibleForTesting
-  public static String constructPrivilegeName(TSentryPrivilege privilege) throws SentryInvalidInputException {
-    StringBuilder privilegeName = new StringBuilder();
-    String serverName = safeTrimLower(privilege.getServerName());
-    String dbName = safeTrimLower(privilege.getDbName());
-    String tableName = safeTrimLower(privilege.getTableName());
-    String uri = privilege.getURI();
-    String action = safeTrimLower(privilege.getAction());
-    PrivilegeScope scope;
-
-    if (serverName == null) {
-      throw new SentryInvalidInputException("Server name is null");
-    }
-
-    if (AccessConstants.SELECT.equalsIgnoreCase(action) ||
-        AccessConstants.INSERT.equalsIgnoreCase(action)) {
-      if (Strings.nullToEmpty(tableName).trim().isEmpty()
-          &&Strings.nullToEmpty(dbName).trim().isEmpty()) {
-        throw new SentryInvalidInputException("Either Table name or Db name must be NON-NULL for SELECT/INSERT privilege");
-      }
-    }
-    if (action == null) {
-      action = AccessConstants.ALL;
-    }
-
-    // Validate privilege scope
-    try {
-      scope = Enum.valueOf(PrivilegeScope.class, privilege.getPrivilegeScope().toUpperCase());
-    } catch (IllegalArgumentException e) {
-      throw new SentryInvalidInputException("Invalid Privilege scope: " +
-          privilege.getPrivilegeScope());
-    }
-    if (PrivilegeScope.SERVER.equals(scope)) {
-      if (StringUtils.isNotEmpty(dbName) || StringUtils.isNotEmpty(tableName)) {
-        throw new SentryInvalidInputException("DB and TABLE names should not be "
-            + "set for SERVER scope");
-      }
-    } else if (PrivilegeScope.DATABASE.equals(scope)) {
-      if (StringUtils.isEmpty(dbName)) {
-        throw new SentryInvalidInputException("DB name not set for DB scope");
-      }
-      if (StringUtils.isNotEmpty(tableName)) {
-        StringUtils.isNotEmpty("TABLE names should not be set for DB scope");
-      }
-    } else if (PrivilegeScope.TABLE.equals(scope)) {
-      if (StringUtils.isEmpty(dbName) || StringUtils.isEmpty(tableName)) {
-        throw new SentryInvalidInputException("TABLE or DB name not set for TABLE scope");
-      }
-    } else if (PrivilegeScope.URI.equals(scope)){
-      if (StringUtils.isEmpty(uri)) {
-        throw new SentryInvalidInputException("URI path not set for URI scope");
-      }
-      if (StringUtils.isNotEmpty(tableName)) {
-        throw new SentryInvalidInputException("TABLE should not be set for URI scope");
-      }
-    } else {
-      throw new SentryInvalidInputException("Unsupported operation scope: " + scope);
-    }
-
-    if (uri == null || uri.equals("")) {
-      privilegeName.append(serverName);
-      privilegeName.append("+");
-      privilegeName.append(dbName);
-
-      if (tableName != null && !tableName.equals("")) {
-        privilegeName.append("+");
-        privilegeName.append(tableName);
-      }
-      privilegeName.append("+");
-      privilegeName.append(action);
-    } else {
-      privilegeName.append(serverName);
-      privilegeName.append("+");
-      privilegeName.append(uri);
-    }
-    return privilegeName.toString();
-  }
-
 
   public CommitContext dropSentryRole(String roleName)
       throws SentryNoSuchObjectException {
@@ -781,15 +700,15 @@ public class SentryStore {
       if ((authHierarchy != null) && (authHierarchy.getServer() != null)) {
         filters.append("&& serverName == \"" + authHierarchy.getServer().toLowerCase() + "\"");
         if (authHierarchy.getDb() != null) {
-          filters.append(" && ((dbName == \"" + authHierarchy.getDb().toLowerCase() + "\") || (dbName == null)) && (URI == null)");
+          filters.append(" && ((dbName == \"" + authHierarchy.getDb().toLowerCase() + "\") || (dbName == \"__NULL__\")) && (URI == \"__NULL__\")");
           if ((authHierarchy.getTable() != null)
               && !AccessConstants.ALL
                   .equalsIgnoreCase(authHierarchy.getTable())) {
-            filters.append(" && ((tableName == \"" + authHierarchy.getTable().toLowerCase() + "\") || (tableName == null)) && (URI == null)");
+            filters.append(" && ((tableName == \"" + authHierarchy.getTable().toLowerCase() + "\") || (tableName == \"__NULL__\")) && (URI == \"__NULL__\")");
           }
         }
         if (authHierarchy.getUri() != null) {
-          filters.append(" && ((\"" + authHierarchy.getUri() + "\".startsWith(URI)) || (URI == null)) && (dbName == null)");
+          filters.append(" && ((URI != \"__NULL__\") && (\"" + authHierarchy.getUri() + "\".startsWith(URI)) || (URI == \"__NULL__\")) && (dbName == \"__NULL__\")");
         }
       }
       query.setFilter(filters.toString());
@@ -1008,11 +927,11 @@ public class SentryStore {
     List<String> authorizable = new ArrayList<String>(4);
     authorizable.add(KV_JOINER.join(AuthorizableType.Server.name().toLowerCase(),
         privilege.getServerName()));
-    if (Strings.nullToEmpty(privilege.getURI()).isEmpty()) {
-      if (!Strings.nullToEmpty(privilege.getDbName()).isEmpty()) {
+    if (isNULL(privilege.getURI())) {
+      if (!isNULL(privilege.getDbName())) {
         authorizable.add(KV_JOINER.join(AuthorizableType.Db.name().toLowerCase(),
             privilege.getDbName()));
-        if (!Strings.nullToEmpty(privilege.getTableName()).isEmpty()) {
+        if (!isNULL(privilege.getTableName())) {
           authorizable.add(KV_JOINER.join(AuthorizableType.Table.name().toLowerCase(),
               privilege.getTableName()));
         }
@@ -1021,7 +940,7 @@ public class SentryStore {
       authorizable.add(KV_JOINER.join(AuthorizableType.URI.name().toLowerCase(),
           privilege.getURI()));
     }
-    if (!Strings.nullToEmpty(privilege.getAction()).isEmpty()
+    if (!isNULL(privilege.getAction())
         && !privilege.getAction().equalsIgnoreCase(AccessConstants.ALL)) {
       authorizable
       .add(KV_JOINER.join(ProviderConstants.PRIVILEGE_NAME.toLowerCase(),
@@ -1087,13 +1006,12 @@ public class SentryStore {
   private TSentryPrivilege convertToTSentryPrivilege(MSentryPrivilege mSentryPrivilege) {
     TSentryPrivilege privilege = new TSentryPrivilege();
     privilege.setCreateTime(mSentryPrivilege.getCreateTime());
-    privilege.setPrivilegeName(mSentryPrivilege.getPrivilegeName());
-    privilege.setAction(mSentryPrivilege.getAction());
+    privilege.setAction(fromNULLCol(mSentryPrivilege.getAction()));
     privilege.setPrivilegeScope(mSentryPrivilege.getPrivilegeScope());
-    privilege.setServerName(mSentryPrivilege.getServerName());
-    privilege.setDbName(mSentryPrivilege.getDbName());
-    privilege.setTableName(mSentryPrivilege.getTableName());
-    privilege.setURI(mSentryPrivilege.getURI());
+    privilege.setServerName(fromNULLCol(mSentryPrivilege.getServerName()));
+    privilege.setDbName(fromNULLCol(mSentryPrivilege.getDbName()));
+    privilege.setTableName(fromNULLCol(mSentryPrivilege.getTableName()));
+    privilege.setURI(fromNULLCol(mSentryPrivilege.getURI()));
     privilege.setGrantorPrincipal(mSentryPrivilege.getGrantorPrincipal());
     return privilege;
   }
@@ -1106,15 +1024,14 @@ public class SentryStore {
   private MSentryPrivilege convertToMSentryPrivilege(TSentryPrivilege privilege)
       throws SentryInvalidInputException {
     MSentryPrivilege mSentryPrivilege = new MSentryPrivilege();
-    mSentryPrivilege.setServerName(safeTrimLower(privilege.getServerName()));
-    mSentryPrivilege.setDbName(safeTrimLower(privilege.getDbName()));
-    mSentryPrivilege.setTableName(safeTrimLower(privilege.getTableName()));
+    mSentryPrivilege.setServerName(toNULLCol(safeTrimLower(privilege.getServerName())));
+    mSentryPrivilege.setDbName(toNULLCol(safeTrimLower(privilege.getDbName())));
+    mSentryPrivilege.setTableName(toNULLCol(safeTrimLower(privilege.getTableName())));
     mSentryPrivilege.setPrivilegeScope(safeTrim(privilege.getPrivilegeScope()));
-    mSentryPrivilege.setAction(safeTrim(privilege.getAction()));
+    mSentryPrivilege.setAction(toNULLCol(safeTrimLower(privilege.getAction())));
     mSentryPrivilege.setCreateTime(System.currentTimeMillis());
     mSentryPrivilege.setGrantorPrincipal(safeTrim(privilege.getGrantorPrincipal()));
-    mSentryPrivilege.setURI(safeTrim(privilege.getURI()));
-    mSentryPrivilege.setPrivilegeName(constructPrivilegeName(privilege));
+    mSentryPrivilege.setURI(toNULLCol(safeTrim(privilege.getURI())));
     return mSentryPrivilege;
   }
   private static String safeTrim(String s) {
@@ -1312,10 +1229,8 @@ public class SentryStore {
       TSentryPrivilege newTPrivilege) throws SentryNoSuchObjectException,
       SentryInvalidInputException {
     HashSet<MSentryRole> roleSet = Sets.newHashSet();
-    tPrivilege.setPrivilegeName(constructPrivilegeName(tPrivilege));
 
-    MSentryPrivilege mPrivilege = getMSentryPrivilege(
-        tPrivilege.getPrivilegeName(), pm);
+    MSentryPrivilege mPrivilege = getMSentryPrivilege(tPrivilege, pm);
     if (mPrivilege != null) {
       roleSet.addAll(ImmutableSet.copyOf((mPrivilege.getRoles())));
     }
@@ -1336,17 +1251,17 @@ public class SentryStore {
   private TSentryPrivilege toSentryPrivilege(TSentryAuthorizable tAuthorizable,
       String grantorPrincipal) throws SentryInvalidInputException {
     TSentryPrivilege tSentryPrivilege = new TSentryPrivilege();
-    tSentryPrivilege.setDbName(tAuthorizable.getDb());
-    tSentryPrivilege.setServerName(tAuthorizable.getServer());
-    tSentryPrivilege.setTableName(tAuthorizable.getTable());
-    tSentryPrivilege.setURI(tAuthorizable.getUri());
+    tSentryPrivilege.setDbName(fromNULLCol(tAuthorizable.getDb()));
+    tSentryPrivilege.setServerName(fromNULLCol(tAuthorizable.getServer()));
+    tSentryPrivilege.setTableName(fromNULLCol(tAuthorizable.getTable()));
+    tSentryPrivilege.setURI(fromNULLCol(tAuthorizable.getUri()));
     tSentryPrivilege.setGrantorPrincipal(grantorPrincipal);
     PrivilegeScope scope;
-    if (tSentryPrivilege.getTableName() != null) {
+    if (!isNULL(tSentryPrivilege.getTableName())) {
       scope = PrivilegeScope.TABLE;
-    } else if (tSentryPrivilege.getDbName() != null) {
+    } else if (!isNULL(tSentryPrivilege.getDbName())) {
       scope = PrivilegeScope.DATABASE;
-    } else if (tSentryPrivilege.getURI() != null) {
+    } else if (!isNULL(tSentryPrivilege.getURI())) {
       scope = PrivilegeScope.URI;
     } else {
       scope = PrivilegeScope.SERVER;
@@ -1355,4 +1270,16 @@ public class SentryStore {
     tSentryPrivilege.setAction(AccessConstants.ALL);
     return tSentryPrivilege;
   }
+
+  public static String toNULLCol(String s) {
+	return Strings.isNullOrEmpty(s) ? NULL_COL : s;
+  }
+
+  public static String fromNULLCol(String s) {
+	return isNULL(s) ? "" : s;
+  }
+
+  public static boolean isNULL(String s) {
+	return Strings.isNullOrEmpty(s) || s.equals(NULL_COL);
+  }  
 }

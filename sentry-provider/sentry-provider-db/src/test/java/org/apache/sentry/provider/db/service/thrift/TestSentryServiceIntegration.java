@@ -186,10 +186,6 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
     client.grantDatabasePrivilege(requestorUserName, roleName, server, db, AccessConstants.ALL);
     Set<TSentryPrivilege> privileges = client.listAllPrivilegesByRoleName(requestorUserName, roleName);
     assertTrue(privileges.size() == 1);
-    for (TSentryPrivilege privilege:privileges) {
-      assertTrue(privilege.getPrivilegeName(),
-        privilege.getPrivilegeName().equalsIgnoreCase(SentryStore.constructPrivilegeName(privilege)));
-    }
 
     client.revokeDatabasePrivilege(requestorUserName, roleName, server, db, AccessConstants.ALL);
     client.dropRole(requestorUserName, roleName);

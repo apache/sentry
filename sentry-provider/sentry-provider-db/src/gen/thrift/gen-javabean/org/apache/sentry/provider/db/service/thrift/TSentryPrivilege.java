@@ -35,7 +35,6 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
   private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("TSentryPrivilege");
 
   private static final org.apache.thrift.protocol.TField PRIVILEGE_SCOPE_FIELD_DESC = new org.apache.thrift.protocol.TField("privilegeScope", org.apache.thrift.protocol.TType.STRING, (short)1);
-  private static final org.apache.thrift.protocol.TField PRIVILEGE_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("privilegeName", org.apache.thrift.protocol.TType.STRING, (short)2);
   private static final org.apache.thrift.protocol.TField SERVER_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("serverName", org.apache.thrift.protocol.TType.STRING, (short)3);
   private static final org.apache.thrift.protocol.TField DB_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("dbName", org.apache.thrift.protocol.TType.STRING, (short)4);
   private static final org.apache.thrift.protocol.TField TABLE_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("tableName", org.apache.thrift.protocol.TType.STRING, (short)5);
@@ -51,7 +50,6 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
   }
 
   private String privilegeScope; // required
-  private String privilegeName; // optional
   private String serverName; // required
   private String dbName; // optional
   private String tableName; // optional
@@ -63,7 +61,6 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
     PRIVILEGE_SCOPE((short)1, "privilegeScope"),
-    PRIVILEGE_NAME((short)2, "privilegeName"),
     SERVER_NAME((short)3, "serverName"),
     DB_NAME((short)4, "dbName"),
     TABLE_NAME((short)5, "tableName"),
@@ -87,8 +84,6 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
       switch(fieldId) {
         case 1: // PRIVILEGE_SCOPE
           return PRIVILEGE_SCOPE;
-        case 2: // PRIVILEGE_NAME
-          return PRIVILEGE_NAME;
         case 3: // SERVER_NAME
           return SERVER_NAME;
         case 4: // DB_NAME
@@ -145,13 +140,11 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
   // isset id assignments
   private static final int __CREATETIME_ISSET_ID = 0;
   private byte __isset_bitfield = 0;
-  private _Fields optionals[] = {_Fields.PRIVILEGE_NAME,_Fields.DB_NAME,_Fields.TABLE_NAME,_Fields.URI,_Fields.CREATE_TIME,_Fields.GRANTOR_PRINCIPAL};
+  private _Fields optionals[] = {_Fields.DB_NAME,_Fields.TABLE_NAME,_Fields.URI,_Fields.CREATE_TIME,_Fields.GRANTOR_PRINCIPAL};
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
     tmpMap.put(_Fields.PRIVILEGE_SCOPE, new org.apache.thrift.meta_data.FieldMetaData("privilegeScope", org.apache.thrift.TFieldRequirementType.REQUIRED, 
-        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
-    tmpMap.put(_Fields.PRIVILEGE_NAME, new org.apache.thrift.meta_data.FieldMetaData("privilegeName", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
     tmpMap.put(_Fields.SERVER_NAME, new org.apache.thrift.meta_data.FieldMetaData("serverName", org.apache.thrift.TFieldRequirementType.REQUIRED, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
@@ -172,6 +165,14 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
   }
 
   public TSentryPrivilege() {
+    this.dbName = "";
+
+    this.tableName = "";
+
+    this.URI = "";
+
+    this.action = "";
+
   }
 
   public TSentryPrivilege(
@@ -192,9 +193,6 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
     __isset_bitfield = other.__isset_bitfield;
     if (other.isSetPrivilegeScope()) {
       this.privilegeScope = other.privilegeScope;
-    }
-    if (other.isSetPrivilegeName()) {
-      this.privilegeName = other.privilegeName;
     }
     if (other.isSetServerName()) {
       this.serverName = other.serverName;
@@ -224,12 +222,15 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
   @Override
   public void clear() {
     this.privilegeScope = null;
-    this.privilegeName = null;
     this.serverName = null;
-    this.dbName = null;
-    this.tableName = null;
-    this.URI = null;
-    this.action = null;
+    this.dbName = "";
+
+    this.tableName = "";
+
+    this.URI = "";
+
+    this.action = "";
+
     setCreateTimeIsSet(false);
     this.createTime = 0;
     this.grantorPrincipal = null;
@@ -255,29 +256,6 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
   public void setPrivilegeScopeIsSet(boolean value) {
     if (!value) {
       this.privilegeScope = null;
-    }
-  }
-
-  public String getPrivilegeName() {
-    return this.privilegeName;
-  }
-
-  public void setPrivilegeName(String privilegeName) {
-    this.privilegeName = privilegeName;
-  }
-
-  public void unsetPrivilegeName() {
-    this.privilegeName = null;
-  }
-
-  /** Returns true if field privilegeName is set (has been assigned a value) and false otherwise */
-  public boolean isSetPrivilegeName() {
-    return this.privilegeName != null;
-  }
-
-  public void setPrivilegeNameIsSet(boolean value) {
-    if (!value) {
-      this.privilegeName = null;
     }
   }
 
@@ -451,14 +429,6 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
       }
       break;
 
-    case PRIVILEGE_NAME:
-      if (value == null) {
-        unsetPrivilegeName();
-      } else {
-        setPrivilegeName((String)value);
-      }
-      break;
-
     case SERVER_NAME:
       if (value == null) {
         unsetServerName();
@@ -523,9 +493,6 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
     case PRIVILEGE_SCOPE:
       return getPrivilegeScope();
 
-    case PRIVILEGE_NAME:
-      return getPrivilegeName();
-
     case SERVER_NAME:
       return getServerName();
 
@@ -560,8 +527,6 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
     switch (field) {
     case PRIVILEGE_SCOPE:
       return isSetPrivilegeScope();
-    case PRIVILEGE_NAME:
-      return isSetPrivilegeName();
     case SERVER_NAME:
       return isSetServerName();
     case DB_NAME:
@@ -599,15 +564,6 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
       if (!(this_present_privilegeScope && that_present_privilegeScope))
         return false;
       if (!this.privilegeScope.equals(that.privilegeScope))
-        return false;
-    }
-
-    boolean this_present_privilegeName = true && this.isSetPrivilegeName();
-    boolean that_present_privilegeName = true && that.isSetPrivilegeName();
-    if (this_present_privilegeName || that_present_privilegeName) {
-      if (!(this_present_privilegeName && that_present_privilegeName))
-        return false;
-      if (!this.privilegeName.equals(that.privilegeName))
         return false;
     }
 
@@ -686,11 +642,6 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
     if (present_privilegeScope)
       builder.append(privilegeScope);
 
-    boolean present_privilegeName = true && (isSetPrivilegeName());
-    builder.append(present_privilegeName);
-    if (present_privilegeName)
-      builder.append(privilegeName);
-
     boolean present_serverName = true && (isSetServerName());
     builder.append(present_serverName);
     if (present_serverName)
@@ -743,16 +694,6 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
     }
     if (isSetPrivilegeScope()) {
       lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.privilegeScope, typedOther.privilegeScope);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
-    lastComparison = Boolean.valueOf(isSetPrivilegeName()).compareTo(typedOther.isSetPrivilegeName());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetPrivilegeName()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.privilegeName, typedOther.privilegeName);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -854,16 +795,6 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
       sb.append(this.privilegeScope);
     }
     first = false;
-    if (isSetPrivilegeName()) {
-      if (!first) sb.append(", ");
-      sb.append("privilegeName:");
-      if (this.privilegeName == null) {
-        sb.append("null");
-      } else {
-        sb.append(this.privilegeName);
-      }
-      first = false;
-    }
     if (!first) sb.append(", ");
     sb.append("serverName:");
     if (this.serverName == null) {
@@ -991,14 +922,6 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
-          case 2: // PRIVILEGE_NAME
-            if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
-              struct.privilegeName = iprot.readString();
-              struct.setPrivilegeNameIsSet(true);
-            } else { 
-              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
-            }
-            break;
           case 3: // SERVER_NAME
             if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
               struct.serverName = iprot.readString();
@@ -1073,13 +996,6 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
         oprot.writeString(struct.privilegeScope);
         oprot.writeFieldEnd();
       }
-      if (struct.privilegeName != null) {
-        if (struct.isSetPrivilegeName()) {
-          oprot.writeFieldBegin(PRIVILEGE_NAME_FIELD_DESC);
-          oprot.writeString(struct.privilegeName);
-          oprot.writeFieldEnd();
-        }
-      }
       if (struct.serverName != null) {
         oprot.writeFieldBegin(SERVER_NAME_FIELD_DESC);
         oprot.writeString(struct.serverName);
@@ -1144,28 +1060,22 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
       oprot.writeString(struct.serverName);
       oprot.writeString(struct.action);
       BitSet optionals = new BitSet();
-      if (struct.isSetPrivilegeName()) {
+      if (struct.isSetDbName()) {
         optionals.set(0);
       }
-      if (struct.isSetDbName()) {
+      if (struct.isSetTableName()) {
         optionals.set(1);
       }
-      if (struct.isSetTableName()) {
+      if (struct.isSetURI()) {
         optionals.set(2);
       }
-      if (struct.isSetURI()) {
+      if (struct.isSetCreateTime()) {
         optionals.set(3);
       }
-      if (struct.isSetCreateTime()) {
+      if (struct.isSetGrantorPrincipal()) {
         optionals.set(4);
       }
-      if (struct.isSetGrantorPrincipal()) {
-        optionals.set(5);
-      }
-      oprot.writeBitSet(optionals, 6);
-      if (struct.isSetPrivilegeName()) {
-        oprot.writeString(struct.privilegeName);
-      }
+      oprot.writeBitSet(optionals, 5);
       if (struct.isSetDbName()) {
         oprot.writeString(struct.dbName);
       }
@@ -1192,28 +1102,24 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
       struct.setServerNameIsSet(true);
       struct.action = iprot.readString();
       struct.setActionIsSet(true);
-      BitSet incoming = iprot.readBitSet(6);
+      BitSet incoming = iprot.readBitSet(5);
       if (incoming.get(0)) {
-        struct.privilegeName = iprot.readString();
-        struct.setPrivilegeNameIsSet(true);
-      }
-      if (incoming.get(1)) {
         struct.dbName = iprot.readString();
         struct.setDbNameIsSet(true);
       }
-      if (incoming.get(2)) {
+      if (incoming.get(1)) {
         struct.tableName = iprot.readString();
         struct.setTableNameIsSet(true);
       }
-      if (incoming.get(3)) {
+      if (incoming.get(2)) {
         struct.URI = iprot.readString();
         struct.setURIIsSet(true);
       }
-      if (incoming.get(4)) {
+      if (incoming.get(3)) {
         struct.createTime = iprot.readI64();
         struct.setCreateTimeIsSet(true);
       }
-      if (incoming.get(5)) {
+      if (incoming.get(4)) {
         struct.grantorPrincipal = iprot.readString();
         struct.setGrantorPrincipalIsSet(true);
       }

@@ -89,7 +89,6 @@ public class TestSentryStore {
     privilege.setAction(AccessConstants.ALL);
     privilege.setGrantorPrincipal(grantor);
     privilege.setCreateTime(System.currentTimeMillis());
-    privilege.setPrivilegeName(SentryStore.constructPrivilegeName(privilege));
 
     long seqId = sentryStore.createSentryRole(roleName, grantor).getSequenceId();
     assertEquals(seqId + 1, sentryStore.alterSentryRoleAddGroups(grantor, roleName, groups).getSequenceId());
@@ -105,7 +104,6 @@ public class TestSentryStore {
     sentryStore.createSentryRole(roleName, grantor);
     TSentryPrivilege tSentryPrivilege = new TSentryPrivilege("URI", "server1", "ALL");
     tSentryPrivilege.setURI(uri);
-    tSentryPrivilege.setPrivilegeName(SentryStore.constructPrivilegeName(tSentryPrivilege));
     sentryStore.alterSentryRoleGrantPrivilege(roleName, tSentryPrivilege);
 
     TSentryAuthorizable tSentryAuthorizable = new TSentryAuthorizable();
@@ -128,7 +126,7 @@ public class TestSentryStore {
         sentryStore.listSentryPrivilegesForProvider(new HashSet<String>(Arrays.asList("group1")), thriftRoleSet, tSentryAuthorizable);
 
     assertTrue(privs.size()==1);
-    assertTrue(privs.contains("server=server1->uri=" + uri + "->action=ALL"));
+    assertTrue(privs.contains("server=server1->uri=" + uri + "->action=all"));
   }
 
   @Test
@@ -205,13 +203,11 @@ public class TestSentryStore {
     privilege.setAction(AccessConstants.ALL);
     privilege.setGrantorPrincipal(grantor);
     privilege.setCreateTime(System.currentTimeMillis());
-    privilege.setPrivilegeName(SentryStore.constructPrivilegeName(privilege));
     assertEquals(seqId + 1, sentryStore.alterSentryRoleGrantPrivilege(roleName, privilege)
         .getSequenceId());
     MSentryRole role = sentryStore.getMSentryRoleByName(roleName);
     Set<MSentryPrivilege> privileges = role.getPrivileges();
     assertEquals(privileges.toString(), 1, privileges.size());
-    assertEquals(privilege.getPrivilegeName(), Iterables.get(privileges, 0).getPrivilegeName());
     privilege.setAction(AccessConstants.SELECT);
     assertEquals(seqId + 2, sentryStore.alterSentryRoleRevokePrivilege(roleName, privilege)
         .getSequenceId());
@@ -241,7 +237,6 @@ public class TestSentryStore {
     privilege1.setAction("SELECT");
     privilege1.setGrantorPrincipal(grantor);
     privilege1.setCreateTime(System.currentTimeMillis());
-    privilege1.setPrivilegeName(SentryStore.constructPrivilegeName(privilege1));
     assertEquals(seqId + 2, sentryStore.alterSentryRoleGrantPrivilege(roleName1, privilege1)
         .getSequenceId());
     assertEquals(seqId + 3, sentryStore.alterSentryRoleGrantPrivilege(roleName2, privilege1)
@@ -251,7 +246,6 @@ public class TestSentryStore {
     privilege2.setServerName("server1");
     privilege2.setGrantorPrincipal(grantor);
     privilege2.setCreateTime(System.currentTimeMillis());
-    privilege2.setPrivilegeName(SentryStore.constructPrivilegeName(privilege2));
     assertEquals(seqId + 4, sentryStore.alterSentryRoleGrantPrivilege(roleName2, privilege2)
         .getSequenceId());
     Set<TSentryGroup> groups = Sets.newHashSet();
@@ -377,25 +371,20 @@ public class TestSentryStore {
     privilege_tbl1.setTableName("tbl1");
     privilege_tbl1.setGrantorPrincipal(grantor);
     privilege_tbl1.setCreateTime(System.currentTimeMillis());
-    privilege_tbl1.setPrivilegeName(SentryStore.constructPrivilegeName(privilege_tbl1));
 
     TSentryPrivilege privilege1 = new TSentryPrivilege(privilege_tbl1);
     privilege1.setAction("SELECT");
-    privilege1.setPrivilegeName(SentryStore.constructPrivilegeName(privilege1));
 
     TSentryPrivilege privilege2_1 = new TSentryPrivilege(privilege_tbl1);
     privilege2_1.setAction("INSERT");
-    privilege2_1.setPrivilegeName(SentryStore.constructPrivilegeName(privilege2_1));
     TSentryPrivilege privilege3_1 = new TSentryPrivilege(privilege_tbl1);
     privilege3_1.setAction("*");
-    privilege3_1.setPrivilegeName(SentryStore.constructPrivilegeName(privilege3_1));
 
     TSentryPrivilege privilege_server = new TSentryPrivilege();
     privilege_server.setPrivilegeScope("SERVER");
     privilege_server.setServerName("server1");
     privilege_server.setGrantorPrincipal(grantor);
     privilege_server.setCreateTime(System.currentTimeMillis());
-    privilege_server.setPrivilegeName(SentryStore.constructPrivilegeName(privilege_server));
 
     TSentryPrivilege privilege_tbl2 = new TSentryPrivilege();
     privilege_tbl2.setPrivilegeScope("TABLE");
@@ -407,12 +396,9 @@ public class TestSentryStore {
 
     TSentryPrivilege privilege2_3 = new TSentryPrivilege(privilege_tbl2);
     privilege2_3.setAction("SELECT");
-    privilege2_3.setPrivilegeName(SentryStore
-        .constructPrivilegeName(privilege2_3));
 
     TSentryPrivilege privilege3_2 = new TSentryPrivilege(privilege_tbl2);
     privilege3_2.setAction("INSERT");
-    privilege2_3.setPrivilegeName(SentryStore.constructPrivilegeName(privilege2_3));
 
     sentryStore.alterSentryRoleGrantPrivilege(roleName1, privilege1);
 
@@ -453,19 +439,13 @@ public class TestSentryStore {
     privilege_tbl1.setTableName("tbl1");
     privilege_tbl1.setGrantorPrincipal(grantor);
     privilege_tbl1.setCreateTime(System.currentTimeMillis());
-    privilege_tbl1.setPrivilegeName(SentryStore
-        .constructPrivilegeName(privilege_tbl1));
 
     TSentryPrivilege privilege_tbl1_insert = new TSentryPrivilege(
         privilege_tbl1);
     privilege_tbl1_insert.setAction("INSERT");
-    privilege_tbl1_insert.setPrivilegeName(SentryStore
-        .constructPrivilegeName(privilege_tbl1_insert));
 
     TSentryPrivilege privilege_tbl1_all = new TSentryPrivilege(privilege_tbl1);
     privilege_tbl1_all.setAction("*");
-    privilege_tbl1_all.setPrivilegeName(SentryStore
-        .constructPrivilegeName(privilege_tbl1_all));
 
     sentryStore.alterSentryRoleGrantPrivilege(roleName1, privilege_tbl1_insert);
     sentryStore.alterSentryRoleGrantPrivilege(roleName1, privilege_tbl1_all);
@@ -507,25 +487,17 @@ public class TestSentryStore {
     privilege_tbl1.setTableName(table1);
     privilege_tbl1.setGrantorPrincipal(grantor);
     privilege_tbl1.setCreateTime(System.currentTimeMillis());
-    privilege_tbl1.setPrivilegeName(SentryStore
-        .constructPrivilegeName(privilege_tbl1));
 
     TSentryPrivilege privilege_tbl1_insert = new TSentryPrivilege(
         privilege_tbl1);
     privilege_tbl1_insert.setAction(AccessConstants.INSERT);
-    privilege_tbl1_insert.setPrivilegeName(SentryStore
-        .constructPrivilegeName(privilege_tbl1_insert));
 
     TSentryPrivilege privilege_tbl1_select = new TSentryPrivilege(
         privilege_tbl1);
     privilege_tbl1_select.setAction(AccessConstants.SELECT);
-    privilege_tbl1_select.setPrivilegeName(SentryStore
-        .constructPrivilegeName(privilege_tbl1_select));
 
     TSentryPrivilege privilege_tbl1_all = new TSentryPrivilege(privilege_tbl1);
     privilege_tbl1_all.setAction(AccessConstants.ALL);
-    privilege_tbl1_all.setPrivilegeName(SentryStore
-        .constructPrivilegeName(privilege_tbl1_all));
 
     sentryStore.alterSentryRoleGrantPrivilege(roleName1, privilege_tbl1_insert);
     sentryStore.alterSentryRoleGrantPrivilege(roleName2, privilege_tbl1_select);

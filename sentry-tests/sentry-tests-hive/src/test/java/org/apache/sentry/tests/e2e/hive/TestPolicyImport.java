@@ -127,7 +127,6 @@ public class TestPolicyImport extends AbstractTestWithStaticConfiguration {
     for (TSentryPrivilege privilege : actualPrivileges) {
       privilege.unsetCreateTime();
       privilege.unsetGrantorPrincipal();
-      privilege.unsetPrivilegeName();
     }
 
     assertEquals("Expected privileges don't match.", expectedPrivileges, actualPrivileges);
