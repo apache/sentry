@@ -32,6 +32,8 @@ import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.provider.db.SentryAlreadyExistsException;
 import org.apache.sentry.provider.db.SentryInvalidInputException;
 import org.apache.sentry.provider.db.SentryNoSuchObjectException;
+import org.apache.sentry.provider.db.log.entity.JsonLogEntityFactory;
+import org.apache.sentry.provider.db.log.util.Constants;
 import org.apache.sentry.provider.db.service.persistent.CommitContext;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.provider.db.service.thrift.PolicyStoreConstants.PolicyStoreServerConfig;
@@ -52,6 +54,7 @@ import com.google.common.collect.Sets;
 @SuppressWarnings("unused")
 public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryPolicyStoreProcessor.class);
+  private static final Logger AUDIT_LOGGER = LoggerFactory.getLogger(Constants.AUDIT_LOGGER_NAME);
 
   public static final String SENTRY_POLICY_SERVICE_NAME = "SentryPolicyService";
 
@@ -158,6 +161,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       LOGGER.error(msg, e);
       response.setStatus(Status.RuntimeError(msg, e));
     }
+
+    AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance().createJsonLogEntity(
+    		request, response, conf).toJsonFormatLog());
     return response;
   }
 
@@ -191,6 +197,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       response.setStatus(Status.RuntimeError(msg, e));
     }
 
+    AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance().createJsonLogEntity(
+    		request, response, conf).toJsonFormatLog());
     return response;
   }
 
@@ -227,6 +235,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       response.setStatus(Status.RuntimeError(msg, e));
     }
 
+    AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance().createJsonLogEntity(
+    		request, response, conf).toJsonFormatLog());
     return response;
   }
 
@@ -254,6 +264,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       LOGGER.error(msg, e);
       response.setStatus(Status.RuntimeError(msg, e));
     }
+
+    AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance().createJsonLogEntity(
+    		request, response, conf).toJsonFormatLog());
     return response;
   }
 
@@ -281,6 +294,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       LOGGER.error(msg, e);
       response.setStatus(Status.RuntimeError(msg, e));
     }
+
+    AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance().createJsonLogEntity(
+    		request, response, conf).toJsonFormatLog());
     return response;
   }
 
@@ -308,6 +324,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       LOGGER.error(msg, e);
       response.setStatus(Status.RuntimeError(msg, e));
     }
+
+    AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance().createJsonLogEntity(
+    		request, response, conf).toJsonFormatLog());
     return response;
   }
 

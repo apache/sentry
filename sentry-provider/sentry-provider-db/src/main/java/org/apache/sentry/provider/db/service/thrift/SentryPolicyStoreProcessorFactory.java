@@ -32,7 +32,7 @@ public class SentryPolicyStoreProcessorFactory extends ProcessorFactory {
         new SentryPolicyStoreProcessor(SentryPolicyStoreProcessor.SENTRY_POLICY_SERVICE_NAME,
             conf);
     TProcessor processor =
-      new SentryPolicyService.Processor<SentryPolicyService.Iface>(sentryServiceHandler);
+      new SentryProcessorWrapper<SentryPolicyService.Iface>(sentryServiceHandler);
     multiplexedProcessor.registerProcessor(SentryPolicyStoreProcessor.SENTRY_POLICY_SERVICE_NAME, processor);
     return true;
   }

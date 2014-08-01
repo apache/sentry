@@ -166,6 +166,18 @@ limitations under the License.
         <artifactId>hive-metastore</artifactId>
         <version>${hive.version}</version>
       </dependency>
+
+      <dependency>
+         <groupId>org.codehaus.jackson</groupId>
+         <artifactId>jackson-core-asl</artifactId>
+         <version>${jackson.version}</version>
+       </dependency>
+       <dependency>
+         <groupId>org.codehaus.jackson</groupId>
+         <artifactId>jackson-mapper-asl</artifactId>
+         <version>${jackson.version}</version>
+      </dependency>
+
       <dependency>
         <groupId>org.apache.hive</groupId>
         <artifactId>hive-beeline</artifactId>
