@@ -40,19 +40,23 @@ import javax.jdo.Transaction;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.sentry.SentryUserException;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
 import org.apache.sentry.provider.common.ProviderConstants;
 import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.provider.db.SentryAlreadyExistsException;
+import org.apache.sentry.provider.db.SentryGrantDeniedException;
 import org.apache.sentry.provider.db.SentryInvalidInputException;
 import org.apache.sentry.provider.db.SentryNoSuchObjectException;
 import org.apache.sentry.provider.db.service.model.MSentryGroup;
 import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
 import org.apache.sentry.provider.db.service.model.MSentryVersion;
+import org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessor;
 import org.apache.sentry.provider.db.service.thrift.TSentryActiveRoleSet;
 import org.apache.sentry.provider.db.service.thrift.TSentryAuthorizable;
+import org.apache.sentry.provider.db.service.thrift.TSentryGrantOption;
 import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
@@ -89,10 +93,12 @@ public class SentryStore {
    */
   private long commitSequenceId;
   private final PersistenceManagerFactory pmf;
+  private Configuration conf;
 
   public SentryStore(Configuration conf) throws SentryNoSuchObjectException,
   SentryAccessDeniedException {
     commitSequenceId = 0;
+    this.conf = conf;
     Properties prop = new Properties();
     prop.putAll(ServerConfig.SENTRY_STORE_DEFAULTS);
     String jdbcUrl = conf.get(ServerConfig.SENTRY_STORE_JDBC_URL, "").trim();
@@ -266,12 +272,15 @@ public class SentryStore {
   }
 
   public CommitContext alterSentryRoleGrantPrivilege(String roleName, TSentryPrivilege privilege)
-      throws SentryNoSuchObjectException, SentryInvalidInputException {
+      throws SentryUserException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
     roleName = trimAndLower(roleName);
     try {
       pm = openTransaction();
+      // first do grant check
+      grantOptionCheck(pm, privilege);
+
       alterSentryRoleGrantPrivilegeCore(pm, roleName, privilege);
       CommitContext commit = commitUpdateTransaction(pm);
       rollbackTransaction = false;
@@ -332,12 +341,15 @@ public class SentryStore {
   }
 
   public CommitContext alterSentryRoleRevokePrivilege(String roleName,
-      TSentryPrivilege tPrivilege) throws SentryNoSuchObjectException, SentryInvalidInputException {
+      TSentryPrivilege tPrivilege) throws SentryUserException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
     roleName = safeTrimLower(roleName);
     try {
       pm = openTransaction();
+      // first do revoke check
+      grantOptionCheck(pm, tPrivilege);
+
       alterSentryRoleRevokePrivilegeCore(pm, roleName, tPrivilege);
 
       CommitContext commit = commitUpdateTransaction(pm);
@@ -369,7 +381,17 @@ public class SentryStore {
         mPrivilege = (MSentryPrivilege) pm.detachCopy(mPrivilege);
       }
 
-      Set<MSentryPrivilege> privilegeGraph = Sets.newHashSet(mPrivilege);
+      Set<MSentryPrivilege> privilegeGraph = Sets.newHashSet();
+      if (mPrivilege.getGrantOption() != null) {
+        privilegeGraph.add(mPrivilege);
+      } else {
+        MSentryPrivilege mTure = new MSentryPrivilege(mPrivilege);
+        mTure.setGrantOption(true);
+        privilegeGraph.add(mTure);
+        MSentryPrivilege mFalse = new MSentryPrivilege(mPrivilege);
+        mFalse.setGrantOption(false);
+        privilegeGraph.add(mFalse);
+      }
       // Get the privilege graph
       populateChildren(Sets.newHashSet(roleName), mPrivilege, privilegeGraph);
       for (MSentryPrivilege childPriv : privilegeGraph) {
@@ -472,9 +494,10 @@ public class SentryStore {
       } else {
         filters.append(" && (dbName != \"__NULL__\" || URI != \"__NULL__\")");
       }
+
       query.setFilter(filters.toString());
       query
-          .setResult("privilegeScope, serverName, dbName, tableName, URI, action, grantorPrincipal");
+          .setResult("privilegeScope, serverName, dbName, tableName, URI, action, grantorPrincipal, grantOption");
       Set<MSentryPrivilege> privileges = new HashSet<MSentryPrivilege>();
       for (Object[] privObj : (List<Object[]>) query.execute()) {
         MSentryPrivilege priv = new MSentryPrivilege();
@@ -485,6 +508,7 @@ public class SentryStore {
         priv.setURI((String) privObj[4]);
         priv.setAction((String) privObj[5]);
         priv.setGrantorPrincipal((String) privObj[6]);
+        priv.setGrantOption((Boolean) privObj[7]);
         privileges.add(priv);
       }
       rollbackTransaction = false;
@@ -498,14 +522,22 @@ public class SentryStore {
   }
 
   private MSentryPrivilege getMSentryPrivilege(TSentryPrivilege tPriv, PersistenceManager pm) {
-    Query query = pm.newQuery(MSentryPrivilege.class);    
+    Query query = pm.newQuery(MSentryPrivilege.class);
     query.setFilter("this.serverName == \"" + toNULLCol(tPriv.getServerName()) + "\" "
 				+ "&& this.dbName == \"" + toNULLCol(tPriv.getDbName()) + "\" "
 				+ "&& this.tableName == \"" + toNULLCol(tPriv.getTableName()) + "\" "
 				+ "&& this.URI == \"" + toNULLCol(tPriv.getURI()) + "\" "
+				+ "&& this.grantOption == grantOption "
 				+ "&& this.action == \"" + toNULLCol(tPriv.getAction().toLowerCase()) + "\"");
+    query.declareParameters("Boolean grantOption");
     query.setUnique(true);
-    Object obj = query.execute();
+    Boolean grantOption = null;
+    if (tPriv.getGrantOption().equals(TSentryGrantOption.TRUE)) {
+      grantOption = true;
+    } else if (tPriv.getGrantOption().equals(TSentryGrantOption.FALSE)) {
+      grantOption = false;
+    }
+    Object obj = query.execute(grantOption);
     if (obj != null)
       return (MSentryPrivilege) obj;
     return null;
@@ -887,6 +919,21 @@ public class SentryStore {
     }
   }
 
+  private Set<MSentryRole> getRolesForGroups(PersistenceManager pm, Set<String> groups) {
+    Set<MSentryRole> result = new HashSet<MSentryRole>();
+    Query query = pm.newQuery(MSentryGroup.class);
+    query.setFilter("this.groupName == t");
+    query.declareParameters("java.lang.String t");
+    query.setUnique(true);
+    for (String group : groups) {
+      MSentryGroup sentryGroup = (MSentryGroup) query.execute(group.trim());
+      if (sentryGroup != null) {
+        result = sentryGroup.getRoles();
+      }
+    }
+    return result;
+  }
+
   public Set<String> listAllSentryPrivilegesForProvider(Set<String> groups, TSentryActiveRoleSet roleSet) throws SentryInvalidInputException {
     return listSentryPrivilegesForProvider(groups, roleSet, null);
   }
@@ -1013,6 +1060,11 @@ public class SentryStore {
     privilege.setTableName(fromNULLCol(mSentryPrivilege.getTableName()));
     privilege.setURI(fromNULLCol(mSentryPrivilege.getURI()));
     privilege.setGrantorPrincipal(mSentryPrivilege.getGrantorPrincipal());
+    if (mSentryPrivilege.getGrantOption() != null) {
+      privilege.setGrantOption(TSentryGrantOption.valueOf(mSentryPrivilege.getGrantOption().toString().toUpperCase()));
+    } else {
+      privilege.setGrantOption(TSentryGrantOption.UNSET);
+    }
     return privilege;
   }
 
@@ -1032,6 +1084,11 @@ public class SentryStore {
     mSentryPrivilege.setCreateTime(System.currentTimeMillis());
     mSentryPrivilege.setGrantorPrincipal(safeTrim(privilege.getGrantorPrincipal()));
     mSentryPrivilege.setURI(toNULLCol(safeTrim(privilege.getURI())));
+    if ( !privilege.getGrantOption().equals(TSentryGrantOption.UNSET) ) {
+      mSentryPrivilege.setGrantOption(Boolean.valueOf(privilege.getGrantOption().toString()));
+    } else {
+      mSentryPrivilege.setGrantOption(null);
+    }
     return mSentryPrivilege;
   }
   private static String safeTrim(String s) {
@@ -1281,5 +1338,68 @@ public class SentryStore {
 
   public static boolean isNULL(String s) {
 	return Strings.isNullOrEmpty(s) || s.equals(NULL_COL);
-  }  
+  }
+
+  /**
+   * Grant option check
+   * @param pm
+   * @param privilege
+   * @throws SentryUserException
+   */
+  private void grantOptionCheck(PersistenceManager pm, TSentryPrivilege privilege)
+      throws SentryUserException {
+    MSentryPrivilege mPrivilege = convertToMSentryPrivilege(privilege);
+    String grantorPrincipal = mPrivilege.getGrantorPrincipal();
+    if (grantorPrincipal == null) {
+      throw new SentryInvalidInputException("grantorPrincipal should not be null");
+    }
+    Set<String> groups = SentryPolicyStoreProcessor.getGroupsFromUserName(conf, grantorPrincipal);
+    if (groups == null || groups.isEmpty()) {
+      throw new SentryGrantDeniedException(grantorPrincipal
+          + " has no grant!");
+    }
+
+    // if grantor is in adminGroup, don't need to do check
+    Set<String> admins = getAdminGroups();
+    boolean isAdminGroup = false;
+    if (admins != null && !admins.isEmpty()) {
+      for (String g : groups) {
+        if (admins.contains(g)) {
+          isAdminGroup = true;
+          break;
+        }
+      }
+    }
+
+    if (!isAdminGroup) {
+      boolean hasGrant = false;
+      Set<MSentryRole> roles = getRolesForGroups(pm, groups);
+      if (roles != null && !roles.isEmpty()) {
+        for (MSentryRole role: roles) {
+          Set<MSentryPrivilege> privilegeSet = role.getPrivileges();
+          if (privilegeSet != null && !privilegeSet.isEmpty()) {
+            // if role has a privilege p with grant option
+            // and mPrivilege is a child privilege of p
+            for (MSentryPrivilege p : privilegeSet) {
+              if (p.getGrantOption() && p.implies(mPrivilege)) {
+                hasGrant = true;
+                break;
+              }
+            }
+          }
+        }
+      }
+
+      if (!hasGrant) {
+        throw new SentryGrantDeniedException(grantorPrincipal
+            + " has no grant!");
+      }
+    }
+  }
+
+  // get adminGroups from conf
+  private Set<String> getAdminGroups() {
+    return Sets.newHashSet(conf.getStrings(
+        ServerConfig.ADMIN_GROUPS, new String[]{}));
+  }
 }

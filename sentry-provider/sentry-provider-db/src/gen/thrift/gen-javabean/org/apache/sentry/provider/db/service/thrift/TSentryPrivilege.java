@@ -42,6 +42,7 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
   private static final org.apache.thrift.protocol.TField ACTION_FIELD_DESC = new org.apache.thrift.protocol.TField("action", org.apache.thrift.protocol.TType.STRING, (short)7);
   private static final org.apache.thrift.protocol.TField CREATE_TIME_FIELD_DESC = new org.apache.thrift.protocol.TField("createTime", org.apache.thrift.protocol.TType.I64, (short)8);
   private static final org.apache.thrift.protocol.TField GRANTOR_PRINCIPAL_FIELD_DESC = new org.apache.thrift.protocol.TField("grantorPrincipal", org.apache.thrift.protocol.TType.STRING, (short)9);
+  private static final org.apache.thrift.protocol.TField GRANT_OPTION_FIELD_DESC = new org.apache.thrift.protocol.TField("grantOption", org.apache.thrift.protocol.TType.I32, (short)10);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
@@ -57,6 +58,7 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
   private String action; // required
   private long createTime; // optional
   private String grantorPrincipal; // optional
+  private TSentryGrantOption grantOption; // optional
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -67,7 +69,12 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
     URI((short)6, "URI"),
     ACTION((short)7, "action"),
     CREATE_TIME((short)8, "createTime"),
-    GRANTOR_PRINCIPAL((short)9, "grantorPrincipal");
+    GRANTOR_PRINCIPAL((short)9, "grantorPrincipal"),
+    /**
+     * 
+     * @see TSentryGrantOption
+     */
+    GRANT_OPTION((short)10, "grantOption");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -98,6 +105,8 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
           return CREATE_TIME;
         case 9: // GRANTOR_PRINCIPAL
           return GRANTOR_PRINCIPAL;
+        case 10: // GRANT_OPTION
+          return GRANT_OPTION;
         default:
           return null;
       }
@@ -140,7 +149,7 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
   // isset id assignments
   private static final int __CREATETIME_ISSET_ID = 0;
   private byte __isset_bitfield = 0;
-  private _Fields optionals[] = {_Fields.DB_NAME,_Fields.TABLE_NAME,_Fields.URI,_Fields.CREATE_TIME,_Fields.GRANTOR_PRINCIPAL};
+  private _Fields optionals[] = {_Fields.DB_NAME,_Fields.TABLE_NAME,_Fields.URI,_Fields.CREATE_TIME,_Fields.GRANTOR_PRINCIPAL,_Fields.GRANT_OPTION};
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
@@ -160,6 +169,8 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64)));
     tmpMap.put(_Fields.GRANTOR_PRINCIPAL, new org.apache.thrift.meta_data.FieldMetaData("grantorPrincipal", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
+    tmpMap.put(_Fields.GRANT_OPTION, new org.apache.thrift.meta_data.FieldMetaData("grantOption", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
+        new org.apache.thrift.meta_data.EnumMetaData(org.apache.thrift.protocol.TType.ENUM, TSentryGrantOption.class)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(TSentryPrivilege.class, metaDataMap);
   }
@@ -172,6 +183,8 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
     this.URI = "";
 
     this.action = "";
+
+    this.grantOption = org.apache.sentry.provider.db.service.thrift.TSentryGrantOption.FALSE;
 
   }
 
@@ -213,6 +226,9 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
     if (other.isSetGrantorPrincipal()) {
       this.grantorPrincipal = other.grantorPrincipal;
     }
+    if (other.isSetGrantOption()) {
+      this.grantOption = other.grantOption;
+    }
   }
 
   public TSentryPrivilege deepCopy() {
@@ -234,6 +250,8 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
     setCreateTimeIsSet(false);
     this.createTime = 0;
     this.grantorPrincipal = null;
+    this.grantOption = org.apache.sentry.provider.db.service.thrift.TSentryGrantOption.FALSE;
+
   }
 
   public String getPrivilegeScope() {
@@ -419,6 +437,37 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
     }
   }
 
+  /**
+   * 
+   * @see TSentryGrantOption
+   */
+  public TSentryGrantOption getGrantOption() {
+    return this.grantOption;
+  }
+
+  /**
+   * 
+   * @see TSentryGrantOption
+   */
+  public void setGrantOption(TSentryGrantOption grantOption) {
+    this.grantOption = grantOption;
+  }
+
+  public void unsetGrantOption() {
+    this.grantOption = null;
+  }
+
+  /** Returns true if field grantOption is set (has been assigned a value) and false otherwise */
+  public boolean isSetGrantOption() {
+    return this.grantOption != null;
+  }
+
+  public void setGrantOptionIsSet(boolean value) {
+    if (!value) {
+      this.grantOption = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case PRIVILEGE_SCOPE:
@@ -485,6 +534,14 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
       }
       break;
 
+    case GRANT_OPTION:
+      if (value == null) {
+        unsetGrantOption();
+      } else {
+        setGrantOption((TSentryGrantOption)value);
+      }
+      break;
+
     }
   }
 
@@ -514,6 +571,9 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
     case GRANTOR_PRINCIPAL:
       return getGrantorPrincipal();
 
+    case GRANT_OPTION:
+      return getGrantOption();
+
     }
     throw new IllegalStateException();
   }
@@ -541,6 +601,8 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
       return isSetCreateTime();
     case GRANTOR_PRINCIPAL:
       return isSetGrantorPrincipal();
+    case GRANT_OPTION:
+      return isSetGrantOption();
     }
     throw new IllegalStateException();
   }
@@ -630,6 +692,15 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
         return false;
     }
 
+    boolean this_present_grantOption = true && this.isSetGrantOption();
+    boolean that_present_grantOption = true && that.isSetGrantOption();
+    if (this_present_grantOption || that_present_grantOption) {
+      if (!(this_present_grantOption && that_present_grantOption))
+        return false;
+      if (!this.grantOption.equals(that.grantOption))
+        return false;
+    }
+
     return true;
   }
 
@@ -676,6 +747,11 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
     builder.append(present_grantorPrincipal);
     if (present_grantorPrincipal)
       builder.append(grantorPrincipal);
+
+    boolean present_grantOption = true && (isSetGrantOption());
+    builder.append(present_grantOption);
+    if (present_grantOption)
+      builder.append(grantOption.getValue());
 
     return builder.toHashCode();
   }
@@ -768,6 +844,16 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetGrantOption()).compareTo(typedOther.isSetGrantOption());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetGrantOption()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.grantOption, typedOther.grantOption);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -854,6 +940,16 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
         sb.append("null");
       } else {
         sb.append(this.grantorPrincipal);
+      }
+      first = false;
+    }
+    if (isSetGrantOption()) {
+      if (!first) sb.append(", ");
+      sb.append("grantOption:");
+      if (this.grantOption == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.grantOption);
       }
       first = false;
     }
@@ -978,6 +1074,14 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
+          case 10: // GRANT_OPTION
+            if (schemeField.type == org.apache.thrift.protocol.TType.I32) {
+              struct.grantOption = TSentryGrantOption.findByValue(iprot.readI32());
+              struct.setGrantOptionIsSet(true);
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+            }
+            break;
           default:
             org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
         }
@@ -1039,6 +1143,13 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
           oprot.writeFieldEnd();
         }
       }
+      if (struct.grantOption != null) {
+        if (struct.isSetGrantOption()) {
+          oprot.writeFieldBegin(GRANT_OPTION_FIELD_DESC);
+          oprot.writeI32(struct.grantOption.getValue());
+          oprot.writeFieldEnd();
+        }
+      }
       oprot.writeFieldStop();
       oprot.writeStructEnd();
     }
@@ -1075,7 +1186,10 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
       if (struct.isSetGrantorPrincipal()) {
         optionals.set(4);
       }
-      oprot.writeBitSet(optionals, 5);
+      if (struct.isSetGrantOption()) {
+        optionals.set(5);
+      }
+      oprot.writeBitSet(optionals, 6);
       if (struct.isSetDbName()) {
         oprot.writeString(struct.dbName);
       }
@@ -1091,6 +1205,9 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
       if (struct.isSetGrantorPrincipal()) {
         oprot.writeString(struct.grantorPrincipal);
       }
+      if (struct.isSetGrantOption()) {
+        oprot.writeI32(struct.grantOption.getValue());
+      }
     }
 
     @Override
@@ -1102,7 +1219,7 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
       struct.setServerNameIsSet(true);
       struct.action = iprot.readString();
       struct.setActionIsSet(true);
-      BitSet incoming = iprot.readBitSet(5);
+      BitSet incoming = iprot.readBitSet(6);
       if (incoming.get(0)) {
         struct.dbName = iprot.readString();
         struct.setDbNameIsSet(true);
@@ -1122,6 +1239,10 @@ public class TSentryPrivilege implements org.apache.thrift.TBase<TSentryPrivileg
       if (incoming.get(4)) {
         struct.grantorPrincipal = iprot.readString();
         struct.setGrantorPrincipalIsSet(true);
+      }
+      if (incoming.get(5)) {
+        struct.grantOption = TSentryGrantOption.findByValue(iprot.readI32());
+        struct.setGrantOptionIsSet(true);
       }
     }
   }

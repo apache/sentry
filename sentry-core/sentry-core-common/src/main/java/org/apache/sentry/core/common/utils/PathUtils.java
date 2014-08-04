@@ -20,9 +20,15 @@ import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import org.apache.commons.lang.text.StrSubstitutor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.base.Strings;
 
 public class PathUtils {
+  private static final Logger LOGGER = LoggerFactory
+      .getLogger(PathUtils.class);
   /**
    * URI is a a special case. For URI's, /a implies /a/b.
    * Therefore the test is "/a/b".startsWith("/a");
@@ -51,6 +57,25 @@ public class PathUtils {
       return true;
     }
     return false;
+  }
+
+  public static boolean impliesURI(String privilege, String request) {
+    try {
+    URI privilegeURI = new URI(new StrSubstitutor(System.getProperties()).replace(privilege));
+    URI requestURI = new URI(request);
+    if(privilegeURI.getScheme() == null || privilegeURI.getPath() == null) {
+      LOGGER.warn("Privilege URI " + request + " is not valid. Either no scheme or no path.");
+      return false;
+    }
+    if(requestURI.getScheme() == null || requestURI.getPath() == null) {
+      LOGGER.warn("Request URI " + request + " is not valid. Either no scheme or no path.");
+      return false;
+    }
+      return PathUtils.impliesURI(privilegeURI, requestURI);
+    } catch (URISyntaxException e) {
+      LOGGER.warn("Request URI " + request + " is not a URI", e);
+      return false;
+    }
   }
 
   /**

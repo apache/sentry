@@ -23,9 +23,8 @@ import java.util.Set;
 
 import javax.jdo.annotations.PersistenceCapable;
 
+import org.apache.sentry.core.common.utils.PathUtils;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
-
-import com.google.common.base.Strings;
 
 /**
  * Database backed Sentry Privilege. Any changes to this object
@@ -43,6 +42,7 @@ public class MSentryPrivilege {
   private String tableName = "";
   private String URI = "";
   private String action = "";
+  private Boolean grantOption = false;
   // roles this privilege is a part of
   private Set<MSentryRole> roles;
   private long createTime;
@@ -54,14 +54,36 @@ public class MSentryPrivilege {
 
   public MSentryPrivilege(String privilegeName, String privilegeScope,
       String serverName, String dbName, String tableName, String URI,
-      String action) {
+      String action, Boolean grantOption) {
     this.privilegeScope = privilegeScope;
     this.serverName = serverName;
     this.dbName = SentryStore.toNULLCol(dbName);
     this.tableName = SentryStore.toNULLCol(tableName);
     this.URI = SentryStore.toNULLCol(URI);
     this.action = SentryStore.toNULLCol(action);
+    this.grantOption = grantOption;
     this.roles = new HashSet<MSentryRole>();
+  }
+
+  public MSentryPrivilege(String privilegeName, String privilegeScope,
+      String serverName, String dbName, String tableName, String URI,
+      String action) {
+    this(privilegeName, privilegeScope, serverName, dbName, tableName,
+        URI, action, false);
+  }
+
+  public MSentryPrivilege(MSentryPrivilege other) {
+    this.privilegeScope = other.privilegeScope;
+    this.serverName = other.serverName;
+    this.dbName = SentryStore.toNULLCol(other.dbName);
+    this.tableName = SentryStore.toNULLCol(other.tableName);
+    this.URI = SentryStore.toNULLCol(other.URI);
+    this.action = SentryStore.toNULLCol(other.action);
+    this.grantOption = other.grantOption;
+    this.roles = new HashSet<MSentryRole>();
+    for (MSentryRole role : other.roles) {
+      roles.add(role);
+    }
   }
 
   public String getServerName() {
@@ -128,6 +150,14 @@ public class MSentryPrivilege {
     this.privilegeScope = privilegeScope;
   }
 
+   public Boolean getGrantOption() {
+     return grantOption;
+   }
+
+   public void setGrantOption(Boolean grantOption) {
+     this.grantOption = grantOption;
+   }
+
   public void appendRole(MSentryRole role) {
     roles.add(role);
   }
@@ -144,10 +174,11 @@ public class MSentryPrivilege {
   @Override
   public String toString() {
     return "MSentryPrivilege [privilegeScope=" + privilegeScope
-        + ", serverName=" + serverName + ", dbName=" + dbName 
+        + ", serverName=" + serverName + ", dbName=" + dbName
         + ", tableName=" + tableName + ", URI=" + URI
         + ", action=" + action + ", roles=[...]" + ", createTime="
-        + createTime + ", grantorPrincipal=" + grantorPrincipal + "]";
+        + createTime + ", grantorPrincipal=" + grantorPrincipal
+        + ", grantOption=" + grantOption +"]";
   }
 
 @Override
@@ -160,6 +191,7 @@ public int hashCode() {
   result = prime * result
 		+ ((serverName == null) ? 0 : serverName.hashCode());
   result = prime * result + ((tableName == null) ? 0 : tableName.hashCode());
+  result = prime * result + ((grantOption == null) ? 0 : grantOption.hashCode());
   return result;
 }
 
@@ -197,8 +229,64 @@ public boolean equals(Object obj) {
 			return false;
 	} else if (!tableName.equals(other.tableName))
 		return false;
+	if (grantOption == null) {
+	  if (other.grantOption != null)
+	    return false;
+	} else if (!grantOption.equals(other.grantOption))
+	  return false;
 	return true;
 }
 
+  /**
+   * Return true if this privilege implies other privilege
+   * Otherwise, return false
+   * @param other, other privilege
+   */
+  public boolean implies(MSentryPrivilege other) {
+    // serverName never be null
+    if (isNULL(serverName) || isNULL(other.serverName)) {
+      return false;
+    } else if (!serverName.equals(other.serverName)) {
+      return false;
+    }
+
+    // check URI implies
+    if (!isNULL(URI) && !isNULL(other.URI)) {
+      if (!PathUtils.impliesURI(URI, other.URI)) {
+        return false;
+      }
+      // if URI is NULL, check dbName and tableName
+    } else if (isNULL(URI) && isNULL(other.URI)) {
+      if (!isNULL(dbName)) {
+        if (isNULL(other.dbName)) {
+          return false;
+        } else if (!dbName.equals(other.dbName)) {
+          return false;
+        }
+      }
+      if (!isNULL(tableName)) {
+        if (isNULL(other.tableName)) {
+          return false;
+        } else if (!tableName.equals(other.tableName)) {
+          return false;
+        }
+      }
+      // if URI is not equals, return false
+    } else {
+      return false;
+    }
+
+    // check action implies
+    if (!action.equalsIgnoreCase("*") &&
+        !action.equalsIgnoreCase(other.action)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  private boolean isNULL(String s) {
+    return SentryStore.isNULL(s);
+  }
 
 }

@@ -279,16 +279,17 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
       SentryPolicyServiceClient sentryClient, String subject,
       String server, GrantDesc desc) throws SentryUserException {
     return processGrantRevokeDDL(console, sentryClient, subject,
-        server, true, desc.getPrincipals(), desc.getPrivileges(), desc.getPrivilegeSubjectDesc());
+        server, true, desc.getPrincipals(), desc.getPrivileges(),
+        desc.getPrivilegeSubjectDesc(), desc.isGrantOption());
   }
 
-
+  // For grant option, we use null to stand for revoke the privilege ignore the grant option
   private int processRevokeDDL(HiveConf conf, LogHelper console,
       SentryPolicyServiceClient sentryClient, String subject,
       String server, RevokeDesc desc) throws SentryUserException {
     return processGrantRevokeDDL(console, sentryClient, subject,
         server, false, desc.getPrincipals(), desc.getPrivileges(),
-        desc.getPrivilegeSubjectDesc());
+        desc.getPrivilegeSubjectDesc(), null);
   }
 
   private int processShowGrantDDL(HiveConf conf, LogHelper console, SentryPolicyServiceClient sentryClient,
@@ -485,8 +486,8 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
   private static int processGrantRevokeDDL(LogHelper console,
       SentryPolicyServiceClient sentryClient, String subject, String server,
       boolean isGrant, List<PrincipalDesc> principals,
-      List<PrivilegeDesc> privileges,
-      PrivilegeObjectDesc privSubjectObjDesc) throws SentryUserException {
+      List<PrivilegeDesc> privileges, PrivilegeObjectDesc privSubjectObjDesc,
+      Boolean grantOption) throws SentryUserException {
     if (privileges == null || privileges.size() == 0) {
       console.printError("No privilege found.");
       return RETURN_CODE_FAILURE;
@@ -535,27 +536,27 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
         for (PrivilegeDesc privDesc : privileges) {
           if (isGrant) {
             if (serverName != null) {
-              sentryClient.grantServerPrivilege(subject, princ.getName(), serverName);
+              sentryClient.grantServerPrivilege(subject, princ.getName(), serverName, grantOption);
             } else if (uriPath != null) {
-              sentryClient.grantURIPrivilege(subject, princ.getName(), server, uriPath);
+              sentryClient.grantURIPrivilege(subject, princ.getName(), server, uriPath, grantOption);
             } else if (tableName == null) {
               sentryClient.grantDatabasePrivilege(subject, princ.getName(), server, dbName,
-                  toDbSentryAction(privDesc.getPrivilege().getPriv()));
+                  toDbSentryAction(privDesc.getPrivilege().getPriv()), grantOption);
             } else {
               sentryClient.grantTablePrivilege(subject, princ.getName(), server, dbName,
-                  tableName, toSentryAction(privDesc.getPrivilege().getPriv()));
+                  tableName, toSentryAction(privDesc.getPrivilege().getPriv()), grantOption);
             }
           } else {
             if (serverName != null) {
-              sentryClient.revokeServerPrivilege(subject, princ.getName(), serverName);
+              sentryClient.revokeServerPrivilege(subject, princ.getName(), serverName, grantOption);
             } else if (uriPath != null) {
-              sentryClient.revokeURIPrivilege(subject, princ.getName(), server, uriPath);
+              sentryClient.revokeURIPrivilege(subject, princ.getName(), server, uriPath, grantOption);
             } else if (tableName == null) {
               sentryClient.revokeDatabasePrivilege(subject, princ.getName(), server, dbName,
-                  toDbSentryAction(privDesc.getPrivilege().getPriv()));
+                  toDbSentryAction(privDesc.getPrivilege().getPriv()), grantOption);
             } else {
               sentryClient.revokeTablePrivilege(subject, princ.getName(), server, dbName,
-                  tableName, toSentryAction(privDesc.getPrivilege().getPriv()));
+                  tableName, toSentryAction(privDesc.getPrivilege().getPriv()), grantOption);
             }
           }
         }

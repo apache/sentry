@@ -21,19 +21,16 @@
 
 package org.apache.sentry.policy.db;
 
-import static org.apache.sentry.provider.file.PolicyFileConstants.AUTHORIZABLE_JOINER;
-import static org.apache.sentry.provider.file.PolicyFileConstants.AUTHORIZABLE_SPLITTER;
+import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_JOINER;
+import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_SPLITTER;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.List;
 
-import org.apache.commons.lang.text.StrSubstitutor;
 import org.apache.sentry.core.common.utils.PathUtils;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
-import org.apache.sentry.policy.common.PrivilegeFactory;
 import org.apache.sentry.policy.common.Privilege;
+import org.apache.sentry.policy.common.PrivilegeFactory;
 import org.apache.sentry.provider.file.KeyValue;
 import org.apache.sentry.provider.file.PolicyFileConstants;
 import org.slf4j.Logger;
@@ -142,22 +139,7 @@ public class DBWildcardPrivilege implements Privilege {
 
   @VisibleForTesting
   protected static boolean impliesURI(String privilege, String request) {
-    try {
-    URI privilegeURI = new URI(new StrSubstitutor(System.getProperties()).replace(privilege));
-    URI requestURI = new URI(request);
-    if(privilegeURI.getScheme() == null || privilegeURI.getPath() == null) {
-      LOGGER.warn("Privilege URI " + request + " is not valid. Either no scheme or no path.");
-      return false;
-    }
-    if(requestURI.getScheme() == null || requestURI.getPath() == null) {
-      LOGGER.warn("Request URI " + request + " is not valid. Either no scheme or no path.");
-      return false;
-    }
-      return PathUtils.impliesURI(privilegeURI, requestURI);
-    } catch (URISyntaxException e) {
-      LOGGER.warn("Request URI " + request + " is not a URI", e);
-      return false;
-    }
+    return PathUtils.impliesURI(privilege, request);
   }
 
   @Override

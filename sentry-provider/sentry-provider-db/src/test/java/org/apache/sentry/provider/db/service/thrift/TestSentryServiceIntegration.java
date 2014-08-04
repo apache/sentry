@@ -24,7 +24,6 @@ import static org.junit.Assert.assertTrue;
 import java.util.Set;
 
 import org.apache.sentry.core.model.db.AccessConstants;
-import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
 import org.junit.Test;
 
@@ -234,5 +233,58 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
     client.grantTablePrivilege(requestorUserName, roleName, "server", "db1", "table1", "ALL");
     client.grantTablePrivilege(requestorUserName, roleName, "server", "db1", "table1", "ALL");
     assertEquals(1, client.listAllPrivilegesByRoleName(requestorUserName, roleName).size());
+  }
+
+  @Test
+  public void testGrantRevokeWithGrantOption() throws Exception {
+    // Grant a privilege with Grant Option
+    String requestorUserName = ADMIN_USER;
+    Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
+    setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+    writePolicyFile();
+    String roleName = "admin_r1";
+    boolean grantOption = true;
+    boolean withoutGrantOption = false;
+
+    client.dropRoleIfExists(requestorUserName,  roleName);
+    client.createRole(requestorUserName,  roleName);
+
+    client.grantTablePrivilege(requestorUserName, roleName, "server", "db1", "table1", "ALL", grantOption);
+    assertEquals(1, client.listAllPrivilegesByRoleName(requestorUserName, roleName).size());
+
+    // Try to revoke the privilege without grantOption and can't revoke the privilege.
+    client.revokeTablePrivilege(requestorUserName, roleName, "server", "db1", "table1", "ALL", withoutGrantOption);
+    assertEquals(1, client.listAllPrivilegesByRoleName(requestorUserName, roleName).size());
+
+    // Try to revoke the privilege with grantOption, the privilege will be revoked.
+    client.revokeTablePrivilege(requestorUserName, roleName, "server", "db1", "table1", "ALL", grantOption);
+    assertEquals(0, client.listAllPrivilegesByRoleName(requestorUserName, roleName).size());
+
+  }
+
+  @Test
+  public void testGrantTwoPrivilegeDiffInGrantOption() throws Exception {
+    // Grant a privilege with 'Grant Option'.
+    String requestorUserName = ADMIN_USER;
+    Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
+    setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+    writePolicyFile();
+    String roleName = "admin_r1";
+    boolean grantOption = true;
+    boolean withoutGrantOption = false;
+
+    client.dropRoleIfExists(requestorUserName,  roleName);
+    client.createRole(requestorUserName,  roleName);
+
+    client.grantTablePrivilege(requestorUserName, roleName, "server", "db1", "table1", "ALL", grantOption);
+    assertEquals(1, client.listAllPrivilegesByRoleName(requestorUserName, roleName).size());
+
+    // Grant a privilege without 'Grant Option'.
+    client.grantTablePrivilege(requestorUserName, roleName, "server", "db1", "table1", "ALL", withoutGrantOption);
+    assertEquals(2, client.listAllPrivilegesByRoleName(requestorUserName, roleName).size());
+
+    // Use 'grantOption = null', the two privileges will be revoked.
+    client.revokeTablePrivilege(requestorUserName, roleName, "server", "db1", "table1", "ALL", null);
+    assertEquals(0, client.listAllPrivilegesByRoleName(requestorUserName, roleName).size());
   }
 }

@@ -117,12 +117,12 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
     List<PrincipalDesc> principalDesc = analyzePrincipalListDef(
         (ASTNode) ast.getChild(1));
     SentryHivePrivilegeObjectDesc privilegeObj = null;
-
+    boolean grantOption = false;
     if (ast.getChildCount() > 2) {
       for (int i = 2; i < ast.getChildCount(); i++) {
         ASTNode astChild = (ASTNode) ast.getChild(i);
         if (astChild.getType() == HiveParser.TOK_GRANT_WITH_OPTION) {
-          throw new SemanticException(SentryHiveConstants.GRANT_OPTION_NOT_SUPPORTED);
+          grantOption = true;
         } else if (astChild.getType() == HiveParser.TOK_PRIV_OBJECT) {
           privilegeObj = analyzePrivilegeObject(astChild);
         }
@@ -150,7 +150,7 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
       }
     }
     GrantDesc grantDesc = new GrantDesc(privilegeObj, privilegeDesc,
-        principalDesc, userName, PrincipalType.USER, false);
+        principalDesc, userName, PrincipalType.USER, grantOption);
     return createTask(new DDLWork(inputs, outputs, grantDesc));
   }
   @Override
