@@ -208,7 +208,6 @@ public class SentryPolicyServiceClient {
   /**
    * Gets sentry role objects for a given groupName using the Sentry service
    * @param requestorUserName : user on whose behalf the request is issued
-   * @param requestorUserGroupNames :groups the requesting user belongs to
    * @param groupName : groupName to look up ( if null returns all roles for all groups)
    * @return Set of thrift sentry role objects
    * @throws SentryUserException
@@ -222,7 +221,6 @@ public class SentryPolicyServiceClient {
     request.setRequestorUserName(requestorUserName);
     request.setGroupName(groupName);
     TListSentryRolesResponse response;
-    Set<String> roles = new HashSet<String>();
     try {
       response = client.list_sentry_roles_by_group(request);
       Status.throwIfNotOk(response.getStatus());
@@ -240,7 +238,6 @@ public class SentryPolicyServiceClient {
   /**
    * Gets sentry privilege objects for a given roleName using the Sentry service
    * @param requestorUserName : user on whose behalf the request is issued
-   * @param requestorUserGroupNames :groups the requesting user belongs to
    * @param roleName : roleName to look up
    * @param authorizable : authorizable Hierarchy (server->db->table etc)
    * @return Set of thrift sentry privilege objects
