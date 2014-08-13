@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
+import static org.apache.hadoop.fs.CommonConfigurationKeys.HADOOP_SECURITY_AUTHENTICATION;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.binding.solr.conf.SolrAuthzConf;
@@ -172,7 +173,7 @@ public class SolrAuthzBinding {
    * Initialize kerberos via UserGroupInformation.  Will only attempt to login
    * during the first request, subsequent calls will have no effect.
    */
-  public static void initKerberos(String keytabFile, String principal) {
+  public void initKerberos(String keytabFile, String principal) {
     if (keytabFile == null || keytabFile.length() == 0) {
       throw new IllegalArgumentException("keytabFile required because kerberos is enabled");
     }
@@ -182,9 +183,17 @@ public class SolrAuthzBinding {
     synchronized (SolrAuthzBinding.class) {
       if (kerberosInit == null) {
         kerberosInit = new Boolean(true);
-        Configuration conf = new Configuration();
-        conf.set("hadoop.security.authentication", "kerberos");
-        UserGroupInformation.setConfiguration(conf);
+        final String authVal = authzConf.get(HADOOP_SECURITY_AUTHENTICATION);
+        final String kerberos = "kerberos";
+        if (authVal != null && !authVal.equals(kerberos)) {
+          throw new IllegalArgumentException(HADOOP_SECURITY_AUTHENTICATION
+              + " set to: " + authVal + ", not kerberos, but attempting to "
+              + " connect to HDFS via kerberos");
+        }
+        // let's avoid modifying the supplied configuration, just to be conservative
+        final Configuration ugiConf = new Configuration(authzConf);
+        ugiConf.set(HADOOP_SECURITY_AUTHENTICATION, kerberos);
+        UserGroupInformation.setConfiguration(ugiConf);
         LOG.info(
             "Attempting to acquire kerberos ticket with keytab: {}, principal: {} ",
             keytabFile, principal);
