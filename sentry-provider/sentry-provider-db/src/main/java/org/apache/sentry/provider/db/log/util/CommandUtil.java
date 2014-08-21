@@ -25,6 +25,7 @@ import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleAddGroupsReq
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleDeleteGroupsRequest;
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleGrantPrivilegeRequest;
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleRevokePrivilegeRequest;
+import org.apache.sentry.provider.db.service.thrift.TSentryGrantOption;
 import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
@@ -133,6 +134,10 @@ public class CommandUtil {
       sb.append(" FROM ROLE ");
     }
     sb.append(roleName);
+
+    if (privilege.getGrantOption() == TSentryGrantOption.TRUE) {
+      sb.append(" WITH GRANT OPTION");
+    }
 
     return sb.toString();
   }

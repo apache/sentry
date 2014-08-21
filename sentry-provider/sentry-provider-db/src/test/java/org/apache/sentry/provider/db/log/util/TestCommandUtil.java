@@ -28,6 +28,7 @@ import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleAddGroupsReq
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleDeleteGroupsRequest;
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleGrantPrivilegeRequest;
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleRevokePrivilegeRequest;
+import org.apache.sentry.provider.db.service.thrift.TSentryGrantOption;
 import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
@@ -253,6 +254,26 @@ public class TestCommandUtil extends TestCase {
     assertEquals(createGrantPrivilegeCmdExcepted, createGrantPrivilegeCmdResult);
     assertEquals(createRevokePrivilegeCmdExcepted,
         createRevokePrivilegeCmdResult);
+  }
+
+  @Test
+  public void testCreateCmdForGrantOrRevokePrivilege8() {
+    TAlterSentryRoleGrantPrivilegeRequest grantRequest = getGrantPrivilegeRequest();
+    TAlterSentryRoleRevokePrivilegeRequest revokeRequest = getRevokePrivilegeRequest();
+
+    TSentryPrivilege privilege = getPrivilege(AccessConstants.SELECT, PrivilegeScope.SERVER.name(),
+        "dbTest", "tableTest", "serverTest", "hdfs://namenode:port/path/to/dir");
+    privilege.setGrantOption(TSentryGrantOption.TRUE);
+    grantRequest.setPrivilege(privilege);
+    revokeRequest.setPrivilege(privilege);
+
+    String createGrantPrivilegeCmdResult = CommandUtil.createCmdForGrantPrivilege(grantRequest);
+    String createGrantPrivilegeCmdExcepted = "GRANT SELECT ON SERVER serverTest TO ROLE testRole WITH GRANT OPTION";
+    String createRevokePrivilegeCmdResult = CommandUtil.createCmdForRevokePrivilege(revokeRequest);
+    String createRevokePrivilegeCmdExcepted = "REVOKE SELECT ON SERVER serverTest FROM ROLE testRole WITH GRANT OPTION";
+
+    assertEquals(createGrantPrivilegeCmdExcepted, createGrantPrivilegeCmdResult);
+    assertEquals(createRevokePrivilegeCmdExcepted, createRevokePrivilegeCmdResult);
   }
 
   private TAlterSentryRoleAddGroupsRequest getRoleAddGroupsRequest() {
