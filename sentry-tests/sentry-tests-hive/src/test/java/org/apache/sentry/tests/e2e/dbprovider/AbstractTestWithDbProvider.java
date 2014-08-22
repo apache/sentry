@@ -130,31 +130,6 @@ public abstract class AbstractTestWithDbProvider extends AbstractTestWithHiveSer
     connection.close();
   }
 
-  protected void createDb(Connection connection, String...dbs) throws Exception {
-    Statement statement = connection.createStatement();
-    for(String db : dbs) {
-      statement.execute("CREATE DATABASE " + db);
-    }
-    statement.close();
-  }
-
-  protected void createTable(Connection connection , String db, File dataFile, String...tables)
-      throws Exception {
-    Statement statement = connection.createStatement();
-    statement.execute("USE " + db);
-    for(String table : tables) {
-      statement.execute("DROP TABLE IF EXISTS " + table);
-      statement.execute("create table " + table
-          + " (under_col int comment 'the under column', value string)");
-      statement.execute("load data local inpath '" + dataFile.getPath()
-          + "' into table " + table);
-      ResultSet res = statement.executeQuery("select * from " + table);
-      Assert.assertTrue("Table should have data after load", res.next());
-      res.close();
-    }
-    statement.close();
-  }
-
   private void startSentryService() throws Exception {
     server.start();
     final long start = System.currentTimeMillis();

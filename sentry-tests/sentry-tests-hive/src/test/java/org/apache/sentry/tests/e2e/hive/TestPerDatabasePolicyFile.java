@@ -59,7 +59,7 @@ public class TestPerDatabasePolicyFile extends AbstractTestWithStaticConfigurati
    */
   @Test
   public void testDbSpecificFileGrantsToOtherDb() throws Exception {
-    doTestDbSpecificFileGrants("server=server1->db=db1");
+    doTestDbSpecificFileGrants("server=server1->db=" + DB1);
   }
   /**
    * Ensure that db specific file cannot grant to all db
@@ -93,8 +93,8 @@ public class TestPerDatabasePolicyFile extends AbstractTestWithStaticConfigurati
     // setup db objects needed by the test
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    createSampleDbTable(statement, "db1", "tbl1");
-    createSampleDbTable(statement, "db2", "tbl1");
+    createSampleDbTable(statement, DB1, "tbl1");
+    createSampleDbTable(statement, DB2, "tbl1");
     statement.close();
     connection.close();
 
@@ -105,14 +105,14 @@ public class TestPerDatabasePolicyFile extends AbstractTestWithStaticConfigurati
     .addRolesToGroup("group1", "db1_role");
     specificPolicyFile.write(specificPolicyFileFile);
 
-    policyFile.addDatabase("db2", specificPolicyFileFile.getPath());
+    policyFile.addDatabase(DB2, specificPolicyFileFile.getPath());
     writePolicyFile(policyFile);
 
     // test execution
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     // test user can query table
-    context.assertAuthzException(statement, "USE db1");
-    context.assertAuthzException(statement, "SELECT COUNT(a) FROM db1.tbl1");
+    context.assertAuthzException(statement, "USE " + DB1);
+    context.assertAuthzException(statement, "SELECT COUNT(a) FROM " + DB1 + ".tbl1");
   }
 }

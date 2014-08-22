@@ -58,7 +58,6 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
    */
   @Test
   public void testFuncPrivileges1() throws Exception {
-    String dbName1 = "db_1";
     String tableName1 = "tb_1";
     String udfClassName = "org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf";
     CodeSource udfSrc = Class.forName(udfClassName).getProtectionDomain().getCodeSource();
@@ -68,13 +67,13 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     }
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
-    statement.execute("CREATE DATABASE " + dbName1);
-    statement.execute("USE " + dbName1);
-    statement.execute("create table " + dbName1 + "." + tableName1
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("USE " + DB1);
+    statement.execute("create table " + DB1 + "." + tableName1
         + " (under_col int comment 'the under column', value string)");
     statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE "
-        + dbName1 + "." + tableName1);
+        + DB1 + "." + tableName1);
     statement.execute("DROP TEMPORARY FUNCTION IF EXISTS printf_test");
     statement.execute("DROP TEMPORARY FUNCTION IF EXISTS printf_test_2");
     context.close();
@@ -83,25 +82,25 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
         .addRolesToGroup(USERGROUP1, "db1_all", "UDF_JAR")
         .addRolesToGroup(USERGROUP2, "db1_tab1", "UDF_JAR")
         .addRolesToGroup(USERGROUP3, "db1_tab1")
-        .addPermissionsToRole("db1_all", "server=server1->db=" + dbName1)
-        .addPermissionsToRole("db1_tab1", "server=server1->db=" + dbName1 + "->table=" + tableName1)
+        .addPermissionsToRole("db1_all", "server=server1->db=" + DB1)
+        .addPermissionsToRole("db1_tab1", "server=server1->db=" + DB1 + "->table=" + tableName1)
         .addPermissionsToRole("UDF_JAR", "server=server1->uri=file://" + udfLocation);
     writePolicyFile(policyFile);
 
     // user1 should be able create/drop temp functions
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("USE " + dbName1);
+    statement.execute("USE " + DB1);
     statement.execute(
         "CREATE TEMPORARY FUNCTION printf_test AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
     statement.execute("SELECT printf_test(value) FROM " + tableName1);
     statement.execute("DROP TEMPORARY FUNCTION printf_test");
     context.close();
 
-    // user2 has select privilege on one of the tables in db2, should be able create/drop temp functions
+    // user2 has select privilege on one of the tables in db1, should be able create/drop temp functions
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
-    statement.execute("USE " + dbName1);
+    statement.execute("USE " + DB1);
     statement.execute(
         "CREATE TEMPORARY FUNCTION printf_test_2 AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
     statement.execute("SELECT printf_test_2(value) FROM " + tableName1);
@@ -112,7 +111,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     connection = context.createConnection(USER3_1);
     statement = context.createStatement(connection);
     try {
-      statement.execute("USE " + dbName1);
+      statement.execute("USE " + DB1);
       statement.execute(
       "CREATE TEMPORARY FUNCTION printf_test_bad AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
       assertFalse("CREATE TEMPORARY FUNCTION should fail for user3", true);
@@ -138,27 +137,26 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
 
   @Test
   public void testUdfWhiteList () throws Exception {
-    String dbName1 = "db1";
     String tableName1 = "tab1";
 
     policyFile
         .addRolesToGroup(USERGROUP1, "db1_all", "UDF_JAR")
         .addRolesToGroup(USERGROUP2, "db1_tab1", "UDF_JAR")
         .addRolesToGroup(USERGROUP3, "db1_tab1")
-        .addPermissionsToRole("db1_all", "server=server1->db=" + dbName1)
-        .addPermissionsToRole("db1_tab1", "server=server1->db=" + dbName1 + "->table=" + tableName1)
+        .addPermissionsToRole("db1_all", "server=server1->db=" + DB1)
+        .addPermissionsToRole("db1_tab1", "server=server1->db=" + DB1 + "->table=" + tableName1)
         .addPermissionsToRole("UDF_JAR", "server=server1->uri=file://${user.home}/.m2");
     writePolicyFile(policyFile);
 
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = connection.createStatement();
-    statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
-    statement.execute("CREATE DATABASE " + dbName1);
-    statement.execute("USE " + dbName1);
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("USE " + DB1);
     statement.execute("create table " + tableName1
         + " (under_col int comment 'the under column', value string)");
     statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE "
-        + dbName1 + "." + tableName1);
+        + DB1 + "." + tableName1);
     statement.execute("SELECT rand(), concat(value, '_foo') FROM " + tableName1);
 
     context.assertAuthzException(statement,

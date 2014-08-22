@@ -61,18 +61,17 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
    */
   @Test
   public void testShowTables1() throws Exception {
-    String dbName1 = "db_1";
     // tables visible to user1 (not access to tb_4
     String tableNames[] = {"tb_1", "tb_2", "tb_3", "tb_4"};
     List<String> tableNamesValidation = new ArrayList<String>();
 
     policyFile
         .addRolesToGroup(USERGROUP1, "tab1_priv,tab2_priv,tab3_priv")
-        .addPermissionsToRole("tab1_priv", "server=server1->db=" + dbName1 + "->table="
+        .addPermissionsToRole("tab1_priv", "server=server1->db=" + DB1 + "->table="
             + tableNames[0] + "->action=select")
-        .addPermissionsToRole("tab2_priv", "server=server1->db=" + dbName1 + "->table="
+        .addPermissionsToRole("tab2_priv", "server=server1->db=" + DB1 + "->table="
             + tableNames[1] + "->action=insert")
-        .addPermissionsToRole("tab3_priv", "server=server1->db=" + dbName1 + "->table="
+        .addPermissionsToRole("tab3_priv", "server=server1->db=" + DB1 + "->table="
             + tableNames[2] + "->action=select")
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
@@ -81,24 +80,24 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
 
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
-    statement.execute("CREATE DATABASE " + dbName1);
-    statement.execute("USE " + dbName1);
-    createTabs(statement, dbName1, tableNames);
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("USE " + DB1);
+    createTabs(statement, DB1, tableNames);
     // Admin should see all tables
     ResultSet rs = statement.executeQuery("SHOW TABLES");
     tableNamesValidation.addAll(Arrays.asList(tableNames));
 
-    validateTables(rs, dbName1, tableNamesValidation);
+    validateTables(rs, DB1, tableNamesValidation);
     statement.close();
 
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("USE " + dbName1);
+    statement.execute("USE " + DB1);
     // User1 should see tables with any level of access
     rs = statement.executeQuery("SHOW TABLES");
     tableNamesValidation.addAll(Arrays.asList(user1TableNames));
-    validateTables(rs, dbName1, tableNamesValidation);
+    validateTables(rs, DB1, tableNamesValidation);
     statement.close();
   }
 
@@ -109,14 +108,13 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
    */
   @Test
   public void testShowTables2() throws Exception {
-    String dbName1 = "db_1";
     // tables visible to user1 (not access to tb_4
     String tableNames[] = {"tb_1", "tb_2", "tb_3", "tb_4"};
     List<String> tableNamesValidation = new ArrayList<String>();
 
     policyFile
         .addRolesToGroup(USERGROUP1, "db_priv")
-        .addPermissionsToRole("db_priv", "server=server1->db=" + dbName1)
+        .addPermissionsToRole("db_priv", "server=server1->db=" + DB1)
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
@@ -124,23 +122,23 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
 
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
-    statement.execute("CREATE DATABASE " + dbName1);
-    statement.execute("USE " + dbName1);
-    createTabs(statement, dbName1, tableNames);
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("USE " + DB1);
+    createTabs(statement, DB1, tableNames);
     // Admin should see all tables
     ResultSet rs = statement.executeQuery("SHOW TABLES");
     tableNamesValidation.addAll(Arrays.asList(tableNames));
-    validateTables(rs, dbName1, tableNamesValidation);
+    validateTables(rs, DB1, tableNamesValidation);
     statement.close();
 
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("USE " + dbName1);
+    statement.execute("USE " + DB1);
     // User1 should see tables with any level of access
     rs = statement.executeQuery("SHOW TABLES");
     tableNamesValidation.addAll(Arrays.asList(user1TableNames));
-    validateTables(rs, dbName1, tableNamesValidation);
+    validateTables(rs, DB1, tableNamesValidation);
     statement.close();
   }
 
@@ -151,14 +149,13 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
    */
   @Test
   public void testShowTables3() throws Exception {
-    String dbName1 = "db_1";
     // tables visible to user1 (not access to tb_4
     String tableNames[] = {"tb_1", "tb_2", "tb_3", "newtab_3"};
     List<String> tableNamesValidation = new ArrayList<String>();
 
     policyFile
         .addRolesToGroup(USERGROUP1, "tab_priv")
-        .addPermissionsToRole("tab_priv", "server=server1->db=" + dbName1 + "->table="
+        .addPermissionsToRole("tab_priv", "server=server1->db=" + DB1 + "->table="
             + tableNames[3] + "->action=insert")
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
@@ -168,23 +165,23 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
 
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
-    statement.execute("CREATE DATABASE " + dbName1);
-    statement.execute("USE " + dbName1);
-    createTabs(statement, dbName1, tableNames);
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("USE " + DB1);
+    createTabs(statement, DB1, tableNames);
     // Admin should see all tables
     ResultSet rs = statement.executeQuery("SHOW TABLES");
     tableNamesValidation.addAll(Arrays.asList(adminTableNames));
-    validateTables(rs, dbName1, tableNamesValidation);
+    validateTables(rs, DB1, tableNamesValidation);
     statement.close();
 
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("USE " + dbName1);
+    statement.execute("USE " + DB1);
     // User1 should see tables with any level of access
     rs = statement.executeQuery("SHOW TABLES");
     tableNamesValidation.addAll(Arrays.asList(user1TableNames));
-    validateTables(rs, dbName1, tableNamesValidation);
+    validateTables(rs, DB1, tableNamesValidation);
     statement.close();
   }
 
@@ -195,13 +192,12 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
    */
   @Test
   public void testShowTables4() throws Exception {
-    String dbName1 = "db_1";
     String tableNames[] = {"tb_1", "tb_2", "tb_3", "newtab_3"};
     List<String> tableNamesValidation = new ArrayList<String>();
 
     policyFile
         .addRolesToGroup(USERGROUP1, "tab_priv")
-        .addPermissionsToRole("tab_priv", "server=server1->db=" + dbName1)
+        .addPermissionsToRole("tab_priv", "server=server1->db=" + DB1)
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
@@ -210,23 +206,23 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
 
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
-    statement.execute("CREATE DATABASE " + dbName1);
-    statement.execute("USE " + dbName1);
-    createTabs(statement, dbName1, tableNames);
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("USE " + DB1);
+    createTabs(statement, DB1, tableNames);
     // Admin should be able to see all tables
     ResultSet rs = statement.executeQuery("SHOW TABLES");
     tableNamesValidation.addAll(Arrays.asList(adminTableNames));
-    validateTables(rs, dbName1, tableNamesValidation);
+    validateTables(rs, DB1, tableNamesValidation);
     statement.close();
 
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("USE " + dbName1);
+    statement.execute("USE " + DB1);
     // User1 should see tables with any level of access
     rs = statement.executeQuery("SHOW TABLES");
     tableNamesValidation.addAll(Arrays.asList(user1TableNames));
-    validateTables(rs, dbName1, tableNamesValidation);
+    validateTables(rs, DB1, tableNamesValidation);
     statement.close();
   }
 
@@ -262,24 +258,22 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
   @Test
   public void testShowDatabases1() throws Exception {
     List<String> dbNamesValidation = new ArrayList<String>();
-    String[] dbNames = {"db_1", "db_2", "db_3"};
-    String[] user1DbNames = {"db_1"};
+    String[] dbNames = {DB1, DB2, DB3};
+    String[] user1DbNames = {DB1};
 
     policyFile
         .addRolesToGroup(USERGROUP1, "db1_all")
-        .addPermissionsToRole("db1_all", "server=server1->db=db_1")
+        .addPermissionsToRole("db1_all", "server=server1->db=" + DB1)
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
-    Connection connection = context.createConnection(ADMIN1);
-    Statement statement = context.createStatement(connection);
-    // create all dbs
-    createDBs(statement, dbNames);
-    ResultSet rs = statement.executeQuery("SHOW DATABASES");
+    createDb(ADMIN1, dbNames);
     dbNamesValidation.addAll(Arrays.asList(dbNames));
     dbNamesValidation.add("default");
-    // admin should see all dbs
-    validateDBs(rs, dbNamesValidation);
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    ResultSet rs = statement.executeQuery("SHOW DATABASES");
+    validateDBs(rs, dbNamesValidation); // admin should see all dbs
     rs.close();
 
     connection = context.createConnection(USER1_1);
@@ -300,27 +294,27 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
    */
   @Test
   public void testShowDatabases2() throws Exception {
-    String[] dbNames = {"db_1", "db_2", "db_3"};
+    String[] dbNames = {DB1, DB2, DB3};
     List<String> dbNamesValidation = new ArrayList<String>();
-    String[] user1DbNames = {"db_1", "db_2"};
-
-    policyFile
-        .addRolesToGroup(USERGROUP1, "db1_tab,db2_tab")
-        .addPermissionsToRole("db1_tab", "server=server1->db=db_1->table=tb_1->action=select")
-        .addPermissionsToRole("db2_tab", "server=server1->db=db_2->table=tb_1->action=insert")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
-    writePolicyFile(policyFile);
+    String[] user1DbNames = {DB1, DB2};
 
     // verify by SQL
     // 1, 2
-    Connection connection = context.createConnection(ADMIN1);
-    Statement statement = context.createStatement(connection);
-    createDBs(statement, dbNames); // create all dbs
-    ResultSet rs = statement.executeQuery("SHOW DATABASES");
+    createDb(ADMIN1, dbNames);
     dbNamesValidation.addAll(Arrays.asList(dbNames));
     dbNamesValidation.add("default");
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    ResultSet rs = statement.executeQuery("SHOW DATABASES");
     validateDBs(rs, dbNamesValidation); // admin should see all dbs
     rs.close();
+
+    policyFile
+        .addRolesToGroup(USERGROUP1, "db1_tab,db2_tab")
+        .addPermissionsToRole("db1_tab", "server=server1->db=" + DB1 + "->table=tb_1->action=select")
+        .addPermissionsToRole("db2_tab", "server=server1->db=" + DB2 + "->table=tb_1->action=insert")
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
@@ -332,40 +326,15 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
     rs.close();
   }
 
-  private ArrayList<String> getAllDbs(Statement stmt) throws SQLException{
-    ArrayList<String> dbs = new ArrayList<String>();
-    ResultSet res = stmt.executeQuery("SHOW DATABASES");
-    while(res.next()) {
-      String db = res.getString(1);
-      dbs.add(db);
-    }
-    return dbs;
-  }
-  private void dropDBs(Statement stmt, ArrayList<String> dbs) throws SQLException{
-    for(String db:dbs) {
-      if(!db.equalsIgnoreCase("default")) {
-        stmt.execute("DROP DATABASE IF EXISTS " + db + " CASCADE");
-      }
-    }
-  }
-
-  // create given dbs
-  private void createDBs(Statement statement, String dbNames[])
-      throws SQLException {
-    //Clean up rest of the dbs TODO:We should really be cleaning up after each test
-    dropDBs(statement, getAllDbs(statement));
-
-    for (String dbName : dbNames) {
-      statement.execute("CREATE DATABASE " + dbName);
-    }
-  }
-
   // compare the table resultset with given array of table names
   private void validateDBs(ResultSet rs, List<String> dbNames)
       throws SQLException {
     while (rs.next()) {
       String dbName = rs.getString(1);
-      Assert.assertTrue(dbName, dbNames.remove(dbName.toLowerCase()));
+      //There might be non test related dbs in the system
+      if(dbNames.contains(dbName.toLowerCase())) {
+        dbNames.remove(dbName.toLowerCase());
+      }
     }
     Assert.assertTrue(dbNames.toString(), dbNames.isEmpty());
   }

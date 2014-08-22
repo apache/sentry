@@ -67,22 +67,20 @@ public class TestMovingToProduction extends AbstractTestWithStaticConfiguration 
     policyFile
         .addRolesToGroup(USERGROUP1, "all_db1", "load_data")
         .addPermissionsToRole("load_data", "server=server1->uri=file://" + dataDir.getPath())
-        .addPermissionsToRole("all_db1", "server=server1->db=db_1")
+        .addPermissionsToRole("all_db1", "server=server1->db="  + DB1)
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
-    String dbName1 = "db_1";
-    String dbName2 = "proddb";
     String tableName1 = "tb_1";
 
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
-    statement.execute("DROP DATABASE IF EXISTS " + dbName2 + " CASCADE");
-    statement.execute("CREATE DATABASE " + dbName1);
-    statement.execute("CREATE DATABASE " + dbName2);
-    statement.execute("DROP TABLE IF EXISTS " + dbName2 + "." + tableName1);
-    statement.execute("create table " + dbName2 + "." + tableName1
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statement.execute("DROP DATABASE IF EXISTS " + DB2 + " CASCADE");
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("CREATE DATABASE " + DB2);
+    statement.execute("DROP TABLE IF EXISTS " + DB2 + "." + tableName1);
+    statement.execute("create table " + DB2 + "." + tableName1
         + " (under_col int comment 'the under column', value string)");
     statement.close();
     connection.close();
@@ -90,7 +88,7 @@ public class TestMovingToProduction extends AbstractTestWithStaticConfiguration 
     // a
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("USE " + dbName1);
+    statement.execute("USE " + DB1);
     statement.execute("DROP TABLE IF EXISTS " + tableName1);
     statement.execute("create table " + tableName1
         + " (under_col int comment 'the under column', value string)");
@@ -99,17 +97,17 @@ public class TestMovingToProduction extends AbstractTestWithStaticConfiguration 
 
     policyFile
         .addRolesToGroup(USERGROUP1, "insert_proddb_tbl1")
-        .addPermissionsToRole("insert_proddb_tbl1", "server=server1->db=proddb->table=tb_1->action=insert");
+        .addPermissionsToRole("insert_proddb_tbl1", "server=server1->db="  + DB2 + "->table=tb_1->action=insert");
     writePolicyFile(policyFile);
-    statement.execute("USE " + dbName2);
+    statement.execute("USE " + DB2);
     statement.execute("INSERT OVERWRITE TABLE "
-        + tableName1 + " SELECT * FROM " + dbName1
+        + tableName1 + " SELECT * FROM " + DB1
         + "." + tableName1);
 
     // b
     policyFile
         .addRolesToGroup(USERGROUP1, "select_proddb_tbl1")
-        .addPermissionsToRole("select_proddb_tbl1", "server=server1->db=proddb->table=tb_1->action=select");
+        .addPermissionsToRole("select_proddb_tbl1", "server=server1->db="  + DB2 + "->table=tb_1->action=select");
     writePolicyFile(policyFile);
 
     ResultSet resultSet = statement.executeQuery("SELECT * FROM " + tableName1 + " LIMIT 10");
@@ -123,18 +121,18 @@ public class TestMovingToProduction extends AbstractTestWithStaticConfiguration 
     // c
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
-    context.assertAuthzException(statement, "USE " + dbName2);
+    context.assertAuthzException(statement, "USE " + DB2);
     context.assertAuthzException(statement, "INSERT OVERWRITE TABLE "
-        + dbName2 + "." + tableName1 + " SELECT * FROM " + dbName1
+        + DB2 + "." + tableName1 + " SELECT * FROM " + DB1
         + "." + tableName1);
-    context.assertAuthzException(statement, "SELECT * FROM " + dbName2 + "." + tableName1 + " LIMIT 10");
+    context.assertAuthzException(statement, "SELECT * FROM " + DB2 + "." + tableName1 + " LIMIT 10");
     statement.close();
     connection.close();
 
     // d
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("USE " + dbName2);
+    statement.execute("USE " + DB2);
     context.assertAuthzException(statement, "DROP TABLE " + tableName1);
     statement.close();
     connection.close();
@@ -150,22 +148,20 @@ public class TestMovingToProduction extends AbstractTestWithStaticConfiguration 
   public void testMovingTable2() throws Exception {
     policyFile
         .addRolesToGroup(USERGROUP1, "all_db1", "load_data")
-        .addPermissionsToRole("all_db1", "server=server1->db=db_1")
+        .addPermissionsToRole("all_db1", "server=server1->db="  + DB1)
         .addPermissionsToRole("load_data", "server=server1->uri=file://" + dataDir.getPath())
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
-    String dbName1 = "db_1";
-    String dbName2 = "proddb";
     String tableName1 = "tb_1";
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
-    statement.execute("DROP DATABASE IF EXISTS " + dbName2 + " CASCADE");
-    statement.execute("CREATE DATABASE " + dbName1);
-    statement.execute("CREATE DATABASE " + dbName2);
-    statement.execute("DROP TABLE IF EXISTS " + dbName2 + "." + tableName1);
-    statement.execute("create table " + dbName2 + "." + tableName1
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statement.execute("DROP DATABASE IF EXISTS " + DB2 + " CASCADE");
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("CREATE DATABASE " + DB2);
+    statement.execute("DROP TABLE IF EXISTS " + DB2 + "." + tableName1);
+    statement.execute("create table " + DB2 + "." + tableName1
         + " (under_col int comment 'the under column', value string)");
     statement.close();
     connection.close();
@@ -173,50 +169,50 @@ public class TestMovingToProduction extends AbstractTestWithStaticConfiguration 
     // a
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("DROP TABLE IF EXISTS " + dbName1 + "." + tableName1);
-    statement.execute("create table " + dbName1 + "." + tableName1
+    statement.execute("DROP TABLE IF EXISTS " + DB1 + "." + tableName1);
+    statement.execute("create table " + DB1 + "." + tableName1
         + " (under_col int comment 'the under column', value string)");
     statement.execute("LOAD DATA LOCAL INPATH 'file://" + dataDir.getPath()
-        + "' INTO TABLE " + dbName1 + "." + tableName1);
+        + "' INTO TABLE " + DB1 + "." + tableName1);
 
     policyFile
         .addRolesToGroup(USERGROUP1, "insert_proddb_tbl1")
-        .addPermissionsToRole("insert_proddb_tbl1", "server=server1->db=proddb->table=tb_1->action=insert");
+        .addPermissionsToRole("insert_proddb_tbl1", "server=server1->db="  + DB2 + "->table=tb_1->action=insert");
     writePolicyFile(policyFile);
 
     statement.execute("INSERT OVERWRITE TABLE "
-        + dbName2 + "." + tableName1 + " SELECT * FROM " + dbName1
+        + DB2 + "." + tableName1 + " SELECT * FROM " + DB1
         + "." + tableName1);
 
     // b
     policyFile
         .addRolesToGroup(USERGROUP1, "select_proddb_tbl1")
-        .addPermissionsToRole("select_proddb_tbl1", "server=server1->db=proddb->table=tb_1->action=select");
+        .addPermissionsToRole("select_proddb_tbl1", "server=server1->db="  + DB2 + "->table=tb_1->action=select");
     writePolicyFile(policyFile);
 
     assertTrue("user1 should be able to select data from "
-        + dbName2 + "." + dbName2 + "." + tableName1, statement.execute("SELECT * FROM "
-            + dbName2 + "." + tableName1 + " LIMIT 10"));
-    assertTrue("user1 should be able to describe table " + dbName2 + "." + tableName1,
-        statement.execute("DESCRIBE " + dbName2 + "." + tableName1));
+        + DB2 + "." + DB2 + "." + tableName1, statement.execute("SELECT * FROM "
+            + DB2 + "." + tableName1 + " LIMIT 10"));
+    assertTrue("user1 should be able to describe table " + DB2 + "." + tableName1,
+        statement.execute("DESCRIBE " + DB2 + "." + tableName1));
 
     // c
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
 
     context.assertAuthzException(statement, "INSERT OVERWRITE TABLE "
-        + dbName2 + "." + tableName1 + " SELECT * FROM " + dbName1
+        + DB2 + "." + tableName1 + " SELECT * FROM " + DB1
         + "." + tableName1);
 
     context.assertAuthzException(statement, "SELECT * FROM "
-        + dbName2 + "." + tableName1 + " LIMIT 10");
+        + DB2 + "." + tableName1 + " LIMIT 10");
     statement.close();
     connection.close();
 
     // d
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("USE " + dbName2);
+    statement.execute("USE " + DB2);
     context.assertAuthzException(statement, "DROP TABLE " + tableName1);
     statement.close();
     connection.close();

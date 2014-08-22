@@ -59,25 +59,24 @@ public class TestPrivilegeAtTransform extends AbstractTestWithStaticConfiguratio
   @Test
   public void testTransform1() throws Exception {
     policyFile
-      .addPermissionsToRole("all_db1", "server=server1->db=db_1")
+      .addPermissionsToRole("all_db1", "server=server1->db=" + DB1)
       .addRolesToGroup(USERGROUP1, "all_db1")
       .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
     // verify by SQL
     // 1, 2
-    String dbName1 = "db_1";
     String tableName1 = "tb_1";
-    String query = "select TRANSFORM(a.under_col, a.value) USING 'cat' AS (tunder_col, tvalue) FROM " + dbName1 + "." + tableName1 + " a";
+    String query = "select TRANSFORM(a.under_col, a.value) USING 'cat' AS (tunder_col, tvalue) FROM " + DB1 + "." + tableName1 + " a";
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
-    statement.execute("CREATE DATABASE " + dbName1);
-    statement.execute("DROP TABLE IF EXISTS " + dbName1 + "." + tableName1);
-    statement.execute("create table " + dbName1 + "." + tableName1
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("DROP TABLE IF EXISTS " + DB1 + "." + tableName1);
+    statement.execute("create table " + DB1 + "." + tableName1
         + " (under_col int, value string)");
     statement.execute("load data local inpath '" + dataFile.getPath()
-            + "' into table " + dbName1 + "." + tableName1);
+            + "' into table " + DB1 + "." + tableName1);
     assertTrue(query, statement.execute(query));
 
     statement.close();
@@ -91,8 +90,8 @@ public class TestPrivilegeAtTransform extends AbstractTestWithStaticConfiguratio
 
     // 4
     policyFile
-      .addPermissionsToRole("select_tb1", "server=server1->db=db_1->table=tb_1->action=select")
-      .addPermissionsToRole("insert_tb1", "server=server1->db=db_1->table=tb_1->action=insert")
+      .addPermissionsToRole("select_tb1", "server=server1->db=" + DB1 + "->table=tb_1->action=select")
+      .addPermissionsToRole("insert_tb1", "server=server1->db=" + DB1 + "->table=tb_1->action=insert")
       .addRolesToGroup(USERGROUP1, "select_tb1", "insert_tb1");
     writePolicyFile(policyFile);
     context.assertAuthzExecHookException(statement, query);

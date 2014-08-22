@@ -131,7 +131,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     Statement statement = context.createStatement(connection);
 
     // Grant only SELECT on Database
-    statement.execute("GRANT SELECT ON DATABASE db1 TO ROLE user_role");
+    statement.execute("GRANT SELECT ON DATABASE " + DB1 + " TO ROLE user_role");
     statement.execute("GRANT ALL ON URI 'file://" + dataFile.getPath() + "' TO ROLE user_role");
     statement.execute("GRANT ROLE user_role TO GROUP " + USERGROUP1);
     statement.close();
@@ -140,18 +140,18 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     // SELECT is allowed
-    statement.execute("SELECT * FROM db1.t1");
-    statement.execute("SELECT * FROM db1.t2");
+    statement.execute("SELECT * FROM " + DB1 + ".t1");
+    statement.execute("SELECT * FROM " + DB1 + ".t2");
     try {
       // INSERT is not allowed
-      statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t1");
+      statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE " + DB1 + ".t1");
       assertTrue("only SELECT allowed on t1!!", false);
     } catch (Exception e) {
       // Ignore
     }
     try {
       // INSERT is not allowed
-      statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t2");
+      statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE " + DB1 + ".t2");
       assertTrue("only SELECT allowed on t2!!", false);
     } catch (Exception e) {
       // Ignore
@@ -168,7 +168,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     Statement statement = context.createStatement(connection);
 
     // Grant only INSERT on Database
-    statement.execute("GRANT INSERT ON DATABASE db1 TO ROLE user_role");
+    statement.execute("GRANT INSERT ON DATABASE " + DB1 + " TO ROLE user_role");
     statement.execute("GRANT ALL ON URI 'file://" + dataFile.getPath() + "' TO ROLE user_role");
     statement.execute("GRANT ROLE user_role TO GROUP " + USERGROUP1);
     statement.close();
@@ -177,18 +177,18 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     // INSERT is allowed
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t1");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t2");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE " + DB1 + ".t1");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE " + DB1 + ".t2");
     try {
       // SELECT is not allowed
-      statement.execute("SELECT * FROM db1.t1");
+      statement.execute("SELECT * FROM " + DB1 + ".t1");
       assertTrue("only SELECT allowed on t1!!", false);
     } catch (Exception e) {
       // Ignore
     }
     try {
       // SELECT is not allowed
-      statement.execute("SELECT * FROM db1.t2");
+      statement.execute("SELECT * FROM " + DB1 + ".t2");
       assertTrue("only INSERT allowed on t2!!", false);
     } catch (Exception e) {
       // Ignore
@@ -219,9 +219,9 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     } catch (Exception e) {
       // Ignore
     }
-    statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
-    statement.execute("CREATE DATABASE db1");
-    statement.execute("USE db1");
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("USE " + DB1);
     statement.execute("DROP TABLE IF EXISTS t1");
     statement.execute("CREATE TABLE t1 (c1 string)");
     statement.execute("DROP TABLE IF EXISTS t2");
@@ -239,7 +239,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     // Revoke ALL on Db
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    statement.execute("REVOKE ALL ON DATABASE db1 from ROLE user_role");
+    statement.execute("REVOKE ALL ON DATABASE " + DB1 + " from ROLE user_role");
     statement.close();
     connection.close();
 
@@ -247,7 +247,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     statement = context.createStatement(connection);
     statement.execute("SELECT * FROM t1");
     try {
-      statement.execute("SELECT * FROM db1.t2");
+      statement.execute("SELECT * FROM " + DB1 + ".t2");
       assertTrue("SELECT should not be allowed after revoke on parent!!", false);
     } catch (Exception e) {
       // Ignore
@@ -290,7 +290,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       // Ignore
     }
     try {
-      statement.execute("SELECT * FROM db1.t2");
+      statement.execute("SELECT * FROM " + DB1 + ".t2");
       assertTrue("SELECT should not be allowed after revoke on parent!!", false);
     } catch (Exception e) {
       // Ignore
@@ -325,9 +325,9 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     statement.execute("CREATE ROLE user_role");
 
     statement.execute("GRANT SELECT ON TABLE t1 TO ROLE user_role");
-    statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
-    statement.execute("CREATE DATABASE db1");
-    statement.execute("USE db1");
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("USE " + DB1);
     statement.execute("DROP TABLE IF EXISTS t2");
     statement.execute("CREATE TABLE t2 (c1 string)");
     statement.execute("GRANT ALL ON TABLE t2 TO ROLE user_role");
@@ -338,7 +338,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("SELECT * FROM t1");
-    statement.execute("SELECT * FROM db1.t2");
+    statement.execute("SELECT * FROM " + DB1 + ".t2");
 
     statement.close();
     connection.close();
@@ -375,9 +375,9 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     statement.execute("CREATE ROLE user_role");
     statement.execute("CREATE ROLE user_role2");
 
-    statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
-    statement.execute("CREATE DATABASE db1");
-    statement.execute("USE db1");
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("USE " + DB1);
     statement.execute("DROP TABLE IF EXISTS t1");
     statement.execute("CREATE TABLE t1 (c1 string)");
     statement.execute("GRANT ALL ON TABLE t1 TO ROLE user_role");
@@ -393,7 +393,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
 
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("SELECT * FROM db1.t1");
+    statement.execute("SELECT * FROM " + DB1 + ".t1");
     statement.close();
     connection.close();
 
@@ -407,7 +407,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     // Revoke ALL on Db
     connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
-    statement.execute("USE db1");
+    statement.execute("USE " + DB1);
     statement.execute("REVOKE INSERT ON TABLE t1 from ROLE user_role");
     statement.close();
     connection.close();
@@ -415,10 +415,10 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     // This Should pass
-    statement.execute("SELECT * FROM db1.t1");
+    statement.execute("SELECT * FROM " + DB1 + ".t1");
 
     try {
-      statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t1");
+      statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE " + DB1 + ".t1");
       assertTrue("INSERT Should Not be allowed since we Revoked INSERT privileges on the table !!", false);
     } catch (Exception e) {
 
@@ -430,7 +430,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     // user_role2 can still insert into table
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t1");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE " + DB1 + ".t1");
     statement.close();
     connection.close();
 
@@ -475,9 +475,9 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     Statement statement = context.createStatement(connection);
     statement.execute("CREATE ROLE user_role");
 
-    statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
-    statement.execute("CREATE DATABASE db1");
-    statement.execute("USE db1");
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("USE " + DB1);
     statement.execute("DROP TABLE IF EXISTS t1");
     statement.execute("CREATE TABLE t1 (c1 string)");
     statement.execute("GRANT ALL ON TABLE t1 TO ROLE user_role");
@@ -489,7 +489,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
 
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("SELECT * FROM db1.t1");
+    statement.execute("SELECT * FROM " + DB1 + ".t1");
     statement.close();
     connection.close();
 
@@ -502,7 +502,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     // Revoke INSERT on Db
     connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
-    statement.execute("USE db1");
+    statement.execute("USE " + DB1);
     statement.execute("REVOKE INSERT ON TABLE t1 from ROLE user_role");
     statement.close();
     connection.close();
@@ -510,10 +510,10 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     // This Should pass
-    statement.execute("SELECT * FROM db1.t1");
+    statement.execute("SELECT * FROM " + DB1 + ".t1");
 
     try {
-      statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t1");
+      statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE " + DB1 + ".t1");
       assertTrue("INSERT Should Not be allowed since we Revoked INSERT privileges on the table !!", false);
     } catch (Exception e) {
 
@@ -557,14 +557,14 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     Statement statement = context.createStatement(connection);
     statement.execute("CREATE ROLE user_role");
 
-    statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
-    statement.execute("CREATE DATABASE db1");
-    statement.execute("USE db1");
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("USE " + DB1);
 
     statement.execute("DROP TABLE IF EXISTS t1");
     statement.execute("CREATE TABLE t1 (c1 string)");
 
-    statement.execute("GRANT ALL ON DATABASE db1 TO ROLE user_role");
+    statement.execute("GRANT ALL ON DATABASE " + DB1 + " TO ROLE user_role");
     statement.execute("GRANT ALL ON TABLE t1 TO ROLE user_role");
     statement.execute("GRANT SELECT ON TABLE t1 TO ROLE user_role");
     statement.execute("GRANT INSERT ON TABLE t1 TO ROLE user_role");
@@ -578,8 +578,8 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     // Ensure everything works
-    statement.execute("SELECT * FROM db1.t1");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t1");
+    statement.execute("SELECT * FROM " + DB1 + ".t1");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE " + DB1 + ".t1");
 
     connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
@@ -589,7 +589,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
 
     connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
-    statement.execute("USE db1");
+    statement.execute("USE " + DB1);
     statement.execute("REVOKE ALL ON SERVER server1 from ROLE user_role");
     statement.close();
     connection.close();
@@ -598,14 +598,14 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     statement = context.createStatement(connection);
     // Ensure nothing works
     try {
-      statement.execute("SELECT * FROM db1.t1");
+      statement.execute("SELECT * FROM " + DB1 + ".t1");
       assertTrue("SELECT should not be allowed !!", false);
     } catch (SQLException se) {
       // Ignore
     }
 
     try {
-      statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t1");
+      statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE " + DB1 + ".t1");
       assertTrue("INSERT should not be allowed !!", false);
     } catch (SQLException se) {
       // Ignore
@@ -643,14 +643,14 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     Statement statement = context.createStatement(connection);
     statement.execute("CREATE ROLE user_role");
 
-    statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
-    statement.execute("CREATE DATABASE db1");
-    statement.execute("USE db1");
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("USE " + DB1);
 
     statement.execute("DROP TABLE IF EXISTS t1");
     statement.execute("CREATE TABLE t1 (c1 string)");
 
-    statement.execute("GRANT ALL ON DATABASE db1 TO ROLE user_role");
+    statement.execute("GRANT ALL ON DATABASE " + DB1 + " TO ROLE user_role");
     statement.execute("GRANT ALL ON TABLE t1 TO ROLE user_role");
     statement.execute("GRANT SELECT ON TABLE t1 TO ROLE user_role");
     statement.execute("GRANT INSERT ON TABLE t1 TO ROLE user_role");
@@ -668,13 +668,13 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     // Ensure everything works
-    statement.execute("SELECT * FROM db1.t1");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t1");
+    statement.execute("SELECT * FROM " + DB1 + ".t1");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE " + DB1 + ".t1");
 
     connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
-    statement.execute("USE db1");
-    statement.execute("REVOKE ALL ON DATABASE db1 from ROLE user_role");
+    statement.execute("USE " + DB1);
+    statement.execute("REVOKE ALL ON DATABASE " + DB1 + " from ROLE user_role");
     statement.close();
     connection.close();
 
@@ -682,14 +682,14 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     statement = context.createStatement(connection);
     // Ensure nothing works
     try {
-      statement.execute("SELECT * FROM db1.t1");
+      statement.execute("SELECT * FROM " + DB1 + ".t1");
       assertTrue("SELECT should not be allowed !!", false);
     } catch (SQLException se) {
       // Ignore
     }
 
     try {
-      statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t1");
+      statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE " + DB1 + ".t1");
       assertTrue("INSERT should not be allowed !!", false);
     } catch (SQLException se) {
       // Ignore
@@ -725,9 +725,9 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     Statement statement = context.createStatement(connection);
     statement.execute("CREATE ROLE user_role");
 
-    statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
-    statement.execute("CREATE DATABASE db1");
-    statement.execute("USE db1");
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("USE " + DB1);
 
     statement.execute("DROP TABLE IF EXISTS t1");
     statement.execute("CREATE TABLE t1 (c1 string)");
@@ -743,8 +743,8 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     // Ensure everything works
-    statement.execute("SELECT * FROM db1.t1");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t1");
+    statement.execute("SELECT * FROM " + DB1 + ".t1");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE " + DB1 + ".t1");
 
     connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
@@ -754,7 +754,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
 
     connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
-    statement.execute("USE db1");
+    statement.execute("USE " + DB1);
     statement.execute("REVOKE ALL ON TABLE t1 from ROLE user_role");
     statement.close();
     connection.close();
@@ -763,14 +763,14 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     statement = context.createStatement(connection);
     // Ensure nothing works
     try {
-      statement.execute("SELECT * FROM db1.t1");
+      statement.execute("SELECT * FROM " + DB1 + ".t1");
       assertTrue("SELECT should not be allowed !!", false);
     } catch (SQLException se) {
       // Ignore
     }
 
     try {
-      statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t1");
+      statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE " + DB1 + ".t1");
       assertTrue("INSERT should not be allowed !!", false);
     } catch (SQLException se) {
       // Ignore
@@ -806,9 +806,9 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     Statement statement = context.createStatement(connection);
     statement.execute("CREATE ROLE user_role");
 
-    statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
-    statement.execute("CREATE DATABASE db1");
-    statement.execute("USE db1");
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("USE " + DB1);
 
     statement.execute("DROP TABLE IF EXISTS t1");
     statement.execute("CREATE TABLE t1 (c1 string)");
@@ -824,8 +824,8 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     // Ensure everything works
-    statement.execute("SELECT * FROM db1.t1");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t1");
+    statement.execute("SELECT * FROM " + DB1 + ".t1");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE " + DB1 + ".t1");
 
     connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
@@ -835,7 +835,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
 
     connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
-    statement.execute("USE db1");
+    statement.execute("USE " + DB1);
     statement.execute("REVOKE SELECT ON TABLE t1 from ROLE user_role");
     statement.close();
     connection.close();
@@ -844,14 +844,14 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     statement = context.createStatement(connection);
     // Ensure select not allowed
     try {
-      statement.execute("SELECT * FROM db1.t1");
+      statement.execute("SELECT * FROM " + DB1 + ".t1");
       assertTrue("SELECT should not be allowed !!", false);
     } catch (SQLException se) {
       // Ignore
     }
 
     // Ensure insert allowed
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t1");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE " + DB1 + ".t1");
     statement.close();
     connection.close();
 
@@ -886,9 +886,9 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     Statement statement = context.createStatement(connection);
     statement.execute("CREATE ROLE user_role");
 
-    statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
-    statement.execute("CREATE DATABASE db1");
-    statement.execute("USE db1");
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("USE " + DB1);
 
     statement.execute("DROP TABLE IF EXISTS t1");
     statement.execute("CREATE TABLE t1 (c1 string)");
@@ -904,8 +904,8 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     // Ensure everything works
-    statement.execute("SELECT * FROM db1.t1");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t1");
+    statement.execute("SELECT * FROM " + DB1 + ".t1");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE " + DB1 + ".t1");
 
     connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
@@ -915,7 +915,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
 
     connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
-    statement.execute("USE db1");
+    statement.execute("USE " + DB1);
     statement.execute("REVOKE INSERT ON TABLE t1 from ROLE user_role");
     statement.close();
     connection.close();
@@ -924,14 +924,14 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     statement = context.createStatement(connection);
     // Ensure insert not allowed
     try {
-      statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE db1.t1");
+      statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE " + DB1 + ".t1");
       assertTrue("INSERT should not be allowed !!", false);
     } catch (SQLException se) {
       // Ignore
     }
 
     // Ensure select allowed
-    statement.execute("SELECT * FROM db1.t1");
+    statement.execute("SELECT * FROM " + DB1 + ".t1");
     statement.close();
     connection.close();
 
@@ -1512,7 +1512,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     }
 
     //On Database - negative
-    resultSet = statement.executeQuery("SHOW GRANT ROLE role1 ON DATABASE db1");
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1 ON DATABASE " + DB1);
     rowCount = 0 ;
     while (resultSet.next()) {
       rowCount++;

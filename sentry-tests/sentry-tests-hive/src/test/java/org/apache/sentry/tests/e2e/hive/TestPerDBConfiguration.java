@@ -80,14 +80,14 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     File db2PolicyFileHandle = new File(context.getPolicyFile().getParent(), DB2_POLICY_FILE);
     db2PolicyFile
         .addRolesToGroup(USERGROUP2, "select_tbl2")
-        .addPermissionsToRole("select_tbl2", "server=server1->db=db2->table=tbl2->action=select")
+        .addPermissionsToRole("select_tbl2", "server=server1->db="  + DB2 + "->table=tbl2->action=select")
         .write(db2PolicyFileHandle);
 
     policyFile
         .addRolesToGroup(USERGROUP1, "select_tbl1")
         .addRolesToGroup(USERGROUP2, "select_tbl2")
-        .addPermissionsToRole("select_tbl1", "server=server1->db=db1->table=tbl1->action=select")
-        .addDatabase("db2", prefix + db2PolicyFileHandle.getName())
+        .addPermissionsToRole("select_tbl1", "server=server1->db=" + DB1 +"->table=tbl1->action=select")
+        .addDatabase(DB2, prefix + db2PolicyFileHandle.getName())
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
@@ -95,16 +95,16 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
 
-    statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
-    statement.execute("DROP DATABASE IF EXISTS db2 CASCADE");
-    statement.execute("CREATE DATABASE db1");
-    statement.execute("USE db1");
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 +" CASCADE");
+    statement.execute("DROP DATABASE IF EXISTS "  + DB2 + " CASCADE");
+    statement.execute("CREATE DATABASE "  + DB1);
+    statement.execute("USE "  + DB1);
     statement.execute("CREATE TABLE tbl1(B INT, A STRING) " +
                       " row format delimited fields terminated by '|'  stored as textfile");
     statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE tbl1");
-    statement.execute("DROP DATABASE IF EXISTS db2 CASCADE");
-    statement.execute("CREATE DATABASE db2");
-    statement.execute("USE db2");
+    statement.execute("DROP DATABASE IF EXISTS "  + DB2 + " CASCADE");
+    statement.execute("CREATE DATABASE "  + DB2);
+    statement.execute("USE "  + DB2);
     statement.execute("CREATE TABLE tbl2(B INT, A STRING) " +
                       " row format delimited fields terminated by '|'  stored as textfile");
     statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE tbl2");
@@ -114,13 +114,13 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     // test execution
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("USE db1");
+    statement.execute("USE "  + DB1);
     // test user1 can execute query on tbl1
     verifyCount(statement, "SELECT COUNT(*) FROM tbl1");
 
     // user1 cannot query db2.tbl2
-    context.assertAuthzException(statement, "USE db2");
-    context.assertAuthzException(statement, "SELECT COUNT(*) FROM db2.tbl2");
+    context.assertAuthzException(statement, "USE "  + DB2);
+    context.assertAuthzException(statement, "SELECT COUNT(*) FROM "  + DB2 + ".tbl2");
     statement.close();
     connection.close();
 
@@ -128,13 +128,13 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
 
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
-    statement.execute("USE db2");
+    statement.execute("USE "  + DB2);
     // test user2 can execute query on tbl2
     verifyCount(statement, "SELECT COUNT(*) FROM tbl2");
 
     // user2 cannot query db1.tbl1
-    context.assertAuthzException(statement, "SELECT COUNT(*) FROM db1.tbl1");
-    context.assertAuthzException(statement, "USE db1");
+    context.assertAuthzException(statement, "SELECT COUNT(*) FROM " + DB1 +".tbl1");
+    context.assertAuthzException(statement, "USE "  + DB1);
 
     statement.close();
     connection.close();
@@ -142,8 +142,8 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     //test cleanup
     connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE db1 CASCADE");
-    statement.execute("DROP DATABASE db2 CASCADE");
+    statement.execute("DROP DATABASE " + DB1 +" CASCADE");
+    statement.execute("DROP DATABASE "  + DB2 + " CASCADE");
     statement.close();
     connection.close();
   }
@@ -168,7 +168,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     PolicyFile db4PolicyFile = new PolicyFile();
     db2PolicyFile
         .addRolesToGroup(USERGROUP2, "select_tbl2")
-        .addPermissionsToRole("select_tbl2", "server=server1->db=db2->table=tbl2->action=select")
+        .addPermissionsToRole("select_tbl2", "server=server1->db="  + DB2 + "->table=tbl2->action=select")
         .write(db2PolicyFileHandle);
     db3PolicyFile
         .addRolesToGroup(USERGROUP3, "select_tbl3_BAD")
@@ -181,8 +181,8 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     policyFile
         .addRolesToGroup(USERGROUP1, "select_tbl1")
         .addRolesToGroup(USERGROUP2, "select_tbl2")
-        .addPermissionsToRole("select_tbl1", "server=server1->db=db1->table=tbl1->action=select")
-        .addDatabase("db2", prefix + db2PolicyFileHandle.getName())
+        .addPermissionsToRole("select_tbl1", "server=server1->db=" + DB1 +"->table=tbl1->action=select")
+        .addDatabase(DB2, prefix + db2PolicyFileHandle.getName())
         .addDatabase("db3", prefix + db3PolicyFileHandle.getName())
         .addDatabase("db4", prefix + db4PolicyFileHandle.getName())
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
@@ -192,16 +192,16 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
 
-    statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
-    statement.execute("CREATE DATABASE db1");
-    statement.execute("USE db1");
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 +" CASCADE");
+    statement.execute("CREATE DATABASE "  + DB1);
+    statement.execute("USE "  + DB1);
     statement.execute("CREATE TABLE tbl1(B INT, A STRING) " +
                       " row format delimited fields terminated by '|'  stored as textfile");
     statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE tbl1");
 
-    statement.execute("DROP DATABASE IF EXISTS db2 CASCADE");
-    statement.execute("CREATE DATABASE db2");
-    statement.execute("USE db2");
+    statement.execute("DROP DATABASE IF EXISTS "  + DB2 + " CASCADE");
+    statement.execute("CREATE DATABASE "  + DB2);
+    statement.execute("USE "  + DB2);
     statement.execute("CREATE TABLE tbl2(B INT, A STRING) " +
                       " row format delimited fields terminated by '|'  stored as textfile");
     statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE tbl2");
@@ -226,14 +226,14 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     // test execution
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("USE db1");
+    statement.execute("USE "  + DB1);
     // test user1 can execute query on tbl1
     verifyCount(statement, "SELECT COUNT(*) FROM tbl1");
     connection.close();
 
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
-    statement.execute("USE db2");
+    statement.execute("USE "  + DB2);
     // test user1 can execute query on tbl1
     verifyCount(statement, "SELECT COUNT(*) FROM tbl2");
     connection.close();
@@ -256,8 +256,8 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     //test cleanup
     connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE db1 CASCADE");
-    statement.execute("DROP DATABASE db2 CASCADE");
+    statement.execute("DROP DATABASE " + DB1 +" CASCADE");
+    statement.execute("DROP DATABASE "  + DB2 + " CASCADE");
     statement.execute("DROP DATABASE db3 CASCADE");
     statement.execute("DROP DATABASE db4 CASCADE");
     statement.close();
@@ -271,16 +271,16 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     policyFile
         .addRolesToGroup(USERGROUP1, "select_tbl1")
         .addRolesToGroup(USERGROUP2, "select_tbl2")
-        .addPermissionsToRole("select_tbl1", "server=server1->db=db1->table=tbl1->action=select")
-        .addDatabase("db2", prefix + db2PolicyFileHandle.getName())
+        .addPermissionsToRole("select_tbl1", "server=server1->db=" + DB1 +"->table=tbl1->action=select")
+        .addDatabase(DB2, prefix + db2PolicyFileHandle.getName())
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
     PolicyFile db2PolicyFile = new PolicyFile();
     db2PolicyFile
         .addRolesToGroup(USERGROUP2, "select_tbl2", "data_read", "insert_tbl2")
-        .addPermissionsToRole("select_tbl2", "server=server1->db=db2->table=tbl2->action=select")
-        .addPermissionsToRole("insert_tbl2", "server=server1->db=db2->table=tbl2->action=insert")
+        .addPermissionsToRole("select_tbl2", "server=server1->db="  + DB2 + "->table=tbl2->action=select")
+        .addPermissionsToRole("insert_tbl2", "server=server1->db="  + DB2 + "->table=tbl2->action=insert")
         .addPermissionsToRole("data_read", "server=server1->URI=file://" + dataFile)
         .write(db2PolicyFileHandle);
     // ugly hack: needs to go away once this becomes a config property. Note that this property
@@ -291,16 +291,16 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
 
-    statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
-    statement.execute("DROP DATABASE IF EXISTS db2 CASCADE");
-    statement.execute("CREATE DATABASE db1");
-    statement.execute("USE db1");
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 +" CASCADE");
+    statement.execute("DROP DATABASE IF EXISTS "  + DB2 + " CASCADE");
+    statement.execute("CREATE DATABASE "  + DB1);
+    statement.execute("USE "  + DB1);
     statement.execute("CREATE TABLE tbl1(B INT, A STRING) " +
                       " row format delimited fields terminated by '|'  stored as textfile");
     statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE tbl1");
-    statement.execute("DROP DATABASE IF EXISTS db2 CASCADE");
-    statement.execute("CREATE DATABASE db2");
-    statement.execute("USE db2");
+    statement.execute("DROP DATABASE IF EXISTS "  + DB2 + " CASCADE");
+    statement.execute("CREATE DATABASE "  + DB2);
+    statement.execute("USE "  + DB2);
     statement.execute("CREATE TABLE tbl2(B INT, A STRING) " +
                       " row format delimited fields terminated by '|'  stored as textfile");
     statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE tbl2");
@@ -310,20 +310,20 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     // test execution
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("USE db1");
+    statement.execute("USE "  + DB1);
     // test user1 can execute query on tbl1
     verifyCount(statement, "SELECT COUNT(*) FROM tbl1");
 
     // user1 cannot query db2.tbl2
-    context.assertAuthzException(statement, "USE db2");
-    context.assertAuthzException(statement, "SELECT COUNT(*) FROM db2.tbl2");
+    context.assertAuthzException(statement, "USE "  + DB2);
+    context.assertAuthzException(statement, "SELECT COUNT(*) FROM "  + DB2 + ".tbl2");
     statement.close();
     connection.close();
 
     // test per-db file for db2
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
-    statement.execute("USE db2");
+    statement.execute("USE "  + DB2);
     // test user2 can execute query on tbl2
     verifyCount(statement, "SELECT COUNT(*) FROM tbl2");
 
@@ -331,12 +331,12 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE tbl2");
 
     // user2 cannot query db1.tbl1
-    context.assertAuthzException(statement, "SELECT COUNT(*) FROM db1.tbl1");
-    context.assertAuthzException(statement, "USE db1");
+    context.assertAuthzException(statement, "SELECT COUNT(*) FROM " + DB1 +".tbl1");
+    context.assertAuthzException(statement, "USE "  + DB1);
 
     // once we disable this property all queries should fail
     System.setProperty(SimpleDBPolicyEngine.ACCESS_ALLOW_URI_PER_DB_POLICYFILE, "false");
-    context.assertAuthzException(statement, "USE db2");
+    context.assertAuthzException(statement, "USE "  + DB2);
 
     // re-enable for clean
     System.setProperty(SimpleDBPolicyEngine.ACCESS_ALLOW_URI_PER_DB_POLICYFILE, "true");
@@ -347,8 +347,8 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     //test cleanup
     connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE db1 CASCADE");
-    statement.execute("DROP DATABASE db2 CASCADE");
+    statement.execute("DROP DATABASE " + DB1 +" CASCADE");
+    statement.execute("DROP DATABASE "  + DB2 + " CASCADE");
     statement.close();
     connection.close();
   }
@@ -361,7 +361,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
   public void testDefaultDb() throws Exception {
     policyFile
         .addRolesToGroup(USERGROUP1, "select_tbl1")
-        .addPermissionsToRole("select_tbl1", "server=server1->db=db1->table=tbl1->action=select")
+        .addPermissionsToRole("select_tbl1", "server=server1->db=" + DB1 +"->table=tbl1->action=select")
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
 
@@ -371,12 +371,12 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
 
     statement.execute("USE default");
 
-    statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
-    statement.execute("CREATE DATABASE db1");
-    statement.execute("USE db1");
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 +" CASCADE");
+    statement.execute("CREATE DATABASE "  + DB1);
+    statement.execute("USE "  + DB1);
     statement.execute("CREATE TABLE tbl1(B INT, A STRING) " +
                       " row format delimited fields terminated by '|'  stored as textfile");
-    statement.execute("DROP DATABASE IF EXISTS db2 CASCADE");
+    statement.execute("DROP DATABASE IF EXISTS "  + DB2 + " CASCADE");
     statement.close();
     connection.close();
 
@@ -404,8 +404,8 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     policyFile
         .addRolesToGroup(USERGROUP1, "select_tbl1")
         .addRolesToGroup(USERGROUP2, "select_tbl2")
-        .addPermissionsToRole("select_tbl1", "server=server1->db=db1->table=tbl1->action=select")
-        .addDatabase("db2", prefix + db2PolicyFileHandle.getName())
+        .addPermissionsToRole("select_tbl1", "server=server1->db=" + DB1 +"->table=tbl1->action=select")
+        .addDatabase(DB2, prefix + db2PolicyFileHandle.getName())
         .addDatabase("default", prefix + defaultPolicyFileHandle.getName())
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
@@ -413,7 +413,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     PolicyFile db2PolicyFile = new PolicyFile();
     db2PolicyFile
         .addRolesToGroup(USERGROUP2, "select_tbl2")
-        .addPermissionsToRole("select_tbl2", "server=server1->db=db2->table=tbl2->action=select")
+        .addPermissionsToRole("select_tbl2", "server=server1->db="  + DB2 + "->table=tbl2->action=select")
         .write(db2PolicyFileHandle);
 
     PolicyFile defaultPolicyFile = new PolicyFile();
@@ -430,15 +430,15 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     statement.execute("CREATE TABLE dtab(B INT, A STRING) " +
                       " row format delimited fields terminated by '|'  stored as textfile");
 
-    statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
-    statement.execute("DROP DATABASE IF EXISTS db2 CASCADE");
-    statement.execute("CREATE DATABASE db1");
-    statement.execute("USE db1");
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 +" CASCADE");
+    statement.execute("DROP DATABASE IF EXISTS "  + DB2 + " CASCADE");
+    statement.execute("CREATE DATABASE "  + DB1);
+    statement.execute("USE "  + DB1);
     statement.execute("CREATE TABLE tbl1(B INT, A STRING) " +
                       " row format delimited fields terminated by '|'  stored as textfile");
-    statement.execute("DROP DATABASE IF EXISTS db2 CASCADE");
-    statement.execute("CREATE DATABASE db2");
-    statement.execute("USE db2");
+    statement.execute("DROP DATABASE IF EXISTS "  + DB2 + " CASCADE");
+    statement.execute("CREATE DATABASE "  + DB2);
+    statement.execute("USE "  + DB2);
     statement.execute("CREATE TABLE tbl2(B INT, A STRING) " +
                       " row format delimited fields terminated by '|'  stored as textfile");
     statement.close();
@@ -447,10 +447,10 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     // user_1 should be able to switch to default, but not the tables from default
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("USE db1");
+    statement.execute("USE "  + DB1);
     statement.execute("USE default");
     context.assertAuthzException(statement, "SELECT * FROM dtab");
-    statement.execute("USE db1");
+    statement.execute("USE "  + DB1);
     context.assertAuthzException(statement, "SELECT * FROM default.dtab");
 
     statement.close();
@@ -459,10 +459,10 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     // user_2 should be able to access default and select from default's tables
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
-    statement.execute("USE db2");
+    statement.execute("USE "  + DB2);
     statement.execute("USE default");
     statement.execute("SELECT * FROM dtab");
-    statement.execute("USE db2");
+    statement.execute("USE "  + DB2);
     statement.execute("SELECT * FROM default.dtab");
     statement.close();
     connection.close();

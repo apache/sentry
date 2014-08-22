@@ -36,14 +36,14 @@ public class TestMetadataPermissions extends AbstractTestWithStaticConfiguration
     policyFile
         .addRolesToGroup(USERGROUP1, "db1_all", "db2_all")
         .addRolesToGroup(USERGROUP2, "db1_all")
-        .addPermissionsToRole("db1_all", "server=server1->db=db1")
-        .addPermissionsToRole("db2_all", "server=server1->db=db2")
+        .addPermissionsToRole("db1_all", "server=server1->db=" + DB1)
+        .addPermissionsToRole("db2_all", "server=server1->db=" + DB2)
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
     Connection adminCon = context.createConnection(ADMIN1);
     Statement adminStmt = context.createStatement(adminCon);
-    for (String dbName : new String[] { "db1", "db2" }) {
+    for (String dbName : new String[] { "" + DB1, DB2 }) {
       adminStmt.execute("USE default");
       adminStmt.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
       adminStmt.execute("CREATE DATABASE " + dbName);
@@ -60,14 +60,13 @@ public class TestMetadataPermissions extends AbstractTestWithStaticConfiguration
    */
   @Test
   public void testDescPrivilegesNegative() throws Exception {
-    String dbName = "db2";
     Connection connection = context.createConnection(USER2_1);
     Statement statement = context.createStatement(connection);
-    context.assertAuthzException(statement, "USE " + dbName);
+    context.assertAuthzException(statement, "USE " + DB2);
 //    TODO when DESCRIBE db.table is supported tests should be uncommented
 //    for (String tabName : new String[] { "tab1", "tab2" }) {
-//      context.assertAuthzException(statement, "DESCRIBE " + dbName + "." + tabName);
-//      context.assertAuthzException(statement, "DESCRIBE EXTENDED " + dbName + "." + tabName);
+//      context.assertAuthzException(statement, "DESCRIBE " + DB1 + "." + tabName);
+//      context.assertAuthzException(statement, "DESCRIBE EXTENDED " + DB1 + "." + tabName);
 //    }
     statement.close();
     connection.close();
@@ -79,11 +78,10 @@ public class TestMetadataPermissions extends AbstractTestWithStaticConfiguration
    */
   @Test
   public void testDescDbPrivilegesNegative() throws Exception {
-    String dbName = "db2";
     Connection connection = context.createConnection(USER2_1);
     Statement statement = context.createStatement(connection);
-    context.assertAuthzException(statement, "DESCRIBE DATABASE " + dbName);
-    context.assertAuthzException(statement, "DESCRIBE DATABASE EXTENDED " + dbName);
+    context.assertAuthzException(statement, "DESCRIBE DATABASE " + DB2);
+    context.assertAuthzException(statement, "DESCRIBE DATABASE EXTENDED " + DB2);
     statement.close();
     connection.close();
   }
@@ -96,7 +94,7 @@ public class TestMetadataPermissions extends AbstractTestWithStaticConfiguration
   public void testDescDbPrivilegesPositive() throws Exception {
     Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
-    for (String dbName : new String[] { "db1", "db2" }) {
+    for (String dbName : new String[] { DB1, DB2 }) {
       statement.execute("USE " + dbName);
       Assert.assertTrue(statement.executeQuery("DESCRIBE DATABASE " + dbName).next());
       Assert.assertTrue(statement.executeQuery("DESCRIBE DATABASE EXTENDED " + dbName).next());
@@ -112,7 +110,7 @@ public class TestMetadataPermissions extends AbstractTestWithStaticConfiguration
   public void testDescPrivilegesPositive() throws Exception {
     Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
-    for (String dbName : new String[] { "db1", "db2" }) {
+    for (String dbName : new String[] { DB1, DB2 }) {
       statement.execute("USE " + dbName);
       Assert.assertTrue(statement.executeQuery("DESCRIBE DATABASE " + dbName).next());
       for (String tabName : new String[] { "tab1", "tab2" }) {

@@ -61,22 +61,20 @@ public class TestEndToEnd extends AbstractTestWithStaticConfiguration {
     policyFile
       .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
-    String dbName1 = "db_1";
-    String dbName2 = "productionDB";
     String tableName1 = "tb_1";
     String tableName2 = "tb_2";
     String viewName1 = "view_1";
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     // 1
-    statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
-    statement.execute("CREATE DATABASE " + dbName1);
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statement.execute("CREATE DATABASE " + DB1);
     // 2
-    statement.execute("DROP DATABASE IF EXISTS " + dbName2 + " CASCADE");
-    statement.execute("CREATE DATABASE " + dbName2);
-    statement.execute("USE " + dbName2);
-    statement.execute("DROP TABLE IF EXISTS " + dbName2 + "." + tableName2);
-    statement.execute("create table " + dbName2 + "." + tableName2
+    statement.execute("DROP DATABASE IF EXISTS " + DB2 + " CASCADE");
+    statement.execute("CREATE DATABASE " + DB2);
+    statement.execute("USE " + DB2);
+    statement.execute("DROP TABLE IF EXISTS " + DB2 + "." + tableName2);
+    statement.execute("create table " + DB2 + "." + tableName2
         + " (under_col int comment 'the under column', value string)");
     statement.execute("load data local inpath '" + dataFile.getPath()
             + "' into table " + tableName2);
@@ -86,19 +84,19 @@ public class TestEndToEnd extends AbstractTestWithStaticConfiguration {
     // 3
     policyFile
         .addRolesToGroup(USERGROUP1, "all_db1", "data_uri", "select_tb1", "insert_tb1")
-        .addPermissionsToRole("all_db1", "server=server1->db=db_1")
-        .addPermissionsToRole("select_tb1", "server=server1->db=productionDB->table=tb_1->action=select")
-        .addPermissionsToRole("insert_tb2", "server=server1->db=productionDB->table=tb_2->action=insert")
-        .addPermissionsToRole("insert_tb1", "server=server1->db=productionDB->table=tb_2->action=insert")
+        .addPermissionsToRole("all_db1", "server=server1->db=" + DB1)
+        .addPermissionsToRole("select_tb1", "server=server1->db=" + DB2 + "->table=tb_1->action=select")
+        .addPermissionsToRole("insert_tb2", "server=server1->db=" + DB2 + "->table=tb_2->action=insert")
+        .addPermissionsToRole("insert_tb1", "server=server1->db=" + DB2 + "->table=tb_2->action=insert")
         .addPermissionsToRole("data_uri", "server=server1->uri=file://" + dataDir.getPath());
     writePolicyFile(policyFile);
 
     // 4
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("USE " + dbName1);
-    statement.execute("DROP TABLE IF EXISTS " + dbName1 + "." + tableName1);
-    statement.execute("create table " + dbName1 + "." + tableName1
+    statement.execute("USE " + DB1);
+    statement.execute("DROP TABLE IF EXISTS " + DB1 + "." + tableName1);
+    statement.execute("create table " + DB1 + "." + tableName1
         + " (under_col int comment 'the under column', value string)");
     statement.execute("load data local inpath '" + dataFile.getPath()
             + "' into table " + tableName1);
@@ -110,9 +108,9 @@ public class TestEndToEnd extends AbstractTestWithStaticConfiguration {
     // 7
     connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
-    statement.execute("USE " + dbName2);
-    statement.execute("DROP TABLE IF EXISTS " + dbName1 + "." + tableName1);
-    statement.execute("create table " + dbName1 + "." + tableName1
+    statement.execute("USE " + DB2);
+    statement.execute("DROP TABLE IF EXISTS " + DB1 + "." + tableName1);
+    statement.execute("create table " + DB1 + "." + tableName1
         + " (under_col int comment 'the under column', value string)");
     statement.close();
     connection.close();
@@ -120,9 +118,9 @@ public class TestEndToEnd extends AbstractTestWithStaticConfiguration {
     // 8
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("USE " + dbName2);
+    statement.execute("USE " + DB2);
     statement.execute("INSERT OVERWRITE TABLE " +
-        dbName2 + "." + tableName2 + " SELECT * FROM " + dbName1
+        DB2 + "." + tableName2 + " SELECT * FROM " + DB1
         + "." + tableName1);
     statement.close();
     connection.close();

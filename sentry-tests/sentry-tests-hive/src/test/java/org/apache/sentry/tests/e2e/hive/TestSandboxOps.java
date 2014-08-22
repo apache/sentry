@@ -55,8 +55,8 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
 
   private PolicyFile addTwoUsersWithAllDb() throws Exception {
     policyFile
-    .addPermissionsToRole("db1_all", "server=server1->db=db1")
-    .addPermissionsToRole("db2_all", "server=server1->db=db2")
+    .addPermissionsToRole("db1_all", "server=server1->db=" + DB1)
+    .addPermissionsToRole("db2_all", "server=server1->db=" + DB2)
     .addRolesToGroup(USERGROUP1, "db1_all", "db2_all");
     return policyFile;
   }
@@ -68,13 +68,13 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
   public void testDbPrivileges() throws Exception {
     addTwoUsersWithAllDb();
     writePolicyFile(policyFile);
-    String[] dbs = new String[] { "db1", "db2" };
+    String[] dbs = new String[] { DB1, DB2 };
     for (String dbName : dbs) {
       dropDb(ADMIN1, dbName);
       createDb(ADMIN1, dbName);
     }
     for (String user : new String[] { USER1_1, USER1_2 }) {
-      for (String dbName : new String[] { "db1", "db2" }) {
+      for (String dbName : dbs) {
         Connection userConn = context.createConnection(user);
         String tabName = user + "_tab1";
         Statement userStmt = context.createStatement(userConn);
@@ -85,7 +85,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
         context.assertAuthzException(userStmt, "load data local inpath '" + dataFile + "' into table " + tabName);
         assertTrue(userStmt.execute("select * from " + tabName));
         // negative users cannot create databases
-        context.assertAuthzException(userStmt, "CREATE DATABASE " + user + "_db");
+        context.assertAuthzException(userStmt, "CREATE DATABASE " + DB3);
         userStmt.close();
         userConn.close();
       }
@@ -104,13 +104,12 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
   public void testAdminDbPrivileges() throws Exception {
     Connection adminCon = context.createConnection(ADMIN1);
     Statement adminStmt = context.createStatement(adminCon);
-    String dbName = "db1";
     adminStmt.execute("use default");
-    adminStmt.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
-    adminStmt.execute("CREATE DATABASE " + dbName);
+    adminStmt.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    adminStmt.execute("CREATE DATABASE " + DB1);
 
     // access the new databases
-    adminStmt.execute("use " + dbName);
+    adminStmt.execute("use " + DB1);
     String tabName = "admin_tab1";
     adminStmt.execute("create table " + tabName + "(c1 string)");
     adminStmt.execute("load data local inpath '" + dataFile.getPath() + "' into table "
@@ -119,7 +118,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
 
     // cleanup
     adminStmt.execute("use default");
-    adminStmt.execute("DROP DATABASE " + dbName + " CASCADE");
+    adminStmt.execute("DROP DATABASE " + DB1 + " CASCADE");
     adminStmt.close();
     adminCon.close();
   }
@@ -133,23 +132,22 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
   @Test
   public void testNegativeUserDMLPrivileges() throws Exception {
     policyFile
-        .addPermissionsToRole("db1_tab2_all", "server=server1->db=db1->table=table_2")
+        .addPermissionsToRole("db1_tab2_all", "server=server1->db=" + DB1 + "->table=table_2")
         .addRolesToGroup(USERGROUP1, "db1_tab2_all");
     writePolicyFile(policyFile);
     Connection adminCon = context.createConnection(ADMIN1);
     Statement adminStmt = context.createStatement(adminCon);
-    String dbName = "db1";
     adminStmt.execute("use default");
-    adminStmt.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
-    adminStmt.execute("CREATE DATABASE " + dbName);
-    adminStmt.execute("use " + dbName);
+    adminStmt.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    adminStmt.execute("CREATE DATABASE " + DB1);
+    adminStmt.execute("use " + DB1);
     adminStmt.execute("create table table_1 (id int)");
     adminStmt.execute("create table table_2 (id int)");
     adminStmt.close();
     adminCon.close();
     Connection userConn = context.createConnection(USER1_1);
     Statement userStmt = context.createStatement(userConn);
-    userStmt.execute("use " + dbName);
+    userStmt.execute("use " + DB1);
     // user1 doesn't have select privilege on table_1, so insert/select should fail
     context.assertAuthzException(userStmt, "insert overwrite table table_2 select * from table_1");
     context.assertAuthzException(userStmt, "insert overwrite directory '" + baseDir.getPath() + "' select * from table_1");
@@ -178,17 +176,16 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
     policyFile
         .addRolesToGroup(USERGROUP1, "db1_all")
         .addRolesToGroup(USERGROUP2, "db1_tab1_select")
-        .addPermissionsToRole("db1_tab1_select", "server=server1->db=db1->table=table_1->action=select")
-        .addPermissionsToRole("db1_all", "server=server1->db=db1");
+        .addPermissionsToRole("db1_tab1_select", "server=server1->db="+ DB1 + "->table=table_1->action=select")
+        .addPermissionsToRole("db1_all", "server=server1->db=" + DB1);
     writePolicyFile(policyFile);
     // create dbs
     Connection adminCon = context.createConnection(ADMIN1);
     Statement adminStmt = context.createStatement(adminCon);
-    String dbName = "db1";
     adminStmt.execute("use default");
-    adminStmt.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
-    adminStmt.execute("CREATE DATABASE " + dbName);
-    adminStmt.execute("use " + dbName);
+    adminStmt.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    adminStmt.execute("CREATE DATABASE " + DB1);
+    adminStmt.execute("use " + DB1);
     adminStmt.execute("create table table_1 (name string)");
     adminStmt.execute("load data local inpath '" + dataFile.getPath() + "' into table table_1");
     adminStmt.execute("create table table_2 (name string)");
@@ -202,16 +199,16 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
 
     Connection userConn = context.createConnection(USER2_1);
     Statement userStmt = context.createStatement(userConn);
-    userStmt.execute("use " + dbName);
+    userStmt.execute("use " + DB1);
 
     context.assertAuthzException(userStmt, "alter table table_2 add columns (id int)");
-    context.assertAuthzException(userStmt, "drop database " + dbName);
+    context.assertAuthzException(userStmt, "drop database " + DB1);
     context.assertAuthzException(userStmt, "CREATE INDEX x ON TABLE table_1(name) AS 'org.apache.hadoop.hive.ql.index.compact.CompactIndexHandler'");
     context.assertAuthzException(userStmt, "CREATE TEMPORARY FUNCTION strip AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
     context.assertAuthzException(userStmt, "create table foo(id int)");
     context.assertAuthzException(userStmt, "create table c_tab_2 as select * from table_2"); // no select or create privilege
     context.assertAuthzException(userStmt, "create table c_tab_1 as select * from table_1"); // no create privilege
-    context.assertAuthzException(userStmt, "ALTER DATABASE " + dbName + " SET DBPROPERTIES ('foo' = 'bar')");
+    context.assertAuthzException(userStmt, "ALTER DATABASE " + DB1 + " SET DBPROPERTIES ('foo' = 'bar')");
     context.assertAuthzException(userStmt, "ALTER VIEW v1 SET TBLPROPERTIES ('foo' = 'bar')");
     context.assertAuthzException(userStmt, "DROP VIEW IF EXISTS v1");
     context.assertAuthzException(userStmt, "create table table_5 (name string)");
@@ -382,8 +379,8 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
     policyFile
         .addRolesToGroup(USERGROUP1, "all_db1", "load_data")
         .addRolesToGroup(USERGROUP2, "select_tb1")
-        .addPermissionsToRole("select_tb1", "server=server1->db=db_1->table=tbl_1->action=select")
-        .addPermissionsToRole("all_db1", "server=server1->db=db_1")
+        .addPermissionsToRole("select_tb1", "server=server1->db=" + DB1 + "->table=tbl_1->action=select")
+        .addPermissionsToRole("all_db1", "server=server1->db=" + DB1)
         .addPermissionsToRole("load_data", "server=server1->uri=file://" + dataFile.toString());
     writePolicyFile(policyFile);
 
@@ -441,7 +438,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
 
     policyFile
         .addRolesToGroup(USERGROUP1, "all_db1", "load_data")
-        .addPermissionsToRole("all_db1", "server=server1->db=db_1")
+        .addPermissionsToRole("all_db1", "server=server1->db=" + DB1)
         .addPermissionsToRole("load_data", "server=server1->uri=file://" + allowedDir.getPath() +
             ", server=server1->uri=file://" + allowedDir.getPath() +
             ", server=server1->uri=" + allowedDfsDir.toString());
@@ -505,8 +502,8 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
     policyFile
         .addRolesToGroup(USERGROUP1, "select_tbl1")
         .addRolesToGroup(USERGROUP2, "select_tbl2")
-        .addPermissionsToRole("select_tbl1", "server=server1->db=db1->table=tbl1->action=select")
-        .addDatabase("db2", dfs.getBaseDir().toUri().toString() + "/" + DB2_POLICY_FILE);
+        .addPermissionsToRole("select_tbl1", "server=server1->db=" + DB1 + "->table=tbl1->action=select")
+        .addDatabase(DB2, dfs.getBaseDir().toUri().toString() + "/" + DB2_POLICY_FILE);
     writePolicyFile(policyFile);
 
     File db2PolicyFileHandle = new File(baseDir.getPath(), DB2_POLICY_FILE);
@@ -514,7 +511,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
     PolicyFile db2PolicyFile = new PolicyFile();
     db2PolicyFile
         .addRolesToGroup(USERGROUP2, "select_tbl2")
-        .addPermissionsToRole("select_tbl2", "server=server1->db=db2->table=tbl2->action=select")
+        .addPermissionsToRole("select_tbl2", "server=server1->db=" + DB2 + "->table=tbl2->action=select")
         .write(db2PolicyFileHandle);
     PolicyFiles.copyFilesToDir(fileSystem, dfs.getBaseDir(), db2PolicyFileHandle);
 
@@ -522,16 +519,16 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
 
-    statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
-    statement.execute("DROP DATABASE IF EXISTS db2 CASCADE");
-    statement.execute("CREATE DATABASE db1");
-    statement.execute("USE db1");
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statement.execute("DROP DATABASE IF EXISTS " + DB2 + " CASCADE");
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("USE " + DB1);
     statement.execute("CREATE TABLE tbl1(B INT, A STRING) " +
                       " row format delimited fields terminated by '|'  stored as textfile");
     statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE tbl1");
-    statement.execute("DROP DATABASE IF EXISTS db2 CASCADE");
-    statement.execute("CREATE DATABASE db2");
-    statement.execute("USE db2");
+    statement.execute("DROP DATABASE IF EXISTS " + DB2 + " CASCADE");
+    statement.execute("CREATE DATABASE " + DB2);
+    statement.execute("USE " + DB2);
     statement.execute("CREATE TABLE tbl2(B INT, A STRING) " +
                       " row format delimited fields terminated by '|'  stored as textfile");
     statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE tbl2");
@@ -543,7 +540,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
     // test user2 can use db2
-    statement.execute("USE db2");
+    statement.execute("USE " + DB2);
     statement.execute("select * from tbl2");
 
     statement.close();
@@ -552,8 +549,9 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
     //test cleanup
     connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE db1 CASCADE");
-    statement.execute("DROP DATABASE db2 CASCADE");
+    statement.execute("DROP DATABASE " + DB1 + " CASCADE");
+
+    statement.execute("DROP DATABASE " + DB2 + " CASCADE");
     statement.close();
     connection.close();
   }

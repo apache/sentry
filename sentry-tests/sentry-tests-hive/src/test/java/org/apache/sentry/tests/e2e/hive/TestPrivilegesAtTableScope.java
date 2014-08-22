@@ -173,8 +173,8 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
-    statement.execute("CREATE DATABASE DB_1");
-    statement.execute("USE DB_1");
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("USE " + DB1);
     statement.execute("CREATE TABLE TAB_1(A STRING)");
     statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
         + "' INTO TABLE TAB_1");
@@ -188,7 +188,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     // test execution
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("USE DB_1");
+    statement.execute("USE " + DB1);
     // test user can execute insert on table
     statement.execute("INSERT INTO TABLE TAB_1 SELECT A FROM TAB_2");
 
@@ -262,8 +262,8 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     Statement statement = context.createStatement(connection);
 
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
-    statement.execute("CREATE DATABASE DB_1");
-    statement.execute("USE DB_1");
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("USE " + DB1);
     statement.execute("CREATE TABLE TAB_1(A STRING)");
     statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
         + "' INTO TABLE TAB_1");
@@ -277,7 +277,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     // test execution
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("USE DB_1");
+    statement.execute("USE " + DB1);
     // test user can execute query on table
     ResultSet resultSet = statement.executeQuery("SELECT COUNT(A) FROM TAB_1");
     int count = 0;
@@ -350,8 +350,8 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     Statement statement = context.createStatement(connection);
 
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
-    statement.execute("CREATE DATABASE DB_1");
-    statement.execute("USE DB_1");
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("USE " + DB1);
     statement.execute("CREATE TABLE TAB_1(B INT, A STRING) "
         + " row format delimited fields terminated by '|'  stored as textfile");
     statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
@@ -367,7 +367,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     // test execution
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("USE DB_1");
+    statement.execute("USE " + DB1);
     // test user can execute query TAB_1 JOIN TAB_2
     ResultSet resultSet = statement
         .executeQuery("SELECT COUNT(*) FROM TAB_1 T1 JOIN TAB_2 T2 ON (T1.B = T2.B)");
@@ -428,8 +428,8 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     Statement statement = context.createStatement(connection);
 
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
-    statement.execute("CREATE DATABASE DB_1");
-    statement.execute("USE DB_1");
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("USE " + DB1);
     statement.execute("CREATE TABLE TAB_1(B INT, A STRING) "
         + " row format delimited fields terminated by '|'  stored as textfile");
     statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
@@ -445,7 +445,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     // test execution
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("USE DB_1");
+    statement.execute("USE " + DB1);
     // test user can execute query on TAB_2
     ResultSet resultSet = statement.executeQuery("SELECT COUNT(*) FROM TAB_2");
     int count = 0;
@@ -513,8 +513,8 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     Statement statement = context.createStatement(connection);
 
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
-    statement.execute("CREATE DATABASE DB_1");
-    statement.execute("USE DB_1");
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("USE " + DB1);
     statement.execute("CREATE TABLE TAB_1(B INT, A STRING) "
         + " row format delimited fields terminated by '|'  stored as textfile");
     statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
@@ -530,7 +530,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     // test execution
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("USE DB_1");
+    statement.execute("USE " + DB1);
     // test user can execute query on TAB_2
     ResultSet resultSet = statement.executeQuery("SELECT COUNT(*) FROM TAB_2");
     int count = 0;
@@ -614,8 +614,8 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     Statement statement = context.createStatement(connection);
 
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
-    statement.execute("CREATE DATABASE DB_1");
-    statement.execute("USE DB_1");
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("USE " + DB1);
     statement.execute("CREATE TABLE TAB_1(B INT, A STRING) "
         + " row format delimited fields terminated by '|'  stored as textfile");
     statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
@@ -631,7 +631,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     // test execution
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("USE DB_1");
+    statement.execute("USE " + DB1);
 
     // test user can execute query VIEW_1 JOIN TAB_1
     ResultSet resultSet = statement

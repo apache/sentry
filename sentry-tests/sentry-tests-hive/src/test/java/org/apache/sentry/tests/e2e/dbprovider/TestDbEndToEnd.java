@@ -96,8 +96,8 @@ public class TestDbEndToEnd extends AbstractTestWithStaticConfiguration {
   public void testNonDefault() throws Exception {
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    statement.execute("CREATE database db1");
-    statement.execute("USE db1");
+    statement.execute("CREATE database " + DB1);
+    statement.execute("USE " + DB1);
     statement.execute("CREATE TABLE t1 (c1 string)");
     statement.execute("CREATE ROLE user_role");
     statement.execute("GRANT SELECT ON TABLE t1 TO ROLE user_role");
@@ -107,7 +107,7 @@ public class TestDbEndToEnd extends AbstractTestWithStaticConfiguration {
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
 
-    statement.execute("SELECT * FROM db1.t1");
+    statement.execute("SELECT * FROM " + DB1 + ".t1");
     statement.close();
     connection.close();
   }
@@ -152,43 +152,41 @@ public class TestDbEndToEnd extends AbstractTestWithStaticConfiguration {
    * 4. user create table, load data in experimental DB
    * 5. user create view based on table in experimental DB
    * 6. admin create table (same name) in production DB
-   * 7. admin grant read@productionDB.table to group
-   *    admin grant select@productionDB.table to group
+   * 7. admin grant read@DB2.table to group
+   *    admin grant select@DB2.table to group
    * 8. user load data from experimental table to production table
    */
   @Test
   public void testEndToEnd1() throws Exception {
 
-    String dbName1 = "db_1";
-    String dbName2 = "productionDB";
     String tableName1 = "tb_1";
     String tableName2 = "tb_2";
     String viewName1 = "view_1";
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     // 1
-    statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
-    statement.execute("CREATE DATABASE " + dbName1);
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statement.execute("CREATE DATABASE " + DB1);
     // 2
-    statement.execute("DROP DATABASE IF EXISTS " + dbName2 + " CASCADE");
-    statement.execute("CREATE DATABASE " + dbName2);
-    statement.execute("USE " + dbName2);
-    statement.execute("DROP TABLE IF EXISTS " + dbName2 + "." + tableName2);
-    statement.execute("create table " + dbName2 + "." + tableName2
+    statement.execute("DROP DATABASE IF EXISTS " + DB2 + " CASCADE");
+    statement.execute("CREATE DATABASE " + DB2);
+    statement.execute("USE " + DB2);
+    statement.execute("DROP TABLE IF EXISTS " + DB2 + "." + tableName2);
+    statement.execute("create table " + DB2 + "." + tableName2
         + " (under_col int comment 'the under column', value string)");
     statement.execute("load data local inpath '" + dataFile.getPath()
         + "' into table " + tableName2);
 
     // 3
     statement.execute("CREATE ROLE all_db1");
-    statement.execute("GRANT ALL ON DATABASE " + dbName1 + " TO ROLE all_db1");
+    statement.execute("GRANT ALL ON DATABASE " + DB1 + " TO ROLE all_db1");
 
     statement.execute("CREATE ROLE select_tb1");
     statement.execute("CREATE ROLE insert_tb1");
     statement.execute("CREATE ROLE insert_tb2");
     statement.execute("CREATE ROLE data_uri");
 
-    statement.execute("USE " + dbName2);
+    statement.execute("USE " + DB2);
     statement.execute("GRANT INSERT ON TABLE " + tableName1
         + " TO ROLE insert_tb1");
     statement.execute("GRANT INSERT ON TABLE " + tableName2
@@ -196,7 +194,7 @@ public class TestDbEndToEnd extends AbstractTestWithStaticConfiguration {
     statement.execute("GRANT ALL ON URI 'file://" + dataDir.getPath()
         + "' TO ROLE data_uri");
 
-    statement.execute("USE " + dbName1);
+    statement.execute("USE " + DB1);
     statement.execute("GRANT SELECT ON TABLE " + tableName1
         + " TO ROLE select_tb1");
 
@@ -210,9 +208,9 @@ public class TestDbEndToEnd extends AbstractTestWithStaticConfiguration {
     // 4
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("USE " + dbName1);
-    statement.execute("DROP TABLE IF EXISTS " + dbName1 + "." + tableName1);
-    statement.execute("create table " + dbName1 + "." + tableName1
+    statement.execute("USE " + DB1);
+    statement.execute("DROP TABLE IF EXISTS " + DB1 + "." + tableName1);
+    statement.execute("create table " + DB1 + "." + tableName1
         + " (under_col int comment 'the under column', value string)");
     statement.execute("load data local inpath '" + dataFile.getPath()
         + "' into table " + tableName1);
@@ -225,9 +223,9 @@ public class TestDbEndToEnd extends AbstractTestWithStaticConfiguration {
     // 7
     connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
-    statement.execute("USE " + dbName2);
-    statement.execute("DROP TABLE IF EXISTS " + dbName1 + "." + tableName1);
-    statement.execute("create table " + dbName1 + "." + tableName1
+    statement.execute("USE " + DB2);
+    statement.execute("DROP TABLE IF EXISTS " + DB1 + "." + tableName1);
+    statement.execute("create table " + DB1 + "." + tableName1
         + " (under_col int comment 'the under column', value string)");
     statement.close();
     connection.close();
@@ -235,10 +233,10 @@ public class TestDbEndToEnd extends AbstractTestWithStaticConfiguration {
     // 8
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("USE " + dbName2);
+    statement.execute("USE " + DB2);
 
     statement.execute("INSERT OVERWRITE TABLE " +
-        dbName2 + "." + tableName2 + " SELECT * FROM " + dbName1
+        DB2 + "." + tableName2 + " SELECT * FROM " + DB1
         + "." + tableName1);
     statement.close();
     connection.close();

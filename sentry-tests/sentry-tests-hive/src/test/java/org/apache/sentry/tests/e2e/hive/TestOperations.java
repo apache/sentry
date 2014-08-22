@@ -35,22 +35,21 @@ import com.google.common.io.Resources;
 
 public class TestOperations extends AbstractTestWithStaticConfiguration {
   private PolicyFile policyFile;
-  final String dbName = "db1";
   final String tableName = "tb1";
   final String semanticException = "SemanticException No valid privileges";
 
   static Map<String, String> privileges = new HashMap<String, String>();
   static {
     privileges.put("all_server", "server=server1->action=all");
-    privileges.put("all_db1", "server=server1->db=db1->action=all");
-    privileges.put("select_db1", "server=server1->db=db1->action=select");
-    privileges.put("insert_db1", "server=server1->db=db1->action=insert");
-    privileges.put("all_db2", "server=server1->db=db2->action=all");
-    privileges.put("all_db1_tb1", "server=server1->db=db1->table=tb1->action=all");
-    privileges.put("select_db1_tb1", "server=server1->db=db1->table=tb1->action=select");
-    privileges.put("insert_db1_tb1", "server=server1->db=db1->table=tb1->action=insert");
-    privileges.put("insert_db2_tb2", "server=server1->db=db2->table=tb2->action=insert");
-    privileges.put("select_db1_view1", "server=server1->db=db1->table=view1->action=select");
+    privileges.put("all_db1", "server=server1->db=" + DB1 + "->action=all");
+    privileges.put("select_db1", "server=server1->db=" + DB1 + "->action=select");
+    privileges.put("insert_db1", "server=server1->db=" + DB1 + "->action=insert");
+    privileges.put("all_db2", "server=server1->db=" + DB2 + "->action=all");
+    privileges.put("all_db1_tb1", "server=server1->db=" + DB1 + "->table=tb1->action=all");
+    privileges.put("select_db1_tb1", "server=server1->db=" + DB1 + "->table=tb1->action=select");
+    privileges.put("insert_db1_tb1", "server=server1->db=" + DB1 + "->table=tb1->action=insert");
+    privileges.put("insert_db2_tb2", "server=server1->db=" + DB2 + "->table=tb2->action=insert");
+    privileges.put("select_db1_view1", "server=server1->db=" + DB1 + "->table=view1->action=select");
 
   }
 
@@ -86,7 +85,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
   private void adminCreatePartition() throws Exception{
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    statement.execute("USE db1");
+    statement.execute("USE " + DB1);
     statement.execute("ALTER TABLE tb1 ADD IF NOT EXISTS PARTITION (b = '1') ");
     statement.close();
     connection.close();
@@ -99,7 +98,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
    */
   @Test
   public void testAllOnDatabase() throws Exception{
-    adminCreate(dbName, null);
+    adminCreate(DB1, null);
     policyFile
         .addPermissionsToRole("all_db1", privileges.get("all_db1"))
         .addRolesToGroup(USERGROUP1, "all_db1");
@@ -108,14 +107,14 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
 
     Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
-    statement.execute("CREATE TABLE db1.tb1(a int)");
-    statement.execute("ALTER DATABASE db1 SET DBPROPERTIES ('comment'='comment')");
-    statement.execute("DROP database db1 cascade");
+    statement.execute("CREATE TABLE " + DB1 + ".tb1(a int)");
+    statement.execute("ALTER DATABASE " + DB1 + " SET DBPROPERTIES ('comment'='comment')");
+    statement.execute("DROP database " + DB1 + " cascade");
     statement.close();
     connection.close();
 
     //Negative case
-    adminCreate(dbName, null);
+    adminCreate(DB1, null);
     policyFile
         .addPermissionsToRole("select_db1", privileges.get("select_db1"))
         .addRolesToGroup(USERGROUP2, "select_db1");
@@ -123,9 +122,9 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
 
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
-    context.assertSentrySemanticException(statement, "CREATE TABLE db1.tb1(a int)", semanticException);
-    context.assertSentrySemanticException(statement, "ALTER DATABASE db1 SET DBPROPERTIES ('comment'='comment')", semanticException);
-    context.assertSentrySemanticException(statement, "DROP database db1 cascade", semanticException);
+    context.assertSentrySemanticException(statement, "CREATE TABLE " + DB1 + ".tb1(a int)", semanticException);
+    context.assertSentrySemanticException(statement, "ALTER DATABASE " + DB1 + " SET DBPROPERTIES ('comment'='comment')", semanticException);
+    context.assertSentrySemanticException(statement, "DROP database " + DB1 + " cascade", semanticException);
     statement.close();
     connection.close();
 
@@ -135,7 +134,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
    */
   @Test
   public void testDescDB() throws Exception {
-    adminCreate(dbName, null);
+    adminCreate(DB1, null);
     policyFile
         .addPermissionsToRole("select_db1", privileges.get("select_db1"))
         .addPermissionsToRole("insert_db1", privileges.get("insert_db1"))
@@ -145,13 +144,13 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
 
     Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
-    statement.execute("describe database db1");
+    statement.execute("describe database " + DB1);
     statement.close();
     connection.close();
 
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
-    statement.execute("describe database db1");
+    statement.execute("describe database " + DB1);
     statement.close();
     connection.close();
 
@@ -162,7 +161,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     writePolicyFile(policyFile);
     connection = context.createConnection(USER3_1);
     statement = context.createStatement(connection);
-    context.assertSentrySemanticException(statement, "describe database db1", semanticException);
+    context.assertSentrySemanticException(statement, "describe database " + DB1, semanticException);
     statement.close();
     connection.close();
 
@@ -203,7 +202,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
   */
   @Test
   public void testAllOnTable() throws Exception{
-    adminCreate(dbName, tableName, true);
+    adminCreate(DB1, tableName, true);
     policyFile
         .addPermissionsToRole("all_db1_tb1", privileges.get("all_db1_tb1"))
         .addRolesToGroup(USERGROUP1, "all_db1_tb1")
@@ -216,7 +215,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     //Negative test cases
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
-    statement.execute("Use db1");
+    statement.execute("Use " + DB1);
     assertSemanticException(statement, "CREATE INDEX table01_index ON TABLE tb1 (a) AS 'COMPACT' WITH DEFERRED REBUILD");
     assertSemanticException(statement, "DROP INDEX table01_index ON tb1");
     assertSemanticException(statement, "ALTER TABLE tb1 ADD IF NOT EXISTS PARTITION (b = '1') ");
@@ -231,13 +230,13 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     //Setup
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("Use db1");
+    statement.execute("Use " + DB1);
     statement.execute("ALTER TABLE tb1 ADD IF NOT EXISTS PARTITION (b = '10') ");
 
     //Negative test cases
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
-    statement.execute("Use db1");
+    statement.execute("Use " + DB1);
     assertSemanticException(statement, "ALTER TABLE tb1 PARTITION (b = 10) RENAME TO PARTITION (b = 2)");
     assertSemanticException(statement, "ALTER TABLE tb1 PARTITION (b = 10) SET SERDEPROPERTIES ('field.delim' = ',')");
     //assertSemanticException(statement, "ALTER TABLE tb1 ARCHIVE PARTITION (b = 2)");
@@ -260,12 +259,12 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     //assertSemanticException(statement, "ALTER INDEX tb1_index ON tb1 REBUILD");
     assertSemanticException(statement, "ALTER TABLE tb1 RENAME TO tb2");
 
-    assertSemanticException(statement, "DROP TABLE db1.tb1");
+    assertSemanticException(statement, "DROP TABLE " + DB1 + ".tb1");
 
     //Positive cases
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("Use db1");
+    statement.execute("Use " + DB1);
     statement.execute("CREATE INDEX table01_index ON TABLE tb1 (a) AS 'COMPACT' WITH DEFERRED REBUILD");
     statement.execute("DROP INDEX table01_index ON tb1");
     statement.execute("ALTER TABLE tb1 ADD IF NOT EXISTS PARTITION (b = '1') ");
@@ -302,9 +301,9 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     //Drop of the new tablename works only when Hive meta store syncs the alters with the sentry privileges.
     //This is currently not set for pseudo cluster runs
     if( hiveServer2Type.equals(HiveServerFactory.HiveServer2Type.UnmanagedHiveServer2)) {
-      statement.execute("DROP TABLE db1.tb2");
+      statement.execute("DROP TABLE " + DB1 + ".tb2");
     } else {
-      statement.execute("DROP TABLE db1.tb1");
+      statement.execute("DROP TABLE " + DB1 + ".tb1");
     }
 
     statement.close();
@@ -317,7 +316,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
    */
   @Test
   public void testSelectAndInsertOnTable() throws Exception {
-    adminCreate(dbName, tableName, true);
+    adminCreate(DB1, tableName, true);
     adminCreatePartition();
     policyFile
         .addPermissionsToRole("select_db1_tb1", privileges.get("select_db1_tb1"))
@@ -327,7 +326,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
 
     Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
-    statement.execute("Use db1");
+    statement.execute("Use " + DB1);
     statement.execute("ANALYZE TABLE tb1 PARTITION (b='1' ) COMPUTE STATISTICS");
     statement.close();
     connection.close();
@@ -345,7 +344,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
    */
   @Test
   public void testSelectOnTable() throws Exception {
-    adminCreate(dbName, tableName, true);
+    adminCreate(DB1, tableName, true);
     adminCreatePartition();
     policyFile
         .addPermissionsToRole("select_db1_tb1", privileges.get("select_db1_tb1"))
@@ -354,7 +353,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
 
     Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
-    statement.execute("Use db1");
+    statement.execute("Use " + DB1);
     statement.execute("select * from tb1");
 
     statement.executeQuery("SHOW Partitions tb1");
@@ -377,7 +376,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     writePolicyFile(policyFile);
     connection = context.createConnection(USER3_1);
     statement = context.createStatement(connection);
-    statement.execute("Use db1");
+    statement.execute("Use " + DB1);
     context.assertSentrySemanticException(statement, "select * from tb1", semanticException);
 
     statement.close();
@@ -398,7 +397,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
    */
   @Test
   public void testInsertOnTable() throws Exception {
-    adminCreate(dbName, tableName, true);
+    adminCreate(DB1, tableName, true);
     adminCreatePartition();
     policyFile
         .addPermissionsToRole("insert_db1_tb1", privileges.get("insert_db1_tb1"))
@@ -407,7 +406,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
 
     Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
-    statement.execute("Use db1");
+    statement.execute("Use " + DB1);
     /*statement.execute("LOCK TABLE tb1 EXCLUSIVE");
     statement.execute("UNLOCK TABLE tb1");
     */
@@ -438,7 +437,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
    */
   @Test
   public void testAlterAllOnTableAndURI() throws Exception {
-    adminCreate(dbName, tableName, true);
+    adminCreate(DB1, tableName, true);
     String tabLocation = dfs.getBaseDir() + "/" + Math.random();
     policyFile
         .addPermissionsToRole("all_db1_tb1", privileges.get("all_db1_tb1"))
@@ -450,7 +449,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
 
     Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
-    statement.execute("Use db1");
+    statement.execute("Use " + DB1);
     statement.execute("ALTER TABLE tb1 SET LOCATION '" + tabLocation + "'");
     statement.execute("ALTER TABLE tb1 ADD IF NOT EXISTS PARTITION (b = '3') LOCATION '" + tabLocation + "/part'");
     statement.close();
@@ -464,7 +463,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
 
     connection = context.createConnection(USER3_1);
     statement = context.createStatement(connection);
-    statement.execute("Use db1");
+    statement.execute("Use " + DB1);
     context.assertSentrySemanticException(statement, "ALTER TABLE tb1 SET LOCATION '" + tabLocation + "'",
         semanticException);
     context.assertSentrySemanticException(statement, "ALTER TABLE tb1 ADD IF NOT EXISTS PARTITION (b = '3') LOCATION '"
@@ -480,8 +479,8 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
    */
   @Test
   public void testCreateView() throws Exception {
-    adminCreate(dbName, tableName);
-    adminCreate("db2", null);
+    adminCreate(DB1, tableName);
+    adminCreate(DB2, null);
     policyFile
         .addPermissionsToRole("select_db1_tb1", privileges.get("select_db1_tb1"))
         .addPermissionsToRole("all_db2", privileges.get("all_db2"))
@@ -490,8 +489,8 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
 
     Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
-    statement.execute("use db2");
-    statement.execute("create view view1 as select a from db1.tb1");
+    statement.execute("use " + DB2);
+    statement.execute("create view view1 as select a from " + DB1 + ".tb1");
     statement.close();
     connection.close();
 
@@ -503,8 +502,8 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
 
     connection = context.createConnection(USER3_1);
     statement = context.createStatement(connection);
-    statement.execute("Use db2");
-    context.assertSentrySemanticException(statement, "create view view1 as select a from db1.tb1",
+    statement.execute("Use " + DB2);
+    context.assertSentrySemanticException(statement, "create view view1 as select a from " + DB1 + ".tb1",
         semanticException);
     statement.close();
     connection.close();
@@ -525,9 +524,9 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
 
-    dropDb(ADMIN1, dbName);
-    createDb(ADMIN1, dbName);
-    createTable(ADMIN1, dbName, dataFile, tableName);
+    dropDb(ADMIN1, DB1);
+    createDb(ADMIN1, DB1);
+    createTable(ADMIN1, DB1, dataFile, tableName);
     String location = dfs.getBaseDir() + "/" + Math.random();
     policyFile
         .addPermissionsToRole("all_db1", privileges.get("all_db1"))
@@ -544,7 +543,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     //Negative case
     connection = context.createConnection(USER3_1);
     statement = context.createStatement(connection);
-    statement.execute("Use db1");
+    statement.execute("Use " + DB1);
     context.assertSentrySemanticException(statement, "export table tb1 to '" + location + "'",
         semanticException);
     statement.close();
@@ -553,7 +552,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     //Positive
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("Use db1");
+    statement.execute("Use " + DB1);
     statement.execute("export table tb1 to '" + location + "'" );
     statement.close();
     connection.close();
@@ -561,7 +560,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     //Negative
     connection = context.createConnection(USER3_1);
     statement = context.createStatement(connection);
-    statement.execute("Use db1");
+    statement.execute("Use " + DB1);
     context.assertSentrySemanticException(statement, "import table tb2 from '" + location + "'",
         semanticException);
     statement.close();
@@ -570,7 +569,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     //Positive
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
-    statement.execute("Use db1");
+    statement.execute("Use " + DB1);
     statement.execute("import table tb2 from '" + location + "'");
     statement.close();
     connection.close();
@@ -588,7 +587,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
 
-    adminCreate(dbName, tableName);
+    adminCreate(DB1, tableName);
 
     policyFile
         .addPermissionsToRole("insert_db1_tb1", privileges.get("insert_db1_tb1"))
@@ -598,7 +597,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
 
     Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
-    statement.execute("Use db1");
+    statement.execute("Use " + DB1);
     statement.execute("load data local inpath '" + dataFile.getPath() + "' into table tb1" );
     statement.close();
     connection.close();
@@ -609,13 +608,13 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
    */
   @Test
   public void testCTAS() throws Exception {
-    adminCreate(dbName, tableName);
-    adminCreate("db2", null);
+    adminCreate(DB1, tableName);
+    adminCreate(DB2, null);
 
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    statement.execute("Use db1");
-    statement.execute("create view view1 as select a from db1.tb1");
+    statement.execute("Use " + DB1);
+    statement.execute("create view view1 as select a from " + DB1 + ".tb1");
     statement.close();
     connection.close();
 
@@ -629,18 +628,18 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
 
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("Use db2");
-    statement.execute("create table tb2 as select a from db1.tb1" );
-    context.assertSentrySemanticException(statement, "create table tb3 as select a from db1.view1",
+    statement.execute("Use " + DB2);
+    statement.execute("create table tb2 as select a from " + DB1 + ".tb1" );
+    context.assertSentrySemanticException(statement, "create table tb3 as select a from " + DB1 + ".view1",
         semanticException);
     statement.close();
     connection.close();
 
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
-    statement.execute("Use db2");
-    statement.execute("create table tb3 as select a from db1.view1" );
-    context.assertSentrySemanticException(statement, "create table tb4 as select a from db1.tb1",
+    statement.execute("Use " + DB2);
+    statement.execute("create table tb3 as select a from " + DB1 + ".view1" );
+    context.assertSentrySemanticException(statement, "create table tb4 as select a from " + DB1 + ".tb1",
         semanticException);
 
     statement.close();
@@ -658,12 +657,12 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
 
-    dropDb(ADMIN1, dbName);
-    dropDb(ADMIN1, "db2");
-    createDb(ADMIN1, dbName);
-    createDb(ADMIN1, "db2");
-    createTable(ADMIN1, dbName, dataFile, tableName);
-    createTable(ADMIN1, "db2", null, "tb2");
+    dropDb(ADMIN1, DB1);
+    dropDb(ADMIN1, DB2);
+    createDb(ADMIN1, DB1);
+    createDb(ADMIN1, DB2);
+    createTable(ADMIN1, DB1, dataFile, tableName);
+    createTable(ADMIN1, DB2, null, "tb2");
     String location = dfs.getBaseDir() + "/" + Math.random();
 
     policyFile
@@ -676,15 +675,15 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
 
     Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
-    assertSemanticException(statement, "insert overwrite directory '" + location + "' select * from db1.tb1" );
-    statement.execute("insert overwrite table db2.tb2 select * from db1.tb1");
+    assertSemanticException(statement, "insert overwrite directory '" + location + "' select * from " + DB1 + ".tb1" );
+    statement.execute("insert overwrite table " + DB2 + ".tb2 select * from " + DB1 + ".tb1");
     statement.close();
     connection.close();
 
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
-    statement.execute("insert overwrite directory '" + location + "' select * from db1.tb1" );
-    assertSemanticException(statement,"insert overwrite table db2.tb2 select * from db1.tb1");
+    statement.execute("insert overwrite directory '" + location + "' select * from " + DB1 + ".tb1" );
+    assertSemanticException(statement,"insert overwrite table " + DB2 + ".tb2 select * from " + DB1 + ".tb1");
     statement.close();
     connection.close();
   }
@@ -695,11 +694,11 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     Statement statement;
     connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
-    statement.execute("create database db1");
-    statement.execute("create table db1.tb1(a int)");
-    statement.execute("DROP table db1.tb1");
-    statement.execute("create table db1.tb1(a int)");
-    statement.execute("use db1");
+    statement.execute("create database " + DB1);
+    statement.execute("create table " + DB1 + ".tb1(a int)");
+    statement.execute("DROP table " + DB1 + ".tb1");
+    statement.execute("create table " + DB1 + ".tb1(a int)");
+    statement.execute("use " + DB1);
     statement.execute("drop table tb1");
   }
 

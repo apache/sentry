@@ -77,9 +77,9 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     policyFile
         .addRolesToGroup(USERGROUP1, "select_tab1", "insert_tab2")
         .addRolesToGroup(USERGROUP2, "select_tab3")
-        .addPermissionsToRole("select_tab1",  "server=server1->db=db1->table=tab1->action=select")
-        .addPermissionsToRole("select_tab3", "server=server1->db=db2->table=tab3->action=select")
-        .addPermissionsToRole("insert_tab2", "server=server1->db=db2->table=tab2->action=insert")
+        .addPermissionsToRole("select_tab1",  "server=server1->db=" + DB1 + "->table=tab1->action=select")
+        .addPermissionsToRole("select_tab3", "server=server1->db=" + DB2 + "->table=tab3->action=select")
+        .addPermissionsToRole("insert_tab2", "server=server1->db=" + DB2 + "->table=tab2->action=insert")
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
@@ -91,12 +91,12 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     statement.execute("DROP DATABASE IF EXISTS DB1 CASCADE");
     statement.execute("DROP DATABASE IF EXISTS DB2 CASCADE");
 
-    statement.execute("CREATE DATABASE DB1");
-    statement.execute("CREATE DATABASE DB2");
-    statement.execute("USE DB1");
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("CREATE DATABASE " + DB2);
+    statement.execute("USE " + DB1);
     statement.execute("CREATE TABLE TAB1(id int)");
     statement.executeQuery("SHOW TABLES");
-    statement.execute("USE DB2");
+    statement.execute("USE " + DB2);
     statement.execute("CREATE TABLE TAB2(id int)");
     statement.execute("CREATE TABLE TAB3(id int)");
 
@@ -106,8 +106,8 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     Statement stmt = context.createStatement(conn);
     ResultSet res = stmt.executeQuery("SHOW DATABASES");
     List<String> result = new ArrayList<String>();
-    result.add("db1");
-    result.add("db2");
+    result.add(DB1);
+    result.add(DB2);
     result.add("default");
 
     while (res.next()) {
@@ -118,7 +118,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     res.close();
 
     // test show tables
-    stmt.execute("USE DB1");
+    stmt.execute("USE " + DB1);
     res = stmt.executeQuery("SHOW TABLES");
     result.clear();
     result.add("tab1");
@@ -130,7 +130,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     assertTrue(result.toString(), result.isEmpty());
     res.close();
 
-    stmt.execute("USE DB2");
+    stmt.execute("USE " + DB2);
     res = stmt.executeQuery("SHOW TABLES");
     result.clear();
     result.add("tab2");
@@ -150,7 +150,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     stmt = context.createStatement(conn);
     res = stmt.executeQuery("SHOW DATABASES");
     result.clear();
-    result.add("db2");
+    result.add(DB2);
     result.add("default");
 
     while (res.next()) {
@@ -161,7 +161,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     res.close();
 
     // test show tables
-    stmt.execute("USE DB2");
+    stmt.execute("USE " + DB2);
     res = stmt.executeQuery("SHOW TABLES");
     result.clear();
     result.add("tab3");
@@ -174,7 +174,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     res.close();
 
     try {
-      stmt.execute("USE DB1");
+      stmt.execute("USE " + DB1);
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
       context.verifyAuthzException(e);
@@ -193,9 +193,9 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     // edit policy file
     policyFile.addRolesToGroup(USERGROUP1, "select_tab1", "insert_tab2")
         .addRolesToGroup(USERGROUP2, "select_tab3")
-        .addPermissionsToRole("select_tab1", "server=server1->db=db1->table=tab1->action=select")
-        .addPermissionsToRole("select_tab3", "server=server1->db=db2->table=tab3->action=select")
-        .addPermissionsToRole("insert_tab2", "server=server1->db=db2->table=tab2->action=insert")
+        .addPermissionsToRole("select_tab1", "server=server1->db=" + DB1 + "->table=tab1->action=select")
+        .addPermissionsToRole("select_tab3", "server=server1->db=" + DB2 + "->table=tab3->action=select")
+        .addPermissionsToRole("insert_tab2", "server=server1->db=" + DB2 + "->table=tab2->action=insert")
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
@@ -208,12 +208,12 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     statement.execute("DROP DATABASE IF EXISTS DB1 CASCADE");
     statement.execute("DROP DATABASE IF EXISTS DB2 CASCADE");
 
-    statement.execute("CREATE DATABASE DB1");
-    statement.execute("CREATE DATABASE DB2");
-    statement.execute("USE DB1");
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("CREATE DATABASE " + DB2);
+    statement.execute("USE " + DB1);
     statement.execute("CREATE TABLE TAB1(id int)");
     statement.executeQuery("SHOW TABLES");
-    statement.execute("USE DB2");
+    statement.execute("USE " + DB2);
     statement.execute("CREATE TABLE TAB2(id int)");
     statement.execute("CREATE TABLE TAB3(id int)");
 
@@ -229,8 +229,8 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     assertEquals("TABLE_SCHEM", resMeta.getColumnName(1));
     assertEquals("TABLE_CATALOG", resMeta.getColumnName(2));
 
-    result.add("db1");
-    result.add("db2");
+    result.add(DB1);
+    result.add(DB2);
     result.add("default");
 
     while (res.next()) {
@@ -241,7 +241,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     res.close();
 
     // test direct JDBC metadata API
-    res = conn.getMetaData().getTables(null, "DB1", "tab%", null);
+    res = conn.getMetaData().getTables(null, DB1, "tab%", null);
     result.add("tab1");
 
     while (res.next()) {
@@ -252,7 +252,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     res.close();
 
     // test direct JDBC metadata API
-    res = conn.getMetaData().getTables(null, "DB2", "tab%", null);
+    res = conn.getMetaData().getTables(null, DB2, "tab%", null);
     result.add("tab2");
 
     while (res.next()) {
@@ -297,7 +297,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     assertEquals("TABLE_SCHEM", resMeta.getColumnName(1));
     assertEquals("TABLE_CATALOG", resMeta.getColumnName(2));
 
-    result.add("db2");
+    result.add(DB2);
     result.add("default");
 
     while (res.next()) {
@@ -330,7 +330,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     res.close();
 
     //test show columns
-    res = conn.getMetaData().getColumns(null, "DB1", "tab%","i%" );
+    res = conn.getMetaData().getColumns(null, DB1, "tab%","i%" );
 
     while (res.next()) {
       String columnName = res.getString(4);
@@ -414,23 +414,22 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
   public void testNegativeUserPrivileges() throws Exception {
     // edit policy file
     policyFile.addRolesToGroup(USERGROUP1, "db1_tab1_insert", "db1_tab2_all")
-        .addPermissionsToRole("db1_tab2_all", "server=server1->db=db1->table=table_2")
-        .addPermissionsToRole("db1_tab1_insert", "server=server1->db=db1->table=table_1->action=insert")
+        .addPermissionsToRole("db1_tab2_all", "server=server1->db=" + DB1 + "->table=table_2")
+        .addPermissionsToRole("db1_tab1_insert", "server=server1->db=" + DB1 + "->table=table_1->action=insert")
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
     Connection adminCon = context.createConnection(ADMIN1);
     Statement adminStmt = context.createStatement(adminCon);
-    String dbName = "db1";
     adminStmt.execute("use default");
-    adminStmt.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
-    adminStmt.execute("CREATE DATABASE " + dbName);
-    adminStmt.execute("create table " + dbName + ".table_1 (id int)");
+    adminStmt.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    adminStmt.execute("CREATE DATABASE " + DB1);
+    adminStmt.execute("create table " + DB1 + ".table_1 (id int)");
     adminStmt.close();
     adminCon.close();
     Connection userConn = context.createConnection(USER1_1);
     Statement userStmt = context.createStatement(userConn);
-    context.assertAuthzException(userStmt, "select * from " + dbName + ".table_1");
+    context.assertAuthzException(userStmt, "select * from " + DB1 + ".table_1");
     userConn.close();
     userStmt.close();
   }
@@ -444,7 +443,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
   @Test
   public void testNegativeUserDMLPrivileges() throws Exception {
     policyFile
-        .addPermissionsToRole("db1_tab2_all", "server=server1->db=db1->table=table_2")
+        .addPermissionsToRole("db1_tab2_all", "server=server1->db=" + DB1 + "->table=table_2")
         .addRolesToGroup(USERGROUP1, "db1_tab2_all")
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
@@ -490,24 +489,23 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     policyFile
         .addRolesToGroup(USERGROUP1, "db1_all")
         .addRolesToGroup(USERGROUP2, "db1_tab1_select")
-        .addPermissionsToRole("db1_all", "server=server1->db=db1")
-        .addPermissionsToRole("db1_tab1_select", "server=server1->db=db1->table=table_1->action=select")
+        .addPermissionsToRole("db1_all", "server=server1->db=" + DB1)
+        .addPermissionsToRole("db1_tab1_select", "server=server1->db=" + DB1 + "->table=table_1->action=select")
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
     // create dbs
     Connection adminCon = context.createConnection(ADMIN1);
     Statement adminStmt = context.createStatement(adminCon);
-    String dbName = "db1";
     adminStmt.execute("use default");
     adminStmt.execute("drop table if exists table_def");
     adminStmt.execute("create table table_def (name string)");
     adminStmt
     .execute("load data local inpath '" + dataFile.getPath() + "' into table table_def");
 
-    adminStmt.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
-    adminStmt.execute("CREATE DATABASE " + dbName);
-    adminStmt.execute("use " + dbName);
+    adminStmt.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    adminStmt.execute("CREATE DATABASE " + DB1);
+    adminStmt.execute("use " + DB1);
 
     adminStmt.execute("create table table_1 (name string)");
     adminStmt
@@ -526,28 +524,28 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     Connection userConn = context.createConnection(USER2_1);
     Statement userStmt = context.createStatement(userConn);
 
-    context.assertAuthzException(userStmt, "drop database " + dbName);
+    context.assertAuthzException(userStmt, "drop database " + DB1);
 
     // Hive currently doesn't support cross db index DDL
 
     context.assertAuthzException(userStmt, "CREATE TEMPORARY FUNCTION strip AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
-    context.assertAuthzException(userStmt, "create table  " + dbName
-        + ".c_tab_2 as select * from  " + dbName + ".table_2");
-    context.assertAuthzException(userStmt, "select * from  " + dbName + ".table_2");
-    context.assertAuthzException(userStmt, "ALTER DATABASE " + dbName
+    context.assertAuthzException(userStmt, "create table  " + DB1
+        + ".c_tab_2 as select * from  " + DB1 + ".table_2");
+    context.assertAuthzException(userStmt, "select * from  " + DB1 + ".table_2");
+    context.assertAuthzException(userStmt, "ALTER DATABASE " + DB1
         + " SET DBPROPERTIES ('foo' = 'bar')");
-    context.assertAuthzException(userStmt, "drop table " + dbName + ".table_1");
-    context.assertAuthzException(userStmt, "DROP VIEW IF EXISTS " + dbName + ".v1");
-    context.assertAuthzException(userStmt, "create table " + dbName + ".table_5 (name string)");
-    context.assertAuthzException(userStmt, "ALTER TABLE " + dbName + ".table_1  RENAME TO "
-        + dbName + ".table_99");
-    context.assertAuthzException(userStmt, "insert overwrite table " + dbName
-        + ".table_2 select * from " + dbName + ".table_1");
-    context.assertAuthzException(userStmt, "insert overwrite table " + dbName
+    context.assertAuthzException(userStmt, "drop table " + DB1 + ".table_1");
+    context.assertAuthzException(userStmt, "DROP VIEW IF EXISTS " + DB1 + ".v1");
+    context.assertAuthzException(userStmt, "create table " + DB1 + ".table_5 (name string)");
+    context.assertAuthzException(userStmt, "ALTER TABLE " + DB1 + ".table_1  RENAME TO "
+        + DB1 + ".table_99");
+    context.assertAuthzException(userStmt, "insert overwrite table " + DB1
+        + ".table_2 select * from " + DB1 + ".table_1");
+    context.assertAuthzException(userStmt, "insert overwrite table " + DB1
         + ".table_2 select * from " + "table_def");
-    context.assertAuthzException(userStmt, "ALTER TABLE " + dbName
+    context.assertAuthzException(userStmt, "ALTER TABLE " + DB1
         + ".table_part_1 ADD IF NOT EXISTS PARTITION (year = 2012)");
-    context.assertAuthzException(userStmt, "ALTER TABLE " + dbName
+    context.assertAuthzException(userStmt, "ALTER TABLE " + DB1
         + ".table_part_1 PARTITION (year = 2012) SET LOCATION '/etc'");
     userStmt.close();
     userConn.close();
@@ -638,9 +636,9 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     // edit policy file
     policyFile
         .addRolesToGroup(USERGROUP1, "all_db1", "load_data", "select_tb2")
-        .addPermissionsToRole("all_db1", "server=server1->db=db_1")
-        .addPermissionsToRole("all_db2", "server=server1->db=db_2")
-        .addPermissionsToRole("select_tb2", "server=server1->db=db_2->table=tb_1->action=select")
+        .addPermissionsToRole("all_db1", "server=server1->db=" + DB1)
+        .addPermissionsToRole("all_db2", "server=server1->db=" + DB2)
+        .addPermissionsToRole("select_tb2", "server=server1->db=" + DB2 + "->table=tb_1->action=select")
         .addPermissionsToRole("load_data", "server=server1->URI=file://" + dataFile.getPath())
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);

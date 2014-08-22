@@ -45,8 +45,6 @@ public class TestDbPrivilegeCleanupOnDrop extends
 
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
 
-  private final static String dbName1 = "db_1";
-  private final static String dbName2 = "prod";
   private final static String tableName1 = "tb_1";
   private final static String tableName2 = "tb_2";
   private final static String tableName3 = "tb_3";
@@ -135,7 +133,7 @@ public class TestDbPrivilegeCleanupOnDrop extends
     setupPrivileges(statement); // setup privileges for USER1
 
     // verify privileges on the created tables
-    statement.execute("USE " + dbName2);
+    statement.execute("USE " + DB2);
     verifyTablePrivilegeExist(statement,
         Lists.newArrayList("select_tbl1", "insert_tbl1", "all_tbl1"),
         tableName1);
@@ -148,7 +146,7 @@ public class TestDbPrivilegeCleanupOnDrop extends
     verifyTablePrivilegesDropped(statement);
 
     // verify privileges created for new tables
-    statement.execute("USE " + dbName2);
+    statement.execute("USE " + DB2);
     verifyTablePrivilegeExist(statement,
         Lists.newArrayList("select_tbl1", "insert_tbl1", "all_tbl1"),
         tableName1 + renameTag);
@@ -172,31 +170,31 @@ public class TestDbPrivilegeCleanupOnDrop extends
     statement.execute("GRANT ROLE all_db1, read_db1, select_tbl1, insert_tbl1,"
         + " all_tbl1, all_tbl2, all_prod to GROUP " + USERGROUP1);
 
-    statement.execute("DROP DATABASE IF EXISTS " + dbName1 + " CASCADE");
-    statement.execute("DROP DATABASE IF EXISTS " + dbName2 + " CASCADE");
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statement.execute("DROP DATABASE IF EXISTS " + DB2 + " CASCADE");
   }
 
   // create test DBs and Tables
   private void setupDbObjects(Statement statement) throws Exception {
-    statement.execute("CREATE DATABASE " + dbName1);
-    statement.execute("CREATE DATABASE " + dbName2);
-    statement.execute("create table " + dbName2 + "." + tableName1
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("CREATE DATABASE " + DB2);
+    statement.execute("create table " + DB2 + "." + tableName1
         + " (under_col int comment 'the under column', value string)");
-    statement.execute("create table " + dbName2 + "." + tableName2
+    statement.execute("create table " + DB2 + "." + tableName2
         + " (under_col int comment 'the under column', value string)");
-    statement.execute("create table " + dbName1 + "." + tableName3
+    statement.execute("create table " + DB1 + "." + tableName3
         + " (under_col int comment 'the under column', value string)");
-    statement.execute("create table " + dbName1 + "." + tableName4
+    statement.execute("create table " + DB1 + "." + tableName4
         + " (under_col int comment 'the under column', value string)");
   }
 
   // Create privileges on DB and Tables
   private void setupPrivileges(Statement statement) throws Exception {
-    statement.execute("GRANT ALL ON DATABASE " + dbName1 + " TO ROLE all_db1");
-    statement.execute("GRANT SELECT ON DATABASE " + dbName1
+    statement.execute("GRANT ALL ON DATABASE " + DB1 + " TO ROLE all_db1");
+    statement.execute("GRANT SELECT ON DATABASE " + DB1
         + " TO ROLE read_db1");
-    statement.execute("GRANT ALL ON DATABASE " + dbName2 + " TO ROLE all_prod");
-    statement.execute("USE " + dbName2);
+    statement.execute("GRANT ALL ON DATABASE " + DB2 + " TO ROLE all_prod");
+    statement.execute("USE " + DB2);
     statement.execute("GRANT SELECT ON TABLE " + tableName1
         + " TO ROLE select_tbl1");
     statement.execute("GRANT INSERT ON TABLE " + tableName1
@@ -207,20 +205,20 @@ public class TestDbPrivilegeCleanupOnDrop extends
 
   // Drop test DBs and Tables
   private void dropDbObjects(Statement statement) throws Exception {
-    statement.execute("DROP TABLE " + dbName2 + "." + tableName1);
-    statement.execute("DROP TABLE " + dbName2 + "." + tableName2);
-    statement.execute("DROP DATABASE " + dbName2);
-    statement.execute("DROP DATABASE " + dbName1 + " CASCADE");
+    statement.execute("DROP TABLE " + DB2 + "." + tableName1);
+    statement.execute("DROP TABLE " + DB2 + "." + tableName2);
+    statement.execute("DROP DATABASE " + DB2);
+    statement.execute("DROP DATABASE " + DB1 + " CASCADE");
   }
 
   // rename tables
   private void renameTables(Statement statement) throws Exception {
-    statement.execute("USE " + dbName2);
+    statement.execute("USE " + DB2);
     statement.execute("ALTER TABLE " + tableName1 + " RENAME TO " + tableName1
         + renameTag);
     statement.execute("ALTER TABLE " + tableName2 + " RENAME TO " + tableName2
         + renameTag);
-    statement.execute("USE " + dbName1);
+    statement.execute("USE " + DB1);
     statement.execute("ALTER TABLE " + tableName3 + " RENAME TO " + tableName3
         + renameTag);
     statement.execute("ALTER TABLE " + tableName4 + " RENAME TO " + tableName4
@@ -252,8 +250,8 @@ public class TestDbPrivilegeCleanupOnDrop extends
   // verify all the test privileges are dropped as we drop the objects
   private void verifyDbPrivilegesDropped(Statement statement) throws Exception {
     List<String> roles = getRoles(statement);
-    verifyPrivilegeDropped(statement, roles, dbName2, SHOW_GRANT_DB_POSITION);
-    verifyPrivilegeDropped(statement, roles, dbName1, SHOW_GRANT_DB_POSITION);
+    verifyPrivilegeDropped(statement, roles, DB2, SHOW_GRANT_DB_POSITION);
+    verifyPrivilegeDropped(statement, roles, DB1, SHOW_GRANT_DB_POSITION);
 
   }
 

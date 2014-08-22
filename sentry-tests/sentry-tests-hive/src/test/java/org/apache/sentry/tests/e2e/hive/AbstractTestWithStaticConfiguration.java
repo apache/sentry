@@ -27,6 +27,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -59,6 +60,7 @@ import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
 import org.apache.tools.ant.util.StringUtils;
 import org.junit.After;
 import org.junit.AfterClass;
+import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -143,12 +145,15 @@ public abstract class AbstractTestWithStaticConfiguration {
   protected void createDb(String user, String...dbs) throws Exception {
     Connection connection = context.createConnection(user);
     Statement statement = connection.createStatement();
+    ArrayList<String> allowedDBs = new ArrayList<String>(Arrays.asList(DB1, DB2, DB3));
     for(String db : dbs) {
+      assertTrue(db + " is not part of known test dbs which will be cleaned up after the test", allowedDBs.contains(db));
       statement.execute("CREATE DATABASE " + db);
     }
     statement.close();
     connection.close();
   }
+
   protected void createTable(String user, String db, File dataFile, String...tables)
       throws Exception {
     Connection connection = context.createConnection(user);
@@ -399,15 +404,12 @@ public abstract class AbstractTestWithStaticConfiguration {
     Statement statement;
     connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
-    ResultSet resultSet;
 
-    resultSet = statement.executeQuery("SHOW DATABASES");
-    while (resultSet.next()) {
-      if(! resultSet.getString(1).equalsIgnoreCase("default")) {
-        Statement statement2 = connection.createStatement();
-        statement2.execute("DROP DATABASE " + resultSet.getString(1) + " CASCADE");
-      }
+    String [] dbs = { DB1, DB2, DB3};
+    for (String db: dbs) {
+      statement.execute("DROP DATABASE if exists " + db + " CASCADE");
     }
+    ResultSet resultSet;
     statement.execute("USE default");
     resultSet = statement.executeQuery("SHOW tables");
     while(resultSet.next()) {
