@@ -265,18 +265,14 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
     // test user can drop table
     statement.execute("DROP TABLE TAB_3");
 
-    //negative test case: user can't create external tables
+    //positive test case: user can create external tables at given location
     assertTrue("Unable to create directory for external table test" , externalTblDir.mkdir());
     statement.execute("CREATE EXTERNAL TABLE EXT_TAB_1(A STRING) STORED AS TEXTFILE LOCATION 'file:"+
                         externalTblDir.getAbsolutePath() + "'");
 
-    //negative test case: user can't execute alter table set location
-    try {
-      statement.execute("ALTER TABLE TAB_2 SET LOCATION 'hdfs://nn1.example.com/hive/warehouse'");
-      Assert.fail("Expected SQL exception");
-    } catch (SQLException e) {
-      context.verifyAuthzException(e);
-    }
+    //negative test case: user can't execute alter table set location,
+    // as the user does not have privileges on that location
+    context.assertSentrySemanticException(statement, "ALTER TABLE TAB_2 SET LOCATION 'file:///tab2'", semanticException);
 
     statement.close();
     connection.close();

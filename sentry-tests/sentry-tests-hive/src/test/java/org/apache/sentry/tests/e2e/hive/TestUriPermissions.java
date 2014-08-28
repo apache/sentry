@@ -172,7 +172,7 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
   @Test
   public void testAlterTableLocationPrivileges() throws Exception {
     String tabName = "tab1";
-    String tabDir = "file://" + hiveServer.getProperty(HiveServerFactory.WAREHOUSE_DIR) + "/" + tabName;
+    String tabDir = hiveServer.getProperty(HiveServerFactory.WAREHOUSE_DIR) + "/" + tabName;
     Connection userConn = null;
     Statement userStmt = null;
 

@@ -36,7 +36,6 @@ import com.google.common.io.Resources;
 public class TestOperations extends AbstractTestWithStaticConfiguration {
   private PolicyFile policyFile;
   final String tableName = "tb1";
-  final String semanticException = "SemanticException No valid privileges";
 
   static Map<String, String> privileges = new HashMap<String, String>();
   static {
@@ -455,7 +454,19 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     statement.close();
     connection.close();
 
-    //Negative case
+    //Negative case: User2_1 has privileges on table but on on uri
+    connection = context.createConnection(USER2_1);
+    statement = context.createStatement(connection);
+    statement.execute("Use " + DB1);
+    context.assertSentrySemanticException(statement, "ALTER TABLE tb1 SET LOCATION '" + tabLocation + "'",
+        semanticException);
+    context.assertSentrySemanticException(statement,
+        "ALTER TABLE tb1 ADD IF NOT EXISTS PARTITION (b = '3') LOCATION '" + tabLocation + "/part'",
+        semanticException);
+    statement.close();
+    connection.close();
+
+    //Negative case: User3_1 has only insert privileges on table
     policyFile
         .addPermissionsToRole("insert_db1_tb1", privileges.get("insert_db1_tb1"))
         .addRolesToGroup(USERGROUP3, "insert_db1_tb1", "all_uri");

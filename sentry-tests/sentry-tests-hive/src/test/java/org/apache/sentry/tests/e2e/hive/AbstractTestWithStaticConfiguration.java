@@ -128,6 +128,8 @@ public abstract class AbstractTestWithStaticConfiguration {
   protected static SentryService sentryServer;
   protected static Configuration sentryConf;
   protected static Context context;
+  protected final String semanticException = "SemanticException No valid privileges";
+
 
   public static void createContext() throws Exception {
     context = new Context(hiveServer, fileSystem,
