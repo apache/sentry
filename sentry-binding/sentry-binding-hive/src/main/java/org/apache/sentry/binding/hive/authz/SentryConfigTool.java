@@ -322,23 +322,32 @@ public class SentryConfigTool {
 
           if (uri != null) {
             System.out.println(String.format(
-                "GRANT ALL ON URI %s TO ROLE %s; # server=%s",
-                uri, roleName, server));
+                "# server=%s",
+                server));
+            System.out.println(String.format(
+                "GRANT ALL ON URI %s TO ROLE %s;",
+                uri, roleName));
 
             client.grantURIPrivilege(requestorUserName, roleName, server, uri);
           } else if (table != null && !AccessConstants.ALL.equals(table)) {
             System.out.println(String.format(
-                "GRANT %s ON TABLE %s TO ROLE %s; # server=%s, database=%s",
+                "# server=%s, database=%s",
+                server, database));
+            System.out.println(String.format(
+                "GRANT %s ON TABLE %s TO ROLE %s;",
                 "*".equals(action) ? "ALL" : action.toUpperCase(), table,
-                roleName, server, database));
+                roleName));
 
             client.grantTablePrivilege(requestorUserName, roleName, server,
                 database, table, action);
           } else if (database != null && !AccessConstants.ALL.equals(database)) {
             System.out.println(String.format(
-                "GRANT %s ON DATABASE %s TO ROLE %s; # server=%s",
+                "# server=%s",
+                server));
+            System.out.println(String.format(
+                "GRANT %s ON DATABASE %s TO ROLE %s;",
                 "*".equals(action) ? "ALL" : action.toUpperCase(),
-                database, roleName, server));
+                database, roleName));
 
             client.grantDatabasePrivilege(requestorUserName, roleName, server,
                 database, action);
