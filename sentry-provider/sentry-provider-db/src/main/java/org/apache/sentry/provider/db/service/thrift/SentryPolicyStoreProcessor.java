@@ -126,10 +126,15 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     return result;
   }
 
-  private void authorize(String requestorUser, Set<String> requestorGroups)
-  throws SentryAccessDeniedException {
+  private boolean inAdminGroups(Set<String> requestorGroups) {
     requestorGroups = toTrimedLower(requestorGroups);
     if (Sets.intersection(adminGroups, requestorGroups).isEmpty()) {
+      return false;
+    } else return true;
+  }
+  private void authorize(String requestorUser, Set<String> requestorGroups)
+  throws SentryAccessDeniedException {
+    if (!inAdminGroups(requestorGroups)) {
       String msg = "User: " + requestorUser + " is part of " + requestorGroups +
           " which does not, intersect admin groups " + adminGroups;
       LOGGER.warn(msg);
@@ -369,12 +374,16 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     TListSentryPrivilegesResponse response = new TListSentryPrivilegesResponse();
     TSentryResponseStatus status;
     Set<TSentryPrivilege> privilegeSet = new HashSet<TSentryPrivilege>();
+    String subject = request.getRequestorUserName();
     try {
-      //TODO: Handle authorization for metadata queries
-      // Shall we allow only admin users to list privileges
-      // or allow all users as long as user is granted this role?
-      authorize(request.getRequestorUserName(),
-          getRequestorGroups(request.getRequestorUserName()));
+      Set<String> groups = getRequestorGroups(subject);
+      Boolean admin = inAdminGroups(groups);
+      if(!admin) {
+        Set<String> roleNamesForGroups = toTrimedLower(sentryStore.getRoleNamesForGroups(groups));
+        if(!roleNamesForGroups.contains(request.getRoleName().trim().toLowerCase())) {
+          throw new SentryAccessDeniedException("Access denied to " + subject);
+        }
+      }
       if (request.isSetAuthorizableHierarchy()) {
         TSentryAuthorizable authorizableHierarchy = request.getAuthorizableHierarchy();
         privilegeSet = sentryStore.getTSentryPrivileges(Sets.newHashSet(request.getRoleName()), authorizableHierarchy);

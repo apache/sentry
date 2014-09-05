@@ -1392,38 +1392,52 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     assertResultSize(resultSet, 0);
     statement.execute("CREATE ROLE role2");
     statement.execute("GRANT SELECT ON TABLE t1 TO ROLE role1");
+    statement.execute("GRANT ROLE role1 to GROUP " + USERGROUP1);
 
-    resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
-    ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-    //| database  | table  | partition  | column  | principal_name  |
-    // principal_type | privilege  | grant_option  | grant_time  | grantor  |
-    assertThat(resultSetMetaData.getColumnCount(), is(10));
-    assertThat(resultSetMetaData.getColumnName(1), equalToIgnoringCase("database"));
-    assertThat(resultSetMetaData.getColumnName(2), equalToIgnoringCase("table"));
-    assertThat(resultSetMetaData.getColumnName(3), equalToIgnoringCase("partition"));
-    assertThat(resultSetMetaData.getColumnName(4), equalToIgnoringCase("column"));
-    assertThat(resultSetMetaData.getColumnName(5), equalToIgnoringCase("principal_name"));
-    assertThat(resultSetMetaData.getColumnName(6), equalToIgnoringCase("principal_type"));
-    assertThat(resultSetMetaData.getColumnName(7), equalToIgnoringCase("privilege"));
-    assertThat(resultSetMetaData.getColumnName(8), equalToIgnoringCase("grant_option"));
-    assertThat(resultSetMetaData.getColumnName(9), equalToIgnoringCase("grant_time"));
-    assertThat(resultSetMetaData.getColumnName(10), equalToIgnoringCase("grantor"));
+    String[] users = {ADMIN1, USER1_1};
+    for (String user:users) {
+      connection = context.createConnection(user);
+      statement = context.createStatement(connection);
+      resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+      ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+      //| database  | table  | partition  | column  | principal_name  |
+      // principal_type | privilege  | grant_option  | grant_time  | grantor  |
+      assertThat(resultSetMetaData.getColumnCount(), is(10));
+      assertThat(resultSetMetaData.getColumnName(1), equalToIgnoringCase("database"));
+      assertThat(resultSetMetaData.getColumnName(2), equalToIgnoringCase("table"));
+      assertThat(resultSetMetaData.getColumnName(3), equalToIgnoringCase("partition"));
+      assertThat(resultSetMetaData.getColumnName(4), equalToIgnoringCase("column"));
+      assertThat(resultSetMetaData.getColumnName(5), equalToIgnoringCase("principal_name"));
+      assertThat(resultSetMetaData.getColumnName(6), equalToIgnoringCase("principal_type"));
+      assertThat(resultSetMetaData.getColumnName(7), equalToIgnoringCase("privilege"));
+      assertThat(resultSetMetaData.getColumnName(8), equalToIgnoringCase("grant_option"));
+      assertThat(resultSetMetaData.getColumnName(9), equalToIgnoringCase("grant_time"));
+      assertThat(resultSetMetaData.getColumnName(10), equalToIgnoringCase("grantor"));
 
-    while ( resultSet.next()) {
-      assertThat(resultSet.getString(1), equalToIgnoringCase("default"));
-      assertThat(resultSet.getString(2), equalToIgnoringCase("t1"));
-      assertThat(resultSet.getString(3), equalToIgnoringCase(""));//partition
-      assertThat(resultSet.getString(4), equalToIgnoringCase(""));//column
-      assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
-      assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
-      assertThat(resultSet.getString(7), equalToIgnoringCase("select"));
-      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
-      //Create time is not tested
-      //assertThat(resultSet.getLong(9), is(new Long(0)));
-      assertThat(resultSet.getString(10), equalToIgnoringCase(ADMIN1));//grantor
+      while ( resultSet.next()) {
+        assertThat(resultSet.getString(1), equalToIgnoringCase("default"));
+        assertThat(resultSet.getString(2), equalToIgnoringCase("t1"));
+        assertThat(resultSet.getString(3), equalToIgnoringCase(""));//partition
+        assertThat(resultSet.getString(4), equalToIgnoringCase(""));//column
+        assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
+        assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
+        assertThat(resultSet.getString(7), equalToIgnoringCase("select"));
+        assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+        //Create time is not tested
+        //assertThat(resultSet.getLong(9), is(new Long(0)));
+        assertThat(resultSet.getString(10), equalToIgnoringCase(ADMIN1));//grantor
+      }
+      statement.close();
+      connection.close();
     }
-    statement.close();
-    connection.close();
+
+    //Negative test case
+    connection = context.createConnection(USER2_1);
+    statement = context.createStatement(connection);
+    context.assertSentryException(statement, "SHOW GRANT ROLE role1",
+        SentryAccessDeniedException.class.getSimpleName());
+
+
   }
 
   /**

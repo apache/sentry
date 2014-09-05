@@ -776,11 +776,8 @@ public class SentryStore {
 
   /**
    * Gets sentry privilege objects for criteria from the persistence layer
-   * @param roleName : roleName to look up
-   * @param serverName : serverName (required)
-   * @param uri : URI (optional)
-   * @param dbName : dbName (optional if tableName is null else required)
-   * @param tableName : tableName (optional)
+   * @param roleNames : roleNames to look up (required)
+   * @param authHierarchy : filter push down based on auth hierarchy (optional)
    * @return : Set of thrift sentry privilege objects
    * @throws SentryNoSuchObjectException
    */
@@ -861,37 +858,7 @@ public class SentryStore {
     return convertToTSentryRoles(roleSet);
   }
 
-  private SetMultimap<String, String> getRoleToPrivilegeMap(Set<String> groups) {
-    SetMultimap<String, String> result = HashMultimap.create();
-    boolean rollbackTransaction = true;
-    PersistenceManager pm = null;
-    try {
-      pm = openTransaction();
-      Query query = pm.newQuery(MSentryGroup.class);
-      query.setFilter("this.groupName == t");
-      query.declareParameters("java.lang.String t");
-      query.setUnique(true);
-      for (String group : groups) {
-        MSentryGroup sentryGroup = (MSentryGroup) query.execute(group.trim());
-        if (sentryGroup != null) {
-          for (MSentryRole role : sentryGroup.getRoles()) {
-            for (MSentryPrivilege privilege : role.getPrivileges()) {
-              result.put(role.getRoleName(), toAuthorizable(privilege));
-            }
-          }
-        }
-      }
-      rollbackTransaction = false;
-      commitTransaction(pm);
-      return result;
-    } finally {
-      if (rollbackTransaction) {
-        rollbackTransaction(pm);
-      }
-    }
-  }
-
-  private Set<String> getRoleNamesForGroups(Set<String> groups) {
+  public Set<String> getRoleNamesForGroups(Set<String> groups) {
     Set<String> result = new HashSet<String>();
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
@@ -928,7 +895,7 @@ public class SentryStore {
     for (String group : groups) {
       MSentryGroup sentryGroup = (MSentryGroup) query.execute(group.trim());
       if (sentryGroup != null) {
-        result = sentryGroup.getRoles();
+        result.addAll(sentryGroup.getRoles());
       }
     }
     return result;

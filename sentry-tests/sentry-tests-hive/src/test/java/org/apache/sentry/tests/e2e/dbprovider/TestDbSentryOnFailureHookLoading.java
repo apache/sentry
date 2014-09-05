@@ -184,7 +184,10 @@ public class TestDbSentryOnFailureHookLoading extends AbstractTestWithDbProvider
     verifyFailureHook(statement, "SHOW GRANT role role1",
         HiveOperation.SHOW_GRANT, null, null, true);
 
-    //Grant privilege on table doesnt expose db and table objects
+    //Should pass as user1_1 is granted role all_db1
+    statement.execute("SHOW GRANT role all_db1");
+
+        //Grant privilege on table doesnt expose db and table objects
     verifyFailureHook(statement,
         "GRANT ALL ON TABLE tab1 TO ROLE admin_role",
         HiveOperation.GRANT_PRIVILEGE, null, null, true);
