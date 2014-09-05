@@ -30,6 +30,12 @@ public class AccessConstants {
   public static final String SELECT = "select";
   public static final String INSERT = "insert";
 
+  public static final String ALTER = "alter";
+  public static final String CREATE = "create";
+  public static final String DROP = "drop";
+  public static final String INDEX = "index";
+  public static final String LOCK = "lock";
+
   public static final String ALL_ROLE = "ALL", DEFAULT_ROLE = "DEFAULT", NONE_ROLE = "NONE",
       SUPERUSER_ROLE = "SUPERUSER", PUBLIC_ROLE = "PUBLIC";
   public static final ImmutableSet<String> RESERVED_ROLE_NAMES = ImmutableSet.of(ALL_ROLE,

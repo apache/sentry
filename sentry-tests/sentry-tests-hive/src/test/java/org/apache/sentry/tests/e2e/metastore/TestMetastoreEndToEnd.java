@@ -70,7 +70,7 @@ public class TestMetastoreEndToEnd extends
         .addRolesToGroup(USERGROUP3, tab2_read_role)
         .addPermissionsToRole(db_all_role, "server=server1->db=" + dbName)
         .addPermissionsToRole("read_db_role",
-            "server=server1->db=" + dbName + "->table=*->action=SELECT")
+            "server=server1->db=" + dbName + "->action=SELECT")
         .addPermissionsToRole(tab1_all_role,
             "server=server1->db=" + dbName + "->table=" + tabName1)
         .addPermissionsToRole(tab2_all_role,

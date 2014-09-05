@@ -536,7 +536,8 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
         for (PrivilegeDesc privDesc : privileges) {
           if (isGrant) {
             if (serverName != null) {
-              sentryClient.grantServerPrivilege(subject, princ.getName(), serverName, grantOption);
+              sentryClient.grantServerPrivilege(subject, princ.getName(), serverName,
+                  toSentryAction(privDesc.getPrivilege().getPriv()), grantOption);
             } else if (uriPath != null) {
               sentryClient.grantURIPrivilege(subject, princ.getName(), server, uriPath, grantOption);
             } else if (tableName == null) {
@@ -570,7 +571,7 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
     }
   }
 
-  private static String toDbSentryAction(PrivilegeType privilegeType) {
+  private static String toDbSentryAction(PrivilegeType privilegeType) throws SentryUserException{
     if (PrivilegeType.ALL.equals(privilegeType)) {
       return AccessConstants.ALL;
     } else {
@@ -578,13 +579,18 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
         return AccessConstants.SELECT;
       } else if (PrivilegeType.INSERT.equals(privilegeType)) {
         return AccessConstants.INSERT;
+      } else if (PrivilegeType.CREATE.equals(privilegeType)){
+        return AccessConstants.CREATE;
+      } else if (PrivilegeType.DROP.equals(privilegeType)){
+        return AccessConstants.DROP;
+      } else if (PrivilegeType.ALTER_METADATA.equals(privilegeType)){
+        return AccessConstants.ALTER;
+      } else if (PrivilegeType.INDEX.equals(privilegeType)){
+        return AccessConstants.INDEX;
+      } else if (PrivilegeType.LOCK.equals(privilegeType)){
+        return AccessConstants.LOCK;
       } else {
-        // Should we throw an Exception here ?
-        // On second thought... I don't think we should..
-        // Earlier, we were sending everything as ALL..
-        // So with the patch, it should default to old
-        // behavior for something other than INSERT or SELECT
-        return AccessConstants.ALL;
+        throw new SentryUserException(privilegeType + " not handled correctly");
       }
     }
   }
@@ -602,7 +608,7 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
     if (PrivilegeType.ALL.equals(privilegeType)) {
       return AccessConstants.ALL;
     } else {
-      return privilegeType.name();
+      return privilegeType.toString();
     }
   }
 

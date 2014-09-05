@@ -163,6 +163,10 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
         currTab = extractTable((ASTNode)ast.getFirstChildWithType(HiveParser.TOK_TABNAME));
         currDB = extractDatabase((ASTNode) ast.getChild(0));
         break;
+      case HiveParser.TOK_ALTERINDEX_REBUILD:
+        currTab = extractTable((ASTNode)ast.getChild(0)); //type is not TOK_TABNAME
+        currDB = extractDatabase((ASTNode) ast.getChild(0));
+        break;
       case HiveParser.TOK_ALTERTABLE_RENAME:
       case HiveParser.TOK_ALTERTABLE_PROPERTIES:
       case HiveParser.TOK_ALTERTABLE_DROPPARTS:

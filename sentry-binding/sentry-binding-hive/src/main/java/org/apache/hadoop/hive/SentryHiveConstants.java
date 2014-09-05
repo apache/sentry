@@ -23,7 +23,8 @@ import org.apache.hadoop.hive.ql.security.authorization.PrivilegeType;
 
 public class SentryHiveConstants {
   public static final EnumSet<PrivilegeType> ALLOWED_PRIVS = EnumSet.of(
-      PrivilegeType.ALL, PrivilegeType.SELECT, PrivilegeType.INSERT);
+      PrivilegeType.ALL, PrivilegeType.SELECT, PrivilegeType.INSERT, PrivilegeType.CREATE, PrivilegeType.DROP,
+      PrivilegeType.ALTER_METADATA, PrivilegeType.INDEX, PrivilegeType.LOCK);
 
   public static final String PRIVILEGE_NOT_SUPPORTED = "Sentry does not support privilege: ";
   public static final String COLUMN_PRIVS_NOT_SUPPORTED = "Sentry users should use views to grant privileges on columns";

@@ -355,7 +355,7 @@ public class SentryConfigTool {
             System.out.println(String.format("GRANT ALL ON SERVER %s TO ROLE %s;",
                 server, roleName));
 
-            client.grantServerPrivilege(requestorUserName, roleName, server);
+            client.grantServerPrivilege(requestorUserName, roleName, server, action);
           } else {
             System.out.println(String.format("No grant for permission %s",
                 permission));

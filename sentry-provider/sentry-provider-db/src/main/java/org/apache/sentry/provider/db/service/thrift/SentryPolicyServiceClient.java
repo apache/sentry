@@ -289,17 +289,17 @@ public class SentryPolicyServiceClient {
   }
 
   public void grantServerPrivilege(String requestorUserName,
-      String roleName, String server)
+      String roleName, String server, String action)
   throws SentryUserException {
     grantPrivilege(requestorUserName, roleName,
-        PrivilegeScope.SERVER, server, null, null, null, AccessConstants.ALL);
+        PrivilegeScope.SERVER, server, null, null, null, action);
   }
 
   public void grantServerPrivilege(String requestorUserName,
-      String roleName, String server, Boolean grantOption)
+      String roleName, String server, String action, Boolean grantOption)
   throws SentryUserException {
     grantPrivilege(requestorUserName, roleName,
-        PrivilegeScope.SERVER, server, null, null, null, AccessConstants.ALL, grantOption);
+        PrivilegeScope.SERVER, server, null, null, null, action, grantOption);
   }
 
   public void grantDatabasePrivilege(String requestorUserName,

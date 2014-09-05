@@ -25,6 +25,11 @@ public enum DBModelAction implements Action {
 
   INSERT(AccessConstants.INSERT),
   SELECT(AccessConstants.SELECT),
+  ALTER(AccessConstants.ALTER),
+  CREATE(AccessConstants.CREATE),
+  DROP(AccessConstants.DROP),
+  INDEX(AccessConstants.INDEX),
+  LOCK(AccessConstants.LOCK),
   ALL(AccessConstants.ALL);
 
   private final String value;

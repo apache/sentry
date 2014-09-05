@@ -276,6 +276,58 @@ public class TestDBWildcardPrivilege {
     assertTrue(DBWildcardPrivilege.impliesURI("hdfs://namenode:8020/path/",
         "hdfs://namenode:8020/path/FooBar"));
   }
+  @Test
+  public void testActionHierarchy() throws Exception {
+    String dbName = "db1";
+    DBWildcardPrivilege dbAll = create(new KeyValue("server", "server1"),
+        new KeyValue("db", dbName), new KeyValue("action", "ALL"));
+
+    DBWildcardPrivilege dbSelect = create(new KeyValue("server", "server1"),
+        new KeyValue("db", dbName), new KeyValue("action", "SELECT"));
+    DBWildcardPrivilege dbInsert = create(new KeyValue("server", "server1"),
+        new KeyValue("db", dbName), new KeyValue("action", "INSERT"));
+    DBWildcardPrivilege dbAlter = create(new KeyValue("server", "server1"),
+        new KeyValue("db", dbName), new KeyValue("action", "ALTER"));
+    DBWildcardPrivilege dbCreate = create(new KeyValue("server", "server1"),
+        new KeyValue("db", dbName), new KeyValue("action", "CREATE"));
+    DBWildcardPrivilege dbDrop = create(new KeyValue("server", "server1"),
+        new KeyValue("db", dbName), new KeyValue("action", "DROP"));
+    DBWildcardPrivilege dbIndex = create(new KeyValue("server", "server1"),
+        new KeyValue("db", dbName), new KeyValue("action", "INDEX"));
+    DBWildcardPrivilege dbLock = create(new KeyValue("server", "server1"),
+        new KeyValue("db", dbName), new KeyValue("action", "LOCK"));
+
+    assertTrue(dbAll.implies(dbSelect));
+    assertTrue(dbAll.implies(dbInsert));
+    assertTrue(dbAll.implies(dbAlter));
+    assertTrue(dbAll.implies(dbCreate));
+    assertTrue(dbAll.implies(dbDrop));
+    assertTrue(dbAll.implies(dbIndex));
+    assertTrue(dbAll.implies(dbLock));
+
+    dbAll = create(new KeyValue("server", "server1"),
+        new KeyValue("db", dbName), new KeyValue("action", "*"));
+
+    assertTrue(dbAll.implies(dbSelect));
+    assertTrue(dbAll.implies(dbInsert));
+    assertTrue(dbAll.implies(dbAlter));
+    assertTrue(dbAll.implies(dbCreate));
+    assertTrue(dbAll.implies(dbDrop));
+    assertTrue(dbAll.implies(dbIndex));
+    assertTrue(dbAll.implies(dbLock));
+
+    dbAll = create(new KeyValue("server", "server1"),
+        new KeyValue("db", dbName));
+
+    assertTrue(dbAll.implies(dbSelect));
+    assertTrue(dbAll.implies(dbInsert));
+    assertTrue(dbAll.implies(dbAlter));
+    assertTrue(dbAll.implies(dbCreate));
+    assertTrue(dbAll.implies(dbDrop));
+    assertTrue(dbAll.implies(dbIndex));
+    assertTrue(dbAll.implies(dbLock));
+
+  }
   static DBWildcardPrivilege create(KeyValue... keyValues) {
     return create(AUTHORIZABLE_JOINER.join(keyValues));
 
