@@ -65,7 +65,7 @@ limitations under the License.
     <datanucleus-core.version>3.2.2</datanucleus-core.version>
     <datanucleus-rdbms.version>3.2.1</datanucleus-rdbms.version>
     <jdo-api.version>3.0.1</jdo-api.version>
-    <derby.version>10.4.2.0</derby.version>
+    <derby.version>10.10.2.0</derby.version>
     <commons-cli.version>1.2</commons-cli.version>
     <hive.version>0.13.1-cdh5.2.0-SNAPSHOT</hive.version>
     <hadoop.version>2.3.0-cdh5.1.0-SNAPSHOT</hadoop.version>
