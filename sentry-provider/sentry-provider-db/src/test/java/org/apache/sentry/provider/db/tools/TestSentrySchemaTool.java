@@ -33,6 +33,8 @@ public class TestSentrySchemaTool {
   private Configuration sentryConf;
   private SentrySchemaTool schemaTool;
 
+  private static final String OLDEST_INIT_VERSION = "1.4.0";
+
   @Before
   public void defaultSetup() throws Exception {
     sentryConf = new Configuration();
@@ -82,7 +84,7 @@ public class TestSentrySchemaTool {
 
   @Test
   public void testUpgrade() throws Exception {
-    schemaTool.doInit(SentryStoreSchemaInfo.getSentryVersion());
+    schemaTool.doInit(OLDEST_INIT_VERSION);
     schemaTool.doUpgrade();
     schemaTool.verifySchemaVersion();
   }

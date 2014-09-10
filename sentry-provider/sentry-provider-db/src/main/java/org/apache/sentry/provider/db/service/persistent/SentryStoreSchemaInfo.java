@@ -37,7 +37,7 @@ public class SentryStoreSchemaInfo {
   private final String sentrySchemaVersions[];
   private final String sentryScriptDir;
 
-  private static final String SENTRY_VERSION = "1.4.0";
+  private static final String SENTRY_VERSION = "1.5.0";
 
   public SentryStoreSchemaInfo(String sentryScriptDir, String dbType)
       throws SentryUserException {
@@ -66,9 +66,32 @@ public class SentryStoreSchemaInfo {
     return SENTRY_VERSION;
   }
 
-  public List<String> getUpgradeScripts(String fromSchemaVer) {
-    // NO upgrade scripts for first version
-    return new ArrayList<String>();
+  public List<String> getUpgradeScripts(String fromSchemaVer)
+      throws SentryUserException {
+    List<String> upgradeScriptList = new ArrayList<String>();
+
+    // check if we are already at current schema level
+    if (getSentryVersion().equals(fromSchemaVer)) {
+      return upgradeScriptList;
+    }
+
+    // Find the list of scripts to execute for this upgrade
+    int firstScript = sentrySchemaVersions.length;
+    for (int i = 0; i < sentrySchemaVersions.length; i++) {
+      if (sentrySchemaVersions[i].startsWith(fromSchemaVer)) {
+        firstScript = i;
+      }
+    }
+    if (firstScript == sentrySchemaVersions.length) {
+      throw new SentryUserException("Unknown version specified for upgrade "
+          + fromSchemaVer + " Metastore schema may be too old or newer");
+    }
+
+    for (int i = firstScript; i < sentrySchemaVersions.length; i++) {
+      String scriptFile = generateUpgradeFileName(sentrySchemaVersions[i]);
+      upgradeScriptList.add(scriptFile);
+    }
+    return upgradeScriptList;
   }
 
   /***
@@ -107,8 +130,8 @@ public class SentryStoreSchemaInfo {
 
   // format the upgrade script name eg upgrade-x-y-dbType.sql
   private String generateUpgradeFileName(String fileVersion) {
-    return UPGRADE_FILE_PREFIX + fileVersion + "." + dbType
-        + SQL_FILE_EXTENSION;
+    return INIT_FILE_PREFIX + UPGRADE_FILE_PREFIX + dbType + "-"
+        + fileVersion + SQL_FILE_EXTENSION;
   }
 
   // Current hive version, in majorVersion.minorVersion.changeVersion format
