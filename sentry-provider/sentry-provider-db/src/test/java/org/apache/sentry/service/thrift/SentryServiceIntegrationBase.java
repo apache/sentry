@@ -20,6 +20,7 @@ package org.apache.sentry.service.thrift;
 import java.io.File;
 import java.security.PrivilegedExceptionAction;
 import java.util.HashSet;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 
@@ -32,6 +33,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.minikdc.KerberosSecurityTestcase;
 import org.apache.hadoop.minikdc.MiniKdc;
 import org.apache.hadoop.net.NetUtils;
+import org.apache.sentry.provider.db.service.thrift.SentryMiniKdcTestcase;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
@@ -46,7 +48,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 
-public abstract class SentryServiceIntegrationBase extends KerberosSecurityTestcase {
+public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase {
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryServiceIntegrationBase.class);
 
   static {
@@ -79,6 +81,7 @@ public abstract class SentryServiceIntegrationBase extends KerberosSecurityTestc
   protected final Configuration conf = new Configuration(false);
   protected PolicyFile policyFile;
   protected File policyFilePath;
+  protected Properties kdcConfOverlay = new Properties();
 
   @Before
   public void setup() throws Exception {
@@ -88,6 +91,10 @@ public abstract class SentryServiceIntegrationBase extends KerberosSecurityTestc
     startSentryService();
     connectToSentryService();
     afterSetup();
+  }
+
+  private void setupKdc() throws Exception {
+    startMiniKdc(kdcConfOverlay);
   }
 
   public void startSentryService() throws Exception {
@@ -103,6 +110,7 @@ public abstract class SentryServiceIntegrationBase extends KerberosSecurityTestc
 
   public void setupConf() throws Exception {
     if (kerberos) {
+      setupKdc();
       kdc = getKdc();
       kdcWorkDir = getWorkDir();
       serverKeytab = new File(kdcWorkDir, "server.keytab");

@@ -15,37 +15,56 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.sentry.provider.db.service.thrift;
 
+import java.io.File;
 import java.util.Properties;
 
 import org.apache.hadoop.minikdc.MiniKdc;
-import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.junit.After;
 
-/**
- * Test various kerberos related stuff on the SentryService side
- */
-public class TestSentryServiceWithKerberos extends SentryServiceIntegrationBase {
+public class SentryMiniKdcTestcase {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(TestSentryServiceFailureCase.class);
+  private File workDir;
+  private Properties conf;
+  private MiniKdc kdc;
 
-  public String getServerKerberosName() {
-    return "sentry/_HOST@" + REALM;
+  public void startMiniKdc(Properties confOverlay) throws Exception {
+    createTestDir();
+    createMiniKdcConf(confOverlay);
+    kdc = new MiniKdc(conf, workDir);
+    kdc.start();
   }
 
-  /**
-   * Test that we are correctly substituting "_HOST" if/when needed.
-   *
-   * @throws Exception
-   */
-  @Test
-  public void testHostSubstitution() throws Exception {
-    // We just need to ensure that we are able to correct connect to the server
-    connectToSentryService();
+  private void createMiniKdcConf(Properties confOverlay) {
+    conf = MiniKdc.createConf();
+    for ( Object property : confOverlay.keySet()) {
+      conf.put(property, confOverlay.get(property));
+    }
+  }
+
+  private void createTestDir() {
+    workDir = new File(System.getProperty("test.dir", "target"));
+  }
+
+  @After
+  public void stopMiniKdc() {
+    if (kdc != null) {
+      kdc.stop();
+    }
+  }
+
+  public MiniKdc getKdc() {
+    return kdc;
+  }
+
+  public File getWorkDir() {
+    return workDir;
+  }
+
+  public Properties getConf() {
+    return conf;
   }
 
 }

@@ -15,37 +15,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.sentry.provider.db.service.thrift;
 
-import java.util.Properties;
-
 import org.apache.hadoop.minikdc.MiniKdc;
-import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-/**
- * Test various kerberos related stuff on the SentryService side
- */
-public class TestSentryServiceWithKerberos extends SentryServiceIntegrationBase {
+public class TestConnectionWithTicketTimeout extends
+    org.apache.sentry.service.thrift.SentryServiceIntegrationBase {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(TestSentryServiceFailureCase.class);
 
-  public String getServerKerberosName() {
-    return "sentry/_HOST@" + REALM;
+  @Override
+  public void beforeSetup() throws Exception {
+    kdcConfOverlay.setProperty(MiniKdc.MAX_TICKET_LIFETIME, "300001");
   }
 
-  /**
-   * Test that we are correctly substituting "_HOST" if/when needed.
-   *
+  /***
+   * Test is run only when sentry.hive.test.ticket.timeout is set to "true"
    * @throws Exception
    */
   @Test
-  public void testHostSubstitution() throws Exception {
-    // We just need to ensure that we are able to correct connect to the server
-    connectToSentryService();
+  public void testConnectionAfterTicketTimeout() throws Exception {
+    if ("true".equalsIgnoreCase(System.getProperty("sentry.hive.test.ticket.timeout", "false"))) {
+      Thread.sleep(400000);
+      connectToSentryService();
+    }
   }
 
 }

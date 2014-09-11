@@ -33,9 +33,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 
 import javax.security.auth.Subject;
-import javax.security.auth.kerberos.KerberosPrincipal;
-import javax.security.auth.login.LoginContext;
-import javax.security.auth.login.LoginException;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -58,6 +55,7 @@ import org.apache.thrift.transport.TSaslServerTransport;
 import org.apache.thrift.transport.TServerSocket;
 import org.apache.thrift.transport.TServerTransport;
 import org.apache.thrift.transport.TTransportFactory;
+import org.mortbay.log.Log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,7 +81,6 @@ public class SentryService implements Callable {
   private final String keytab;
   private final ExecutorService serviceExecutor;
   private Future future;
-
   private TServer thriftServer;
   private Status status;
 
@@ -141,17 +138,11 @@ public class SentryService implements Callable {
 
   @Override
   public String call() throws Exception {
-    LoginContext loginContext = null;
+    SentryKerberosContext kerberosContext = null;
     try {
       if (kerberos) {
-        Subject subject = new Subject(false,
-            Sets.newHashSet(new KerberosPrincipal(principal)),
-            new HashSet<Object>(), new HashSet<Object>());
-        loginContext = new LoginContext("", subject, null,
-            KerberosConfiguration.createClientConfig(principal, new File(keytab)));
-        loginContext.login();
-        subject = loginContext.getSubject();
-        Subject.doAs(subject, new PrivilegedExceptionAction<Void>() {
+        kerberosContext = new SentryKerberosContext(principal, keytab, true);
+        Subject.doAs(kerberosContext.getSubject(), new PrivilegedExceptionAction<Void>() {
           @Override
           public Void run() throws Exception {
             runServer();
@@ -164,15 +155,11 @@ public class SentryService implements Callable {
     } catch (Exception t) {
       LOGGER.error("Error starting server", t);
       throw new Exception("Error starting server", t);
-    }finally {
-      status = Status.NOT_STARTED;
-      if (loginContext != null) {
-        try {
-          loginContext.logout();
-        } catch (LoginException e) {
-          LOGGER.error("Error logging out", e);
-        }
+    } finally {
+      if (kerberosContext != null) {
+        kerberosContext.shutDown();
       }
+      status = Status.NOT_STARTED;
     }
     return null;
   }
