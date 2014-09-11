@@ -21,7 +21,6 @@ package org.apache.sentry.provider.db.service.thrift;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.PrivilegedExceptionAction;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -96,6 +95,9 @@ public class SentryPolicyServiceClient {
         baseOpen();
       } else {
         try {
+          if (ugi.isFromKeytab()) {
+            ugi.checkTGTAndReloginFromKeytab();
+          }
           ugi.doAs(new PrivilegedExceptionAction<Void>() {
             public Void run() throws TTransportException {
               baseOpen();
