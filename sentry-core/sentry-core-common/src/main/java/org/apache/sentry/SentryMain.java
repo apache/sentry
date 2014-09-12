@@ -31,6 +31,8 @@ import com.google.common.collect.ImmutableMap;
 public class SentryMain {
   private static final String HELP_SHORT = "h";
   private static final String HELP_LONG = "help";
+  private static final String VERSION_SHORT = "v";
+  private static final String VERSION_LONG = "version";
   private static final String COMMAND = "command";
   private static final String HIVE_CONF = "hiveconf";
   private static final String LOG4J_CONF = "log4jConf";
@@ -46,6 +48,8 @@ public class SentryMain {
     CommandLineParser parser = new GnuParser();
     Options options = new Options();
     options.addOption(HELP_SHORT, HELP_LONG, false, "Print this help text");
+    options.addOption(VERSION_SHORT, VERSION_LONG, false,
+        "Print Sentry version");
     options.addOption(HIVE_CONF, true, "Set hive configuration variables");
     options.addOption(null, COMMAND, true, "Command to run. Options: " + COMMANDS.keySet());
     options.addOption(null, LOG4J_CONF, true, "Location of log4j properties file");
@@ -66,6 +70,9 @@ public class SentryMain {
     if (commandName == null && (commandLine.hasOption(HELP_SHORT) ||
         commandLine.hasOption(HELP_LONG))) {
       printHelp(options, null);
+    } else if (commandLine.hasOption(VERSION_SHORT) ||
+        commandLine.hasOption(VERSION_LONG)) {
+      printVersion();
     }
 
     String commandClazz = COMMANDS.get(commandName);
@@ -86,6 +93,12 @@ public class SentryMain {
     }
     ((Command)command).run(commandLine.getArgs());
   }
+
+  private static void printVersion() {
+    System.out.println(SentryVersionInfo.getBuildVersion());
+    System.exit(0);
+  }
+
   private static void printHelp(Options options, String msg) {
     String sentry = "sentry";
     if(msg != null)

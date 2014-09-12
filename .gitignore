@@ -8,6 +8,7 @@ target/
 *.iml
 derby.log
 datanucleus.log
+sentry-core/sentry-core-common/src/gen
 **/TempStatsStore/
 # Package Files #
 *.jar
