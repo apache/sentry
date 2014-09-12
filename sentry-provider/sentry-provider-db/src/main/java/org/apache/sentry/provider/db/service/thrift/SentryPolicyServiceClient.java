@@ -136,7 +136,7 @@ public class SentryPolicyServiceClient {
 
       // Resolve server host in the same way as we are doing on server side
       serverPrincipal = SecurityUtil.getServerPrincipal(serverPrincipal, serverAddress.getAddress());
-      LOGGER.info("Using server kerberos principal: " + serverPrincipal);
+      LOGGER.debug("Using server kerberos principal: " + serverPrincipal);
 
       serverPrincipalParts = SaslRpcServer.splitKerberosName(serverPrincipal);
       Preconditions.checkArgument(serverPrincipalParts.length == 3,
@@ -154,12 +154,12 @@ public class SentryPolicyServiceClient {
     } catch (TTransportException e) {
       throw new IOException("Transport exception while opening transport: " + e.getMessage(), e);
     }
-    LOGGER.info("Successfully opened transport: " + transport + " to " + serverAddress);
+    LOGGER.debug("Successfully opened transport: " + transport + " to " + serverAddress);
     TMultiplexedProtocol protocol = new TMultiplexedProtocol(
       new TBinaryProtocol(transport),
       SentryPolicyStoreProcessor.SENTRY_POLICY_SERVICE_NAME);
     client = new SentryPolicyService.Client(protocol);
-    LOGGER.info("Successfully created client");
+    LOGGER.debug("Successfully created client");
   }
 
   public synchronized void createRole(String requestorUserName, String roleName)
