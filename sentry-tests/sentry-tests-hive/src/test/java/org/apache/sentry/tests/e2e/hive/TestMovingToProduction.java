@@ -43,7 +43,9 @@ public class TestMovingToProduction extends AbstractTestWithStaticConfiguration 
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP)
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
   }
 
   /**
@@ -64,15 +66,7 @@ public class TestMovingToProduction extends AbstractTestWithStaticConfiguration 
    */
   @Test
   public void testMovingTable1() throws Exception {
-    policyFile
-        .addRolesToGroup(USERGROUP1, "all_db1", "load_data")
-        .addPermissionsToRole("load_data", "server=server1->uri=file://" + dataDir.getPath())
-        .addPermissionsToRole("all_db1", "server=server1->db="  + DB1)
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
-    writePolicyFile(policyFile);
-
     String tableName1 = "tb_1";
-
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
@@ -84,6 +78,13 @@ public class TestMovingToProduction extends AbstractTestWithStaticConfiguration 
         + " (under_col int comment 'the under column', value string)");
     statement.close();
     connection.close();
+
+    policyFile
+        .addRolesToGroup(USERGROUP1, "all_db1", "load_data")
+        .addPermissionsToRole("load_data", "server=server1->uri=file://" + dataDir.getPath())
+        .addPermissionsToRole("all_db1", "server=server1->db="  + DB1);
+    writePolicyFile(policyFile);
+
 
     // a
     connection = context.createConnection(USER1_1);
@@ -146,13 +147,6 @@ public class TestMovingToProduction extends AbstractTestWithStaticConfiguration 
    */
   @Test
   public void testMovingTable2() throws Exception {
-    policyFile
-        .addRolesToGroup(USERGROUP1, "all_db1", "load_data")
-        .addPermissionsToRole("all_db1", "server=server1->db="  + DB1)
-        .addPermissionsToRole("load_data", "server=server1->uri=file://" + dataDir.getPath())
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
-    writePolicyFile(policyFile);
-
     String tableName1 = "tb_1";
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
@@ -165,6 +159,12 @@ public class TestMovingToProduction extends AbstractTestWithStaticConfiguration 
         + " (under_col int comment 'the under column', value string)");
     statement.close();
     connection.close();
+
+    policyFile
+        .addRolesToGroup(USERGROUP1, "all_db1", "load_data")
+        .addPermissionsToRole("all_db1", "server=server1->db="  + DB1)
+        .addPermissionsToRole("load_data", "server=server1->uri=file://" + dataDir.getPath());
+    writePolicyFile(policyFile);
 
     // a
     connection = context.createConnection(USER1_1);
