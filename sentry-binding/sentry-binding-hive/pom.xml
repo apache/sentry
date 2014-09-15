@@ -75,6 +75,14 @@ limitations under the License.
     <!-- required for SentryGrantRevokeTask -->
     <dependency>
       <groupId>org.apache.sentry</groupId>
+      <artifactId>sentry-service-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.sentry</groupId>
+      <artifactId>sentry-hdfs</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.sentry</groupId>
       <artifactId>sentry-provider-db</artifactId>
     </dependency>
     <dependency>

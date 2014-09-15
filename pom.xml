@@ -68,7 +68,7 @@ limitations under the License.
     <derby.version>10.10.2.0</derby.version>
     <commons-cli.version>1.2</commons-cli.version>
     <hive.version>0.13.1-cdh5.2.0-SNAPSHOT</hive.version>
-    <hadoop.version>2.3.0-cdh5.1.0-SNAPSHOT</hadoop.version>
+    <hadoop.version>2.5.0</hadoop.version>
     <fest.reflect.version>1.4.1</fest.reflect.version>
     <guava.version>11.0.2</guava.version>
     <junit.version>4.9</junit.version>
@@ -146,6 +146,12 @@ limitations under the License.
         <groupId>org.apache.hadoop</groupId>
         <artifactId>hadoop-hdfs</artifactId>
         <version>${hadoop.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-hdfs</artifactId>
+        <version>${hadoop.version}</version>
+        <type>test-jar</type>
       </dependency>
       <dependency>
         <groupId>org.apache.hadoop</groupId>
@@ -324,12 +330,27 @@ limitations under the License.
       </dependency>
       <dependency>
         <groupId>org.apache.sentry</groupId>
+        <artifactId>sentry-service-client</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.sentry</groupId>
         <artifactId>sentry-provider-common</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.sentry</groupId>
         <artifactId>sentry-provider-file</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.sentry</groupId>
+        <artifactId>sentry-hdfs</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.sentry</groupId>
+        <artifactId>sentry-hdfs-int</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -402,6 +423,9 @@ limitations under the License.
     <module>sentry-policy</module>
     <module>sentry-tests</module>
     <module>sentry-dist</module>
+    <module>sentry-service-client</module>
+    <module>sentry-hdfs</module>
+    <module>sentry-hdfs-int</module>
   </modules>
 
   <build>

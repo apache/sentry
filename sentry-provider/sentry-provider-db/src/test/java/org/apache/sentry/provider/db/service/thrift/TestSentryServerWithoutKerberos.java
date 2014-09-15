@@ -18,18 +18,27 @@
 
 package org.apache.sentry.provider.db.service.thrift;
 import static junit.framework.Assert.assertEquals;
-import static org.junit.Assert.assertEquals;
 
+import java.io.IOException;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import junit.framework.Assert;
 
+import org.apache.hadoop.fs.permission.AclEntry;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.core.model.db.Table;
+import org.apache.sentry.hdfs.PermissionsUpdate;
+import org.apache.sentry.hdfs.SentryServiceClient;
+import org.apache.sentry.hdfs.SentryServiceClient.SentryAuthzUpdate;
+import org.apache.sentry.hdfs.UpdateableAuthzPermissions;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
 import org.junit.Test;
 
@@ -37,6 +46,30 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 public class TestSentryServerWithoutKerberos extends SentryServiceIntegrationBase {
+
+  public class SentryAdapter {
+
+    private SentryServiceClient sentryClient;
+    private UpdateableAuthzPermissions perms;
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
+
+    public SentryAdapter(UpdateableAuthzPermissions perms, SentryPolicyServiceClient sentryClient) throws Exception {
+      this.perms = perms;
+      this.sentryClient = new SentryServiceClient(conf);
+    }
+
+    public void pullUpdates() throws IOException {
+      SentryAuthzUpdate sentryUpdates = sentryClient.getAllUpdatesFrom(
+          perms.getLastUpdatedSeqNum() + 1, 0);
+      for (PermissionsUpdate update : sentryUpdates.getPermUpdates()) {
+        if (update.hasFullImage()) {
+          perms = perms.updateFull(update);
+        }
+        perms.updatePartial(Lists.newArrayList(update), lock);
+      }
+    }
+
+  }
 
   @Override
   public void beforeSetup() throws Exception {
@@ -61,6 +94,8 @@ public class TestSentryServerWithoutKerberos extends SentryServiceIntegrationBas
     Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
     setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
     writePolicyFile();
+    
+    UpdateableAuthzPermissions authzPerms = new UpdateableAuthzPermissions();
 
     String roleName1 = "admin_r1";
     String roleName2 = "admin_r2";
@@ -77,6 +112,12 @@ public class TestSentryServerWithoutKerberos extends SentryServiceIntegrationBas
     client.grantTablePrivilege(requestorUserName, roleName1, "server", "db2", "table3", "ALL");
     client.grantTablePrivilege(requestorUserName, roleName1, "server", "db2", "table4", "ALL");
 
+    SentryAdapter adapter = new SentryAdapter(authzPerms, client);
+    adapter.pullUpdates();
+//    waitToCommit(authzPerms);
+
+    List<AclEntry> sentryAcls = authzPerms.getAcls("db1.table1");
+    System.out.println("1 : " + sentryAcls);
 
     client.dropRoleIfExists(requestorUserName, roleName2);
     client.createRole(requestorUserName, roleName2);
@@ -88,6 +129,12 @@ public class TestSentryServerWithoutKerberos extends SentryServiceIntegrationBas
     client.grantTablePrivilege(requestorUserName, roleName2, "server", "db2", "table3", "ALL");
     client.grantTablePrivilege(requestorUserName, roleName2, "server", "db2", "table4", "ALL");
     client.grantTablePrivilege(requestorUserName, roleName2, "server", "db3", "table5", "ALL");
+
+    adapter.pullUpdates();
+//    waitToCommit(authzPermCache);
+    sentryAcls = authzPerms.getAcls("db1.table1");
+    System.out.println("2 : " + sentryAcls);
+
 
     Set<TSentryPrivilege> listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, roleName2, Lists.newArrayList(new Server("server"), new Database("db1")));
     assertEquals("Privilege not assigned to role2 !!", 2, listPrivilegesByRoleName.size());
@@ -162,4 +209,15 @@ public class TestSentryServerWithoutKerberos extends SentryServiceIntegrationBas
     assertEquals(0, client.listPrivilegesForProvider(requestorUserGroupNames,
             ActiveRoleSet.ALL).size());
   }
+
+//  private void waitToCommit(Update hmsCache) throws InterruptedException {
+//    int counter = 0;
+//    while(!hmsCache.areAllUpdatesCommited()) {
+//      Thread.sleep(200);
+//      counter++;
+//      if (counter > 10000) {
+//        fail("Updates taking too long to commit !!");
+//      }
+//    }
+//  }
 }

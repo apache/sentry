@@ -21,6 +21,7 @@ import junit.framework.Assert;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.provider.db.service.thrift.PolicyStoreConstants.PolicyStoreServerConfig;
+import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -31,6 +32,7 @@ public class TestSentryPolicyStoreProcessor {
   @Before
   public void setup() {
     conf = new Configuration(false);
+    conf.setBoolean(ServerConfig.SENTRY_HDFS_INTEGRATION_ENABLE, true);
   }
   @Test(expected=SentryConfigurationException.class)
   public void testConfigNotNotificationHandler() throws Exception {

@@ -42,6 +42,11 @@ limitations under the License.
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-mapreduce-client-jobclient</artifactId>
+      <version>2.5.0</version>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
@@ -72,11 +77,19 @@ limitations under the License.
     </dependency>
     <dependency>
       <groupId>org.apache.sentry</groupId>
+      <artifactId>sentry-hdfs</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.sentry</groupId>
       <artifactId>sentry-core-common</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.sentry</groupId>
       <artifactId>sentry-core-model-db</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.sentry</groupId>
+      <artifactId>sentry-service-client</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.sentry</groupId>
@@ -86,6 +99,11 @@ limitations under the License.
       <groupId>org.apache.sentry</groupId>
       <artifactId>sentry-provider-file</artifactId>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hive</groupId>
+      <artifactId>hive-exec</artifactId>
+      <version>0.13.1-cdh5.2.0-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.apache.hive</groupId>
@@ -107,6 +125,11 @@ limitations under the License.
     <dependency>
       <groupId>ant-contrib</groupId>
       <artifactId>ant-contrib</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.sentry</groupId>
+      <artifactId>sentry-hdfs-int</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
@@ -138,6 +161,11 @@ limitations under the License.
       <artifactId>mockito-all</artifactId>
       <scope>test</scope>
     </dependency>
+      <dependency>
+        <groupId>org.apache.hive</groupId>
+        <artifactId>hive-metastore</artifactId>
+        <version>${hive.version}</version>
+      </dependency>
   </dependencies>
 
   <build>
@@ -189,68 +217,5 @@ limitations under the License.
       </plugin>
     </plugins>
   </build>
-  <profiles>
-    <profile>
-      <id>thriftif</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-antrun-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>generate-thrift-sources</id>
-                <phase>generate-sources</phase>
-                <configuration>
-                  <target>
-                    <taskdef name="for" classname="net.sf.antcontrib.logic.ForTask"
-                      classpathref="maven.plugin.classpath" />
-                    <property name="thrift.args" value="-I ${thrift.home} --gen java:beans,hashcode"/>
-                    <property name="thrift.gen.dir" value="${basedir}/src/gen/thrift"/>
-                    <delete dir="${thrift.gen.dir}"/>
-                    <mkdir dir="${thrift.gen.dir}"/>
-                    <for param="thrift.file">
-                      <path>
-                        <fileset dir="${basedir}/src/main/resources/" includes="**/*.thrift" />
-                      </path>
-                      <sequential>
-                        <echo message="Generating Thrift code for @{thrift.file}"/>
-                        <exec executable="${thrift.home}/bin/thrift"  failonerror="true" dir=".">
-                          <arg line="${thrift.args} -I ${basedir}/src/main/resources/ -o ${thrift.gen.dir} @{thrift.file} " />
-                        </exec>
-                      </sequential>
-                    </for>
-                  </target>
-                </configuration>
-                <goals>
-                  <goal>run</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-enforcer-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>enforce-property</id>
-                <goals>
-                  <goal>enforce</goal>
-                </goals>
-                <configuration>
-                  <rules>
-                    <requireProperty>
-                      <property>thrift.home</property>
-                    </requireProperty>
-                  </rules>
-                  <fail>true</fail>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 
 </project>

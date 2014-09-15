@@ -23,6 +23,7 @@ import static org.apache.sentry.provider.common.ProviderConstants.KV_JOINER;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -40,20 +41,25 @@ import javax.jdo.Transaction;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.sentry.SentryUserException;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
+import org.apache.sentry.hdfs.PermissionsUpdate;
 import org.apache.sentry.provider.common.ProviderConstants;
 import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.provider.db.SentryAlreadyExistsException;
 import org.apache.sentry.provider.db.SentryGrantDeniedException;
 import org.apache.sentry.provider.db.SentryInvalidInputException;
 import org.apache.sentry.provider.db.SentryNoSuchObjectException;
+import org.apache.sentry.provider.db.service.UpdateForwarder.ExternalImageRetriever;
 import org.apache.sentry.provider.db.service.model.MSentryGroup;
 import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
 import org.apache.sentry.provider.db.service.model.MSentryVersion;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessor;
+import org.apache.sentry.provider.db.service.thrift.TPrivilegeChanges;
+import org.apache.sentry.provider.db.service.thrift.TRoleChanges;
 import org.apache.sentry.provider.db.service.thrift.TSentryActiveRoleSet;
 import org.apache.sentry.provider.db.service.thrift.TSentryAuthorizable;
 import org.apache.sentry.provider.db.service.thrift.TSentryGrantOption;
@@ -79,11 +85,21 @@ import com.google.common.collect.Sets;
  * such as role and group names will be normalized to lowercase
  * in addition to starting and ending whitespace.
  */
-public class SentryStore {
+public class SentryStore implements ExternalImageRetriever<PermissionsUpdate> {
   private static final UUID SERVER_UUID = UUID.randomUUID();
 
   public static String NULL_COL = "__NULL__";
   static final String DEFAULT_DATA_DIR = "sentry_policy_db";
+  
+  public static Map<String, FsAction> ACTION_MAPPING = new HashMap<String, FsAction>();
+  static {
+    ACTION_MAPPING.put("ALL", FsAction.ALL);
+    ACTION_MAPPING.put(AccessConstants.ALL, FsAction.ALL);
+    ACTION_MAPPING.put(AccessConstants.SELECT, FsAction.READ);
+    ACTION_MAPPING.put("SELECT", FsAction.READ);
+    ACTION_MAPPING.put(AccessConstants.INSERT, FsAction.WRITE);
+    ACTION_MAPPING.put("INSERT", FsAction.WRITE);
+  }
   /**
    * Commit order sequence id. This is used by notification handlers
    * to know the order in which events where committed to the database.
@@ -713,7 +729,6 @@ public class SentryStore {
       }
     }
   }
-
 
   List<MSentryPrivilege> getMSentryPrivileges(Set<String> roleNames, TSentryAuthorizable authHierarchy) {
     if ((roleNames.size() == 0)||(roleNames == null)) return new ArrayList<MSentryPrivilege>();
@@ -1369,4 +1384,56 @@ public class SentryStore {
     return Sets.newHashSet(conf.getStrings(
         ServerConfig.ADMIN_GROUPS, new String[]{}));
   }
+
+  @Override
+  public PermissionsUpdate retrieveFullImage(long seqNum) {
+    PermissionsUpdate retVal = new PermissionsUpdate(seqNum, true);
+    boolean rollbackTransaction = true;
+    PersistenceManager pm = null;
+    try {
+      pm = openTransaction();
+      Query query = pm.newQuery(MSentryPrivilege.class);
+      String filters = "(serverName != \"__NULL__\") "
+              + "&& (dbName != \"__NULL__\") "
+              + "&& (URI == \"__NULL__\")";
+      query.setFilter(filters.toString());
+      query.setOrdering("serverName ascending, dbName ascending, tableName ascending");
+      List<MSentryPrivilege> privileges = (List<MSentryPrivilege>) query.execute();
+      rollbackTransaction = false;
+      for (MSentryPrivilege mPriv : privileges) {
+        String authzObj = mPriv.getDbName();
+        if (!isNULL(mPriv.getTableName())) {
+          authzObj = authzObj + "." + mPriv.getTableName();
+        }
+        TPrivilegeChanges pUpdate = retVal.addPrivilegeUpdate(authzObj);
+        for (MSentryRole mRole : mPriv.getRoles()) {
+          String existingPriv = pUpdate.getAddPrivileges().get(mRole.getRoleName());
+          if (existingPriv == null) {
+            pUpdate.putToAddPrivileges(mRole.getRoleName(),
+                ACTION_MAPPING.get(mPriv.getAction()).SYMBOL);
+          } else {
+            pUpdate.putToAddPrivileges(
+                mRole.getRoleName(),
+                FsAction.getFsAction(existingPriv)
+                    .or(ACTION_MAPPING.get(mPriv.getAction())).SYMBOL);
+          }
+        }
+      }
+      query = pm.newQuery(MSentryGroup.class);
+      List<MSentryGroup> groups = (List<MSentryGroup>) query.execute();
+      for (MSentryGroup mGroup : groups) {
+        for (MSentryRole role : mGroup.getRoles()) {
+          TRoleChanges rUpdate = retVal.addRoleUpdate(role.getRoleName());
+          rUpdate.addToAddGroups(mGroup.getGroupName());
+        }
+      }
+      commitTransaction(pm);
+      return retVal;
+    } finally {
+      if (rollbackTransaction) {
+        rollbackTransaction(pm);
+      }
+    }
+  }
+
 }

@@ -38,13 +38,14 @@ import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
+import org.apache.sentry.hdfs.PathsUpdate;
 import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
 import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.apache.sentry.service.thrift.ServiceConstants.ThriftConstants;
 import org.apache.sentry.service.thrift.Status;
 import org.apache.thrift.TException;
-import org.apache.thrift.protocol.TBinaryProtocol;
+import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.protocol.TMultiplexedProtocol;
 import org.apache.thrift.transport.TSaslClientTransport;
 import org.apache.thrift.transport.TSocket;
@@ -156,7 +157,7 @@ public class SentryPolicyServiceClient {
     }
     LOGGER.debug("Successfully opened transport: " + transport + " to " + serverAddress);
     TMultiplexedProtocol protocol = new TMultiplexedProtocol(
-      new TBinaryProtocol(transport),
+      new TCompactProtocol(transport),
       SentryPolicyStoreProcessor.SENTRY_POLICY_SERVICE_NAME);
     client = new SentryPolicyService.Client(protocol);
     LOGGER.debug("Successfully created client");
@@ -567,6 +568,15 @@ TSENTRY_SERVICE_VERSION_CURRENT, requestorUserName,
           .rename_sentry_privilege(request);
       Status.throwIfNotOk(response.getStatus());
     } catch (TException e) {
+      throw new SentryUserException(THRIFT_EXCEPTION_MESSAGE, e);
+    }
+  }
+
+  public synchronized void notifyHMSUpdate(PathsUpdate update)
+      throws SentryUserException {
+    try {
+      client.handle_hms_notification(update.getThriftObject());
+    } catch (Exception e) {
       throw new SentryUserException(THRIFT_EXCEPTION_MESSAGE, e);
     }
   }
