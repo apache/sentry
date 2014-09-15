@@ -532,6 +532,7 @@ limitations under the License.
                   <exclude>**/*.sql</exclude>
                   <exclude>**/upgrade.*</exclude>
                   <exclude>**/datanucleus.log</exclude>
+                  <exclude>**/metastore_db/</exclude>
                 </excludes>
               </configuration>
             </execution>
