@@ -17,26 +17,21 @@
  */
 package org.apache.sentry.hdfs;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.UnresolvedLinkException;
 import org.apache.hadoop.fs.permission.AclEntry;
 import org.apache.hadoop.fs.permission.AclEntryScope;
 import org.apache.hadoop.fs.permission.AclEntryType;
-import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.server.namenode.AclFeature;
-import org.apache.hadoop.hdfs.server.namenode.AuthorizationProvider;
-import org.apache.hadoop.hdfs.server.namenode.DefaultAuthorizationProvider;
-import org.apache.hadoop.security.AccessControlException;
+import org.apache.hadoop.hdfs.server.namenode.INodeAttributeProvider;
+import org.apache.hadoop.hdfs.server.namenode.INodeAttributes;
+import org.apache.hadoop.hdfs.server.namenode.XAttrFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +39,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 
 public class SentryAuthorizationProvider 
-    implements AuthorizationProvider, Configurable {
+    extends INodeAttributeProvider implements Configurable {
   
   static class SentryAclFeature extends AclFeature {
     public SentryAclFeature(ImmutableList<AclEntry> entries) {
@@ -57,10 +52,9 @@ public class SentryAuthorizationProvider
 
   private boolean started;
   private Configuration conf;
-  private AuthorizationProvider defaultAuthzProvider;
   private String user;
   private String group;
-  private FsPermission permission;
+  private short permission;
   private boolean originalAuthzAsAcl;
   private SentryAuthorizationInfo authzInfo;
 
@@ -94,8 +88,6 @@ public class SentryAuthorizationProvider
         throw new RuntimeException("HDFS ACLs must be enabled");
       }
 
-      defaultAuthzProvider = new DefaultAuthorizationProvider();
-      defaultAuthzProvider.start();
       // Configuration is read from hdfs-sentry.xml and NN configuration, in
       // that order of precedence.
       Configuration conf = new Configuration(this.conf);
@@ -104,10 +96,9 @@ public class SentryAuthorizationProvider
           SentryAuthorizationConstants.HDFS_USER_DEFAULT);
       group = conf.get(SentryAuthorizationConstants.HDFS_GROUP_KEY,
           SentryAuthorizationConstants.HDFS_GROUP_DEFAULT);
-      permission = FsPermission.createImmutable(
-          (short) conf.getLong(SentryAuthorizationConstants.HDFS_PERMISSION_KEY,
-              SentryAuthorizationConstants.HDFS_PERMISSION_DEFAULT)
-      );
+      permission = (short) conf.getLong(
+          SentryAuthorizationConstants.HDFS_PERMISSION_KEY,
+          SentryAuthorizationConstants.HDFS_PERMISSION_DEFAULT);
       originalAuthzAsAcl = conf.getBoolean(
           SentryAuthorizationConstants.INCLUDE_HDFS_AUTHZ_AS_ACL_KEY,
           SentryAuthorizationConstants.INCLUDE_HDFS_AUTHZ_AS_ACL_DEFAULT);
@@ -130,142 +121,104 @@ public class SentryAuthorizationProvider
   public synchronized void stop() {
     LOG.debug("Stopping");
     authzInfo.stop();
-    defaultAuthzProvider.stop();
-    defaultAuthzProvider = null;
   }
 
-  @Override
-  public void setSnaphottableDirs(Map<INodeAuthorizationInfo, Integer>
-      snapshotableDirs) {
-    defaultAuthzProvider.setSnaphottableDirs(snapshotableDirs);
-  }
+  private static final AclFeature EMPTY_ACL_FEATURE =
+      new AclFeature(AclFeature.EMPTY_ENTRY_LIST);
 
-  @Override
-  public void addSnapshottable(INodeAuthorizationInfo dir) {
-    defaultAuthzProvider.addSnapshottable(dir);
-  }
+  private class INodeAttributesX implements INodeAttributes {
+    private boolean useDefault;
+    private INodeAttributes node;
+    private AclFeature aclFeature;
+    
+    public INodeAttributesX(boolean useDefault, INodeAttributes node,
+        AclFeature aclFeature) {
+      this.node = node;
+      this.useDefault = useDefault;
+      this.aclFeature = aclFeature;
+    }
+    
+    @Override
+    public boolean isDirectory() {
+      return node.isDirectory();
+    }
 
-  @Override
-  public void removeSnapshottable(INodeAuthorizationInfo dir) {
-    defaultAuthzProvider.removeSnapshottable(dir);
-  }
+    @Override
+    public byte[] getLocalNameBytes() {
+      return node.getLocalNameBytes();
+    }
 
-  @Override
-  public void createSnapshot(INodeAuthorizationInfo dir, int snapshotId)
-      throws IOException{
-    defaultAuthzProvider.createSnapshot(dir, snapshotId);
-  }
+    public String getUserName() {
+      return (useDefault) ? node.getUserName() : user;
+    }
 
-  @Override
-  public void removeSnapshot(INodeAuthorizationInfo dir, int snapshotId)
-      throws IOException {
-    defaultAuthzProvider.removeSnapshot(dir, snapshotId);
-  }
+    @Override
+    public String getGroupName() {
+      return (useDefault) ? node.getGroupName() : group;
+    }
 
-  @Override
-  public void checkPermission(String user, Set<String> groups,
-      INodeAuthorizationInfo[] inodes, int snapshotId,
-      boolean doCheckOwner, FsAction ancestorAccess, FsAction parentAccess,
-      FsAction access, FsAction subAccess, boolean ignoreEmptyDir)
-      throws AccessControlException, UnresolvedLinkException {
-    defaultAuthzProvider.checkPermission(user, groups, inodes, snapshotId,
-        doCheckOwner, ancestorAccess, parentAccess, access, subAccess,
-        ignoreEmptyDir);
-  }
+    @Override
+    public FsPermission getFsPermission() {
+      return (useDefault) ? node.getFsPermission()
+                          : new FsPermission(getFsPermissionShort());
+    }
 
-  private static final String[] EMPTY_STRING_ARRAY = new String[0];
+    @Override
+    public short getFsPermissionShort() {
+      return (useDefault) ? node.getFsPermissionShort()
+                          : (short) getPermissionLong();
+    }
+
+    @Override
+    public long getPermissionLong() {
+      return (useDefault) ? node.getPermissionLong() : permission;
+    }
+
+    @Override
+    public AclFeature getAclFeature() {
+      AclFeature feature;
+      if (useDefault) {
+        feature = node.getAclFeature();
+        if (feature == null) {
+          feature = EMPTY_ACL_FEATURE;
+        }
+      } else {
+        feature = aclFeature;
+      }
+      return feature;
+    }
+
+    @Override
+    public XAttrFeature getXAttrFeature() {
+      return node.getXAttrFeature();
+    }
+
+    @Override
+    public long getModificationTime() {
+      return node.getModificationTime();
+    }
+
+    @Override
+    public long getAccessTime() {
+      return node.getAccessTime();
+    }
+  }
   
-  private String[] getPathElements(INodeAuthorizationInfo node) {
-    return getPathElements(node, 0);
-  }
-
-  private String[] getPathElements(INodeAuthorizationInfo node, int idx) {
-    String[] paths;
-    INodeAuthorizationInfo parent = node.getParent();
-    if (parent == null) {
-      paths = (idx > 0) ? new String[idx] : EMPTY_STRING_ARRAY;
-    } else {
-      paths = getPathElements(parent, idx + 1);
-      paths[paths.length - 1 - idx] = node.getLocalName();
-    }
-    return paths;
-  }
-
   @Override
-  public void setUser(INodeAuthorizationInfo node, String user) {
-    defaultAuthzProvider.setUser(node, user);
-  }
-
-  @Override
-  public String getUser(INodeAuthorizationInfo node, int snapshotId) {
-    String user;
-    String[] pathElements = getPathElements(node);
-    if (!authzInfo.isManaged(pathElements)) {
-      user = defaultAuthzProvider.getUser(node, snapshotId);
-    } else {
-      if (!authzInfo.isStale()) {
+  public INodeAttributes getAttributes(String[] pathElements,
+      INodeAttributes node) {
+    if (authzInfo.isManaged(pathElements)) {
+      boolean stale = authzInfo.isStale();
+      AclFeature aclFeature = getAclFeature(pathElements, node, stale);
+      if (!stale) {
         if (authzInfo.doesBelongToAuthzObject(pathElements)) {
-          user = this.user;
-        } else {
-          user = defaultAuthzProvider.getUser(node, snapshotId);
+          node = new INodeAttributesX(false, node, aclFeature);
         }
       } else {
-        user = this.user;
+        node = new INodeAttributesX(true, node, aclFeature);
       }
     }
-    return user;
-  }
-
-  @Override
-  public void setGroup(INodeAuthorizationInfo node, String group) {
-    defaultAuthzProvider.setGroup(node, group);
-  }
-
-  @Override
-  public String getGroup(INodeAuthorizationInfo node, int snapshotId) {
-    String group;
-    String[] pathElements = getPathElements(node);
-    if (!authzInfo.isManaged(pathElements)) {
-      group = defaultAuthzProvider.getGroup(node, snapshotId);
-    } else {
-      if (!authzInfo.isStale()) {
-        if (authzInfo.doesBelongToAuthzObject(pathElements)) {
-          group = this.group;
-        } else {
-          group = defaultAuthzProvider.getGroup(node, snapshotId);
-        }
-      } else {
-        group = this.group;
-      }
-    }
-    return group;
-  }
-
-  @Override
-  public void setPermission(INodeAuthorizationInfo node,
-      FsPermission permission) {
-    defaultAuthzProvider.setPermission(node, permission);
-  }
-
-  @Override
-  public FsPermission getFsPermission(
-      INodeAuthorizationInfo node, int snapshotId) {
-    FsPermission permission;
-    String[] pathElements = getPathElements(node);
-    if (!authzInfo.isManaged(pathElements)) {
-      permission = defaultAuthzProvider.getFsPermission(node, snapshotId);
-    } else {
-      if (!authzInfo.isStale()) {
-        if (authzInfo.doesBelongToAuthzObject(pathElements)) {
-          permission = this.permission;
-        } else {
-          permission = defaultAuthzProvider.getFsPermission(node, snapshotId);
-        }
-      } else {
-        permission = this.permission;
-      }
-    }
-    return permission;
+    return node;
   }
 
   private List<AclEntry> createAclEntries(String user, String group,
@@ -291,80 +244,35 @@ public class SentryAuthorizationProvider
     return list;
   }
 
-  @Override
-  public AclFeature getAclFeature(INodeAuthorizationInfo node, int snapshotId) {
+  public AclFeature getAclFeature(String[] pathElements, INodeAttributes node, 
+      boolean stale) {
     AclFeature f = null;
-    String[] pathElements = getPathElements(node);
     String p = Arrays.toString(pathElements);
-    boolean isManaged = false;
-    boolean isStale = false;
     boolean hasAuthzObj = false;
-    if (!authzInfo.isManaged(pathElements)) {
-      isManaged = false;
-      f = defaultAuthzProvider.getAclFeature(node, snapshotId);
-    } else {
-      isManaged = true;
-      List<AclEntry> list = new ArrayList<AclEntry>();
-      if (originalAuthzAsAcl) {
-        String user = defaultAuthzProvider.getUser(node, snapshotId);
-        String group = defaultAuthzProvider.getGroup(node, snapshotId);
-        INodeAuthorizationInfo pNode = node.getParent();
-        while  (group == null || pNode != null) {
-          group = defaultAuthzProvider.getGroup(pNode, snapshotId);
-          pNode = pNode.getParent();
-        }
-        FsPermission perm = defaultAuthzProvider.getFsPermission(node, snapshotId);
-        list.addAll(createAclEntries(user, group, perm));
-      }
-      if (!authzInfo.isStale()) { 
-        isStale = false;
-        if (authzInfo.doesBelongToAuthzObject(pathElements)) {
-          hasAuthzObj = true;
-          list.addAll(authzInfo.getAclEntries(pathElements));
-          f = new SentryAclFeature(ImmutableList.copyOf(list));
-        } else {
-          hasAuthzObj = false;
-          f = defaultAuthzProvider.getAclFeature(node, snapshotId);
-        }
-      } else {
-        isStale = true;
+    List<AclEntry> list = new ArrayList<AclEntry>();
+    if (originalAuthzAsAcl) {
+      String user = node.getUserName();
+      String group = node.getGroupName();
+      FsPermission perm = node.getFsPermission();
+      list.addAll(createAclEntries(user, group, perm));
+    }
+    if (!stale) { 
+      if (authzInfo.doesBelongToAuthzObject(pathElements)) {
+        hasAuthzObj = true;
+        list.addAll(authzInfo.getAclEntries(pathElements));
         f = new SentryAclFeature(ImmutableList.copyOf(list));
       }
+    } else {
+      f = new SentryAclFeature(ImmutableList.copyOf(list));
     }
     if (LOG.isDebugEnabled()) {
-      LOG.debug("### getAclEntry [" + (p == null ? "null" : p) + "] : ["
-          + "isManaged=" + isManaged
-          + ",isStale=" + isStale
+      LOG.debug("### getAclEntry [" + p + "] : ["
+          + "isStale=" + stale
           + ",hasAuthzObj=" + hasAuthzObj
           + ",origAtuhzAsAcl=" + originalAuthzAsAcl + "]"
           + "[" + (f == null ? "null" : f.getEntries()) + "]");
     }
     return f;
-  }
-
-  @Override
-  public void removeAclFeature(INodeAuthorizationInfo node) {
-    AclFeature aclFeature = node.getAclFeature(CURRENT_STATE_ID);
-    if (aclFeature.getClass() != SentryAclFeature.class) {
-      defaultAuthzProvider.removeAclFeature(node);
-    }
-  }
-
-  @Override
-  public void addAclFeature(INodeAuthorizationInfo node, AclFeature f) {
-    String[] pathElements = getPathElements(node);
-    if (!authzInfo.isManaged(pathElements)) {
-      defaultAuthzProvider.addAclFeature(node, f);
-    }
-  }
-
-  @Override 
-  public boolean doesAllowChanges(INodeAuthorizationInfo node) {
-    String[] pathElements = getPathElements(node);
-    if (!authzInfo.isManaged(pathElements)) {
-      return defaultAuthzProvider.doesAllowChanges(node);
-    }
-    return !authzInfo.doesBelongToAuthzObject(getPathElements(node));
   }
 
 }

@@ -264,7 +264,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
         PermissionsUpdate update = new PermissionsUpdate(permSeqNum.incrementAndGet(), false);
         update.addPrivilegeUpdate(authzObj).putToAddPrivileges(
             request.getRoleName(),
-            SentryStore.ACTION_MAPPING.get(request.getPrivilege().getAction())
+            SentryStore.ACTION_MAPPING.get(request.getPrivilege().getAction().toUpperCase())
                 .SYMBOL);
         permsUpdater.handleUpdateNotification(update);
         LOGGER.info("Authz Perm preUpdate [" + update.getSeqNum() + "]..");
@@ -306,7 +306,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
         PermissionsUpdate update = new PermissionsUpdate(permSeqNum.incrementAndGet(), false);
         update.addPrivilegeUpdate(authzObj).putToDelPrivileges(
             request.getRoleName(),
-            SentryStore.ACTION_MAPPING.get(request.getPrivilege().getAction())
+            SentryStore.ACTION_MAPPING.get(request.getPrivilege().getAction().toUpperCase())
                 .SYMBOL);
         permsUpdater.handleUpdateNotification(update);
         LOGGER.info("Authz Perm preUpdate [" + update.getSeqNum() + ", " + authzObj + "]..");

@@ -1410,12 +1410,12 @@ public class SentryStore implements ExternalImageRetriever<PermissionsUpdate> {
           String existingPriv = pUpdate.getAddPrivileges().get(mRole.getRoleName());
           if (existingPriv == null) {
             pUpdate.putToAddPrivileges(mRole.getRoleName(),
-                ACTION_MAPPING.get(mPriv.getAction()).SYMBOL);
+                ACTION_MAPPING.get(mPriv.getAction().toUpperCase()).SYMBOL);
           } else {
             pUpdate.putToAddPrivileges(
                 mRole.getRoleName(),
                 FsAction.getFsAction(existingPriv)
-                    .or(ACTION_MAPPING.get(mPriv.getAction())).SYMBOL);
+                    .or(ACTION_MAPPING.get(mPriv.getAction().toUpperCase())).SYMBOL);
           }
         }
       }
