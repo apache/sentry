@@ -100,11 +100,17 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
       return this;
     }
 
-    public HierarcyBuilder addUriToOutput(Server server, String uriPath) {
+    public HierarcyBuilder addUriToOutput(Server server, String uriPath,
+        String warehouseDirPath) throws MetaException {
       List<DBModelAuthorizable> uriHierarchy = new ArrayList<DBModelAuthorizable>();
       addServerToOutput(server);
       uriHierarchy.add(server);
-      uriHierarchy.add(new AccessURI(uriPath));
+      try {
+        uriHierarchy.add(new AccessURI(PathUtils.parseDFSURI(warehouseDirPath,
+            uriPath)));
+      } catch (URISyntaxException e) {
+        throw new MetaException("Error paring the URI " + e.getMessage());
+      }
       authHierarchy.add(uriHierarchy);
       return this;
     }
@@ -130,7 +136,7 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
   private final HiveConf hiveConf;
   private final ImmutableSet<String> serviceUsers;
   private HiveAuthzBinding hiveAuthzBinding;
-  private String warehouseDir;
+  private final String warehouseDir;
 
   public MetastoreAuthzBinding(Configuration config) throws Exception {
     super(config);
@@ -233,7 +239,7 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
       } catch(URISyntaxException e) {
         throw new MetaException(e.getMessage());
       }
-      inputBuilder.addUriToOutput(getAuthServer(), uriPath);
+      inputBuilder.addUriToOutput(getAuthServer(), uriPath, warehouseDir);
     }
     authorizeMetastoreAccess(HiveOperation.CREATETABLE, inputBuilder.build(),
         outputBuilder.build());
@@ -280,7 +286,8 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
       throw new MetaException(e.getMessage());
     }
     if (oldLocationUri.compareTo(newLocationUri) != 0) {
-      outputBuilder.addUriToOutput(getAuthServer(), newLocationUri);
+      outputBuilder.addUriToOutput(getAuthServer(), newLocationUri,
+          warehouseDir);
       operation = HiveOperation.ALTERTABLE_LOCATION;
     }
     authorizeMetastoreAccess(
@@ -314,7 +321,7 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
 	        throw new MetaException(e.getMessage());
 	      }
 	      if (!partitionLocation.startsWith(tableLocation + File.separator)) {
-	        outputBuilder.addUriToOutput(getAuthServer(), uriPath);
+          outputBuilder.addUriToOutput(getAuthServer(), uriPath, warehouseDir);
 	      }
 	    }
       authorizeMetastoreAccess(HiveOperation.ALTERTABLE_ADDPARTS,
@@ -356,7 +363,7 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
       } catch (URISyntaxException e) {
         throw new MetaException(e.getMessage());
       }
-      outputBuilder.addUriToOutput(getAuthServer(), uriPath);
+      outputBuilder.addUriToOutput(getAuthServer(), uriPath, warehouseDir);
     }
     authorizeMetastoreAccess(
         HiveOperation.ALTERPARTITION_LOCATION,
