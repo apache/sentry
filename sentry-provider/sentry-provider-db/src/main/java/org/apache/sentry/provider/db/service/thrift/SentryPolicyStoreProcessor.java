@@ -337,17 +337,20 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     TListSentryRolesResponse response = new TListSentryRolesResponse();
     TSentryResponseStatus status;
     Set<TSentryRole> roleSet = new HashSet<TSentryRole>();
-    Set<String> groups = new HashSet<String>();
+    String subject = request.getRequestorUserName();
     boolean checkAllGroups = false;
     try {
+      Set<String> groups = getRequestorGroups(subject);
       // Don't check admin permissions for listing requestor's own roles
       if (AccessConstants.ALL.equalsIgnoreCase(request.getGroupName())) {
-        groups = getRequestorGroups(request.getRequestorUserName());
         checkAllGroups = true;
       } else {
-        authorize(request.getRequestorUserName(),
-          getRequestorGroups(request.getRequestorUserName()));
-        groups.add(request.getGroupName());
+        if (!inAdminGroups(groups)) {
+          // non-admin can only list roles for their own group
+          if (!groups.contains(request.getGroupName())) {
+            throw new SentryAccessDeniedException("Access denied to " + subject);
+          }
+        }
       }
       roleSet = sentryStore.getTSentryRolesByGroupName(groups, checkAllGroups);
       response.setRoles(roleSet);
