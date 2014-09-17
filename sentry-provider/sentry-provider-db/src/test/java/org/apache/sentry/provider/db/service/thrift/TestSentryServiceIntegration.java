@@ -21,12 +21,23 @@ package org.apache.sentry.provider.db.service.thrift;
 import static junit.framework.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
+import org.apache.sentry.core.common.ActiveRoleSet;
+import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.model.db.AccessConstants;
+import org.apache.sentry.core.model.db.AccessURI;
+import org.apache.sentry.core.model.db.Database;
+import org.apache.sentry.core.model.db.Server;
+import org.apache.sentry.core.model.db.Table;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
 import org.junit.Test;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 
@@ -287,4 +298,216 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
     client.revokeTablePrivilege(requestorUserName, roleName, "server", "db1", "table1", "ALL", null);
     assertEquals(0, client.listAllPrivilegesByRoleName(requestorUserName, roleName).size());
   }
+
+  @Test
+  public void testListByAuthDB() throws Exception {
+    String requestorUserName = ADMIN_USER;
+    Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
+    String roleName1 = "role1";
+    String roleName2 = "role2";
+    Set<String> testRoleSet = Sets.newHashSet(roleName1, roleName2);
+    String group1 = "group1";
+    String group2 = "group2";
+    Set<String> testGroupSet = Sets.newHashSet(group1, group2);
+    String server = "server1";
+    String db = "testDB";
+    String db2 = "testDB2";
+    String tab = "testTab";
+    setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+    writePolicyFile();
+
+    client.dropRoleIfExists(requestorUserName, roleName1);
+    client.createRole(requestorUserName, roleName1);
+    client.dropRoleIfExists(requestorUserName, roleName2);
+    client.createRole(requestorUserName, roleName2);
+
+    TSentryPrivilege role1db1 = client.grantDatabasePrivilege(
+        requestorUserName, roleName1, server, db, AccessConstants.SELECT);
+    client.grantTablePrivilege(requestorUserName, roleName1, server, db, tab,
+        AccessConstants.ALL);
+    client.grantTablePrivilege(requestorUserName, roleName1, server, db2, tab,
+        AccessConstants.SELECT);
+    client.grantURIPrivilege(requestorUserName, roleName1, server, "hdfs:///fooUri");
+    client.grantRoleToGroup(requestorUserName, group1, roleName1);
+
+    TSentryPrivilege role2db1 = client.grantDatabasePrivilege(
+        requestorUserName, roleName2, server, db,
+        AccessConstants.ALL);
+    client.grantDatabasePrivilege(requestorUserName, roleName2, server, db2,
+        AccessConstants.SELECT);
+    client.grantTablePrivilege(requestorUserName, roleName2, server, db2, tab,
+        AccessConstants.ALL);
+    client.grantRoleToGroup(requestorUserName, group2, roleName2);
+
+    // build expected output
+    TSentryPrivilegeMap db1RoleToPrivMap = new TSentryPrivilegeMap(
+        new TreeMap<String, Set<TSentryPrivilege>>());
+    db1RoleToPrivMap.getPrivilegeMap()
+        .put(roleName1, Sets.newHashSet(role1db1));
+    db1RoleToPrivMap.getPrivilegeMap()
+        .put(roleName2, Sets.newHashSet(role2db1));
+    Map<TSentryAuthorizable, TSentryPrivilegeMap> expectedResults = Maps
+        .newTreeMap();
+    List<? extends Authorizable> db1Authrizable = Lists.newArrayList(
+        new Server(server), new Database(db));
+    expectedResults.put(
+        SentryPolicyServiceClient.setupSentryAuthorizable(db1Authrizable),
+        db1RoleToPrivMap);
+
+    Set<List<? extends Authorizable>> authorizableSet = Sets.newHashSet();
+    authorizableSet.add(db1Authrizable);
+
+    // verify for null group and null roleset
+    Map<TSentryAuthorizable, TSentryPrivilegeMap> authPrivMap = client
+        .listPrivilegsbyAuthorizable(authorizableSet, null, null);
+    assertEquals(expectedResults, authPrivMap);
+
+    // verify for null group and specific roleset
+    authPrivMap = client.listPrivilegsbyAuthorizable(authorizableSet, null,
+        new ActiveRoleSet(testRoleSet));
+    assertEquals(expectedResults, authPrivMap);
+
+    // verify for null group and specific roleset
+    authPrivMap = client.listPrivilegsbyAuthorizable(authorizableSet, null,
+        ActiveRoleSet.ALL);
+    assertEquals(expectedResults, authPrivMap);
+
+    // verify for specific group and null roleset
+    authPrivMap = client.listPrivilegsbyAuthorizable(authorizableSet,
+        testGroupSet, null);
+    assertEquals(expectedResults, authPrivMap);
+
+    // verify for specific group and specific roleset
+    authPrivMap = client.listPrivilegsbyAuthorizable(authorizableSet,
+        testGroupSet, new ActiveRoleSet(testRoleSet));
+    assertEquals(expectedResults, authPrivMap);
+
+    // verify for specific group and ALL roleset
+    authPrivMap = client.listPrivilegsbyAuthorizable(authorizableSet,
+        testGroupSet, ActiveRoleSet.ALL);
+    assertEquals(expectedResults, authPrivMap);
+  }
+
+  @Test
+  public void testListByAuthTab() throws Exception {
+    String requestorUserName = ADMIN_USER;
+    Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
+    String roleName1 = "role1";
+    String roleName2 = "role2";
+    String server = "server1";
+    String db = "testDB";
+    String db2 = "testDB2";
+    String tab = "testTab";
+    setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+    writePolicyFile();
+
+    client.dropRoleIfExists(requestorUserName, roleName1);
+    client.createRole(requestorUserName, roleName1);
+    client.dropRoleIfExists(requestorUserName, roleName2);
+    client.createRole(requestorUserName, roleName2);
+
+    client.grantDatabasePrivilege(
+        requestorUserName, roleName1, server, db, AccessConstants.SELECT);
+    client.grantTablePrivilege(requestorUserName, roleName1, server, db, tab,
+        AccessConstants.ALL);
+    TSentryPrivilege role1db2tab = client.grantTablePrivilege(
+        requestorUserName, roleName1, server, db2, tab,
+        AccessConstants.SELECT);
+
+    client.grantDatabasePrivilege(
+        requestorUserName, roleName2, server, db,
+        AccessConstants.ALL);
+    client.grantDatabasePrivilege(requestorUserName, roleName2, server, db2,
+        AccessConstants.SELECT);
+    TSentryPrivilege role2db2tab = client.grantTablePrivilege(
+        requestorUserName, roleName2, server, db2, tab,
+        AccessConstants.ALL);
+    client.grantURIPrivilege(requestorUserName, roleName1, server,
+        "hdfs:///fooUri");
+
+    // build expected output
+    TSentryPrivilegeMap db1RoleToPrivMap = new TSentryPrivilegeMap(
+        new TreeMap<String, Set<TSentryPrivilege>>());
+    db1RoleToPrivMap.getPrivilegeMap()
+.put(roleName1,
+        Sets.newHashSet(role1db2tab));
+    db1RoleToPrivMap.getPrivilegeMap()
+.put(roleName2,
+        Sets.newHashSet(role2db2tab));
+    Map<TSentryAuthorizable, TSentryPrivilegeMap> expectedResults = Maps
+        .newTreeMap();
+    List<? extends Authorizable> db2TabAuthrizable = Lists.newArrayList(
+        new Server(server), new Database(db2), new Table(tab));
+    expectedResults.put(
+        SentryPolicyServiceClient.setupSentryAuthorizable(db2TabAuthrizable),
+        db1RoleToPrivMap);
+
+    Set<List<? extends Authorizable>> authorizableSet = Sets.newHashSet();
+    authorizableSet.add(db2TabAuthrizable);
+    Map<TSentryAuthorizable, TSentryPrivilegeMap> authPrivMap = client
+        .listPrivilegsbyAuthorizable(authorizableSet, null, null);
+
+    assertEquals(expectedResults, authPrivMap);
+  }
+
+  @Test
+  public void testListByAuthUri() throws Exception {
+    String requestorUserName = ADMIN_USER;
+    Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
+    String roleName1 = "role1";
+    String roleName2 = "role2";
+    String server = "server1";
+    String db = "testDB";
+    String db2 = "testDB2";
+    String tab = "testTab";
+    String uri1 = "hdfs:///fooUri";
+    setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+    writePolicyFile();
+
+    client.dropRoleIfExists(requestorUserName, roleName1);
+    client.createRole(requestorUserName, roleName1);
+    client.dropRoleIfExists(requestorUserName, roleName2);
+    client.createRole(requestorUserName, roleName2);
+
+    client.grantDatabasePrivilege(requestorUserName, roleName1, server, db,
+        AccessConstants.SELECT);
+    client.grantTablePrivilege(requestorUserName, roleName1, server, db, tab,
+        AccessConstants.ALL);
+    client.grantTablePrivilege(requestorUserName, roleName1, server, db2, tab,
+        AccessConstants.SELECT);
+    TSentryPrivilege role1uri1 = client.grantURIPrivilege(requestorUserName,
+        roleName1, server, uri1);
+
+    client.grantDatabasePrivilege(requestorUserName, roleName2, server, db,
+        AccessConstants.ALL);
+    client.grantDatabasePrivilege(requestorUserName, roleName2, server, db2,
+        AccessConstants.SELECT);
+    client.grantTablePrivilege(requestorUserName, roleName2, server, db2, tab,
+        AccessConstants.ALL);
+    TSentryPrivilege role2uri2 = client.grantURIPrivilege(requestorUserName,
+        roleName2, server, uri1);
+
+    // build expected output
+    TSentryPrivilegeMap db1RoleToPrivMap = new TSentryPrivilegeMap(
+        new TreeMap<String, Set<TSentryPrivilege>>());
+    db1RoleToPrivMap.getPrivilegeMap().put(roleName1,
+        Sets.newHashSet(role1uri1));
+    db1RoleToPrivMap.getPrivilegeMap().put(roleName2,
+        Sets.newHashSet(role2uri2));
+    Map<TSentryAuthorizable, TSentryPrivilegeMap> expectedResults = Maps
+        .newTreeMap();
+    List<? extends Authorizable> uri1Authrizable = Lists.newArrayList(
+        new Server(server), new AccessURI(uri1));
+    expectedResults.put(
+        SentryPolicyServiceClient.setupSentryAuthorizable(uri1Authrizable),
+        db1RoleToPrivMap);
+
+    Set<List<? extends Authorizable>> authorizableSet = Sets.newHashSet();
+    authorizableSet.add(uri1Authrizable);
+    Map<TSentryAuthorizable, TSentryPrivilegeMap> authPrivMap = client
+        .listPrivilegsbyAuthorizable(authorizableSet, null, null);
+
+    assertEquals(expectedResults, authPrivMap);
+  }
+
 }

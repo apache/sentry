@@ -31,25 +31,25 @@ import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TAlterSentryRoleGrantPrivilegeResponse implements org.apache.thrift.TBase<TAlterSentryRoleGrantPrivilegeResponse, TAlterSentryRoleGrantPrivilegeResponse._Fields>, java.io.Serializable, Cloneable {
-  private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("TAlterSentryRoleGrantPrivilegeResponse");
+public class TListSentryPrivilegesByAuthResponse implements org.apache.thrift.TBase<TListSentryPrivilegesByAuthResponse, TListSentryPrivilegesByAuthResponse._Fields>, java.io.Serializable, Cloneable {
+  private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("TListSentryPrivilegesByAuthResponse");
 
   private static final org.apache.thrift.protocol.TField STATUS_FIELD_DESC = new org.apache.thrift.protocol.TField("status", org.apache.thrift.protocol.TType.STRUCT, (short)1);
-  private static final org.apache.thrift.protocol.TField PRIVILEGE_FIELD_DESC = new org.apache.thrift.protocol.TField("privilege", org.apache.thrift.protocol.TType.STRUCT, (short)2);
+  private static final org.apache.thrift.protocol.TField PRIVILEGES_MAP_BY_AUTH_FIELD_DESC = new org.apache.thrift.protocol.TField("privilegesMapByAuth", org.apache.thrift.protocol.TType.MAP, (short)2);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
-    schemes.put(StandardScheme.class, new TAlterSentryRoleGrantPrivilegeResponseStandardSchemeFactory());
-    schemes.put(TupleScheme.class, new TAlterSentryRoleGrantPrivilegeResponseTupleSchemeFactory());
+    schemes.put(StandardScheme.class, new TListSentryPrivilegesByAuthResponseStandardSchemeFactory());
+    schemes.put(TupleScheme.class, new TListSentryPrivilegesByAuthResponseTupleSchemeFactory());
   }
 
   private org.apache.sentry.service.thrift.TSentryResponseStatus status; // required
-  private TSentryPrivilege privilege; // optional
+  private Map<TSentryAuthorizable,TSentryPrivilegeMap> privilegesMapByAuth; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
     STATUS((short)1, "status"),
-    PRIVILEGE((short)2, "privilege");
+    PRIVILEGES_MAP_BY_AUTH((short)2, "privilegesMapByAuth");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -66,8 +66,8 @@ public class TAlterSentryRoleGrantPrivilegeResponse implements org.apache.thrift
       switch(fieldId) {
         case 1: // STATUS
           return STATUS;
-        case 2: // PRIVILEGE
-          return PRIVILEGE;
+        case 2: // PRIVILEGES_MAP_BY_AUTH
+          return PRIVILEGES_MAP_BY_AUTH;
         default:
           return null;
       }
@@ -108,48 +108,63 @@ public class TAlterSentryRoleGrantPrivilegeResponse implements org.apache.thrift
   }
 
   // isset id assignments
-  private _Fields optionals[] = {_Fields.PRIVILEGE};
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
     tmpMap.put(_Fields.STATUS, new org.apache.thrift.meta_data.FieldMetaData("status", org.apache.thrift.TFieldRequirementType.REQUIRED, 
         new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, org.apache.sentry.service.thrift.TSentryResponseStatus.class)));
-    tmpMap.put(_Fields.PRIVILEGE, new org.apache.thrift.meta_data.FieldMetaData("privilege", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
-        new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TSentryPrivilege.class)));
+    tmpMap.put(_Fields.PRIVILEGES_MAP_BY_AUTH, new org.apache.thrift.meta_data.FieldMetaData("privilegesMapByAuth", org.apache.thrift.TFieldRequirementType.REQUIRED, 
+        new org.apache.thrift.meta_data.MapMetaData(org.apache.thrift.protocol.TType.MAP, 
+            new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TSentryAuthorizable.class), 
+            new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TSentryPrivilegeMap.class))));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
-    org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(TAlterSentryRoleGrantPrivilegeResponse.class, metaDataMap);
+    org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(TListSentryPrivilegesByAuthResponse.class, metaDataMap);
   }
 
-  public TAlterSentryRoleGrantPrivilegeResponse() {
+  public TListSentryPrivilegesByAuthResponse() {
   }
 
-  public TAlterSentryRoleGrantPrivilegeResponse(
-    org.apache.sentry.service.thrift.TSentryResponseStatus status)
+  public TListSentryPrivilegesByAuthResponse(
+    org.apache.sentry.service.thrift.TSentryResponseStatus status,
+    Map<TSentryAuthorizable,TSentryPrivilegeMap> privilegesMapByAuth)
   {
     this();
     this.status = status;
+    this.privilegesMapByAuth = privilegesMapByAuth;
   }
 
   /**
    * Performs a deep copy on <i>other</i>.
    */
-  public TAlterSentryRoleGrantPrivilegeResponse(TAlterSentryRoleGrantPrivilegeResponse other) {
+  public TListSentryPrivilegesByAuthResponse(TListSentryPrivilegesByAuthResponse other) {
     if (other.isSetStatus()) {
       this.status = new org.apache.sentry.service.thrift.TSentryResponseStatus(other.status);
     }
-    if (other.isSetPrivilege()) {
-      this.privilege = new TSentryPrivilege(other.privilege);
+    if (other.isSetPrivilegesMapByAuth()) {
+      Map<TSentryAuthorizable,TSentryPrivilegeMap> __this__privilegesMapByAuth = new HashMap<TSentryAuthorizable,TSentryPrivilegeMap>();
+      for (Map.Entry<TSentryAuthorizable, TSentryPrivilegeMap> other_element : other.privilegesMapByAuth.entrySet()) {
+
+        TSentryAuthorizable other_element_key = other_element.getKey();
+        TSentryPrivilegeMap other_element_value = other_element.getValue();
+
+        TSentryAuthorizable __this__privilegesMapByAuth_copy_key = new TSentryAuthorizable(other_element_key);
+
+        TSentryPrivilegeMap __this__privilegesMapByAuth_copy_value = new TSentryPrivilegeMap(other_element_value);
+
+        __this__privilegesMapByAuth.put(__this__privilegesMapByAuth_copy_key, __this__privilegesMapByAuth_copy_value);
+      }
+      this.privilegesMapByAuth = __this__privilegesMapByAuth;
     }
   }
 
-  public TAlterSentryRoleGrantPrivilegeResponse deepCopy() {
-    return new TAlterSentryRoleGrantPrivilegeResponse(this);
+  public TListSentryPrivilegesByAuthResponse deepCopy() {
+    return new TListSentryPrivilegesByAuthResponse(this);
   }
 
   @Override
   public void clear() {
     this.status = null;
-    this.privilege = null;
+    this.privilegesMapByAuth = null;
   }
 
   public org.apache.sentry.service.thrift.TSentryResponseStatus getStatus() {
@@ -175,26 +190,37 @@ public class TAlterSentryRoleGrantPrivilegeResponse implements org.apache.thrift
     }
   }
 
-  public TSentryPrivilege getPrivilege() {
-    return this.privilege;
+  public int getPrivilegesMapByAuthSize() {
+    return (this.privilegesMapByAuth == null) ? 0 : this.privilegesMapByAuth.size();
   }
 
-  public void setPrivilege(TSentryPrivilege privilege) {
-    this.privilege = privilege;
+  public void putToPrivilegesMapByAuth(TSentryAuthorizable key, TSentryPrivilegeMap val) {
+    if (this.privilegesMapByAuth == null) {
+      this.privilegesMapByAuth = new HashMap<TSentryAuthorizable,TSentryPrivilegeMap>();
+    }
+    this.privilegesMapByAuth.put(key, val);
   }
 
-  public void unsetPrivilege() {
-    this.privilege = null;
+  public Map<TSentryAuthorizable,TSentryPrivilegeMap> getPrivilegesMapByAuth() {
+    return this.privilegesMapByAuth;
   }
 
-  /** Returns true if field privilege is set (has been assigned a value) and false otherwise */
-  public boolean isSetPrivilege() {
-    return this.privilege != null;
+  public void setPrivilegesMapByAuth(Map<TSentryAuthorizable,TSentryPrivilegeMap> privilegesMapByAuth) {
+    this.privilegesMapByAuth = privilegesMapByAuth;
   }
 
-  public void setPrivilegeIsSet(boolean value) {
+  public void unsetPrivilegesMapByAuth() {
+    this.privilegesMapByAuth = null;
+  }
+
+  /** Returns true if field privilegesMapByAuth is set (has been assigned a value) and false otherwise */
+  public boolean isSetPrivilegesMapByAuth() {
+    return this.privilegesMapByAuth != null;
+  }
+
+  public void setPrivilegesMapByAuthIsSet(boolean value) {
     if (!value) {
-      this.privilege = null;
+      this.privilegesMapByAuth = null;
     }
   }
 
@@ -208,11 +234,11 @@ public class TAlterSentryRoleGrantPrivilegeResponse implements org.apache.thrift
       }
       break;
 
-    case PRIVILEGE:
+    case PRIVILEGES_MAP_BY_AUTH:
       if (value == null) {
-        unsetPrivilege();
+        unsetPrivilegesMapByAuth();
       } else {
-        setPrivilege((TSentryPrivilege)value);
+        setPrivilegesMapByAuth((Map<TSentryAuthorizable,TSentryPrivilegeMap>)value);
       }
       break;
 
@@ -224,8 +250,8 @@ public class TAlterSentryRoleGrantPrivilegeResponse implements org.apache.thrift
     case STATUS:
       return getStatus();
 
-    case PRIVILEGE:
-      return getPrivilege();
+    case PRIVILEGES_MAP_BY_AUTH:
+      return getPrivilegesMapByAuth();
 
     }
     throw new IllegalStateException();
@@ -240,8 +266,8 @@ public class TAlterSentryRoleGrantPrivilegeResponse implements org.apache.thrift
     switch (field) {
     case STATUS:
       return isSetStatus();
-    case PRIVILEGE:
-      return isSetPrivilege();
+    case PRIVILEGES_MAP_BY_AUTH:
+      return isSetPrivilegesMapByAuth();
     }
     throw new IllegalStateException();
   }
@@ -250,12 +276,12 @@ public class TAlterSentryRoleGrantPrivilegeResponse implements org.apache.thrift
   public boolean equals(Object that) {
     if (that == null)
       return false;
-    if (that instanceof TAlterSentryRoleGrantPrivilegeResponse)
-      return this.equals((TAlterSentryRoleGrantPrivilegeResponse)that);
+    if (that instanceof TListSentryPrivilegesByAuthResponse)
+      return this.equals((TListSentryPrivilegesByAuthResponse)that);
     return false;
   }
 
-  public boolean equals(TAlterSentryRoleGrantPrivilegeResponse that) {
+  public boolean equals(TListSentryPrivilegesByAuthResponse that) {
     if (that == null)
       return false;
 
@@ -268,12 +294,12 @@ public class TAlterSentryRoleGrantPrivilegeResponse implements org.apache.thrift
         return false;
     }
 
-    boolean this_present_privilege = true && this.isSetPrivilege();
-    boolean that_present_privilege = true && that.isSetPrivilege();
-    if (this_present_privilege || that_present_privilege) {
-      if (!(this_present_privilege && that_present_privilege))
+    boolean this_present_privilegesMapByAuth = true && this.isSetPrivilegesMapByAuth();
+    boolean that_present_privilegesMapByAuth = true && that.isSetPrivilegesMapByAuth();
+    if (this_present_privilegesMapByAuth || that_present_privilegesMapByAuth) {
+      if (!(this_present_privilegesMapByAuth && that_present_privilegesMapByAuth))
         return false;
-      if (!this.privilege.equals(that.privilege))
+      if (!this.privilegesMapByAuth.equals(that.privilegesMapByAuth))
         return false;
     }
 
@@ -289,21 +315,21 @@ public class TAlterSentryRoleGrantPrivilegeResponse implements org.apache.thrift
     if (present_status)
       builder.append(status);
 
-    boolean present_privilege = true && (isSetPrivilege());
-    builder.append(present_privilege);
-    if (present_privilege)
-      builder.append(privilege);
+    boolean present_privilegesMapByAuth = true && (isSetPrivilegesMapByAuth());
+    builder.append(present_privilegesMapByAuth);
+    if (present_privilegesMapByAuth)
+      builder.append(privilegesMapByAuth);
 
     return builder.toHashCode();
   }
 
-  public int compareTo(TAlterSentryRoleGrantPrivilegeResponse other) {
+  public int compareTo(TListSentryPrivilegesByAuthResponse other) {
     if (!getClass().equals(other.getClass())) {
       return getClass().getName().compareTo(other.getClass().getName());
     }
 
     int lastComparison = 0;
-    TAlterSentryRoleGrantPrivilegeResponse typedOther = (TAlterSentryRoleGrantPrivilegeResponse)other;
+    TListSentryPrivilegesByAuthResponse typedOther = (TListSentryPrivilegesByAuthResponse)other;
 
     lastComparison = Boolean.valueOf(isSetStatus()).compareTo(typedOther.isSetStatus());
     if (lastComparison != 0) {
@@ -315,12 +341,12 @@ public class TAlterSentryRoleGrantPrivilegeResponse implements org.apache.thrift
         return lastComparison;
       }
     }
-    lastComparison = Boolean.valueOf(isSetPrivilege()).compareTo(typedOther.isSetPrivilege());
+    lastComparison = Boolean.valueOf(isSetPrivilegesMapByAuth()).compareTo(typedOther.isSetPrivilegesMapByAuth());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetPrivilege()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.privilege, typedOther.privilege);
+    if (isSetPrivilegesMapByAuth()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.privilegesMapByAuth, typedOther.privilegesMapByAuth);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -342,7 +368,7 @@ public class TAlterSentryRoleGrantPrivilegeResponse implements org.apache.thrift
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder("TAlterSentryRoleGrantPrivilegeResponse(");
+    StringBuilder sb = new StringBuilder("TListSentryPrivilegesByAuthResponse(");
     boolean first = true;
 
     sb.append("status:");
@@ -352,16 +378,14 @@ public class TAlterSentryRoleGrantPrivilegeResponse implements org.apache.thrift
       sb.append(this.status);
     }
     first = false;
-    if (isSetPrivilege()) {
-      if (!first) sb.append(", ");
-      sb.append("privilege:");
-      if (this.privilege == null) {
-        sb.append("null");
-      } else {
-        sb.append(this.privilege);
-      }
-      first = false;
+    if (!first) sb.append(", ");
+    sb.append("privilegesMapByAuth:");
+    if (this.privilegesMapByAuth == null) {
+      sb.append("null");
+    } else {
+      sb.append(this.privilegesMapByAuth);
     }
+    first = false;
     sb.append(")");
     return sb.toString();
   }
@@ -372,12 +396,13 @@ public class TAlterSentryRoleGrantPrivilegeResponse implements org.apache.thrift
       throw new org.apache.thrift.protocol.TProtocolException("Required field 'status' is unset! Struct:" + toString());
     }
 
+    if (!isSetPrivilegesMapByAuth()) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'privilegesMapByAuth' is unset! Struct:" + toString());
+    }
+
     // check for sub-struct validity
     if (status != null) {
       status.validate();
-    }
-    if (privilege != null) {
-      privilege.validate();
     }
   }
 
@@ -397,15 +422,15 @@ public class TAlterSentryRoleGrantPrivilegeResponse implements org.apache.thrift
     }
   }
 
-  private static class TAlterSentryRoleGrantPrivilegeResponseStandardSchemeFactory implements SchemeFactory {
-    public TAlterSentryRoleGrantPrivilegeResponseStandardScheme getScheme() {
-      return new TAlterSentryRoleGrantPrivilegeResponseStandardScheme();
+  private static class TListSentryPrivilegesByAuthResponseStandardSchemeFactory implements SchemeFactory {
+    public TListSentryPrivilegesByAuthResponseStandardScheme getScheme() {
+      return new TListSentryPrivilegesByAuthResponseStandardScheme();
     }
   }
 
-  private static class TAlterSentryRoleGrantPrivilegeResponseStandardScheme extends StandardScheme<TAlterSentryRoleGrantPrivilegeResponse> {
+  private static class TListSentryPrivilegesByAuthResponseStandardScheme extends StandardScheme<TListSentryPrivilegesByAuthResponse> {
 
-    public void read(org.apache.thrift.protocol.TProtocol iprot, TAlterSentryRoleGrantPrivilegeResponse struct) throws org.apache.thrift.TException {
+    public void read(org.apache.thrift.protocol.TProtocol iprot, TListSentryPrivilegesByAuthResponse struct) throws org.apache.thrift.TException {
       org.apache.thrift.protocol.TField schemeField;
       iprot.readStructBegin();
       while (true)
@@ -424,11 +449,24 @@ public class TAlterSentryRoleGrantPrivilegeResponse implements org.apache.thrift
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
-          case 2: // PRIVILEGE
-            if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
-              struct.privilege = new TSentryPrivilege();
-              struct.privilege.read(iprot);
-              struct.setPrivilegeIsSet(true);
+          case 2: // PRIVILEGES_MAP_BY_AUTH
+            if (schemeField.type == org.apache.thrift.protocol.TType.MAP) {
+              {
+                org.apache.thrift.protocol.TMap _map98 = iprot.readMapBegin();
+                struct.privilegesMapByAuth = new HashMap<TSentryAuthorizable,TSentryPrivilegeMap>(2*_map98.size);
+                for (int _i99 = 0; _i99 < _map98.size; ++_i99)
+                {
+                  TSentryAuthorizable _key100; // required
+                  TSentryPrivilegeMap _val101; // required
+                  _key100 = new TSentryAuthorizable();
+                  _key100.read(iprot);
+                  _val101 = new TSentryPrivilegeMap();
+                  _val101.read(iprot);
+                  struct.privilegesMapByAuth.put(_key100, _val101);
+                }
+                iprot.readMapEnd();
+              }
+              struct.setPrivilegesMapByAuthIsSet(true);
             } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
@@ -442,7 +480,7 @@ public class TAlterSentryRoleGrantPrivilegeResponse implements org.apache.thrift
       struct.validate();
     }
 
-    public void write(org.apache.thrift.protocol.TProtocol oprot, TAlterSentryRoleGrantPrivilegeResponse struct) throws org.apache.thrift.TException {
+    public void write(org.apache.thrift.protocol.TProtocol oprot, TListSentryPrivilegesByAuthResponse struct) throws org.apache.thrift.TException {
       struct.validate();
 
       oprot.writeStructBegin(STRUCT_DESC);
@@ -451,12 +489,18 @@ public class TAlterSentryRoleGrantPrivilegeResponse implements org.apache.thrift
         struct.status.write(oprot);
         oprot.writeFieldEnd();
       }
-      if (struct.privilege != null) {
-        if (struct.isSetPrivilege()) {
-          oprot.writeFieldBegin(PRIVILEGE_FIELD_DESC);
-          struct.privilege.write(oprot);
-          oprot.writeFieldEnd();
+      if (struct.privilegesMapByAuth != null) {
+        oprot.writeFieldBegin(PRIVILEGES_MAP_BY_AUTH_FIELD_DESC);
+        {
+          oprot.writeMapBegin(new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRUCT, org.apache.thrift.protocol.TType.STRUCT, struct.privilegesMapByAuth.size()));
+          for (Map.Entry<TSentryAuthorizable, TSentryPrivilegeMap> _iter102 : struct.privilegesMapByAuth.entrySet())
+          {
+            _iter102.getKey().write(oprot);
+            _iter102.getValue().write(oprot);
+          }
+          oprot.writeMapEnd();
         }
+        oprot.writeFieldEnd();
       }
       oprot.writeFieldStop();
       oprot.writeStructEnd();
@@ -464,40 +508,49 @@ public class TAlterSentryRoleGrantPrivilegeResponse implements org.apache.thrift
 
   }
 
-  private static class TAlterSentryRoleGrantPrivilegeResponseTupleSchemeFactory implements SchemeFactory {
-    public TAlterSentryRoleGrantPrivilegeResponseTupleScheme getScheme() {
-      return new TAlterSentryRoleGrantPrivilegeResponseTupleScheme();
+  private static class TListSentryPrivilegesByAuthResponseTupleSchemeFactory implements SchemeFactory {
+    public TListSentryPrivilegesByAuthResponseTupleScheme getScheme() {
+      return new TListSentryPrivilegesByAuthResponseTupleScheme();
     }
   }
 
-  private static class TAlterSentryRoleGrantPrivilegeResponseTupleScheme extends TupleScheme<TAlterSentryRoleGrantPrivilegeResponse> {
+  private static class TListSentryPrivilegesByAuthResponseTupleScheme extends TupleScheme<TListSentryPrivilegesByAuthResponse> {
 
     @Override
-    public void write(org.apache.thrift.protocol.TProtocol prot, TAlterSentryRoleGrantPrivilegeResponse struct) throws org.apache.thrift.TException {
+    public void write(org.apache.thrift.protocol.TProtocol prot, TListSentryPrivilegesByAuthResponse struct) throws org.apache.thrift.TException {
       TTupleProtocol oprot = (TTupleProtocol) prot;
       struct.status.write(oprot);
-      BitSet optionals = new BitSet();
-      if (struct.isSetPrivilege()) {
-        optionals.set(0);
-      }
-      oprot.writeBitSet(optionals, 1);
-      if (struct.isSetPrivilege()) {
-        struct.privilege.write(oprot);
+      {
+        oprot.writeI32(struct.privilegesMapByAuth.size());
+        for (Map.Entry<TSentryAuthorizable, TSentryPrivilegeMap> _iter103 : struct.privilegesMapByAuth.entrySet())
+        {
+          _iter103.getKey().write(oprot);
+          _iter103.getValue().write(oprot);
+        }
       }
     }
 
     @Override
-    public void read(org.apache.thrift.protocol.TProtocol prot, TAlterSentryRoleGrantPrivilegeResponse struct) throws org.apache.thrift.TException {
+    public void read(org.apache.thrift.protocol.TProtocol prot, TListSentryPrivilegesByAuthResponse struct) throws org.apache.thrift.TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
       struct.status = new org.apache.sentry.service.thrift.TSentryResponseStatus();
       struct.status.read(iprot);
       struct.setStatusIsSet(true);
-      BitSet incoming = iprot.readBitSet(1);
-      if (incoming.get(0)) {
-        struct.privilege = new TSentryPrivilege();
-        struct.privilege.read(iprot);
-        struct.setPrivilegeIsSet(true);
+      {
+        org.apache.thrift.protocol.TMap _map104 = new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRUCT, org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
+        struct.privilegesMapByAuth = new HashMap<TSentryAuthorizable,TSentryPrivilegeMap>(2*_map104.size);
+        for (int _i105 = 0; _i105 < _map104.size; ++_i105)
+        {
+          TSentryAuthorizable _key106; // required
+          TSentryPrivilegeMap _val107; // required
+          _key106 = new TSentryAuthorizable();
+          _key106.read(iprot);
+          _val107 = new TSentryPrivilegeMap();
+          _val107.read(iprot);
+          struct.privilegesMapByAuth.put(_key106, _val107);
+        }
       }
+      struct.setPrivilegesMapByAuthIsSet(true);
     }
   }
 

@@ -31,6 +31,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
 
+import javax.jdo.FetchGroup;
 import javax.jdo.JDODataStoreException;
 import javax.jdo.JDOHelper;
 import javax.jdo.PersistenceManager;
@@ -59,6 +60,7 @@ import org.apache.sentry.provider.db.service.thrift.TSentryAuthorizable;
 import org.apache.sentry.provider.db.service.thrift.TSentryGrantOption;
 import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
+import org.apache.sentry.provider.db.service.thrift.TSentryPrivilegeMap;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
 import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
@@ -68,10 +70,9 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.google.common.collect.SetMultimap;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 /**
@@ -281,7 +282,12 @@ public class SentryStore {
       // first do grant check
       grantOptionCheck(pm, grantorPrincipal, privilege);
 
-      alterSentryRoleGrantPrivilegeCore(pm, roleName, privilege);
+      MSentryPrivilege mPrivilege =
+          alterSentryRoleGrantPrivilegeCore(pm, roleName, privilege);
+      // capture the new privilege
+      if (mPrivilege != null) {
+        convertToTSentryPrivilege(mPrivilege, privilege);
+      }
       CommitContext commit = commitUpdateTransaction(pm);
       rollbackTransaction = false;
       return commit;
@@ -292,9 +298,10 @@ public class SentryStore {
     }
   }
 
-  private void alterSentryRoleGrantPrivilegeCore(PersistenceManager pm,
+  private MSentryPrivilege alterSentryRoleGrantPrivilegeCore(PersistenceManager pm,
       String roleName, TSentryPrivilege privilege)
       throws SentryNoSuchObjectException, SentryInvalidInputException {
+    MSentryPrivilege mPrivilege = null;
     MSentryRole mRole = getMSentryRole(pm, roleName);
     if (mRole == null) {
       throw new SentryNoSuchObjectException("Role: " + roleName);
@@ -324,12 +331,12 @@ public class SentryStore {
           tAll.setAction(AccessConstants.ALL);
           MSentryPrivilege mAll = getMSentryPrivilege(tAll, pm);
           if ((mAll != null) && (mRole.getPrivileges().contains(mAll))) {
-            return;
+            return null;
           }
         }
       }
 
-      MSentryPrivilege mPrivilege = getMSentryPrivilege(privilege, pm);
+      mPrivilege = getMSentryPrivilege(privilege, pm);
       if (mPrivilege == null) {
         mPrivilege = convertToMSentryPrivilege(privilege);
       }
@@ -337,7 +344,7 @@ public class SentryStore {
       pm.makePersistent(mRole);
       pm.makePersistent(mPrivilege);
     }
-    return;
+    return mPrivilege;
   }
 
   public CommitContext alterSentryRoleRevokePrivilege(String grantorPrincipal, String roleName,
@@ -754,6 +761,93 @@ public class SentryStore {
     }
   }
 
+  List<MSentryPrivilege> getMSentryPrivilegesByAuth(Set<String> roleNames, TSentryAuthorizable authHierarchy) {
+    boolean rollbackTransaction = true;
+    PersistenceManager pm = null;
+    try {
+      pm = openTransaction();
+      Query query = pm.newQuery(MSentryPrivilege.class);
+      StringBuilder filters = new StringBuilder();
+      if ((roleNames.size() == 0)||(roleNames == null)) {
+        filters.append(" !roles.isEmpty() ");
+      } else {
+        query.declareVariables("org.apache.sentry.provider.db.service.model.MSentryRole role");
+        List<String> rolesFiler = new LinkedList<String>();
+        for (String rName : roleNames) {
+          rolesFiler.add("role.roleName == \"" + rName.trim().toLowerCase() + "\"");
+        }
+        filters.append("roles.contains(role) "
+          + "&& (" + Joiner.on(" || ").join(rolesFiler) + ") ");
+      }
+      if ((authHierarchy.getServer() != null)) {
+        filters.append("&& serverName == \"" +
+            authHierarchy.getServer().toLowerCase() + "\"");
+        if (authHierarchy.getDb() != null) {
+          filters.append(" && (dbName == \"" +
+              authHierarchy.getDb().toLowerCase() + "\") && (URI == \"__NULL__\")");
+          if (authHierarchy.getTable() != null) {
+            filters.append(" && (tableName == \"" +
+                authHierarchy.getTable().toLowerCase() + "\")");
+          } else {
+            filters.append(" && (tableName == \"__NULL__\")");
+          }
+        } else if (authHierarchy.getUri() != null) {
+          filters.append(" && (URI != \"__NULL__\") && (\"" + authHierarchy.getUri() +
+              "\".startsWith(URI)) && (dbName == \"__NULL__\")");
+        } else {
+          filters.append(" && (dbName == \"__NULL__\") && (URI == \"__NULL__\")");
+        }
+      } else {
+        // if no server, then return empty resultset
+        return new ArrayList<MSentryPrivilege>();
+      }
+      FetchGroup grp = pm.getFetchGroup(
+          org.apache.sentry.provider.db.service.model.MSentryPrivilege.class,
+          "fetchRole");
+      grp.addMember("roles");
+      pm.getFetchPlan().addGroup("fetchRole");
+      query.setFilter(filters.toString());
+      List<MSentryPrivilege> privileges = (List<MSentryPrivilege>) query.execute();
+      rollbackTransaction = false;
+      commitTransaction(pm);
+      return privileges;
+    } finally {
+      if (rollbackTransaction) {
+        rollbackTransaction(pm);
+      }
+    }
+  }
+
+  public TSentryPrivilegeMap listSentryPrivilegesByAuthorizable(
+      Set<String> groups, TSentryActiveRoleSet activeRoles,
+      TSentryAuthorizable authHierarchy)
+      throws SentryInvalidInputException {
+    Map<String, Set<TSentryPrivilege>> resultPrivilegeMap = Maps.newTreeMap();
+    Set<String> roles = Sets.newHashSet();
+    if (groups != null && !groups.isEmpty()) {
+      roles = getRolesToQuery(groups, new TSentryActiveRoleSet(true, null));
+    }
+    if (activeRoles != null && !activeRoles.isAll()) {
+      roles.addAll(activeRoles.getRoles());
+    }
+
+    List<MSentryPrivilege> mSentryPrivileges = getMSentryPrivilegesByAuth(roles,
+        authHierarchy);
+    for (MSentryPrivilege priv : mSentryPrivileges) {
+      for (MSentryRole role : priv.getRoles()) {
+        TSentryPrivilege tPriv = convertToTSentryPrivilege(priv);
+        if (resultPrivilegeMap.containsKey(role.getRoleName())) {
+          resultPrivilegeMap.get(role.getRoleName()).add(tPriv);
+        } else {
+          Set<TSentryPrivilege> tPrivSet = Sets.newTreeSet();
+          tPrivSet.add(tPriv);
+          resultPrivilegeMap.put(role.getRoleName(), tPrivSet);
+        }
+      }
+    }
+    return new TSentryPrivilegeMap(resultPrivilegeMap);
+  }
+
   private Set<MSentryPrivilege> getMSentryPrivilegesByRoleName(String roleName)
       throws SentryNoSuchObjectException {
     MSentryRole mSentryRole = getMSentryRoleByName(roleName);
@@ -1017,6 +1111,12 @@ public class SentryStore {
 
   private TSentryPrivilege convertToTSentryPrivilege(MSentryPrivilege mSentryPrivilege) {
     TSentryPrivilege privilege = new TSentryPrivilege();
+    convertToTSentryPrivilege(mSentryPrivilege, privilege);
+    return privilege;
+  }
+
+  private void convertToTSentryPrivilege(MSentryPrivilege mSentryPrivilege,
+      TSentryPrivilege privilege) {
     privilege.setCreateTime(mSentryPrivilege.getCreateTime());
     privilege.setAction(fromNULLCol(mSentryPrivilege.getAction()));
     privilege.setPrivilegeScope(mSentryPrivilege.getPrivilegeScope());
@@ -1029,7 +1129,6 @@ public class SentryStore {
     } else {
       privilege.setGrantOption(TSentryGrantOption.UNSET);
     }
-    return privilege;
   }
 
   /**

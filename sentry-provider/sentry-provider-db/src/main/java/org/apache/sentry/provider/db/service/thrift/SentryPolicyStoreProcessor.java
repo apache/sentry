@@ -22,6 +22,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
@@ -49,6 +50,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 @SuppressWarnings("unused")
@@ -180,6 +182,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       CommitContext commitContext = sentryStore.alterSentryRoleGrantPrivilege(request.getRequestorUserName(),
           request.getRoleName(), request.getPrivilege());
       response.setStatus(Status.OK());
+      response.setPrivilege(request.getPrivilege());
       notificationHandlerInvoker.alter_sentry_role_grant_privilege(commitContext,
           request, response);
     } catch (SentryNoSuchObjectException e) {
@@ -520,6 +523,28 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     } catch (SentryAccessDeniedException e) {
       LOGGER.error(e.getMessage(), e);
       response.setStatus(Status.AccessDenied(e.getMessage(), e));
+    } catch (Exception e) {
+      String msg = "Unknown error for request: " + request + ", message: "
+          + e.getMessage();
+      LOGGER.error(msg, e);
+      response.setStatus(Status.RuntimeError(msg, e));
+    }
+    return response;
+  }
+
+  @Override
+  public TListSentryPrivilegesByAuthResponse list_sentry_privileges_by_authorizable(
+      TListSentryPrivilegesByAuthRequest request) throws TException {
+    TListSentryPrivilegesByAuthResponse response = new TListSentryPrivilegesByAuthResponse();
+    Map<TSentryAuthorizable, TSentryPrivilegeMap> authRoleMap = Maps.newHashMap();
+    try {
+      for (TSentryAuthorizable authorizable : request.getAuthorizableSet()) {
+        authRoleMap.put(authorizable, sentryStore
+            .listSentryPrivilegesByAuthorizable(request.getGroups(),
+                request.getRoleSet(), authorizable));
+      }
+      response.setPrivilegesMapByAuth(authRoleMap);
+      response.setStatus(Status.OK());
     } catch (Exception e) {
       String msg = "Unknown error for request: " + request + ", message: "
           + e.getMessage();
