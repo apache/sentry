@@ -344,11 +344,14 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       if (AccessConstants.ALL.equalsIgnoreCase(request.getGroupName())) {
         checkAllGroups = true;
       } else {
-        if (!inAdminGroups(groups)) {
-          // non-admin can only list roles for their own group
-          if (!groups.contains(request.getGroupName())) {
-            throw new SentryAccessDeniedException("Access denied to " + subject);
-          }
+        boolean admin = inAdminGroups(groups);
+        //Only admin users can list all roles in the system ( groupname = null)
+        //Non admin users are only allowed to list only groups which they belong to
+        if(!admin && (request.getGroupName() == null || !groups.contains(request.getGroupName()))) {
+          throw new SentryAccessDeniedException("Access denied to " + subject);
+        }else {
+          groups.clear();
+          groups.add(request.getGroupName());
         }
       }
       roleSet = sentryStore.getTSentryRolesByGroupName(groups, checkAllGroups);
