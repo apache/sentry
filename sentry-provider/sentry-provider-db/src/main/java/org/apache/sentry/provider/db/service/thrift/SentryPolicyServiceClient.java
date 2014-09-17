@@ -376,7 +376,6 @@ public class SentryPolicyServiceClient {
     privilege.setDbName(db);
     privilege.setTableName(table);
     privilege.setAction(action);
-    privilege.setGrantorPrincipal(requestorUserName);
     privilege.setCreateTime(System.currentTimeMillis());
     privilege.setGrantOption(convertTSentryGrantOption(grantOption));
     request.setPrivilege(privilege);
@@ -466,7 +465,6 @@ public class SentryPolicyServiceClient {
     privilege.setDbName(db);
     privilege.setTableName(table);
     privilege.setAction(action);
-    privilege.setGrantorPrincipal(requestorUserName);
     privilege.setCreateTime(System.currentTimeMillis());
     privilege.setGrantOption(convertTSentryGrantOption(grantOption));
     request.setPrivilege(privilege);

@@ -425,7 +425,7 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
       appendNonNull(builder, privilege.getAction());
       appendNonNull(builder, false);//isGrantOption()
       appendNonNull(builder, privilege.getCreateTime() * 1000L);
-      appendNonNull(builder, privilege.getGrantorPrincipal());
+      appendNonNull(builder, "--");
     }
     LOG.info("builder.toString(): " + builder.toString());
     return builder.toString();
@@ -440,7 +440,7 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
       appendNonNull(builder, roleGrant.getRoleName(), true);
       appendNonNull(builder, false);//isGrantOption()
       appendNonNull(builder, null);//roleGrant.getGrantTime() * 1000L
-      appendNonNull(builder, roleGrant.getGrantorPrincipal());
+      appendNonNull(builder, "--");
     }
     return builder.toString();
   }

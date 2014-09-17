@@ -46,7 +46,6 @@ public class MSentryPrivilege {
   // roles this privilege is a part of
   private Set<MSentryRole> roles;
   private long createTime;
-  private String grantorPrincipal;
 
   public MSentryPrivilege() {
     this.roles = new HashSet<MSentryRole>();
@@ -134,14 +133,6 @@ public class MSentryPrivilege {
     this.createTime = createTime;
   }
 
-  public String getGrantorPrincipal() {
-    return grantorPrincipal;
-  }
-
-  public void setGrantorPrincipal(String grantorPrincipal) {
-    this.grantorPrincipal = grantorPrincipal;
-  }
-
   public String getPrivilegeScope() {
     return privilegeScope;
   }
@@ -177,7 +168,7 @@ public class MSentryPrivilege {
         + ", serverName=" + serverName + ", dbName=" + dbName
         + ", tableName=" + tableName + ", URI=" + URI
         + ", action=" + action + ", roles=[...]" + ", createTime="
-        + createTime + ", grantorPrincipal=" + grantorPrincipal
+        + createTime
         + ", grantOption=" + grantOption +"]";
   }
 

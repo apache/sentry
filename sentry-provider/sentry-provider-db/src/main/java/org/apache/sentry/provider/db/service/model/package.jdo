@@ -38,10 +38,7 @@
       <field name = "createTime">
       	<column name = "CREATE_TIME" jdbc-type="BIGINT"/>
       </field>
-      <field name="grantorPrincipal">  
-        <column name="GRANTOR_PRINCIPAL" length="4000" jdbc-type="VARCHAR"/>
-      </field>
-      
+
       <field name="roles" mapped-by="groups">
          <collection element-type="org.apache.sentry.provider.db.service.model.MSentryRole"/>
       </field>
@@ -58,9 +55,6 @@
       </field>
       <field name = "createTime">
       	<column name = "CREATE_TIME" jdbc-type="BIGINT"/>
-      </field>
-      <field name="grantorPrincipal">  
-        <column name="GRANTOR_PRINCIPAL" length="4000" jdbc-type="VARCHAR"/>
       </field>
       <field name = "privileges" table="SENTRY_ROLE_DB_PRIVILEGE_MAP" default-fetch-group="true">
         <collection element-type="org.apache.sentry.provider.db.service.model.MSentryPrivilege"/>
@@ -115,9 +109,6 @@
       </field>
       <field name = "createTime">
       	<column name = "CREATE_TIME" jdbc-type="BIGINT"/>
-      </field>
-      <field name="grantorPrincipal">  
-        <column name="GRANTOR_PRINCIPAL" length="4000" jdbc-type="VARCHAR"/>
       </field>
       <field name="grantOption">
         <column name="WITH_GRANT_OPTION" length="1" jdbc-type="CHAR"/>

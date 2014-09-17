@@ -48,8 +48,7 @@ struct TSentryPrivilege {
 6: optional string URI = "",
 7: required string action = "",
 8: optional i64 createTime, # Set on server side
-9: optional string grantorPrincipal, # Set on server side
-10: optional TSentryGrantOption grantOption = TSentryGrantOption.FALSE
+9: optional TSentryGrantOption grantOption = TSentryGrantOption.FALSE
 }
 
 # TODO can this be deleted? it's not adding value to TAlterSentryRoleAddGroupsRequest
@@ -132,7 +131,7 @@ struct TListSentryRolesRequest {
 struct TSentryRole {
 1: required string roleName,
 2: required set<TSentryGroup> groups,
-3: required string grantorPrincipal
+3: required string grantorPrincipal #Deprecated
 }
 struct TListSentryRolesResponse {
 1: required sentry_common_service.TSentryResponseStatus status

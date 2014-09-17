@@ -149,8 +149,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     try {
       authorize(request.getRequestorUserName(),
           getRequestorGroups(request.getRequestorUserName()));
-      CommitContext commitContext = sentryStore.createSentryRole(request.getRoleName(),
-          request.getRequestorUserName());
+      CommitContext commitContext = sentryStore.createSentryRole(request.getRoleName());
       response.setStatus(Status.OK());
       notificationHandlerInvoker.create_sentry_role(commitContext,
           request, response);
@@ -178,8 +177,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
 
     TAlterSentryRoleGrantPrivilegeResponse response = new TAlterSentryRoleGrantPrivilegeResponse();
     try {
-      CommitContext commitContext = sentryStore.alterSentryRoleGrantPrivilege(request.getRoleName(),
-                                    request.getPrivilege());
+      CommitContext commitContext = sentryStore.alterSentryRoleGrantPrivilege(request.getRequestorUserName(),
+          request.getRoleName(), request.getPrivilege());
       response.setStatus(Status.OK());
       notificationHandlerInvoker.alter_sentry_role_grant_privilege(commitContext,
           request, response);
@@ -210,8 +209,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   (TAlterSentryRoleRevokePrivilegeRequest request) throws TException {
     TAlterSentryRoleRevokePrivilegeResponse response = new TAlterSentryRoleRevokePrivilegeResponse();
     try {
-      CommitContext commitContext = sentryStore.alterSentryRoleRevokePrivilege(request.getRoleName(),
-                                    request.getPrivilege());
+      CommitContext commitContext = sentryStore.alterSentryRoleRevokePrivilege(request.getRequestorUserName(),
+          request.getRoleName(), request.getPrivilege());
       response.setStatus(Status.OK());
       notificationHandlerInvoker.alter_sentry_role_revoke_privilege(commitContext,
           request, response);
@@ -513,7 +512,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     try {
       authorize(request.getRequestorUserName(), adminGroups);
       sentryStore.renamePrivilege(request.getOldAuthorizable(),
-          request.getNewAuthorizable(), request.getRequestorUserName());
+          request.getNewAuthorizable());
       response.setStatus(Status.OK());
     } catch (SentryAccessDeniedException e) {
       LOGGER.error(e.getMessage(), e);

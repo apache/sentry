@@ -36,13 +36,10 @@ public class MSentryGroup {
   // set of roles granted to this group
   private Set<MSentryRole> roles;
   private long createTime;
-  private String grantorPrincipal;
 
-  public MSentryGroup(String groupName, long createTime, String grantorPrincipal,
-      Set<MSentryRole> roles) {
+  public MSentryGroup(String groupName, long createTime, Set<MSentryRole> roles) {
     this.setGroupName(groupName);
     this.createTime = createTime;
-    this.grantorPrincipal = grantorPrincipal;
     this.roles = roles;
   }
 
@@ -52,14 +49,6 @@ public class MSentryGroup {
 
   public void setCreateTime(long createTime) {
     this.createTime = createTime;
-  }
-
-  public String getGrantorPrincipal() {
-    return grantorPrincipal;
-  }
-
-  public void setGrantorPrincipal(String grantorPrincipal) {
-    this.grantorPrincipal = grantorPrincipal;
   }
 
   public Set<MSentryRole> getRoles() {
@@ -89,8 +78,7 @@ public class MSentryGroup {
   @Override
   public String toString() {
     return "MSentryGroup [groupName=" + groupName + ", roles=[...]"
-        + ", createTime=" + createTime + ", grantorPrincipal="
-        + grantorPrincipal + "]";
+        + ", createTime=" + createTime +  "]";
   }
 
   @Override

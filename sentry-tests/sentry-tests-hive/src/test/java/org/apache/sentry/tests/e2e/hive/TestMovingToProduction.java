@@ -38,7 +38,7 @@ public class TestMovingToProduction extends AbstractTestWithStaticConfiguration 
 
 
   @Before
-  public void setUp() throws Exception {
+  public void setup() throws Exception {
     File dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);

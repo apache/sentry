@@ -126,7 +126,6 @@ public class TestPolicyImport extends AbstractTestWithStaticConfiguration {
     Set<TSentryPrivilege> actualPrivileges = client.listAllPrivilegesByRoleName("hive", role);
     for (TSentryPrivilege privilege : actualPrivileges) {
       privilege.unsetCreateTime();
-      privilege.unsetGrantorPrincipal();
     }
 
     assertEquals("Expected privileges don't match.", expectedPrivileges, actualPrivileges);

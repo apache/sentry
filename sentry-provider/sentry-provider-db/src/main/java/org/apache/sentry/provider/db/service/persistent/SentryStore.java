@@ -243,11 +243,10 @@ public class SentryStore {
   /**
    * Create a sentry role and persist it.
    * @param roleName: Name of the role being persisted
-   * @param grantorPrincipal: TODO: Currently not used
    * @returns commit context used for notification handlers
    * @throws SentryAlreadyExistsException
    */
-  public CommitContext createSentryRole(String roleName, String grantorPrincipal)
+  public CommitContext createSentryRole(String roleName)
       throws SentryAlreadyExistsException {
     roleName = trimAndLower(roleName);
     boolean rollbackTransaction = true;
@@ -256,7 +255,7 @@ public class SentryStore {
       pm = openTransaction();
       MSentryRole mSentryRole = getMSentryRole(pm, roleName);
       if (mSentryRole == null) {
-        MSentryRole mRole = new MSentryRole(roleName, System.currentTimeMillis(), grantorPrincipal);
+        MSentryRole mRole = new MSentryRole(roleName, System.currentTimeMillis());
         pm.makePersistent(mRole);
         CommitContext commit = commitUpdateTransaction(pm);
         rollbackTransaction = false;
@@ -271,7 +270,8 @@ public class SentryStore {
     }
   }
 
-  public CommitContext alterSentryRoleGrantPrivilege(String roleName, TSentryPrivilege privilege)
+  public CommitContext alterSentryRoleGrantPrivilege(String grantorPrincipal,
+      String roleName, TSentryPrivilege privilege)
       throws SentryUserException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
@@ -279,7 +279,7 @@ public class SentryStore {
     try {
       pm = openTransaction();
       // first do grant check
-      grantOptionCheck(pm, privilege);
+      grantOptionCheck(pm, grantorPrincipal, privilege);
 
       alterSentryRoleGrantPrivilegeCore(pm, roleName, privilege);
       CommitContext commit = commitUpdateTransaction(pm);
@@ -340,7 +340,7 @@ public class SentryStore {
     return;
   }
 
-  public CommitContext alterSentryRoleRevokePrivilege(String roleName,
+  public CommitContext alterSentryRoleRevokePrivilege(String grantorPrincipal, String roleName,
       TSentryPrivilege tPrivilege) throws SentryUserException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
@@ -348,7 +348,7 @@ public class SentryStore {
     try {
       pm = openTransaction();
       // first do revoke check
-      grantOptionCheck(pm, tPrivilege);
+      grantOptionCheck(pm, grantorPrincipal, tPrivilege);
 
       alterSentryRoleRevokePrivilegeCore(pm, roleName, tPrivilege);
 
@@ -497,7 +497,7 @@ public class SentryStore {
 
       query.setFilter(filters.toString());
       query
-          .setResult("privilegeScope, serverName, dbName, tableName, URI, action, grantorPrincipal, grantOption");
+          .setResult("privilegeScope, serverName, dbName, tableName, URI, action, grantOption");
       Set<MSentryPrivilege> privileges = new HashSet<MSentryPrivilege>();
       for (Object[] privObj : (List<Object[]>) query.execute()) {
         MSentryPrivilege priv = new MSentryPrivilege();
@@ -507,8 +507,7 @@ public class SentryStore {
         priv.setTableName((String) privObj[3]);
         priv.setURI((String) privObj[4]);
         priv.setAction((String) privObj[5]);
-        priv.setGrantorPrincipal((String) privObj[6]);
-        priv.setGrantOption((Boolean) privObj[7]);
+        priv.setGrantOption((Boolean) privObj[6]);
         privileges.add(priv);
       }
       rollbackTransaction = false;
@@ -573,8 +572,8 @@ public class SentryStore {
     }
   }
 
-  public CommitContext alterSentryRoleAddGroups(String grantorPrincipal,
-      String roleName, Set<TSentryGroup> groupNames)
+  public CommitContext alterSentryRoleAddGroups( String grantorPrincipal, String roleName,
+      Set<TSentryGroup> groupNames)
           throws SentryNoSuchObjectException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
@@ -599,7 +598,7 @@ public class SentryStore {
           MSentryGroup group = (MSentryGroup) query.execute(groupName);
           if (group == null) {
             group = new MSentryGroup(groupName, System.currentTimeMillis(),
-                grantorPrincipal, Sets.newHashSet(role));
+                 Sets.newHashSet(role));
           }
           group.appendRole(role);
           groups.add(group);
@@ -1000,7 +999,6 @@ public class SentryStore {
   private TSentryRole convertToTSentryRole(MSentryRole mSentryRole) {
     TSentryRole role = new TSentryRole();
     role.setRoleName(mSentryRole.getRoleName());
-    role.setGrantorPrincipal(mSentryRole.getGrantorPrincipal());
     Set<TSentryGroup> sentryGroups = new HashSet<TSentryGroup>();
     for(MSentryGroup mSentryGroup:mSentryRole.getGroups()) {
       TSentryGroup group = convertToTSentryGroup(mSentryGroup);
@@ -1026,7 +1024,6 @@ public class SentryStore {
     privilege.setDbName(fromNULLCol(mSentryPrivilege.getDbName()));
     privilege.setTableName(fromNULLCol(mSentryPrivilege.getTableName()));
     privilege.setURI(fromNULLCol(mSentryPrivilege.getURI()));
-    privilege.setGrantorPrincipal(mSentryPrivilege.getGrantorPrincipal());
     if (mSentryPrivilege.getGrantOption() != null) {
       privilege.setGrantOption(TSentryGrantOption.valueOf(mSentryPrivilege.getGrantOption().toString().toUpperCase()));
     } else {
@@ -1049,7 +1046,6 @@ public class SentryStore {
     mSentryPrivilege.setPrivilegeScope(safeTrim(privilege.getPrivilegeScope()));
     mSentryPrivilege.setAction(toNULLCol(safeTrimLower(privilege.getAction())));
     mSentryPrivilege.setCreateTime(System.currentTimeMillis());
-    mSentryPrivilege.setGrantorPrincipal(safeTrim(privilege.getGrantorPrincipal()));
     mSentryPrivilege.setURI(toNULLCol(safeTrim(privilege.getURI())));
     if ( !privilege.getGrantOption().equals(TSentryGrantOption.UNSET) ) {
       mSentryPrivilege.setGrantOption(Boolean.valueOf(privilege.getGrantOption().toString()));
@@ -1183,14 +1179,14 @@ public class SentryStore {
    * @throws SentryInvalidInputException
    */
   public void renamePrivilege(TSentryAuthorizable tAuthorizable,
-      TSentryAuthorizable newTAuthorizable, String grantorPrincipal)
+      TSentryAuthorizable newTAuthorizable)
       throws SentryNoSuchObjectException, SentryInvalidInputException {
     PersistenceManager pm = null;
     boolean rollbackTransaction = true;
 
     TSentryPrivilege tPrivilege = toSentryPrivilege(tAuthorizable);
-    TSentryPrivilege newPrivilege = toSentryPrivilege(newTAuthorizable,
-        grantorPrincipal);
+    TSentryPrivilege newPrivilege = toSentryPrivilege(newTAuthorizable);
+
     try {
       pm = openTransaction();
       // In case of tables or DBs, check all actions
@@ -1266,20 +1262,13 @@ public class SentryStore {
     }
   }
 
-  // convert TSentryAuthorizable to TSentryPrivilege
   private TSentryPrivilege toSentryPrivilege(TSentryAuthorizable tAuthorizable)
       throws SentryInvalidInputException {
-    return toSentryPrivilege(tAuthorizable, null);
-  }
-
-  private TSentryPrivilege toSentryPrivilege(TSentryAuthorizable tAuthorizable,
-      String grantorPrincipal) throws SentryInvalidInputException {
     TSentryPrivilege tSentryPrivilege = new TSentryPrivilege();
     tSentryPrivilege.setDbName(fromNULLCol(tAuthorizable.getDb()));
     tSentryPrivilege.setServerName(fromNULLCol(tAuthorizable.getServer()));
     tSentryPrivilege.setTableName(fromNULLCol(tAuthorizable.getTable()));
     tSentryPrivilege.setURI(fromNULLCol(tAuthorizable.getUri()));
-    tSentryPrivilege.setGrantorPrincipal(grantorPrincipal);
     PrivilegeScope scope;
     if (!isNULL(tSentryPrivilege.getTableName())) {
       scope = PrivilegeScope.TABLE;
@@ -1313,10 +1302,9 @@ public class SentryStore {
    * @param privilege
    * @throws SentryUserException
    */
-  private void grantOptionCheck(PersistenceManager pm, TSentryPrivilege privilege)
+  private void grantOptionCheck(PersistenceManager pm, String grantorPrincipal, TSentryPrivilege privilege)
       throws SentryUserException {
     MSentryPrivilege mPrivilege = convertToMSentryPrivilege(privilege);
-    String grantorPrincipal = mPrivilege.getGrantorPrincipal();
     if (grantorPrincipal == null) {
       throw new SentryInvalidInputException("grantorPrincipal should not be null");
     }
