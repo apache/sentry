@@ -251,6 +251,52 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
   }
 
   /**
+   * Steps: 1. admin create db_1 and tb_1, tb_2, tb_3, tb_4 and table_5
+   *        2. admin should see all tables except table_5 which does not match tb*
+   *        3. user1 should only see the matched tables it has any level of privilege
+   */
+  @Test
+  public void testShowTablesExtended() throws Exception {
+    // tables visible to user1 (not access to tb_4
+    String tableNames[] = {"tb_1", "tb_2", "tb_3", "tb_4", "table_5"};
+    List<String> tableNamesValidation = new ArrayList<String>();
+
+    policyFile
+        .addRolesToGroup(USERGROUP1, "tab1_priv,tab2_priv,tab3_priv")
+        .addPermissionsToRole("tab1_priv", "server=server1->db=" + DB1 + "->table="
+            + tableNames[0] + "->action=select")
+        .addPermissionsToRole("tab2_priv", "server=server1->db=" + DB1 + "->table="
+            + tableNames[1] + "->action=insert")
+        .addPermissionsToRole("tab3_priv", "server=server1->db=" + DB1 + "->table="
+            + tableNames[2] + "->action=select")
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
+
+    String user1TableNames[] = {"tb_1", "tb_2", "tb_3"};
+
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("USE " + DB1);
+    createTabs(statement, DB1, tableNames);
+    // Admin should see all tables except table_5, the one does not match the pattern
+    ResultSet rs = statement.executeQuery("SHOW TABLE EXTENDED IN " + DB1 + " LIKE 'tb*'");
+    tableNamesValidation.addAll(Arrays.asList(tableNames).subList(0, 4));
+    validateTablesInRs(rs, DB1, tableNamesValidation);
+    statement.close();
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    statement.execute("USE " + DB1);
+    // User1 should see tables with any level of access
+    rs = statement.executeQuery("SHOW TABLE EXTENDED IN " + DB1 + " LIKE 'tb*'");
+    tableNamesValidation.addAll(Arrays.asList(user1TableNames));
+    validateTablesInRs(rs, DB1, tableNamesValidation);
+    statement.close();
+  }
+
+  /**
    * Steps: 1. admin create few dbs
    *        2. admin can do show databases
    *        3. users with db level permissions should only those dbs on 'show database'
@@ -355,6 +401,22 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
     while (rs.next()) {
       String tableName = rs.getString(1);
       Assert.assertTrue(tableName, tableNames.remove(tableName.toLowerCase()));
+    }
+    Assert.assertTrue(tableNames.toString(), tableNames.isEmpty());
+    rs.close();
+  }
+
+  // compare the tables in resultset with given array of table names
+  // for some hive query like 'show table extended ...', the resultset does
+  // not only contains tableName (See HIVE-8109)
+  private void validateTablesInRs(ResultSet rs, String dbName,
+      List<String> tableNames) throws SQLException {
+    while (rs.next()) {
+      String tableName = rs.getString(1);
+      if (tableName.startsWith("tableName:")) {
+        Assert.assertTrue("Expected table " + tableName.substring(10),
+            tableNames.remove(tableName.substring(10).toLowerCase()));
+      }
     }
     Assert.assertTrue(tableNames.toString(), tableNames.isEmpty());
     rs.close();

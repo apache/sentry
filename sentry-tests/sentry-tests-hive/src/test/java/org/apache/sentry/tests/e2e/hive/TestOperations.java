@@ -326,6 +326,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
   6. Describe tb1 : HiveOperation.DESCTABLE5.
   7. HiveOperation.SHOWPARTITIONS
   8. TODO: show functions?
+  9. HiveOperation.SHOW_TABLESTATUS
    */
   @Test
   public void testSelectOnTable() throws Exception {
@@ -347,6 +348,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     statement.executeQuery("SHOW indexes on tb1");
     statement.executeQuery("SHOW COLUMNS from tb1");
     statement.executeQuery("SHOW functions '.*'");
+    statement.executeQuery("SHOW TABLE EXTENDED IN " + DB1 + " LIKE 'tb*'");
 
     statement.executeQuery("DESCRIBE tb1");
     statement.executeQuery("DESCRIBE tb1 PARTITION (b=1)");
@@ -355,6 +357,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     connection.close();
 
     //Negative case
+    adminCreate(DB2, tableName);
     policyFile
         .addPermissionsToRole("insert_db1_tb1", privileges.get("insert_db1_tb1"))
         .addRolesToGroup(USERGROUP3, "insert_db1_tb1");
@@ -363,6 +366,8 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     statement = context.createStatement(connection);
     statement.execute("Use " + DB1);
     context.assertSentrySemanticException(statement, "select * from tb1", semanticException);
+    context.assertSentrySemanticException(statement,
+        "SHOW TABLE EXTENDED IN " + DB2 + " LIKE 'tb*'", semanticException);
 
     statement.close();
     connection.close();
@@ -379,6 +384,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
   6. HiveOperation.SHOWPARTITIONS
   7. TODO: show functions?
   8. TODO: lock, unlock, Show locks
+  9. HiveOperation.SHOW_TABLESTATUS
    */
   @Test
   public void testInsertOnTable() throws Exception {
@@ -401,6 +407,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     statement.executeQuery("SHOW COLUMNS from tb1");
     statement.executeQuery("SHOW functions '.*'");
     //statement.executeQuery("SHOW LOCKS tb1");
+    statement.executeQuery("SHOW TABLE EXTENDED IN " + DB1 + " LIKE 'tb*'");
 
     //NoViableAltException
     //statement.executeQuery("SHOW transactions");

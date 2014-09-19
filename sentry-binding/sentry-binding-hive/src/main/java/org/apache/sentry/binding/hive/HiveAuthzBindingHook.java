@@ -151,7 +151,6 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
         break;
       case HiveParser.TOK_DROPTABLE:
       case HiveParser.TOK_DROPVIEW:
-      case HiveParser.TOK_SHOW_TABLESTATUS:
       case HiveParser.TOK_SHOW_CREATETABLE:
       case HiveParser.TOK_ALTERTABLE_SERIALIZER:
       case HiveParser.TOK_ALTERVIEW_ADDPARTS:
@@ -166,6 +165,20 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
       case HiveParser.TOK_ALTERINDEX_REBUILD:
         currTab = extractTable((ASTNode)ast.getChild(0)); //type is not TOK_TABNAME
         currDB = extractDatabase((ASTNode) ast.getChild(0));
+      case HiveParser.TOK_SHOW_TABLESTATUS:
+        currDB = extractDatabase((ASTNode)ast.getChild(0));
+        int children = ast.getChildCount();
+        for (int i = 1; i < children; i++) {
+          ASTNode child = (ASTNode) ast.getChild(i);
+          if (child.getToken().getType() == HiveParser.Identifier) {
+            currDB = new Database(child.getText());
+            break;
+          }
+        }
+        //loosing the requested privileges for possible wildcard tables, since
+        //further authorization will be done at the filter step and those unwanted will
+        //eventually be filtered out from the output
+        currTab = Table.ALL;
         break;
       case HiveParser.TOK_ALTERTABLE_RENAME:
       case HiveParser.TOK_ALTERTABLE_PROPERTIES:
