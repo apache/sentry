@@ -17,6 +17,7 @@
 
 bin=`dirname "$0"`
 myhome=`cd "$bin/.."; pwd`
+RUN_CONFIG_TOOL=0
 
 # the root of the Hive installation
 if [[ -z $SENTRY_HOME ]] ; then
@@ -41,23 +42,17 @@ if [ ! -f ${HADOOP} ]; then
   exit 4;
 fi
 
-#check to see if the hive conf dir is given as an optional argument
+# If we are running config-tool then invoke it via separate script. It needs Hive classpatch and config
 args=()
 while [ $# -gt 0 ]; do    # Until you run out of parameters . . .
   case "$1" in
-    --hive-config)
+    --command)
+      if [ "$2" = "config-tool" ]
+      then
+        RUN_CONFIG_TOOL=1
+      fi
+      args+=" $1"
       shift
-      confdir=$1
-      shift
-      export HIVE_CONF_DIR=$confdir
-      echo Using hive-conf-dir $HIVE_CONF_DIR
-      ;;
-    --hive-home)
-      shift
-      homedir=$1
-      shift
-      export HIVE_HOME=$homedir
-      echo Using hive-home $HIVE_HOME
       ;;
     *)
       args+=" $1"
@@ -66,19 +61,19 @@ while [ $# -gt 0 ]; do    # Until you run out of parameters . . .
   esac
 done
 
-_CMD_JAR=sentry-core-common-*.jar
+export _CMD_JAR=sentry-core-common-*.jar
 for f in ${SENTRY_HOME}/lib/*.jar; do
   HADOOP_CLASSPATH=${HADOOP_CLASSPATH}:${f}
 done
 export HADOOP_CLASSPATH
-if [[ -z "$HIVE_HOME" ]]
+export RUN_CONFIG_TOOL
+if [ "${RUN_CONFIG_TOOL}" = "0" ]
 then
   for f in ${SENTRY_HOME}/lib/server/*.jar; do
     HADOOP_CLASSPATH=${HADOOP_CLASSPATH}:${f}
   done
   exec $HADOOP jar ${SENTRY_HOME}/lib/${_CMD_JAR} org.apache.sentry.SentryMain ${args[@]}
 else
-  _HIVE_CMD=${HIVE_HOME}/bin/hive
-  ${_HIVE_CMD} --service jar ${SENTRY_HOME}/lib/${_CMD_JAR} org.apache.sentry.SentryMain ${args[@]}
+  exec ${SENTRY_HOME}/bin/config_tool ${args[@]}
 fi
 
