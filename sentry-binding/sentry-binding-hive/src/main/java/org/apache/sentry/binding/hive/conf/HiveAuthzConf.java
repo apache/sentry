@@ -125,6 +125,7 @@ public class HiveAuthzConf extends Configuration {
     "variance,weekofyear,when,xpath,xpath_boolean,xpath_double,xpath_float,xpath_int,xpath_long," +
     "xpath_number,xpath_short,xpath_string,year,base64,cume_dist, decode, dense_rank, first_value," +
     "lag, last_value, lead, noop, noopwithmap, ntile, nvl, percent_rank, rank, to_unix_timestamp," +
+    "current_database, char, varchar, matchpath, row_number" +
     "unbase64,windowingtablefunction";
 
   // map of current property names - > deprecated property names.
