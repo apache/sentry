@@ -32,7 +32,6 @@ import org.apache.hadoop.hive.metastore.events.DropDatabaseEvent;
 import org.apache.hadoop.hive.metastore.events.DropTableEvent;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.SentryUserException;
-import org.apache.sentry.binding.hive.HiveAuthzBindingHook;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
 import org.apache.sentry.core.common.Authorizable;
@@ -62,6 +61,10 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
     if (!syncWithPolicyStore(AuthzConfVars.AUTHZ_SYNC_CREATE_WITH_POLICY_STORE)) {
       return;
     }
+    // don't sync privileges if the operation has failed
+    if (!tableEvent.getStatus()) {
+      return;
+    }
     dropSentryTablePrivilege(tableEvent.getTable().getDbName(),
         tableEvent.getTable().getTableName());
   }
@@ -70,6 +73,10 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
   public void onDropTable(DropTableEvent tableEvent) throws MetaException {
     // drop the privileges on the given table
     if (!syncWithPolicyStore(AuthzConfVars.AUTHZ_SYNC_DROP_WITH_POLICY_STORE)) {
+      return;
+    }
+    // don't sync privileges if the operation has failed
+    if (!tableEvent.getStatus()) {
       return;
     }
     dropSentryTablePrivilege(tableEvent.getTable().getDbName(),
@@ -82,6 +89,10 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
     // drop the privileges on the database, incase anything left behind during
     // last drop db
     if (!syncWithPolicyStore(AuthzConfVars.AUTHZ_SYNC_CREATE_WITH_POLICY_STORE)) {
+      return;
+    }
+    // don't sync privileges if the operation has failed
+    if (!dbEvent.getStatus()) {
       return;
     }
     dropSentryDbPrivileges(dbEvent.getDatabase().getName());
@@ -97,6 +108,10 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
     if (!syncWithPolicyStore(AuthzConfVars.AUTHZ_SYNC_DROP_WITH_POLICY_STORE)) {
       return;
     }
+    // don't sync privileges if the operation has failed
+    if (!dbEvent.getStatus()) {
+      return;
+    }
     dropSentryDbPrivileges(dbEvent.getDatabase().getName());
   }
 
@@ -109,6 +124,11 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
     if (!syncWithPolicyStore(AuthzConfVars.AUTHZ_SYNC_ALTER_WITH_POLICY_STORE)) {
       return;
     }
+    // don't sync privileges if the operation has failed
+    if (!tableEvent.getStatus()) {
+      return;
+    }
+
     if (tableEvent.getOldTable() != null) {
       oldTableName = tableEvent.getOldTable().getTableName();
     }
