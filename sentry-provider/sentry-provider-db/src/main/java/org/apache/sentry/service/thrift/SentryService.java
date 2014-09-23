@@ -182,8 +182,7 @@ public class SentryService implements Callable {
             .getConstructor(Configuration.class);
         ProcessorFactory factory = (ProcessorFactory) constructor
             .newInstance(conf);
-        registeredProcessor = registeredProcessor
-            || factory.register(processor);
+        registeredProcessor = factory.register(processor) || registeredProcessor;
       } catch (Exception e) {
         throw new IllegalStateException("Could not create "
             + processorFactory, e);
