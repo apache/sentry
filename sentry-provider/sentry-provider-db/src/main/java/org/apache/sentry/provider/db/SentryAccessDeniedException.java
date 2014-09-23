@@ -24,4 +24,7 @@ public class SentryAccessDeniedException extends SentryUserException {
   public SentryAccessDeniedException(String msg) {
     super(msg);
   }
+  public SentryAccessDeniedException(String msg, String reason) {
+    super(msg, reason);
+  }
 }

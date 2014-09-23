@@ -120,7 +120,9 @@ public class HiveAuthzBinding {
           }
         }
         if (!foundRole) {
-          throw new SentryUserException("Not authorized to set role " + name);
+          //Set the reason for hive binding to pick up
+          throw new SentryUserException("Not authorized to set role " + name, "Not authorized to set role " + name);
+
         }
       }
       return new ActiveRoleSet(Sets.newHashSet(ROLE_SET_SPLITTER.split(name)));

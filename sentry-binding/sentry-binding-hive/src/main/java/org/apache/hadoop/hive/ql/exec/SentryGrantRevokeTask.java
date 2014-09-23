@@ -170,10 +170,10 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
         HiveAuthzBindingHook.runFailureHook(hookContext, csHooks);
         throw e; // rethrow the exception for logging
       }
-    } catch(Throwable throwable) {
-      setException(throwable);
-      String msg = "Error processing Sentry command: " + throwable.getMessage();
-      LOG.error(msg, throwable);
+    } catch(SentryUserException e) {
+      setException(new Exception(e.getClass().getSimpleName() + ": " + e.getReason(), e));
+      String msg = "Error processing Sentry command: " + e.getMessage();
+      LOG.error(msg, e);
       console.printError(msg);
       return RETURN_CODE_FAILURE;
     } finally {

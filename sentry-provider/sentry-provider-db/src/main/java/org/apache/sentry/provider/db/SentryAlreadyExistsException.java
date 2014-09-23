@@ -24,4 +24,7 @@ public class SentryAlreadyExistsException extends SentryUserException {
   public SentryAlreadyExistsException(String msg) {
     super(msg);
   }
+  public SentryAlreadyExistsException(String msg, String reason) {
+    super(msg, reason);
+  }
 }

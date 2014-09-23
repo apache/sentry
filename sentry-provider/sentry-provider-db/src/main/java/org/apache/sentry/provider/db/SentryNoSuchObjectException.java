@@ -24,4 +24,7 @@ public class SentryNoSuchObjectException extends SentryUserException {
   public SentryNoSuchObjectException(String msg) {
     super(msg);
   }
+  public SentryNoSuchObjectException(String msg, String reason) {
+    super(msg, reason);
+  }
 }

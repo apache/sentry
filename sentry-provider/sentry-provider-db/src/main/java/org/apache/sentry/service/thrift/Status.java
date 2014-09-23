@@ -97,15 +97,15 @@ public enum Status {
     case OK:
       break;
     case ALREADY_EXISTS:
-      throw new SentryAlreadyExistsException(serverErrorToString(thriftStatus));
+      throw new SentryAlreadyExistsException(serverErrorToString(thriftStatus), thriftStatus.getMessage());
     case NO_SUCH_OBJECT:
-      throw new SentryNoSuchObjectException(serverErrorToString(thriftStatus));
+      throw new SentryNoSuchObjectException(serverErrorToString(thriftStatus), thriftStatus.getMessage());
     case RUNTIME_ERROR:
       throw new RuntimeException(serverErrorToString(thriftStatus));
     case INVALID_INPUT:
-      throw new SentryInvalidInputException(serverErrorToString(thriftStatus));
+      throw new SentryInvalidInputException(serverErrorToString(thriftStatus), thriftStatus.getMessage());
     case ACCESS_DENIED:
-      throw new SentryAccessDeniedException(serverErrorToString(thriftStatus));
+      throw new SentryAccessDeniedException(serverErrorToString(thriftStatus), thriftStatus.getMessage());
     case UNKNOWN:
       throw new AssertionError(serverErrorToString(thriftStatus));
     default:

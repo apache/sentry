@@ -19,10 +19,19 @@ package org.apache.sentry;
 
 public class SentryUserException extends Exception{
   private static final long serialVersionUID = 2329620558380655835L;
+  protected String reason;
   public SentryUserException(String msg) {
     super(msg);
+  }
+  public SentryUserException(String msg, String reason) {
+    super(msg);
+    this.reason = reason;
   }
   public SentryUserException(String msg, Throwable t) {
     super(msg, t);
   }
+  public String getReason() {
+    return reason;
+  }
+
 }
