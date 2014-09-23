@@ -17,47 +17,53 @@
 
 package org.apache.sentry.tests.e2e.dbprovider;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashMap;
-import java.util.Map;
 
 import junit.framework.Assert;
 
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.provider.db.SentryAccessDeniedException;
+import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 import org.apache.sentry.tests.e2e.hive.DummySentryOnFailureHook;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
-import org.junit.Assume;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class TestPrivilegeWithGrantOption extends AbstractTestWithDbProvider {
+public class TestPrivilegeWithGrantOption extends AbstractTestWithStaticConfiguration {
 
-  Map<String, String > testProperties;
+  private static boolean isInternalServer = false;
 
-  @Before
-  public void setup() throws Exception {
-    testProperties = new HashMap<String, String>();
-    testProperties.put(HiveAuthzConf.AuthzConfVars.AUTHZ_ONFAILURE_HOOKS.getVar(),
-        DummySentryOnFailureHook.class.getName());
-    createContext(testProperties);
-    DummySentryOnFailureHook.invoked = false;
-
-    // Do not run these tests if run with external HiveServer2
-    // This test checks for a static member, which will not
-    // be set if HiveServer2 and the test run in different JVMs
+  @BeforeClass
+  public static void setupTestStaticConfiguration() throws Exception {
+    useSentryService = true;
     String hiveServer2Type = System
         .getProperty(HiveServerFactory.HIVESERVER2_TYPE);
-    if(hiveServer2Type != null) {
-      Assume.assumeTrue(HiveServerFactory.isInternalServer(
-          HiveServerFactory.HiveServer2Type.valueOf(hiveServer2Type.trim())));
+    if ((hiveServer2Type == null)
+        || HiveServerFactory.isInternalServer(HiveServerFactory.HiveServer2Type
+            .valueOf(hiveServer2Type.trim()))) {
+      System.setProperty(
+        HiveAuthzConf.AuthzConfVars.AUTHZ_ONFAILURE_HOOKS.getVar(),
+        DummySentryOnFailureHook.class.getName());
+      isInternalServer = true;
     }
+    AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
+  }
+
+  @Override
+  @Before
+  public void setup() throws Exception {
+    DummySentryOnFailureHook.invoked = false;
+    super.setupAdmin();
+    super.setup();
   }
 
   /*
@@ -74,10 +80,6 @@ public class TestPrivilegeWithGrantOption extends AbstractTestWithDbProvider {
     // setup db objects needed by the test
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    statement.execute("CREATE ROLE admin_role");
-    statement.execute("GRANT ALL ON SERVER "
-        + HiveServerFactory.DEFAULT_AUTHZ_SERVER_NAME + " TO ROLE admin_role");
-    statement.execute("GRANT ROLE admin_role TO GROUP " + ADMINGROUP);
     statement.execute("DROP DATABASE IF EXISTS db_1 CASCADE");
     statement.execute("DROP DATABASE IF EXISTS db_2 CASCADE");
     statement.execute("CREATE DATABASE db_1");
@@ -97,8 +99,11 @@ public class TestPrivilegeWithGrantOption extends AbstractTestWithDbProvider {
 
     statement.execute("USE db_1");
     statement.execute("CREATE TABLE foo (id int)");
-    verifyFailureHook(statement,"GRANT ALL ON DATABASE db_1 TO ROLE group2_role",HiveOperation.GRANT_PRIVILEGE,null,null,true);
-    verifyFailureHook(statement,"GRANT ALL ON DATABASE db_1 TO ROLE group2_role WITH GRANT OPTION",HiveOperation.GRANT_PRIVILEGE,null,null,true);
+    runSQLWithError(statement, "GRANT ALL ON DATABASE db_1 TO ROLE group2_role",
+        HiveOperation.GRANT_PRIVILEGE, null, null, true);
+    runSQLWithError(statement,
+        "GRANT ALL ON DATABASE db_1 TO ROLE group2_role WITH GRANT OPTION",
+        HiveOperation.GRANT_PRIVILEGE, null, null, true);
     connection.close();
 
     connection = context.createConnection(USER3_1);
@@ -108,34 +113,107 @@ public class TestPrivilegeWithGrantOption extends AbstractTestWithDbProvider {
 
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    verifyFailureHook(statement,"REVOKE ALL ON Database db_1 FROM ROLE admin_role",HiveOperation.REVOKE_PRIVILEGE,null,null,true);
-    verifyFailureHook(statement,"REVOKE ALL ON Database db_1 FROM ROLE group2_role",HiveOperation.REVOKE_PRIVILEGE,null,null,true);
-    verifyFailureHook(statement,"REVOKE ALL ON Database db_1 FROM ROLE group3_grant_role",HiveOperation.REVOKE_PRIVILEGE,null,null,true);
+    runSQLWithError(statement, "REVOKE ALL ON Database db_1 FROM ROLE admin_role",
+        HiveOperation.REVOKE_PRIVILEGE, null, null, true);
+    runSQLWithError(statement, "REVOKE ALL ON Database db_1 FROM ROLE group2_role",
+        HiveOperation.REVOKE_PRIVILEGE, null, null, true);
+    runSQLWithError(statement,
+        "REVOKE ALL ON Database db_1 FROM ROLE group3_grant_role",
+        HiveOperation.REVOKE_PRIVILEGE, null, null, true);
     connection.close();
 
     connection = context.createConnection(USER3_1);
     statement = context.createStatement(connection);
     statement.execute("REVOKE ALL ON Database db_1 FROM ROLE group2_role");
     statement.execute("REVOKE ALL ON Database db_1 FROM ROLE group3_grant_role");
-    verifyFailureHook(statement,"REVOKE ALL ON Database db_1 FROM ROLE group1_role",HiveOperation.REVOKE_PRIVILEGE,null,null,true);
+    runSQLWithError(statement, "REVOKE ALL ON Database db_1 FROM ROLE group1_role",
+        HiveOperation.REVOKE_PRIVILEGE, null, null, true);
 
     connection.close();
     context.close();
   }
 
+  /**
+   * Test privileges with grant on parent objects are sufficient for operation
+   * on child objects
+   * @throws Exception
+   */
+  @Test
+  public void testImpliedPrivilegesWithGrant() throws Exception {
+    // setup db objects needed by the test
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+
+    statement.execute("DROP DATABASE IF EXISTS db_1 CASCADE");
+    statement.execute("CREATE DATABASE db_1");
+
+    statement.execute("CREATE ROLE role1");
+    statement
+        .execute("GRANT ALL ON DATABASE db_1 TO ROLE role1 WITH GRANT OPTION");
+    statement.execute("GRANT ROLE role1 TO GROUP " + USERGROUP1);
+
+    statement.execute("CREATE ROLE role2");
+    statement.execute("GRANT ROLE role2 TO GROUP " + USERGROUP2);
+
+    statement.execute("CREATE ROLE role3_1");
+    statement.execute("GRANT ROLE role3_1 TO GROUP " + USERGROUP3);
+
+    statement.execute("CREATE ROLE role3_2");
+    statement.execute("GRANT ROLE role3_2 TO GROUP " + USERGROUP3);
+    connection.close();
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+
+    statement.execute("USE db_1");
+    statement.execute("CREATE TABLE foo (id int)");
+    // user1 with grant option of ALL on DB should be able grant ALL on TABLE
+    statement.execute("GRANT ALL ON TABLE foo TO ROLE role2");
+    // user1 with grant option of ALL on DB should be able grant SELECT on DB
+    statement.execute("GRANT SELECT ON DATABASE db_1 TO ROLE role3_1");
+    // user1 with grant option of ALL on DB should be able grant INSERT on TABLE
+    statement.execute("GRANT INSERT ON TABLE foo TO ROLE role3_2");
+    connection.close();
+
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    statement.execute("use db_1");
+    verifySingleGrantWithGrantOption(statement,
+        "SHOW GRANT ROLE role2 ON TABLE foo", 2, "foo");
+    verifySingleGrantWithGrantOption(statement,
+        "SHOW GRANT ROLE role3_1 ON DATABASE db_1", 1, "db_1");
+    verifySingleGrantWithGrantOption(statement,
+        "SHOW GRANT ROLE role3_2 ON TABLE foo", 2, "foo");
+    statement.close();
+    connection.close();
+  }
+
   // run the given statement and verify that failure hook is invoked as expected
-  private void verifyFailureHook(Statement statement, String sqlStr, HiveOperation expectedOp,
-       String dbName, String tableName, boolean checkSentryAccessDeniedException) throws Exception {
+  private void runSQLWithError(Statement statement, String sqlStr,
+      HiveOperation expectedOp, String dbName, String tableName,
+      boolean checkSentryAccessDeniedException) throws Exception {
     // negative test case: non admin user can't create role
     assertFalse(DummySentryOnFailureHook.invoked);
     try {
       statement.execute(sqlStr);
       Assert.fail("Expected SQL exception for " + sqlStr);
     } catch (SQLException e) {
-      assertTrue(DummySentryOnFailureHook.invoked);
+      verifyFailureHook(expectedOp, dbName, tableName, checkSentryAccessDeniedException);
     } finally {
       DummySentryOnFailureHook.invoked = false;
     }
+
+  }
+
+  // run the given statement and verify that failure hook is invoked as expected
+  private void verifyFailureHook(HiveOperation expectedOp,
+      String dbName, String tableName, boolean checkSentryAccessDeniedException)
+      throws Exception {
+    if (!isInternalServer) {
+      return;
+    }
+
+    assertTrue(DummySentryOnFailureHook.invoked);
     if (expectedOp != null) {
       Assert.assertNotNull("Hive op is null for op: " + expectedOp, DummySentryOnFailureHook.hiveOp);
       Assert.assertTrue(expectedOp.equals(DummySentryOnFailureHook.hiveOp));
@@ -153,4 +231,15 @@ public class TestPrivilegeWithGrantOption extends AbstractTestWithDbProvider {
       Assert.assertTrue(dbName.equalsIgnoreCase(DummySentryOnFailureHook.db.getName()));
     }
   }
+
+  // verify the expected object name at specific position in the SHOW GRANT result
+  private void verifySingleGrantWithGrantOption(Statement statetment,
+      String statementSql, int dbObjectPosition, String dbObjectName)
+      throws Exception {
+    ResultSet res = statetment.executeQuery(statementSql);
+    assertTrue(res.next());
+    assertEquals(dbObjectName, res.getString(dbObjectPosition));
+    res.close();
+  }
+
 }
