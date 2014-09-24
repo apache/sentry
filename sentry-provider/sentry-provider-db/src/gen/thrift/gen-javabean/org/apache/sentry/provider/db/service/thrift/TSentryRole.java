@@ -36,6 +36,7 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
 
   private static final org.apache.thrift.protocol.TField ROLE_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("roleName", org.apache.thrift.protocol.TType.STRING, (short)1);
   private static final org.apache.thrift.protocol.TField GROUPS_FIELD_DESC = new org.apache.thrift.protocol.TField("groups", org.apache.thrift.protocol.TType.SET, (short)2);
+  private static final org.apache.thrift.protocol.TField GRANTOR_PRINCIPAL_FIELD_DESC = new org.apache.thrift.protocol.TField("grantorPrincipal", org.apache.thrift.protocol.TType.STRING, (short)3);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
@@ -45,11 +46,13 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
 
   private String roleName; // required
   private Set<TSentryGroup> groups; // required
+  private String grantorPrincipal; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
     ROLE_NAME((short)1, "roleName"),
-    GROUPS((short)2, "groups");
+    GROUPS((short)2, "groups"),
+    GRANTOR_PRINCIPAL((short)3, "grantorPrincipal");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -68,6 +71,8 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
           return ROLE_NAME;
         case 2: // GROUPS
           return GROUPS;
+        case 3: // GRANTOR_PRINCIPAL
+          return GRANTOR_PRINCIPAL;
         default:
           return null;
       }
@@ -116,6 +121,8 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
     tmpMap.put(_Fields.GROUPS, new org.apache.thrift.meta_data.FieldMetaData("groups", org.apache.thrift.TFieldRequirementType.REQUIRED, 
         new org.apache.thrift.meta_data.SetMetaData(org.apache.thrift.protocol.TType.SET, 
             new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TSentryGroup.class))));
+    tmpMap.put(_Fields.GRANTOR_PRINCIPAL, new org.apache.thrift.meta_data.FieldMetaData("grantorPrincipal", org.apache.thrift.TFieldRequirementType.REQUIRED, 
+        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(TSentryRole.class, metaDataMap);
   }
@@ -125,11 +132,13 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
 
   public TSentryRole(
     String roleName,
-    Set<TSentryGroup> groups)
+    Set<TSentryGroup> groups,
+    String grantorPrincipal)
   {
     this();
     this.roleName = roleName;
     this.groups = groups;
+    this.grantorPrincipal = grantorPrincipal;
   }
 
   /**
@@ -146,6 +155,9 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
       }
       this.groups = __this__groups;
     }
+    if (other.isSetGrantorPrincipal()) {
+      this.grantorPrincipal = other.grantorPrincipal;
+    }
   }
 
   public TSentryRole deepCopy() {
@@ -156,6 +168,7 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
   public void clear() {
     this.roleName = null;
     this.groups = null;
+    this.grantorPrincipal = null;
   }
 
   public String getRoleName() {
@@ -219,6 +232,29 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
     }
   }
 
+  public String getGrantorPrincipal() {
+    return this.grantorPrincipal;
+  }
+
+  public void setGrantorPrincipal(String grantorPrincipal) {
+    this.grantorPrincipal = grantorPrincipal;
+  }
+
+  public void unsetGrantorPrincipal() {
+    this.grantorPrincipal = null;
+  }
+
+  /** Returns true if field grantorPrincipal is set (has been assigned a value) and false otherwise */
+  public boolean isSetGrantorPrincipal() {
+    return this.grantorPrincipal != null;
+  }
+
+  public void setGrantorPrincipalIsSet(boolean value) {
+    if (!value) {
+      this.grantorPrincipal = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case ROLE_NAME:
@@ -237,6 +273,14 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
       }
       break;
 
+    case GRANTOR_PRINCIPAL:
+      if (value == null) {
+        unsetGrantorPrincipal();
+      } else {
+        setGrantorPrincipal((String)value);
+      }
+      break;
+
     }
   }
 
@@ -247,6 +291,9 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
 
     case GROUPS:
       return getGroups();
+
+    case GRANTOR_PRINCIPAL:
+      return getGrantorPrincipal();
 
     }
     throw new IllegalStateException();
@@ -263,6 +310,8 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
       return isSetRoleName();
     case GROUPS:
       return isSetGroups();
+    case GRANTOR_PRINCIPAL:
+      return isSetGrantorPrincipal();
     }
     throw new IllegalStateException();
   }
@@ -298,6 +347,15 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
         return false;
     }
 
+    boolean this_present_grantorPrincipal = true && this.isSetGrantorPrincipal();
+    boolean that_present_grantorPrincipal = true && that.isSetGrantorPrincipal();
+    if (this_present_grantorPrincipal || that_present_grantorPrincipal) {
+      if (!(this_present_grantorPrincipal && that_present_grantorPrincipal))
+        return false;
+      if (!this.grantorPrincipal.equals(that.grantorPrincipal))
+        return false;
+    }
+
     return true;
   }
 
@@ -314,6 +372,11 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
     builder.append(present_groups);
     if (present_groups)
       builder.append(groups);
+
+    boolean present_grantorPrincipal = true && (isSetGrantorPrincipal());
+    builder.append(present_grantorPrincipal);
+    if (present_grantorPrincipal)
+      builder.append(grantorPrincipal);
 
     return builder.toHashCode();
   }
@@ -342,6 +405,16 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
     }
     if (isSetGroups()) {
       lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.groups, typedOther.groups);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetGrantorPrincipal()).compareTo(typedOther.isSetGrantorPrincipal());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetGrantorPrincipal()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.grantorPrincipal, typedOther.grantorPrincipal);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -381,6 +454,14 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
       sb.append(this.groups);
     }
     first = false;
+    if (!first) sb.append(", ");
+    sb.append("grantorPrincipal:");
+    if (this.grantorPrincipal == null) {
+      sb.append("null");
+    } else {
+      sb.append(this.grantorPrincipal);
+    }
+    first = false;
     sb.append(")");
     return sb.toString();
   }
@@ -393,6 +474,10 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
 
     if (!isSetGroups()) {
       throw new org.apache.thrift.protocol.TProtocolException("Required field 'groups' is unset! Struct:" + toString());
+    }
+
+    if (!isSetGrantorPrincipal()) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'grantorPrincipal' is unset! Struct:" + toString());
     }
 
     // check for sub-struct validity
@@ -459,6 +544,14 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
+          case 3: // GRANTOR_PRINCIPAL
+            if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
+              struct.grantorPrincipal = iprot.readString();
+              struct.setGrantorPrincipalIsSet(true);
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+            }
+            break;
           default:
             org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
         }
@@ -489,6 +582,11 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
         }
         oprot.writeFieldEnd();
       }
+      if (struct.grantorPrincipal != null) {
+        oprot.writeFieldBegin(GRANTOR_PRINCIPAL_FIELD_DESC);
+        oprot.writeString(struct.grantorPrincipal);
+        oprot.writeFieldEnd();
+      }
       oprot.writeFieldStop();
       oprot.writeStructEnd();
     }
@@ -514,6 +612,7 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
           _iter20.write(oprot);
         }
       }
+      oprot.writeString(struct.grantorPrincipal);
     }
 
     @Override
@@ -533,6 +632,8 @@ public class TSentryRole implements org.apache.thrift.TBase<TSentryRole, TSentry
         }
       }
       struct.setGroupsIsSet(true);
+      struct.grantorPrincipal = iprot.readString();
+      struct.setGrantorPrincipalIsSet(true);
     }
   }
 

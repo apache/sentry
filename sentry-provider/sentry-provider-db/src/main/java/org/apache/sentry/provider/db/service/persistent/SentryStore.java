@@ -1093,6 +1093,7 @@ public class SentryStore {
   private TSentryRole convertToTSentryRole(MSentryRole mSentryRole) {
     TSentryRole role = new TSentryRole();
     role.setRoleName(mSentryRole.getRoleName());
+    role.setGrantorPrincipal("--");
     Set<TSentryGroup> sentryGroups = new HashSet<TSentryGroup>();
     for(MSentryGroup mSentryGroup:mSentryRole.getGroups()) {
       TSentryGroup group = convertToTSentryGroup(mSentryGroup);
