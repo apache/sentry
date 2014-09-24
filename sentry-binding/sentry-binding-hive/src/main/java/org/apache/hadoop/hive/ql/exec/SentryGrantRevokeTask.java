@@ -127,7 +127,6 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
         this.sentryClient = sentryClientFactory.create(authzConf);
       } catch (Exception e) {
         String msg = "Error creating Sentry client: " + e.getMessage();
-        LOG.error(msg, e);
         throw new RuntimeException(msg, e);
       }
       Preconditions.checkNotNull(hiveAuthzBinding, "HiveAuthzBinding cannot be null");
@@ -172,6 +171,12 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
       }
     } catch(SentryUserException e) {
       setException(new Exception(e.getClass().getSimpleName() + ": " + e.getReason(), e));
+      String msg = "Error processing Sentry command: " + e.getMessage();
+      LOG.error(msg, e);
+      console.printError(msg);
+      return RETURN_CODE_FAILURE;
+    } catch(Throwable e) {
+      setException(e);
       String msg = "Error processing Sentry command: " + e.getMessage();
       LOG.error(msg, e);
       console.printError(msg);
