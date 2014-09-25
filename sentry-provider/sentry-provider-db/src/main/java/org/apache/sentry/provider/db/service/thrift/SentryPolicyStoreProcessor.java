@@ -537,14 +537,48 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       TListSentryPrivilegesByAuthRequest request) throws TException {
     TListSentryPrivilegesByAuthResponse response = new TListSentryPrivilegesByAuthResponse();
     Map<TSentryAuthorizable, TSentryPrivilegeMap> authRoleMap = Maps.newHashMap();
+    String subject = request.getRequestorUserName();
+    Set<String> requestedGroups = request.getGroups();
+    TSentryActiveRoleSet requestedRoleSet = request.getRoleSet();
     try {
+      Set<String> memberGroups = getRequestorGroups(subject);
+      if(!inAdminGroups(memberGroups)) {
+        // disallow non-admin to lookup groups that they are not part of
+        if (requestedGroups != null && !requestedGroups.isEmpty()) {
+          for (String requestedGroup : requestedGroups) {
+            if (!memberGroups.contains(requestedGroup)) {
+              // if user doesn't belong to one of the requested group then raise error
+              throw new SentryAccessDeniedException("Access denied to " + subject);
+            }
+          }
+        } else {
+          // non-admin's search is limited to it's own groups
+          requestedGroups = memberGroups;
+        }
+
+        // disallow non-admin to lookup roles that they are not part of
+        if (requestedRoleSet != null && !requestedRoleSet.isAll()) {
+          Set<String> roles = toTrimedLower(sentryStore
+              .getRoleNamesForGroups(memberGroups));
+          for (String role : toTrimedLower(requestedRoleSet.getRoles())) {
+            if (!roles.contains(role)) {
+              throw new SentryAccessDeniedException("Access denied to "
+                  + subject);
+            }
+          }
+        }
+      }
+
       for (TSentryAuthorizable authorizable : request.getAuthorizableSet()) {
         authRoleMap.put(authorizable, sentryStore
-            .listSentryPrivilegesByAuthorizable(request.getGroups(),
+            .listSentryPrivilegesByAuthorizable(requestedGroups,
                 request.getRoleSet(), authorizable));
       }
       response.setPrivilegesMapByAuth(authRoleMap);
       response.setStatus(Status.OK());
+    } catch (SentryAccessDeniedException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
     } catch (Exception e) {
       String msg = "Unknown error for request: " + request + ", message: "
           + e.getMessage();

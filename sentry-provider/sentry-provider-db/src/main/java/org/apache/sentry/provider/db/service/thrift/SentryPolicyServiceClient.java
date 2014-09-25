@@ -574,15 +574,17 @@ TSENTRY_SERVICE_VERSION_CURRENT, requestorUserName,
   }
 
   public synchronized Map<TSentryAuthorizable, TSentryPrivilegeMap> listPrivilegsbyAuthorizable(
-      Set<List<? extends Authorizable>> authorizables, Set<String> groups, ActiveRoleSet roleSet)
-      throws SentryUserException {
+      String requestorUserName,
+      Set<List<? extends Authorizable>> authorizables, Set<String> groups,
+      ActiveRoleSet roleSet) throws SentryUserException {
     Set<TSentryAuthorizable> authSet = Sets.newTreeSet();
 
     for (List<? extends Authorizable> authorizableHierarchy : authorizables) {
       authSet.add(setupSentryAuthorizable(authorizableHierarchy));
     }
     TListSentryPrivilegesByAuthRequest request = new TListSentryPrivilegesByAuthRequest(
-        ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT, authSet);
+        ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT, requestorUserName,
+        authSet);
     if (groups != null) {
       request.setGroups(groups);
     }

@@ -35,9 +35,10 @@ public class TListSentryPrivilegesByAuthRequest implements org.apache.thrift.TBa
   private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("TListSentryPrivilegesByAuthRequest");
 
   private static final org.apache.thrift.protocol.TField PROTOCOL_VERSION_FIELD_DESC = new org.apache.thrift.protocol.TField("protocol_version", org.apache.thrift.protocol.TType.I32, (short)1);
-  private static final org.apache.thrift.protocol.TField AUTHORIZABLE_SET_FIELD_DESC = new org.apache.thrift.protocol.TField("authorizableSet", org.apache.thrift.protocol.TType.SET, (short)2);
-  private static final org.apache.thrift.protocol.TField GROUPS_FIELD_DESC = new org.apache.thrift.protocol.TField("groups", org.apache.thrift.protocol.TType.SET, (short)3);
-  private static final org.apache.thrift.protocol.TField ROLE_SET_FIELD_DESC = new org.apache.thrift.protocol.TField("roleSet", org.apache.thrift.protocol.TType.STRUCT, (short)4);
+  private static final org.apache.thrift.protocol.TField REQUESTOR_USER_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("requestorUserName", org.apache.thrift.protocol.TType.STRING, (short)2);
+  private static final org.apache.thrift.protocol.TField AUTHORIZABLE_SET_FIELD_DESC = new org.apache.thrift.protocol.TField("authorizableSet", org.apache.thrift.protocol.TType.SET, (short)3);
+  private static final org.apache.thrift.protocol.TField GROUPS_FIELD_DESC = new org.apache.thrift.protocol.TField("groups", org.apache.thrift.protocol.TType.SET, (short)4);
+  private static final org.apache.thrift.protocol.TField ROLE_SET_FIELD_DESC = new org.apache.thrift.protocol.TField("roleSet", org.apache.thrift.protocol.TType.STRUCT, (short)5);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
@@ -46,6 +47,7 @@ public class TListSentryPrivilegesByAuthRequest implements org.apache.thrift.TBa
   }
 
   private int protocol_version; // required
+  private String requestorUserName; // required
   private Set<TSentryAuthorizable> authorizableSet; // required
   private Set<String> groups; // optional
   private TSentryActiveRoleSet roleSet; // optional
@@ -53,9 +55,10 @@ public class TListSentryPrivilegesByAuthRequest implements org.apache.thrift.TBa
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
     PROTOCOL_VERSION((short)1, "protocol_version"),
-    AUTHORIZABLE_SET((short)2, "authorizableSet"),
-    GROUPS((short)3, "groups"),
-    ROLE_SET((short)4, "roleSet");
+    REQUESTOR_USER_NAME((short)2, "requestorUserName"),
+    AUTHORIZABLE_SET((short)3, "authorizableSet"),
+    GROUPS((short)4, "groups"),
+    ROLE_SET((short)5, "roleSet");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -72,11 +75,13 @@ public class TListSentryPrivilegesByAuthRequest implements org.apache.thrift.TBa
       switch(fieldId) {
         case 1: // PROTOCOL_VERSION
           return PROTOCOL_VERSION;
-        case 2: // AUTHORIZABLE_SET
+        case 2: // REQUESTOR_USER_NAME
+          return REQUESTOR_USER_NAME;
+        case 3: // AUTHORIZABLE_SET
           return AUTHORIZABLE_SET;
-        case 3: // GROUPS
+        case 4: // GROUPS
           return GROUPS;
-        case 4: // ROLE_SET
+        case 5: // ROLE_SET
           return ROLE_SET;
         default:
           return null;
@@ -126,6 +131,8 @@ public class TListSentryPrivilegesByAuthRequest implements org.apache.thrift.TBa
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
     tmpMap.put(_Fields.PROTOCOL_VERSION, new org.apache.thrift.meta_data.FieldMetaData("protocol_version", org.apache.thrift.TFieldRequirementType.REQUIRED, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
+    tmpMap.put(_Fields.REQUESTOR_USER_NAME, new org.apache.thrift.meta_data.FieldMetaData("requestorUserName", org.apache.thrift.TFieldRequirementType.REQUIRED, 
+        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
     tmpMap.put(_Fields.AUTHORIZABLE_SET, new org.apache.thrift.meta_data.FieldMetaData("authorizableSet", org.apache.thrift.TFieldRequirementType.REQUIRED, 
         new org.apache.thrift.meta_data.SetMetaData(org.apache.thrift.protocol.TType.SET, 
             new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TSentryAuthorizable.class))));
@@ -145,11 +152,13 @@ public class TListSentryPrivilegesByAuthRequest implements org.apache.thrift.TBa
 
   public TListSentryPrivilegesByAuthRequest(
     int protocol_version,
+    String requestorUserName,
     Set<TSentryAuthorizable> authorizableSet)
   {
     this();
     this.protocol_version = protocol_version;
     setProtocol_versionIsSet(true);
+    this.requestorUserName = requestorUserName;
     this.authorizableSet = authorizableSet;
   }
 
@@ -159,6 +168,9 @@ public class TListSentryPrivilegesByAuthRequest implements org.apache.thrift.TBa
   public TListSentryPrivilegesByAuthRequest(TListSentryPrivilegesByAuthRequest other) {
     __isset_bitfield = other.__isset_bitfield;
     this.protocol_version = other.protocol_version;
+    if (other.isSetRequestorUserName()) {
+      this.requestorUserName = other.requestorUserName;
+    }
     if (other.isSetAuthorizableSet()) {
       Set<TSentryAuthorizable> __this__authorizableSet = new HashSet<TSentryAuthorizable>();
       for (TSentryAuthorizable other_element : other.authorizableSet) {
@@ -186,6 +198,7 @@ public class TListSentryPrivilegesByAuthRequest implements org.apache.thrift.TBa
   public void clear() {
     this.protocol_version = 1;
 
+    this.requestorUserName = null;
     this.authorizableSet = null;
     this.groups = null;
     this.roleSet = null;
@@ -211,6 +224,29 @@ public class TListSentryPrivilegesByAuthRequest implements org.apache.thrift.TBa
 
   public void setProtocol_versionIsSet(boolean value) {
     __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __PROTOCOL_VERSION_ISSET_ID, value);
+  }
+
+  public String getRequestorUserName() {
+    return this.requestorUserName;
+  }
+
+  public void setRequestorUserName(String requestorUserName) {
+    this.requestorUserName = requestorUserName;
+  }
+
+  public void unsetRequestorUserName() {
+    this.requestorUserName = null;
+  }
+
+  /** Returns true if field requestorUserName is set (has been assigned a value) and false otherwise */
+  public boolean isSetRequestorUserName() {
+    return this.requestorUserName != null;
+  }
+
+  public void setRequestorUserNameIsSet(boolean value) {
+    if (!value) {
+      this.requestorUserName = null;
+    }
   }
 
   public int getAuthorizableSetSize() {
@@ -322,6 +358,14 @@ public class TListSentryPrivilegesByAuthRequest implements org.apache.thrift.TBa
       }
       break;
 
+    case REQUESTOR_USER_NAME:
+      if (value == null) {
+        unsetRequestorUserName();
+      } else {
+        setRequestorUserName((String)value);
+      }
+      break;
+
     case AUTHORIZABLE_SET:
       if (value == null) {
         unsetAuthorizableSet();
@@ -354,6 +398,9 @@ public class TListSentryPrivilegesByAuthRequest implements org.apache.thrift.TBa
     case PROTOCOL_VERSION:
       return Integer.valueOf(getProtocol_version());
 
+    case REQUESTOR_USER_NAME:
+      return getRequestorUserName();
+
     case AUTHORIZABLE_SET:
       return getAuthorizableSet();
 
@@ -376,6 +423,8 @@ public class TListSentryPrivilegesByAuthRequest implements org.apache.thrift.TBa
     switch (field) {
     case PROTOCOL_VERSION:
       return isSetProtocol_version();
+    case REQUESTOR_USER_NAME:
+      return isSetRequestorUserName();
     case AUTHORIZABLE_SET:
       return isSetAuthorizableSet();
     case GROUPS:
@@ -405,6 +454,15 @@ public class TListSentryPrivilegesByAuthRequest implements org.apache.thrift.TBa
       if (!(this_present_protocol_version && that_present_protocol_version))
         return false;
       if (this.protocol_version != that.protocol_version)
+        return false;
+    }
+
+    boolean this_present_requestorUserName = true && this.isSetRequestorUserName();
+    boolean that_present_requestorUserName = true && that.isSetRequestorUserName();
+    if (this_present_requestorUserName || that_present_requestorUserName) {
+      if (!(this_present_requestorUserName && that_present_requestorUserName))
+        return false;
+      if (!this.requestorUserName.equals(that.requestorUserName))
         return false;
     }
 
@@ -447,6 +505,11 @@ public class TListSentryPrivilegesByAuthRequest implements org.apache.thrift.TBa
     if (present_protocol_version)
       builder.append(protocol_version);
 
+    boolean present_requestorUserName = true && (isSetRequestorUserName());
+    builder.append(present_requestorUserName);
+    if (present_requestorUserName)
+      builder.append(requestorUserName);
+
     boolean present_authorizableSet = true && (isSetAuthorizableSet());
     builder.append(present_authorizableSet);
     if (present_authorizableSet)
@@ -479,6 +542,16 @@ public class TListSentryPrivilegesByAuthRequest implements org.apache.thrift.TBa
     }
     if (isSetProtocol_version()) {
       lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.protocol_version, typedOther.protocol_version);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetRequestorUserName()).compareTo(typedOther.isSetRequestorUserName());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetRequestorUserName()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.requestorUserName, typedOther.requestorUserName);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -537,6 +610,14 @@ public class TListSentryPrivilegesByAuthRequest implements org.apache.thrift.TBa
     sb.append(this.protocol_version);
     first = false;
     if (!first) sb.append(", ");
+    sb.append("requestorUserName:");
+    if (this.requestorUserName == null) {
+      sb.append("null");
+    } else {
+      sb.append(this.requestorUserName);
+    }
+    first = false;
+    if (!first) sb.append(", ");
     sb.append("authorizableSet:");
     if (this.authorizableSet == null) {
       sb.append("null");
@@ -572,6 +653,10 @@ public class TListSentryPrivilegesByAuthRequest implements org.apache.thrift.TBa
     // check for required fields
     if (!isSetProtocol_version()) {
       throw new org.apache.thrift.protocol.TProtocolException("Required field 'protocol_version' is unset! Struct:" + toString());
+    }
+
+    if (!isSetRequestorUserName()) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'requestorUserName' is unset! Struct:" + toString());
     }
 
     if (!isSetAuthorizableSet()) {
@@ -628,7 +713,15 @@ public class TListSentryPrivilegesByAuthRequest implements org.apache.thrift.TBa
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
-          case 2: // AUTHORIZABLE_SET
+          case 2: // REQUESTOR_USER_NAME
+            if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
+              struct.requestorUserName = iprot.readString();
+              struct.setRequestorUserNameIsSet(true);
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+            }
+            break;
+          case 3: // AUTHORIZABLE_SET
             if (schemeField.type == org.apache.thrift.protocol.TType.SET) {
               {
                 org.apache.thrift.protocol.TSet _set82 = iprot.readSetBegin();
@@ -647,7 +740,7 @@ public class TListSentryPrivilegesByAuthRequest implements org.apache.thrift.TBa
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
-          case 3: // GROUPS
+          case 4: // GROUPS
             if (schemeField.type == org.apache.thrift.protocol.TType.SET) {
               {
                 org.apache.thrift.protocol.TSet _set85 = iprot.readSetBegin();
@@ -665,7 +758,7 @@ public class TListSentryPrivilegesByAuthRequest implements org.apache.thrift.TBa
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
-          case 4: // ROLE_SET
+          case 5: // ROLE_SET
             if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
               struct.roleSet = new TSentryActiveRoleSet();
               struct.roleSet.read(iprot);
@@ -690,6 +783,11 @@ public class TListSentryPrivilegesByAuthRequest implements org.apache.thrift.TBa
       oprot.writeFieldBegin(PROTOCOL_VERSION_FIELD_DESC);
       oprot.writeI32(struct.protocol_version);
       oprot.writeFieldEnd();
+      if (struct.requestorUserName != null) {
+        oprot.writeFieldBegin(REQUESTOR_USER_NAME_FIELD_DESC);
+        oprot.writeString(struct.requestorUserName);
+        oprot.writeFieldEnd();
+      }
       if (struct.authorizableSet != null) {
         oprot.writeFieldBegin(AUTHORIZABLE_SET_FIELD_DESC);
         {
@@ -741,6 +839,7 @@ public class TListSentryPrivilegesByAuthRequest implements org.apache.thrift.TBa
     public void write(org.apache.thrift.protocol.TProtocol prot, TListSentryPrivilegesByAuthRequest struct) throws org.apache.thrift.TException {
       TTupleProtocol oprot = (TTupleProtocol) prot;
       oprot.writeI32(struct.protocol_version);
+      oprot.writeString(struct.requestorUserName);
       {
         oprot.writeI32(struct.authorizableSet.size());
         for (TSentryAuthorizable _iter90 : struct.authorizableSet)
@@ -775,6 +874,8 @@ public class TListSentryPrivilegesByAuthRequest implements org.apache.thrift.TBa
       TTupleProtocol iprot = (TTupleProtocol) prot;
       struct.protocol_version = iprot.readI32();
       struct.setProtocol_versionIsSet(true);
+      struct.requestorUserName = iprot.readString();
+      struct.setRequestorUserNameIsSet(true);
       {
         org.apache.thrift.protocol.TSet _set92 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
         struct.authorizableSet = new HashSet<TSentryAuthorizable>(2*_set92.size);
