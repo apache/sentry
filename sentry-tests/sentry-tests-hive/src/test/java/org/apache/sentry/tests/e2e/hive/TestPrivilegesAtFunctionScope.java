@@ -17,7 +17,6 @@ printf_test_3 * Licensed to the Apache Software Foundation (ASF) under one or mo
 
 package org.apache.sentry.tests.e2e.hive;
 
-import org.apache.sentry.provider.file.PolicyFile;
 import static org.junit.Assert.assertFalse;
 
 import java.io.File;
@@ -27,6 +26,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -79,12 +79,13 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     context.close();
 
     policyFile
-        .addRolesToGroup(USERGROUP1, "db1_all", "UDF_JAR")
+        .addRolesToGroup(USERGROUP1, "db1_all", "UDF_JAR", "data_read")
         .addRolesToGroup(USERGROUP2, "db1_tab1", "UDF_JAR")
         .addRolesToGroup(USERGROUP3, "db1_tab1")
         .addPermissionsToRole("db1_all", "server=server1->db=" + DB1)
         .addPermissionsToRole("db1_tab1", "server=server1->db=" + DB1 + "->table=" + tableName1)
-        .addPermissionsToRole("UDF_JAR", "server=server1->uri=file://" + udfLocation);
+        .addPermissionsToRole("UDF_JAR", "server=server1->uri=file://" + udfLocation)
+        .addPermissionsToRole("data_read", "server=server1->URI=file://" + dataFile.getPath());
     writePolicyFile(policyFile);
 
     // user1 should be able create/drop temp functions
@@ -95,6 +96,18 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
         "CREATE TEMPORARY FUNCTION printf_test AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
     statement.execute("SELECT printf_test(value) FROM " + tableName1);
     statement.execute("DROP TEMPORARY FUNCTION printf_test");
+
+    statement.execute(
+        "CREATE FUNCTION printf_test_perm AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf' ");
+    statement.execute("SELECT printf_test_perm(value) FROM " + tableName1);
+    statement.execute("DROP FUNCTION printf_test_perm");
+
+    // test perm UDF with 'using file' syntax
+    statement
+        .execute("CREATE FUNCTION printf_test_perm AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf' "
+            + " using file '" + "file://" + dataFile.getPath() + "'");
+    statement.execute("DROP FUNCTION printf_test_perm");
+
     context.close();
 
     // user2 has select privilege on one of the tables in db1, should be able create/drop temp functions
@@ -104,20 +117,49 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     statement.execute(
         "CREATE TEMPORARY FUNCTION printf_test_2 AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
     statement.execute("SELECT printf_test_2(value) FROM " + tableName1);
-    statement.execute("DROP TEMPORARY FUNCTION printf_test");
+    statement.execute("DROP TEMPORARY FUNCTION printf_test_2");
+
+    statement.execute(
+        "CREATE FUNCTION " + DB1 + ".printf_test_2_perm AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
+    statement.execute("SELECT printf_test_2_perm(value) FROM " + tableName1);
+    statement.execute("DROP FUNCTION printf_test_2_perm");
+
+    /*** Disabled till HIVE-8266 is addressed
+    // USER2 doesn't have URI perm on dataFile
+    try {
+      statement
+          .execute("CREATE FUNCTION "
+              + DB1
+              + ".printf_test_2_perm AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'"
+              + " using file '" + "file://" + dataFile.getPath() + "'");
+      assertFalse("CREATE TEMPORARY FUNCTION should fail for user3", true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    ***/
+
     context.close();
 
     // user3 shouldn't be able to create/drop temp functions since it doesn't have permission for jar
     connection = context.createConnection(USER3_1);
     statement = context.createStatement(connection);
+    statement.execute("USE " + DB1);
     try {
-      statement.execute("USE " + DB1);
       statement.execute(
       "CREATE TEMPORARY FUNCTION printf_test_bad AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
       assertFalse("CREATE TEMPORARY FUNCTION should fail for user3", true);
     } catch (SQLException e) {
       context.verifyAuthzException(e);
     }
+
+    try {
+      statement.execute(
+      "CREATE FUNCTION printf_test_perm_bad AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
+      assertFalse("CREATE FUNCTION should fail for user3", true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+
     context.close();
 
     // user4 (not part of any group ) shouldn't be able to create/drop temp functions
