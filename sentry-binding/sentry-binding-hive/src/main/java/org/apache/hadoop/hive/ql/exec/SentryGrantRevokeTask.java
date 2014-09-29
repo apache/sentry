@@ -71,6 +71,7 @@ import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.core.model.db.Table;
 import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
+import org.apache.sentry.provider.db.service.thrift.TSentryGrantOption;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
 import org.apache.sentry.service.thrift.SentryServiceClientFactory;
@@ -428,7 +429,8 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
       appendNonNull(builder, roleName);//getPrincipalName()
       appendNonNull(builder, "ROLE");//getPrincipalType()
       appendNonNull(builder, privilege.getAction());
-      appendNonNull(builder, false);//isGrantOption()
+      appendNonNull(builder,
+          TSentryGrantOption.TRUE.equals(privilege.getGrantOption()));
       appendNonNull(builder, privilege.getCreateTime() * 1000L);
       appendNonNull(builder, "--");
     }

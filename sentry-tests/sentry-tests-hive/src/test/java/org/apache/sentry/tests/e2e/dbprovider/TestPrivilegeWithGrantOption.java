@@ -41,6 +41,9 @@ import org.junit.Test;
 public class TestPrivilegeWithGrantOption extends AbstractTestWithStaticConfiguration {
 
   private static boolean isInternalServer = false;
+  private static int SHOW_GRANT_ROLE_DB_POSITION = 1;
+  private static int SHOW_GRANT_ROLE_TABLE_POSITION = 2;
+  private static int SHOW_GRANT_ROLE_WITH_GRANT_POSITION = 8;
 
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception {
@@ -175,15 +178,40 @@ public class TestPrivilegeWithGrantOption extends AbstractTestWithStaticConfigur
     statement.execute("GRANT INSERT ON TABLE foo TO ROLE role3_2");
     connection.close();
 
+    connection = context.createConnection(USER2_1);
+    statement = context.createStatement(connection);
+    statement.execute("USE db_1");
+    runSQLWithError(statement, "GRANT ALL ON TABLE foo TO ROLE role3_2",
+        HiveOperation.GRANT_PRIVILEGE, null, null, true);
+    connection.close();
+
     connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
     statement.execute("use db_1");
     verifySingleGrantWithGrantOption(statement,
-        "SHOW GRANT ROLE role2 ON TABLE foo", 2, "foo");
+        "SHOW GRANT ROLE role2 ON TABLE foo", SHOW_GRANT_ROLE_TABLE_POSITION,
+        "foo");
     verifySingleGrantWithGrantOption(statement,
-        "SHOW GRANT ROLE role3_1 ON DATABASE db_1", 1, "db_1");
+        "SHOW GRANT ROLE role3_1 ON DATABASE db_1",
+        SHOW_GRANT_ROLE_DB_POSITION, "db_1");
     verifySingleGrantWithGrantOption(statement,
-        "SHOW GRANT ROLE role3_2 ON TABLE foo", 2, "foo");
+        "SHOW GRANT ROLE role3_2 ON TABLE foo", SHOW_GRANT_ROLE_TABLE_POSITION,
+        "foo");
+
+    // test 'with grant option' status
+    verifySingleGrantWithGrantOption(statement, "show grant role role1",
+        SHOW_GRANT_ROLE_WITH_GRANT_POSITION, "true");
+    verifySingleGrantWithGrantOption(statement,
+        "SHOW GRANT ROLE role1 ON DATABASE db_1",
+        SHOW_GRANT_ROLE_WITH_GRANT_POSITION, "true");
+    verifySingleGrantWithGrantOption(statement,
+        "SHOW GRANT ROLE role1 ON TABLE foo",
+        SHOW_GRANT_ROLE_WITH_GRANT_POSITION, "true");
+    verifySingleGrantWithGrantOption(statement, "show grant role role2",
+        SHOW_GRANT_ROLE_WITH_GRANT_POSITION, "false");
+    verifySingleGrantWithGrantOption(statement,
+        "SHOW GRANT ROLE role2 ON TABLE foo",
+        SHOW_GRANT_ROLE_WITH_GRANT_POSITION, "false");
     statement.close();
     connection.close();
   }
