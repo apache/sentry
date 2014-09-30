@@ -26,6 +26,7 @@ public class AccessConstants {
    */
   public static final String ALL = "*";
   public static final String SOME = "+";
+  public static final String ACTION_ALL = "ALL";
 
   public static final String SELECT = "select";
   public static final String INSERT = "insert";

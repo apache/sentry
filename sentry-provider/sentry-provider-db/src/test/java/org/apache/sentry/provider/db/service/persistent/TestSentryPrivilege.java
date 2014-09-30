@@ -50,28 +50,45 @@ public class TestSentryPrivilege {
     my.setDbName("");
     assertTrue(my.implies(your));
 
-    // 2.test server+URI+action
-    my = new MSentryPrivilege();
-    your = new MSentryPrivilege();
-    my.setServerName("server1");
-    my.setAction(AccessConstants.ALL);
-    your.setServerName("server1");
-    your.setAction(AccessConstants.ALL);
-    my.setURI("hdfs://namenode:9000/path");
-    your.setURI("hdfs://namenode:9000/path");
+    my.setAction(AccessConstants.ACTION_ALL);
     assertTrue(my.implies(your));
 
-    my.setURI("hdfs://namenode:9000/path");
-    your.setURI("hdfs://namenode:9000/path/to/some/dir");
+    my.setTableName("");
     assertTrue(my.implies(your));
 
-    my.setURI("file:///path");
-    your.setURI("file:///path");
+    my.setDbName("");
     assertTrue(my.implies(your));
 
-    my.setURI("file:///path");
-    your.setURI("file:///path/to/some/dir");
-    assertTrue(my.implies(your));
+    // 2.test server+URI+action using all combinations of * and ALL for action
+    String[][] actionMap = new String[][] {
+        { AccessConstants.ALL, AccessConstants.ALL },
+        { AccessConstants.ALL, AccessConstants.ACTION_ALL },
+        { AccessConstants.ACTION_ALL, AccessConstants.ALL },
+        { AccessConstants.ACTION_ALL, AccessConstants.ACTION_ALL } };
+
+    for (int actions = 0; actions < actionMap.length; actions++) {
+      my = new MSentryPrivilege();
+      your = new MSentryPrivilege();
+      my.setServerName("server1");
+      my.setAction(actionMap[actions][0]);
+      your.setServerName("server1");
+      your.setAction(actionMap[actions][1]);
+      my.setURI("hdfs://namenode:9000/path");
+      your.setURI("hdfs://namenode:9000/path");
+      assertTrue(my.implies(your));
+
+      my.setURI("hdfs://namenode:9000/path");
+      your.setURI("hdfs://namenode:9000/path/to/some/dir");
+      assertTrue(my.implies(your));
+
+      my.setURI("file:///path");
+      your.setURI("file:///path");
+      assertTrue(my.implies(your));
+
+      my.setURI("file:///path");
+      your.setURI("file:///path/to/some/dir");
+      assertTrue(my.implies(your));
+    }
   }
 
   @Test

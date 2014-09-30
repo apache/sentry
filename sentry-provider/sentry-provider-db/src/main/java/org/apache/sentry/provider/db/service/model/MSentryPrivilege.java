@@ -24,6 +24,7 @@ import java.util.Set;
 import javax.jdo.annotations.PersistenceCapable;
 
 import org.apache.sentry.core.common.utils.PathUtils;
+import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 
 /**
@@ -268,8 +269,9 @@ public boolean equals(Object obj) {
     }
 
     // check action implies
-    if (!action.equalsIgnoreCase("*") &&
-        !action.equalsIgnoreCase(other.action)) {
+    if (!action.equalsIgnoreCase(AccessConstants.ALL)
+        && !action.equalsIgnoreCase(other.action)
+        && !action.equalsIgnoreCase(AccessConstants.ACTION_ALL)) {
       return false;
     }
 
