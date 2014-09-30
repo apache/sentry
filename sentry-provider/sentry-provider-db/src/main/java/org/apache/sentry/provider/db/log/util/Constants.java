@@ -48,7 +48,7 @@ public class Constants {
   public final static String OPERATION_DROP_ROLE = "DROP_ROLE";
   public final static String OPERATION_ADD_ROLE = "ADD_ROLE_TO_GROUP";
   public final static String OPERATION_DELETE_ROLE = "DELETE_ROLE_FROM_GROUP";
-  public final static String OPERATION_GRANT_PRIVILEGE = "GRANTE_PRIVILEGE";
+  public final static String OPERATION_GRANT_PRIVILEGE = "GRANT_PRIVILEGE";
   public final static String OPERATION_REVOKE_PRIVILEGE = "REVOKE_PRIVILEGE";
 
   public final static String OBJECT_TYPE_PRINCIPAL = "PRINCIPAL";
