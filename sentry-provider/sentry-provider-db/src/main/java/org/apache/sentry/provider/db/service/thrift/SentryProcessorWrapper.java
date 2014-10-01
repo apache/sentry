@@ -30,6 +30,8 @@ import org.apache.thrift.transport.TTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Preconditions;
+
 public class SentryProcessorWrapper<I extends SentryPolicyService.Iface> extends
     SentryPolicyService.Processor<SentryPolicyService.Iface> {
 
@@ -68,15 +70,18 @@ public class SentryProcessorWrapper<I extends SentryPolicyService.Iface> extends
     CommandUtil.setIpAddress(socket.getInetAddress().toString());
   }
 
+  /**
+   * Returns the underlying TSocket from the transport, or null of the transport type is
+   * unknown.
+   */
   private TSocket getUnderlyingSocketFromTransport(TTransport transport) {
-    if (transport != null) {
-      if (transport instanceof TSaslServerTransport) {
-        transport = ((TSaslServerTransport) transport).getUnderlyingTransport();
-      } else if (transport instanceof TSaslClientTransport) {
-        transport = ((TSaslClientTransport) transport).getUnderlyingTransport();
-      } else if (transport instanceof TSocket) {
-        return (TSocket) transport;
-      }
+    Preconditions.checkNotNull(transport);
+    if (transport instanceof TSaslServerTransport) {
+      return (TSocket) ((TSaslServerTransport) transport).getUnderlyingTransport();
+    } else if (transport instanceof TSaslClientTransport) {
+      return (TSocket) ((TSaslClientTransport) transport).getUnderlyingTransport();
+    } else if (transport instanceof TSocket) {
+      return (TSocket) transport;
     }
     return null;
   }
