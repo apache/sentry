@@ -85,7 +85,8 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
         .addPermissionsToRole("db1_all", "server=server1->db=" + DB1)
         .addPermissionsToRole("db1_tab1", "server=server1->db=" + DB1 + "->table=" + tableName1)
         .addPermissionsToRole("UDF_JAR", "server=server1->uri=file://" + udfLocation)
-        .addPermissionsToRole("data_read", "server=server1->URI=file://" + dataFile.getPath());
+        .addPermissionsToRole("data_read", "server=server1->URI=" 
+            + fileSystem.getDefaultUri(fileSystem.getConf()) + "/tmp");
     writePolicyFile(policyFile);
 
     // user1 should be able create/drop temp functions
@@ -105,7 +106,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     // test perm UDF with 'using file' syntax
     statement
         .execute("CREATE FUNCTION printf_test_perm AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf' "
-            + " using file '" + "file://" + dataFile.getPath() + "'");
+            + " using file '" + fileSystem.getDefaultUri(fileSystem.getConf()) + "/tmp" + "'");
     statement.execute("DROP FUNCTION printf_test_perm");
 
     context.close();
