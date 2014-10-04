@@ -22,6 +22,7 @@ import static junit.framework.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -317,6 +318,11 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
     String db2 = "testDB2";
     String tab = "testTab";
     setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+    String group1user = "group1user";
+    setLocalGroupMapping(group1user, Sets.newHashSet(group1));
+    String group2user = "group2user";
+    setLocalGroupMapping(group2user, Sets.newHashSet(group2));
+    setLocalGroupMapping("random", Sets.newHashSet("foo"));
     writePolicyFile();
 
     client.dropRoleIfExists(requestorUserName, roleName1);
@@ -388,6 +394,16 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
     // verify for specific group and ALL roleset
     authPrivMap = client.listPrivilegsbyAuthorizable(requestorUserName, authorizableSet,
         testGroupSet, ActiveRoleSet.ALL);
+    assertEquals(expectedResults, authPrivMap);
+
+    // verify users not belonging to any group are not shown anything
+    authPrivMap = client
+        .listPrivilegsbyAuthorizable("random", authorizableSet,
+            new HashSet<String>(), ActiveRoleSet.ALL);
+    expectedResults.clear();
+    expectedResults.put(
+        SentryPolicyServiceClient.setupSentryAuthorizable(db1Authrizable),
+        new TSentryPrivilegeMap(new HashMap<String, Set<TSentryPrivilege>>()));
     assertEquals(expectedResults, authPrivMap);
   }
 

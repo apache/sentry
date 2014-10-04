@@ -820,7 +820,7 @@ public class SentryStore {
 
   public TSentryPrivilegeMap listSentryPrivilegesByAuthorizable(
       Set<String> groups, TSentryActiveRoleSet activeRoles,
-      TSentryAuthorizable authHierarchy)
+      TSentryAuthorizable authHierarchy, boolean isAdmin)
       throws SentryInvalidInputException {
     Map<String, Set<TSentryPrivilege>> resultPrivilegeMap = Maps.newTreeMap();
     Set<String> roles = Sets.newHashSet();
@@ -828,20 +828,27 @@ public class SentryStore {
       roles = getRolesToQuery(groups, new TSentryActiveRoleSet(true, null));
     }
     if (activeRoles != null && !activeRoles.isAll()) {
-      roles.addAll(activeRoles.getRoles());
+      // need to check/convert to lowercase here since this is from user input
+      for (String aRole : activeRoles.getRoles()) {
+        roles.add(aRole.toLowerCase());
+      }
     }
 
-    List<MSentryPrivilege> mSentryPrivileges = getMSentryPrivilegesByAuth(roles,
-        authHierarchy);
-    for (MSentryPrivilege priv : mSentryPrivileges) {
-      for (MSentryRole role : priv.getRoles()) {
-        TSentryPrivilege tPriv = convertToTSentryPrivilege(priv);
-        if (resultPrivilegeMap.containsKey(role.getRoleName())) {
-          resultPrivilegeMap.get(role.getRoleName()).add(tPriv);
-        } else {
-          Set<TSentryPrivilege> tPrivSet = Sets.newTreeSet();
-          tPrivSet.add(tPriv);
-          resultPrivilegeMap.put(role.getRoleName(), tPrivSet);
+    // An empty 'roles' is a treated as a wildcard (in case of admin role)..
+    // so if not admin, don't return anything if 'roles' is empty..
+    if (isAdmin || !roles.isEmpty()) {
+      List<MSentryPrivilege> mSentryPrivileges = getMSentryPrivilegesByAuth(roles,
+          authHierarchy);
+      for (MSentryPrivilege priv : mSentryPrivileges) {
+        for (MSentryRole role : priv.getRoles()) {
+          TSentryPrivilege tPriv = convertToTSentryPrivilege(priv);
+          if (resultPrivilegeMap.containsKey(role.getRoleName())) {
+            resultPrivilegeMap.get(role.getRoleName()).add(tPriv);
+          } else {
+            Set<TSentryPrivilege> tPrivSet = Sets.newTreeSet();
+            tPrivSet.add(tPriv);
+            resultPrivilegeMap.put(role.getRoleName(), tPrivSet);
+          }
         }
       }
     }

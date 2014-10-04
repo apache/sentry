@@ -569,10 +569,11 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
         }
       }
 
+      // If user is not part of any group.. return empty response
       for (TSentryAuthorizable authorizable : request.getAuthorizableSet()) {
         authRoleMap.put(authorizable, sentryStore
             .listSentryPrivilegesByAuthorizable(requestedGroups,
-                request.getRoleSet(), authorizable));
+                request.getRoleSet(), authorizable, inAdminGroups(memberGroups)));
       }
       response.setPrivilegesMapByAuth(authRoleMap);
       response.setStatus(Status.OK());
