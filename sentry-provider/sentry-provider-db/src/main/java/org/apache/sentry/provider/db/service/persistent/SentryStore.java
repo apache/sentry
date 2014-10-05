@@ -705,7 +705,7 @@ public class SentryStore {
       }
       StringBuilder filters = new StringBuilder("roles.contains(role) "
           + "&& (" + Joiner.on(" || ").join(rolesFiler) + ") ");
-      filters.append("&& serverName == \"" + serverName + "\"");
+      filters.append("&& serverName == \"" + serverName.trim().toLowerCase() + "\"");
       query.setFilter(filters.toString());
       query.setResult("count(this)");
 
