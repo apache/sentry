@@ -38,7 +38,9 @@ import org.apache.hadoop.hive.serde.serdeConstants;
 import org.apache.hadoop.hive.shims.ShimLoader;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.pig.PigServer;
+import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.service.thrift.SentryServiceClientFactory;
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory.HiveServer2Type;
 import org.junit.After;
@@ -50,6 +52,7 @@ public abstract class AbstractMetastoreTestWithStaticConfiguration extends
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception {
     useSentryService = true;
+    setMetastoreListener = true;
     testServerType = HiveServer2Type.InternalMetastore.name();
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
   }

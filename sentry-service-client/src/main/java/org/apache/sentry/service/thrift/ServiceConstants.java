@@ -66,6 +66,13 @@ public class ServiceConstants {
     public static final String RPC_MIN_THREADS = "sentry.service.server-min-threads";
     public static final int RPC_MIN_THREADS_DEFAULT = 10;
     public static final String ALLOW_CONNECT = "sentry.service.allow.connect";
+    
+    public static final String SENTRY_POLICY_STORE_PLUGINS = "sentry.policy.store.plugins";
+    public static final String SENTRY_POLICY_STORE_PLUGINS_DEFAULT = "";
+
+    public static final String SENTRY_METASTORE_PLUGINS = "sentry.metastore.plugins";
+    public static final String SENTRY_METASTORE_PLUGINS_DEFAULT = "";
+    
     public static final String PROCESSOR_FACTORIES = "sentry.service.processor.factories";
     public static final String PROCESSOR_FACTORIES_DEFAULT =
         "org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessorFactory";
@@ -97,6 +104,9 @@ public class ServiceConstants {
     public static final String SENTRY_STORE_HADOOP_GROUP_MAPPING = "org.apache.sentry.provider.common.HadoopGroupMappingService";
     public static final String SENTRY_STORE_LOCAL_GROUP_MAPPING = "org.apache.sentry.provider.file.LocalGroupMappingService";
     public static final String SENTRY_STORE_GROUP_MAPPING_DEFAULT = SENTRY_STORE_HADOOP_GROUP_MAPPING;
+    
+    public static final String SENTRY_HDFS_INTEGRATION_ENABLE = "sentry.hdfs.integration.enable";
+    public static final String SENTRY_HDFS_INTEGRATION_PATH_PREFIXES = "sentry.hdfs.integration.path.prefixes";
 
     public static final ImmutableMap<String, String> SENTRY_STORE_DEFAULTS =
         ImmutableMap.<String, String>builder()

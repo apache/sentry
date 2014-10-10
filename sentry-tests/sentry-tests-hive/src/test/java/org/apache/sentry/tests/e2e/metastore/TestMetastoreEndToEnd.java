@@ -105,19 +105,42 @@ public class TestMetastoreEndToEnd extends
    * Setup admin privileges for user ADMIN1 verify user can create DB and tables
    * @throws Exception
    */
-  @Test
-  public void testServerPrivileges() throws Exception {
-    String tabName = "tab1";
-    HiveMetaStoreClient client = context.getMetaStoreClient(ADMIN1);
-    client.dropDatabase(dbName, true, true, true);
-
-    createMetastoreDB(client, dbName);
-    createMetastoreTable(client, dbName, tabName,
-        Lists.newArrayList(new FieldSchema("col1", "int", "")));
-    assertEquals(1, client.getTables(dbName, tabName).size());
-    client.dropTable(dbName, tabName);
-    client.dropDatabase(dbName, true, true, true);
-  }
+//  @Test
+//  public void testServerPrivileges() throws Exception {
+//    String tabName = "tab1";
+//    HiveMetaStoreClient client = context.getMetaStoreClient(ADMIN1);
+//    client.dropDatabase(dbName, true, true, true);
+//
+//    createMetastoreDB(client, dbName);
+//    createMetastoreTable(client, dbName, tabName,
+//        Lists.newArrayList(new FieldSchema("col1", "int", "")));
+//    assertEquals(1, client.getTables(dbName, tabName).size());
+//    
+//    AuthzPathsCache authzPathCache = new AuthzPathsCache(null, new String[]{"/"}, 0);
+//    SentryPolicyServiceClient sentryClient = new SentryServiceClientFactory().create(sentryConf);
+//    waitToCommit(authzPathCache, sentryClient);
+//    assertEquals("/%PREFIX[data%DIR[db_1.db%AUTHZ_OBJECT#db_1[tab1%AUTHZ_OBJECT#db_1.tab1[]]]]", authzPathCache.serializeAllPaths());
+//    client.dropTable(dbName, tabName);
+//    client.dropDatabase(dbName, true, true, true);
+//    waitToCommit(authzPathCache, sentryClient);
+//    assertEquals("/%PREFIX[]", authzPathCache.serializeAllPaths());
+//  }
+//
+//  private void waitToCommit(AuthzPathsCache authzPathCache, SentryPolicyServiceClient sentryClient)
+//      throws Exception {
+//    SentryAuthzUpdate allUpdates = sentryClient.getAllUpdatesFrom(0, 0);
+//    for (HMSUpdate update : allUpdates.pathUpdates) {
+//      authzPathCache.handleUpdateNotification(update);
+//    }
+//    int counter = 0;
+//    while(!authzPathCache.areAllUpdatesCommited()) {
+//      Thread.sleep(200);
+//      counter++;
+//      if (counter > 10000) {
+//        fail("Updates taking too long to commit !!");
+//      }
+//    }
+//  }
 
   /**
    * verify non-admin user can not create or drop DB

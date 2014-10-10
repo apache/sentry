@@ -234,7 +234,12 @@ service SentryPolicyService
   # For use with ProviderBackend.getPrivileges only
   TListSentryPrivilegesForProviderResponse list_sentry_privileges_for_provider(1:TListSentryPrivilegesForProviderRequest request)
 
- TDropPrivilegesResponse drop_sentry_privilege(1:TDropPrivilegesRequest request);
+  TDropPrivilegesResponse drop_sentry_privilege(1:TDropPrivilegesRequest request);
+
+  TRenamePrivilegesResponse rename_sentry_privilege(1:TRenamePrivilegesRequest request);
+
+  # HMS Path cache
+  void handle_hms_notification(1:TPathsUpdate pathsUpdate);
 
  TRenamePrivilegesResponse rename_sentry_privilege(1:TRenamePrivilegesRequest request);
 

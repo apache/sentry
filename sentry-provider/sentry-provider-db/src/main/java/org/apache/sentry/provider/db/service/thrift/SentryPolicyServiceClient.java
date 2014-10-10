@@ -44,7 +44,7 @@ import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.apache.sentry.service.thrift.ServiceConstants.ThriftConstants;
 import org.apache.sentry.service.thrift.Status;
 import org.apache.thrift.TException;
-import org.apache.thrift.protocol.TBinaryProtocol;
+import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.protocol.TMultiplexedProtocol;
 import org.apache.thrift.transport.TSaslClientTransport;
 import org.apache.thrift.transport.TSocket;
@@ -157,7 +157,7 @@ public class SentryPolicyServiceClient {
     }
     LOGGER.debug("Successfully opened transport: " + transport + " to " + serverAddress);
     TMultiplexedProtocol protocol = new TMultiplexedProtocol(
-      new TBinaryProtocol(transport),
+      new TCompactProtocol(transport),
       SentryPolicyStoreProcessor.SENTRY_POLICY_SERVICE_NAME);
     client = new SentryPolicyService.Client(protocol);
     LOGGER.debug("Successfully created client");

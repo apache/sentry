@@ -18,14 +18,24 @@
 
 package org.apache.sentry.provider.db.service.thrift;
 
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
+import org.apache.hadoop.hive.metastore.api.Database;
+import org.apache.hadoop.hive.metastore.api.Partition;
+import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.sentry.SentryUserException;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.common.GroupMappingService;
@@ -33,12 +43,16 @@ import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.provider.db.SentryAlreadyExistsException;
 import org.apache.sentry.provider.db.SentryInvalidInputException;
 import org.apache.sentry.provider.db.SentryNoSuchObjectException;
+import org.apache.sentry.provider.db.SentryPolicyStorePlugin;
+import org.apache.sentry.provider.db.SentryPolicyStorePlugin.SentryPluginException;
 import org.apache.sentry.provider.db.log.entity.JsonLogEntityFactory;
 import org.apache.sentry.provider.db.log.util.Constants;
 import org.apache.sentry.provider.db.service.persistent.CommitContext;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.provider.db.service.thrift.PolicyStoreConstants.PolicyStoreServerConfig;
+import org.apache.sentry.service.thrift.ServiceConstants.ConfUtilties;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
+import org.apache.sentry.service.thrift.ProcessorFactory;
 import org.apache.sentry.service.thrift.Status;
 import org.apache.sentry.service.thrift.TSentryResponseStatus;
 import org.apache.thrift.TException;
@@ -60,12 +74,16 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
 
   public static final String SENTRY_POLICY_SERVICE_NAME = "SentryPolicyService";
 
+  public static volatile SentryPolicyStoreProcessor instance;
+
   private final String name;
   private final Configuration conf;
   private final SentryStore sentryStore;
   private final NotificationHandlerInvoker notificationHandlerInvoker;
   private final ImmutableSet<String> adminGroups;
   private boolean isReady;
+
+  private List<SentryPolicyStorePlugin> sentryPlugins = new LinkedList<SentryPolicyStorePlugin>();
 
   public SentryPolicyStoreProcessor(String name, Configuration conf) throws Exception {
     super();
@@ -78,12 +96,35 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     isReady = true;
     adminGroups = ImmutableSet.copyOf(toTrimedLower(Sets.newHashSet(conf.getStrings(
         ServerConfig.ADMIN_GROUPS, new String[]{}))));
+    
+    Iterable<String> pluginClasses = ConfUtilties.CLASS_SPLITTER
+        .split(conf.get(ServerConfig.SENTRY_POLICY_STORE_PLUGINS,
+            ServerConfig.SENTRY_POLICY_STORE_PLUGINS_DEFAULT).trim());
+    for (String pluginClassStr : pluginClasses) {
+      Class<?> clazz = conf.getClassByName(pluginClassStr);
+      if (!SentryPolicyStorePlugin.class.isAssignableFrom(clazz)) {
+        throw new IllegalArgumentException("Sentry Plugin ["
+            + pluginClassStr + "] is not a "
+            + SentryPolicyStorePlugin.class.getName());
+      }
+      SentryPolicyStorePlugin plugin = (SentryPolicyStorePlugin)clazz.newInstance();
+      plugin.initialize(conf, sentryStore);
+      sentryPlugins.add(plugin);
+    }
+    if (instance == null) {
+      instance = this;
+    }
   }
 
   public void stop() {
     if (isReady) {
       sentryStore.stop();
     }
+  }
+
+  public void registerPlugin(SentryPolicyStorePlugin plugin) throws SentryPluginException {
+    plugin.initialize(conf, sentryStore);
+    sentryPlugins.add(plugin);
   }
 
   @VisibleForTesting
@@ -185,6 +226,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       response.setPrivilege(request.getPrivilege());
       notificationHandlerInvoker.alter_sentry_role_grant_privilege(commitContext,
           request, response);
+      for (SentryPolicyStorePlugin plugin : sentryPlugins) {
+        plugin.onAlterSentryRoleGrantPrivilege(request);
+      }
     } catch (SentryNoSuchObjectException e) {
       String msg = "Role: " + request.getRoleName() + " doesn't exist.";
       LOGGER.error(msg, e);
@@ -217,6 +261,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       response.setStatus(Status.OK());
       notificationHandlerInvoker.alter_sentry_role_revoke_privilege(commitContext,
           request, response);
+      for (SentryPolicyStorePlugin plugin : sentryPlugins) {
+        plugin.onAlterSentryRoleRevokePrivilege(request);
+      }
     } catch (SentryNoSuchObjectException e) {
       String msg = "Privilege: [server=" + request.getPrivilege().getServerName() +
     		  ",db=" + request.getPrivilege().getDbName() +
@@ -255,6 +302,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       response.setStatus(Status.OK());
       notificationHandlerInvoker.drop_sentry_role(commitContext,
           request, response);
+      for (SentryPolicyStorePlugin plugin : sentryPlugins) {
+        plugin.onDropSentryRole(request);
+      }
     } catch (SentryNoSuchObjectException e) {
       String msg = "Role :" + request + " does not exist.";
       LOGGER.error(msg, e);
@@ -285,6 +335,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       response.setStatus(Status.OK());
       notificationHandlerInvoker.alter_sentry_role_add_groups(commitContext,
           request, response);
+      for (SentryPolicyStorePlugin plugin : sentryPlugins) {
+        plugin.onAlterSentryRoleAddGroups(request);
+      }
     } catch (SentryNoSuchObjectException e) {
       String msg = "Role: " + request + " does not exist.";
       LOGGER.error(msg, e);
@@ -315,6 +368,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       response.setStatus(Status.OK());
       notificationHandlerInvoker.alter_sentry_role_delete_groups(commitContext,
           request, response);
+      for (SentryPolicyStorePlugin plugin : sentryPlugins) {
+        plugin.onAlterSentryRoleDeleteGroups(request);
+      }
     } catch (SentryNoSuchObjectException e) {
       String msg = "Role: " + request + " does not exist.";
       LOGGER.error(msg, e);
@@ -499,6 +555,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       authorize(request.getRequestorUserName(), adminGroups);
       sentryStore.dropPrivilege(request.getAuthorizable());
       response.setStatus(Status.OK());
+      // TODO : Sentry - HDFS : Have to handle this 
     } catch (SentryAccessDeniedException e) {
       LOGGER.error(e.getMessage(), e);
       response.setStatus(Status.AccessDenied(e.getMessage(), e));
@@ -520,6 +577,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       sentryStore.renamePrivilege(request.getOldAuthorizable(),
           request.getNewAuthorizable());
       response.setStatus(Status.OK());
+      // TODO : Sentry - HDFS : Have to handle this
     } catch (SentryAccessDeniedException e) {
       LOGGER.error(e.getMessage(), e);
       response.setStatus(Status.AccessDenied(e.getMessage(), e));
@@ -577,6 +635,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       }
       response.setPrivilegesMapByAuth(authRoleMap);
       response.setStatus(Status.OK());
+      // TODO : Sentry - HDFS : Have to handle this
     } catch (SentryAccessDeniedException e) {
       LOGGER.error(e.getMessage(), e);
       response.setStatus(Status.AccessDenied(e.getMessage(), e));
