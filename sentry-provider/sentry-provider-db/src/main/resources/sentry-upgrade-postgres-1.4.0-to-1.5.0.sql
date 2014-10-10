@@ -1,5 +1,5 @@
 SELECT 'Upgrading Sentry store schema from 1.4.0 to 1.5.0';
-\i 001-SENTRY-339.postgres.sql;
+\i 001-SENTRY-327.postgres.sql;
 \i 002-SENTRY-339.postgres.sql;
 \i 003-SENTRY-380.postgres.sql;
 
