@@ -17,6 +17,7 @@
  */
 package org.apache.sentry.tests.e2e.metastore;
 
+import java.io.IOException;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,6 +34,7 @@ import org.apache.hadoop.hive.metastore.api.SerDeInfo;
 import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.hadoop.hive.ql.Driver;
+import org.apache.hadoop.hive.ql.processors.CommandProcessorResponse;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.hive.serde.serdeConstants;
 import org.apache.hadoop.hive.shims.ShimLoader;
@@ -178,9 +180,13 @@ public abstract class AbstractMetastoreTestWithStaticConfiguration extends
 
   public void execHiveSQL(String sqlStmt, String userName) throws Exception {
     HiveConf hiveConf = new HiveConf();
-    Driver driver = new Driver(hiveConf);
+    Driver driver = new Driver(hiveConf, userName);
     SessionState.start(new CliSessionState(hiveConf));
-    driver.run(sqlStmt);
+    CommandProcessorResponse cpr = driver.run(sqlStmt);
+    if (cpr.getResponseCode() != 0) {
+      throw new IOException("Failed to execute \"" + sqlStmt + "\". Driver returned "
+          + cpr.getResponseCode() + " Error: " + cpr.getErrorMessage());
+    }
     driver.close();
     SessionState.get().close();
   }

@@ -18,8 +18,8 @@
 
 package org.apache.sentry.tests.e2e.metastore;
 
-import org.apache.sentry.provider.file.PolicyFile;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -29,7 +29,7 @@ import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hive.hcatalog.pig.HCatStorer;
 import org.apache.pig.ExecType;
 import org.apache.pig.PigServer;
-import org.apache.sentry.tests.e2e.hive.Context;
+import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 import org.junit.Before;
 import org.junit.Test;
@@ -93,18 +93,11 @@ public class TestMetaStoreWithPigHCat extends
     execPigLatin(USER2_1, pigServer, "A = load '" + dataFile.getPath()
         + "' as (id:int);");
     try {
-      execPigLatin(USER2_1, pigServer, "store A into '" + dbName + "."
-          + tabName
-          + "' using " + HCatStorer.class.getName() + " ('part_col=part2');");
-      // TODO: The HCatStore seems to be swallowing the exception. Thus we
-      // manually verify that partition is not created by above call.
-      client = context.getMetaStoreClient(ADMIN1);
-      assertEquals(1, client.listPartitionNames(dbName, tabName, (short)10).size());
-      client.close();
-      // fail("HCatStore should fail for non-privilege user");
-
+      execPigLatin(USER2_1, pigServer, "store A into '" + dbName + "." + tabName + "' using "
+          + HCatStorer.class.getName() + " ('part_col=part2');");
+      fail("USER2_1 has no access to the metadata, exception will be thrown.");
     } catch (IOException e) {
-      Context.verifyMetastoreAuthException(e.getCause());
+      // ignore the exception
     }
 
   }
