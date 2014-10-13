@@ -64,11 +64,15 @@ limitations under the License.
     </dependency>
     <dependency>
       <groupId>org.apache.sentry</groupId>
-      <artifactId>sentry-hdfs</artifactId>
+      <artifactId>sentry-hdfs-common</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.sentry</groupId>
-      <artifactId>sentry-hdfs-int</artifactId>
+      <artifactId>sentry-hdfs-service</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.sentry</groupId>
+      <artifactId>sentry-hdfs-namenode-plugin</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.sentry</groupId>

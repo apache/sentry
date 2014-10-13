@@ -19,10 +19,7 @@ package org.apache.sentry.binding.metastore;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -45,15 +42,16 @@ import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.core.model.db.Table;
 import org.apache.sentry.provider.db.SentryMetastoreListenerPlugin;
-import org.apache.sentry.provider.db.SentryPolicyStorePlugin;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.service.thrift.SentryServiceClientFactory;
 import org.apache.sentry.service.thrift.ServiceConstants.ConfUtilties;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
-
-import com.google.common.collect.Lists;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SentryMetastorePostEventListener extends MetaStoreEventListener {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(SentryMetastoreListenerPlugin.class);
   private final SentryServiceClientFactory sentryClientFactory;
   private final HiveAuthzConf authzConf;
   private final Server server;
@@ -75,13 +73,14 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
         if (!SentryMetastoreListenerPlugin.class.isAssignableFrom(clazz)) {
           throw new IllegalArgumentException("Class ["
               + pluginClassStr + "] is not a "
-              + SentryPolicyStorePlugin.class.getName());
+              + SentryMetastoreListenerPlugin.class.getName());
         }
         SentryMetastoreListenerPlugin plugin = (SentryMetastoreListenerPlugin) clazz
             .getConstructor(Configuration.class).newInstance(config);
         sentryPlugins.add(plugin);
       }
     } catch (Exception e) {
+      LOGGER.error("Could not initialize Plugin !!", e);
       throw new RuntimeException(e);
     }
   }
