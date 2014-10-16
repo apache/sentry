@@ -34,8 +34,6 @@ public class SentryHDFSServiceProcessor implements SentryHDFSService.Iface {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryHDFSServiceProcessor.class);
 
-  public static final String SENTRY_HDFS_SERVICE_NAME = "SentryHDFSService";
-
   @Override
   public TAuthzUpdateResponse get_all_authz_updates_from(long permSeqNum, long pathSeqNum)
       throws TException {

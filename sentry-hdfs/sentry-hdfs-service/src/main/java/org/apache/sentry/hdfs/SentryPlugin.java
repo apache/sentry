@@ -44,7 +44,7 @@ import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleRevokePrivil
 import org.apache.sentry.provider.db.service.thrift.TDropSentryRoleRequest;
 import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
-import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
+import org.apache.sentry.hdfs.ServiceConstants.ServerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,7 +99,8 @@ public class SentryPlugin implements SentryPolicyStorePlugin {
     HiveConf hiveConf = new HiveConf(conf, Configuration.class);
     final MetastoreClient hmsClient = new ExtendedMetastoreClient(hiveConf);
     final String[] pathPrefixes = conf
-        .getStrings(ServerConfig.SENTRY_HDFS_INTEGRATION_PATH_PREFIXES, new String[]{"/"});
+        .getStrings(ServerConfig.SENTRY_HDFS_INTEGRATION_PATH_PREFIXES,
+            ServerConfig.SENTRY_HDFS_INTEGRATION_PATH_PREFIXES_DEFAULT);
     pathsUpdater = new UpdateForwarder<PathsUpdate>(new UpdateableAuthzPaths(
         pathPrefixes), createHMSImageRetriever(pathPrefixes, hmsClient), 100);
     PermImageRetriever permImageRetriever = new PermImageRetriever(sentryStore);

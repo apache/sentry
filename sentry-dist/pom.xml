@@ -64,18 +64,6 @@ limitations under the License.
     </dependency>
     <dependency>
       <groupId>org.apache.sentry</groupId>
-      <artifactId>sentry-hdfs-common</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.sentry</groupId>
-      <artifactId>sentry-hdfs-service</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.sentry</groupId>
-      <artifactId>sentry-hdfs-namenode-plugin</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.sentry</groupId>
       <artifactId>sentry-service-client</artifactId>
     </dependency>
     <dependency>
@@ -109,6 +97,7 @@ limitations under the License.
               <descriptors>
                 <descriptor>src/main/assembly/src.xml</descriptor>
                 <descriptor>src/main/assembly/bin.xml</descriptor>
+                <descriptor>src/main/assembly/sentry-hdfs.xml</descriptor>
               </descriptors>
             </configuration>
           </execution>

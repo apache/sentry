@@ -57,7 +57,6 @@
         <include>com.jolbox:bonecp</include>
         <include>org.apache.hive:hive-beeline</include>
         <include>org.apache.derby:derby</include>
-        <include>org.apache.derby:derby</include>
       </includes>
     </dependencySet>
   </dependencySets>
@@ -80,6 +79,7 @@
         <exclude>sentry-provider/**</exclude>
         <exclude>sentry-policy/**</exclude>
         <exclude>sentry-tests/**</exclude>
+        <exclude>sentry-hdfs/**</exclude>
       </excludes>
 
       <includes>
@@ -93,6 +93,16 @@
         <include>README*</include>
       </includes>
       <outputDirectory>/</outputDirectory>
+    </fileSet>
+    <fileSet>
+      <directory>${project.parent.basedir}/sentry-hdfs/sentry-hdfs-dist/target</directory>
+      <includes>
+        <include>sentry-hdfs-*.jar</include>
+      </includes>
+      <excludes>
+        <exclude>sentry-hdfs-dist-*.jar</exclude>
+      </excludes>
+      <outputDirectory>lib</outputDirectory>
     </fileSet>
     <fileSet>
       <directory>${project.parent.basedir}/sentry-provider/sentry-provider-db/src/main/resources</directory>

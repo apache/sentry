@@ -37,8 +37,8 @@ import org.apache.sentry.hdfs.service.thrift.SentryHDFSService.Client;
 import org.apache.sentry.hdfs.service.thrift.TAuthzUpdateResponse;
 import org.apache.sentry.hdfs.service.thrift.TPathsUpdate;
 import org.apache.sentry.hdfs.service.thrift.TPermissionsUpdate;
-import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
-import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
+import org.apache.sentry.hdfs.ServiceConstants.ClientConfig;
+import org.apache.sentry.hdfs.ServiceConstants.ServerConfig;
 import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.protocol.TMultiplexedProtocol;
 import org.apache.thrift.transport.TSaslClientTransport;
@@ -53,7 +53,9 @@ import com.google.common.base.Preconditions;
 public class SentryHDFSServiceClient {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryHDFSServiceClient.class);
-  
+
+  public static final String SENTRY_HDFS_SERVICE_NAME = "SentryHDFSService";
+
   public static class SentryAuthzUpdate {
 
     private final List<PermissionsUpdate> permUpdates;
@@ -136,13 +138,13 @@ public class SentryHDFSServiceClient {
                            ClientConfig.SERVER_RPC_PORT, ClientConfig.SERVER_RPC_PORT_DEFAULT));
     this.connectionTimeout = conf.getInt(ClientConfig.SERVER_RPC_CONN_TIMEOUT,
                                          ClientConfig.SERVER_RPC_CONN_TIMEOUT_DEFAULT);
-    kerberos = ServerConfig.SECURITY_MODE_KERBEROS.equalsIgnoreCase(
-        conf.get(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_KERBEROS).trim());
+    kerberos = ClientConfig.SECURITY_MODE_KERBEROS.equalsIgnoreCase(
+        conf.get(ClientConfig.SECURITY_MODE, ClientConfig.SECURITY_MODE_KERBEROS).trim());
     transport = new TSocket(serverAddress.getHostName(),
         serverAddress.getPort(), connectionTimeout);
     if (kerberos) {
       String serverPrincipal = Preconditions.checkNotNull(
-          conf.get(ServerConfig.PRINCIPAL), ServerConfig.PRINCIPAL + " is required");
+          conf.get(ClientConfig.PRINCIPAL), ClientConfig.PRINCIPAL + " is required");
 
       // Resolve server host in the same way as we are doing on server side
       serverPrincipal = SecurityUtil.getServerPrincipal(serverPrincipal, serverAddress.getAddress());
@@ -152,7 +154,7 @@ public class SentryHDFSServiceClient {
       Preconditions.checkArgument(serverPrincipalParts.length == 3,
            "Kerberos principal should have 3 parts: " + serverPrincipal);
       boolean wrapUgi = "true".equalsIgnoreCase(conf
-          .get(ServerConfig.SECURITY_USE_UGI_TRANSPORT, "true"));
+          .get(ClientConfig.SECURITY_USE_UGI_TRANSPORT, "true"));
       transport = new UgiSaslClientTransport(AuthMethod.KERBEROS.getMechanismName(),
           null, serverPrincipalParts[0], serverPrincipalParts[1],
           ClientConfig.SASL_PROPERTIES, null, transport, wrapUgi);
@@ -167,7 +169,7 @@ public class SentryHDFSServiceClient {
     LOGGER.info("Successfully opened transport: " + transport + " to " + serverAddress);
     TMultiplexedProtocol protocol = new TMultiplexedProtocol(
       new TCompactProtocol(transport),
-      SentryHDFSServiceProcessor.SENTRY_HDFS_SERVICE_NAME);
+      SentryHDFSServiceClient.SENTRY_HDFS_SERVICE_NAME);
     client = new SentryHDFSService.Client(protocol);
     LOGGER.info("Successfully created client");
   }

@@ -360,6 +360,11 @@ limitations under the License.
       </dependency>
       <dependency>
         <groupId>org.apache.sentry</groupId>
+        <artifactId>sentry-hdfs-dist</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.sentry</groupId>
         <artifactId>sentry-provider-cache</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -541,6 +546,7 @@ limitations under the License.
                   <exclude>**/.metadata/</exclude>
                   <!-- Maven working directory -->
                   <exclude>**/target/</exclude>
+                  <exclude>**/assembly/</exclude>
                   <!-- Pre commit testing generated files -->
                   <exclude>maven-repo/</exclude>
                   <exclude>test-output/</exclude>

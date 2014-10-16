@@ -28,11 +28,11 @@ limitations under the License.
   <artifactId>sentry-hdfs</artifactId>
   <name>Sentry HDFS</name>
   <packaging>pom</packaging>
-
   <modules>
     <module>sentry-hdfs-common</module>
     <module>sentry-hdfs-service</module>
     <module>sentry-hdfs-namenode-plugin</module>
+    <module>sentry-hdfs-dist</module>
   </modules>
 
 </project>

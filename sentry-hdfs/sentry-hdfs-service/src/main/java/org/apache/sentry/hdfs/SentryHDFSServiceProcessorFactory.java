@@ -98,7 +98,7 @@ public class SentryHDFSServiceProcessorFactory extends ProcessorFactory{
         new SentryHDFSServiceProcessor();
     TProcessor processor = new ProcessorWrapper(sentryServiceHandler);
     multiplexedProcessor.registerProcessor(
-        SentryHDFSServiceProcessor.SENTRY_HDFS_SERVICE_NAME, processor);
+        SentryHDFSServiceClient.SENTRY_HDFS_SERVICE_NAME, processor);
     return true;
   }
 }
