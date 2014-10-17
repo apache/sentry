@@ -432,9 +432,9 @@ limitations under the License.
     <module>sentry-provider</module>
     <module>sentry-policy</module>
     <module>sentry-tests</module>
-    <module>sentry-dist</module>
     <module>sentry-service-client</module>
     <module>sentry-hdfs</module>
+    <module>sentry-dist</module>
   </modules>
 
   <build>

@@ -30,6 +30,20 @@
 
   <baseDirectory>sentry-hdfs-${project.version}</baseDirectory>
 
+  <dependencySets>
+    <dependencySet>
+      <outputDirectory>/</outputDirectory>
+      <unpack>false</unpack>
+      <useProjectArtifact>false</useProjectArtifact>
+      <useStrictFiltering>true</useStrictFiltering>
+      <useTransitiveFiltering>false</useTransitiveFiltering>
+      <includes>
+        <include>org.apache.thrift:libthrift</include>
+        <include>org.apache.thrift:libfb303</include>
+      </includes>
+    </dependencySet>
+  </dependencySets>
+
   <fileSets>
     <fileSet>
       <directory>${project.parent.basedir}/sentry-hdfs/sentry-hdfs-dist/target</directory>

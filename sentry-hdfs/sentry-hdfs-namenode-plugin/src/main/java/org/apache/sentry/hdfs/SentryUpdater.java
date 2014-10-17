@@ -42,6 +42,7 @@ public class SentryUpdater {
       } catch (Exception e) {
         LOG.error("Error connecting to Sentry ['{}'] !!",
             e.getMessage());
+        sentryClient = null;
         return null;
       }
     }

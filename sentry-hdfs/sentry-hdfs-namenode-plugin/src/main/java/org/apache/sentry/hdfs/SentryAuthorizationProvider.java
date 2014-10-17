@@ -309,7 +309,7 @@ public class SentryAuthorizationProvider
         String user = defaultAuthzProvider.getUser(node, snapshotId);
         String group = defaultAuthzProvider.getGroup(node, snapshotId);
         INodeAuthorizationInfo pNode = node.getParent();
-        while  (group == null || pNode != null) {
+        while  (group == null && pNode != null) {
           group = defaultAuthzProvider.getGroup(pNode, snapshotId);
           pNode = pNode.getParent();
         }
@@ -334,9 +334,9 @@ public class SentryAuthorizationProvider
     if (LOG.isDebugEnabled()) {
       LOG.debug("### getAclEntry [" + (p == null ? "null" : p) + "] : ["
           + "isManaged=" + isManaged
-          + ",isStale=" + isStale
-          + ",hasAuthzObj=" + hasAuthzObj
-          + ",origAtuhzAsAcl=" + originalAuthzAsAcl + "]"
+          + ", isStale=" + isStale
+          + ", hasAuthzObj=" + hasAuthzObj
+          + ", origAuthzAsAcl=" + originalAuthzAsAcl + "]"
           + "[" + (f == null ? "null" : f.getEntries()) + "]");
     }
     return f;

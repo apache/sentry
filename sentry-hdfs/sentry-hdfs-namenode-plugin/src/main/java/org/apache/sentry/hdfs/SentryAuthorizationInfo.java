@@ -112,9 +112,13 @@ public class SentryAuthorizationInfo implements Runnable {
       lock.writeLock().lock();
       try {
         authzPaths = newAuthzPaths;
-        LOG.warn("##### FULL Updated paths seq Num [" + authzPaths.getLastUpdatedSeqNum() + "]");
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("FULL Updated paths seq Num [" + authzPaths.getLastUpdatedSeqNum() + "]");
+        }
         authzPermissions = newAuthzPerms;
-        LOG.warn("##### FULL Updated perms seq Num [" + authzPermissions.getLastUpdatedSeqNum() + "]");
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("FULL Updated perms seq Num [" + authzPermissions.getLastUpdatedSeqNum() + "]");
+        }
       } finally {
         lock.writeLock().unlock();
       }
@@ -192,7 +196,7 @@ public class SentryAuthorizationInfo implements Runnable {
   public boolean isStale() {
     long now = System.currentTimeMillis();
     boolean stale = now - lastUpdate > staleThresholdMillisec;
-    if (stale && now - lastStaleReport > 30 * 1000) {
+    if (stale && now - lastStaleReport > retryWaitMillisec) {
       LOG.warn("Authorization information has been stale for [{}]s", 
           (now - lastUpdate) / 1000);
       lastStaleReport = now;
