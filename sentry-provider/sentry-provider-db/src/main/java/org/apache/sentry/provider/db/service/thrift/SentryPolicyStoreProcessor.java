@@ -554,8 +554,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     try {
       authorize(request.getRequestorUserName(), adminGroups);
       sentryStore.dropPrivilege(request.getAuthorizable());
-      response.setStatus(Status.OK());
-      // TODO : Sentry - HDFS : Have to handle this 
+      response.setStatus(Status.OK()); 
     } catch (SentryAccessDeniedException e) {
       LOGGER.error(e.getMessage(), e);
       response.setStatus(Status.AccessDenied(e.getMessage(), e));
@@ -576,8 +575,10 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       authorize(request.getRequestorUserName(), adminGroups);
       sentryStore.renamePrivilege(request.getOldAuthorizable(),
           request.getNewAuthorizable());
+      for (SentryPolicyStorePlugin plugin : sentryPlugins) {
+        plugin.onRenameSentryPrivilege(request);
+      }
       response.setStatus(Status.OK());
-      // TODO : Sentry - HDFS : Have to handle this
     } catch (SentryAccessDeniedException e) {
       LOGGER.error(e.getMessage(), e);
       response.setStatus(Status.AccessDenied(e.getMessage(), e));

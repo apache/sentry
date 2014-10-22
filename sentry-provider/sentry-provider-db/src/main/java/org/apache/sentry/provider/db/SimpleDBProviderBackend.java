@@ -77,20 +77,28 @@ public class SimpleDBProviderBackend implements ProviderBackend {
    */
   @Override
   public ImmutableSet<String> getPrivileges(Set<String> groups, ActiveRoleSet roleSet, Authorizable... authorizableHierarchy) {
+    return getPrivileges(1, groups, roleSet, authorizableHierarchy);
+  }
+
+  private ImmutableSet<String> getPrivileges(int retryCount, Set<String> groups, ActiveRoleSet roleSet, Authorizable... authorizableHierarchy) {
     if (!initialized) {
       throw new IllegalStateException("Backend has not been properly initialized");
     }
     try {
       return ImmutableSet.copyOf(getSentryClient().listPrivilegesForProvider(groups, roleSet, authorizableHierarchy));
-    } catch (SentryUserException e) {
-      String msg = "Unable to obtain privileges from server: " + e.getMessage();
-      LOGGER.error(msg, e);
-      try {
-        policyServiceClient.close();
-      } catch (Exception ex) {
-        // Ignore
-      }
+    } catch (Exception e) {
       policyServiceClient = null;
+      if (retryCount > 0) {
+        return getPrivileges(retryCount - 1, groups, roleSet, authorizableHierarchy);
+      } else {
+        String msg = "Unable to obtain privileges from server: " + e.getMessage();
+        LOGGER.error(msg, e);
+        try {
+          policyServiceClient.close();
+        } catch (Exception ex2) {
+          // Ignore
+        }
+      }
     }
     return ImmutableSet.of();
   }

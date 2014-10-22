@@ -30,6 +30,12 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 
+/**
+ * A non thread-safe implementation of {@link AuthzPaths}. It abstracts over the
+ * core data-structures used to efficiently handle request from clients of 
+ * the {@link AuthzPaths} paths. All updates to this class is handled by the
+ * thread safe {@link UpdateableAuthzPaths} class
+ */
 public class HMSPaths implements AuthzPaths {
 
   @VisibleForTesting
@@ -102,7 +108,7 @@ public class HMSPaths implements AuthzPaths {
   static class Entry {
     private Entry parent;
     private EntryType type;
-    private final String pathElement;
+    private String pathElement;
     private String authzObj;
     private final Map<String, Entry> children;
 
@@ -170,7 +176,7 @@ public class HMSPaths implements AuthzPaths {
       }
       return sb.toString();
     }
-    
+
     public Entry createPrefix(List<String> pathElements) {
       Entry prefix = findPrefixEntry(pathElements);
       if (prefix != null) {
@@ -310,10 +316,12 @@ public class HMSPaths implements AuthzPaths {
   }
 
   private volatile Entry root;
+  private String[] prefixes;
   private Map<String, Set<Entry>> authzObjToPath;
 
   public HMSPaths(String[] pathPrefixes) {
     boolean rootPrefix = false;
+    this.prefixes = pathPrefixes;
     for (String pathPrefix : pathPrefixes) {
       rootPrefix = rootPrefix || pathPrefix.equals(Path.SEPARATOR);
     }
@@ -327,10 +335,6 @@ public class HMSPaths implements AuthzPaths {
         root.createPrefix(getPathElements(pathPrefix));
       }
     }
-    authzObjToPath = new HashMap<String, Set<Entry>>();
-  }
-
-  HMSPaths() {
     authzObjToPath = new HashMap<String, Set<Entry>>();
   }
 
@@ -441,12 +445,49 @@ public class HMSPaths implements AuthzPaths {
     return authzObj;
   }
 
+  boolean renameAuthzObject(String oldName, List<String> oldPathElems,
+      String newName, List<String> newPathElems) {
+    // Handle '/'
+    if ((oldPathElems == null)||(oldPathElems.size() == 0)) return false;
+    Entry entry =
+        root.find(oldPathElems.toArray(new String[oldPathElems.size()]), false);
+    if ((entry != null)&&(entry.getAuthzObj().equals(oldName))) {
+      // Update pathElements
+      for (int i = newPathElems.size() - 1; i > -1; i--) {
+        if (entry.parent != null) {
+          if (!entry.pathElement.equals(newPathElems.get(i))) {
+            entry.parent.getChildren().put(newPathElems.get(i), entry);
+            entry.parent.getChildren().remove(entry.pathElement);
+          }
+        }
+        entry.pathElement = newPathElems.get(i);
+        entry = entry.parent;
+      }
+      // This would be true only for table rename
+      if (!oldName.equals(newName)) {
+        Set<Entry> eSet = authzObjToPath.get(oldName);
+        authzObjToPath.put(newName, eSet);
+        for (Entry e : eSet) {
+          if (e.getAuthzObj().equals(oldName)) {
+            e.setAuthzObj(newName);
+          }
+        }
+        authzObjToPath.remove(oldName);
+      }
+    }
+    return true;
+  }
+
   @Override
   public boolean isUnderPrefix(String[] pathElements) {
     return root.findPrefixEntry(Lists.newArrayList(pathElements)) != null;
   }
 
   // Used by the serializer
+  String[] getPrefixes() {
+    return prefixes;
+  }
+
   Entry getRootEntry() {
     return root;
   }
@@ -460,8 +501,8 @@ public class HMSPaths implements AuthzPaths {
   }
 
   @Override
-  public HMSPathsSerDe getPathsDump() {
-    return new HMSPathsSerDe(this);
+  public HMSPathsDumper getPathsDump() {
+    return new HMSPathsDumper(this);
   }
 
 }

@@ -67,10 +67,6 @@ limitations under the License.
       <artifactId>sentry-provider-db</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.sentry</groupId>
-      <artifactId>sentry-service-client</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-exec</artifactId>
       <version>${hive.version}</version>

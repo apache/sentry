@@ -162,14 +162,4 @@ public class TestSentryServerWithoutKerberos extends SentryServiceIntegrationBas
             ActiveRoleSet.ALL).size());
   }
 
-//  private void waitToCommit(Update hmsCache) throws InterruptedException {
-//    int counter = 0;
-//    while(!hmsCache.areAllUpdatesCommited()) {
-//      Thread.sleep(200);
-//      counter++;
-//      if (counter > 10000) {
-//        fail("Updates taking too long to commit !!");
-//      }
-//    }
-//  }
 }

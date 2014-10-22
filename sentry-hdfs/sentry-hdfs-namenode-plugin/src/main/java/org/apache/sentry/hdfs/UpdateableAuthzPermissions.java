@@ -17,6 +17,7 @@
  */
 package org.apache.sentry.hdfs;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<PermissionsUpdate> {
+  private static final int MAX_UPDATES_PER_LOCK_USE = 99;
   private volatile SentryPermissions perms = new SentryPermissions();
   private final AtomicLong seqNum = new AtomicLong(0);
   
@@ -67,7 +69,7 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
       int counter = 0;
       for (PermissionsUpdate update : updates) {
         applyPartialUpdate(update);
-        if (++counter > 99) {
+        if (++counter > MAX_UPDATES_PER_LOCK_USE) {
           counter = 0;
           lock.writeLock().unlock();
           lock.writeLock().lock();
@@ -119,6 +121,19 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
 
   private void applyPrivilegeUpdates(PermissionsUpdate update) {
     for (TPrivilegeChanges pUpdate : update.getPrivilegeUpdates()) {
+      if (pUpdate.getAuthzObj().equals(PermissionsUpdate.RENAME_PRIVS)) {
+        String newAuthzObj = pUpdate.getAddPrivileges().keySet().iterator().next();
+        String oldAuthzObj = pUpdate.getDelPrivileges().keySet().iterator().next();
+        PrivilegeInfo privilegeInfo = perms.getPrivilegeInfo(oldAuthzObj);
+        Map<String, FsAction> allPermissions = privilegeInfo.getAllPermissions();
+        perms.delPrivilegeInfo(oldAuthzObj);
+        PrivilegeInfo newPrivilegeInfo = new PrivilegeInfo(newAuthzObj);
+        for (Map.Entry<String, FsAction> e : allPermissions.entrySet()) {
+          newPrivilegeInfo.setPermission(e.getKey(), e.getValue());
+        }
+        perms.addPrivilegeInfo(newPrivilegeInfo);
+        return;
+      }
       if (pUpdate.getAuthzObj().equals(PermissionsUpdate.ALL_PRIVS)) {
         // Request to remove role from all Privileges
         String roleToRemove = pUpdate.getDelPrivileges().keySet().iterator()

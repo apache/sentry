@@ -32,14 +32,19 @@ public class TestHMSPathsFullDump {
 
   @Test
   public void testDumpAndInitialize() {
-    HMSPaths hmsPaths = new HMSPaths(new String[] {"/user/hive/warehouse"});
+    HMSPaths hmsPaths = new HMSPaths(new String[] {"/user/hive/warehouse", "/user/hive/w2"});
     hmsPaths._addAuthzObject("db1", Lists.newArrayList("/user/hive/warehouse/db1"));
     hmsPaths._addAuthzObject("db1.tbl11", Lists.newArrayList("/user/hive/warehouse/db1/tbl11"));
     hmsPaths._addPathsToAuthzObject("db1.tbl11", Lists.newArrayList(
         "/user/hive/warehouse/db1/tbl11/part111",
         "/user/hive/warehouse/db1/tbl11/part112",
         "/user/hive/warehouse/db1/tbl11/p1=1/p2=x"));
-    
+
+    // Not in prefix paths
+    hmsPaths._addAuthzObject("db2", Lists.newArrayList("/user/hive/w2/db2"));
+    hmsPaths._addAuthzObject("db2.tbl21", Lists.newArrayList("/user/hive/w2/db2/tbl21"));
+    hmsPaths._addPathsToAuthzObject("db2.tbl21", Lists.newArrayList("/user/hive/w2/db2/tbl21/p1=1/p2=x"));
+
     Assert.assertEquals("db1", hmsPaths.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1"}, false));
     Assert.assertEquals("db1.tbl11", hmsPaths.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11"}, false));
     Assert.assertEquals("db1.tbl11", hmsPaths.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11", "part111"}, false));
@@ -47,15 +52,19 @@ public class TestHMSPathsFullDump {
 
     Assert.assertEquals("db1.tbl11", hmsPaths.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11", "p1=1", "p2=x"}, false));
     Assert.assertEquals("db1.tbl11", hmsPaths.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11", "p1=1"}, true));
+    Assert.assertEquals("db2.tbl21", hmsPaths.findAuthzObject(new String[]{"user", "hive", "w2", "db2", "tbl21", "p1=1"}, true));
 
-    HMSPathsSerDe serDe = hmsPaths.getPathsDump();
+    HMSPathsDumper serDe = hmsPaths.getPathsDump();
     TPathsDump pathsDump = serDe.createPathsDump();
-    HMSPaths hmsPaths2 = serDe.initializeFromDump(pathsDump);
+    HMSPaths hmsPaths2 = new HMSPaths(new String[] {"/user/hive/warehouse"}).getPathsDump().initializeFromDump(pathsDump);
 
     Assert.assertEquals("db1", hmsPaths2.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1"}, false));
     Assert.assertEquals("db1.tbl11", hmsPaths2.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11"}, false));
     Assert.assertEquals("db1.tbl11", hmsPaths2.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11", "part111"}, false));
     Assert.assertEquals("db1.tbl11", hmsPaths2.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11", "part112"}, false));
+
+    // This path is not under prefix, so should not be deserialized.. 
+    Assert.assertNull(hmsPaths2.findAuthzObject(new String[]{"user", "hive", "w2", "db2", "tbl21", "p1=1"}, true));
   }
 
   @Test
@@ -78,7 +87,7 @@ public class TestHMSPathsFullDump {
         }
       }
     }
-    HMSPathsSerDe serDe = hmsPaths.getPathsDump();
+    HMSPathsDumper serDe = hmsPaths.getPathsDump();
     long t1 = System.currentTimeMillis();
     TPathsDump pathsDump = serDe.createPathsDump();
     byte[] ser = new TSerializer(new TCompactProtocol.Factory()).serialize(pathsDump);

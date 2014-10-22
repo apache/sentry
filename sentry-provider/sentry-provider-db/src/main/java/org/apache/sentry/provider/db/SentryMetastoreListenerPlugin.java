@@ -20,6 +20,10 @@ package org.apache.sentry.provider.db;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * Plugin interface providing hooks to implementing classes, which are invoked
+ * on path creation/updation and deletion
+ */
 public abstract class SentryMetastoreListenerPlugin {
   
   private static List<SentryMetastoreListenerPlugin> registry = new LinkedList<SentryMetastoreListenerPlugin>();
@@ -32,6 +36,9 @@ public abstract class SentryMetastoreListenerPlugin {
     return registry;
   }
 
+  public abstract void renameAuthzObject(String oldName, String oldPath,
+      String newName, String newPath);
+  
   public abstract void addPath(String authzObj, String path);
 
   public abstract void removePath(String authzObj, String path);

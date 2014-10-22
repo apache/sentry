@@ -40,7 +40,7 @@ public class TestUpdateableAuthzPaths {
 
     UpdateableAuthzPaths authzPaths = new UpdateableAuthzPaths(hmsPaths);
     PathsUpdate update = new PathsUpdate(1, true);
-    update.getThriftObject().setPathsDump(authzPaths.getPathsDump().createPathsDump());
+    update.toThrift().setPathsDump(authzPaths.getPathsDump().createPathsDump());
 
     UpdateableAuthzPaths authzPaths2 = new UpdateableAuthzPaths(new String[] {"/"});
     UpdateableAuthzPaths pre = authzPaths2.updateFull(update);
@@ -55,7 +55,7 @@ public class TestUpdateableAuthzPaths {
     // Ensure Full Update wipes old stuff
     UpdateableAuthzPaths authzPaths3 = new UpdateableAuthzPaths(createBaseHMSPaths(2, 1));
     update = new PathsUpdate(2, true);
-    update.getThriftObject().setPathsDump(authzPaths3.getPathsDump().createPathsDump());
+    update.toThrift().setPathsDump(authzPaths3.getPathsDump().createPathsDump());
     pre = authzPaths2.updateFull(update);
     assertFalse(pre == authzPaths2);
     authzPaths2 = pre;
@@ -95,6 +95,24 @@ public class TestUpdateableAuthzPaths {
     // Verify new Paths
     assertEquals("db1.tbl12", authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "tbl12"}));
     assertEquals("db1.tbl12", authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "tbl12", "part121"}));
+
+    // Rename table
+    update = new PathsUpdate(4, false);
+    update.newPathChange("db1.xtbl11").addToAddPaths(PathsUpdate.cleanPath("file:///db1/xtbl11"));
+    update.newPathChange("db1.tbl11").addToDelPaths(PathsUpdate.cleanPath("file:///db1/tbl11"));
+    authzPaths.updatePartial(Lists.newArrayList(update), lock);
+
+    // Verify name change
+    assertEquals("db1", authzPaths.findAuthzObjectExactMatch(new String[]{"db1"}));
+    assertEquals("db1.xtbl11", authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "xtbl11"}));
+    assertEquals("db1.xtbl11", authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "xtbl11", "part111"}));
+    assertEquals("db1.xtbl11", authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "xtbl11", "part112"}));
+    // Verify other tables are not touched
+    assertNull(authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "xtbl12"}));
+    assertNull(authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "xtbl12", "part121"}));
+    assertEquals("db1.tbl12", authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "tbl12"}));
+    assertEquals("db1.tbl12", authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "tbl12", "part121"}));
+
   }
 
   @Test

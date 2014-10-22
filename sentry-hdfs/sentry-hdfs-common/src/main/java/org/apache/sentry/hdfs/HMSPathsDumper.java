@@ -19,7 +19,6 @@ package org.apache.sentry.hdfs;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,7 +28,7 @@ import org.apache.sentry.hdfs.HMSPaths.EntryType;
 import org.apache.sentry.hdfs.service.thrift.TPathEntry;
 import org.apache.sentry.hdfs.service.thrift.TPathsDump;
 
-public class HMSPathsSerDe implements AuthzPathsDumper<HMSPaths> {
+public class HMSPathsDumper implements AuthzPathsDumper<HMSPaths> {
 
   private final HMSPaths hmsPaths;
 
@@ -42,7 +41,7 @@ public class HMSPathsSerDe implements AuthzPathsDumper<HMSPaths> {
     }
   }
 
-  public HMSPathsSerDe(HMSPaths hmsPaths) {
+  public HMSPathsDumper(HMSPaths hmsPaths) {
     this.hmsPaths = hmsPaths;
   }
 
@@ -80,23 +79,37 @@ public class HMSPathsSerDe implements AuthzPathsDumper<HMSPaths> {
 
   @Override
   public HMSPaths initializeFromDump(TPathsDump pathDump) {
-    HMSPaths hmsPaths = new HMSPaths();
+    HMSPaths hmsPaths = new HMSPaths(this.hmsPaths.getPrefixes());
     TPathEntry tRootEntry = pathDump.getNodeMap().get(pathDump.getRootId());
-    Entry rootEntry = new Entry(null, tRootEntry.getPathElement(),
-        EntryType.fromByte(tRootEntry.getType()), tRootEntry.getAuthzObj());
+    Entry rootEntry = hmsPaths.getRootEntry();
+//    Entry rootEntry = new Entry(null, tRootEntry.getPathElement(),
+//        EntryType.fromByte(tRootEntry.getType()), tRootEntry.getAuthzObj());
     Map<String, Set<Entry>> authzObjToPath = new HashMap<String, Set<Entry>>();
-    cloneToEntry(tRootEntry, rootEntry, pathDump.getNodeMap(), authzObjToPath);
+    cloneToEntry(tRootEntry, rootEntry, pathDump.getNodeMap(), authzObjToPath,
+        rootEntry.getType() == EntryType.PREFIX);
     hmsPaths.setRootEntry(rootEntry);
     hmsPaths.setAuthzObjToPathMapping(authzObjToPath);
     return hmsPaths;
   }
 
   private void cloneToEntry(TPathEntry tParent, Entry parent,
-      Map<Integer, TPathEntry> idMap, Map<String, Set<Entry>> authzObjToPath) {
+      Map<Integer, TPathEntry> idMap, Map<String,
+      Set<Entry>> authzObjToPath, boolean hasCrossedPrefix) {
     for (Integer id : tParent.getChildren()) {
       TPathEntry tChild = idMap.get(id);
-      Entry child = new Entry(parent, tChild.getPathElement(),
-          EntryType.fromByte(tChild.getType()), tChild.getAuthzObj());
+      Entry child = null;
+      boolean isChildPrefix = hasCrossedPrefix;
+      if (!hasCrossedPrefix) {
+        child = parent.getChildren().get(tChild.getPathElement());
+        // If we havn't reached a prefix entry yet, then child should
+        // already exists.. else it is not part of the prefix
+        if (child == null) continue;
+        isChildPrefix = child.getType() == EntryType.PREFIX;
+      }
+      if (child == null) {
+        child = new Entry(parent, tChild.getPathElement(),
+            EntryType.fromByte(tChild.getType()), tChild.getAuthzObj());
+      }
       if (child.getAuthzObj() != null) {
         Set<Entry> paths = authzObjToPath.get(child.getAuthzObj());
         if (paths == null) {
@@ -106,7 +119,7 @@ public class HMSPathsSerDe implements AuthzPathsDumper<HMSPaths> {
         paths.add(child);
       }
       parent.getChildren().put(child.getPathElement(), child);
-      cloneToEntry(tChild, child, idMap, authzObjToPath);
+      cloneToEntry(tChild, child, idMap, authzObjToPath, isChildPrefix);
     }
   }
 

@@ -26,7 +26,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import org.apache.sentry.hdfs.Updateable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 
@@ -53,7 +54,7 @@ public class UpdateForwarder<K extends Updateable.Update> implements
   // downstream cache sees) will be a full image. All subsequent entries are
   // partial edits
   private final LinkedList<K> updateLog = new LinkedList<K>();
-  // UpdateLog is dissabled when updateLogSize = 0;
+  // UpdateLog is disabled when updateLogSize = 0;
   private final int updateLogSize;
 
   private final ExternalImageRetriever<K> imageRetreiver;
@@ -63,15 +64,64 @@ public class UpdateForwarder<K extends Updateable.Update> implements
   private final ReadWriteLock lock = new ReentrantReadWriteLock();
   private static final long INIT_SEQ_NUM = -2;
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(UpdateForwarder.class);
+
   public UpdateForwarder(Updateable<K> updateable,
       ExternalImageRetriever<K> imageRetreiver, int updateLogSize) {
+    this(updateable, imageRetreiver, updateLogSize, 5000);
+  }
+  public UpdateForwarder(Updateable<K> updateable,
+      ExternalImageRetriever<K> imageRetreiver, int updateLogSize,
+      int initUpdateRetryDelay) {
     this.updateLogSize = updateLogSize;
     this.imageRetreiver = imageRetreiver;
-    K fullImage = imageRetreiver.retrieveFullImage(INIT_SEQ_NUM);
-    appendToUpdateLog(fullImage);
-    this.updateable = updateable.updateFull(fullImage);
+    if (imageRetreiver != null) {
+      spawnInitialUpdater(updateable, initUpdateRetryDelay);
+    } else {
+      this.updateable = updateable;
+    }
   }
 
+  private void spawnInitialUpdater(final Updateable<K> updateable,
+      final int initUpdateRetryDelay) {
+    K firstFullImage = null;
+    try {
+      firstFullImage = imageRetreiver.retrieveFullImage(INIT_SEQ_NUM);
+    } catch (Exception e) {
+      LOGGER.warn("InitialUpdater encountered exception !! ", e);
+      firstFullImage = null;
+      Thread initUpdater = new Thread() {
+        @Override
+        public void run() {
+          while (UpdateForwarder.this.updateable == null) {
+            try {
+              Thread.sleep(initUpdateRetryDelay);
+            } catch (InterruptedException e) {
+              LOGGER.warn("Thread interrupted !! ", e);
+              break;
+            }
+            K fullImage = null;
+            try {
+              fullImage =
+                  UpdateForwarder.this.imageRetreiver
+                  .retrieveFullImage(INIT_SEQ_NUM);
+              appendToUpdateLog(fullImage);
+            } catch (Exception e) {
+              LOGGER.warn("InitialUpdater encountered exception !! ", e);
+            }
+            if (fullImage != null) {
+              UpdateForwarder.this.updateable = updateable.updateFull(fullImage);
+            }
+          }
+        }
+      };
+      initUpdater.start();
+    }
+    if (firstFullImage != null) {
+      appendToUpdateLog(firstFullImage);
+      this.updateable = updateable.updateFull(firstFullImage);
+    }
+  }
   /**
    * Handle notifications from HMS plug-in or upstream Cache
    * @param update
@@ -80,8 +130,10 @@ public class UpdateForwarder<K extends Updateable.Update> implements
     // Correct the seqNums on the first update
     if (lastCommittedSeqNum.get() == INIT_SEQ_NUM) {
       K firstUpdate = updateLog.peek();
-      long firstSeqNum = update.getSeqNum() - 1;
-      firstUpdate.setSeqNum(firstSeqNum);
+      long firstSeqNum = update.getSeqNum() - 1; 
+      if (firstUpdate != null) {
+        firstUpdate.setSeqNum(firstSeqNum);
+      }
       lastCommittedSeqNum.set(firstSeqNum);
       lastSeenSeqNum.set(firstSeqNum);
     }
@@ -101,10 +153,12 @@ public class UpdateForwarder<K extends Updateable.Update> implements
             // apply partial preUpdate
             updateable.updatePartial(Lists.newArrayList(update), lock);
           } else {
-            // Retrieve full update from External Source and 
-            toUpdate = imageRetreiver
-                .retrieveFullImage(update.getSeqNum());
-            updateable = updateable.updateFull(toUpdate);
+            // Retrieve full update from External Source and
+            if (imageRetreiver != null) {
+              toUpdate = imageRetreiver
+                  .retrieveFullImage(update.getSeqNum());
+              updateable = updateable.updateFull(toUpdate);
+            }
           }
         }
         appendToUpdateLog(toUpdate);
@@ -143,6 +197,9 @@ public class UpdateForwarder<K extends Updateable.Update> implements
         return retVal;
       }
       K head = updateLog.peek();
+      if (head == null) {
+        return retVal;
+      }
       if (seqNum > currSeqNum + 1) {
         // This process has probably restarted since downstream
         // recieved last update
@@ -206,22 +263,24 @@ public class UpdateForwarder<K extends Updateable.Update> implements
 
   @Override
   public Updateable<K> updateFull(K update) {
-    return updateable.updateFull(update);
+    return (updateable != null) ? updateable.updateFull(update) : null;
   }
 
   @Override
   public void updatePartial(Iterable<K> updates, ReadWriteLock lock) {
-    updateable.updatePartial(updates, lock);
+    if (updateable != null) {
+      updateable.updatePartial(updates, lock);
+    }
   }
   
   @Override
   public long getLastUpdatedSeqNum() {
-    return updateable.getLastUpdatedSeqNum();
+    return (updateable != null) ? updateable.getLastUpdatedSeqNum() : INIT_SEQ_NUM;
   }
 
   @Override
   public K createFullImageUpdate(long currSeqNum) {
-    return updateable.createFullImageUpdate(currSeqNum);
+    return (updateable != null) ? updateable.createFullImageUpdate(currSeqNum) : null;
   }
 
 }

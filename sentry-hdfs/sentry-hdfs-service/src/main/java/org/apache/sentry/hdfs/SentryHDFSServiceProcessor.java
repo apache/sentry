@@ -47,16 +47,16 @@ public class SentryHDFSServiceProcessor implements SentryHDFSService.Iface {
         for (PathsUpdate update : pathUpdates) {
           if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("### Sending PATH preUpdate seq [" + update.getSeqNum() + "] ###");
-            LOGGER.debug("### Sending PATH preUpdate [" + update.getThriftObject() + "] ###");
+            LOGGER.debug("### Sending PATH preUpdate [" + update.toThrift() + "] ###");
           }
-          retVal.getAuthzPathUpdate().add(update.getThriftObject());
+          retVal.getAuthzPathUpdate().add(update.toThrift());
         }
         for (PermissionsUpdate update : permUpdates) {
           if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("### Sending PERM preUpdate seq [" + update.getSeqNum() + "] ###");
-            LOGGER.debug("### Sending PERM preUpdate [" + update.getThriftObject() + "] ###");
+            LOGGER.debug("### Sending PERM preUpdate [" + update.toThrift() + "] ###");
           }
-          retVal.getAuthzPermUpdate().add(update.getThriftObject());
+          retVal.getAuthzPermUpdate().add(update.toThrift());
         }
       } catch (Exception e) {
         LOGGER.error("Error Sending updates to downstream Cache", e);
@@ -83,6 +83,11 @@ public class SentryHDFSServiceProcessor implements SentryHDFSService.Iface {
       LOGGER.error("Error handling notification from HMS", e);
       throw new TException(e);
     }
+  }
+
+  @Override
+  public long check_hms_seq_num(long pathSeqNum) throws TException {
+    return SentryPlugin.instance.getLastSeenHMSPathSeqNum();
   }
 
   /**

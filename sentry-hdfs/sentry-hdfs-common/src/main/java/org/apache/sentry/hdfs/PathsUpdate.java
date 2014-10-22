@@ -27,6 +27,10 @@ import org.apache.sentry.hdfs.service.thrift.TPathsUpdate;
 
 import com.google.common.collect.Lists;
 
+/**
+ * A wrapper class over the TPathsUpdate thrift generated class. Please see
+ * {@link Updateable.Update} for more information 
+ */
 public class PathsUpdate implements Updateable.Update {
   
   public static String ALL_PATHS = "__ALL_PATHS__";
@@ -66,7 +70,7 @@ public class PathsUpdate implements Updateable.Update {
     tPathsUpdate.setSeqNum(seqNum);
   }
 
-  public TPathsUpdate getThriftObject() {
+  public TPathsUpdate toThrift() {
     return tPathsUpdate;
   }
 

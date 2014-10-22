@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class UpdateableAuthzPaths implements AuthzPaths, Updateable<PathsUpdate> {
+  private static final int MAX_UPDATES_PER_LOCK_USE = 99;
   private volatile HMSPaths paths;
   private final AtomicLong seqNum = new AtomicLong(0);
 
@@ -58,7 +59,7 @@ public class UpdateableAuthzPaths implements AuthzPaths, Updateable<PathsUpdate>
   @Override
   public UpdateableAuthzPaths updateFull(PathsUpdate update) {
     UpdateableAuthzPaths other = getPathsDump().initializeFromDump(
-        update.getThriftObject().getPathsDump());
+        update.toThrift().getPathsDump());
     other.seqNum.set(update.getSeqNum());
     return other;
   }
@@ -70,7 +71,7 @@ public class UpdateableAuthzPaths implements AuthzPaths, Updateable<PathsUpdate>
       int counter = 0;
       for (PathsUpdate update : updates) {
         applyPartialUpdate(update);
-        if (++counter > 99) {
+        if (++counter > MAX_UPDATES_PER_LOCK_USE) {
           counter = 0;
           lock.writeLock().unlock();
           lock.writeLock().lock();
@@ -84,6 +85,28 @@ public class UpdateableAuthzPaths implements AuthzPaths, Updateable<PathsUpdate>
   }
 
   private void applyPartialUpdate(PathsUpdate update) {
+    // Handle alter table rename : will have exactly 2 patch changes
+    // 1 an add path and the other a del path
+    if (update.getPathChanges().size() == 2) {
+      List<TPathChanges> pathChanges = update.getPathChanges();
+      TPathChanges newPathInfo = null;
+      TPathChanges oldPathInfo = null;
+      if ((pathChanges.get(0).getAddPathsSize() == 1)
+        && (pathChanges.get(1).getDelPathsSize() == 1)) {
+        newPathInfo = pathChanges.get(0);
+        oldPathInfo = pathChanges.get(1);
+      } else if ((pathChanges.get(1).getAddPathsSize() == 1)
+          && (pathChanges.get(0).getDelPathsSize() == 1)) {
+        newPathInfo = pathChanges.get(1);
+        oldPathInfo = pathChanges.get(0);
+      }
+      if ((newPathInfo != null)&&(oldPathInfo != null)) {
+        paths.renameAuthzObject(
+            oldPathInfo.getAuthzObj(), oldPathInfo.getDelPaths().get(0),
+            newPathInfo.getAuthzObj(), newPathInfo.getAddPaths().get(0));
+        return;
+      }
+    }
     for (TPathChanges pathChanges : update.getPathChanges()) {
       paths.addPathsToAuthzObject(pathChanges.getAuthzObj(), pathChanges
           .getAddPaths(), true);
@@ -107,7 +130,7 @@ public class UpdateableAuthzPaths implements AuthzPaths, Updateable<PathsUpdate>
   @Override
   public PathsUpdate createFullImageUpdate(long currSeqNum) {
     PathsUpdate pathsUpdate = new PathsUpdate(currSeqNum, true);
-    pathsUpdate.getThriftObject().setPathsDump(getPathsDump().createPathsDump());
+    pathsUpdate.toThrift().setPathsDump(getPathsDump().createPathsDump());
     return pathsUpdate;
   }
 
@@ -122,8 +145,8 @@ public class UpdateableAuthzPaths implements AuthzPaths, Updateable<PathsUpdate>
 
       @Override
       public UpdateableAuthzPaths initializeFromDump(TPathsDump pathsDump) {
-        return new UpdateableAuthzPaths(new HMSPaths().getPathsDump().initializeFromDump(
-            pathsDump));
+        return new UpdateableAuthzPaths(UpdateableAuthzPaths.this.paths
+            .getPathsDump().initializeFromDump(pathsDump));
       }
     };
   }

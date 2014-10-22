@@ -1466,6 +1466,9 @@ public class SentryStore {
         ServerConfig.ADMIN_GROUPS, new String[]{}));
   }
 
+  /**
+   * This returns a Mapping of AuthZObj(db/table) -> (Role -> permission)
+   */
   public Map<String, HashMap<String, String>> retrieveFullPrivilegeImage() {
     Map<String, HashMap<String, String>> retVal = new HashMap<String, HashMap<String,String>>();
     boolean rollbackTransaction = true;
@@ -1510,6 +1513,9 @@ public class SentryStore {
     }
   }
 
+  /**
+   * This returns a Mapping of Role -> [Groups]
+   */
   public Map<String, LinkedList<String>> retrieveFullRoleImage() {
     Map<String, LinkedList<String>> retVal = new HashMap<String, LinkedList<String>>();
     boolean rollbackTransaction = true;

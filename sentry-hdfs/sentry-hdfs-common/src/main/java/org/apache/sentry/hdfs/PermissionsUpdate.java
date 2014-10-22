@@ -27,6 +27,7 @@ import org.apache.sentry.hdfs.service.thrift.TRoleChanges;
 
 public class PermissionsUpdate implements Updateable.Update {
 
+  public static String RENAME_PRIVS = "__RENAME_PRIV__";
   public static String ALL_AUTHZ_OBJ = "__ALL_AUTHZ_OBJ__";
   public static String ALL_PRIVS = "__ALL_PRIVS__";
   public static String ALL_ROLES = "__ALL_ROLES__";
@@ -87,7 +88,7 @@ public class PermissionsUpdate implements Updateable.Update {
     return tPermUpdate.getPrivilegeChanges().values();
   }
 
-  public TPermissionsUpdate getThriftObject() {
+  public TPermissionsUpdate toThrift() {
     return tPermUpdate;
   }
 }

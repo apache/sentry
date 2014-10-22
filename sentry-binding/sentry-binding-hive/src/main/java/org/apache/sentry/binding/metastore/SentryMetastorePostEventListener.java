@@ -62,7 +62,7 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
     super(config);
     sentryClientFactory = new SentryServiceClientFactory();
 
-    authzConf = HiveAuthzConf.getAuthzConf(new HiveConf());
+    authzConf = HiveAuthzConf.getAuthzConf((HiveConf)config);
     server = new Server(authzConf.get(AuthzConfVars.AUTHZ_SERVER_NAME.getVar()));
     Iterable<String> pluginClasses = ConfUtilties.CLASS_SPLITTER
         .split(config.get(ServerConfig.SENTRY_METASTORE_PLUGINS,
@@ -179,7 +179,6 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
   @Override
   public void onAlterTable (AlterTableEvent tableEvent) throws MetaException {
     String oldTableName = null, newTableName = null;
-    // TODO : notify SentryHMSPathCache
     if (!syncWithPolicyStore(AuthzConfVars.AUTHZ_SYNC_ALTER_WITH_POLICY_STORE)) {
       return;
     }
@@ -196,7 +195,9 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
     }
     if (!oldTableName.equalsIgnoreCase(newTableName)) {
       renameSentryTablePrivilege(tableEvent.getOldTable().getDbName(),
-          oldTableName, tableEvent.getNewTable().getDbName(), newTableName);
+          oldTableName, tableEvent.getOldTable().getSd().getLocation(),
+          tableEvent.getNewTable().getDbName(), newTableName,
+          tableEvent.getNewTable().getSd().getLocation());
     }
   }
 
@@ -214,7 +215,6 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
         }
       }
     }
-    // TODO Auto-generated method stub
     super.onAddPartition(partitionEvent);
   }
 
@@ -227,7 +227,6 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
     for (SentryMetastoreListenerPlugin plugin : sentryPlugins) {
       plugin.removePath(authzObj, path);
     }
-    // TODO Auto-generated method stub
     super.onDropPartition(partitionEvent);
   }
 
@@ -284,7 +283,7 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
   }
 
   private void renameSentryTablePrivilege(String oldDbName, String oldTabName,
-      String newDbName, String newTabName)
+      String oldPath, String newDbName, String newTabName, String newPath)
       throws MetaException {
     List<Authorizable> oldAuthorizableTable = new ArrayList<Authorizable>();
     oldAuthorizableTable.add(server);
@@ -308,6 +307,10 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
               + " Error: " + e.getMessage());
     } catch (IOException e) {
       throw new MetaException("Failed to find local user " + e.getMessage());
+    }
+    for (SentryMetastoreListenerPlugin plugin : sentryPlugins) {
+      plugin.renameAuthzObject(oldDbName + "." + oldTabName, oldPath,
+          newDbName + "." + newTabName, newPath);
     }
   }
 

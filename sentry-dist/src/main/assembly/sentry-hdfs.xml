@@ -33,17 +33,21 @@
   <dependencySets>
     <dependencySet>
       <outputDirectory>/</outputDirectory>
-      <unpack>false</unpack>
+      <unpack>true</unpack>
       <useProjectArtifact>false</useProjectArtifact>
       <useStrictFiltering>true</useStrictFiltering>
       <useTransitiveFiltering>false</useTransitiveFiltering>
       <includes>
         <include>org.apache.thrift:libthrift</include>
         <include>org.apache.thrift:libfb303</include>
+        <include>org.apache.sentry:sentry-hdfs-namenode-plugin</include>
+        <include>org.apache.sentry:sentry-hdfs-common</include>
+        <include>org.apache.sentry:sentry-hdfs-service</include>
       </includes>
     </dependencySet>
   </dependencySets>
 
+<!--
   <fileSets>
     <fileSet>
       <directory>${project.parent.basedir}/sentry-hdfs/sentry-hdfs-dist/target</directory>
@@ -56,6 +60,6 @@
       <outputDirectory>/</outputDirectory>
     </fileSet>
   </fileSets>
-
+-->
 </assembly>
 

@@ -177,7 +177,16 @@ public class SentryHDFSServiceClient {
   public synchronized void notifyHMSUpdate(PathsUpdate update)
       throws IOException {
     try {
-      client.handle_hms_notification(update.getThriftObject());
+      client.handle_hms_notification(update.toThrift());
+    } catch (Exception e) {
+      throw new IOException("Thrift Exception occurred !!", e);
+    }
+  }
+
+  public synchronized long getLastSeenHMSPathSeqNum()
+      throws IOException {
+    try {
+      return client.check_hms_seq_num(-1);
     } catch (Exception e) {
       throw new IOException("Thrift Exception occurred !!", e);
     }

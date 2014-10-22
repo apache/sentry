@@ -17,14 +17,42 @@
  */
 package org.apache.sentry.hdfs;
 
+/**
+ * A public interface of the fundamental APIs exposed by the implementing
+ * data structure. The primary client of this interface is the Namenode
+ * plugin.
+ */
 public interface AuthzPaths {
 
+  /**
+   * Check if a Path belongs to the configured prefix set
+   * @param pathElements : A path split into segments
+   * @return Is Path under configured prefix
+   */
   public boolean isUnderPrefix(String[] pathElements);
 
+  /**
+   * Returns the authorizable Object (database/table) associated with this path.
+   * Unlike {@link #findAuthzObjectExactMatch(String[])}, if not match is
+   * found, it will return the first ancestor that has an associated
+   * authorizable object.
+   * @param pathElements : A path split into segments
+   * @return A authzObject associated with this path
+   */
   public String findAuthzObject(String[] pathElements);
 
+  /**
+   * Returns the authorizable Object (database/table) associated with this path.
+   * @param pathElements : A path split into segments
+   * @return A authzObject associated with this path
+   */
   public String findAuthzObjectExactMatch(String[] pathElements);
 
+  /**
+   * Return a Dumper that may return a more optimized over the
+   * wire representation of the internal data-structures.
+   * @return
+   */
   public AuthzPathsDumper<? extends AuthzPaths> getPathsDump();
 
 }

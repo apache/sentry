@@ -224,6 +224,7 @@ public class TestHDFSIntegration {
         hiveConf.set("sentry.service.client.server.rpc-port", String.valueOf(sentryPort));
         hiveConf.set("sentry.service.security.mode", "none");
         hiveConf.set("sentry.hdfs.service.security.mode", "none");
+        hiveConf.set("sentry.hdfs.init.update.retry.delay.ms", "500");
         hiveConf.set("sentry.hive.provider.backend", "org.apache.sentry.provider.db.SimpleDBProviderBackend");
         hiveConf.set("sentry.provider", LocalGroupResourceAuthorizationProvider.class.getName());
         hiveConf.set("sentry.hive.provider", LocalGroupResourceAuthorizationProvider.class.getName());
@@ -417,6 +418,8 @@ public class TestHDFSIntegration {
 
   @Test
   public void testEnd2End() throws Exception {
+    Thread.sleep(1000);
+
     Connection conn = hiveServer2.createConnection("hive", "hive");
     Statement stmt = conn.createStatement();
     stmt.execute("create role admin_role");
@@ -449,19 +452,29 @@ public class TestHDFSIntegration {
     Thread.sleep(1000);
     verifyOnAllSubDirs("/user/hive/warehouse/p1", FsAction.WRITE_EXECUTE, "hbase", true);
 
+    // Verify table rename works
+    stmt.execute("alter table p1 rename to p3");
+    Thread.sleep(1000);
+    verifyOnAllSubDirs("/user/hive/warehouse/p3", FsAction.WRITE_EXECUTE, "hbase", true);
+
+    stmt.execute("alter table p3 partition (month=1, day=1) rename to partition (month=1, day=3)");
+    Thread.sleep(1000);
+    verifyOnAllSubDirs("/user/hive/warehouse/p3", FsAction.WRITE_EXECUTE, "hbase", true);
+    verifyOnAllSubDirs("/user/hive/warehouse/p3/month=1/day=3", FsAction.WRITE_EXECUTE, "hbase", true);
+
     sentryService.stop();
     // Verify that Sentry permission are still enforced for the "stale" period
     Thread.sleep(500);
-    verifyOnAllSubDirs("/user/hive/warehouse/p1", FsAction.WRITE_EXECUTE, "hbase", true);
+    verifyOnAllSubDirs("/user/hive/warehouse/p3", FsAction.WRITE_EXECUTE, "hbase", true);
 
     // Verify that Sentry permission are NOT enforced AFTER "stale" period
     Thread.sleep(3000);
-    verifyOnAllSubDirs("/user/hive/warehouse/p1", null, "hbase", false);
+    verifyOnAllSubDirs("/user/hive/warehouse/p3", null, "hbase", false);
 
     startSentry();
     // Verify that After Sentry restart permissions are re-enforced
     Thread.sleep(5000);
-    verifyOnAllSubDirs("/user/hive/warehouse/p1", FsAction.WRITE_EXECUTE, "hbase", true);
+    verifyOnAllSubDirs("/user/hive/warehouse/p3", FsAction.WRITE_EXECUTE, "hbase", true);
 
     // Create new table and verify everything is fine after restart...
     stmt.execute("create table p2 (s string) partitioned by (month int, day int)");
@@ -477,6 +490,10 @@ public class TestHDFSIntegration {
 
     Thread.sleep(1000);
     verifyOnAllSubDirs("/user/hive/warehouse/p2", null, "hbase", false);
+
+    stmt.execute("grant select on table p2 to role p1_admin");
+    Thread.sleep(1000);
+    verifyOnAllSubDirs("/user/hive/warehouse/p2", FsAction.READ_EXECUTE, "hbase", true);
 
     stmt.execute("grant select on table p2 to role p1_admin");
     Thread.sleep(1000);

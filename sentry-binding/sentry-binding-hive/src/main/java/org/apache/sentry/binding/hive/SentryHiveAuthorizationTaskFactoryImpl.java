@@ -239,8 +239,6 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
 
   private Task<? extends Serializable> analyzeGrantRevokeRole(boolean isGrant, ASTNode ast,
       HashSet<ReadEntity> inputs, HashSet<WriteEntity> outputs) throws SemanticException {
-    LOG.debug("## FULL AST : [" + ast.dump() + "]");
-    LOG.debug("## CHILD AST : [" + ((ASTNode)ast.getChild(0)).dump() + "]");
     List<PrincipalDesc> principalDesc = analyzePrincipalListDef(
         (ASTNode) ast.getChild(0));
     

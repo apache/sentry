@@ -23,15 +23,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.hadoop.hive.metastore.api.Database;
-import org.apache.hadoop.hive.metastore.api.Partition;
-import org.apache.hadoop.hive.metastore.api.Table;
+import org.apache.sentry.hdfs.ServiceConstants.ServerConfig;
 import org.apache.sentry.hdfs.UpdateForwarder.ExternalImageRetriever;
-import org.apache.sentry.hdfs.service.thrift.TPathChanges;
 import org.apache.sentry.hdfs.service.thrift.TPermissionsUpdate;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
 import org.apache.sentry.hdfs.service.thrift.TRoleChanges;
@@ -42,13 +37,12 @@ import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleDeleteGroups
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleGrantPrivilegeRequest;
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleRevokePrivilegeRequest;
 import org.apache.sentry.provider.db.service.thrift.TDropSentryRoleRequest;
+import org.apache.sentry.provider.db.service.thrift.TRenamePrivilegesRequest;
+import org.apache.sentry.provider.db.service.thrift.TSentryAuthorizable;
 import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
-import org.apache.sentry.hdfs.ServiceConstants.ServerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.Lists;
 
 public class SentryPlugin implements SentryPolicyStorePlugin {
 
@@ -94,18 +88,24 @@ public class SentryPlugin implements SentryPolicyStorePlugin {
   private UpdateForwarder<PermissionsUpdate> permsUpdater;
   private final AtomicLong permSeqNum = new AtomicLong(5);
 
+  long getLastSeenHMSPathSeqNum() {
+    return pathsUpdater.getLastSeen();
+  }
+
   @Override
   public void initialize(Configuration conf, SentryStore sentryStore) throws SentryPluginException {
-    HiveConf hiveConf = new HiveConf(conf, Configuration.class);
-    final MetastoreClient hmsClient = new ExtendedMetastoreClient(hiveConf);
     final String[] pathPrefixes = conf
         .getStrings(ServerConfig.SENTRY_HDFS_INTEGRATION_PATH_PREFIXES,
             ServerConfig.SENTRY_HDFS_INTEGRATION_PATH_PREFIXES_DEFAULT);
+    final int initUpdateRetryDelayMs =
+        conf.getInt(ServerConfig.SENTRY_HDFS_INIT_UPDATE_RETRY_DELAY_MS,
+            ServerConfig.SENTRY_HDFS_INIT_UPDATE_RETRY_DELAY_DEFAULT);
     pathsUpdater = new UpdateForwarder<PathsUpdate>(new UpdateableAuthzPaths(
-        pathPrefixes), createHMSImageRetriever(pathPrefixes, hmsClient), 100);
+        pathPrefixes), null, 100, initUpdateRetryDelayMs);
     PermImageRetriever permImageRetriever = new PermImageRetriever(sentryStore);
     permsUpdater = new UpdateForwarder<PermissionsUpdate>(
-        new UpdateablePermissions(permImageRetriever), permImageRetriever, 100);
+        new UpdateablePermissions(permImageRetriever), permImageRetriever,
+        100, initUpdateRetryDelayMs);
     instance = this;
   }
 
@@ -120,42 +120,6 @@ public class SentryPlugin implements SentryPolicyStorePlugin {
   public void handlePathUpdateNotification(PathsUpdate update) {
     pathsUpdater.handleUpdateNotification(update);
     LOGGER.info("Recieved Authz Path update [" + update.getSeqNum() + "]..");
-  }
-
-  private ExternalImageRetriever<PathsUpdate> createHMSImageRetriever(
-      final String[] pathPrefixes, final MetastoreClient hmsClient) {
-    return new ExternalImageRetriever<PathsUpdate>() {
-      @Override
-      public PathsUpdate retrieveFullImage(long currSeqNum) {
-        PathsUpdate tempUpdate = new PathsUpdate(currSeqNum, false);
-        List<Database> allDatabases = hmsClient.getAllDatabases();
-        for (Database db : allDatabases) {
-          tempUpdate.newPathChange(db.getName()).addToAddPaths(
-              PathsUpdate.cleanPath(db.getLocationUri()));
-          List<Table> allTables = hmsClient.getAllTablesOfDatabase(db);
-          for (Table tbl : allTables) {
-            TPathChanges tblPathChange = tempUpdate.newPathChange(tbl
-                .getDbName() + "." + tbl.getTableName());
-            List<Partition> tblParts = hmsClient.listAllPartitions(db, tbl);
-            tblPathChange.addToAddPaths(PathsUpdate.cleanPath(tbl.getSd()
-                    .getLocation() == null ? db.getLocationUri() : tbl
-                    .getSd().getLocation()));
-            for (Partition part : tblParts) {
-              tblPathChange.addToAddPaths(PathsUpdate.cleanPath(part.getSd()
-                  .getLocation()));
-            }
-          }
-        }
-        UpdateableAuthzPaths tmpAuthzPaths = new UpdateableAuthzPaths(
-            pathPrefixes);
-        tmpAuthzPaths.updatePartial(Lists.newArrayList(tempUpdate),
-            new ReentrantReadWriteLock());
-        PathsUpdate retUpdate = new PathsUpdate(currSeqNum, true);
-        retUpdate.getThriftObject().setPathsDump(
-            tmpAuthzPaths.getPathsDump().createPathsDump());
-        return retUpdate;
-      }
-    };
   }
 
   @Override
@@ -198,6 +162,19 @@ public class SentryPlugin implements SentryPolicyStorePlugin {
   }
 
   @Override
+  public void onRenameSentryPrivilege(TRenamePrivilegesRequest request)
+      throws SentryPluginException {
+    String oldAuthz = getAuthzObj(request.getOldAuthorizable());
+    String newAuthz = getAuthzObj(request.getNewAuthorizable());
+    PermissionsUpdate update = new PermissionsUpdate(permSeqNum.incrementAndGet(), false);
+    TPrivilegeChanges privUpdate = update.addPrivilegeUpdate(PermissionsUpdate.RENAME_PRIVS);
+    privUpdate.putToAddPrivileges(newAuthz, newAuthz);
+    privUpdate.putToDelPrivileges(oldAuthz, oldAuthz);
+    permsUpdater.handleUpdateNotification(update);
+    LOGGER.info("Authz Perm preUpdate [" + update.getSeqNum() + ", " + newAuthz + ", " + oldAuthz + "]..");
+  }
+
+  @Override
   public void onAlterSentryRoleRevokePrivilege(
       TAlterSentryRoleRevokePrivilegeRequest request)
       throws SentryPluginException {
@@ -236,4 +213,17 @@ public class SentryPlugin implements SentryPolicyStorePlugin {
     return authzObj;
   }
 
+  private String getAuthzObj(TSentryAuthorizable authzble) {
+    String authzObj = null;
+    if (!SentryStore.isNULL(authzble.getDb())) {
+      String dbName = authzble.getDb();
+      String tblName = authzble.getTable();
+      if (tblName == null) {
+        authzObj = dbName;
+      } else {
+        authzObj = dbName + "." + tblName;
+      }
+    }
+    return authzObj;
+  }
 }

@@ -23,6 +23,10 @@ import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.Partition;
 import org.apache.hadoop.hive.metastore.api.Table;
 
+/**
+ * Interface to abstract all interactions between Sentry and Hive Metastore
+ * 
+ */
 public interface MetastoreClient {
 
   public List<Database> getAllDatabases();

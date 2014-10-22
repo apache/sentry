@@ -29,11 +29,15 @@ import org.apache.hadoop.hive.metastore.api.Table;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Implementation of {@link MetastoreClient}
+ *
+ */
 public class ExtendedMetastoreClient implements MetastoreClient {
-  
+
   private static Logger LOG = LoggerFactory.getLogger(ExtendedMetastoreClient.class);
 
-  private HiveMetaStoreClient client;
+  private volatile HiveMetaStoreClient client;
   private final HiveConf hiveConf;
   public ExtendedMetastoreClient(HiveConf hiveConf) {
     this.hiveConf = hiveConf;

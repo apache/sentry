@@ -203,8 +203,8 @@ public class HiveAuthzConf extends Configuration {
       if (retVal == null) {
         retVal = AuthzConfVars.getDefault(varName);
       } else {
-//        Log.warn("Using the deprecated config setting " + currentToDeprecatedProps.get(varName).getVar() +
-//            " instead of " + varName);
+        LOG.warn("Using the deprecated config setting " + currentToDeprecatedProps.get(varName).getVar() +
+            " instead of " + varName);
       }
     }
     if (retVal == null) {

@@ -32,7 +32,6 @@ public class TestSentryPolicyStoreProcessor {
   @Before
   public void setup() {
     conf = new Configuration(false);
-    conf.setBoolean(ServerConfig.SENTRY_HDFS_INTEGRATION_ENABLE, true);
   }
   @Test(expected=SentryConfigurationException.class)
   public void testConfigNotNotificationHandler() throws Exception {

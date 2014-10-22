@@ -20,7 +20,13 @@ package org.apache.sentry.hdfs;
 import java.util.concurrent.locks.ReadWriteLock;
 
 public interface Updateable<K extends Updateable.Update> {
-  
+
+  /**
+   * Thrift currently does not support class inheritance.We need all update
+   * objects to expose a unified API. A wrapper class need to be created 
+   * implementing this interface and containing the generated thrift class as 
+   * a work around
+   */
   public interface Update {
 
     boolean hasFullImage();
