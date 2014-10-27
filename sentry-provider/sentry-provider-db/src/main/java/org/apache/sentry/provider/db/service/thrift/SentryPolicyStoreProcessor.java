@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.SentryUserException;
@@ -589,4 +590,34 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     return response;
   }
 
+  /**
+   * Respond to a request for a config value in the sentry server.  The client
+   * can request any config value that starts with "sentry." and doesn't contain
+   * "keytab".
+   * @param request Contains config parameter sought and default if not found
+   * @return The response, containing the value and status
+   * @throws TException
+   */
+  @Override
+  public TSentryConfigValueResponse get_sentry_config_value(
+          TSentryConfigValueRequest request) throws TException {
+
+    TSentryConfigValueResponse response = new TSentryConfigValueResponse();
+    String attr = request.getPropertyName();
+
+    // Only allow config parameters like...
+    if (!Pattern.matches("^sentry\\..*", attr) ||
+        Pattern.matches(".*keytab.*", attr)) {
+      String msg = "Attempted access of the configuration property " + attr +
+              " was denied";
+      LOGGER.error(msg);
+      response.setStatus(Status.AccessDenied(msg,
+              new SentryAccessDeniedException(msg)));
+      return response;
+    }
+
+    response.setValue(conf.get(attr,request.getDefaultValue()));
+    response.setStatus(Status.OK());
+    return response;
+  }
 }

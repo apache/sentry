@@ -69,7 +69,7 @@ public class SentryPolicyServiceClient {
   private int connectionTimeout;
   private static final Logger LOGGER = LoggerFactory
                                        .getLogger(SentryPolicyServiceClient.class);
-  private static final String THRIFT_EXCEPTION_MESSAGE = "Thrift exception occured ";
+  private static final String THRIFT_EXCEPTION_MESSAGE = "Thrift exception occurred ";
 
   /**
    * This transport wraps the Sasl transports to set up the right UGI context for open().
@@ -597,6 +597,32 @@ TSENTRY_SERVICE_VERSION_CURRENT, requestorUserName,
           .list_sentry_privileges_by_authorizable(request);
       Status.throwIfNotOk(response.getStatus());
       return response.getPrivilegesMapByAuth();
+    } catch (TException e) {
+      throw new SentryUserException(THRIFT_EXCEPTION_MESSAGE, e);
+    }
+  }
+
+  /**
+   * Returns the configuration value in the sentry server associated with
+   * propertyName, or if propertyName does not exist, the defaultValue.
+   * There is no "requestorUserName" because this is regarded as an
+   * internal interface.
+   * @param propertyName Config attribute to search for
+   * @param defaultValue String to return if not found
+   * @return The value of the propertyName
+   * @throws SentryUserException
+   */
+  public String getConfigValue(String propertyName, String defaultValue)
+          throws SentryUserException {
+    TSentryConfigValueRequest request = new TSentryConfigValueRequest(
+            ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT, propertyName);
+    if (defaultValue != null) {
+      request.setDefaultValue(defaultValue);
+    }
+    try {
+      TSentryConfigValueResponse response = client.get_sentry_config_value(request);
+      Status.throwIfNotOk(response.getStatus());
+      return response.getValue();
     } catch (TException e) {
       throw new SentryUserException(THRIFT_EXCEPTION_MESSAGE, e);
     }

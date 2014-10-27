@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
+import org.apache.sentry.SentryUserException;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.model.db.AccessConstants;
@@ -633,6 +634,64 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
       client.listPrivilegsbyAuthorizable(user1, authorizableSet, null, roleSet2);
       fail("listPrivilegsbyAuthorizable() should fail for user1 accessing " + roleName2);
     } catch (SentryAccessDeniedException e) {
+      // expected
+    }
+  }
+
+  @Test
+  public void testGetConfigVal() throws Exception {
+    String val;
+
+    // Basic success case
+    val = client.getConfigValue("sentry.service.admin.group", "xxx");
+    assertEquals(val, "admin_group");
+
+    // Undefined value gets the default back
+    val = client.getConfigValue("sentry.this.is.not.defined", "hello");
+    assertEquals(val, "hello");
+
+    // Undefined value and null default gets null back
+    val = client.getConfigValue("sentry.this.is.not.defined", null);
+    assertEquals(val, null);
+
+    // Known config value with null default works as expected
+    val = client.getConfigValue("sentry.service.admin.group", null);
+    assertEquals(val, "admin_group");
+
+    // Value that is forbidden (anything not starting with "sentry") dies
+    try {
+      val = client.getConfigValue("notsentry", "xxx");
+      fail("Attempt to access banned config value succeeded");
+    } catch (SentryAccessDeniedException e) {
+      assertTrue(e.toString().contains("was denied"));
+      assertTrue(e.toString().contains("notsentry"));
+      // expected
+    }
+
+    // Ditto with a null default
+    try {
+      val = client.getConfigValue("notsentry", null);
+      fail("Attempt to access banned config value succeeded");
+    } catch (SentryAccessDeniedException e) {
+      assertTrue(e.toString().contains("was denied"));
+      assertTrue(e.toString().contains("notsentry"));
+      // expected
+    }
+
+    // Attempt to get the location of the keytab also fails
+    try {
+      val = client.getConfigValue("sentry.service.server.keytab", "xxx");
+      fail("Attempt to access banned keytab succeeded");
+    } catch (SentryAccessDeniedException e) {
+      assertTrue(e.toString().contains("was denied"));
+      assertTrue(e.toString().contains("keytab"));
+    }
+
+    // null parameter name fails
+    try {
+      val = client.getConfigValue(null, null);
+      fail("null parameter succeeded");
+    } catch (SentryUserException e) {
       // expected
     }
   }
