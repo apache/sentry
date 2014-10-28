@@ -638,6 +638,23 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
     }
   }
 
+  /**
+   * Attempt to access a configuration value that is forbidden in getConfigVal
+   * @param configVal The banned value
+   * @param defaultVal A default to pass to getConfigValue
+   * @throws Exception
+   */
+  private void checkBannedConfigVal(String configVal, String defaultVal)
+          throws Exception {
+  try {
+      client.getConfigValue(configVal, defaultVal);
+      fail("Attempt to access " + configVal + " succeeded");
+    } catch (SentryAccessDeniedException e) {
+      assertTrue(e.toString().contains("was denied"));
+      assertTrue(e.toString().contains(configVal));
+    }
+  }
+
   @Test
   public void testGetConfigVal() throws Exception {
     String val;
@@ -659,33 +676,19 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
     assertEquals(val, "admin_group");
 
     // Value that is forbidden (anything not starting with "sentry") dies
-    try {
-      val = client.getConfigValue("notsentry", "xxx");
-      fail("Attempt to access banned config value succeeded");
-    } catch (SentryAccessDeniedException e) {
-      assertTrue(e.toString().contains("was denied"));
-      assertTrue(e.toString().contains("notsentry"));
-      // expected
-    }
+    checkBannedConfigVal("notsentry", "xxx");
 
     // Ditto with a null default
-    try {
-      val = client.getConfigValue("notsentry", null);
-      fail("Attempt to access banned config value succeeded");
-    } catch (SentryAccessDeniedException e) {
-      assertTrue(e.toString().contains("was denied"));
-      assertTrue(e.toString().contains("notsentry"));
-      // expected
-    }
+    checkBannedConfigVal("notsentry", null);
+
+    // Values with .jdbc. are forbidden
+    checkBannedConfigVal("sentry.xxx.jdbc.xxx", null);
+
+    // Values with password are forbidden
+    checkBannedConfigVal("sentry.xxx.password", null);
 
     // Attempt to get the location of the keytab also fails
-    try {
-      val = client.getConfigValue("sentry.service.server.keytab", "xxx");
-      fail("Attempt to access banned keytab succeeded");
-    } catch (SentryAccessDeniedException e) {
-      assertTrue(e.toString().contains("was denied"));
-      assertTrue(e.toString().contains("keytab"));
-    }
+    checkBannedConfigVal("sentry.service.server.keytab", null);
 
     // null parameter name fails
     try {

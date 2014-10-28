@@ -602,12 +602,15 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   public TSentryConfigValueResponse get_sentry_config_value(
           TSentryConfigValueRequest request) throws TException {
 
+    final String requirePattern = "^sentry\\..*";
+    final String excludePattern = ".*keytab.*|.*\\.jdbc\\..*|.*password.*";
+
     TSentryConfigValueResponse response = new TSentryConfigValueResponse();
     String attr = request.getPropertyName();
 
     // Only allow config parameters like...
-    if (!Pattern.matches("^sentry\\..*", attr) ||
-        Pattern.matches(".*keytab.*", attr)) {
+    if (!Pattern.matches(requirePattern, attr) ||
+        Pattern.matches(excludePattern, attr)) {
       String msg = "Attempted access of the configuration property " + attr +
               " was denied";
       LOGGER.error(msg);
