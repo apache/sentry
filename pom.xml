@@ -50,8 +50,8 @@ limitations under the License.
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compile.source>1.6</maven.compile.source>
-    <maven.compile.target>1.6</maven.compile.target>
+    <maven.compile.source>1.7</maven.compile.source>
+    <maven.compile.target>1.7</maven.compile.target>
     <!-- versions are in alphabetical order -->
     <ant.contrib.version>1.0b3</ant.contrib.version>
     <maven.antrun.plugin.version>1.7</maven.antrun.plugin.version>
@@ -83,6 +83,8 @@ limitations under the License.
     <zookeeper.version>3.4.5-cdh5.1.0-SNAPSHOT</zookeeper.version>
     <pig.version>0.12.0-cdh5.1.0-SNAPSHOT</pig.version>
     <jackson.version>1.8.8</jackson.version>
+    <metrics.version>3.1.0</metrics.version>
+    <jettyVersion>7.6.16.v20140903</jettyVersion>
   </properties>
 
   <dependencyManagement>

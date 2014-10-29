@@ -24,6 +24,7 @@ import javax.security.sasl.Sasl;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
+import org.apache.sentry.provider.db.service.thrift.SentryMetrics;
 
 public class ServiceConstants {
 
@@ -121,6 +122,13 @@ public class ServiceConstants {
     .put("javax.jdo.option.NonTransactionalWrite", "false")
     .put("javax.jdo.option.Multithreaded", "true")
     .build();
+
+    public static final String SENTRY_WEB_PORT = "sentry.service.web.port";
+    public static final int SENTRY_WEB_PORT_DEFAULT = 51000;
+    public static final String SENTRY_REPORTING = "sentry.service.reporting";
+    public static final String SENTRY_REPORTING_JMX = SentryMetrics.Reporting.JMX.name(); //case insensitive
+    public static final String SENTRY_REPORTING_CONSOLE = SentryMetrics.Reporting.CONSOLE.name();//case insensitive
+
 
   }
   public static class ClientConfig {

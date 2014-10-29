@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import com.codahale.metrics.Timer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.SentryUserException;
 import org.apache.sentry.core.model.db.AccessConstants;
@@ -67,6 +68,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   private final NotificationHandlerInvoker notificationHandlerInvoker;
   private final ImmutableSet<String> adminGroups;
   private boolean isReady;
+  SentryMetrics sentryMetrics;
 
   public SentryPolicyStoreProcessor(String name, Configuration conf) throws Exception {
     super();
@@ -79,6 +81,24 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     isReady = true;
     adminGroups = ImmutableSet.copyOf(toTrimedLower(Sets.newHashSet(conf.getStrings(
         ServerConfig.ADMIN_GROUPS, new String[]{}))));
+    initReporting();
+  }
+
+  private void initReporting() {
+    String sentryReporting = conf.get(ServerConfig.SENTRY_REPORTING);
+    if( sentryReporting != null) {
+      SentryMetrics.Reporting reporting;
+      try {
+        reporting = SentryMetrics.Reporting.valueOf(sentryReporting.toUpperCase());
+        sentryMetrics = SentryMetrics.getInstance();
+        sentryMetrics.addSentryStoreGauges(sentryStore);
+        sentryMetrics.initReporting(reporting);
+
+      } catch (IllegalArgumentException e) {
+        LOGGER.warn("Metrics reporting not configured correctly, please set " + ServerConfig.SENTRY_REPORTING +
+            " to: " + ServerConfig.SENTRY_REPORTING_CONSOLE + "/" + ServerConfig.SENTRY_REPORTING_JMX);
+      }
+    }
   }
 
   public void stop() {
@@ -148,6 +168,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   @Override
   public TCreateSentryRoleResponse create_sentry_role(
     TCreateSentryRoleRequest request) throws TException {
+    final Timer.Context timerContext = sentryMetrics.createRoleTimer.time();
     TCreateSentryRoleResponse response = new TCreateSentryRoleResponse();
     try {
       authorize(request.getRequestorUserName(),
@@ -167,6 +188,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       String msg = "Unknown error for request: " + request + ", message: " + e.getMessage();
       LOGGER.error(msg, e);
       response.setStatus(Status.RuntimeError(msg, e));
+    } finally {
+      timerContext.stop();
     }
 
     AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance().createJsonLogEntity(
@@ -177,6 +200,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   @Override
   public TAlterSentryRoleGrantPrivilegeResponse alter_sentry_role_grant_privilege
   (TAlterSentryRoleGrantPrivilegeRequest request) throws TException {
+    final Timer.Context timerContext = sentryMetrics.grantTimer.time();
 
     TAlterSentryRoleGrantPrivilegeResponse response = new TAlterSentryRoleGrantPrivilegeResponse();
     try {
@@ -201,6 +225,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       String msg = "Unknown error for request: " + request + ", message: " + e.getMessage();
       LOGGER.error(msg, e);
       response.setStatus(Status.RuntimeError(msg, e));
+    } finally {
+      timerContext.stop();
     }
 
     AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance().createJsonLogEntity(
@@ -211,6 +237,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   @Override
   public TAlterSentryRoleRevokePrivilegeResponse alter_sentry_role_revoke_privilege
   (TAlterSentryRoleRevokePrivilegeRequest request) throws TException {
+    final Timer.Context timerContext = sentryMetrics.revokeTimer.time();
     TAlterSentryRoleRevokePrivilegeResponse response = new TAlterSentryRoleRevokePrivilegeResponse();
     try {
       CommitContext commitContext = sentryStore.alterSentryRoleRevokePrivilege(request.getRequestorUserName(),
@@ -237,6 +264,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       String msg = "Unknown error for request: " + request + ", message: " + e.getMessage();
       LOGGER.error(msg, e);
       response.setStatus(Status.RuntimeError(msg, e));
+    } finally {
+      timerContext.stop();
     }
 
     AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance().createJsonLogEntity(
@@ -247,6 +276,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   @Override
   public TDropSentryRoleResponse drop_sentry_role(
     TDropSentryRoleRequest request)  throws TException {
+    final Timer.Context timerContext = sentryMetrics.dropRoleTimer.time();
     TDropSentryRoleResponse response = new TDropSentryRoleResponse();
     TSentryResponseStatus status;
     try {
@@ -267,6 +297,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       String msg = "Unknown error for request: " + request + ", message: " + e.getMessage();
       LOGGER.error(msg, e);
       response.setStatus(Status.RuntimeError(msg, e));
+    } finally {
+      timerContext.stop();
     }
 
     AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance().createJsonLogEntity(
@@ -277,6 +309,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   @Override
   public TAlterSentryRoleAddGroupsResponse alter_sentry_role_add_groups(
     TAlterSentryRoleAddGroupsRequest request) throws TException {
+    final Timer.Context timerContext = sentryMetrics.grantRoleTimer.time();
     TAlterSentryRoleAddGroupsResponse response = new TAlterSentryRoleAddGroupsResponse();
     try {
       authorize(request.getRequestorUserName(),
@@ -297,6 +330,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       String msg = "Unknown error for request: " + request + ", message: " + e.getMessage();
       LOGGER.error(msg, e);
       response.setStatus(Status.RuntimeError(msg, e));
+    } finally {
+      timerContext.stop();
     }
 
     AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance().createJsonLogEntity(
@@ -307,6 +342,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   @Override
   public TAlterSentryRoleDeleteGroupsResponse alter_sentry_role_delete_groups(
     TAlterSentryRoleDeleteGroupsRequest request) throws TException {
+    final Timer.Context timerContext = sentryMetrics.revokeRoleTimer.time();
     TAlterSentryRoleDeleteGroupsResponse response = new TAlterSentryRoleDeleteGroupsResponse();
     try {
       authorize(request.getRequestorUserName(),
@@ -327,6 +363,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       String msg = "Unknown error adding groups to role: " + request;
       LOGGER.error(msg, e);
       response.setStatus(Status.RuntimeError(msg, e));
+    } finally {
+      timerContext.stop();
     }
 
     AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance().createJsonLogEntity(
@@ -337,6 +375,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   @Override
   public TListSentryRolesResponse list_sentry_roles_by_group(
     TListSentryRolesRequest request) throws TException {
+    final Timer.Context timerContext = sentryMetrics.listRolesByGroupTimer.time();
     TListSentryRolesResponse response = new TListSentryRolesResponse();
     TSentryResponseStatus status;
     Set<TSentryRole> roleSet = new HashSet<TSentryRole>();
@@ -373,6 +412,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       String msg = "Unknown error for request: " + request + ", message: " + e.getMessage();
       LOGGER.error(msg, e);
       response.setStatus(Status.RuntimeError(msg, e));
+    } finally {
+      timerContext.stop();
     }
     return response;
   }
@@ -380,6 +421,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   @Override
   public TListSentryPrivilegesResponse list_sentry_privileges_by_role(
       TListSentryPrivilegesRequest request) throws TException {
+    final Timer.Context timerContext = sentryMetrics.listPrivilegesByRoleTimer.time();
     TListSentryPrivilegesResponse response = new TListSentryPrivilegesResponse();
     TSentryResponseStatus status;
     Set<TSentryPrivilege> privilegeSet = new HashSet<TSentryPrivilege>();
@@ -413,6 +455,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       String msg = "Unknown error for request: " + request + ", message: " + e.getMessage();
       LOGGER.error(msg, e);
       response.setStatus(Status.RuntimeError(msg, e));
+    } finally {
+      timerContext.stop();
     }
     return response;
   }
@@ -424,6 +468,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   @Override
   public TListSentryPrivilegesForProviderResponse list_sentry_privileges_for_provider(
       TListSentryPrivilegesForProviderRequest request) throws TException {
+    final Timer.Context timerContext = sentryMetrics.listPrivilegesForProviderTimer.time();
     TListSentryPrivilegesForProviderResponse response = new TListSentryPrivilegesForProviderResponse();
     response.setPrivileges(new HashSet<String>());
     try {
@@ -449,6 +494,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       String msg = "Unknown error for request: " + request + ", message: " + e.getMessage();
       LOGGER.error(msg, e);
       response.setStatus(Status.RuntimeError(msg, e));
+    } finally {
+      timerContext.stop();
     }
     return response;
   }
@@ -495,6 +542,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   @Override
   public TDropPrivilegesResponse drop_sentry_privilege(
       TDropPrivilegesRequest request) throws TException {
+    final Timer.Context timerContext = sentryMetrics.dropPrivilegeTimer.time();
     TDropPrivilegesResponse response = new TDropPrivilegesResponse();
     try {
       authorize(request.getRequestorUserName(), adminGroups);
@@ -508,6 +556,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
           + e.getMessage();
       LOGGER.error(msg, e);
       response.setStatus(Status.RuntimeError(msg, e));
+    } finally {
+      timerContext.stop();
     }
     return response;
   }
@@ -515,6 +565,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   @Override
   public TRenamePrivilegesResponse rename_sentry_privilege(
       TRenamePrivilegesRequest request) throws TException {
+    final Timer.Context timerContext = sentryMetrics.renamePrivilegeTimer.time();
     TRenamePrivilegesResponse response = new TRenamePrivilegesResponse();
     try {
       authorize(request.getRequestorUserName(), adminGroups);
@@ -529,6 +580,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
           + e.getMessage();
       LOGGER.error(msg, e);
       response.setStatus(Status.RuntimeError(msg, e));
+    } finally {
+      timerContext.close();
     }
     return response;
   }
@@ -536,6 +589,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   @Override
   public TListSentryPrivilegesByAuthResponse list_sentry_privileges_by_authorizable(
       TListSentryPrivilegesByAuthRequest request) throws TException {
+    final Timer.Context timerContext = sentryMetrics.listPrivilegesByAuthorizableTimer.time();
     TListSentryPrivilegesByAuthResponse response = new TListSentryPrivilegesByAuthResponse();
     Map<TSentryAuthorizable, TSentryPrivilegeMap> authRoleMap = Maps.newHashMap();
     String subject = request.getRequestorUserName();
@@ -586,6 +640,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
           + e.getMessage();
       LOGGER.error(msg, e);
       response.setStatus(Status.RuntimeError(msg, e));
+    } finally {
+      timerContext.stop();
     }
     return response;
   }

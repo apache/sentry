@@ -18,6 +18,7 @@
 
 package org.apache.sentry.provider.db.service.persistent;
 
+import com.codahale.metrics.Gauge;
 import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_JOINER;
 import static org.apache.sentry.provider.common.ProviderConstants.KV_JOINER;
 
@@ -269,6 +270,47 @@ public class SentryStore {
         rollbackTransaction(pm);
       }
     }
+  }
+
+  private <T> Long getCount(Class<T> tClass) {
+    PersistenceManager pm = null;
+    Long size = new Long(-1);
+    try {
+      pm = openTransaction();
+      Query query = pm.newQuery();
+      query.setClass(tClass);
+      query.setResult("count(this)");
+      size = (Long)query.execute();
+
+    } finally {
+      commitTransaction(pm);
+    }
+    return size;
+  }
+  public Gauge<Long> getRoleCountGauge() {
+    return new Gauge< Long >() {
+      @Override
+      public Long getValue() {
+        return getCount(MSentryRole.class);
+      }
+    };
+  }
+
+  public Gauge<Long> getPrivilegeCountGauge() {
+    return new Gauge< Long >() {
+      @Override
+      public Long getValue() {
+        return getCount(MSentryPrivilege.class);
+      }
+    };
+  }
+  public Gauge<Long> getGroupCountGauge() {
+    return new Gauge< Long >() {
+      @Override
+      public Long getValue() {
+        return getCount(MSentryGroup.class);
+      }
+    };
   }
 
   public CommitContext alterSentryRoleGrantPrivilege(String grantorPrincipal,

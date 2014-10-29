@@ -25,7 +25,10 @@ import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.ServerSocket;
 import java.security.PrivilegedExceptionAction;
+import java.util.ArrayList;
+import java.util.EventListener;
 import java.util.HashSet;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -45,6 +48,9 @@ import org.apache.hadoop.security.SaslRpcServer;
 import org.apache.hadoop.security.SaslRpcServer.AuthMethod;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.sentry.Command;
+import org.apache.sentry.provider.db.service.thrift.SentryHealthCheckServletContextListener;
+import org.apache.sentry.provider.db.service.thrift.SentryMetricsServletContextListener;
+import org.apache.sentry.provider.db.service.thrift.SentryWebServer;
 import org.apache.sentry.service.thrift.ServiceConstants.ConfUtilties;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.apache.thrift.TMultiplexedProcessor;
@@ -55,12 +61,10 @@ import org.apache.thrift.transport.TSaslServerTransport;
 import org.apache.thrift.transport.TServerSocket;
 import org.apache.thrift.transport.TServerTransport;
 import org.apache.thrift.transport.TTransportFactory;
-import org.mortbay.log.Log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
 
 public class SentryService implements Callable {
 
@@ -83,6 +87,8 @@ public class SentryService implements Callable {
   private Future future;
   private TServer thriftServer;
   private Status status;
+  private int webServerPort;
+  private SentryWebServer sentryWebServer;
 
   public SentryService(Configuration conf) {
     this.conf = conf;
@@ -133,6 +139,7 @@ public class SentryService implements Callable {
             + (count++));
       }
     });
+    webServerPort = conf.getInt(ServerConfig.SENTRY_WEB_PORT, ServerConfig.SENTRY_WEB_PORT_DEFAULT);
     status = Status.NOT_STARTED;
   }
 
@@ -210,7 +217,23 @@ public class SentryService implements Callable {
         .minWorkerThreads(minThreads).maxWorkerThreads(maxThreads);
     thriftServer = new TThreadPoolServer(args);
     LOGGER.info("Serving on " + address);
+    startSentryWebServer();
     thriftServer.serve();
+  }
+
+  private void startSentryWebServer() throws Exception{
+    List<EventListener> listenerList = new ArrayList<EventListener>();
+    listenerList.add(new SentryHealthCheckServletContextListener());
+    listenerList.add(new SentryMetricsServletContextListener());
+    sentryWebServer = new SentryWebServer(listenerList, webServerPort);
+    sentryWebServer.start();
+
+  }
+
+  private void stopSentryWebServer() throws Exception{
+    if( sentryWebServer != null) {
+      sentryWebServer.stop();
+    }
   }
 
   public InetSocketAddress getAddress() {
@@ -231,7 +254,7 @@ public class SentryService implements Callable {
     future = serviceExecutor.submit(this);
   }
 
-  public synchronized void stop() {
+  public synchronized void stop() throws Exception{
     if (status == Status.NOT_STARTED) {
       return;
     }
@@ -241,6 +264,7 @@ public class SentryService implements Callable {
       thriftServer.stop();
     }
     thriftServer = null;
+    stopSentryWebServer();
     status = Status.NOT_STARTED;
     LOGGER.info("Stopped...");
   }

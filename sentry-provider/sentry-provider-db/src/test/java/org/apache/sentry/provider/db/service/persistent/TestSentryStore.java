@@ -157,6 +157,7 @@ public class TestSentryStore {
       // expected
     }
   }
+
   @Test
   public void testCaseSensitiveScope() throws Exception {
     String roleName = "role1";
@@ -840,6 +841,69 @@ public class TestSentryStore {
     }
   }
 
+  @Test
+  public void testSentryRoleSize() throws Exception {
+    for( long i = 0; i< 5; i++ ) {
+      assertEquals((Long)i, sentryStore.getRoleCountGauge().getValue());
+      sentryStore.createSentryRole("role" + i);
+    }
+  }
+  @Test
+  public void testSentryPrivilegeSize() throws Exception {
+    String role1 = "role1";
+    String role2 = "role2";
+
+    sentryStore.createSentryRole(role1);
+    sentryStore.createSentryRole(role2);
+
+    TSentryPrivilege privilege = new TSentryPrivilege();
+    privilege.setPrivilegeScope("TABLE");
+    privilege.setServerName("server1");
+    privilege.setDbName("db1");
+    privilege.setTableName("tb1");
+    privilege.setCreateTime(System.currentTimeMillis());
+
+    String grantor = "g1";
+
+    assertEquals(new Long(0), sentryStore.getPrivilegeCountGauge().getValue());
+
+    sentryStore.alterSentryRoleGrantPrivilege(grantor, role1, privilege);
+    assertEquals(new Long(1), sentryStore.getPrivilegeCountGauge().getValue());
+
+    sentryStore.alterSentryRoleGrantPrivilege(grantor, role2, privilege);
+    assertEquals(new Long(1), sentryStore.getPrivilegeCountGauge().getValue());
+
+    privilege.setTableName("tb2");
+    sentryStore.alterSentryRoleGrantPrivilege(grantor, role2, privilege);
+    assertEquals(new Long(2), sentryStore.getPrivilegeCountGauge().getValue());
+  }
+
+  @Test
+  public void testSentryGroupsSize() throws Exception {
+    String role1 = "role1";
+    String role2 = "role2";
+
+    sentryStore.createSentryRole(role1);
+    sentryStore.createSentryRole(role2);
+
+    Set<TSentryGroup> groups = Sets.newHashSet();
+    TSentryGroup group = new TSentryGroup();
+    group.setGroupName("group1");
+    groups.add(group);
+
+    String grantor = "g1";
+
+    sentryStore.alterSentryRoleAddGroups(grantor, role1, groups);
+    assertEquals(new Long(1), sentryStore.getGroupCountGauge().getValue());
+
+    sentryStore.alterSentryRoleAddGroups(grantor, role2, groups);
+    assertEquals(new Long(1), sentryStore.getGroupCountGauge().getValue());
+
+    groups.add(new TSentryGroup("group2"));
+    sentryStore.alterSentryRoleAddGroups(grantor, role2, groups);
+    assertEquals(new Long(2), sentryStore.getGroupCountGauge().getValue());
+
+  }
   protected void addGroupsToUser(String user, String... groupNames) {
     policyFile.addGroupsToUser(user, groupNames);
   }
@@ -847,4 +911,5 @@ public class TestSentryStore {
   protected void writePolicyFile() throws Exception {
     policyFile.write(policyFilePath);
   }
+
 }
