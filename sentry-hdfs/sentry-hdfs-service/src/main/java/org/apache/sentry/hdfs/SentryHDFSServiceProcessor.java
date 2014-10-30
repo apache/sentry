@@ -75,7 +75,7 @@ public class SentryHDFSServiceProcessor implements SentryHDFSService.Iface {
       PathsUpdate hmsUpdate = new PathsUpdate(update);
       if (SentryPlugin.instance != null) {
         SentryPlugin.instance.handlePathUpdateNotification(hmsUpdate);
-        LOGGER.info("Authz Paths update [" + hmsUpdate.getSeqNum() + "]..");
+        LOGGER.debug("Authz Paths update [" + hmsUpdate.getSeqNum() + "]..");
       } else {
         LOGGER.error("SentryPlugin not initialized yet !!");
       }

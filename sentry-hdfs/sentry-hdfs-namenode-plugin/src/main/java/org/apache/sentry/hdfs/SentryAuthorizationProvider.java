@@ -315,6 +315,8 @@ public class SentryAuthorizationProvider
         }
         FsPermission perm = defaultAuthzProvider.getFsPermission(node, snapshotId);
         list.addAll(createAclEntries(user, group, perm));
+      } else {
+        list.addAll(createAclEntries(this.user, this.group, this.permission));
       }
       if (!authzInfo.isStale()) { 
         isStale = false;

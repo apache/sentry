@@ -17,10 +17,11 @@
  */
 package org.apache.sentry.hdfs;
 
-import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 
@@ -75,7 +76,7 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
           lock.writeLock().lock();
         }
         seqNum.set(update.getSeqNum());
-        LOG.warn("##### Updated perms seq Num [" + seqNum.get() + "]");
+        LOG.debug("##### Updated perms seq Num [" + seqNum.get() + "]");
       }
     } finally {
       lock.writeLock().unlock();
@@ -127,14 +128,16 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
         PrivilegeInfo privilegeInfo = perms.getPrivilegeInfo(oldAuthzObj);
         Map<String, FsAction> allPermissions = privilegeInfo.getAllPermissions();
         perms.delPrivilegeInfo(oldAuthzObj);
+        perms.removeParentChildMappings(oldAuthzObj);
         PrivilegeInfo newPrivilegeInfo = new PrivilegeInfo(newAuthzObj);
         for (Map.Entry<String, FsAction> e : allPermissions.entrySet()) {
           newPrivilegeInfo.setPermission(e.getKey(), e.getValue());
         }
         perms.addPrivilegeInfo(newPrivilegeInfo);
+        perms.addParentChildMappings(newAuthzObj);
         return;
       }
-      if (pUpdate.getAuthzObj().equals(PermissionsUpdate.ALL_PRIVS)) {
+      if (pUpdate.getAuthzObj().equals(PermissionsUpdate.ALL_AUTHZ_OBJ)) {
         // Request to remove role from all Privileges
         String roleToRemove = pUpdate.getDelPrivileges().keySet().iterator()
             .next();
@@ -157,19 +160,32 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
       }
       if (pInfo != null) {
         perms.addPrivilegeInfo(pInfo);
+        perms.addParentChildMappings(pUpdate.getAuthzObj());
         for (Map.Entry<String, String> dMap : pUpdate.getDelPrivileges().entrySet()) {
           if (dMap.getKey().equals(PermissionsUpdate.ALL_ROLES)) {
             // Remove all privileges
             perms.delPrivilegeInfo(pUpdate.getAuthzObj());
+            perms.removeParentChildMappings(pUpdate.getAuthzObj());
             break;
           }
-          FsAction fsAction = pInfo.getPermission(dMap.getKey());
-          if (fsAction != null) {
-            fsAction = fsAction.and(getFAction(dMap.getValue()).not());
-            if (FsAction.NONE == fsAction) {
-              pInfo.removePermission(dMap.getKey());
-            } else {
-              pInfo.setPermission(dMap.getKey(), fsAction);
+          List<PrivilegeInfo> parentAndChild = new LinkedList<PrivilegeInfo>();
+          parentAndChild.add(pInfo);
+          Set<String> children = perms.getChildren(pInfo.getAuthzObj());
+          if (children != null) {
+            for (String child : children) {
+              parentAndChild.add(perms.getPrivilegeInfo(child));
+            }
+          }
+          // recursive revoke
+          for (PrivilegeInfo pInfo2 : parentAndChild) {
+            FsAction fsAction = pInfo2.getPermission(dMap.getKey());
+            if (fsAction != null) {
+              fsAction = fsAction.and(getFAction(dMap.getValue()).not());
+              if (FsAction.NONE == fsAction) {
+                pInfo2.removePermission(dMap.getKey());
+              } else {
+                pInfo2.setPermission(dMap.getKey(), fsAction);
+              }
             }
           }
         }

@@ -43,6 +43,6 @@ public abstract class SentryMetastoreListenerPlugin {
 
   public abstract void removePath(String authzObj, String path);
 
-  public abstract void removeAllPaths(String authzObj);
+  public abstract void removeAllPaths(String authzObj, List<String> childObjects);
 
 }

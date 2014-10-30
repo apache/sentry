@@ -46,6 +46,18 @@
         <exclude>org.apache.derby:derby</exclude>
       </excludes>
     </dependencySet>
+<!--
+    <dependencySet>
+      <outputDirectory>lib/plugins</outputDirectory>
+      <unpack>true</unpack>
+      <useTransitiveDependencies>false</useTransitiveDependencies>
+      <includes>
+        <include>org.apache.sentry:sentry-provider-db</include>
+        <include>org.apache.sentry:sentry-hdfs-common</include>
+        <include>org.apache.sentry:sentry-hdfs-namenode-plugin</include>
+      </includes>
+    </dependencySet>
+-->
     <dependencySet>
       <outputDirectory>lib/server</outputDirectory>
       <unpack>false</unpack>
@@ -102,7 +114,7 @@
       <excludes>
         <exclude>sentry-hdfs-dist-*.jar</exclude>
       </excludes>
-      <outputDirectory>lib</outputDirectory>
+      <outputDirectory>lib/plugins</outputDirectory>
     </fileSet>
     <fileSet>
       <directory>${project.parent.basedir}/sentry-provider/sentry-provider-db/src/main/resources</directory>

@@ -77,7 +77,7 @@ public class UpdateableAuthzPaths implements AuthzPaths, Updateable<PathsUpdate>
           lock.writeLock().lock();
         }
         seqNum.set(update.getSeqNum());
-        LOG.warn("##### Updated paths seq Num [" + seqNum.get() + "]");
+        LOG.debug("##### Updated paths seq Num [" + seqNum.get() + "]");
       }
     } finally {
       lock.writeLock().unlock();

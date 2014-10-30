@@ -23,12 +23,16 @@ import org.apache.sentry.hdfs.service.thrift.TPathsDump;
 import org.apache.thrift.TDeserializer;
 import org.apache.thrift.TException;
 import org.apache.thrift.TSerializer;
+import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TCompactProtocol;
+import org.apache.thrift.protocol.TProtocolFactory;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
 
 public class TestHMSPathsFullDump {
+  
+  private static boolean useCompact = true;
 
   @Test
   public void testDumpAndInitialize() {
@@ -71,13 +75,13 @@ public class TestHMSPathsFullDump {
   public void testThrftSerialization() throws TException {
     HMSPaths hmsPaths = new HMSPaths(new String[] {"/"});
     String prefix = "/user/hive/warehouse/";
-    for (int dbNum = 0; dbNum < 1; dbNum++) {
+    for (int dbNum = 0; dbNum < 10; dbNum++) {
       String dbName = "db" + dbNum;
       hmsPaths._addAuthzObject(dbName, Lists.newArrayList(prefix + dbName));
-      for (int tblNum = 0; tblNum < 1000000; tblNum++) {
+      for (int tblNum = 0; tblNum < 1000; tblNum++) {
         String tblName = "tbl" + tblNum;
         hmsPaths._addAuthzObject(dbName + "." + tblName, Lists.newArrayList(prefix + dbName + "/" + tblName));
-        for (int partNum = 0; partNum < 1; partNum++) {
+        for (int partNum = 0; partNum < 100; partNum++) {
           String partName = "part" + partNum;
           hmsPaths
               ._addPathsToAuthzObject(
@@ -90,17 +94,19 @@ public class TestHMSPathsFullDump {
     HMSPathsDumper serDe = hmsPaths.getPathsDump();
     long t1 = System.currentTimeMillis();
     TPathsDump pathsDump = serDe.createPathsDump();
-    byte[] ser = new TSerializer(new TCompactProtocol.Factory()).serialize(pathsDump);
+    
+    TProtocolFactory protoFactory = useCompact ? new TCompactProtocol.Factory() : new TBinaryProtocol.Factory(); 
+    byte[] ser = new TSerializer(protoFactory).serialize(pathsDump);
     long serTime = System.currentTimeMillis() - t1;
     System.out.println("Serialization Time: " + serTime + ", " + ser.length);
 
     t1 = System.currentTimeMillis();
     TPathsDump tPathsDump = new TPathsDump();
-    new TDeserializer(new TCompactProtocol.Factory()).deserialize(tPathsDump, ser);
+    new TDeserializer(protoFactory).deserialize(tPathsDump, ser);
     HMSPaths fromDump = serDe.initializeFromDump(tPathsDump);
     System.out.println("Deserialization Time: " + (System.currentTimeMillis() - t1));
-    Assert.assertEquals("db9.tbl999", fromDump.findAuthzObject(new String[]{"user", "hive", "warehouse", "db0", "tbl999"}, false));
-    Assert.assertEquals("db9.tbl999", fromDump.findAuthzObject(new String[]{"user", "hive", "warehouse", "db0", "tbl999", "part5"}, false));
+    Assert.assertEquals("db9.tbl999", fromDump.findAuthzObject(new String[]{"user", "hive", "warehouse", "db9", "tbl999"}, false));
+    Assert.assertEquals("db9.tbl999", fromDump.findAuthzObject(new String[]{"user", "hive", "warehouse", "db9", "tbl999", "part99"}, false));
   }
 
 }

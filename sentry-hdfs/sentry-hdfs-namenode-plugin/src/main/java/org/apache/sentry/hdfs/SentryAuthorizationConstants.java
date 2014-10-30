@@ -51,5 +51,5 @@ public class SentryAuthorizationConstants {
 
   public static final String INCLUDE_HDFS_AUTHZ_AS_ACL_KEY = CONFIG_PREFIX + 
       "include-hdfs-authz-as-acl";
-  public static final boolean INCLUDE_HDFS_AUTHZ_AS_ACL_DEFAULT = true;
+  public static final boolean INCLUDE_HDFS_AUTHZ_AS_ACL_DEFAULT = false;
 }

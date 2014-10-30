@@ -114,7 +114,7 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
       String authzObj = tableEvent.getTable().getDbName() + "."
           + tableEvent.getTable().getTableName();
       for (SentryMetastoreListenerPlugin plugin : sentryPlugins) {
-        plugin.removePath(authzObj, "*");
+        plugin.removeAllPaths(authzObj, null);
       }
     }
     // drop the privileges on the given table
@@ -160,7 +160,8 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
   public void onDropDatabase(DropDatabaseEvent dbEvent) throws MetaException {
     String authzObj = dbEvent.getDatabase().getName();
     for (SentryMetastoreListenerPlugin plugin : sentryPlugins) {
-      plugin.removePath(authzObj, "*");
+      List<String> tNames = dbEvent.getHandler().get_all_tables(authzObj);
+      plugin.removeAllPaths(authzObj, tNames);
     }
     dropSentryDbPrivileges(dbEvent.getDatabase().getName());
     if (!syncWithPolicyStore(AuthzConfVars.AUTHZ_SYNC_DROP_WITH_POLICY_STORE)) {

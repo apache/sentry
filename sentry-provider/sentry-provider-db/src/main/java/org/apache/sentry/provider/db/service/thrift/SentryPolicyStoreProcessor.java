@@ -266,10 +266,10 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       }
     } catch (SentryNoSuchObjectException e) {
       String msg = "Privilege: [server=" + request.getPrivilege().getServerName() +
-    		  ",db=" + request.getPrivilege().getDbName() +
-    		  ",table=" + request.getPrivilege().getTableName() +
-    		  ",URI=" + request.getPrivilege().getURI() +
-    		  ",action=" + request.getPrivilege().getAction() + "] doesn't exist.";
+              ",db=" + request.getPrivilege().getDbName() +
+              ",table=" + request.getPrivilege().getTableName() +
+              ",URI=" + request.getPrivilege().getURI() +
+              ",action=" + request.getPrivilege().getAction() + "] doesn't exist.";
       LOGGER.error(msg, e);
       response.setStatus(Status.NoSuchObject(msg, e));
     } catch (SentryInvalidInputException e) {
@@ -554,6 +554,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     try {
       authorize(request.getRequestorUserName(), adminGroups);
       sentryStore.dropPrivilege(request.getAuthorizable());
+      for (SentryPolicyStorePlugin plugin : sentryPlugins) {
+        plugin.onDropSentryPrivilege(request);
+      }
       response.setStatus(Status.OK()); 
     } catch (SentryAccessDeniedException e) {
       LOGGER.error(e.getMessage(), e);

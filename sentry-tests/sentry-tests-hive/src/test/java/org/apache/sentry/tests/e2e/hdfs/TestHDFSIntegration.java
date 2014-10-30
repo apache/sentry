@@ -42,6 +42,7 @@ import junit.framework.Assert;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FsStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.AclEntry;
 import org.apache.hadoop.fs.permission.AclEntryType;
@@ -97,26 +98,6 @@ import com.google.common.io.Files;
 import com.google.common.io.Resources;
 
 public class TestHDFSIntegration {
-
-  // mock user group mapping that maps user to same group
-  public static class PseudoGroupMappingService implements
-      GroupMappingServiceProvider {
-
-    @Override
-    public List<String> getGroups(String user) {
-      return Lists.newArrayList(user, System.getProperty("user.name"));
-    }
-
-    @Override
-    public void cacheGroupsRefresh() throws IOException {
-      // no-op
-    }
-
-    @Override
-    public void cacheGroupsAdd(List<String> groups) throws IOException {
-      // no-op
-    }
-  }
 
   public static class WordCountMapper extends MapReduceBase implements
       Mapper<LongWritable, Text, String, Long> {
@@ -222,6 +203,8 @@ public class TestHDFSIntegration {
         hiveConf.set("sentry.hdfs.service.client.server.rpc-address", "localhost");
         hiveConf.set("sentry.hdfs.service.client.server.rpc-port", String.valueOf(sentryPort));
         hiveConf.set("sentry.service.client.server.rpc-port", String.valueOf(sentryPort));
+//        hiveConf.set("sentry.service.server.compact.transport", "true");
+//        hiveConf.set("sentry.service.client.compact.transport", "true");
         hiveConf.set("sentry.service.security.mode", "none");
         hiveConf.set("sentry.hdfs.service.security.mode", "none");
         hiveConf.set("sentry.hdfs.init.update.retry.delay.ms", "500");
@@ -279,11 +262,32 @@ public class TestHDFSIntegration {
         .set(hiveSite.toURI().toURL());
 
         metastore = new InternalMetastoreServer(hiveConf);
-        metastore.start();
+        new Thread() {
+          @Override
+          public void run() {
+            try {
+              metastore.start();
+              while(true){}
+            } catch (Exception e) {
+              System.out.println("Could not start Hive Server");
+            }
+          }
+        }.start();
 
         hiveServer2 = new InternalHiveServer(hiveConf);
-        hiveServer2.start();
+        new Thread() {
+          @Override
+          public void run() {
+            try {
+              hiveServer2.start();
+              while(true){}
+            } catch (Exception e) {
+              System.out.println("Could not start Hive Server");
+            }
+          }
+        }.start();
 
+        Thread.sleep(10000);
         return null;
       }
     });
@@ -306,7 +310,7 @@ public class TestHDFSIntegration {
             MiniDFS.PseudoGroupMappingService.class.getName());
         Configuration.addDefaultResource("test.xml");
 
-        conf.set("sentry.authorization-provider.hdfs-path-prefixes", "/user/hive/warehouse");
+        conf.set("sentry.authorization-provider.hdfs-path-prefixes", "/user/hive/warehouse,/tmp/external");
         conf.set("sentry.authorization-provider.cache-refresh-retry-wait.ms", "5000");
         conf.set("sentry.authorization-provider.cache-stale-threshold.ms", "3000");
 
@@ -342,6 +346,20 @@ public class TestHDFSIntegration {
             + miniDFS.getFileSystem().getFileStatus(tmpPath).getGroup() + ", "
             + miniDFS.getFileSystem().getFileStatus(tmpPath).getPermission() + ", "
             + "\n\n");
+
+        int dfsSafeCheckRetry = 30;
+        boolean hasStarted = false;
+        for (int i = dfsSafeCheckRetry; i > 0; i--) {
+          if (!miniDFS.getFileSystem().isInSafeMode()) {
+            hasStarted = true;
+            System.out.println("HDFS safemode check num times : " + (31 - i));
+            break;
+          }
+        }
+        if (!hasStarted) {
+          throw new RuntimeException("HDFS hasnt exited safe mode yet..");
+        }
+
         return null;
       }
     });
@@ -362,7 +380,9 @@ public class TestHDFSIntegration {
             .put(ConfVars.HIVE_SERVER2_THRIFT_MIN_WORKER_THREADS.varname, "2");
         properties.put("hive.metastore.uris", "thrift://localhost:" + hmsPort);
         properties.put(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_NONE);
+//        properties.put("sentry.service.server.compact.transport", "true");
         properties.put("sentry.hive.testing.mode", "true");
+        properties.put("sentry.service.reporting", "CONSOLE");
         properties.put(ServerConfig.ADMIN_GROUPS, "hive,admin");
         properties.put(ServerConfig.RPC_ADDRESS, "localhost");
         properties.put(ServerConfig.RPC_PORT, String.valueOf(sentryPort < 0 ? 0 : sentryPort));
@@ -478,12 +498,7 @@ public class TestHDFSIntegration {
 
     // Create new table and verify everything is fine after restart...
     stmt.execute("create table p2 (s string) partitioned by (month int, day int)");
-    try {
-      stmt.execute("alter table p2 add partition (month=1, day=1)");
-    } catch (Exception e) {
-      // Metastore throws and exception first time after sentry restart
-      stmt.execute("alter table p2 add partition (month=1, day=1)");
-    }
+    stmt.execute("alter table p2 add partition (month=1, day=1)");
     stmt.execute("alter table p2 add partition (month=1, day=2)");
     stmt.execute("alter table p2 add partition (month=2, day=1)");
     stmt.execute("alter table p2 add partition (month=2, day=2)");
@@ -498,6 +513,73 @@ public class TestHDFSIntegration {
     stmt.execute("grant select on table p2 to role p1_admin");
     Thread.sleep(1000);
     verifyOnAllSubDirs("/user/hive/warehouse/p2", FsAction.READ_EXECUTE, "hbase", true);
+
+    // Create external table
+    writeToPath("/tmp/external/ext1", 5, "foo", "bar");
+
+    stmt.execute("create table ext1 (s string) location \'/tmp/external/ext1\'");
+    ResultSet rs = stmt.executeQuery("select * from ext1");
+    int numRows = 0;
+    while (rs.next()) { numRows++; }
+    Assert.assertEquals(5, numRows);
+
+    // Ensure existing group permissions are never returned..
+    verifyOnAllSubDirs("/tmp/external/ext1", null, "bar", false);
+    verifyOnAllSubDirs("/tmp/external/ext1", null, "hbase", false);
+
+    stmt.execute("grant all on table ext1 to role p1_admin");
+    Thread.sleep(1000);
+    verifyOnAllSubDirs("/tmp/external/ext1", FsAction.ALL, "hbase", true);
+
+    stmt.execute("revoke select on table ext1 from role p1_admin");
+    Thread.sleep(1000);
+    verifyOnAllSubDirs("/tmp/external/ext1", FsAction.WRITE_EXECUTE, "hbase", true);
+
+    // Verify database operations works correctly
+    stmt.execute("create database db1");
+    Thread.sleep(1000);
+    verifyOnAllSubDirs("/user/hive/warehouse/db1.db", null, "hbase", false);
+
+    stmt.execute("create table db1.tbl1 (s string)");
+    Thread.sleep(1000);
+    verifyOnAllSubDirs("/user/hive/warehouse/db1.db/tbl1", null, "hbase", false);
+    stmt.execute("create table db1.tbl2 (s string)");
+    Thread.sleep(1000);
+    verifyOnAllSubDirs("/user/hive/warehouse/db1.db/tbl2", null, "hbase", false);
+
+    // Verify db privileges are propagated to tables
+    stmt.execute("grant select on database db1 to role p1_admin");
+    Thread.sleep(1000);
+    verifyOnAllSubDirs("/user/hive/warehouse/db1.db/tbl1", FsAction.READ_EXECUTE, "hbase", true);
+    verifyOnAllSubDirs("/user/hive/warehouse/db1.db/tbl2", FsAction.READ_EXECUTE, "hbase", true);
+
+    stmt.execute("use db1");
+    stmt.execute("grant all on table tbl1 to role p1_admin");
+    Thread.sleep(1000);
+
+    verifyOnAllSubDirs("/user/hive/warehouse/db1.db/tbl1", FsAction.ALL, "hbase", true);
+    verifyOnAllSubDirs("/user/hive/warehouse/db1.db/tbl2", FsAction.READ_EXECUTE, "hbase", true);
+
+    // Verify recursive revoke
+    stmt.execute("revoke select on database db1 from role p1_admin");
+    Thread.sleep(1000);
+
+    verifyOnAllSubDirs("/user/hive/warehouse/db1.db/tbl1", FsAction.WRITE_EXECUTE, "hbase", true);
+    verifyOnAllSubDirs("/user/hive/warehouse/db1.db/tbl2", null, "hbase", false);
+
+    // Verify cleanup..
+    stmt.execute("drop table tbl1");
+    Thread.sleep(1000);
+    Assert.assertFalse(miniDFS.getFileSystem().exists(new Path("/user/hive/warehouse/db1.db/tbl1")));
+
+    stmt.execute("drop table tbl2");
+    Thread.sleep(1000);
+    Assert.assertFalse(miniDFS.getFileSystem().exists(new Path("/user/hive/warehouse/db1.db/tbl2")));
+
+    stmt.execute("use default");
+    stmt.execute("drop database db1");
+    Thread.sleep(1000);
+    Assert.assertFalse(miniDFS.getFileSystem().exists(new Path("/user/hive/warehouse/db1.db")));
 
     stmt.close();
     conn.close();
@@ -527,6 +609,19 @@ public class TestHDFSIntegration {
     rs.close();
   }
 
+  private void writeToPath(String path, int numRows, String user, String group) throws IOException {
+    Path p = new Path(path);
+    miniDFS.getFileSystem().mkdirs(p);
+    miniDFS.getFileSystem().setOwner(p, user, group);
+//    miniDFS.getFileSystem().setPermission(p, FsPermission.valueOf("-rwxrwx---"));
+    FSDataOutputStream f1 = miniDFS.getFileSystem().create(new Path(path + "/stuff.txt"));
+    for (int i = 0; i < numRows; i++) {
+      f1.writeChars("random" + i + "\n");
+    }
+    f1.flush();
+    f1.close();
+  }
+
   private void verifyHDFSandMR(Statement stmt) throws IOException,
       InterruptedException, SQLException, Exception {
     // hbase user should not be allowed to read...
@@ -548,8 +643,8 @@ public class TestHDFSIntegration {
     // runWordCount(new JobConf(miniMR.getConfig()), "/user/hive/warehouse/p1/month=1/day=1", "/tmp/wc_out");
 
     stmt.execute("grant select on table p1 to role p1_admin");
-
     Thread.sleep(1000);
+
     verifyOnAllSubDirs("/user/hive/warehouse/p1", FsAction.READ_EXECUTE, "hbase", true);
     // hbase user should now be allowed to read...
     hbaseUgi.doAs(new PrivilegedExceptionAction<Void>() {

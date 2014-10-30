@@ -63,6 +63,8 @@ public class ServiceConstants {
 
     public static final String SERVER_RPC_CONN_TIMEOUT = "sentry.hdfs.service.client.server.rpc-connection-timeout";
     public static final int SERVER_RPC_CONN_TIMEOUT_DEFAULT = 200000;
+    public static final String USE_COMPACT_TRANSPORT = "sentry.hdfs.service.client.compact.transport";
+    public static final boolean USE_COMPACT_TRANSPORT_DEFAULT = false;
   }
 
 }

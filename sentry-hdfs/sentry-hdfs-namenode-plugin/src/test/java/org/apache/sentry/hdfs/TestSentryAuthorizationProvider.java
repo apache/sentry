@@ -56,6 +56,7 @@ public class TestSentryAuthorizationProvider {
       public Void run() throws Exception {
         System.setProperty(MiniDFSCluster.PROP_TEST_BUILD_DATA, "target/test/data");
         Configuration conf = new HdfsConfiguration();
+        conf.setBoolean("sentry.authorization-provider.include-hdfs-authz-as-acl", true);
         conf.set(DFSConfigKeys.DFS_NAMENODE_AUTHORIZATION_PROVIDER_KEY,
             MockSentryAuthorizationProvider.class.getName());
         conf.setBoolean(DFSConfigKeys.DFS_NAMENODE_ACLS_ENABLED_KEY, true);

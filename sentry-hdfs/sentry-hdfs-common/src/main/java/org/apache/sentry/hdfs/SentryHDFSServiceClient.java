@@ -39,8 +39,10 @@ import org.apache.sentry.hdfs.service.thrift.TPathsUpdate;
 import org.apache.sentry.hdfs.service.thrift.TPermissionsUpdate;
 import org.apache.sentry.hdfs.ServiceConstants.ClientConfig;
 import org.apache.sentry.hdfs.ServiceConstants.ServerConfig;
-import org.apache.thrift.protocol.TCompactProtocol;
+import org.apache.thrift.protocol.TBinaryProtocol;
+//import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.protocol.TMultiplexedProtocol;
+import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TSaslClientTransport;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
@@ -167,9 +169,15 @@ public class SentryHDFSServiceClient {
       throw new IOException("Transport exception while opening transport: " + e.getMessage(), e);
     }
     LOGGER.info("Successfully opened transport: " + transport + " to " + serverAddress);
+    TProtocol tProtocol = new TBinaryProtocol(transport);
+//    if (conf.getBoolean(ClientConfig.USE_COMPACT_TRANSPORT,
+//        ClientConfig.USE_COMPACT_TRANSPORT_DEFAULT)) {
+//      tProtocol = new TCompactProtocol(transport);
+//    } else {
+//      tProtocol = new TBinaryProtocol(transport);
+//    }
     TMultiplexedProtocol protocol = new TMultiplexedProtocol(
-      new TCompactProtocol(transport),
-      SentryHDFSServiceClient.SENTRY_HDFS_SERVICE_NAME);
+      tProtocol, SentryHDFSServiceClient.SENTRY_HDFS_SERVICE_NAME);
     client = new SentryHDFSService.Client(protocol);
     LOGGER.info("Successfully created client");
   }

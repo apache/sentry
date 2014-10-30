@@ -452,6 +452,7 @@ limitations under the License.
           <downloadSources>true</downloadSources>
           <workspaceActiveCodeStyleProfileName>GoogleStyle</workspaceActiveCodeStyleProfileName>
           <workspaceCodeStylesURL>https://google-styleguide.googlecode.com/svn/trunk/eclipse-java-google-style.xml</workspaceCodeStylesURL>
+          <sourceIncludes><include>src/gen/thrift/gen-javabean/**</include></sourceIncludes>
         </configuration>
       </plugin>
 

@@ -80,9 +80,13 @@ public class SentryHDFSServiceProcessorFactory extends ProcessorFactory{
           transport = ((TSaslServerTransport) transport).getUnderlyingTransport();
         } else if (transport instanceof TSaslClientTransport) {
           transport = ((TSaslClientTransport) transport).getUnderlyingTransport();
-        } else if (transport instanceof TSocket) {
-          return (TSocket) transport;
+        } else {
+          if (!(transport instanceof TSocket)) {
+            LOGGER.warn("Transport class [" + transport.getClass().getName() + "] is not of type TSocket");
+            return null;
+          }
         }
+        return (TSocket) transport;
       }
       return null;
     }

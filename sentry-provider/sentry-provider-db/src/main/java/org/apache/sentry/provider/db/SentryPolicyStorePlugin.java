@@ -25,6 +25,7 @@ import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleAddGroupsReq
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleDeleteGroupsRequest;
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleGrantPrivilegeRequest;
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleRevokePrivilegeRequest;
+import org.apache.sentry.provider.db.service.thrift.TDropPrivilegesRequest;
 import org.apache.sentry.provider.db.service.thrift.TDropSentryRoleRequest;
 import org.apache.sentry.provider.db.service.thrift.TRenamePrivilegesRequest;
 
@@ -53,5 +54,7 @@ public interface SentryPolicyStorePlugin {
   public void onDropSentryRole(TDropSentryRoleRequest tRequest) throws SentryPluginException;
 
   public void onRenameSentryPrivilege(TRenamePrivilegesRequest request) throws SentryPluginException;
+
+  public void onDropSentryPrivilege(TDropPrivilegesRequest request) throws SentryPluginException;
 
 }

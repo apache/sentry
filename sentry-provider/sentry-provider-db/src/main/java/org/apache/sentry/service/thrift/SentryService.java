@@ -207,7 +207,7 @@ public class SentryService implements Callable {
     TThreadPoolServer.Args args = new TThreadPoolServer.Args(
         serverTransport).processor(processor)
         .transportFactory(transportFactory)
-        .protocolFactory(new TCompactProtocol.Factory())
+        .protocolFactory(new TBinaryProtocol.Factory())
         .minWorkerThreads(minThreads).maxWorkerThreads(maxThreads);
     thriftServer = new TThreadPoolServer(args);
     LOGGER.info("Serving on " + address);
