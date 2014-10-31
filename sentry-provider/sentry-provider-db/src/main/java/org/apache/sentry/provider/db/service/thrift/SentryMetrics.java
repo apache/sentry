@@ -40,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 public class SentryMetrics {
   private static SentryMetrics sentryMetrics = null;
   private boolean reportingInitialized = false;
+  private boolean gaugesAdded = false;
 
   public final Timer createRoleTimer = SentryMetricsServletContextListener.METRIC_REGISTRY.timer(
       MetricRegistry.name(SentryPolicyStoreProcessor.class, "create-role"));
@@ -84,9 +85,12 @@ public class SentryMetrics {
   }
 
   public void addSentryStoreGauges(SentryStore sentryStore) {
-    addGauge(SentryStore.class, "role_count", sentryStore.getRoleCountGauge());
-    addGauge(SentryStore.class, "privilege_count", sentryStore.getPrivilegeCountGauge());
-    addGauge(SentryStore.class, "group_count", sentryStore.getGroupCountGauge());
+    if(!gaugesAdded) {
+      addGauge(SentryStore.class, "role_count", sentryStore.getRoleCountGauge());
+      addGauge(SentryStore.class, "privilege_count", sentryStore.getPrivilegeCountGauge());
+      addGauge(SentryStore.class, "group_count", sentryStore.getGroupCountGauge());
+      gaugesAdded = true;
+    }
   }
 
 

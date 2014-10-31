@@ -27,7 +27,6 @@ import java.net.ServerSocket;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.EventListener;
-import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -222,11 +221,15 @@ public class SentryService implements Callable {
   }
 
   private void startSentryWebServer() throws Exception{
-    List<EventListener> listenerList = new ArrayList<EventListener>();
-    listenerList.add(new SentryHealthCheckServletContextListener());
-    listenerList.add(new SentryMetricsServletContextListener());
-    sentryWebServer = new SentryWebServer(listenerList, webServerPort);
-    sentryWebServer.start();
+    Boolean sentryReportingEnable = conf.getBoolean(ServerConfig.SENTRY_WEB_ENABLE,
+        ServerConfig.SENTRY_WEB_ENABLE_DEFAULT);
+    if(sentryReportingEnable) {
+      List<EventListener> listenerList = new ArrayList<EventListener>();
+      listenerList.add(new SentryHealthCheckServletContextListener());
+      listenerList.add(new SentryMetricsServletContextListener());
+      sentryWebServer = new SentryWebServer(listenerList, webServerPort);
+      sentryWebServer.start();
+    }
 
   }
 

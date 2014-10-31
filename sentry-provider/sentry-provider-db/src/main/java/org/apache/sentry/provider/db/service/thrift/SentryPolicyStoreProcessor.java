@@ -81,22 +81,23 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     isReady = true;
     adminGroups = ImmutableSet.copyOf(toTrimedLower(Sets.newHashSet(conf.getStrings(
         ServerConfig.ADMIN_GROUPS, new String[]{}))));
-    initReporting();
+    initMetrics();
   }
 
-  private void initReporting() {
-    String sentryReporting = conf.get(ServerConfig.SENTRY_REPORTING);
+  private void initMetrics() {
+    sentryMetrics = SentryMetrics.getInstance();
+    sentryMetrics.addSentryStoreGauges(sentryStore);
+
+    String sentryReporting = conf.get(ServerConfig.SENTRY_REPORTER);
     if( sentryReporting != null) {
       SentryMetrics.Reporting reporting;
       try {
         reporting = SentryMetrics.Reporting.valueOf(sentryReporting.toUpperCase());
-        sentryMetrics = SentryMetrics.getInstance();
-        sentryMetrics.addSentryStoreGauges(sentryStore);
         sentryMetrics.initReporting(reporting);
 
       } catch (IllegalArgumentException e) {
-        LOGGER.warn("Metrics reporting not configured correctly, please set " + ServerConfig.SENTRY_REPORTING +
-            " to: " + ServerConfig.SENTRY_REPORTING_CONSOLE + "/" + ServerConfig.SENTRY_REPORTING_JMX);
+        LOGGER.warn("Metrics reporting not configured correctly, please set " + ServerConfig.SENTRY_REPORTER +
+            " to: " + ServerConfig.SENTRY_REPORTER_CONSOLE + "/" + ServerConfig.SENTRY_REPORTER_JMX);
       }
     }
   }

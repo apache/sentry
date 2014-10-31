@@ -360,7 +360,6 @@ public abstract class AbstractTestWithStaticConfiguration {
     for (Map.Entry<String, String> entry : properties.entrySet()) {
       sentryConf.set(entry.getKey(), entry.getValue());
     }
-    sentryConf.set(ServerConfig.SENTRY_REPORTING, ServerConfig.SENTRY_REPORTING_CONSOLE);
     sentryServer = new SentryServiceFactory().create(sentryConf);
     properties.put(ClientConfig.SERVER_RPC_ADDRESS, sentryServer.getAddress()
         .getHostName());
