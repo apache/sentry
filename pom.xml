@@ -85,7 +85,7 @@ limitations under the License.
     <zookeeper.version>${cdh.zookeeper.version}</zookeeper.version>
     <pig.version>${cdh.pig.version}</pig.version>
     <jackson.version>1.8.8</jackson.version>
-    <metrics.version>3.1.0</metrics.version>
+    <metrics.version>3.0.2</metrics.version>
     <jettyVersion>7.6.16.v20140903</jettyVersion>
     <curator.version>2.6.0</curator.version>
    <!--  <curator.version>cdh.curator.version</curator.version> -->
