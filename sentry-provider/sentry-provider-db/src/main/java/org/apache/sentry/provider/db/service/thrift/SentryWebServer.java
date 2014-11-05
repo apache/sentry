@@ -52,4 +52,7 @@ public class SentryWebServer {
   public void stop() throws Exception{
     server.stop();
   }
+  public boolean isAlive() {
+    return server != null && server.isStarted();
+  }
 }

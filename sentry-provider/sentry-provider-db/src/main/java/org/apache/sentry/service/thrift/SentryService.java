@@ -60,6 +60,7 @@ import org.apache.thrift.transport.TSaslServerTransport;
 import org.apache.thrift.transport.TServerSocket;
 import org.apache.thrift.transport.TServerTransport;
 import org.apache.thrift.transport.TTransportFactory;
+import org.eclipse.jetty.util.MultiException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -258,18 +259,51 @@ public class SentryService implements Callable {
   }
 
   public synchronized void stop() throws Exception{
-    if (status == Status.NOT_STARTED) {
-      return;
-    }
+    MultiException exception = null;
     LOGGER.info("Attempting to stop...");
-
-    if (thriftServer.isServing()) {
-      thriftServer.stop();
+    if (isRunning()) {
+      LOGGER.info("Attempting to stop sentry thrift service...");
+      try {
+        thriftServer.stop();
+        thriftServer = null;
+        status = Status.NOT_STARTED;
+      } catch (Exception e) {
+        LOGGER.error("Error while stopping sentry thrift service", e);
+        exception = addMultiException(exception,e);
+      }
+    } else {
+      thriftServer = null;
+      status = Status.NOT_STARTED;
+      LOGGER.info("Sentry thrift service is already stopped...");
     }
-    thriftServer = null;
-    stopSentryWebServer();
-    status = Status.NOT_STARTED;
+    if (isWebServerRunning()) {
+      try {
+        LOGGER.info("Attempting to stop sentry web service...");
+        stopSentryWebServer();
+      } catch (Exception e) {
+        LOGGER.error("Error while stopping sentry web service", e);
+        exception = addMultiException(exception,e);
+      }
+    } else {
+      LOGGER.info("Sentry web service is already stopped...");
+    }
+    if (exception != null) {
+      exception.ifExceptionThrow();
+    }
     LOGGER.info("Stopped...");
+  }
+
+  private MultiException addMultiException(MultiException exception, Exception e) {
+    if(exception == null){
+      exception = new MultiException();
+    }
+    exception.add(e);
+    return exception;
+  }
+
+  private boolean isWebServerRunning() {
+    return sentryWebServer != null
+        && sentryWebServer.isAlive();
   }
 
   private static int findFreePort() {
