@@ -26,14 +26,18 @@ import org.apache.sentry.hdfs.service.thrift.SentryHDFSService;
 import org.apache.sentry.hdfs.service.thrift.TAuthzUpdateResponse;
 import org.apache.sentry.hdfs.service.thrift.TPathsUpdate;
 import org.apache.sentry.hdfs.service.thrift.TPermissionsUpdate;
+import org.apache.sentry.provider.db.service.thrift.SentryMetrics;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.codahale.metrics.Timer;
+
 public class SentryHDFSServiceProcessor implements SentryHDFSService.Iface {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryHDFSServiceProcessor.class);
-
+  private final SentryMetrics sentryMetrics = SentryMetrics.getInstance();
+  
   @Override
   public TAuthzUpdateResponse get_all_authz_updates_from(long permSeqNum, long pathSeqNum)
       throws TException {
@@ -47,7 +51,10 @@ public class SentryHDFSServiceProcessor implements SentryHDFSService.Iface {
       }
       List<PermissionsUpdate> permUpdates = SentryPlugin.instance.getAllPermsUpdatesFrom(permSeqNum);
       List<PathsUpdate> pathUpdates = SentryPlugin.instance.getAllPathsUpdatesFrom(pathSeqNum);
+      final Timer.Context timerContext = sentryMetrics.getAllAuthzUpdatesTimer.time();
       try {
+        List<PermissionsUpdate> permUpdates = SentryPlugin.instance.getAllPermsUpdatesFrom(permSeqNum);
+        List<PathsUpdate> pathUpdates = SentryPlugin.instance.getAllPathsUpdatesFrom(pathSeqNum);
         for (PathsUpdate update : pathUpdates) {
           if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("### Sending PATH preUpdate seq [" + update.getSeqNum() + "] ###");
@@ -80,6 +87,8 @@ public class SentryHDFSServiceProcessor implements SentryHDFSService.Iface {
       } catch (Exception e) {
         LOGGER.error("Error Sending updates to downstream Cache", e);
         throw new TException(e);
+      } finally {
+        timerContext.stop();
       }
     } else {
       LOGGER.error("SentryPlugin not initialized yet !!");
@@ -90,6 +99,7 @@ public class SentryHDFSServiceProcessor implements SentryHDFSService.Iface {
 
   @Override
   public void handle_hms_notification(TPathsUpdate update) throws TException {
+    final Timer.Context timerContext = sentryMetrics.handleHmsNotificationTimer.time();
     try {
       PathsUpdate hmsUpdate = new PathsUpdate(update);
       if (SentryPlugin.instance != null) {
@@ -101,7 +111,10 @@ public class SentryHDFSServiceProcessor implements SentryHDFSService.Iface {
     } catch (Exception e) {
       LOGGER.error("Error handling notification from HMS", e);
       throw new TException(e);
+    } finally {
+      timerContext.stop();
     }
+
   }
 
   @Override

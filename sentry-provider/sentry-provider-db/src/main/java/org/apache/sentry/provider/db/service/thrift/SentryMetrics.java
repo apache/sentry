@@ -18,6 +18,7 @@
 package org.apache.sentry.provider.db.service.thrift;
 
 import com.codahale.metrics.ConsoleReporter;
+import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.JmxReporter;
 import com.codahale.metrics.Metric;
@@ -28,6 +29,7 @@ import com.codahale.metrics.jvm.BufferPoolMetricSet;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
+
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 
 import java.lang.management.ManagementFactory;
@@ -68,6 +70,14 @@ public class SentryMetrics {
       MetricRegistry.name(SentryPolicyStoreProcessor.class, "list-privileges-for-provider"));
   public final Timer listPrivilegesByAuthorizableTimer = SentryMetricsServletContextListener.METRIC_REGISTRY.timer(
       MetricRegistry.name(SentryPolicyStoreProcessor.class, "list-privileges-by-authorizable"));
+  public final Timer getAllAuthzUpdatesTimer = SentryMetricsServletContextListener.METRIC_REGISTRY.timer(
+      MetricRegistry.name(SentryPolicyStoreProcessor.class, "get-all-authz-updates-from"));
+  public final Counter privilegeUpdateCounter =
+      SentryMetricsServletContextListener.METRIC_REGISTRY.counter("hdfs-privilege-updates");
+  public final Counter numPathUpdatesCounter =
+      SentryMetricsServletContextListener.METRIC_REGISTRY.counter("hdfs-num-path-updates");
+  public final Timer handleHmsNotificationTimer = SentryMetricsServletContextListener.METRIC_REGISTRY.timer(
+      MetricRegistry.name(SentryPolicyStoreProcessor.class, "handle_hms_notification"));
 
   private SentryMetrics() {
     registerMetricSet("gc", new GarbageCollectorMetricSet(), SentryMetricsServletContextListener.METRIC_REGISTRY);

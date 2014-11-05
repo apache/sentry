@@ -34,6 +34,7 @@ import org.apache.sentry.hdfs.service.thrift.TRoleChanges;
 import org.apache.sentry.provider.db.SentryPolicyStorePlugin;
 import org.apache.sentry.provider.db.SentryPolicyStorePlugin.SentryPluginException;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
+import org.apache.sentry.provider.db.service.thrift.SentryMetrics;
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleAddGroupsRequest;
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleDeleteGroupsRequest;
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleGrantPrivilegeRequest;
@@ -120,11 +121,15 @@ public class SentryPlugin implements SentryPolicyStorePlugin {
   }
 
   public List<PathsUpdate> getAllPathsUpdatesFrom(long pathSeqNum) {
-    return pathsUpdater.getAllUpdatesFrom(pathSeqNum);
+    List<PathsUpdate> allPathUpdates = pathsUpdater.getAllUpdatesFrom(pathSeqNum);
+    SentryMetrics.getInstance().numPathUpdatesCounter.inc(allPathUpdates.size());
+    return allPathUpdates;
   }
 
   public List<PermissionsUpdate> getAllPermsUpdatesFrom(long permSeqNum) {
-    return permsUpdater.getAllUpdatesFrom(permSeqNum);
+    List<PermissionsUpdate> allPermUpdates = permsUpdater.getAllUpdatesFrom(permSeqNum);
+    SentryMetrics.getInstance().privilegeUpdateCounter.inc(allPermUpdates.size());
+    return allPermUpdates;
   }
 
   public void handlePathUpdateNotification(PathsUpdate update)

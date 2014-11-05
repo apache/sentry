@@ -48,6 +48,7 @@ import org.apache.hadoop.security.SaslRpcServer.AuthMethod;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.sentry.Command;
 import org.apache.sentry.provider.db.service.thrift.SentryHealthCheckServletContextListener;
+import org.apache.sentry.provider.db.service.thrift.SentryMetrics;
 import org.apache.sentry.provider.db.service.thrift.SentryMetricsServletContextListener;
 import org.apache.sentry.provider.db.service.thrift.SentryWebServer;
 import org.apache.sentry.service.thrift.ServiceConstants.ConfUtilties;
