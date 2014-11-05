@@ -105,7 +105,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     // test perm UDF with 'using file' syntax
     statement
         .execute("CREATE FUNCTION printf_test_perm AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf' "
-            + " using file 'file:///tmp'");
+            + " using file 'file://" + udfLocation + "'");
     statement.execute("DROP FUNCTION printf_test_perm");
 
     context.close();
