@@ -105,8 +105,10 @@ public class TestUpdateableAuthzPaths {
     // Verify name change
     assertEquals("db1", authzPaths.findAuthzObjectExactMatch(new String[]{"db1"}));
     assertEquals("db1.xtbl11", authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "xtbl11"}));
-    assertEquals("db1.xtbl11", authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "xtbl11", "part111"}));
-    assertEquals("db1.xtbl11", authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "xtbl11", "part112"}));
+    // Explicit set location has to be done on the partition else it will be associated to
+    // the old location
+    assertEquals("db1.xtbl11", authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "tbl11", "part111"}));
+    assertEquals("db1.xtbl11", authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "tbl11", "part112"}));
     // Verify other tables are not touched
     assertNull(authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "xtbl12"}));
     assertNull(authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "xtbl12", "part121"}));

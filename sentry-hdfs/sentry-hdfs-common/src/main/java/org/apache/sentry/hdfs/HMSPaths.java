@@ -20,6 +20,7 @@ package org.apache.sentry.hdfs;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -453,15 +454,16 @@ public class HMSPaths implements AuthzPaths {
         root.find(oldPathElems.toArray(new String[oldPathElems.size()]), false);
     if ((entry != null)&&(entry.getAuthzObj().equals(oldName))) {
       // Update pathElements
-      for (int i = newPathElems.size() - 1; i > -1; i--) {
-        if (entry.parent != null) {
-          if (!entry.pathElement.equals(newPathElems.get(i))) {
-            entry.parent.getChildren().put(newPathElems.get(i), entry);
-            entry.parent.getChildren().remove(entry.pathElement);
-          }
-        }
-        entry.pathElement = newPathElems.get(i);
-        entry = entry.parent;
+      String[] newPath = newPathElems.toArray(new String[newPathElems.size()]);
+      // Can't use Lists.newArrayList() because of whacky generics
+      List<List<String>> pathElemsAsList = new LinkedList<List<String>>();
+      pathElemsAsList.add(oldPathElems);
+      deletePathsFromAuthzObject(oldName, pathElemsAsList);
+      if (isUnderPrefix(newPath)) {
+        // Can't use Lists.newArrayList() because of whacky generics
+        pathElemsAsList = new LinkedList<List<String>>();
+        pathElemsAsList.add(newPathElems);
+        addPathsToAuthzObject(oldName, pathElemsAsList);
       }
       // This would be true only for table rename
       if (!oldName.equals(newName)) {

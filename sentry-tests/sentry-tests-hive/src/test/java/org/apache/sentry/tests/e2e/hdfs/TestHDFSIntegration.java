@@ -42,7 +42,6 @@ import junit.framework.Assert;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FsStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.AclEntry;
 import org.apache.hadoop.fs.permission.AclEntryType;
@@ -70,7 +69,6 @@ import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapred.RunningJob;
 import org.apache.hadoop.mapred.TextInputFormat;
 import org.apache.hadoop.mapred.TextOutputFormat;
-import org.apache.hadoop.security.GroupMappingServiceProvider;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.binding.hive.SentryHiveAuthorizationTaskFactoryImpl;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
@@ -92,7 +90,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
@@ -128,6 +125,9 @@ public class TestHDFSIntegration {
     }
 
   }
+
+  private static final int NUM_RETRIES = 10;
+  private static final int RETRY_WAIT = 1000;
 
   private MiniDFSCluster miniDFS;
   private MiniMRClientCluster miniMR;
@@ -214,7 +214,6 @@ public class TestHDFSIntegration {
         hiveConf.set("sentry.hive.provider.resource", policyFileLocation.getPath());
         hiveConf.set("sentry.hive.testing.mode", "true");
         hiveConf.set("sentry.hive.server", "server1");
-        
 
         hiveConf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING, ServerConfig.SENTRY_STORE_LOCAL_GROUP_MAPPING);
         hiveConf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE, policyFileLocation.getPath());
@@ -382,7 +381,7 @@ public class TestHDFSIntegration {
         properties.put(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_NONE);
 //        properties.put("sentry.service.server.compact.transport", "true");
         properties.put("sentry.hive.testing.mode", "true");
-        properties.put("sentry.service.reporting", "CONSOLE");
+        properties.put("sentry.service.reporting", "JMX");
         properties.put(ServerConfig.ADMIN_GROUPS, "hive,admin");
         properties.put(ServerConfig.RPC_ADDRESS, "localhost");
         properties.put(ServerConfig.RPC_PORT, String.valueOf(sentryPort < 0 ? 0 : sentryPort));
@@ -437,8 +436,7 @@ public class TestHDFSIntegration {
   }
 
   @Test
-  public void testEnd2End() throws Exception {
-    Thread.sleep(1000);
+  public void testEnd2End() throws Throwable {
 
     Connection conn = hiveServer2.createConnection("hive", "hive");
     Statement stmt = conn.createStatement();
@@ -461,39 +459,31 @@ public class TestHDFSIntegration {
     verifyHDFSandMR(stmt);
 
     stmt.execute("revoke select on table p1 from role p1_admin");
-    Thread.sleep(1000);
     verifyOnAllSubDirs("/user/hive/warehouse/p1", null, "hbase", false);
 
     stmt.execute("grant all on table p1 to role p1_admin");
-    Thread.sleep(1000);
     verifyOnAllSubDirs("/user/hive/warehouse/p1", FsAction.ALL, "hbase", true);
 
     stmt.execute("revoke select on table p1 from role p1_admin");
-    Thread.sleep(1000);
     verifyOnAllSubDirs("/user/hive/warehouse/p1", FsAction.WRITE_EXECUTE, "hbase", true);
 
     // Verify table rename works
     stmt.execute("alter table p1 rename to p3");
-    Thread.sleep(1000);
     verifyOnAllSubDirs("/user/hive/warehouse/p3", FsAction.WRITE_EXECUTE, "hbase", true);
 
     stmt.execute("alter table p3 partition (month=1, day=1) rename to partition (month=1, day=3)");
-    Thread.sleep(1000);
     verifyOnAllSubDirs("/user/hive/warehouse/p3", FsAction.WRITE_EXECUTE, "hbase", true);
     verifyOnAllSubDirs("/user/hive/warehouse/p3/month=1/day=3", FsAction.WRITE_EXECUTE, "hbase", true);
 
     sentryService.stop();
     // Verify that Sentry permission are still enforced for the "stale" period
-    Thread.sleep(500);
     verifyOnAllSubDirs("/user/hive/warehouse/p3", FsAction.WRITE_EXECUTE, "hbase", true);
 
     // Verify that Sentry permission are NOT enforced AFTER "stale" period
-    Thread.sleep(3000);
     verifyOnAllSubDirs("/user/hive/warehouse/p3", null, "hbase", false);
 
     startSentry();
     // Verify that After Sentry restart permissions are re-enforced
-    Thread.sleep(5000);
     verifyOnAllSubDirs("/user/hive/warehouse/p3", FsAction.WRITE_EXECUTE, "hbase", true);
 
     // Create new table and verify everything is fine after restart...
@@ -503,86 +493,136 @@ public class TestHDFSIntegration {
     stmt.execute("alter table p2 add partition (month=2, day=1)");
     stmt.execute("alter table p2 add partition (month=2, day=2)");
 
-    Thread.sleep(1000);
     verifyOnAllSubDirs("/user/hive/warehouse/p2", null, "hbase", false);
 
     stmt.execute("grant select on table p2 to role p1_admin");
-    Thread.sleep(1000);
     verifyOnAllSubDirs("/user/hive/warehouse/p2", FsAction.READ_EXECUTE, "hbase", true);
 
     stmt.execute("grant select on table p2 to role p1_admin");
-    Thread.sleep(1000);
     verifyOnAllSubDirs("/user/hive/warehouse/p2", FsAction.READ_EXECUTE, "hbase", true);
 
     // Create external table
     writeToPath("/tmp/external/ext1", 5, "foo", "bar");
 
     stmt.execute("create table ext1 (s string) location \'/tmp/external/ext1\'");
-    ResultSet rs = stmt.executeQuery("select * from ext1");
-    int numRows = 0;
-    while (rs.next()) { numRows++; }
-    Assert.assertEquals(5, numRows);
+    verifyQuery(stmt, "ext1", 5);
 
     // Ensure existing group permissions are never returned..
     verifyOnAllSubDirs("/tmp/external/ext1", null, "bar", false);
     verifyOnAllSubDirs("/tmp/external/ext1", null, "hbase", false);
 
     stmt.execute("grant all on table ext1 to role p1_admin");
-    Thread.sleep(1000);
     verifyOnAllSubDirs("/tmp/external/ext1", FsAction.ALL, "hbase", true);
 
     stmt.execute("revoke select on table ext1 from role p1_admin");
-    Thread.sleep(1000);
     verifyOnAllSubDirs("/tmp/external/ext1", FsAction.WRITE_EXECUTE, "hbase", true);
 
     // Verify database operations works correctly
     stmt.execute("create database db1");
-    Thread.sleep(1000);
     verifyOnAllSubDirs("/user/hive/warehouse/db1.db", null, "hbase", false);
 
     stmt.execute("create table db1.tbl1 (s string)");
-    Thread.sleep(1000);
     verifyOnAllSubDirs("/user/hive/warehouse/db1.db/tbl1", null, "hbase", false);
     stmt.execute("create table db1.tbl2 (s string)");
-    Thread.sleep(1000);
     verifyOnAllSubDirs("/user/hive/warehouse/db1.db/tbl2", null, "hbase", false);
 
     // Verify db privileges are propagated to tables
     stmt.execute("grant select on database db1 to role p1_admin");
-    Thread.sleep(1000);
     verifyOnAllSubDirs("/user/hive/warehouse/db1.db/tbl1", FsAction.READ_EXECUTE, "hbase", true);
     verifyOnAllSubDirs("/user/hive/warehouse/db1.db/tbl2", FsAction.READ_EXECUTE, "hbase", true);
 
     stmt.execute("use db1");
     stmt.execute("grant all on table tbl1 to role p1_admin");
-    Thread.sleep(1000);
 
     verifyOnAllSubDirs("/user/hive/warehouse/db1.db/tbl1", FsAction.ALL, "hbase", true);
     verifyOnAllSubDirs("/user/hive/warehouse/db1.db/tbl2", FsAction.READ_EXECUTE, "hbase", true);
 
     // Verify recursive revoke
     stmt.execute("revoke select on database db1 from role p1_admin");
-    Thread.sleep(1000);
 
     verifyOnAllSubDirs("/user/hive/warehouse/db1.db/tbl1", FsAction.WRITE_EXECUTE, "hbase", true);
     verifyOnAllSubDirs("/user/hive/warehouse/db1.db/tbl2", null, "hbase", false);
 
     // Verify cleanup..
     stmt.execute("drop table tbl1");
-    Thread.sleep(1000);
     Assert.assertFalse(miniDFS.getFileSystem().exists(new Path("/user/hive/warehouse/db1.db/tbl1")));
 
     stmt.execute("drop table tbl2");
-    Thread.sleep(1000);
     Assert.assertFalse(miniDFS.getFileSystem().exists(new Path("/user/hive/warehouse/db1.db/tbl2")));
 
     stmt.execute("use default");
     stmt.execute("drop database db1");
-    Thread.sleep(1000);
     Assert.assertFalse(miniDFS.getFileSystem().exists(new Path("/user/hive/warehouse/db1.db")));
+
+    // START : Verify external table set location..
+    writeToPath("/tmp/external/tables/ext2_before/i=1", 5, "foo", "bar");
+    writeToPath("/tmp/external/tables/ext2_before/i=2", 5, "foo", "bar");
+
+    stmt.execute("create external table ext2 (s string) partitioned by (i int) location \'/tmp/external/tables/ext2_before\'");
+    stmt.execute("alter table ext2 add partition (i=1)");
+    stmt.execute("alter table ext2 add partition (i=2)");
+    verifyQuery(stmt, "ext2", 10);
+    verifyOnAllSubDirs("/tmp/external/tables/ext2_before", null, "hbase", false);
+    stmt.execute("grant all on table ext2 to role p1_admin");
+    verifyOnPath("/tmp/external/tables/ext2_before", FsAction.ALL, "hbase", true);
+    verifyOnPath("/tmp/external/tables/ext2_before/i=1", FsAction.ALL, "hbase", true);
+    verifyOnPath("/tmp/external/tables/ext2_before/i=2", FsAction.ALL, "hbase", true);
+    verifyOnPath("/tmp/external/tables/ext2_before/i=1/stuff.txt", FsAction.ALL, "hbase", true);
+    verifyOnPath("/tmp/external/tables/ext2_before/i=2/stuff.txt", FsAction.ALL, "hbase", true);
+
+    writeToPath("/tmp/external/tables/ext2_after/i=1", 6, "foo", "bar");
+    writeToPath("/tmp/external/tables/ext2_after/i=2", 6, "foo", "bar");
+
+    stmt.execute("alter table ext2 set location \'hdfs:///tmp/external/tables/ext2_after\'");
+    // Even though table location is altered, partition location is still old (still 10 rows)
+    verifyQuery(stmt, "ext2", 10);
+    // You have to explicitly alter partition location..
+    verifyOnPath("/tmp/external/tables/ext2_before", null, "hbase", false);
+    verifyOnPath("/tmp/external/tables/ext2_before/i=1", FsAction.ALL, "hbase", true);
+    verifyOnPath("/tmp/external/tables/ext2_before/i=2", FsAction.ALL, "hbase", true);
+    verifyOnPath("/tmp/external/tables/ext2_before/i=1/stuff.txt", FsAction.ALL, "hbase", true);
+    verifyOnPath("/tmp/external/tables/ext2_before/i=2/stuff.txt", FsAction.ALL, "hbase", true);
+
+    stmt.execute("alter table ext2 partition (i=1) set location \'hdfs:///tmp/external/tables/ext2_after/i=1\'");
+    stmt.execute("alter table ext2 partition (i=2) set location \'hdfs:///tmp/external/tables/ext2_after/i=2\'");
+    // Now that partition location is altered, it picks up new data (12 rows instead of 10)
+    verifyQuery(stmt, "ext2", 12);
+
+    verifyOnPath("/tmp/external/tables/ext2_before", null, "hbase", false);
+    verifyOnPath("/tmp/external/tables/ext2_before/i=1", null, "hbase", false);
+    verifyOnPath("/tmp/external/tables/ext2_before/i=2", null, "hbase", false);
+    verifyOnPath("/tmp/external/tables/ext2_before/i=1/stuff.txt", null, "hbase", false);
+    verifyOnPath("/tmp/external/tables/ext2_before/i=2/stuff.txt", null, "hbase", false);
+    verifyOnPath("/tmp/external/tables/ext2_after", FsAction.ALL, "hbase", true);
+    verifyOnPath("/tmp/external/tables/ext2_after/i=1", FsAction.ALL, "hbase", true);
+    verifyOnPath("/tmp/external/tables/ext2_after/i=2", FsAction.ALL, "hbase", true);
+    verifyOnPath("/tmp/external/tables/ext2_after/i=1/stuff.txt", FsAction.ALL, "hbase", true);
+    verifyOnPath("/tmp/external/tables/ext2_after/i=2/stuff.txt", FsAction.ALL, "hbase", true);
+    // END : Verify external table set location..
 
     stmt.close();
     conn.close();
+  }
+
+  private void verifyQuery(Statement stmt, String table, int n) throws Throwable {
+    verifyQuery(stmt, table, n, NUM_RETRIES);
+  }
+  
+  private void verifyQuery(Statement stmt, String table, int n, int retry) throws Throwable {
+    ResultSet rs = null;
+    try {
+      rs = stmt.executeQuery("select * from " + table);
+      int numRows = 0;
+      while (rs.next()) { numRows++; }
+      Assert.assertEquals(n, numRows);
+    } catch (Throwable th) {
+      if (retry > 0) {
+        Thread.sleep(RETRY_WAIT);
+        verifyQuery(stmt, table, n, retry - 1);
+      } else {
+        throw th;
+      }
+    }
   }
 
   private void loadData(Statement stmt) throws IOException, SQLException {
@@ -620,10 +660,11 @@ public class TestHDFSIntegration {
     }
     f1.flush();
     f1.close();
+    miniDFS.getFileSystem().setOwner(new Path(path + "/stuff.txt"), "asuresh", "supergroup");
+    miniDFS.getFileSystem().setPermission(new Path(path + "/stuff.txt"), FsPermission.valueOf("-rwxrwx---"));
   }
 
-  private void verifyHDFSandMR(Statement stmt) throws IOException,
-      InterruptedException, SQLException, Exception {
+  private void verifyHDFSandMR(Statement stmt) throws Throwable {
     // hbase user should not be allowed to read...
     UserGroupInformation hbaseUgi = UserGroupInformation.createUserForTesting("hbase", new String[] {"hbase"});
     hbaseUgi.doAs(new PrivilegedExceptionAction<Void>() {
@@ -643,7 +684,6 @@ public class TestHDFSIntegration {
     // runWordCount(new JobConf(miniMR.getConfig()), "/user/hive/warehouse/p1/month=1/day=1", "/tmp/wc_out");
 
     stmt.execute("grant select on table p1 to role p1_admin");
-    Thread.sleep(1000);
 
     verifyOnAllSubDirs("/user/hive/warehouse/p1", FsAction.READ_EXECUTE, "hbase", true);
     // hbase user should now be allowed to read...
@@ -666,21 +706,41 @@ public class TestHDFSIntegration {
 
   }
 
-  private void verifyOnAllSubDirs(String path, FsAction fsAction, String group, boolean groupShouldExist) throws Exception {
-    verifyOnAllSubDirs(new Path(path), fsAction, group, groupShouldExist);
+  private void verifyOnAllSubDirs(String path, FsAction fsAction, String group, boolean groupShouldExist) throws Throwable {
+    verifyOnAllSubDirs(path, fsAction, group, groupShouldExist, true);
   }
 
-  private void verifyOnAllSubDirs(Path p, FsAction fsAction, String group, boolean groupShouldExist) throws Exception {
-    FileStatus fStatus = miniDFS.getFileSystem().getFileStatus(p);
-    if (groupShouldExist) {
-      Assert.assertEquals(fsAction, getAcls(p).get(group));
-    } else {
-      Assert.assertFalse(getAcls(p).containsKey(group));
+  private void verifyOnPath(String path, FsAction fsAction, String group, boolean groupShouldExist) throws Throwable {
+    verifyOnAllSubDirs(path, fsAction, group, groupShouldExist, false);
+  }
+
+  private void verifyOnAllSubDirs(String path, FsAction fsAction, String group, boolean groupShouldExist, boolean recurse) throws Throwable {
+    verifyOnAllSubDirs(new Path(path), fsAction, group, groupShouldExist, recurse, NUM_RETRIES);
+  }
+
+  private void verifyOnAllSubDirs(Path p, FsAction fsAction, String group, boolean groupShouldExist, boolean recurse, int retry) throws Throwable {
+    FileStatus fStatus = null;
+    try {
+      fStatus = miniDFS.getFileSystem().getFileStatus(p);
+      if (groupShouldExist) {
+        Assert.assertEquals(fsAction, getAcls(p).get(group));
+      } else {
+        Assert.assertFalse(getAcls(p).containsKey(group));
+      }
+    } catch (Throwable th) {
+      if (retry > 0) {
+        Thread.sleep(RETRY_WAIT);
+        verifyOnAllSubDirs(p, fsAction, group, groupShouldExist, recurse, retry - 1);
+      } else {
+        throw th;
+      }
     }
-    if (fStatus.isDirectory()) {
-      FileStatus[] children = miniDFS.getFileSystem().listStatus(p);
-      for (FileStatus fs : children) {
-        verifyOnAllSubDirs(fs.getPath(), fsAction, group, groupShouldExist);
+    if (recurse) {
+      if (fStatus.isDirectory()) {
+        FileStatus[] children = miniDFS.getFileSystem().listStatus(p);
+        for (FileStatus fs : children) {
+          verifyOnAllSubDirs(fs.getPath(), fsAction, group, groupShouldExist, recurse, NUM_RETRIES);
+        }
       }
     }
   }

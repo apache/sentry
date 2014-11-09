@@ -27,6 +27,7 @@ import org.apache.hadoop.hive.metastore.MetaStoreEventListener;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.Partition;
 import org.apache.hadoop.hive.metastore.events.AddPartitionEvent;
+import org.apache.hadoop.hive.metastore.events.AlterPartitionEvent;
 import org.apache.hadoop.hive.metastore.events.AlterTableEvent;
 import org.apache.hadoop.hive.metastore.events.CreateDatabaseEvent;
 import org.apache.hadoop.hive.metastore.events.CreateTableEvent;
@@ -180,9 +181,6 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
   @Override
   public void onAlterTable (AlterTableEvent tableEvent) throws MetaException {
     String oldTableName = null, newTableName = null;
-    if (!syncWithPolicyStore(AuthzConfVars.AUTHZ_SYNC_ALTER_WITH_POLICY_STORE)) {
-      return;
-    }
     // don't sync privileges if the operation has failed
     if (!tableEvent.getStatus()) {
       return;
@@ -194,15 +192,37 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
     if (tableEvent.getNewTable() != null) {
       newTableName = tableEvent.getNewTable().getTableName();
     }
-    if (!oldTableName.equalsIgnoreCase(newTableName)) {
-      renameSentryTablePrivilege(tableEvent.getOldTable().getDbName(),
-          oldTableName, tableEvent.getOldTable().getSd().getLocation(),
-          tableEvent.getNewTable().getDbName(), newTableName,
-          tableEvent.getNewTable().getSd().getLocation());
-    }
+    renameSentryTablePrivilege(tableEvent.getOldTable().getDbName(),
+        oldTableName, tableEvent.getOldTable().getSd().getLocation(),
+        tableEvent.getNewTable().getDbName(), newTableName,
+        tableEvent.getNewTable().getSd().getLocation());
   }
 
-  
+  @Override
+  public void onAlterPartition(AlterPartitionEvent partitionEvent)
+      throws MetaException {
+    // don't sync privileges if the operation has failed
+    if (!partitionEvent.getStatus()) {
+      return;
+    }
+    String oldLoc = null, newLoc = null;
+    if (partitionEvent.getOldPartition() != null) {
+      oldLoc = partitionEvent.getOldPartition().getSd().getLocation();
+    }
+    if (partitionEvent.getNewPartition() != null) {
+      newLoc = partitionEvent.getNewPartition().getSd().getLocation();
+    }
+
+    if ((oldLoc != null) && (newLoc != null) && (!oldLoc.equals(newLoc))) {
+      String authzObj =
+          partitionEvent.getOldPartition().getDbName() + "."
+              + partitionEvent.getOldPartition().getTableName();
+      for (SentryMetastoreListenerPlugin plugin : sentryPlugins) {
+        plugin.renameAuthzObject(authzObj, oldLoc,
+            authzObj, newLoc);
+      }
+    }
+  }
 
   @Override
   public void onAddPartition(AddPartitionEvent partitionEvent)
@@ -296,19 +316,23 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
     newAuthorizableTable.add(new Database(newDbName));
     newAuthorizableTable.add(new Table(newTabName));
 
-    try {
-      String requestorUserName = UserGroupInformation.getCurrentUser()
-          .getShortUserName();
-      SentryPolicyServiceClient sentryClient = getSentryServiceClient();
-      sentryClient.renamePrivileges(requestorUserName, oldAuthorizableTable, newAuthorizableTable);
-    } catch (SentryUserException e) {
-      throw new MetaException(
-          "Failed to remove Sentry policies for rename table " + oldDbName
-              + "." + oldTabName + "to " + newDbName + "." + newTabName
-              + " Error: " + e.getMessage());
-    } catch (IOException e) {
-      throw new MetaException("Failed to find local user " + e.getMessage());
+    if (!oldTabName.equalsIgnoreCase(newTabName)
+        && syncWithPolicyStore(AuthzConfVars.AUTHZ_SYNC_ALTER_WITH_POLICY_STORE)) {
+      try {
+        String requestorUserName = UserGroupInformation.getCurrentUser()
+            .getShortUserName();
+        SentryPolicyServiceClient sentryClient = getSentryServiceClient();
+        sentryClient.renamePrivileges(requestorUserName, oldAuthorizableTable, newAuthorizableTable);
+      } catch (SentryUserException e) {
+        throw new MetaException(
+            "Failed to remove Sentry policies for rename table " + oldDbName
+            + "." + oldTabName + "to " + newDbName + "." + newTabName
+            + " Error: " + e.getMessage());
+      } catch (IOException e) {
+        throw new MetaException("Failed to find local user " + e.getMessage());
+      }
     }
+    // The HDFS plugin needs to know if it's a path change (set location)
     for (SentryMetastoreListenerPlugin plugin : sentryPlugins) {
       plugin.renameAuthzObject(oldDbName + "." + oldTabName, oldPath,
           newDbName + "." + newTabName, newPath);
