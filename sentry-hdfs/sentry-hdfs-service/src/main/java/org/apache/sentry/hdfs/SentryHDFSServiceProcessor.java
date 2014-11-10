@@ -58,6 +58,21 @@ public class SentryHDFSServiceProcessor implements SentryHDFSService.Iface {
           }
           retVal.getAuthzPermUpdate().add(update.toThrift());
         }
+        if (LOGGER.isDebugEnabled()) {
+          StringBuilder permSeq = new StringBuilder("<");
+          for (PermissionsUpdate permUpdate : permUpdates) {
+            permSeq.append(permUpdate.getSeqNum()).append(",");
+          }
+          permSeq.append(">");
+          StringBuilder pathSeq = new StringBuilder("<");
+          for (PathsUpdate pathUpdate : pathUpdates) {
+            pathSeq.append(pathUpdate.getSeqNum()).append(",");
+          }
+          pathSeq.append(">");
+          LOGGER.debug("#### Updates requested from HDFS ["
+              + "permReq=" + permSeqNum + ", permResp=" + permSeq + "] "
+              + "[pathReq=" + pathSeqNum + ", pathResp=" + pathSeq + "]");
+        }
       } catch (Exception e) {
         LOGGER.error("Error Sending updates to downstream Cache", e);
         throw new TException(e);

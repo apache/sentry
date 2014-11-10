@@ -169,17 +169,26 @@ public class UpdateForwarder<K extends Updateable.Update> implements
 
   private void appendToUpdateLog(K update) {
     synchronized (updateLog) {
+      boolean logCompacted = false;
       if (updateLogSize > 0) {
         if (update.hasFullImage() || (updateLog.size() == updateLogSize)) {
           // Essentially a log compaction
           updateLog.clear();
           updateLog.add(update.hasFullImage() ? update
               : createFullImageUpdate(update.getSeqNum()));
+          logCompacted = true;
         } else {
           updateLog.add(update);
         }
       }
       lastCommittedSeqNum.set(update.getSeqNum());
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug("#### Appending to Update Log ["
+            + "type=" + update.getClass() + ", "
+            + "lastCommit=" + lastCommittedSeqNum.get() + ", "
+            + "lastSeen=" + lastSeenSeqNum.get() + ", "
+            + "logCompacted=" + logCompacted + "]");
+      }
     }
   }
 
@@ -192,6 +201,14 @@ public class UpdateForwarder<K extends Updateable.Update> implements
     List<K> retVal = new LinkedList<K>();
     synchronized (updateLog) {
       long currSeqNum = lastCommittedSeqNum.get();
+      if (LOGGER.isDebugEnabled() && (updateable != null)) {
+        LOGGER.debug("#### GetAllUpdatesFrom ["
+            + "type=" + updateable.getClass() + ", "
+            + "reqSeqNum=" + seqNum + ", "
+            + "lastCommit=" + lastCommittedSeqNum.get() + ", "
+            + "lastSeen=" + lastSeenSeqNum.get() + ", "
+            + "updateLogSize=" + updateLog.size() + "]");
+      }
       if (updateLogSize == 0) {
         // no updatelog configured..
         return retVal;
@@ -227,21 +244,10 @@ public class UpdateForwarder<K extends Updateable.Update> implements
       } else {
         // increment iterator to requested seqNum
         Iterator<K> iter = updateLog.iterator();
-        K u = null;
         while (iter.hasNext()) {
-          u = iter.next();
-          if (u.getSeqNum() == seqNum) {
-            break;
-          }
-        }
-        // add all updates from requestedSeq
-        // to committedSeqNum
-        for (long seq = seqNum; seq <= currSeqNum; seq ++) {
-          retVal.add(u);
-          if (iter.hasNext()) {
-            u = iter.next();
-          } else {
-            break;
+          K elem = iter.next();
+          if (elem.getSeqNum() >= seqNum) {
+            retVal.add(elem);
           }
         }
       }
