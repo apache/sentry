@@ -226,6 +226,8 @@ public class HiveAuthzPrivilegesMap {
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_LOCATION, alterTableAndUriPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTBLPART_SKEWED_LOCATION, alterTableAndUriPrivilege);//TODO: Needs test case
 
+    // MSCK REPAIR TABLE <table name> / ALTER TABLE RECOVER PARTITIONS <tableName>
+    hiveAuthzStmtPrivMap.put(HiveOperation.MSCK, alterTablePrivilege);
 
     hiveAuthzStmtPrivMap.put(HiveOperation.ANALYZE_TABLE, tableQueryPrivilege);
 

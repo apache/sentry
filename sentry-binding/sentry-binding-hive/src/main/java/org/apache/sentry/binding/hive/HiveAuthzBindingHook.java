@@ -194,6 +194,12 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
         currTab = extractTable((ASTNode)ast.getChild(0));
         currDB = extractDatabase((ASTNode)ast.getChild(0));
         break;
+      case HiveParser.TOK_MSCK:
+        // token name TOK_TABNAME is not properly set in this case and child(0) does
+    	  // not contain the table name.
+    	  currTab = extractTable((ASTNode)ast.getChild(1));
+        currDB = extractDatabase((ASTNode)ast.getChild(0));
+        break;
       case HiveParser.TOK_ALTERTABLE_ADDPARTS:
         /*
          * Compiler doesn't create read/write entities for create table.

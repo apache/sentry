@@ -485,6 +485,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     assertSemanticException(statement, "ALTER TABLE tb1 CHANGE COLUMN a c int");
     assertSemanticException(statement, "ALTER TABLE tb1 ADD COLUMNS (a int)");
     assertSemanticException(statement, "ALTER TABLE tb1 REPLACE COLUMNS (a int, c int)");
+    assertSemanticException(statement, "MSCK REPAIR TABLE tb1");
 
     //assertSemanticException(statement, "ALTER VIEW view1 SET TBLPROPERTIES ('comment' = 'new_comment')");
 
@@ -516,6 +517,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     statement.execute("ALTER TABLE tb1 CHANGE COLUMN a c int");
     statement.execute("ALTER TABLE tb1 ADD COLUMNS (a int)");
     statement.execute("ALTER TABLE tb1 REPLACE COLUMNS (a int, c int)");
+    statement.execute("MSCK REPAIR TABLE tb1");
 
     //statement.execute("ALTER VIEW view1 SET TBLPROPERTIES ('comment' = 'new_comment')");
 

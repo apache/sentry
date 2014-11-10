@@ -92,6 +92,8 @@ public class TestHiveAuthzBindings {
       HiveAuthzPrivilegesMap.getHiveAuthzPrivileges(HiveOperation.CREATEDATABASE);
   private static final HiveAuthzPrivileges createFuncPrivileges =
       HiveAuthzPrivilegesMap.getHiveAuthzPrivileges(HiveOperation.CREATEFUNCTION);
+  private static final HiveAuthzPrivileges alterTabPrivileges =
+      HiveAuthzPrivilegesMap.getHiveAuthzPrivileges(HiveOperation.ALTERTABLE_PROPERTIES);
 
   // auth bindings handler
   private HiveAuthzBinding testAuth = null;
@@ -189,6 +191,37 @@ public class TestHiveAuthzBindings {
     outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, ANALYST_DB, null));
     testAuth.authorize(HiveOperation.CREATETABLE, createTabPrivileges, JUNIOR_ANALYST_SUBJECT,
         inputTabHierarcyList, outputTabHierarcyList);
+  }
+
+  /**
+   * Positive test case for MSCK REPAIR TABLE. User has privileges to execute the
+   * operation.
+   */
+  @Test
+  public void testMsckRepairTable() throws Exception {
+    inputTabHierarcyList.add(buildObjectHierarchy(SERVER1, JUNIOR_ANALYST_DB, PURCHASES_TAB));
+    testAuth.authorize(HiveOperation.MSCK, alterTabPrivileges, MANAGER_SUBJECT,
+      inputTabHierarcyList, outputTabHierarcyList);
+
+    // Should also succeed for the admin.
+    testAuth.authorize(HiveOperation.MSCK, alterTabPrivileges, ADMIN_SUBJECT,
+      inputTabHierarcyList, outputTabHierarcyList);
+
+    // Admin can also run this against tables in the ANALYST_DB.
+    inputTabHierarcyList.add(buildObjectHierarchy(SERVER1, ANALYST_DB, PURCHASES_TAB));
+    testAuth.authorize(HiveOperation.MSCK, alterTabPrivileges, ADMIN_SUBJECT,
+      inputTabHierarcyList, outputTabHierarcyList);
+  }
+
+  /**
+   * Negative case for MSCK REPAIR TABLE. User should not have privileges to execute
+   * the operation.
+   */
+  @Test(expected=AuthorizationException.class)
+  public void testMsckRepairTableRejection() throws Exception {
+	outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, JUNIOR_ANALYST_DB, PURCHASES_TAB));
+    testAuth.authorize(HiveOperation.MSCK, alterTabPrivileges,
+        JUNIOR_ANALYST_SUBJECT, inputTabHierarcyList, outputTabHierarcyList);
   }
 
   /**
