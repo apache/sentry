@@ -431,6 +431,7 @@ public class TestHDFSIntegration {
         properties
             .put(ConfVars.HIVE_SERVER2_THRIFT_MIN_WORKER_THREADS.varname, "2");
         properties.put("hive.metastore.uris", "thrift://localhost:" + hmsPort);
+        properties.put("hive.exec.local.scratchdir", Files.createTempDir().getAbsolutePath());
         properties.put(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_NONE);
 //        properties.put("sentry.service.server.compact.transport", "true");
         properties.put("sentry.hive.testing.mode", "true");
