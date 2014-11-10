@@ -27,7 +27,6 @@ import java.util.concurrent.locks.ReadWriteLock;
 
 import org.apache.hadoop.fs.permission.AclEntry;
 import org.apache.hadoop.fs.permission.FsAction;
-import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.hdfs.SentryPermissions.PrivilegeInfo;
 import org.apache.sentry.hdfs.SentryPermissions.RoleInfo;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
@@ -46,8 +45,10 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
   static {
     ACTION_MAPPING.put("ALL", FsAction.ALL);
     ACTION_MAPPING.put("*", FsAction.ALL);
-    ACTION_MAPPING.put(AccessConstants.SELECT.toUpperCase(), FsAction.READ_EXECUTE);
-    ACTION_MAPPING.put(AccessConstants.INSERT.toUpperCase(), FsAction.WRITE_EXECUTE);
+    ACTION_MAPPING.put("SELECT", FsAction.READ_EXECUTE);
+    ACTION_MAPPING.put("select", FsAction.READ_EXECUTE);
+    ACTION_MAPPING.put("INSERT", FsAction.WRITE_EXECUTE);
+    ACTION_MAPPING.put("insert", FsAction.WRITE_EXECUTE);
   }
 
   @Override

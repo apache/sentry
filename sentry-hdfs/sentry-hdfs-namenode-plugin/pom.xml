@@ -35,16 +35,6 @@ limitations under the License.
       <version>1.5.0-incubating-SNAPSHOT</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.sentry</groupId>
-      <artifactId>sentry-service-client</artifactId>
-      <version>1.5.0-incubating-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.sentry</groupId>
-      <artifactId>sentry-hdfs-service</artifactId>
-      <version>1.5.0-incubating-SNAPSHOT</version>
-    </dependency>
-    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>

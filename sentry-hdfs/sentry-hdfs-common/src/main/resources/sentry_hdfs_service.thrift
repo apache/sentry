@@ -81,7 +81,7 @@ service SentryHDFSService
 {
   # HMS Path cache
   void handle_hms_notification(1:TPathsUpdate pathsUpdate);
-
+  i64 check_hms_seq_num(1:i64 pathSeqNum);
   TAuthzUpdateResponse get_all_authz_updates_from(1:i64 permSeqNum, 2:i64 pathSeqNum);
   map<string, list<string>> get_all_related_paths(1:string path, 2:bool exactMatch);
 }
