@@ -79,14 +79,13 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     context.close();
 
     policyFile
-        .addRolesToGroup(USERGROUP1, "db1_all", "UDF_JAR", "data_read")
+        .addRolesToGroup(USERGROUP1, "db1_all", "UDF_JAR")
         .addRolesToGroup(USERGROUP2, "db1_tab1", "UDF_JAR")
         .addRolesToGroup(USERGROUP3, "db1_tab1")
         .addPermissionsToRole("db1_all", "server=server1->db=" + DB1)
         .addPermissionsToRole("db1_tab1", "server=server1->db=" + DB1 + "->table=" + tableName1)
-        .addPermissionsToRole("UDF_JAR", "server=server1->uri=file://" + udfLocation)
-        .addPermissionsToRole("data_read", "server=server1->URI=" 
-            + fileSystem.getDefaultUri(fileSystem.getConf()) + "/tmp");
+        .addPermissionsToRole("UDF_JAR", "server=server1->uri=file://" + udfLocation);
+
     writePolicyFile(policyFile);
 
     // user1 should be able create/drop temp functions
@@ -106,7 +105,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     // test perm UDF with 'using file' syntax
     statement
         .execute("CREATE FUNCTION printf_test_perm AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf' "
-            + " using file '" + fileSystem.getDefaultUri(fileSystem.getConf()) + "/tmp" + "'");
+            + " using file 'file://" + udfLocation + "'");
     statement.execute("DROP FUNCTION printf_test_perm");
 
     context.close();
