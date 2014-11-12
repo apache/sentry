@@ -19,8 +19,10 @@
 package org.apache.sentry.provider.db.service.thrift;
 
 import org.apache.hadoop.minikdc.MiniKdc;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore("SENTRY-515: Not part of automated unit testing, as it takes too long")
 public class TestConnectionWithTicketTimeout extends
     org.apache.sentry.service.thrift.SentryServiceIntegrationBase {
 
@@ -36,10 +38,8 @@ public class TestConnectionWithTicketTimeout extends
    */
   @Test
   public void testConnectionAfterTicketTimeout() throws Exception {
-    if ("true".equalsIgnoreCase(System.getProperty("sentry.hive.test.ticket.timeout", "false"))) {
-      Thread.sleep(400000);
-      connectToSentryService();
-    }
+    Thread.sleep(400000);
+    connectToSentryService();
   }
 
 }
