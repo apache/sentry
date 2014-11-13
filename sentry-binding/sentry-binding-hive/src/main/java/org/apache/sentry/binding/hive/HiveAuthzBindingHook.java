@@ -290,7 +290,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
     try {
       HiveConf conf = SessionState.get().getConf();
       String warehouseDir = conf.getVar(ConfVars.METASTOREWAREHOUSE);
-      return new AccessURI(PathUtils.parseDFSURI(warehouseDir, uri, isLocal));
+      return new AccessURI(PathUtils.parseURI(warehouseDir, uri, isLocal));
     } catch (Exception e) {
       throw new SemanticException("Error parsing URI " + uri + ": " +
         e.getMessage(), e);

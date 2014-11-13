@@ -19,6 +19,7 @@ package org.apache.sentry.core.common.utils;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.net.URI;
 
@@ -43,6 +44,23 @@ public class TestPathUtils {
     // warehouse hdfs, path hdfs
     assertEquals("hdfs://namenode:8020/tmp/hive-user", PathUtils.
       parseDFSURI("hdfs://namenode:8020/user/hive/warehouse", "hdfs://namenode:8020/tmp/hive-user"));
+    try {
+      PathUtils.parseDFSURI("hdfs://namenode:8020/user/hive/warehouse", "tmp/hive-user");
+      fail("IllegalArgumentException should be thrown");
+    } catch (IllegalArgumentException ue) {
+    }
+
+    // warehouse swift, path /
+    assertEquals("swift://namenode:8020/tmp/hive-user",
+        PathUtils.parseDFSURI("swift://namenode:8020/user/hive/warehouse", "/tmp/hive-user"));
+    // warehouse swift, path swift
+    assertEquals("swift://namenode:8020/tmp/hive-user", PathUtils.parseDFSURI(
+        "swift://namenode:8020/user/hive/warehouse", "swift://namenode:8020/tmp/hive-user"));
+    try {
+      PathUtils.parseDFSURI("swift://namenode:8020/user/hive/warehouse", "tmp/hive-user");
+      fail("IllegalArgumentException should be thrown");
+    } catch (IllegalArgumentException ue) {
+    }
 
     // warehouse file:///, path /
     assertEquals("file:///tmp/hive-user", PathUtils.
@@ -53,6 +71,11 @@ public class TestPathUtils {
     // warehouse file:///, path file:///
     assertEquals("file:///tmp/hive-user", PathUtils.
       parseDFSURI("file:///tmp/hive-warehouse", "file:///tmp/hive-user"));
+    try {
+      PathUtils.parseDFSURI("file:///hive-warehouse", "tmp/hive-user");
+      fail("IllegalArgumentException should be thrown");
+    } catch (IllegalArgumentException ue) {
+    }
 
     // warehouse file:/, path /
     assertEquals("file:///tmp/hive-user", PathUtils.
@@ -63,6 +86,23 @@ public class TestPathUtils {
     // warehouse file:/, path file:///
     assertEquals("file:///tmp/hive-user", PathUtils.
       parseDFSURI("file:/tmp/hive-warehouse", "file:///tmp/hive-user"));
+
+    // for local test case
+    assertEquals("file:///tmp/hive-user",
+        PathUtils.parseURI("testLocal:///tmp/hive-warehouse", "/tmp/hive-user", true));
+    assertEquals("file://localhost:9999/tmp/hive-user", PathUtils.parseURI(
+        "file://localhost:9999/tmp/hive-warehouse", "file://localhost:9999/tmp/hive-user", true));
+    assertEquals("file://localhost:9999/tmp/hive-user", PathUtils.parseURI(
+        "file:///tmp/hive-warehouse", "file://localhost:9999/tmp/hive-user", true));
+    try {
+      PathUtils.parseURI("testLocal:///tmp/hive-warehouse", "tmp/hive-user", true);
+      fail("IllegalStateException should be thrown");
+    } catch (IllegalArgumentException ue) {
+    }
+
+    // warehouse /, path /
+    assertEquals("file:///tmp/hive-user",
+        PathUtils.parseDFSURI("/tmp/hive-warehouse", "/tmp/hive-user"));
   }
 
   @Test
@@ -73,5 +113,7 @@ public class TestPathUtils {
       parseLocalURI("file:/tmp/hive-user"));
     assertEquals("file:///tmp/hive-user", PathUtils.
       parseLocalURI("file:///tmp/hive-user"));
+    assertEquals("file://localhost:9999/tmp/hive-user",
+        PathUtils.parseLocalURI("file://localhost:9999/tmp/hive-user"));
   }
 }
