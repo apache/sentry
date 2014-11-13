@@ -24,6 +24,7 @@ import static org.apache.sentry.provider.common.ProviderConstants.KV_JOINER;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -86,6 +87,7 @@ public class SentryStore {
 
   public static String NULL_COL = "__NULL__";
   static final String DEFAULT_DATA_DIR = "sentry_policy_db";
+
   /**
    * Commit order sequence id. This is used by notification handlers
    * to know the order in which events where committed to the database.
@@ -761,7 +763,6 @@ public class SentryStore {
       }
     }
   }
-
 
   List<MSentryPrivilege> getMSentryPrivileges(Set<String> roleNames, TSentryAuthorizable authHierarchy) {
     if ((roleNames.size() == 0)||(roleNames == null)) return new ArrayList<MSentryPrivilege>();
@@ -1506,4 +1507,82 @@ public class SentryStore {
     return Sets.newHashSet(conf.getStrings(
         ServerConfig.ADMIN_GROUPS, new String[]{}));
   }
+
+  /**
+   * This returns a Mapping of AuthZObj(db/table) -> (Role -> permission)
+   */
+  public Map<String, HashMap<String, String>> retrieveFullPrivilegeImage() {
+    Map<String, HashMap<String, String>> retVal = new HashMap<String, HashMap<String,String>>();
+    boolean rollbackTransaction = true;
+    PersistenceManager pm = null;
+    try {
+      pm = openTransaction();
+      Query query = pm.newQuery(MSentryPrivilege.class);
+      String filters = "(serverName != \"__NULL__\") "
+          + "&& (dbName != \"__NULL__\") " + "&& (URI == \"__NULL__\")";
+      query.setFilter(filters.toString());
+      query
+          .setOrdering("serverName ascending, dbName ascending, tableName ascending");
+      List<MSentryPrivilege> privileges = (List<MSentryPrivilege>) query
+          .execute();
+      rollbackTransaction = false;
+      for (MSentryPrivilege mPriv : privileges) {
+        String authzObj = mPriv.getDbName();
+        if (!isNULL(mPriv.getTableName())) {
+          authzObj = authzObj + "." + mPriv.getTableName();
+        }
+        HashMap<String, String> pUpdate = retVal.get(authzObj);
+        if (pUpdate == null) {
+          pUpdate = new HashMap<String, String>();
+          retVal.put(authzObj, pUpdate);
+        }
+        for (MSentryRole mRole : mPriv.getRoles()) {
+          String existingPriv = pUpdate.get(mRole.getRoleName());
+          if (existingPriv == null) {
+            pUpdate.put(mRole.getRoleName(), mPriv.getAction().toUpperCase());
+          } else {
+            pUpdate.put(mRole.getRoleName(), existingPriv + ","
+                + mPriv.getAction().toUpperCase());
+          }
+        }
+      }
+      commitTransaction(pm);
+      return retVal;
+    } finally {
+      if (rollbackTransaction) {
+        rollbackTransaction(pm);
+      }
+    }
+  }
+
+  /**
+   * This returns a Mapping of Role -> [Groups]
+   */
+  public Map<String, LinkedList<String>> retrieveFullRoleImage() {
+    Map<String, LinkedList<String>> retVal = new HashMap<String, LinkedList<String>>();
+    boolean rollbackTransaction = true;
+    PersistenceManager pm = null;
+    try {
+      pm = openTransaction();
+      Query query = pm.newQuery(MSentryGroup.class);
+      List<MSentryGroup> groups = (List<MSentryGroup>) query.execute();
+      for (MSentryGroup mGroup : groups) {
+        for (MSentryRole role : mGroup.getRoles()) {
+          LinkedList<String> rUpdate = retVal.get(role.getRoleName());
+          if (rUpdate == null) {
+            rUpdate = new LinkedList<String>();
+            retVal.put(role.getRoleName(), rUpdate);
+          }
+          rUpdate.add(mGroup.getGroupName());
+        }
+      }
+      commitTransaction(pm);
+      return retVal;
+    } finally {
+      if (rollbackTransaction) {
+        rollbackTransaction(pm);
+      }
+    }
+  }
+
 }

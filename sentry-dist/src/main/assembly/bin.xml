@@ -46,6 +46,18 @@
         <exclude>org.apache.derby:derby</exclude>
       </excludes>
     </dependencySet>
+<!--
+    <dependencySet>
+      <outputDirectory>lib/plugins</outputDirectory>
+      <unpack>true</unpack>
+      <useTransitiveDependencies>false</useTransitiveDependencies>
+      <includes>
+        <include>org.apache.sentry:sentry-provider-db</include>
+        <include>org.apache.sentry:sentry-hdfs-common</include>
+        <include>org.apache.sentry:sentry-hdfs-namenode-plugin</include>
+      </includes>
+    </dependencySet>
+-->
     <dependencySet>
       <outputDirectory>lib/server</outputDirectory>
       <unpack>false</unpack>
@@ -56,7 +68,6 @@
         <include>org.datanucleus:*</include>
         <include>com.jolbox:bonecp</include>
         <include>org.apache.hive:hive-beeline</include>
-        <include>org.apache.derby:derby</include>
         <include>org.apache.derby:derby</include>
       </includes>
     </dependencySet>
@@ -80,6 +91,7 @@
         <exclude>sentry-provider/**</exclude>
         <exclude>sentry-policy/**</exclude>
         <exclude>sentry-tests/**</exclude>
+        <exclude>sentry-hdfs/**</exclude>
       </excludes>
 
       <includes>
@@ -93,6 +105,16 @@
         <include>README*</include>
       </includes>
       <outputDirectory>/</outputDirectory>
+    </fileSet>
+    <fileSet>
+      <directory>${project.parent.basedir}/sentry-hdfs/sentry-hdfs-dist/target</directory>
+      <includes>
+        <include>sentry-hdfs-*.jar</include>
+      </includes>
+      <excludes>
+        <exclude>sentry-hdfs-dist-*.jar</exclude>
+      </excludes>
+      <outputDirectory>lib/plugins</outputDirectory>
     </fileSet>
     <fileSet>
       <directory>${project.parent.basedir}/sentry-provider/sentry-provider-db/src/main/resources</directory>

@@ -27,6 +27,7 @@ public class StaticUserGroup {
       USER2_1 = "user2_1",
       USER3_1 = "user3_1",
       USER4_1 = "user4_1",
+      HIVE = "hive",
       USERGROUP1 = "user_group1",
       USERGROUP2 = "user_group2",
       USERGROUP3 = "user_group3",
@@ -39,6 +40,7 @@ public class StaticUserGroup {
     ADMINGROUP = System.getProperty("sentry.e2etest.admin.group", "admin");
     staticMapping = new HashMap<String, String>();
     staticMapping.put(ADMIN1, ADMINGROUP);
+    staticMapping.put(HIVE, HIVE);
     staticMapping.put(USER1_1, USERGROUP1);
     staticMapping.put(USER1_2, USERGROUP1);
     staticMapping.put(USER2_1, USERGROUP2);

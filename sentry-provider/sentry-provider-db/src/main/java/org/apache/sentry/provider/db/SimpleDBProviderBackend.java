@@ -39,9 +39,10 @@ public class SimpleDBProviderBackend implements ProviderBackend {
   private static final Logger LOGGER = LoggerFactory
       .getLogger(SimpleDBProviderBackend.class);
 
-  private final SentryPolicyServiceClient policyServiceClient;
+  private SentryPolicyServiceClient policyServiceClient;
 
   private volatile boolean initialized;
+  private Configuration conf; 
 
   public SimpleDBProviderBackend(Configuration conf, String resourcePath) throws IOException {
     // DB Provider doesn't use policy file path
@@ -50,6 +51,8 @@ public class SimpleDBProviderBackend implements ProviderBackend {
 
   public SimpleDBProviderBackend(Configuration conf) throws IOException {
     this(new SentryPolicyServiceClient(conf));
+    this.initialized = false;
+    this.conf = conf;
   }
 
   @VisibleForTesting
@@ -74,14 +77,28 @@ public class SimpleDBProviderBackend implements ProviderBackend {
    */
   @Override
   public ImmutableSet<String> getPrivileges(Set<String> groups, ActiveRoleSet roleSet, Authorizable... authorizableHierarchy) {
+    return getPrivileges(1, groups, roleSet, authorizableHierarchy);
+  }
+
+  private ImmutableSet<String> getPrivileges(int retryCount, Set<String> groups, ActiveRoleSet roleSet, Authorizable... authorizableHierarchy) {
     if (!initialized) {
       throw new IllegalStateException("Backend has not been properly initialized");
     }
     try {
-      return ImmutableSet.copyOf(policyServiceClient.listPrivilegesForProvider(groups, roleSet, authorizableHierarchy));
-    } catch (SentryUserException e) {
-      String msg = "Unable to obtain privileges from server: " + e.getMessage();
-      LOGGER.error(msg, e);
+      return ImmutableSet.copyOf(getSentryClient().listPrivilegesForProvider(groups, roleSet, authorizableHierarchy));
+    } catch (Exception e) {
+      policyServiceClient = null;
+      if (retryCount > 0) {
+        return getPrivileges(retryCount - 1, groups, roleSet, authorizableHierarchy);
+      } else {
+        String msg = "Unable to obtain privileges from server: " + e.getMessage();
+        LOGGER.error(msg, e);
+        try {
+          policyServiceClient.close();
+        } catch (Exception ex2) {
+          // Ignore
+        }
+      }
     }
     return ImmutableSet.of();
   }
@@ -101,6 +118,19 @@ public class SimpleDBProviderBackend implements ProviderBackend {
     }
   }
 
+  private SentryPolicyServiceClient getSentryClient() {
+    if (policyServiceClient == null) {
+      try {
+        policyServiceClient = new SentryPolicyServiceClient(conf);
+      } catch (Exception e) {
+        LOGGER.error("Error connecting to Sentry ['{}'] !!",
+            e.getMessage());
+        policyServiceClient = null;
+        return null;
+      }
+    }
+    return policyServiceClient;
+  }
   /**
    * SimpleDBProviderBackend does not implement validatePolicy()
    */

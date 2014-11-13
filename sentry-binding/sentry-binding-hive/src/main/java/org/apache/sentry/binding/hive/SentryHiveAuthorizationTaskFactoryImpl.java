@@ -50,11 +50,14 @@ import org.apache.hadoop.hive.ql.security.authorization.Privilege;
 import org.apache.hadoop.hive.ql.security.authorization.PrivilegeRegistry;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.sentry.core.model.db.AccessConstants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 
 public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorizationTaskFactory {
 
+  private static final Logger LOG = LoggerFactory.getLogger(SentryHiveAuthorizationTaskFactoryImpl.class);
 
   public SentryHiveAuthorizationTaskFactoryImpl(HiveConf conf, Hive db) {
 
@@ -238,6 +241,7 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
       HashSet<ReadEntity> inputs, HashSet<WriteEntity> outputs) throws SemanticException {
     List<PrincipalDesc> principalDesc = analyzePrincipalListDef(
         (ASTNode) ast.getChild(0));
+    
     List<String> roles = new ArrayList<String>();
     for (int i = 1; i < ast.getChildCount(); i++) {
       roles.add(BaseSemanticAnalyzer.unescapeIdentifier(ast.getChild(i).getText()));
@@ -314,11 +318,20 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
       ASTNode child = (ASTNode) node.getChild(i);
       PrincipalType type = null;
       switch (child.getType()) {
+      case 880:
+        type = PrincipalType.USER;
+        break;
       case HiveParser.TOK_USER:
         type = PrincipalType.USER;
         break;
+      case 685:
+        type = PrincipalType.GROUP;
+        break;
       case HiveParser.TOK_GROUP:
         type = PrincipalType.GROUP;
+        break;
+      case 782:
+        type = PrincipalType.ROLE;
         break;
       case HiveParser.TOK_ROLE:
         type = PrincipalType.ROLE;
@@ -326,6 +339,7 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
       }
       String principalName = BaseSemanticAnalyzer.unescapeIdentifier(child.getChild(0).getText());
       PrincipalDesc principalDesc = new PrincipalDesc(principalName, type);
+      LOG.debug("## Principal : [ " + principalName + ", " + type + "]");
       principalList.add(principalDesc);
     }
     return principalList;

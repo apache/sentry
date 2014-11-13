@@ -68,7 +68,7 @@ limitations under the License.
     <derby.version>10.10.2.0</derby.version>
     <commons-cli.version>1.2</commons-cli.version>
     <hive.version>0.13.1-cdh5.3.0-SNAPSHOT</hive.version>
-    <hadoop.version>2.3.0-cdh5.1.0-SNAPSHOT</hadoop.version>
+    <hadoop.version>2.5.0-cdh5.2.0-SNAPSHOT</hadoop.version>
     <fest.reflect.version>1.4.1</fest.reflect.version>
     <guava.version>11.0.2</guava.version>
     <junit.version>4.9</junit.version>
@@ -148,6 +148,12 @@ limitations under the License.
         <groupId>org.apache.hadoop</groupId>
         <artifactId>hadoop-hdfs</artifactId>
         <version>${hadoop.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-hdfs</artifactId>
+        <version>${hadoop.version}</version>
+        <type>test-jar</type>
       </dependency>
       <dependency>
         <groupId>org.apache.hadoop</groupId>
@@ -336,6 +342,26 @@ limitations under the License.
       </dependency>
       <dependency>
         <groupId>org.apache.sentry</groupId>
+        <artifactId>sentry-hdfs-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.sentry</groupId>
+        <artifactId>sentry-hdfs-service</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.sentry</groupId>
+        <artifactId>sentry-hdfs-namenode-plugin</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.sentry</groupId>
+        <artifactId>sentry-hdfs-dist</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.sentry</groupId>
         <artifactId>sentry-provider-cache</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -403,6 +429,7 @@ limitations under the License.
     <module>sentry-provider</module>
     <module>sentry-policy</module>
     <module>sentry-tests</module>
+    <module>sentry-hdfs</module>
     <module>sentry-dist</module>
   </modules>
 
@@ -427,8 +454,38 @@ limitations under the License.
           <downloadSources>true</downloadSources>
           <workspaceActiveCodeStyleProfileName>GoogleStyle</workspaceActiveCodeStyleProfileName>
           <workspaceCodeStylesURL>https://google-styleguide.googlecode.com/svn/trunk/eclipse-java-google-style.xml</workspaceCodeStylesURL>
+          <sourceIncludes><include>src/gen/thrift/gen-javabean/**</include></sourceIncludes>
         </configuration>
       </plugin>
+
+<!---
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>2.1</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <artifactSet>
+                <includes>
+                  <include>org.apache.thrift:libthrift</include>
+                </includes>
+              </artifactSet>
+              <relocations>
+                <relocation>
+                  <pattern>org.apache.thrift</pattern>
+                  <shadedPattern>sentry.org.apache.thrift</shadedPattern>
+                </relocation>
+              </relocations>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+-->
     </plugins>
 
     <pluginManagement>
@@ -515,10 +572,12 @@ limitations under the License.
                   <exclude>**/.metadata/</exclude>
                   <!-- Maven working directory -->
                   <exclude>**/target/</exclude>
+                  <exclude>**/assembly/</exclude>
                   <!-- Pre commit testing generated files -->
                   <exclude>maven-repo/</exclude>
                   <exclude>test-output/</exclude>
                   <!-- Derby files which are created after test run -->
+                  <exclude>**/dependency-reduced-pom.xml</exclude>
                   <exclude>**/derby.log</exclude>
                   <exclude>**/service.properties</exclude>
                   <exclude>**/*.lck</exclude>

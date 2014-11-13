@@ -18,7 +18,7 @@ package org.apache.sentry.binding.hive.conf;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
-import org.mortbay.log.Log;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -203,7 +203,7 @@ public class HiveAuthzConf extends Configuration {
       if (retVal == null) {
         retVal = AuthzConfVars.getDefault(varName);
       } else {
-        Log.warn("Using the deprecated config setting " + currentToDeprecatedProps.get(varName).getVar() +
+        LOG.warn("Using the deprecated config setting " + currentToDeprecatedProps.get(varName).getVar() +
             " instead of " + varName);
       }
     }
