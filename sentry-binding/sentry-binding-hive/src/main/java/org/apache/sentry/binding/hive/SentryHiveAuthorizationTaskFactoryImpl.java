@@ -48,6 +48,7 @@ import org.apache.hadoop.hive.ql.plan.RoleDDLDesc;
 import org.apache.hadoop.hive.ql.plan.ShowGrantDesc;
 import org.apache.hadoop.hive.ql.security.authorization.Privilege;
 import org.apache.hadoop.hive.ql.security.authorization.PrivilegeRegistry;
+import org.apache.hadoop.hive.ql.security.authorization.PrivilegeType;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.slf4j.Logger;
@@ -140,12 +141,6 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
     if (privilegeObj.getPartSpec() != null) {
       throw new SemanticException(SentryHiveConstants.PARTITION_PRIVS_NOT_SUPPORTED);
     }
-    for (PrivilegeDesc privDesc : privilegeDesc) {
-      List<String> columns = privDesc.getColumns();
-      if (columns != null && !columns.isEmpty()) {
-        throw new SemanticException(SentryHiveConstants.COLUMN_PRIVS_NOT_SUPPORTED);
-      }
-    }
     for (PrincipalDesc princ : principalDesc) {
       if (princ.getType() != PrincipalType.ROLE) {
         String msg = SentryHiveConstants.GRANT_REVOKE_NOT_SUPPORTED_FOR_PRINCIPAL + princ.getType();
@@ -169,12 +164,6 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
     if (privilegeObj.getPartSpec() != null) {
       throw new SemanticException(SentryHiveConstants.PARTITION_PRIVS_NOT_SUPPORTED);
     }
-    for (PrivilegeDesc privDesc : privilegeDesc) {
-      List<String> columns = privDesc.getColumns();
-      if (columns != null && !columns.isEmpty()) {
-        throw new SemanticException(SentryHiveConstants.COLUMN_PRIVS_NOT_SUPPORTED);
-      }
-    }
     for (PrincipalDesc princ : principalDesc) {
       if (princ.getType() != PrincipalType.ROLE) {
         String msg = SentryHiveConstants.GRANT_REVOKE_NOT_SUPPORTED_FOR_PRINCIPAL + princ.getType();
@@ -194,7 +183,7 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
   @Override
   public Task<? extends Serializable> createShowGrantTask(ASTNode ast, Path resultFile, HashSet<ReadEntity> inputs,
       HashSet<WriteEntity> outputs) throws SemanticException {
-    PrivilegeObjectDesc privHiveObj = null;
+    SentryHivePrivilegeObjectDesc privHiveObj = null;
 
     ASTNode principal = (ASTNode) ast.getChild(0);
     PrincipalType type = PrincipalType.USER;
@@ -216,18 +205,20 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
     String principalName = BaseSemanticAnalyzer.unescapeIdentifier(principal.getChild(0).getText());
     PrincipalDesc principalDesc = new PrincipalDesc(principalName, type);
 
-    //Column privileges and Partition privileges are not supported by Sentry
+    // Partition privileges are not supported by Sentry
+    List<String> cols = null;
     if (ast.getChildCount() > 1) {
       ASTNode child = (ASTNode) ast.getChild(1);
       if (child.getToken().getType() == HiveParser.TOK_PRIV_OBJECT_COL) {
         privHiveObj = analyzePrivilegeObject(child);
+        cols = privHiveObj.getColumns();
       }else {
         throw new SemanticException("Unrecognized Token: " + child.getToken().getType());
       }
     }
 
     ShowGrantDesc showGrant = new ShowGrantDesc(resultFile.toString(),
-        principalDesc, privHiveObj, null);
+        principalDesc, privHiveObj, cols);
     return createTask(new DDLWork(inputs, outputs, showGrant));
   }
 
@@ -297,8 +288,8 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
         if (astChild.getToken().getType() == HiveParser.TOK_PARTSPEC) {
           throw new SemanticException(SentryHiveConstants.PARTITION_PRIVS_NOT_SUPPORTED);
         } else if (astChild.getToken().getType() == HiveParser.TOK_TABCOLNAME) {
-          throw new SemanticException(SentryHiveConstants.COLUMN_PRIVS_NOT_SUPPORTED);
-        }else if (astChild.getToken().getType() == HiveParser.TOK_URI) {
+          subject.setColumns(BaseSemanticAnalyzer.getColumnNames(astChild));
+        } else if (astChild.getToken().getType() == HiveParser.TOK_URI) {
           privilegeObject = privilegeObject.replaceAll("'", "").replaceAll("\"", "");
           subject.setUri(true);
         } else if (astChild.getToken().getType() == HiveParser.TOK_SERVER) {
@@ -359,10 +350,16 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
         String msg = SentryHiveConstants.PRIVILEGE_NOT_SUPPORTED + privObj.getPriv();
         throw new SemanticException(msg);
       }
+      List<String> cols = null;
       if (privilegeDef.getChildCount() > 1) {
-        throw new SemanticException(SentryHiveConstants.COLUMN_PRIVS_NOT_SUPPORTED);
+        cols = BaseSemanticAnalyzer.getColumnNames((ASTNode) privilegeDef.getChild(1));
       }
-      PrivilegeDesc privilegeDesc = new PrivilegeDesc(privObj, null);
+      if (cols != null && (privObj.getPriv().equals(PrivilegeType.INSERT)
+              || privObj.getPriv().equals(PrivilegeType.ALL))) {
+        String msg = SentryHiveConstants.PRIVILEGE_NOT_SUPPORTED + privObj.getPriv() + " on Column";
+        throw new SemanticException(msg);
+      }
+      PrivilegeDesc privilegeDesc = new PrivilegeDesc(privObj, cols);
       ret.add(privilegeDesc);
     }
     return ret;

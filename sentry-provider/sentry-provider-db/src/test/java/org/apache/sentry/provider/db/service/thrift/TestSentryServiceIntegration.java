@@ -305,6 +305,70 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
   }
 
   @Test
+  public void testGranRevokePrivilegeOnColumnForRole() throws Exception {
+    String requestorUserName = ADMIN_USER;
+    Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
+    setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+    writePolicyFile();
+    String roleName1 = "admin_r1";
+    String roleName2 = "admin_r2";
+
+    client.dropRoleIfExists(requestorUserName,  roleName1);
+    client.createRole(requestorUserName,  roleName1);
+
+    client.grantColumnPrivilege(requestorUserName, roleName1, "server", "db1", "table1", "col1", "ALL");
+    client.grantColumnPrivilege(requestorUserName, roleName1, "server", "db1", "table1", "col2", "ALL");
+    client.grantColumnPrivilege(requestorUserName, roleName1, "server", "db1", "table2", "col1", "ALL");
+    client.grantColumnPrivilege(requestorUserName, roleName1, "server", "db1", "table2", "col2", "ALL");
+    client.grantColumnPrivilege(requestorUserName, roleName1, "server", "db2", "table1", "col1", "ALL");
+    client.grantColumnPrivilege(requestorUserName, roleName1, "server", "db2", "table2", "col1", "ALL");
+
+
+    client.dropRoleIfExists(requestorUserName,  roleName2);
+    client.createRole(requestorUserName,  roleName2);
+
+    client.grantColumnPrivilege(requestorUserName, roleName2, "server", "db1", "table1", "col1", "ALL");
+    client.grantColumnPrivilege(requestorUserName, roleName2, "server", "db1", "table1", "col2", "ALL");
+    client.grantColumnPrivilege(requestorUserName, roleName2, "server", "db1", "table2", "col1", "ALL");
+    client.grantColumnPrivilege(requestorUserName, roleName2, "server", "db1", "table2", "col2", "ALL");
+    client.grantColumnPrivilege(requestorUserName, roleName2, "server", "db2", "table1", "col1", "ALL");
+    client.grantColumnPrivilege(requestorUserName, roleName2, "server", "db2", "table2", "col1", "ALL");
+
+    Set<TSentryPrivilege> listPrivilegesByRoleName = client.listAllPrivilegesByRoleName(requestorUserName, roleName1);
+    assertEquals("Privilege not assigned to role1 !!", 6, listPrivilegesByRoleName.size());
+
+    listPrivilegesByRoleName = client.listAllPrivilegesByRoleName(requestorUserName, roleName2);
+    assertEquals("Privilege not assigned to role2 !!", 6, listPrivilegesByRoleName.size());
+
+
+    client.revokeColumnPrivilege(requestorUserName, roleName1, "server", "db1", "table1", "col1", "ALL");
+    listPrivilegesByRoleName = client.listAllPrivilegesByRoleName(requestorUserName, roleName1);
+    assertTrue("Privilege not correctly revoked !!", listPrivilegesByRoleName.size() == 5);
+    listPrivilegesByRoleName = client.listAllPrivilegesByRoleName(requestorUserName, roleName2);
+    assertTrue("Privilege not correctly revoked !!", listPrivilegesByRoleName.size() == 6);
+
+    client.revokeTablePrivilege(requestorUserName, roleName2, "server", "db1", "table1", "ALL");
+    listPrivilegesByRoleName = client.listAllPrivilegesByRoleName(requestorUserName, roleName2);
+    assertTrue("Privilege not correctly revoked !!", listPrivilegesByRoleName.size() == 4);
+    listPrivilegesByRoleName = client.listAllPrivilegesByRoleName(requestorUserName, roleName1);
+    assertTrue("Privilege not correctly revoked !!", listPrivilegesByRoleName.size() == 5);
+
+    client.revokeDatabasePrivilege(requestorUserName, roleName1, "server", "db1", "ALL");
+    listPrivilegesByRoleName = client.listAllPrivilegesByRoleName(requestorUserName, roleName1);
+    assertTrue("Privilege not correctly revoked !!", listPrivilegesByRoleName.size() == 2);
+    client.revokeColumnPrivilege(requestorUserName, roleName1, "server", "db2", "table1", "col1", "ALL");
+    client.revokeColumnPrivilege(requestorUserName, roleName1, "server", "db2", "table2", "col1", "ALL");
+    listPrivilegesByRoleName = client.listAllPrivilegesByRoleName(requestorUserName, roleName1);
+    assertTrue("Privilege not correctly revoked !!", listPrivilegesByRoleName.size() == 0);
+
+    client.revokeColumnPrivilege(requestorUserName, roleName2, "server", "db1", "table2", "col1", "ALL");
+    client.revokeColumnPrivilege(requestorUserName, roleName2, "server", "db1", "table2", "col2", "ALL");
+    client.revokeColumnPrivilege(requestorUserName, roleName2, "server", "db2", "table1", "col1", "ALL");
+    client.revokeColumnPrivilege(requestorUserName, roleName2, "server", "db2", "table2", "col1", "ALL");
+    listPrivilegesByRoleName = client.listAllPrivilegesByRoleName(requestorUserName, roleName2);
+    assertTrue("Privilege not correctly revoked !!", listPrivilegesByRoleName.size() == 0);
+  }
+
   public void testListByAuthDB() throws Exception {
     String requestorUserName = ADMIN_USER;
     Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);

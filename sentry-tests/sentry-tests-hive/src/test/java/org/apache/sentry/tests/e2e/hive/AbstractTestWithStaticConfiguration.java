@@ -290,7 +290,7 @@ public abstract class AbstractTestWithStaticConfiguration {
   }
   private void addPrivilege(String roleName, String privileges, Statement statement)
       throws IOException, SQLException{
-    String serverName = null, dbName = null, tableName = null, uriPath = null;
+    String serverName = null, dbName = null, tableName = null, uriPath = null, columnName = null;
     String action = "ALL";//AccessConstants.ALL;
     for (String privilege : ROLE_SPLITTER.split(privileges)) {
       for(String section : AUTHORIZABLE_SPLITTER.split(privilege)) {
@@ -307,6 +307,8 @@ public abstract class AbstractTestWithStaticConfiguration {
             dbName = dbAuthorizable.getName();
           } else if (DBModelAuthorizable.AuthorizableType.Table.equals(dbAuthorizable.getAuthzType())) {
             tableName = dbAuthorizable.getName();
+          } else if (DBModelAuthorizable.AuthorizableType.Column.equals(dbAuthorizable.getAuthzType())) {
+            columnName = dbAuthorizable.getName();
           } else if (DBModelAuthorizable.AuthorizableType.URI.equals(dbAuthorizable.getAuthzType())) {
             uriPath = dbAuthorizable.getName();
           } else {
@@ -320,7 +322,11 @@ public abstract class AbstractTestWithStaticConfiguration {
         }
       }
 
-      if (tableName != null) {
+      if (columnName != null) {
+        statement.execute("CREATE DATABASE IF NOT EXISTS " + dbName);
+        statement.execute("USE " + dbName);
+        statement.execute("GRANT " + action + " ( " + columnName + " ) ON TABLE " + tableName + " TO ROLE " + roleName);
+      } else if (tableName != null) {
         statement.execute("CREATE DATABASE IF NOT EXISTS " + dbName);
         statement.execute("USE " + dbName);
         statement.execute("GRANT " + action + " ON TABLE " + tableName + " TO ROLE " + roleName);

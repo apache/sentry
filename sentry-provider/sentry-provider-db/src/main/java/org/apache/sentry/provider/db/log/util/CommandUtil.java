@@ -19,6 +19,7 @@
 package org.apache.sentry.provider.db.log.util;
 
 import java.util.Iterator;
+import java.util.Set;
 
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleAddGroupsRequest;
@@ -87,14 +88,25 @@ public class CommandUtil {
 
   public static String createCmdForGrantPrivilege(
       TAlterSentryRoleGrantPrivilegeRequest request) {
-    return createCmdForGrantOrRevokePrivilege(request.getRoleName(),
-        request.getPrivilege(), true);
+    return createCmdForGrantOrRevokePrivileges(request.getRoleName(),
+        request.getPrivileges(), true);
   }
 
   public static String createCmdForRevokePrivilege(
       TAlterSentryRoleRevokePrivilegeRequest request) {
-    return createCmdForGrantOrRevokePrivilege(request.getRoleName(),
-        request.getPrivilege(), false);
+    return createCmdForGrantOrRevokePrivileges(request.getRoleName(),
+        request.getPrivileges(), false);
+  }
+
+  private static String createCmdForGrantOrRevokePrivileges(String roleName,
+      Set<TSentryPrivilege> privileges, boolean isGrant) {
+    StringBuilder sb = new StringBuilder();
+    if (privileges != null) {
+      for (TSentryPrivilege privilege : privileges) {
+        sb.append(createCmdForGrantOrRevokePrivilege(roleName, privilege, isGrant));
+      }
+    }
+    return sb.toString();
   }
 
   private static String createCmdForGrantOrRevokePrivilege(String roleName,

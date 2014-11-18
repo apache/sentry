@@ -170,6 +170,7 @@ public class HiveServerFactory {
         "org.apache.sentry.binding.metastore.SentryHiveMetaStoreClient");
 
     properties.put(ConfVars.HIVESTATSAUTOGATHER.varname, "false");
+    properties.put(ConfVars.HIVE_STATS_COLLECT_SCANCOLS.varname, "true");
     String hadoopBinPath = properties.get(HADOOPBIN);
     Assert.assertNotNull(hadoopBinPath, "Hadoop Bin");
     File hadoopBin = new File(hadoopBinPath);

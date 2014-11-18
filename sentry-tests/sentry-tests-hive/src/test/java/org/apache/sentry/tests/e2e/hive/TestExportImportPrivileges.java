@@ -101,8 +101,10 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticConfigurat
     policyFile
         .addRolesToGroup(USERGROUP1, "tab1_read", "tab1_write", "db1_all", "data_read", "data_export")
         .addRolesToGroup(USERGROUP2, "tab1_write", "tab1_read")
+        .addRolesToGroup(USERGROUP3, "col1_read")
         .addPermissionsToRole("tab1_write", "server=server1->db=" + DB1 + "->table=" + TBL1 + "->action=INSERT")
         .addPermissionsToRole("tab1_read", "server=server1->db=" + DB1 + "->table=" + TBL1 + "->action=SELECT")
+        .addPermissionsToRole("col1_read", "server=server1->db=" + DB1 + "->table=" + TBL1 + "->column=under_col->action=SELECT")
         .addPermissionsToRole("db1_all", "server=server1->db=" + DB1)
         .addPermissionsToRole("data_read", "server=server1->URI=file://" + dataFile.getPath())
         .addPermissionsToRole("data_export", "server=server1->URI=" + exportDir);
@@ -137,6 +139,14 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticConfigurat
     statement = context.createStatement(connection);
     statement.execute("use " + DB1);
     statement.execute("IMPORT TABLE " + TBL2 + " FROM '" + exportDir + "'");
+    statement.close();
+    connection.close();
+
+    // Positive test, user3 have access to the target directory
+    connection = context.createConnection(USER3_1);
+    statement = context.createStatement(connection);
+    statement.execute("use " + DB1);
+    statement.execute("SELECT under_col FROM " + TBL1);
     statement.close();
     connection.close();
   }

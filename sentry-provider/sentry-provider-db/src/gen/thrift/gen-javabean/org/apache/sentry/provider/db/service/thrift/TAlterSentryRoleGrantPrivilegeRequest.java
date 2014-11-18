@@ -38,6 +38,7 @@ public class TAlterSentryRoleGrantPrivilegeRequest implements org.apache.thrift.
   private static final org.apache.thrift.protocol.TField REQUESTOR_USER_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("requestorUserName", org.apache.thrift.protocol.TType.STRING, (short)2);
   private static final org.apache.thrift.protocol.TField ROLE_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("roleName", org.apache.thrift.protocol.TType.STRING, (short)3);
   private static final org.apache.thrift.protocol.TField PRIVILEGE_FIELD_DESC = new org.apache.thrift.protocol.TField("privilege", org.apache.thrift.protocol.TType.STRUCT, (short)5);
+  private static final org.apache.thrift.protocol.TField PRIVILEGES_FIELD_DESC = new org.apache.thrift.protocol.TField("privileges", org.apache.thrift.protocol.TType.SET, (short)6);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
@@ -48,14 +49,16 @@ public class TAlterSentryRoleGrantPrivilegeRequest implements org.apache.thrift.
   private int protocol_version; // required
   private String requestorUserName; // required
   private String roleName; // required
-  private TSentryPrivilege privilege; // required
+  private TSentryPrivilege privilege; // optional
+  private Set<TSentryPrivilege> privileges; // optional
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
     PROTOCOL_VERSION((short)1, "protocol_version"),
     REQUESTOR_USER_NAME((short)2, "requestorUserName"),
     ROLE_NAME((short)3, "roleName"),
-    PRIVILEGE((short)5, "privilege");
+    PRIVILEGE((short)5, "privilege"),
+    PRIVILEGES((short)6, "privileges");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -78,6 +81,8 @@ public class TAlterSentryRoleGrantPrivilegeRequest implements org.apache.thrift.
           return ROLE_NAME;
         case 5: // PRIVILEGE
           return PRIVILEGE;
+        case 6: // PRIVILEGES
+          return PRIVILEGES;
         default:
           return null;
       }
@@ -120,6 +125,7 @@ public class TAlterSentryRoleGrantPrivilegeRequest implements org.apache.thrift.
   // isset id assignments
   private static final int __PROTOCOL_VERSION_ISSET_ID = 0;
   private byte __isset_bitfield = 0;
+  private _Fields optionals[] = {_Fields.PRIVILEGE,_Fields.PRIVILEGES};
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
@@ -129,8 +135,11 @@ public class TAlterSentryRoleGrantPrivilegeRequest implements org.apache.thrift.
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
     tmpMap.put(_Fields.ROLE_NAME, new org.apache.thrift.meta_data.FieldMetaData("roleName", org.apache.thrift.TFieldRequirementType.REQUIRED, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
-    tmpMap.put(_Fields.PRIVILEGE, new org.apache.thrift.meta_data.FieldMetaData("privilege", org.apache.thrift.TFieldRequirementType.REQUIRED, 
+    tmpMap.put(_Fields.PRIVILEGE, new org.apache.thrift.meta_data.FieldMetaData("privilege", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
         new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TSentryPrivilege.class)));
+    tmpMap.put(_Fields.PRIVILEGES, new org.apache.thrift.meta_data.FieldMetaData("privileges", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
+        new org.apache.thrift.meta_data.SetMetaData(org.apache.thrift.protocol.TType.SET, 
+            new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TSentryPrivilege.class))));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(TAlterSentryRoleGrantPrivilegeRequest.class, metaDataMap);
   }
@@ -143,15 +152,13 @@ public class TAlterSentryRoleGrantPrivilegeRequest implements org.apache.thrift.
   public TAlterSentryRoleGrantPrivilegeRequest(
     int protocol_version,
     String requestorUserName,
-    String roleName,
-    TSentryPrivilege privilege)
+    String roleName)
   {
     this();
     this.protocol_version = protocol_version;
     setProtocol_versionIsSet(true);
     this.requestorUserName = requestorUserName;
     this.roleName = roleName;
-    this.privilege = privilege;
   }
 
   /**
@@ -169,6 +176,13 @@ public class TAlterSentryRoleGrantPrivilegeRequest implements org.apache.thrift.
     if (other.isSetPrivilege()) {
       this.privilege = new TSentryPrivilege(other.privilege);
     }
+    if (other.isSetPrivileges()) {
+      Set<TSentryPrivilege> __this__privileges = new HashSet<TSentryPrivilege>();
+      for (TSentryPrivilege other_element : other.privileges) {
+        __this__privileges.add(new TSentryPrivilege(other_element));
+      }
+      this.privileges = __this__privileges;
+    }
   }
 
   public TAlterSentryRoleGrantPrivilegeRequest deepCopy() {
@@ -182,6 +196,7 @@ public class TAlterSentryRoleGrantPrivilegeRequest implements org.apache.thrift.
     this.requestorUserName = null;
     this.roleName = null;
     this.privilege = null;
+    this.privileges = null;
   }
 
   public int getProtocol_version() {
@@ -275,6 +290,44 @@ public class TAlterSentryRoleGrantPrivilegeRequest implements org.apache.thrift.
     }
   }
 
+  public int getPrivilegesSize() {
+    return (this.privileges == null) ? 0 : this.privileges.size();
+  }
+
+  public java.util.Iterator<TSentryPrivilege> getPrivilegesIterator() {
+    return (this.privileges == null) ? null : this.privileges.iterator();
+  }
+
+  public void addToPrivileges(TSentryPrivilege elem) {
+    if (this.privileges == null) {
+      this.privileges = new HashSet<TSentryPrivilege>();
+    }
+    this.privileges.add(elem);
+  }
+
+  public Set<TSentryPrivilege> getPrivileges() {
+    return this.privileges;
+  }
+
+  public void setPrivileges(Set<TSentryPrivilege> privileges) {
+    this.privileges = privileges;
+  }
+
+  public void unsetPrivileges() {
+    this.privileges = null;
+  }
+
+  /** Returns true if field privileges is set (has been assigned a value) and false otherwise */
+  public boolean isSetPrivileges() {
+    return this.privileges != null;
+  }
+
+  public void setPrivilegesIsSet(boolean value) {
+    if (!value) {
+      this.privileges = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case PROTOCOL_VERSION:
@@ -309,6 +362,14 @@ public class TAlterSentryRoleGrantPrivilegeRequest implements org.apache.thrift.
       }
       break;
 
+    case PRIVILEGES:
+      if (value == null) {
+        unsetPrivileges();
+      } else {
+        setPrivileges((Set<TSentryPrivilege>)value);
+      }
+      break;
+
     }
   }
 
@@ -325,6 +386,9 @@ public class TAlterSentryRoleGrantPrivilegeRequest implements org.apache.thrift.
 
     case PRIVILEGE:
       return getPrivilege();
+
+    case PRIVILEGES:
+      return getPrivileges();
 
     }
     throw new IllegalStateException();
@@ -345,6 +409,8 @@ public class TAlterSentryRoleGrantPrivilegeRequest implements org.apache.thrift.
       return isSetRoleName();
     case PRIVILEGE:
       return isSetPrivilege();
+    case PRIVILEGES:
+      return isSetPrivileges();
     }
     throw new IllegalStateException();
   }
@@ -398,6 +464,15 @@ public class TAlterSentryRoleGrantPrivilegeRequest implements org.apache.thrift.
         return false;
     }
 
+    boolean this_present_privileges = true && this.isSetPrivileges();
+    boolean that_present_privileges = true && that.isSetPrivileges();
+    if (this_present_privileges || that_present_privileges) {
+      if (!(this_present_privileges && that_present_privileges))
+        return false;
+      if (!this.privileges.equals(that.privileges))
+        return false;
+    }
+
     return true;
   }
 
@@ -424,6 +499,11 @@ public class TAlterSentryRoleGrantPrivilegeRequest implements org.apache.thrift.
     builder.append(present_privilege);
     if (present_privilege)
       builder.append(privilege);
+
+    boolean present_privileges = true && (isSetPrivileges());
+    builder.append(present_privileges);
+    if (present_privileges)
+      builder.append(privileges);
 
     return builder.toHashCode();
   }
@@ -476,6 +556,16 @@ public class TAlterSentryRoleGrantPrivilegeRequest implements org.apache.thrift.
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetPrivileges()).compareTo(typedOther.isSetPrivileges());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetPrivileges()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.privileges, typedOther.privileges);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -515,14 +605,26 @@ public class TAlterSentryRoleGrantPrivilegeRequest implements org.apache.thrift.
       sb.append(this.roleName);
     }
     first = false;
-    if (!first) sb.append(", ");
-    sb.append("privilege:");
-    if (this.privilege == null) {
-      sb.append("null");
-    } else {
-      sb.append(this.privilege);
+    if (isSetPrivilege()) {
+      if (!first) sb.append(", ");
+      sb.append("privilege:");
+      if (this.privilege == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.privilege);
+      }
+      first = false;
     }
-    first = false;
+    if (isSetPrivileges()) {
+      if (!first) sb.append(", ");
+      sb.append("privileges:");
+      if (this.privileges == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.privileges);
+      }
+      first = false;
+    }
     sb.append(")");
     return sb.toString();
   }
@@ -539,10 +641,6 @@ public class TAlterSentryRoleGrantPrivilegeRequest implements org.apache.thrift.
 
     if (!isSetRoleName()) {
       throw new org.apache.thrift.protocol.TProtocolException("Required field 'roleName' is unset! Struct:" + toString());
-    }
-
-    if (!isSetPrivilege()) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'privilege' is unset! Struct:" + toString());
     }
 
     // check for sub-struct validity
@@ -620,6 +718,25 @@ public class TAlterSentryRoleGrantPrivilegeRequest implements org.apache.thrift.
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
+          case 6: // PRIVILEGES
+            if (schemeField.type == org.apache.thrift.protocol.TType.SET) {
+              {
+                org.apache.thrift.protocol.TSet _set16 = iprot.readSetBegin();
+                struct.privileges = new HashSet<TSentryPrivilege>(2*_set16.size);
+                for (int _i17 = 0; _i17 < _set16.size; ++_i17)
+                {
+                  TSentryPrivilege _elem18; // required
+                  _elem18 = new TSentryPrivilege();
+                  _elem18.read(iprot);
+                  struct.privileges.add(_elem18);
+                }
+                iprot.readSetEnd();
+              }
+              struct.setPrivilegesIsSet(true);
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+            }
+            break;
           default:
             org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
         }
@@ -647,9 +764,25 @@ public class TAlterSentryRoleGrantPrivilegeRequest implements org.apache.thrift.
         oprot.writeFieldEnd();
       }
       if (struct.privilege != null) {
-        oprot.writeFieldBegin(PRIVILEGE_FIELD_DESC);
-        struct.privilege.write(oprot);
-        oprot.writeFieldEnd();
+        if (struct.isSetPrivilege()) {
+          oprot.writeFieldBegin(PRIVILEGE_FIELD_DESC);
+          struct.privilege.write(oprot);
+          oprot.writeFieldEnd();
+        }
+      }
+      if (struct.privileges != null) {
+        if (struct.isSetPrivileges()) {
+          oprot.writeFieldBegin(PRIVILEGES_FIELD_DESC);
+          {
+            oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, struct.privileges.size()));
+            for (TSentryPrivilege _iter19 : struct.privileges)
+            {
+              _iter19.write(oprot);
+            }
+            oprot.writeSetEnd();
+          }
+          oprot.writeFieldEnd();
+        }
       }
       oprot.writeFieldStop();
       oprot.writeStructEnd();
@@ -671,7 +804,26 @@ public class TAlterSentryRoleGrantPrivilegeRequest implements org.apache.thrift.
       oprot.writeI32(struct.protocol_version);
       oprot.writeString(struct.requestorUserName);
       oprot.writeString(struct.roleName);
-      struct.privilege.write(oprot);
+      BitSet optionals = new BitSet();
+      if (struct.isSetPrivilege()) {
+        optionals.set(0);
+      }
+      if (struct.isSetPrivileges()) {
+        optionals.set(1);
+      }
+      oprot.writeBitSet(optionals, 2);
+      if (struct.isSetPrivilege()) {
+        struct.privilege.write(oprot);
+      }
+      if (struct.isSetPrivileges()) {
+        {
+          oprot.writeI32(struct.privileges.size());
+          for (TSentryPrivilege _iter20 : struct.privileges)
+          {
+            _iter20.write(oprot);
+          }
+        }
+      }
     }
 
     @Override
@@ -683,9 +835,26 @@ public class TAlterSentryRoleGrantPrivilegeRequest implements org.apache.thrift.
       struct.setRequestorUserNameIsSet(true);
       struct.roleName = iprot.readString();
       struct.setRoleNameIsSet(true);
-      struct.privilege = new TSentryPrivilege();
-      struct.privilege.read(iprot);
-      struct.setPrivilegeIsSet(true);
+      BitSet incoming = iprot.readBitSet(2);
+      if (incoming.get(0)) {
+        struct.privilege = new TSentryPrivilege();
+        struct.privilege.read(iprot);
+        struct.setPrivilegeIsSet(true);
+      }
+      if (incoming.get(1)) {
+        {
+          org.apache.thrift.protocol.TSet _set21 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
+          struct.privileges = new HashSet<TSentryPrivilege>(2*_set21.size);
+          for (int _i22 = 0; _i22 < _set21.size; ++_i22)
+          {
+            TSentryPrivilege _elem23; // required
+            _elem23 = new TSentryPrivilege();
+            _elem23.read(iprot);
+            struct.privileges.add(_elem23);
+          }
+        }
+        struct.setPrivilegesIsSet(true);
+      }
     }
   }
 

@@ -182,4 +182,51 @@ public class TestSentryPrivilege {
     your.setURI("hdfs://namenode:9000/path1");
     assertFalse(my.implies(your));
   }
+
+  @Test
+  public void testImpliesPrivilegePositiveWithColumn() throws Exception {
+    // 1.test server+database+table+column+action
+    MSentryPrivilege my = new MSentryPrivilege();
+    MSentryPrivilege your = new MSentryPrivilege();
+    my.setServerName("server1");
+    my.setAction(AccessConstants.SELECT);
+    your.setServerName("server1");
+    your.setDbName("db1");
+    your.setTableName("tb1");
+    your.setColumnName("c1");
+    your.setAction(AccessConstants.SELECT);
+    assertTrue(my.implies(your));
+
+    my.setDbName("db1");
+    assertTrue(my.implies(your));
+
+    my.setTableName("tb1");
+    assertTrue(my.implies(your));
+
+    my.setColumnName("c1");
+    assertTrue(my.implies(your));
+  }
+
+  @Test
+  public void testImpliesPrivilegeNegativeWithColumn() throws Exception {
+    // 1.test server+database+table+column+action
+    MSentryPrivilege my = new MSentryPrivilege();
+    MSentryPrivilege your = new MSentryPrivilege();
+    // bad column
+    my.setServerName("server1");
+    my.setDbName("db1");
+    my.setTableName("tb1");
+    my.setColumnName("c1");
+    my.setAction(AccessConstants.SELECT);
+    your.setServerName("server1");
+    your.setDbName("db1");
+    your.setTableName("tb1");
+    your.setColumnName("c2");
+    your.setAction(AccessConstants.SELECT);
+    assertFalse(my.implies(your));
+
+    // bad scope
+    your.setColumnName("");
+    assertFalse(my.implies(your));
+  }
 }

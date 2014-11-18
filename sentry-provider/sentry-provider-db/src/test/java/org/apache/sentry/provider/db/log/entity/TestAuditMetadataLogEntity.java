@@ -31,7 +31,7 @@ public class TestAuditMetadataLogEntity extends TestCase {
   public void testToJsonFormatLog() throws Throwable {
     AuditMetadataLogEntity amle = new AuditMetadataLogEntity("serviceName",
         "userName", "impersonator", "ipAddress", "operation", "eventTime",
-        "operationText", "allowed", "databaseName", "tableName",
+        "operationText", "allowed", "databaseName", "tableName", "columnName",
         "resourcePath", "objectType");
     String jsonAuditLog = amle.toJsonFormatLog();
     ContainerNode rootNode = AuditMetadataLogEntity.parse(jsonAuditLog);
@@ -48,6 +48,7 @@ public class TestAuditMetadataLogEntity extends TestCase {
     assertEntryEquals(rootNode, Constants.LOG_FIELD_DATABASE_NAME,
         "databaseName");
     assertEntryEquals(rootNode, Constants.LOG_FIELD_TABLE_NAME, "tableName");
+    assertEntryEquals(rootNode, Constants.LOG_FIELD_COLUMN_NAME, "columnName");
     assertEntryEquals(rootNode, Constants.LOG_FIELD_RESOURCE_PATH,
         "resourcePath");
     assertEntryEquals(rootNode, Constants.LOG_FIELD_OBJECT_TYPE, "objectType");

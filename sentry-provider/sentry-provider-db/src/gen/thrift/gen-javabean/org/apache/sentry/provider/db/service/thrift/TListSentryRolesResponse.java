@@ -444,14 +444,14 @@ public class TListSentryRolesResponse implements org.apache.thrift.TBase<TListSe
           case 2: // ROLES
             if (schemeField.type == org.apache.thrift.protocol.TType.SET) {
               {
-                org.apache.thrift.protocol.TSet _set24 = iprot.readSetBegin();
-                struct.roles = new HashSet<TSentryRole>(2*_set24.size);
-                for (int _i25 = 0; _i25 < _set24.size; ++_i25)
+                org.apache.thrift.protocol.TSet _set48 = iprot.readSetBegin();
+                struct.roles = new HashSet<TSentryRole>(2*_set48.size);
+                for (int _i49 = 0; _i49 < _set48.size; ++_i49)
                 {
-                  TSentryRole _elem26; // required
-                  _elem26 = new TSentryRole();
-                  _elem26.read(iprot);
-                  struct.roles.add(_elem26);
+                  TSentryRole _elem50; // required
+                  _elem50 = new TSentryRole();
+                  _elem50.read(iprot);
+                  struct.roles.add(_elem50);
                 }
                 iprot.readSetEnd();
               }
@@ -483,9 +483,9 @@ public class TListSentryRolesResponse implements org.apache.thrift.TBase<TListSe
           oprot.writeFieldBegin(ROLES_FIELD_DESC);
           {
             oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, struct.roles.size()));
-            for (TSentryRole _iter27 : struct.roles)
+            for (TSentryRole _iter51 : struct.roles)
             {
-              _iter27.write(oprot);
+              _iter51.write(oprot);
             }
             oprot.writeSetEnd();
           }
@@ -518,9 +518,9 @@ public class TListSentryRolesResponse implements org.apache.thrift.TBase<TListSe
       if (struct.isSetRoles()) {
         {
           oprot.writeI32(struct.roles.size());
-          for (TSentryRole _iter28 : struct.roles)
+          for (TSentryRole _iter52 : struct.roles)
           {
-            _iter28.write(oprot);
+            _iter52.write(oprot);
           }
         }
       }
@@ -535,14 +535,14 @@ public class TListSentryRolesResponse implements org.apache.thrift.TBase<TListSe
       BitSet incoming = iprot.readBitSet(1);
       if (incoming.get(0)) {
         {
-          org.apache.thrift.protocol.TSet _set29 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
-          struct.roles = new HashSet<TSentryRole>(2*_set29.size);
-          for (int _i30 = 0; _i30 < _set29.size; ++_i30)
+          org.apache.thrift.protocol.TSet _set53 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
+          struct.roles = new HashSet<TSentryRole>(2*_set53.size);
+          for (int _i54 = 0; _i54 < _set53.size; ++_i54)
           {
-            TSentryRole _elem31; // required
-            _elem31 = new TSentryRole();
-            _elem31.read(iprot);
-            struct.roles.add(_elem31);
+            TSentryRole _elem55; // required
+            _elem55 = new TSentryRole();
+            _elem55.read(iprot);
+            struct.roles.add(_elem55);
           }
         }
         struct.setRolesIsSet(true);

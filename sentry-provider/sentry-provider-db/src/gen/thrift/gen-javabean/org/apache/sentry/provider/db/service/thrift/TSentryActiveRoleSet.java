@@ -443,13 +443,13 @@ public class TSentryActiveRoleSet implements org.apache.thrift.TBase<TSentryActi
           case 2: // ROLES
             if (schemeField.type == org.apache.thrift.protocol.TType.SET) {
               {
-                org.apache.thrift.protocol.TSet _set40 = iprot.readSetBegin();
-                struct.roles = new HashSet<String>(2*_set40.size);
-                for (int _i41 = 0; _i41 < _set40.size; ++_i41)
+                org.apache.thrift.protocol.TSet _set64 = iprot.readSetBegin();
+                struct.roles = new HashSet<String>(2*_set64.size);
+                for (int _i65 = 0; _i65 < _set64.size; ++_i65)
                 {
-                  String _elem42; // required
-                  _elem42 = iprot.readString();
-                  struct.roles.add(_elem42);
+                  String _elem66; // required
+                  _elem66 = iprot.readString();
+                  struct.roles.add(_elem66);
                 }
                 iprot.readSetEnd();
               }
@@ -478,9 +478,9 @@ public class TSentryActiveRoleSet implements org.apache.thrift.TBase<TSentryActi
         oprot.writeFieldBegin(ROLES_FIELD_DESC);
         {
           oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRING, struct.roles.size()));
-          for (String _iter43 : struct.roles)
+          for (String _iter67 : struct.roles)
           {
-            oprot.writeString(_iter43);
+            oprot.writeString(_iter67);
           }
           oprot.writeSetEnd();
         }
@@ -506,9 +506,9 @@ public class TSentryActiveRoleSet implements org.apache.thrift.TBase<TSentryActi
       oprot.writeBool(struct.all);
       {
         oprot.writeI32(struct.roles.size());
-        for (String _iter44 : struct.roles)
+        for (String _iter68 : struct.roles)
         {
-          oprot.writeString(_iter44);
+          oprot.writeString(_iter68);
         }
       }
     }
@@ -519,13 +519,13 @@ public class TSentryActiveRoleSet implements org.apache.thrift.TBase<TSentryActi
       struct.all = iprot.readBool();
       struct.setAllIsSet(true);
       {
-        org.apache.thrift.protocol.TSet _set45 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRING, iprot.readI32());
-        struct.roles = new HashSet<String>(2*_set45.size);
-        for (int _i46 = 0; _i46 < _set45.size; ++_i46)
+        org.apache.thrift.protocol.TSet _set69 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRING, iprot.readI32());
+        struct.roles = new HashSet<String>(2*_set69.size);
+        for (int _i70 = 0; _i70 < _set69.size; ++_i70)
         {
-          String _elem47; // required
-          _elem47 = iprot.readString();
-          struct.roles.add(_elem47);
+          String _elem71; // required
+          _elem71 = iprot.readString();
+          struct.roles.add(_elem71);
         }
       }
       struct.setRolesIsSet(true);

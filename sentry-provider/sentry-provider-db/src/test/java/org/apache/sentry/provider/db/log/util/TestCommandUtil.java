@@ -34,6 +34,8 @@ import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
 import org.junit.Test;
 
+import com.google.common.collect.Sets;
+
 public class TestCommandUtil extends TestCase {
 
   @Test
@@ -103,8 +105,10 @@ public class TestCommandUtil extends TestCase {
     TSentryPrivilege privilege = getPrivilege(AccessConstants.ALL,
         PrivilegeScope.DATABASE.name(), "dbTest", "tableTest", "serverTest",
         "hdfs://namenode:port/path/to/dir");
-    grantRequest.setPrivilege(privilege);
-    revokeRequest.setPrivilege(privilege);
+    Set<TSentryPrivilege> privileges = Sets.newHashSet();
+    privileges.add(privilege);
+    grantRequest.setPrivileges(privileges);
+    revokeRequest.setPrivileges(privileges);
 
     String createGrantPrivilegeCmdResult = CommandUtil
         .createCmdForGrantPrivilege(grantRequest);
@@ -126,8 +130,10 @@ public class TestCommandUtil extends TestCase {
     TSentryPrivilege privilege = getPrivilege(AccessConstants.INSERT,
         PrivilegeScope.DATABASE.name(), "dbTest", "tableTest", "serverTest",
         "hdfs://namenode:port/path/to/dir");
-    grantRequest.setPrivilege(privilege);
-    revokeRequest.setPrivilege(privilege);
+    Set<TSentryPrivilege> privileges = Sets.newHashSet();
+    privileges.add(privilege);
+    grantRequest.setPrivileges(privileges);
+    revokeRequest.setPrivileges(privileges);
 
     String createGrantPrivilegeCmdResult = CommandUtil
         .createCmdForGrantPrivilege(grantRequest);
@@ -149,8 +155,10 @@ public class TestCommandUtil extends TestCase {
     TSentryPrivilege privilege = getPrivilege(AccessConstants.SELECT,
         PrivilegeScope.DATABASE.name(), "dbTest", "tableTest", "serverTest",
         "hdfs://namenode:port/path/to/dir");
-    grantRequest.setPrivilege(privilege);
-    revokeRequest.setPrivilege(privilege);
+    Set<TSentryPrivilege> privileges = Sets.newHashSet();
+    privileges.add(privilege);
+    grantRequest.setPrivileges(privileges);
+    revokeRequest.setPrivileges(privileges);
 
     String createGrantPrivilegeCmdResult = CommandUtil
         .createCmdForGrantPrivilege(grantRequest);
@@ -172,8 +180,10 @@ public class TestCommandUtil extends TestCase {
     TSentryPrivilege privilege = getPrivilege(null,
         PrivilegeScope.DATABASE.name(), "dbTest", "tableTest", "serverTest",
         "hdfs://namenode:port/path/to/dir");
-    grantRequest.setPrivilege(privilege);
-    revokeRequest.setPrivilege(privilege);
+    Set<TSentryPrivilege> privileges = Sets.newHashSet();
+    privileges.add(privilege);
+    grantRequest.setPrivileges(privileges);
+    revokeRequest.setPrivileges(privileges);
 
     String createGrantPrivilegeCmdResult = CommandUtil
         .createCmdForGrantPrivilege(grantRequest);
@@ -195,8 +205,10 @@ public class TestCommandUtil extends TestCase {
     TSentryPrivilege privilege = getPrivilege(AccessConstants.SELECT,
         PrivilegeScope.TABLE.name(), "dbTest", "tableTest", "serverTest",
         "hdfs://namenode:port/path/to/dir");
-    grantRequest.setPrivilege(privilege);
-    revokeRequest.setPrivilege(privilege);
+    Set<TSentryPrivilege> privileges = Sets.newHashSet();
+    privileges.add(privilege);
+    grantRequest.setPrivileges(privileges);
+    revokeRequest.setPrivileges(privileges);
 
     String createGrantPrivilegeCmdResult = CommandUtil
         .createCmdForGrantPrivilege(grantRequest);
@@ -218,8 +230,10 @@ public class TestCommandUtil extends TestCase {
     TSentryPrivilege privilege = getPrivilege(AccessConstants.SELECT,
         PrivilegeScope.SERVER.name(), "dbTest", "tableTest", "serverTest",
         "hdfs://namenode:port/path/to/dir");
-    grantRequest.setPrivilege(privilege);
-    revokeRequest.setPrivilege(privilege);
+    Set<TSentryPrivilege> privileges = Sets.newHashSet();
+    privileges.add(privilege);
+    grantRequest.setPrivileges(privileges);
+    revokeRequest.setPrivileges(privileges);
 
     String createGrantPrivilegeCmdResult = CommandUtil
         .createCmdForGrantPrivilege(grantRequest);
@@ -241,8 +255,10 @@ public class TestCommandUtil extends TestCase {
     TSentryPrivilege privilege = getPrivilege(AccessConstants.SELECT,
         PrivilegeScope.URI.name(), "dbTest", "tableTest", "serverTest",
         "hdfs://namenode:port/path/to/dir");
-    grantRequest.setPrivilege(privilege);
-    revokeRequest.setPrivilege(privilege);
+    Set<TSentryPrivilege> privileges = Sets.newHashSet();
+    privileges.add(privilege);
+    grantRequest.setPrivileges(privileges);
+    revokeRequest.setPrivileges(privileges);
 
     String createGrantPrivilegeCmdResult = CommandUtil
         .createCmdForGrantPrivilege(grantRequest);
@@ -264,8 +280,10 @@ public class TestCommandUtil extends TestCase {
     TSentryPrivilege privilege = getPrivilege(AccessConstants.SELECT, PrivilegeScope.SERVER.name(),
         "dbTest", "tableTest", "serverTest", "hdfs://namenode:port/path/to/dir");
     privilege.setGrantOption(TSentryGrantOption.TRUE);
-    grantRequest.setPrivilege(privilege);
-    revokeRequest.setPrivilege(privilege);
+    Set<TSentryPrivilege> privileges = Sets.newHashSet();
+    privileges.add(privilege);
+    grantRequest.setPrivileges(privileges);
+    revokeRequest.setPrivileges(privileges);
 
     String createGrantPrivilegeCmdResult = CommandUtil.createCmdForGrantPrivilege(grantRequest);
     String createGrantPrivilegeCmdExcepted = "GRANT SELECT ON SERVER serverTest TO ROLE testRole WITH GRANT OPTION";

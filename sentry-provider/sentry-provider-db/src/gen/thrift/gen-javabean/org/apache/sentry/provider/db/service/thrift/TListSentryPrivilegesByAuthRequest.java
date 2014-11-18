@@ -724,14 +724,14 @@ public class TListSentryPrivilegesByAuthRequest implements org.apache.thrift.TBa
           case 3: // AUTHORIZABLE_SET
             if (schemeField.type == org.apache.thrift.protocol.TType.SET) {
               {
-                org.apache.thrift.protocol.TSet _set82 = iprot.readSetBegin();
-                struct.authorizableSet = new HashSet<TSentryAuthorizable>(2*_set82.size);
-                for (int _i83 = 0; _i83 < _set82.size; ++_i83)
+                org.apache.thrift.protocol.TSet _set106 = iprot.readSetBegin();
+                struct.authorizableSet = new HashSet<TSentryAuthorizable>(2*_set106.size);
+                for (int _i107 = 0; _i107 < _set106.size; ++_i107)
                 {
-                  TSentryAuthorizable _elem84; // required
-                  _elem84 = new TSentryAuthorizable();
-                  _elem84.read(iprot);
-                  struct.authorizableSet.add(_elem84);
+                  TSentryAuthorizable _elem108; // required
+                  _elem108 = new TSentryAuthorizable();
+                  _elem108.read(iprot);
+                  struct.authorizableSet.add(_elem108);
                 }
                 iprot.readSetEnd();
               }
@@ -743,13 +743,13 @@ public class TListSentryPrivilegesByAuthRequest implements org.apache.thrift.TBa
           case 4: // GROUPS
             if (schemeField.type == org.apache.thrift.protocol.TType.SET) {
               {
-                org.apache.thrift.protocol.TSet _set85 = iprot.readSetBegin();
-                struct.groups = new HashSet<String>(2*_set85.size);
-                for (int _i86 = 0; _i86 < _set85.size; ++_i86)
+                org.apache.thrift.protocol.TSet _set109 = iprot.readSetBegin();
+                struct.groups = new HashSet<String>(2*_set109.size);
+                for (int _i110 = 0; _i110 < _set109.size; ++_i110)
                 {
-                  String _elem87; // required
-                  _elem87 = iprot.readString();
-                  struct.groups.add(_elem87);
+                  String _elem111; // required
+                  _elem111 = iprot.readString();
+                  struct.groups.add(_elem111);
                 }
                 iprot.readSetEnd();
               }
@@ -792,9 +792,9 @@ public class TListSentryPrivilegesByAuthRequest implements org.apache.thrift.TBa
         oprot.writeFieldBegin(AUTHORIZABLE_SET_FIELD_DESC);
         {
           oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, struct.authorizableSet.size()));
-          for (TSentryAuthorizable _iter88 : struct.authorizableSet)
+          for (TSentryAuthorizable _iter112 : struct.authorizableSet)
           {
-            _iter88.write(oprot);
+            _iter112.write(oprot);
           }
           oprot.writeSetEnd();
         }
@@ -805,9 +805,9 @@ public class TListSentryPrivilegesByAuthRequest implements org.apache.thrift.TBa
           oprot.writeFieldBegin(GROUPS_FIELD_DESC);
           {
             oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRING, struct.groups.size()));
-            for (String _iter89 : struct.groups)
+            for (String _iter113 : struct.groups)
             {
-              oprot.writeString(_iter89);
+              oprot.writeString(_iter113);
             }
             oprot.writeSetEnd();
           }
@@ -842,9 +842,9 @@ public class TListSentryPrivilegesByAuthRequest implements org.apache.thrift.TBa
       oprot.writeString(struct.requestorUserName);
       {
         oprot.writeI32(struct.authorizableSet.size());
-        for (TSentryAuthorizable _iter90 : struct.authorizableSet)
+        for (TSentryAuthorizable _iter114 : struct.authorizableSet)
         {
-          _iter90.write(oprot);
+          _iter114.write(oprot);
         }
       }
       BitSet optionals = new BitSet();
@@ -858,9 +858,9 @@ public class TListSentryPrivilegesByAuthRequest implements org.apache.thrift.TBa
       if (struct.isSetGroups()) {
         {
           oprot.writeI32(struct.groups.size());
-          for (String _iter91 : struct.groups)
+          for (String _iter115 : struct.groups)
           {
-            oprot.writeString(_iter91);
+            oprot.writeString(_iter115);
           }
         }
       }
@@ -877,27 +877,27 @@ public class TListSentryPrivilegesByAuthRequest implements org.apache.thrift.TBa
       struct.requestorUserName = iprot.readString();
       struct.setRequestorUserNameIsSet(true);
       {
-        org.apache.thrift.protocol.TSet _set92 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
-        struct.authorizableSet = new HashSet<TSentryAuthorizable>(2*_set92.size);
-        for (int _i93 = 0; _i93 < _set92.size; ++_i93)
+        org.apache.thrift.protocol.TSet _set116 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
+        struct.authorizableSet = new HashSet<TSentryAuthorizable>(2*_set116.size);
+        for (int _i117 = 0; _i117 < _set116.size; ++_i117)
         {
-          TSentryAuthorizable _elem94; // required
-          _elem94 = new TSentryAuthorizable();
-          _elem94.read(iprot);
-          struct.authorizableSet.add(_elem94);
+          TSentryAuthorizable _elem118; // required
+          _elem118 = new TSentryAuthorizable();
+          _elem118.read(iprot);
+          struct.authorizableSet.add(_elem118);
         }
       }
       struct.setAuthorizableSetIsSet(true);
       BitSet incoming = iprot.readBitSet(2);
       if (incoming.get(0)) {
         {
-          org.apache.thrift.protocol.TSet _set95 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRING, iprot.readI32());
-          struct.groups = new HashSet<String>(2*_set95.size);
-          for (int _i96 = 0; _i96 < _set95.size; ++_i96)
+          org.apache.thrift.protocol.TSet _set119 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRING, iprot.readI32());
+          struct.groups = new HashSet<String>(2*_set119.size);
+          for (int _i120 = 0; _i120 < _set119.size; ++_i120)
           {
-            String _elem97; // required
-            _elem97 = iprot.readString();
-            struct.groups.add(_elem97);
+            String _elem121; // required
+            _elem121 = iprot.readString();
+            struct.groups.add(_elem121);
           }
         }
         struct.setGroupsIsSet(true);

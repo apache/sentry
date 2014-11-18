@@ -17,6 +17,7 @@
 package org.apache.sentry.policy.db;
 
 import org.apache.sentry.core.model.db.AccessURI;
+import org.apache.sentry.core.model.db.Column;
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
 import org.apache.sentry.core.model.db.Database;
@@ -55,6 +56,8 @@ public class DBModelAuthorizables {
       return new Table(name);
     case View:
       return new View(name);
+    case Column:
+      return new Column(name);
     case URI:
       return new AccessURI(name);
     default:

@@ -46,6 +46,7 @@ public class AuditMetadataLogEntity implements JsonLogEntity {
   private String allowed;
   private String databaseName;
   private String tableName;
+  private String columnName;
   private String resourcePath;
   private String objectType;
 
@@ -55,8 +56,8 @@ public class AuditMetadataLogEntity implements JsonLogEntity {
   public AuditMetadataLogEntity(String serviceName, String userName,
       String impersonator, String ipAddress, String operation,
       String eventTime, String operationText, String allowed,
-      String databaseName, String tableName, String resourcePath,
-      String objectType) {
+      String databaseName, String tableName, String columnName,
+      String resourcePath, String objectType) {
     this.serviceName = serviceName;
     this.userName = userName;
     this.impersonator = impersonator;
@@ -67,6 +68,7 @@ public class AuditMetadataLogEntity implements JsonLogEntity {
     this.allowed = allowed;
     this.databaseName = databaseName;
     this.tableName = tableName;
+    this.columnName = columnName;
     this.resourcePath = resourcePath;
     this.objectType = objectType;
   }
@@ -88,6 +90,7 @@ public class AuditMetadataLogEntity implements JsonLogEntity {
       json.writeStringField(Constants.LOG_FIELD_ALLOWED, allowed);
       json.writeStringField(Constants.LOG_FIELD_DATABASE_NAME, databaseName);
       json.writeStringField(Constants.LOG_FIELD_TABLE_NAME, tableName);
+      json.writeStringField(Constants.LOG_FIELD_COLUMN_NAME, columnName);
       json.writeStringField(Constants.LOG_FIELD_RESOURCE_PATH, resourcePath);
       json.writeStringField(Constants.LOG_FIELD_OBJECT_TYPE, objectType);
       json.writeEndObject();
@@ -189,6 +192,14 @@ public class AuditMetadataLogEntity implements JsonLogEntity {
 
   public void setTableName(String tableName) {
     this.tableName = tableName;
+  }
+
+  public String getColumnName() {
+    return columnName;
+  }
+
+  public void setColumnName(String columnName) {
+    this.columnName = columnName;
   }
 
   public String getResourcePath() {

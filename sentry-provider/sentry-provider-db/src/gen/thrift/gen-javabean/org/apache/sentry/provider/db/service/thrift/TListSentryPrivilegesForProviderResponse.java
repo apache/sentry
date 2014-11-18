@@ -447,13 +447,13 @@ public class TListSentryPrivilegesForProviderResponse implements org.apache.thri
           case 2: // PRIVILEGES
             if (schemeField.type == org.apache.thrift.protocol.TType.SET) {
               {
-                org.apache.thrift.protocol.TSet _set56 = iprot.readSetBegin();
-                struct.privileges = new HashSet<String>(2*_set56.size);
-                for (int _i57 = 0; _i57 < _set56.size; ++_i57)
+                org.apache.thrift.protocol.TSet _set80 = iprot.readSetBegin();
+                struct.privileges = new HashSet<String>(2*_set80.size);
+                for (int _i81 = 0; _i81 < _set80.size; ++_i81)
                 {
-                  String _elem58; // required
-                  _elem58 = iprot.readString();
-                  struct.privileges.add(_elem58);
+                  String _elem82; // required
+                  _elem82 = iprot.readString();
+                  struct.privileges.add(_elem82);
                 }
                 iprot.readSetEnd();
               }
@@ -484,9 +484,9 @@ public class TListSentryPrivilegesForProviderResponse implements org.apache.thri
         oprot.writeFieldBegin(PRIVILEGES_FIELD_DESC);
         {
           oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRING, struct.privileges.size()));
-          for (String _iter59 : struct.privileges)
+          for (String _iter83 : struct.privileges)
           {
-            oprot.writeString(_iter59);
+            oprot.writeString(_iter83);
           }
           oprot.writeSetEnd();
         }
@@ -512,9 +512,9 @@ public class TListSentryPrivilegesForProviderResponse implements org.apache.thri
       struct.status.write(oprot);
       {
         oprot.writeI32(struct.privileges.size());
-        for (String _iter60 : struct.privileges)
+        for (String _iter84 : struct.privileges)
         {
-          oprot.writeString(_iter60);
+          oprot.writeString(_iter84);
         }
       }
     }
@@ -526,13 +526,13 @@ public class TListSentryPrivilegesForProviderResponse implements org.apache.thri
       struct.status.read(iprot);
       struct.setStatusIsSet(true);
       {
-        org.apache.thrift.protocol.TSet _set61 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRING, iprot.readI32());
-        struct.privileges = new HashSet<String>(2*_set61.size);
-        for (int _i62 = 0; _i62 < _set61.size; ++_i62)
+        org.apache.thrift.protocol.TSet _set85 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRING, iprot.readI32());
+        struct.privileges = new HashSet<String>(2*_set85.size);
+        for (int _i86 = 0; _i86 < _set85.size; ++_i86)
         {
-          String _elem63; // required
-          _elem63 = iprot.readString();
-          struct.privileges.add(_elem63);
+          String _elem87; // required
+          _elem87 = iprot.readString();
+          struct.privileges.add(_elem87);
         }
       }
       struct.setPrivilegesIsSet(true);

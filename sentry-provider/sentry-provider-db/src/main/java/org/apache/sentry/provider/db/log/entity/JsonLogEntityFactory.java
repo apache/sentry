@@ -18,6 +18,8 @@
 
 package org.apache.sentry.provider.db.log.entity;
 
+import java.util.Set;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.provider.db.log.util.CommandUtil;
 import org.apache.sentry.provider.db.log.util.Constants;
@@ -37,6 +39,8 @@ import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.apache.sentry.service.thrift.Status;
 import org.apache.sentry.service.thrift.TSentryResponseStatus;
+
+import com.google.common.collect.ImmutableSet;
 
 public class JsonLogEntityFactory {
 
@@ -69,27 +73,50 @@ public class JsonLogEntityFactory {
     return amle;
   }
 
-  public JsonLogEntity createJsonLogEntity(
+  public Set<JsonLogEntity> createJsonLogEntitys(
       TAlterSentryRoleGrantPrivilegeRequest request,
+      TAlterSentryRoleGrantPrivilegeResponse response, Configuration conf) {
+    ImmutableSet.Builder<JsonLogEntity> setBuilder = ImmutableSet.builder();
+    if (request.isSetPrivileges()) {
+      for (TSentryPrivilege privilege : request.getPrivileges()) {
+        JsonLogEntity logEntity = createJsonLogEntity(request, privilege, response, conf);
+        setBuilder.add(logEntity);
+      }
+    }
+    return setBuilder.build();
+  }
+
+  private JsonLogEntity createJsonLogEntity(
+      TAlterSentryRoleGrantPrivilegeRequest request, TSentryPrivilege privilege,
       TAlterSentryRoleGrantPrivilegeResponse response, Configuration conf) {
     AuditMetadataLogEntity amle = createCommonAMLE(conf, response.getStatus(),
         request.getRequestorUserName(), request.getClass().getName());
     amle.setOperationText(CommandUtil.createCmdForGrantPrivilege(request));
-    TSentryPrivilege privilege = request.getPrivilege();
     amle.setDatabaseName(privilege.getDbName());
     amle.setTableName(privilege.getTableName());
     amle.setResourcePath(privilege.getURI());
-
     return amle;
   }
 
-  public JsonLogEntity createJsonLogEntity(
+  public Set<JsonLogEntity> createJsonLogEntitys(
       TAlterSentryRoleRevokePrivilegeRequest request,
+      TAlterSentryRoleRevokePrivilegeResponse response, Configuration conf) {
+    ImmutableSet.Builder<JsonLogEntity> setBuilder = ImmutableSet.builder();
+    if (request.isSetPrivileges()) {
+      for (TSentryPrivilege privilege : request.getPrivileges()) {
+        JsonLogEntity logEntity = createJsonLogEntity(request, privilege, response, conf);
+        setBuilder.add(logEntity);
+      }
+    }
+    return setBuilder.build();
+  }
+
+  private JsonLogEntity createJsonLogEntity(
+      TAlterSentryRoleRevokePrivilegeRequest request, TSentryPrivilege privilege,
       TAlterSentryRoleRevokePrivilegeResponse response, Configuration conf) {
     AuditMetadataLogEntity amle = createCommonAMLE(conf, response.getStatus(),
         request.getRequestorUserName(), request.getClass().getName());
     amle.setOperationText(CommandUtil.createCmdForRevokePrivilege(request));
-    TSentryPrivilege privilege = request.getPrivilege();
     amle.setDatabaseName(privilege.getDbName());
     amle.setTableName(privilege.getTableName());
     amle.setResourcePath(privilege.getURI());

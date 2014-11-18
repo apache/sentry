@@ -56,6 +56,7 @@ import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.common.utils.PathUtils;
 import org.apache.sentry.core.model.db.AccessURI;
+import org.apache.sentry.core.model.db.Column;
 import org.apache.sentry.core.model.db.DBModelAction;
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
@@ -417,24 +418,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
       inputHierarchy.add(dbHierarchy);
       outputHierarchy.add(dbHierarchy);
 
-      for(ReadEntity readEntity:inputs) {
-        // skip the tables/view that are part of expanded view definition.
-        if (isChildTabForView(readEntity)) {
-          continue;
-        }
-        // If this is a UDF, then check whether its allowed to be executed
-         // TODO: when we support execute privileges on UDF, this can be removed.
-        if (isUDF(readEntity)) {
-          if (isBuiltinUDF(readEntity)) {
-            checkUDFWhiteList(readEntity.getUDF().getDisplayName());
-          }
-          continue;
-        }
-        List<DBModelAuthorizable> entityHierarchy = new ArrayList<DBModelAuthorizable>();
-        entityHierarchy.add(hiveAuthzBinding.getAuthServer());
-        entityHierarchy.addAll(getAuthzHierarchyFromEntity(readEntity));
-        inputHierarchy.add(entityHierarchy);
-      }
+      getInputHierarchyFromInputs(inputHierarchy, inputs);
       break;
     case TABLE:
       // workaround for add partitions
@@ -442,24 +426,8 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
         inputHierarchy.add(ImmutableList.of(hiveAuthzBinding.getAuthServer(), partitionURI));
       }
 
-      for (ReadEntity readEntity: inputs) {
-        // skip the tables/view that are part of expanded view definition.
-        if (isChildTabForView(readEntity)) {
-          continue;
-        }
-        // If this is a UDF, then check whether its allowed to be executed
-        // TODO: when we support execute privileges on UDF, this can be removed.
-        if (isUDF(readEntity)) {
-          if (isBuiltinUDF(readEntity)) {
-            checkUDFWhiteList(readEntity.getUDF().getDisplayName());
-          }
-          continue;
-        }
-        List<DBModelAuthorizable> entityHierarchy = new ArrayList<DBModelAuthorizable>();
-        entityHierarchy.add(hiveAuthzBinding.getAuthServer());
-        entityHierarchy.addAll(getAuthzHierarchyFromEntity(readEntity));
-        inputHierarchy.add(entityHierarchy);
-      }
+      getInputHierarchyFromInputs(inputHierarchy, inputs);
+
       for (WriteEntity writeEntity: outputs) {
         if (filterWriteEntity(writeEntity)) {
           continue;
@@ -491,6 +459,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
       connectHierarchy.add(hiveAuthzBinding.getAuthServer());
       // by default allow connect access to default db
       Table currTbl = Table.ALL;
+      Column currCol = Column.ALL;
       if ((DEFAULT_DATABASE_NAME.equalsIgnoreCase(currDB.getName()) &&
           "false".equalsIgnoreCase(authzConf.
               get(HiveAuthzConf.AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), "false")))
@@ -502,6 +471,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
 
       connectHierarchy.add(currDB);
       connectHierarchy.add(currTbl);
+      connectHierarchy.add(currCol);
 
       inputHierarchy.add(connectHierarchy);
       // check if this is a create temp function and we need to validate URI
@@ -600,6 +570,67 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
     return objectHierarchy;
   }
 
+  /**
+   * Add column level hierarchy to inputHierarchy
+   *
+   * @param inputHierarchy
+   * @param entity
+   * @param sentryContext
+   */
+  private void addColumnHierarchy(List<List<DBModelAuthorizable>> inputHierarchy,
+      ReadEntity entity) {
+    List<DBModelAuthorizable> entityHierarchy = new ArrayList<DBModelAuthorizable>();
+    entityHierarchy.add(hiveAuthzBinding.getAuthServer());
+    entityHierarchy.addAll(getAuthzHierarchyFromEntity(entity));
+
+    switch (entity.getType()) {
+    case TABLE:
+    case PARTITION:
+      List<String> cols = entity.getAccessedColumns();
+      for (String col : cols) {
+        List<DBModelAuthorizable> colHierarchy = new ArrayList<DBModelAuthorizable>(entityHierarchy);
+        colHierarchy.add(new Column(col));
+        inputHierarchy.add(colHierarchy);
+      }
+      break;
+    default:
+      inputHierarchy.add(entityHierarchy);
+    }
+  }
+
+  /**
+   * Get Authorizable from inputs and put into inputHierarchy
+   *
+   * @param inputHierarchy
+   * @param entity
+   * @param sentryContext
+   */
+  private void getInputHierarchyFromInputs(List<List<DBModelAuthorizable>> inputHierarchy,
+      Set<ReadEntity> inputs) {
+    for (ReadEntity readEntity: inputs) {
+      // skip the tables/view that are part of expanded view definition.
+      if (isChildTabForView(readEntity)) {
+        continue;
+      }
+      // If this is a UDF, then check whether its allowed to be executed
+      // TODO: when we support execute privileges on UDF, this can be removed.
+      if (isUDF(readEntity)) {
+        if (isBuiltinUDF(readEntity)) {
+          checkUDFWhiteList(readEntity.getUDF().getDisplayName());
+        }
+        continue;
+      }
+      if (readEntity.getAccessedColumns() != null && !readEntity.getAccessedColumns().isEmpty()) {
+        addColumnHierarchy(inputHierarchy, readEntity);
+      } else {
+        List<DBModelAuthorizable> entityHierarchy = new ArrayList<DBModelAuthorizable>();
+        entityHierarchy.add(hiveAuthzBinding.getAuthServer());
+        entityHierarchy.addAll(getAuthzHierarchyFromEntity(readEntity));
+        inputHierarchy.add(entityHierarchy);
+      }
+    }
+  }
+
   // Check if this write entity needs to skipped
   private boolean filterWriteEntity(WriteEntity writeEntity)
       throws AuthorizationException {
@@ -640,7 +671,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
     List<String> filteredResult = new ArrayList<String>();
     Subject subject = new Subject(userName);
     HiveAuthzPrivileges tableMetaDataPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
-        addInputObjectPriviledge(AuthorizableType.Table, EnumSet.of(DBModelAction.SELECT, DBModelAction.INSERT)).
+        addInputObjectPriviledge(AuthorizableType.Column, EnumSet.of(DBModelAction.SELECT, DBModelAction.INSERT)).
         setOperationScope(HiveOperationScope.TABLE).
         setOperationType(HiveOperationType.INFO).
         build();
@@ -657,6 +688,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
       externalAuthorizableHierarchy.add(hiveAuthzBinding.getAuthServer());
       externalAuthorizableHierarchy.add(database);
       externalAuthorizableHierarchy.add(table);
+      externalAuthorizableHierarchy.add(Column.ALL);
       inputHierarchy.add(externalAuthorizableHierarchy);
 
       try {
@@ -679,7 +711,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
     List<String> filteredResult = new ArrayList<String>();
     Subject subject = new Subject(userName);
     HiveAuthzPrivileges anyPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
-        addInputObjectPriviledge(AuthorizableType.Table, EnumSet.of(DBModelAction.SELECT, DBModelAction.INSERT)).
+        addInputObjectPriviledge(AuthorizableType.Column, EnumSet.of(DBModelAction.SELECT, DBModelAction.INSERT)).
         addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.SELECT)).
         setOperationScope(HiveOperationScope.CONNECT).
         setOperationType(HiveOperationType.QUERY).
@@ -707,6 +739,7 @@ hiveAuthzBinding.getAuthzConf().get(
       externalAuthorizableHierarchy.add(hiveAuthzBinding.getAuthServer());
       externalAuthorizableHierarchy.add(database);
       externalAuthorizableHierarchy.add(Table.ALL);
+      externalAuthorizableHierarchy.add(Column.ALL);
       inputHierarchy.add(externalAuthorizableHierarchy);
 
       try {

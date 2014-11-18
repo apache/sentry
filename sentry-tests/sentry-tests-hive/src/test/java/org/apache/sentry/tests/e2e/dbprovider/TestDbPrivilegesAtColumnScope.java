@@ -14,20 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.core.model.db;
 
-import org.apache.sentry.core.common.Authorizable;
+package org.apache.sentry.tests.e2e.dbprovider;
 
-public interface DBModelAuthorizable extends Authorizable {
+import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
+import org.apache.sentry.tests.e2e.hive.TestPrivilegesAtColumnScope;
+import org.junit.Before;
+import org.junit.BeforeClass;
 
-  public enum AuthorizableType {
-    Server,
-    Db,
-    Table,
-    Column,
-    View,
-    URI
-  };
+public class TestDbPrivilegesAtColumnScope extends TestPrivilegesAtColumnScope {
+  @Override
+  @Before
+  public void setup() throws Exception {
+    super.setupAdmin();
+    super.setup();
+  }
+  @BeforeClass
+  public static void setupTestStaticConfiguration() throws Exception {
+    useSentryService = true;
+    AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
 
-  public AuthorizableType getAuthzType();
+  }
+
 }

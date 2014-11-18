@@ -14,46 +14,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.sentry.core.model.db;
 
-package org.apache.hadoop.hive.ql.exec;
+public class Column implements DBModelAuthorizable {
 
-import java.util.ArrayList;
-import java.util.List;
+  /**
+   * Represents all Column
+   */
+  public static final Column ALL = new Column(AccessConstants.ALL);
 
-import org.apache.hadoop.hive.ql.plan.PrivilegeObjectDesc;
+  private final String name;
 
-public class SentryHivePrivilegeObjectDesc extends PrivilegeObjectDesc {
-  private boolean isUri;
-  private boolean isServer;
-  private List<String> columns = new ArrayList<String>();
-
-  public SentryHivePrivilegeObjectDesc() {
-    // reset table type which is on by default
-    super.setTable(false);
+  public Column(String name) {
+    this.name = name;
   }
 
-  public boolean getUri() {
-    return isUri;
+  @Override
+  public String getName() {
+    return name;
   }
 
-  public void setUri(boolean isUri) {
-    this.isUri = isUri;
+  @Override
+  public String toString() {
+    return "Column [name=" + name + "]";
   }
 
-  public boolean getServer() {
-    return isServer;
+  @Override
+  public AuthorizableType getAuthzType() {
+    return AuthorizableType.Column;
   }
 
-  public void setServer(boolean isServer) {
-    this.isServer = isServer;
+  @Override
+  public String getTypeName() {
+    return getAuthzType().name();
   }
-
-  public List<String> getColumns() {
-    return columns;
-  }
-
-  public void setColumns(List<String> columns) {
-    this.columns = columns;
-  }
-
 }

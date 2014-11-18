@@ -47,6 +47,7 @@ import org.apache.sentry.provider.db.SentryInvalidInputException;
 import org.apache.sentry.provider.db.SentryNoSuchObjectException;
 import org.apache.sentry.provider.db.SentryPolicyStorePlugin;
 import org.apache.sentry.provider.db.SentryPolicyStorePlugin.SentryPluginException;
+import org.apache.sentry.provider.db.log.entity.JsonLogEntity;
 import org.apache.sentry.provider.db.log.entity.JsonLogEntityFactory;
 import org.apache.sentry.provider.db.log.util.Constants;
 import org.apache.sentry.provider.db.service.persistent.CommitContext;
@@ -55,6 +56,7 @@ import org.apache.sentry.provider.db.service.thrift.PolicyStoreConstants.PolicyS
 import org.apache.sentry.service.thrift.ServiceConstants.ConfUtilties;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.apache.sentry.service.thrift.ProcessorFactory;
+import org.apache.sentry.service.thrift.ServiceConstants.ThriftConstants;
 import org.apache.sentry.service.thrift.Status;
 import org.apache.sentry.service.thrift.TSentryResponseStatus;
 import org.apache.thrift.TException;
@@ -245,10 +247,22 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
 
     TAlterSentryRoleGrantPrivilegeResponse response = new TAlterSentryRoleGrantPrivilegeResponse();
     try {
-      CommitContext commitContext = sentryStore.alterSentryRoleGrantPrivilege(request.getRequestorUserName(),
-          request.getRoleName(), request.getPrivilege());
+      // There should only one field be set
+      if ( !(request.isSetPrivileges()^request.isSetPrivilege()) ) {
+        throw new SentryUserException("SENTRY API version is not right!");
+      }
+      // Maintain compatibility for old API: Set privilege field to privileges field
+      if (request.isSetPrivilege()) {
+        request.setPrivileges(Sets.newHashSet(request.getPrivilege()));
+      }
+      CommitContext commitContext = sentryStore.alterSentryRoleGrantPrivileges(request.getRequestorUserName(),
+          request.getRoleName(), request.getPrivileges());
       response.setStatus(Status.OK());
-      response.setPrivilege(request.getPrivilege());
+      response.setPrivileges(request.getPrivileges());
+      // Maintain compatibility for old API: Set privilege field to response
+      if (response.isSetPrivileges() && response.getPrivileges().size() == 1) {
+        response.setPrivilege(response.getPrivileges().iterator().next());
+      }
       notificationHandlerInvoker.alter_sentry_role_grant_privilege(commitContext,
           request, response);
       for (SentryPolicyStorePlugin plugin : sentryPlugins) {
@@ -273,8 +287,11 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       timerContext.stop();
     }
 
-    AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance().createJsonLogEntity(
-    		request, response, conf).toJsonFormatLog());
+    Set<JsonLogEntity> jsonLogEntitys = JsonLogEntityFactory.getInstance().createJsonLogEntitys(
+        request, response, conf);
+    for (JsonLogEntity jsonLogEntity : jsonLogEntitys) {
+      AUDIT_LOGGER.info(jsonLogEntity.toJsonFormatLog());
+    }
     return response;
   }
 
@@ -284,8 +301,16 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     final Timer.Context timerContext = sentryMetrics.revokeTimer.time();
     TAlterSentryRoleRevokePrivilegeResponse response = new TAlterSentryRoleRevokePrivilegeResponse();
     try {
-      CommitContext commitContext = sentryStore.alterSentryRoleRevokePrivilege(request.getRequestorUserName(),
-          request.getRoleName(), request.getPrivilege());
+      // There should only one field be set
+      if ( !(request.isSetPrivileges()^request.isSetPrivilege()) ) {
+        throw new SentryUserException("SENTRY API version is not right!");
+      }
+      // Maintain compatibility for old API: Set privilege field to privileges field
+      if (request.isSetPrivilege()) {
+        request.setPrivileges(Sets.newHashSet(request.getPrivilege()));
+      }
+      CommitContext commitContext = sentryStore.alterSentryRoleRevokePrivileges(request.getRequestorUserName(),
+          request.getRoleName(), request.getPrivileges());
       response.setStatus(Status.OK());
       notificationHandlerInvoker.alter_sentry_role_revoke_privilege(commitContext,
           request, response);
@@ -293,13 +318,25 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
         plugin.onAlterSentryRoleRevokePrivilege(request);
       }
     } catch (SentryNoSuchObjectException e) {
-      String msg = "Privilege: [server=" + request.getPrivilege().getServerName() +
-              ",db=" + request.getPrivilege().getDbName() +
-              ",table=" + request.getPrivilege().getTableName() +
-              ",URI=" + request.getPrivilege().getURI() +
-              ",action=" + request.getPrivilege().getAction() + "] doesn't exist.";
-      LOGGER.error(msg, e);
-      response.setStatus(Status.NoSuchObject(msg, e));
+      StringBuilder msg = new StringBuilder();
+      if (request.getPrivileges().size() > 0) {
+        for (TSentryPrivilege privilege : request.getPrivileges()) {
+          msg.append("Privilege: [server=");
+          msg.append(privilege.getServerName());
+          msg.append(",db=");
+          msg.append(privilege.getDbName());
+          msg.append(",table=");
+          msg.append(privilege.getTableName());
+          msg.append(",URI=");
+          msg.append(privilege.getURI());
+          msg.append(",action=");
+          msg.append(privilege.getAction());
+          msg.append("] ");
+        }
+        msg.append("doesn't exist.");
+      }
+      LOGGER.error(msg.toString(), e);
+      response.setStatus(Status.NoSuchObject(msg.toString(), e));
     } catch (SentryInvalidInputException e) {
       String msg = "Invalid input privilege object";
       LOGGER.error(msg, e);
@@ -315,8 +352,11 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       timerContext.stop();
     }
 
-    AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance().createJsonLogEntity(
-    		request, response, conf).toJsonFormatLog());
+    Set<JsonLogEntity> jsonLogEntitys = JsonLogEntityFactory.getInstance().createJsonLogEntitys(
+        request, response, conf);
+    for (JsonLogEntity jsonLogEntity : jsonLogEntitys) {
+      AUDIT_LOGGER.info(jsonLogEntity.toJsonFormatLog());
+    }
     return response;
   }
 

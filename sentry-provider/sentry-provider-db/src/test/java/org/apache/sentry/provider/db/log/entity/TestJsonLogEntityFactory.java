@@ -20,6 +20,7 @@ package org.apache.sentry.provider.db.log.entity;
 
 import static junit.framework.Assert.assertEquals;
 
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -28,6 +29,7 @@ import org.apache.log4j.Logger;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.db.log.util.CommandUtil;
 import org.apache.sentry.provider.db.log.util.Constants;
+import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleAddGroupsRequest;
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleAddGroupsResponse;
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleDeleteGroupsRequest;
@@ -47,6 +49,8 @@ import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.apache.sentry.service.thrift.Status;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import com.google.common.collect.Sets;
 
 public class TestJsonLogEntityFactory {
 
@@ -122,10 +126,18 @@ public class TestJsonLogEntityFactory {
 
     TSentryPrivilege privilege = getPrivilege(AccessConstants.ALL,
         PrivilegeScope.DATABASE.name(), TEST_DATABASE_NAME, null, null, null);
-    request.setPrivilege(privilege);
+    Set<TSentryPrivilege> privileges = Sets.newHashSet();
+    privileges.add(privilege);
+    request.setPrivileges(privileges);
     response.setStatus(Status.OK());
-    AuditMetadataLogEntity amle = (AuditMetadataLogEntity) JsonLogEntityFactory
-        .getInstance().createJsonLogEntity(request, response, conf);
+    AuditMetadataLogEntity amle = new AuditMetadataLogEntity();
+    Set<JsonLogEntity> amles =  JsonLogEntityFactory
+        .getInstance().createJsonLogEntitys(request, response, conf);
+    assertEquals(amles.size(),1);
+    for (JsonLogEntity amle1 : amles) {
+      amle = (AuditMetadataLogEntity) amle1;
+      break;
+    }
     assertCommon(amle, Constants.TRUE, Constants.OPERATION_GRANT_PRIVILEGE,
         "GRANT ALL ON DATABASE testDB TO ROLE testRole", TEST_DATABASE_NAME,
         null, null, Constants.OBJECT_TYPE_PRINCIPAL);
@@ -133,10 +145,17 @@ public class TestJsonLogEntityFactory {
 
     privilege = getPrivilege(AccessConstants.ALL, PrivilegeScope.TABLE.name(),
         null, TEST_TABLE_NAME, null, null);
-    request.setPrivilege(privilege);
+    privileges = Sets.newHashSet();
+    privileges.add(privilege);
+    request.setPrivileges(privileges);
     response.setStatus(Status.InvalidInput("", null));
-    amle = (AuditMetadataLogEntity) JsonLogEntityFactory.getInstance()
-        .createJsonLogEntity(request, response, conf);
+    amles =  JsonLogEntityFactory.getInstance()
+        .createJsonLogEntitys(request, response, conf);
+    assertEquals(amles.size(),1);
+    for (JsonLogEntity amle1 : amles) {
+      amle = (AuditMetadataLogEntity) amle1;
+      break;
+    }
     assertCommon(amle, Constants.FALSE, Constants.OPERATION_GRANT_PRIVILEGE,
         "GRANT ALL ON TABLE testTable TO ROLE testRole", null, TEST_TABLE_NAME,
         null, Constants.OBJECT_TYPE_PRINCIPAL);
@@ -152,10 +171,18 @@ public class TestJsonLogEntityFactory {
 
     TSentryPrivilege privilege = getPrivilege(AccessConstants.ALL,
         PrivilegeScope.DATABASE.name(), TEST_DATABASE_NAME, null, null, null);
-    request.setPrivilege(privilege);
+    Set<TSentryPrivilege> privileges = Sets.newHashSet();
+    privileges.add(privilege);
+    request.setPrivileges(privileges);
     response.setStatus(Status.OK());
-    AuditMetadataLogEntity amle = (AuditMetadataLogEntity) JsonLogEntityFactory
-        .getInstance().createJsonLogEntity(request, response, conf);
+    AuditMetadataLogEntity amle = new AuditMetadataLogEntity();
+    Set<JsonLogEntity> amles =  JsonLogEntityFactory
+        .getInstance().createJsonLogEntitys(request, response, conf);
+    assertEquals(amles.size(),1);
+    for (JsonLogEntity amle1 : amles) {
+      amle = (AuditMetadataLogEntity) amle1;
+      break;
+    }
     assertCommon(amle, Constants.TRUE, Constants.OPERATION_REVOKE_PRIVILEGE,
         "REVOKE ALL ON DATABASE testDB FROM ROLE testRole", TEST_DATABASE_NAME,
         null, null, Constants.OBJECT_TYPE_PRINCIPAL);
@@ -163,10 +190,17 @@ public class TestJsonLogEntityFactory {
 
     privilege = getPrivilege(AccessConstants.ALL, PrivilegeScope.TABLE.name(),
         null, TEST_TABLE_NAME, null, null);
-    request.setPrivilege(privilege);
+    privileges = Sets.newHashSet();
+    privileges.add(privilege);
+    request.setPrivileges(privileges);
     response.setStatus(Status.InvalidInput("", null));
-    amle = (AuditMetadataLogEntity) JsonLogEntityFactory.getInstance()
-        .createJsonLogEntity(request, response, conf);
+    amles =  JsonLogEntityFactory.getInstance()
+        .createJsonLogEntitys(request, response, conf);
+    assertEquals(amles.size(),1);
+    for (JsonLogEntity amle1 : amles) {
+      amle = (AuditMetadataLogEntity) amle1;
+      break;
+    }
     assertCommon(amle, Constants.FALSE, Constants.OPERATION_REVOKE_PRIVILEGE,
         "REVOKE ALL ON TABLE testTable FROM ROLE testRole", null,
         TEST_TABLE_NAME, null, Constants.OBJECT_TYPE_PRINCIPAL);

@@ -38,6 +38,7 @@ public class TSentryAuthorizable implements org.apache.thrift.TBase<TSentryAutho
   private static final org.apache.thrift.protocol.TField URI_FIELD_DESC = new org.apache.thrift.protocol.TField("uri", org.apache.thrift.protocol.TType.STRING, (short)2);
   private static final org.apache.thrift.protocol.TField DB_FIELD_DESC = new org.apache.thrift.protocol.TField("db", org.apache.thrift.protocol.TType.STRING, (short)3);
   private static final org.apache.thrift.protocol.TField TABLE_FIELD_DESC = new org.apache.thrift.protocol.TField("table", org.apache.thrift.protocol.TType.STRING, (short)4);
+  private static final org.apache.thrift.protocol.TField COLUMN_FIELD_DESC = new org.apache.thrift.protocol.TField("column", org.apache.thrift.protocol.TType.STRING, (short)5);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
@@ -49,13 +50,15 @@ public class TSentryAuthorizable implements org.apache.thrift.TBase<TSentryAutho
   private String uri; // optional
   private String db; // optional
   private String table; // optional
+  private String column; // optional
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
     SERVER((short)1, "server"),
     URI((short)2, "uri"),
     DB((short)3, "db"),
-    TABLE((short)4, "table");
+    TABLE((short)4, "table"),
+    COLUMN((short)5, "column");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -78,6 +81,8 @@ public class TSentryAuthorizable implements org.apache.thrift.TBase<TSentryAutho
           return DB;
         case 4: // TABLE
           return TABLE;
+        case 5: // COLUMN
+          return COLUMN;
         default:
           return null;
       }
@@ -118,7 +123,7 @@ public class TSentryAuthorizable implements org.apache.thrift.TBase<TSentryAutho
   }
 
   // isset id assignments
-  private _Fields optionals[] = {_Fields.URI,_Fields.DB,_Fields.TABLE};
+  private _Fields optionals[] = {_Fields.URI,_Fields.DB,_Fields.TABLE,_Fields.COLUMN};
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
@@ -129,6 +134,8 @@ public class TSentryAuthorizable implements org.apache.thrift.TBase<TSentryAutho
     tmpMap.put(_Fields.DB, new org.apache.thrift.meta_data.FieldMetaData("db", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
     tmpMap.put(_Fields.TABLE, new org.apache.thrift.meta_data.FieldMetaData("table", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
+        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
+    tmpMap.put(_Fields.COLUMN, new org.apache.thrift.meta_data.FieldMetaData("column", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(TSentryAuthorizable.class, metaDataMap);
@@ -160,6 +167,9 @@ public class TSentryAuthorizable implements org.apache.thrift.TBase<TSentryAutho
     if (other.isSetTable()) {
       this.table = other.table;
     }
+    if (other.isSetColumn()) {
+      this.column = other.column;
+    }
   }
 
   public TSentryAuthorizable deepCopy() {
@@ -172,6 +182,7 @@ public class TSentryAuthorizable implements org.apache.thrift.TBase<TSentryAutho
     this.uri = null;
     this.db = null;
     this.table = null;
+    this.column = null;
   }
 
   public String getServer() {
@@ -266,6 +277,29 @@ public class TSentryAuthorizable implements org.apache.thrift.TBase<TSentryAutho
     }
   }
 
+  public String getColumn() {
+    return this.column;
+  }
+
+  public void setColumn(String column) {
+    this.column = column;
+  }
+
+  public void unsetColumn() {
+    this.column = null;
+  }
+
+  /** Returns true if field column is set (has been assigned a value) and false otherwise */
+  public boolean isSetColumn() {
+    return this.column != null;
+  }
+
+  public void setColumnIsSet(boolean value) {
+    if (!value) {
+      this.column = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case SERVER:
@@ -300,6 +334,14 @@ public class TSentryAuthorizable implements org.apache.thrift.TBase<TSentryAutho
       }
       break;
 
+    case COLUMN:
+      if (value == null) {
+        unsetColumn();
+      } else {
+        setColumn((String)value);
+      }
+      break;
+
     }
   }
 
@@ -316,6 +358,9 @@ public class TSentryAuthorizable implements org.apache.thrift.TBase<TSentryAutho
 
     case TABLE:
       return getTable();
+
+    case COLUMN:
+      return getColumn();
 
     }
     throw new IllegalStateException();
@@ -336,6 +381,8 @@ public class TSentryAuthorizable implements org.apache.thrift.TBase<TSentryAutho
       return isSetDb();
     case TABLE:
       return isSetTable();
+    case COLUMN:
+      return isSetColumn();
     }
     throw new IllegalStateException();
   }
@@ -389,6 +436,15 @@ public class TSentryAuthorizable implements org.apache.thrift.TBase<TSentryAutho
         return false;
     }
 
+    boolean this_present_column = true && this.isSetColumn();
+    boolean that_present_column = true && that.isSetColumn();
+    if (this_present_column || that_present_column) {
+      if (!(this_present_column && that_present_column))
+        return false;
+      if (!this.column.equals(that.column))
+        return false;
+    }
+
     return true;
   }
 
@@ -415,6 +471,11 @@ public class TSentryAuthorizable implements org.apache.thrift.TBase<TSentryAutho
     builder.append(present_table);
     if (present_table)
       builder.append(table);
+
+    boolean present_column = true && (isSetColumn());
+    builder.append(present_column);
+    if (present_column)
+      builder.append(column);
 
     return builder.toHashCode();
   }
@@ -463,6 +524,16 @@ public class TSentryAuthorizable implements org.apache.thrift.TBase<TSentryAutho
     }
     if (isSetTable()) {
       lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.table, typedOther.table);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetColumn()).compareTo(typedOther.isSetColumn());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetColumn()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.column, typedOther.column);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -521,6 +592,16 @@ public class TSentryAuthorizable implements org.apache.thrift.TBase<TSentryAutho
         sb.append("null");
       } else {
         sb.append(this.table);
+      }
+      first = false;
+    }
+    if (isSetColumn()) {
+      if (!first) sb.append(", ");
+      sb.append("column:");
+      if (this.column == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.column);
       }
       first = false;
     }
@@ -603,6 +684,14 @@ public class TSentryAuthorizable implements org.apache.thrift.TBase<TSentryAutho
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
+          case 5: // COLUMN
+            if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
+              struct.column = iprot.readString();
+              struct.setColumnIsSet(true);
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+            }
+            break;
           default:
             org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
         }
@@ -642,6 +731,13 @@ public class TSentryAuthorizable implements org.apache.thrift.TBase<TSentryAutho
           oprot.writeFieldEnd();
         }
       }
+      if (struct.column != null) {
+        if (struct.isSetColumn()) {
+          oprot.writeFieldBegin(COLUMN_FIELD_DESC);
+          oprot.writeString(struct.column);
+          oprot.writeFieldEnd();
+        }
+      }
       oprot.writeFieldStop();
       oprot.writeStructEnd();
     }
@@ -670,7 +766,10 @@ public class TSentryAuthorizable implements org.apache.thrift.TBase<TSentryAutho
       if (struct.isSetTable()) {
         optionals.set(2);
       }
-      oprot.writeBitSet(optionals, 3);
+      if (struct.isSetColumn()) {
+        optionals.set(3);
+      }
+      oprot.writeBitSet(optionals, 4);
       if (struct.isSetUri()) {
         oprot.writeString(struct.uri);
       }
@@ -680,6 +779,9 @@ public class TSentryAuthorizable implements org.apache.thrift.TBase<TSentryAutho
       if (struct.isSetTable()) {
         oprot.writeString(struct.table);
       }
+      if (struct.isSetColumn()) {
+        oprot.writeString(struct.column);
+      }
     }
 
     @Override
@@ -687,7 +789,7 @@ public class TSentryAuthorizable implements org.apache.thrift.TBase<TSentryAutho
       TTupleProtocol iprot = (TTupleProtocol) prot;
       struct.server = iprot.readString();
       struct.setServerIsSet(true);
-      BitSet incoming = iprot.readBitSet(3);
+      BitSet incoming = iprot.readBitSet(4);
       if (incoming.get(0)) {
         struct.uri = iprot.readString();
         struct.setUriIsSet(true);
@@ -699,6 +801,10 @@ public class TSentryAuthorizable implements org.apache.thrift.TBase<TSentryAutho
       if (incoming.get(2)) {
         struct.table = iprot.readString();
         struct.setTableIsSet(true);
+      }
+      if (incoming.get(3)) {
+        struct.column = iprot.readString();
+        struct.setColumnIsSet(true);
       }
     }
   }

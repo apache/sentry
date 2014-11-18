@@ -41,6 +41,7 @@ public class MSentryPrivilege {
   private String serverName = "";
   private String dbName = "";
   private String tableName = "";
+  private String columnName = "";
   private String URI = "";
   private String action = "";
   private Boolean grantOption = false;
@@ -53,12 +54,13 @@ public class MSentryPrivilege {
   }
 
   public MSentryPrivilege(String privilegeName, String privilegeScope,
-      String serverName, String dbName, String tableName, String URI,
-      String action, Boolean grantOption) {
+      String serverName, String dbName, String tableName, String columnName,
+      String URI, String action, Boolean grantOption) {
     this.privilegeScope = privilegeScope;
     this.serverName = serverName;
     this.dbName = SentryStore.toNULLCol(dbName);
     this.tableName = SentryStore.toNULLCol(tableName);
+    this.columnName = SentryStore.toNULLCol(columnName);
     this.URI = SentryStore.toNULLCol(URI);
     this.action = SentryStore.toNULLCol(action);
     this.grantOption = grantOption;
@@ -66,10 +68,10 @@ public class MSentryPrivilege {
   }
 
   public MSentryPrivilege(String privilegeName, String privilegeScope,
-      String serverName, String dbName, String tableName, String URI,
-      String action) {
+      String serverName, String dbName, String tableName, String columnName,
+      String URI, String action) {
     this(privilegeName, privilegeScope, serverName, dbName, tableName,
-        URI, action, false);
+        columnName, URI, action, false);
   }
 
   public MSentryPrivilege(MSentryPrivilege other) {
@@ -77,6 +79,7 @@ public class MSentryPrivilege {
     this.serverName = other.serverName;
     this.dbName = SentryStore.toNULLCol(other.dbName);
     this.tableName = SentryStore.toNULLCol(other.tableName);
+    this.columnName = SentryStore.toNULLCol(other.columnName);
     this.URI = SentryStore.toNULLCol(other.URI);
     this.action = SentryStore.toNULLCol(other.action);
     this.grantOption = other.grantOption;
@@ -108,6 +111,14 @@ public class MSentryPrivilege {
 
   public void setTableName(String tableName) {
     this.tableName = (tableName == null) ? "" : tableName;
+  }
+
+  public String getColumnName() {
+    return columnName;
+  }
+
+  public void setColumnName(String columnName) {
+    this.columnName = (columnName == null) ? "" : columnName;
   }
 
   public String getURI() {
@@ -167,67 +178,74 @@ public class MSentryPrivilege {
   public String toString() {
     return "MSentryPrivilege [privilegeScope=" + privilegeScope
         + ", serverName=" + serverName + ", dbName=" + dbName
-        + ", tableName=" + tableName + ", URI=" + URI
-        + ", action=" + action + ", roles=[...]" + ", createTime="
-        + createTime
-        + ", grantOption=" + grantOption +"]";
+        + ", tableName=" + tableName + ", columnName=" + columnName
+        + ", URI=" + URI + ", action=" + action + ", roles=[...]"
+        + ", createTime=" + createTime + ", grantOption=" + grantOption +"]";
   }
 
-@Override
-public int hashCode() {
-  final int prime = 31;
-  int result = 1;
-  result = prime * result + ((URI == null) ? 0 : URI.hashCode());
-  result = prime * result + ((action == null) ? 0 : action.hashCode());
-  result = prime * result + ((dbName == null) ? 0 : dbName.hashCode());
-  result = prime * result
-		+ ((serverName == null) ? 0 : serverName.hashCode());
-  result = prime * result + ((tableName == null) ? 0 : tableName.hashCode());
-  result = prime * result + ((grantOption == null) ? 0 : grantOption.hashCode());
-  return result;
-}
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((URI == null) ? 0 : URI.hashCode());
+    result = prime * result + ((action == null) ? 0 : action.hashCode());
+    result = prime * result + ((dbName == null) ? 0 : dbName.hashCode());
+    result = prime * result
+        + ((serverName == null) ? 0 : serverName.hashCode());
+    result = prime * result + ((tableName == null) ? 0 : tableName.hashCode());
+    result = prime * result
+        + ((columnName == null) ? 0 : columnName.hashCode());
+    result = prime * result
+        + ((grantOption == null) ? 0 : grantOption.hashCode());
+    return result;
+  }
 
-@Override
-public boolean equals(Object obj) {
-	if (this == obj)
-		return true;
-	if (obj == null)
-		return false;
-	if (getClass() != obj.getClass())
-		return false;
-	MSentryPrivilege other = (MSentryPrivilege) obj;
-	if (URI == null) {
-		if (other.URI != null)
-			return false;
-	} else if (!URI.equals(other.URI))
-		return false;
-	if (action == null) {
-		if (other.action != null)
-			return false;
-	} else if (!action.equals(other.action))
-		return false;
-	if (dbName == null) {
-		if (other.dbName != null)
-			return false;
-	} else if (!dbName.equals(other.dbName))
-		return false;
-	if (serverName == null) {
-		if (other.serverName != null)
-			return false;
-	} else if (!serverName.equals(other.serverName))
-		return false;
-	if (tableName == null) {
-		if (other.tableName != null)
-			return false;
-	} else if (!tableName.equals(other.tableName))
-		return false;
-	if (grantOption == null) {
-	  if (other.grantOption != null)
-	    return false;
-	} else if (!grantOption.equals(other.grantOption))
-	  return false;
-	return true;
-}
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    MSentryPrivilege other = (MSentryPrivilege) obj;
+    if (URI == null) {
+      if (other.URI != null)
+        return false;
+    } else if (!URI.equals(other.URI))
+      return false;
+    if (action == null) {
+      if (other.action != null)
+        return false;
+    } else if (!action.equals(other.action))
+      return false;
+    if (dbName == null) {
+      if (other.dbName != null)
+        return false;
+    } else if (!dbName.equals(other.dbName))
+      return false;
+    if (serverName == null) {
+      if (other.serverName != null)
+        return false;
+    } else if (!serverName.equals(other.serverName))
+      return false;
+    if (tableName == null) {
+      if (other.tableName != null)
+        return false;
+    } else if (!tableName.equals(other.tableName))
+      return false;
+    if (columnName == null) {
+      if (other.columnName != null)
+        return false;
+    } else if (!columnName.equals(other.columnName))
+      return false;
+    if (grantOption == null) {
+      if (other.grantOption != null)
+        return false;
+    } else if (!grantOption.equals(other.grantOption))
+      return false;
+    return true;
+  }
 
   /**
    * Return true if this privilege implies other privilege
@@ -260,6 +278,13 @@ public boolean equals(Object obj) {
         if (isNULL(other.tableName)) {
           return false;
         } else if (!tableName.equals(other.tableName)) {
+          return false;
+        }
+      }
+      if (!isNULL(columnName)) {
+        if (isNULL(other.columnName)) {
+          return false;
+        } else if (!columnName.equals(other.columnName)) {
           return false;
         }
       }

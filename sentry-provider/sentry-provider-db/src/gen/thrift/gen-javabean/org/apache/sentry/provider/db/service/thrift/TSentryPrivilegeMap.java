@@ -359,26 +359,26 @@ public class TSentryPrivilegeMap implements org.apache.thrift.TBase<TSentryPrivi
           case 1: // PRIVILEGE_MAP
             if (schemeField.type == org.apache.thrift.protocol.TType.MAP) {
               {
-                org.apache.thrift.protocol.TMap _map64 = iprot.readMapBegin();
-                struct.privilegeMap = new HashMap<String,Set<TSentryPrivilege>>(2*_map64.size);
-                for (int _i65 = 0; _i65 < _map64.size; ++_i65)
+                org.apache.thrift.protocol.TMap _map88 = iprot.readMapBegin();
+                struct.privilegeMap = new HashMap<String,Set<TSentryPrivilege>>(2*_map88.size);
+                for (int _i89 = 0; _i89 < _map88.size; ++_i89)
                 {
-                  String _key66; // required
-                  Set<TSentryPrivilege> _val67; // required
-                  _key66 = iprot.readString();
+                  String _key90; // required
+                  Set<TSentryPrivilege> _val91; // required
+                  _key90 = iprot.readString();
                   {
-                    org.apache.thrift.protocol.TSet _set68 = iprot.readSetBegin();
-                    _val67 = new HashSet<TSentryPrivilege>(2*_set68.size);
-                    for (int _i69 = 0; _i69 < _set68.size; ++_i69)
+                    org.apache.thrift.protocol.TSet _set92 = iprot.readSetBegin();
+                    _val91 = new HashSet<TSentryPrivilege>(2*_set92.size);
+                    for (int _i93 = 0; _i93 < _set92.size; ++_i93)
                     {
-                      TSentryPrivilege _elem70; // required
-                      _elem70 = new TSentryPrivilege();
-                      _elem70.read(iprot);
-                      _val67.add(_elem70);
+                      TSentryPrivilege _elem94; // required
+                      _elem94 = new TSentryPrivilege();
+                      _elem94.read(iprot);
+                      _val91.add(_elem94);
                     }
                     iprot.readSetEnd();
                   }
-                  struct.privilegeMap.put(_key66, _val67);
+                  struct.privilegeMap.put(_key90, _val91);
                 }
                 iprot.readMapEnd();
               }
@@ -404,14 +404,14 @@ public class TSentryPrivilegeMap implements org.apache.thrift.TBase<TSentryPrivi
         oprot.writeFieldBegin(PRIVILEGE_MAP_FIELD_DESC);
         {
           oprot.writeMapBegin(new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRING, org.apache.thrift.protocol.TType.SET, struct.privilegeMap.size()));
-          for (Map.Entry<String, Set<TSentryPrivilege>> _iter71 : struct.privilegeMap.entrySet())
+          for (Map.Entry<String, Set<TSentryPrivilege>> _iter95 : struct.privilegeMap.entrySet())
           {
-            oprot.writeString(_iter71.getKey());
+            oprot.writeString(_iter95.getKey());
             {
-              oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, _iter71.getValue().size()));
-              for (TSentryPrivilege _iter72 : _iter71.getValue())
+              oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, _iter95.getValue().size()));
+              for (TSentryPrivilege _iter96 : _iter95.getValue())
               {
-                _iter72.write(oprot);
+                _iter96.write(oprot);
               }
               oprot.writeSetEnd();
             }
@@ -439,14 +439,14 @@ public class TSentryPrivilegeMap implements org.apache.thrift.TBase<TSentryPrivi
       TTupleProtocol oprot = (TTupleProtocol) prot;
       {
         oprot.writeI32(struct.privilegeMap.size());
-        for (Map.Entry<String, Set<TSentryPrivilege>> _iter73 : struct.privilegeMap.entrySet())
+        for (Map.Entry<String, Set<TSentryPrivilege>> _iter97 : struct.privilegeMap.entrySet())
         {
-          oprot.writeString(_iter73.getKey());
+          oprot.writeString(_iter97.getKey());
           {
-            oprot.writeI32(_iter73.getValue().size());
-            for (TSentryPrivilege _iter74 : _iter73.getValue())
+            oprot.writeI32(_iter97.getValue().size());
+            for (TSentryPrivilege _iter98 : _iter97.getValue())
             {
-              _iter74.write(oprot);
+              _iter98.write(oprot);
             }
           }
         }
@@ -457,25 +457,25 @@ public class TSentryPrivilegeMap implements org.apache.thrift.TBase<TSentryPrivi
     public void read(org.apache.thrift.protocol.TProtocol prot, TSentryPrivilegeMap struct) throws org.apache.thrift.TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
       {
-        org.apache.thrift.protocol.TMap _map75 = new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRING, org.apache.thrift.protocol.TType.SET, iprot.readI32());
-        struct.privilegeMap = new HashMap<String,Set<TSentryPrivilege>>(2*_map75.size);
-        for (int _i76 = 0; _i76 < _map75.size; ++_i76)
+        org.apache.thrift.protocol.TMap _map99 = new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRING, org.apache.thrift.protocol.TType.SET, iprot.readI32());
+        struct.privilegeMap = new HashMap<String,Set<TSentryPrivilege>>(2*_map99.size);
+        for (int _i100 = 0; _i100 < _map99.size; ++_i100)
         {
-          String _key77; // required
-          Set<TSentryPrivilege> _val78; // required
-          _key77 = iprot.readString();
+          String _key101; // required
+          Set<TSentryPrivilege> _val102; // required
+          _key101 = iprot.readString();
           {
-            org.apache.thrift.protocol.TSet _set79 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
-            _val78 = new HashSet<TSentryPrivilege>(2*_set79.size);
-            for (int _i80 = 0; _i80 < _set79.size; ++_i80)
+            org.apache.thrift.protocol.TSet _set103 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
+            _val102 = new HashSet<TSentryPrivilege>(2*_set103.size);
+            for (int _i104 = 0; _i104 < _set103.size; ++_i104)
             {
-              TSentryPrivilege _elem81; // required
-              _elem81 = new TSentryPrivilege();
-              _elem81.read(iprot);
-              _val78.add(_elem81);
+              TSentryPrivilege _elem105; // required
+              _elem105 = new TSentryPrivilege();
+              _elem105.read(iprot);
+              _val102.add(_elem105);
             }
           }
-          struct.privilegeMap.put(_key77, _val78);
+          struct.privilegeMap.put(_key101, _val102);
         }
       }
       struct.setPrivilegeMapIsSet(true);

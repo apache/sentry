@@ -155,12 +155,20 @@ public class TestConfigTool extends AbstractTestWithStaticConfiguration {
     policyFile
         .addRolesToGroup(USERGROUP1, "select_tab1", "insert_tab2")
         .addRolesToGroup(USERGROUP2, "select_tab3")
+        .addRolesToGroup(USERGROUP3, "select_colA")
+        .addRolesToGroup(USERGROUP4, "select_colAB")
         .addPermissionsToRole("select_tab1",
             "server=server1->db=db1->table=tab1->action=select")
         .addPermissionsToRole("insert_tab2",
             "server=server1->db=db1->table=tab2->action=insert")
         .addPermissionsToRole("select_tab3",
             "server=server1->db=db1->table=tab3->action=select")
+        .addPermissionsToRole("select_colA",
+            "server=server1->db=db1->table=tab3->column=a->action=select")
+        .addPermissionsToRole("select_colAB",
+            "server=server1->db=db1->table=tab3->column=a->action=select")
+        .addPermissionsToRole("select_colAB",
+            "server=server1->db=db1->table=tab3->column=b->action=select")
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     policyFile.write(context.getPolicyFile());
 
@@ -179,6 +187,18 @@ public class TestConfigTool extends AbstractTestWithStaticConfiguration {
         new Subject(USER2_1));
     assertTrue(permList
         .contains("server=server1->db=db1->table=tab3->action=select"));
+
+    permList = configTool.getSentryProvider().listPrivilegesForSubject(
+        new Subject(USER3_1));
+    assertTrue(permList
+        .contains("server=server1->db=db1->table=tab3->column=a->action=select"));
+
+    permList = configTool.getSentryProvider().listPrivilegesForSubject(
+        new Subject(USER4_1));
+    assertTrue(permList
+        .contains("server=server1->db=db1->table=tab3->column=a->action=select"));
+    assertTrue(permList
+        .contains("server=server1->db=db1->table=tab3->column=b->action=select"));
 
     permList = configTool.getSentryProvider().listPrivilegesForSubject(
         new Subject(ADMIN1));
@@ -223,12 +243,20 @@ public class TestConfigTool extends AbstractTestWithStaticConfiguration {
     policyFile
         .addRolesToGroup(USERGROUP1, "select_tab1", "insert_tab2")
         .addRolesToGroup(USERGROUP2, "select_tab3")
+        .addRolesToGroup(USERGROUP3, "select_colAB")
+        .addRolesToGroup(USERGROUP4, "select_colA")
         .addPermissionsToRole("select_tab1",
             "server=server1->db=default->table=tab1->action=select")
         .addPermissionsToRole("insert_tab2",
             "server=server1->db=default->table=tab2->action=insert")
         .addPermissionsToRole("select_tab3",
             "server=server1->db=default->table=tab3->action=select")
+        .addPermissionsToRole("select_colA",
+            "server=server1->db=default->table=tab1->column=a->action=select")
+        .addPermissionsToRole("select_colAB",
+            "server=server1->db=default->table=tab1->column=a->action=select")
+        .addPermissionsToRole("select_colAB",
+            "server=server1->db=default->table=tab1->column=b->action=select")
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     policyFile.write(context.getPolicyFile());
 
@@ -239,11 +267,11 @@ public class TestConfigTool extends AbstractTestWithStaticConfiguration {
     statement.execute("DROP TABLE IF EXISTS tab1");
     statement.execute("DROP TABLE IF EXISTS tab2");
     statement.execute("DROP TABLE IF EXISTS tab3");
-    statement.execute("CREATE TABLE tab1(B INT, A STRING) "
+    statement.execute("CREATE TABLE tab1(b INT, a STRING) "
         + " row format delimited fields terminated by '|'  stored as textfile");
-    statement.execute("CREATE TABLE tab2(B INT, A STRING) "
+    statement.execute("CREATE TABLE tab2(b INT, a STRING) "
         + " row format delimited fields terminated by '|'  stored as textfile");
-    statement.execute("CREATE TABLE tab3(B INT, A STRING) "
+    statement.execute("CREATE TABLE tab3(b INT, a STRING) "
         + " row format delimited fields terminated by '|'  stored as textfile");
     statement.close();
     connection.close();
@@ -279,7 +307,41 @@ public class TestConfigTool extends AbstractTestWithStaticConfiguration {
     } catch (SQLException e) {
       assertTrue(errBuffer.toString().contains(
           "Server=server1->Db=default->Table=tab2->action=insert"));
+      errBuffer.flush();
     }
 
+    // user3_1 can select A from tab1, but can't select B from tab1
+    configTool.setUser(USER3_1);
+    configTool.verifyRemoteQuery("SELECT a FROM tab1");
+    configTool.verifyRemoteQuery("SELECT COUNT(a) FROM tab1");
+    configTool.verifyRemoteQuery("SELECT b FROM tab1");
+    configTool.verifyRemoteQuery("SELECT COUNT(b) FROM tab1");
+    configTool.verifyRemoteQuery("SELECT a,b FROM tab1");
+
+    // user4_1 can select A from tab1, but can't select B from tab1
+    configTool.setUser(USER4_1);
+    configTool.verifyRemoteQuery("SELECT a FROM tab1");
+    configTool.verifyRemoteQuery("SELECT COUNT(a) FROM tab1");
+
+    try {
+      configTool.setUser(USER4_1);
+      configTool
+          .verifyRemoteQuery("SELECT b FROM tab1");
+      fail("Query should have failed with insufficient perms");
+    } catch (SQLException e) {
+      assertTrue(errBuffer.toString().contains(
+          "Server=server1->Db=default->Table=tab1->Column=b->action=select"));
+      errBuffer.flush();
+    }
+
+    try {
+      configTool.setUser(USER4_1);
+      configTool
+          .verifyRemoteQuery("SELECT COUNT(b) FROM tab1");
+      fail("Query should have failed with insufficient perms");
+    } catch (SQLException e) {
+      assertTrue(errBuffer.toString().contains(
+          "Server=server1->Db=default->Table=tab1->Column=b->action=select"));
+    }
   }
 }

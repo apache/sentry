@@ -322,9 +322,11 @@ public class HiveAuthzBinding {
           }
         }
       }
-      if(!found && !(key.equals(AuthorizableType.URI)) &&  !(hiveOp.equals(HiveOperation.QUERY))) {
+      if(!found && !(key.equals(AuthorizableType.URI)) &&  !(hiveOp.equals(HiveOperation.QUERY))
+          && !(hiveOp.equals(HiveOperation.CREATETABLE_AS_SELECT))) {
         //URI privileges are optional for some privileges: anyPrivilege, tableDDLAndOptionalUriPrivilege
         //Query can mean select/insert/analyze where all of them have different required privileges.
+        //CreateAsSelect can has table/columns privileges with select.
         //For these alone we skip if there is no equivalent input privilege
         //TODO: Even this case should be handled to make sure we do not skip the privilege check if we did not build
         //the input privileges correctly

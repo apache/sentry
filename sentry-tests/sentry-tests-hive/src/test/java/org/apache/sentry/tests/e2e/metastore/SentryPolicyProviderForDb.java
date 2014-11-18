@@ -104,7 +104,7 @@ public class SentryPolicyProviderForDb extends PolicyFile {
 
   private void addPrivilege(String roleName, String privileges)
       throws Exception {
-    String serverName = null, dbName = null, tableName = null, uriPath = null;
+    String serverName = null, dbName = null, tableName = null, columnName = null, uriPath = null;
     String action = AccessConstants.ALL;
     for (String privilege : ROLE_SPLITTER.split(privileges)) {
       for (String section : AUTHORIZABLE_SPLITTER.split(privilege)) {
@@ -125,6 +125,8 @@ public class SentryPolicyProviderForDb extends PolicyFile {
             tableName = dbAuthorizable.getName();
           } else if (AuthorizableType.URI.equals(dbAuthorizable.getAuthzType())) {
             uriPath = dbAuthorizable.getName();
+          } else if (AuthorizableType.Column.equals(dbAuthorizable.getAuthzType())) {
+            columnName = dbAuthorizable.getName();
           } else {
             throw new IOException("Unsupported auth type "
                 + dbAuthorizable.getName() + " : "
@@ -138,7 +140,10 @@ public class SentryPolicyProviderForDb extends PolicyFile {
         }
       }
 
-      if (tableName != null) {
+      if (columnName != null) {
+        sentryClient.grantColumnPrivilege(ADMIN1, roleName, serverName, dbName,
+            tableName, columnName, action);
+      } else if (tableName != null) {
         sentryClient.grantTablePrivilege(ADMIN1, roleName, serverName, dbName,
             tableName, action);
       } else if (dbName != null) {

@@ -135,12 +135,13 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
 
   private ImmutableSet<String> appendDefaultDBPriv(ImmutableSet<String> privileges, Authorizable[] authorizables) {
     // Only for switch db
-    if ((authorizables != null)&&(authorizables.length == 3)&&(authorizables[2].getName().equals("+"))) {
+    if ((authorizables != null)&&(authorizables.length == 4)&&(authorizables[2].getName().equals("+"))) {
       if ((privileges.size() == 1) && hasOnlyServerPrivilege(privileges.asList().get(0))) {
         // Assuming authorizable[0] will always be the server
         // This Code is only reachable only when user fires a 'use default'
         // and the user has a privilege on atleast 1 privilized Object
-        String defaultPriv = "Server=" + authorizables[0].getName() + "->Db=default->Table=*->action=select";
+        String defaultPriv = "Server=" + authorizables[0].getName()
+            + "->Db=default->Table=*->Column=*->action=select";
         HashSet<String> newPrivs = Sets.newHashSet(defaultPriv);
         return ImmutableSet.copyOf(newPrivs);
       }

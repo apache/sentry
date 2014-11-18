@@ -290,6 +290,7 @@ public class SentryConfigTool {
           String server = null;
           String database = null;
           String table = null;
+          String column = null;
           String uri = null;
           String action = AccessConstants.ALL;
           for (String authorizable : PolicyFileConstants.AUTHORIZABLE_SPLITTER.
@@ -315,6 +316,9 @@ public class SentryConfigTool {
               case URI:
                 uri = a.getName();
                 break;
+              case Column:
+                column = a.getName();
+                break;
               default:
                 break;
             }
@@ -329,6 +333,17 @@ public class SentryConfigTool {
                 uri, roleName));
 
             client.grantURIPrivilege(requestorUserName, roleName, server, uri);
+          } else if (column != null && !AccessConstants.ALL.equals(column)) {
+            System.out.println(String.format(
+                "# server=%s, database=%s",
+                server, database));
+            System.out.println(String.format(
+                "GRANT %s (%s) ON TABLE %s TO ROLE %s;",
+                "*".equals(action) ? "ALL" : action.toUpperCase(), column,
+                table, roleName));
+
+            client.grantColumnPrivilege(requestorUserName, roleName, server,
+                database, table, column, action);
           } else if (table != null && !AccessConstants.ALL.equals(table)) {
             System.out.println(String.format(
                 "# server=%s, database=%s",

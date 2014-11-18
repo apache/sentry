@@ -41,6 +41,7 @@ public class Constants {
   public final static String LOG_FIELD_ALLOWED = "allowed";
   public final static String LOG_FIELD_DATABASE_NAME = "databaseName";
   public final static String LOG_FIELD_TABLE_NAME = "tableName";
+  public final static String LOG_FIELD_COLUMN_NAME = "column";
   public final static String LOG_FIELD_RESOURCE_PATH = "resourcePath";
   public final static String LOG_FIELD_OBJECT_TYPE = "objectType";
 

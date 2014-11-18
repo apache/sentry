@@ -85,6 +85,7 @@
         <field name="serverName"/>
         <field name="dbName"/>
         <field name="tableName"/>
+        <field name="columnName"/>
         <field name="URI"/>
         <field name="action"/>
         <field name="grantOption"/>
@@ -100,6 +101,9 @@
       </field>
       <field name="tableName">  
         <column name="TABLE_NAME" length="4000" jdbc-type="VARCHAR"/>
+      </field>
+      <field name="columnName">
+        <column name="COLUMN_NAME" length="4000" jdbc-type="VARCHAR"/>
       </field>
       <field name="URI">  
         <column name="URI" length="4000" jdbc-type="VARCHAR"/>

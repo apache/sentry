@@ -49,6 +49,7 @@ struct TSentryPrivilege {
 7: required string action = "",
 8: optional i64 createTime, # Set on server side
 9: optional TSentryGrantOption grantOption = TSentryGrantOption.FALSE
+10: optional string columnName = "",
 }
 
 # TODO can this be deleted? it's not adding value to TAlterSentryRoleAddGroupsRequest
@@ -104,11 +105,13 @@ struct TAlterSentryRoleGrantPrivilegeRequest {
 1: required i32 protocol_version = sentry_common_service.TSENTRY_SERVICE_V1,
 2: required string requestorUserName, # user on whose behalf the request is issued
 3: required string roleName,
-5: required TSentryPrivilege privilege
+5: optional TSentryPrivilege privilege,
+6: optional set<TSentryPrivilege> privileges
 }
 struct TAlterSentryRoleGrantPrivilegeResponse {
 1: required sentry_common_service.TSentryResponseStatus status
 2: optional TSentryPrivilege privilege
+3: optional set<TSentryPrivilege> privileges
 }
 
 # REVOKE ... ON ... FROM ROLE ...
@@ -116,7 +119,8 @@ struct TAlterSentryRoleRevokePrivilegeRequest {
 1: required i32 protocol_version = sentry_common_service.TSENTRY_SERVICE_V1,
 2: required string requestorUserName, # user on whose behalf the request is issued
 3: required string roleName,
-5: required TSentryPrivilege privilege
+5: optional TSentryPrivilege privilege,
+6: optional set<TSentryPrivilege> privileges
 }
 struct TAlterSentryRoleRevokePrivilegeResponse {
 1: required sentry_common_service.TSentryResponseStatus status
@@ -144,6 +148,7 @@ struct TSentryAuthorizable {
 2: optional string uri,
 3: optional string db,
 4: optional string table,
+5: optional string column,
 }
 
 # SHOW GRANT

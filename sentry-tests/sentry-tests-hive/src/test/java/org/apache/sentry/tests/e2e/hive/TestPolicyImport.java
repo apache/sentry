@@ -68,7 +68,7 @@ public class TestPolicyImport extends AbstractTestWithStaticConfiguration {
 
     @Test
   public void testImportPolicy() throws Exception {
-    policyFile.addRolesToGroup("analyst", "analyst_role", "customers_select_role");
+    policyFile.addRolesToGroup("analyst", "analyst_role", "customers_select_role", "analyst_salary_role");
     policyFile.addRolesToGroup("jranalyst", "junior_analyst_role");
     policyFile.addRolesToGroup("manager", "analyst_role",  "junior_analyst_role",
         "customers_insert_role", "customers_select_role");
@@ -80,6 +80,7 @@ public class TestPolicyImport extends AbstractTestWithStaticConfiguration {
     policyFile.addPermissionsToRole("customers_admin_role", "server=server1->db=customers");
     policyFile.addPermissionsToRole("customers_insert_role", "server=server1->db=customers->table=*->action=insert");
     policyFile.addPermissionsToRole("customers_select_role", "server=server1->db=customers->table=*->action=select");
+    policyFile.addPermissionsToRole("analyst_salary_role", "server=server1->db=customers->table=customer_info->column=salary->action=select");
 
     policyFile.write(context.getPolicyFile());
 
@@ -90,7 +91,7 @@ public class TestPolicyImport extends AbstractTestWithStaticConfiguration {
     configTool.importPolicy();
 
     SentryPolicyServiceClient client = new SentryPolicyServiceClient(configTool.getAuthzConf());
-    verifyRoles(client, "analyst", "analyst_role", "customers_select_role");
+    verifyRoles(client, "analyst", "analyst_role", "customers_select_role", "analyst_salary_role");
     verifyRoles(client, "jranalyst", "junior_analyst_role");
     verifyRoles(client, "manager", "analyst_role", "junior_analyst_role",
         "customers_insert_role", "customers_select_role");
@@ -107,6 +108,8 @@ public class TestPolicyImport extends AbstractTestWithStaticConfiguration {
         createPrivilege(AccessConstants.INSERT, "customers", null, null));
     verifyPrivileges(client, "customers_select_role",
         createPrivilege(AccessConstants.SELECT, "customers", null, null));
+    verifyPrivileges(client, "analyst_salary_role",
+        createPrivilege(AccessConstants.SELECT, "customers", "customer_info", "salary", null));
   }
 
   private void verifyRoles(SentryPolicyServiceClient client, String group, String ... roles) throws SentryUserException {
@@ -159,4 +162,37 @@ public class TestPolicyImport extends AbstractTestWithStaticConfiguration {
     return privilege;
   }
 
+  private TSentryPrivilege createPrivilege(String action, String dbName, String tableName, String columnName, String uri) {
+    String scope = "SERVER";
+    if (uri != null) {
+      scope = "URI";
+    } else if (dbName != null) {
+      if (columnName != null) {
+        scope = "COLUMN";
+      } else if (tableName != null) {
+        scope = "TABLE";
+      } else  {
+        scope = "DATABASE";
+      }
+    }
+
+    TSentryPrivilege privilege = new TSentryPrivilege(scope, "server1", action);
+    if (dbName != null) {
+      privilege.setDbName(dbName);
+    }
+
+    if (tableName != null) {
+      privilege.setTableName(tableName);
+    }
+
+    if (columnName != null) {
+      privilege.setColumnName(columnName);
+    }
+
+    if (uri != null) {
+      privilege.setURI(uri);
+    }
+
+    return privilege;
+  }
 }
