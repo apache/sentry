@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import junit.framework.Assert;
 
@@ -89,12 +90,17 @@ import org.fest.reflect.core.Reflection;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 
 public class TestHDFSIntegration {
+  
+  private static final Logger LOGGER = LoggerFactory
+      .getLogger(TestHDFSIntegration.class);
 
   public static class WordCountMapper extends MapReduceBase implements
       Mapper<LongWritable, Text, String, Long> {
@@ -194,6 +200,10 @@ public class TestHDFSIntegration {
   }
 
   private void startHiveAndMetastore() throws IOException, InterruptedException {
+    startHiveAndMetastore(NUM_RETRIES);
+  }
+
+  private void startHiveAndMetastore(final int retries) throws IOException, InterruptedException {
     hiveUgi.doAs(new PrivilegedExceptionAction<Void>() {
       @Override
       public Void run() throws Exception {
@@ -228,7 +238,7 @@ public class TestHDFSIntegration {
         hiveConf.set("datanucleus.fixedDatastore", "false");
         hiveConf.set("datanucleus.autoStartMechanism", "SchemaTable");
         hmsPort = findPort();
-        System.out.println("\n\n HMS port : " + hmsPort + "\n\n");
+        LOGGER.info("\n\n HMS port : " + hmsPort + "\n\n");
         hiveConf.set("hive.metastore.uris", "thrift://localhost:" + hmsPort);
         hiveConf.set("hive.metastore.pre.event.listeners", "org.apache.sentry.binding.metastore.MetastoreAuthzBinding");
         hiveConf.set("hive.metastore.event.listeners", "org.apache.sentry.binding.metastore.SentryMetastorePostEventListener");
@@ -245,7 +255,7 @@ public class TestHDFSIntegration {
         out.close();
 
         hiveConf.set("hive.sentry.conf.url", accessSite.getPath());
-        System.out.println("Sentry client file : " + accessSite.getPath());
+        LOGGER.info("Sentry client file : " + accessSite.getPath());
 
         File hiveSite = new File(confDir, "hive-site.xml");
         hiveConf.set("hive.server2.enable.doAs", "false");
@@ -268,28 +278,53 @@ public class TestHDFSIntegration {
               metastore.start();
               while(true){}
             } catch (Exception e) {
-              System.out.println("Could not start Hive Server");
+              LOGGER.info("Could not start Hive Server");
             }
           }
         }.start();
 
-        hiveServer2 = new InternalHiveServer(hiveConf);
-        new Thread() {
-          @Override
-          public void run() {
-            try {
-              hiveServer2.start();
-              while(true){}
-            } catch (Exception e) {
-              System.out.println("Could not start Hive Server");
-            }
-          }
-        }.start();
-
-        Thread.sleep(10000);
+        startHiveServer2(retries, hiveConf);
         return null;
       }
     });
+  }
+
+  private void startHiveServer2(final int retries, HiveConf hiveConf)
+      throws IOException, InterruptedException, SQLException {
+    Connection conn = null;
+    Thread th = null;
+    final AtomicBoolean keepRunning = new AtomicBoolean(true);
+    try {
+      hiveServer2 = new InternalHiveServer(hiveConf);
+      th = new Thread() {
+        @Override
+        public void run() {
+          try {
+            hiveServer2.start();
+            while(keepRunning.get()){}
+          } catch (Exception e) {
+            LOGGER.info("Could not start Hive Server");
+          }
+        }
+      };
+      th.start();
+      Thread.sleep(RETRY_WAIT * 5);
+      conn = hiveServer2.createConnection("hive", "hive");
+    } catch (Exception ex) {
+      if (retries > 0) {
+        try {
+          keepRunning.set(false);
+          hiveServer2.shutdown();
+        } catch (Exception e) {
+          // Ignore
+        }
+        LOGGER.info("Re-starting Hive Server2 !!");
+        startHiveServer2(retries - 1, hiveConf);
+      }
+    }
+    if (conn != null) {
+      conn.close();
+    }
   }
 
   private void startDFSandYARN() throws IOException,
@@ -323,8 +358,8 @@ public class TestHDFSIntegration {
         Path warehousePath = new Path(hivePath, "warehouse");
         miniDFS.getFileSystem().mkdirs(warehousePath);
         boolean directory = miniDFS.getFileSystem().isDirectory(warehousePath);
-        System.out.println("\n\n Is dir :" + directory + "\n\n");
-        System.out.println("\n\n DefaultFS :" + miniDFS.getFileSystem().getUri() + "\n\n");
+        LOGGER.info("\n\n Is dir :" + directory + "\n\n");
+        LOGGER.info("\n\n DefaultFS :" + miniDFS.getFileSystem().getUri() + "\n\n");
         fsURI = miniDFS.getFileSystem().getUri().toString();
         conf.set("fs.defaultFS", fsURI);
 
@@ -335,12 +370,12 @@ public class TestHDFSIntegration {
         miniDFS.getFileSystem().setPermission(tmpPath, FsPermission.valueOf("drwxrwxrwx"));
         miniDFS.getFileSystem().setOwner(hivePath, "hive", "hive");
         miniDFS.getFileSystem().setOwner(warehousePath, "hive", "hive");
-        System.out.println("\n\n Owner :"
+        LOGGER.info("\n\n Owner :"
             + miniDFS.getFileSystem().getFileStatus(warehousePath).getOwner()
             + ", "
             + miniDFS.getFileSystem().getFileStatus(warehousePath).getGroup()
             + "\n\n");
-        System.out.println("\n\n Owner tmp :"
+        LOGGER.info("\n\n Owner tmp :"
             + miniDFS.getFileSystem().getFileStatus(tmpPath).getOwner() + ", "
             + miniDFS.getFileSystem().getFileStatus(tmpPath).getGroup() + ", "
             + miniDFS.getFileSystem().getFileStatus(tmpPath).getPermission() + ", "
@@ -351,7 +386,7 @@ public class TestHDFSIntegration {
         for (int i = dfsSafeCheckRetry; i > 0; i--) {
           if (!miniDFS.getFileSystem().isInSafeMode()) {
             hasStarted = true;
-            System.out.println("HDFS safemode check num times : " + (31 - i));
+            LOGGER.info("HDFS safemode check num times : " + (31 - i));
             break;
           }
         }
@@ -410,7 +445,7 @@ public class TestHDFSIntegration {
             String.valueOf(sentryService.getAddress().getPort()));
         waitOnSentryService();
         sentryPort = sentryService.getAddress().getPort();
-        System.out.println("\n\n Sentry port : " + sentryPort + "\n\n");
+        LOGGER.info("\n\n Sentry port : " + sentryPort + "\n\n");
         return null;
       }
     });
@@ -784,4 +819,5 @@ public class TestHDFSIntegration {
     }
     
   }
+
 }
