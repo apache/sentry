@@ -146,7 +146,6 @@ public class PolicyFile {
             "");
     LOGGER.info("Writing policy file to " + file + ":\n" + contents);
     Files.write(contents, file, Charsets.UTF_8);
-
   }
 
   private String getSection(String name, Map<String, String> mapping) {

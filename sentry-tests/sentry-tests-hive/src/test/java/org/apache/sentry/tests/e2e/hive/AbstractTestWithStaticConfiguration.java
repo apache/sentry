@@ -109,7 +109,7 @@ public abstract class AbstractTestWithStaticConfiguration {
   private static final String EXTERNAL_SENTRY_SERVICE = "sentry.e2etest.external.sentry";
   protected static final String EXTERNAL_HIVE_LIB = "sentry.e2etest.hive.lib";
 
-  protected static boolean policy_on_hdfs = false;
+  protected static boolean policyOnHdfs = false;
   protected static boolean useSentryService = false;
   protected static boolean setMetastoreListener = false;
   protected static String testServerType = null;
@@ -187,8 +187,8 @@ public abstract class AbstractTestWithStaticConfiguration {
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception {
     properties = Maps.newHashMap();
-    if(!policy_on_hdfs) {
-      policy_on_hdfs = new Boolean(System.getProperty("sentry.e2etest.policyonhdfs", "false"));
+    if(!policyOnHdfs) {
+      policyOnHdfs = new Boolean(System.getProperty("sentry.e2etest.policyonhdfs", "false"));
     }
     if (testServerType != null) {
       properties.put("sentry.e2etest.hiveServer2Type", testServerType);
@@ -204,22 +204,21 @@ public abstract class AbstractTestWithStaticConfiguration {
     dfs = DFSFactory.create(dfsType, baseDir, testServerType);
     fileSystem = dfs.getFileSystem();
 
-    String policyURI;
-
-    //TODO: We can probably get rid of this.
     PolicyFile policyFile = PolicyFile.setAdminOnServer1(ADMIN1)
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     policyFile.write(policyFileLocation);
-
-    if (policy_on_hdfs) {
-      String dfsUri = fileSystem.getDefaultUri(fileSystem.getConf()).toString();
+    
+    String policyURI;
+    if (policyOnHdfs) {
+      String dfsUri = FileSystem.getDefaultUri(fileSystem.getConf()).toString();
       LOGGER.error("dfsUri " + dfsUri);
-      policyURI = dfsUri + System.getProperty("sentry.e2etest.hive.policy.location", "/user/hive/sentry");
+      policyURI = dfsUri + System.getProperty("sentry.e2etest.hive.policy.location",
+          "/user/hive/sentry");
       policyURI += "/" + HiveServerFactory.AUTHZ_PROVIDER_FILENAME;
-      dfs.writePolicyFile(policyFileLocation);
     } else {
       policyURI = policyFileLocation.getPath();
     }
+    
     boolean startSentry = new Boolean(System.getProperty(EXTERNAL_SENTRY_SERVICE, "false"));
     if (useSentryService && (!startSentry)) {
       setupSentryService();
@@ -248,7 +247,7 @@ public abstract class AbstractTestWithStaticConfiguration {
   protected void writePolicyFile(PolicyFile policyFile) throws Exception{
 
     policyFile.write(context.getPolicyFile());
-    if(policy_on_hdfs) {
+    if(policyOnHdfs) {
       dfs.writePolicyFile(context.getPolicyFile());
     } else if(useSentryService) {
       grantPermissions(policyFile);

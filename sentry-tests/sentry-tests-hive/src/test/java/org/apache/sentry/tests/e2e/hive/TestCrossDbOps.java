@@ -48,7 +48,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
 
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception{
-    policy_on_hdfs = true;
+    policyOnHdfs = true;
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
   }
 

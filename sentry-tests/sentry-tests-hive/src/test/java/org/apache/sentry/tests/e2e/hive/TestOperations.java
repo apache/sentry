@@ -67,7 +67,6 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP)
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
-
   }
 
   private void adminCreate(String db, String table) throws Exception{
