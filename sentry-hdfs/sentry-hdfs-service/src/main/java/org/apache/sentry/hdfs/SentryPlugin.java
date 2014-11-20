@@ -158,11 +158,21 @@ public class SentryPlugin implements SentryPolicyStorePlugin {
   public void onAlterSentryRoleGrantPrivilege(
       TAlterSentryRoleGrantPrivilegeRequest request)
       throws SentryPluginException {
-    String authzObj = getAuthzObj(request.getPrivilege());
+    if (request.isSetPrivileges()) {
+      String roleName = request.getRoleName();
+      for (TSentryPrivilege privilege : request.getPrivileges()) {
+        onAlterSentryRoleGrantPrivilegeCore(roleName, privilege);
+      }
+    }
+  }
+
+  private void onAlterSentryRoleGrantPrivilegeCore(String roleName, TSentryPrivilege privilege)
+      throws SentryPluginException {
+    String authzObj = getAuthzObj(privilege);
     if (authzObj != null) {
       PermissionsUpdate update = new PermissionsUpdate(permSeqNum.incrementAndGet(), false);
       update.addPrivilegeUpdate(authzObj).putToAddPrivileges(
-          request.getRoleName(), request.getPrivilege().getAction().toUpperCase());
+          roleName, privilege.getAction().toUpperCase());
       permsUpdater.handleUpdateNotification(update);
       LOGGER.debug("Authz Perm preUpdate [" + update.getSeqNum() + "]..");
     }
@@ -185,11 +195,21 @@ public class SentryPlugin implements SentryPolicyStorePlugin {
   public void onAlterSentryRoleRevokePrivilege(
       TAlterSentryRoleRevokePrivilegeRequest request)
       throws SentryPluginException {
-    String authzObj = getAuthzObj(request.getPrivilege());
+    if (request.isSetPrivileges()) {
+      String roleName = request.getRoleName();
+      for (TSentryPrivilege privilege : request.getPrivileges()) {
+        onAlterSentryRoleRevokePrivilegeCore(roleName, privilege);
+      }
+    }
+  }
+
+  private void onAlterSentryRoleRevokePrivilegeCore(String roleName, TSentryPrivilege privilege)
+      throws SentryPluginException {
+    String authzObj = getAuthzObj(privilege);
     if (authzObj != null) {
       PermissionsUpdate update = new PermissionsUpdate(permSeqNum.incrementAndGet(), false);
       update.addPrivilegeUpdate(authzObj).putToDelPrivileges(
-          request.getRoleName(), request.getPrivilege().getAction().toUpperCase());
+          roleName, privilege.getAction().toUpperCase());
       permsUpdater.handleUpdateNotification(update);
       LOGGER.debug("Authz Perm preUpdate [" + update.getSeqNum() + ", " + authzObj + "]..");
     }
