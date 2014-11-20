@@ -198,6 +198,21 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     connection.close();
   }
 
+  @Test
+  public void testGrantDuplicateonDb() throws Exception {
+
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("CREATE ROLE user_role");
+
+    // Grant only SELECT on Database
+    statement.execute("GRANT SELECT ON DATABASE db1 TO ROLE user_role");
+    statement.execute("GRANT SELECT ON DATABASE DB1 TO ROLE user_role");
+    statement.execute("GRANT SELECT ON DATABASE Db1 TO ROLE user_role");
+    statement.close();
+    connection.close();
+  }
+
   private File doSetupForGrantDbTests() throws Exception {
     super.setupAdmin();
 

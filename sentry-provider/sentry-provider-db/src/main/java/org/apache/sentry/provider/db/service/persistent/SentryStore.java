@@ -18,7 +18,6 @@
 
 package org.apache.sentry.provider.db.service.persistent;
 
-import com.codahale.metrics.Gauge;
 import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_JOINER;
 import static org.apache.sentry.provider.common.ProviderConstants.KV_JOINER;
 
@@ -68,6 +67,7 @@ import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.datanucleus.store.rdbms.exceptions.MissingTableException;
 
+import com.codahale.metrics.Gauge;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
@@ -599,21 +599,22 @@ public class SentryStore {
 
   private List<MSentryPrivilege> getMSentryPrivileges(TSentryPrivilege tPriv, PersistenceManager pm) {
     Query query = pm.newQuery(MSentryPrivilege.class);
-    StringBuilder filters = new StringBuilder("this.serverName == \"" + toNULLCol(tPriv.getServerName()) + "\" ");
+    StringBuilder filters = new StringBuilder("this.serverName == \""
+          + toNULLCol(safeTrimLower(tPriv.getServerName())) + "\" ");
     if (!isNULL(tPriv.getDbName())) {
-      filters.append("&& this.dbName == \"" + toNULLCol(tPriv.getDbName()) + "\" ");
+      filters.append("&& this.dbName == \"" + toNULLCol(safeTrimLower(tPriv.getDbName())) + "\" ");
       if (!isNULL(tPriv.getTableName())) {
-        filters.append("&& this.tableName == \"" + toNULLCol(tPriv.getTableName()) + "\" ");
+        filters.append("&& this.tableName == \"" + toNULLCol(safeTrimLower(tPriv.getTableName())) + "\" ");
         if (!isNULL(tPriv.getColumnName())) {
-          filters.append("&& this.columnName == \"" + toNULLCol(tPriv.getColumnName()) + "\" ");
+          filters.append("&& this.columnName == \"" + toNULLCol(safeTrimLower(tPriv.getColumnName())) + "\" ");
         }
       }
     }
     // if db is null, uri is not null
     else if (!isNULL(tPriv.getURI())){
-      filters.append("&& this.URI == \"" + toNULLCol(tPriv.getURI()) + "\" ");
+      filters.append("&& this.URI == \"" + toNULLCol(safeTrim(tPriv.getURI())) + "\" ");
     }
-    filters.append("&& this.action == \"" + toNULLCol(tPriv.getAction().toLowerCase()) + "\"");
+    filters.append("&& this.action == \"" + toNULLCol(safeTrimLower(tPriv.getAction())) + "\"");
 
     query.setFilter(filters.toString());
     List<MSentryPrivilege> privileges = (List<MSentryPrivilege>) query.execute();
@@ -622,13 +623,13 @@ public class SentryStore {
 
   private MSentryPrivilege getMSentryPrivilege(TSentryPrivilege tPriv, PersistenceManager pm) {
     Query query = pm.newQuery(MSentryPrivilege.class);
-    query.setFilter("this.serverName == \"" + toNULLCol(tPriv.getServerName()) + "\" "
-				+ "&& this.dbName == \"" + toNULLCol(tPriv.getDbName()) + "\" "
-				+ "&& this.tableName == \"" + toNULLCol(tPriv.getTableName()) + "\" "
-				+ "&& this.columnName == \"" + toNULLCol(tPriv.getColumnName()) + "\" "
-				+ "&& this.URI == \"" + toNULLCol(tPriv.getURI()) + "\" "
+    query.setFilter("this.serverName == \"" + toNULLCol(safeTrimLower(tPriv.getServerName())) + "\" "
+				+ "&& this.dbName == \"" + toNULLCol(safeTrimLower(tPriv.getDbName())) + "\" "
+				+ "&& this.tableName == \"" + toNULLCol(safeTrimLower(tPriv.getTableName())) + "\" "
+				+ "&& this.columnName == \"" + toNULLCol(safeTrimLower(tPriv.getColumnName())) + "\" "
+				+ "&& this.URI == \"" + toNULLCol(safeTrim(tPriv.getURI())) + "\" "
 				+ "&& this.grantOption == grantOption "
-				+ "&& this.action == \"" + toNULLCol(tPriv.getAction().toLowerCase()) + "\"");
+				+ "&& this.action == \"" + toNULLCol(safeTrimLower(tPriv.getAction())) + "\"");
     query.declareParameters("Boolean grantOption");
     query.setUnique(true);
     Boolean grantOption = null;

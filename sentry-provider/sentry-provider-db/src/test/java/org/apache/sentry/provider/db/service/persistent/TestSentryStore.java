@@ -743,6 +743,35 @@ public class TestSentryStore {
   }
 
   @Test
+  public void testGrantDuplicatePrivilege() throws Exception {
+    String roleName = "test-privilege";
+    String grantor = "g1";
+    String server = "server1";
+    String db = "db1";
+    String table = "tbl1";
+    long seqId = sentryStore.createSentryRole(roleName).getSequenceId();
+    TSentryPrivilege privilege = new TSentryPrivilege();
+    privilege.setPrivilegeScope("TABLE");
+    privilege.setServerName(server);
+    privilege.setDbName(db);
+    privilege.setTableName(table);
+    privilege.setAction(AccessConstants.ALL);
+    privilege.setCreateTime(System.currentTimeMillis());
+    assertEquals(seqId + 1, sentryStore.alterSentryRoleGrantPrivilege(grantor, roleName, privilege)
+        .getSequenceId());
+    assertEquals(seqId + 2, sentryStore.alterSentryRoleGrantPrivilege(grantor, roleName, privilege)
+        .getSequenceId());
+    privilege.setServerName("Server1");
+    privilege.setDbName("DB1");
+    privilege.setTableName("TBL1");
+    assertEquals(seqId + 3, sentryStore.alterSentryRoleGrantPrivilege(grantor, roleName, privilege)
+        .getSequenceId());
+    MSentryRole role = sentryStore.getMSentryRoleByName(roleName);
+    Set<MSentryPrivilege> privileges = role.getPrivileges();
+    assertEquals(privileges.toString(), 1, privileges.size());
+  }
+
+  @Test
   public void testListSentryPrivilegesForProvider() throws Exception {
     String roleName1 = "list-privs-r1", roleName2 = "list-privs-r2";
     String groupName1 = "list-privs-g1", groupName2 = "list-privs-g2";
