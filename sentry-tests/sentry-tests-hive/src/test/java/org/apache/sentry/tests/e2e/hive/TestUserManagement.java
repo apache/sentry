@@ -300,11 +300,11 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
     policyFile
         .addRolesToGroup("group1", ADMINGROUP)
         .addPermissionsToRole(ADMINGROUP, "server=server1")
-        .addGroupsToUser("user1~!@#$%^&*()+-", "group1")
+        .addGroupsToUser("user1~!#$%^&*()+-", "group1")
         .addGroupsToUser("user2", "group1")
         .addGroupsToUser("user3", "group1");
     writePolicyFile(policyFile);
-    doCreateDbLoadDataDropDb("user1~!@#$%^&*()+-", "user1~!@#$%^&*()+-", "user2", "user3");
+    doCreateDbLoadDataDropDb("user1~!#$%^&*()+-", "user1~!#$%^&*()+-", "user2", "user3");
   }
 
   /**
