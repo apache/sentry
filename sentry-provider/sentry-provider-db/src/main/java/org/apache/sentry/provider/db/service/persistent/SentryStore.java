@@ -31,6 +31,9 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import javax.jdo.FetchGroup;
 import javax.jdo.JDODataStoreException;
@@ -76,6 +79,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * SentryStore is the data access object for Sentry data. Strings
@@ -84,6 +89,8 @@ import com.google.common.collect.Sets;
  */
 public class SentryStore {
   private static final UUID SERVER_UUID = UUID.randomUUID();
+  private static final Logger LOGGER = LoggerFactory
+          .getLogger(SentryStore.class);
 
   public static String NULL_COL = "__NULL__";
   static final String DEFAULT_DATA_DIR = "sentry_policy_db";
@@ -98,6 +105,8 @@ public class SentryStore {
   private long commitSequenceId;
   private final PersistenceManagerFactory pmf;
   private Configuration conf;
+  private PrivCleaner privCleaner = null;
+  private Thread privCleanerThread = null;
 
   public SentryStore(Configuration conf) throws SentryNoSuchObjectException,
   SentryAccessDeniedException {
@@ -136,8 +145,22 @@ public class SentryStore {
       prop.setProperty("datanucleus.autoCreateSchema", "true");
       prop.setProperty("datanucleus.fixedDatastore", "false");
     }
+
+    // Disallow operations outside of transactions
+    prop.setProperty("datanucleus.NontransactionalRead", "false");
+    prop.setProperty("datanucleus.NontransactionalWrite", "false");
+
     pmf = JDOHelper.getPersistenceManagerFactory(prop);
     verifySentryStoreSchema(conf, checkSchemaVersion);
+
+    // Kick off the thread that cleans orphaned privileges (unless told not to)
+    privCleaner = this.new PrivCleaner();
+    if (conf.get(ServerConfig.SENTRY_STORE_ORPHANED_PRIVILEGE_REMOVAL,
+            ServerConfig.SENTRY_STORE_ORPHANED_PRIVILEGE_REMOVAL_DEFAULT)
+            .equalsIgnoreCase("true")) {
+      privCleanerThread = new Thread(privCleaner);
+      privCleanerThread.start();
+    }
   }
 
   // ensure that the backend DB schema is set
@@ -159,6 +182,14 @@ public class SentryStore {
   }
 
   public synchronized void stop() {
+    if (privCleanerThread != null) {
+      privCleaner.exit();
+      try {
+        privCleanerThread.join();
+      } catch (InterruptedException e) {
+        // Ignore...
+      }
+    }
     if (pmf != null) {
       pmf.close();
     }
@@ -315,6 +346,16 @@ public class SentryStore {
     };
   }
 
+  /**
+   * Lets the test code know how many privs are in the db, so that we know
+   * if they are in fact being cleaned up when not being referenced any more.
+   * @return The number of rows in the db priv table.
+   */
+  @VisibleForTesting
+  long countMSentryPrivileges() {
+    return getCount(MSentryPrivilege.class);
+  }
+
   public CommitContext alterSentryRoleGrantPrivilege(String grantorPrincipal,
       String roleName, TSentryPrivilege privilege)
       throws SentryUserException {
@@ -371,10 +412,12 @@ public class SentryStore {
           MSentryPrivilege mInsert = getMSentryPrivilege(tNotAll, pm);
           if ((mSelect != null) && (mRole.getPrivileges().contains(mSelect))) {
             mSelect.removeRole(mRole);
+            privCleaner.incPrivRemoval();
             pm.makePersistent(mSelect);
           }
           if ((mInsert != null) && (mRole.getPrivileges().contains(mInsert))) {
             mInsert.removeRole(mRole);
+            privCleaner.incPrivRemoval();
             pm.makePersistent(mInsert);
           }
         } else {
@@ -484,6 +527,7 @@ public class SentryStore {
 
     if (requestedPrivToRevoke.getAction().equalsIgnoreCase("ALL") || requestedPrivToRevoke.getAction().equalsIgnoreCase("*")) {
       persistedPriv.removeRole(mRole);
+      privCleaner.incPrivRemoval();
       pm.makePersistent(persistedPriv);
     } else if (requestedPrivToRevoke.getAction().equalsIgnoreCase(AccessConstants.SELECT)
         && (!currentPrivilege.getAction().equalsIgnoreCase(AccessConstants.INSERT))) {
@@ -499,12 +543,14 @@ public class SentryStore {
       throws SentryInvalidInputException {
     // If table / URI, remove ALL
     persistedPriv.removeRole(mRole);
+    privCleaner.incPrivRemoval();
     pm.makePersistent(persistedPriv);
 
     currentPrivilege.setAction(AccessConstants.ALL);
     persistedPriv = getMSentryPrivilege(convertToTSentryPrivilege(currentPrivilege), pm);
     if ((persistedPriv != null)&&(mRole.getPrivileges().contains(persistedPriv))) {
       persistedPriv.removeRole(mRole);
+      privCleaner.incPrivRemoval();
       pm.makePersistent(persistedPriv);
 
       currentPrivilege.setAction(addAction);
@@ -660,8 +706,9 @@ public class SentryStore {
         throw new SentryNoSuchObjectException("Role " + roleName);
       } else {
         pm.retrieve(sentryRole);
+        int numPrivs = sentryRole.getPrivileges().size();
         sentryRole.removePrivileges();
-
+        privCleaner.incPrivRemoval(numPrivs);
         pm.deletePersistent(sentryRole);
       }
       CommitContext commit = commitUpdateTransaction(pm);
@@ -1676,4 +1723,191 @@ public class SentryStore {
     }
   }
 
+  /**
+   * This thread exists to clean up "orphaned" privilege rows in the database.
+   * These rows aren't removed automatically due to the fact that there is
+   * a many-to-many mapping between the roles and privileges, and the
+   * detection and removal of orphaned privileges is a wee bit involved.
+   * This thread hangs out until notified by the parent (the outer class)
+   * and then runs a custom SQL statement that detects and removes orphans.
+   */
+  private class PrivCleaner implements Runnable {
+    // Kick off priv orphan removal after this many notifies
+    private static final int NOTIFY_THRESHOLD = 50;
+
+    // How many times we've been notified; reset to zero after orphan removal
+    private int currentNotifies = 0;
+
+    // Internal state for threads
+    private boolean exitRequired = false;
+
+    // This lock and condition are needed to implement a way to drop the
+    // lock inside a while loop, and not hold the lock across the orphan
+    // removal.
+    private final Lock lock = new ReentrantLock();
+    private final Condition cond = lock.newCondition();
+
+    /**
+     * Waits in a loop, running the orphan removal function when notified.
+     * Will exit after exitRequired is set to true by exit().  We are careful
+     * to not hold our lock while removing orphans; that operation might
+     * take a long time.  There's also the matter of lock ordering.  Other
+     * threads start a transaction first, and then grab our lock; this thread
+     * grabs the lock and then starts a transaction.  Handling this correctly
+     * requires explicit locking/unlocking through the loop.
+     */
+    public void run() {
+      while (true) {
+        lock.lock();
+        try {
+          // Check here in case this was set during removeOrphanedPrivileges()
+          if (exitRequired) {
+            return;
+          }
+          while (currentNotifies <= NOTIFY_THRESHOLD) {
+            try {
+              cond.await();
+            } catch (InterruptedException e) {
+              // Interrupted
+            }
+            // Check here in case this was set while waiting
+            if (exitRequired) {
+              return;
+            }
+          }
+          currentNotifies = 0;
+        } finally {
+          lock.unlock();
+        }
+        try {
+          removeOrphanedPrivileges();
+        } catch (Exception e) {
+          LOGGER.warn("Privilege cleaning thread encountered an error: " +
+                  e.getMessage());
+        }
+      }
+    }
+
+    /**
+     * This is called when a privilege is removed from a role.  This may
+     * or may not mean that the privilege needs to be removed from the
+     * database; there may be more references to it from other roles.
+     * As a result, we'll lazily run the orphan cleaner every
+     * NOTIFY_THRESHOLD times this routine is called.
+     * @param numDeletions The number of potentially orphaned privileges
+     */
+    public void incPrivRemoval(int numDeletions) {
+      if (privCleanerThread != null) {
+        lock.lock();
+        currentNotifies += numDeletions;
+        if (currentNotifies > NOTIFY_THRESHOLD) {
+          cond.signal();
+        }
+        lock.unlock();
+      }
+    }
+
+    /**
+     * Simple form of incPrivRemoval when only one privilege is deleted.
+     */
+    public void incPrivRemoval() {
+      incPrivRemoval(1);
+    }
+
+    /**
+     * Tell this thread to exit. Safe to call multiple times, as it just
+     * notifies the run() loop to finish up.
+     */
+    public void exit() {
+      if (privCleanerThread != null) {
+        lock.lock();
+        try {
+          exitRequired = true;
+          cond.signal();
+        } finally {
+          lock.unlock();
+        }
+      }
+    }
+
+    /**
+     * Run a SQL query to detect orphaned privileges, and then delete
+     * each one.  This is complicated by the fact that datanucleus does
+     * not seem to play well with the mix between a direct SQL query
+     * and operations on the database.  The solution that seems to work
+     * is to split the operation into two transactions: the first is
+     * just a read for privileges that look like they're orphans, the
+     * second transaction will go and get each of those privilege objects,
+     * verify that there are no roles attached, and then delete them.
+     */
+    private void removeOrphanedPrivileges() {
+      final String privDB = "SENTRY_DB_PRIVILEGE";
+      final String privId = "DB_PRIVILEGE_ID";
+      final String mapDB = "SENTRY_ROLE_DB_PRIVILEGE_MAP";
+      final String privFilter =
+              "select " + privId +
+              " from " + privDB + " p" +
+              " where not exists (" +
+                  " select 1 from " + mapDB + " d" +
+                  " where p." + privId + " != d." + privId +
+              " )";
+      boolean rollback = true;
+      int orphansRemoved = 0;
+      ArrayList<Object> idList = new ArrayList<Object>();
+      PersistenceManager pm = pmf.getPersistenceManager();
+
+      // Transaction 1: Perform a SQL query to get things that look like orphans
+      try {
+        Transaction transaction = pm.currentTransaction();
+        transaction.begin();
+        transaction.setRollbackOnly();  // Makes the tx read-only
+        Query query = pm.newQuery("javax.jdo.query.SQL", privFilter);
+        query.setClass(MSentryPrivilege.class);
+        List<MSentryPrivilege> results = (List<MSentryPrivilege>) query.execute();
+        for (MSentryPrivilege orphan : results) {
+          idList.add(pm.getObjectId(orphan));
+        }
+        transaction.rollback();
+        rollback = false;
+      } finally {
+        if (rollback && pm.currentTransaction().isActive()) {
+          pm.currentTransaction().rollback();
+        } else {
+          LOGGER.debug("Found {} potential orphans", idList.size());
+        }
+      }
+
+      if (idList.isEmpty()) {
+        pm.close();
+        return;
+      }
+
+      Preconditions.checkState(!rollback);
+
+      // Transaction 2: For each potential orphan, verify it's really an
+      // orphan and delete it if so
+      rollback = true;
+      try {
+        Transaction transaction = pm.currentTransaction();
+        transaction.begin();
+        pm.refreshAll();  // Try to ensure we really have correct objects
+        for (Object id : idList) {
+          MSentryPrivilege priv = (MSentryPrivilege) pm.getObjectById(id);
+          if (priv.getRoles().isEmpty()) {
+            pm.deletePersistent(priv);
+            orphansRemoved++;
+          }
+        }
+        transaction.commit();
+        pm.close();
+        rollback = false;
+      } finally {
+        if (rollback) {
+          rollbackTransaction(pm);
+        } else {
+          LOGGER.debug("Cleaned up {} orphaned privileges", orphansRemoved);
+        }
+      }
+    }
+  }
 }
