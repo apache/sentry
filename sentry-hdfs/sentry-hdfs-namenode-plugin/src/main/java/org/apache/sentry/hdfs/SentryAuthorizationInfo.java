@@ -100,30 +100,34 @@ public class SentryAuthorizationInfo implements Runnable {
     return authzPermissions;
   }
 
-  private void update() {
+  private boolean update() {
     SentryAuthzUpdate updates = updater.getUpdates();
-    UpdateableAuthzPaths newAuthzPaths = processUpdates(
-        updates.getPathUpdates(), authzPaths);
-    UpdateableAuthzPermissions newAuthzPerms = processUpdates(
-        updates.getPermUpdates(), authzPermissions);
-    // If there were any FULL updates the returned instance would be
-    // different
-    if ((newAuthzPaths != authzPaths)||(newAuthzPerms != authzPermissions)) {
-      lock.writeLock().lock();
-      try {
-        authzPaths = newAuthzPaths;
-        if (LOG.isDebugEnabled()) {
-          LOG.debug("FULL Updated paths seq Num [" + authzPaths.getLastUpdatedSeqNum() + "]");
+    // Updates can be null if Sentry Service is un-reachable
+    if (updates != null) {
+      UpdateableAuthzPaths newAuthzPaths = processUpdates(
+          updates.getPathUpdates(), authzPaths);
+      UpdateableAuthzPermissions newAuthzPerms = processUpdates(
+          updates.getPermUpdates(), authzPermissions);
+      // If there were any FULL updates the returned instance would be
+      // different
+      if ((newAuthzPaths != authzPaths)||(newAuthzPerms != authzPermissions)) {
+        lock.writeLock().lock();
+        try {
+          authzPaths = newAuthzPaths;
+          if (LOG.isDebugEnabled()) {
+            LOG.debug("FULL Updated paths seq Num [" + authzPaths.getLastUpdatedSeqNum() + "]");
+          }
+          authzPermissions = newAuthzPerms;
+          if (LOG.isDebugEnabled()) {
+            LOG.debug("FULL Updated perms seq Num [" + authzPermissions.getLastUpdatedSeqNum() + "]");
+          }
+        } finally {
+          lock.writeLock().unlock();
         }
-        authzPermissions = newAuthzPerms;
-        if (LOG.isDebugEnabled()) {
-          LOG.debug("FULL Updated perms seq Num [" + authzPermissions.getLastUpdatedSeqNum() + "]");
-        }
-      } finally {
-        lock.writeLock().unlock();
       }
+      return true;
     }
-
+    return false;
   }
 
   private <K extends Update, V extends Updateable<K>> V processUpdates(List<K> updates,
@@ -143,6 +147,7 @@ public class SentryAuthorizationInfo implements Runnable {
   }
 
   public void run() {
+    boolean success = false;
     try {
       // In case of previous preUpdate failure, we sleep for a retry wait 
       // interval we can do this because we are using a singledthreadedexecutor
@@ -151,24 +156,32 @@ public class SentryAuthorizationInfo implements Runnable {
       if (waitUntil > currTime) {
         Thread.sleep(waitUntil - currTime);
       }
-      update();
+      success = update();
+    } catch (Exception ex) {
+      success = false;
+      LOG.warn("Failed to update, will retry in [{}]ms, error: ", 
+          new Object[]{ retryWaitMillisec, ex.getMessage(), ex});
+    }
+    if (success) {
       // we reset lastUpdate only on successful pulling
       lastUpdate = System.currentTimeMillis();
       waitUntil = lastUpdate;
-    } catch (Exception ex) {
-      LOG.warn("Failed to update, will retry in [{}]ms, error: ", 
-          new Object[]{ retryWaitMillisec, ex.getMessage(), ex});
+    } else {
       waitUntil = System.currentTimeMillis() + retryWaitMillisec;
     }
   }
 
   public void start() {
     if (authzPaths != null) {
+      boolean success = false;
       try {
-        update();
+        success = update();
       } catch (Exception ex) {
+        success = false;
         LOG.warn("Failed to do initial update, will retry in [{}]ms, error: ",
             new Object[]{retryWaitMillisec, ex.getMessage(), ex});
+      }
+      if (!success) {
         waitUntil = System.currentTimeMillis() + retryWaitMillisec;
       }
       executor = Executors.newSingleThreadScheduledExecutor(
