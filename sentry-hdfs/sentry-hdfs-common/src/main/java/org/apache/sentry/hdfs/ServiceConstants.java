@@ -45,6 +45,8 @@ public class ServiceConstants {
         new String[]{"/user/hive/warehouse"};
     public static final String SENTRY_HDFS_INIT_UPDATE_RETRY_DELAY_MS = "sentry.hdfs.init.update.retry.delay.ms";
     public static final int SENTRY_HDFS_INIT_UPDATE_RETRY_DELAY_DEFAULT = 10000;
+    public static final String SENTRY_HDFS_SYNC_CHECKER_PERIOD_MS = "sentry.hdfs.sync.checker.period.ms";
+    public static final int SENTRY_HDFS_SYNC_CHECKER_PERIOD_DEFAULT = 1000;
 
   }
   public static class ClientConfig {

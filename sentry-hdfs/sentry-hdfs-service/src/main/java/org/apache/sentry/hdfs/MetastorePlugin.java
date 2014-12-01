@@ -129,7 +129,9 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
     ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(1);
     threadPool.scheduleWithFixedDelay(new SyncTask(),
         this.conf.getLong(ServerConfig.SENTRY_HDFS_INIT_UPDATE_RETRY_DELAY_MS,
-            ServerConfig.SENTRY_HDFS_INIT_UPDATE_RETRY_DELAY_DEFAULT), 1000,
+            ServerConfig.SENTRY_HDFS_INIT_UPDATE_RETRY_DELAY_DEFAULT),
+        this.conf.getLong(ServerConfig.SENTRY_HDFS_SYNC_CHECKER_PERIOD_MS,
+            ServerConfig.SENTRY_HDFS_SYNC_CHECKER_PERIOD_DEFAULT),
         TimeUnit.MILLISECONDS);
     this.threadPool = threadPool;
   }
