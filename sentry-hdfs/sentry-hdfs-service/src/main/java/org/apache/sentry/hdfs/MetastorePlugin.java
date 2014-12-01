@@ -23,7 +23,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -31,7 +30,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.hadoop.hive.metastore.HiveMetaStore;
 import org.apache.hadoop.hive.metastore.HiveMetaStore.HMSHandler;
 import org.apache.hadoop.hive.metastore.IHMSHandler;
 import org.apache.hadoop.hive.metastore.MetaStorePreEventListener;
@@ -56,6 +54,35 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(MetastorePlugin.class);
 
+  class SyncTask implements Runnable {
+    @Override
+    public void run() {
+      if (!notificiationLock.tryLock()) {
+        // No need to sync.. as metastore is in the process of pushing an update..
+        return;
+      }
+      try {
+        long lastSeenBySentry =
+            MetastorePlugin.this.getClient().getLastSeenHMSPathSeqNum();
+        long lastSent = lastSentSeqNum;
+        if (lastSeenBySentry != lastSent) {
+          LOGGER.warn("#### Sentry not in sync with HMS [" + lastSeenBySentry + ", "
+              + lastSent + "]");
+          PathsUpdate fullImageUpdate =
+              MetastorePlugin.this.authzPaths.createFullImageUpdate(lastSent);
+          notifySentryNoLock(fullImageUpdate);
+          LOGGER.warn("#### Synced Sentry with update [" + lastSent + "]");
+        }
+      } catch (Exception e) {
+        sentryClient = null;
+        LOGGER.error("Error talking to Sentry HDFS Service !!", e);
+      } finally {
+        syncSent = true;
+        notificiationLock.unlock();
+      }
+    }
+  }
+
   private final Configuration conf;
   private SentryHDFSServiceClient sentryClient;
   private UpdateableAuthzPaths authzPaths;
@@ -64,17 +91,20 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
   //Initialized to some value > 1 so that the first update notification
  // will trigger a full Image fetch
   private final AtomicLong seqNum = new AtomicLong(5);
-  private volatile long lastSentSeqNum = -1;
+
+  // For some reason, HMS sometimes restarts the plugin
+  private static volatile long lastSentSeqNum = -1;
+  private volatile boolean syncSent = false;
   private final ExecutorService threadPool;
 
   static class ProxyHMSHandler extends HMSHandler {
-	public ProxyHMSHandler(String name, HiveConf conf) throws MetaException {
-		super(name, conf);
-	}
-	@Override
-	public String startFunction(String function, String extraLogInfo) {
-		return function;
-	}
+    public ProxyHMSHandler(String name, HiveConf conf) throws MetaException {
+      super(name, conf);
+    }
+    @Override
+    public String startFunction(String function, String extraLogInfo) {
+      return function;
+    }
   }
 
   public MetastorePlugin(Configuration conf) {
@@ -97,30 +127,9 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
       LOGGER.error("Could not connect to Sentry HDFS Service !!", e);
     }
     ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(1);
-    threadPool.scheduleWithFixedDelay(new Runnable() {
-      @Override
-      public void run() {
-        notificiationLock.lock();
-        try {
-          long lastSeenHMSPathSeqNum =
-              MetastorePlugin.this.getClient().getLastSeenHMSPathSeqNum();
-          if (lastSeenHMSPathSeqNum != lastSentSeqNum) {
-            LOGGER.warn("Sentry not in sync with HMS [" + lastSeenHMSPathSeqNum + ", " + lastSentSeqNum + "]");
-            PathsUpdate fullImageUpdate =
-                MetastorePlugin.this.authzPaths.createFullImageUpdate(
-                    lastSentSeqNum);
-            LOGGER.warn("Sentry not in sync with HMS !!");
-            notifySentryNoLock(fullImageUpdate, false);
-          }
-        } catch (Exception e) {
-          sentryClient = null;
-          LOGGER.error("Error talking to Sentry HDFS Service !!", e);
-        } finally {
-          notificiationLock.unlock();
-        }
-      }
-    }, this.conf.getLong(ServerConfig.SENTRY_HDFS_INIT_UPDATE_RETRY_DELAY_MS,
-        ServerConfig.SENTRY_HDFS_INIT_UPDATE_RETRY_DELAY_DEFAULT), 1000,
+    threadPool.scheduleWithFixedDelay(new SyncTask(),
+        this.conf.getLong(ServerConfig.SENTRY_HDFS_INIT_UPDATE_RETRY_DELAY_MS,
+            ServerConfig.SENTRY_HDFS_INIT_UPDATE_RETRY_DELAY_DEFAULT), 1000,
         TimeUnit.MILLISECONDS);
     this.threadPool = threadPool;
   }
@@ -162,7 +171,7 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
         + "path : " + path + "]");
     PathsUpdate update = createHMSUpdate();
     update.newPathChange(authzObj).addToAddPaths(PathsUpdate.cleanPath(path));
-    notifySentry(update, true);
+    notifySentryAndApplyLocal(update);
   }
 
   @Override
@@ -180,7 +189,7 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
     }
     update.newPathChange(authzObj).addToDelPaths(
         Lists.newArrayList(PathsUpdate.ALL_PATHS));
-    notifySentry(update, true);
+    notifySentryAndApplyLocal(update);
   }
 
   @Override
@@ -194,7 +203,7 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
           + "path : " + path + "]");
       PathsUpdate update = createHMSUpdate();
       update.newPathChange(authzObj).addToDelPaths(PathsUpdate.cleanPath(path));
-      notifySentry(update, true);
+      notifySentryAndApplyLocal(update);
     }
   }
 
@@ -210,7 +219,7 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
         + "newPath : " + newPath + "]");
     update.newPathChange(newName).addToAddPaths(PathsUpdate.cleanPath(newPath));
     update.newPathChange(oldName).addToDelPaths(PathsUpdate.cleanPath(oldPath));
-    notifySentry(update, true);
+    notifySentryAndApplyLocal(update);
   }
 
   private SentryHDFSServiceClient getClient() {
@@ -227,30 +236,30 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
 
   private PathsUpdate createHMSUpdate() {
     PathsUpdate update = new PathsUpdate(seqNum.incrementAndGet(), false);
-    LOGGER.debug("#### HMS Path Update SeqNum : [" + seqNum.get() + "]");
+    LOGGER.debug("#### Creating HMS Path Update SeqNum : [" + seqNum.get() + "]");
     return update;
   }
 
-  private void notifySentryNoLock(PathsUpdate update, boolean applyLocal) {
-    if (applyLocal) {
-      authzPaths.updatePartial(Lists.newArrayList(update), new ReentrantReadWriteLock());
-    }
+  private void notifySentryNoLock(PathsUpdate update) {
     try {
       getClient().notifyHMSUpdate(update);
     } catch (Exception e) {
       LOGGER.error("Could not send update to Sentry HDFS Service !!", e);
-    } finally {
-      lastSentSeqNum = update.getSeqNum();
-      LOGGER.debug("#### HMS Path Last update sent : [" + lastSentSeqNum + "]");
     }
   }
 
-  private void notifySentry(PathsUpdate update, boolean applyLocal) {
+  private void notifySentryAndApplyLocal(PathsUpdate update) {
     notificiationLock.lock();
+    if (!syncSent) {
+      new SyncTask().run();
+    }
     try {
-      notifySentryNoLock(update, applyLocal);
+      authzPaths.updatePartial(Lists.newArrayList(update), new ReentrantReadWriteLock());
+      notifySentryNoLock(update);
     } finally {
+      lastSentSeqNum = update.getSeqNum();
       notificiationLock.unlock();
+      LOGGER.debug("#### HMS Path Last update sent : ["+ lastSentSeqNum + "]");
     }
   }
 
