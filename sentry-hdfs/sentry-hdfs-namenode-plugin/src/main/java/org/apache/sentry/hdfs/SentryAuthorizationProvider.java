@@ -232,7 +232,7 @@ public class SentryAuthorizationProvider
         if (authzInfo.doesBelongToAuthzObject(pathElements)) {
           group = this.group;
         } else {
-          group = defaultAuthzProvider.getGroup(node, snapshotId);
+          group = getDefaultProviderGroup(node, snapshotId);
         }
       } else {
         group = this.group;
@@ -307,12 +307,7 @@ public class SentryAuthorizationProvider
       List<AclEntry> list = new ArrayList<AclEntry>();
       if (originalAuthzAsAcl) {
         String user = defaultAuthzProvider.getUser(node, snapshotId);
-        String group = defaultAuthzProvider.getGroup(node, snapshotId);
-        INodeAuthorizationInfo pNode = node.getParent();
-        while  (group == null && pNode != null) {
-          group = defaultAuthzProvider.getGroup(pNode, snapshotId);
-          pNode = pNode.getParent();
-        }
+        String group = getDefaultProviderGroup(node, snapshotId);
         FsPermission perm = defaultAuthzProvider.getFsPermission(node, snapshotId);
         list.addAll(createAclEntries(user, group, perm));
       } else {
@@ -344,6 +339,17 @@ public class SentryAuthorizationProvider
     return f;
   }
 
+  private String getDefaultProviderGroup(INodeAuthorizationInfo node,
+      int snapshotId) {
+    String group = defaultAuthzProvider.getGroup(node, snapshotId);
+    INodeAuthorizationInfo pNode = node.getParent();
+    while  (group == null && pNode != null) {
+      group = defaultAuthzProvider.getGroup(pNode, snapshotId);
+      pNode = pNode.getParent();
+    }
+    return group;
+  }
+
   @Override
   public void removeAclFeature(INodeAuthorizationInfo node) {
     AclFeature aclFeature = node.getAclFeature(CURRENT_STATE_ID);
@@ -359,14 +365,5 @@ public class SentryAuthorizationProvider
       defaultAuthzProvider.addAclFeature(node, f);
     }
   }
-
-//  @Override 
-//  public boolean doesAllowChanges(INodeAuthorizationInfo node) {
-//    String[] pathElements = getPathElements(node);
-//    if (!authzInfo.isManaged(pathElements)) {
-//      return defaultAuthzProvider.doesAllowChanges(node);
-//    }
-//    return !authzInfo.doesBelongToAuthzObject(getPathElements(node));
-//  }
 
 }
