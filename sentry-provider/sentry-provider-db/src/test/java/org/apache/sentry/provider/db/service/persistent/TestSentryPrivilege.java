@@ -88,6 +88,11 @@ public class TestSentryPrivilege {
       my.setURI("file:///path");
       your.setURI("file:///path/to/some/dir");
       assertTrue(my.implies(your));
+
+      // my is SERVER level privilege, your is URI level privilege
+      my.setURI("");
+      your.setURI("file:///path");
+      assertTrue(my.implies(your));
     }
   }
 
@@ -110,6 +115,7 @@ public class TestSentryPrivilege {
     // bad action
     your.setAction(AccessConstants.ALL);
     assertFalse(my.implies(your));
+
 
     // bad table
     your.setTableName("tb2");
@@ -180,6 +186,13 @@ public class TestSentryPrivilege {
     your.setServerName("server2");
     my.setURI("hdfs://namenode:9000/path1");
     your.setURI("hdfs://namenode:9000/path1");
+    assertFalse(my.implies(your));
+
+    // bad implies
+    my.setServerName("server1");
+    my.setURI("hdfs://namenode:9000/path1");
+    your.setServerName("server1");
+    your.setURI("");
     assertFalse(my.implies(your));
   }
 

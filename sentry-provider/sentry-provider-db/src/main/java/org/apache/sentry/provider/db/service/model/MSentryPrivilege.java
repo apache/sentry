@@ -288,8 +288,8 @@ public class MSentryPrivilege {
           return false;
         }
       }
-      // if URI is not equals, return false
-    } else {
+      // if URI is not NULL, but other's URI is NULL, return false
+    } else if (!isNULL(URI) && isNULL(other.URI)){
       return false;
     }
 
