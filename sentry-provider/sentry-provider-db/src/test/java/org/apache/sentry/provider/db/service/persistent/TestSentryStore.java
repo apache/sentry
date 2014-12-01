@@ -46,6 +46,7 @@ import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.collect.Iterables;
@@ -261,6 +262,7 @@ public class TestSentryStore {
    * cleanup thread runs, and expect them all to be gone from the database.
    * @throws Exception
    */
+  @Ignore("Disabled with SENTRY-545 following SENTRY-140 problems")
   @Test
   public void testPrivilegeCleanup() throws Exception {
     final String roleName = "test-priv-cleanup";
@@ -302,6 +304,7 @@ public class TestSentryStore {
    * cleanup thread.
    * @throws Exception
    */
+  @Ignore("Disabled with SENTRY-545 following SENTRY-140 problems")
   @Test
   public void testPrivilegeCleanup2() throws Exception {
     final String roleName = "test-priv-cleanup";
