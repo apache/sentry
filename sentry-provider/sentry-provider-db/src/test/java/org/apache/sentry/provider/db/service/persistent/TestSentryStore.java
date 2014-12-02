@@ -404,9 +404,12 @@ public class TestSentryStore {
     assertEquals(privileges.toString(), 0, privileges.size());
   }
 
+  /**
+   * Regression test for SENTRY-74 and SENTRY-552
+   */
   @Test
   public void testGrantRevokePrivilegeWithColumn() throws Exception {
-    String roleName = "test-privilege";
+    String roleName = "test-col-privilege";
     String grantor = "g1";
     String server = "server1";
     String db = "db1";
@@ -422,6 +425,8 @@ public class TestSentryStore {
     privilege.setColumnName(column1);
     privilege.setAction(AccessConstants.ALL);
     privilege.setCreateTime(System.currentTimeMillis());
+
+    // Grant ALL on c1 and c2
     assertEquals(seqId + 1, sentryStore.alterSentryRoleGrantPrivilege(grantor, roleName, privilege)
         .getSequenceId());
     privilege.setColumnName(column2);
@@ -430,22 +435,32 @@ public class TestSentryStore {
     MSentryRole role = sentryStore.getMSentryRoleByName(roleName);
     Set<MSentryPrivilege> privileges = role.getPrivileges();
     assertEquals(privileges.toString(), 2, privileges.size());
+
+    // Revoke SELECT on c2
     privilege.setAction(AccessConstants.SELECT);
     assertEquals(seqId + 3, sentryStore.alterSentryRoleRevokePrivilege(grantor, roleName, privilege)
         .getSequenceId());
 
-    // after having ALL and revoking SELECT, we should have INSERT
+    // At this point c1 has ALL privileges and c2 should have INSERT after revoking SELECT
     role = sentryStore.getMSentryRoleByName(roleName);
     privileges = role.getPrivileges();
     assertEquals(privileges.toString(), 2, privileges.size());
-    MSentryPrivilege mPrivilege = Iterables.get(privileges, 0);
-    assertEquals(server, mPrivilege.getServerName());
-    assertEquals(db, mPrivilege.getDbName());
-    assertEquals(table, mPrivilege.getTableName());
-    assertEquals(AccessConstants.INSERT, mPrivilege.getAction());
-    assertFalse(mPrivilege.getGrantOption());
+    for (MSentryPrivilege mPrivilege: privileges) {
+      assertEquals(server, mPrivilege.getServerName());
+      assertEquals(db, mPrivilege.getDbName());
+      assertEquals(table, mPrivilege.getTableName());
+      assertFalse(mPrivilege.getGrantOption());
+      if (mPrivilege.getColumnName().equals(column1)) {
+        assertEquals(AccessConstants.ALL, mPrivilege.getAction());
+      } else if (mPrivilege.getColumnName().equals(column2)) {
+        assertEquals(AccessConstants.INSERT, mPrivilege.getAction());
+      } else {
+        fail("Unexpected column name: " + mPrivilege.getColumnName());
+      }
+    }
 
-    // after revoking table level privilege, we will remove the two column level items
+    // after revoking INSERT table level privilege will remove privileges from column2
+    // and downgrade column1 to SELECT privileges.
     privilege = new TSentryPrivilege();
     privilege.setPrivilegeScope("TABLE");
     privilege.setServerName(server);
@@ -457,7 +472,177 @@ public class TestSentryStore {
         .getSequenceId());
     role = sentryStore.getMSentryRoleByName(roleName);
     privileges = role.getPrivileges();
+    assertEquals(privileges.toString(), 1, privileges.size());
+    assertEquals(column1, Iterables.get(privileges, 0).getColumnName());
+    assertEquals(AccessConstants.SELECT, Iterables.get(privileges, 0).getAction());
+
+    // Revoke ALL from the table should now remove all the column privileges.
+    privilege.setAction(AccessConstants.ALL);
+    privilege.setCreateTime(System.currentTimeMillis());
+    assertEquals(seqId + 5, sentryStore.alterSentryRoleRevokePrivilege(grantor, roleName, privilege)
+        .getSequenceId());
+    role = sentryStore.getMSentryRoleByName(roleName);
+    privileges = role.getPrivileges();
     assertEquals(privileges.toString(), 0, privileges.size());
+  }
+
+  /**
+   * Regression test for SENTRY-552
+   */
+  @Test
+  public void testGrantRevokeTablePrivilegeDowngradeByDb() throws Exception {
+    String roleName = "test-table-db-downgrade-privilege";
+    String grantor = "g1";
+    String server = "server1";
+    String db = "db1";
+    String table1 = "tbl1";
+    String table2 = "tbl2";
+    long seqId = sentryStore.createSentryRole(roleName).getSequenceId();
+    TSentryPrivilege privilegeTable1 = new TSentryPrivilege();
+    privilegeTable1.setPrivilegeScope("TABLE");
+    privilegeTable1.setServerName(server);
+    privilegeTable1.setDbName(db);
+    privilegeTable1.setTableName(table1);
+    privilegeTable1.setAction(AccessConstants.ALL);
+    privilegeTable1.setCreateTime(System.currentTimeMillis());
+    TSentryPrivilege privilegeTable2 = privilegeTable1.deepCopy();;
+    privilegeTable2.setTableName(table2);
+
+    // Grant ALL on table1 and table2
+    assertEquals(seqId + 1, sentryStore.alterSentryRoleGrantPrivilege(grantor, roleName, privilegeTable1)
+        .getSequenceId());
+    assertEquals(seqId + 2, sentryStore.alterSentryRoleGrantPrivilege(grantor, roleName, privilegeTable2)
+        .getSequenceId());
+    MSentryRole role = sentryStore.getMSentryRoleByName(roleName);
+    Set<MSentryPrivilege> privileges = role.getPrivileges();
+    assertEquals(privileges.toString(), 2, privileges.size());
+
+    // Revoke SELECT on table2
+    privilegeTable2.setAction(AccessConstants.SELECT);
+    assertEquals(seqId + 3, sentryStore.alterSentryRoleRevokePrivilege(grantor, roleName, privilegeTable2)
+        .getSequenceId());
+    // after having ALL and revoking SELECT, we should have INSERT
+    role = sentryStore.getMSentryRoleByName(roleName);
+    privileges = role.getPrivileges();
+    assertEquals(privileges.toString(), 2, privileges.size());
+
+    // At this point table1 has ALL privileges and table2 should have INSERT after revoking SELECT
+    role = sentryStore.getMSentryRoleByName(roleName);
+    privileges = role.getPrivileges();
+    assertEquals(privileges.toString(), 2, privileges.size());
+    for (MSentryPrivilege mPrivilege: privileges) {
+      assertEquals(server, mPrivilege.getServerName());
+      assertEquals(db, mPrivilege.getDbName());
+      assertFalse(mPrivilege.getGrantOption());
+      if (mPrivilege.getTableName().equals(table1)) {
+        assertEquals(AccessConstants.ALL, mPrivilege.getAction());
+      } else if (mPrivilege.getTableName().equals(table2)) {
+        assertEquals(AccessConstants.INSERT, mPrivilege.getAction());
+      } else {
+        fail("Unexpected table name: " + mPrivilege.getTableName());
+      }
+    }
+
+    // Revoke INSERT on Database
+    privilegeTable2.setAction(AccessConstants.INSERT);
+    privilegeTable2.setPrivilegeScope("DATABASE");
+    privilegeTable2.unsetTableName();
+    assertEquals(seqId + 4, sentryStore.alterSentryRoleRevokePrivilege(grantor, roleName, privilegeTable2)
+        .getSequenceId());
+    role = sentryStore.getMSentryRoleByName(roleName);
+    privileges = role.getPrivileges();
+
+    // after revoking INSERT database level privilege will remove privileges from table2
+    // and downgrade table1 to SELECT privileges.
+    assertEquals(privileges.toString(), 1, privileges.size());
+    MSentryPrivilege mPrivilege = Iterables.get(privileges, 0);
+    assertEquals(server, mPrivilege.getServerName());
+    assertEquals(db, mPrivilege.getDbName());
+    assertEquals(table1, mPrivilege.getTableName());
+    assertEquals(AccessConstants.SELECT, mPrivilege.getAction());
+    assertFalse(mPrivilege.getGrantOption());
+  }
+
+  /**
+   * Regression test for SENTRY-552
+   */
+  @Test
+  public void testGrantRevokeColumnPrivilegeDowngradeByDb() throws Exception {
+    String roleName = "test-column-db-downgrade-privilege";
+    String grantor = "g1";
+    String server = "server1";
+    String db = "db1";
+    String table = "tbl1";
+    String column1 = "c1";
+    String column2 = "c2";
+    long seqId = sentryStore.createSentryRole(roleName).getSequenceId();
+    TSentryPrivilege privilegeCol1 = new TSentryPrivilege();
+    privilegeCol1.setPrivilegeScope("COLUMN");
+    privilegeCol1.setServerName(server);
+    privilegeCol1.setDbName(db);
+    privilegeCol1.setTableName(table);
+    privilegeCol1.setColumnName(column1);
+    privilegeCol1.setAction(AccessConstants.ALL);
+    privilegeCol1.setCreateTime(System.currentTimeMillis());
+    TSentryPrivilege privilegeCol2 = privilegeCol1.deepCopy();;
+    privilegeCol2.setColumnName(column2);
+
+    // Grant ALL on column1 and column2
+    assertEquals(seqId + 1, sentryStore.alterSentryRoleGrantPrivilege(grantor, roleName, privilegeCol1)
+        .getSequenceId());
+    assertEquals(seqId + 2, sentryStore.alterSentryRoleGrantPrivilege(grantor, roleName, privilegeCol2)
+        .getSequenceId());
+    MSentryRole role = sentryStore.getMSentryRoleByName(roleName);
+    Set<MSentryPrivilege> privileges = role.getPrivileges();
+    assertEquals(privileges.toString(), 2, privileges.size());
+
+    // Revoke SELECT on column2
+    privilegeCol2.setAction(AccessConstants.SELECT);
+    assertEquals(seqId + 3, sentryStore.alterSentryRoleRevokePrivilege(grantor, roleName, privilegeCol2)
+        .getSequenceId());
+    // after having ALL and revoking SELECT, we should have INSERT
+    role = sentryStore.getMSentryRoleByName(roleName);
+    privileges = role.getPrivileges();
+    assertEquals(privileges.toString(), 2, privileges.size());
+
+    // At this point column1 has ALL privileges and column2 should have INSERT after revoking SELECT
+    role = sentryStore.getMSentryRoleByName(roleName);
+    privileges = role.getPrivileges();
+    assertEquals(privileges.toString(), 2, privileges.size());
+    for (MSentryPrivilege mPrivilege: privileges) {
+      assertEquals(server, mPrivilege.getServerName());
+      assertEquals(db, mPrivilege.getDbName());
+      assertEquals(table, mPrivilege.getTableName());
+      assertFalse(mPrivilege.getGrantOption());
+      if (mPrivilege.getColumnName().equals(column1)) {
+        assertEquals(AccessConstants.ALL, mPrivilege.getAction());
+      } else if (mPrivilege.getColumnName().equals(column2)) {
+        assertEquals(AccessConstants.INSERT, mPrivilege.getAction());
+      } else {
+        fail("Unexpected column name: " + mPrivilege.getColumnName());
+      }
+    }
+
+    // Revoke INSERT on Database
+    privilegeCol2.setAction(AccessConstants.INSERT);
+    privilegeCol2.setPrivilegeScope("DATABASE");
+    privilegeCol2.unsetTableName();
+    privilegeCol2.unsetColumnName();
+    assertEquals(seqId + 4, sentryStore.alterSentryRoleRevokePrivilege(grantor, roleName, privilegeCol2)
+        .getSequenceId());
+    role = sentryStore.getMSentryRoleByName(roleName);
+    privileges = role.getPrivileges();
+
+    // after revoking INSERT database level privilege will remove privileges from column2
+    // and downgrade column1 to SELECT privileges.
+    assertEquals(privileges.toString(), 1, privileges.size());
+    MSentryPrivilege mPrivilege = Iterables.get(privileges, 0);
+    assertEquals(server, mPrivilege.getServerName());
+    assertEquals(db, mPrivilege.getDbName());
+    assertEquals(table, mPrivilege.getTableName());
+    assertEquals(column1, mPrivilege.getColumnName());
+    assertEquals(AccessConstants.SELECT, mPrivilege.getAction());
+    assertFalse(mPrivilege.getGrantOption());
   }
 
   @Test

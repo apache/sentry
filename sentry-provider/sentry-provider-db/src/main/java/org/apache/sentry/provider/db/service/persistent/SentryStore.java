@@ -581,6 +581,24 @@ public class SentryStore {
             && (!isNULL(childPriv.getColumnName()))) {
           populateChildren(roleNames, childPriv, children);
         }
+        // The method getChildPrivileges() didn't do filter on "action",
+        // if the action is not "All", it should judge the action of children privilege.
+        // For example: a user has a privilege “All on Col1”,
+        // if the operation is “REVOKE INSERT on table”
+        // the privilege should be the child of table level privilege.
+        // but the privilege may still have other meaning, likes "SELECT on Col1".
+        // and the privileges like "SELECT on Col1" should not be revoke.
+        if (!priv.isActionALL()) {
+          if (childPriv.isActionALL()) {
+            // If the child privilege is All, we should convert it to the same
+            // privilege with parent
+            childPriv.setAction(priv.getAction());
+          }
+          // Only include privilege that imply the parent privilege.
+          if (!priv.implies(childPriv)) {
+            continue;
+          }
+        }
         children.add(childPriv);
       }
     }

@@ -307,4 +307,9 @@ public class MSentryPrivilege {
     return SentryStore.isNULL(s);
   }
 
+  public boolean isActionALL() {
+    return AccessConstants.ACTION_ALL.equalsIgnoreCase(action)
+        || AccessConstants.ALL.equals(action);
+  }
+
 }

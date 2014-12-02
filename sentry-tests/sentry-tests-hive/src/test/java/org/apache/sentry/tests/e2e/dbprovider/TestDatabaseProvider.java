@@ -122,10 +122,11 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     connection.close();
   }
 
-
-  // SENTRY-303 tests
+  /**
+   * Regression test for SENTRY-303 and SENTRY-543.
+   */
   @Test
-  public void testGrantSELECTonDb() throws Exception {
+  public void testGrantRevokeSELECTonDb() throws Exception {
     File dataFile = doSetupForGrantDbTests();
 
     Connection connection = context.createConnection(ADMIN1);
@@ -154,6 +155,36 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       // INSERT is not allowed
       statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE " + DB1 + ".t2");
       assertTrue("only SELECT allowed on t2!!", false);
+    } catch (Exception e) {
+      // Ignore
+    }
+
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+
+    // SENTRY-543 - Verify recursive revoke of SELECT on database removes the correct
+    // privileges.
+    statement.execute("USE " + DB1);
+    statement.execute("GRANT ALL ON TABLE t1 TO ROLE user_role");
+    statement.execute("REVOKE SELECT ON DATABASE " + DB1 + " FROM ROLE user_role");
+    statement.close();
+    connection.close();
+
+    // Switch to user1 - they should not have no access on t1 and t2 now.
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+
+    try {
+      // SELECT is not allowed
+      statement.execute("SELECT * FROM " + DB1 + ".t1");
+      fail("SELECT should have been revoked from t1");
+    } catch (Exception e) {
+      // Ignore
+    }
+    try {
+      // SELECT is not allowed
+      statement.execute("SELECT * FROM " + DB1 + ".t2");
+      fail("SELECT should have been revoked from t2");
     } catch (Exception e) {
       // Ignore
     }
