@@ -226,7 +226,7 @@ public class SentryAuthorizationProvider
     String group;
     String[] pathElements = getPathElements(node);
     if (!authzInfo.isManaged(pathElements)) {
-      group = defaultAuthzProvider.getGroup(node, snapshotId);
+      group = getDefaultProviderGroup(node, snapshotId);
     } else {
       if (!authzInfo.isStale()) {
         if (authzInfo.doesBelongToAuthzObject(pathElements)) {
@@ -255,14 +255,26 @@ public class SentryAuthorizationProvider
     if (!authzInfo.isManaged(pathElements)) {
       permission = defaultAuthzProvider.getFsPermission(node, snapshotId);
     } else {
+      FsPermission returnPerm = this.permission;
+      // Handle case when prefix directory is itself associated with an
+      // authorizable object (default db directory in hive)
+      // An executable permission needs to be set on the the prefix directory
+      // in this case.. else, subdirectories (which map to other dbs) will
+      // not be travesible.
+      for (String [] prefixPath : authzInfo.getPathPrefixes()) {
+        if (Arrays.equals(prefixPath, pathElements)) {
+          returnPerm = FsPermission.createImmutable((short)(returnPerm.toShort() | 0x01));
+          break;
+        }
+      }
       if (!authzInfo.isStale()) {
         if (authzInfo.doesBelongToAuthzObject(pathElements)) {
-          permission = this.permission;
+          permission = returnPerm;
         } else {
           permission = defaultAuthzProvider.getFsPermission(node, snapshotId);
         }
       } else {
-        permission = this.permission;
+        permission = returnPerm;
       }
     }
     return permission;

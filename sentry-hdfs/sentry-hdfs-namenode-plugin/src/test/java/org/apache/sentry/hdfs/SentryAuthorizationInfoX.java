@@ -20,7 +20,6 @@ package org.apache.sentry.hdfs;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.permission.AclEntry;
 import org.apache.hadoop.fs.permission.AclEntryScope;
 import org.apache.hadoop.fs.permission.AclEntryType;
@@ -29,7 +28,7 @@ import org.apache.hadoop.fs.permission.FsAction;
 public class SentryAuthorizationInfoX extends SentryAuthorizationInfo {
 
   public SentryAuthorizationInfoX() {
-    super();
+    super(new String[]{"/user/authz"});
   }
 
   @Override

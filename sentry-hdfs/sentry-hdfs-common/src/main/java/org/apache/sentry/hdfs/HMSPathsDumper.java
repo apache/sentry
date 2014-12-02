@@ -105,6 +105,11 @@ public class HMSPathsDumper implements AuthzPathsDumper<HMSPaths> {
         // already exists.. else it is not part of the prefix
         if (child == null) continue;
         isChildPrefix = child.getType() == EntryType.PREFIX;
+        // Handle case when prefix entry has an authzObject
+        // For Eg (default table mapped to /user/hive/warehouse)
+        if (isChildPrefix) {
+          child.setAuthzObj(tChild.getAuthzObj());
+        }
       }
       if (child == null) {
         child = new Entry(parent, tChild.getPathElement(),

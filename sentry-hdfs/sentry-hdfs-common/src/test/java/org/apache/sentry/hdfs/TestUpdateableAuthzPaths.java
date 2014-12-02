@@ -138,6 +138,13 @@ public class TestUpdateableAuthzPaths {
     assertEquals("db1.tbl11", authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "tbl11", "part112"}));
   }
 
+  @Test
+  public void testDefaultDbPath() {
+    HMSPaths hmsPaths = new HMSPaths(new String[] {"/user/hive/warehouse"});
+    hmsPaths._addAuthzObject("default", Lists.newArrayList("/user/hive/warehouse"));
+    assertEquals("default", hmsPaths.findAuthzObject(new String[]{"user", "hive", "warehouse"}));
+  }
+
   private HMSPaths createBaseHMSPaths(int dbNum, int tblNum) {
     String db = "db" + dbNum;
     String tbl = "tbl" + dbNum + "" + tblNum;

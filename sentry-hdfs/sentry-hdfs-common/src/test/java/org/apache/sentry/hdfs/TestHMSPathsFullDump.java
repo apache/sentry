@@ -37,6 +37,7 @@ public class TestHMSPathsFullDump {
   @Test
   public void testDumpAndInitialize() {
     HMSPaths hmsPaths = new HMSPaths(new String[] {"/user/hive/warehouse", "/user/hive/w2"});
+    hmsPaths._addAuthzObject("default", Lists.newArrayList("/user/hive/warehouse"));
     hmsPaths._addAuthzObject("db1", Lists.newArrayList("/user/hive/warehouse/db1"));
     hmsPaths._addAuthzObject("db1.tbl11", Lists.newArrayList("/user/hive/warehouse/db1/tbl11"));
     hmsPaths._addPathsToAuthzObject("db1.tbl11", Lists.newArrayList(
@@ -44,11 +45,12 @@ public class TestHMSPathsFullDump {
         "/user/hive/warehouse/db1/tbl11/part112",
         "/user/hive/warehouse/db1/tbl11/p1=1/p2=x"));
 
-    // Not in prefix paths
+    // Not in Deserialized objects prefix paths
     hmsPaths._addAuthzObject("db2", Lists.newArrayList("/user/hive/w2/db2"));
     hmsPaths._addAuthzObject("db2.tbl21", Lists.newArrayList("/user/hive/w2/db2/tbl21"));
     hmsPaths._addPathsToAuthzObject("db2.tbl21", Lists.newArrayList("/user/hive/w2/db2/tbl21/p1=1/p2=x"));
 
+    Assert.assertEquals("default", hmsPaths.findAuthzObject(new String[]{"user", "hive", "warehouse"}, false));
     Assert.assertEquals("db1", hmsPaths.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1"}, false));
     Assert.assertEquals("db1.tbl11", hmsPaths.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11"}, false));
     Assert.assertEquals("db1.tbl11", hmsPaths.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11", "part111"}, false));
@@ -62,6 +64,7 @@ public class TestHMSPathsFullDump {
     TPathsDump pathsDump = serDe.createPathsDump();
     HMSPaths hmsPaths2 = new HMSPaths(new String[] {"/user/hive/warehouse"}).getPathsDump().initializeFromDump(pathsDump);
 
+    Assert.assertEquals("default", hmsPaths2.findAuthzObject(new String[]{"user", "hive", "warehouse"}, false));
     Assert.assertEquals("db1", hmsPaths2.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1"}, false));
     Assert.assertEquals("db1.tbl11", hmsPaths2.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11"}, false));
     Assert.assertEquals("db1.tbl11", hmsPaths2.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11", "part111"}, false));

@@ -122,7 +122,7 @@ public class HMSPaths implements AuthzPaths {
       children = new HashMap<String, Entry>();
     }
 
-    private void setAuthzObj(String authzObj) {
+    void setAuthzObj(String authzObj) {
       this.authzObj = authzObj;
     }
 
@@ -156,6 +156,10 @@ public class HMSPaths implements AuthzPaths {
       if (child == null) {
         child = new Entry(entryParent, lastPathElement, type, authzObj);
         entryParent.getChildren().put(lastPathElement, child);
+      } else if (type == EntryType.AUTHZ_OBJECT &&
+          child.getType() == EntryType.PREFIX) {
+        // Support for default db in hive (which is usually a prefix dir)
+        child.setAuthzObj(authzObj);
       } else if (type == EntryType.AUTHZ_OBJECT &&
           child.getType() == EntryType.DIR) {
         // if the entry already existed as dir, we change it  to be a authz obj
@@ -277,17 +281,17 @@ public class HMSPaths implements AuthzPaths {
         boolean isPartialMatchOk, Entry lastAuthObj) {
       Entry found = null;
       if (index == pathElements.length) {
-        if (isPartialMatchOk && (getType() == EntryType.AUTHZ_OBJECT)) {
+        if (isPartialMatchOk && (getAuthzObj() != null)) {
           found = this;
         }
       } else {
         Entry child = getChildren().get(pathElements[index]);
         if (child != null) {
           if (index == pathElements.length - 1) {
-            found = (child.getType() == EntryType.AUTHZ_OBJECT) ? child : lastAuthObj;
+            found = (child.getAuthzObj() != null) ? child : lastAuthObj;
           } else {
             found = child.find(pathElements, index + 1, isPartialMatchOk,
-                (child.getType() == EntryType.AUTHZ_OBJECT) ? child : lastAuthObj);
+                (child.getAuthzObj() != null) ? child : lastAuthObj);
           }
         } else {
           if (isPartialMatchOk) {

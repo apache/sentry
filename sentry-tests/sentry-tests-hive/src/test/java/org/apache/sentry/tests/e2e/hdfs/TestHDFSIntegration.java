@@ -487,13 +487,32 @@ public class TestHDFSIntegration {
     stmt.execute("create role p1_admin");
     stmt.execute("grant role p1_admin to group hbase");
 
+    // Verify default db is inaccessible initially
+    verifyOnAllSubDirs("/user/hive/warehouse", null, "hbase", false);
+
     verifyOnAllSubDirs("/user/hive/warehouse/p1", null, "hbase", false);
 
     loadData(stmt);
 
     verifyHDFSandMR(stmt);
 
+    // Verify default db is STILL inaccessible after grants but tables are fine
+    verifyOnPath("/user/hive/warehouse", null, "hbase", false);
+    verifyOnAllSubDirs("/user/hive/warehouse/p1", FsAction.READ_EXECUTE, "hbase", true);
+
     stmt.execute("revoke select on table p1 from role p1_admin");
+    verifyOnAllSubDirs("/user/hive/warehouse/p1", null, "hbase", false);
+
+    // Verify default db grants work
+    stmt.execute("grant select on database default to role p1_admin");
+    verifyOnPath("/user/hive/warehouse", FsAction.READ_EXECUTE, "hbase", true);
+
+    // Verify default db grants are propagated to the tables
+    verifyOnAllSubDirs("/user/hive/warehouse/p1", FsAction.READ_EXECUTE, "hbase", true);
+
+    // Verify default db revokes work
+    stmt.execute("revoke select on database default from role p1_admin");
+    verifyOnPath("/user/hive/warehouse", null, "hbase", false);
     verifyOnAllSubDirs("/user/hive/warehouse/p1", null, "hbase", false);
 
     stmt.execute("grant all on table p1 to role p1_admin");
@@ -561,8 +580,19 @@ public class TestHDFSIntegration {
     stmt.execute("create table db1.tbl2 (s string)");
     verifyOnAllSubDirs("/user/hive/warehouse/db1.db/tbl2", null, "hbase", false);
 
+    // Verify default db grants do not affect other dbs
+    stmt.execute("grant all on database default to role p1_admin");
+    verifyOnPath("/user/hive/warehouse", FsAction.ALL, "hbase", true);
+    verifyOnAllSubDirs("/user/hive/warehouse/db1.db", null, "hbase", false);
+
     // Verify db privileges are propagated to tables
     stmt.execute("grant select on database db1 to role p1_admin");
+    verifyOnAllSubDirs("/user/hive/warehouse/db1.db/tbl1", FsAction.READ_EXECUTE, "hbase", true);
+    verifyOnAllSubDirs("/user/hive/warehouse/db1.db/tbl2", FsAction.READ_EXECUTE, "hbase", true);
+
+    // Verify default db revokes do not affect other dbs
+    stmt.execute("revoke all on database default from role p1_admin");
+    verifyOnPath("/user/hive/warehouse", null, "hbase", false);
     verifyOnAllSubDirs("/user/hive/warehouse/db1.db/tbl1", FsAction.READ_EXECUTE, "hbase", true);
     verifyOnAllSubDirs("/user/hive/warehouse/db1.db/tbl2", FsAction.READ_EXECUTE, "hbase", true);
 
