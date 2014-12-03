@@ -500,6 +500,24 @@ public class TestHDFSIntegration {
     verifyOnPath("/user/hive/warehouse", null, "hbase", false);
     verifyOnAllSubDirs("/user/hive/warehouse/p1", FsAction.READ_EXECUTE, "hbase", true);
 
+    adminUgi.doAs(new PrivilegedExceptionAction<Void>() {
+      @Override
+      public Void run() throws Exception {
+        // Simulate hdfs dfs -setfacl -m <aclantry> <path>
+        AclStatus existing =
+            miniDFS.getFileSystem()
+            .getAclStatus(new Path("/user/hive/warehouse/p1"));
+        ArrayList<AclEntry> newEntries =
+            new ArrayList<AclEntry>(existing.getEntries());
+        newEntries.add(AclEntry.parseAclEntry("user::---", true));
+        newEntries.add(AclEntry.parseAclEntry("group:bla:rwx", true));
+        newEntries.add(AclEntry.parseAclEntry("other::---", true));
+        miniDFS.getFileSystem().setAcl(new Path("/user/hive/warehouse/p1"),
+            newEntries);
+        return null;
+      }
+    });
+
     stmt.execute("revoke select on table p1 from role p1_admin");
     verifyOnAllSubDirs("/user/hive/warehouse/p1", null, "hbase", false);
 

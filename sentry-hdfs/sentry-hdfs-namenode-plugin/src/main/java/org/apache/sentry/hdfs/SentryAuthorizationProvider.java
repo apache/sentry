@@ -20,6 +20,9 @@ package org.apache.sentry.hdfs;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -296,10 +299,6 @@ public class SentryAuthorizationProvider
     builder.setPermission(fsPerm.getGroupAction());
     list.add(builder.build());
     builder.setName(null);
-    builder.setType(AclEntryType.OTHER);
-    builder.setScope(AclEntryScope.ACCESS);
-    builder.setPermission(fsPerm.getOtherAction());
-    list.add(builder.build());
     return list;
   }
 
@@ -311,44 +310,67 @@ public class SentryAuthorizationProvider
     boolean isManaged = false;
     boolean isStale = false;
     boolean hasAuthzObj = false;
+    Map<String, AclEntry> aclMap = null;
     if (!authzInfo.isManaged(pathElements)) {
       isManaged = false;
       f = defaultAuthzProvider.getAclFeature(node, snapshotId);
     } else {
       isManaged = true;
-      List<AclEntry> list = new ArrayList<AclEntry>();
+      aclMap = new HashMap<String, AclEntry>();
       if (originalAuthzAsAcl) {
         String user = defaultAuthzProvider.getUser(node, snapshotId);
         String group = getDefaultProviderGroup(node, snapshotId);
         FsPermission perm = defaultAuthzProvider.getFsPermission(node, snapshotId);
-        list.addAll(createAclEntries(user, group, perm));
+        addToACLMap(aclMap, createAclEntries(user, group, perm));
       } else {
-        list.addAll(createAclEntries(this.user, this.group, this.permission));
+        addToACLMap(aclMap,
+            createAclEntries(this.user, this.group, this.permission));
       }
       if (!authzInfo.isStale()) { 
         isStale = false;
         if (authzInfo.doesBelongToAuthzObject(pathElements)) {
           hasAuthzObj = true;
-          list.addAll(authzInfo.getAclEntries(pathElements));
-          f = new SentryAclFeature(ImmutableList.copyOf(list));
+          addToACLMap(aclMap, authzInfo.getAclEntries(pathElements));
+          f = new SentryAclFeature(ImmutableList.copyOf(aclMap.values()));
         } else {
           hasAuthzObj = false;
           f = defaultAuthzProvider.getAclFeature(node, snapshotId);
         }
       } else {
         isStale = true;
-        f = new SentryAclFeature(ImmutableList.copyOf(list));
+        f = new SentryAclFeature(ImmutableList.copyOf(aclMap.values()));
       }
     }
     if (LOG.isDebugEnabled()) {
-      LOG.debug("### getAclEntry [" + (p == null ? "null" : p) + "] : ["
+      LOG.debug("### getAclEntry \n[" + (p == null ? "null" : p) + "] : ["
           + "isManaged=" + isManaged
           + ", isStale=" + isStale
           + ", hasAuthzObj=" + hasAuthzObj
-          + ", origAuthzAsAcl=" + originalAuthzAsAcl + "]"
-          + "[" + (f == null ? "null" : f.getEntries()) + "]");
+          + ", origAuthzAsAcl=" + originalAuthzAsAcl + "]\n"
+          + "[" + (aclMap == null ? "null" : aclMap) + "]\n"
+          + "[" + (f == null ? "null" : f.getEntries()) + "]\n");
     }
     return f;
+  }
+
+  private void addToACLMap(Map<String, AclEntry> map,
+      Collection<AclEntry> entries) {
+    for (AclEntry ent : entries) {
+      String key = (ent.getName() == null ? "" : ent.getName())
+          + ent.getScope() + ent.getType();
+      AclEntry aclEntry = map.get(key);
+      if (aclEntry == null) {
+        map.put(key, ent);
+      } else {
+        map.put(key,
+            new AclEntry.Builder().
+            setName(ent.getName()).
+            setScope(ent.getScope()).
+            setType(ent.getType()).
+            setPermission(ent.getPermission().or(aclEntry.getPermission())).
+            build());
+      }
+    }
   }
 
   private String getDefaultProviderGroup(INodeAuthorizationInfo node,

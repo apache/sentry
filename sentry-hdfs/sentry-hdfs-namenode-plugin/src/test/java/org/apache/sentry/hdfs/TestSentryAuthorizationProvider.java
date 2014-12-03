@@ -136,7 +136,6 @@ public class TestSentryAuthorizationProvider {
         List<AclEntry> acls = new ArrayList<AclEntry>();
         acls.add(new AclEntry.Builder().setName(sysUser).setType(AclEntryType.USER).setScope(AclEntryScope.ACCESS).setPermission(FsAction.ALL).build());
         acls.add(new AclEntry.Builder().setName("supergroup").setType(AclEntryType.GROUP).setScope(AclEntryScope.ACCESS).setPermission(FsAction.READ_EXECUTE).build());
-        acls.add(new AclEntry.Builder().setName(null).setType(AclEntryType.OTHER).setScope(AclEntryScope.ACCESS).setPermission(FsAction.READ_EXECUTE).build());
         acls.add(new AclEntry.Builder().setName("user-authz").setType(AclEntryType.USER).setScope(AclEntryScope.ACCESS).setPermission(FsAction.ALL).build());
         Assert.assertEquals(new LinkedHashSet<AclEntry>(acls), new LinkedHashSet<AclEntry>(fs.getAclStatus(path).getEntries()));
 

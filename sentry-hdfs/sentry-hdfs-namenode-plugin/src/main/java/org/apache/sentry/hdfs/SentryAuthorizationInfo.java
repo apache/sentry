@@ -17,6 +17,7 @@
  */
 package org.apache.sentry.hdfs;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -37,6 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 
 public class SentryAuthorizationInfo implements Runnable {
   private static Logger LOG =
@@ -264,8 +266,12 @@ public class SentryAuthorizationInfo implements Runnable {
     lock.readLock().lock();
     try {
       String authzObj = authzPaths.findAuthzObject(pathElements);
-      return (authzObj != null) ? authzPermissions.getAcls(authzObj) 
-          : Collections.EMPTY_LIST;
+      // Apparently setFAcl throws error if 'group::---' is not present
+      AclEntry noGroup = AclEntry.parseAclEntry("group::---", true);
+      ArrayList<AclEntry> retList = Lists.newArrayList(noGroup);
+      retList.addAll((authzObj != null) ? authzPermissions.getAcls(authzObj)
+          : Collections.EMPTY_LIST);
+      return retList;
     } finally {
       lock.readLock().unlock();
     }
