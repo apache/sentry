@@ -450,8 +450,6 @@ limitations under the License.
         <artifactId>maven-eclipse-plugin</artifactId>
         <version>${maven.eclipse.plugin.version}</version>
         <configuration>
-          <downloadJavadocs>true</downloadJavadocs>
-          <downloadSources>true</downloadSources>
           <workspaceActiveCodeStyleProfileName>GoogleStyle</workspaceActiveCodeStyleProfileName>
           <workspaceCodeStylesURL>https://google-styleguide.googlecode.com/svn/trunk/eclipse-java-google-style.xml</workspaceCodeStylesURL>
           <sourceIncludes><include>src/gen/thrift/gen-javabean/**</include></sourceIncludes>
