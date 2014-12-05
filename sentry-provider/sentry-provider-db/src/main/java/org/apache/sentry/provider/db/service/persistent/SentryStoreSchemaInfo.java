@@ -55,7 +55,7 @@ public class SentryStoreSchemaInfo {
         upgradeOrderList.add(currSchemaVersion.trim());
       }
     } catch (FileNotFoundException e) {
-      throw new SentryUserException("File " + upgradeListFile + "not found ", e);
+      throw new SentryUserException("File " + upgradeListFile + " not found ", e);
     } catch (IOException e) {
       throw new SentryUserException("Error reading " + upgradeListFile, e);
     }
@@ -78,8 +78,10 @@ public class SentryStoreSchemaInfo {
     // Find the list of scripts to execute for this upgrade
     int firstScript = sentrySchemaVersions.length;
     for (int i = 0; i < sentrySchemaVersions.length; i++) {
-      if (sentrySchemaVersions[i].startsWith(fromSchemaVer)) {
+      String fromVersion = sentrySchemaVersions[i].split("-to-")[0];
+      if (fromVersion.equals(fromSchemaVer)) {
         firstScript = i;
+        break;
       }
     }
     if (firstScript == sentrySchemaVersions.length) {
