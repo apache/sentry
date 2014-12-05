@@ -22,6 +22,7 @@ import java.net.URISyntaxException;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.google.common.base.Preconditions;
 import org.apache.sentry.hdfs.service.thrift.TPathChanges;
 import org.apache.sentry.hdfs.service.thrift.TPathsUpdate;
 
@@ -74,12 +75,23 @@ public class PathsUpdate implements Updateable.Update {
     return tPathsUpdate;
   }
 
-  
 
-  public static List<String> cleanPath(String path) {
+  /**
+   *
+   * @param path : Needs to be a HDFS location with scheme
+   * @return Path in the form a list containing the path tree with scheme/ authority stripped off.
+   * Returns null if a non HDFS path
+   */
+  public static List<String> parsePath(String path) {
     try {
-      return Lists.newArrayList(new URI(path).getPath().split("^/")[1]
-          .split("/"));
+      URI uri = new URI(path);
+      Preconditions.checkNotNull(uri.getScheme());
+      if(uri.getScheme().equalsIgnoreCase("hdfs")) {
+        return Lists.newArrayList(uri.getPath().split("^/")[1]
+            .split("/"));
+      } else {
+        return null;
+      }
     } catch (URISyntaxException e) {
       throw new RuntimeException("Incomprehensible path [" + path + "]");
     }

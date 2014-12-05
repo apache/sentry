@@ -1003,6 +1003,8 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     Statement statement = context.createStatement(connection);
     assertSemanticException(statement, "create external table " + DB1 + ".tb1(a int) stored as " +
         "textfile location 'file:" + externalTblDir.getAbsolutePath() + "'");
+    //Create external table on HDFS
+    assertSemanticException(statement, "create external table " + DB1 + ".tb2(a int) location '/user/hive/warehouse/blah'");
     statement.close();
     connection.close();
 

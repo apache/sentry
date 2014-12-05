@@ -142,8 +142,10 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
     List<String> allDbStr = hmsHandler.get_all_databases();
     for (String dbName : allDbStr) {
       Database db = hmsHandler.get_database(dbName);
-      tempUpdate.newPathChange(db.getName()).addToAddPaths(
-          PathsUpdate.cleanPath(db.getLocationUri()));
+      List<String> dbPath = PathsUpdate.parsePath(db.getLocationUri());
+      if(dbPath != null) {
+        tempUpdate.newPathChange(db.getName()).addToAddPaths(dbPath);
+      }
       List<String> allTblStr = hmsHandler.get_all_tables(db.getName());
       for (String tblName : allTblStr) {
         Table tbl = hmsHandler.get_table(db.getName(), tblName);
@@ -151,12 +153,16 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
             .getDbName() + "." + tbl.getTableName());
         List<Partition> tblParts =
             hmsHandler.get_partitions(db.getName(), tbl.getTableName(), (short) -1);
-        tblPathChange.addToAddPaths(PathsUpdate.cleanPath(tbl.getSd()
-            .getLocation() == null ? db.getLocationUri() : tbl
-            .getSd().getLocation()));
+        List<String> tb1Path = PathsUpdate.parsePath(tbl.getSd().getLocation() == null ?
+            db.getLocationUri() : tbl.getSd().getLocation());
+        if(tb1Path != null) {
+          tblPathChange.addToAddPaths(tb1Path);
+        }
         for (Partition part : tblParts) {
-          tblPathChange.addToAddPaths(PathsUpdate.cleanPath(part.getSd()
-              .getLocation()));
+          List<String> partPath = PathsUpdate.parsePath(part.getSd().getLocation());
+          if(partPath != null) {
+            tblPathChange.addToAddPaths(partPath);
+          }
         }
       }
     }
@@ -167,12 +173,16 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
 
   @Override
   public void addPath(String authzObj, String path) {
+    List<String> pathTree = PathsUpdate.parsePath(path);
+    if(pathTree == null) {
+      return;
+    }
     LOGGER.debug("#### HMS Path Update ["
         + "OP : addPath, "
         + "authzObj : " + authzObj + ", "
         + "path : " + path + "]");
     PathsUpdate update = createHMSUpdate();
-    update.newPathChange(authzObj).addToAddPaths(PathsUpdate.cleanPath(path));
+    update.newPathChange(authzObj).addToAddPaths(pathTree);
     notifySentryAndApplyLocal(update);
   }
 
@@ -199,12 +209,16 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
     if ("*".equals(path)) {
       removeAllPaths(authzObj, null);
     } else {
+      List<String> pathTree = PathsUpdate.parsePath(path);
+      if(pathTree == null) {
+        return;
+      }
       LOGGER.debug("#### HMS Path Update ["
           + "OP : removePath, "
           + "authzObj : " + authzObj + ", "
           + "path : " + path + "]");
       PathsUpdate update = createHMSUpdate();
-      update.newPathChange(authzObj).addToDelPaths(PathsUpdate.cleanPath(path));
+      update.newPathChange(authzObj).addToDelPaths(pathTree);
       notifySentryAndApplyLocal(update);
     }
   }
@@ -219,8 +233,14 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
         + "newPath : " + oldPath + ","
         + "newName : " + newName + ","
         + "newPath : " + newPath + "]");
-    update.newPathChange(newName).addToAddPaths(PathsUpdate.cleanPath(newPath));
-    update.newPathChange(oldName).addToDelPaths(PathsUpdate.cleanPath(oldPath));
+    List<String> newPathTree = PathsUpdate.parsePath(newPath);
+    if( newPathTree != null ) {
+      update.newPathChange(newName).addToAddPaths(newPathTree);
+    }
+    List<String> oldPathTree = PathsUpdate.parsePath(oldPath);
+    if( oldPathTree != null ) {
+      update.newPathChange(oldName).addToDelPaths(oldPathTree);
+    }
     notifySentryAndApplyLocal(update);
   }
 

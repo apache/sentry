@@ -77,13 +77,13 @@ public class TestUpdateableAuthzPaths {
     // Create table
     PathsUpdate update = new PathsUpdate(2, false);
     TPathChanges pathChange = update.newPathChange("db1.tbl12");
-    pathChange.addToAddPaths(PathsUpdate.cleanPath("file:///db1/tbl12"));
+    pathChange.addToAddPaths(PathsUpdate.parsePath("hdfs:///db1/tbl12"));
     authzPaths.updatePartial(Lists.newArrayList(update), lock);
     
     // Add partition
     update = new PathsUpdate(3, false);
     pathChange = update.newPathChange("db1.tbl12");
-    pathChange.addToAddPaths(PathsUpdate.cleanPath("file:///db1/tbl12/part121"));
+    pathChange.addToAddPaths(PathsUpdate.parsePath("hdfs:///db1/tbl12/part121"));
     authzPaths.updatePartial(Lists.newArrayList(update), lock);
 
     // Ensure no change in existing Paths
@@ -98,8 +98,8 @@ public class TestUpdateableAuthzPaths {
 
     // Rename table
     update = new PathsUpdate(4, false);
-    update.newPathChange("db1.xtbl11").addToAddPaths(PathsUpdate.cleanPath("file:///db1/xtbl11"));
-    update.newPathChange("db1.tbl11").addToDelPaths(PathsUpdate.cleanPath("file:///db1/tbl11"));
+    update.newPathChange("db1.xtbl11").addToAddPaths(PathsUpdate.parsePath("hdfs:///db1/xtbl11"));
+    update.newPathChange("db1.tbl11").addToDelPaths(PathsUpdate.parsePath("hdfs:///db1/tbl11"));
     authzPaths.updatePartial(Lists.newArrayList(update), lock);
 
     // Verify name change
@@ -128,7 +128,7 @@ public class TestUpdateableAuthzPaths {
     // Drop partition
     PathsUpdate update = new PathsUpdate(2, false);
     TPathChanges pathChange = update.newPathChange("db1.tbl11");
-    pathChange.addToDelPaths(PathsUpdate.cleanPath("file:///db1/tbl11/part111"));
+    pathChange.addToDelPaths(PathsUpdate.parsePath("hdfs:///db1/tbl11/part111"));
     authzPaths.updatePartial(Lists.newArrayList(update), lock);
 
     // Verify Paths deleted

@@ -38,6 +38,7 @@ import java.util.StringTokenizer;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.google.common.base.Preconditions;
 import junit.framework.Assert;
 
 import org.apache.hadoop.conf.Configuration;
@@ -88,7 +89,9 @@ import org.apache.sentry.tests.e2e.hive.hiveserver.InternalHiveServer;
 import org.apache.sentry.tests.e2e.hive.hiveserver.InternalMetastoreServer;
 import org.fest.reflect.core.Reflection;
 import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,18 +138,25 @@ public class TestHDFSIntegration {
   private static final int NUM_RETRIES = 10;
   private static final int RETRY_WAIT = 1000;
 
-  private MiniDFSCluster miniDFS;
+  private static MiniDFSCluster miniDFS;
   private MiniMRClientCluster miniMR;
-  private InternalHiveServer hiveServer2;
-  private InternalMetastoreServer metastore;
-  private SentryService sentryService;
-  private String fsURI;
-  private int hmsPort;
-  private int sentryPort = -1;
-  private File baseDir;
-  private File policyFileLocation;
-  private UserGroupInformation adminUgi;
-  private UserGroupInformation hiveUgi;
+  private static InternalHiveServer hiveServer2;
+  private static InternalMetastoreServer metastore;
+  private static SentryService sentryService;
+  private static String fsURI;
+  private static int hmsPort;
+  private static int sentryPort = -1;
+  private static File baseDir;
+  private static File policyFileLocation;
+  private static UserGroupInformation adminUgi;
+  private static UserGroupInformation hiveUgi;
+
+  // Variables which are used for cleanup after test
+  // Please set these values in each test
+  private Path tmpHDFSDir;
+  private String[] dbNames;
+  private String[] roles;
+  private String admin;
 
   protected static File assertCreateDir(File dir) {
     if(!dir.isDirectory()) {
@@ -162,7 +172,7 @@ public class TestHDFSIntegration {
     return port;
   }
 
-  private void waitOnSentryService() throws Exception {
+  private static void waitOnSentryService() throws Exception {
     sentryService.start();
     final long start = System.currentTimeMillis();
     while (!sentryService.isRunning()) {
@@ -173,8 +183,8 @@ public class TestHDFSIntegration {
     }
   }
 
-  @Before
-  public void setup() throws Exception {
+  @BeforeClass
+  public static void setup() throws Exception {
     Class.forName("org.apache.hive.jdbc.HiveDriver");
     baseDir = Files.createTempDir();
     policyFileLocation = new File(baseDir, HiveServerFactory.AUTHZ_PROVIDER_FILENAME);
@@ -199,11 +209,11 @@ public class TestHDFSIntegration {
 
   }
 
-  private void startHiveAndMetastore() throws IOException, InterruptedException {
+  private static void startHiveAndMetastore() throws IOException, InterruptedException {
     startHiveAndMetastore(NUM_RETRIES);
   }
 
-  private void startHiveAndMetastore(final int retries) throws IOException, InterruptedException {
+  private static void startHiveAndMetastore(final int retries) throws IOException, InterruptedException {
     hiveUgi.doAs(new PrivilegedExceptionAction<Void>() {
       @Override
       public Void run() throws Exception {
@@ -230,6 +240,7 @@ public class TestHDFSIntegration {
         hiveConf.set("fs.defaultFS", fsURI);
         hiveConf.set("fs.default.name", fsURI);
         hiveConf.set("hive.metastore.execute.setugi", "true");
+        hiveConf.set("hive.metastore.warehouse.dir", "hdfs:///user/hive/warehouse");
         hiveConf.set("javax.jdo.option.ConnectionURL", "jdbc:derby:;databaseName=" + baseDir.getAbsolutePath() + "/metastore_db;create=true");
         hiveConf.set("javax.jdo.option.ConnectionDriverName", "org.apache.derby.jdbc.EmbeddedDriver");
         hiveConf.set("javax.jdo.option.ConnectionUserName", "hive");
@@ -244,6 +255,7 @@ public class TestHDFSIntegration {
         hiveConf.set("hive.metastore.event.listeners", "org.apache.sentry.binding.metastore.SentryMetastorePostEventListener");
         hiveConf.set("hive.security.authorization.task.factory", "org.apache.sentry.binding.hive.SentryHiveAuthorizationTaskFactoryImpl");
         hiveConf.set("hive.server2.session.hook", "org.apache.sentry.binding.hive.HiveAuthzBindingSessionHook");
+        hiveConf.set("sentry.metastore.service.users", "hive");// queries made by hive user (beeline) skip meta store check
 
         HiveAuthzConf authzConf = new HiveAuthzConf(Resources.getResource("sentry-site.xml"));
         authzConf.addResource(hiveConf);
@@ -289,7 +301,7 @@ public class TestHDFSIntegration {
     });
   }
 
-  private void startHiveServer2(final int retries, HiveConf hiveConf)
+  private static void startHiveServer2(final int retries, HiveConf hiveConf)
       throws IOException, InterruptedException, SQLException {
     Connection conn = null;
     Thread th = null;
@@ -327,7 +339,7 @@ public class TestHDFSIntegration {
     }
   }
 
-  private void startDFSandYARN() throws IOException,
+  private static void startDFSandYARN() throws IOException,
       InterruptedException {
     adminUgi.doAs(new PrivilegedExceptionAction<Void>() {
       @Override
@@ -399,7 +411,7 @@ public class TestHDFSIntegration {
     });
   }
 
-  private void startSentry() throws IOException,
+  private static void startSentry() throws IOException,
       InterruptedException {
     hiveUgi.doAs(new PrivilegedExceptionAction<Void>() {
       @Override
@@ -452,7 +464,41 @@ public class TestHDFSIntegration {
   }
 
   @After
-  public void cleanUp() throws Exception {
+  public void cleanAfterTest() throws Exception {
+    //Clean up database
+    Connection conn;
+    Statement stmt;
+    Preconditions.checkArgument(admin != null && dbNames !=null && roles != null && tmpHDFSDir != null,
+        "Test case did not set some of these values required for clean up: admin, dbNames, roles, tmpHDFSDir");
+
+    conn = hiveServer2.createConnection(admin, admin);
+    stmt = conn.createStatement();
+    for( String dbName: dbNames) {
+      stmt.execute("drop database if exists " + dbName + " cascade");
+    }
+    stmt.close();
+    conn.close();
+
+    //Clean up roles
+    conn = hiveServer2.createConnection("hive", "hive");
+    stmt = conn.createStatement();
+    for( String role:roles) {
+      stmt.execute("drop role " + role);
+    }
+    stmt.close();
+    conn.close();
+
+    //Clean up hdfs directories
+    miniDFS.getFileSystem().delete(tmpHDFSDir, true);
+
+    tmpHDFSDir = null;
+    dbNames = null;
+    roles = null;
+    admin = null;
+  }
+
+  @AfterClass
+  public static void cleanUp() throws Exception {
     try {
       if (miniDFS != null) {
         miniDFS.shutdown();
@@ -472,9 +518,15 @@ public class TestHDFSIntegration {
 
   @Test
   public void testEnd2End() throws Throwable {
+    tmpHDFSDir = new Path("/tmp/external");
+    dbNames = new String[]{"db1"};
+    roles = new String[]{"admin_role"};
+    admin = "hive";
 
-    Connection conn = hiveServer2.createConnection("hive", "hive");
-    Statement stmt = conn.createStatement();
+    Connection conn;
+    Statement stmt;
+    conn = hiveServer2.createConnection("hive", "hive");
+    stmt = conn.createStatement();
     stmt.execute("create role admin_role");
     stmt.execute("grant role admin_role to group hive");
     stmt.execute("grant all on server server1 to role admin_role");
@@ -685,6 +737,115 @@ public class TestHDFSIntegration {
 
     stmt.close();
     conn.close();
+  }
+
+  /**
+   * Make sure non HDFS paths are not added to the object - location map.
+   * @throws Throwable
+   */
+  @Test
+  public void testNonHDFSLocations() throws Throwable {
+    String dbName = "db2";
+
+    tmpHDFSDir = new Path("/tmp/external");
+    dbNames = new String[]{dbName};
+    roles = new String[]{"admin_role", "user_role"};
+    admin = StaticUserGroup.ADMIN1;
+
+    Connection conn;
+    Statement stmt;
+
+    conn = hiveServer2.createConnection("hive", "hive");
+    stmt = conn.createStatement();
+    stmt.execute("create role admin_role");
+    stmt.execute("grant all on server server1 to role admin_role");
+    stmt.execute("grant all on uri 'file:///tmp/external' to role admin_role");
+    stmt.execute("grant all on uri 'hdfs:///tmp/external' to role admin_role");
+    stmt.execute("grant role admin_role to group " + StaticUserGroup.ADMINGROUP);
+
+    conn = hiveServer2.createConnection(admin, admin);
+    stmt = conn.createStatement();
+    stmt.execute("create database " + dbName);
+    stmt.close();
+    conn.close();
+
+    conn = hiveServer2.createConnection("hive", "hive");
+    stmt = conn.createStatement();
+    stmt.execute("create role user_role");
+    stmt.execute("grant all on database " + dbName + " to role user_role");
+    stmt.execute("grant role user_role to group " + StaticUserGroup.USERGROUP1);
+    stmt.close();
+    conn.close();
+
+    conn = hiveServer2.createConnection(admin, admin);
+    stmt = conn.createStatement();
+
+    miniDFS.getFileSystem().mkdirs(tmpHDFSDir);
+    miniDFS.getFileSystem().setOwner(tmpHDFSDir, "hive", "hive");
+
+    //External table on local file system
+    miniDFS.getFileSystem().mkdirs(new Path("/tmp/external/tab1_loc"));
+    stmt.execute("use " + dbName);
+    stmt.execute("create external table tab1(a int) location 'file:///tmp/external/tab1_loc'");
+    verifyOnAllSubDirs("/tmp/external/tab1_loc", null, StaticUserGroup.USERGROUP1, false);
+
+    //External partitioned table on local file system
+    miniDFS.getFileSystem().mkdirs(new Path("/tmp/external/tab2_loc/i=1"));
+    stmt.execute("create external table tab2 (s string) partitioned by (i int) location 'file:///tmp/external/tab2_loc'");
+    verifyOnAllSubDirs("/tmp/external/tab2_loc", null, StaticUserGroup.USERGROUP1, false);
+    //Partition on local file system
+    stmt.execute("alter table tab2 add partition (i=1)");
+    stmt.execute("alter table tab2 partition (i=1) set location 'file:///tmp/external/tab2_loc/i=1'");
+    verifyOnAllSubDirs("/tmp/external/tab2_loc/i=1", null, StaticUserGroup.USERGROUP1, false);
+
+    //HDFS to local file system, also make sure does not specifying scheme still works
+    stmt.execute("create external table tab3(a int) location '/tmp/external/tab3_loc'");
+    // SENTRY-546
+    // verifyOnAllSubDirs("/tmp/external/tab3_loc", FsAction.ALL, StaticUserGroup.USERGROUP1, true);
+    verifyOnAllSubDirs("/tmp/external/tab3_loc", null, StaticUserGroup.USERGROUP1, true);
+    stmt.execute("alter table tab3 set location 'file:///tmp/external/tab3_loc'");
+    verifyOnAllSubDirs("/tmp/external/tab3_loc", null, StaticUserGroup.USERGROUP1, false);
+
+    //Local file system to HDFS
+    stmt.execute("create table tab4(a int) location 'file:///tmp/external/tab4_loc'");
+    stmt.execute("alter table tab4 set location 'hdfs:///tmp/external/tab4_loc'");
+    miniDFS.getFileSystem().mkdirs(new Path("/tmp/external/tab4_loc"));
+    // SENTRY-546
+    // verifyOnAllSubDirs("/tmp/external/tab4_loc", FsAction.ALL, StaticUserGroup.USERGROUP1, true);
+    verifyOnAllSubDirs("/tmp/external/tab4_loc", null, StaticUserGroup.USERGROUP1, true);
+    stmt.close();
+    conn.close();
+  }
+
+  @Ignore("SENTRY-546")
+  @Test
+  public void testExternalTable() throws Throwable {
+    String dbName = "db2";
+
+    tmpHDFSDir = new Path("/tmp/external");
+    dbNames = new String[]{dbName};
+    roles = new String[]{"admin_role"};
+    admin = StaticUserGroup.ADMIN1;
+
+    Connection conn;
+    Statement stmt;
+
+    conn = hiveServer2.createConnection("hive", "hive");
+    stmt = conn.createStatement();
+    stmt.execute("create role admin_role");
+    stmt.execute("grant all on server server1 to role admin_role");
+    stmt.execute("grant all on uri 'hdfs:///tmp/external' to role admin_role");
+    stmt.execute("grant role admin_role to group " + StaticUserGroup.ADMINGROUP);
+
+    conn = hiveServer2.createConnection(StaticUserGroup.ADMIN1, StaticUserGroup.ADMIN1);
+    stmt = conn.createStatement();
+    stmt.execute("create database " + dbName);
+    stmt.execute("create external table tab1(a int) location '/tmp/external/tab1_loc'");
+    verifyOnAllSubDirs("/tmp/external/tab1_loc", FsAction.ALL, StaticUserGroup.ADMINGROUP, true);
+
+    stmt.close();
+    conn.close();
+
   }
 
   private void verifyQuery(Statement stmt, String table, int n) throws Throwable {
