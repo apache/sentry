@@ -69,6 +69,8 @@ import org.apache.sentry.provider.db.service.thrift.TSentryRole;
 import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.datanucleus.store.rdbms.exceptions.MissingTableException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.codahale.metrics.Gauge;
 import com.google.common.annotations.VisibleForTesting;
@@ -79,8 +81,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * SentryStore is the data access object for Sentry data. Strings
@@ -504,7 +504,7 @@ public class SentryStore {
         privilegeGraph.add(mFalse);
       }
       // Get the privilege graph
-      populateChildren(Sets.newHashSet(roleName), mPrivilege, privilegeGraph);
+      populateChildren(pm, Sets.newHashSet(roleName), mPrivilege, privilegeGraph);
       for (MSentryPrivilege childPriv : privilegeGraph) {
         revokePartial(pm, tPrivilege, mRole, childPriv);
       }
@@ -567,19 +567,21 @@ public class SentryStore {
 
 
   /**
-   * Explore Privilege graph and collect child privileges
+   * Explore Privilege graph and collect child privileges.
+   * The responsibility to commit/rollback the transaction should be handled by the caller.
    */
-  private void populateChildren(Set<String> roleNames, MSentryPrivilege priv,
+  private void populateChildren(PersistenceManager pm, Set<String> roleNames, MSentryPrivilege priv,
       Set<MSentryPrivilege> children) throws SentryInvalidInputException {
+    Preconditions.checkNotNull(pm);
     if ((!isNULL(priv.getServerName())) || (!isNULL(priv.getDbName()))
         || (!isNULL(priv.getTableName()))) {
       // Get all TableLevel Privs
-      Set<MSentryPrivilege> childPrivs = getChildPrivileges(roleNames, priv);
+      Set<MSentryPrivilege> childPrivs = getChildPrivileges(pm, roleNames, priv);
       for (MSentryPrivilege childPriv : childPrivs) {
         // Only recurse for table level privs..
         if ((!isNULL(childPriv.getDbName())) && (!isNULL(childPriv.getTableName()))
             && (!isNULL(childPriv.getColumnName()))) {
-          populateChildren(roleNames, childPriv, children);
+          populateChildren(pm, roleNames, childPriv, children);
         }
         // The method getChildPrivileges() didn't do filter on "action",
         // if the action is not "All", it should judge the action of children privilege.
@@ -604,61 +606,51 @@ public class SentryStore {
     }
   }
 
-  private Set<MSentryPrivilege> getChildPrivileges(Set<String> roleNames,
+  private Set<MSentryPrivilege> getChildPrivileges(PersistenceManager pm, Set<String> roleNames,
       MSentryPrivilege parent) throws SentryInvalidInputException {
     // Column and URI do not have children
-    if ((!isNULL(parent.getColumnName()))||(!isNULL(parent.getURI()))) return new HashSet<MSentryPrivilege>();
-    boolean rollbackTransaction = true;
-    PersistenceManager pm = null;
-    try {
-      pm = openTransaction();
-      Query query = pm.newQuery(MSentryPrivilege.class);
-      query
-          .declareVariables("org.apache.sentry.provider.db.service.model.MSentryRole role");
-      List<String> rolesFiler = new LinkedList<String>();
-      for (String rName : roleNames) {
-        rolesFiler.add("role.roleName == \"" + rName.trim().toLowerCase() + "\"");
-      }
-      StringBuilder filters = new StringBuilder("roles.contains(role) "
-          + "&& (" + Joiner.on(" || ").join(rolesFiler) + ")");
-      filters.append(" && serverName == \"" + parent.getServerName() + "\"");
-      if (!isNULL(parent.getDbName())) {
-        filters.append(" && dbName == \"" + parent.getDbName() + "\"");
-        if (!isNULL(parent.getTableName())) {
-          filters.append(" && tableName == \"" + parent.getTableName() + "\"");
-          filters.append(" && columnName != \"__NULL__\"");
-        } else {
-          filters.append(" && tableName != \"__NULL__\"");
-        }
-      } else {
-        filters.append(" && (dbName != \"__NULL__\" || URI != \"__NULL__\")");
-      }
-
-      query.setFilter(filters.toString());
-      query
-          .setResult("privilegeScope, serverName, dbName, tableName, columnName," +
-          		" URI, action, grantOption");
-      Set<MSentryPrivilege> privileges = new HashSet<MSentryPrivilege>();
-      for (Object[] privObj : (List<Object[]>) query.execute()) {
-        MSentryPrivilege priv = new MSentryPrivilege();
-        priv.setPrivilegeScope((String) privObj[0]);
-        priv.setServerName((String) privObj[1]);
-        priv.setDbName((String) privObj[2]);
-        priv.setTableName((String) privObj[3]);
-        priv.setColumnName((String) privObj[4]);
-        priv.setURI((String) privObj[5]);
-        priv.setAction((String) privObj[6]);
-        priv.setGrantOption((Boolean) privObj[7]);
-        privileges.add(priv);
-      }
-      rollbackTransaction = false;
-      commitTransaction(pm);
-      return privileges;
-    } finally {
-      if (rollbackTransaction) {
-        rollbackTransaction(pm);
-      }
+    if ((!isNULL(parent.getColumnName())) || (!isNULL(parent.getURI()))) {
+      return new HashSet<MSentryPrivilege>();
     }
+
+    Query query = pm.newQuery(MSentryPrivilege.class);
+    query.declareVariables("org.apache.sentry.provider.db.service.model.MSentryRole role");
+    List<String> rolesFiler = new LinkedList<String>();
+    for (String rName : roleNames) {
+      rolesFiler.add("role.roleName == \"" + rName.trim().toLowerCase() + "\"");
+    }
+    StringBuilder filters = new StringBuilder("roles.contains(role) "
+        + "&& (" + Joiner.on(" || ").join(rolesFiler) + ")");
+    filters.append(" && serverName == \"" + parent.getServerName() + "\"");
+    if (!isNULL(parent.getDbName())) {
+      filters.append(" && dbName == \"" + parent.getDbName() + "\"");
+      if (!isNULL(parent.getTableName())) {
+        filters.append(" && tableName == \"" + parent.getTableName() + "\"");
+        filters.append(" && columnName != \"__NULL__\"");
+      } else {
+        filters.append(" && tableName != \"__NULL__\"");
+      }
+    } else {
+      filters.append(" && (dbName != \"__NULL__\" || URI != \"__NULL__\")");
+    }
+
+    query.setFilter(filters.toString());
+    query.setResult("privilegeScope, serverName, dbName, tableName, columnName," +
+        " URI, action, grantOption");
+    Set<MSentryPrivilege> privileges = new HashSet<MSentryPrivilege>();
+    for (Object[] privObj : (List<Object[]>) query.execute()) {
+      MSentryPrivilege priv = new MSentryPrivilege();
+      priv.setPrivilegeScope((String) privObj[0]);
+      priv.setServerName((String) privObj[1]);
+      priv.setDbName((String) privObj[2]);
+      priv.setTableName((String) privObj[3]);
+      priv.setColumnName((String) privObj[4]);
+      priv.setURI((String) privObj[5]);
+      priv.setAction((String) privObj[6]);
+      priv.setGrantOption((Boolean) privObj[7]);
+      privileges.add(priv);
+    }
+    return privileges;
   }
 
   private List<MSentryPrivilege> getMSentryPrivileges(TSentryPrivilege tPriv, PersistenceManager pm) {
@@ -1543,9 +1535,9 @@ public class SentryStore {
       Set<MSentryPrivilege> privilegeGraph = Sets.newHashSet();
       if (parent != null) {
         privilegeGraph.add(parent);
-        populateChildren(Sets.newHashSet(role.getRoleName()), parent, privilegeGraph);
+        populateChildren(pm, Sets.newHashSet(role.getRoleName()), parent, privilegeGraph);
       } else {
-        populateChildren(Sets.newHashSet(role.getRoleName()), convertToMSentryPrivilege(tPrivilege),
+        populateChildren(pm, Sets.newHashSet(role.getRoleName()), convertToMSentryPrivilege(tPrivilege),
             privilegeGraph);
       }
       // 2. revoke privilege and child privileges

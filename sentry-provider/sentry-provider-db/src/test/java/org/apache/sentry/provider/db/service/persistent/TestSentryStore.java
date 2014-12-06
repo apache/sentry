@@ -1260,6 +1260,46 @@ public class TestSentryStore {
         .size());
   }
 
+  /**
+   * Regression test for SENTRY-547
+   * Use case:
+   * GRANT INSERT on TABLE tbl1 to ROLE role1
+   * GRANT SELECT on TABLE tbl1 to ROLE role1
+   * DROP TABLE tbl1
+   *
+   * After drop tbl1, role1 should have 0 privileges
+   */
+  @Test
+  public void testDropTableWithMultiAction() throws Exception {
+    String roleName1 = "role1";
+    String grantor = "g1";
+    sentryStore.createSentryRole(roleName1);
+
+    TSentryPrivilege privilege_tbl1 = new TSentryPrivilege();
+    privilege_tbl1.setPrivilegeScope("TABLE");
+    privilege_tbl1.setServerName("server1");
+    privilege_tbl1.setDbName("db1");
+    privilege_tbl1.setTableName("tbl1");
+    privilege_tbl1.setCreateTime(System.currentTimeMillis());
+
+    TSentryPrivilege privilege_tbl1_insert = new TSentryPrivilege(
+        privilege_tbl1);
+    privilege_tbl1_insert.setAction(AccessConstants.INSERT);
+
+    TSentryPrivilege privilege_tbl1_select = new TSentryPrivilege(
+        privilege_tbl1);
+    privilege_tbl1_select.setAction(AccessConstants.SELECT);
+
+    sentryStore.alterSentryRoleGrantPrivilege(grantor, roleName1, privilege_tbl1_insert);
+    sentryStore.alterSentryRoleGrantPrivilege(grantor, roleName1, privilege_tbl1_select);
+
+    assertEquals(2, sentryStore.getAllTSentryPrivilegesByRoleName(roleName1).size());
+
+    // after drop privilege_tbl1, role1 should have 0 privileges
+    sentryStore.dropPrivilege(toTSentryAuthorizable(privilege_tbl1));
+    assertEquals(0, sentryStore.getAllTSentryPrivilegesByRoleName(roleName1).size());
+  }
+
   @Test
   public void testDropTableWithColumn() throws Exception {
     String roleName1 = "role1", roleName2 = "role2";
