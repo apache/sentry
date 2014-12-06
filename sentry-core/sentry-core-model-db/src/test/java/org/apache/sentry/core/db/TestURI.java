@@ -42,4 +42,15 @@ public class TestURI {
   public void testBadUriIncorrectHdfsPrefix() {
     new AccessURI("hdfs:/some/path");
   }
+
+  @Test
+  public void testUriSwiftPrefix() {
+    new AccessURI("swift:///some/path");
+  }
+
+  @Test
+  public void testUriWithAuthority() {
+    new AccessURI("hdfs://localhost:9999/some/path");
+  }
+
 }
