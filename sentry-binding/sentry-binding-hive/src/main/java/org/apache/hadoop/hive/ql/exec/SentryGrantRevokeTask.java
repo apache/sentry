@@ -619,27 +619,27 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
   }
 
   private static String toDbSentryAction(PrivilegeType privilegeType) throws SentryUserException{
-    if (PrivilegeType.ALL.equals(privilegeType)) {
-      return AccessConstants.ALL;
-    } else {
-      if (PrivilegeType.SELECT.equals(privilegeType)) {
+    switch(privilegeType) {
+      case ALL:
+        return AccessConstants.ALL;
+      case SELECT:
         return AccessConstants.SELECT;
-      } else if (PrivilegeType.INSERT.equals(privilegeType)) {
+      case INSERT:
         return AccessConstants.INSERT;
-      } else if (PrivilegeType.CREATE.equals(privilegeType)){
+      case CREATE:
         return AccessConstants.CREATE;
-      } else if (PrivilegeType.DROP.equals(privilegeType)){
+      case DROP:
         return AccessConstants.DROP;
-      } else if (PrivilegeType.ALTER_METADATA.equals(privilegeType)){
+      case ALTER_METADATA:
         return AccessConstants.ALTER;
-      } else if (PrivilegeType.INDEX.equals(privilegeType)){
+      case INDEX:
         return AccessConstants.INDEX;
-      } else if (PrivilegeType.LOCK.equals(privilegeType)){
+      case LOCK:
         return AccessConstants.LOCK;
-      } else {
-        throw new SentryUserException(privilegeType + " not handled correctly");
+      default:
+        throw new SentryUserException("Unknown privilege type: " + privilegeType);
+        //Exception is thrown here only for development purposes.
       }
-    }
   }
 
   private static SentryHivePrivilegeObjectDesc toSentryHivePrivilegeObjectDesc(PrivilegeObjectDesc privSubjectObjDesc)

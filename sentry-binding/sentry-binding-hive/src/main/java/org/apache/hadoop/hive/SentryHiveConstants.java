@@ -22,9 +22,7 @@ import java.util.EnumSet;
 import org.apache.hadoop.hive.ql.security.authorization.PrivilegeType;
 
 public class SentryHiveConstants {
-  public static final EnumSet<PrivilegeType> ALLOWED_PRIVS = EnumSet.of(
-      PrivilegeType.ALL, PrivilegeType.SELECT, PrivilegeType.INSERT, PrivilegeType.CREATE, PrivilegeType.DROP,
-      PrivilegeType.ALTER_METADATA, PrivilegeType.INDEX, PrivilegeType.LOCK);
+  public static final EnumSet<PrivilegeType> ALLOWED_PRIVS = EnumSet.allOf(PrivilegeType.class);
 
   public static final String PRIVILEGE_NOT_SUPPORTED = "Sentry does not support privilege: ";
   public static final String PARTITION_PRIVS_NOT_SUPPORTED = "Sentry does not support partition level authorization";

@@ -153,7 +153,6 @@ public class SentryPolicyProviderForDb extends PolicyFile {
         sentryClient.grantURIPrivilege(ADMIN1, roleName, serverName, uriPath);
       } else if (serverName != null) {
         sentryClient.grantServerPrivilege(ADMIN1, roleName, serverName, action);
-        ;
       }
     }
 
