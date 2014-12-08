@@ -17,13 +17,16 @@
  */
 package org.apache.sentry.tests.e2e.dbprovider;
 
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
@@ -79,7 +82,7 @@ public class TestDbPrivilegeCleanupOnDrop extends
    * drop table and verify that the no privileges are referring to it drop db
    * and verify that the no privileges are referring to it drop db cascade
    * verify that the no privileges are referring to db and tables under it
-   * 
+   *
    * @throws Exception
    */
   @Test
@@ -98,10 +101,23 @@ public class TestDbPrivilegeCleanupOnDrop extends
   }
 
   /**
+   * Return the remaining rows of the current resultSet
+   * Cautiously it will modify the cursor position of the resultSet
+   *
+   */
+  private void assertRemainingRows(ResultSet resultSet, int expected) throws SQLException{
+    int count = 0;
+    while(resultSet.next()) {
+      count++;
+    }
+    assertThat(count, is(expected));
+  }
+
+  /**
    * drop table and verify that the no privileges are referring to it drop db
    * and verify that the no privileges are referring to it drop db cascade
    * verify that the no privileges are referring to db and tables under it
-   * 
+   *
    * @throws Exception
    */
   @Test
@@ -120,7 +136,7 @@ public class TestDbPrivilegeCleanupOnDrop extends
   /**
    * rename table and verify that the no privileges are referring to it old table
    * verify that the same privileges are created for the new table name
-   * 
+   *
    * @throws Exception
    */
   @Test
@@ -152,6 +168,50 @@ public class TestDbPrivilegeCleanupOnDrop extends
         tableName1 + renameTag);
     verifyTablePrivilegeExist(statement, Lists.newArrayList("all_tbl2"),
         tableName2 + renameTag);
+
+    statement.close();
+    connection.close();
+  }
+
+  /**
+   * After we drop/rename table, we will drop/rename all privileges(ALL,SELECT,INSERT,ALTER,DROP...)
+   * from this role
+   *
+   * @throws Exception
+   */
+  @Test
+  public void testDropAndRenameWithMultiAction() throws Exception {
+    super.setupAdmin();
+
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("CREATE ROLE user_role");
+    statement.execute("GRANT ROLE user_role TO GROUP " + USERGROUP1);
+
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("USE " + DB1);
+    statement.execute("CREATE TABLE t1 (c1 string)");
+
+    // Grant SELECT/INSERT/DROP/ALTER to TABLE t1
+    statement.execute("GRANT SELECT ON TABLE t1 TO ROLE user_role");
+    statement.execute("GRANT INSERT ON TABLE t1 TO ROLE user_role");
+    statement.execute("GRANT ALTER ON TABLE t1 TO ROLE user_role");
+    statement.execute("GRANT DROP ON TABLE t1 TO ROLE user_role");
+    // For rename, grant CREATE to DB1
+    statement.execute("GRANT CREATE ON DATABASE " + DB1 + " TO ROLE user_role");
+
+    // After rename table t1 to t2, user_role will have no permission to drop t1
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    statement.execute("USE " + DB1);
+    statement.execute("ALTER TABLE t1 RENAME TO t2");
+    context.assertSentrySemanticException(statement, "drop table t1", semanticException);
+
+    // After rename table t1 to t2, user_role should have permission to drop t2
+    statement.execute("drop table t2");
+    ResultSet resultSet = statement.executeQuery("SHOW GRANT ROLE user_role");
+    // user_role will revoke all privilege from table t2, only remain CREATE on db_1
+    assertRemainingRows(resultSet, 1);
 
     statement.close();
     connection.close();

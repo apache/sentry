@@ -95,6 +95,17 @@ public class SentryStore {
   public static String NULL_COL = "__NULL__";
   static final String DEFAULT_DATA_DIR = "sentry_policy_db";
 
+  private static final Set<String> ALL_ACTIONS = Sets.newHashSet(AccessConstants.ALL,
+      AccessConstants.SELECT, AccessConstants.INSERT, AccessConstants.ALTER,
+      AccessConstants.CREATE, AccessConstants.DROP, AccessConstants.INDEX,
+      AccessConstants.LOCK);
+
+  // Now partial revoke just support action with SELECT,INSERT and ALL.
+  // e.g. If we REVOKE SELECT from a privilege with action ALL, it will leads to INSERT
+  // Otherwise, if we revoke other privilege(e.g. ALTER,DROP...), we will remove it from a role directly.
+  private static final Set<String> PARTIAL_REVOKE_ACTIONS = Sets.newHashSet(AccessConstants.ALL,
+      AccessConstants.ACTION_ALL.toLowerCase(), AccessConstants.SELECT, AccessConstants.INSERT);
+
   /**
    * Commit order sequence id. This is used by notification handlers
    * to know the order in which events where committed to the database.
@@ -506,7 +517,7 @@ public class SentryStore {
       // Get the privilege graph
       populateChildren(pm, Sets.newHashSet(roleName), mPrivilege, privilegeGraph);
       for (MSentryPrivilege childPriv : privilegeGraph) {
-        revokePartial(pm, tPrivilege, mRole, childPriv);
+        revokePrivilegeFromRole(pm, tPrivilege, mRole, childPriv);
       }
       pm.makePersistent(mRole);
     }
@@ -562,9 +573,24 @@ public class SentryStore {
       persistedPriv.appendRole(mRole);
       pm.makePersistent(persistedPriv);
     }
-
   }
 
+  /**
+   * Revoke privilege from role
+   */
+  private void revokePrivilegeFromRole(PersistenceManager pm, TSentryPrivilege tPrivilege,
+      MSentryRole mRole, MSentryPrivilege mPrivilege) throws SentryInvalidInputException {
+    if (PARTIAL_REVOKE_ACTIONS.contains(mPrivilege.getAction())) {
+      // if this privilege is in {ALL,SELECT,INSERT}
+      // we will do partial revoke
+      revokePartial(pm, tPrivilege, mRole, mPrivilege);
+    } else {
+      // if this privilege is not ALL, SELECT nor INSERT,
+      // we will revoke it from role directly
+      mPrivilege.removeRole(mRole);
+      pm.makePersistent(mPrivilege);
+    }
+  }
 
   /**
    * Explore Privilege graph and collect child privileges.
@@ -680,12 +706,12 @@ public class SentryStore {
   private MSentryPrivilege getMSentryPrivilege(TSentryPrivilege tPriv, PersistenceManager pm) {
     Query query = pm.newQuery(MSentryPrivilege.class);
     query.setFilter("this.serverName == \"" + toNULLCol(safeTrimLower(tPriv.getServerName())) + "\" "
-				+ "&& this.dbName == \"" + toNULLCol(safeTrimLower(tPriv.getDbName())) + "\" "
-				+ "&& this.tableName == \"" + toNULLCol(safeTrimLower(tPriv.getTableName())) + "\" "
-				+ "&& this.columnName == \"" + toNULLCol(safeTrimLower(tPriv.getColumnName())) + "\" "
-				+ "&& this.URI == \"" + toNULLCol(safeTrim(tPriv.getURI())) + "\" "
-				+ "&& this.grantOption == grantOption "
-				+ "&& this.action == \"" + toNULLCol(safeTrimLower(tPriv.getAction())) + "\"");
+        + "&& this.dbName == \"" + toNULLCol(safeTrimLower(tPriv.getDbName())) + "\" "
+        + "&& this.tableName == \"" + toNULLCol(safeTrimLower(tPriv.getTableName())) + "\" "
+        + "&& this.columnName == \"" + toNULLCol(safeTrimLower(tPriv.getColumnName())) + "\" "
+        + "&& this.URI == \"" + toNULLCol(safeTrim(tPriv.getURI())) + "\" "
+        + "&& this.grantOption == grantOption "
+        + "&& this.action == \"" + toNULLCol(safeTrimLower(tPriv.getAction())) + "\"");
     query.declareParameters("Boolean grantOption");
     query.setUnique(true);
     Boolean grantOption = null;
@@ -1423,8 +1449,7 @@ public class SentryStore {
       pm = openTransaction();
 
       if (isMultiActionsSupported(tPrivilege)) {
-        for (String privilegeAction : Sets.newHashSet(AccessConstants.ALL,
-            AccessConstants.SELECT, AccessConstants.INSERT)) {
+        for (String privilegeAction : ALL_ACTIONS) {
           tPrivilege.setAction(privilegeAction);
           dropPrivilegeForAllRoles(pm, new TSentryPrivilege(tPrivilege));
         }
@@ -1463,8 +1488,7 @@ public class SentryStore {
       pm = openTransaction();
       // In case of tables or DBs, check all actions
       if (isMultiActionsSupported(tPrivilege)) {
-        for (String privilegeAction : Sets.newHashSet(AccessConstants.ALL,
-            AccessConstants.SELECT, AccessConstants.INSERT)) {
+        for (String privilegeAction : ALL_ACTIONS) {
           tPrivilege.setAction(privilegeAction);
           newPrivilege.setAction(privilegeAction);
           renamePrivilegeForAllRoles(pm, tPrivilege, newPrivilege);
@@ -1583,15 +1607,15 @@ public class SentryStore {
   }
 
   public static String toNULLCol(String s) {
-	return Strings.isNullOrEmpty(s) ? NULL_COL : s;
+    return Strings.isNullOrEmpty(s) ? NULL_COL : s;
   }
 
   public static String fromNULLCol(String s) {
-	return isNULL(s) ? "" : s;
+    return isNULL(s) ? "" : s;
   }
 
   public static boolean isNULL(String s) {
-	return Strings.isNullOrEmpty(s) || s.equals(NULL_COL);
+    return Strings.isNullOrEmpty(s) || s.equals(NULL_COL);
   }
 
   /**
