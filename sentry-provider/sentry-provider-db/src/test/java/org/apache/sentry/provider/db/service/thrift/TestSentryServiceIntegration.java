@@ -425,7 +425,7 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
     List<? extends Authorizable> db1Authrizable = Lists.newArrayList(
         new Server(server), new Database(db));
     expectedResults.put(
-        SentryPolicyServiceClient.setupSentryAuthorizable(db1Authrizable),
+        SentryPolicyServiceClientDefaultImpl.setupSentryAuthorizable(db1Authrizable),
         db1RoleToPrivMap);
 
     Set<List<? extends Authorizable>> authorizableSet = Sets.newHashSet();
@@ -467,7 +467,7 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
             new HashSet<String>(), ActiveRoleSet.ALL);
     expectedResults.clear();
     expectedResults.put(
-        SentryPolicyServiceClient.setupSentryAuthorizable(db1Authrizable),
+        SentryPolicyServiceClientDefaultImpl.setupSentryAuthorizable(db1Authrizable),
         new TSentryPrivilegeMap(new HashMap<String, Set<TSentryPrivilege>>()));
     assertEquals(expectedResults, authPrivMap);
   }
@@ -523,7 +523,7 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
     List<? extends Authorizable> db2TabAuthrizable = Lists.newArrayList(
         new Server(server), new Database(db2), new Table(tab));
     expectedResults.put(
-        SentryPolicyServiceClient.setupSentryAuthorizable(db2TabAuthrizable),
+        SentryPolicyServiceClientDefaultImpl.setupSentryAuthorizable(db2TabAuthrizable),
         db1RoleToPrivMap);
 
     Set<List<? extends Authorizable>> authorizableSet = Sets.newHashSet();
@@ -583,7 +583,7 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
     List<? extends Authorizable> uri1Authrizable = Lists.newArrayList(
         new Server(server), new AccessURI(uri1));
     expectedResults.put(
-        SentryPolicyServiceClient.setupSentryAuthorizable(uri1Authrizable),
+        SentryPolicyServiceClientDefaultImpl.setupSentryAuthorizable(uri1Authrizable),
         db1RoleToPrivMap);
 
     Set<List<? extends Authorizable>> authorizableSet = Sets.newHashSet();
@@ -648,7 +648,7 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
     List<? extends Authorizable> db2TabAuthorizable = Lists.newArrayList(
         new Server(server), new Database(db2), new Table(tab));
     expectedResults.put(
-        SentryPolicyServiceClient.setupSentryAuthorizable(db2TabAuthorizable),
+        SentryPolicyServiceClientDefaultImpl.setupSentryAuthorizable(db2TabAuthorizable),
         db1RoleToPrivMap);
 
     Set<List<? extends Authorizable>> authorizableSet = Sets.newHashSet();

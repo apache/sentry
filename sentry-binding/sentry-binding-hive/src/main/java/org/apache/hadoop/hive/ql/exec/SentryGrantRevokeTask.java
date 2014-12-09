@@ -97,7 +97,6 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
   private static final int terminator = Utilities.newLineCode;
   private static final long serialVersionUID = -7625118066790571999L;
 
-  private SentryServiceClientFactory sentryClientFactory;
   private SentryPolicyServiceClient sentryClient;
   private HiveConf conf;
   private HiveAuthzBinding hiveAuthzBinding;
@@ -107,17 +106,6 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
   private Set<String> subjectGroups;
   private String ipAddress;
   private HiveOperation stmtOperation;
-
-
-  public SentryGrantRevokeTask() {
-    this(new SentryServiceClientFactory());
-  }
-  public SentryGrantRevokeTask(SentryServiceClientFactory sentryClientFactory) {
-    super();
-    this.sentryClientFactory = sentryClientFactory;
-
-  }
-
 
   @Override
   public void initialize(HiveConf conf, QueryPlan queryPlan, DriverContext ctx) {
@@ -129,7 +117,7 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
   public int execute(DriverContext driverContext) {
     try {
       try {
-        this.sentryClient = sentryClientFactory.create(authzConf);
+        this.sentryClient = SentryServiceClientFactory.create(authzConf);
       } catch (Exception e) {
         String msg = "Error creating Sentry client: " + e.getMessage();
         throw new RuntimeException(msg, e);

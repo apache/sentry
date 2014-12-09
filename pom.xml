@@ -85,6 +85,7 @@ limitations under the License.
     <jackson.version>1.8.8</jackson.version>
     <metrics.version>3.1.0</metrics.version>
     <jettyVersion>7.6.16.v20140903</jettyVersion>
+    <curator.version>2.6.0</curator.version>
   </properties>
 
   <dependencyManagement>
@@ -419,6 +420,26 @@ limitations under the License.
         <groupId>org.apache.pig</groupId>
         <artifactId>pig</artifactId>
         <version>${pig.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.pig</groupId>
+        <artifactId>pig</artifactId>
+        <version>${pig.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.curator</groupId>
+        <artifactId>curator-recipes</artifactId>
+        <version>${curator.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.curator</groupId>
+        <artifactId>curator-x-discovery</artifactId>
+        <version>${curator.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.curator</groupId>
+        <artifactId>curator-test</artifactId>
+        <version>${curator.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

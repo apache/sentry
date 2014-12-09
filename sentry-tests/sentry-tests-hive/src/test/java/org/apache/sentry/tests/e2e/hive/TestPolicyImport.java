@@ -28,6 +28,7 @@ import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
 import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.service.thrift.SentryServiceClientFactory;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -90,7 +91,7 @@ public class TestPolicyImport extends AbstractTestWithStaticConfiguration {
 
     configTool.importPolicy();
 
-    SentryPolicyServiceClient client = new SentryPolicyServiceClient(configTool.getAuthzConf());
+    SentryPolicyServiceClient client = SentryServiceClientFactory.create(configTool.getAuthzConf());
     verifyRoles(client, "analyst", "analyst_role", "customers_select_role", "analyst_salary_role");
     verifyRoles(client, "jranalyst", "junior_analyst_role");
     verifyRoles(client, "manager", "analyst_role", "junior_analyst_role",

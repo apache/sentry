@@ -27,12 +27,12 @@ import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
+import org.apache.sentry.service.thrift.SentryServiceClientFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 
 public class SimpleDBProviderBackend implements ProviderBackend {
 
@@ -44,13 +44,13 @@ public class SimpleDBProviderBackend implements ProviderBackend {
   private volatile boolean initialized;
   private Configuration conf; 
 
-  public SimpleDBProviderBackend(Configuration conf, String resourcePath) throws IOException {
+  public SimpleDBProviderBackend(Configuration conf, String resourcePath) throws Exception {
     // DB Provider doesn't use policy file path
     this(conf);
   }
 
-  public SimpleDBProviderBackend(Configuration conf) throws IOException {
-    this(new SentryPolicyServiceClient(conf));
+  public SimpleDBProviderBackend(Configuration conf) throws Exception {
+    this(SentryServiceClientFactory.create(conf));
     this.initialized = false;
     this.conf = conf;
   }
@@ -121,7 +121,7 @@ public class SimpleDBProviderBackend implements ProviderBackend {
   private SentryPolicyServiceClient getSentryClient() {
     if (policyServiceClient == null) {
       try {
-        policyServiceClient = new SentryPolicyServiceClient(conf);
+        policyServiceClient = SentryServiceClientFactory.create(conf);
       } catch (Exception e) {
         LOGGER.error("Error connecting to Sentry ['{}'] !!",
             e.getMessage());

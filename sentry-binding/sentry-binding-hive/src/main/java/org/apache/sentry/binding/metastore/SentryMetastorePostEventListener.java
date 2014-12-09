@@ -53,7 +53,6 @@ import org.slf4j.LoggerFactory;
 public class SentryMetastorePostEventListener extends MetaStoreEventListener {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryMetastoreListenerPlugin.class);
-  private final SentryServiceClientFactory sentryClientFactory;
   private final HiveAuthzConf authzConf;
   private final Server server;
 
@@ -61,7 +60,6 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
 
   public SentryMetastorePostEventListener(Configuration config) {
     super(config);
-    sentryClientFactory = new SentryServiceClientFactory();
 
     authzConf = HiveAuthzConf.getAuthzConf((HiveConf)config);
     server = new Server(authzConf.get(AuthzConfVars.AUTHZ_SERVER_NAME.getVar()));
@@ -254,7 +252,7 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
   private SentryPolicyServiceClient getSentryServiceClient()
       throws MetaException {
     try {
-      return sentryClientFactory.create(authzConf);
+      return SentryServiceClientFactory.create(authzConf);
     } catch (Exception e) {
       throw new MetaException("Failed to connect to Sentry service "
           + e.getMessage());

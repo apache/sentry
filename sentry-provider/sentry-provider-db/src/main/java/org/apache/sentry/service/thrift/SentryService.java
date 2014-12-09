@@ -97,6 +97,7 @@ public class SentryService implements Callable {
         .getInt(ServerConfig.RPC_PORT, ServerConfig.RPC_PORT_DEFAULT);
     if (port == 0) {
       port = findFreePort();
+      conf.setInt(ServerConfig.RPC_PORT, port);
     }
     this.address = NetUtils.createSocketAddr(
         conf.get(ServerConfig.RPC_ADDRESS, ServerConfig.RPC_ADDRESS_DEFAULT),

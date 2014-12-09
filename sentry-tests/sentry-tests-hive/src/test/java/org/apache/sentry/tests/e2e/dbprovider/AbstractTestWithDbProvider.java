@@ -19,16 +19,20 @@ package org.apache.sentry.tests.e2e.dbprovider;
 
 import java.io.File;
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
-import junit.framework.Assert;
-
-import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Maps;
+import com.google.common.io.Files;
+import org.apache.commons.io.FileUtils;
+import org.apache.curator.test.TestingServer;
 import org.apache.sentry.binding.hive.SentryHiveAuthorizationTaskFactoryImpl;
 import org.apache.sentry.provider.db.SimpleDBProviderBackend;
 import org.apache.sentry.provider.file.PolicyFile;
@@ -43,20 +47,21 @@ import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
 import org.junit.After;
 import org.junit.BeforeClass;
 
-import com.google.common.collect.Maps;
-import com.google.common.io.Files;
-
 public abstract class AbstractTestWithDbProvider extends AbstractTestWithHiveServer {
 
   protected static final String SERVER_HOST = "localhost";
 
   private Map<String, String> properties = Maps.newHashMap();
   private File dbDir;
-  private SentryService server;
+  private int sentryServerCount = 1;
+  private List<SentryService> servers = new ArrayList<SentryService>(sentryServerCount);
   private Configuration conf;
   private PolicyFile policyFile;
   private File policyFilePath;
   protected Context context;
+
+  protected boolean haEnabled;
+  private TestingServer zkServer;
 
   @BeforeClass
   public static void setupTest() throws Exception {
@@ -87,15 +92,24 @@ public abstract class AbstractTestWithDbProvider extends AbstractTestWithHiveSer
     policyFilePath = new File(Files.createTempDir(), "sentry-policy-file.ini");
     properties.put(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE,
         policyFilePath.getPath());
+    if (haEnabled) {
+      zkServer = new TestingServer();
+      zkServer.start();
+      properties.put(ServerConfig.SENTRY_HA_ENABLED, "true");
+      properties.put(ServerConfig.SENTRY_HA_ZOOKEEPER_NAMESPACE, "sentry-test");
+      properties.put(ServerConfig.SENTRY_HA_ZOOKEEPER_QUORUM, zkServer.getConnectString());
+    }
     for (Map.Entry<String, String> entry : properties.entrySet()) {
       conf.set(entry.getKey(), entry.getValue());
     }
-    server = new SentryServiceFactory().create(conf);
-
-    properties.put(ClientConfig.SERVER_RPC_ADDRESS, server.getAddress()
-        .getHostName());
-    properties.put(ClientConfig.SERVER_RPC_PORT,
-        String.valueOf(server.getAddress().getPort()));
+    for (int i = 0; i < sentryServerCount; i++) {
+      SentryService server = new SentryServiceFactory().create(new Configuration(conf));
+      servers.add(server);
+      properties.put(ClientConfig.SERVER_RPC_ADDRESS, server.getAddress()
+          .getHostName());
+      properties.put(ClientConfig.SERVER_RPC_PORT,
+          String.valueOf(server.getAddress().getPort()));
+    }
 
     context = super.createContext(properties);
     policyFile
@@ -108,14 +122,19 @@ public abstract class AbstractTestWithDbProvider extends AbstractTestWithHiveSer
 
   @After
   public void tearDown() throws Exception {
-    if (server != null) {
-      server.stop();
+    for (SentryService server : servers) {
+      if (server != null) {
+        server.stop();
+      }
     }
     if (context != null) {
       context.close();
     }
     if (dbDir != null) {
       FileUtils.deleteQuietly(dbDir);
+    }
+    if (zkServer != null) {
+      zkServer.stop();
     }
   }
 
@@ -131,14 +150,35 @@ public abstract class AbstractTestWithDbProvider extends AbstractTestWithHiveSer
   }
 
   private void startSentryService() throws Exception {
-    server.start();
-    final long start = System.currentTimeMillis();
-    while(!server.isRunning()) {
-      Thread.sleep(1000);
-      if(System.currentTimeMillis() - start > 60000L) {
-        throw new TimeoutException("Server did not start after 60 seconds");
+    for (SentryService server : servers) {
+      server.start();
+      final long start = System.currentTimeMillis();
+      while(!server.isRunning()) {
+        Thread.sleep(1000);
+        if(System.currentTimeMillis() - start > 60000L) {
+          throw new TimeoutException("Server did not start after 60 seconds");
+        }
       }
     }
+  }
+
+  protected void shutdownAllSentryService() throws Exception {
+    for (SentryService server : servers) {
+      if (server != null) {
+        server.stop();
+      }
+    }
+    servers = null;
+  }
+
+  protected void startSentryService(int serverCount) throws Exception {
+    Preconditions.checkArgument((serverCount > 0), "Server count should > 0.");
+    servers = new ArrayList<SentryService>(serverCount);
+    for (int i = 0; i < sentryServerCount; i++) {
+      SentryService server = new SentryServiceFactory().create(new Configuration(conf));
+      servers.add(server);
+    }
+    startSentryService();
   }
 
 }

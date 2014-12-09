@@ -178,6 +178,18 @@ limitations under the License.
         <artifactId>hive-metastore</artifactId>
         <version>${hive.version}</version>
       </dependency>
+    <dependency>
+      <groupId>org.apache.curator</groupId>
+      <artifactId>curator-recipes</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.curator</groupId>
+      <artifactId>curator-x-discovery</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.curator</groupId>
+      <artifactId>curator-test</artifactId>
+    </dependency>
   </dependencies>
 
   <build>

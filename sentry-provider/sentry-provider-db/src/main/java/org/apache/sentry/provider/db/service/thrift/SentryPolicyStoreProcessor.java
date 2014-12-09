@@ -51,9 +51,12 @@ import org.apache.sentry.provider.db.log.entity.JsonLogEntity;
 import org.apache.sentry.provider.db.log.entity.JsonLogEntityFactory;
 import org.apache.sentry.provider.db.log.util.Constants;
 import org.apache.sentry.provider.db.service.persistent.CommitContext;
+import org.apache.sentry.provider.db.service.persistent.HAContext;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
+import org.apache.sentry.provider.db.service.persistent.ServiceRegister;
 import org.apache.sentry.provider.db.service.thrift.PolicyStoreConstants.PolicyStoreServerConfig;
 import org.apache.sentry.service.thrift.ServiceConstants.ConfUtilties;
+import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.apache.sentry.service.thrift.ProcessorFactory;
 import org.apache.sentry.service.thrift.ServiceConstants.ThriftConstants;
@@ -87,6 +90,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   private final ImmutableSet<String> adminGroups;
   private boolean isReady;
   SentryMetrics sentryMetrics;
+  private HAContext haContext;
 
   private List<SentryPolicyStorePlugin> sentryPlugins = new LinkedList<SentryPolicyStorePlugin>();
 
@@ -97,7 +101,16 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     this.notificationHandlerInvoker = new NotificationHandlerInvoker(conf,
         createHandlers(conf));
     isReady = false;
-    sentryStore = new SentryStore(conf);
+    if(conf.getBoolean(ServerConfig.SENTRY_HA_ENABLED,
+        ServerConfig.SENTRY_HA_ENABLED_DEFAULT)){
+      haContext = new HAContext(conf);
+      sentryStore = new SentryStore(conf);
+      ServiceRegister reg = new ServiceRegister(haContext);
+      reg.regService(conf.get(ServerConfig.RPC_ADDRESS),
+          conf.getInt(ServerConfig.RPC_PORT,ServerConfig.RPC_PORT_DEFAULT));
+    } else {
+      sentryStore = new SentryStore(conf);
+    }
     isReady = true;
     adminGroups = ImmutableSet.copyOf(toTrimedLower(Sets.newHashSet(conf.getStrings(
         ServerConfig.ADMIN_GROUPS, new String[]{}))));
@@ -142,6 +155,12 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   public void stop() {
     if (isReady) {
       sentryStore.stop();
+    }
+    if (haContext != null) {
+      try {
+        haContext.getCuratorFramework().close();
+      } catch (Exception e) {
+      }
     }
   }
 

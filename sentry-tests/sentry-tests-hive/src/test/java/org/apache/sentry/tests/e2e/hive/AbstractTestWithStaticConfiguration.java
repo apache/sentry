@@ -397,8 +397,7 @@ public abstract class AbstractTestWithStaticConfiguration {
     if (sentryServer == null) {
       throw new IllegalAccessException("Sentry service not initialized");
     }
-    SentryServiceClientFactory factory = new SentryServiceClientFactory();
-    return factory.create(sentryServer.getConf());
+    return SentryServiceClientFactory.create(sentryServer.getConf());
   }
 
   @Before
