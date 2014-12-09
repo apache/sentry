@@ -17,6 +17,7 @@
  */
 package org.apache.sentry.hdfs;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -127,15 +128,21 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
         String newAuthzObj = pUpdate.getAddPrivileges().keySet().iterator().next();
         String oldAuthzObj = pUpdate.getDelPrivileges().keySet().iterator().next();
         PrivilegeInfo privilegeInfo = perms.getPrivilegeInfo(oldAuthzObj);
-        Map<String, FsAction> allPermissions = privilegeInfo.getAllPermissions();
-        perms.delPrivilegeInfo(oldAuthzObj);
-        perms.removeParentChildMappings(oldAuthzObj);
-        PrivilegeInfo newPrivilegeInfo = new PrivilegeInfo(newAuthzObj);
-        for (Map.Entry<String, FsAction> e : allPermissions.entrySet()) {
-          newPrivilegeInfo.setPermission(e.getKey(), e.getValue());
+        // The privilegeInfo object can be null if no explicit Privileges
+        // have been granted on the object. For eg. If grants have been applied on
+        // Db, but no explicit grants on Table.. then the authzObject associated
+        // with the table will never exist.
+        if (privilegeInfo != null) {
+          Map<String, FsAction> allPermissions = privilegeInfo.getAllPermissions();
+          perms.delPrivilegeInfo(oldAuthzObj);
+          perms.removeParentChildMappings(oldAuthzObj);
+          PrivilegeInfo newPrivilegeInfo = new PrivilegeInfo(newAuthzObj);
+          for (Map.Entry<String, FsAction> e : allPermissions.entrySet()) {
+            newPrivilegeInfo.setPermission(e.getKey(), e.getValue());
+          }
+          perms.addPrivilegeInfo(newPrivilegeInfo);
+          perms.addParentChildMappings(newAuthzObj);
         }
-        perms.addPrivilegeInfo(newPrivilegeInfo);
-        perms.addParentChildMappings(newAuthzObj);
         return;
       }
       if (pUpdate.getAuthzObj().equals(PermissionsUpdate.ALL_AUTHZ_OBJ)) {

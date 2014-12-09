@@ -655,6 +655,16 @@ public class TestHDFSIntegration {
     verifyOnPath("/user/hive/warehouse", FsAction.ALL, "hbase", true);
     verifyOnAllSubDirs("/user/hive/warehouse/db1.db", null, "hbase", false);
 
+    // Verify table rename works
+    stmt.execute("create table q1 (s string)");
+    verifyOnAllSubDirs("/user/hive/warehouse/q1", FsAction.ALL, "hbase", true);
+    stmt.execute("alter table q1 rename to q2");
+    verifyOnAllSubDirs("/user/hive/warehouse/q2", FsAction.ALL, "hbase", true);
+
+    stmt.execute("create table q3 (s string)");
+    verifyOnAllSubDirs("/user/hive/warehouse/q3", FsAction.ALL, "hbase", true);
+    verifyOnAllSubDirs("/user/hive/warehouse/q2", FsAction.ALL, "hbase", true);
+
     // Verify db privileges are propagated to tables
     stmt.execute("grant select on database db1 to role p1_admin");
     verifyOnAllSubDirs("/user/hive/warehouse/db1.db/tbl1", FsAction.READ_EXECUTE, "hbase", true);
