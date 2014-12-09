@@ -246,7 +246,8 @@ public class TestHDFSIntegration {
         hiveConf.set("fs.defaultFS", fsURI);
         hiveConf.set("fs.default.name", fsURI);
         hiveConf.set("hive.metastore.execute.setugi", "true");
-        hiveConf.set("hive.metastore.warehouse.dir", "hdfs:///user/hive/warehouse");
+        //Workaround for CDH-23735
+        //hiveConf.set("hive.metastore.warehouse.dir", "hdfs:///user/hive/warehouse");
         hiveConf.set("javax.jdo.option.ConnectionURL", "jdbc:derby:;databaseName=" + baseDir.getAbsolutePath() + "/metastore_db;create=true");
         hiveConf.set("javax.jdo.option.ConnectionDriverName", "org.apache.derby.jdbc.EmbeddedDriver");
         hiveConf.set("javax.jdo.option.ConnectionUserName", "hive");
