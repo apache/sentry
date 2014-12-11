@@ -661,6 +661,10 @@ public class TestHDFSIntegration {
     stmt.execute("alter table q1 rename to q2");
     verifyOnAllSubDirs("/user/hive/warehouse/q2", FsAction.ALL, "hbase", true);
 
+    // Verify table GRANTS do not trump db GRANTS
+    stmt.execute("grant select on table q2 to role p1_admin");
+    verifyOnAllSubDirs("/user/hive/warehouse/q2", FsAction.ALL, "hbase", true);
+
     stmt.execute("create table q3 (s string)");
     verifyOnAllSubDirs("/user/hive/warehouse/q3", FsAction.ALL, "hbase", true);
     verifyOnAllSubDirs("/user/hive/warehouse/q2", FsAction.ALL, "hbase", true);

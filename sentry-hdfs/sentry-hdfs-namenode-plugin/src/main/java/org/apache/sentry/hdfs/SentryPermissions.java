@@ -30,10 +30,8 @@ import org.apache.hadoop.fs.permission.AclEntryScope;
 import org.apache.hadoop.fs.permission.AclEntryType;
 import org.apache.hadoop.fs.permission.FsAction;
 
-import com.google.common.collect.Lists;
-
 public class SentryPermissions implements AuthzPermissions {
-  
+
   public static class PrivilegeInfo {
     private final String authzObj;
     private final Map<String, FsAction> roleToPermission = new HashMap<String, FsAction>();
@@ -156,7 +154,7 @@ public class SentryPermissions implements AuthzPermissions {
       FsAction action = groupPerm.getValue();
       FsAction pAction = pGroupPerms.get(groupPerm.getKey());
       if (pAction != null) {
-        action.or(pAction);
+        action = action.or(pAction);
       }
       if ((action == FsAction.READ) || (action == FsAction.WRITE)
           || (action == FsAction.READ_WRITE)) {
