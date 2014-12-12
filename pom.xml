@@ -422,11 +422,6 @@ limitations under the License.
         <version>${pig.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.pig</groupId>
-        <artifactId>pig</artifactId>
-        <version>${pig.version}</version>
-      </dependency>
-      <dependency>
         <groupId>org.apache.curator</groupId>
         <artifactId>curator-recipes</artifactId>
         <version>${curator.version}</version>

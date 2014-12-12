@@ -124,10 +124,6 @@ limitations under the License.
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-    </dependency>
-    <dependency>
       <groupId>javax.jdo</groupId>
       <artifactId>jdo-api</artifactId>
     </dependency>
