@@ -375,23 +375,24 @@ public class TestMetadataObjectRetrieval extends AbstractTestWithStaticConfigura
     policyFile.removePermissionsFromRole(GROUP1_ROLE, SELECT_DB1_VIEW1)
     .addPermissionsToRole(GROUP1_ROLE, SELECT_DB1_TBL1);
     writePolicyFile(policyFile);
-    verifyIndex(statement, TBL1, INDEX1);
+    verifyIndex(statement, DB1, TBL1, INDEX1);
 
     policyFile.removePermissionsFromRole(GROUP1_ROLE, SELECT_DB1_TBL1)
     .addPermissionsToRole(GROUP1_ROLE, INSERT_DB1_TBL1);
     writePolicyFile(policyFile);
-    verifyIndex(statement, TBL1, INDEX1);
+    verifyIndex(statement, DB1, TBL1, INDEX1);
     statement.close();
     connection.close();
   }
 
-  private void verifyIndex(Statement statement, String table, String index) throws Exception {
+  private void verifyIndex(Statement statement, String dbName, String table, String index) throws Exception {
     ResultSet rs = statement.executeQuery("SHOW INDEX ON " + table);
     assertTrue(rs.next());
     assertEquals(index, rs.getString(1).trim());
     assertEquals(table, rs.getString(2).trim());
     assertEquals("value", rs.getString(3).trim());
-    assertEquals("db_1__tb_1_index_1__", rs.getString(4).trim());
+    assertEquals(dbName + "." + dbName + "__" + table + "_" + index + "__",
+        rs.getString(4).trim());
     assertEquals("compact", rs.getString(5).trim());
   }
 

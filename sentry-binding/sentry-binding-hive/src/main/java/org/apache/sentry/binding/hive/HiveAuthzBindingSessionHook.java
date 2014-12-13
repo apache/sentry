@@ -25,6 +25,7 @@ import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveAuthorizer;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveAuthorizerFactory;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveAuthorizerImpl;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveAuthzPluginException;
+import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveAuthzSessionContext;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveMetastoreClientFactory;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hive.service.cli.HiveSQLException;
@@ -70,11 +71,9 @@ public class HiveAuthzBindingSessionHook
     @Override
     public HiveAuthorizer createHiveAuthorizer(
         HiveMetastoreClientFactory metastoreClientFactory, HiveConf conf,
-        HiveAuthenticationProvider hiveAuthenticator)
-        throws HiveAuthzPluginException {
-      // TODO Auto-generated method stub
-      return new SentryHiveAuthorizerImpl(null, null);
-    }
+        HiveAuthenticationProvider hiveAuthenticator,
+        HiveAuthzSessionContext ctx) throws HiveAuthzPluginException {
+      return new SentryHiveAuthorizerImpl(null, null);    }
   }
 
   public static class SentryHiveAuthorizerImpl extends HiveAuthorizerImpl {

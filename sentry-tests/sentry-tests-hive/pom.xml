@@ -177,6 +177,8 @@ limitations under the License.
     <dependency>
       <groupId>org.apache.pig</groupId>
       <artifactId>pig</artifactId>
+      <version>${pig.version}</version>
+      <classifier>h2</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -251,6 +253,28 @@ limitations under the License.
           <scope>test</scope>
           <version>1.3</version>
       </dependency>
+      <dependency>
+        <groupId>org.apache.curator</groupId>
+        <artifactId>curator-framework</artifactId>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.zookeeper</groupId>
+        <artifactId>zookeeper</artifactId>
+        <exclusions>
+          <exclusion>
+            <groupId>org.jboss.netty</groupId>
+            <artifactId>netty</artifactId>
+          </exclusion>
+        </exclusions>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>joda-time</groupId>
+        <artifactId>joda-time</artifactId>
+        <version>${joda-time.version}</version>
+        <scope>test</scope>
+      </dependency>
   </dependencies>
   <build>
     <plugins>
@@ -296,7 +320,7 @@ limitations under the License.
   </build>
   <profiles>
    <profile>
-     <id>download-hadoop</id>
+     <id>link-hadoop</id>
      <activation>
        <activeByDefault>false</activeByDefault>
        <property><name>!skipTests</name></property>
@@ -307,93 +331,52 @@ limitations under the License.
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-antrun-plugin</artifactId>
         <configuration>
+          <exportAntProperties>true</exportAntProperties>
           <skipTests>true</skipTests>
         </configuration>
         <executions>
           <execution>
-            <id>download-hadoop</id>
+            <id>link-hadoop</id>
             <phase>generate-sources</phase>
             <goals>
               <goal>run</goal>
             </goals>
             <configuration>
               <target>
-                <echo file="target/download.sh">
+                <echo file="target/hadoop-setup.sh">
                   set -e
                   set -x
                   /bin/pwd
                   BASE_DIR=./target
-                  DOWNLOAD_DIR=./thirdparty
-                  download() {
-                    url=$1;
-                    tarName=$2
-                    finalName=$3
-                    rm -rf $BASE_DIR/$finalName
-                    if [[ ! -f $DOWNLOAD_DIR/$tarName ]]
-                    then
-                      wget -nv -O $DOWNLOAD_DIR/$tarName $url
-                    fi
-                    tar -zxf $DOWNLOAD_DIR/$tarName -C $BASE_DIR
-                    mv $BASE_DIR/${finalName}* $BASE_DIR/$finalName
+                  TEST_UTIL_DIR=./testutil
+                  setup_hadoop() {
+                    set -e
+                    set -x
+                    /bin/pwd
+                    cp -f $TEST_UTIL_DIR/* $BASE_DIR/.
+                    chmod 777 $BASE_DIR/hadoop
                   }
-                  mkdir -p $DOWNLOAD_DIR
-                  download "http://nightly.cloudera.com/cdh5/cdh/5/hadoop-latest.tar.gz" hadoop.tar.gz hadoop
-                  download "http://nightly.cloudera.com/cdh5/cdh/5/hive-latest.tar.gz" hive.tar.gz hive
+                  setup_hadoop
                 </echo>
                 <exec executable="bash" dir="${basedir}" failonerror="true">
-                  <arg line="target/download.sh"/>
+                  <arg line="target/hadoop-setup.sh"/>
                 </exec>
               </target>
             </configuration>
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <environmentVariables>
+            <SENTRY_HADOOP_TEST_CLASSPATH>${maven.test.classpath}</SENTRY_HADOOP_TEST_CLASSPATH>
+          </environmentVariables>
+        </configuration>
+      </plugin>
      </plugins>
     </build>
-   </profile>
-   <profile>
-     <id>link-hadoop</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property><name>hadoop-dist</name></property>
-      </activation>
-     <build>
-      <plugins>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-antrun-plugin</artifactId>
-          <configuration>
-            <skipTests>false</skipTests>
-          </configuration>
-          <executions>
-            <execution>
-              <id>link-hadoop</id>
-              <phase>generate-sources</phase>
-              <goals>
-                <goal>run</goal>
-              </goals>
-              <configuration>
-                <target>
-                  <echo file="target/link_dist.sh">
-                    set -e
-                    set -x
-                    /bin/pwd
-                    BASE_DIR=./target
-                    rm -f $BASE_DIR/hadoop
-                    ln -s $1/hadoop $BASE_DIR/.
-                    rm -f $BASE_DIR/hive
-                    ln -s $2/hive $BASE_DIR/.
-                  </echo>
-                  <exec executable="bash" dir="${basedir}" failonerror="true">
-                    <arg line="target/link_dist.sh ${hadoop-dist} ${hive-dist}"/>
-                  </exec>
-                </target>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
-      </plugins>
-     </build>
    </profile>
    <profile>
      <id>cluster-hadoop</id>

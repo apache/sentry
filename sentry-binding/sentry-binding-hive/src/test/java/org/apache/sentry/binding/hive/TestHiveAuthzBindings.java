@@ -204,7 +204,7 @@ public class TestHiveAuthzBindings {
    */
   @Test
   public void testMsckRepairTable() throws Exception {
-    inputTabHierarcyList.add(buildObjectHierarchy(SERVER1, JUNIOR_ANALYST_DB, PURCHASES_TAB));
+    outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, JUNIOR_ANALYST_DB, PURCHASES_TAB));
     testAuth.authorize(HiveOperation.MSCK, alterTabPrivileges, MANAGER_SUBJECT,
       inputTabHierarcyList, outputTabHierarcyList);
 
@@ -224,7 +224,7 @@ public class TestHiveAuthzBindings {
    */
   @Test(expected=AuthorizationException.class)
   public void testMsckRepairTableRejection() throws Exception {
-	outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, JUNIOR_ANALYST_DB, PURCHASES_TAB));
+	inputTabHierarcyList.add(buildObjectHierarchy(SERVER1, JUNIOR_ANALYST_DB, PURCHASES_TAB));
     testAuth.authorize(HiveOperation.MSCK, alterTabPrivileges,
         JUNIOR_ANALYST_SUBJECT, inputTabHierarcyList, outputTabHierarcyList);
   }

@@ -32,6 +32,7 @@ import org.apache.pig.PigServer;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.io.Resources;
@@ -43,6 +44,11 @@ public class TestMetaStoreWithPigHCat extends
   private static final String dbName = "db_1";
   private static final String db_all_role = "all_db1";
   private static final String uri_role = "uri_role";
+
+  @BeforeClass
+  public static void beforeClass() {
+    System.setProperty("hadoopversion", "23");
+  }
 
   @Before
   public void setup() throws Exception {

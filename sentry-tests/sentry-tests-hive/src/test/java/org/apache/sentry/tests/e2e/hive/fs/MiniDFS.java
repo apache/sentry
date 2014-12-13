@@ -26,6 +26,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.security.GroupMappingServiceProvider;
+import org.apache.hadoop.security.Groups;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory.HiveServer2Type;
 
 import com.google.common.collect.Lists;
@@ -54,10 +55,15 @@ public class MiniDFS extends AbstractDFS {
   private static MiniDFSCluster dfsCluster;
 
   MiniDFS(File baseDir, String serverType) throws Exception {
-    if (HiveServer2Type.InternalMetastore.name().equalsIgnoreCase(serverType)) {
-      Configuration.addDefaultResource("core-site-for-sentry-test.xml");
-    }
     Configuration conf = new Configuration();
+    if (HiveServer2Type.InternalMetastore.name().equalsIgnoreCase(serverType)) {
+      // set the test group mapping that maps user to a group of same name
+      conf.set("hadoop.security.group.mapping",
+          "org.apache.sentry.tests.e2e.hive.fs.MiniDFS$PseudoGroupMappingService");
+      // set umask for metastore test client can create tables in the warehouse dir
+      conf.set("fs.permissions.umask-mode", "000");
+      Groups.getUserToGroupsMappingServiceWithLoadedConfiguration(conf);
+    }
     File dfsDir = assertCreateDir(new File(baseDir, "dfs"));
     conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, dfsDir.getPath());
     conf.set("hadoop.security.group.mapping",

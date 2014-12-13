@@ -101,10 +101,6 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
     public ProxyHMSHandler(String name, HiveConf conf) throws MetaException {
       super(name, conf);
     }
-    @Override
-    public String startFunction(String function, String extraLogInfo) {
-      return function;
-    }
   }
 
   public MetastorePlugin(Configuration conf) {

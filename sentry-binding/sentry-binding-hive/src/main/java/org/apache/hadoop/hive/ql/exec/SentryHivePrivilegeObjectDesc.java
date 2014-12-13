@@ -25,7 +25,6 @@ import org.apache.hadoop.hive.ql.plan.PrivilegeObjectDesc;
 public class SentryHivePrivilegeObjectDesc extends PrivilegeObjectDesc {
   private boolean isUri;
   private boolean isServer;
-  private List<String> columns = new ArrayList<String>();
 
   public SentryHivePrivilegeObjectDesc() {
     // reset table type which is on by default
@@ -46,14 +45,6 @@ public class SentryHivePrivilegeObjectDesc extends PrivilegeObjectDesc {
 
   public void setServer(boolean isServer) {
     this.isServer = isServer;
-  }
-
-  public List<String> getColumns() {
-    return columns;
-  }
-
-  public void setColumns(List<String> columns) {
-    this.columns = columns;
   }
 
 }

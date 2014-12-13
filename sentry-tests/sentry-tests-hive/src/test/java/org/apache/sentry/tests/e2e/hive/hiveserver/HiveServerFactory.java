@@ -66,7 +66,6 @@ public class HiveServerFactory {
   public static final String METASTORE_SETUGI = HiveConf.ConfVars.METASTORE_EXECUTE_SET_UGI.varname;
   public static final String METASTORE_BYPASS = AuthzConfVars.AUTHZ_METASTORE_SERVICE_USERS.getVar();
   public static final String METASTORE_CLIENT_TIMEOUT = HiveConf.ConfVars.METASTORE_CLIENT_SOCKET_TIMEOUT.varname;
-  public static final String METASTORE_CLIENT_IMPL = HiveConf.ConfVars.METASTORE_CLIENT_IMPL.varname;
   public static final String METASTORE_RAW_STORE_IMPL = HiveConf.ConfVars.METASTORE_RAW_STORE_IMPL.varname;
 
   static {
@@ -137,12 +136,12 @@ public class HiveServerFactory {
       properties.put(SUPPORT_CONCURRENCY, "false");
     }
     if(!properties.containsKey(HADOOPBIN)) {
-      properties.put(HADOOPBIN, "./target/hadoop/bin/hadoop");
+      properties.put(HADOOPBIN, "./target/hadoop");
     }
+    properties.put(METASTORE_RAW_STORE_IMPL,
+        "org.apache.sentry.binding.metastore.AuthorizingObjectStore");
     if (!properties.containsKey(METASTORE_URI)) {
       if (HiveServer2Type.InternalMetastore.equals(type)) {
-        properties.put(METASTORE_RAW_STORE_IMPL,
-            "org.apache.sentry.binding.metastore.AuthorizingObjectStore");
         // The configuration sentry.metastore.service.users is for the user who
         // has all access to get the metadata.
         properties.put(METASTORE_BYPASS, "accessAllMetaUser");
@@ -155,6 +154,13 @@ public class HiveServerFactory {
         properties.put(ConfVars.METASTORESERVERMINTHREADS.varname, "5");
       }
     }
+
+    // set the SentryMetaStoreFilterHook for HiveServer2 only, not for metastore
+    if (!HiveServer2Type.InternalMetastore.equals(type)) {
+      properties.put(ConfVars.METASTORE_FILTER_HOOK.varname,
+          org.apache.sentry.binding.metastore.SentryMetaStoreFilterHook.class.getName());
+    }
+
     if (!properties.containsKey(METASTORE_BYPASS)) {
       properties.put(METASTORE_BYPASS, "hive,impala," + System.getProperty("user.name", ""));
     } else {
@@ -166,9 +172,8 @@ public class HiveServerFactory {
     properties.put(METASTORE_SETUGI, "true");
     properties.put(METASTORE_CLIENT_TIMEOUT, "100");
     properties.put(ConfVars.HIVE_WAREHOUSE_SUBDIR_INHERIT_PERMS.varname, "true");
-    properties.put(METASTORE_CLIENT_IMPL,
-        "org.apache.sentry.binding.metastore.SentryHiveMetaStoreClient");
 
+    properties.put(ConfVars.HIVE_SERVER2_BUILTIN_UDF_BLACKLIST.varname, "reflect,reflect2,java_method");
     properties.put(ConfVars.HIVESTATSAUTOGATHER.varname, "false");
     properties.put(ConfVars.HIVE_STATS_COLLECT_SCANCOLS.varname, "true");
     String hadoopBinPath = properties.get(HADOOPBIN);
@@ -203,8 +208,7 @@ public class HiveServerFactory {
     authzConf.writeXml(out);
     out.close();
     // points hive-site.xml at access-site.xml
-    hiveConf.set(HiveAuthzConf.HIVE_SENTRY_CONF_URL, accessSite.toURI().toURL()
-        .toExternalForm());
+    hiveConf.set(HiveAuthzConf.HIVE_SENTRY_CONF_URL, "file:///" + accessSite.getPath());
 
     if(!properties.containsKey(HiveConf.ConfVars.HIVE_SERVER2_SESSION_HOOK.varname)) {
       hiveConf.set(HiveConf.ConfVars.HIVE_SERVER2_SESSION_HOOK.varname,

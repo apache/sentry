@@ -48,6 +48,7 @@ import org.apache.hadoop.hive.metastore.events.PreEventContext;
 import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.shims.ShimLoader;
+import org.apache.hadoop.hive.shims.Utils;
 import org.apache.sentry.binding.hive.authz.HiveAuthzBinding;
 import org.apache.sentry.binding.hive.authz.HiveAuthzPrivilegesMap;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
@@ -430,8 +431,7 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
 
   private String getUserName() throws MetaException {
     try {
-      return ShimLoader.getHadoopShims().getUGIForConf(hiveConf)
-          .getShortUserName();
+      return Utils.getUGI().getShortUserName();
     } catch (LoginException e) {
       throw new MetaException("Failed to get username " + e.getMessage());
     } catch (IOException e) {

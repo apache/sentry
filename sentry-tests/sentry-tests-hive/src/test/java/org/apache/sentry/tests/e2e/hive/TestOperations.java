@@ -54,6 +54,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     privileges.put("select_db1_tb1", "server=server1->db=" + DB1 + "->table=tb1->action=select");
     privileges.put("insert_db1_tb1", "server=server1->db=" + DB1 + "->table=tb1->action=insert");
     privileges.put("alter_db1_tb1", "server=server1->db=" + DB1 + "->table=tb1->action=alter");
+    privileges.put("alter_db1_ptab", "server=server1->db=" + DB1 + "->table=ptab->action=alter");
     privileges.put("index_db1_tb1", "server=server1->db=" + DB1 + "->table=tb1->action=index");
     privileges.put("lock_db1_tb1", "server=server1->db=" + DB1 + "->table=tb1->action=lock");
     privileges.put("drop_db1_tb1", "server=server1->db=" + DB1 + "->table=tb1->action=drop");
@@ -446,7 +447,8 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     adminCreate(DB1, tableName, true);
     policyFile
         .addPermissionsToRole("alter_db1_tb1", privileges.get("alter_db1_tb1"))
-        .addRolesToGroup(USERGROUP1, "alter_db1_tb1")
+        .addPermissionsToRole("alter_db1_ptab", privileges.get("alter_db1_ptab"))
+        .addRolesToGroup(USERGROUP1, "alter_db1_tb1", "alter_db1_ptab")
         .addPermissionsToRole("insert_db1_tb1", privileges.get("insert_db1_tb1"))
         .addRolesToGroup(USERGROUP2, "insert_db1_tb1");
     writePolicyFile(policyFile);
@@ -459,7 +461,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     statement.execute("Use " + DB1);
     statement.execute("ALTER TABLE tb1 ADD IF NOT EXISTS PARTITION (b = '10') ");
     statement.execute("ALTER TABLE tb1 ADD IF NOT EXISTS PARTITION (b = '1') ");
-
+    statement.execute("CREATE TABLE ptab (a int) STORED AS PARQUET");
     //Negative test cases
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
@@ -483,7 +485,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
 
     assertSemanticException(statement, "ALTER TABLE tb1 CHANGE COLUMN a c int");
     assertSemanticException(statement, "ALTER TABLE tb1 ADD COLUMNS (a int)");
-    assertSemanticException(statement, "ALTER TABLE tb1 REPLACE COLUMNS (a int, c int)");
+    assertSemanticException(statement, "ALTER TABLE ptab REPLACE COLUMNS (a int, c int)");
     assertSemanticException(statement, "MSCK REPAIR TABLE tb1");
 
     //assertSemanticException(statement, "ALTER VIEW view1 SET TBLPROPERTIES ('comment' = 'new_comment')");
@@ -515,7 +517,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
 
     statement.execute("ALTER TABLE tb1 CHANGE COLUMN a c int");
     statement.execute("ALTER TABLE tb1 ADD COLUMNS (a int)");
-    statement.execute("ALTER TABLE tb1 REPLACE COLUMNS (a int, c int)");
+    statement.execute("ALTER TABLE ptab REPLACE COLUMNS (a int, c int)");
     statement.execute("MSCK REPAIR TABLE tb1");
 
     //statement.execute("ALTER VIEW view1 SET TBLPROPERTIES ('comment' = 'new_comment')");

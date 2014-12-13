@@ -39,8 +39,8 @@ public class HiveAuthzConf extends Configuration {
   public static final String HIVE_ACCESS_SUBJECT_NAME = "hive.access.subject.name";
   public static final String HIVE_SENTRY_SUBJECT_NAME = "hive.sentry.subject.name";
   public static final String HIVE_SENTRY_AUTH_ERRORS = "sentry.hive.authorization.errors";
-  public static final String HIVE_SENTRY_MOCK_COMPILATION = "hive.sentry.mock.compilation";
-  public static final String HIVE_SENTRY_MOCK_ERROR = "hive.sentry.mock.error";
+  public static final String HIVE_SENTRY_MOCK_COMPILATION = "sentry.hive.mock.compilation";
+  public static final String HIVE_SENTRY_MOCK_ERROR = "sentry.hive.mock.error";
   public static final String HIVE_SENTRY_PRIVILEGE_ERROR_MESSAGE = "No valid privileges";
   /**
    * Property used to persist the role set in the session. This is not public for now.

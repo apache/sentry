@@ -67,25 +67,28 @@ limitations under the License.
     <jdo-api.version>3.0.1</jdo-api.version>
     <derby.version>10.10.2.0</derby.version>
     <commons-cli.version>1.2</commons-cli.version>
-    <hive.version>0.13.1-cdh5.3.0-SNAPSHOT</hive.version>
+    <hive.version>0.15.0-SNAPSHOT</hive.version>
     <hadoop.version>2.5.0-cdh5.2.0-SNAPSHOT</hadoop.version>
     <fest.reflect.version>1.4.1</fest.reflect.version>
     <guava.version>11.0.2</guava.version>
     <junit.version>4.9</junit.version>
-    <libthrift.version>0.9.0-cdh4-1</libthrift.version>
-    <libfb303.version>0.9.0</libfb303.version>
+    <libthrift.version>0.9.2</libthrift.version>
+    <libfb303.version>0.9.2</libfb303.version>
+    <curator.version>2.6.0</curator.version>
     <log4j.version>1.2.16</log4j.version>
     <mockito.version>1.8.5</mockito.version>
     <shiro.version>1.2.1</shiro.version>
     <slf4j.version>1.6.1</slf4j.version>
     <solr.version>4.10.2</solr.version>
     <solr.sentry.handlers.version>4.4.0-cdh5.2.0-SNAPSHOT</solr.sentry.handlers.version>
-    <zookeeper.version>3.4.5-cdh5.1.0-SNAPSHOT</zookeeper.version>
-    <pig.version>0.12.0-cdh5.1.0-SNAPSHOT</pig.version>
+    <zookeeper.version>3.4.5</zookeeper.version>
+    <pig.version>0.12.0</pig.version>
     <jackson.version>1.8.8</jackson.version>
     <metrics.version>3.1.0</metrics.version>
     <jettyVersion>7.6.16.v20140903</jettyVersion>
     <curator.version>2.6.0</curator.version>
+    <joda-time.version>2.5</joda-time.version>
+    <test.sentry.hadoop.classpath>${maven.test.classpath}</test.sentry.hadoop.classpath>
   </properties>
 
   <dependencyManagement>
@@ -436,6 +439,27 @@ limitations under the License.
         <artifactId>curator-test</artifactId>
         <version>${curator.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.apache.curator</groupId>
+        <artifactId>curator-framework</artifactId>
+        <version>${curator.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.zookeeper</groupId>
+        <artifactId>zookeeper</artifactId>
+        <version>${zookeeper.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.jboss.netty</groupId>
+            <artifactId>netty</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>joda-time</groupId>
+        <artifactId>joda-time</artifactId>
+        <version>${joda-time.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -470,6 +494,25 @@ limitations under the License.
           <workspaceCodeStylesURL>https://google-styleguide.googlecode.com/svn/trunk/eclipse-java-google-style.xml</workspaceCodeStylesURL>
           <sourceIncludes><include>src/gen/thrift/gen-javabean/**</include></sourceIncludes>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>define-classpath</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <exportAntProperties>true</exportAntProperties>
+              <target>
+                <property name="maven.test.classpath" refid="maven.test.classpath"/>
+              </target>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
 
 <!---

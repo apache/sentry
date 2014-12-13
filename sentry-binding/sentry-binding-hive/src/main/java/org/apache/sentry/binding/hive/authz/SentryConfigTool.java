@@ -400,7 +400,7 @@ public class SentryConfigTool {
     // setup Hive driver
     SessionState session = new SessionState(getHiveConf());
     SessionState.start(session);
-    Driver driver = new Driver(session.getConf(), getUser(), null);
+    Driver driver = new Driver(session.getConf(), getUser());
 
     // compile the query
     CommandProcessorResponse compilerStatus = driver

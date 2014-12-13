@@ -34,6 +34,7 @@ import org.apache.hadoop.hive.ql.hooks.WriteEntity;
 import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
 import org.apache.hadoop.hive.ql.parse.BaseSemanticAnalyzer;
+import org.apache.hadoop.hive.ql.parse.DDLSemanticAnalyzer;
 import org.apache.hadoop.hive.ql.parse.HiveParser;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.parse.authorization.HiveAuthorizationTaskFactory;
@@ -218,7 +219,7 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
     }
 
     ShowGrantDesc showGrant = new ShowGrantDesc(resultFile.toString(),
-        principalDesc, privHiveObj, cols);
+        principalDesc, privHiveObj);
     return createTask(new DDLWork(inputs, outputs, showGrant));
   }
 
@@ -232,7 +233,7 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
       HashSet<ReadEntity> inputs, HashSet<WriteEntity> outputs) throws SemanticException {
     List<PrincipalDesc> principalDesc = analyzePrincipalListDef(
         (ASTNode) ast.getChild(0));
-    
+
     List<String> roles = new ArrayList<String>();
     for (int i = 1; i < ast.getChildCount(); i++) {
       roles.add(BaseSemanticAnalyzer.unescapeIdentifier(ast.getChild(i).getText()));
@@ -280,26 +281,33 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
   private SentryHivePrivilegeObjectDesc analyzePrivilegeObject(ASTNode ast)
       throws SemanticException {
     SentryHivePrivilegeObjectDesc subject = new SentryHivePrivilegeObjectDesc();
-    String privilegeObject = BaseSemanticAnalyzer.unescapeIdentifier(ast
-        .getChild(0).getText());
-    if (ast.getChildCount() > 1) {
-      for (int i = 1; i < ast.getChildCount(); i++) {
-        ASTNode astChild = (ASTNode) ast.getChild(i);
-        if (astChild.getToken().getType() == HiveParser.TOK_PARTSPEC) {
+    ASTNode astChild = (ASTNode) ast.getChild(0);
+    ASTNode gchild = (ASTNode) astChild.getChild(0);
+
+    String privilegeObject = BaseSemanticAnalyzer.unescapeIdentifier(gchild.getText());
+    subject.setObject(privilegeObject);
+      if (astChild.getToken().getType() == HiveParser.TOK_PARTSPEC) {
           throw new SemanticException(SentryHiveConstants.PARTITION_PRIVS_NOT_SUPPORTED);
-        } else if (astChild.getToken().getType() == HiveParser.TOK_TABCOLNAME) {
-          subject.setColumns(BaseSemanticAnalyzer.getColumnNames(astChild));
-        } else if (astChild.getToken().getType() == HiveParser.TOK_URI) {
+        } else if (astChild.getToken().getType() == HiveParser.TOK_URI_TYPE) {
           privilegeObject = privilegeObject.replaceAll("'", "").replaceAll("\"", "");
+          subject.setObject(privilegeObject);
           subject.setUri(true);
-        } else if (astChild.getToken().getType() == HiveParser.TOK_SERVER) {
+        } else if (astChild.getToken().getType() == HiveParser.TOK_SERVER_TYPE) {
           subject.setServer(true);
         } else if (astChild.getToken().getType() == HiveParser.TOK_TABLE_TYPE) {
           subject.setTable(true);
+          String[] qualified = BaseSemanticAnalyzer.getQualifiedTableName(gchild);
+          subject.setObject(qualified[1]);
+        }
+      for (int i = 1; i < astChild.getChildCount(); i++) {
+        gchild = (ASTNode) astChild.getChild(i);
+        if (gchild.getType() == HiveParser.TOK_PARTSPEC) {
+          throw new SemanticException(SentryHiveConstants.PARTITION_PRIVS_NOT_SUPPORTED);
+        } else if (gchild.getType() == HiveParser.TOK_TABCOLNAME) {
+          subject.setColumns(BaseSemanticAnalyzer.getColumnNames(gchild));
         }
       }
-    }
-    subject.setObject(privilegeObject);
+
     return subject;
   }
 

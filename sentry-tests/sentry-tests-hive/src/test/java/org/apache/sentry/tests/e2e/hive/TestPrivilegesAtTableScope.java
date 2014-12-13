@@ -18,6 +18,7 @@
 package org.apache.sentry.tests.e2e.hive;
 
 import org.apache.sentry.provider.file.PolicyFile;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -48,7 +49,15 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
 
   @Before
   public void setup() throws Exception {
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP)
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
+    statement.execute("CREATE DATABASE DB_1");
+    statement.close();
+    connection.close();
   }
 
   /*
@@ -76,8 +85,6 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     // setup db objects needed by the test
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
-    statement.execute("CREATE DATABASE DB_1");
     statement.execute("USE DB_1");
     statement.execute("CREATE TABLE TAB_1(A STRING)");
     statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
@@ -172,8 +179,6 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     // setup db objects needed by the test
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
-    statement.execute("CREATE DATABASE " + DB1);
     statement.execute("USE " + DB1);
     statement.execute("CREATE TABLE TAB_1(A STRING)");
     statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
@@ -261,8 +266,6 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
 
-    statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
-    statement.execute("CREATE DATABASE " + DB1);
     statement.execute("USE " + DB1);
     statement.execute("CREATE TABLE TAB_1(A STRING)");
     statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
@@ -349,8 +352,6 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
 
-    statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
-    statement.execute("CREATE DATABASE " + DB1);
     statement.execute("USE " + DB1);
     statement.execute("CREATE TABLE TAB_1(B INT, A STRING) "
         + " row format delimited fields terminated by '|'  stored as textfile");
@@ -427,8 +428,6 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
 
-    statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
-    statement.execute("CREATE DATABASE " + DB1);
     statement.execute("USE " + DB1);
     statement.execute("CREATE TABLE TAB_1(B INT, A STRING) "
         + " row format delimited fields terminated by '|'  stored as textfile");
@@ -512,8 +511,6 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
 
-    statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
-    statement.execute("CREATE DATABASE " + DB1);
     statement.execute("USE " + DB1);
     statement.execute("CREATE TABLE TAB_1(B INT, A STRING) "
         + " row format delimited fields terminated by '|'  stored as textfile");
@@ -613,8 +610,6 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
 
-    statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
-    statement.execute("CREATE DATABASE " + DB1);
     statement.execute("USE " + DB1);
     statement.execute("CREATE TABLE TAB_1(B INT, A STRING) "
         + " row format delimited fields terminated by '|'  stored as textfile");

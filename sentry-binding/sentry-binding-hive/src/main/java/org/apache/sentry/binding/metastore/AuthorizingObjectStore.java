@@ -40,6 +40,7 @@ import org.apache.hadoop.hive.metastore.api.UnknownDBException;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.shims.ShimLoader;
+import org.apache.hadoop.hive.shims.Utils;
 import org.apache.sentry.binding.hive.HiveAuthzBindingHook;
 import org.apache.sentry.binding.hive.authz.HiveAuthzBinding;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
@@ -377,8 +378,7 @@ public class AuthorizingObjectStore extends ObjectStore {
    */
   private String getUserName() throws MetaException {
     try {
-      return ShimLoader.getHadoopShims().getUGIForConf(getHiveConf())
-          .getShortUserName();
+      return Utils.getUGI().getShortUserName();
     } catch (LoginException e) {
       throw new MetaException("Failed to get username " + e.getMessage());
     } catch (IOException e) {

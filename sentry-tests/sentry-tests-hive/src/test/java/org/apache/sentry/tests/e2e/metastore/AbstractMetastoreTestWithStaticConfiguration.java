@@ -38,6 +38,7 @@ import org.apache.hadoop.hive.ql.processors.CommandProcessorResponse;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.hive.serde.serdeConstants;
 import org.apache.hadoop.hive.shims.ShimLoader;
+import org.apache.hadoop.hive.shims.Utils;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.pig.PigServer;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
@@ -197,7 +198,7 @@ public abstract class AbstractMetastoreTestWithStaticConfiguration extends
       final String pigLatin) throws Exception {
     UserGroupInformation clientUgi = UserGroupInformation
         .createRemoteUser(userName);
-    ShimLoader.getHadoopShims().doAs(clientUgi,
+    clientUgi.doAs(
         new PrivilegedExceptionAction<Object>() {
           @Override
           public Void run() throws Exception {
