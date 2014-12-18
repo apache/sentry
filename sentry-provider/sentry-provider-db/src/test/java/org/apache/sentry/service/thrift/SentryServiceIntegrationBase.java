@@ -147,6 +147,9 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
     dbDir = new File(Files.createTempDir(), "sentry_policy_db");
     conf.set(ServerConfig.SENTRY_STORE_JDBC_URL,
         "jdbc:derby:;databaseName=" + dbDir.getPath() + ";create=true");
+    // InMem Db
+    dbDir.mkdirs();
+    conf.set("sentry.store.type", "mem");
     server = new SentryServiceFactory().create(conf);
     conf.set(ClientConfig.SERVER_RPC_ADDRESS, server.getAddress().getHostName());
     conf.set(ClientConfig.SERVER_RPC_PORT, String.valueOf(server.getAddress().getPort()));

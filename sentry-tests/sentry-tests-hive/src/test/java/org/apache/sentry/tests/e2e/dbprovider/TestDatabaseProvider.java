@@ -52,6 +52,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception{
     useSentryService = true;
+    useFileStore = true;
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
   }
 
@@ -128,14 +129,49 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
   @Test
   public void testGrantRevokeSELECTonDb() throws Exception {
     File dataFile = doSetupForGrantDbTests();
-
+    
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
 
+    // Test Db switch..
+    statement.execute("USE " + DB1);
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
     // Grant only SELECT on Database
     statement.execute("GRANT SELECT ON DATABASE " + DB1 + " TO ROLE user_role");
+    statement.close();
+    connection.close();
+    
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    statement.execute("USE " + DB1);
+    statement.close();
+    connection.close();
+    
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
     statement.execute("GRANT ALL ON URI 'file://" + dataFile.getPath() + "' TO ROLE user_role");
+    statement.close();
+    connection.close();
+    
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    statement.execute("USE " + DB1);
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
     statement.execute("GRANT ROLE user_role TO GROUP " + USERGROUP1);
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    statement.execute("USE " + DB1);
     statement.close();
     connection.close();
 
@@ -275,7 +311,6 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     statement.execute("CREATE TABLE t2 (c2 string)");
     statement.close();
     connection.close();
-
     return dataFile;
   }
 

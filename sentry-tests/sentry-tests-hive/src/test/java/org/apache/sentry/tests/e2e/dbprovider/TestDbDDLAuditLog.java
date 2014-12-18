@@ -68,6 +68,7 @@ public class TestDbDDLAuditLog extends AbstractTestWithStaticConfiguration {
 
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception {
+    useInMemDb = true;
     useSentryService = true;
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
     Logger logger = Logger.getLogger("sentry.hive.authorization.ddl.logger");

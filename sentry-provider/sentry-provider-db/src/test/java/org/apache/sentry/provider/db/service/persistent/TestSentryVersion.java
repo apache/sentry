@@ -52,10 +52,10 @@ public class TestSentryVersion {
   @Test
   public void testVerifySentryVersionCheck() throws Exception {
     conf.set(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "false");
-    SentryStore sentryStore = new SentryStore(conf);
+    DbSentryStore sentryStore = new DbSentryStore(conf);
     sentryStore.stop();
     conf.set(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "true");
-    sentryStore = new SentryStore(conf);
+    sentryStore = new DbSentryStore(conf);
   }
 
   /**
@@ -65,7 +65,7 @@ public class TestSentryVersion {
    */
   @Test(expected = SentryNoSuchObjectException.class)
   public void testNegSentrySchemaDefault() throws Exception {
-    SentryStore sentryStore = new SentryStore(conf);
+    DbSentryStore sentryStore = new DbSentryStore(conf);
   }
 
   /**
@@ -76,7 +76,7 @@ public class TestSentryVersion {
   @Test
   public void testSentryImplicitVersion() throws Exception {
     conf.set(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "false");
-    SentryStore sentryStore = new SentryStore(conf);
+    DbSentryStore sentryStore = new DbSentryStore(conf);
     assertEquals(SentryStoreSchemaInfo.getSentryVersion(),
         sentryStore.getSentryVersion());
   }

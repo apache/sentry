@@ -43,6 +43,7 @@ public class TestDbEndToEnd extends AbstractTestWithStaticConfiguration {
 
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception{
+    useInMemDb = true;
     useSentryService = true;
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
   }
@@ -233,7 +234,7 @@ public class TestDbEndToEnd extends AbstractTestWithStaticConfiguration {
     // 8
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("USE " + DB2);
+    statement.execute("USE " + DB1);
 
     statement.execute("INSERT OVERWRITE TABLE " +
         DB2 + "." + tableName2 + " SELECT * FROM " + DB1

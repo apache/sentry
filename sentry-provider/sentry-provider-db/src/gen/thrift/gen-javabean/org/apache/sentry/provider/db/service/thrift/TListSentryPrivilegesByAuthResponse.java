@@ -449,17 +449,17 @@ public class TListSentryPrivilegesByAuthResponse implements org.apache.thrift.TB
           case 2: // PRIVILEGES_MAP_BY_AUTH
             if (schemeField.type == org.apache.thrift.protocol.TType.MAP) {
               {
-                org.apache.thrift.protocol.TMap _map122 = iprot.readMapBegin();
-                struct.privilegesMapByAuth = new HashMap<TSentryAuthorizable,TSentryPrivilegeMap>(2*_map122.size);
-                for (int _i123 = 0; _i123 < _map122.size; ++_i123)
+                org.apache.thrift.protocol.TMap _map194 = iprot.readMapBegin();
+                struct.privilegesMapByAuth = new HashMap<TSentryAuthorizable,TSentryPrivilegeMap>(2*_map194.size);
+                for (int _i195 = 0; _i195 < _map194.size; ++_i195)
                 {
-                  TSentryAuthorizable _key124; // required
-                  TSentryPrivilegeMap _val125; // required
-                  _key124 = new TSentryAuthorizable();
-                  _key124.read(iprot);
-                  _val125 = new TSentryPrivilegeMap();
-                  _val125.read(iprot);
-                  struct.privilegesMapByAuth.put(_key124, _val125);
+                  TSentryAuthorizable _key196; // required
+                  TSentryPrivilegeMap _val197; // required
+                  _key196 = new TSentryAuthorizable();
+                  _key196.read(iprot);
+                  _val197 = new TSentryPrivilegeMap();
+                  _val197.read(iprot);
+                  struct.privilegesMapByAuth.put(_key196, _val197);
                 }
                 iprot.readMapEnd();
               }
@@ -491,10 +491,10 @@ public class TListSentryPrivilegesByAuthResponse implements org.apache.thrift.TB
           oprot.writeFieldBegin(PRIVILEGES_MAP_BY_AUTH_FIELD_DESC);
           {
             oprot.writeMapBegin(new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRUCT, org.apache.thrift.protocol.TType.STRUCT, struct.privilegesMapByAuth.size()));
-            for (Map.Entry<TSentryAuthorizable, TSentryPrivilegeMap> _iter126 : struct.privilegesMapByAuth.entrySet())
+            for (Map.Entry<TSentryAuthorizable, TSentryPrivilegeMap> _iter198 : struct.privilegesMapByAuth.entrySet())
             {
-              _iter126.getKey().write(oprot);
-              _iter126.getValue().write(oprot);
+              _iter198.getKey().write(oprot);
+              _iter198.getValue().write(oprot);
             }
             oprot.writeMapEnd();
           }
@@ -527,10 +527,10 @@ public class TListSentryPrivilegesByAuthResponse implements org.apache.thrift.TB
       if (struct.isSetPrivilegesMapByAuth()) {
         {
           oprot.writeI32(struct.privilegesMapByAuth.size());
-          for (Map.Entry<TSentryAuthorizable, TSentryPrivilegeMap> _iter127 : struct.privilegesMapByAuth.entrySet())
+          for (Map.Entry<TSentryAuthorizable, TSentryPrivilegeMap> _iter199 : struct.privilegesMapByAuth.entrySet())
           {
-            _iter127.getKey().write(oprot);
-            _iter127.getValue().write(oprot);
+            _iter199.getKey().write(oprot);
+            _iter199.getValue().write(oprot);
           }
         }
       }
@@ -545,17 +545,17 @@ public class TListSentryPrivilegesByAuthResponse implements org.apache.thrift.TB
       BitSet incoming = iprot.readBitSet(1);
       if (incoming.get(0)) {
         {
-          org.apache.thrift.protocol.TMap _map128 = new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRUCT, org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
-          struct.privilegesMapByAuth = new HashMap<TSentryAuthorizable,TSentryPrivilegeMap>(2*_map128.size);
-          for (int _i129 = 0; _i129 < _map128.size; ++_i129)
+          org.apache.thrift.protocol.TMap _map200 = new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRUCT, org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
+          struct.privilegesMapByAuth = new HashMap<TSentryAuthorizable,TSentryPrivilegeMap>(2*_map200.size);
+          for (int _i201 = 0; _i201 < _map200.size; ++_i201)
           {
-            TSentryAuthorizable _key130; // required
-            TSentryPrivilegeMap _val131; // required
-            _key130 = new TSentryAuthorizable();
-            _key130.read(iprot);
-            _val131 = new TSentryPrivilegeMap();
-            _val131.read(iprot);
-            struct.privilegesMapByAuth.put(_key130, _val131);
+            TSentryAuthorizable _key202; // required
+            TSentryPrivilegeMap _val203; // required
+            _key202 = new TSentryAuthorizable();
+            _key202.read(iprot);
+            _val203 = new TSentryPrivilegeMap();
+            _val203.read(iprot);
+            struct.privilegesMapByAuth.put(_key202, _val203);
           }
         }
         struct.setPrivilegesMapByAuthIsSet(true);

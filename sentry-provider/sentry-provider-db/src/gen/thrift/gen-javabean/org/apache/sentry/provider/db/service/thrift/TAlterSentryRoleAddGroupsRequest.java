@@ -631,14 +631,14 @@ public class TAlterSentryRoleAddGroupsRequest implements org.apache.thrift.TBase
           case 5: // GROUPS
             if (schemeField.type == org.apache.thrift.protocol.TType.SET) {
               {
-                org.apache.thrift.protocol.TSet _set0 = iprot.readSetBegin();
-                struct.groups = new HashSet<TSentryGroup>(2*_set0.size);
-                for (int _i1 = 0; _i1 < _set0.size; ++_i1)
+                org.apache.thrift.protocol.TSet _set72 = iprot.readSetBegin();
+                struct.groups = new HashSet<TSentryGroup>(2*_set72.size);
+                for (int _i73 = 0; _i73 < _set72.size; ++_i73)
                 {
-                  TSentryGroup _elem2; // required
-                  _elem2 = new TSentryGroup();
-                  _elem2.read(iprot);
-                  struct.groups.add(_elem2);
+                  TSentryGroup _elem74; // required
+                  _elem74 = new TSentryGroup();
+                  _elem74.read(iprot);
+                  struct.groups.add(_elem74);
                 }
                 iprot.readSetEnd();
               }
@@ -677,9 +677,9 @@ public class TAlterSentryRoleAddGroupsRequest implements org.apache.thrift.TBase
         oprot.writeFieldBegin(GROUPS_FIELD_DESC);
         {
           oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, struct.groups.size()));
-          for (TSentryGroup _iter3 : struct.groups)
+          for (TSentryGroup _iter75 : struct.groups)
           {
-            _iter3.write(oprot);
+            _iter75.write(oprot);
           }
           oprot.writeSetEnd();
         }
@@ -707,9 +707,9 @@ public class TAlterSentryRoleAddGroupsRequest implements org.apache.thrift.TBase
       oprot.writeString(struct.roleName);
       {
         oprot.writeI32(struct.groups.size());
-        for (TSentryGroup _iter4 : struct.groups)
+        for (TSentryGroup _iter76 : struct.groups)
         {
-          _iter4.write(oprot);
+          _iter76.write(oprot);
         }
       }
     }
@@ -724,14 +724,14 @@ public class TAlterSentryRoleAddGroupsRequest implements org.apache.thrift.TBase
       struct.roleName = iprot.readString();
       struct.setRoleNameIsSet(true);
       {
-        org.apache.thrift.protocol.TSet _set5 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
-        struct.groups = new HashSet<TSentryGroup>(2*_set5.size);
-        for (int _i6 = 0; _i6 < _set5.size; ++_i6)
+        org.apache.thrift.protocol.TSet _set77 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
+        struct.groups = new HashSet<TSentryGroup>(2*_set77.size);
+        for (int _i78 = 0; _i78 < _set77.size; ++_i78)
         {
-          TSentryGroup _elem7; // required
-          _elem7 = new TSentryGroup();
-          _elem7.read(iprot);
-          struct.groups.add(_elem7);
+          TSentryGroup _elem79; // required
+          _elem79 = new TSentryGroup();
+          _elem79.read(iprot);
+          struct.groups.add(_elem79);
         }
       }
       struct.setGroupsIsSet(true);

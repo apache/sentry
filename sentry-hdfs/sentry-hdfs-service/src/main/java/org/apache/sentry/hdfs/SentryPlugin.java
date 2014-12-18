@@ -27,12 +27,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.hdfs.ServiceConstants.ServerConfig;
 import org.apache.sentry.hdfs.UpdateForwarder.ExternalImageRetriever;
-import org.apache.sentry.hdfs.service.thrift.TPathChanges;
 import org.apache.sentry.hdfs.service.thrift.TPermissionsUpdate;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
 import org.apache.sentry.hdfs.service.thrift.TRoleChanges;
 import org.apache.sentry.provider.db.SentryPolicyStorePlugin;
-import org.apache.sentry.provider.db.SentryPolicyStorePlugin.SentryPluginException;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleAddGroupsRequest;
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleDeleteGroupsRequest;
@@ -52,6 +50,7 @@ import com.google.common.base.Strings;
 public class SentryPlugin implements SentryPolicyStorePlugin {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryPlugin.class);
+  public static String NULL_COL = "__NULL__";
 
   public static volatile SentryPlugin instance;
 
@@ -239,10 +238,10 @@ public class SentryPlugin implements SentryPolicyStorePlugin {
 
   private String getAuthzObj(TSentryPrivilege privilege) {
     String authzObj = null;
-    if (!SentryStore.isNULL(privilege.getDbName())) {
+    if (!isNULL(privilege.getDbName())) {
       String dbName = privilege.getDbName();
       String tblName = privilege.getTableName();
-      if (SentryStore.isNULL(tblName)) {
+      if (isNULL(tblName)) {
         authzObj = dbName;
       } else {
         authzObj = dbName + "." + tblName;
@@ -253,15 +252,27 @@ public class SentryPlugin implements SentryPolicyStorePlugin {
 
   private String getAuthzObj(TSentryAuthorizable authzble) {
     String authzObj = null;
-    if (!SentryStore.isNULL(authzble.getDb())) {
+    if (!isNULL(authzble.getDb())) {
       String dbName = authzble.getDb();
       String tblName = authzble.getTable();
-      if (SentryStore.isNULL(tblName)) {
+      if (isNULL(tblName)) {
         authzObj = dbName;
       } else {
         authzObj = dbName + "." + tblName;
       }
     }
     return authzObj;
+  }
+
+  public static String toNULLCol(String s) {
+    return Strings.isNullOrEmpty(s) ? NULL_COL : s;
+  }
+
+  public static String fromNULLCol(String s) {
+    return isNULL(s) ? "" : s;
+  }
+
+  public static boolean isNULL(String s) {
+    return Strings.isNullOrEmpty(s) || s.equals(NULL_COL);
   }
 }

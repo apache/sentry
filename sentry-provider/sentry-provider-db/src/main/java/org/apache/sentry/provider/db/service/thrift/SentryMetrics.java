@@ -28,6 +28,8 @@ import com.codahale.metrics.jvm.BufferPoolMetricSet;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
+
+import org.apache.sentry.provider.db.service.persistent.DbSentryStore;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 
 import java.lang.management.ManagementFactory;
@@ -84,15 +86,36 @@ public class SentryMetrics {
     return sentryMetrics;
   }
 
-  public void addSentryStoreGauges(SentryStore sentryStore) {
+  public void addSentryStoreGauges(final SentryStore sentryStore) {
     if(!gaugesAdded) {
-      addGauge(SentryStore.class, "role_count", sentryStore.getRoleCountGauge());
-      addGauge(SentryStore.class, "privilege_count", sentryStore.getPrivilegeCountGauge());
-      addGauge(SentryStore.class, "group_count", sentryStore.getGroupCountGauge());
+      addGauge(SentryStore.class, "role_count", new Gauge<Long>() {
+        @Override
+        public Long getValue() {
+          return sentryStore.getRoleCount();
+        }});
+      addGauge(SentryStore.class, "privilege_count", new Gauge<Long>() {
+        @Override
+        public Long getValue() {
+          return sentryStore.getPrivilegeCount();
+        }});
+      addGauge(SentryStore.class, "group_count", new Gauge<Long>() {
+        @Override
+        public Long getValue() {
+          return sentryStore.getGroupCount();
+        }});
       gaugesAdded = true;
     }
   }
 
+//@Override
+//public Gauge<Long> getGroupCountGauge() {
+//  return new Gauge< Long >() {
+//    @Override
+//    public Long getValue() {
+//      return getCount(MSentryGroup.class);
+//    }
+//  };
+//}
 
   /* Should be only called once to initialize the reporters
    */

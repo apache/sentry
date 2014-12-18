@@ -93,6 +93,7 @@ limitations under the License.
     <easymock.version>3.0</easymock.version>
     <objenesis.version>1.2</objenesis.version>
     <cglib.version>2.2</cglib.version>
+    <hazelcast.version>3.2</hazelcast.version>
   </properties>
 
   <dependencyManagement>

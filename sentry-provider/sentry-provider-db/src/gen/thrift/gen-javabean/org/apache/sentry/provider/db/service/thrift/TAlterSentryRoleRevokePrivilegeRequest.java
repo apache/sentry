@@ -721,14 +721,14 @@ public class TAlterSentryRoleRevokePrivilegeRequest implements org.apache.thrift
           case 6: // PRIVILEGES
             if (schemeField.type == org.apache.thrift.protocol.TType.SET) {
               {
-                org.apache.thrift.protocol.TSet _set32 = iprot.readSetBegin();
-                struct.privileges = new HashSet<TSentryPrivilege>(2*_set32.size);
-                for (int _i33 = 0; _i33 < _set32.size; ++_i33)
+                org.apache.thrift.protocol.TSet _set104 = iprot.readSetBegin();
+                struct.privileges = new HashSet<TSentryPrivilege>(2*_set104.size);
+                for (int _i105 = 0; _i105 < _set104.size; ++_i105)
                 {
-                  TSentryPrivilege _elem34; // required
-                  _elem34 = new TSentryPrivilege();
-                  _elem34.read(iprot);
-                  struct.privileges.add(_elem34);
+                  TSentryPrivilege _elem106; // required
+                  _elem106 = new TSentryPrivilege();
+                  _elem106.read(iprot);
+                  struct.privileges.add(_elem106);
                 }
                 iprot.readSetEnd();
               }
@@ -775,9 +775,9 @@ public class TAlterSentryRoleRevokePrivilegeRequest implements org.apache.thrift
           oprot.writeFieldBegin(PRIVILEGES_FIELD_DESC);
           {
             oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, struct.privileges.size()));
-            for (TSentryPrivilege _iter35 : struct.privileges)
+            for (TSentryPrivilege _iter107 : struct.privileges)
             {
-              _iter35.write(oprot);
+              _iter107.write(oprot);
             }
             oprot.writeSetEnd();
           }
@@ -818,9 +818,9 @@ public class TAlterSentryRoleRevokePrivilegeRequest implements org.apache.thrift
       if (struct.isSetPrivileges()) {
         {
           oprot.writeI32(struct.privileges.size());
-          for (TSentryPrivilege _iter36 : struct.privileges)
+          for (TSentryPrivilege _iter108 : struct.privileges)
           {
-            _iter36.write(oprot);
+            _iter108.write(oprot);
           }
         }
       }
@@ -843,14 +843,14 @@ public class TAlterSentryRoleRevokePrivilegeRequest implements org.apache.thrift
       }
       if (incoming.get(1)) {
         {
-          org.apache.thrift.protocol.TSet _set37 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
-          struct.privileges = new HashSet<TSentryPrivilege>(2*_set37.size);
-          for (int _i38 = 0; _i38 < _set37.size; ++_i38)
+          org.apache.thrift.protocol.TSet _set109 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
+          struct.privileges = new HashSet<TSentryPrivilege>(2*_set109.size);
+          for (int _i110 = 0; _i110 < _set109.size; ++_i110)
           {
-            TSentryPrivilege _elem39; // required
-            _elem39 = new TSentryPrivilege();
-            _elem39.read(iprot);
-            struct.privileges.add(_elem39);
+            TSentryPrivilege _elem111; // required
+            _elem111 = new TSentryPrivilege();
+            _elem111.read(iprot);
+            struct.privileges.add(_elem111);
           }
         }
         struct.setPrivilegesIsSet(true);

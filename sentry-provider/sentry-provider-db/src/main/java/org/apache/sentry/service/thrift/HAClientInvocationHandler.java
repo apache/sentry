@@ -51,7 +51,7 @@ public class HAClientInvocationHandler implements InvocationHandler {
 
   public HAClientInvocationHandler(Configuration conf) throws Exception {
     this.conf = conf;
-    manager = new ServiceManager(new HAContext(conf));
+    manager = new ServiceManager(HAContext.get(conf));
     checkClientConf();
     renewSentryClient();
   }

@@ -51,6 +51,17 @@ public class HAContext {
   private static final Logger LOGGER = LoggerFactory.getLogger(HAContext.class);
 
   public final static String SENTRY_SERVICE_REGISTER_NAMESPACE = "sentry-service";
+
+  // Implement singleton
+  private static HAContext haContext;
+
+  public synchronized static HAContext get(Configuration conf) throws Exception {
+    if (haContext == null) {
+      haContext = new HAContext(conf);
+    }
+    return haContext;
+  }
+
   private final String zookeeperQuorum;
   private final int retriesMaxCount;
   private final int sleepMsBetweenRetries;
@@ -62,7 +73,7 @@ public class HAContext {
   private final CuratorFramework curatorFramework;
   private final RetryPolicy retryPolicy;
 
-  public HAContext(Configuration conf) throws Exception {
+  HAContext(Configuration conf) throws Exception {
     this.zookeeperQuorum = conf.get(ServerConfig.SENTRY_HA_ZOOKEEPER_QUORUM,
         ServerConfig.SENTRY_HA_ZOOKEEPER_QUORUM_DEFAULT);
     this.retriesMaxCount = conf.getInt(ServerConfig.SENTRY_HA_ZOOKEEPER_RETRIES_MAX_COUNT,

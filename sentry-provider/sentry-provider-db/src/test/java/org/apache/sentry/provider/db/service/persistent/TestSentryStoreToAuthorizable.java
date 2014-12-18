@@ -32,55 +32,55 @@ public class TestSentryStoreToAuthorizable {
   public void testServer() {
     privilege = new MSentryPrivilege(null, null, "server1", null, null, null, null, null);
     assertEquals("server=server1",
-        SentryStore.toAuthorizable(privilege));
+        StoreUtils.toAuthorizable(privilege));
     privilege = new MSentryPrivilege(null, null, "server1", null, null, null, null,
         AccessConstants.ALL);
     assertEquals("server=server1",
-        SentryStore.toAuthorizable(privilege));
+        StoreUtils.toAuthorizable(privilege));
   }
 
   @Test
   public void testTable() {
     privilege = new MSentryPrivilege(null, null, "server1", "db1", "tbl1", null, null, null);
     assertEquals("server=server1->db=db1->table=tbl1",
-        SentryStore.toAuthorizable(privilege));
+        StoreUtils.toAuthorizable(privilege));
     privilege = new MSentryPrivilege(null, null, "server1", "db1", "tbl1", null, null,
         AccessConstants.INSERT);
     assertEquals("server=server1->db=db1->table=tbl1->action=insert",
-        SentryStore.toAuthorizable(privilege));
+        StoreUtils.toAuthorizable(privilege));
     privilege = new MSentryPrivilege(null, null, "server1", "db1", "tbl1", null, null,
         AccessConstants.SELECT);
     assertEquals("server=server1->db=db1->table=tbl1->action=select",
-        SentryStore.toAuthorizable(privilege));
+        StoreUtils.toAuthorizable(privilege));
     privilege = new MSentryPrivilege(null, null, "server1", "db1", "tbl1", null, null,
         AccessConstants.ALL);
     assertEquals("server=server1->db=db1->table=tbl1",
-        SentryStore.toAuthorizable(privilege));
+        StoreUtils.toAuthorizable(privilege));
   }
 
   @Test
   public void testDb() {
     privilege = new MSentryPrivilege(null, null, "server1", "db1", null, null, null, null);
     assertEquals("server=server1->db=db1",
-        SentryStore.toAuthorizable(privilege));
+        StoreUtils.toAuthorizable(privilege));
     privilege = new MSentryPrivilege(null, null, "server1", "db1", null, null, null,
         AccessConstants.ALL);
     assertEquals("server=server1->db=db1",
-        SentryStore.toAuthorizable(privilege));
+        StoreUtils.toAuthorizable(privilege));
   }
 
   @Test
   public void testUri() {
     privilege = new MSentryPrivilege(null, null, "server1", null, null, null, "file:///", null);
     assertEquals("server=server1->uri=file:///",
-        SentryStore.toAuthorizable(privilege));
+        StoreUtils.toAuthorizable(privilege));
     privilege = new MSentryPrivilege(null, null, "server1", null, null, null, "file:///",
         AccessConstants.SELECT);
     assertEquals("server=server1->uri=file:///->action=select",
-        SentryStore.toAuthorizable(privilege));
+        StoreUtils.toAuthorizable(privilege));
     privilege = new MSentryPrivilege(null, null, "server1", null, null, null, "file:///",
         AccessConstants.ALL);
     assertEquals("server=server1->uri=file:///",
-        SentryStore.toAuthorizable(privilege));
+        StoreUtils.toAuthorizable(privilege));
   }
 }

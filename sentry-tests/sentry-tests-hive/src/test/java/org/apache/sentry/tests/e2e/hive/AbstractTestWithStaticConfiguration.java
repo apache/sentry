@@ -60,12 +60,15 @@ import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
 import org.apache.tools.ant.util.StringUtils;
 import org.junit.After;
 import org.junit.AfterClass;
+
 import static org.junit.Assert.assertTrue;
+
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 
@@ -128,6 +131,8 @@ public abstract class AbstractTestWithStaticConfiguration {
   protected static SentryService sentryServer;
   protected static Configuration sentryConf;
   protected static Context context;
+  protected static boolean useInMemDb;
+  protected static boolean useFileStore;
   protected final String semanticException = "SemanticException No valid privileges";
 
 
@@ -365,6 +370,17 @@ public abstract class AbstractTestWithStaticConfiguration {
     for (Map.Entry<String, String> entry : properties.entrySet()) {
       sentryConf.set(entry.getKey(), entry.getValue());
     }
+    // InMem Db
+    if (useInMemDb || !Strings.isNullOrEmpty(System.getenv("USE_IN_MEM"))) {
+      baseDir.mkdirs();
+      sentryConf.set("sentry.store.type", "mem");
+      System.out.println("\n\n\n ****** Using InMem Store *******\n\n\n");
+    } else if (useFileStore || !Strings.isNullOrEmpty(System.getenv("USE_FILE_STORE"))) {
+      baseDir.mkdirs();
+      sentryConf.set("sentry.store.type", "file");
+      System.out.println("\n\n\n ****** Using File Log Store *******\n\n\n");
+    }
+
     sentryServer = new SentryServiceFactory().create(sentryConf);
     properties.put(ClientConfig.SERVER_RPC_ADDRESS, sentryServer.getAddress()
         .getHostName());

@@ -25,7 +25,8 @@ import javax.jdo.annotations.PersistenceCapable;
 
 import org.apache.sentry.core.common.utils.PathUtils;
 import org.apache.sentry.core.model.db.AccessConstants;
-import org.apache.sentry.provider.db.service.persistent.SentryStore;
+import org.apache.sentry.provider.db.service.persistent.DbSentryStore;
+import org.apache.sentry.provider.db.service.persistent.StoreUtils;
 
 /**
  * Database backed Sentry Privilege. Any changes to this object
@@ -58,11 +59,11 @@ public class MSentryPrivilege {
       String URI, String action, Boolean grantOption) {
     this.privilegeScope = privilegeScope;
     this.serverName = serverName;
-    this.dbName = SentryStore.toNULLCol(dbName);
-    this.tableName = SentryStore.toNULLCol(tableName);
-    this.columnName = SentryStore.toNULLCol(columnName);
-    this.URI = SentryStore.toNULLCol(URI);
-    this.action = SentryStore.toNULLCol(action);
+    this.dbName = StoreUtils.toNULLCol(dbName);
+    this.tableName = StoreUtils.toNULLCol(tableName);
+    this.columnName = StoreUtils.toNULLCol(columnName);
+    this.URI = StoreUtils.toNULLCol(URI);
+    this.action = StoreUtils.toNULLCol(action);
     this.grantOption = grantOption;
     this.roles = new HashSet<MSentryRole>();
   }
@@ -77,11 +78,11 @@ public class MSentryPrivilege {
   public MSentryPrivilege(MSentryPrivilege other) {
     this.privilegeScope = other.privilegeScope;
     this.serverName = other.serverName;
-    this.dbName = SentryStore.toNULLCol(other.dbName);
-    this.tableName = SentryStore.toNULLCol(other.tableName);
-    this.columnName = SentryStore.toNULLCol(other.columnName);
-    this.URI = SentryStore.toNULLCol(other.URI);
-    this.action = SentryStore.toNULLCol(other.action);
+    this.dbName = StoreUtils.toNULLCol(other.dbName);
+    this.tableName = StoreUtils.toNULLCol(other.tableName);
+    this.columnName = StoreUtils.toNULLCol(other.columnName);
+    this.URI = StoreUtils.toNULLCol(other.URI);
+    this.action = StoreUtils.toNULLCol(other.action);
     this.grantOption = other.grantOption;
     this.roles = new HashSet<MSentryRole>();
     for (MSentryRole role : other.roles) {
@@ -304,7 +305,7 @@ public class MSentryPrivilege {
   }
 
   private boolean isNULL(String s) {
-    return SentryStore.isNULL(s);
+    return StoreUtils.isNULL(s);
   }
 
   public boolean isActionALL() {

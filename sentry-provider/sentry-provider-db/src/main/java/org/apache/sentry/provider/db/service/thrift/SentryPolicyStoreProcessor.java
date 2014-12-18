@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.codahale.metrics.Timer;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
@@ -52,8 +53,10 @@ import org.apache.sentry.provider.db.log.entity.JsonLogEntityFactory;
 import org.apache.sentry.provider.db.log.util.Constants;
 import org.apache.sentry.provider.db.service.persistent.CommitContext;
 import org.apache.sentry.provider.db.service.persistent.HAContext;
-import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.provider.db.service.persistent.ServiceRegister;
+import org.apache.sentry.provider.db.service.persistent.DbSentryStore;
+import org.apache.sentry.provider.db.service.persistent.SentryStore;
+import org.apache.sentry.provider.db.service.persistent.SentryStoreFactory;
 import org.apache.sentry.provider.db.service.thrift.PolicyStoreConstants.PolicyStoreServerConfig;
 import org.apache.sentry.service.thrift.ServiceConstants.ConfUtilties;
 import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
@@ -103,13 +106,13 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     isReady = false;
     if(conf.getBoolean(ServerConfig.SENTRY_HA_ENABLED,
         ServerConfig.SENTRY_HA_ENABLED_DEFAULT)){
-      haContext = new HAContext(conf);
-      sentryStore = new SentryStore(conf);
+      haContext = HAContext.get(conf);
+      sentryStore = SentryStoreFactory.createSentryStore(conf);
       ServiceRegister reg = new ServiceRegister(haContext);
       reg.regService(conf.get(ServerConfig.RPC_ADDRESS),
           conf.getInt(ServerConfig.RPC_PORT,ServerConfig.RPC_PORT_DEFAULT));
     } else {
-      sentryStore = new SentryStore(conf);
+      sentryStore = SentryStoreFactory.createSentryStore(conf);
     }
     isReady = true;
     adminGroups = ImmutableSet.copyOf(toTrimedLower(Sets.newHashSet(conf.getStrings(

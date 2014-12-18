@@ -52,9 +52,63 @@ struct TSentryPrivilege {
 10: optional string columnName = "",
 }
 
+struct TSentryAuthorizable {
+1: required string server,
+2: optional string uri,
+3: optional string db,
+4: optional string table,
+5: optional string column,
+}
+
+enum TSentryStoreOp {
+  CREATE_ROLE = 0,
+  DROP_ROLE = 1,
+  GRANT_PRIVILEGES = 2,
+  REVOKE_PRVILEGES = 3,
+  ADD_GROUPS = 4,
+  DEL_GROUPS = 5,
+  SET_VERSION = 6,
+  DROP_PRIVILEGE = 7,
+  RENAME_PRIVILEGE = 8,
+  SNAPSHOT = 9,
+  NO_OP = 100
+}
+
+struct TStorePrivilege {
+1: required TSentryGrantOption grantOption,
+2: required i16 privilege 
+}
+
+struct TStoreAuthorizable {
+1: required string name,
+2: required string type,
+3: optional map<string, TStorePrivilege> privileges,
+4: optional set<i32> children 
+}
+
+struct TStoreSnapshot {
+1: required map<string, TStoreAuthorizable> rootAuthorizable,
+2: required map<string, set<string>> roleToGroups,
+3: required map<i32, TStoreAuthorizable> objIds
+}
+
 # TODO can this be deleted? it's not adding value to TAlterSentryRoleAddGroupsRequest
 struct TSentryGroup {
 1: required string groupName
+}
+
+# Represents a Privilege in transport from the client to the server
+struct TSentryStoreRecord {
+1: required TSentryStoreOp storeOp,
+2: optional string roleName,
+3: optional string grantorPrincipal,
+4: optional set<TSentryPrivilege> privileges,
+5: optional set<string> groups,
+6: optional TSentryAuthorizable authorizable,
+7: optional TSentryAuthorizable newAuthorizable,
+8: optional string version,
+9: optional string versionComment,
+10: optional TStoreSnapshot snapshot
 }
 
 # CREATE ROLE r1
@@ -141,14 +195,6 @@ struct TSentryRole {
 struct TListSentryRolesResponse {
 1: required sentry_common_service.TSentryResponseStatus status
 2: optional set<TSentryRole> roles
-}
-
-struct TSentryAuthorizable {
-1: required string server,
-2: optional string uri,
-3: optional string db,
-4: optional string table,
-5: optional string column,
 }
 
 # SHOW GRANT

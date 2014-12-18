@@ -631,14 +631,14 @@ public class TAlterSentryRoleDeleteGroupsRequest implements org.apache.thrift.TB
           case 5: // GROUPS
             if (schemeField.type == org.apache.thrift.protocol.TType.SET) {
               {
-                org.apache.thrift.protocol.TSet _set8 = iprot.readSetBegin();
-                struct.groups = new HashSet<TSentryGroup>(2*_set8.size);
-                for (int _i9 = 0; _i9 < _set8.size; ++_i9)
+                org.apache.thrift.protocol.TSet _set80 = iprot.readSetBegin();
+                struct.groups = new HashSet<TSentryGroup>(2*_set80.size);
+                for (int _i81 = 0; _i81 < _set80.size; ++_i81)
                 {
-                  TSentryGroup _elem10; // required
-                  _elem10 = new TSentryGroup();
-                  _elem10.read(iprot);
-                  struct.groups.add(_elem10);
+                  TSentryGroup _elem82; // required
+                  _elem82 = new TSentryGroup();
+                  _elem82.read(iprot);
+                  struct.groups.add(_elem82);
                 }
                 iprot.readSetEnd();
               }
@@ -677,9 +677,9 @@ public class TAlterSentryRoleDeleteGroupsRequest implements org.apache.thrift.TB
         oprot.writeFieldBegin(GROUPS_FIELD_DESC);
         {
           oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, struct.groups.size()));
-          for (TSentryGroup _iter11 : struct.groups)
+          for (TSentryGroup _iter83 : struct.groups)
           {
-            _iter11.write(oprot);
+            _iter83.write(oprot);
           }
           oprot.writeSetEnd();
         }
@@ -707,9 +707,9 @@ public class TAlterSentryRoleDeleteGroupsRequest implements org.apache.thrift.TB
       oprot.writeString(struct.roleName);
       {
         oprot.writeI32(struct.groups.size());
-        for (TSentryGroup _iter12 : struct.groups)
+        for (TSentryGroup _iter84 : struct.groups)
         {
-          _iter12.write(oprot);
+          _iter84.write(oprot);
         }
       }
     }
@@ -724,14 +724,14 @@ public class TAlterSentryRoleDeleteGroupsRequest implements org.apache.thrift.TB
       struct.roleName = iprot.readString();
       struct.setRoleNameIsSet(true);
       {
-        org.apache.thrift.protocol.TSet _set13 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
-        struct.groups = new HashSet<TSentryGroup>(2*_set13.size);
-        for (int _i14 = 0; _i14 < _set13.size; ++_i14)
+        org.apache.thrift.protocol.TSet _set85 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
+        struct.groups = new HashSet<TSentryGroup>(2*_set85.size);
+        for (int _i86 = 0; _i86 < _set85.size; ++_i86)
         {
-          TSentryGroup _elem15; // required
-          _elem15 = new TSentryGroup();
-          _elem15.read(iprot);
-          struct.groups.add(_elem15);
+          TSentryGroup _elem87; // required
+          _elem87 = new TSentryGroup();
+          _elem87.read(iprot);
+          struct.groups.add(_elem87);
         }
       }
       struct.setGroupsIsSet(true);
