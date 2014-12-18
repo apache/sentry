@@ -40,7 +40,7 @@ limitations under the License.
       <artifactId>solr-test-framework</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.solr</groupId>
+      <groupId>org.apache.sentry</groupId>
       <artifactId>solr-sentry-handlers</artifactId>
     </dependency>
     <dependency>

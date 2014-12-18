@@ -59,6 +59,8 @@
         <include>sentry-provider/**</include>
         <include>sentry-policy/**</include>
         <include>sentry-tests/**</include>
+        <include>sentry-hdfs/**</include>
+        <include>sentry-solr/**</include>
       </includes>
       <outputDirectory>/</outputDirectory>
     </fileSet>
