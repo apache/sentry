@@ -16,14 +16,39 @@
  */
 package org.apache.sentry.core.model.search;
 
-import org.apache.sentry.core.common.Authorizable;
+/**
+ * Represents the field authorizable in the solr model
+ */
+public class Field implements SearchModelAuthorizable{
 
-public interface SearchModelAuthorizable extends Authorizable {
+  private final String name;
+  /**
+   * Represents all fields
+   */
+  public static final Field ALL = new Field(SearchConstants.ALL);
 
-  public enum AuthorizableType {
-    Collection,
-    Field
-  };
+  public Field(String name) {
+    this.name = name;
+  }
 
-  public AuthorizableType getAuthzType();
+  @Override
+  public AuthorizableType getAuthzType() {
+    return AuthorizableType.Field;
+  }
+
+  @Override
+  public String toString() {
+    return "Field [name=" + name + "]";
+  }
+
+  @Override
+  public String getTypeName() {
+    return getAuthzType().name();
+  }
+
+  @Override
+  public String getName() {
+    return name;
+  }
+
 }

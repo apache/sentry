@@ -219,7 +219,7 @@ public class SentryStore {
    *
    * Synchronized because we obtain persistence manager
    */
-  private synchronized PersistenceManager openTransaction() {
+  public synchronized PersistenceManager openTransaction() {
     PersistenceManager pm = pmf.getPersistenceManager();
     Transaction currentTransaction = pm.currentTransaction();
     currentTransaction.begin();
@@ -229,7 +229,7 @@ public class SentryStore {
   /**
    * Synchronized due to sequence id generation
    */
-  private synchronized CommitContext commitUpdateTransaction(PersistenceManager pm) {
+  public synchronized CommitContext commitUpdateTransaction(PersistenceManager pm) {
     commitTransaction(pm);
     return new CommitContext(SERVER_UUID, incrementGetSequenceId());
   }
@@ -244,7 +244,7 @@ public class SentryStore {
     return ++commitSequenceId;
   }
 
-  private void commitTransaction(PersistenceManager pm) {
+  public void commitTransaction(PersistenceManager pm) {
     Transaction currentTransaction = pm.currentTransaction();
     try {
       Preconditions.checkState(currentTransaction.isActive(), "Transaction is not active");
@@ -254,7 +254,7 @@ public class SentryStore {
     }
   }
 
-  private void rollbackTransaction(PersistenceManager pm) {
+  public void rollbackTransaction(PersistenceManager pm) {
     if (pm == null || pm.isClosed()) {
       return;
     }
@@ -271,7 +271,7 @@ public class SentryStore {
   Get the MSentry object from roleName
   Note: Should be called inside a transaction
    */
-  private MSentryRole getMSentryRole(PersistenceManager pm, String roleName) {
+  public MSentryRole getMSentryRole(PersistenceManager pm, String roleName) {
     Query query = pm.newQuery(MSentryRole.class);
     query.setFilter("this.roleName == t");
     query.declareParameters("java.lang.String t");
@@ -744,6 +744,8 @@ public class SentryStore {
         pm.retrieve(sentryRole);
         int numPrivs = sentryRole.getPrivileges().size();
         sentryRole.removePrivileges();
+        //with SENTRY-398 generic model
+        sentryRole.removeGMPrivileges();
         privCleaner.incPrivRemoval(numPrivs);
         pm.deletePersistent(sentryRole);
       }
@@ -1171,7 +1173,7 @@ public class SentryStore {
     }
   }
 
-  private Set<MSentryRole> getRolesForGroups(PersistenceManager pm, Set<String> groups) {
+  public Set<MSentryRole> getRolesForGroups(PersistenceManager pm, Set<String> groups) {
     Set<MSentryRole> result = new HashSet<MSentryRole>();
     Query query = pm.newQuery(MSentryGroup.class);
     query.setFilter("this.groupName == t");

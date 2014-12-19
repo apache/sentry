@@ -35,6 +35,8 @@ public class sentry_common_serviceConstants {
 
   public static final int TSENTRY_SERVICE_V1 = 1;
 
+  public static final int TSENTRY_SERVICE_V2 = 1;
+
   public static final int TSENTRY_STATUS_OK = 0;
 
   public static final int TSENTRY_STATUS_ALREADY_EXISTS = 1;

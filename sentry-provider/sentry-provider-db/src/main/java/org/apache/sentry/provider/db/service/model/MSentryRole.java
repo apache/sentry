@@ -36,6 +36,9 @@ public class MSentryRole {
   private String roleName;
   // set of privileges granted to this role
   private Set<MSentryPrivilege> privileges;
+  // set of generic model privileges grant ro this role
+  private Set<MSentryGMPrivilege> gmPrivileges;
+
   // set of groups this role belongs to
   private Set<MSentryGroup> groups;
   private long createTime;
@@ -44,6 +47,7 @@ public class MSentryRole {
     this.roleName = roleName;
     this.createTime = createTime;
     privileges = new HashSet<MSentryPrivilege>();
+    gmPrivileges = new HashSet<MSentryGMPrivilege>();
     groups = new HashSet<MSentryGroup>();
   }
 
@@ -71,6 +75,14 @@ public class MSentryRole {
     return privileges;
   }
 
+  public Set<MSentryGMPrivilege> getGmPrivileges() {
+    return gmPrivileges;
+  }
+
+  public void setGmPrivileges(Set<MSentryGMPrivilege> gmPrivileges) {
+    this.gmPrivileges = gmPrivileges;
+  }
+
   public void setGroups(Set<MSentryGroup> groups) {
     this.groups = groups;
   }
@@ -93,6 +105,25 @@ public class MSentryRole {
     if (privileges.add(privilege)) {
       privilege.appendRole(this);
     }
+  }
+
+  public void removeGMPrivilege(MSentryGMPrivilege gmPrivilege) {
+    if (gmPrivileges.remove(gmPrivilege)) {
+      gmPrivilege.removeRole(this);
+    }
+  }
+
+  public void appendGMPrivilege(MSentryGMPrivilege gmPrivilege) {
+    if (gmPrivileges.add(gmPrivilege)) {
+      gmPrivilege.appendRole(this);
+    }
+  }
+
+  public void removeGMPrivileges() {
+    for (MSentryGMPrivilege privilege : ImmutableSet.copyOf(gmPrivileges)) {
+      privilege.removeRole(this);
+    }
+    Preconditions.checkState(gmPrivileges.isEmpty(), "gmPrivileges should be empty: " + gmPrivileges);
   }
 
   public void appendGroups(Set<MSentryGroup> groups) {
@@ -121,7 +152,7 @@ public class MSentryRole {
 
   @Override
   public String toString() {
-    return "MSentryRole [roleName=" + roleName + ", privileges=[..]"
+    return "MSentryRole [roleName=" + roleName + ", privileges=[..]" + ", gmPrivileges=[..]"
         + ", groups=[...]" + ", createTime=" + createTime + "]";
   }
 
@@ -149,4 +180,5 @@ public class MSentryRole {
       return false;
     return true;
   }
+
 }

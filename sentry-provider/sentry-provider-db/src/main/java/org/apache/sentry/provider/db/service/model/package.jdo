@@ -64,8 +64,18 @@
             <element>
                 <column name="DB_PRIVILEGE_ID"/>
             </element>
-      </field>  
-      
+      </field>
+
+      <field name = "gmPrivileges" table="SENTRY_ROLE_GM_PRIVILEGE_MAP" default-fetch-group="true">
+        <collection element-type="org.apache.sentry.provider.db.service.model.MSentryGMPrivilege"/>
+            <join>
+                <column name="ROLE_ID"/>
+            </join>
+            <element>
+                <column name="GM_PRIVILEGE_ID"/>
+            </element>
+      </field>
+
       <field name = "groups" table="SENTRY_ROLE_GROUP_MAP" >
         <collection element-type="org.apache.sentry.provider.db.service.model.MSentryGroup"/>
             <join>
@@ -74,10 +84,10 @@
             <element>
                 <column name="GROUP_ID"/>
             </element>
-      </field>  
+      </field>
     </class>
-    
-    <class name="MSentryPrivilege" identity-type="datastore" table="SENTRY_DB_PRIVILEGE" detachable="true">  
+
+    <class name="MSentryPrivilege" identity-type="datastore" table="SENTRY_DB_PRIVILEGE" detachable="true">
       <datastore-identity>
         <column name="DB_PRIVILEGE_ID"/>
       </datastore-identity>
@@ -119,8 +129,74 @@
       </field>
       <field name="roles" mapped-by="privileges">
          <collection element-type="org.apache.sentry.provider.db.service.model.MSentryRole"/>
-      </field>  
+      </field>
     </class>
+
+    <class name="MSentryGMPrivilege" identity-type="datastore" table="SENTRY_GM_PRIVILEGE" detachable="true">
+      <datastore-identity>
+        <column name="GM_PRIVILEGE_ID"/>
+      </datastore-identity>
+    <index name="GM_PRIVILEGE_INDEX" unique="true">
+        <field name="componentName"/>
+        <field name="serviceName"/>
+        <field name="resourceName0"/>
+        <field name="resourceType0"/>
+        <field name="resourceName1"/>
+        <field name="resourceType1"/>
+        <field name="resourceName2"/>
+        <field name="resourceType2"/>
+        <field name="resourceName3"/>
+        <field name="resourceType3"/>
+        <field name="action"/>
+        <field name="grantOption"/>
+	  </index>
+      <field name="componentName">
+        <column name="COMPONENT_NAME" length="100" jdbc-type="VARCHAR"/>
+      </field>
+      <field name="serviceName">
+        <column name="SERVICE_NAME" length="100" jdbc-type="VARCHAR"/>
+      </field>
+      <field name="resourceName0">
+        <column name="RESOURCE_NAME_0" length="100" jdbc-type="VARCHAR"/>
+      </field>
+      <field name="resourceType0">
+        <column name="RESOURCE_TYPE_0" length="100" jdbc-type="VARCHAR"/>
+      </field>
+      <field name="resourceName1">
+        <column name="RESOURCE_NAME_1" length="100" jdbc-type="VARCHAR"/>
+      </field>
+      <field name="resourceType1">
+        <column name="RESOURCE_TYPE_1" length="100" jdbc-type="VARCHAR"/>
+      </field>
+      <field name="resourceName2">
+        <column name="RESOURCE_NAME_2" length="100" jdbc-type="VARCHAR"/>
+      </field>
+      <field name="resourceType2">
+        <column name="RESOURCE_TYPE_2" length="100" jdbc-type="VARCHAR"/>
+      </field>
+      <field name="resourceName3">
+        <column name="RESOURCE_NAME_3" length="100" jdbc-type="VARCHAR"/>
+      </field>
+      <field name="resourceType3">
+        <column name="RESOURCE_TYPE_3" length="100" jdbc-type="VARCHAR"/>
+      </field>
+      <field name="action">
+        <column name="ACTION" length="100" jdbc-type="VARCHAR"/>
+      </field>
+      <field name="scope">
+        <column name="SCOPE" length="100" jdbc-type="VARCHAR"/>
+      </field>
+      <field name = "createTime">
+        <column name = "CREATE_TIME" jdbc-type="BIGINT"/>
+      </field>
+      <field name="grantOption">
+        <column name="WITH_GRANT_OPTION" length="1" jdbc-type="CHAR"/>
+      </field>
+      <field name="roles" mapped-by="gmPrivileges">
+        <collection element-type="org.apache.sentry.provider.db.service.model.MSentryRole"/>
+      </field>
+    </class>
+
     <class name="MSentryVersion" table="SENTRY_VERSION" identity-type="datastore" detachable="true">
       <datastore-identity>
         <column name="VER_ID"/>

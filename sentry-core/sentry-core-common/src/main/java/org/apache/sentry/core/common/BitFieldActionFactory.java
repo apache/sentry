@@ -15,14 +15,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.provider.db.service.thrift;
+package org.apache.sentry.core.common;
 
-public class PolicyStoreConstants {
-  public static final String SENTRY_GENERIC_POLICY_NOTIFICATION = "sentry.generic.policy.notification";
-  public static final String SENTRY_GENERIC_POLICY_STORE = "sentry.generic.policy.store";
-  public static final String SENTRY_GENERIC_POLICY_STORE_DEFAULT =
-      "org.apache.sentry.provider.db.generic.service.persistent.DelegateSentryStore";
-  public static class PolicyStoreServerConfig {
-    public static final String NOTIFICATION_HANDLERS = "sentry.policy.store.notification.handlers";
-  }
+import java.util.List;
+
+public abstract class BitFieldActionFactory {
+  /**
+   * Get BitFieldAction list by the given action code.
+   * Take the Solr for example, the ALL action code is 0x0003, two bits are set.
+   * The return BitFieldAction list are UPDATE action(0x0001) and QUERY action(0x0002)
+   * @param actionCode
+   * @return The BitFieldAction List
+   */
+  public abstract List<? extends BitFieldAction> getActionsByCode(int actionCode);
+  /**
+   * Get the BitFieldAction from the given name
+   * @param name
+   * @return
+   */
+  public abstract BitFieldAction getActionByName(String name);
 }
