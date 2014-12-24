@@ -136,7 +136,7 @@ def mvn_clean(result, mvn_repo, output_dir):
     result.fatal("failed to clean project (exit code %d)" % (rc))
 
 def mvn_install(result, mvn_repo, output_dir):
-  rc = execute("mvn install -DskipTests -Dmaven.repo.local=%s 1>%s/install.txt 2>&1" % (mvn_repo, output_dir))
+  rc = execute("mvn install -U -DskipTests -Dmaven.repo.local=%s 1>%s/install.txt 2>&1" % (mvn_repo, output_dir))
   if rc != 0:
     result.fatal("failed to build with patch (exit code %d)" % (rc))
 
@@ -146,7 +146,7 @@ def find_all_files(top):
             yield os.path.join(root, f)
 
 def mvn_test(result, mvn_repo, output_dir):
-  rc = execute("mvn verify -Dmaven.repo.local=%s 1>%s/test.txt 2>&1" % (mvn_repo, output_dir))
+  rc = execute("mvn verify -fae -Dmaven.repo.local=%s 1>%s/test.txt 2>&1" % (mvn_repo, output_dir))
   if rc == 0:
     result.success("all tests passed")
   else:
