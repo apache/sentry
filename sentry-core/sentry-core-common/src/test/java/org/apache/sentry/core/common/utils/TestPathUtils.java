@@ -90,10 +90,6 @@ public class TestPathUtils {
     // for local test case
     assertEquals("file:///tmp/hive-user",
         PathUtils.parseURI("testLocal:///tmp/hive-warehouse", "/tmp/hive-user", true));
-    assertEquals("file://localhost:9999/tmp/hive-user", PathUtils.parseURI(
-        "file://localhost:9999/tmp/hive-warehouse", "file://localhost:9999/tmp/hive-user", true));
-    assertEquals("file://localhost:9999/tmp/hive-user", PathUtils.parseURI(
-        "file:///tmp/hive-warehouse", "file://localhost:9999/tmp/hive-user", true));
     try {
       PathUtils.parseURI("testLocal:///tmp/hive-warehouse", "tmp/hive-user", true);
       fail("IllegalStateException should be thrown");

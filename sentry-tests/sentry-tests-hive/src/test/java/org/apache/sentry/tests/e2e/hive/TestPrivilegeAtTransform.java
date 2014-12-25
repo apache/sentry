@@ -55,19 +55,23 @@ public class TestPrivilegeAtTransform extends AbstractTestWithStaticConfiguratio
    * 4. insert@table select@table cannot issue transform command
    * 5. select@view cannot issue transform command
    * 6. transform@server can issue the transform command
+   * 7. non-admin user with URI privilege on transform can execute query
    */
   @Test
   public void testTransform1() throws Exception {
     policyFile
       .addPermissionsToRole("all_db1", "server=server1->db=" + DB1)
+      .addPermissionsToRole("transform_uri", "server=server1->uri=file:///bin/cat")
       .addRolesToGroup(USERGROUP1, "all_db1")
+      .addRolesToGroup(USERGROUP2, "all_db1", "transform_uri")
       .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
     // verify by SQL
     // 1, 2
     String tableName1 = "tb_1";
-    String query = "select TRANSFORM(a.under_col, a.value) USING 'cat' AS (tunder_col, tvalue) FROM " + DB1 + "." + tableName1 + " a";
+    String query = "select TRANSFORM(a.under_col, a.value) "
+        + "USING '/bin/cat' AS (tunder_col, tvalue) FROM " + DB1 + "." + tableName1 + " a";
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
@@ -82,11 +86,10 @@ public class TestPrivilegeAtTransform extends AbstractTestWithStaticConfiguratio
     statement.close();
     connection.close();
 
+    // 3
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-
-    // 3
-    context.assertAuthzExecHookException(statement, query);
+    context.assertAuthzException(statement, query);
 
     // 4
     policyFile
@@ -94,7 +97,7 @@ public class TestPrivilegeAtTransform extends AbstractTestWithStaticConfiguratio
       .addPermissionsToRole("insert_tb1", "server=server1->db=" + DB1 + "->table=tb_1->action=insert")
       .addRolesToGroup(USERGROUP1, "select_tb1", "insert_tb1");
     writePolicyFile(policyFile);
-    context.assertAuthzExecHookException(statement, query);
+    context.assertAuthzException(statement, query);
 
     // 5
     policyFile
@@ -104,5 +107,12 @@ public class TestPrivilegeAtTransform extends AbstractTestWithStaticConfiguratio
     assertTrue(query, statement.execute(query));
     statement.close();
     connection.close();
+
+    connection = context.createConnection(USER2_1);
+    statement = context.createStatement(connection);
+    assertTrue(query, statement.execute(query));
+    statement.close();
+    connection.close();
+
   }
 }

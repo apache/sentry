@@ -39,8 +39,6 @@ public class HiveAuthzBindingSessionHook
 
   public static final String SEMANTIC_HOOK =
     "org.apache.sentry.binding.hive.HiveAuthzBindingHook";
-  public static final String PRE_EXEC_HOOK =
-    "org.apache.sentry.binding.hive.HiveAuthzBindingPreExecHook";
   public static final String FILTER_HOOK =
     "org.apache.sentry.binding.hive.HiveAuthzBindingHook";
   public static final String SCRATCH_DIR_PERMISSIONS = "700";
@@ -58,6 +56,7 @@ public class HiveAuthzBindingSessionHook
     ConfVars.SCRATCHDIRPERMISSION.varname,
     ConfVars.HIVE_SECURITY_COMMAND_WHITELIST.varname,
     ConfVars.HIVE_AUTHORIZATION_TASK_FACTORY.varname,
+    ConfVars.HIVE_CAPTURE_TRANSFORM_ENTITY.varname,
     HiveAuthzConf.HIVE_ACCESS_CONF_URL,
     HiveAuthzConf.HIVE_SENTRY_CONF_URL,
     HiveAuthzConf.HIVE_ACCESS_SUBJECT_NAME,
@@ -105,9 +104,9 @@ public class HiveAuthzBindingSessionHook
 
     appendConfVar(sessionConf, ConfVars.SEMANTIC_ANALYZER_HOOK.varname,
         SEMANTIC_HOOK);
-    appendConfVar(sessionConf, ConfVars.PREEXECHOOKS.varname, PRE_EXEC_HOOK);
     sessionConf.setVar(ConfVars.HIVE_SECURITY_COMMAND_WHITELIST, "set");
     sessionConf.setVar(ConfVars.SCRATCHDIRPERMISSION, SCRATCH_DIR_PERMISSIONS);
+    sessionConf.setBoolVar(ConfVars.HIVE_CAPTURE_TRANSFORM_ENTITY, true);
 
     // set user name
     sessionConf.set(HiveAuthzConf.HIVE_ACCESS_SUBJECT_NAME, sessionHookContext.getSessionUser());

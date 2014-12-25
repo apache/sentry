@@ -563,7 +563,8 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
     case DFS_DIR:
     case LOCAL_DIR:
       try {
-        objectHierarchy.add(parseURI(entity.toString()));
+        objectHierarchy.add(parseURI(entity.toString(),
+            entity.getType().equals(Entity.Type.LOCAL_DIR)));
       } catch (Exception e) {
         throw new AuthorizationException("Failed to get File URI", e);
       }

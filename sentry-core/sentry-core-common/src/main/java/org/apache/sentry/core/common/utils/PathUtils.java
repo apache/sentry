@@ -120,6 +120,7 @@ public class PathUtils {
 
       if (StringUtils.isEmpty(uriScheme) || isLocal) {
         uriScheme = LOCAL_FILE_SCHEMA;
+        uriAuthority = "";
       }
 
       uriPath = new Path(uriScheme + AUTHORITY_PREFIX + StringUtils.trimToEmpty(uriAuthority)
