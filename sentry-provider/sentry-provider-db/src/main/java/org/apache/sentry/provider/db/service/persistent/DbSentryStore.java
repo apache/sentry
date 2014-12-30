@@ -66,6 +66,7 @@ import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilegeMap;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
+import org.apache.sentry.provider.db.service.thrift.TStoreSnapshot;
 import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.datanucleus.store.rdbms.exceptions.MissingTableException;
@@ -87,7 +88,7 @@ import com.google.common.collect.Sets;
  * such as role and group names will be normalized to lowercase
  * in addition to starting and ending whitespace.
  */
-public class SentryStore {
+public class DbSentryStore implements SentryStore {
   private static final UUID SERVER_UUID = UUID.randomUUID();
   private static final Logger LOGGER = LoggerFactory
           .getLogger(SentryStore.class);
@@ -119,7 +120,7 @@ public class SentryStore {
   private PrivCleaner privCleaner = null;
   private Thread privCleanerThread = null;
 
-  public SentryStore(Configuration conf) throws SentryNoSuchObjectException,
+  public DbSentryStore(Configuration conf) throws SentryNoSuchObjectException,
   SentryAccessDeniedException {
     commitSequenceId = 0;
     this.conf = conf;
@@ -1758,6 +1759,52 @@ public class SentryStore {
       }
     }
   }
+
+  // TODO : Fix this : START
+
+  @Override
+  public Configuration getConfiguration() {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public Set<String> getGroupsForRole(String roleName) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public long getRoleCount() {
+    // TODO Auto-generated method stub
+    return 0;
+  }
+
+  @Override
+  public long getPrivilegeCount() {
+    // TODO Auto-generated method stub
+    return 0;
+  }
+
+  @Override
+  public long getGroupCount() {
+    // TODO Auto-generated method stub
+    return 0;
+  }
+
+  @Override
+  public TStoreSnapshot toSnapshot() {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public void fromSnapshot(TStoreSnapshot snapshot) {
+    // TODO Auto-generated method stub
+    
+  }
+
+  // TODO : Fix this : END 
 
   /**
    * This thread exists to clean up "orphaned" privilege rows in the database.

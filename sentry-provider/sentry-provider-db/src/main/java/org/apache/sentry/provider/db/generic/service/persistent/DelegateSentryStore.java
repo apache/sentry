@@ -37,7 +37,7 @@ import org.apache.sentry.provider.db.SentryNoSuchObjectException;
 import org.apache.sentry.provider.db.service.model.MSentryGroup;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
 import org.apache.sentry.provider.db.service.persistent.CommitContext;
-import org.apache.sentry.provider.db.service.persistent.SentryStore;
+import org.apache.sentry.provider.db.service.persistent.DbSentryStore;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessor;
 import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
@@ -57,7 +57,7 @@ import com.google.common.collect.Sets;
  * resourceName2=cl1,resourceType2=COLUMN ) of generic privilege table
  */
 public class DelegateSentryStore implements SentryStoreLayer {
-  private SentryStore delegate;
+  private DbSentryStore delegate;
   private Configuration conf;
   private Set<String> adminGroups;
   private PrivilegeOperatePersistence privilegeOperator;
@@ -69,7 +69,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
     conf.set(ServerConfig.SENTRY_STORE_ORPHANED_PRIVILEGE_REMOVAL,"false");
     this.conf = conf;
     //delegated old sentryStore
-    this.delegate = new SentryStore(conf);
+    this.delegate = new DbSentryStore(conf);
     adminGroups = ImmutableSet.copyOf(toTrimedLower(Sets.newHashSet(conf.getStrings(
         ServerConfig.ADMIN_GROUPS, new String[]{}))));
   }
