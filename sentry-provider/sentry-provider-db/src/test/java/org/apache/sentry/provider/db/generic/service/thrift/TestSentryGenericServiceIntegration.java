@@ -79,354 +79,393 @@ public class TestSentryGenericServiceIntegration extends SentryServiceIntegratio
 
   @Test
   public void testCreateDropShowRole() throws Exception {
-    String requestorUserName = ADMIN_USER;
-    Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
-    String roleName = "admin_r";
-    setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
-    writePolicyFile();
+    runTestAsSubject(new TestOperation(){
+      @Override
+      public void runTestAsSubject() throws Exception {
+        String requestorUserName = ADMIN_USER;
+        Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
+        String roleName = "admin_r";
+        setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+        writePolicyFile();
 
-    client.dropRoleIfExists(requestorUserName, roleName, SOLR);
+        client.dropRoleIfExists(requestorUserName, roleName, SOLR);
 
-    client.createRole(requestorUserName, roleName, SOLR);
+        client.createRole(requestorUserName, roleName, SOLR);
 
-    client.addRoleToGroups(requestorUserName, roleName, SOLR, Sets.newHashSet(requestorUserGroupNames));
+        client.addRoleToGroups(requestorUserName, roleName, SOLR, Sets.newHashSet(requestorUserGroupNames));
 
-    Set<TSentryRole> roles = client.listUserRoles(requestorUserName,SOLR);
-    assertEquals("Incorrect number of roles", 1, roles.size());
-    for (TSentryRole role:roles) {
-      assertTrue(role.getRoleName(), role.getRoleName().equalsIgnoreCase(roleName));
-    }
-    client.dropRole(requestorUserName, roleName, SOLR);
+        Set<TSentryRole> roles = client.listUserRoles(requestorUserName,SOLR);
+        assertEquals("Incorrect number of roles", 1, roles.size());
+        for (TSentryRole role:roles) {
+          assertTrue(role.getRoleName(), role.getRoleName().equalsIgnoreCase(roleName));
+        }
+        client.dropRole(requestorUserName, roleName, SOLR);
+      }});
   }
 
   @Test
   public void testAddDeleteRoleToGroup() throws Exception {
-    String requestorUserName = ADMIN_USER;
-    Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
-    String testGroupName = "g1";
-    String roleName = "admin_r";
-    setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
-    setLocalGroupMapping(requestorUserName, Sets.newHashSet(testGroupName));
-    writePolicyFile();
+    runTestAsSubject(new TestOperation(){
+      @Override
+      public void runTestAsSubject() throws Exception {
+        String requestorUserName = ADMIN_USER;
+        Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
+        String testGroupName = "g1";
+        String roleName = "admin_r";
+        setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+        setLocalGroupMapping(requestorUserName, Sets.newHashSet(testGroupName));
+        writePolicyFile();
 
-    client.dropRoleIfExists(requestorUserName, roleName, SOLR);
+        client.dropRoleIfExists(requestorUserName, roleName, SOLR);
 
-    client.createRole(requestorUserName, roleName, SOLR);
+        client.createRole(requestorUserName, roleName, SOLR);
 
-    client.addRoleToGroups(requestorUserName, roleName, SOLR, Sets.newHashSet(testGroupName));
+        client.addRoleToGroups(requestorUserName, roleName, SOLR, Sets.newHashSet(testGroupName));
 
-    Set<TSentryRole> roles = client.listUserRoles(requestorUserName,SOLR);
-    assertEquals("Incorrect number of roles", 1, roles.size());
-    for (TSentryRole role:roles) {
-      assertTrue(role.getRoleName(), role.getRoleName().equalsIgnoreCase(roleName));
-      assertTrue(role.getGroups().size() == 1);
-      for (String group :role.getGroups()) {
-        assertEquals(testGroupName, group);
-      }
-    }
+        Set<TSentryRole> roles = client.listUserRoles(requestorUserName,SOLR);
+        assertEquals("Incorrect number of roles", 1, roles.size());
+        for (TSentryRole role:roles) {
+          assertTrue(role.getRoleName(), role.getRoleName().equalsIgnoreCase(roleName));
+          assertTrue(role.getGroups().size() == 1);
+          for (String group :role.getGroups()) {
+            assertEquals(testGroupName, group);
+          }
+        }
 
-    client.deleteRoleToGroups(requestorUserName, roleName, SOLR, Sets.newHashSet(testGroupName));
-    roles = client.listUserRoles(requestorUserName,SOLR);
-    assertEquals("Incorrect number of roles", 0, roles.size());
+        client.deleteRoleToGroups(requestorUserName, roleName, SOLR, Sets.newHashSet(testGroupName));
+        roles = client.listUserRoles(requestorUserName,SOLR);
+        assertEquals("Incorrect number of roles", 0, roles.size());
 
-    client.dropRole(requestorUserName, roleName, SOLR);
+        client.dropRole(requestorUserName, roleName, SOLR);
+      }});
   }
 
   @Test
   public void testGranRevokePrivilege() throws Exception {
-    String requestorUserName = ADMIN_USER;
-    Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
-    setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
-    writePolicyFile();
-    String roleName1 = "admin_r1";
-    String roleName2 = "admin_r2";
+    runTestAsSubject(new TestOperation(){
+      @Override
+      public void runTestAsSubject() throws Exception {
+        String requestorUserName = ADMIN_USER;
+        Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
+        setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+        writePolicyFile();
+        String roleName1 = "admin_r1";
+        String roleName2 = "admin_r2";
 
-    client.dropRoleIfExists(requestorUserName,  roleName1, SOLR);
-    client.createRole(requestorUserName,  roleName1, SOLR);
+        client.dropRoleIfExists(requestorUserName,  roleName1, SOLR);
+        client.createRole(requestorUserName,  roleName1, SOLR);
 
-    client.dropRoleIfExists(requestorUserName,  roleName2, SOLR);
-    client.createRole(requestorUserName,  roleName2, SOLR);
+        client.dropRoleIfExists(requestorUserName,  roleName2, SOLR);
+        client.createRole(requestorUserName,  roleName2, SOLR);
 
-    TSentryPrivilege queryPrivilege = new TSentryPrivilege(SOLR, "service1",
-                                          fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f1"))),
-                                          SearchConstants.QUERY);
+        TSentryPrivilege queryPrivilege = new TSentryPrivilege(SOLR, "service1",
+                                              fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f1"))),
+                                              SearchConstants.QUERY);
 
-    TSentryPrivilege updatePrivilege = new TSentryPrivilege(SOLR, "service1",
-        fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f1"))),
-        SearchConstants.UPDATE);
+        TSentryPrivilege updatePrivilege = new TSentryPrivilege(SOLR, "service1",
+            fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f1"))),
+            SearchConstants.UPDATE);
 
-    client.grantPrivilege(requestorUserName, roleName1, SOLR, queryPrivilege);
-    client.grantPrivilege(requestorUserName, roleName2, SOLR, updatePrivilege);
+        client.grantPrivilege(requestorUserName, roleName1, SOLR, queryPrivilege);
+        client.grantPrivilege(requestorUserName, roleName2, SOLR, updatePrivilege);
 
-    client.revokePrivilege(requestorUserName, roleName1, SOLR, queryPrivilege);
-    client.revokePrivilege(requestorUserName, roleName2, SOLR, updatePrivilege);
-
+        client.revokePrivilege(requestorUserName, roleName1, SOLR, queryPrivilege);
+        client.revokePrivilege(requestorUserName, roleName2, SOLR, updatePrivilege);
+      }});
   }
 
   @Test
   public void testMultipleRolesSamePrivilege() throws Exception {
-    String requestorUserName = ADMIN_USER;
-    Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
-    setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
-    writePolicyFile();
-    String roleName1 = "admin_r1";
-    String roleName2 = "admin_r2";
+    runTestAsSubject(new TestOperation(){
+      @Override
+      public void runTestAsSubject() throws Exception {
+        String requestorUserName = ADMIN_USER;
+        Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
+        setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+        writePolicyFile();
+        String roleName1 = "admin_r1";
+        String roleName2 = "admin_r2";
 
-    client.dropRoleIfExists(requestorUserName, roleName1, SOLR);
-    client.createRole(requestorUserName,  roleName1, SOLR);
+        client.dropRoleIfExists(requestorUserName, roleName1, SOLR);
+        client.createRole(requestorUserName,  roleName1, SOLR);
 
-    client.dropRoleIfExists(requestorUserName,  roleName2, SOLR);
-    client.createRole(requestorUserName,  roleName2, SOLR);
+        client.dropRoleIfExists(requestorUserName,  roleName2, SOLR);
+        client.createRole(requestorUserName,  roleName2, SOLR);
 
-    TSentryPrivilege queryPrivilege = new TSentryPrivilege(SOLR, "service1",
-        fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f1"))),
-        SearchConstants.QUERY);
+        TSentryPrivilege queryPrivilege = new TSentryPrivilege(SOLR, "service1",
+            fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f1"))),
+            SearchConstants.QUERY);
 
-    client.grantPrivilege(requestorUserName, roleName1, SOLR, queryPrivilege);
-    Set<TSentryPrivilege> listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, roleName1, SOLR, "service1");
-    assertTrue("Privilege not assigned to role1 !!", listPrivilegesByRoleName.size() == 1);
+        client.grantPrivilege(requestorUserName, roleName1, SOLR, queryPrivilege);
+        Set<TSentryPrivilege> listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, roleName1, SOLR, "service1");
+        assertTrue("Privilege not assigned to role1 !!", listPrivilegesByRoleName.size() == 1);
 
-    client.grantPrivilege(requestorUserName, roleName2, SOLR, queryPrivilege);
-    listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, roleName2, SOLR, "service1");
-    assertTrue("Privilege not assigned to role2 !!", listPrivilegesByRoleName.size() == 1);
+        client.grantPrivilege(requestorUserName, roleName2, SOLR, queryPrivilege);
+        listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, roleName2, SOLR, "service1");
+        assertTrue("Privilege not assigned to role2 !!", listPrivilegesByRoleName.size() == 1);
+      }});
   }
 
   @Test
   public void testShowRoleGrant() throws Exception {
-    String requestorUserName = ADMIN_USER;
-    Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
-    String roleName = "admin_r1";
-    String groupName = "group1";
-    setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
-    setLocalGroupMapping(requestorUserName, Sets.newHashSet(groupName));
-    writePolicyFile();
+    runTestAsSubject(new TestOperation(){
+      @Override
+      public void runTestAsSubject() throws Exception {
+        String requestorUserName = ADMIN_USER;
+        Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
+        String roleName = "admin_r1";
+        String groupName = "group1";
+        setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+        setLocalGroupMapping(requestorUserName, Sets.newHashSet(groupName));
+        writePolicyFile();
 
-    client.dropRoleIfExists(requestorUserName, roleName, SOLR);
-    client.createRole(requestorUserName, roleName, SOLR);
-    client.addRoleToGroups(requestorUserName, roleName, SOLR, Sets.newHashSet(groupName));
+        client.dropRoleIfExists(requestorUserName, roleName, SOLR);
+        client.createRole(requestorUserName, roleName, SOLR);
+        client.addRoleToGroups(requestorUserName, roleName, SOLR, Sets.newHashSet(groupName));
 
-    Set<TSentryRole> groupRoles = client.listRolesByGroupName(requestorUserName, groupName,SOLR);
-    assertTrue(groupRoles.size() == 1);
-    for (TSentryRole role:groupRoles) {
-      assertTrue(role.getRoleName(), role.getRoleName().equalsIgnoreCase(roleName));
-      assertTrue(role.getGroups().size() == 1);
-      for (String group :role.getGroups()) {
-        assertEquals(groupName, group);
-      }
-    }
+        Set<TSentryRole> groupRoles = client.listRolesByGroupName(requestorUserName, groupName,SOLR);
+        assertTrue(groupRoles.size() == 1);
+        for (TSentryRole role:groupRoles) {
+          assertTrue(role.getRoleName(), role.getRoleName().equalsIgnoreCase(roleName));
+          assertTrue(role.getGroups().size() == 1);
+          for (String group :role.getGroups()) {
+            assertEquals(groupName, group);
+          }
+        }
 
-    client.dropRole(requestorUserName, roleName, SOLR);
+        client.dropRole(requestorUserName, roleName, SOLR);
+      }});
   }
 
   @Test
   public void testShowGrant() throws Exception {
-    String requestorUserName = ADMIN_USER;
-    Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
-    String roleName = "admin_r1";
-    setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
-    writePolicyFile();
+    runTestAsSubject(new TestOperation(){
+      @Override
+      public void runTestAsSubject() throws Exception {
+        String requestorUserName = ADMIN_USER;
+        Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
+        String roleName = "admin_r1";
+        setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+        writePolicyFile();
 
-    client.dropRoleIfExists(requestorUserName, roleName, SOLR);
-    client.createRole(requestorUserName, roleName, SOLR);
+        client.dropRoleIfExists(requestorUserName, roleName, SOLR);
+        client.createRole(requestorUserName, roleName, SOLR);
 
-    TSentryPrivilege queryPrivilege = new TSentryPrivilege(SOLR, "service1",
-        fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f1"))),
-        SearchConstants.QUERY);
+        TSentryPrivilege queryPrivilege = new TSentryPrivilege(SOLR, "service1",
+            fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f1"))),
+            SearchConstants.QUERY);
 
-    TSentryPrivilege updatePrivilege = new TSentryPrivilege(SOLR, "service1",
-        fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f1"))),
-        SearchConstants.UPDATE);
+        TSentryPrivilege updatePrivilege = new TSentryPrivilege(SOLR, "service1",
+            fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f1"))),
+            SearchConstants.UPDATE);
 
-    client.grantPrivilege(requestorUserName, roleName, SOLR, updatePrivilege);
-    client.grantPrivilege(requestorUserName, roleName, SOLR, queryPrivilege);
-    Set<TSentryPrivilege> privileges = client.listPrivilegesByRoleName(requestorUserName, roleName, SOLR, "service1");
-    assertTrue(privileges.size() == 2);
+        client.grantPrivilege(requestorUserName, roleName, SOLR, updatePrivilege);
+        client.grantPrivilege(requestorUserName, roleName, SOLR, queryPrivilege);
+        Set<TSentryPrivilege> privileges = client.listPrivilegesByRoleName(requestorUserName, roleName, SOLR, "service1");
+        assertTrue(privileges.size() == 2);
 
-    client.revokePrivilege(requestorUserName, roleName, SOLR, updatePrivilege);
-    privileges = client.listPrivilegesByRoleName(requestorUserName, roleName, SOLR, "service1");
-    assertTrue(privileges.size() == 1);
+        client.revokePrivilege(requestorUserName, roleName, SOLR, updatePrivilege);
+        privileges = client.listPrivilegesByRoleName(requestorUserName, roleName, SOLR, "service1");
+        assertTrue(privileges.size() == 1);
+      }});
   }
 
   @Test
   public void testSameGrantTwice() throws Exception {
-    String requestorUserName = ADMIN_USER;
-    Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
-    setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
-    writePolicyFile();
-    String roleName = "admin_r1";
+    runTestAsSubject(new TestOperation(){
+      @Override
+      public void runTestAsSubject() throws Exception {
+        String requestorUserName = ADMIN_USER;
+        Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
+        setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+        writePolicyFile();
+        String roleName = "admin_r1";
 
-    client.createRole(requestorUserName, roleName, SOLR);
+        client.createRole(requestorUserName, roleName, SOLR);
 
-    TSentryPrivilege queryPrivilege = new TSentryPrivilege(SOLR, "service1",
-        fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f1"))),
-        SearchConstants.QUERY);
+        TSentryPrivilege queryPrivilege = new TSentryPrivilege(SOLR, "service1",
+            fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f1"))),
+            SearchConstants.QUERY);
 
-    client.grantPrivilege(requestorUserName, roleName, SOLR, queryPrivilege);
-    assertEquals(1, client.listPrivilegesByRoleName(requestorUserName, roleName, SOLR, "service1").size());
+        client.grantPrivilege(requestorUserName, roleName, SOLR, queryPrivilege);
+        assertEquals(1, client.listPrivilegesByRoleName(requestorUserName, roleName, SOLR, "service1").size());
+      }});
   }
 
   @Test
   public void testGrantRevokeWithGrantOption() throws Exception {
-    String adminUser = ADMIN_USER;
-    Set<String> adminGroup = Sets.newHashSet(ADMIN_GROUP);
-    String grantOptionUser = "user1";
-    Set<String> grantOptionGroup = Sets.newHashSet("group1");
-    String noGrantOptionUser = "user2";
-    Set<String> noGrantOptionGroup = Sets.newHashSet("group2");
+    runTestAsSubject(new TestOperation(){
+      @Override
+      public void runTestAsSubject() throws Exception {
+        String adminUser = ADMIN_USER;
+        Set<String> adminGroup = Sets.newHashSet(ADMIN_GROUP);
+        String grantOptionUser = "user1";
+        Set<String> grantOptionGroup = Sets.newHashSet("group1");
+        String noGrantOptionUser = "user2";
+        Set<String> noGrantOptionGroup = Sets.newHashSet("group2");
 
-    setLocalGroupMapping(adminUser, adminGroup);
-    setLocalGroupMapping(grantOptionUser, grantOptionGroup);
-    setLocalGroupMapping(noGrantOptionUser, noGrantOptionGroup);
-    writePolicyFile();
+        setLocalGroupMapping(adminUser, adminGroup);
+        setLocalGroupMapping(grantOptionUser, grantOptionGroup);
+        setLocalGroupMapping(noGrantOptionUser, noGrantOptionGroup);
+        writePolicyFile();
 
-    String grantRole = "grant_r";
-    String noGrantRole = "no_grant_r";
-    String testRole = "test_role";
+        String grantRole = "grant_r";
+        String noGrantRole = "no_grant_r";
+        String testRole = "test_role";
 
-    client.createRole(adminUser, grantRole, SOLR);
-    client.createRole(adminUser, noGrantRole, SOLR);
-    client.createRole(adminUser, testRole, SOLR);
+        client.createRole(adminUser, grantRole, SOLR);
+        client.createRole(adminUser, noGrantRole, SOLR);
+        client.createRole(adminUser, testRole, SOLR);
 
-    TSentryPrivilege grantPrivilege = new TSentryPrivilege(SOLR, "service1",
-        fromAuthorizable(Arrays.asList(new Collection("c1"))),
-        SearchConstants.QUERY);
-    grantPrivilege.setGrantOption(TSentryGrantOption.TRUE);
+        TSentryPrivilege grantPrivilege = new TSentryPrivilege(SOLR, "service1",
+            fromAuthorizable(Arrays.asList(new Collection("c1"))),
+            SearchConstants.QUERY);
+        grantPrivilege.setGrantOption(TSentryGrantOption.TRUE);
 
-    TSentryPrivilege noGrantPrivilege = new TSentryPrivilege(SOLR, "service1",
-        fromAuthorizable(Arrays.asList(new Collection("c1"))),
-        SearchConstants.QUERY);
-    noGrantPrivilege.setGrantOption(TSentryGrantOption.FALSE);
+        TSentryPrivilege noGrantPrivilege = new TSentryPrivilege(SOLR, "service1",
+            fromAuthorizable(Arrays.asList(new Collection("c1"))),
+            SearchConstants.QUERY);
+        noGrantPrivilege.setGrantOption(TSentryGrantOption.FALSE);
 
-    TSentryPrivilege testPrivilege = new TSentryPrivilege(SOLR, "service1",
-        fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f1"))),
-        SearchConstants.QUERY);
-    testPrivilege.setGrantOption(TSentryGrantOption.FALSE);
+        TSentryPrivilege testPrivilege = new TSentryPrivilege(SOLR, "service1",
+            fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f1"))),
+            SearchConstants.QUERY);
+        testPrivilege.setGrantOption(TSentryGrantOption.FALSE);
 
-    client.grantPrivilege(adminUser, grantRole, SOLR, grantPrivilege);
-    client.grantPrivilege(adminUser, noGrantRole, SOLR, noGrantPrivilege);
+        client.grantPrivilege(adminUser, grantRole, SOLR, grantPrivilege);
+        client.grantPrivilege(adminUser, noGrantRole, SOLR, noGrantPrivilege);
 
-    client.addRoleToGroups(adminUser, grantRole, SOLR, grantOptionGroup);
-    client.addRoleToGroups(adminUser, noGrantRole, SOLR, noGrantOptionGroup);
+        client.addRoleToGroups(adminUser, grantRole, SOLR, grantOptionGroup);
+        client.addRoleToGroups(adminUser, noGrantRole, SOLR, noGrantOptionGroup);
 
-    try {
-      client.grantPrivilege(grantOptionUser,testRole,SOLR, testPrivilege);
-    } catch (SentryUserException e) {
-      fail("grantOptionUser failed grant privilege to user");
-    }
+        try {
+          client.grantPrivilege(grantOptionUser,testRole,SOLR, testPrivilege);
+        } catch (SentryUserException e) {
+          fail("grantOptionUser failed grant privilege to user");
+        }
 
-    try {
-      client.grantPrivilege(noGrantOptionUser, testRole, SOLR, testPrivilege);
-      fail("noGrantOptionUser can't grant privilege to user");
-    } catch (SentryUserException e) {
-    }
+        try {
+          client.grantPrivilege(noGrantOptionUser, testRole, SOLR, testPrivilege);
+          fail("noGrantOptionUser can't grant privilege to user");
+        } catch (SentryUserException e) {
+        }
 
-    try {
-      client.revokePrivilege(grantOptionUser, testRole, SOLR, testPrivilege);
-    } catch(SentryUserException e) {
-      fail("grantOptionUser failed revoke privilege to user");
-    }
+        try {
+          client.revokePrivilege(grantOptionUser, testRole, SOLR, testPrivilege);
+        } catch(SentryUserException e) {
+          fail("grantOptionUser failed revoke privilege to user");
+        }
 
-    try {
-      client.revokePrivilege(noGrantOptionUser, testRole, SOLR, testPrivilege);
-      fail("noGrantOptionUser can't revoke privilege to user");
-    } catch (SentryUserException e) {
-    }
+        try {
+          client.revokePrivilege(noGrantOptionUser, testRole, SOLR, testPrivilege);
+          fail("noGrantOptionUser can't revoke privilege to user");
+        } catch (SentryUserException e) {
+        }
+      }});
   }
 
   @Test
   public void testGetPrivilegeByHierarchy() throws Exception {
-    String adminUser = ADMIN_USER;
-    Set<String> adminGroup = Sets.newHashSet(ADMIN_GROUP);
-    String testRole = "role1";
-    Set<String> testGroup = Sets.newHashSet("group1");
-    String testUser = "user1";
-    setLocalGroupMapping(adminUser, adminGroup);
-    setLocalGroupMapping(testUser, testGroup);
-    writePolicyFile();
+    runTestAsSubject(new TestOperation(){
+      @Override
+      public void runTestAsSubject() throws Exception {
+        String adminUser = ADMIN_USER;
+        Set<String> adminGroup = Sets.newHashSet(ADMIN_GROUP);
+        String testRole = "role1";
+        Set<String> testGroup = Sets.newHashSet("group1");
+        String testUser = "user1";
+        setLocalGroupMapping(adminUser, adminGroup);
+        setLocalGroupMapping(testUser, testGroup);
+        writePolicyFile();
 
 
-    client.createRole(adminUser, testRole, SOLR);
-    client.addRoleToGroups(adminUser, testRole, SOLR, testGroup);
+        client.createRole(adminUser, testRole, SOLR);
+        client.addRoleToGroups(adminUser, testRole, SOLR, testGroup);
 
-    TSentryPrivilege queryPrivilege = new TSentryPrivilege(SOLR, "service1",
-        fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f1"))),
-        SearchConstants.QUERY);
+        TSentryPrivilege queryPrivilege = new TSentryPrivilege(SOLR, "service1",
+            fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f1"))),
+            SearchConstants.QUERY);
 
-    TSentryPrivilege updatePrivilege = new TSentryPrivilege(SOLR, "service1",
-        fromAuthorizable(Arrays.asList(new Collection("c2"), new Field("f2"))),
-        SearchConstants.UPDATE);
+        TSentryPrivilege updatePrivilege = new TSentryPrivilege(SOLR, "service1",
+            fromAuthorizable(Arrays.asList(new Collection("c2"), new Field("f2"))),
+            SearchConstants.UPDATE);
 
-    client.grantPrivilege(adminUser, testRole, SOLR, queryPrivilege);
-    client.grantPrivilege(adminUser, testRole, SOLR, updatePrivilege);
+        client.grantPrivilege(adminUser, testRole, SOLR, queryPrivilege);
+        client.grantPrivilege(adminUser, testRole, SOLR, updatePrivilege);
 
-    assertEquals(2, client.listPrivilegesByRoleName(testUser, testRole, SOLR, "service1").size());
+        assertEquals(2, client.listPrivilegesByRoleName(testUser, testRole, SOLR, "service1").size());
 
-    assertEquals(1, client.listPrivilegesByRoleName(testUser, testRole,
-        SOLR, "service1", Arrays.asList(new Collection("c1"))).size());
+        assertEquals(1, client.listPrivilegesByRoleName(testUser, testRole,
+            SOLR, "service1", Arrays.asList(new Collection("c1"))).size());
 
-    assertEquals(1, client.listPrivilegesByRoleName(testUser, testRole,
-        SOLR, "service1", Arrays.asList(new Collection("c2"))).size());
+        assertEquals(1, client.listPrivilegesByRoleName(testUser, testRole,
+            SOLR, "service1", Arrays.asList(new Collection("c2"))).size());
 
-    assertEquals(1, client.listPrivilegesByRoleName(testUser, testRole,
-        SOLR, "service1", Arrays.asList(new Collection("c1"), new Field("f1"))).size());
+        assertEquals(1, client.listPrivilegesByRoleName(testUser, testRole,
+            SOLR, "service1", Arrays.asList(new Collection("c1"), new Field("f1"))).size());
 
-    assertEquals(1, client.listPrivilegesByRoleName(testUser, testRole,
-        SOLR, "service1", Arrays.asList(new Collection("c2"), new Field("f2"))).size());
+        assertEquals(1, client.listPrivilegesByRoleName(testUser, testRole,
+            SOLR, "service1", Arrays.asList(new Collection("c2"), new Field("f2"))).size());
 
-   //test listPrivilegesForProvider by group(testGroup)
-    ActiveRoleSet roleSet = ActiveRoleSet.ALL;
+       //test listPrivilegesForProvider by group(testGroup)
+        ActiveRoleSet roleSet = ActiveRoleSet.ALL;
 
-    assertEquals(1, client.listPrivilegesForProvider(SOLR, "service1", roleSet,
-        testGroup, Arrays.asList(new Collection("c1"))).size());
+        assertEquals(1, client.listPrivilegesForProvider(SOLR, "service1", roleSet,
+            testGroup, Arrays.asList(new Collection("c1"))).size());
 
-    assertEquals(1, client.listPrivilegesForProvider(SOLR, "service1", roleSet,
-        testGroup, Arrays.asList(new Collection("c2"))).size());
+        assertEquals(1, client.listPrivilegesForProvider(SOLR, "service1", roleSet,
+            testGroup, Arrays.asList(new Collection("c2"))).size());
 
-    assertEquals(1, client.listPrivilegesForProvider(SOLR, "service1", roleSet,
-        testGroup, Arrays.asList(new Collection("c1"), new Field("f1"))).size());
+        assertEquals(1, client.listPrivilegesForProvider(SOLR, "service1", roleSet,
+            testGroup, Arrays.asList(new Collection("c1"), new Field("f1"))).size());
 
-    assertEquals(1, client.listPrivilegesForProvider(SOLR, "service1", roleSet,
-        testGroup, Arrays.asList(new Collection("c2"), new Field("f2"))).size());
+        assertEquals(1, client.listPrivilegesForProvider(SOLR, "service1", roleSet,
+            testGroup, Arrays.asList(new Collection("c2"), new Field("f2"))).size());
+      }});
   }
 
   @Test
   public void testDropAndRenamePrivilege() throws Exception {
-    String requestorUserName = ADMIN_USER;
-    Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
-    setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
-    writePolicyFile();
-    String roleName = "admin_r1";
+    runTestAsSubject(new TestOperation(){
+      @Override
+      public void runTestAsSubject() throws Exception {
+        String requestorUserName = ADMIN_USER;
+        Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
+        setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+        writePolicyFile();
+        String roleName = "admin_r1";
 
-    client.createRole(requestorUserName, roleName, SOLR);
+        client.createRole(requestorUserName, roleName, SOLR);
 
-    TSentryPrivilege queryPrivilege = new TSentryPrivilege(SOLR, "service1",
-        fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f1"))),
-        SearchConstants.QUERY);
-    client.grantPrivilege(requestorUserName, roleName, SOLR, queryPrivilege);
+        TSentryPrivilege queryPrivilege = new TSentryPrivilege(SOLR, "service1",
+            fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f1"))),
+            SearchConstants.QUERY);
+        client.grantPrivilege(requestorUserName, roleName, SOLR, queryPrivilege);
 
-    assertEquals(1, client.listPrivilegesByRoleName(requestorUserName, roleName,
-        SOLR, "service1", Arrays.asList(new Collection("c1"), new Field("f1"))).size());
+        assertEquals(1, client.listPrivilegesByRoleName(requestorUserName, roleName,
+            SOLR, "service1", Arrays.asList(new Collection("c1"), new Field("f1"))).size());
 
-    assertEquals(0, client.listPrivilegesByRoleName(requestorUserName, roleName,
-        SOLR, "service1", Arrays.asList(new Collection("c2"), new Field("f2"))).size());
+        assertEquals(0, client.listPrivilegesByRoleName(requestorUserName, roleName,
+            SOLR, "service1", Arrays.asList(new Collection("c2"), new Field("f2"))).size());
 
-    client.renamePrivilege(requestorUserName, SOLR, "service1", Arrays.asList(new Collection("c1"), new Field("f1")),
-        Arrays.asList(new Collection("c2"), new Field("f2")));
+        client.renamePrivilege(requestorUserName, SOLR, "service1", Arrays.asList(new Collection("c1"), new Field("f1")),
+            Arrays.asList(new Collection("c2"), new Field("f2")));
 
-    assertEquals(0, client.listPrivilegesByRoleName(requestorUserName, roleName,
-        SOLR, "service1", Arrays.asList(new Collection("c1"), new Field("f1"))).size());
+        assertEquals(0, client.listPrivilegesByRoleName(requestorUserName, roleName,
+            SOLR, "service1", Arrays.asList(new Collection("c1"), new Field("f1"))).size());
 
-    assertEquals(1, client.listPrivilegesByRoleName(requestorUserName, roleName,
-        SOLR, "service1", Arrays.asList(new Collection("c2"), new Field("f2"))).size());
+        assertEquals(1, client.listPrivilegesByRoleName(requestorUserName, roleName,
+            SOLR, "service1", Arrays.asList(new Collection("c2"), new Field("f2"))).size());
 
-    TSentryPrivilege dropPrivilege = new TSentryPrivilege(SOLR, "service1",
-        fromAuthorizable(Arrays.asList(new Collection("c2"), new Field("f2"))),
-        SearchConstants.QUERY);
+        TSentryPrivilege dropPrivilege = new TSentryPrivilege(SOLR, "service1",
+            fromAuthorizable(Arrays.asList(new Collection("c2"), new Field("f2"))),
+            SearchConstants.QUERY);
 
-    client.dropPrivilege(requestorUserName, SOLR, dropPrivilege);
+        client.dropPrivilege(requestorUserName, SOLR, dropPrivilege);
 
-    assertEquals(0, client.listPrivilegesByRoleName(requestorUserName, roleName,
-        SOLR, "service1", Arrays.asList(new Collection("c2"), new Field("f2"))).size());
+        assertEquals(0, client.listPrivilegesByRoleName(requestorUserName, roleName,
+            SOLR, "service1", Arrays.asList(new Collection("c2"), new Field("f2"))).size());
+      }});
   }
 
   private List<TAuthorizable> fromAuthorizable(List<? extends Authorizable> authorizables) {
