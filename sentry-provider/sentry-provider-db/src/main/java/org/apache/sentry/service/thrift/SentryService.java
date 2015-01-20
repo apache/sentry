@@ -230,7 +230,7 @@ public class SentryService implements Callable {
       List<EventListener> listenerList = new ArrayList<EventListener>();
       listenerList.add(new SentryHealthCheckServletContextListener());
       listenerList.add(new SentryMetricsServletContextListener());
-      sentryWebServer = new SentryWebServer(listenerList, webServerPort);
+      sentryWebServer = new SentryWebServer(listenerList, webServerPort, conf);
       sentryWebServer.start();
     }
 

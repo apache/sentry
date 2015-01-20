@@ -62,6 +62,7 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
   protected static final String REALM = "EXAMPLE.COM";
   protected static final String SERVER_PRINCIPAL = "sentry/" + SERVER_HOST;
   protected static final String SERVER_KERBEROS_NAME = "sentry/" + SERVER_HOST + "@" + REALM;
+  protected static final String HTTP_PRINCIPAL = "HTTP/" + SERVER_HOST;
   protected static final String CLIENT_PRINCIPAL = "hive/" + SERVER_HOST;
   protected static final String CLIENT_KERBEROS_SHORT_NAME = "hive";
   protected static final String CLIENT_KERBEROS_NAME = CLIENT_KERBEROS_SHORT_NAME
@@ -75,6 +76,7 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
   protected File kdcWorkDir;
   protected File dbDir;
   protected File serverKeytab;
+  protected File httpKeytab;
   protected File clientKeytab;
   protected Subject clientSubject;
   protected LoginContext clientLoginContext;
@@ -89,6 +91,10 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
   protected TestingServer zkServer;
 
   private File ZKKeytabFile;
+
+  protected boolean webServerEnabled = false;
+  protected int webServerPort = ServerConfig.SENTRY_WEB_PORT_DEFAULT;
+  protected boolean webSecurity = false;
 
   @Before
   public void setup() throws Exception {
@@ -140,6 +146,24 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
         conf.set(ServerConfig.SENTRY_HA_ZOOKEEPER_SECURITY, "true");
       }
     }
+    if (webServerEnabled) {
+      conf.set(ServerConfig.SENTRY_WEB_ENABLE, "true");
+      conf.set(ServerConfig.SENTRY_WEB_PORT, String.valueOf(webServerPort));
+      if (webSecurity) {
+        httpKeytab = new File(kdcWorkDir, "http.keytab");
+        kdc.createPrincipal(httpKeytab, HTTP_PRINCIPAL);
+        conf.set(ServerConfig.SENTRY_WEB_SECURITY_TYPE,
+            ServerConfig.SENTRY_WEB_SECURITY_TYPE_KERBEROS);
+        conf.set(ServerConfig.SENTRY_WEB_SECURITY_PRINCIPAL, HTTP_PRINCIPAL);
+        conf.set(ServerConfig.SENTRY_WEB_SECURITY_KEYTAB, httpKeytab.getPath());
+      } else {
+        conf.set(ServerConfig.SENTRY_WEB_SECURITY_TYPE,
+            ServerConfig.SENTRY_WEB_SECURITY_TYPE_NONE);
+      }
+    } else {
+      conf.set(ServerConfig.SENTRY_WEB_ENABLE, "false");
+    }
+
     conf.set(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "false");
     conf.set(ServerConfig.ADMIN_GROUPS, ADMIN_GROUP);
     conf.set(ServerConfig.RPC_ADDRESS, SERVER_HOST);
