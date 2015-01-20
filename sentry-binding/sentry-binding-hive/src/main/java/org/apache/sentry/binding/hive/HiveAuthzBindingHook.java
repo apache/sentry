@@ -31,7 +31,6 @@ import java.util.Set;
 import org.apache.hadoop.hive.common.JavaUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
-import org.apache.hadoop.hive.ql.exec.FunctionRegistry;
 import org.apache.hadoop.hive.ql.exec.SentryGrantRevokeTask;
 import org.apache.hadoop.hive.ql.exec.Task;
 import org.apache.hadoop.hive.ql.hooks.Entity;
@@ -461,34 +460,11 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
         outputHierarchy.add(externalAuthorizableHierarchy);
       }
       break;
-    case CONNECT:
-      /* The 'CONNECT' is an implicit privilege scope currently used for
+    case FUNCTION:
+      /* The 'FUNCTION' privilege scope currently used for
        *  - CREATE TEMP FUNCTION
-       *  - DROP TEMP FUNCTION
-       *  - USE <db>
-       *  It's allowed when the user has any privilege on the current database. For application
-       *  backward compatibility, we allow (optional) implicit connect permission on 'default' db.
+       *  - DROP TEMP FUNCTION.
        */
-      List<DBModelAuthorizable> connectHierarchy = new ArrayList<DBModelAuthorizable>();
-      connectHierarchy.add(hiveAuthzBinding.getAuthServer());
-      // by default allow connect access to default db
-      Table currTbl = Table.ALL;
-      Column currCol = Column.ALL;
-      if ((DEFAULT_DATABASE_NAME.equalsIgnoreCase(currDB.getName()) &&
-          "false".equalsIgnoreCase(authzConf.
-              get(HiveAuthzConf.AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), "false")))
-              ||stmtOperation.equals(HiveOperation.CREATEFUNCTION)
-              ||stmtOperation.equals(HiveOperation.DROPFUNCTION)) {
-        currDB = Database.ALL;
-        currTbl = Table.SOME;
-      }
-
-      connectHierarchy.add(currDB);
-      connectHierarchy.add(currTbl);
-      connectHierarchy.add(currCol);
-
-      inputHierarchy.add(connectHierarchy);
-      // check if this is a create temp function and we need to validate URI
       if (udfURI != null) {
         List<DBModelAuthorizable> udfUriHierarchy = new ArrayList<DBModelAuthorizable>();
         udfUriHierarchy.add(hiveAuthzBinding.getAuthServer());
@@ -501,7 +477,30 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
           outputHierarchy.add(entityHierarchy);
         }
       }
+      break;
+    case CONNECT:
+      /* The 'CONNECT' is an implicit privilege scope currently used for
+       *  - USE <db>
+       *  It's allowed when the user has any privilege on the current database. For application
+       *  backward compatibility, we allow (optional) implicit connect permission on 'default' db.
+       */
+      List<DBModelAuthorizable> connectHierarchy = new ArrayList<DBModelAuthorizable>();
+      connectHierarchy.add(hiveAuthzBinding.getAuthServer());
+      // by default allow connect access to default db
+      Table currTbl = Table.ALL;
+      Column currCol = Column.ALL;
+      if ((DEFAULT_DATABASE_NAME.equalsIgnoreCase(currDB.getName()) &&
+          "false".equalsIgnoreCase(authzConf.
+              get(HiveAuthzConf.AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), "false")))) {
+        currDB = Database.ALL;
+        currTbl = Table.SOME;
+      }
 
+      connectHierarchy.add(currDB);
+      connectHierarchy.add(currTbl);
+      connectHierarchy.add(currCol);
+
+      inputHierarchy.add(connectHierarchy);
       outputHierarchy.add(connectHierarchy);
       break;
 

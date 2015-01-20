@@ -51,7 +51,7 @@ public class HiveAuthzPrivileges {
     SERVER,
     DATABASE,
     TABLE,
-    URI,
+    FUNCTION,
     CONNECT
   }
 

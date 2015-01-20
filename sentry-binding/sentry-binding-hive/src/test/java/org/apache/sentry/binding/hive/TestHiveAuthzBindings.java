@@ -294,10 +294,6 @@ public class TestHiveAuthzBindings {
   @Test
   public void testValidateCreateFunctionAppropiateURI() throws Exception {
     inputTabHierarcyList.add(Arrays.asList(new DBModelAuthorizable[] {
-        new Server(SERVER1), new Database(CUSTOMER_DB), new Table(AccessConstants.ALL),
-        new Column(AccessConstants.ALL)
-    }));
-    inputTabHierarcyList.add(Arrays.asList(new DBModelAuthorizable[] {
         new Server(SERVER1), new AccessURI("file:///path/to/some/lib/dir/my.jar")
     }));
     testAuth.authorize(HiveOperation.CREATEFUNCTION, createFuncPrivileges, ANALYST_SUBJECT,
@@ -305,7 +301,9 @@ public class TestHiveAuthzBindings {
   }
   @Test(expected=AuthorizationException.class)
   public void testValidateCreateFunctionRejectionForUnknownUser() throws Exception {
-    inputTabHierarcyList.add(buildObjectHierarchy(SERVER1, CUSTOMER_DB, AccessConstants.ALL));
+    inputTabHierarcyList.add(Arrays.asList(new DBModelAuthorizable[] {
+        new Server(SERVER1), new AccessURI("file:///path/to/some/lib/dir/my.jar")
+    }));
     testAuth.authorize(HiveOperation.CREATEFUNCTION, createFuncPrivileges, NO_SUCH_SUBJECT,
         inputTabHierarcyList, outputTabHierarcyList);
   }

@@ -167,12 +167,17 @@ public class HiveAuthzPrivilegesMap {
         setOperationType(HiveOperationType.DML).
         build();
 
+    HiveAuthzPrivileges functionPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
+        addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.ALL)).
+        addOutputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.ALL)).
+        setOperationScope(HiveOperationScope.FUNCTION).
+        setOperationType(HiveOperationType.DATA_LOAD).
+        build();
+
     HiveAuthzPrivileges anyPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
         addInputObjectPriviledge(AuthorizableType.Column, EnumSet.of(DBModelAction.SELECT,
             DBModelAction.INSERT, DBModelAction.ALTER, DBModelAction.CREATE, DBModelAction.DROP,
             DBModelAction.INDEX, DBModelAction.LOCK)).
-        addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.ALL)). //TODO: make them ||
-        addOutputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.ALL)).
         setOperationScope(HiveOperationScope.CONNECT).
         setOperationType(HiveOperationType.QUERY).
         build();
@@ -231,9 +236,13 @@ public class HiveAuthzPrivilegesMap {
 
     hiveAuthzStmtPrivMap.put(HiveOperation.ANALYZE_TABLE, tableQueryPrivilege);
 
+    // SWITCHDATABASE
     hiveAuthzStmtPrivMap.put(HiveOperation.SWITCHDATABASE, anyPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.CREATEFUNCTION, anyPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.DROPFUNCTION, anyPrivilege);
+
+    // CREATEFUNCTION
+    // DROPFUNCTION
+    hiveAuthzStmtPrivMap.put(HiveOperation.CREATEFUNCTION, functionPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.DROPFUNCTION, functionPrivilege);
 
     // SHOWDATABASES
     // SHOWTABLES
