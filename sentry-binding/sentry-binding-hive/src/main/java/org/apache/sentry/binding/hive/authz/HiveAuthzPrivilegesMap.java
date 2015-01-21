@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
-import org.apache.sentry.binding.hive.authz.HiveAuthzPrivileges.HiveExtendedOperation;
 import org.apache.sentry.binding.hive.authz.HiveAuthzPrivileges.HiveOperationScope;
 import org.apache.sentry.binding.hive.authz.HiveAuthzPrivileges.HiveOperationType;
 import org.apache.sentry.core.model.db.DBModelAction;
@@ -161,11 +160,16 @@ public class HiveAuthzPrivilegesMap {
       setOperationType(HiveOperationType.INFO).
       build();
 
-    HiveAuthzPrivileges tableDMLPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
-        addOutputObjectPriviledge(AuthorizableType.Table, EnumSet.of(DBModelAction.INSERT)).
+    HiveAuthzPrivileges tableLockPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder()
+        .addInputObjectPriviledge(AuthorizableType.Table, EnumSet.of(DBModelAction.LOCK)).
         setOperationScope(HiveOperationScope.TABLE).
         setOperationType(HiveOperationType.DML).
         build();
+
+    HiveAuthzPrivileges dbLockPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder()
+        .addInputObjectPriviledge(AuthorizableType.Db, EnumSet.of(DBModelAction.LOCK))
+        .setOperationScope(HiveOperationScope.DATABASE).setOperationType(HiveOperationType.DML)
+        .build();
 
     HiveAuthzPrivileges functionPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
         addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.ALL)).
@@ -257,8 +261,10 @@ public class HiveAuthzPrivilegesMap {
     hiveAuthzStmtPrivMap.put(HiveOperation.EXPORT, tableExportPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.IMPORT, dbImportPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.LOAD, tableLoadPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.LOCKTABLE, tableDMLPrivilege);//TODO: Needs test case
-    hiveAuthzStmtPrivMap.put(HiveOperation.UNLOCKTABLE, tableDMLPrivilege);//TODO: Needs test case
+    hiveAuthzStmtPrivMap.put(HiveOperation.LOCKTABLE, tableLockPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.UNLOCKTABLE, tableLockPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.LOCKDB, dbLockPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.UNLOCKDB, dbLockPrivilege);
     // CREATEROLE
     // DROPROLE
     // GRANT_PRIVILEGE

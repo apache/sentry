@@ -19,6 +19,7 @@ package org.apache.sentry.tests.e2e.hive;
 import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_SPLITTER;
 import static org.apache.sentry.provider.common.ProviderConstants.PRIVILEGE_PREFIX;
 import static org.apache.sentry.provider.common.ProviderConstants.ROLE_SPLITTER;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -60,7 +61,6 @@ import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
 import org.apache.tools.ant.util.StringUtils;
 import org.junit.After;
 import org.junit.AfterClass;
-import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -113,7 +113,7 @@ public abstract class AbstractTestWithStaticConfiguration {
   protected static boolean useSentryService = false;
   protected static boolean setMetastoreListener = false;
   protected static String testServerType = null;
-
+  protected static boolean enableHiveConcurrency = false;
 
   protected static File baseDir;
   protected static File logDir;
@@ -222,6 +222,14 @@ public abstract class AbstractTestWithStaticConfiguration {
     boolean startSentry = new Boolean(System.getProperty(EXTERNAL_SENTRY_SERVICE, "false"));
     if (useSentryService && (!startSentry)) {
       setupSentryService();
+    }
+
+    if (enableHiveConcurrency) {
+      properties.put(HiveConf.ConfVars.HIVE_SUPPORT_CONCURRENCY.varname, "true");
+      properties.put(HiveConf.ConfVars.HIVE_TXN_MANAGER.varname,
+          "org.apache.hadoop.hive.ql.lockmgr.DummyTxnManager");
+      properties.put(HiveConf.ConfVars.HIVE_LOCK_MANAGER.varname,
+          "org.apache.hadoop.hive.ql.lockmgr.EmbeddedLockManager");
     }
 
     hiveServer = create(properties, baseDir, confDir, logDir, policyURI, fileSystem);

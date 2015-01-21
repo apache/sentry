@@ -162,6 +162,8 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
       case HiveParser.TOK_ALTERVIEW_RENAME:
       case HiveParser.TOK_CREATEINDEX:
       case HiveParser.TOK_DROPINDEX:
+      case HiveParser.TOK_LOCKTABLE:
+      case HiveParser.TOK_UNLOCKTABLE:
         currTab = extractTable((ASTNode)ast.getFirstChildWithType(HiveParser.TOK_TABNAME));
         currDB = extractDatabase((ASTNode) ast.getChild(0));
         break;
@@ -430,7 +432,6 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
       }
 
       getInputHierarchyFromInputs(inputHierarchy, inputs);
-
       for (WriteEntity writeEntity: outputs) {
         if (filterWriteEntity(writeEntity)) {
           continue;
