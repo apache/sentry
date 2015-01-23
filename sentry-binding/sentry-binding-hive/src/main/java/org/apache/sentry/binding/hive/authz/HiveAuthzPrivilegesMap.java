@@ -54,7 +54,7 @@ public class HiveAuthzPrivilegesMap {
         setOperationType(HiveOperationType.DDL).
         build();
     HiveAuthzPrivileges alterDbPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
-        addInputObjectPriviledge(AuthorizableType.Db, EnumSet.of(DBModelAction.ALTER)).
+        addOutputObjectPriviledge(AuthorizableType.Db, EnumSet.of(DBModelAction.ALTER)).
         setOperationScope(HiveOperationScope.DATABASE).
         setOperationType(HiveOperationType.DDL).
         build();
