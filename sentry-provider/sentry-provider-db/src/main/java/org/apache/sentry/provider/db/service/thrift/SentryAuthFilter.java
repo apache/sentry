@@ -56,7 +56,7 @@ public class SentryAuthFilter extends AuthenticationFilter {
     LOG.debug("Authenticating user: " + userName + " from request.");
     if (!allowUsers.contains(userName)) {
       response.sendError(HttpServletResponse.SC_FORBIDDEN,
-          userName + " is unauthorized.");
+          userName + " is unauthorized. status code: " + HttpServletResponse.SC_FORBIDDEN);
     }
   }
 

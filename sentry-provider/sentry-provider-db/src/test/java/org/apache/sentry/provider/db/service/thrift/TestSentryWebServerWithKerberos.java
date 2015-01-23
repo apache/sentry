@@ -31,15 +31,20 @@ import javax.security.auth.login.LoginContext;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.security.authentication.client.AuthenticatedURL;
+import org.apache.hadoop.security.authentication.client.AuthenticationException;
 import org.apache.hadoop.security.authentication.client.KerberosAuthenticator;
 import org.apache.sentry.service.thrift.KerberosConfiguration;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
 import org.junit.Assert;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Sets;
 
 public class TestSentryWebServerWithKerberos extends SentryServiceIntegrationBase {
+
+  private static Logger LOG = LoggerFactory.getLogger(TestSentryWebServerWithKerberos.class);
 
   @Override
   public void beforeSetup() throws Exception {
@@ -102,9 +107,12 @@ public class TestSentryWebServerWithKerberos extends SentryServiceIntegrationBas
         try {
           new AuthenticatedURL(new KerberosAuthenticator()).openConnection(url, new AuthenticatedURL.Token());
           fail("Here should fail.");
-        } catch (Exception e) {
-          String expectedError = "status: 403, message: user is unauthorized.";
-          Assert.assertTrue(e.getMessage().contains(expectedError));
+        } catch (AuthenticationException e) {
+          String expectedError = "status code: 403";
+          if (!e.getMessage().contains(expectedError)) {
+            LOG.error("UnexpectedError: " + e.getMessage(), e);
+            fail("UnexpectedError: " + e.getMessage());
+          }
         }
         return null;
       }
