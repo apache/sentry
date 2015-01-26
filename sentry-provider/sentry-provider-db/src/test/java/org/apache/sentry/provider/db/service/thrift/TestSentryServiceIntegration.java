@@ -407,6 +407,7 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
       }});
   }
 
+  @Test
   public void testListByAuthDB() throws Exception {
     runTestAsSubject(new TestOperation(){
       @Override
@@ -557,11 +558,9 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
         // build expected output
         TSentryPrivilegeMap db1RoleToPrivMap = new TSentryPrivilegeMap(
             new TreeMap<String, Set<TSentryPrivilege>>());
-        db1RoleToPrivMap.getPrivilegeMap()
-    .put(roleName1,
+        db1RoleToPrivMap.getPrivilegeMap().put(roleName1,
             Sets.newHashSet(role1db2tab));
-        db1RoleToPrivMap.getPrivilegeMap()
-    .put(roleName2,
+        db1RoleToPrivMap.getPrivilegeMap().put(roleName2,
             Sets.newHashSet(role2db2tab));
         Map<TSentryAuthorizable, TSentryPrivilegeMap> expectedResults = Maps
             .newTreeMap();
