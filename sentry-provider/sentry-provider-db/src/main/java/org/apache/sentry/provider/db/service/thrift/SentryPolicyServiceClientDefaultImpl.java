@@ -255,7 +255,7 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
     request.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
     request.setRequestorUserName(requestorUserName);
     request.setRoleName(roleName);
-    if (authorizable != null) {
+    if (authorizable != null && !authorizable.isEmpty()) {
       TSentryAuthorizable tSentryAuthorizable = setupSentryAuthorizable(authorizable);
       request.setAuthorizableHierarchy(tSentryAuthorizable);
     }
