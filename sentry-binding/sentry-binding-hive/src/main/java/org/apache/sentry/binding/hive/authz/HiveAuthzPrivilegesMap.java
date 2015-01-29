@@ -43,7 +43,7 @@ public class HiveAuthzPrivilegesMap {
         build();
 
     HiveAuthzPrivileges tableCreatePrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
-        addInputObjectPriviledge(AuthorizableType.Db, EnumSet.of(DBModelAction.CREATE)).
+        addOutputObjectPriviledge(AuthorizableType.Db, EnumSet.of(DBModelAction.CREATE)).
         addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.ALL)).//TODO: make it optional
         setOperationScope(HiveOperationScope.DATABASE).
         setOperationType(HiveOperationType.DDL).

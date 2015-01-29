@@ -163,7 +163,7 @@ public class TestHiveAuthzBindings {
    */
   @Test
   public void testValidateCreateTabPrivilegesForAdmin() throws Exception {
-    inputTabHierarcyList.add(buildObjectHierarchy(SERVER1, CUSTOMER_DB, null));
+    outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, CUSTOMER_DB, null));
     testAuth.authorize(HiveOperation.CREATETABLE, createTabPrivileges, ADMIN_SUBJECT,
         inputTabHierarcyList, outputTabHierarcyList);
   }
@@ -173,7 +173,7 @@ public class TestHiveAuthzBindings {
    */
   @Test
   public void testValidateCreateTabPrivilegesForUser() throws Exception {
-    inputTabHierarcyList.add(buildObjectHierarchy(SERVER1, JUNIOR_ANALYST_DB, null));
+    outputTabHierarcyList.add(buildObjectHierarchy(SERVER1, JUNIOR_ANALYST_DB, null));
     testAuth.authorize(HiveOperation.CREATETABLE, createTabPrivileges, MANAGER_SUBJECT,
         inputTabHierarcyList, outputTabHierarcyList);
   }
