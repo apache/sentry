@@ -124,7 +124,6 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     statement.execute("SELECT printf_test_2_perm(value) FROM " + tableName1);
     statement.execute("DROP FUNCTION printf_test_2_perm");
 
-    /*** Disabled till HIVE-8266 is addressed
     // USER2 doesn't have URI perm on dataFile
     try {
       statement
@@ -136,7 +135,6 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     } catch (SQLException e) {
       context.verifyAuthzException(e);
     }
-    ***/
 
     context.close();
 
