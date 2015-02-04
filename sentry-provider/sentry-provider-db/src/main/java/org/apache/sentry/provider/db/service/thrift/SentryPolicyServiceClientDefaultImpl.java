@@ -657,12 +657,27 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
     }
   }
 
+  @Override
   public synchronized void grantRoleToGroup(String requestorUserName,
       String groupName, String roleName)
   throws SentryUserException {
-    TAlterSentryRoleAddGroupsRequest request = new TAlterSentryRoleAddGroupsRequest(ThriftConstants.
-TSENTRY_SERVICE_VERSION_CURRENT, requestorUserName,
-        roleName, Sets.newHashSet(new TSentryGroup(groupName)));
+    grantRoleToGroups(requestorUserName, roleName, Sets.newHashSet(groupName));
+  }
+
+  @Override
+  public synchronized void revokeRoleFromGroup(String requestorUserName,
+      String groupName, String roleName)
+  throws SentryUserException {
+    revokeRoleFromGroups(requestorUserName, roleName, Sets.newHashSet(groupName));
+  }
+
+  @Override
+  public synchronized void grantRoleToGroups(String requestorUserName,
+      String roleName, Set<String> groups)
+  throws SentryUserException {
+    TAlterSentryRoleAddGroupsRequest request = new TAlterSentryRoleAddGroupsRequest(
+        ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT, requestorUserName,
+        roleName, convert2TGroups(groups));
     try {
       TAlterSentryRoleAddGroupsResponse response = client.alter_sentry_role_add_groups(request);
       Status.throwIfNotOk(response.getStatus());
@@ -671,18 +686,29 @@ TSENTRY_SERVICE_VERSION_CURRENT, requestorUserName,
     }
   }
 
-  public synchronized void revokeRoleFromGroup(String requestorUserName,
-      String groupName, String roleName)
+  @Override
+  public synchronized void revokeRoleFromGroups(String requestorUserName,
+      String roleName, Set<String> groups)
   throws SentryUserException {
-    TAlterSentryRoleDeleteGroupsRequest request = new TAlterSentryRoleDeleteGroupsRequest(ThriftConstants.
-TSENTRY_SERVICE_VERSION_CURRENT, requestorUserName,
-        roleName, Sets.newHashSet(new TSentryGroup(groupName)));
+    TAlterSentryRoleDeleteGroupsRequest request = new TAlterSentryRoleDeleteGroupsRequest(
+        ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT, requestorUserName,
+        roleName, convert2TGroups(groups));
     try {
       TAlterSentryRoleDeleteGroupsResponse response = client.alter_sentry_role_delete_groups(request);
       Status.throwIfNotOk(response.getStatus());
     } catch (TException e) {
       throw new SentryUserException(THRIFT_EXCEPTION_MESSAGE, e);
     }
+  }
+
+  private Set<TSentryGroup> convert2TGroups(Set<String> groups) {
+    Set<TSentryGroup> tGroups = Sets.newHashSet();
+    if (groups != null) {
+      for (String groupName : groups) {
+        tGroups.add(new TSentryGroup(groupName));
+      }
+    }
+    return tGroups;
   }
 
   public synchronized void dropPrivileges(String requestorUserName,

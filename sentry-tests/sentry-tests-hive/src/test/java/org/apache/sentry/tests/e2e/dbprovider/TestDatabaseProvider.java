@@ -2003,4 +2003,70 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
 
   }
 
+  /**
+   * Regression test for SENTRY-617.
+   */
+  @Test
+  public void testGrantRevokeRoleToGroups() throws Exception {
+    super.setupAdmin();
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("USE " + DB1);
+    statement.execute("DROP TABLE IF EXISTS t1");
+    statement.execute("CREATE TABLE t1 (c1 string)");
+    statement.execute("CREATE ROLE user_role");
+    statement.execute("GRANT ALL ON TABLE t1 TO ROLE user_role");
+
+    // grant role to group user_group1, group user_group2, user_group3
+    statement.execute("GRANT ROLE user_role TO GROUP " + USERGROUP1
+        + ", GROUP " + USERGROUP2 + ", GROUP " + USERGROUP3);
+
+    // user1, user2, user3 should have permission to access table t1
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    statement.execute("SELECT * FROM " + DB1 + ".t1");
+    connection = context.createConnection(USER2_1);
+    statement = context.createStatement(connection);
+    statement.execute("SELECT * FROM " + DB1 + ".t1");
+    connection = context.createConnection(USER3_1);
+    statement = context.createStatement(connection);
+    statement.execute("SELECT * FROM " + DB1 + ".t1");
+
+    // revoke role from group user_group1, group user_group2
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    statement.execute("REVOKE ROLE user_role FROM GROUP " + USERGROUP1
+        + ", GROUP " + USERGROUP2);
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    try {
+      // INSERT is not allowed
+      statement.execute("SELECT * FROM " + DB1 + ".t1");
+      assertTrue("after revoking, user1 has no permission to access table t1", false);
+    } catch (Exception e) {
+      // Ignore
+    }
+
+    connection = context.createConnection(USER2_1);
+    statement = context.createStatement(connection);
+    try {
+      // INSERT is not allowed
+      statement.execute("SELECT * FROM " + DB1 + ".t1");
+      assertTrue("after revoking, user1 has no permission to access table t1", false);
+    } catch (Exception e) {
+      // Ignore
+    }
+
+    // user3 still has permission to access table t1
+    connection = context.createConnection(USER3_1);
+    statement = context.createStatement(connection);
+    statement.execute("SELECT * FROM " + DB1 + ".t1");
+
+    statement.close();
+    connection.close();
+  }
+
 }

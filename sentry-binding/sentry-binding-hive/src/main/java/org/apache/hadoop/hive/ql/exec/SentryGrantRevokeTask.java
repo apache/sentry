@@ -86,6 +86,7 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 
 public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable {
   private static final Logger LOG = LoggerFactory
@@ -397,21 +398,26 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
       boolean grantRole = desc.getGrant();
       List<PrincipalDesc> principals = desc.getPrincipalDesc();
       List<String> roles = desc.getRoles();
+      // get principals
+      Set<String> groups = Sets.newHashSet();
       for (PrincipalDesc principal : principals) {
         if (principal.getType() != PrincipalType.GROUP) {
           String msg = SentryHiveConstants.GRANT_REVOKE_NOT_SUPPORTED_FOR_PRINCIPAL +
               principal.getType();
           throw new HiveException(msg);
         }
-        String groupName = principal.getName();
-        for (String roleName : roles) {
-          if (grantRole) {
-            sentryClient.grantRoleToGroup(subject, groupName, roleName);
-          } else {
-            sentryClient.revokeRoleFromGroup(subject, groupName, roleName);
-          }
+        groups.add(principal.getName());
+      }
+
+      // grant/revoke role to/from principals
+      for (String roleName : roles) {
+        if (grantRole) {
+          sentryClient.grantRoleToGroups(subject, roleName, groups);
+        } else {
+          sentryClient.revokeRoleFromGroups(subject, roleName, groups);
         }
       }
+
     } catch (HiveException e) {
       String msg = "Error in grant/revoke operation, error message " + e.getMessage();
       LOG.warn(msg, e);
