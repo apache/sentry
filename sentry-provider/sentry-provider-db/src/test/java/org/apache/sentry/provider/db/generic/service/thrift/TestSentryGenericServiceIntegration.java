@@ -23,13 +23,10 @@ import static org.junit.Assert.fail;
 
 import java.security.PrivilegedExceptionAction;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import javax.security.auth.Subject;
-import javax.security.auth.kerberos.KerberosPrincipal;
-import javax.security.auth.login.LoginContext;
 
 import org.apache.sentry.SentryUserException;
 import org.apache.sentry.core.common.ActiveRoleSet;
@@ -37,10 +34,8 @@ import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.model.search.Collection;
 import org.apache.sentry.core.model.search.Field;
 import org.apache.sentry.core.model.search.SearchConstants;
-import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
-import org.apache.sentry.service.thrift.KerberosConfiguration;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
-import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
+import org.junit.After;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
@@ -58,14 +53,6 @@ public class TestSentryGenericServiceIntegration extends SentryServiceIntegratio
     // The client should already be logged in when running in solr
     // therefore we must manually login in the integration tests
     if (kerberos) {
-      conf.set(ServerConfig.SECURITY_USE_UGI_TRANSPORT, "false");
-      clientSubject = new Subject(false, Sets.newHashSet(
-          new KerberosPrincipal(CLIENT_KERBEROS_NAME)), new HashSet<Object>(),
-        new HashSet<Object>());
-      clientLoginContext = new LoginContext("", clientSubject, null,
-          KerberosConfiguration.createClientConfig(CLIENT_KERBEROS_NAME, clientKeytab));
-      clientLoginContext.login();
-      clientSubject = clientLoginContext.getSubject();
       this.client = Subject.doAs(clientSubject, new PrivilegedExceptionAction<SentryGenericServiceClient>() {
         @Override
         public SentryGenericServiceClient run() throws Exception {
@@ -75,6 +62,18 @@ public class TestSentryGenericServiceIntegration extends SentryServiceIntegratio
     } else {
       this.client = new SentryGenericServiceClient(conf);
     }
+  }
+
+  @After
+  public void after() throws SentryUserException {
+    Set<TSentryRole> tRoles = client.listAllRoles(ADMIN_USER, SOLR);
+    for (TSentryRole tRole : tRoles) {
+      client.dropRole(ADMIN_USER, tRole.getRoleName(), SOLR);
+    }
+    if(client != null) {
+      client.close();
+    }
+    policyFilePath.delete();
   }
 
   @Test

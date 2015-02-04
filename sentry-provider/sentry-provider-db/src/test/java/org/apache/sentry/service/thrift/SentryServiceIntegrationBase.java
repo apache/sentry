@@ -33,15 +33,19 @@ import org.apache.curator.test.TestingServer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.minikdc.MiniKdc;
 import org.apache.hadoop.net.NetUtils;
+import org.apache.sentry.SentryUserException;
 import org.apache.sentry.provider.db.service.thrift.SentryMiniKdcTestcase;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
+import org.apache.sentry.provider.db.service.thrift.TSentryRole;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.apache.zookeeper.server.ZooKeeperSaslServer;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +65,7 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
   protected static final String SERVER_HOST = NetUtils.createSocketAddr("localhost:80").getAddress().getCanonicalHostName();
   protected static final String REALM = "EXAMPLE.COM";
   protected static final String SERVER_PRINCIPAL = "sentry/" + SERVER_HOST;
-  protected static final String SERVER_KERBEROS_NAME = "sentry/" + SERVER_HOST + "@" + REALM;
+  protected static String SERVER_KERBEROS_NAME = "sentry/" + SERVER_HOST + "@" + REALM;
   protected static final String HTTP_PRINCIPAL = "HTTP/" + SERVER_HOST;
   protected static final String CLIENT_PRINCIPAL = "hive/" + SERVER_HOST;
   protected static final String CLIENT_KERBEROS_SHORT_NAME = "hive";
@@ -70,47 +74,46 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
   protected static final String ADMIN_USER = "admin_user";
   protected static final String ADMIN_GROUP = "admin_group";
 
-  protected SentryService server;
+  protected static SentryService server;
   protected SentryPolicyServiceClient client;
-  protected MiniKdc kdc;
-  protected File kdcWorkDir;
-  protected File dbDir;
-  protected File serverKeytab;
-  protected File httpKeytab;
-  protected File clientKeytab;
-  protected Subject clientSubject;
-  protected LoginContext clientLoginContext;
-  protected boolean kerberos;
-  protected final Configuration conf = new Configuration(false);
+  protected static MiniKdc kdc;
+  protected static File kdcWorkDir;
+  protected static File dbDir;
+  protected static File serverKeytab;
+  protected static File httpKeytab;
+  protected static File clientKeytab;
+  protected static Subject clientSubject;
+  protected static LoginContext clientLoginContext;
+  protected static boolean kerberos;
+  protected final static Configuration conf = new Configuration(false);
   protected PolicyFile policyFile;
   protected File policyFilePath;
-  protected Properties kdcConfOverlay = new Properties();
+  protected static Properties kdcConfOverlay = new Properties();
 
-  protected boolean haEnabled = false;
+  protected static boolean haEnabled = false;
   protected static final String ZK_SERVER_PRINCIPAL = "zookeeper/" + SERVER_HOST;
-  protected TestingServer zkServer;
+  protected static TestingServer zkServer;
 
-  private File ZKKeytabFile;
+  private static File ZKKeytabFile;
 
-  protected boolean webServerEnabled = false;
-  protected int webServerPort = ServerConfig.SENTRY_WEB_PORT_DEFAULT;
-  protected boolean webSecurity = false;
+  protected static boolean webServerEnabled = false;
+  protected static int webServerPort = ServerConfig.SENTRY_WEB_PORT_DEFAULT;
+  protected static boolean webSecurity = false;
 
-  @Before
-  public void setup() throws Exception {
-    this.kerberos = true;
+  @BeforeClass
+  public static void setup() throws Exception {
+    kerberos = true;
     beforeSetup();
     setupConf();
     startSentryService();
-    connectToSentryService();
     afterSetup();
   }
 
-  private void setupKdc() throws Exception {
+  private static void setupKdc() throws Exception {
     startMiniKdc(kdcConfOverlay);
   }
 
-  public void startSentryService() throws Exception {
+  public static void startSentryService() throws Exception {
     server.start();
     final long start = System.currentTimeMillis();
     while(!server.isRunning()) {
@@ -121,7 +124,7 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
     }
   }
 
-  public void setupConf() throws Exception {
+  public static void setupConf() throws Exception {
     if (kerberos) {
       setupKdc();
       kdc = getKdc();
@@ -133,6 +136,15 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
       conf.set(ServerConfig.PRINCIPAL, getServerKerberosName());
       conf.set(ServerConfig.KEY_TAB, serverKeytab.getPath());
       conf.set(ServerConfig.ALLOW_CONNECT, CLIENT_KERBEROS_SHORT_NAME);
+
+      conf.set(ServerConfig.SECURITY_USE_UGI_TRANSPORT, "false");
+      clientSubject = new Subject(false, Sets.newHashSet(
+          new KerberosPrincipal(CLIENT_KERBEROS_NAME)), new HashSet<Object>(),
+        new HashSet<Object>());
+      clientLoginContext = new LoginContext("", clientSubject, null,
+          KerberosConfiguration.createClientConfig(CLIENT_KERBEROS_NAME, clientKeytab));
+      clientLoginContext.login();
+      clientSubject = clientLoginContext.getSubject();
     } else {
       LOGGER.info("Stopped KDC");
       conf.set(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_NONE);
@@ -176,24 +188,33 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
     conf.set(ClientConfig.SERVER_RPC_PORT, String.valueOf(server.getAddress().getPort()));
     conf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING,
         ServerConfig.SENTRY_STORE_LOCAL_GROUP_MAPPING);
+  }
+
+  @Before
+  public void before() throws Exception {
     policyFilePath = new File(dbDir, "local_policy_file.ini");
     conf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE,
         policyFilePath.getPath());
     policyFile = new PolicyFile();
+    connectToSentryService();
+  }
+
+  @After
+  public void after() throws SentryUserException {
+    if (client != null) {
+      Set<TSentryRole> tRoles = client.listRoles(ADMIN_USER);
+      if (tRoles != null) {
+        for (TSentryRole tRole : tRoles) {
+          client.dropRole(ADMIN_USER, tRole.getRoleName());
+        }
+      }
+      client.close();
+    }
+    policyFilePath.delete();
   }
 
   public void connectToSentryService() throws Exception {
-    // The client should already be logged in when running in hive/impala/solr
-    // therefore we must manually login in the integration tests
     if (kerberos) {
-      conf.set(ServerConfig.SECURITY_USE_UGI_TRANSPORT, "false");
-      clientSubject = new Subject(false, Sets.newHashSet(
-          new KerberosPrincipal(CLIENT_KERBEROS_NAME)), new HashSet<Object>(),
-        new HashSet<Object>());
-      clientLoginContext = new LoginContext("", clientSubject, null,
-          KerberosConfiguration.createClientConfig(CLIENT_KERBEROS_NAME, clientKeytab));
-      clientLoginContext.login();
-      clientSubject = clientLoginContext.getSubject();
       client = Subject.doAs(clientSubject, new PrivilegedExceptionAction<SentryPolicyServiceClient>() {
         @Override
         public SentryPolicyServiceClient run() throws Exception {
@@ -205,12 +226,10 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
     }
   }
 
-  @After
-  public void tearDown() throws Exception {
+  @AfterClass
+  public static void tearDown() throws Exception {
     beforeTeardown();
-    if(client != null) {
-      client.close();
-    }
+
     if(clientLoginContext != null) {
       try {
         clientLoginContext.logout();
@@ -224,23 +243,24 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
     if (dbDir != null) {
       FileUtils.deleteQuietly(dbDir);
     }
+    stopMiniKdc();
     afterTeardown();
   }
 
-  public String getServerKerberosName() {
+  public static String getServerKerberosName() {
     return SERVER_KERBEROS_NAME;
   }
 
-  public void beforeSetup() throws Exception {
+  public static void beforeSetup() throws Exception {
 
   }
-  public void afterSetup() throws Exception {
+  public static void afterSetup() throws Exception {
 
   }
-  public void beforeTeardown() throws Exception {
+  public static void beforeTeardown() throws Exception {
 
   }
-  public void afterTeardown() throws Exception {
+  public static void afterTeardown() throws Exception {
 
   }
   protected static void assertOK(TSentryResponseStatus resp) {
@@ -269,7 +289,7 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
     policyFile.write(policyFilePath);
   }
 
-  protected TestingServer getZKServer() throws Exception {
+  protected static TestingServer getZKServer() throws Exception {
     if (!kerberos) {
       LOGGER.info("Creating a non-security ZooKeeper Server.");
       return new TestingServer();
@@ -302,7 +322,7 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
   }
 
   protected void runTestAsSubject(final TestOperation test) throws Exception {
-    if (this.kerberos) {
+    if (kerberos) {
       Subject.doAs(clientSubject, new PrivilegedExceptionAction<Void>() {
         @Override
         public Void run() throws Exception {

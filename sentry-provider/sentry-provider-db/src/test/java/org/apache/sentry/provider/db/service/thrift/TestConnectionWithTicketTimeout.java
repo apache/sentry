@@ -19,6 +19,7 @@
 package org.apache.sentry.provider.db.service.thrift;
 
 import org.apache.hadoop.minikdc.MiniKdc;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -26,9 +27,16 @@ import org.junit.Test;
 public class TestConnectionWithTicketTimeout extends
     org.apache.sentry.service.thrift.SentryServiceIntegrationBase {
 
+  @BeforeClass
+  public static void setup() throws Exception {
+    kerberos = true;
+    beforeSetup();
+    setupConf();
+    startSentryService();
+    afterSetup();
+  }
 
-  @Override
-  public void beforeSetup() throws Exception {
+  public static void beforeSetup() throws Exception {
     kdcConfOverlay.setProperty(MiniKdc.MAX_TICKET_LIFETIME, "300001");
   }
 

@@ -17,24 +17,32 @@
  */
 package org.apache.sentry.provider.db.service.thrift;
 
-import java.util.Properties;
-
-import org.apache.hadoop.minikdc.MiniKdc;
+import org.apache.sentry.SentryUserException;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
-import org.junit.Ignore;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Test various kerberos related stuff on the SentryService side
  */
 public class TestSentryServiceWithKerberos extends SentryServiceIntegrationBase {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(TestSentryServiceFailureCase.class);
+  @BeforeClass
+  public static void setup() throws Exception {
+    SERVER_KERBEROS_NAME = "sentry/_HOST@" + REALM;
+    SentryServiceIntegrationBase.setup();
+  }
 
-  public String getServerKerberosName() {
-    return "sentry/_HOST@" + REALM;
+  @Override
+  @Before
+  public void before() throws Exception {
+  }
+
+  @Override
+  @After
+  public void after() throws SentryUserException {
   }
 
   /**

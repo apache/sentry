@@ -18,7 +18,11 @@
 package org.apache.sentry.provider.db.service.thrift;
 
 
+import org.apache.sentry.SentryUserException;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -26,15 +30,25 @@ import org.junit.Test;
  */
 public class TestSentryServiceForHAWithKerberos extends SentryServiceIntegrationBase {
 
-  @Override
-  public void beforeSetup() throws Exception {
-    this.haEnabled = true;
-    this.kerberos = true;
+  @BeforeClass
+  public static void setup() throws Exception {
+    kerberos = true;
+    haEnabled = true;
+    SERVER_KERBEROS_NAME = "sentry/_HOST@" + REALM;
+    beforeSetup();
+    setupConf();
+    startSentryService();
+    afterSetup();
   }
 
   @Override
-  public String getServerKerberosName() {
-    return "sentry/_HOST@" + REALM;
+  @Before
+  public void before() throws Exception {
+  }
+
+  @Override
+  @After
+  public void after() throws SentryUserException {
   }
 
   /**

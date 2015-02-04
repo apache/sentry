@@ -22,44 +22,42 @@ import java.io.File;
 import java.util.Properties;
 
 import org.apache.hadoop.minikdc.MiniKdc;
-import org.junit.After;
 
 public class SentryMiniKdcTestcase {
 
-  private File workDir;
-  private Properties conf;
-  private MiniKdc kdc;
+  private static File workDir;
+  private static Properties conf;
+  private static MiniKdc kdc;
 
-  public void startMiniKdc(Properties confOverlay) throws Exception {
+  public static void startMiniKdc(Properties confOverlay) throws Exception {
     createTestDir();
     createMiniKdcConf(confOverlay);
     kdc = new MiniKdc(conf, workDir);
     kdc.start();
   }
 
-  private void createMiniKdcConf(Properties confOverlay) {
+  private static void createMiniKdcConf(Properties confOverlay) {
     conf = MiniKdc.createConf();
     for ( Object property : confOverlay.keySet()) {
       conf.put(property, confOverlay.get(property));
     }
   }
 
-  private void createTestDir() {
+  private static void createTestDir() {
     workDir = new File(System.getProperty("test.dir", "target"));
   }
 
-  @After
-  public void stopMiniKdc() {
+  public static void stopMiniKdc() {
     if (kdc != null) {
       kdc.stop();
     }
   }
 
-  public MiniKdc getKdc() {
+  public static MiniKdc getKdc() {
     return kdc;
   }
 
-  public File getWorkDir() {
+  public static File getWorkDir() {
     return workDir;
   }
 

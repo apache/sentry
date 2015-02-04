@@ -20,10 +20,13 @@ package org.apache.sentry.provider.db.service.thrift;
 
 import java.security.PrivilegedActionException;
 
+import org.apache.sentry.SentryUserException;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,14 +36,25 @@ import com.google.common.base.Strings;
 public class TestSentryServiceFailureCase extends SentryServiceIntegrationBase {
   private static final Logger LOGGER = LoggerFactory.getLogger(TestSentryServiceFailureCase.class);
   private static final String PEER_CALLBACK_FAILURE = "Peer indicated failure: Problem with callback handler";
-  @Before @Override
-  public void setup() throws Exception {
-    this.kerberos = true;
+
+  @BeforeClass
+  public static void setup() throws Exception {
+    kerberos = true;
     beforeSetup();
     setupConf();
     conf.set(ServerConfig.ALLOW_CONNECT, "");
     startSentryService();
     afterSetup();
+  }
+
+  @Override
+  @Before
+  public void before() throws Exception {
+  }
+
+  @Override
+  @After
+  public void after() throws SentryUserException {
   }
 
   @Test

@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-import org.apache.sentry.SentryUserException;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.model.db.AccessConstants;
@@ -781,6 +780,11 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
     runTestAsSubject(new TestOperation(){
       @Override
       public void runTestAsSubject() throws Exception {
+        String requestorUserName = ADMIN_USER;
+        Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
+        setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+        writePolicyFile();
+
         String val;
 
         // Basic success case
@@ -814,13 +818,6 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
         // Attempt to get the location of the keytab also fails
         checkBannedConfigVal("sentry.service.server.keytab", null);
 
-        // null parameter name fails
-        try {
-          val = client.getConfigValue(null, null);
-          fail("null parameter succeeded");
-        } catch (SentryUserException e) {
-          // expected
-        }
       }});
   }
 }

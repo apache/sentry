@@ -21,16 +21,31 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.sentry.SentryUserException;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestSentryWebServerWithoutSecurity extends SentryServiceIntegrationBase {
 
-  @Override
-  public void beforeSetup() throws Exception {
+  @BeforeClass
+  public static void setup() throws Exception {
     webServerEnabled = true;
     webSecurity = false;
+    SentryServiceIntegrationBase.setup();
+  }
+
+  @Override
+  @Before
+  public void before() throws Exception {
+  }
+
+  @Override
+  @After
+  public void after() throws SentryUserException {
   }
 
   @Test

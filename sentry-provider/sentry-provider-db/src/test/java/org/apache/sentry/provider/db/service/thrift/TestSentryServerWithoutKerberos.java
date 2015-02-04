@@ -32,6 +32,7 @@ import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.core.model.db.Table;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
@@ -39,9 +40,13 @@ import com.google.common.collect.Sets;
 
 public class TestSentryServerWithoutKerberos extends SentryServiceIntegrationBase {
 
-  @Override
-  public void beforeSetup() throws Exception {
-    this.kerberos = false;
+  @BeforeClass
+  public static void setup() throws Exception {
+    kerberos = false;
+    beforeSetup();
+    setupConf();
+    startSentryService();
+    afterSetup();
   }
 
   @Test

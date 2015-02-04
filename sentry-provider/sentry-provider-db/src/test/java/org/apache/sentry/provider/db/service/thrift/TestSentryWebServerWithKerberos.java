@@ -33,9 +33,13 @@ import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.security.authentication.client.AuthenticatedURL;
 import org.apache.hadoop.security.authentication.client.AuthenticationException;
 import org.apache.hadoop.security.authentication.client.KerberosAuthenticator;
+import org.apache.sentry.SentryUserException;
 import org.apache.sentry.service.thrift.KerberosConfiguration;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,10 +50,21 @@ public class TestSentryWebServerWithKerberos extends SentryServiceIntegrationBas
 
   private static Logger LOG = LoggerFactory.getLogger(TestSentryWebServerWithKerberos.class);
 
-  @Override
-  public void beforeSetup() throws Exception {
+  @BeforeClass
+  public static void setup() throws Exception {
     webServerEnabled = true;
     webSecurity = true;
+    SentryServiceIntegrationBase.setup();
+  }
+
+  @Override
+  @Before
+  public void before() throws Exception {
+  }
+
+  @Override
+  @After
+  public void after() throws SentryUserException {
   }
 
   @Test

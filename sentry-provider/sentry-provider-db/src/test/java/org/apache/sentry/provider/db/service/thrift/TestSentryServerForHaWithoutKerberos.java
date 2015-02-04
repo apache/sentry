@@ -18,7 +18,6 @@
 
 package org.apache.sentry.provider.db.service.thrift;
 import static junit.framework.Assert.assertEquals;
-import static org.junit.Assert.assertEquals;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -31,6 +30,7 @@ import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.core.model.db.Table;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
@@ -38,10 +38,14 @@ import com.google.common.collect.Sets;
 
 public class TestSentryServerForHaWithoutKerberos extends SentryServiceIntegrationBase {
 
-  @Override
-  public void beforeSetup() throws Exception {
-    this.haEnabled = true;
-    this.kerberos = false;
+  @BeforeClass
+  public static void setup() throws Exception {
+    kerberos = false;
+    haEnabled = true;
+    beforeSetup();
+    setupConf();
+    startSentryService();
+    afterSetup();
   }
 
   @Test
