@@ -114,6 +114,8 @@ public abstract class AbstractTestWithStaticConfiguration {
   protected static boolean setMetastoreListener = false;
   protected static String testServerType = null;
   protected static boolean enableHiveConcurrency = false;
+  // indicate if the database need to be clear for every test case in one test class
+  protected static boolean clearDbAfterPerTest = true;
 
   protected static File baseDir;
   protected static File logDir;
@@ -252,8 +254,7 @@ public abstract class AbstractTestWithStaticConfiguration {
         baseDir, confDir, logDir, policyFile, fileSystem);
   }
 
-  protected void writePolicyFile(PolicyFile policyFile) throws Exception{
-
+  protected void writePolicyFile(PolicyFile policyFile) throws Exception {
     policyFile.write(context.getPolicyFile());
     if(policyOnHdfs) {
       dfs.writePolicyFile(context.getPolicyFile());
@@ -262,7 +263,7 @@ public abstract class AbstractTestWithStaticConfiguration {
     }
   }
 
-  private void grantPermissions(PolicyFile policyFile) throws Exception{
+  private void grantPermissions(PolicyFile policyFile) throws Exception {
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
 
@@ -295,6 +296,7 @@ public abstract class AbstractTestWithStaticConfiguration {
       }
     }
   }
+
   private void addPrivilege(String roleName, String privileges, Statement statement)
       throws IOException, SQLException{
     String serverName = null, dbName = null, tableName = null, uriPath = null, columnName = null;
@@ -415,31 +417,31 @@ public abstract class AbstractTestWithStaticConfiguration {
 
   @After
   public void clearDB() throws Exception {
-    Connection connection;
-    Statement statement;
-    connection = context.createConnection(ADMIN1);
-    statement = context.createStatement(connection);
-
-    String [] dbs = { DB1, DB2, DB3};
-    for (String db: dbs) {
-      statement.execute("DROP DATABASE if exists " + db + " CASCADE");
-    }
     ResultSet resultSet;
-    statement.execute("USE default");
-    resultSet = statement.executeQuery("SHOW tables");
-    while(resultSet.next()) {
-      Statement statement2 = context.createStatement(connection);
-      statement2.execute("DROP table " + resultSet.getString(1));
-      statement2.close();
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+
+    if (clearDbAfterPerTest) {
+      String[] dbs = { DB1, DB2, DB3 };
+      for (String db : dbs) {
+        statement.execute("DROP DATABASE if exists " + db + " CASCADE");
+      }
+      statement.execute("USE default");
+      resultSet = statement.executeQuery("SHOW tables");
+      while (resultSet.next()) {
+        Statement statement2 = context.createStatement(connection);
+        statement2.execute("DROP table " + resultSet.getString(1));
+        statement2.close();
+      }
     }
 
     if(useSentryService) {
       resultSet = statement.executeQuery("SHOW roles");
       List<String> roles = new ArrayList<String>();
-      while ( resultSet.next()) {
+      while (resultSet.next()) {
         roles.add(resultSet.getString(1));
       }
-      for(String role:roles) {
+      for (String role : roles) {
         statement.execute("DROP Role " + role);
       }
     }
@@ -448,10 +450,9 @@ public abstract class AbstractTestWithStaticConfiguration {
 
   }
 
-  protected void setupAdmin() throws Exception {
-
+  protected static void setupAdmin() throws Exception {
     if(useSentryService) {
-    Connection connection = context.createConnection(ADMIN1);
+      Connection connection = context.createConnection(ADMIN1);
       Statement statement = connection.createStatement();
       try {
         statement.execute("CREATE ROLE admin_role");
