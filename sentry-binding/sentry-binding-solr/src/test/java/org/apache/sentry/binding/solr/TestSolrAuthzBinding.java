@@ -25,10 +25,13 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
+import java.util.UUID;
 
 import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.sentry.binding.solr.authz.SentrySolrAuthorizationException;
 import org.apache.sentry.binding.solr.authz.SolrAuthzBinding;
 import org.apache.sentry.binding.solr.conf.SolrAuthzConf;
@@ -324,5 +327,36 @@ public class TestSolrAuthzBinding {
      binding.authorizeCollection(general1, generalInfoCollection, updateSet);
      binding.authorizeCollection(general1, generalInfoCollection, allSet);
      binding.authorizeCollection(general1, generalInfoCollection, allOfSet);
+  }
+
+  /**
+   * Test that when the resource is put on  HDFS and the scheme of the resource is not set,
+   * the resouce can be found if fs.defaultFS is specified
+   */
+  @Test
+  public void testResourceWithSchemeNotSet() throws Exception {
+    SolrAuthzConf solrAuthzConf =
+        new SolrAuthzConf(Resources.getResource("sentry-site.xml"));
+    setUsableAuthzConf(solrAuthzConf);
+
+    MiniDFSCluster dfsCluster =  HdfsTestUtil.setupClass(new File(Files.createTempDir(),
+      TestSolrAuthzBinding.class.getName() + "_"
+        + System.currentTimeMillis()).getAbsolutePath());
+    String resourceOnHDFS = "/hdfs" + File.separator + UUID.randomUUID() + File.separator + "test-authz-provider.ini";
+    try {
+      Path src = new Path(baseDir.getPath(), RESOURCE_PATH);
+      // Copy resource to HDFSS
+      dfsCluster.getFileSystem().copyFromLocalFile(false,
+          new Path(baseDir.getPath(), RESOURCE_PATH),
+          new Path(resourceOnHDFS));
+      solrAuthzConf.set(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar(), resourceOnHDFS);
+      // set HDFS as the defaultFS so the resource will be found
+      solrAuthzConf.set("fs.defaultFS", dfsCluster.getFileSystem().getConf().get("fs.defaultFS"));
+      new SolrAuthzBinding(solrAuthzConf);
+    } finally {
+      if (dfsCluster != null) {
+        HdfsTestUtil.teardownClass(dfsCluster);
+      }
+    }
   }
 }

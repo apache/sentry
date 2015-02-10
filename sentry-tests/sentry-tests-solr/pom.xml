@@ -29,12 +29,12 @@ limitations under the License.
   <name>Sentry Solr Tests</name>
   <description>end to end tests for sentry-solr integration</description>
 
-  <properties>
-    <lucene-junit.version>4.10</lucene-junit.version>
-    <carrot-search.version>2.0.10</carrot-search.version>
-  </properties>
-
   <dependencies>
+    <dependency>
+      <groupId>org.apache.sentry</groupId>
+      <artifactId>sentry-binding-solr</artifactId>
+      <type>test-jar</type>
+    </dependency>
     <dependency>
       <groupId>org.apache.solr</groupId>
       <artifactId>solr-test-framework</artifactId>
@@ -66,16 +66,6 @@ limitations under the License.
           <artifactId>servlet-api</artifactId>
         </exclusion>
       </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>${lucene-junit.version}</version> <!-- required for LuceneTestCase -->
-    </dependency>
-    <dependency>
-      <groupId>com.carrotsearch.randomizedtesting</groupId>
-      <artifactId>randomizedtesting-runner</artifactId>
-      <version>${carrot-search.version}</version>
     </dependency>
   </dependencies>
 </project>

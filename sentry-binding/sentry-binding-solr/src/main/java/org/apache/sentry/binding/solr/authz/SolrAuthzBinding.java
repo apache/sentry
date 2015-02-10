@@ -99,9 +99,9 @@ public class SolrAuthzBinding {
 
     // load the authz provider class
     Constructor<?> constrctor =
-      Class.forName(authProviderName).getDeclaredConstructor(String.class, PolicyEngine.class);
+      Class.forName(authProviderName).getDeclaredConstructor(Configuration.class, String.class, PolicyEngine.class);
     constrctor.setAccessible(true);
-    return (AuthorizationProvider) constrctor.newInstance(new Object[] {resourceName, policyEngine});
+    return (AuthorizationProvider) constrctor.newInstance(new Object[] {authzConf, resourceName, policyEngine});
   }
 
 

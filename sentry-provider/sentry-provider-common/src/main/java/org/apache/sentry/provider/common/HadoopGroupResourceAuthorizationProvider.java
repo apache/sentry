@@ -37,6 +37,11 @@ public class HadoopGroupResourceAuthorizationProvider extends
         Groups.getUserToGroupsMappingService(new Configuration())));
   }
 
+  public HadoopGroupResourceAuthorizationProvider(Configuration conf, String resource, PolicyEngine policy) throws IOException {
+    this(policy, new HadoopGroupMappingService(
+        Groups.getUserToGroupsMappingService(conf)));
+  }
+
   @VisibleForTesting
   public HadoopGroupResourceAuthorizationProvider(PolicyEngine policy,
       GroupMappingService groupService) {

@@ -19,6 +19,7 @@ package org.apache.sentry.provider.file;
 
 import java.io.IOException;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.common.ResourceAuthorizationProvider;
@@ -29,5 +30,9 @@ public class LocalGroupResourceAuthorizationProvider extends
 
   public LocalGroupResourceAuthorizationProvider(String resource, PolicyEngine policy) throws IOException {
     super(policy, new LocalGroupMappingService(new Path(resource)));
+  }
+
+  public LocalGroupResourceAuthorizationProvider(Configuration conf, String resource, PolicyEngine policy) throws IOException {
+    super(policy, new LocalGroupMappingService(conf, new Path(resource)));
   }
 }

@@ -19,6 +19,7 @@ package org.apache.sentry.provider.file;
 
 import java.io.IOException;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.common.GroupMappingService;
 
@@ -33,6 +34,10 @@ public class HadoopGroupResourceAuthorizationProvider extends
 
   public HadoopGroupResourceAuthorizationProvider(String resource, PolicyEngine policy) throws IOException {
     super(resource, policy);
+  }
+
+  public HadoopGroupResourceAuthorizationProvider(Configuration conf, String resource, PolicyEngine policy) throws IOException {
+    super(conf, resource, policy);
   }
 
   @VisibleForTesting
