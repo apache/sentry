@@ -32,6 +32,7 @@ limitations under the License.
   <modules>
     <module>sentry-policy-common</module>
     <module>sentry-policy-db</module>
+    <module>sentry-policy-indexer</module>
     <module>sentry-policy-search</module>
   </modules>
 

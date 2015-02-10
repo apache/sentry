@@ -16,38 +16,38 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sentry.policy.search;
+package org.apache.sentry.policy.indexer;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNull;
 
-import org.apache.sentry.core.model.search.Collection;
+import org.apache.sentry.core.model.indexer.Indexer;
 import org.junit.Test;
 
-public class TestSearchModelAuthorizables {
+public class TestIndexerModelAuthorizables {
 
   @Test
-  public void testCollection() throws Exception {
-    Collection coll = (Collection)SearchModelAuthorizables.from("CoLleCtiOn=collection1");
-    assertEquals("collection1", coll.getName());
+  public void testIndexer() throws Exception {
+    Indexer indexer = (Indexer)IndexerModelAuthorizables.from("InDexEr=indexer1");
+    assertEquals("indexer1", indexer.getName());
   }
 
   @Test(expected=IllegalArgumentException.class)
   public void testNoKV() throws Exception {
-    System.out.println(SearchModelAuthorizables.from("nonsense"));
+    System.out.println(IndexerModelAuthorizables.from("nonsense"));
   }
 
   @Test(expected=IllegalArgumentException.class)
   public void testEmptyKey() throws Exception {
-    System.out.println(SearchModelAuthorizables.from("=v"));
+    System.out.println(IndexerModelAuthorizables.from("=v"));
   }
 
   @Test(expected=IllegalArgumentException.class)
   public void testEmptyValue() throws Exception {
-    System.out.println(SearchModelAuthorizables.from("k="));
+    System.out.println(IndexerModelAuthorizables.from("k="));
   }
 
   @Test
   public void testNotAuthorizable() throws Exception {
-    assertNull(SearchModelAuthorizables.from("k=v"));
+    assertNull(IndexerModelAuthorizables.from("k=v"));
   }
 }
