@@ -25,7 +25,7 @@ limitations under the License.
   </parent>
 
   <artifactId>sentry-core-model-search</artifactId>
-  <name>Sentry Core Model Solr</name>
+  <name>Sentry Core Model Search</name>
 
   <dependencies>
     <dependency>
