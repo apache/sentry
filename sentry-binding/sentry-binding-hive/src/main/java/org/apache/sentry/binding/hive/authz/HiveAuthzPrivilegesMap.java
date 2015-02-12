@@ -186,6 +186,12 @@ public class HiveAuthzPrivilegesMap {
         setOperationType(HiveOperationType.QUERY).
         build();
 
+    HiveAuthzPrivileges truncateTablePrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
+        addOutputObjectPriviledge(AuthorizableType.Table, EnumSet.of(DBModelAction.DROP)).
+        setOperationScope(HiveOperationScope.TABLE).
+        setOperationType(HiveOperationType.DDL).
+        build();
+
     hiveAuthzStmtPrivMap.put(HiveOperation.CREATEDATABASE, createServerPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.DROPDATABASE, dropDbPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.CREATETABLE, tableCreatePrivilege);
@@ -284,6 +290,7 @@ public class HiveAuthzPrivilegesMap {
     hiveAuthzStmtPrivMap.put(HiveOperation.QUERY, tableQueryPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.DESCDATABASE, dbMetaDataPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.DESCTABLE, tableMetaDataPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.TRUNCATETABLE, truncateTablePrivilege);
   }
 
   public static HiveAuthzPrivileges getHiveAuthzPrivileges(HiveOperation hiveStmtOp) {
