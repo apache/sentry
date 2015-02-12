@@ -37,13 +37,9 @@ import org.apache.hadoop.hive.ql.Driver;
 import org.apache.hadoop.hive.ql.processors.CommandProcessorResponse;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.hive.serde.serdeConstants;
-import org.apache.hadoop.hive.shims.ShimLoader;
-import org.apache.hadoop.hive.shims.Utils;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.pig.PigServer;
-import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.provider.file.PolicyFile;
-import org.apache.sentry.service.thrift.SentryServiceClientFactory;
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory.HiveServer2Type;
 import org.junit.After;
@@ -65,8 +61,7 @@ public abstract class AbstractMetastoreTestWithStaticConfiguration extends
 
   }
 
-  @Override
-  protected void writePolicyFile(PolicyFile policyFile) throws Exception {
+  protected static void writePolicyFile(PolicyFile policyFile) throws Exception {
     policyFile.write(context.getPolicyFile());
   }
 

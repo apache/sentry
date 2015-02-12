@@ -39,14 +39,9 @@ public class TestPrivilegesAtColumnScope extends AbstractTestWithStaticConfigura
 
   private static PolicyFile policyFile;
   private final static String MULTI_TYPE_DATA_FILE_NAME = "emp.dat";
-  private static boolean isDBDataPrepared = false;
 
   @Before
   public void setup() throws Exception {
-    if (!isDBDataPrepared) {
-      prepareDBDataForTest();
-      isDBDataPrepared = true;
-    }
     if (useSentryService) {
       policyFile = new PolicyFile();
     } else {
@@ -56,12 +51,15 @@ public class TestPrivilegesAtColumnScope extends AbstractTestWithStaticConfigura
 
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception {
-    clearDbAfterPerTest = false;
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
+    prepareDBDataForTest();
   }
 
-  private void prepareDBDataForTest() throws Exception {
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP).setUserGroupMapping(
+  private static void prepareDBDataForTest() throws Exception {
+    clearDbAfterPerTest = false;
+    // if use sentry service, need setup admin role first
+    setupAdmin();
+    PolicyFile policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP).setUserGroupMapping(
         StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
     // copy data file to test dir

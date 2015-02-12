@@ -254,7 +254,7 @@ public abstract class AbstractTestWithStaticConfiguration {
         baseDir, confDir, logDir, policyFile, fileSystem);
   }
 
-  protected void writePolicyFile(PolicyFile policyFile) throws Exception {
+  protected static void writePolicyFile(PolicyFile policyFile) throws Exception {
     policyFile.write(context.getPolicyFile());
     if(policyOnHdfs) {
       dfs.writePolicyFile(context.getPolicyFile());
@@ -263,7 +263,7 @@ public abstract class AbstractTestWithStaticConfiguration {
     }
   }
 
-  private void grantPermissions(PolicyFile policyFile) throws Exception {
+  private static void grantPermissions(PolicyFile policyFile) throws Exception {
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
 
@@ -297,7 +297,7 @@ public abstract class AbstractTestWithStaticConfiguration {
     }
   }
 
-  private void addPrivilege(String roleName, String privileges, Statement statement)
+  private static void addPrivilege(String roleName, String privileges, Statement statement)
       throws IOException, SQLException{
     String serverName = null, dbName = null, tableName = null, uriPath = null, columnName = null;
     String action = "ALL";//AccessConstants.ALL;
