@@ -19,6 +19,7 @@ package org.apache.sentry.binding.hive;
 
 import junit.framework.Assert;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.hive.SentryHiveConstants;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
@@ -46,10 +47,14 @@ import org.apache.hadoop.hive.ql.plan.ShowGrantDesc;
 import org.apache.hadoop.hive.ql.security.HadoopDefaultAuthenticator;
 import org.apache.hadoop.hive.ql.security.authorization.Privilege;
 import org.apache.hadoop.hive.ql.session.SessionState;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import com.google.common.io.Files;
+
+import java.io.File;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
@@ -73,13 +78,18 @@ public class TestSentryHiveAuthorizationTaskFactory {
   private Hive db;
   private Table table;
   private Partition partition;
+  private File baseDir;
 
   @Before
   public void setup() throws Exception {
     conf = new HiveConf();
+    baseDir = Files.createTempDir();
+    baseDir.setWritable(true, false);
+    conf.setVar(HiveConf.ConfVars.SCRATCHDIR, baseDir.getAbsolutePath());
     SessionState.start(conf);
     conf.setVar(ConfVars.HIVE_AUTHORIZATION_TASK_FACTORY,
         SentryHiveAuthorizationTaskFactoryImpl.class.getName());
+
     db = Mockito.mock(Hive.class);
     table = new Table(DB, TABLE);
     partition = new Partition(table);
@@ -449,5 +459,12 @@ public class TestSentryHiveAuthorizationTaskFactory {
   private static <L extends List<?>> L assertSize(int size, L list) {
     Assert.assertEquals(list.toString(), size, list.size());
     return list;
+  }
+
+  @After
+  public void clear() {
+    if(baseDir != null) {
+      FileUtils.deleteQuietly(baseDir);
+    }
   }
 }

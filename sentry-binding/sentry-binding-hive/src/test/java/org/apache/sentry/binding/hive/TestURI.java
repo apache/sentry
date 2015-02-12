@@ -16,20 +16,31 @@
  */
 package org.apache.sentry.binding.hive;
 
+import java.io.File;
+
+import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.session.SessionState;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.google.common.io.Files;
+
 public class TestURI {
 
   private static HiveConf conf;
+  private static File baseDir;
+
   @BeforeClass
   public static void setupTestURI() {
     conf = new HiveConf();
+    baseDir = Files.createTempDir();
+    baseDir.setWritable(true, false);
+    conf.setVar(HiveConf.ConfVars.SCRATCHDIR, baseDir.getAbsolutePath());
     SessionState.start(conf);
   }
 
@@ -59,5 +70,12 @@ public class TestURI {
   public void testParseURICorrectHDFSPrefix() throws SemanticException {
     Assert.assertEquals("hdfs:///some/path",
         HiveAuthzBindingHook.parseURI("hdfs:///some/path").getName());
+  }
+
+  @AfterClass
+  public static void clear() {
+    if(baseDir != null) {
+      FileUtils.deleteQuietly(baseDir);
+    }
   }
 }

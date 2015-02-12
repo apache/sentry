@@ -641,6 +641,9 @@ limitations under the License.
             <forkedProcessTimeoutInSeconds>900</forkedProcessTimeoutInSeconds>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
             <argLine>-Xms512m -Xmx2g</argLine>
+            <systemPropertyVariables>
+              <java.net.preferIPv4Stack>true</java.net.preferIPv4Stack>
+            </systemPropertyVariables>
           </configuration>
         </plugin>
         <plugin>

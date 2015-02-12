@@ -42,6 +42,8 @@ public class InternalHiveServer extends AbstractHiveServer {
 
   @Override
   public synchronized void shutdown() throws Exception {
-    hiveServer2.stop();
+    if (hiveServer2 != null) {
+      hiveServer2.stop();
+    }
   }
 }

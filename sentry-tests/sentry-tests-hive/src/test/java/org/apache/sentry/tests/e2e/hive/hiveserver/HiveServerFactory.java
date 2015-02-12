@@ -39,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.io.Files;
 import com.google.common.io.Resources;
 
 public class HiveServerFactory {
@@ -110,6 +111,20 @@ public class HiveServerFactory {
         properties.put(WAREHOUSE_DIR, new File(baseDir, "warehouse").getPath());
         fileSystem.mkdirs(new Path("/", "warehouse"), new FsPermission((short) 0777));
       }
+    }
+    Boolean policyOnHDFS = new Boolean(System.getProperty("sentry.e2etest.policyonhdfs", "false"));
+    if (policyOnHDFS) {
+      // Initialize "hive.exec.scratchdir", according the description of
+      // "hive.exec.scratchdir", the permission should be (733).
+      // <description>HDFS root scratch dir for Hive jobs which gets created with write
+      // all (733) permission. For each connecting user, an HDFS scratch dir:
+      // ${hive.exec.scratchdir}/&lt;username&gt; is created,
+      // with ${hive.scratch.dir.permission}.</description>
+      fileSystem.mkdirs(new Path("/tmp/hive/"));
+      fileSystem.setPermission(new Path("/tmp/hive/"), new FsPermission((short) 0733));
+    } else {
+      LOGGER.info("Setting an readable path to hive.exec.scratchdir");
+      properties.put("hive.exec.scratchdir", new File(baseDir, "scratchdir").getPath());
     }
     if(!properties.containsKey(METASTORE_CONNECTION_URL)) {
       properties.put(METASTORE_CONNECTION_URL,
