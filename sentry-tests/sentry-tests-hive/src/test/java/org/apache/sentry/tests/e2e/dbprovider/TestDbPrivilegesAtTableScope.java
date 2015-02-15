@@ -33,7 +33,7 @@ public class TestDbPrivilegesAtTableScope extends TestPrivilegesAtTableScope {
   public static void setupTestStaticConfiguration() throws Exception {
     useSentryService = true;
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
-
+    prepareDBDataForTest();
   }
 
 }

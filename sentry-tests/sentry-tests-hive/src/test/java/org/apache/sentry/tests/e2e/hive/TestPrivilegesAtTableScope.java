@@ -17,11 +17,8 @@
 
 package org.apache.sentry.tests.e2e.hive;
 
-import org.apache.sentry.provider.file.PolicyFile;
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -32,7 +29,9 @@ import java.sql.Statement;
 
 import junit.framework.Assert;
 
+import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.io.Resources;
@@ -42,22 +41,54 @@ import com.google.common.io.Resources;
 
 public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfiguration {
 
-  private PolicyFile policyFile;
+  private static PolicyFile policyFile;
+  private final static String MULTI_TYPE_DATA_FILE_NAME = "emp.dat";
 
-  private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
-  private final String MULTI_TYPE_DATA_FILE_NAME = "emp.dat";
+  @BeforeClass
+  public static void setupTestStaticConfiguration() throws Exception {
+    AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
+    prepareDBDataForTest();
+  }
+
+  protected static void prepareDBDataForTest() throws Exception {
+    clearDbAfterPerTest = false;
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP).setUserGroupMapping(
+        StaticUserGroup.getStaticMapping());
+    // The setupAdmin is for TestDbPrivilegesAtTableScope to add role admin_role
+    setupAdmin();
+    writePolicyFile(policyFile);
+    // copy data file to test dir
+    File dataDir = context.getDataDir();
+    File dataFile = new File(dataDir, MULTI_TYPE_DATA_FILE_NAME);
+    FileOutputStream to = new FileOutputStream(dataFile);
+    Resources.copy(Resources.getResource(MULTI_TYPE_DATA_FILE_NAME), to);
+    to.close();
+
+    // setup db objects needed by the test
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+
+    statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
+    statement.execute("CREATE DATABASE DB_1");
+    statement.execute("USE DB_1");
+
+    statement.execute("CREATE TABLE TAB_1(B INT, A STRING) "
+        + " row format delimited fields terminated by '|'  stored as textfile");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE TAB_1");
+    statement.execute("CREATE TABLE TAB_2(B INT, A STRING) "
+        + " row format delimited fields terminated by '|'  stored as textfile");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE TAB_2");
+    statement.execute("CREATE VIEW VIEW_1 AS SELECT A, B FROM TAB_1");
+
+    statement.close();
+    connection.close();
+  }
 
   @Before
   public void setup() throws Exception {
     policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP)
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
-    Connection connection = context.createConnection(ADMIN1);
-    Statement statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
-    statement.execute("CREATE DATABASE DB_1");
-    statement.close();
-    connection.close();
   }
 
   /*
@@ -67,13 +98,6 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
    */
   @Test
   public void testInsertAndSelect() throws Exception {
-    File dataDir = context.getDataDir();
-    // copy data file to test dir
-    File dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
-    FileOutputStream to = new FileOutputStream(dataFile);
-    Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
-    to.close();
-
     policyFile
         .addRolesToGroup(USERGROUP1, "select_tab1", "insert_tab1", "select_tab2")
         .addPermissionsToRole("select_tab1", "server=server1->db=DB_1->table=TAB_1->action=select")
@@ -82,38 +106,14 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
-    // setup db objects needed by the test
-    Connection connection = context.createConnection(ADMIN1);
+    // test execution
+    Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
     statement.execute("USE DB_1");
-    statement.execute("CREATE TABLE TAB_1(A STRING)");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
-        + "' INTO TABLE TAB_1");
-    statement.execute("CREATE TABLE TAB_2(A STRING)");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
-        + "' INTO TABLE TAB_2");
-    statement.close();
-    connection.close();
-
-    // test execution
-    connection = context.createConnection(USER1_1);
-    statement = context.createStatement(connection);
-    statement.execute("USE DB_1");
     // test user can insert
-    statement.execute("INSERT INTO TABLE TAB_1 SELECT A FROM TAB_2");
+    statement.execute("INSERT INTO TABLE TAB_1 SELECT A, B FROM TAB_2");
     // test user can query table
-    ResultSet resultSet = statement.executeQuery("SELECT COUNT(A) FROM TAB_1");
-    int count = 0;
-    int countRows = 0;
-
-    while (resultSet.next()) {
-      count = resultSet.getInt(1);
-      countRows++;
-    }
-
-    assertTrue("Incorrect row count", countRows == 1);
-    assertTrue("Incorrect result", count == 1000);
-
+    statement.executeQuery("SELECT A FROM TAB_2");
     // negative test: test user can't drop
     try {
       statement.execute("DROP TABLE TAB_1");
@@ -146,10 +146,13 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     statement.close();
     connection.close();
 
-    // test cleanup
+    // connect as admin to restore the tab_1
     connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE DB_1 CASCADE");
+    statement.execute("USE DB_1");
+    statement.execute("CREATE TABLE TAB_1(B INT, A STRING) "
+        + " row format delimited fields terminated by '|'  stored as textfile");
+    statement.execute("INSERT INTO TABLE TAB_1 SELECT A, B FROM TAB_2");
     statement.close();
     connection.close();
 
@@ -162,13 +165,6 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
    */
   @Test
   public void testInsert() throws Exception {
-    File dataDir = context.getDataDir();
-    // copy data file to test dir
-    File dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
-    FileOutputStream to = new FileOutputStream(dataFile);
-    Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
-    to.close();
-
     policyFile
         .addRolesToGroup(USERGROUP1, "insert_tab1", "select_tab2")
         .addPermissionsToRole("insert_tab1", "server=server1->db=DB_1->table=TAB_1->action=insert")
@@ -176,30 +172,16 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
-    // setup db objects needed by the test
-    Connection connection = context.createConnection(ADMIN1);
+    // test execution
+    Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
-    statement.execute("CREATE TABLE TAB_1(A STRING)");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
-        + "' INTO TABLE TAB_1");
-    statement.execute("CREATE VIEW VIEW_1(A) AS SELECT A FROM TAB_1");
-    statement.execute("CREATE TABLE TAB_2(A STRING)");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
-        + "' INTO TABLE TAB_2");
-    statement.close();
-    connection.close();
-
-    // test execution
-    connection = context.createConnection(USER1_1);
-    statement = context.createStatement(connection);
-    statement.execute("USE " + DB1);
     // test user can execute insert on table
-    statement.execute("INSERT INTO TABLE TAB_1 SELECT A FROM TAB_2");
+    statement.execute("INSERT INTO TABLE TAB_1 SELECT A, B FROM TAB_2");
 
     // negative test: user can't query table
     try {
-      statement.executeQuery("SELECT COUNT(A) FROM TAB_1");
+      statement.executeQuery("SELECT A FROM TAB_1");
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
       context.verifyAuthzException(e);
@@ -207,7 +189,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
 
     // negative test: test user can't query view
     try {
-      statement.executeQuery("SELECT COUNT(A) FROM VIEW_1");
+      statement.executeQuery("SELECT A FROM VIEW_1");
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
       context.verifyAuthzException(e);
@@ -231,13 +213,6 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     }
     statement.close();
     connection.close();
-
-    // test cleanup
-    connection = context.createConnection(ADMIN1);
-    statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE DB_1 CASCADE");
-    statement.close();
-    connection.close();
   }
 
   /*
@@ -247,13 +222,6 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
    */
   @Test
   public void testSelect() throws Exception {
-    // copy data file to test dir
-    File dataDir = context.getDataDir();
-    File dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
-    FileOutputStream to = new FileOutputStream(dataFile);
-    Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
-    to.close();
-
     policyFile
         .addRolesToGroup(USERGROUP1, "select_tab1", "select_tab2")
         .addPermissionsToRole("select_tab1", "server=server1->db=DB_1->table=TAB_1->action=select")
@@ -262,40 +230,16 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
-    // setup db objects needed by the test
-    Connection connection = context.createConnection(ADMIN1);
-    Statement statement = context.createStatement(connection);
-
-    statement.execute("USE " + DB1);
-    statement.execute("CREATE TABLE TAB_1(A STRING)");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
-        + "' INTO TABLE TAB_1");
-    statement.execute("CREATE VIEW VIEW_1(A) AS SELECT A FROM TAB_1");
-    statement.execute("CREATE TABLE TAB_2(A STRING)");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
-        + "' INTO TABLE TAB_2");
-    statement.close();
-    connection.close();
-
     // test execution
-    connection = context.createConnection(USER1_1);
-    statement = context.createStatement(connection);
+    Connection connection = context.createConnection(USER1_1);
+    Statement statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
     // test user can execute query on table
-    ResultSet resultSet = statement.executeQuery("SELECT COUNT(A) FROM TAB_1");
-    int count = 0;
-    int countRows = 0;
-
-    while (resultSet.next()) {
-      count = resultSet.getInt(1);
-      countRows++;
-    }
-    assertTrue("Incorrect row count", countRows == 1);
-    assertTrue("Incorrect result", count == 500);
+    statement.executeQuery("SELECT A FROM TAB_1");
 
     // negative test: test insert into table
     try {
-      statement.executeQuery("INSERT INTO TABLE TAB_1 SELECT A FROM TAB_2");
+      statement.executeQuery("INSERT INTO TABLE TAB_1 SELECT A, B FROM TAB_2");
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
       context.verifyAuthzException(e);
@@ -303,7 +247,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
 
     // negative test: test user can't query view
     try {
-      statement.executeQuery("SELECT COUNT(A) FROM VIEW_1");
+      statement.executeQuery("SELECT A FROM VIEW_1");
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
       context.verifyAuthzException(e);
@@ -318,13 +262,6 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     }
     statement.close();
     connection.close();
-
-    // test cleanup
-    connection = context.createConnection(ADMIN1);
-    statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE DB_1 CASCADE");
-    statement.close();
-    connection.close();
   }
 
   /*
@@ -334,13 +271,6 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
    */
   @Test
   public void testTableViewJoin() throws Exception {
-    // copy data file to test dir
-    File dataDir = context.getDataDir();
-    File dataFile = new File(dataDir, MULTI_TYPE_DATA_FILE_NAME);
-    FileOutputStream to = new FileOutputStream(dataFile);
-    Resources.copy(Resources.getResource(MULTI_TYPE_DATA_FILE_NAME), to);
-    to.close();
-
     policyFile
         .addRolesToGroup(USERGROUP1, "select_tab1", "select_tab2")
         .addPermissionsToRole("select_tab1", "server=server1->db=DB_1->table=TAB_1->action=select")
@@ -348,56 +278,21 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
-    // setup db objects needed by the test
-    Connection connection = context.createConnection(ADMIN1);
-    Statement statement = context.createStatement(connection);
-
-    statement.execute("USE " + DB1);
-    statement.execute("CREATE TABLE TAB_1(B INT, A STRING) "
-        + " row format delimited fields terminated by '|'  stored as textfile");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
-        + "' INTO TABLE TAB_1");
-    statement.execute("CREATE VIEW VIEW_1 AS SELECT A, B FROM TAB_1");
-    statement.execute("CREATE TABLE TAB_2(B INT, A STRING) "
-        + " row format delimited fields terminated by '|'  stored as textfile");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
-        + "' INTO TABLE TAB_2");
-    statement.close();
-    connection.close();
-
     // test execution
-    connection = context.createConnection(USER1_1);
-    statement = context.createStatement(connection);
+    Connection connection = context.createConnection(USER1_1);
+    Statement statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
     // test user can execute query TAB_1 JOIN TAB_2
-    ResultSet resultSet = statement
-        .executeQuery("SELECT COUNT(*) FROM TAB_1 T1 JOIN TAB_2 T2 ON (T1.B = T2.B)");
-    int count = 0;
-    int countRows = 0;
-
-    while (resultSet.next()) {
-      count = resultSet.getInt(1);
-      countRows++;
-    }
-    assertTrue("Incorrect row count", countRows == 1);
-    assertTrue("Incorrect result", count == 12);
+    statement.executeQuery("SELECT T1.B FROM TAB_1 T1 JOIN TAB_2 T2 ON (T1.B = T2.B)");
 
     // negative test: test user can't execute query VIEW_1 JOIN TAB_2
     try {
-      statement
-          .executeQuery("SELECT COUNT(*) FROM VIEW_1 V1 JOIN TAB_2 T2 ON (V1.B = T2.B)");
+      statement.executeQuery("SELECT V1.B FROM VIEW_1 V1 JOIN TAB_2 T2 ON (V1.B = T2.B)");
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
       context.verifyAuthzException(e);
     }
 
-    statement.close();
-    connection.close();
-
-    // test cleanup
-    connection = context.createConnection(ADMIN1);
-    statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.close();
     connection.close();
   }
@@ -409,14 +304,6 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
    */
   @Test
   public void testTableViewJoin2() throws Exception {
-
-    File dataDir = context.getDataDir();
-    // copy data file to test dir
-    File dataFile = new File(dataDir, MULTI_TYPE_DATA_FILE_NAME);
-    FileOutputStream to = new FileOutputStream(dataFile);
-    Resources.copy(Resources.getResource(MULTI_TYPE_DATA_FILE_NAME), to);
-    to.close();
-
     policyFile
         .addRolesToGroup(USERGROUP1, "select_tab2")
         .addPermissionsToRole("select_tab1", "server=server1->db=DB_1->table=TAB_1->action=select")
@@ -424,43 +311,16 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
-    // setup db objects needed by the test
-    Connection connection = context.createConnection(ADMIN1);
-    Statement statement = context.createStatement(connection);
-
-    statement.execute("USE " + DB1);
-    statement.execute("CREATE TABLE TAB_1(B INT, A STRING) "
-        + " row format delimited fields terminated by '|'  stored as textfile");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
-        + "' INTO TABLE TAB_1");
-    statement.execute("CREATE VIEW VIEW_1 AS SELECT A, B FROM TAB_1");
-    statement.execute("CREATE TABLE TAB_2(B INT, A STRING) "
-        + " row format delimited fields terminated by '|'  stored as textfile");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
-        + "' INTO TABLE TAB_2");
-    statement.close();
-    connection.close();
-
     // test execution
-    connection = context.createConnection(USER1_1);
-    statement = context.createStatement(connection);
+    Connection connection = context.createConnection(USER1_1);
+    Statement statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
     // test user can execute query on TAB_2
-    ResultSet resultSet = statement.executeQuery("SELECT COUNT(*) FROM TAB_2");
-    int count = 0;
-    int countRows = 0;
-
-    while (resultSet.next()) {
-      count = resultSet.getInt(1);
-      countRows++;
-    }
-    assertTrue("Incorrect row count", countRows == 1);
-    assertTrue("Incorrect result", count == 12);
+    statement.executeQuery("SELECT A FROM TAB_2");
 
     // negative test: test user can't execute query VIEW_1 JOIN TAB_2
     try {
-      statement
-          .executeQuery("SELECT COUNT(*) FROM VIEW_1 JOIN TAB_2 ON (VIEW_1.B = TAB_2.B)");
+      statement.executeQuery("SELECT VIEW_1.B FROM VIEW_1 JOIN TAB_2 ON (VIEW_1.B = TAB_2.B)");
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
       context.verifyAuthzException(e);
@@ -468,20 +328,12 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
 
     // negative test: test user can't execute query TAB_1 JOIN TAB_2
     try {
-      statement
-          .executeQuery("SELECT COUNT(*) FROM TAB_1 JOIN TAB_2 ON (TAB_1.B = TAB_2.B)");
+      statement.executeQuery("SELECT TAB_1.B FROM TAB_1 JOIN TAB_2 ON (TAB_1.B = TAB_2.B)");
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
       context.verifyAuthzException(e);
     }
 
-    statement.close();
-    connection.close();
-
-    // test cleanup
-    connection = context.createConnection(ADMIN1);
-    statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.close();
     connection.close();
   }
@@ -493,13 +345,6 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
    */
   @Test
   public void testTableViewJoin3() throws Exception {
-    File dataDir = context.getDataDir();
-    // copy data file to test dir
-    File dataFile = new File(dataDir, MULTI_TYPE_DATA_FILE_NAME);
-    FileOutputStream to = new FileOutputStream(dataFile);
-    Resources.copy(Resources.getResource(MULTI_TYPE_DATA_FILE_NAME), to);
-    to.close();
-
     policyFile
         .addRolesToGroup(USERGROUP1, "select_tab2", "select_view1")
         .addPermissionsToRole("select_view1", "server=server1->db=DB_1->table=VIEW_1->action=select")
@@ -507,80 +352,27 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
-    // setup db objects needed by the test
-    Connection connection = context.createConnection(ADMIN1);
-    Statement statement = context.createStatement(connection);
-
-    statement.execute("USE " + DB1);
-    statement.execute("CREATE TABLE TAB_1(B INT, A STRING) "
-        + " row format delimited fields terminated by '|'  stored as textfile");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
-        + "' INTO TABLE TAB_1");
-    statement.execute("CREATE VIEW VIEW_1 AS SELECT A, B FROM TAB_1");
-    statement.execute("CREATE TABLE TAB_2(B INT, A STRING) "
-        + " row format delimited fields terminated by '|'  stored as textfile");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
-        + "' INTO TABLE TAB_2");
-    statement.close();
-    connection.close();
-
     // test execution
-    connection = context.createConnection(USER1_1);
-    statement = context.createStatement(connection);
+    Connection connection = context.createConnection(USER1_1);
+    Statement statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
     // test user can execute query on TAB_2
-    ResultSet resultSet = statement.executeQuery("SELECT COUNT(*) FROM TAB_2");
-    int count = 0;
-    int countRows = 0;
-
-    while (resultSet.next()) {
-      count = resultSet.getInt(1);
-      countRows++;
-    }
-    assertTrue("Incorrect row count", countRows == 1);
-    assertTrue("Incorrect result", count == 12);
+    statement.executeQuery("SELECT A FROM TAB_2");
 
     // test user can execute query VIEW_1 JOIN TAB_2
-    resultSet = statement
-        .executeQuery("SELECT COUNT(*) FROM VIEW_1 V1 JOIN TAB_2 T2 ON (V1.B = T2.B)");
-    count = 0;
-    countRows = 0;
-
-    while (resultSet.next()) {
-      count = resultSet.getInt(1);
-      countRows++;
-    }
-    assertTrue("Incorrect row count", countRows == 1);
-    assertTrue("Incorrect result", count == 12);
+    statement.executeQuery("SELECT V1.B FROM VIEW_1 V1 JOIN TAB_2 T2 ON (V1.B = T2.B)");
 
     // test user can execute query on VIEW_1
-    resultSet = statement.executeQuery("SELECT COUNT(*) FROM VIEW_1");
-    count = 0;
-    countRows = 0;
-
-    while (resultSet.next()) {
-      count = resultSet.getInt(1);
-      countRows++;
-    }
-    assertTrue("Incorrect row count", countRows == 1);
-    assertTrue("Incorrect result", count == 12);
+    statement.executeQuery("SELECT A FROM VIEW_1");
 
     // negative test: test user can't execute query TAB_1 JOIN TAB_2
     try {
-      statement
-          .executeQuery("SELECT COUNT(*) FROM TAB_1 T1 JOIN TAB_2 T2 ON (T1.B = T2.B)");
+      statement.executeQuery("SELECT T1.B FROM TAB_1 T1 JOIN TAB_2 T2 ON (T1.B = T2.B)");
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
       context.verifyAuthzException(e);
     }
 
-    statement.close();
-    connection.close();
-
-    // test cleanup
-    connection = context.createConnection(ADMIN1);
-    statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.close();
     connection.close();
   }
@@ -592,13 +384,6 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
    */
   @Test
   public void testTableViewJoin4() throws Exception {
-    File dataDir = context.getDataDir();
-    // copy data file to test dir
-    File dataFile = new File(dataDir, MULTI_TYPE_DATA_FILE_NAME);
-    FileOutputStream to = new FileOutputStream(dataFile);
-    Resources.copy(Resources.getResource(MULTI_TYPE_DATA_FILE_NAME), to);
-    to.close();
-
     policyFile
         .addRolesToGroup(USERGROUP1, "select_tab1", "select_view1")
         .addPermissionsToRole("select_view1", "server=server1->db=DB_1->table=VIEW_1->action=select")
@@ -606,57 +391,22 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
-    // setup db objects needed by the test
-    Connection connection = context.createConnection(ADMIN1);
-    Statement statement = context.createStatement(connection);
-
-    statement.execute("USE " + DB1);
-    statement.execute("CREATE TABLE TAB_1(B INT, A STRING) "
-        + " row format delimited fields terminated by '|'  stored as textfile");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
-        + "' INTO TABLE TAB_1");
-    statement.execute("CREATE VIEW VIEW_1 AS SELECT A, B FROM TAB_1");
-    statement.execute("CREATE TABLE TAB_2(B INT, A STRING) "
-        + " row format delimited fields terminated by '|'  stored as textfile");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath()
-        + "' INTO TABLE TAB_2");
-    statement.close();
-    connection.close();
-
     // test execution
-    connection = context.createConnection(USER1_1);
-    statement = context.createStatement(connection);
+    Connection connection = context.createConnection(USER1_1);
+    Statement statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
 
     // test user can execute query VIEW_1 JOIN TAB_1
-    ResultSet resultSet = statement
-        .executeQuery("SELECT COUNT(*) FROM VIEW_1 JOIN TAB_1 ON (VIEW_1.B = TAB_1.B)");
-    int count = 0;
-    int countRows = 0;
-
-    while (resultSet.next()) {
-      count = resultSet.getInt(1);
-      countRows++;
-    }
-    assertTrue("Incorrect row count", countRows == 1);
-    assertTrue("Incorrect result", count == 12);
+    statement.executeQuery("SELECT VIEW_1.B FROM VIEW_1 JOIN TAB_1 ON (VIEW_1.B = TAB_1.B)");
 
     // negative test: test user can't execute query TAB_1 JOIN TAB_2
     try {
-      statement
-          .executeQuery("SELECT COUNT(*) FROM TAB_1 JOIN TAB_2 ON (TAB_1.B = TAB_2.B)");
+      statement.executeQuery("SELECT TAB_1.B FROM TAB_1 JOIN TAB_2 ON (TAB_1.B = TAB_2.B)");
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
       context.verifyAuthzException(e);
     }
 
-    statement.close();
-    connection.close();
-
-    // test cleanup
-    connection = context.createConnection(ADMIN1);
-    statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE DB_1 CASCADE");
     statement.close();
     connection.close();
   }
