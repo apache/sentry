@@ -84,7 +84,7 @@ public class PathsUpdate implements Updateable.Update {
    */
   public static List<String> parsePath(String path) {
     try {
-      URI uri = new URI(path);
+      URI uri = new URI(path.replace(" ","%20"));
       Preconditions.checkNotNull(uri.getScheme());
       if(uri.getScheme().equalsIgnoreCase("hdfs")) {
         return Lists.newArrayList(uri.getPath().split("^/")[1]
