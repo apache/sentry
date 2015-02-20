@@ -25,7 +25,6 @@ import java.net.InetSocketAddress;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.SecurityUtil;
-
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.sentry.SentryUserException;
 import org.apache.sentry.provider.db.service.persistent.HAContext;
@@ -43,7 +42,7 @@ public class HAClientInvocationHandler implements InvocationHandler {
   private static final Logger LOGGER = LoggerFactory.getLogger(HAClientInvocationHandler.class);
 
   private final Configuration conf;
-  private final ServiceManager manager;
+  private ServiceManager manager;
   private ServiceInstance<Void> currentServiceInstance;
   private SentryPolicyServiceClient client = null;
 
@@ -51,7 +50,6 @@ public class HAClientInvocationHandler implements InvocationHandler {
 
   public HAClientInvocationHandler(Configuration conf) throws Exception {
     this.conf = conf;
-    manager = new ServiceManager(new HAContext(conf));
     checkClientConf();
     renewSentryClient();
   }
@@ -87,25 +85,35 @@ public class HAClientInvocationHandler implements InvocationHandler {
   }
 
   private void renewSentryClient() throws IOException {
-    while (true) {
-      if (client != null) {
-        client.close();
+    try {
+      manager = new ServiceManager(new HAContext(conf));
+    } catch (Exception e1) {
+      throw new IOException("Failed to extract Sentry node info from zookeeper", e1);
+    }
+
+    try {
+      while (true) {
+        if (client != null) {
+          client.close();
+        }
+        currentServiceInstance = manager.getServiceInstance();
+        if (currentServiceInstance == null) {
+          throw new IOException("No avaiable node.");
+        }
+        InetSocketAddress serverAddress =
+            ServiceManager.convertServiceInstance(currentServiceInstance);
+        conf.set(ServiceConstants.ClientConfig.SERVER_RPC_ADDRESS, serverAddress.getHostName());
+        conf.setInt(ServiceConstants.ClientConfig.SERVER_RPC_PORT, serverAddress.getPort());
+        try {
+          client = new SentryPolicyServiceClientDefaultImpl(conf);
+          break;
+        } catch (IOException e) {
+          manager.reportError(currentServiceInstance);
+          LOGGER.info("Transport exception while opening transport:", e, e.getMessage());
+        }
       }
-      currentServiceInstance = manager.getServiceInstance();
-      if (currentServiceInstance == null) {
-        throw new IOException("No avaiable node.");
-      }
-      InetSocketAddress serverAddress =
-          ServiceManager.convertServiceInstance(currentServiceInstance);
-      conf.set(ServiceConstants.ClientConfig.SERVER_RPC_ADDRESS, serverAddress.getHostName());
-      conf.setInt(ServiceConstants.ClientConfig.SERVER_RPC_PORT, serverAddress.getPort());
-      try {
-        client = new SentryPolicyServiceClientDefaultImpl(conf);
-        break;
-      } catch (IOException e) {
-        manager.reportError(currentServiceInstance);
-        LOGGER.info("Transport exception while opening transport:", e, e.getMessage());
-      }
+    } finally {
+      manager.close();
     }
   }
 

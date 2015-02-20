@@ -85,7 +85,7 @@ public class SentryService implements Callable {
   private final String[] principalParts;
   private final String keytab;
   private final ExecutorService serviceExecutor;
-  private Future future;
+  private Future serviceStatus;
   private TServer thriftServer;
   private Status status;
   private int webServerPort;
@@ -239,6 +239,7 @@ public class SentryService implements Callable {
   private void stopSentryWebServer() throws Exception{
     if( sentryWebServer != null) {
       sentryWebServer.stop();
+      sentryWebServer = null;
     }
   }
 
@@ -257,7 +258,7 @@ public class SentryService implements Callable {
     }
     LOGGER.info("Attempting to start...");
     status = Status.STARTED;
-    future = serviceExecutor.submit(this);
+    serviceStatus = serviceExecutor.submit(this);
   }
 
   public synchronized void stop() throws Exception{
@@ -293,6 +294,16 @@ public class SentryService implements Callable {
       exception.ifExceptionThrow();
     }
     LOGGER.info("Stopped...");
+  }
+
+  // wait for the service thread to finish execution
+  public synchronized void waitForShutDown() {
+    LOGGER.info("Waiting on future.get()");
+    try {
+      serviceStatus.get();
+    } catch (Exception e) {
+      LOGGER.debug("Error during the shutdown", e);
+    }
   }
 
   private MultiException addMultiException(MultiException exception, Exception e) {
@@ -355,9 +366,9 @@ public class SentryService implements Callable {
       File configFile = null;
       if (configFileName == null || commandLine.hasOption("h") || commandLine.hasOption("help")) {
         // print usage
-          HelpFormatter formatter = new HelpFormatter();
-          formatter.printHelp("sentry --command service", options);
-          System.exit(-1);
+        HelpFormatter formatter = new HelpFormatter();
+        formatter.printHelp("sentry --command service", options);
+        System.exit(-1);
       } else if(!((configFile = new File(configFileName)).isFile() && configFile.canRead())) {
         throw new IllegalArgumentException("Cannot read configuration file " + configFile);
       }
@@ -378,8 +389,7 @@ public class SentryService implements Callable {
 
       // Let's wait on the service to stop
       try {
-        LOGGER.info("Waiting on future.get()");
-        server.future.get();
+        server.waitForShutDown();
       } finally {
         server.serviceExecutor.shutdown();
       }

@@ -49,15 +49,16 @@ import org.apache.sentry.policy.db.DBModelAuthorizables;
 import org.apache.sentry.provider.db.SimpleDBProviderBackend;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.provider.file.PolicyFile;
-import org.apache.sentry.service.thrift.SentryService;
 import org.apache.sentry.service.thrift.SentryServiceClientFactory;
-import org.apache.sentry.service.thrift.SentryServiceFactory;
 import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.apache.sentry.tests.e2e.hive.fs.DFS;
 import org.apache.sentry.tests.e2e.hive.fs.DFSFactory;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServer;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
+import org.apache.sentry.tests.e2e.minisentry.SentrySrvFactory;
+import org.apache.sentry.tests.e2e.minisentry.SentrySrvFactory.SentrySrvType;
+import org.apache.sentry.tests.e2e.minisentry.SentrySrv;
 import org.apache.tools.ant.util.StringUtils;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -108,6 +109,7 @@ public abstract class AbstractTestWithStaticConfiguration {
   protected static final String SERVER_HOST = "localhost";
   private static final String EXTERNAL_SENTRY_SERVICE = "sentry.e2etest.external.sentry";
   protected static final String EXTERNAL_HIVE_LIB = "sentry.e2etest.hive.lib";
+  private static final String ENABLE_SENTRY_HA = "sentry.e2etest.enable.service.ha";
 
   protected static boolean policyOnHdfs = false;
   protected static boolean useSentryService = false;
@@ -127,8 +129,9 @@ public abstract class AbstractTestWithStaticConfiguration {
   protected static HiveServerFactory.HiveServer2Type hiveServer2Type;
   protected static DFS dfs;
   protected static Map<String, String> properties;
-  protected static SentryService sentryServer;
+  protected static SentrySrv sentryServer;
   protected static Configuration sentryConf;
+  protected static boolean enableSentryHA = false;
   protected static Context context;
   protected final String semanticException = "SemanticException No valid privileges";
 
@@ -209,7 +212,7 @@ public abstract class AbstractTestWithStaticConfiguration {
     PolicyFile policyFile = PolicyFile.setAdminOnServer1(ADMIN1)
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     policyFile.write(policyFileLocation);
-    
+
     String policyURI;
     if (policyOnHdfs) {
       String dfsUri = FileSystem.getDefaultUri(fileSystem.getConf()).toString();
@@ -220,8 +223,11 @@ public abstract class AbstractTestWithStaticConfiguration {
     } else {
       policyURI = policyFileLocation.getPath();
     }
-    
+
     boolean startSentry = new Boolean(System.getProperty(EXTERNAL_SENTRY_SERVICE, "false"));
+    if ("true".equalsIgnoreCase(System.getProperty(ENABLE_SENTRY_HA, "false"))) {
+      enableSentryHA = true;
+    }
     if (useSentryService && (!startSentry)) {
       setupSentryService();
     }
@@ -240,8 +246,8 @@ public abstract class AbstractTestWithStaticConfiguration {
   }
 
   public static HiveServer create(Map<String, String> properties,
-                                  File baseDir, File confDir, File logDir, String policyFile,
-                                  FileSystem fileSystem) throws Exception {
+      File baseDir, File confDir, File logDir, String policyFile,
+      FileSystem fileSystem) throws Exception {
     String type = properties.get(HiveServerFactory.HIVESERVER2_TYPE);
     if(type == null) {
       type = System.getProperty(HiveServerFactory.HIVESERVER2_TYPE);
@@ -291,7 +297,7 @@ public abstract class AbstractTestWithStaticConfiguration {
         .entrySet()) {
       for (String roleNames : groupEntry.getValue()) {
         for (String roleName : roleNames.split(",")) {
-            statement.execute("GRANT ROLE " + roleName + " TO GROUP " + groupEntry.getKey());
+          statement.execute("GRANT ROLE " + roleName + " TO GROUP " + groupEntry.getKey());
         }
       }
     }
@@ -359,7 +365,7 @@ public abstract class AbstractTestWithStaticConfiguration {
     properties.put(ConfVars.HIVE_AUTHORIZATION_TASK_FACTORY.varname,
         SentryHiveAuthorizationTaskFactoryImpl.class.getName());
     properties
-        .put(ConfVars.HIVE_SERVER2_THRIFT_MIN_WORKER_THREADS.varname, "2");
+    .put(ConfVars.HIVE_SERVER2_THRIFT_MIN_WORKER_THREADS.varname, "2");
     properties.put(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_NONE);
     properties.put(ServerConfig.ADMIN_GROUPS, ADMINGROUP);
     properties.put(ServerConfig.RPC_ADDRESS, SERVER_HOST);
@@ -368,22 +374,30 @@ public abstract class AbstractTestWithStaticConfiguration {
 
     properties.put(ServerConfig.SENTRY_STORE_JDBC_URL,
         "jdbc:derby:;databaseName=" + baseDir.getPath()
-            + "/sentrystore_db;create=true");
+        + "/sentrystore_db;create=true");
     properties.put(ServerConfig.SENTRY_STORE_GROUP_MAPPING, ServerConfig.SENTRY_STORE_LOCAL_GROUP_MAPPING);
     properties.put(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE, policyFileLocation.getPath());
     properties.put(ServerConfig.RPC_MIN_THREADS, "3");
     for (Map.Entry<String, String> entry : properties.entrySet()) {
       sentryConf.set(entry.getKey(), entry.getValue());
     }
-    sentryServer = new SentryServiceFactory().create(sentryConf);
-    properties.put(ClientConfig.SERVER_RPC_ADDRESS, sentryServer.getAddress()
+    sentryServer = SentrySrvFactory.create(
+        SentrySrvType.INTERNAL_SERVER, sentryConf, enableSentryHA ? 2 : 1);
+    properties.put(ClientConfig.SERVER_RPC_ADDRESS, sentryServer.get(0)
+        .getAddress()
         .getHostName());
-    sentryConf.set(ClientConfig.SERVER_RPC_ADDRESS, sentryServer.getAddress()
+    sentryConf.set(ClientConfig.SERVER_RPC_ADDRESS, sentryServer.get(0)
+        .getAddress()
         .getHostName());
     properties.put(ClientConfig.SERVER_RPC_PORT,
-        String.valueOf(sentryServer.getAddress().getPort()));
+        String.valueOf(sentryServer.get(0).getAddress().getPort()));
     sentryConf.set(ClientConfig.SERVER_RPC_PORT,
-        String.valueOf(sentryServer.getAddress().getPort()));
+        String.valueOf(sentryServer.get(0).getAddress().getPort()));
+    if (enableSentryHA) {
+      properties.put(ClientConfig.SERVER_HA_ENABLED, "true");
+      properties.put(ClientConfig.SENTRY_HA_ZOOKEEPER_QUORUM,
+          sentryServer.getZKQuorum());
+    }
     startSentryService();
     if (setMetastoreListener) {
       properties.put(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS.varname,
@@ -393,21 +407,14 @@ public abstract class AbstractTestWithStaticConfiguration {
   }
 
   private static void startSentryService() throws Exception {
-    sentryServer.start();
-    final long start = System.currentTimeMillis();
-    while (!sentryServer.isRunning()) {
-      Thread.sleep(1000);
-      if (System.currentTimeMillis() - start > 60000L) {
-        throw new TimeoutException("Server did not start after 60 seconds");
-      }
-    }
+    sentryServer.startAll();
   }
 
   public static SentryPolicyServiceClient getSentryClient() throws Exception {
     if (sentryServer == null) {
       throw new IllegalAccessException("Sentry service not initialized");
     }
-    return SentryServiceClientFactory.create(sentryServer.getConf());
+    return SentryServiceClientFactory.create(sentryServer.get(0).getConf());
   }
 
   @Before
@@ -475,8 +482,7 @@ public abstract class AbstractTestWithStaticConfiguration {
     }
 
     if (sentryServer != null) {
-      sentryServer.stop();
-      sentryServer = null;
+      sentryServer.close();
       sentryServer = null;
     }
 
@@ -496,5 +502,9 @@ public abstract class AbstractTestWithStaticConfiguration {
     if (context != null) {
       context.close();
     }
+  }
+
+  public static SentrySrv getSentrySrv() {
+    return sentryServer;
   }
 }

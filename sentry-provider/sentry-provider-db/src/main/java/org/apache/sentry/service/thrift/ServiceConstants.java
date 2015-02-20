@@ -121,7 +121,7 @@ public class ServiceConstants {
     public static final String SENTRY_HA_ZOOKEEPER_SLEEP_BETWEEN_RETRIES_MS = SENTRY_HA_ZK_PROPERTY_PREFIX + "session.sleep.between.retries.ms";
     public static final int SENTRY_HA_ZOOKEEPER_SLEEP_BETWEEN_RETRIES_MS_DEFAULT = 100;
     public static final String SENTRY_HA_ZOOKEEPER_NAMESPACE = SENTRY_HA_ZK_PROPERTY_PREFIX + "namespace";
-    public static final String SENTRY_HA_ZOOKEEPER_NAMESPACE_DEFAULT = "/sentry";
+    public static final String SENTRY_HA_ZOOKEEPER_NAMESPACE_DEFAULT = "sentry";
 
     public static final ImmutableMap<String, String> SENTRY_STORE_DEFAULTS =
         ImmutableMap.<String, String>builder()

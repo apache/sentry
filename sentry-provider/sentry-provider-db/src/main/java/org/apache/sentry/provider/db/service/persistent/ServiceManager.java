@@ -29,11 +29,20 @@ import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.ServiceProvider;
 import org.apache.curator.x.discovery.details.InstanceSerializer;
 import org.apache.hadoop.net.NetUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+/***
+ * ServerManager handles registration of the Sentry service for Curator service
+ * discovery. Each server registers with ZK and add its host:port details which
+ * is used by the clients to discover available servers
+ */
 public class ServiceManager {
-
+  private static final Logger LOGGER = LoggerFactory
+      .getLogger(ServiceManager.class);
   private HAContext haContext;
   private ServiceProvider<Void> serviceProvider;
+  private ServiceDiscovery<Void> serviceDiscovery;
 
   public ServiceManager(HAContext haContext) throws IOException {
     this.haContext = haContext;
@@ -47,7 +56,7 @@ public class ServiceManager {
         curatorFramework.start();
       }
       InstanceSerializer<Void> instanceSerializer = new FixedJsonInstanceSerializer<Void>(Void.class);
-      ServiceDiscovery<Void> serviceDiscovery = ServiceDiscoveryBuilder.<Void>builder(Void.class)
+      serviceDiscovery = ServiceDiscoveryBuilder.<Void>builder(Void.class)
                 .basePath(HAContext.SENTRY_SERVICE_REGISTER_NAMESPACE)
                 .serializer(instanceSerializer)
                 .client(curatorFramework)
@@ -79,5 +88,16 @@ public class ServiceManager {
 
   public static InetSocketAddress convertServiceInstance(ServiceInstance<?> service) {
     return NetUtils.createSocketAddr(service.getAddress(),service.getPort());
+  }
+
+  public void close() {
+    try {
+      serviceProvider.close();
+      serviceDiscovery.close();
+      haContext.getCuratorFramework().close();
+      LOGGER.debug("Closed ZK resources");
+    } catch (IOException e) {
+      LOGGER.warn("Error closing the service manager", e);
+    }
   }
 }
