@@ -48,6 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
 
 public class SentryPlugin implements SentryPolicyStorePlugin {
 
@@ -67,7 +68,7 @@ public class SentryPlugin implements SentryPolicyStorePlugin {
     public PermissionsUpdate retrieveFullImage(long currSeqNum) {
       Map<String, HashMap<String, String>> privilegeImage = sentryStore.retrieveFullPrivilegeImage();
       Map<String, LinkedList<String>> roleImage = sentryStore.retrieveFullRoleImage();
-      
+
       TPermissionsUpdate tPermUpdate = new TPermissionsUpdate(true, currSeqNum,
           new HashMap<String, TPrivilegeChanges>(),
           new HashMap<String, TRoleChanges>());
@@ -86,13 +87,14 @@ public class SentryPlugin implements SentryPolicyStorePlugin {
       permissionsUpdate.setSeqNum(currSeqNum);
       return permissionsUpdate;
     }
-    
+
   }
 
   private UpdateForwarder<PathsUpdate> pathsUpdater;
   private UpdateForwarder<PermissionsUpdate> permsUpdater;
   private final AtomicLong permSeqNum = new AtomicLong(5);
   private PermImageRetriever permImageRetriever;
+  private boolean outOfSync = false;
 
   long getLastSeenHMSPathSeqNum() {
     return pathsUpdater.getLastSeen();
@@ -106,12 +108,13 @@ public class SentryPlugin implements SentryPolicyStorePlugin {
     final int initUpdateRetryDelayMs =
         conf.getInt(ServerConfig.SENTRY_HDFS_INIT_UPDATE_RETRY_DELAY_MS,
             ServerConfig.SENTRY_HDFS_INIT_UPDATE_RETRY_DELAY_DEFAULT);
-    pathsUpdater = new UpdateForwarder<PathsUpdate>(new UpdateableAuthzPaths(
-        pathPrefixes), null, 100, initUpdateRetryDelayMs);
     permImageRetriever = new PermImageRetriever(sentryStore);
-    permsUpdater = new UpdateForwarder<PermissionsUpdate>(
-        new UpdateablePermissions(permImageRetriever), permImageRetriever,
-        100, initUpdateRetryDelayMs);
+
+    pathsUpdater = UpdateForwarder.create(conf, new UpdateableAuthzPaths(
+        pathPrefixes), new PathsUpdate(0, false), null, 100, initUpdateRetryDelayMs);
+    permsUpdater = UpdateForwarder.create(conf,
+        new UpdateablePermissions(permImageRetriever), new PermissionsUpdate(0, false),
+        permImageRetriever, 100, initUpdateRetryDelayMs);
     LOGGER.info("Sentry HDFS plugin initialized !!");
     instance = this;
   }
@@ -124,7 +127,8 @@ public class SentryPlugin implements SentryPolicyStorePlugin {
     return permsUpdater.getAllUpdatesFrom(permSeqNum);
   }
 
-  public void handlePathUpdateNotification(PathsUpdate update) {
+  public void handlePathUpdateNotification(PathsUpdate update)
+      throws SentryPluginException {
     pathsUpdater.handleUpdateNotification(update);
     LOGGER.debug("Recieved Authz Path update [" + update.getSeqNum() + "]..");
   }
@@ -144,7 +148,7 @@ public class SentryPlugin implements SentryPolicyStorePlugin {
   @Override
   public void onAlterSentryRoleDeleteGroups(
       TAlterSentryRoleDeleteGroupsRequest request)
-      throws SentryPluginException {
+          throws SentryPluginException {
     PermissionsUpdate update = new PermissionsUpdate(permSeqNum.incrementAndGet(), false);
     TRoleChanges rUpdate = update.addRoleUpdate(request.getRoleName());
     for (TSentryGroup group : request.getGroups()) {
@@ -157,7 +161,7 @@ public class SentryPlugin implements SentryPolicyStorePlugin {
   @Override
   public void onAlterSentryRoleGrantPrivilege(
       TAlterSentryRoleGrantPrivilegeRequest request)
-      throws SentryPluginException {
+          throws SentryPluginException {
     if (request.isSetPrivileges()) {
       String roleName = request.getRoleName();
       for (TSentryPrivilege privilege : request.getPrivileges()) {
@@ -194,13 +198,21 @@ public class SentryPlugin implements SentryPolicyStorePlugin {
   @Override
   public void onAlterSentryRoleRevokePrivilege(
       TAlterSentryRoleRevokePrivilegeRequest request)
-      throws SentryPluginException {
+          throws SentryPluginException {
     if (request.isSetPrivileges()) {
       String roleName = request.getRoleName();
       for (TSentryPrivilege privilege : request.getPrivileges()) {
         onAlterSentryRoleRevokePrivilegeCore(roleName, privilege);
       }
     }
+  }
+
+  public boolean isOutOfSync() {
+    return outOfSync;
+  }
+
+  public void setOutOfSync(boolean outOfSync) {
+    this.outOfSync = outOfSync;
   }
 
   private void onAlterSentryRoleRevokePrivilegeCore(String roleName, TSentryPrivilege privilege)

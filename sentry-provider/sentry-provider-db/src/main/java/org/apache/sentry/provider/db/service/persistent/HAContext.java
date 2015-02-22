@@ -41,6 +41,7 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 
 /**
@@ -49,6 +50,7 @@ import com.google.common.base.Preconditions;
 public class HAContext {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(HAContext.class);
+  private static HAContext serverHAContext = null;
 
   public final static String SENTRY_SERVICE_REGISTER_NAMESPACE = "sentry-service";
   private final String zookeeperQuorum;
@@ -62,7 +64,7 @@ public class HAContext {
   private final CuratorFramework curatorFramework;
   private final RetryPolicy retryPolicy;
 
-  public HAContext(Configuration conf) throws Exception {
+  private HAContext(Configuration conf) throws Exception {
     this.zookeeperQuorum = conf.get(ServerConfig.SENTRY_HA_ZOOKEEPER_QUORUM,
         ServerConfig.SENTRY_HA_ZOOKEEPER_QUORUM_DEFAULT);
     this.retriesMaxCount = conf.getInt(ServerConfig.SENTRY_HA_ZOOKEEPER_RETRIES_MAX_COUNT,
@@ -96,12 +98,55 @@ public class HAContext {
     checkAndSetACLs();
   }
 
+  /**
+   * Use common HAContext (ie curator framework connection to ZK)
+   *
+   * @param conf
+   * @throws Exception
+   */
+  public static HAContext getHAContext(Configuration conf) throws Exception {
+    if (serverHAContext == null) {
+      serverHAContext = new HAContext(conf);
+      Runtime.getRuntime().addShutdownHook(new Thread() {
+        @Override
+        public void run() {
+          LOGGER.info("ShutdownHook closing curator framework");
+          try {
+            clearServerContext();
+          } catch (Throwable t) {
+            LOGGER.error("Error stopping SentryService", t);
+          }
+        }
+      });
+
+    }
+    return serverHAContext;
+  }
+
+  @VisibleForTesting
+  public static synchronized void clearServerContext() {
+    if (serverHAContext != null) {
+      serverHAContext.getCuratorFramework().close();
+      serverHAContext = null;
+    }
+  }
+
+  public void startCuratorFramework() {
+    if (curatorFramework.getState() != CuratorFrameworkState.STARTED) {
+      curatorFramework.start();
+    }
+  }
+
   public CuratorFramework getCuratorFramework() {
     return this.curatorFramework;
   }
 
   public String getZookeeperQuorum() {
     return zookeeperQuorum;
+  }
+
+  public static boolean isHaEnabled(Configuration conf) {
+    return conf.getBoolean(ServerConfig.SENTRY_HA_ENABLED, ServerConfig.SENTRY_HA_ENABLED_DEFAULT);
   }
 
   public String getNamespace() {

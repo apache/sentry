@@ -17,12 +17,14 @@
  */
 package org.apache.sentry.hdfs;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.LinkedList;
 import java.util.List;
 
 import com.google.common.base.Preconditions;
+
 import org.apache.sentry.hdfs.service.thrift.TPathChanges;
 import org.apache.sentry.hdfs.service.thrift.TPathsUpdate;
 
@@ -30,13 +32,17 @@ import com.google.common.collect.Lists;
 
 /**
  * A wrapper class over the TPathsUpdate thrift generated class. Please see
- * {@link Updateable.Update} for more information 
+ * {@link Updateable.Update} for more information
  */
 public class PathsUpdate implements Updateable.Update {
-  
+
   public static String ALL_PATHS = "__ALL_PATHS__";
 
   private final TPathsUpdate tPathsUpdate;
+
+  public PathsUpdate() {
+    this(0, false);
+  }
 
   public PathsUpdate(TPathsUpdate tPathsUpdate) {
     this.tPathsUpdate = tPathsUpdate;
@@ -95,6 +101,16 @@ public class PathsUpdate implements Updateable.Update {
     } catch (URISyntaxException e) {
       throw new RuntimeException("Incomprehensible path [" + path + "]");
     }
+  }
+
+  @Override
+  public byte[] serialize() throws IOException {
+    return ThriftSerializer.serialize(tPathsUpdate);
+  }
+
+  @Override
+  public void deserialize(byte[] data) throws IOException {
+    ThriftSerializer.deserialize(tPathsUpdate, data);
   }
 
 }

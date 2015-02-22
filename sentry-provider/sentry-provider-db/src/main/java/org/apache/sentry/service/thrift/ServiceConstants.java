@@ -77,7 +77,7 @@ public class ServiceConstants {
     public static final String PROCESSOR_FACTORIES = "sentry.service.processor.factories";
     public static final String PROCESSOR_FACTORIES_DEFAULT =
         "org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessorFactory" +
-        ",org.apache.sentry.provider.db.generic.service.thrift.SentryGenericPolicyProcessorFactory";
+            ",org.apache.sentry.provider.db.generic.service.thrift.SentryGenericPolicyProcessorFactory";
     public static final String SENTRY_STORE_JDBC_URL = "sentry.store.jdbc.url";
     public static final String SENTRY_STORE_JDBC_USER = "sentry.store.jdbc.user";
     public static final String SENTRY_STORE_JDBC_USER_DEFAULT = "Sentry";
@@ -125,27 +125,27 @@ public class ServiceConstants {
 
     public static final ImmutableMap<String, String> SENTRY_STORE_DEFAULTS =
         ImmutableMap.<String, String>builder()
-    .put("datanucleus.connectionPoolingType", "BoneCP")
-    .put("datanucleus.validateTables", "false")
-    .put("datanucleus.validateColumns", "false")
-    .put("datanucleus.validateConstraints", "false")
-    .put("datanucleus.storeManagerType", "rdbms")
+        .put("datanucleus.connectionPoolingType", "BoneCP")
+        .put("datanucleus.validateTables", "false")
+        .put("datanucleus.validateColumns", "false")
+        .put("datanucleus.validateConstraints", "false")
+        .put("datanucleus.storeManagerType", "rdbms")
         .put("datanucleus.autoCreateSchema", "false")
         .put("datanucleus.fixedDatastore", "true")
-    .put("datanucleus.autoStartMechanismMode", "checked")
-    .put("datanucleus.transactionIsolation", "read-committed")
-    .put("datanucleus.cache.level2", "false")
-    .put("datanucleus.cache.level2.type", "none")
-    .put("datanucleus.identifierFactory", "datanucleus1")
-    .put("datanucleus.rdbms.useLegacyNativeValueStrategy", "true")
-    .put("datanucleus.plugin.pluginRegistryBundleCheck", "LOG")
-    .put("javax.jdo.PersistenceManagerFactoryClass",
-                     "org.datanucleus.api.jdo.JDOPersistenceManagerFactory")
-    .put("javax.jdo.option.DetachAllOnCommit", "true")
-    .put("javax.jdo.option.NonTransactionalRead", "false")
-    .put("javax.jdo.option.NonTransactionalWrite", "false")
-    .put("javax.jdo.option.Multithreaded", "true")
-    .build();
+        .put("datanucleus.autoStartMechanismMode", "checked")
+        .put("datanucleus.transactionIsolation", "read-committed")
+        .put("datanucleus.cache.level2", "false")
+        .put("datanucleus.cache.level2.type", "none")
+        .put("datanucleus.identifierFactory", "datanucleus1")
+        .put("datanucleus.rdbms.useLegacyNativeValueStrategy", "true")
+        .put("datanucleus.plugin.pluginRegistryBundleCheck", "LOG")
+        .put("javax.jdo.PersistenceManagerFactoryClass",
+            "org.datanucleus.api.jdo.JDOPersistenceManagerFactory")
+            .put("javax.jdo.option.DetachAllOnCommit", "true")
+            .put("javax.jdo.option.NonTransactionalRead", "false")
+            .put("javax.jdo.option.NonTransactionalWrite", "false")
+            .put("javax.jdo.option.Multithreaded", "true")
+            .build();
 
     public static final String SENTRY_WEB_ENABLE = "sentry.service.web.enable";
     public static final Boolean SENTRY_WEB_ENABLE_DEFAULT = false;

@@ -32,10 +32,8 @@ public class ServiceRegister {
   }
 
   public void regService(String host, int port) throws Exception {
-    if (haContext.getCuratorFramework().getState() != CuratorFrameworkState.STARTED) {
-      haContext.getCuratorFramework().start();
-    }
 
+    haContext.startCuratorFramework();
     ServiceInstance<Void> serviceInstance = ServiceInstance.<Void>builder()
         .address(host)
         .port(port)

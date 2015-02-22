@@ -25,6 +25,7 @@ import org.apache.sentry.hdfs.Updateable;
 import org.apache.sentry.hdfs.UpdateForwarder.ExternalImageRetriever;
 
 public class UpdateablePermissions implements Updateable<PermissionsUpdate>{
+  private static final String UPDATABLE_TYPE_NAME = "perm_update";
 
   private AtomicLong seqNum = new AtomicLong();
   private final ExternalImageRetriever<PermissionsUpdate> imageRetreiver;
@@ -57,6 +58,11 @@ public class UpdateablePermissions implements Updateable<PermissionsUpdate>{
     UpdateablePermissions other = new UpdateablePermissions(imageRetreiver);
     other.seqNum.set(update.getSeqNum());
     return other;
+  }
+
+  @Override
+  public String getUpdateableTypeName() {
+    return UPDATABLE_TYPE_NAME;
   }
 
 }

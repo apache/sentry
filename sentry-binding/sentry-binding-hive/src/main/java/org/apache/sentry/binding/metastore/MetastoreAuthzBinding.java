@@ -49,6 +49,7 @@ import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.shims.ShimLoader;
 import org.apache.hadoop.hive.shims.Utils;
+import org.apache.sentry.SentryUserException;
 import org.apache.sentry.binding.hive.authz.HiveAuthzBinding;
 import org.apache.sentry.binding.hive.authz.HiveAuthzPrivilegesMap;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
@@ -138,6 +139,7 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
   private final ImmutableSet<String> serviceUsers;
   private HiveAuthzBinding hiveAuthzBinding;
   private final String warehouseDir;
+  private static boolean sentryCacheOutOfSync = false;
 
   public MetastoreAuthzBinding(Configuration config) throws Exception {
     super(config);
@@ -389,6 +391,10 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
       List<List<DBModelAuthorizable>> inputHierarchy,
       List<List<DBModelAuthorizable>> outputHierarchy)
       throws InvalidOperationException {
+    if (isSentryCacheOutOfSync()) {
+      throw invalidOperationException(new SentryUserException(
+          "Metastore/Sentry cache is out of sync"));
+    }
     try {
       HiveAuthzBinding hiveAuthzBinding = getHiveAuthzBinding();
       hiveAuthzBinding.authorize(hiveOp, HiveAuthzPrivilegesMap
@@ -446,4 +452,13 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
       return sd.getLocation();
     }
   }
+
+  public static boolean isSentryCacheOutOfSync() {
+    return sentryCacheOutOfSync;
+  }
+
+  public static void setSentryCacheOutOfSync(boolean sentryCacheOutOfSync) {
+    MetastoreAuthzBinding.sentryCacheOutOfSync = sentryCacheOutOfSync;
+  }
+
 }

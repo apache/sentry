@@ -17,30 +17,34 @@
  */
 package org.apache.sentry.hdfs;
 
+import java.io.IOException;
 import java.util.concurrent.locks.ReadWriteLock;
 
 public interface Updateable<K extends Updateable.Update> {
 
   /**
    * Thrift currently does not support class inheritance.We need all update
-   * objects to expose a unified API. A wrapper class need to be created 
-   * implementing this interface and containing the generated thrift class as 
+   * objects to expose a unified API. A wrapper class need to be created
+   * implementing this interface and containing the generated thrift class as
    * a work around
    */
   public interface Update {
 
     boolean hasFullImage();
-    
+
     long getSeqNum();
 
     void setSeqNum(long seqNum);
 
+    byte[] serialize() throws IOException;
+
+    void deserialize(byte data[]) throws IOException;
   }
 
   /**
    * Apply multiple partial updates in order
    * @param update
-   * @param lock External Lock. 
+   * @param lock External Lock.
    * @return
    */
   public void updatePartial(Iterable<K> update, ReadWriteLock lock);
@@ -63,5 +67,7 @@ public interface Updateable<K extends Updateable.Update> {
    * @return
    */
   public K createFullImageUpdate(long currSeqNum);
+
+  public String getUpdateableTypeName();
 
 }

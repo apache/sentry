@@ -17,6 +17,8 @@
  */
 package org.apache.sentry.hdfs;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -26,13 +28,16 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.sentry.provider.db.SentryPolicyStorePlugin.SentryPluginException;
+import org.apache.sentry.provider.db.service.persistent.HAContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 
 public class UpdateForwarder<K extends Updateable.Update> implements
-    Updateable<K> {
+    Updateable<K>, Closeable {
 
   public static interface ExternalImageRetriever<K> {
 
@@ -41,44 +46,65 @@ public class UpdateForwarder<K extends Updateable.Update> implements
   }
 
   private final AtomicLong lastSeenSeqNum = new AtomicLong(0);
-  private final AtomicLong lastCommittedSeqNum = new AtomicLong(0);
+  protected final AtomicLong lastCommittedSeqNum = new AtomicLong(0);
   // Updates should be handled in order
   private final Executor updateHandler = Executors.newSingleThreadExecutor();
 
   // Update log is used when propagate updates to a downstream cache.
   // The preUpdate log stores all commits that were applied to this cache.
-  // When the update log is filled to capacity (updateLogSize), all
+  // When the update log is filled to capacity (getMaxUpdateLogSize()), all
   // entries are cleared and a compact image if the state of the cache is
   // appended to the log.
   // The first entry in an update log (consequently the first preUpdate a
   // downstream cache sees) will be a full image. All subsequent entries are
   // partial edits
-  private final LinkedList<K> updateLog = new LinkedList<K>();
-  // UpdateLog is disabled when updateLogSize = 0;
-  private final int updateLogSize;
+  protected final LinkedList<K> updateLog = new LinkedList<K>();
+  // UpdateLog is disabled when getMaxUpdateLogSize() = 0;
+  private final int maxUpdateLogSize;
 
   private final ExternalImageRetriever<K> imageRetreiver;
 
   private volatile Updateable<K> updateable;
 
   private final ReadWriteLock lock = new ReentrantReadWriteLock();
-  private static final long INIT_SEQ_NUM = -2;
+  protected static final long INIT_SEQ_NUM = -2;
+  protected static final int INIT_UPDATE_RETRY_DELAY = 5000;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UpdateForwarder.class);
+  private static final String UPDATABLE_TYPE_NAME = "update_forwarder";
 
-  public UpdateForwarder(Updateable<K> updateable,
-      ExternalImageRetriever<K> imageRetreiver, int updateLogSize) {
-    this(updateable, imageRetreiver, updateLogSize, 5000);
+  public UpdateForwarder(Configuration conf, Updateable<K> updateable,
+      ExternalImageRetriever<K> imageRetreiver, int maxUpdateLogSize) {
+    this(conf, updateable, imageRetreiver, maxUpdateLogSize, INIT_UPDATE_RETRY_DELAY);
   }
-  public UpdateForwarder(Updateable<K> updateable,
-      ExternalImageRetriever<K> imageRetreiver, int updateLogSize,
+  public UpdateForwarder(Configuration conf, Updateable<K> updateable,
+      ExternalImageRetriever<K> imageRetreiver, int maxUpdateLogSize,
       int initUpdateRetryDelay) {
-    this.updateLogSize = updateLogSize;
+    this.maxUpdateLogSize = maxUpdateLogSize;
     this.imageRetreiver = imageRetreiver;
     if (imageRetreiver != null) {
       spawnInitialUpdater(updateable, initUpdateRetryDelay);
     } else {
       this.updateable = updateable;
+    }
+  }
+
+  public static <K extends Updateable.Update> UpdateForwarder<K> create(Configuration conf,
+      Updateable<K> updateable, K update, ExternalImageRetriever<K> imageRetreiver,
+      int maxUpdateLogSize) throws SentryPluginException {
+    return create(conf, updateable, update, imageRetreiver, maxUpdateLogSize,
+        INIT_UPDATE_RETRY_DELAY);
+  }
+
+  public static <K extends Updateable.Update> UpdateForwarder<K> create(Configuration conf,
+      Updateable<K> updateable, K update, ExternalImageRetriever<K> imageRetreiver,
+      int maxUpdateLogSize, int initUpdateRetryDelay) throws SentryPluginException {
+    if (HAContext.isHaEnabled(conf)) {
+      return new UpdateForwarderWithHA<K>(conf, updateable, update, imageRetreiver,
+          maxUpdateLogSize, initUpdateRetryDelay);
+    } else {
+      return new UpdateForwarder<K>(conf, updateable, imageRetreiver,
+          maxUpdateLogSize, initUpdateRetryDelay);
     }
   }
 
@@ -126,18 +152,18 @@ public class UpdateForwarder<K extends Updateable.Update> implements
    * Handle notifications from HMS plug-in or upstream Cache
    * @param update
    */
-  public void handleUpdateNotification(final K update) {
+  public void handleUpdateNotification(final K update) throws SentryPluginException {
     // Correct the seqNums on the first update
     if (lastCommittedSeqNum.get() == INIT_SEQ_NUM) {
-      K firstUpdate = updateLog.peek();
-      long firstSeqNum = update.getSeqNum() - 1; 
+      K firstUpdate = getUpdateLog().peek();
+      long firstSeqNum = update.getSeqNum() - 1;
       if (firstUpdate != null) {
         firstUpdate.setSeqNum(firstSeqNum);
       }
       lastCommittedSeqNum.set(firstSeqNum);
       lastSeenSeqNum.set(firstSeqNum);
     }
-    final boolean editNotMissed = 
+    final boolean editNotMissed =
         lastSeenSeqNum.incrementAndGet() == update.getSeqNum();
     if (!editNotMissed) {
       lastSeenSeqNum.set(update.getSeqNum());
@@ -167,18 +193,18 @@ public class UpdateForwarder<K extends Updateable.Update> implements
     updateHandler.execute(task);
   }
 
-  private void appendToUpdateLog(K update) {
-    synchronized (updateLog) {
+  protected void appendToUpdateLog(K update) {
+    synchronized (getUpdateLog()) {
       boolean logCompacted = false;
-      if (updateLogSize > 0) {
-        if (update.hasFullImage() || (updateLog.size() == updateLogSize)) {
+      if (getMaxUpdateLogSize() > 0) {
+        if (update.hasFullImage() || (getUpdateLog().size() == getMaxUpdateLogSize())) {
           // Essentially a log compaction
-          updateLog.clear();
-          updateLog.add(update.hasFullImage() ? update
+          getUpdateLog().clear();
+          getUpdateLog().add(update.hasFullImage() ? update
               : createFullImageUpdate(update.getSeqNum()));
           logCompacted = true;
         } else {
-          updateLog.add(update);
+          getUpdateLog().add(update);
         }
       }
       lastCommittedSeqNum.set(update.getSeqNum());
@@ -199,7 +225,7 @@ public class UpdateForwarder<K extends Updateable.Update> implements
    */
   public List<K> getAllUpdatesFrom(long seqNum) {
     List<K> retVal = new LinkedList<K>();
-    synchronized (updateLog) {
+    synchronized (getUpdateLog()) {
       long currSeqNum = lastCommittedSeqNum.get();
       if (LOGGER.isDebugEnabled() && (updateable != null)) {
         LOGGER.debug("#### GetAllUpdatesFrom ["
@@ -207,20 +233,20 @@ public class UpdateForwarder<K extends Updateable.Update> implements
             + "reqSeqNum=" + seqNum + ", "
             + "lastCommit=" + lastCommittedSeqNum.get() + ", "
             + "lastSeen=" + lastSeenSeqNum.get() + ", "
-            + "updateLogSize=" + updateLog.size() + "]");
+            + "getMaxUpdateLogSize()=" + getUpdateLog().size() + "]");
       }
-      if (updateLogSize == 0) {
+      if (getMaxUpdateLogSize() == 0) {
         // no updatelog configured..
         return retVal;
       }
-      K head = updateLog.peek();
+      K head = getUpdateLog().peek();
       if (head == null) {
         return retVal;
       }
       if (seqNum > currSeqNum + 1) {
         // This process has probably restarted since downstream
         // recieved last update
-        retVal.addAll(updateLog);
+        retVal.addAll(getUpdateLog());
         return retVal;
       }
       if (head.getSeqNum() > seqNum) {
@@ -228,7 +254,7 @@ public class UpdateForwarder<K extends Updateable.Update> implements
         if (head.hasFullImage()) {
           // head is a refresh(full) image
           // Send full image along with partial updates
-          for (K u : updateLog) {
+          for (K u : getUpdateLog()) {
             retVal.add(u);
           }
         } else {
@@ -237,13 +263,13 @@ public class UpdateForwarder<K extends Updateable.Update> implements
           // add fullImage to head of Log
           // NOTE : This should ideally never happen
           K fullImage = createFullImageUpdate(currSeqNum);
-          updateLog.clear();
-          updateLog.add(fullImage);
+          getUpdateLog().clear();
+          getUpdateLog().add(fullImage);
           retVal.add(fullImage);
         }
       } else {
         // increment iterator to requested seqNum
-        Iterator<K> iter = updateLog.iterator();
+        Iterator<K> iter = getUpdateLog().iterator();
         while (iter.hasNext()) {
           K elem = iter.next();
           if (elem.getSeqNum() >= seqNum) {
@@ -254,7 +280,7 @@ public class UpdateForwarder<K extends Updateable.Update> implements
     }
     return retVal;
   }
- 
+
   public boolean areAllUpdatesCommited() {
     return lastCommittedSeqNum.get() == lastSeenSeqNum.get();
   }
@@ -278,7 +304,7 @@ public class UpdateForwarder<K extends Updateable.Update> implements
       updateable.updatePartial(updates, lock);
     }
   }
-  
+
   @Override
   public long getLastUpdatedSeqNum() {
     return (updateable != null) ? updateable.getLastUpdatedSeqNum() : INIT_SEQ_NUM;
@@ -289,4 +315,21 @@ public class UpdateForwarder<K extends Updateable.Update> implements
     return (updateable != null) ? updateable.createFullImageUpdate(currSeqNum) : null;
   }
 
+  @Override
+  public String getUpdateableTypeName() {
+    // TODO Auto-generated method stub
+    return UPDATABLE_TYPE_NAME;
+  }
+
+  protected LinkedList<K> getUpdateLog() {
+    return updateLog;
+  }
+
+  protected int getMaxUpdateLogSize() {
+    return maxUpdateLogSize;
+  }
+
+  @Override
+  public void close() throws IOException {
+  }
 }

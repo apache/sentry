@@ -17,6 +17,7 @@
  */
 package org.apache.sentry.hdfs;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -34,6 +35,10 @@ public class PermissionsUpdate implements Updateable.Update {
   public static String ALL_GROUPS = "__ALL_GROUPS__";
 
   private final TPermissionsUpdate tPermUpdate;
+
+  public PermissionsUpdate() {
+    this(0, false);
+  }
 
   public PermissionsUpdate(TPermissionsUpdate tPermUpdate) {
     this.tPermUpdate = tPermUpdate;
@@ -90,5 +95,15 @@ public class PermissionsUpdate implements Updateable.Update {
 
   public TPermissionsUpdate toThrift() {
     return tPermUpdate;
+  }
+
+  @Override
+  public byte[] serialize() throws IOException {
+    return ThriftSerializer.serialize(tPermUpdate);
+  }
+
+  @Override
+  public void deserialize(byte[] data) throws IOException {
+    ThriftSerializer.deserialize(tPermUpdate, data);
   }
 }

@@ -86,7 +86,7 @@ public class HAClientInvocationHandler implements InvocationHandler {
 
   private void renewSentryClient() throws IOException {
     try {
-      manager = new ServiceManager(new HAContext(conf));
+      manager = new ServiceManager(HAContext.getHAContext(conf));
     } catch (Exception e1) {
       throw new IOException("Failed to extract Sentry node info from zookeeper", e1);
     }
@@ -106,6 +106,8 @@ public class HAClientInvocationHandler implements InvocationHandler {
         conf.setInt(ServiceConstants.ClientConfig.SERVER_RPC_PORT, serverAddress.getPort());
         try {
           client = new SentryPolicyServiceClientDefaultImpl(conf);
+          LOGGER.info("Sentry Client using server " + serverAddress.getHostName() +
+              ":" + serverAddress.getPort());
           break;
         } catch (IOException e) {
           manager.reportError(currentServiceInstance);

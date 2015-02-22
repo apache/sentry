@@ -28,11 +28,12 @@ import org.slf4j.LoggerFactory;
 
 public class UpdateableAuthzPaths implements AuthzPaths, Updateable<PathsUpdate> {
   private static final int MAX_UPDATES_PER_LOCK_USE = 99;
+  private static final String UPDATABLE_TYPE_NAME = "path_update";
   private volatile HMSPaths paths;
   private final AtomicLong seqNum = new AtomicLong(0);
 
   private static Logger LOG = LoggerFactory.getLogger(UpdateableAuthzPaths.class);
-  
+
   public UpdateableAuthzPaths(String[] pathPrefixes) {
     this.paths = new HMSPaths(pathPrefixes);
   }
@@ -92,7 +93,7 @@ public class UpdateableAuthzPaths implements AuthzPaths, Updateable<PathsUpdate>
       TPathChanges newPathInfo = null;
       TPathChanges oldPathInfo = null;
       if ((pathChanges.get(0).getAddPathsSize() == 1)
-        && (pathChanges.get(1).getDelPathsSize() == 1)) {
+          && (pathChanges.get(1).getDelPathsSize() == 1)) {
         newPathInfo = pathChanges.get(0);
         oldPathInfo = pathChanges.get(1);
       } else if ((pathChanges.get(1).getAddPathsSize() == 1)
@@ -149,5 +150,10 @@ public class UpdateableAuthzPaths implements AuthzPaths, Updateable<PathsUpdate>
             .getPathsDump().initializeFromDump(pathsDump));
       }
     };
+  }
+
+  @Override
+  public String getUpdateableTypeName() {
+    return UPDATABLE_TYPE_NAME;
   }
 }

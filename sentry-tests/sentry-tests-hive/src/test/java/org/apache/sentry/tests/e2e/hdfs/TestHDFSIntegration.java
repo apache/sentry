@@ -39,8 +39,10 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.base.Preconditions;
+
 import junit.framework.Assert;
 
+import org.apache.curator.test.TestingServer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
@@ -104,6 +106,7 @@ public class TestHDFSIntegration {
   
   private static final Logger LOGGER = LoggerFactory
       .getLogger(TestHDFSIntegration.class);
+  protected static boolean testSentryHA = false;
 
   public static class WordCountMapper extends MapReduceBase implements
       Mapper<LongWritable, Text, String, Long> {
@@ -150,6 +153,7 @@ public class TestHDFSIntegration {
   private static File policyFileLocation;
   private static UserGroupInformation adminUgi;
   private static UserGroupInformation hiveUgi;
+  private static TestingServer server;
 
   // Variables which are used for cleanup after test
   // Please set these values in each test
@@ -443,6 +447,9 @@ public class TestHDFSIntegration {
             "org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessorFactory,org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory");
         properties.put("sentry.policy.store.plugins", "org.apache.sentry.hdfs.SentryPlugin");
         properties.put(ServerConfig.RPC_MIN_THREADS, "3");
+        if (testSentryHA) {
+          haSetup(properties);
+        }
         for (Map.Entry<String, String> entry : properties.entrySet()) {
           sentryConf.set(entry.getKey(), entry.getValue());
         }
@@ -461,6 +468,14 @@ public class TestHDFSIntegration {
         return null;
       }
     });
+  }
+
+  public static void haSetup(Map<String, String> properties) throws Exception {
+    server = new TestingServer();
+    server.start();
+    properties.put(ServerConfig.SENTRY_HA_ZOOKEEPER_QUORUM,
+        server.getConnectString());
+    properties.put(ServerConfig.SENTRY_HA_ENABLED, "true");
   }
 
   @After

@@ -41,6 +41,10 @@ public class SentryHDFSServiceProcessor implements SentryHDFSService.Iface {
     retVal.setAuthzPathUpdate(new LinkedList<TPathsUpdate>());
     retVal.setAuthzPermUpdate(new LinkedList<TPermissionsUpdate>());
     if (SentryPlugin.instance != null) {
+      if (SentryPlugin.instance.isOutOfSync()) {
+        throw new TException(
+            "This Sentry server is not communicating with other nodes and out of sync ");
+      }
       List<PermissionsUpdate> permUpdates = SentryPlugin.instance.getAllPermsUpdatesFrom(permSeqNum);
       List<PathsUpdate> pathUpdates = SentryPlugin.instance.getAllPathsUpdatesFrom(pathSeqNum);
       try {
@@ -80,7 +84,7 @@ public class SentryHDFSServiceProcessor implements SentryHDFSService.Iface {
     } else {
       LOGGER.error("SentryPlugin not initialized yet !!");
     }
-    
+
     return retVal;
   }
 

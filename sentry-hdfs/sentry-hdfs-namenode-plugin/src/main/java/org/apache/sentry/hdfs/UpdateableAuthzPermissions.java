@@ -37,9 +37,10 @@ import org.slf4j.LoggerFactory;
 
 public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<PermissionsUpdate> {
   private static final int MAX_UPDATES_PER_LOCK_USE = 99;
+  private static final String UPDATABLE_TYPE_NAME = "perm_authz_update";
   private volatile SentryPermissions perms = new SentryPermissions();
   private final AtomicLong seqNum = new AtomicLong(0);
-  
+
   private static Logger LOG = LoggerFactory.getLogger(UpdateableAuthzPermissions.class);
 
   public static Map<String, FsAction> ACTION_MAPPING = new HashMap<String, FsAction>();
@@ -84,7 +85,7 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
       lock.writeLock().unlock();
     }
   }
-  
+
 
   private void applyPartialUpdate(PermissionsUpdate update) {
     applyPrivilegeUpdates(update);
@@ -233,5 +234,9 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
     return retVal;
   }
 
-  
+  @Override
+  public String getUpdateableTypeName() {
+    return UPDATABLE_TYPE_NAME;
+  }
+
 }

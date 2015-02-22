@@ -51,15 +51,12 @@ public class ServiceManager {
 
   private void init() throws IOException {
     try {
-      CuratorFramework curatorFramework = haContext.getCuratorFramework();
-      if (curatorFramework.getState() != CuratorFrameworkState.STARTED) {
-        curatorFramework.start();
-      }
+      haContext.startCuratorFramework();
       InstanceSerializer<Void> instanceSerializer = new FixedJsonInstanceSerializer<Void>(Void.class);
       serviceDiscovery = ServiceDiscoveryBuilder.<Void>builder(Void.class)
                 .basePath(HAContext.SENTRY_SERVICE_REGISTER_NAMESPACE)
                 .serializer(instanceSerializer)
-                .client(curatorFramework)
+          .client(haContext.getCuratorFramework())
                 .build();
       serviceDiscovery.start();
       serviceProvider = serviceDiscovery
@@ -94,7 +91,6 @@ public class ServiceManager {
     try {
       serviceProvider.close();
       serviceDiscovery.close();
-      haContext.getCuratorFramework().close();
       LOGGER.debug("Closed ZK resources");
     } catch (IOException e) {
       LOGGER.warn("Error closing the service manager", e);

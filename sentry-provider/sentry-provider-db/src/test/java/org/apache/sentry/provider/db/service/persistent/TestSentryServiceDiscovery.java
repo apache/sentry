@@ -46,14 +46,12 @@ public class TestSentryServiceDiscovery {
     conf.set(ServerConfig.SENTRY_HA_ENABLED, "true");
     conf.set(ServerConfig.SENTRY_HA_ZOOKEEPER_NAMESPACE, "sentry-test");
     conf.set(ServerConfig.SENTRY_HA_ZOOKEEPER_QUORUM, server.getConnectString());
-    haContext = new HAContext(conf);
+    haContext = HAContext.getHAContext(conf);
   }
 
   @After
   public void teardown() {
-    if (haContext != null) {
-      CloseableUtils.closeQuietly(haContext.getCuratorFramework());
-    }
+    HAContext.clearServerContext();
     if (server != null) {
       try {
         server.stop();

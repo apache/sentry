@@ -103,7 +103,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     isReady = false;
     if(conf.getBoolean(ServerConfig.SENTRY_HA_ENABLED,
         ServerConfig.SENTRY_HA_ENABLED_DEFAULT)){
-      haContext = new HAContext(conf);
+      haContext = HAContext.getHAContext(conf);
       sentryStore = new SentryStore(conf);
       ServiceRegister reg = new ServiceRegister(haContext);
       reg.regService(conf.get(ServerConfig.RPC_ADDRESS),
@@ -665,7 +665,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       for (SentryPolicyStorePlugin plugin : sentryPlugins) {
         plugin.onDropSentryPrivilege(request);
       }
-      response.setStatus(Status.OK()); 
+      response.setStatus(Status.OK());
     } catch (SentryAccessDeniedException e) {
       LOGGER.error(e.getMessage(), e);
       response.setStatus(Status.AccessDenied(e.getMessage(), e));

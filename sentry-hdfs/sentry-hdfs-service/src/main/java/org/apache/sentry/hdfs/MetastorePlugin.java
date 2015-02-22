@@ -258,7 +258,7 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
     return update;
   }
 
-  private void notifySentryNoLock(PathsUpdate update) {
+  protected void notifySentryNoLock(PathsUpdate update) {
     try {
       getClient().notifyHMSUpdate(update);
     } catch (Exception e) {
@@ -266,7 +266,7 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
     }
   }
 
-  private void notifySentryAndApplyLocal(PathsUpdate update) {
+  protected void notifySentryAndApplyLocal(PathsUpdate update) {
     notificiationLock.lock();
     if (!syncSent) {
       new SyncTask().run();
@@ -280,5 +280,4 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
       LOGGER.debug("#### HMS Path Last update sent : ["+ lastSentSeqNum + "]");
     }
   }
-
 }
