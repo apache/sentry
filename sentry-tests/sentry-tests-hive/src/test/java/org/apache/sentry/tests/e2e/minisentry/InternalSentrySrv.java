@@ -20,19 +20,91 @@ package org.apache.sentry.tests.e2e.minisentry;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.curator.test.TestingServer;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.sentry.provider.db.service.thrift.SentryProcessorWrapper;
 import org.apache.sentry.service.thrift.SentryService;
 import org.apache.sentry.service.thrift.SentryServiceFactory;
 import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
+import org.apache.thrift.protocol.TProtocol;
+import org.apache.thrift.server.ServerContext;
+import org.apache.thrift.server.TServerEventHandler;
+import org.apache.thrift.transport.TSocket;
+import org.apache.thrift.transport.TTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 
 public class InternalSentrySrv implements SentrySrv {
+
+  public static class SentryServerContext implements ServerContext {
+    private long contextId;
+
+    public SentryServerContext(long contextId) {
+      this.contextId = contextId;
+    }
+
+    public long getContextId() {
+      return contextId;
+    }
+  }
+
+  /**
+   * Thrift even handler class to track client connections to Sentry service
+   */
+  public static class SentryThriftEvenHandler implements TServerEventHandler {
+    // unique id for each client connection. We could see multiple simultaneous
+    // client connections, some make it thread safe.
+    private AtomicLong clientId = new AtomicLong();
+    // Lists of clientId currently connected
+    private List<Long> clientList = Lists.newArrayList();
+
+    /**
+     * Thrift callback when a new client is connecting
+     */
+    @Override
+    public ServerContext createContext(TProtocol inputProto,
+        TProtocol outputProto) {
+      clientList.add(clientId.incrementAndGet());
+      LOGGER.info("Client Connected: " + clientId.get());
+      return new SentryServerContext(clientId.get());
+    }
+
+    /**
+     * Thrift callback when a client is disconnecting
+     */
+    @Override
+    public void deleteContext(ServerContext arg0, TProtocol arg1, TProtocol arg2) {
+      clientList.remove(((SentryServerContext) arg0).getContextId());
+      LOGGER.info("Client Disonnected: "
+          + ((SentryServerContext) arg0).getContextId());
+    }
+
+    @Override
+    public void preServe() {
+    }
+
+    @Override
+    public void processContext(ServerContext arg0, TTransport arg1,
+        TTransport arg2) {
+    }
+
+    public long getClientCount() {
+      return clientList.size();
+    }
+
+    public List<Long> getClienList() {
+      return clientList;
+    }
+
+    public long getClientId() {
+      return clientId.get();
+    }
+  }
 
   private List<SentryService> sentryServers = Lists.newArrayList();
   private static TestingServer zkServer; // created only if in case of HA
@@ -91,6 +163,7 @@ public class InternalSentrySrv implements SentrySrv {
         throw new TimeoutException("Server did not start after 60 seconds");
       }
     }
+    sentryServer.setThriftEventHandler(new SentryThriftEvenHandler());
   }
 
   @Override
@@ -161,4 +234,40 @@ public class InternalSentrySrv implements SentrySrv {
     return zkServer != null;
   }
 
+  @Override
+  public long getNumActiveClients(int serverNum) {
+    SentryThriftEvenHandler thriftHandler = (SentryThriftEvenHandler) get(
+        serverNum).getThriftEventHandler();
+    LOGGER.warn("Total clients: " + thriftHandler.getClientId());
+    for (Long clientId: thriftHandler.getClienList()) {
+      LOGGER.warn("Got clients: " + clientId);
+    }
+    return thriftHandler.getClientCount();
+  }
+
+  @Override
+  public long getNumActiveClients() {
+    long numClients = 0;
+    for (int sentryServerNum = 0; sentryServerNum < sentryServers.size(); sentryServerNum++) {
+      numClients += getNumActiveClients(sentryServerNum);
+    }
+    return numClients;
+
+  }
+
+  @Override
+  public long getTotalClients() {
+    long totalClients = 0;
+    for (int sentryServerNum = 0; sentryServerNum < sentryServers.size(); sentryServerNum++) {
+      totalClients += getTotalClients(sentryServerNum);
+    }
+    return totalClients;
+  }
+
+  @Override
+  public long getTotalClients(int serverNum) {
+    SentryThriftEvenHandler thriftHandler = (SentryThriftEvenHandler) get(
+        serverNum).getThriftEventHandler();
+    return thriftHandler.getClientId();
+  }
 }

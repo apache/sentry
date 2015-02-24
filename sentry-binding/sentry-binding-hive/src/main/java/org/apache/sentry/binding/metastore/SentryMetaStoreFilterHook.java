@@ -133,6 +133,8 @@ public class SentryMetaStoreFilterHook implements MetaStoreFilterHook {
     } catch (Exception e) {
       LOG.warn("Error getting DB list ", e);
       return new ArrayList<String>();
+    } finally {
+      close();
     }
   }
 
@@ -150,6 +152,8 @@ public class SentryMetaStoreFilterHook implements MetaStoreFilterHook {
     } catch (Exception e) {
       LOG.warn("Error getting Table list ", e);
       return new ArrayList<String>();
+    } finally {
+      close();
     }
   }
 
@@ -193,4 +197,10 @@ public class SentryMetaStoreFilterHook implements MetaStoreFilterHook {
     return SessionState.get().getConf();
   }
 
+  private void close() {
+    if (hiveAuthzBinding != null) {
+      hiveAuthzBinding.close();
+      hiveAuthzBinding = null;
+    }
+  }
 }

@@ -76,4 +76,25 @@ public interface SentrySrv {
    * @return True - HA is enabled False - HA is not enabled
    */
   public boolean isHaEnabled();
+
+  /**
+   * Get the number of active clients connections across servers
+   */
+  public long getNumActiveClients();
+
+  /**
+   * Get the number of active clients connections for the given server
+   */
+  public long getNumActiveClients(int serverNum);
+
+  /**
+   * Get the total number of clients connected so far
+   */
+  public long getTotalClients();
+
+  /**
+   * Get the total number of clients connected so far
+   */
+  public long getTotalClients(int serverNum);
+
 }

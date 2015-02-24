@@ -57,8 +57,6 @@ import com.google.common.collect.Sets;
 public class HiveAuthzBinding {
   private static final Logger LOG = LoggerFactory
       .getLogger(HiveAuthzBinding.class);
-  private static final Map<String, HiveAuthzBinding> authzBindingMap =
-      new ConcurrentHashMap<String, HiveAuthzBinding>();
   private static final AtomicInteger queryID = new AtomicInteger();
   private static final Splitter ROLE_SET_SPLITTER = Splitter.on(",").trimResults()
       .omitEmptyStrings();
@@ -127,49 +125,6 @@ public class HiveAuthzBinding {
       }
       return new ActiveRoleSet(Sets.newHashSet(ROLE_SET_SPLITTER.split(name)));
     }
-  }
-
-  /**
-   * Retrieve the HiveAuthzBinding if the tag is saved in the given configuration
-   * @param conf
-   * @return HiveAuthzBinding or null
-   */
-  public static HiveAuthzBinding get(Configuration conf) {
-    String tagName = conf.get(HIVE_BINDING_TAG);
-    if (tagName == null) {
-      return null;
-    } else {
-      return authzBindingMap.get(tagName);
-    }
-  }
-
-  /**
-   * store the HiveAuthzBinding in the authzBindingMap and save a tag in the given configuration
-   * @param conf
-   */
-  public void set (Configuration conf) {
-    if (!open) {
-      throw new IllegalStateException("Binding has been closed");
-    }
-    String tagName = SessionState.get().getSessionId() + "_" + queryID.incrementAndGet();
-    authzBindingMap.put(tagName, this);
-    conf.set(HIVE_BINDING_TAG, tagName);
-  }
-
-  /**
-   * remove the authzBindingMap entry for given tag
-   * @param conf
-   */
-  public void clear(Configuration conf) {
-    if (!open) {
-      throw new IllegalStateException("Binding has been closed");
-    }
-    String tagName = conf.get(HIVE_BINDING_TAG);
-    if (tagName != null) {
-      authzBindingMap.remove(tagName);
-    }
-    open = false;
-    authProvider.close();
   }
 
   private void validateHiveConfig(HiveHook hiveHook, HiveConf hiveConf, HiveAuthzConf authzConf)
@@ -392,5 +347,9 @@ public class HiveAuthzBinding {
       throw new IllegalStateException("Binding has been closed");
     }
     return authProvider.getLastFailedPrivileges();
+  }
+
+  public void close() {
+    authProvider.close();
   }
 }

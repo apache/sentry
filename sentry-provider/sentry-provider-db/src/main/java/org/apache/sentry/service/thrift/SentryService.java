@@ -56,6 +56,7 @@ import org.apache.thrift.TMultiplexedProcessor;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.server.TServer;
+import org.apache.thrift.server.TServerEventHandler;
 import org.apache.thrift.server.TThreadPoolServer;
 import org.apache.thrift.transport.TSaslServerTransport;
 import org.apache.thrift.transport.TServerSocket;
@@ -398,5 +399,23 @@ public class SentryService implements Callable {
 
   public Configuration getConf() {
     return conf;
+  }
+
+  /**
+   * Add Thrift event handler to underlying thrift threadpool server
+   * @param eventHandler
+   */
+  public void setThriftEventHandler(TServerEventHandler eventHandler) throws IllegalStateException {
+    if (thriftServer == null) {
+      throw new IllegalStateException("Server is not initialized or stopped");
+    }
+    thriftServer.setServerEventHandler(eventHandler);
+  }
+
+  public TServerEventHandler getThriftEventHandler() throws IllegalStateException {
+    if (thriftServer == null) {
+      throw new IllegalStateException("Server is not initialized or stopped");
+    }
+    return thriftServer.getEventHandler();
   }
 }
