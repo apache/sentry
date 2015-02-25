@@ -100,11 +100,11 @@ public class HiveServerFactory {
       return new UnmanagedHiveServer();
     }
     if(!properties.containsKey(WAREHOUSE_DIR)) {
-      LOGGER.error("fileSystem " + fileSystem.getClass().getSimpleName());
+      LOGGER.info("fileSystem " + fileSystem.getClass().getSimpleName());
       if (fileSystem instanceof DistributedFileSystem) {
         @SuppressWarnings("static-access")
         String dfsUri = fileSystem.getDefaultUri(fileSystem.getConf()).toString();
-        LOGGER.error("dfsUri " + dfsUri);
+        LOGGER.info("dfsUri " + dfsUri);
         properties.put(WAREHOUSE_DIR, dfsUri + "/data");
         fileSystem.mkdirs(new Path("/data/"), new FsPermission((short) 0777));
       } else {
