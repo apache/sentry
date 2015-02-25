@@ -22,18 +22,25 @@ import static junit.framework.Assert.fail;
 
 import java.util.Set;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.provider.db.SentryAlreadyExistsException;
 import org.apache.sentry.provider.db.SentryNoSuchObjectException;
+import org.apache.sentry.provider.file.PolicyFile;
+import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.collect.Sets;
 
 public class TestDelegateSentryStore extends SentryStoreIntegrationBase{
   private static final String SEARCH = "solr";
-  @Override
-  public SentryStoreLayer createSentryStore(Configuration conf) throws Exception {
-    return new DelegateSentryStore(conf);
+
+  @Before
+  public void configure() throws Exception {
+    /**
+     * add the admin user to admin groups
+     */
+    policyFile = new PolicyFile();
+    addGroupsToUser("admin", getAdminGroups());
+    writePolicyFile();
   }
 
   @Test

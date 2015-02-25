@@ -21,30 +21,30 @@ import java.io.File;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.provider.db.generic.service.persistent.SentryStoreLayer;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 import com.google.common.io.Files;
 
 public abstract class SentryStoreIntegrationBase {
-  protected final String[] adminGroups = {"adminGroup"};
-  private File dataDir;
-  protected SentryStoreLayer sentryStore;
-  private PolicyFile policyFile;
-  private File policyFilePath;
+  protected final static String[] adminGroups = { "adminGroup" };
+  private static File dataDir;
+  private static File policyFilePath;
+  private static Configuration conf;
+  protected static DelegateSentryStore sentryStore;
+  protected static PolicyFile policyFile;
 
-  @Before
-  public void setup() throws Exception {
-    Configuration conf = new Configuration(false);
+  @BeforeClass
+  public static void setup() throws Exception {
+    conf = new Configuration(false);
     setup(conf);
-    configure(conf);
-    sentryStore = createSentryStore(conf);
+    sentryStore = new DelegateSentryStore(conf);
   }
 
-  private void setup(Configuration conf) throws Exception {
+  private static void setup(Configuration conf) throws Exception {
     dataDir = new File(Files.createTempDir(), "sentry_policy_db");
     conf.set(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "false");
     conf.set(ServerConfig.SENTRY_STORE_JDBC_URL,
@@ -56,14 +56,15 @@ public abstract class SentryStoreIntegrationBase {
     policyFilePath = new File(Files.createTempDir(), "local_policy_file.ini");
     conf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE,
         policyFilePath.getPath());
-    policyFile = new PolicyFile();
-    String adminUser = "admin";
-    addGroupsToUser(adminUser, adminGroups);
-    writePolicyFile();
   }
 
   @After
-  public void teardown() {
+  public void clearData() {
+    sentryStore.clearAllTables();
+  }
+
+  @AfterClass
+  public static void teardown() {
     if (sentryStore != null) {
       sentryStore.close();
     }
@@ -75,21 +76,15 @@ public abstract class SentryStoreIntegrationBase {
     }
   }
 
-  public void addGroupsToUser(String user, String... groupNames) {
+  public static void addGroupsToUser(String user, String... groupNames) {
     policyFile.addGroupsToUser(user, groupNames);
   }
 
-  public void writePolicyFile() throws Exception {
+  public static void writePolicyFile() throws Exception {
     policyFile.write(policyFilePath);
   }
 
   public String[] getAdminGroups() {
     return adminGroups;
   }
-
-  public void configure(Configuration conf) throws Exception {
-
-  }
-
-  public abstract SentryStoreLayer createSentryStore(Configuration conf) throws Exception;
 }

@@ -23,15 +23,14 @@ import static junit.framework.Assert.fail;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.model.search.Collection;
 import org.apache.sentry.core.model.search.Field;
 import org.apache.sentry.core.model.search.SearchConstants;
 import org.apache.sentry.provider.db.SentryGrantDeniedException;
-import org.apache.sentry.provider.db.generic.service.persistent.DelegateSentryStore;
-import org.apache.sentry.provider.db.generic.service.persistent.SentryStoreLayer;
 import org.apache.sentry.provider.db.generic.service.persistent.PrivilegeObject.Builder;
+import org.apache.sentry.provider.file.PolicyFile;
+import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.collect.Sets;
@@ -54,19 +53,14 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
   private static final String FIELD_NAME = "field1";
   private static final String NOT_FIELD_NAME = "not_field1";
 
-  @Override
-  public void configure(Configuration conf) throws Exception {
+  @Before
+  public void configure() throws Exception {
     /**
      * add the solr user to admin groups
      */
+    policyFile = new PolicyFile();
     addGroupsToUser(ADMIN_USER, getAdminGroups());
     writePolicyFile();
-  }
-
-  @Override
-  public SentryStoreLayer createSentryStore(Configuration conf)
-      throws Exception {
-    return new DelegateSentryStore(conf);
   }
 
   /**

@@ -34,6 +34,7 @@ import org.apache.sentry.provider.db.SentryAlreadyExistsException;
 import org.apache.sentry.provider.db.SentryGrantDeniedException;
 import org.apache.sentry.provider.db.SentryInvalidInputException;
 import org.apache.sentry.provider.db.SentryNoSuchObjectException;
+import org.apache.sentry.provider.db.service.model.MSentryGMPrivilege;
 import org.apache.sentry.provider.db.service.model.MSentryGroup;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
 import org.apache.sentry.provider.db.service.persistent.CommitContext;
@@ -43,6 +44,7 @@ import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -443,5 +445,23 @@ public class DelegateSentryStore implements SentryStoreLayer {
   private Set<String> getRequestorGroups(String userName)
       throws SentryUserException {
     return SentryPolicyStoreProcessor.getGroupsFromUserName(this.conf, userName);
+  }
+
+  @VisibleForTesting
+  void clearAllTables() {
+    boolean rollbackTransaction = true;
+    PersistenceManager pm = null;
+    try {
+      pm = openTransaction();
+      pm.newQuery(MSentryRole.class).deletePersistentAll();
+      pm.newQuery(MSentryGroup.class).deletePersistentAll();
+      pm.newQuery(MSentryGMPrivilege.class).deletePersistentAll();
+      commitUpdateTransaction(pm);
+      rollbackTransaction = false;
+    } finally {
+      if (rollbackTransaction) {
+        rollbackTransaction(pm);
+      }
+    }
   }
 }
