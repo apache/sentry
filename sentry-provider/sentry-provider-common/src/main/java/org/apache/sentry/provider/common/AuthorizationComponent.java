@@ -14,18 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.core.model.search;
-
-public class SearchConstants {
-
-  public static final String ALL = "*";
-  public static final String QUERY = "query";
-  public static final String UPDATE = "update";
-  /**
-   * The property of sentry.search.cluster was used to distinguish itself from multiple search clusters. For example, there are two
-   * search clusters: cluster1 and cluster2 implemented authorization via sentry, and it must set the value of
-   * sentry.search.cluster=cluster1 or cluster2 to communicate with sentry service for authorization
-   */
-  public static final String SENTRY_SEARCH_CLUSTER_KEY = "sentry.search.cluster";
-  public static final String SENTRY_SEARCH_CLUSTER_DEFAULT = "clutser1";
+package org.apache.sentry.provider.common;
+/**
+ * Represent which component being authorized by Sentry
+ * using generic model
+ */
+public class AuthorizationComponent{
+  public static final String Search = "solr";
 }

@@ -26,6 +26,7 @@ import org.apache.hadoop.conf.Configuration;
 import static org.apache.hadoop.fs.CommonConfigurationKeys.HADOOP_SECURITY_AUTHENTICATION;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.sentry.SentryUserException;
 import org.apache.sentry.binding.solr.conf.SolrAuthzConf;
 import org.apache.sentry.binding.solr.conf.SolrAuthzConf.AuthzConfVars;
 import org.apache.sentry.core.common.ActiveRoleSet;
@@ -36,6 +37,8 @@ import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.common.AuthorizationProvider;
 import org.apache.sentry.provider.common.GroupMappingService;
 import org.apache.sentry.provider.common.ProviderBackend;
+import org.apache.sentry.provider.db.generic.service.thrift.SearchPolicyServiceClient;
+import org.apache.sentry.provider.db.generic.service.thrift.SearchProviderBackend;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,11 +61,17 @@ public class SolrAuthzBinding {
   private final AuthorizationProvider authProvider;
   private final GroupMappingService groupMapping;
   private ProviderBackend providerBackend;
+  private Subject bindingSubject;
 
   public SolrAuthzBinding (SolrAuthzConf authzConf) throws Exception {
     this.authzConf = addHdfsPropsToConf(authzConf);
     this.authProvider = getAuthProvider();
     this.groupMapping = authProvider.getGroupMapping();
+    /**
+     * The Solr server principal will use the binding
+     */
+    this.bindingSubject = new Subject(UserGroupInformation.getCurrentUser()
+        .getShortUserName());
   }
 
   // Instantiate the configured authz provider
@@ -203,6 +212,43 @@ public class SolrAuthzBinding {
           throw new RuntimeException(ioe);
         }
         LOG.info("Got Kerberos ticket");
+      }
+    }
+  }
+
+  /**
+   * SENTRY-478
+   * If the binding uses the searchProviderBackend, it can sync privilege with Sentry Service
+   */
+  public boolean isSyncEnabled() {
+    return (providerBackend instanceof SearchProviderBackend);
+  }
+
+  public SearchPolicyServiceClient getClient() throws Exception {
+    return new SearchPolicyServiceClient(authzConf);
+  }
+
+  /**
+   * Attempt to notify the Sentry service when deleting collection happened
+   * @param collection
+   * @throws SolrException
+   */
+  public void deleteCollectionPrivilege(String collection) throws SentrySolrAuthorizationException {
+    if (!isSyncEnabled()) {
+      return;
+    }
+    SearchPolicyServiceClient client = null;
+    try {
+      client = getClient();
+      client.dropCollectionPrivilege(collection, bindingSubject.getName());
+    } catch (SentryUserException ex) {
+      throw new SentrySolrAuthorizationException("User " + bindingSubject.getName() +
+          " can't delete privileges for collection " + collection);
+    } catch (Exception ex) {
+      throw new SentrySolrAuthorizationException("Unable to obtain client:" + ex.getMessage());
+    } finally {
+      if (client != null) {
+        client.close();
       }
     }
   }

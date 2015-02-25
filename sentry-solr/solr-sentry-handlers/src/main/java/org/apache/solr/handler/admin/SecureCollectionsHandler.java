@@ -77,5 +77,15 @@ public class SecureCollectionsHandler extends CollectionsHandler {
     SecureRequestHandlerUtil.checkSentryAdmin(req, SecureRequestHandlerUtil.UPDATE_ONLY,
       true, collection);
     super.handleRequestBody(req, rsp);
+
+    /**
+     * Attempt to sync collection privileges with Sentry when the metadata has changed.
+     * ex: When the collection has been deleted, the privileges related to the collection
+     * were also needed to drop.
+     */
+    if (action.equals(CollectionAction.DELETE)) {
+      SecureRequestHandlerUtil.syncDeleteCollection(collection);
+    }
+
   }
 }

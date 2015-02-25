@@ -190,4 +190,17 @@ public class SentryIndexAuthorizationSingleton {
     return req instanceof LocalSolrQueryRequest?
       superUser:(String)httpServletRequest.getAttribute(USER_NAME);
   }
+
+  /**
+   * Attempt to notify the Sentry service when deleting collection happened
+   * @param collection
+   * @throws SolrException
+   */
+  public void deleteCollection(String collection) throws SolrException {
+    try {
+      binding.deleteCollectionPrivilege(collection);
+    } catch (SentrySolrAuthorizationException ex) {
+      throw new SolrException(SolrException.ErrorCode.UNAUTHORIZED, ex);
+    }
+  }
 }

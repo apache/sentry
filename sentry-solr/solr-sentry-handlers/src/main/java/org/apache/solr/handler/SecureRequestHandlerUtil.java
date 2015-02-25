@@ -55,6 +55,18 @@ public class SecureRequestHandlerUtil {
     checkSentry(req, andActions, false, false, null);
   }
 
+  /**
+   * Attempt to sync collection privileges with Sentry when the metadata has changed.
+   * ex: When the collection has been deleted, the privileges related to the collection
+   * were also needed to drop. When the collection has been renamed, the privileges must been
+   * renamed too.
+   */
+  public static void syncDeleteCollection(String collection) {
+    final SentryIndexAuthorizationSingleton sentryInstance =
+        (testOverride == null)?SentryIndexAuthorizationSingleton.getInstance():testOverride;
+    sentryInstance.deleteCollection(collection);
+  }
+
   private static void checkSentry(SolrQueryRequest req, Set<SearchModelAction> andActions,
       boolean admin, boolean checkCollection, String collection) {
     // Sentry currently does have AND support for actions; need to check

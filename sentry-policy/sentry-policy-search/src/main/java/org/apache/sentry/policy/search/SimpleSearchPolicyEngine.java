@@ -85,7 +85,7 @@ public class SimpleSearchPolicyEngine implements PolicyEngine {
   @Override
   public void validatePolicy(boolean strictValidation)
       throws SentryConfigurationException {
-    throw new SentryConfigurationException("Not implemented yet");
+    providerBackend.validatePolicy(strictValidation);
   }
 
   public static ImmutableList<PrivilegeValidator> createPrivilegeValidators() {

@@ -16,13 +16,17 @@
  */
 package org.apache.sentry.tests.e2e.solr;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Random;
@@ -30,9 +34,11 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import com.google.common.io.Files;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -44,33 +50,20 @@ import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.util.EntityUtils;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.sentry.binding.solr.HdfsTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
-import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.ZkController;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -84,18 +77,20 @@ import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.io.Files;
+
 public class AbstractSolrSentryTestBase {
   private static final Logger LOG = LoggerFactory.getLogger(AbstractSolrSentryTestBase.class);
   protected static final String SENTRY_ERROR_MSG = "SentrySolrAuthorizationException";
-  private static MiniDFSCluster dfsCluster;
-  private static MiniSolrCloudCluster miniSolrCloudCluster;
-  private static SortedMap<Class, String> extraRequestFilters;
+  protected static MiniDFSCluster dfsCluster;
+  protected static MiniSolrCloudCluster miniSolrCloudCluster;
+  protected static SortedMap<Class, String> extraRequestFilters;
   protected static final String ADMIN_USER = "admin";
   protected static final String ALL_DOCS = "*:*";
   protected static final Random RANDOM = new Random();
   protected static final String RESOURCES_DIR = "target" + File.separator + "test-classes" + File.separator + "solr";
   protected static final String CONF_DIR_IN_ZK = "conf1";
-  private static final int NUM_SERVERS = 4;
+  protected static final int NUM_SERVERS = 4;
 
   private static void addPropertyToSentry(StringBuilder builder, String name, String value) {
     builder.append("<property>\n");
