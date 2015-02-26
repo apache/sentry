@@ -367,6 +367,24 @@ public class SentryStore {
     return getCount(MSentryPrivilege.class);
   }
 
+  @VisibleForTesting
+  void clearAllTables() {
+    boolean rollbackTransaction = true;
+    PersistenceManager pm = null;
+    try {
+      pm = openTransaction();
+      pm.newQuery(MSentryRole.class).deletePersistentAll();
+      pm.newQuery(MSentryGroup.class).deletePersistentAll();
+      pm.newQuery(MSentryPrivilege.class).deletePersistentAll();
+      commitUpdateTransaction(pm);
+      rollbackTransaction = false;
+    } finally {
+      if (rollbackTransaction) {
+        rollbackTransaction(pm);
+      }
+    }
+  }
+
   public CommitContext alterSentryRoleGrantPrivilege(String grantorPrincipal,
       String roleName, TSentryPrivilege privilege)
       throws SentryUserException {

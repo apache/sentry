@@ -45,7 +45,9 @@ import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -55,15 +57,15 @@ import com.google.common.io.Files;
 
 public class TestSentryStore {
 
-  private File dataDir;
-  private SentryStore sentryStore;
-  private String[] adminGroups = {"adminGroup1"};
-  private PolicyFile policyFile;
-  private File policyFilePath;
+  private static File dataDir;
+  private static SentryStore sentryStore;
+  private static String[] adminGroups = { "adminGroup1" };
+  private static PolicyFile policyFile;
+  private static File policyFilePath;
   final long NUM_PRIVS = 60;  // > SentryStore.PrivCleaner.NOTIFY_THRESHOLD
 
-  @Before
-  public void setup() throws Exception {
+  @BeforeClass
+  public static void setup() throws Exception {
     dataDir = new File(Files.createTempDir(), "sentry_policy_db");
     Configuration conf = new Configuration(false);
     conf.set(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "false");
@@ -75,16 +77,24 @@ public class TestSentryStore {
     policyFilePath = new File(dataDir, "local_policy_file.ini");
     conf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE,
         policyFilePath.getPath());
-    policyFile = new PolicyFile();
     sentryStore = new SentryStore(conf);
+  }
 
+  @Before
+  public void before() throws Exception {
+    policyFile = new PolicyFile();
     String adminUser = "g1";
     addGroupsToUser(adminUser, adminGroups);
     writePolicyFile();
   }
 
   @After
-  public void teardown() {
+  public void after() {
+    sentryStore.clearAllTables();
+  }
+
+  @AfterClass
+  public static void teardown() {
     if (sentryStore != null) {
       sentryStore.stop();
     }
@@ -150,7 +160,6 @@ public class TestSentryStore {
   @Test
   public void testCreateDuplicateRole() throws Exception {
     String roleName = "test-dup-role";
-    String grantor = "g1";
     sentryStore.createSentryRole(roleName);
     try {
       sentryStore.createSentryRole(roleName);
@@ -172,7 +181,6 @@ public class TestSentryStore {
   @Test
   public void testCreateDropRole() throws Exception {
     String roleName = "test-drop-role";
-    String grantor = "g1";
     long seqId = sentryStore.createSentryRole(roleName).getSequenceId();
     assertEquals(seqId + 1, sentryStore.dropSentryRole(roleName).getSequenceId());
   }
@@ -1631,11 +1639,11 @@ public class TestSentryStore {
     assertEquals(1, privilegeSet.size());
   }
 
-  protected void addGroupsToUser(String user, String... groupNames) {
+  protected static void addGroupsToUser(String user, String... groupNames) {
     policyFile.addGroupsToUser(user, groupNames);
   }
 
-  protected void writePolicyFile() throws Exception {
+  protected static void writePolicyFile() throws Exception {
     policyFile.write(policyFilePath);
   }
 
