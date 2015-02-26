@@ -29,6 +29,7 @@ public class SentryUserException extends Exception{
   }
   public SentryUserException(String msg, Throwable t) {
     super(msg, t);
+    reason = t.getMessage();
   }
   public String getReason() {
     return reason;

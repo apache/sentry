@@ -47,11 +47,11 @@ public class HAClientInvocationHandler implements InvocationHandler {
   private SentryPolicyServiceClient client = null;
 
   private static final String THRIFT_EXCEPTION_MESSAGE = "Thrift exception occured ";
+  public static final String SENTRY_HA_ERROR_MESSAGE = "No Sentry server available. Please ensure that at least one Sentry server is online";
 
   public HAClientInvocationHandler(Configuration conf) throws Exception {
     this.conf = conf;
     checkClientConf();
-    renewSentryClient();
   }
 
   @Override
@@ -63,6 +63,11 @@ public class HAClientInvocationHandler implements InvocationHandler {
         if (!method.isAccessible()) {
           method.setAccessible(true);
         }
+        // The client is initialized in the first call instead of constructor.
+        // This way we can propagate the connection exception to caller cleanly
+        if (client == null) {
+          renewSentryClient();
+        }
         result = method.invoke(client, args);
       } catch (IllegalAccessException e) {
         throw new SentryUserException(e.getMessage(), e.getCause());
@@ -72,18 +77,26 @@ public class HAClientInvocationHandler implements InvocationHandler {
         } else {
           LOGGER.warn(THRIFT_EXCEPTION_MESSAGE + ": Error in connect current" +
               " service, will retry other service.", e);
-          try {
-            renewSentryClient();
-          } catch (IOException e1) {
-            throw new SentryUserException(e1.getMessage(), e1.getCause());
+          if (client != null) {
+            client.close();
+            client = null;
           }
         }
-
+      } catch (IOException e1) {
+        // close() doesn't throw exception we supress that in case of connection
+        // loss. Changing SentryPolicyServiceClient#close() to throw an
+        // exception would be a backward incompatible change for Sentry clients.
+        if ("close".equals(method.getName())) {
+          return null;
+        }
+        throw new SentryUserException("Error connecting to sentry service "
+            + e1.getMessage(), e1);
       }
       return result;
     }
   }
 
+  // Retrieve the new connection endpoint from ZK and connect to new server
   private void renewSentryClient() throws IOException {
     try {
       manager = new ServiceManager(HAContext.getHAContext(conf));
@@ -93,12 +106,9 @@ public class HAClientInvocationHandler implements InvocationHandler {
 
     try {
       while (true) {
-        if (client != null) {
-          client.close();
-        }
         currentServiceInstance = manager.getServiceInstance();
         if (currentServiceInstance == null) {
-          throw new IOException("No avaiable node.");
+          throw new IOException(SENTRY_HA_ERROR_MESSAGE);
         }
         InetSocketAddress serverAddress =
             ServiceManager.convertServiceInstance(currentServiceInstance);

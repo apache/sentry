@@ -136,6 +136,10 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
       conf.set(ServerConfig.PRINCIPAL, getServerKerberosName());
       conf.set(ServerConfig.KEY_TAB, serverKeytab.getPath());
       conf.set(ServerConfig.ALLOW_CONNECT, CLIENT_KERBEROS_SHORT_NAME);
+      conf.set(ServerConfig.SERVER_HA_ZOOKEEPER_CLIENT_PRINCIPAL,
+          getServerKerberosName());
+      conf.set(ServerConfig.SERVER_HA_ZOOKEEPER_CLIENT_KEYTAB,
+          serverKeytab.getPath());
 
       conf.set(ServerConfig.SECURITY_USE_UGI_TRANSPORT, "false");
       clientSubject = new Subject(false, Sets.newHashSet(

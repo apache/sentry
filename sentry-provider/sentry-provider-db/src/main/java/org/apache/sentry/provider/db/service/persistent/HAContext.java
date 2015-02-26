@@ -184,7 +184,7 @@ public class HAContext {
           LOGGER.info("'sasl' ACLs not set; setting...");
           List<String> children = curatorFramework.getZookeeperClient().getZooKeeper().getChildren(namespace, null);
           for (String child : children) {
-              checkAndSetACLs(child);
+              checkAndSetACLs(namespace + "/" + child);
           }
           curatorFramework.getZookeeperClient().getZooKeeper().setACL(namespace, saslACL, -1);
         }
@@ -202,9 +202,9 @@ public class HAContext {
 
   // This gets ignored during most tests, see ZKXTestCaseWithSecurity#setupZKServer()
   private void setJaasConfiguration(Configuration conf) throws IOException {
-      String keytabFile = conf.get(ServerConfig.KEY_TAB);
+      String keytabFile = conf.get(ServerConfig.SERVER_HA_ZOOKEEPER_CLIENT_KEYTAB);
       Preconditions.checkArgument(keytabFile.length() != 0, "Keytab File is not right.");
-      String principal = conf.get(ServerConfig.PRINCIPAL);
+      String principal = conf.get(ServerConfig.SERVER_HA_ZOOKEEPER_CLIENT_PRINCIPAL);
       principal = SecurityUtil.getServerPrincipal(principal, conf.get(ServerConfig.RPC_ADDRESS));
       Preconditions.checkArgument(principal.length() != 0, "Kerberos principal is not right.");
 

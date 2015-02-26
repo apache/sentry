@@ -173,13 +173,15 @@ public class Context {
     }
   }
 
-  public void assertAuthzExecHookException(Statement statement, String query)
-      throws SQLException {
+  public void assertAuthzExecHookException(Statement statement, String query,
+      String expectedMsg) throws SQLException {
     try {
       statement.execute(query);
       Assert.fail("Expected SQLException for '" + query + "'");
     } catch (SQLException e) {
       verifyAuthzExecHookException(e);
+      assertNotNull(e.getMessage());
+      assertTrue(e.getMessage().contains(expectedMsg));
     }
   }
 
@@ -283,7 +285,7 @@ public class Context {
   /**
    * Execute "set x" and extract value from key=val format result Verify the
    * extracted value
-   * 
+   *
    * @param stmt
    * @return
    * @throws Exception

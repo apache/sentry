@@ -122,7 +122,9 @@ public class ServiceConstants {
     public static final int SENTRY_HA_ZOOKEEPER_SLEEP_BETWEEN_RETRIES_MS_DEFAULT = 100;
     public static final String SENTRY_HA_ZOOKEEPER_NAMESPACE = SENTRY_HA_ZK_PROPERTY_PREFIX + "namespace";
     public static final String SENTRY_HA_ZOOKEEPER_NAMESPACE_DEFAULT = "sentry";
-
+    // principal and keytab for client to be able to connect to secure ZK. Needed for Sentry HA with secure ZK
+    public static final String SERVER_HA_ZOOKEEPER_CLIENT_PRINCIPAL = "sentry.zookeeper.client.principal";
+    public static final String SERVER_HA_ZOOKEEPER_CLIENT_KEYTAB = "sentry.zookeeper.client.keytab";
     public static final ImmutableMap<String, String> SENTRY_STORE_DEFAULTS =
         ImmutableMap.<String, String>builder()
         .put("datanucleus.connectionPoolingType", "BoneCP")
@@ -179,6 +181,7 @@ public class ServiceConstants {
     public static final String SERVER_HA_ZOOKEEPER_QUORUM_DEFAULT = ServerConfig.SENTRY_HA_ZOOKEEPER_QUORUM_DEFAULT;
     public static final String SENTRY_HA_ZOOKEEPER_NAMESPACE = ServerConfig.SENTRY_HA_ZOOKEEPER_NAMESPACE;
     public static final String SERVER_HA_ZOOKEEPER_NAMESPACE_DEFAULT = ServerConfig.SENTRY_HA_ZOOKEEPER_NAMESPACE_DEFAULT;
+
   }
 
   /**

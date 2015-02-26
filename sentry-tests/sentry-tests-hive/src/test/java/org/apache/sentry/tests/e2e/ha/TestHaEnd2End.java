@@ -25,8 +25,8 @@ import java.sql.Statement;
 
 import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.service.thrift.HAClientInvocationHandler;
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
-import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -133,7 +133,8 @@ public class TestHaEnd2End extends AbstractTestWithStaticConfiguration {
     // stop both servers and verify it fails
     getSentrySrv().stop(0);
     getSentrySrv().stop(1);
-    context.assertAuthzException(adminStmt, "CREATE ROLE " + roleName3);
+    context.assertAuthzExecHookException(adminStmt, "CREATE ROLE " + roleName3,
+        HAClientInvocationHandler.SENTRY_HA_ERROR_MESSAGE);
 
     getSentrySrv().start(0);
     getSentrySrv().start(1);
