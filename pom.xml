@@ -70,6 +70,7 @@ limitations under the License.
     <commons-cli.version>1.2</commons-cli.version>
     <hive.version>${cdh.hive.version}</hive.version>
     <hadoop.version>${cdh.hadoop.version}</hadoop.version>
+    <hbase-solr.version>${cdh.hbase-solr.version}</hbase-solr.version>
     <fest.reflect.version>1.4.1</fest.reflect.version>
     <guava.version>11.0.2</guava.version>
     <junit.version>4.9</junit.version>
@@ -122,6 +123,60 @@ limitations under the License.
         <groupId>com.jolbox</groupId>
         <artifactId>bonecp</artifactId>
         <version>${bonecp.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.ngdata</groupId>
+        <artifactId>hbase-indexer-server</artifactId>
+        <version>${hbase-solr.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>com.ngdata</groupId>
+            <artifactId>hbase-indexer-engine</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.ngdata</groupId>
+            <artifactId>hbase-indexer-morphlines</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.ngdata</groupId>
+            <artifactId>hbase-indexer-mr</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.ngdata</groupId>
+            <artifactId>hbase-sep-api</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.ngdata</groupId>
+            <artifactId>hbase-sep-impl</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-core</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-hdfs</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.solr</groupId>
+            <artifactId>solr:war</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>com.ngdata</groupId>
+        <artifactId>hbase-indexer-model</artifactId>
+        <version>${hbase-solr.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>com.ngdata</groupId>
+            <artifactId>hbase-sep-api</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.ngdata</groupId>
+            <artifactId>hbase-sep-impl</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.apache.derby</groupId>
@@ -250,6 +305,11 @@ limitations under the License.
       </dependency>
       <dependency>
         <groupId>org.apache.solr</groupId>
+        <artifactId>solr-sentry-handlers</artifactId>
+        <version>${solr.sentry.handlers.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.solr</groupId>
         <artifactId>solr-test-framework</artifactId>
         <version>${solr.version}</version>
       </dependency>
@@ -351,6 +411,11 @@ limitations under the License.
       <dependency>
         <groupId>org.apache.sentry</groupId>
         <artifactId>sentry-binding-hive</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.sentry</groupId>
+        <artifactId>sentry-binding-hbase-indexer</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
