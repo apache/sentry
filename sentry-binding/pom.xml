@@ -31,6 +31,7 @@ limitations under the License.
 
   <modules>
     <module>sentry-binding-hive</module>
+    <module>sentry-binding-hbase-indexer</module>
     <module>sentry-binding-solr</module>
   </modules>
 
