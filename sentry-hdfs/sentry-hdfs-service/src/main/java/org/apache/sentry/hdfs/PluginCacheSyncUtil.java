@@ -18,9 +18,10 @@
 package org.apache.sentry.hdfs;
 
 import java.io.IOException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.atomic.DistributedAtomicLong;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
@@ -35,6 +36,8 @@ import org.apache.sentry.provider.db.service.persistent.HAContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.annotations.VisibleForTesting;
+
 /**
  * Utility class for handling the cache update syncup via Curator path cache It
  * creates the path cache, a distributed lock and counter. The updated API
@@ -45,15 +48,22 @@ import org.slf4j.LoggerFactory;
 public class PluginCacheSyncUtil {
   private static final Logger LOGGER = LoggerFactory
       .getLogger(PluginCacheSyncUtil.class);
+  public static final long CACHE_GC_SIZE_THRESHOLD_HWM = 100;
+  public static final long CACHE_GC_SIZE_THRESHOLD_LWM = 50;
+  public static final long CACHE_GC_SIZE_MAX_CLEANUP = 1000;
+  public static final long ZK_COUNTER_INIT_VALUE = 4;
+  public static final long GC_COUNTER_INIT_VALUE = ZK_COUNTER_INIT_VALUE + 1;
 
   private final String zkPath;
   private final HAContext haContext;
   private final PathChildrenCache cache;
-  private InterProcessSemaphoreMutex updatorLock;
+  private InterProcessSemaphoreMutex updatorLock, gcLock;
   private int lockTimeout;
-  private DistributedAtomicLong updateCounter;
+  private DistributedAtomicLong updateCounter, gcCounter;
+  private final ScheduledExecutorService gcSchedulerForZk = Executors
+      .newScheduledThreadPool(1);
 
-  public PluginCacheSyncUtil(String zkPath, Configuration conf,
+  public PluginCacheSyncUtil(String zkPath, final Configuration conf,
       PathChildrenCacheListener cacheListener) throws SentryPluginException {
     this.zkPath = zkPath;
     // Init ZK connection
@@ -79,14 +89,31 @@ public class PluginCacheSyncUtil {
     lockTimeout = conf.getInt(
         ServerConfig.SENTRY_HDFS_INIT_UPDATE_RETRY_DELAY_MS,
         ServerConfig.SENTRY_HDFS_INIT_UPDATE_RETRY_DELAY_DEFAULT);
+    gcLock = new InterProcessSemaphoreMutex(
+        haContext.getCuratorFramework(), zkPath + "/gclock");
 
     updateCounter = new DistributedAtomicLong(haContext.getCuratorFramework(),
         zkPath + "/counter", haContext.getRetryPolicy());
     try {
-      updateCounter.initialize((long) 4);
+      updateCounter.initialize(ZK_COUNTER_INIT_VALUE);
     } catch (Exception e) {
       LOGGER.error("Error initializing  counter for zpath " + zkPath, e);
     }
+
+    // GC setup
+    gcCounter = new DistributedAtomicLong(haContext.getCuratorFramework(),
+        zkPath + "/gccounter", haContext.getRetryPolicy());
+    try {
+      gcCounter.initialize(GC_COUNTER_INIT_VALUE);
+    } catch (Exception e) {
+      LOGGER.error("Error initializing  counter for zpath " + zkPath, e);
+    }
+    final Runnable gcRunner = new Runnable() {
+      public void run() {
+        gcPluginCache(conf);
+      }
+    };
+    gcSchedulerForZk.scheduleAtFixedRate(gcRunner, 10, 10, TimeUnit.MINUTES);
   }
 
   public void handleCacheUpdate(Update update) throws SentryPluginException {
@@ -148,4 +175,52 @@ public class PluginCacheSyncUtil {
   public long getUpdateCounter() throws Exception {
     return updateCounter.get().preValue();
   }
+
+  /**
+   * Cleanup old znode of the plugin cache. The last cleaned and last created
+   * node counters are stored in ZK. If the number of available nodes are more
+   * than the high water mark, then we delete the old nodes till we reach low
+   * water mark. The scheduler periodically runs the cleanup routine
+   * @param conf
+   */
+  @VisibleForTesting
+  public void gcPluginCache(Configuration conf) {
+    try {
+      // If we can acquire gc lock, then continue with znode cleanup
+      if (!gcLock.acquire(500, TimeUnit.MILLISECONDS)) {
+        return;
+      }
+
+      // If we have passed the High watermark, then start the cleanup
+      Long updCount = updateCounter.get().preValue();
+      Long gcCount = gcCounter.get().preValue();
+      if (updCount - gcCount > CACHE_GC_SIZE_THRESHOLD_HWM) {
+        Long numNodesToClean = Math.min(updCount - gcCount
+            - CACHE_GC_SIZE_THRESHOLD_LWM, CACHE_GC_SIZE_MAX_CLEANUP);
+        for (Long nodeNum = gcCount; nodeNum < gcCount + numNodesToClean; nodeNum++) {
+          String pathToDelete = ZKPaths.makePath(zkPath + "/cache",
+              Long.toString(nodeNum));
+          try {
+            haContext.getCuratorFramework().delete().forPath(pathToDelete);
+            gcCounter.increment();
+            LOGGER.debug("Deleted znode " + pathToDelete);
+          } catch (Exception e) {
+            LOGGER.info("Error cleaning up node " + pathToDelete, e);
+            break;
+          }
+        }
+      }
+    } catch (Exception e) {
+      LOGGER.warn("Error cleaning the cache", e);
+    } finally {
+      if (gcLock.isAcquiredInThisProcess()) {
+        try {
+          gcLock.release();
+        } catch (Exception e) {
+          LOGGER.warn("Error releasing gc lock", e);
+        }
+      }
+    }
+  }
+
 }

@@ -40,7 +40,7 @@ import com.google.common.collect.Lists;
 
 public class TestUpdateForwarder {
 
-  static class DummyUpdate implements Update {
+  public static class DummyUpdate implements Update {
     private long seqNum = 0;
     private boolean hasFullUpdate = false;
     private String state;
