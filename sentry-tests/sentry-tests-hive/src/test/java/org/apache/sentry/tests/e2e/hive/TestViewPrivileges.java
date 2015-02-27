@@ -19,32 +19,24 @@ package org.apache.sentry.tests.e2e.hive;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
-import org.apache.sentry.binding.hive.SentryHiveAuthorizationTaskFactoryImpl;
-import org.apache.sentry.provider.db.SimpleDBProviderBackend;
+import junit.framework.Assert;
+
 import org.apache.sentry.provider.file.PolicyFile;
-import org.apache.sentry.service.thrift.SentryService;
-import org.apache.sentry.service.thrift.SentryServiceFactory;
-import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
-import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
-import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.collect.Maps;
-import com.google.common.io.Files;
 import com.google.common.io.Resources;
 
 public class TestViewPrivileges extends AbstractTestWithHiveServer {
@@ -67,62 +59,6 @@ public class TestViewPrivileges extends AbstractTestWithHiveServer {
   public void tearDown() throws Exception {
     if(context != null) {
       context.close();
-    }
-  }
-
-  @Test
-  public void testPartitionedViewOnJoin() throws Exception {
-    // copy data file to test dir
-    File dataDir = context.getDataDir();
-    File dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
-    FileOutputStream to = new FileOutputStream(dataFile);
-    Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
-    to.close();
-
-    String viewName = "view1";
-    String db = "db1";
-    String tabNames[] = { "tab1", "tab2" } ;
-    policyFile
-        .addPermissionsToRole("view", "server=server1->db=" + db + "->table=" + viewName)
-        .addRolesToGroup(USERGROUP1, "view")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
-    policyFile.write(context.getPolicyFile());
-
-    //admin creates a view
-    Connection conn = context.createConnection(ADMIN1);
-    Statement stmt = context.createStatement(conn);
-    stmt.execute("DROP DATABASE IF EXISTS " + db + " CASCADE");
-    stmt.execute("CREATE DATABASE " + db);
-
-    stmt.execute("use " + db);
-    for (String tabName : tabNames) {
-      stmt.execute("create table " + tabName + " (id int) partitioned by (part string)");
-      stmt.execute("load data local inpath '" + dataFile + "' into table " + tabName + " PARTITION (part=\"a\")");
-      stmt.execute("load data local inpath '" + dataFile + "' into table " + tabName + " PARTITION (part=\"b\")");
-      ResultSet res = stmt.executeQuery("select count(*) from " + tabName);
-      org.junit.Assert.assertThat(res, notNullValue());
-      while(res.next()) {
-        Assume.assumeTrue(res.getInt(1) == new Integer(1000));
-      }
-    }
-    stmt.execute("create view " + viewName + " as select t1.id from " +
-        tabNames[0] + " t1 JOIN " + tabNames[1] + " t2 on (t1.id = t2.id) where t1.id<100");
-    ResultSet res = stmt.executeQuery("select count(*) from " + viewName);
-    org.junit.Assert.assertThat(res, notNullValue());
-    int rowsInView = 0;
-    while(res.next()) {
-      System.out.println("Admin: Rows in view: " + res.getInt(1));
-      rowsInView = res.getInt(1);
-    }
-
-    Connection userConn = context.createConnection(USER1_1);
-    Statement userStmt = context.createStatement(userConn);
-    userStmt.execute("use " + db);
-    res = userStmt.executeQuery("select count(*) from " + viewName);
-    org.junit.Assert.assertThat(res, notNullValue());
-    while(res.next()) {
-      System.out.println("User1_1: Rows in view: " + res.getInt(1));
-      org.junit.Assert.assertThat(res.getInt(1), is(rowsInView));
     }
   }
 
@@ -164,17 +100,32 @@ public class TestViewPrivileges extends AbstractTestWithHiveServer {
     org.junit.Assert.assertThat(res, notNullValue());
     int rowsInView = 0;
     while(res.next()) {
-      System.out.println("Admin: Rows in view: " + res.getInt(1));
       rowsInView = res.getInt(1);
     }
+    stmt.close();
+    conn.close();
+
     Connection userConn = context.createConnection(USER1_1);
     Statement userStmt = context.createStatement(userConn);
     userStmt.execute("use " + db);
     res = userStmt.executeQuery("select count(*) from " + viewName);
     org.junit.Assert.assertThat(res, notNullValue());
     while(res.next()) {
-      System.out.println("User1_1: Rows in view: " + res.getInt(1));
       org.junit.Assert.assertThat(res.getInt(1), is(rowsInView));
     }
+    userStmt.close();
+    userConn.close();
+
+    // user2 hasn't the privilege for the view
+    userConn = context.createConnection(USER2_1);
+    userStmt = context.createStatement(userConn);
+    try {
+      userStmt.executeQuery("select count(*) from " + viewName);
+      Assert.fail("Expected SQL exception");
+    } catch (SQLException e) {
+      // ignore the exception
+    }
+    userStmt.close();
+    userConn.close();
   }
 }
