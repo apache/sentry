@@ -996,9 +996,10 @@ public class TestHDFSIntegration {
     try {
       fStatus = miniDFS.getFileSystem().getFileStatus(p);
       if (groupShouldExist) {
-        Assert.assertEquals(fsAction, getAcls(p).get(group));
+        Assert.assertEquals("Error at verifying Path action : " + p + " ;", fsAction, getAcls(p).get(group));
       } else {
-        Assert.assertFalse(getAcls(p).containsKey(group));
+        Assert.assertFalse("Error at verifying Path : " + p + " ," +
+                " group : " + group + " ;", getAcls(p).containsKey(group));
       }
     } catch (Throwable th) {
       if (retry > 0) {
