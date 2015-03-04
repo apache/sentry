@@ -139,14 +139,14 @@ public class SentryAuthorizationInfo implements Runnable {
       if ((newAuthzPaths != authzPaths)||(newAuthzPerms != authzPermissions)) {
         lock.writeLock().lock();
         try {
+          LOG.warn("FULL Updated paths seq Num [old="
+              + authzPaths.getLastUpdatedSeqNum() + "], [new="
+              + newAuthzPaths.getLastUpdatedSeqNum() + "]");
           authzPaths = newAuthzPaths;
-          if (LOG.isDebugEnabled()) {
-            LOG.debug("FULL Updated paths seq Num [" + authzPaths.getLastUpdatedSeqNum() + "]");
-          }
+          LOG.warn("FULL Updated perms seq Num [old="
+              + authzPermissions.getLastUpdatedSeqNum() + "], [new="
+              + newAuthzPerms.getLastUpdatedSeqNum() + "]");
           authzPermissions = newAuthzPerms;
-          if (LOG.isDebugEnabled()) {
-            LOG.debug("FULL Updated perms seq Num [" + authzPermissions.getLastUpdatedSeqNum() + "]");
-          }
         } finally {
           lock.writeLock().unlock();
         }
@@ -162,12 +162,22 @@ public class SentryAuthorizationInfo implements Runnable {
     // one in the List.. all the remaining will be partial updates
     if (updates.size() > 0) {
       if (updates.get(0).hasFullImage()) {
+        LOG.warn("Process Update : FULL IMAGE "
+            + "[" + updateable.getClass() + "]"
+            + "[" + updates.get(0).getSeqNum() + "]");
         updateable = (V)updateable.updateFull(updates.remove(0));
       }
       // Any more elements ?
       if (!updates.isEmpty()) {
+        LOG.warn("Process Update : More updates.. "
+            + "[" + updateable.getClass() + "]"
+            + "[" + updateable.getLastUpdatedSeqNum() + "]"
+            + "[" + updates.size() + "]");
         updateable.updatePartial(updates, lock);
       }
+      LOG.warn("Process Update : Finished updates.. "
+          + "[" + updateable.getClass() + "]"
+          + "[" + updateable.getLastUpdatedSeqNum() + "]");
     }
     return updateable;
   }
@@ -198,7 +208,7 @@ public class SentryAuthorizationInfo implements Runnable {
   }
 
   public void start() {
-    if (authzPaths != null) {
+    if ((authzPaths != null)||(authzPermissions != null)) {
       boolean success = false;
       try {
         success = update();

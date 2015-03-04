@@ -88,12 +88,11 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
   private UpdateableAuthzPaths authzPaths;
   private Lock notificiationLock;
 
-  //Initialized to some value > 1 so that the first update notification
- // will trigger a full Image fetch
-  private final AtomicLong seqNum = new AtomicLong(5);
+  // Initialized to some value > 1.
+  private static final AtomicLong seqNum = new AtomicLong(5);
 
-  // For some reason, HMS sometimes restarts the plugin
-  private static volatile long lastSentSeqNum = -1;
+  // Has to match the value of seqNum
+  private static volatile long lastSentSeqNum = seqNum.get();
   private volatile boolean syncSent = false;
   private final ExecutorService threadPool;
 
