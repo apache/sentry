@@ -25,7 +25,7 @@ public class TestPathsUpdate {
   @Test
   public void testParsePath(){
     List<String> results = PathsUpdate.parsePath(
-      "hdfs://hostname.test.com:8020/user/hive/warehouse/break/b=all the spaces/c=in PartKeys"
+      "hdfs://hostname.test.com:8020/user/hive/warehouse/break/b=all | ' & the spaces/c=in PartKeys/With fun chars *%!|"
     );
     System.out.println(results);
     Assert.assertNotNull("Parse path without throwing exception",results);
