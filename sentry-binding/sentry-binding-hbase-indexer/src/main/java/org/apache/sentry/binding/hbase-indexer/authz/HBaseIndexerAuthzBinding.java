@@ -30,6 +30,7 @@ import java.util.Set;
 import org.apache.hadoop.conf.Configuration;
 import static org.apache.hadoop.fs.CommonConfigurationKeys.HADOOP_SECURITY_AUTHENTICATION;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.binding.hbaseindexer.conf.HBaseIndexerAuthzConf;
 import org.apache.sentry.binding.hbaseindexer.conf.HBaseIndexerAuthzConf.AuthzConfVars;
@@ -88,6 +89,11 @@ public class HBaseIndexerAuthzBinding {
       String keytabProp = authzConf.get("hbase.regionserver.keytab.file");
       String principalProp = authzConf.get("hbase.regionserver.kerberos.principal");
       if (keytabProp != null && principalProp != null) {
+        // if necessary, translate _HOST in principal specification
+        String actualHost = authzConf.get(AuthzConfVars.PRINCIPAL_HOSTNAME.getVar());
+        if (actualHost != null) {
+          principalProp = SecurityUtil.getServerPrincipal(principalProp, actualHost);
+        }
         initKerberos(keytabProp, principalProp);
       }
     }
