@@ -150,6 +150,7 @@ public class SentryService implements Callable {
   public String call() throws Exception {
     SentryKerberosContext kerberosContext = null;
     try {
+      status = Status.STARTED;
       if (kerberos) {
         kerberosContext = new SentryKerberosContext(principal, keytab, true);
         Subject.doAs(kerberosContext.getSubject(), new PrivilegedExceptionAction<Void>() {
@@ -258,7 +259,6 @@ public class SentryService implements Callable {
       throw new IllegalStateException("Cannot start when " + status);
     }
     LOGGER.info("Attempting to start...");
-    status = Status.STARTED;
     serviceStatus = serviceExecutor.submit(this);
   }
 
