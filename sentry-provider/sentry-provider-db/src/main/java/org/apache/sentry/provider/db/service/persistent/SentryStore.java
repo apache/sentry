@@ -605,8 +605,12 @@ public class SentryStore {
     } else {
       // if this privilege is not ALL, SELECT nor INSERT,
       // we will revoke it from role directly
-      mPrivilege.removeRole(mRole);
-      pm.makePersistent(mPrivilege);
+      MSentryPrivilege persistedPriv = getMSentryPrivilege(convertToTSentryPrivilege(mPrivilege), pm);
+      if (persistedPriv != null) {
+        mPrivilege.removeRole(mRole);
+        privCleaner.incPrivRemoval();
+        pm.makePersistent(mPrivilege);
+      }
     }
   }
 
