@@ -310,8 +310,9 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
 	        .getDbName(), mapiPart.getTableName());
 	    // check if we need to validate URI permissions when storage location is
 	    // non-default, ie something not under the parent table
-	    String partitionLocation = mapiPart.getSd().getLocation();
-	    if (!StringUtils.isEmpty(partitionLocation)) {
+
+	    if (mapiPart.isSetSd()) {
+        String partitionLocation = mapiPart.getSd().getLocation();
 	      String tableLocation = context
 	          .getHandler()
 	          .get_table(mapiPart.getDbName(),
@@ -323,7 +324,8 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
 	      } catch (URISyntaxException e) {
 	        throw new MetaException(e.getMessage());
 	      }
-	      if (!partitionLocation.startsWith(tableLocation + File.separator)) {
+	      if (!partitionLocation.equals(tableLocation) &&
+	          !partitionLocation.startsWith(tableLocation + File.separator)) {
           outputBuilder.addUriToOutput(getAuthServer(), uriPath, warehouseDir);
 	      }
 	    }

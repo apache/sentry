@@ -24,9 +24,12 @@ import static org.junit.Assert.fail;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
+import java.util.Map;
 
 import junit.framework.Assert;
 
+import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.metastore.api.MetaException;
@@ -41,6 +44,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
 
 public class TestMetastoreEndToEnd extends
@@ -57,6 +61,7 @@ public class TestMetastoreEndToEnd extends
   private static final String tab2_read_role = "tab2_read_role";
   private static final String tabName1 = "tab1";
   private static final String tabName2 = "tab2";
+  private static final String tabName3 = "tab3";
 
   @Before
   public void setup() throws Exception {
@@ -115,7 +120,7 @@ public class TestMetastoreEndToEnd extends
 //    createMetastoreTable(client, dbName, tabName,
 //        Lists.newArrayList(new FieldSchema("col1", "int", "")));
 //    assertEquals(1, client.getTables(dbName, tabName).size());
-//    
+//
 //    AuthzPathsCache authzPathCache = new AuthzPathsCache(null, new String[]{"/"}, 0);
 //    SentryPolicyServiceClient sentryClient = new SentryServiceClientFactory().create(sentryConf);
 //    waitToCommit(authzPathCache, sentryClient);
@@ -500,7 +505,7 @@ public class TestMetastoreEndToEnd extends
    */
   @Test
   public void testPartionInsert() throws Exception {
-    String partVal1 = "part1", partVal2 = "part2", partVal3 = "part3";
+    String partVal1 = "part1", partVal2 = "part2", partVal3 = "part5";
 
     policyFile.addRolesToGroup(USERGROUP1, uri_role).addPermissionsToRole(
         uri_role, "server=server1->uri=file://" + dataFile.getPath());
@@ -524,6 +529,18 @@ public class TestMetastoreEndToEnd extends
         + " PARTITION (part_col='" + partVal2 + "') SELECT * FROM " + dbName
         + "." + tabName2, USER2_1);
     verifyPartitionExists(dbName, tabName1, partVal2);
+
+    // verify that user with Table all can add dynamic partition using INSERT
+    Map<String, String> dynamicInsertProperties = Maps.newHashMap();
+    dynamicInsertProperties.put(ConfVars.DYNAMICPARTITIONING.varname, "true");
+    dynamicInsertProperties.put(ConfVars.DYNAMICPARTITIONINGMODE.varname,
+        "nonstrict");
+
+    execHiveSQL("CREATE TABLE " + dbName + "." + tabName3
+        + " (id int) PARTITIONED BY (part_col string)", USER1_1);
+    execHiveSQLwithOverlay("INSERT OVERWRITE TABLE " + dbName + "." + tabName3
+        + " partition (part_col) SELECT id, part_col FROM "
+        + dbName + "." + tabName1, USER1_1, dynamicInsertProperties);
   }
 
   private void verifyPartitionExists(String dbName, String tabName,
