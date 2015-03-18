@@ -162,7 +162,6 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
       List<String> tNames = dbEvent.getHandler().get_all_tables(authzObj);
       plugin.removeAllPaths(authzObj, tNames);
     }
-    dropSentryDbPrivileges(dbEvent.getDatabase().getName());
     if (!syncWithPolicyStore(AuthzConfVars.AUTHZ_SYNC_DROP_WITH_POLICY_STORE)) {
       return;
     }
