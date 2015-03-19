@@ -33,6 +33,7 @@ import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.io.Resources;
@@ -75,7 +76,10 @@ public class TestMetaStoreWithPigHCat extends
 
   /**
    * Verify add partition via Pig+HCatStore
+   *
+   * *** Disabled due to HCat inputformat compatibility issue in Hive 1.1.0
    */
+  @Ignore
   @Test
   public void testPartionLoad() throws Exception {
     String tabName = "tab1";
