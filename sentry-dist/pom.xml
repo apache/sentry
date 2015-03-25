@@ -44,6 +44,10 @@ limitations under the License.
     </dependency>
     <dependency>
       <groupId>org.apache.sentry</groupId>
+      <artifactId>sentry-core-model-sqoop</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.sentry</groupId>
       <artifactId>sentry-binding-hive</artifactId>
     </dependency>
     <dependency>
