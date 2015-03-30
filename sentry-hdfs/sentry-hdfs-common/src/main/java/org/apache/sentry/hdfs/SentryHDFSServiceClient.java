@@ -102,6 +102,13 @@ public class SentryHDFSServiceClient {
         baseOpen();
       } else {
         try {
+          // ensure that the ticket is valid before connecting to service. Note that
+          // checkTGTAndReloginFromKeytab() renew the ticket only when more than 80%
+          // of ticket lifetime has passed. 
+          if (ugi.isFromKeytab()) {
+            ugi.checkTGTAndReloginFromKeytab();
+          }
+
           ugi.doAs(new PrivilegedExceptionAction<Void>() {
             public Void run() throws TTransportException {
               baseOpen();
