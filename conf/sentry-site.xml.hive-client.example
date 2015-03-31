@@ -55,7 +55,7 @@
   </property>
   <property>
     <name>sentry.service.server.principal</name>
-    <value>hivemeta/centos64.cloudera.com@HS2.CLOUDERA.COM</value>
+    <value>sentry/centos64.example.com@EXAMPLE.COM</value>
   </property>
   <property>
     <name>sentry.metastore.service.users</name>
