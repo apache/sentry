@@ -262,6 +262,14 @@ public class TestUpdateForwarder {
 
   @Test
   public void testGetUpdatesAfterExternalEntityReset() throws Exception {
+    /*
+     * Disabled for Sentry HA. Since the sequence numbers are trakced in ZK, the
+     * lower sequence updates are ignored which causes this test to fail in HA
+     * mode
+     */
+    Assume.assumeTrue(!testConf.getBoolean(ServerConfig.SENTRY_HA_ENABLED,
+        false));
+
     DummyImageRetreiver imageRetreiver = new DummyImageRetreiver();
     imageRetreiver.setState("a,b,c");
     updateForwarder = UpdateForwarder.create(

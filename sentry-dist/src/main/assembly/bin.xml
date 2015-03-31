@@ -71,6 +71,16 @@
         <include>org.apache.derby:derby</include>
       </includes>
     </dependencySet>
+    <dependencySet>
+      <outputDirectory>lib/plugins</outputDirectory>
+      <unpack>false</unpack>
+      <useProjectArtifact>false</useProjectArtifact>
+      <useStrictFiltering>true</useStrictFiltering>
+      <useTransitiveFiltering>true</useTransitiveFiltering>
+      <includes>
+        <include>org.apache.curator:curator-x-discovery</include>
+      </includes>
+    </dependencySet>
   </dependencySets>
 
   <fileSets>

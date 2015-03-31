@@ -19,6 +19,7 @@
 package org.apache.sentry.provider.db.service.persistent;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -43,6 +44,8 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
 
 /**
  * Stores the HA related context
@@ -51,6 +54,7 @@ public class HAContext {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(HAContext.class);
   private static HAContext serverHAContext = null;
+  private static boolean aclChecked = false;
 
   public final static String SENTRY_SERVICE_REGISTER_NAMESPACE = "sentry-service";
   private final String zookeeperQuorum;
@@ -64,7 +68,7 @@ public class HAContext {
   private final CuratorFramework curatorFramework;
   private final RetryPolicy retryPolicy;
 
-  private HAContext(Configuration conf) throws Exception {
+  protected HAContext(Configuration conf) throws Exception {
     this.zookeeperQuorum = conf.get(ServerConfig.SENTRY_HA_ZOOKEEPER_QUORUM,
         ServerConfig.SENTRY_HA_ZOOKEEPER_QUORUM_DEFAULT);
     this.retriesMaxCount = conf.getInt(ServerConfig.SENTRY_HA_ZOOKEEPER_RETRIES_MAX_COUNT,
@@ -81,8 +85,20 @@ public class HAContext {
       LOGGER.info("Connecting to ZooKeeper with SASL/Kerberos and using 'sasl' ACLs");
       setJaasConfiguration(conf);
       System.setProperty(ZooKeeperSaslClient.LOGIN_CONTEXT_NAME_KEY, "Client");
-      saslACL = Collections.singletonList(new ACL(Perms.ALL, new Id("sasl", getServicePrincipal(conf))));
+      saslACL = Lists.newArrayList();
+      saslACL.add(new ACL(Perms.ALL, new Id("sasl", getServicePrincipal(conf,
+          ServerConfig.PRINCIPAL))));
+      saslACL.add(new ACL(Perms.ALL, new Id("sasl", getServicePrincipal(conf,
+              ServerConfig.SERVER_HA_ZOOKEEPER_CLIENT_PRINCIPAL))));
       aclProvider = new SASLOwnerACLProvider();
+      String allowConnect = conf.get(ServerConfig.ALLOW_CONNECT);
+
+      if (!Strings.isNullOrEmpty(allowConnect)) {
+        for (String principal : Arrays.asList(allowConnect.split("\\s*,\\s*"))) {
+          LOGGER.info("Adding acls for " + principal);
+          saslACL.add(new ACL(Perms.ALL, new Id("sasl", principal)));
+        }
+      }
     } else {
       LOGGER.info("Connecting to ZooKeeper without authentication");
       aclProvider = new DefaultACLProvider();
@@ -95,7 +111,7 @@ public class HAContext {
         .retryPolicy(retryPolicy)
         .aclProvider(aclProvider)
         .build();
-    checkAndSetACLs();
+    startCuratorFramework();
   }
 
   /**
@@ -121,6 +137,13 @@ public class HAContext {
 
     }
     return serverHAContext;
+  }
+
+  // HA context for server which verifies the ZK ACLs on namespace
+  public static HAContext getHAServerContext(Configuration conf) throws Exception {
+    HAContext serverContext = getHAContext(conf);
+    serverContext.checkAndSetACLs();
+    return serverContext;
   }
 
   @VisibleForTesting
@@ -162,40 +185,42 @@ public class HAContext {
     Preconditions.checkNotNull(namespace, "Zookeeper namespace should not be null.");
   }
 
-  private String getServicePrincipal(Configuration conf) throws IOException {
-    String principal = conf.get(ServerConfig.PRINCIPAL);
+  protected String getServicePrincipal(Configuration conf, String confProperty)
+      throws IOException {
+    String principal = conf.get(confProperty);
     Preconditions.checkNotNull(principal);
     Preconditions.checkArgument(principal.length() != 0, "Server principal is not right.");
     return principal.split("[/@]")[0];
   }
 
   private void checkAndSetACLs() throws Exception {
-    if (zkSecure) {
+    if (zkSecure && !aclChecked) {
       // If znodes were previously created without security enabled, and now it is, we need to go through all existing znodes
-      // and set the ACLs for them
+      // and set the ACLs for them. This is done just once at the startup
       // We can't get the namespace znode through curator; have to go through zk client
-      if (curatorFramework.getState() != CuratorFrameworkState.STARTED) {
-        curatorFramework.start();
-      }
+      startCuratorFramework();
       String namespace = "/" + curatorFramework.getNamespace();
       if (curatorFramework.getZookeeperClient().getZooKeeper().exists(namespace, null) != null) {
         List<ACL> acls = curatorFramework.getZookeeperClient().getZooKeeper().getACL(namespace, new Stat());
-        if (!acls.get(0).getId().getScheme().equals("sasl")) {
+        if (acls.isEmpty() || !acls.get(0).getId().getScheme().equals("sasl")) {
           LOGGER.info("'sasl' ACLs not set; setting...");
           List<String> children = curatorFramework.getZookeeperClient().getZooKeeper().getChildren(namespace, null);
           for (String child : children) {
-              checkAndSetACLs(namespace + "/" + child);
+            checkAndSetACLs("/" + child);
           }
           curatorFramework.getZookeeperClient().getZooKeeper().setACL(namespace, saslACL, -1);
         }
       }
+      aclChecked = true;
+
     }
   }
 
   private void checkAndSetACLs(String path) throws Exception {
+      LOGGER.info("Setting acls on " + path);
       List<String> children = curatorFramework.getChildren().forPath(path);
       for (String child : children) {
-          checkAndSetACLs(path + "/" + child);
+        checkAndSetACLs(path + "/" + child);
       }
       curatorFramework.setACL().withACL(saslACL).forPath(path);
   }

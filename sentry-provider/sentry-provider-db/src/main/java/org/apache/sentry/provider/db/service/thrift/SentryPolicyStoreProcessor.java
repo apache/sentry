@@ -101,9 +101,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     this.notificationHandlerInvoker = new NotificationHandlerInvoker(conf,
         createHandlers(conf));
     isReady = false;
-    if(conf.getBoolean(ServerConfig.SENTRY_HA_ENABLED,
-        ServerConfig.SENTRY_HA_ENABLED_DEFAULT)){
-      haContext = HAContext.getHAContext(conf);
+    if (conf.getBoolean(ServerConfig.SENTRY_HA_ENABLED,
+        ServerConfig.SENTRY_HA_ENABLED_DEFAULT)) {
+      haContext = HAContext.getHAServerContext(conf);
       sentryStore = new SentryStore(conf);
       ServiceRegister reg = new ServiceRegister(haContext);
       reg.regService(conf.get(ServerConfig.RPC_ADDRESS),

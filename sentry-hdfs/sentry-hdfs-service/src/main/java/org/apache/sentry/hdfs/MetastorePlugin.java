@@ -89,12 +89,13 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
   private Lock notificiationLock;
 
   // Initialized to some value > 1.
-  private static final AtomicLong seqNum = new AtomicLong(5);
+  protected static final AtomicLong seqNum = new AtomicLong(5);
 
   // Has to match the value of seqNum
-  private static volatile long lastSentSeqNum = seqNum.get();
+  protected static volatile long lastSentSeqNum = seqNum.get();
   private volatile boolean syncSent = false;
   private final ExecutorService threadPool;
+  private final Configuration sentryConf;
 
   static class ProxyHMSHandler extends HMSHandler {
     public ProxyHMSHandler(String name, HiveConf conf) throws MetaException {
@@ -102,9 +103,10 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
     }
   }
 
-  public MetastorePlugin(Configuration conf) {
+  public MetastorePlugin(Configuration conf, Configuration sentryConf) {
     this.notificiationLock = new ReentrantLock();
     this.conf = new HiveConf((HiveConf)conf);
+    this.sentryConf = new Configuration(sentryConf);
     this.conf.unset(HiveConf.ConfVars.METASTORE_PRE_EVENT_LISTENERS.varname);
     this.conf.unset(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS.varname);
     this.conf.unset(HiveConf.ConfVars.METASTORE_END_FUNCTION_LISTENERS.varname);
@@ -116,7 +118,7 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
       throw new RuntimeException(e1);
     }
     try {
-      sentryClient = new SentryHDFSServiceClient(conf);
+      sentryClient = SentryHDFSServiceClientFactory.create(sentryConf);
     } catch (Exception e) {
       sentryClient = null;
       LOGGER.error("Could not connect to Sentry HDFS Service !!", e);
@@ -242,8 +244,8 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
   private SentryHDFSServiceClient getClient() {
     if (sentryClient == null) {
       try {
-        sentryClient = new SentryHDFSServiceClient(conf);
-      } catch (IOException e) {
+        sentryClient = SentryHDFSServiceClientFactory.create(sentryConf);
+      } catch (Exception e) {
         sentryClient = null;
         LOGGER.error("Could not connect to Sentry HDFS Service !!", e);
       }
@@ -265,13 +267,12 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
     }
   }
 
-  protected void notifySentryAndApplyLocal(PathsUpdate update) {
+  protected void notifySentry(PathsUpdate update) {
     notificiationLock.lock();
     if (!syncSent) {
       new SyncTask().run();
     }
     try {
-      authzPaths.updatePartial(Lists.newArrayList(update), new ReentrantReadWriteLock());
       notifySentryNoLock(update);
     } finally {
       lastSentSeqNum = update.getSeqNum();
@@ -279,4 +280,14 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
       LOGGER.debug("#### HMS Path Last update sent : ["+ lastSentSeqNum + "]");
     }
   }
+
+  protected void applyLocal(PathsUpdate update) {
+    authzPaths.updatePartial(Lists.newArrayList(update), new ReentrantReadWriteLock());
+  }
+
+  protected void notifySentryAndApplyLocal(PathsUpdate update) {
+    applyLocal(update);
+    notifySentry(update);
+  }
+
 }

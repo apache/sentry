@@ -33,6 +33,7 @@ import org.apache.sentry.hdfs.ServiceConstants.ServerConfig;
 import org.apache.sentry.hdfs.Updateable.Update;
 import org.apache.sentry.provider.db.SentryPolicyStorePlugin.SentryPluginException;
 import org.apache.sentry.provider.db.service.persistent.HAContext;
+import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,9 +132,15 @@ public class PluginCacheSyncUtil {
     }
 
     try {
-      // increment the global sequence counter
       try {
-        update.setSeqNum(updateCounter.increment().postValue());
+        // increment the global sequence counter if this is not a full update
+        if (!update.hasFullImage()) {
+          update.setSeqNum(updateCounter.increment().postValue());
+        } else {
+          if (updateCounter.get().preValue() < update.getSeqNum()) {
+            updateCounter.add(update.getSeqNum() - updateCounter.get().preValue());
+          }
+        }
       } catch (Exception e1) {
         throw new SentryPluginException(
             "Error setting ZK counter for update cache syncup" + e1, e1);
@@ -204,6 +211,10 @@ public class PluginCacheSyncUtil {
             haContext.getCuratorFramework().delete().forPath(pathToDelete);
             gcCounter.increment();
             LOGGER.debug("Deleted znode " + pathToDelete);
+          } catch (NoNodeException eN) {
+            // We might have endup with holes in the node counter due to network/ZK errors
+            // Ignore the delete error if the node doesn't exist and move on
+            gcCounter.increment();
           } catch (Exception e) {
             LOGGER.info("Error cleaning up node " + pathToDelete, e);
             break;
