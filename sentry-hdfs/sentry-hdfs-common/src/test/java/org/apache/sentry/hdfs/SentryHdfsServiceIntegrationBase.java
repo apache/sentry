@@ -70,11 +70,11 @@ public class SentryHdfsServiceIntegrationBase extends
           new PrivilegedExceptionAction<SentryHDFSServiceClient>() {
             @Override
             public SentryHDFSServiceClient run() throws Exception {
-              return new SentryHDFSServiceClient(conf);
+              return SentryHDFSServiceClientFactory.create(conf);
             }
           });
     } else {
-      hdfsClient = new SentryHDFSServiceClient(conf);
+      hdfsClient = SentryHDFSServiceClientFactory.create(conf);
     }
     hdfsClient.close();
   }

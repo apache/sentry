@@ -18,14 +18,11 @@
 package org.apache.sentry.hdfs;
 
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
-import org.apache.curator.utils.ZKPaths;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.hdfs.ServiceConstants.ServerConfig;
 import org.apache.sentry.provider.db.SentryPolicyStorePlugin.SentryPluginException;
-import org.apache.sentry.provider.db.service.persistent.HAContext;
 import org.apache.sentry.binding.metastore.MetastoreAuthzBinding;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,25 +66,34 @@ public class MetastorePluginWithHA extends MetastorePlugin {
   private String zkPath;
   private PluginCacheSyncUtil pluginCacheSync;
 
-  public MetastorePluginWithHA(Configuration conf) throws Exception {
-    super(conf);
-    zkPath = conf.get(ServerConfig.SENTRY_METASTORE_HA_ZOOKEEPER_NAMESPACE,
+  public MetastorePluginWithHA(Configuration conf, Configuration sentryConfig) throws Exception {
+    super(conf, sentryConfig);
+    zkPath = sentryConfig.get(ServerConfig.SENTRY_METASTORE_HA_ZOOKEEPER_NAMESPACE,
         ServerConfig.SENTRY_METASTORE_HA_ZOOKEEPER_NAMESPACE_DEFAULT);
 
-    pluginCacheSync = new PluginCacheSyncUtil(zkPath, conf,
+    pluginCacheSync = new PluginCacheSyncUtil(zkPath, sentryConfig,
         new SentryMetastoreHACacheListener(this));
+    // start seq# from the last global seq
+    seqNum.set(pluginCacheSync.getUpdateCounter());
+    MetastorePlugin.lastSentSeqNum = seqNum.get();
   }
 
   @Override
   protected void notifySentryAndApplyLocal(PathsUpdate update) {
     try {
+      // push to ZK in order to keep the metastore local cache in sync
       pluginCacheSync.handleCacheUpdate(update);
+
+      // notify Sentry. Note that Sentry service already has a cache
+      // sync mechanism to replicate this update to all other Sentry servers
+      notifySentry(update);
     } catch (SentryPluginException e) {
       LOGGER.error("Error pushing update to cache", e);
     }
   }
 
+  // apply the update to local cache
   private void processCacheNotification(PathsUpdate update) {
-    super.notifySentryAndApplyLocal(update);
+    super.applyLocal(update);
   }
 }

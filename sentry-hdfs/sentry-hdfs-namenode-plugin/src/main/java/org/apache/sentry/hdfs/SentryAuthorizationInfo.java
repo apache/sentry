@@ -31,7 +31,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.AclEntry;
 import org.apache.hadoop.util.StringUtils;
-import org.apache.sentry.hdfs.SentryHDFSServiceClient.SentryAuthzUpdate;
+import org.apache.sentry.hdfs.SentryAuthzUpdate;
 import org.apache.sentry.hdfs.Updateable.Update;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

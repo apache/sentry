@@ -56,7 +56,7 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
   private final HiveAuthzConf authzConf;
   private final Server server;
 
-  private List<SentryMetastoreListenerPlugin> sentryPlugins = new ArrayList<SentryMetastoreListenerPlugin>(); 
+  private List<SentryMetastoreListenerPlugin> sentryPlugins = new ArrayList<SentryMetastoreListenerPlugin>();
 
   public SentryMetastorePostEventListener(Configuration config) {
     super(config);
@@ -66,6 +66,7 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
     Iterable<String> pluginClasses = ConfUtilties.CLASS_SPLITTER
         .split(config.get(ServerConfig.SENTRY_METASTORE_PLUGINS,
             ServerConfig.SENTRY_METASTORE_PLUGINS_DEFAULT).trim());
+
     try {
       for (String pluginClassStr : pluginClasses) {
         Class<?> clazz = config.getClassByName(pluginClassStr);
@@ -75,7 +76,8 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
               + SentryMetastoreListenerPlugin.class.getName());
         }
         SentryMetastoreListenerPlugin plugin = (SentryMetastoreListenerPlugin) clazz
-            .getConstructor(Configuration.class).newInstance(config);
+            .getConstructor(Configuration.class, Configuration.class)
+            .newInstance(config, authzConf);
         sentryPlugins.add(plugin);
       }
     } catch (Exception e) {

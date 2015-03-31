@@ -18,7 +18,7 @@
 package org.apache.sentry.hdfs;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.hdfs.SentryHDFSServiceClient.SentryAuthzUpdate;
+import org.apache.sentry.hdfs.SentryAuthzUpdate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +38,7 @@ public class SentryUpdater {
   public SentryAuthzUpdate getUpdates() {
     if (sentryClient == null) {
       try {
-        sentryClient = new SentryHDFSServiceClient(conf);
+        sentryClient = SentryHDFSServiceClientFactory.create(conf);
       } catch (Exception e) {
         LOG.error("Error connecting to Sentry ['{}'] !!",
             e.getMessage());

@@ -15,21 +15,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.sentry.hdfs;
 
-import java.io.IOException;
+public class SentryHdfsServiceException extends RuntimeException {
+  private static final long serialVersionUID = 1511645864949767378L;
 
-public interface SentryHDFSServiceClient {
-  public static final String SENTRY_HDFS_SERVICE_NAME = "SentryHDFSService";
+  public SentryHdfsServiceException(String message, Throwable cause) {
+    super(message, cause);
+  }
 
-  public void notifyHMSUpdate(PathsUpdate update)
-      throws SentryHdfsServiceException;
+  public SentryHdfsServiceException(String message) {
+    super(message);
+  }
 
-  public long getLastSeenHMSPathSeqNum() throws SentryHdfsServiceException;
 
-  public SentryAuthzUpdate getAllUpdatesFrom(long permSeqNum, long pathSeqNum)
-      throws SentryHdfsServiceException;
-
-  public void close();
 }
-
