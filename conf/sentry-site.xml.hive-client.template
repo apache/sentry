@@ -86,7 +86,7 @@
   <property>
     <name>sentry.hive.failure.hooks</name>
     <value> </value>
-    <description>Deprecated Name:  hive.sentry.failure.hooks.  Any failure hooks to be configured like navigator (i.e. com.cloudera.navigator.audit.hive.HiveSentryOnFailureHook)</description>
+    <description>Deprecated Name:  hive.sentry.failure.hooks</description>
   </property>
 
   <property>

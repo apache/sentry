@@ -140,6 +140,8 @@ public class TestHDFSIntegration {
 
   private static final int NUM_RETRIES = 10;
   private static final int RETRY_WAIT = 1000;
+  private static final String DFS_NAMENODE_AUTHORIZATION_PROVIDER_KEY =
+      "dfs.namenode.authorization.provider.class";
 
   private static MiniDFSCluster miniDFS;
   private MiniMRClientCluster miniMR;
@@ -350,7 +352,7 @@ public class TestHDFSIntegration {
       public Void run() throws Exception {
         System.setProperty(MiniDFSCluster.PROP_TEST_BUILD_DATA, "target/test/data");
         Configuration conf = new HdfsConfiguration();
-        conf.set(DFSConfigKeys.DFS_NAMENODE_AUTHORIZATION_PROVIDER_KEY,
+        conf.set(DFS_NAMENODE_AUTHORIZATION_PROVIDER_KEY,
             SentryAuthorizationProvider.class.getName());
         conf.setBoolean(DFSConfigKeys.DFS_NAMENODE_ACLS_ENABLED_KEY, true);
         conf.setInt(DFSConfigKeys.DFS_REPLICATION_KEY, 1);
