@@ -19,6 +19,7 @@ package org.apache.sentry.tests.e2e.hive;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -486,6 +487,38 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     statement.execute("USE " + DB1);
     // verify select on tab can NOT truncate table
     context.assertAuthzException(statement, "TRUNCATE TABLE " + TBL3);
+    statement.close();
+    connection.close();
+  }
+
+  /**
+   * Test queries without from clause. Hive rewrites the queries with dummy db and table
+   * entities which should not trip authorization check.
+   * @throws Exception
+   */
+  @Test
+  public void testSelectWithoutFrom() throws Exception {
+    policyFile
+        .addRolesToGroup(USERGROUP1, "all_tab1")
+        .addPermissionsToRole("all_tab1",
+            "server=server1->db=" + DB1 + "->table=" + TBL1)
+        .addRolesToGroup(USERGROUP2, "select_tab1")
+        .addPermissionsToRole("select_tab1",
+            "server=server1->db=" + DB1 + "->table=" + TBL1)
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
+
+    Connection connection = context.createConnection(USER1_1);
+    Statement statement = context.createStatement(connection);
+
+    // test with implicit default database
+    assertTrue(statement.executeQuery("SELECT 1 ").next());
+    assertTrue(statement.executeQuery("SELECT current_database()").next());
+
+    // test after switching database
+    statement.execute("USE " + DB1);
+    assertTrue(statement.executeQuery("SELECT 1 ").next());
+    assertTrue(statement.executeQuery("SELECT current_database() ").next());
     statement.close();
     connection.close();
   }
