@@ -33,7 +33,6 @@ limitations under the License.
     <module>sentry-core-model-db</module>
     <module>sentry-core-model-indexer</module>
     <module>sentry-core-model-search</module>
-    <module>sentry-core-model-sqoop</module>
   </modules>
 
 </project>
