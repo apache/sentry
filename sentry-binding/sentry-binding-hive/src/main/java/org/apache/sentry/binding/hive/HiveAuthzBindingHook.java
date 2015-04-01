@@ -618,8 +618,9 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
   private void getInputHierarchyFromInputs(List<List<DBModelAuthorizable>> inputHierarchy,
       Set<ReadEntity> inputs) {
     for (ReadEntity readEntity: inputs) {
-      // skip the tables/view that are part of expanded view definition.
-      if (isChildTabForView(readEntity)) {
+      // skip the tables/view that are part of expanded view definition
+      // skip the Hive generated dummy entities created for queries like 'select <expr>'
+      if (isChildTabForView(readEntity) || isDummyEntity(readEntity)) {
         continue;
       }
       if (readEntity.getAccessedColumns() != null && !readEntity.getAccessedColumns().isEmpty()) {
@@ -828,5 +829,10 @@ hiveAuthzBinding.getAuthzConf().get(
     }
 
     return hooks;
+  }
+
+  // Check if the given entity is identified as dummy by Hive compilers.
+  private boolean isDummyEntity(Entity entity) {
+    return entity.isDummy();
   }
 }
