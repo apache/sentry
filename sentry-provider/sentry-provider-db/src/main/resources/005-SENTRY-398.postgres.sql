@@ -2,19 +2,19 @@
 CREATE TABLE "SENTRY_GM_PRIVILEGE" (
   "GM_PRIVILEGE_ID" BIGINT NOT NULL,
   "COMPONENT_NAME" character varying(32) NOT NULL,
-  "SERVICE_NAME" character varying(64) NOT NULL,
-  "RESOURCE_NAME_0" character varying(64) DEFAULT NULL::character varying,
-  "RESOURCE_NAME_1" character varying(64) DEFAULT NULL::character varying,
-  "RESOURCE_NAME_2" character varying(64) DEFAULT NULL::character varying,
-  "RESOURCE_NAME_3" character varying(64) DEFAULT NULL::character varying,
-  "RESOURCE_TYPE_0" character varying(64) DEFAULT NULL::character varying,
-  "RESOURCE_TYPE_1" character varying(64) DEFAULT NULL::character varying,
-  "RESOURCE_TYPE_2" character varying(64) DEFAULT NULL::character varying,
-  "RESOURCE_TYPE_3" character varying(64) DEFAULT NULL::character varying,
+  "CREATE_TIME" BIGINT NOT NULL,
+  "WITH_GRANT_OPTION" CHAR(1) NOT NULL DEFAULT 'N',
+  "RESOURCE_NAME_0" character varying(64) DEFAULT '__NULL__',
+  "RESOURCE_NAME_1" character varying(64) DEFAULT '__NULL__',
+  "RESOURCE_NAME_2" character varying(64) DEFAULT '__NULL__',
+  "RESOURCE_NAME_3" character varying(64) DEFAULT '__NULL__',
+  "RESOURCE_TYPE_0" character varying(64) DEFAULT '__NULL__',
+  "RESOURCE_TYPE_1" character varying(64) DEFAULT '__NULL__',
+  "RESOURCE_TYPE_2" character varying(64) DEFAULT '__NULL__',
+  "RESOURCE_TYPE_3" character varying(64) DEFAULT '__NULL__',
   "ACTION" character varying(32) NOT NULL,
   "scope" character varying(128) NOT NULL,
-  "CREATE_TIME" BIGINT NOT NULL,
-  "WITH_GRANT_OPTION" CHAR(1) NOT NULL
+  "SERVICE_NAME" character varying(64) NOT NULL
 );
 ALTER TABLE ONLY "SENTRY_GM_PRIVILEGE"
   ADD CONSTRAINT "SENTRY_GM_PRIV_PK" PRIMARY KEY ("GM_PRIVILEGE_ID");
