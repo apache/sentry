@@ -497,7 +497,7 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
     String grantor = ADMIN_USER;
     PrivilegeObject allPrivilege = new Builder()
         .setComponent(SEARCH)
-        .setAction(SearchConstants.QUERY)
+        .setAction(SearchConstants.ALL)
         .setService(SERVICE)
         .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME), new Field(FIELD_NAME)))
         .build();
@@ -521,6 +521,58 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
 
     sentryStore.alterRoleRevokePrivilege(SEARCH, roleName, updatePrivilege, grantor);
 
+    assertEquals(Sets.newHashSet(queryPrivilege),
+        sentryStore.getPrivilegesByRole(SEARCH, Sets.newHashSet(roleName)));
+  }
+
+  /**
+   * Grant update, query and all privilege to role r1
+   * Revoke query privilege from role r1
+   * there is update privilege related to role r1
+   */
+  @Test
+  public void testRevokePrivilegeWithAllPrivilegesGranted() throws Exception {
+    String roleName = "r1";
+    /**
+     * grantor is admin, there is no need to check grant option
+     */
+    String grantor = ADMIN_USER;
+    PrivilegeObject allPrivilege = new Builder()
+        .setComponent(SEARCH)
+        .setAction(SearchConstants.ALL)
+        .setService(SERVICE)
+        .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME), new Field(FIELD_NAME)))
+        .build();
+
+    PrivilegeObject updatePrivilege = new Builder(allPrivilege)
+        .setAction(SearchConstants.UPDATE)
+        .build();
+
+    PrivilegeObject queryPrivilege = new Builder(allPrivilege)
+        .setAction(SearchConstants.QUERY)
+        .build();
+
+    sentryStore.createRole(SEARCH, roleName, grantor);
+    //grant query to role r1
+    sentryStore.alterRoleGrantPrivilege(SEARCH, roleName, queryPrivilege, grantor);
+    assertEquals(Sets.newHashSet(queryPrivilege),
+        sentryStore.getPrivilegesByRole(SEARCH, Sets.newHashSet(roleName)));
+
+    //grant update to role r1
+    sentryStore.alterRoleGrantPrivilege(SEARCH, roleName, updatePrivilege, grantor);
+    assertEquals(Sets.newHashSet(queryPrivilege, updatePrivilege),
+        sentryStore.getPrivilegesByRole(SEARCH, Sets.newHashSet(roleName)));
+    /**
+     * grant all action privilege to role r1, because all action includes query and update action,
+     * The role r1 only has the action all privilege
+     */
+    sentryStore.alterRoleGrantPrivilege(SEARCH, roleName, allPrivilege, grantor);
+    assertEquals(Sets.newHashSet(allPrivilege),
+        sentryStore.getPrivilegesByRole(SEARCH, Sets.newHashSet(roleName)));
+    /**
+     * revoke update privilege from role r1, the query privilege has been left
+     */
+    sentryStore.alterRoleRevokePrivilege(SEARCH, roleName, updatePrivilege, grantor);
     assertEquals(Sets.newHashSet(queryPrivilege),
         sentryStore.getPrivilegesByRole(SEARCH, Sets.newHashSet(roleName)));
   }

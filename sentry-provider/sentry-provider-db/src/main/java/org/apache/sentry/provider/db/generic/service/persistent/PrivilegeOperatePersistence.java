@@ -34,6 +34,7 @@ import org.apache.sentry.core.common.BitFieldActionFactory;
 import org.apache.sentry.core.model.search.SearchActionFactory;
 import org.apache.sentry.provider.db.generic.service.persistent.PrivilegeObject.Builder;
 import org.apache.sentry.provider.db.service.model.MSentryGMPrivilege;
+import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
 
 import com.google.common.base.Joiner;
@@ -144,6 +145,8 @@ public class PrivilegeOperatePersistence {
     MSentryGMPrivilege mPrivilege = getPrivilege(convertToPrivilege(privilege), pm);
     if (mPrivilege == null) {
       mPrivilege = convertToPrivilege(privilege);
+    } else {
+      mPrivilege = (MSentryGMPrivilege) pm.detachCopy(mPrivilege);
     }
 
     Set<MSentryGMPrivilege> privilegeGraph = Sets.newHashSet();
@@ -161,10 +164,9 @@ public class PrivilegeOperatePersistence {
        * privilege.removeRole(role) and pm.makePersistent(privilege)
        * will remove other roles that shouldn't been removed
        */
-      pm.retrieve(persistedPriv);
-
       revokeRolePartial(mPrivilege, persistedPriv, role, pm);
     }
+    pm.makePersistent(role);
   }
 
   /**
@@ -234,10 +236,16 @@ public class PrivilegeOperatePersistence {
             /**
              * grant the left privileges to role
              */
-            MSentryGMPrivilege leftPriv = new MSentryGMPrivilege(persistedPriv);
-            leftPriv.setAction(ac.getValue());
-            leftPriv.appendRole(role);
-            pm.makePersistent(leftPriv);
+            MSentryGMPrivilege tmpPriv = new MSentryGMPrivilege(persistedPriv);
+            tmpPriv.setAction(ac.getValue());
+            MSentryGMPrivilege leftPersistedPriv = getPrivilege(tmpPriv, pm);
+            if (leftPersistedPriv == null) {
+              //leftPersistedPriv isn't exist
+              leftPersistedPriv = tmpPriv;
+              role.appendGMPrivilege(leftPersistedPriv);
+            }
+            leftPersistedPriv.appendRole(role);
+            pm.makePersistent(leftPersistedPriv);
           }
         }
       } else if (revokeaction.implies(persistedAction)) {
