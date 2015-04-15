@@ -35,9 +35,10 @@ import org.apache.sentry.binding.hive.HiveAuthzBindingSessionHook;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.base.Charsets;
@@ -45,22 +46,26 @@ import com.google.common.collect.Maps;
 
 public class TestServerConfiguration extends AbstractTestWithHiveServer {
 
-  private Context context;
-  private Map<String, String> properties;
+  private static Context context;
+  private static Map<String, String> properties;
   private PolicyFile policyFile;
 
-  @Before
-  public void setup() throws Exception {
+  @BeforeClass
+  public static void setup() throws Exception {
     properties = Maps.newHashMap();
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
-
+    context = createContext(properties);
   }
 
-  @After
-  public void tearDown() throws Exception {
+  @AfterClass
+  public static void tearDown() throws Exception {
     if(context != null) {
       context.close();
     }
+  }
+
+  @Before
+  public void setupPolicyFile() throws Exception {
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
   }
 
   /**
@@ -68,9 +73,10 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
    */
   @Test
   public void testImpersonationIsDisabled() throws Exception {
+    Map<String, String> properties = Maps.newHashMap();
     properties.put(HiveServerFactory.ACCESS_TESTING_MODE, "false");
     properties.put("hive.server2.enable.impersonation", "true");
-    verifyInvalidConfigurationException();
+    verifyInvalidConfigurationException(properties);
   }
 
   /**
@@ -78,13 +84,14 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
    */
   @Test
   public void testAuthenticationIsStrong() throws Exception {
+    Map<String, String> properties = Maps.newHashMap();
     properties.put(HiveServerFactory.ACCESS_TESTING_MODE, "false");
     properties.put("hive.server2.authentication", "NONE");
-    verifyInvalidConfigurationException();
+    verifyInvalidConfigurationException(properties);
   }
 
-  private void verifyInvalidConfigurationException() throws Exception{
-    context = createContext(properties);
+  private void verifyInvalidConfigurationException(Map<String, String> properties) throws Exception{
+    Context context = createContext(properties);
     policyFile
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
@@ -95,6 +102,10 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
       Assert.fail("Expected SQLException");
     } catch (SQLException e) {
       context.verifyInvalidConfigurationException(e);
+    } finally {
+      if (context != null) {
+        context.close();
+      }
     }
   }
 
@@ -103,10 +114,10 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
    */
   @Test
   public void testRemovalOfPolicyFile() throws Exception {
-    context = createContext(properties);
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     try {
+      statement.execute("DROP TABLE IF EXISTS test CASCADE");
       statement.execute("create table test (a string)");
       Assert.fail("Expected SQLException");
     } catch (SQLException e) {
@@ -119,7 +130,6 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
    */
   @Test
   public void testCorruptionOfPolicyFile() throws Exception {
-    context = createContext(properties);
     File policyFile = context.getPolicyFile();
     FileOutputStream out = new FileOutputStream(policyFile);
     out.write("this is not valid".getBytes(Charsets.UTF_8));
@@ -127,6 +137,7 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     try {
+      statement.execute("DROP TABLE IF EXISTS test CASCADE");
       statement.execute("create table test (a string)");
       Assert.fail("Expected SQLException");
     } catch (SQLException e) {
@@ -136,8 +147,6 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
 
   @Test
   public void testAddDeleteDFSRestriction() throws Exception {
-    context = createContext(properties);
-
     policyFile
         .addRolesToGroup(USERGROUP1, "all_db1")
         .addRolesToGroup(USERGROUP2, "select_tb1")
@@ -164,7 +173,6 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
    */
   @Test
   public void testAccessConfigRestrictions() throws Exception {
-    context = createContext(properties);
     policyFile
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
@@ -208,8 +216,9 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
    */
   @Test
   public void testDefaultDbRestrictivePrivilege() throws Exception {
+    Map<String, String> properties = Maps.newHashMap();
     properties.put(HiveAuthzConf.AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), "true");
-    context = createContext(properties);
+    Context context = createContext(properties);
 
     policyFile
         .addRolesToGroup(USERGROUP1, "all_default")
@@ -224,17 +233,14 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("use default");
-    context.close();
 
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("use default");
-    context.close();
 
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
     statement.execute("use default");
-    context.close();
 
     connection = context.createConnection(USER3_1);
     statement = context.createStatement(connection);

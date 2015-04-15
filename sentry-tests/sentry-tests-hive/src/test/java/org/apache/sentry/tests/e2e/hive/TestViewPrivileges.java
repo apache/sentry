@@ -31,9 +31,10 @@ import java.util.Map;
 import junit.framework.Assert;
 
 import org.apache.sentry.provider.file.PolicyFile;
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.collect.Maps;
@@ -42,24 +43,28 @@ import com.google.common.io.Resources;
 public class TestViewPrivileges extends AbstractTestWithHiveServer {
   protected static final String SERVER_HOST = "localhost";
 
-  private Context context;
-  private Map<String, String> properties;
+  private static Context context;
+  private static Map<String, String> properties;
   private PolicyFile policyFile;
 
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
 
-  @Before
-  public void setUp() throws Exception {
+  @BeforeClass
+  public static void setUp() throws Exception {
     properties = Maps.newHashMap();
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
     context = createContext(properties);
   }
 
-  @After
-  public void tearDown() throws Exception {
+  @AfterClass
+  public static void tearDown() throws Exception {
     if(context != null) {
       context.close();
     }
+  }
+  
+  @Before
+  public void setupPolicyFile() throws Exception {
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
   }
 
   @Test

@@ -25,14 +25,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
-
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Maps;
-import com.google.common.io.Files;
 import org.apache.commons.io.FileUtils;
 import org.apache.curator.test.TestingServer;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.sentry.binding.hive.SentryHiveAuthorizationTaskFactoryImpl;
 import org.apache.sentry.provider.db.SimpleDBProviderBackend;
 import org.apache.sentry.provider.file.PolicyFile;
@@ -44,36 +40,34 @@ import org.apache.sentry.tests.e2e.hive.AbstractTestWithHiveServer;
 import org.apache.sentry.tests.e2e.hive.Context;
 import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Maps;
+import com.google.common.io.Files;
 
 public abstract class AbstractTestWithDbProvider extends AbstractTestWithHiveServer {
 
   protected static final String SERVER_HOST = "localhost";
 
-  private Map<String, String> properties = Maps.newHashMap();
-  private File dbDir;
-  private int sentryServerCount = 1;
-  private List<SentryService> servers = new ArrayList<SentryService>(sentryServerCount);
-  private Configuration conf;
-  private PolicyFile policyFile;
-  private File policyFilePath;
-  protected Context context;
+  protected static Map<String, String> properties = Maps.newHashMap();
+  private static File dbDir;
+  private static int sentryServerCount = 1;
+  private static List<SentryService> servers = new ArrayList<SentryService>(sentryServerCount);
+  private static Configuration conf;
+  private static PolicyFile policyFile;
+  private static File policyFilePath;
+  protected static Context context;
 
-  protected boolean haEnabled;
-  private TestingServer zkServer;
+  protected static boolean haEnabled;
+  private static TestingServer zkServer;
 
   @BeforeClass
   public static void setupTest() throws Exception {
   }
 
-  @Override
-  public Context createContext(Map<String, String> properties) throws Exception {
-    this.properties = properties;
-    return createContext();
-  }
-
-  public Context createContext() throws Exception {
+  public static void createContext() throws Exception {
     conf = new Configuration(false);
     policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
     properties.put(HiveServerFactory.AUTHZ_PROVIDER_BACKEND, SimpleDBProviderBackend.class.getName());
@@ -111,17 +105,16 @@ public abstract class AbstractTestWithDbProvider extends AbstractTestWithHiveSer
           String.valueOf(server.getAddress().getPort()));
     }
 
-    context = super.createContext(properties);
+    context = AbstractTestWithHiveServer.createContext(properties);
     policyFile
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile(), policyFilePath);
 
     startSentryService();
-    return context;
   }
 
-  @After
-  public void tearDown() throws Exception {
+  @AfterClass
+  public static void tearDown() throws Exception {
     for (SentryService server : servers) {
       if (server != null) {
         server.stop();
@@ -149,7 +142,7 @@ public abstract class AbstractTestWithDbProvider extends AbstractTestWithHiveSer
     connection.close();
   }
 
-  private void startSentryService() throws Exception {
+  private static void startSentryService() throws Exception {
     for (SentryService server : servers) {
       server.start();
       final long start = System.currentTimeMillis();

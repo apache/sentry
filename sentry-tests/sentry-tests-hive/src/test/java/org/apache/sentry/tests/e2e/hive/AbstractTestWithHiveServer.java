@@ -16,30 +16,32 @@
  */
 package org.apache.sentry.tests.e2e.hive;
 
-import com.google.common.io.Files;
+import java.io.File;
+import java.util.Map;
+
 import junit.framework.Assert;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServer;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
-import org.junit.After;
+import org.junit.AfterClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.util.Map;
+import com.google.common.io.Files;
 
 public abstract class AbstractTestWithHiveServer {
   private static final Logger LOGGER = LoggerFactory
       .getLogger(AbstractTestWithHiveServer.class);
-  protected File baseDir;
-  protected File logDir;
-  protected File confDir;
-  protected File dataDir;
-  protected File policyFile;
-  protected HiveServer hiveServer;
-  protected FileSystem fileSystem;
+  protected static File baseDir;
+  protected static File logDir;
+  protected static File confDir;
+  protected static File dataDir;
+  protected static File policyFile;
+  protected static HiveServer hiveServer;
+  protected static FileSystem fileSystem;
 
   protected static final String ADMIN1 = StaticUserGroup.ADMIN1,
       ADMINGROUP = StaticUserGroup.ADMINGROUP,
@@ -50,7 +52,7 @@ public abstract class AbstractTestWithHiveServer {
       USERGROUP2 = StaticUserGroup.USERGROUP2,
       USERGROUP3 = StaticUserGroup.USERGROUP3;
 
-  public Context createContext(Map<String, String> properties)
+  public static Context createContext(Map<String, String> properties)
       throws Exception {
     fileSystem = FileSystem.get(new Configuration());
     baseDir = Files.createTempDir();
@@ -61,7 +63,7 @@ public abstract class AbstractTestWithHiveServer {
     policyFile = new File(confDir, HiveServerFactory.AUTHZ_PROVIDER_FILENAME);
     hiveServer = HiveServerFactory.create(properties, baseDir, confDir, logDir, policyFile.getPath(), fileSystem);
     hiveServer.start();
-    return new Context(hiveServer, getFileSystem(),
+    return new Context(hiveServer, fileSystem,
         baseDir, confDir, dataDir, policyFile);
   }
 
@@ -76,8 +78,8 @@ public abstract class AbstractTestWithHiveServer {
     return fileSystem;
   }
 
-  @After
-  public void tearDownWithHiveServer() throws Exception {
+  @AfterClass
+  public static void tearDownWithHiveServer() throws Exception {
     if(hiveServer != null) {
       hiveServer.shutdown();
       hiveServer = null;
