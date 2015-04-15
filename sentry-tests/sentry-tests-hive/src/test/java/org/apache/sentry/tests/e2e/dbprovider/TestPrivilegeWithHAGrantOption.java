@@ -17,36 +17,34 @@
 
 package org.apache.sentry.tests.e2e.dbprovider;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.hadoop.hive.ql.plan.HiveOperation;
 
 import junit.framework.Assert;
+
+import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.tests.e2e.hive.DummySentryOnFailureHook;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
 import org.junit.Assume;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 public class TestPrivilegeWithHAGrantOption extends AbstractTestWithDbProvider {
 
-  Map<String, String > testProperties;
-
-  @Before
-  public void setup() throws Exception {
+  @BeforeClass
+  public static void setup() throws Exception {
     haEnabled = true;
-    testProperties = new HashMap<String, String>();
-    testProperties.put(HiveAuthzConf.AuthzConfVars.AUTHZ_ONFAILURE_HOOKS.getVar(),
+    properties = new HashMap<String, String>();
+    properties.put(HiveAuthzConf.AuthzConfVars.AUTHZ_ONFAILURE_HOOKS.getVar(),
         DummySentryOnFailureHook.class.getName());
-    createContext(testProperties);
+    createContext();
     DummySentryOnFailureHook.invoked = false;
 
     // Do not run these tests if run with external HiveServer2
