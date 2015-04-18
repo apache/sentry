@@ -79,7 +79,7 @@ public class MetastorePluginWithHA extends MetastorePlugin {
   }
 
   @Override
-  protected void notifySentryAndApplyLocal(PathsUpdate update) {
+  protected void processUpdate(PathsUpdate update) {
     try {
       // push to ZK in order to keep the metastore local cache in sync
       pluginCacheSync.handleCacheUpdate(update);

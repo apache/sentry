@@ -17,8 +17,11 @@
  */
 package org.apache.sentry.hdfs;
 
-import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -31,14 +34,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStore.HMSHandler;
-import org.apache.hadoop.hive.metastore.IHMSHandler;
 import org.apache.hadoop.hive.metastore.MetaStorePreEventListener;
-import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.MetaException;
-import org.apache.hadoop.hive.metastore.api.Partition;
-import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.sentry.hdfs.ServiceConstants.ServerConfig;
-import org.apache.sentry.hdfs.service.thrift.TPathChanges;
 import org.apache.sentry.provider.db.SentryMetastoreListenerPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,6 +57,11 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
     public void run() {
       if (!notificiationLock.tryLock()) {
         // No need to sync.. as metastore is in the process of pushing an update..
+        return;
+      }
+      if (MetastorePlugin.this.authzPaths == null) {
+        LOGGER.info("#### Metastore Plugin cache has not finished" +
+                "initialization.");
         return;
       }
       try {
@@ -85,7 +88,7 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
 
   private final Configuration conf;
   private SentryHDFSServiceClient sentryClient;
-  private UpdateableAuthzPaths authzPaths;
+  private volatile UpdateableAuthzPaths authzPaths;
   private Lock notificiationLock;
 
   // Initialized to some value > 1.
@@ -94,6 +97,11 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
   // Has to match the value of seqNum
   protected static volatile long lastSentSeqNum = seqNum.get();
   private volatile boolean syncSent = false;
+  private volatile boolean initComplete = false;
+  private volatile boolean queueFlushComplete = false;
+  private volatile Throwable initError = null;
+  private final Queue<PathsUpdate> updateQueue = new LinkedList<PathsUpdate>();
+
   private final ExecutorService threadPool;
   private final Configuration sentryConf;
 
@@ -111,11 +119,53 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
     this.conf.unset(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS.varname);
     this.conf.unset(HiveConf.ConfVars.METASTORE_END_FUNCTION_LISTENERS.varname);
     this.conf.unset(HiveConf.ConfVars.METASTOREURIS.varname);
-    try {
-      this.authzPaths = createInitialUpdate(new ProxyHMSHandler("sentry.hdfs", (HiveConf)this.conf));
-    } catch (Exception e1) {
-      LOGGER.error("Could not create Initial AuthzPaths or HMSHandler !!", e1);
-      throw new RuntimeException(e1);
+    Thread initUpdater = new Thread() {
+      @Override
+      public void run() {
+        MetastoreCacheInitializer cacheInitializer = null;
+        try {
+          cacheInitializer =
+                  new MetastoreCacheInitializer(new ProxyHMSHandler("sentry.hdfs",
+                        (HiveConf) MetastorePlugin.this.conf),
+                          MetastorePlugin.this.conf);
+          MetastorePlugin.this.authzPaths =
+                  cacheInitializer.createInitialUpdate();
+          LOGGER.info("#### Metastore Plugin initialization complete !!");
+          synchronized (updateQueue) {
+            while (!updateQueue.isEmpty()) {
+              PathsUpdate update = updateQueue.poll();
+              if (update != null) {
+                processUpdate(update);
+              }
+            }
+            queueFlushComplete = true;
+          }
+          LOGGER.info("#### Finished flushing queued updates to Sentry !!");
+        } catch (Exception e) {
+          LOGGER.error("#### Could not create Initial AuthzPaths or HMSHandler !!", e);
+          initError = e;
+        } finally {
+          if (cacheInitializer != null) {
+            try {
+              cacheInitializer.close();
+            } catch (Exception e) {
+              LOGGER.info("#### Exception while closing cacheInitializer !!", e);
+            }
+          }
+          initComplete = true;
+        }
+      }
+    };
+    if (this.conf.getBoolean(
+            ServerConfig.SENTRY_HDFS_SYNC_METASTORE_CACHE_ASYNC_INIT_ENABLE,
+            ServerConfig
+                    .SENTRY_HDFS_SYNC_METASTORE_CACHE_ASYNC_INIT_ENABLE_DEFAULT)) {
+      LOGGER.warn("#### Metastore Cache initialization is set to aync..." +
+              "HDFS ACL synchronization will not happen until metastore" +
+              "cache initialization is completed !!");
+      initUpdater.start();
+    } else {
+      initUpdater.run();
     }
     try {
       sentryClient = SentryHDFSServiceClientFactory.create(sentryConf);
@@ -125,47 +175,13 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
     }
     ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(1);
     threadPool.scheduleWithFixedDelay(new SyncTask(),
-        this.conf.getLong(ServerConfig.SENTRY_HDFS_INIT_UPDATE_RETRY_DELAY_MS,
-            ServerConfig.SENTRY_HDFS_INIT_UPDATE_RETRY_DELAY_DEFAULT),
-        this.conf.getLong(ServerConfig.SENTRY_HDFS_SYNC_CHECKER_PERIOD_MS,
-            ServerConfig.SENTRY_HDFS_SYNC_CHECKER_PERIOD_DEFAULT),
-        TimeUnit.MILLISECONDS);
+            this.conf.getLong(ServerConfig
+                            .SENTRY_HDFS_INIT_UPDATE_RETRY_DELAY_MS,
+                    ServerConfig.SENTRY_HDFS_INIT_UPDATE_RETRY_DELAY_DEFAULT),
+            this.conf.getLong(ServerConfig.SENTRY_HDFS_SYNC_CHECKER_PERIOD_MS,
+                    ServerConfig.SENTRY_HDFS_SYNC_CHECKER_PERIOD_DEFAULT),
+            TimeUnit.MILLISECONDS);
     this.threadPool = threadPool;
-  }
-
-  private UpdateableAuthzPaths createInitialUpdate(IHMSHandler hmsHandler) throws Exception {
-    UpdateableAuthzPaths authzPaths = new UpdateableAuthzPaths(new String[] {"/"});
-    PathsUpdate tempUpdate = new PathsUpdate(-1, false);
-    List<String> allDbStr = hmsHandler.get_all_databases();
-    for (String dbName : allDbStr) {
-      Database db = hmsHandler.get_database(dbName);
-      List<String> dbPath = PathsUpdate.parsePath(db.getLocationUri());
-      if(dbPath != null) {
-        tempUpdate.newPathChange(db.getName()).addToAddPaths(dbPath);
-      }
-      List<String> allTblStr = hmsHandler.get_all_tables(db.getName());
-      for (String tblName : allTblStr) {
-        Table tbl = hmsHandler.get_table(db.getName(), tblName);
-        TPathChanges tblPathChange = tempUpdate.newPathChange(tbl
-            .getDbName() + "." + tbl.getTableName());
-        List<Partition> tblParts =
-            hmsHandler.get_partitions(db.getName(), tbl.getTableName(), (short) -1);
-        List<String> tb1Path = PathsUpdate.parsePath(tbl.getSd().getLocation() == null ?
-            db.getLocationUri() : tbl.getSd().getLocation());
-        if(tb1Path != null) {
-          tblPathChange.addToAddPaths(tb1Path);
-        }
-        for (Partition part : tblParts) {
-          List<String> partPath = PathsUpdate.parsePath(part.getSd().getLocation());
-          if(partPath != null) {
-            tblPathChange.addToAddPaths(partPath);
-          }
-        }
-      }
-    }
-    authzPaths.updatePartial(Lists.newArrayList(tempUpdate),
-        new ReentrantReadWriteLock());
-    return authzPaths;
   }
 
   @Override
@@ -197,7 +213,7 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
       }
     }
     update.newPathChange(authzObj).addToDelPaths(
-        Lists.newArrayList(PathsUpdate.ALL_PATHS));
+            Lists.newArrayList(PathsUpdate.ALL_PATHS));
     notifySentryAndApplyLocal(update);
   }
 
@@ -247,7 +263,7 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
         sentryClient = SentryHDFSServiceClientFactory.create(sentryConf);
       } catch (Exception e) {
         sentryClient = null;
-        LOGGER.error("Could not connect to Sentry HDFS Service !!", e);
+        LOGGER.error("#### Could not connect to Sentry HDFS Service !!", e);
       }
     }
     return sentryClient;
@@ -285,7 +301,31 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
     authzPaths.updatePartial(Lists.newArrayList(update), new ReentrantReadWriteLock());
   }
 
-  protected void notifySentryAndApplyLocal(PathsUpdate update) {
+  private void notifySentryAndApplyLocal(PathsUpdate update) {
+    if (initComplete) {
+      processUpdate(update);
+    } else {
+      if (initError == null) {
+        synchronized (updateQueue) {
+          if (!queueFlushComplete) {
+            updateQueue.add(update);
+          } else {
+            processUpdate(update);
+          }
+        }
+      } else {
+        StringWriter sw = new StringWriter();
+        initError.printStackTrace(new PrintWriter(sw));
+        LOGGER.error("#### Error initializing Metastore Plugin" +
+                "[" + sw.toString() + "] !!");
+        throw new RuntimeException(initError);
+      }
+      LOGGER.warn("#### Path update [" + update.getSeqNum() + "] not sent to Sentry.." +
+              "Metastore hasn't been initialized yet !!");
+    }
+  }
+
+  protected void processUpdate(PathsUpdate update) {
     applyLocal(update);
     notifySentry(update);
   }
