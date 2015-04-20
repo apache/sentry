@@ -17,15 +17,12 @@
 
 package org.apache.sentry.tests.e2e.hive;
 
-import org.apache.sentry.provider.file.PolicyFile;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.sql.Connection;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -33,6 +30,7 @@ import java.util.List;
 
 import junit.framework.Assert;
 
+import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -182,165 +180,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     context.close();
   }
 
-  /*
-   * Admin creates DB_1, DB2, tables (tab_1 ) and (tab_2, tab_3) in DB_1 and
-   * DB_2 respectively. User user1 has select on DB_1.tab_1, insert on
-   * DB2.tab_2 User user2 has select on DB2.tab_3 Test show database and show
-   * tables for both user1 and user2
-   */
-  @Test
-  public void testJDBCGetSchemasAndGetTables() throws Exception {
-    // edit policy file
-    policyFile.addRolesToGroup(USERGROUP1, "select_tab1", "insert_tab2")
-        .addRolesToGroup(USERGROUP2, "select_tab3")
-        .addPermissionsToRole("select_tab1", "server=server1->db=" + DB1 + "->table=tab1->action=select")
-        .addPermissionsToRole("select_tab3", "server=server1->db=" + DB2 + "->table=tab3->action=select")
-        .addPermissionsToRole("insert_tab2", "server=server1->db=" + DB2 + "->table=tab2->action=insert")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
-    writePolicyFile(policyFile);
 
-
-    // admin create two databases
-    Connection connection = context.createConnection(ADMIN1);
-    Statement statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
-    statement.execute("DROP DATABASE IF EXISTS DB_2 CASCADE");
-    statement.execute("DROP DATABASE IF EXISTS DB1 CASCADE");
-    statement.execute("DROP DATABASE IF EXISTS DB2 CASCADE");
-
-    statement.execute("CREATE DATABASE " + DB1);
-    statement.execute("CREATE DATABASE " + DB2);
-    statement.execute("USE " + DB1);
-    statement.execute("CREATE TABLE TAB1(id int)");
-    statement.executeQuery("SHOW TABLES");
-    statement.execute("USE " + DB2);
-    statement.execute("CREATE TABLE TAB2(id int)");
-    statement.execute("CREATE TABLE TAB3(id int)");
-
-    // test show databases
-    // show databases shouldn't filter any of the dbs from the resultset
-    Connection conn = context.createConnection(USER1_1);
-    List<String> result = new ArrayList<String>();
-
-    // test direct JDBC metadata API
-    ResultSet res = conn.getMetaData().getSchemas();
-    ResultSetMetaData resMeta = res.getMetaData();
-    assertEquals(2, resMeta.getColumnCount());
-    assertEquals("TABLE_SCHEM", resMeta.getColumnName(1));
-    assertEquals("TABLE_CATALOG", resMeta.getColumnName(2));
-
-    result.add(DB1);
-    result.add(DB2);
-    result.add("default");
-
-    while (res.next()) {
-      String dbName = res.getString(1);
-      assertTrue(dbName, result.remove(dbName));
-    }
-    assertTrue(result.toString(), result.isEmpty());
-    res.close();
-
-    // test direct JDBC metadata API
-    res = conn.getMetaData().getTables(null, DB1, "tab%", null);
-    result.add("tab1");
-
-    while (res.next()) {
-      String tableName = res.getString(3);
-      assertTrue(tableName, result.remove(tableName));
-    }
-    assertTrue(result.toString(), result.isEmpty());
-    res.close();
-
-    // test direct JDBC metadata API
-    res = conn.getMetaData().getTables(null, DB2, "tab%", null);
-    result.add("tab2");
-
-    while (res.next()) {
-      String tableName = res.getString(3);
-      assertTrue(tableName, result.remove(tableName));
-    }
-    assertTrue(result.toString(), result.isEmpty());
-    res.close();
-
-    res = conn.getMetaData().getTables(null, "DB%", "tab%", null);
-    result.add("tab2");
-    result.add("tab1");
-
-    while (res.next()) {
-      String tableName = res.getString(3);
-      assertTrue(tableName, result.remove(tableName));
-    }
-    assertTrue(result.toString(), result.isEmpty());
-    res.close();
-
-    //test show columns
-    res = conn.getMetaData().getColumns(null, "DB%", "tab%","i%" );
-    result.add("id");
-    result.add("id");
-
-    while (res.next()) {
-      String columnName = res.getString(4);
-      assertTrue(columnName, result.remove(columnName));
-    }
-    assertTrue(result.toString(), result.isEmpty());
-    res.close();
-
-    conn.close();
-
-    // test show databases and show tables for user2
-    conn = context.createConnection(USER2_1);
-
-    // test direct JDBC metadata API
-    res = conn.getMetaData().getSchemas();
-    resMeta = res.getMetaData();
-    assertEquals(2, resMeta.getColumnCount());
-    assertEquals("TABLE_SCHEM", resMeta.getColumnName(1));
-    assertEquals("TABLE_CATALOG", resMeta.getColumnName(2));
-
-    result.add(DB2);
-    result.add("default");
-
-    while (res.next()) {
-      String dbName = res.getString(1);
-      assertTrue(dbName, result.remove(dbName));
-    }
-    assertTrue(result.toString(), result.isEmpty());
-    res.close();
-
-    // test JDBC direct API
-    res = conn.getMetaData().getTables(null, "DB%", "tab%", null);
-    result.add("tab3");
-
-    while (res.next()) {
-      String tableName = res.getString(3);
-      assertTrue(tableName, result.remove(tableName));
-    }
-    assertTrue(result.toString(), result.isEmpty());
-    res.close();
-
-    //test show columns
-    res = conn.getMetaData().getColumns(null, "DB%", "tab%","i%" );
-    result.add("id");
-
-    while (res.next()) {
-      String columnName = res.getString(4);
-      assertTrue(columnName, result.remove(columnName));
-    }
-    assertTrue(result.toString(), result.isEmpty());
-    res.close();
-
-    //test show columns
-    res = conn.getMetaData().getColumns(null, DB1, "tab%","i%" );
-
-    while (res.next()) {
-      String columnName = res.getString(4);
-      assertTrue(columnName, result.remove(columnName));
-    }
-    assertTrue(result.toString(), result.isEmpty());
-    res.close();
-
-    context.close();
-  }
 
   /**
    * 2.8 admin user create two database, DB_1, DB_2 admin grant all to USER1_1,
