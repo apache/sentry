@@ -189,6 +189,10 @@ limitations under the License.
       <groupId>org.apache.curator</groupId>
       <artifactId>curator-test</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-pool2</artifactId>
+    </dependency>
   </dependencies>
 
   <build>

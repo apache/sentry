@@ -20,26 +20,36 @@ package org.apache.sentry.service.thrift;
 
 import java.lang.reflect.Proxy;
 
+import org.apache.commons.pool2.BasePooledObjectFactory;
+import org.apache.commons.pool2.PooledObject;
+import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.apache.hadoop.conf.Configuration;
-
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClientDefaultImpl;
 import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class SentryServiceClientFactory {
+/**
+ * SentryServiceClientPoolFactory is for connection pool to manage the object. Implement the related
+ * method to create object, destroy object and wrap object.
+ */
 
-  private SentryServiceClientFactory() {
+public class SentryServiceClientPoolFactory extends BasePooledObjectFactory<SentryPolicyServiceClient> {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(SentryServiceClientPoolFactory.class);
+
+  private Configuration conf;
+
+  public SentryServiceClientPoolFactory(Configuration conf) {
+    this.conf = conf;
   }
 
-  public static SentryPolicyServiceClient create(Configuration conf) throws Exception {
+  @Override
+  public SentryPolicyServiceClient create() throws Exception {
+    LOGGER.debug("Creating Sentry Service Client...");
     boolean haEnabled = conf.getBoolean(ClientConfig.SERVER_HA_ENABLED, false);
-    boolean pooled = conf.getBoolean(ClientConfig.SENTRY_POOL_ENABLED, false);
-    if (pooled) {
-      return (SentryPolicyServiceClient) Proxy
-          .newProxyInstance(SentryPolicyServiceClientDefaultImpl.class.getClassLoader(),
-              SentryPolicyServiceClientDefaultImpl.class.getInterfaces(),
-              new PoolClientInvocationHandler(conf));
-    } else if (haEnabled) {
+    if (haEnabled) {
       return (SentryPolicyServiceClient) Proxy
           .newProxyInstance(SentryPolicyServiceClientDefaultImpl.class.getClassLoader(),
               SentryPolicyServiceClientDefaultImpl.class.getInterfaces(),
@@ -49,4 +59,20 @@ public class SentryServiceClientFactory {
     }
   }
 
+  @Override
+  public PooledObject<SentryPolicyServiceClient> wrap(SentryPolicyServiceClient client) {
+    return new DefaultPooledObject<SentryPolicyServiceClient>(client);
+  }
+
+  @Override
+  public void destroyObject(PooledObject<SentryPolicyServiceClient> pooledObject) {
+    SentryPolicyServiceClient client = pooledObject.getObject();
+    LOGGER.debug("Destroying Sentry Service Client: " + client);
+    if (client != null) {
+      // The close() of TSocket or TSaslClientTransport is called actually, and there has no
+      // exception even there has some problems, eg, the client is closed already.
+      // The close here is just try to close the socket and the client will be destroyed soon.
+      client.close();
+    }
+  }
 }

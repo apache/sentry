@@ -94,6 +94,7 @@ limitations under the License.
     <easymock.version>3.0</easymock.version>
     <objenesis.version>1.2</objenesis.version>
     <cglib.version>2.2</cglib.version>
+    <commons-pool2.version>2.2</commons-pool2.version>
   </properties>
 
   <dependencyManagement>
@@ -611,6 +612,11 @@ limitations under the License.
         <groupId>cglib</groupId>
         <artifactId>cglib-nodep</artifactId>
         <version>${cglib.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-pool2</artifactId>
+        <version>${commons-pool2.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

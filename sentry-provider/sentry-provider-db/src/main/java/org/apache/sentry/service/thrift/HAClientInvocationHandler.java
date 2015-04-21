@@ -18,7 +18,6 @@
 package org.apache.sentry.service.thrift;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
@@ -37,7 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 
-public class HAClientInvocationHandler implements InvocationHandler {
+public class HAClientInvocationHandler extends SentryClientInvocationHandler {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(HAClientInvocationHandler.class);
 
@@ -55,7 +54,7 @@ public class HAClientInvocationHandler implements InvocationHandler {
   }
 
   @Override
-  public Object invoke(Object proxy, Method method, Object[] args) throws
+  public Object invokeImpl(Object proxy, Method method, Object[] args) throws
       SentryUserException {
     Object result = null;
     while (true) {
@@ -83,12 +82,6 @@ public class HAClientInvocationHandler implements InvocationHandler {
           }
         }
       } catch (IOException e1) {
-        // close() doesn't throw exception we supress that in case of connection
-        // loss. Changing SentryPolicyServiceClient#close() to throw an
-        // exception would be a backward incompatible change for Sentry clients.
-        if ("close".equals(method.getName())) {
-          return null;
-        }
         throw new SentryUserException("Error connecting to sentry service "
             + e1.getMessage(), e1);
       }
@@ -136,6 +129,13 @@ public class HAClientInvocationHandler implements InvocationHandler {
           ServerConfig.PRINCIPAL + " is required");
       Preconditions.checkArgument(serverPrincipal.contains(SecurityUtil.HOSTNAME_PATTERN),
           ServerConfig.PRINCIPAL + " : " + serverPrincipal + " should contain " + SecurityUtil.HOSTNAME_PATTERN);
+    }
+  }
+
+  @Override
+  public void close() {
+    if (client != null) {
+      client.close();
     }
   }
 }
