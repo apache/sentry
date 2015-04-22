@@ -23,6 +23,7 @@ import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
 
@@ -541,6 +542,41 @@ public class TestMetastoreEndToEnd extends
     execHiveSQLwithOverlay("INSERT OVERWRITE TABLE " + dbName + "." + tabName3
         + " partition (part_col) SELECT id, part_col FROM "
         + dbName + "." + tabName1, USER1_1, dynamicInsertProperties);
+  }
+
+  @Test
+  public void testAddPartion() throws Exception {
+    String partVal1 = "part1", partVal2 = "part2", partVal3 = "part5";
+    String newPath1 = "fooTab1";
+    String tabDir1 = hiveServer.getProperty(HiveServerFactory.WAREHOUSE_DIR)
+        + File.separator + newPath1;
+
+    policyFile.addRolesToGroup(USERGROUP1, uri_role).addPermissionsToRole(
+        uri_role, "server=server1->URI=" + tabDir1);
+    writePolicyFile(policyFile);
+
+    execHiveSQL("DROP TABLE IF EXISTS " + dbName + "." + tabName1, USER1_1);
+    execHiveSQL("CREATE TABLE " + dbName + "." + tabName1
+        + " (id int) PARTITIONED BY (part_col string)", USER1_1);
+
+    execHiveSQL("ALTER TABLE " + dbName + "." + tabName1
+        + " ADD PARTITION (part_col ='" + partVal1 +  "')", USER1_1);
+    verifyPartitionExists(dbName, tabName1, partVal1);
+
+    execHiveSQL("ALTER TABLE " + dbName + "." + tabName1
+        + " ADD PARTITION (part_col ='" + partVal2 +  "') location '"
+        + tabDir1 + "'", USER1_1);
+    verifyPartitionExists(dbName, tabName1, partVal2);
+
+    try {
+      execHiveSQL("ALTER TABLE " + dbName + "." + tabName1
+          + " ADD PARTITION (part_col ='" + partVal2 + "') location '"
+          + tabDir1 + "'", USER2_1);
+      fail("alter table should have failed due to missing URI privilege");
+    } catch (IOException e) {
+      // Expected error
+    }
+
   }
 
   private void verifyPartitionExists(String dbName, String tabName,
