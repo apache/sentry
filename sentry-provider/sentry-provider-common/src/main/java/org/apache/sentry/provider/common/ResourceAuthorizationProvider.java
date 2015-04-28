@@ -47,23 +47,23 @@ import com.google.common.collect.Sets;
 public abstract class ResourceAuthorizationProvider implements AuthorizationProvider {
   private static final Logger LOGGER = LoggerFactory
       .getLogger(ResourceAuthorizationProvider.class);
+  private final static ThreadLocal<List<String>> lastFailedPrivileges =
+      new ThreadLocal<List<String>>() {
+        @Override
+        protected List<String> initialValue() {
+          return new ArrayList<String>();
+        }
+      };
 
   private final GroupMappingService groupService;
   private final PolicyEngine policy;
   private final PrivilegeFactory privilegeFactory;
-  private final ThreadLocal<List<String>> lastFailedPrivileges;
 
   public ResourceAuthorizationProvider(PolicyEngine policy,
       GroupMappingService groupService) {
     this.policy = policy;
     this.groupService = groupService;
     this.privilegeFactory = policy.getPrivilegeFactory();
-    this.lastFailedPrivileges = new ThreadLocal<List<String>>() {
-      @Override
-      protected List<String> initialValue() {
-        return new ArrayList<String>();
-      }
-    };
   }
 
   /***
