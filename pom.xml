@@ -18,9 +18,9 @@ limitations under the License.
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.apache</groupId>
-    <artifactId>apache</artifactId>
-    <version>13</version>
+    <groupId>com.cloudera.cdh</groupId>
+    <artifactId>cdh-root</artifactId>
+    <version>5.5.0-SNAPSHOT</version>
   </parent>
 
   <groupId>org.apache.sentry</groupId>
@@ -60,6 +60,7 @@ limitations under the License.
     <build.helper.maven.plugin.version>1.8</build.helper.maven.plugin.version>
     <commons.lang.version>2.6</commons.lang.version>
     <commons.logging.version>1.2</commons.logging.version>
+    <commons.codec.version>1.9</commons.codec.version>
     <bonecp.version>0.7.1.RELEASE</bonecp.version>
     <datanucleus.maven.plugin.version>3.3.0-release</datanucleus.maven.plugin.version>
     <datanucleus-api-jdo.version>3.2.6</datanucleus-api-jdo.version>
@@ -118,6 +119,11 @@ limitations under the License.
         <groupId>commons-logging</groupId>
         <artifactId>commons-logging</artifactId>
         <version>${commons.logging.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-codec</groupId>
+        <artifactId>commons-codec</artifactId>
+        <version>${commons.codec.version}</version>
       </dependency>
       <dependency>
         <groupId>com.jolbox</groupId>

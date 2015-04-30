@@ -53,8 +53,6 @@ public class SentryHDFSServiceProcessor implements SentryHDFSService.Iface {
       List<PathsUpdate> pathUpdates = SentryPlugin.instance.getAllPathsUpdatesFrom(pathSeqNum);
       final Timer.Context timerContext = sentryMetrics.getAllAuthzUpdatesTimer.time();
       try {
-        List<PermissionsUpdate> permUpdates = SentryPlugin.instance.getAllPermsUpdatesFrom(permSeqNum);
-        List<PathsUpdate> pathUpdates = SentryPlugin.instance.getAllPathsUpdatesFrom(pathSeqNum);
         for (PathsUpdate update : pathUpdates) {
           if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("### Sending PATH preUpdate seq [" + update.getSeqNum() + "] ###");
