@@ -47,6 +47,10 @@ public class HiveAuthzConf extends Configuration {
    */
   public static final String SENTRY_ACTIVE_ROLE_SET = "hive.sentry.active.role.set";
 
+  public static final String HIVE_SENTRY_SECURITY_COMMAND_WHITELIST =
+      "hive.sentry.security.command.whitelist";
+  public static final String HIVE_SENTRY_SECURITY_COMMAND_WHITELIST_DEFAULT =
+      "set,reset,reload";
 
   /**
    * Config setting definitions

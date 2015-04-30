@@ -57,6 +57,7 @@ public class HiveAuthzBindingSessionHook
     ConfVars.HIVE_SECURITY_COMMAND_WHITELIST.varname,
     ConfVars.HIVE_AUTHORIZATION_TASK_FACTORY.varname,
     ConfVars.HIVE_CAPTURE_TRANSFORM_ENTITY.varname,
+    ConfVars.HIVERELOADABLEJARS.varname,
     HiveAuthzConf.HIVE_ACCESS_CONF_URL,
     HiveAuthzConf.HIVE_SENTRY_CONF_URL,
     HiveAuthzConf.HIVE_ACCESS_SUBJECT_NAME,
@@ -95,7 +96,7 @@ public class HiveAuthzBindingSessionHook
    * 2. Set additional config properties required for auth
    *      set HIVE_EXTENDED_ENITITY_CAPTURE = true
    *      set SCRATCHDIRPERMISSION = 700
-   * 3. Add sensetive config parameters to the config restrict list so that they can't be overridden by users
+   * 3. Add sensitive config parameters to the config restrict list so that they can't be overridden by users
    */
   @Override
   public void run(HiveSessionHookContext sessionHookContext) throws HiveSQLException {
@@ -104,7 +105,11 @@ public class HiveAuthzBindingSessionHook
 
     appendConfVar(sessionConf, ConfVars.SEMANTIC_ANALYZER_HOOK.varname,
         SEMANTIC_HOOK);
-    sessionConf.setVar(ConfVars.HIVE_SECURITY_COMMAND_WHITELIST, "set");
+    HiveAuthzConf authzConf = HiveAuthzBindingHook.loadAuthzConf(sessionConf);
+    String commandWhitelist =
+        authzConf.get(HiveAuthzConf.HIVE_SENTRY_SECURITY_COMMAND_WHITELIST,
+            HiveAuthzConf.HIVE_SENTRY_SECURITY_COMMAND_WHITELIST_DEFAULT);
+    sessionConf.setVar(ConfVars.HIVE_SECURITY_COMMAND_WHITELIST, commandWhitelist);
     sessionConf.setVar(ConfVars.SCRATCHDIRPERMISSION, SCRATCH_DIR_PERMISSIONS);
     sessionConf.setBoolVar(ConfVars.HIVE_CAPTURE_TRANSFORM_ENTITY, true);
 
