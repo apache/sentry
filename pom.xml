@@ -775,7 +775,7 @@ limitations under the License.
                   <exclude>**/service.properties</exclude>
                   <exclude>**/*.lck</exclude>
                   <!-- Patch files which can be lying around -->
-                  <exclude>**.patch</exclude>
+                  <exclude>**/**.patch</exclude>
                   <!-- Exclude generated solr config files -->
                   <exclude>**/solr/collection1/conf/**</exclude>
                   <exclude>**/empty-file-main-lib.txt</exclude>
