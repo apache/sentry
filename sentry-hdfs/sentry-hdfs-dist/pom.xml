@@ -67,8 +67,16 @@ limitations under the License.
                   <include>org.apache.sentry:sentry-hdfs-common</include>
                   <include>org.apache.sentry:sentry-hdfs-namenode-plugin</include>
                   <include>org.apache.sentry:sentry-provider-db</include>
+                  <include>org.apache.sentry:sentry-hdfs-service</include>
+                  <include>org.apache.thrift:libthrift</include>
                 </includes>
               </artifactSet>
+              <relocations>
+                <relocation>
+                  <pattern>org.apache.thrift</pattern>
+                  <shadedPattern>sentry.org.apache.thrift</shadedPattern>
+                </relocation>
+              </relocations>
             </configuration>
           </execution>
         </executions>
