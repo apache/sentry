@@ -812,6 +812,13 @@ limitations under the License.
             </dependency>
           </dependencies>
         </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <configuration>
+            <sourcepath>src/gen/thrift/gen-javabean</sourcepath>
+          </configuration>
+        </plugin>
       </plugins>
     </pluginManagement>
   </build>
