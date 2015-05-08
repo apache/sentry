@@ -16,3 +16,6 @@ sentry-core/sentry-core-common/src/gen
 *.ear
 test-output/
 maven-repo/
+*.orig
+*.rej
+.DS_Store
