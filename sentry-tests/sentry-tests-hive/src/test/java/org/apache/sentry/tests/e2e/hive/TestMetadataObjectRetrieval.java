@@ -391,7 +391,7 @@ public class TestMetadataObjectRetrieval extends AbstractTestWithStaticConfigura
     assertEquals(index, rs.getString(1).trim());
     assertEquals(table, rs.getString(2).trim());
     assertEquals("value", rs.getString(3).trim());
-    assertEquals(dbName + "." + dbName + "__" + table + "_" + index + "__",
+    assertEquals(dbName + "__" + table + "_" + index + "__",
         rs.getString(4).trim());
     assertEquals("compact", rs.getString(5).trim());
   }
