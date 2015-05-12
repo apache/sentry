@@ -14,12 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.provider.common;
-/**
- * Represent which component being authorized by Sentry
- * using generic model
- */
-public class AuthorizationComponent{
-  public static final String Search = "solr";
-  public static final String SQOOP = "sqoop";
+package org.apache.sentry.sqoop;
+
+import org.apache.sqoop.security.AuthenticationProvider;
+
+public class MockAuthenticationProvider extends AuthenticationProvider {
+
+  @Override
+  public String[] getGroupNames() {
+    return new String[]{""};
+  }
+
+  @Override
+  public String getUserName() {
+    return "";
+  }
 }

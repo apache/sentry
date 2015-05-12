@@ -29,6 +29,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.SentryUserException;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.model.db.AccessConstants;
+import org.apache.sentry.provider.common.AuthorizationComponent;
 import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.provider.db.SentryAlreadyExistsException;
 import org.apache.sentry.provider.db.SentryInvalidInputException;
@@ -255,6 +256,9 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     Set<String> permissions = Sets.newHashSet();
     for (PrivilegeObject privilege : privileges) {
       List<String> hierarchy = Lists.newArrayList();
+      if (hasComponentServerPrivilege(privilege.getComponent())) {
+        hierarchy.add(KV_JOINER.join("server", privilege.getService()));
+      }
       for (Authorizable authorizable : privilege.getAuthorizables()) {
         hierarchy.add(KV_JOINER.join(authorizable.getTypeName(),authorizable.getName()));
       }
@@ -262,6 +266,11 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
       permissions.add(AUTHORIZABLE_JOINER.join(hierarchy));
     }
     return permissions;
+  }
+
+  private boolean hasComponentServerPrivilege(String component) {
+    //judge the component whether has the server privilege, for example: sqoop has the privilege on the server
+    return AuthorizationComponent.SQOOP.equalsIgnoreCase(component);
   }
 
   @Override
