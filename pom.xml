@@ -727,13 +727,14 @@ limitations under the License.
           <artifactId>maven-surefire-plugin</artifactId>
           <version>2.16</version>
           <configuration>
-            <forkMode>always</forkMode>
+            <forkCount>1</forkCount>
+	    <reuseForks>false</reuseForks>
             <environmentVariables>
               <HADOOP_CLIENT_OPTS>-Xmx1500m -Dhive.log.dir=./target/</HADOOP_CLIENT_OPTS>
             </environmentVariables>
             <forkedProcessTimeoutInSeconds>900</forkedProcessTimeoutInSeconds>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
-            <argLine>-Xms512m -Xmx2g</argLine>
+            <argLine>-Xms512m -Xmx2g -XX:MaxPermSize=2g</argLine>
             <systemPropertyVariables>
               <java.net.preferIPv4Stack>true</java.net.preferIPv4Stack>
             </systemPropertyVariables>
