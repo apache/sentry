@@ -36,6 +36,10 @@ public class HadoopGroupMappingService implements GroupMappingService {
     this.groups = groups;
   }
 
+  public HadoopGroupMappingService(Configuration conf, String resource) {
+    this(Groups.getUserToGroupsMappingService(conf));
+  }
+
   @Override
   public Set<String> getGroups(String user) {
     try {
