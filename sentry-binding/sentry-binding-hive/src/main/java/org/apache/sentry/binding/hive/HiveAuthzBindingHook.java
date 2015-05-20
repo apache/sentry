@@ -540,6 +540,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
       objectHierarchy.add(new Table(entity.getTable().getTableName()));
       break;
     case PARTITION:
+    case DUMMYPARTITION:
       objectHierarchy.add(new Database(entity.getPartition().getTable().getDbName()));
       objectHierarchy.add(new Table(entity.getPartition().getTable().getTableName()));
       break;
