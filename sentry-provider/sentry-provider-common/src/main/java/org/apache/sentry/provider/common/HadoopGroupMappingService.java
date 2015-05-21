@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.Groups;
 import org.slf4j.Logger;
@@ -30,6 +31,7 @@ public class HadoopGroupMappingService implements GroupMappingService {
 
   private static final Logger LOGGER = LoggerFactory
       .getLogger(HadoopGroupMappingService.class);
+  private static Configuration hadoopConf;
   private final Groups groups;
 
   public HadoopGroupMappingService(Groups groups) {
@@ -37,7 +39,19 @@ public class HadoopGroupMappingService implements GroupMappingService {
   }
 
   public HadoopGroupMappingService(Configuration conf, String resource) {
-    this(Groups.getUserToGroupsMappingService(conf));
+    if (hadoopConf == null) {
+      synchronized (HadoopGroupMappingService.class) {
+        if (hadoopConf == null) {
+          // clone the current config and add resource path
+          hadoopConf = new Configuration();
+          hadoopConf.addResource(conf);
+          if (!StringUtils.isEmpty(resource)) {
+            hadoopConf.addResource(resource);
+          }
+        }
+      }
+    }
+    this.groups = Groups.getUserToGroupsMappingService(hadoopConf);
   }
 
   @Override
