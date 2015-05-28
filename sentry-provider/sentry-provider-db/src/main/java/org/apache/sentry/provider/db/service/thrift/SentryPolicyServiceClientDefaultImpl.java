@@ -300,6 +300,17 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
         PrivilegeScope.SERVER, server, null, null, null, null, action);
   }
 
+  @Deprecated
+  /***
+   * Should use grantServerPrivilege(String requestorUserName,
+   *  String roleName, String server, String action, Boolean grantOption)
+   */
+  public TSentryPrivilege grantServerPrivilege(String requestorUserName,
+      String roleName, String server, Boolean grantOption) throws SentryUserException {
+    return grantServerPrivilege(requestorUserName, roleName, server,
+        AccessConstants.ALL, grantOption);
+  }
+
   public TSentryPrivilege grantServerPrivilege(String requestorUserName,
       String roleName, String server, String action, Boolean grantOption)
   throws SentryUserException {

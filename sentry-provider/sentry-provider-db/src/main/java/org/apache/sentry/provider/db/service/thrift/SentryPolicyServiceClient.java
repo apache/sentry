@@ -67,6 +67,9 @@ public interface SentryPolicyServiceClient {
       String action) throws SentryUserException;
 
   public TSentryPrivilege grantServerPrivilege(String requestorUserName, String roleName,
+      String server, Boolean grantOption) throws SentryUserException;
+
+  public TSentryPrivilege grantServerPrivilege(String requestorUserName, String roleName,
       String server, String action, Boolean grantOption) throws SentryUserException;
 
   public TSentryPrivilege grantDatabasePrivilege(String requestorUserName, String roleName,
