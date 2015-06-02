@@ -16,9 +16,10 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sentry.provider.file;
-import static org.apache.sentry.provider.file.PolicyFileConstants.KV_JOINER;
-import static org.apache.sentry.provider.file.PolicyFileConstants.KV_SPLITTER;
+package org.apache.sentry.provider.common;
+
+import static org.apache.sentry.provider.common.ProviderConstants.KV_JOINER;
+import static org.apache.sentry.provider.common.ProviderConstants.KV_SPLITTER;
 
 import java.util.List;
 
@@ -30,25 +31,28 @@ public class KeyValue {
 
   public KeyValue(String keyValue) {
     List<String> kvList = Lists.newArrayList(KV_SPLITTER.trimResults().limit(2).split(keyValue));
-    if(kvList.size() != 2) {
+    if (kvList.size() != 2) {
       throw new IllegalArgumentException("Invalid key value: " + keyValue + " " + kvList);
     }
     key = kvList.get(0);
     value = kvList.get(1);
-    if(key.isEmpty()) {
+    if (key.isEmpty()) {
       throw new IllegalArgumentException("Key cannot be empty");
-    } else if(value.isEmpty()) {
+    } else if (value.isEmpty()) {
       throw new IllegalArgumentException("Value cannot be empty");
     }
   }
+
   public KeyValue(String key, String value) {
     super();
     this.key = key;
     this.value = value;
   }
+
   public String getKey() {
     return key;
   }
+
   public String getValue() {
     return value;
   }
@@ -57,6 +61,7 @@ public class KeyValue {
   public String toString() {
     return KV_JOINER.join(key, value);
   }
+
   @Override
   public int hashCode() {
     final int prime = 31;
@@ -65,6 +70,7 @@ public class KeyValue {
     result = prime * result + ((value == null) ? 0 : value.hashCode());
     return result;
   }
+
   @Override
   public boolean equals(Object obj) {
     if (this == obj)

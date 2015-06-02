@@ -28,6 +28,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.sentry.provider.common.GroupMappingService;
+import org.apache.sentry.provider.common.PolicyFileConstants;
+import org.apache.sentry.provider.common.ProviderConstants;
 import org.apache.shiro.config.Ini;
 import org.apache.shiro.config.Ini.Section;
 import org.slf4j.Logger;
@@ -109,8 +111,8 @@ public class LocalGroupMappingService implements GroupMappingService {
             " in the " + resourcePath);
         continue;
       }
-      Set<String> groupList = Sets.newHashSet(
-          PolicyFileConstants.ROLE_SPLITTER.trimResults().split(groupNames));
+      Set<String> groupList = Sets.newHashSet(ProviderConstants.ROLE_SPLITTER.trimResults().split(
+          groupNames));
       LOGGER.debug("Got user mapping: " + userName + ", Groups: " + groupNames);
       groupMap.put(userName, groupList);
     }

@@ -14,15 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.provider.file;
+package org.apache.sentry.provider.common;
 
-import org.apache.sentry.provider.common.ProviderConstants;
-
-public class PolicyFileConstants extends ProviderConstants {
-
+public class PolicyFileConstants {
   public static final String DATABASES = "databases";
   public static final String GROUPS = "groups";
   public static final String ROLES = "roles";
   public static final String USERS = "users";
-
+  public static final String PRIVILEGE_SERVER_NAME = "server";
+  public static final String PRIVILEGE_DATABASE_NAME = "db";
+  public static final String PRIVILEGE_TABLE_NAME = "table";
+  public static final String PRIVILEGE_COLUMN_NAME = "column";
+  public static final String PRIVILEGE_URI_NAME = "uri";
+  public static final String PRIVILEGE_ACTION_NAME = "action";
+  public static final String PRIVILEGE_GRANT_OPTION_NAME = "grantoption";
 }

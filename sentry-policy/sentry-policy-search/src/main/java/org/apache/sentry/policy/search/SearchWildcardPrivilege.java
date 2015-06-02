@@ -21,16 +21,13 @@
 
 package org.apache.sentry.policy.search;
 
-import static org.apache.sentry.provider.file.PolicyFileConstants.AUTHORIZABLE_JOINER;
-import static org.apache.sentry.provider.file.PolicyFileConstants.AUTHORIZABLE_SPLITTER;
-
 import java.util.List;
 
 import org.apache.sentry.core.model.search.SearchConstants;
 import org.apache.sentry.policy.common.Privilege;
 import org.apache.sentry.policy.common.PrivilegeFactory;
-import org.apache.sentry.provider.file.KeyValue;
-import org.apache.sentry.provider.file.PolicyFileConstants;
+import org.apache.sentry.provider.common.KeyValue;
+import org.apache.sentry.provider.common.ProviderConstants;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -47,7 +44,8 @@ public class SearchWildcardPrivilege implements Privilege {
       throw new IllegalArgumentException("Wildcard string cannot be null or empty.");
     }
     List<KeyValue>parts = Lists.newArrayList();
-    for (String authorizable : AUTHORIZABLE_SPLITTER.trimResults().split(wildcardString)) {
+    for (String authorizable : ProviderConstants.AUTHORIZABLE_SPLITTER.trimResults().split(
+        wildcardString)) {
       if (authorizable.isEmpty()) {
         throw new IllegalArgumentException("Privilege '" + wildcardString + "' has an empty section");
       }
@@ -110,7 +108,7 @@ public class SearchWildcardPrivilege implements Privilege {
         "Please report, this method should not be called with two different keys");
     if(policyPart.getValue().equals(SearchConstants.ALL) || policyPart.equals(requestPart)) {
       return true;
-    } else if (!PolicyFileConstants.PRIVILEGE_NAME.equalsIgnoreCase(policyPart.getKey())
+    } else if (!ProviderConstants.PRIVILEGE_NAME.equalsIgnoreCase(policyPart.getKey())
         && SearchConstants.ALL.equalsIgnoreCase(requestPart.getValue())) {
       /* privilege request is to match with any object of given type */
       return true;
@@ -120,7 +118,7 @@ public class SearchWildcardPrivilege implements Privilege {
 
   @Override
   public String toString() {
-    return AUTHORIZABLE_JOINER.join(parts);
+    return ProviderConstants.AUTHORIZABLE_JOINER.join(parts);
   }
 
   @Override

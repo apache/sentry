@@ -20,13 +20,13 @@ package org.apache.sentry.policy.db;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertTrue;
-import static org.apache.sentry.provider.file.PolicyFileConstants.AUTHORIZABLE_JOINER;
-import static org.apache.sentry.provider.file.PolicyFileConstants.KV_JOINER;
-import static org.apache.sentry.provider.file.PolicyFileConstants.KV_SEPARATOR;
+import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_JOINER;
+import static org.apache.sentry.provider.common.ProviderConstants.KV_JOINER;
+import static org.apache.sentry.provider.common.ProviderConstants.KV_SEPARATOR;
 
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.policy.common.Privilege;
-import org.apache.sentry.provider.file.KeyValue;
+import org.apache.sentry.provider.common.KeyValue;
 import org.junit.Test;
 
 public class TestDBWildcardPrivilege {

@@ -17,7 +17,7 @@
 package org.apache.sentry.policy.search;
 
 import org.apache.sentry.core.model.search.SearchModelAction;
-import org.apache.sentry.provider.file.KeyValue;
+import org.apache.sentry.provider.common.KeyValue;
 
 public class SearchModelActions {
 
