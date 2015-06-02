@@ -21,8 +21,8 @@ import org.apache.sentry.core.model.sqoop.Job;
 import org.apache.sentry.core.model.sqoop.Link;
 import org.apache.sentry.core.model.sqoop.Server;
 import org.apache.sentry.core.model.sqoop.SqoopAuthorizable;
-import org.apache.sentry.provider.file.KeyValue;
 import org.apache.sentry.core.model.sqoop.SqoopAuthorizable.AuthorizableType;
+import org.apache.sentry.provider.common.KeyValue;
 
 public class SqoopModelAuthorizables {
   public static SqoopAuthorizable from(KeyValue keyValue) {

@@ -16,8 +16,13 @@
  */
 package org.apache.sentry.provider.file;
 
-import com.google.common.io.ByteStreams;
-import com.google.common.io.Resources;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -25,12 +30,8 @@ import org.apache.shiro.config.Ini;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import com.google.common.io.ByteStreams;
+import com.google.common.io.Resources;
 
 public class PolicyFiles {
 
@@ -40,7 +41,7 @@ public class PolicyFiles {
   public static void copyToDir(File dest, String... resources)
       throws FileNotFoundException, IOException {
     for(String resource : resources) {
-      LOGGER.info("Copying " + resource + " to " + dest);
+      LOGGER.debug("Copying " + resource + " to " + dest);
       Resources.copy(Resources.getResource(resource), new FileOutputStream(new File(dest, resource)));
     }
   }
@@ -54,7 +55,7 @@ public class PolicyFiles {
       in.close();
       out.hflush();
       out.close();
-      LOGGER.info("Copying " + resource + " to " + dest + ", bytes " + bytes);
+      LOGGER.debug("Copying " + resource + " to " + dest + ", bytes " + bytes);
     }
   }
 
@@ -72,7 +73,7 @@ public class PolicyFiles {
   public static Ini loadFromPath(FileSystem fileSystem, Path path) throws IOException {
     InputStream inputStream = null;
     try {
-      LOGGER.info("Opening " + path);
+      LOGGER.debug("Opening " + path);
       String dfsUri = fileSystem.getDefaultUri(fileSystem.getConf()).toString();
       inputStream = fileSystem.open(path);
       Ini ini = new Ini();

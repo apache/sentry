@@ -23,7 +23,7 @@ import java.util.List;
 import org.apache.sentry.core.model.sqoop.SqoopActionConstant;
 import org.apache.sentry.policy.common.Privilege;
 import org.apache.sentry.policy.common.PrivilegeFactory;
-import org.apache.sentry.provider.file.KeyValue;
+import org.apache.sentry.provider.common.KeyValue;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;

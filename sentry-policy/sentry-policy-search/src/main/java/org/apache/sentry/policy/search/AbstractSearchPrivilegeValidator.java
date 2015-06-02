@@ -16,8 +16,8 @@
  */
 package org.apache.sentry.policy.search;
 
-import static org.apache.sentry.provider.file.PolicyFileConstants.AUTHORIZABLE_SPLITTER;
-import static org.apache.sentry.provider.file.PolicyFileConstants.PRIVILEGE_PREFIX;
+import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_SPLITTER;
+import static org.apache.sentry.provider.common.ProviderConstants.PRIVILEGE_PREFIX;
 
 import java.util.List;
 

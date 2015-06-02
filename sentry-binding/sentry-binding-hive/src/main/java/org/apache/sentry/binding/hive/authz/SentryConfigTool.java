@@ -17,7 +17,14 @@
 
 package org.apache.sentry.binding.hive.authz;
 
-import com.google.common.collect.Table;
+import java.security.CodeSource;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
@@ -40,7 +47,6 @@ import org.apache.sentry.binding.hive.HiveAuthzBindingHook;
 import org.apache.sentry.binding.hive.HiveAuthzBindingSessionHook;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
-
 import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.db.AccessConstants;
@@ -48,22 +54,15 @@ import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.policy.db.DBModelAuthorizables;
 import org.apache.sentry.provider.common.AuthorizationProvider;
+import org.apache.sentry.provider.common.KeyValue;
 import org.apache.sentry.provider.common.ProviderBackendContext;
+import org.apache.sentry.provider.common.ProviderConstants;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
-import org.apache.sentry.provider.file.KeyValue;
-import org.apache.sentry.provider.file.PolicyFileConstants;
 import org.apache.sentry.provider.file.SimpleFileProviderBackend;
 import org.apache.sentry.service.thrift.SentryServiceClientFactory;
 
-import java.security.CodeSource;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.HashSet;
-import java.util.Set;
+import com.google.common.collect.Table;
 
 public class SentryConfigTool {
   private String sentrySiteFile = null;
@@ -294,7 +293,7 @@ public class SentryConfigTool {
           String column = null;
           String uri = null;
           String action = AccessConstants.ALL;
-          for (String authorizable : PolicyFileConstants.AUTHORIZABLE_SPLITTER.
+          for (String authorizable : ProviderConstants.AUTHORIZABLE_SPLITTER.
               trimResults().split(permission)) {
             KeyValue kv = new KeyValue(authorizable);
             DBModelAuthorizable a = DBModelAuthorizables.from(kv);

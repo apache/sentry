@@ -19,7 +19,7 @@ package org.apache.sentry.policy.search;
 import org.apache.sentry.core.model.search.Collection;
 import org.apache.sentry.core.model.search.SearchModelAuthorizable;
 import org.apache.sentry.core.model.search.SearchModelAuthorizable.AuthorizableType;
-import org.apache.sentry.provider.file.KeyValue;
+import org.apache.sentry.provider.common.KeyValue;
 
 public class SearchModelAuthorizables {
 
