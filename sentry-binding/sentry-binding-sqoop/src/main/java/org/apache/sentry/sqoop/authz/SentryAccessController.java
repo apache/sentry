@@ -140,7 +140,7 @@ public class SentryAccessController extends AuthorizationAccessController {
 
   @Override
   public void removeResource(MResource resource) throws SqoopException {
-    binding.dropPrivilege(getSubject(), resource);
+    binding.dropPrivilege(resource);
   }
 
   @Override

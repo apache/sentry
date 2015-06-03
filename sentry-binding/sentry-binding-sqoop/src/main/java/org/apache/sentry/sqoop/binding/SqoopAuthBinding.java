@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.SentryUserException;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
@@ -56,6 +57,7 @@ public class SqoopAuthBinding {
   private final Configuration authConf;
   private final AuthorizationProvider authProvider;
   private final Server sqoopServer;
+  private final Subject bindingSubject;
   private ProviderBackend providerBackend;
 
   private final SqoopActionFactory actionFactory = new SqoopActionFactory();
@@ -65,6 +67,9 @@ public class SqoopAuthBinding {
     this.authConf.set(AuthzConfVars.AUTHZ_SERVER_NAME.getVar(), serverName);
     this.sqoopServer = new Server(serverName);
     this.authProvider = createAuthProvider();
+    /** The Sqoop server principal will use the binding */
+    this.bindingSubject = new Subject(UserGroupInformation.getCurrentUser()
+        .getShortUserName());
   }
 
   /**
@@ -265,7 +270,7 @@ public class SqoopAuthBinding {
     });
   }
 
-  public void dropPrivilege(final Subject subject, final MResource resource) throws SqoopException {
+  public void dropPrivilege(final MResource resource) throws SqoopException {
     execute(new Command<Void>() {
       @Override
       public Void run(SentryGenericServiceClient client) throws Exception {
@@ -274,7 +279,7 @@ public class SqoopAuthBinding {
         privilege.setServiceName(sqoopServer.getName());
         privilege.setAuthorizables(toTSentryAuthorizable(resource));
         privilege.setAction(SqoopActionConstant.ALL);
-        client.dropPrivilege(subject.getName(), COMPONENT_TYPE, privilege);
+        client.dropPrivilege(bindingSubject.getName(), COMPONENT_TYPE, privilege);
         return null;
       }
     });
