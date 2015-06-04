@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.Writer;
+import java.nio.file.Files;
 
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Layout;
@@ -57,7 +58,7 @@ public class RollingFileWithoutDeleteAppender extends FileAppender {
    */
   public RollingFileWithoutDeleteAppender(Layout layout, String filename,
       boolean append) throws IOException {
-    super(layout, filename, append);
+    super(layout, getLogFileName(filename), append);
   }
 
   /**
@@ -69,7 +70,7 @@ public class RollingFileWithoutDeleteAppender extends FileAppender {
    */
   public RollingFileWithoutDeleteAppender(Layout layout, String filename)
       throws IOException {
-    super(layout, filename);
+    super(layout, getLogFileName(filename));
   }
 
   /**
@@ -88,10 +89,6 @@ public class RollingFileWithoutDeleteAppender extends FileAppender {
    */
   // synchronization not necessary since doAppend is alreasy synched
   public void rollOver() {
-    File target;
-    File file;
-    String suffix = Long.toString(System.currentTimeMillis());
-
     if (qw != null) {
       long size = ((CountingQuietWriter) qw).getCount();
       LogLog.debug("rolling over count=" + size);
@@ -100,40 +97,19 @@ public class RollingFileWithoutDeleteAppender extends FileAppender {
       nextRollover = size + maxFileSize;
     }
 
-    boolean renameSucceeded = true;
-
-    // Rename fileName to fileName.yyyyMMddHHmmss
-    target = new File(fileName + "." + suffix);
-
     this.closeFile(); // keep windows happy.
 
-    file = new File(fileName);
-    LogLog.debug("Renaming file " + file + " to " + target);
-    renameSucceeded = file.renameTo(target);
-    //
-    // if file rename failed, reopen file with append = true
-    //
-    if (!renameSucceeded) {
-      try {
-        this.setFile(fileName, true, bufferedIO, bufferSize);
-      } catch (IOException e) {
-        if (e instanceof InterruptedIOException) {
-          Thread.currentThread().interrupt();
-        }
-        LogLog.error("setFile(" + fileName + ", true) call failed.", e);
+    String newFileName = getLogFileName(fileName);
+    try {
+      // This will also close the file. This is OK since multiple
+      // close operations are safe.
+      this.setFile(newFileName, false, bufferedIO, bufferSize);
+      nextRollover = 0;
+    } catch (IOException e) {
+      if (e instanceof InterruptedIOException) {
+        Thread.currentThread().interrupt();
       }
-    } else {
-      try {
-        // This will also close the file. This is OK since multiple
-        // close operations are safe.
-        this.setFile(fileName, false, bufferedIO, bufferSize);
-        nextRollover = 0;
-      } catch (IOException e) {
-        if (e instanceof InterruptedIOException) {
-          Thread.currentThread().interrupt();
-        }
-        LogLog.error("setFile(" + fileName + ", false) call failed.", e);
-      }
+      LogLog.error("setFile(" + newFileName + ", false) call failed.", e);
     }
   }
 
@@ -154,7 +130,7 @@ public class RollingFileWithoutDeleteAppender extends FileAppender {
    * required for differentiating the setter taking a <code>long</code> argument
    * from the setter taking a <code>String</code> argument by the JavaBeans
    * {@link java.beans.Introspector Introspector}.
-   * 
+   *
    * @see #setMaxFileSize(String)
    */
   public void setMaximumFileSize(long maxFileSize) {
@@ -191,5 +167,10 @@ public class RollingFileWithoutDeleteAppender extends FileAppender {
         rollOver();
       }
     }
+  }
+
+  // Mangled file name. Append the current timestamp
+  private static String getLogFileName(String oldFileName) {
+    return oldFileName + "." + Long.toString(System.currentTimeMillis());
   }
 }

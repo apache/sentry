@@ -20,6 +20,7 @@ package org.apache.sentry.provider.db.log.appender;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.fail;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 
@@ -72,6 +73,30 @@ public class TestRollingFileWithoutDeleteAppender {
       fail("Excepted 10 log files.");
     }
 
+  }
+
+  /***
+   * Generate log enough to cause a single rollover. Verify the file name format
+   * @throws Throwable
+   */
+  @Test
+  public void testFileNamePattern() throws Throwable {
+    if (dataDir == null) {
+      fail("Excepted temp folder for audit log is created.");
+    }
+    RollingFileWithoutDeleteAppender appender = new RollingFileWithoutDeleteAppender(
+        new PatternLayout("%m%n"), dataDir.getPath() + "/auditLog.log");
+    appender.setMaximumFileSize(10);
+    sentryLogger.addAppender(appender);
+    sentryLogger.debug("123456789012345");
+    File[] files = dataDir.listFiles();
+    if (files != null) {
+      assertEquals(files.length, 2);
+      assertTrue(files[0].getName().contains("auditLog.log."));
+      assertTrue(files[1].getName().contains("auditLog.log."));
+    } else {
+      fail("Excepted 2 log files.");
+    }
   }
 
   @After
