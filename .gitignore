@@ -19,3 +19,4 @@ maven-repo/
 *.orig
 *.rej
 .DS_Store
+**/thirdparty/*
