@@ -134,6 +134,13 @@
       </includes>
       <outputDirectory>scripts/sentrystore/upgrade</outputDirectory>
     </fileSet>
+    <fileSet>
+      <directory>${project.parent.basedir}/sentry-provider/sentry-provider-db/target</directory>
+      <outputDirectory>lib/impala</outputDirectory>
+      <includes>
+        <include>sentry-provider-db*-sh.jar</include>
+      </includes>
+    </fileSet>
   </fileSets>
 
 </assembly>
