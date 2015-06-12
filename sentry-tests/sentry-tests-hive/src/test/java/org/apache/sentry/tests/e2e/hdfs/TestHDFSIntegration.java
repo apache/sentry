@@ -555,6 +555,14 @@ public class TestHDFSIntegration {
     stmt.execute("alter table p1 add partition (month=2, day=1)");
     stmt.execute("alter table p1 add partition (month=2, day=2)");
 
+    // db privileges
+    stmt.execute("create database db5");
+    stmt.execute("create role db_role");
+    stmt.execute("create role tab_role");
+    stmt.execute("grant role db_role to group hbase");
+    stmt.execute("grant role tab_role to group flume");
+    stmt.execute("create table db5.p2(id int)");
+
     stmt.execute("create role p1_admin");
     stmt.execute("grant role p1_admin to group hbase");
 
@@ -562,6 +570,15 @@ public class TestHDFSIntegration {
     verifyOnAllSubDirs("/user/hive/warehouse", null, "hbase", false);
 
     verifyOnAllSubDirs("/user/hive/warehouse/p1", null, "hbase", false);
+
+    stmt.execute("grant all on database db5 to role db_role");
+    stmt.execute("use db5");
+    stmt.execute("grant all on table p2 to role tab_role");
+    stmt.execute("use default");
+    verifyOnAllSubDirs("/user/hive/warehouse/db5.db", FsAction.ALL, "hbase", true);
+    verifyOnAllSubDirs("/user/hive/warehouse/db5.db/p2", FsAction.ALL, "hbase", true);
+    verifyOnAllSubDirs("/user/hive/warehouse/db5.db/p2", FsAction.ALL, "flume", true);
+    verifyOnPath("/user/hive/warehouse/db5.db", FsAction.ALL, "flume", false);
 
     loadData(stmt);
 

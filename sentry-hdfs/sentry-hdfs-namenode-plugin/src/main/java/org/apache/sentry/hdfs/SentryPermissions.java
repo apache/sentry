@@ -118,10 +118,14 @@ public class SentryPermissions implements AuthzPermissions {
   }
 
   private Map<String, FsAction> getGroupPerms(String authzObj) {
-    Map<String, FsAction> groupPerms = new HashMap<String, FsAction>();
-    if (authzObj == null) {
-      return groupPerms;
+    Map<String, FsAction> groupPerms;
+    String parent = getParentAuthzObject(authzObj);
+    if (parent == null || parent.equals(authzObj)) {
+      groupPerms = new HashMap<String, FsAction>();
+    } else {
+      groupPerms = getGroupPerms(parent);
     }
+
     PrivilegeInfo privilegeInfo = privileges.get(authzObj);
     if (privilegeInfo != null) {
       for (Map.Entry<String, FsAction> privs : privilegeInfo
@@ -135,16 +139,6 @@ public class SentryPermissions implements AuthzPermissions {
   @Override
   public List<AclEntry> getAcls(String authzObj) {
     Map<String, FsAction> groupPerms = getGroupPerms(authzObj);
-    String parent = getParentAuthzObject(authzObj);
-    Map<String, FsAction> pGroupPerms = null;
-    if (parent == null) {
-      pGroupPerms = new HashMap<String, FsAction>();
-    } else {
-      pGroupPerms = getGroupPerms(getParentAuthzObject(authzObj));
-      if ((groupPerms == null)||(groupPerms.size() == 0)) {
-        groupPerms = pGroupPerms;
-      }
-    }
     List<AclEntry> retList = new LinkedList<AclEntry>();
     for (Map.Entry<String, FsAction> groupPerm : groupPerms.entrySet()) {
       AclEntry.Builder builder = new AclEntry.Builder();
@@ -152,10 +146,6 @@ public class SentryPermissions implements AuthzPermissions {
       builder.setType(AclEntryType.GROUP);
       builder.setScope(AclEntryScope.ACCESS);
       FsAction action = groupPerm.getValue();
-      FsAction pAction = pGroupPerms.get(groupPerm.getKey());
-      if (pAction != null) {
-        action = action.or(pAction);
-      }
       if ((action == FsAction.READ) || (action == FsAction.WRITE)
           || (action == FsAction.READ_WRITE)) {
         action = action.or(FsAction.EXECUTE);
