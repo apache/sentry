@@ -38,6 +38,7 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.server.namenode.AclFeature;
 import org.apache.hadoop.hdfs.server.namenode.AuthorizationProvider;
+import org.apache.hadoop.hdfs.server.namenode.DefaultAuthorizationProvider;
 import org.apache.hadoop.security.AccessControlException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,7 +97,7 @@ public class SentryAuthorizationProvider
         throw new RuntimeException("HDFS ACLs must be enabled");
       }
 
-      defaultAuthzProvider = AuthorizationProvider.get();
+      defaultAuthzProvider = new DefaultAuthorizationProvider();
       defaultAuthzProvider.start();
       // Configuration is read from hdfs-sentry.xml and NN configuration, in
       // that order of precedence.

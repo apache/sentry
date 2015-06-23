@@ -103,7 +103,7 @@ import com.google.common.io.Files;
 import com.google.common.io.Resources;
 
 public class TestHDFSIntegration {
-  
+
   private static final Logger LOGGER = LoggerFactory
       .getLogger(TestHDFSIntegration.class);
   protected static boolean testSentryHA = false;
@@ -140,8 +140,6 @@ public class TestHDFSIntegration {
 
   private static final int NUM_RETRIES = 10;
   private static final int RETRY_WAIT = 1000;
-  private static final String DFS_NAMENODE_AUTHORIZATION_PROVIDER_KEY =
-      "dfs.namenode.authorization.provider.class";
 
   private static MiniDFSCluster miniDFS;
   private MiniMRClientCluster miniMR;
@@ -353,7 +351,7 @@ public class TestHDFSIntegration {
       public Void run() throws Exception {
         System.setProperty(MiniDFSCluster.PROP_TEST_BUILD_DATA, "target/test/data");
         Configuration conf = new HdfsConfiguration();
-        conf.set(DFS_NAMENODE_AUTHORIZATION_PROVIDER_KEY,
+        conf.set(DFSConfigKeys.DFS_NAMENODE_AUTHORIZATION_PROVIDER_KEY,
             SentryAuthorizationProvider.class.getName());
         conf.setBoolean(DFSConfigKeys.DFS_NAMENODE_ACLS_ENABLED_KEY, true);
         conf.setInt(DFSConfigKeys.DFS_REPLICATION_KEY, 1);
@@ -913,7 +911,7 @@ public class TestHDFSIntegration {
   private void verifyQuery(Statement stmt, String table, int n) throws Throwable {
     verifyQuery(stmt, table, n, NUM_RETRIES);
   }
-  
+
   private void verifyQuery(Statement stmt, String table, int n, int retry) throws Throwable {
     ResultSet rs = null;
     try {
@@ -947,7 +945,7 @@ public class TestHDFSIntegration {
     f2.close();
     stmt.execute("load data inpath \'/tmp/f2.txt\' overwrite into table p1 partition (month=2, day=2)");
     ResultSet rs = stmt.executeQuery("select * from p1");
-    List<String> vals = new ArrayList<String>(); 
+    List<String> vals = new ArrayList<String>();
     while (rs.next()) {
       vals.add(rs.getString(1));
     }
@@ -1089,7 +1087,7 @@ public class TestHDFSIntegration {
     if (!jobClient.monitorAndPrintJob(job, submittedJob)) {
       throw new IOException("job Failed !!");
     }
-    
+
   }
 
 }

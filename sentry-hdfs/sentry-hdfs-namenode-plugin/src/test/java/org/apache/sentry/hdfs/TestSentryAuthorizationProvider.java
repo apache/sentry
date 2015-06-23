@@ -44,12 +44,9 @@ import org.junit.Test;
 
 
 public class TestSentryAuthorizationProvider {
-  private static final String DFS_NAMENODE_AUTHORIZATION_PROVIDER_KEY =
-      "dfs.namenode.authorization.provider.class";
-
   private MiniDFSCluster miniDFS;
   private UserGroupInformation admin;
-  
+
   @Before
   public void setUp() throws Exception {
     admin = UserGroupInformation.createUserForTesting(
@@ -60,7 +57,7 @@ public class TestSentryAuthorizationProvider {
         System.setProperty(MiniDFSCluster.PROP_TEST_BUILD_DATA, "target/test/data");
         Configuration conf = new HdfsConfiguration();
         conf.setBoolean("sentry.authorization-provider.include-hdfs-authz-as-acl", true);
-        conf.set(DFS_NAMENODE_AUTHORIZATION_PROVIDER_KEY,
+        conf.set(DFSConfigKeys.DFS_NAMENODE_AUTHORIZATION_PROVIDER_KEY,
             MockSentryAuthorizationProvider.class.getName());
         conf.setBoolean(DFSConfigKeys.DFS_NAMENODE_ACLS_ENABLED_KEY, true);
         EditLogFileOutputStream.setShouldSkipFsyncForTesting(true);
@@ -148,7 +145,7 @@ public class TestSentryAuthorizationProvider {
         Assert.assertEquals("hive", fs.getFileStatus(path).getGroup());
         Assert.assertEquals(new FsPermission((short) 0770), fs.getFileStatus(path).getPermission());
         Assert.assertFalse(fs.getAclStatus(path).getEntries().isEmpty());
-        
+
         Path path2 = new Path("/user/authz/obj/path2");
         fs.mkdirs(path2);
         fs.setAcl(path2, baseAclList);
