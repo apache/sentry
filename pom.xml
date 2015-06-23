@@ -817,6 +817,7 @@ limitations under the License.
                   <exclude>**/upgrade.*</exclude>
                   <exclude>**/datanucleus.log</exclude>
                   <exclude>**/metastore_db/</exclude>
+                  <exclude>**/*.rej</exclude>
                 </excludes>
               </configuration>
             </execution>
