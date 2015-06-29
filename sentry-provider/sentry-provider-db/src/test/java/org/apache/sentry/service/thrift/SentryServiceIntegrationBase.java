@@ -34,6 +34,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.minikdc.MiniKdc;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.sentry.SentryUserException;
+import org.apache.sentry.provider.db.service.persistent.HAContext;
 import org.apache.sentry.provider.db.service.thrift.SentryMiniKdcTestcase;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
@@ -323,9 +324,10 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
       System.setProperty("zookeeper.kerberos.removeHostFromPrincipal", "true");
       System.setProperty("zookeeper.kerberos.removeRealmFromPrincipal", "true");
 
-      JaasConfiguration.addEntry("Server", ZK_SERVER_PRINCIPAL, ZKKeytabFile.getAbsolutePath());
+      JaasConfiguration.addEntryForKeytab("Server", ZK_SERVER_PRINCIPAL, ZKKeytabFile.getAbsolutePath());
       // Here's where we add the "Client" to the jaas configuration, even though we'd like not to
-      JaasConfiguration.addEntry("Client", SERVER_KERBEROS_NAME, serverKeytab.getAbsolutePath());
+      JaasConfiguration.addEntryForKeytab(HAContext.SENTRY_ZK_JAAS_NAME,
+          SERVER_KERBEROS_NAME, serverKeytab.getAbsolutePath());
       javax.security.auth.login.Configuration.setConfiguration(JaasConfiguration.getInstance());
 
       System.setProperty(ZooKeeperSaslServer.LOGIN_CONTEXT_NAME_KEY, "Server");

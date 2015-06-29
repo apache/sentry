@@ -72,7 +72,7 @@ public class JaasConfiguration extends Configuration {
    * @param principal The principal of the user
    * @param keytab The location of the keytab
    */
-  public static void addEntry(String name, String principal, String keytab) {
+  public static void addEntryForKeytab(String name, String principal, String keytab) {
     Map<String, String> options = new HashMap<String, String>();
     options.put("keyTab", keytab);
     options.put("principal", principal);
@@ -82,6 +82,22 @@ public class JaasConfiguration extends Configuration {
     AppConfigurationEntry entry = new AppConfigurationEntry(krb5LoginModuleName,
         AppConfigurationEntry.LoginModuleControlFlag.REQUIRED, options);
     entries.put(name, entry);
+  }
+
+  /**
+   * Add an entry to the jaas configuration with the passed in name. The other
+   * necessary options will be set for you.
+   *
+   * @param name The name of the entry (e.g. "Client")
+   */
+  public static void addEntryForTicketCache(String sectionName) {
+    Map<String, String> options = new HashMap<String, String>();
+    options.put("useKeyTab", "false");
+    options.put("storeKey", "false");
+    options.put("useTicketCache", "true");
+    AppConfigurationEntry entry = new AppConfigurationEntry(krb5LoginModuleName,
+        AppConfigurationEntry.LoginModuleControlFlag.REQUIRED, options);
+    entries.put(sectionName, entry);
   }
 
   /**
