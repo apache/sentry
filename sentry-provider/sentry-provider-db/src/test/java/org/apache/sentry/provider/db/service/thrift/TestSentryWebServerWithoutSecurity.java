@@ -21,7 +21,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.sentry.SentryUserException;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
 import org.junit.After;
 import org.junit.Assert;
@@ -45,7 +44,7 @@ public class TestSentryWebServerWithoutSecurity extends SentryServiceIntegration
 
   @Override
   @After
-  public void after() throws SentryUserException {
+  public void after() {
   }
 
   @Test

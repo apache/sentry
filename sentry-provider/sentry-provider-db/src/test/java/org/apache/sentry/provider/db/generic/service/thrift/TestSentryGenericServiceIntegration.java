@@ -37,11 +37,15 @@ import org.apache.sentry.core.model.search.SearchConstants;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
 import org.junit.After;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 public class TestSentryGenericServiceIntegration extends SentryServiceIntegrationBase {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(SentryServiceIntegrationBase.class);
   private static final String SOLR = "SOLR";
   private SentryGenericServiceClient client;
 
@@ -65,15 +69,25 @@ public class TestSentryGenericServiceIntegration extends SentryServiceIntegratio
   }
 
   @After
-  public void after() throws SentryUserException {
-    Set<TSentryRole> tRoles = client.listAllRoles(ADMIN_USER, SOLR);
-    for (TSentryRole tRole : tRoles) {
-      client.dropRole(ADMIN_USER, tRole.getRoleName(), SOLR);
+  public void after() {
+    try {
+      runTestAsSubject(new TestOperation(){
+        @Override
+        public void runTestAsSubject() throws Exception {
+          Set<TSentryRole> tRoles = client.listAllRoles(ADMIN_USER, SOLR);
+          for (TSentryRole tRole : tRoles) {
+            client.dropRole(ADMIN_USER, tRole.getRoleName(), SOLR);
+          }
+          if(client != null) {
+            client.close();
+          }
+        }
+      });
+    } catch (Exception e) {
+      LOGGER.error(e.getMessage(), e);
+    } finally {
+      policyFilePath.delete();
     }
-    if(client != null) {
-      client.close();
-    }
-    policyFilePath.delete();
   }
 
   @Test

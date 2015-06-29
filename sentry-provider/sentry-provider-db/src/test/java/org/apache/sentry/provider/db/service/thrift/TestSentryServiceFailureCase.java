@@ -20,7 +20,6 @@ package org.apache.sentry.provider.db.service.thrift;
 
 import java.security.PrivilegedActionException;
 
-import org.apache.sentry.SentryUserException;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.junit.After;
@@ -54,7 +53,7 @@ public class TestSentryServiceFailureCase extends SentryServiceIntegrationBase {
 
   @Override
   @After
-  public void after() throws SentryUserException {
+  public void after() {
   }
 
   @Test

@@ -18,12 +18,17 @@
 package org.apache.sentry.provider.db.service.thrift;
 
 
-import org.apache.sentry.SentryUserException;
+import java.io.File;
+import java.util.Set;
+
+import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
-import org.junit.After;
+import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import com.google.common.collect.Sets;
 
 /**
  * Test various kerberos related stuff on the SentryService side
@@ -44,21 +49,27 @@ public class TestSentryServiceForHAWithKerberos extends SentryServiceIntegration
   @Override
   @Before
   public void before() throws Exception {
-  }
-
-  @Override
-  @After
-  public void after() throws SentryUserException {
-  }
-
-  /**
-   * Test that we are correctly substituting "_HOST" if/when needed.
-   *
-   * @throws Exception
-   */
-  @Test
-  public void testHostSubstitution() throws Exception {
-    // We just need to ensure that we are able to correct connect to the server
+    policyFilePath = new File(dbDir, "local_policy_file.ini");
+    conf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE,
+      policyFilePath.getPath());
+    policyFile = new PolicyFile();
     connectToSentryService();
+  }
+
+  @Test
+  public void testCreateRole() throws Exception {
+    runTestAsSubject(new TestOperation(){
+      @Override
+      public void runTestAsSubject() throws Exception {
+        String requestorUserName = ADMIN_USER;
+        Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
+        setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+        writePolicyFile();
+        String roleName = "admin_r";
+        client.dropRoleIfExists(requestorUserName, roleName);
+        client.createRole(requestorUserName, roleName);
+        client.dropRole(requestorUserName, roleName);
+      }
+    });
   }
 }

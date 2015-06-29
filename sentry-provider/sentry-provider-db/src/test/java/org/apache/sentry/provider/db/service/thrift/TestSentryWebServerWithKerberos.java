@@ -33,7 +33,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.security.authentication.client.AuthenticatedURL;
 import org.apache.hadoop.security.authentication.client.AuthenticationException;
 import org.apache.hadoop.security.authentication.client.KerberosAuthenticator;
-import org.apache.sentry.SentryUserException;
 import org.apache.sentry.service.thrift.KerberosConfiguration;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
 import org.junit.After;
@@ -64,7 +63,7 @@ public class TestSentryWebServerWithKerberos extends SentryServiceIntegrationBas
 
   @Override
   @After
-  public void after() throws SentryUserException {
+  public void after() {
   }
 
   @Test
