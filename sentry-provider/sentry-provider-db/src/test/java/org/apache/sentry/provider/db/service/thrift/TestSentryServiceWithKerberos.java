@@ -17,7 +17,6 @@
  */
 package org.apache.sentry.provider.db.service.thrift;
 
-import org.apache.sentry.SentryUserException;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
 import org.junit.After;
 import org.junit.Before;
@@ -42,7 +41,7 @@ public class TestSentryServiceWithKerberos extends SentryServiceIntegrationBase 
 
   @Override
   @After
-  public void after() throws SentryUserException {
+  public void after() {
   }
 
   /**

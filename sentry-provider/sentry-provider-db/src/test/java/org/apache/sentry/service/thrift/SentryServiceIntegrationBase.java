@@ -33,7 +33,6 @@ import org.apache.curator.test.TestingServer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.minikdc.MiniKdc;
 import org.apache.hadoop.net.NetUtils;
-import org.apache.sentry.SentryUserException;
 import org.apache.sentry.provider.db.service.persistent.HAContext;
 import org.apache.sentry.provider.db.service.thrift.SentryMiniKdcTestcase;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
@@ -216,17 +215,27 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
   }
 
   @After
-  public void after() throws SentryUserException {
-    if (client != null) {
-      Set<TSentryRole> tRoles = client.listRoles(ADMIN_USER);
-      if (tRoles != null) {
-        for (TSentryRole tRole : tRoles) {
-          client.dropRole(ADMIN_USER, tRole.getRoleName());
+  public void after() {
+    try {
+      runTestAsSubject(new TestOperation() {
+        @Override
+        public void runTestAsSubject() throws Exception {
+          if (client != null) {
+            Set<TSentryRole> tRoles = client.listRoles(ADMIN_USER);
+            if (tRoles != null) {
+              for (TSentryRole tRole : tRoles) {
+                client.dropRole(ADMIN_USER, tRole.getRoleName());
+              }
+            }
+            client.close();
+          }
         }
-      }
-      client.close();
+      });
+    } catch (Exception e) {
+      LOGGER.error(e.getMessage(), e);
+    } finally {
+      policyFilePath.delete();
     }
-    policyFilePath.delete();
   }
 
   public void connectToSentryService() throws Exception {

@@ -21,7 +21,6 @@ package org.apache.sentry.hdfs;
 import java.security.PrivilegedExceptionAction;
 
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.sentry.SentryUserException;
 import org.apache.sentry.hdfs.ServiceConstants.ClientConfig;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
 import org.junit.After;
@@ -43,7 +42,7 @@ public class SentryHdfsServiceIntegrationBase extends
   }
 
   @After
-  public void after() throws SentryUserException {
+  public void after() {
     if (hdfsClient != null) {
       hdfsClient.close();
     }
