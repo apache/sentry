@@ -21,7 +21,11 @@ package org.apache.sentry.provider.db.service.persistent;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import javax.security.auth.login.AppConfigurationEntry;
 
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
@@ -57,6 +61,7 @@ public class HAContext {
   private static boolean aclChecked = false;
 
   public final static String SENTRY_SERVICE_REGISTER_NAMESPACE = "sentry-service";
+  public static final String SENTRY_ZK_JAAS_NAME = "SentryClient";
   private final String zookeeperQuorum;
   private final int retriesMaxCount;
   private final int sleepMsBetweenRetries;
@@ -84,7 +89,8 @@ public class HAContext {
     if (zkSecure) {
       LOGGER.info("Connecting to ZooKeeper with SASL/Kerberos and using 'sasl' ACLs");
       setJaasConfiguration(conf);
-      System.setProperty(ZooKeeperSaslClient.LOGIN_CONTEXT_NAME_KEY, "Client");
+      System.setProperty(ZooKeeperSaslClient.LOGIN_CONTEXT_NAME_KEY,
+          SENTRY_ZK_JAAS_NAME);
       saslACL = Lists.newArrayList();
       saslACL.add(new ACL(Perms.ALL, new Id("sasl", getServicePrincipal(conf,
           ServerConfig.PRINCIPAL))));
@@ -227,16 +233,24 @@ public class HAContext {
 
   // This gets ignored during most tests, see ZKXTestCaseWithSecurity#setupZKServer()
   private void setJaasConfiguration(Configuration conf) throws IOException {
+    if ("false".equalsIgnoreCase(conf.get(
+          ServerConfig.SERVER_HA_ZOOKEEPER_CLIENT_TICKET_CACHE,
+          ServerConfig.SERVER_HA_ZOOKEEPER_CLIENT_TICKET_CACHE_DEFAULT))) {
       String keytabFile = conf.get(ServerConfig.SERVER_HA_ZOOKEEPER_CLIENT_KEYTAB);
       Preconditions.checkArgument(keytabFile.length() != 0, "Keytab File is not right.");
       String principal = conf.get(ServerConfig.SERVER_HA_ZOOKEEPER_CLIENT_PRINCIPAL);
-      principal = SecurityUtil.getServerPrincipal(principal, conf.get(ServerConfig.RPC_ADDRESS));
+      principal = SecurityUtil.getServerPrincipal(principal,
+        conf.get(ServerConfig.RPC_ADDRESS, ServerConfig.RPC_ADDRESS_DEFAULT));
       Preconditions.checkArgument(principal.length() != 0, "Kerberos principal is not right.");
 
       // This is equivalent to writing a jaas.conf file and setting the system property, "java.security.auth.login.config", to
       // point to it (but this way we don't have to write a file, and it works better for the tests)
-      JaasConfiguration.addEntry("Client", principal, keytabFile);
-      javax.security.auth.login.Configuration.setConfiguration(JaasConfiguration.getInstance());
+      JaasConfiguration.addEntryForKeytab(SENTRY_ZK_JAAS_NAME, principal, keytabFile);
+    } else {
+      // Create jaas conf for ticket cache
+      JaasConfiguration.addEntryForTicketCache(SENTRY_ZK_JAAS_NAME);
+    }
+    javax.security.auth.login.Configuration.setConfiguration(JaasConfiguration.getInstance());
   }
 
   public class SASLOwnerACLProvider implements ACLProvider {
