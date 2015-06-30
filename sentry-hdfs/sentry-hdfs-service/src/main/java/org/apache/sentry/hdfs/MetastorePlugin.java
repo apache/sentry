@@ -31,6 +31,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStore.HMSHandler;
@@ -111,10 +112,38 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
     }
   }
 
+  private void updateSentryConfFromHiveConf(String property) {
+    if (sentryConf.get(property) == null || sentryConf.get(property).isEmpty()) {
+      String value = conf.get(property);
+      if(value != null) {
+        LOGGER.warn("Deprecated: Property " + property + " was set in hive-site.xml, " +
+            "it should be instead set in sentry-site.xml");
+        sentryConf.set(property, value);
+      }
+    }
+  }
+
+  @VisibleForTesting
+  public Configuration getSentryConf() {
+    return sentryConf;
+  }
+
   public MetastorePlugin(Configuration conf, Configuration sentryConf) {
     this.notificiationLock = new ReentrantLock();
     this.conf = new HiveConf((HiveConf)conf);
     this.sentryConf = new Configuration(sentryConf);
+
+    //TODO: Remove this in C6.
+    //CDH-28899: Maintain backward compatibility. Allow reading the configs from hive-site
+    // along with sentry-site, where sentry-site takes the precedence
+    updateSentryConfFromHiveConf(ServiceConstants.ClientConfig.SERVER_RPC_ADDRESS);
+    updateSentryConfFromHiveConf(ServiceConstants.ClientConfig.SERVER_RPC_PORT);
+    updateSentryConfFromHiveConf(ServiceConstants.ClientConfig.SERVER_RPC_CONN_TIMEOUT);
+    updateSentryConfFromHiveConf(ServiceConstants.ClientConfig.SECURITY_MODE);
+    updateSentryConfFromHiveConf(ServiceConstants.ClientConfig.SECURITY_USE_UGI_TRANSPORT);
+    updateSentryConfFromHiveConf(ServiceConstants.ClientConfig.PRINCIPAL);
+    updateSentryConfFromHiveConf(ServiceConstants.ClientConfig.USE_COMPACT_TRANSPORT);
+
     this.conf.unset(HiveConf.ConfVars.METASTORE_PRE_EVENT_LISTENERS.varname);
     this.conf.unset(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS.varname);
     this.conf.unset(HiveConf.ConfVars.METASTORE_END_FUNCTION_LISTENERS.varname);
@@ -168,7 +197,7 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
       initUpdater.run();
     }
     try {
-      sentryClient = SentryHDFSServiceClientFactory.create(sentryConf);
+      sentryClient = SentryHDFSServiceClientFactory.create(this.sentryConf);
     } catch (Exception e) {
       sentryClient = null;
       LOGGER.error("Could not connect to Sentry HDFS Service !!", e);
