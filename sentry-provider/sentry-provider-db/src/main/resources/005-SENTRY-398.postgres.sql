@@ -13,7 +13,7 @@ CREATE TABLE "SENTRY_GM_PRIVILEGE" (
   "RESOURCE_TYPE_2" character varying(64) DEFAULT '__NULL__',
   "RESOURCE_TYPE_3" character varying(64) DEFAULT '__NULL__',
   "ACTION" character varying(32) NOT NULL,
-  "scope" character varying(128) NOT NULL,
+  "SCOPE" character varying(128) NOT NULL,
   "SERVICE_NAME" character varying(64) NOT NULL
 );
 ALTER TABLE ONLY "SENTRY_GM_PRIVILEGE"
