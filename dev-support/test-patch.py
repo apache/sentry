@@ -283,7 +283,7 @@ if defect:
     sys.exit(1)
   result.attachment = attachment
   # parse branch info
-  branchPattern = re.compile('/secure/attachment/\d+/%s(\.\d+)-(\w+)\.(patch|txt|patch.\txt)' % (re.escape(defect)))
+  branchPattern = re.compile('/secure/attachment/\d+/%s(\.\d+)-(\S+)\.(patch|txt|patch.\txt)' % (re.escape(defect)))
   try:
     branchInfo = re.search(branchPattern,attachment)
     if branchInfo:
