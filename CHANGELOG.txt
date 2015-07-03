@@ -1,3 +1,9 @@
+Release Notes - Sentry - Version 1.5.1
+
+** Bug
+    * [SENTRY-764] - Update the LICENSE file
+    * [SENTRY-775] - Update the Changelog file in 1.5.0 release for some missing jiras
+
 Release Notes - Sentry - Version 1.5.0
 
 ** Sub-task
@@ -24,6 +30,13 @@ Release Notes - Sentry - Version 1.5.0
     * [SENTRY-405] - Adding a general jdo access layer(sentrystore) to support the new authorization model
     * [SENTRY-406] - Support "WITH GRANT OPTION" for the audit log
     * [SENTRY-426] - Add upgrade scripts for column level privileges
+    * [SENTRY-433] - Create common in-memory data structures for efficient storage of Path and Permission information
+    * [SENTRY-434] - Create wrapper classes for the Path and Permission data structures to handle Full/Partial updates
+    * [SENTRY-435] - Implement SentryAuthorizationProvider namenode plugin
+    * [SENTRY-436] - Add Thrift endpoints to handle updates from HMS as well as request for updates from Sentry Namenode plugin
+    * [SENTRY-437] - Create UpdateHandler and Forwarder that stores updates in a log to be sent to Sentry NN plugin
+    * [SENTRY-438] - Modify SentryMetastorePostEventHandler to post updates to Sentry on HMS Path changes
+    * [SENTRY-439] - Add e2e testcases for Sentry HDFS integration
     * [SENTRY-456] - Service discovery for SENTRY high availability
     * [SENTRY-459] - Security mode (Kerberos) support for SENTRY high availability
     * [SENTRY-463] - Refactor SentryServiceClientFactory: change "create SentryPolicyServiceClient" to static
@@ -62,6 +75,7 @@ Release Notes - Sentry - Version 1.5.0
     * [SENTRY-331] - Add more granular privileges to the DBModel
     * [SENTRY-355] - Support metadata read privilege enforcement for Metastore pluging
     * [SENTRY-398] - Create the generic authorization model in Sentry
+    * [SENTRY-432] - Synchronization of HDFS permissions with Sentry permissions
     * [SENTRY-477] - Sentry service should expose metrics
     * [SENTRY-478] - Solr Sentry plug-in integration with DB store
     * [SENTRY-501] - High availability for the SENTRY service(Zookeeper part)
@@ -223,6 +237,7 @@ Release Notes - Sentry - Version 1.5.0
     * [SENTRY-690] - Remove SENTRY-645 patch from 1.5.0 release
     * [SENTRY-691] - upgrade schema tool: when upgrade oracle backed db from 1.4.0 - 1.5.0, gets syntax error
     * [SENTRY-693] - The generic model has not successfully revoke part of privileges from existed ALL privilege
+    * [SENTRY-694] - Sentry leaving orphan rows in SENTRY_DB_PRIVILEGE
 
 
 ** Task
