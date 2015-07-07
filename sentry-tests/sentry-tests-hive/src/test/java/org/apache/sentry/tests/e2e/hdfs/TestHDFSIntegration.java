@@ -35,14 +35,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.base.Preconditions;
 
 import junit.framework.Assert;
 
-import org.apache.curator.test.TestingServer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
@@ -80,15 +78,14 @@ import org.apache.sentry.hdfs.SentryAuthorizationProvider;
 import org.apache.sentry.provider.db.SimpleDBProviderBackend;
 import org.apache.sentry.provider.file.LocalGroupResourceAuthorizationProvider;
 import org.apache.sentry.provider.file.PolicyFile;
-import org.apache.sentry.service.thrift.SentryService;
-import org.apache.sentry.service.thrift.SentryServiceFactory;
-import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 import org.apache.sentry.tests.e2e.hive.fs.MiniDFS;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
 import org.apache.sentry.tests.e2e.hive.hiveserver.InternalHiveServer;
 import org.apache.sentry.tests.e2e.hive.hiveserver.InternalMetastoreServer;
+import org.apache.sentry.tests.e2e.minisentry.SentrySrv;
+import org.apache.sentry.tests.e2e.minisentry.SentrySrvFactory;
 import org.fest.reflect.core.Reflection;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -106,7 +103,6 @@ public class TestHDFSIntegration {
 
   private static final Logger LOGGER = LoggerFactory
       .getLogger(TestHDFSIntegration.class);
-  protected static boolean testSentryHA = false;
 
   public static class WordCountMapper extends MapReduceBase implements
       Mapper<LongWritable, Text, String, Long> {
@@ -145,15 +141,17 @@ public class TestHDFSIntegration {
   private MiniMRClientCluster miniMR;
   private static InternalHiveServer hiveServer2;
   private static InternalMetastoreServer metastore;
-  private static SentryService sentryService;
+
+  private static int sentryPort = -1;
+  protected static SentrySrv sentryServer;
+  protected static boolean testSentryHA = false;
+
   private static String fsURI;
   private static int hmsPort;
-  private static int sentryPort = -1;
   private static File baseDir;
   private static File policyFileLocation;
   private static UserGroupInformation adminUgi;
   private static UserGroupInformation hiveUgi;
-  private static TestingServer server;
 
   // Variables which are used for cleanup after test
   // Please set these values in each test
@@ -174,17 +172,6 @@ public class TestHDFSIntegration {
     int port = socket.getLocalPort();
     socket.close();
     return port;
-  }
-
-  private static void waitOnSentryService() throws Exception {
-    sentryService.start();
-    final long start = System.currentTimeMillis();
-    while (!sentryService.isRunning()) {
-      Thread.sleep(1000);
-      if (System.currentTimeMillis() - start > 60000L) {
-        throw new TimeoutException("Server did not start after 60 seconds");
-      }
-    }
   }
 
   @BeforeClass
@@ -344,6 +331,13 @@ public class TestHDFSIntegration {
     }
   }
 
+  private static String getSentryPort() throws Exception{
+    if(sentryServer!=null) {
+      return String.valueOf(sentryServer.get(0).getAddress().getPort());
+    } else {
+      throw new Exception("Sentry server not initialized");
+    }
+  }
   private static void startDFSandYARN() throws IOException,
       InterruptedException {
     adminUgi.doAs(new PrivilegedExceptionAction<Void>() {
@@ -416,68 +410,55 @@ public class TestHDFSIntegration {
     });
   }
 
-  private static void startSentry() throws IOException,
-      InterruptedException {
-    hiveUgi.doAs(new PrivilegedExceptionAction<Void>() {
-      @Override
-      public Void run() throws Exception {
-        Configuration sentryConf = new Configuration(false);
-        Map<String, String> properties = Maps.newHashMap();
-        properties.put(HiveServerFactory.AUTHZ_PROVIDER_BACKEND,
-            SimpleDBProviderBackend.class.getName());
-        properties.put(ConfVars.HIVE_AUTHORIZATION_TASK_FACTORY.varname,
-            SentryHiveAuthorizationTaskFactoryImpl.class.getName());
-        properties
-            .put(ConfVars.HIVE_SERVER2_THRIFT_MIN_WORKER_THREADS.varname, "2");
-        properties.put("hive.metastore.uris", "thrift://localhost:" + hmsPort);
-        properties.put("hive.exec.local.scratchdir", Files.createTempDir().getAbsolutePath());
-        properties.put(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_NONE);
+  private static void startSentry() throws Exception {
+    try {
+
+      hiveUgi.doAs(new PrivilegedExceptionAction<Void>() {
+        @Override
+        public Void run() throws Exception {
+          Configuration sentryConf = new Configuration(false);
+          Map<String, String> properties = Maps.newHashMap();
+          properties.put(HiveServerFactory.AUTHZ_PROVIDER_BACKEND,
+              SimpleDBProviderBackend.class.getName());
+          properties.put(ConfVars.HIVE_AUTHORIZATION_TASK_FACTORY.varname,
+              SentryHiveAuthorizationTaskFactoryImpl.class.getName());
+          properties
+              .put(ConfVars.HIVE_SERVER2_THRIFT_MIN_WORKER_THREADS.varname, "2");
+          properties.put("hive.metastore.uris", "thrift://localhost:" + hmsPort);
+          properties.put("hive.exec.local.scratchdir", Files.createTempDir().getAbsolutePath());
+          properties.put(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_NONE);
 //        properties.put("sentry.service.server.compact.transport", "true");
-        properties.put("sentry.hive.testing.mode", "true");
-        properties.put("sentry.service.reporting", "JMX");
-        properties.put(ServerConfig.ADMIN_GROUPS, "hive,admin");
-        properties.put(ServerConfig.RPC_ADDRESS, "localhost");
-        properties.put(ServerConfig.RPC_PORT, String.valueOf(sentryPort < 0 ? 0 : sentryPort));
-        properties.put(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "false");
+          properties.put("sentry.hive.testing.mode", "true");
+          properties.put("sentry.service.reporting", "JMX");
+          properties.put(ServerConfig.ADMIN_GROUPS, "hive,admin");
+          properties.put(ServerConfig.RPC_ADDRESS, "localhost");
+          properties.put(ServerConfig.RPC_PORT, String.valueOf(sentryPort > 0 ? sentryPort : 0));
+          properties.put(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "false");
 
-        properties.put(ServerConfig.SENTRY_STORE_GROUP_MAPPING, ServerConfig.SENTRY_STORE_LOCAL_GROUP_MAPPING);
-        properties.put(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE, policyFileLocation.getPath());
-        properties.put(ServerConfig.SENTRY_STORE_JDBC_URL,
-            "jdbc:derby:;databaseName=" + baseDir.getPath()
-                + "/sentrystore_db;create=true");
-        properties.put("sentry.service.processor.factories",
-            "org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessorFactory,org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory");
-        properties.put("sentry.policy.store.plugins", "org.apache.sentry.hdfs.SentryPlugin");
-        properties.put(ServerConfig.RPC_MIN_THREADS, "3");
-        if (testSentryHA) {
-          haSetup(properties);
+          properties.put(ServerConfig.SENTRY_STORE_GROUP_MAPPING, ServerConfig.SENTRY_STORE_LOCAL_GROUP_MAPPING);
+          properties.put(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE, policyFileLocation.getPath());
+          properties.put(ServerConfig.SENTRY_STORE_JDBC_URL,
+              "jdbc:derby:;databaseName=" + baseDir.getPath()
+                  + "/sentrystore_db;create=true");
+          properties.put("sentry.service.processor.factories",
+              "org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessorFactory,org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory");
+          properties.put("sentry.policy.store.plugins", "org.apache.sentry.hdfs.SentryPlugin");
+          properties.put(ServerConfig.RPC_MIN_THREADS, "3");
+          for (Map.Entry<String, String> entry : properties.entrySet()) {
+            sentryConf.set(entry.getKey(), entry.getValue());
+          }
+          sentryServer = SentrySrvFactory.create(SentrySrvFactory.SentrySrvType.INTERNAL_SERVER,
+              sentryConf, testSentryHA ? 2 : 1);
+          sentryPort = sentryServer.get(0).getAddress().getPort();
+          sentryServer.startAll();
+          LOGGER.info("\n\n Sentry service started \n\n");
+          return null;
         }
-        for (Map.Entry<String, String> entry : properties.entrySet()) {
-          sentryConf.set(entry.getKey(), entry.getValue());
-        }
-        sentryService = new SentryServiceFactory().create(sentryConf);
-        properties.put(ClientConfig.SERVER_RPC_ADDRESS, sentryService.getAddress()
-            .getHostName());
-        sentryConf.set(ClientConfig.SERVER_RPC_ADDRESS, sentryService.getAddress()
-            .getHostName());
-        properties.put(ClientConfig.SERVER_RPC_PORT,
-            String.valueOf(sentryService.getAddress().getPort()));
-        sentryConf.set(ClientConfig.SERVER_RPC_PORT,
-            String.valueOf(sentryService.getAddress().getPort()));
-        waitOnSentryService();
-        sentryPort = sentryService.getAddress().getPort();
-        LOGGER.info("\n\n Sentry port : " + sentryPort + "\n\n");
-        return null;
-      }
-    });
-  }
-
-  public static void haSetup(Map<String, String> properties) throws Exception {
-    server = new TestingServer();
-    server.start();
-    properties.put(ServerConfig.SENTRY_HA_ZOOKEEPER_QUORUM,
-        server.getConnectString());
-    properties.put(ServerConfig.SENTRY_HA_ENABLED, "true");
+      });
+    } catch (Exception e) {
+      //An exception happening in above block will result in a wrapped UndeclaredThrowableException.
+      throw new Exception(e.getCause());
+    }
   }
 
   @After
@@ -633,14 +614,18 @@ public class TestHDFSIntegration {
     verifyOnAllSubDirs("/user/hive/warehouse/p3", FsAction.WRITE_EXECUTE, "hbase", true);
     verifyOnAllSubDirs("/user/hive/warehouse/p3/month=1/day=3", FsAction.WRITE_EXECUTE, "hbase", true);
 
-    sentryService.stop();
-    // Verify that Sentry permission are still enforced for the "stale" period
-    verifyOnAllSubDirs("/user/hive/warehouse/p3", FsAction.WRITE_EXECUTE, "hbase", true);
+    //TODO: SENTRY-795: HDFS permissions do not sync when Sentry restarts in HA mode.
+    if(!testSentryHA) {
+      sentryServer.stop(0);
+      // Verify that Sentry permission are still enforced for the "stale" period
+      verifyOnAllSubDirs("/user/hive/warehouse/p3", FsAction.WRITE_EXECUTE, "hbase", true);
 
-    // Verify that Sentry permission are NOT enforced AFTER "stale" period
-    verifyOnAllSubDirs("/user/hive/warehouse/p3", null, "hbase", false);
+      // Verify that Sentry permission are NOT enforced AFTER "stale" period
+      verifyOnAllSubDirs("/user/hive/warehouse/p3", null, "hbase", false);
 
-    startSentry();
+      sentryServer.start(0);
+    }
+
     // Verify that After Sentry restart permissions are re-enforced
     verifyOnAllSubDirs("/user/hive/warehouse/p3", FsAction.WRITE_EXECUTE, "hbase", true);
 
