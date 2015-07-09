@@ -74,6 +74,7 @@ import org.apache.hadoop.mapred.TextOutputFormat;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.binding.hive.SentryHiveAuthorizationTaskFactoryImpl;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
+import org.apache.sentry.hdfs.SentryAuthorizationConstants;
 import org.apache.sentry.hdfs.SentryAuthorizationProvider;
 import org.apache.sentry.provider.db.SimpleDBProviderBackend;
 import org.apache.sentry.provider.file.LocalGroupResourceAuthorizationProvider;
@@ -145,6 +146,7 @@ public class TestHDFSIntegration {
   private static int sentryPort = -1;
   protected static SentrySrv sentryServer;
   protected static boolean testSentryHA = false;
+  private static final long STALE_THRESHOLD = 5000;
 
   private static String fsURI;
   private static int hmsPort;
@@ -270,9 +272,9 @@ public class TestHDFSIntegration {
         out.close();
 
         Reflection.staticField("hiveSiteURL")
-        .ofType(URL.class)
-        .in(HiveConf.class)
-        .set(hiveSite.toURI().toURL());
+          .ofType(URL.class)
+          .in(HiveConf.class)
+          .set(hiveSite.toURI().toURL());
 
         metastore = new InternalMetastoreServer(hiveConf);
         new Thread() {
@@ -280,7 +282,8 @@ public class TestHDFSIntegration {
           public void run() {
             try {
               metastore.start();
-              while(true){}
+              while (true) {
+              }
             } catch (Exception e) {
               LOGGER.info("Could not start Hive Server");
             }
@@ -357,7 +360,7 @@ public class TestHDFSIntegration {
 
         conf.set("sentry.authorization-provider.hdfs-path-prefixes", "/user/hive/warehouse,/tmp/external");
         conf.set("sentry.authorization-provider.cache-refresh-retry-wait.ms", "5000");
-        conf.set("sentry.authorization-provider.cache-stale-threshold.ms", "3000");
+        conf.set("sentry.authorization-provider.cache-stale-threshold.ms", String.valueOf(STALE_THRESHOLD));
 
         conf.set("sentry.hdfs.service.security.mode", "none");
         conf.set("sentry.hdfs.service.client.server.rpc-address", "localhost");
@@ -507,8 +510,12 @@ public class TestHDFSIntegration {
           hiveServer2.shutdown();
         }
       } finally {
-        if (metastore != null) {
-          metastore.shutdown();
+        try {
+          if (metastore != null) {
+            metastore.shutdown();
+          }
+        } finally {
+          sentryServer.close();
         }
       }
     }
@@ -616,14 +623,23 @@ public class TestHDFSIntegration {
 
     //TODO: SENTRY-795: HDFS permissions do not sync when Sentry restarts in HA mode.
     if(!testSentryHA) {
-      sentryServer.stop(0);
-      // Verify that Sentry permission are still enforced for the "stale" period
-      verifyOnAllSubDirs("/user/hive/warehouse/p3", FsAction.WRITE_EXECUTE, "hbase", true);
+      long beforeStop = System.currentTimeMillis();
+      sentryServer.stopAll();
+      long timeTakenForStopMs = System.currentTimeMillis() - beforeStop;
+      LOGGER.info("Time taken for Sentry server stop: " + timeTakenForStopMs);
+
+      // Verify that Sentry permission are still enforced for the "stale" period only if stop did not take too long
+      if(timeTakenForStopMs < STALE_THRESHOLD) {
+        verifyOnAllSubDirs("/user/hive/warehouse/p3", FsAction.WRITE_EXECUTE, "hbase", true);
+        Thread.sleep((STALE_THRESHOLD - timeTakenForStopMs));
+      } else {
+        LOGGER.warn("Sentry server stop took too long");
+      }
 
       // Verify that Sentry permission are NOT enforced AFTER "stale" period
       verifyOnAllSubDirs("/user/hive/warehouse/p3", null, "hbase", false);
 
-      sentryServer.start(0);
+      sentryServer.startAll();
     }
 
     // Verify that After Sentry restart permissions are re-enforced
