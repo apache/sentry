@@ -754,6 +754,7 @@ limitations under the License.
                   <exclude>**/datanucleus.log</exclude>
                   <exclude>**/metastore_db/</exclude>
                   <exclude>**/*.rej</exclude>
+                  <exclude>**/thirdparty/</exclude>
                 </excludes>
               </configuration>
             </execution>
