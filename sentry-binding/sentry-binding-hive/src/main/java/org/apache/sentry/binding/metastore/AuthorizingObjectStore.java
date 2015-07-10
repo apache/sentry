@@ -224,7 +224,7 @@ public class AuthorizingObjectStore extends ObjectStore {
   @Override
   public List<Partition> getPartitionsWithAuth(String dbName, String tblName,
       short maxParts, String userName, List<String> groupNames)
-      throws MetaException, NoSuchObjectException, InvalidObjectException {
+      throws MetaException, InvalidObjectException {
     if (filterTables(dbName, Lists.newArrayList(tblName)).isEmpty()) {
       throw new MetaException(getNoAccessMessageForTable(dbName, tblName));
     }
