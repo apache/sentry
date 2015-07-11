@@ -96,10 +96,11 @@ public class SentryHDFSServiceProcessorFactory extends ProcessorFactory{
     super(conf);
   }
 
-
+  @Override
   public boolean register(TMultiplexedProcessor multiplexedProcessor) throws Exception {
     SentryHDFSServiceProcessor sentryServiceHandler =
         new SentryHDFSServiceProcessor();
+    LOGGER.info("Calling registerProcessor from SentryHDFSServiceProcessorFactory");
     TProcessor processor = new ProcessorWrapper(sentryServiceHandler);
     multiplexedProcessor.registerProcessor(
         SentryHDFSServiceClient.SENTRY_HDFS_SERVICE_NAME, processor);

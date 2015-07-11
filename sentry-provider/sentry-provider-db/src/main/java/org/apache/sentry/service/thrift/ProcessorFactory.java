@@ -22,11 +22,10 @@ import org.apache.thrift.TMultiplexedProcessor;
 
 public abstract class ProcessorFactory {
   protected final Configuration conf;
+
   public ProcessorFactory(Configuration conf) {
     this.conf = conf;
   }
 
-  public boolean register(TMultiplexedProcessor processor) throws Exception {
-    return false;
-  }
+  public abstract boolean register(TMultiplexedProcessor processor) throws Exception;
 }
