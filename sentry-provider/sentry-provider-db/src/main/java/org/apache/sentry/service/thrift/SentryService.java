@@ -191,9 +191,14 @@ public class SentryService implements Callable {
       try {
         Constructor<?> constructor = clazz
             .getConstructor(Configuration.class);
+        LOGGER.info("ProcessorFactory being used: " + clazz.getCanonicalName());
         ProcessorFactory factory = (ProcessorFactory) constructor
             .newInstance(conf);
-        registeredProcessor = factory.register(processor) || registeredProcessor;
+        boolean status = factory.register(processor);
+        if(!status) {
+          LOGGER.error("Failed to register " + clazz.getCanonicalName());
+        }
+        registeredProcessor = status || registeredProcessor;
       } catch (Exception e) {
         throw new IllegalStateException("Could not create "
             + processorFactory, e);
