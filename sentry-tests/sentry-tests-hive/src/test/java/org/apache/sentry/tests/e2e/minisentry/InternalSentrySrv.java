@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.curator.test.TestingServer;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.provider.db.service.thrift.SentryProcessorWrapper;
 import org.apache.sentry.service.thrift.SentryService;
 import org.apache.sentry.service.thrift.SentryServiceFactory;
 import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
@@ -32,7 +31,6 @@ import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.server.ServerContext;
 import org.apache.thrift.server.TServerEventHandler;
-import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -193,7 +191,6 @@ public class InternalSentrySrv implements SentrySrv {
     }
     SentryService sentryServer = sentryServers.get(serverNum);
     sentryServer.stop();
-    sentryServer.waitForShutDown();
   }
 
   @Override

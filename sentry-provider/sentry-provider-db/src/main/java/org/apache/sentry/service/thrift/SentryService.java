@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.EventListener;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -55,7 +56,6 @@ import org.apache.sentry.service.thrift.ServiceConstants.ConfUtilties;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.apache.thrift.TMultiplexedProcessor;
 import org.apache.thrift.protocol.TBinaryProtocol;
-import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.server.TServer;
 import org.apache.thrift.server.TServerEventHandler;
 import org.apache.thrift.server.TThreadPoolServer;
@@ -304,13 +304,9 @@ public class SentryService implements Callable {
   }
 
   // wait for the service thread to finish execution
-  public synchronized void waitForShutDown() {
+  public synchronized void waitOnFuture() throws ExecutionException, InterruptedException {
     LOGGER.info("Waiting on future.get()");
-    try {
       serviceStatus.get();
-    } catch (Exception e) {
-      LOGGER.debug("Error during the shutdown", e);
-    }
   }
 
   private MultiException addMultiException(MultiException exception, Exception e) {
@@ -396,7 +392,7 @@ public class SentryService implements Callable {
 
       // Let's wait on the service to stop
       try {
-        server.waitForShutDown();
+        server.waitOnFuture();
       } finally {
         server.serviceExecutor.shutdown();
       }
