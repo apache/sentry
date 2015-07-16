@@ -33,6 +33,15 @@ import com.google.common.collect.Lists;
 
 public class TestLinkEndToEnd extends AbstractSqoopSentryTestBase {
 
+  private void dropAndCreateRole(SqoopClient client, MRole mrole) throws Exception {
+    try {
+      client.dropRole(mrole);
+    } catch (Exception e) {
+      // nothing to do if role doesn't exist
+    }
+    client.createRole(mrole);
+  }
+
   @Test
   public void testShowLink() throws Exception {
     /**
@@ -50,7 +59,7 @@ public class TestLinkEndToEnd extends AbstractSqoopSentryTestBase {
     MPrincipal group1 = new MPrincipal(GROUP1, MPrincipal.TYPE.GROUP);
     MResource allLink = new MResource(SqoopActionConstant.ALL, MResource.TYPE.LINK);
     MPrivilege readAllPrivilege = new MPrivilege(allLink,SqoopActionConstant.READ, false);
-    client.createRole(role1);
+    dropAndCreateRole(client, role1);
     client.grantRole(Lists.newArrayList(role1), Lists.newArrayList(group1));
     client.grantPrivilege(Lists.newArrayList(new MPrincipal(role1.getName(), MPrincipal.TYPE.ROLE)),
         Lists.newArrayList(readAllPrivilege));
@@ -62,7 +71,7 @@ public class TestLinkEndToEnd extends AbstractSqoopSentryTestBase {
     MPrincipal group2 = new MPrincipal(GROUP2, MPrincipal.TYPE.GROUP);
     MResource hdfsLinkResource = new MResource(String.valueOf(hdfsLink.getPersistenceId()), MResource.TYPE.LINK);
     MPrivilege readHdfsLinkPrivilege = new MPrivilege(hdfsLinkResource,SqoopActionConstant.READ, false);
-    client.createRole(role2);
+    dropAndCreateRole(client, role2);
     client.grantRole(Lists.newArrayList(role2), Lists.newArrayList(group2));
     client.grantPrivilege(Lists.newArrayList(new MPrincipal(role2.getName(), MPrincipal.TYPE.ROLE)),
         Lists.newArrayList(readHdfsLinkPrivilege));
@@ -119,7 +128,7 @@ public class TestLinkEndToEnd extends AbstractSqoopSentryTestBase {
     MPrivilege writeHdfsPrivilege = new MPrivilege(hdfsLinkResource,SqoopActionConstant.WRITE, false);
     MResource  allConnector = new MResource(SqoopActionConstant.ALL, MResource.TYPE.CONNECTOR);
     MPrivilege readConnectorPriv = new MPrivilege(allConnector,SqoopActionConstant.READ, false);
-    client.createRole(role4);
+    dropAndCreateRole(client, role4);
     client.grantRole(Lists.newArrayList(role4), Lists.newArrayList(group4));
     client.grantPrivilege(Lists.newArrayList(new MPrincipal(role4.getName(), MPrincipal.TYPE.ROLE)),
         Lists.newArrayList(writeHdfsPrivilege, readConnectorPriv));
@@ -191,7 +200,7 @@ public class TestLinkEndToEnd extends AbstractSqoopSentryTestBase {
     MPrivilege readHdfsPrivilege = new MPrivilege(hdfsLinkResource,SqoopActionConstant.READ, false);
     MResource  allConnector = new MResource(SqoopActionConstant.ALL, MResource.TYPE.CONNECTOR);
     MPrivilege readConnectorPriv = new MPrivilege(allConnector,SqoopActionConstant.READ, false);
-    client.createRole(role4);
+    dropAndCreateRole(client, role4);
     client.grantRole(Lists.newArrayList(role4), Lists.newArrayList(group4));
     client.grantPrivilege(Lists.newArrayList(new MPrincipal(role4.getName(), MPrincipal.TYPE.ROLE)),
         Lists.newArrayList(readHdfsPrivilege, readConnectorPriv));
@@ -203,7 +212,7 @@ public class TestLinkEndToEnd extends AbstractSqoopSentryTestBase {
     MRole role5 = new MRole(ROLE5);
     MPrincipal group5 = new MPrincipal(GROUP5, MPrincipal.TYPE.GROUP);
     MPrivilege writeHdfsPrivilege = new MPrivilege(hdfsLinkResource,SqoopActionConstant.WRITE, false);
-    client.createRole(role5);
+    dropAndCreateRole(client, role5);
     client.grantRole(Lists.newArrayList(role5), Lists.newArrayList(group5));
     client.grantPrivilege(Lists.newArrayList(new MPrincipal(role5.getName(), MPrincipal.TYPE.ROLE)),
         Lists.newArrayList(writeHdfsPrivilege, readConnectorPriv));
@@ -233,6 +242,12 @@ public class TestLinkEndToEnd extends AbstractSqoopSentryTestBase {
     }
 
     client = sqoopServerRunner.getSqoopClient(ADMIN_USER);
+    try {
+      client.dropRole(role4);
+      client.dropRole(role5);
+    } catch (Exception e) {
+      // nothing to do if cleanup fails
+    }
     client.deleteLink(hdfsLink.getPersistenceId());
   }
 }
