@@ -83,7 +83,6 @@ public class ServiceConstants {
     public static final String SENTRY_STORE_JDBC_USER = "sentry.store.jdbc.user";
     public static final String SENTRY_STORE_JDBC_USER_DEFAULT = "Sentry";
     public static final String SENTRY_STORE_JDBC_PASS = "sentry.store.jdbc.password";
-    public static final String SENTRY_STORE_JDBC_PASS_DEFAULT = "Sentry";
     public static final String SENTRY_STORE_JDBC_DRIVER = "sentry.store.jdbc.driver";
     public static final String SENTRY_STORE_JDBC_DRIVER_DEFAULT = "org.apache.derby.jdbc.EmbeddedDriver";
 

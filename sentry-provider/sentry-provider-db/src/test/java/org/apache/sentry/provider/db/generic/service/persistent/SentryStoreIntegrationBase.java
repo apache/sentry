@@ -49,6 +49,7 @@ public abstract class SentryStoreIntegrationBase {
     conf.set(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "false");
     conf.set(ServerConfig.SENTRY_STORE_JDBC_URL,
         "jdbc:derby:;databaseName=" + dataDir.getPath() + ";create=true");
+    conf.set(ServerConfig.SENTRY_STORE_JDBC_PASS, "dummy");
     conf.setStrings(ServerConfig.ADMIN_GROUPS, adminGroups);
     conf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING,
         ServerConfig.SENTRY_STORE_LOCAL_GROUP_MAPPING);

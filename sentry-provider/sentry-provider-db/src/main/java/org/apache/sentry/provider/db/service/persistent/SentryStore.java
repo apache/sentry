@@ -21,6 +21,7 @@ package org.apache.sentry.provider.db.service.persistent;
 import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_JOINER;
 import static org.apache.sentry.provider.common.ProviderConstants.KV_JOINER;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -58,6 +59,7 @@ import org.apache.sentry.provider.db.service.model.MSentryGroup;
 import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
 import org.apache.sentry.provider.db.service.model.MSentryVersion;
+import org.apache.sentry.provider.db.service.thrift.SentryConfigurationException;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessor;
 import org.apache.sentry.provider.db.service.thrift.TSentryActiveRoleSet;
 import org.apache.sentry.provider.db.service.thrift.TSentryAuthorizable;
@@ -120,7 +122,7 @@ public class SentryStore {
   private Thread privCleanerThread = null;
 
   public SentryStore(Configuration conf) throws SentryNoSuchObjectException,
-  SentryAccessDeniedException {
+  SentryAccessDeniedException, SentryConfigurationException, IOException {
     commitSequenceId = 0;
     this.conf = conf;
     Properties prop = new Properties();
@@ -130,8 +132,17 @@ public class SentryStore {
         ServerConfig.SENTRY_STORE_JDBC_URL + " missing");
     String user = conf.get(ServerConfig.SENTRY_STORE_JDBC_USER, ServerConfig.
         SENTRY_STORE_JDBC_USER_DEFAULT).trim();
-    String pass = conf.get(ServerConfig.SENTRY_STORE_JDBC_PASS, ServerConfig.
-        SENTRY_STORE_JDBC_PASS_DEFAULT).trim();
+    //Password will be read from Credential provider specified using property
+    // CREDENTIAL_PROVIDER_PATH("hadoop.security.credential.provider.path" in sentry-site.xml
+    // it falls back to reading directly from sentry-site.xml
+    char[] passTmp = conf.getPassword(ServerConfig.SENTRY_STORE_JDBC_PASS);
+    String pass = null;
+    if(passTmp != null) {
+      pass = new String(passTmp);
+    } else {
+      throw new SentryConfigurationException("Error reading " + ServerConfig.SENTRY_STORE_JDBC_PASS);
+    }
+
     String driverName = conf.get(ServerConfig.SENTRY_STORE_JDBC_DRIVER,
         ServerConfig.SENTRY_STORE_JDBC_DRIVER_DEFAULT);
     prop.setProperty(ServerConfig.JAVAX_JDO_URL, jdbcUrl);

@@ -49,6 +49,7 @@ import org.apache.hive.beeline.BeeLine;
 import org.apache.sentry.Command;
 import org.apache.sentry.SentryUserException;
 import org.apache.sentry.provider.db.service.persistent.SentryStoreSchemaInfo;
+import org.apache.sentry.provider.db.service.thrift.SentryConfigurationException;
 import org.apache.sentry.provider.db.tools.SentrySchemaHelper.NestedScriptParser;
 import org.apache.sentry.service.thrift.SentryService;
 import org.apache.sentry.service.thrift.ServiceConstants;
@@ -68,12 +69,12 @@ public class SentrySchemaTool {
   private final SentryStoreSchemaInfo SentryStoreSchemaInfo;
 
   public SentrySchemaTool(Configuration sentryConf, String dbType)
-      throws SentryUserException {
+      throws SentryUserException, IOException {
     this(System.getenv("SENTRY_HOME") + SENTRY_SCRIP_DIR, sentryConf, dbType);
   }
 
   public SentrySchemaTool(String sentryScripPath, Configuration sentryConf,
-      String dbType) throws SentryUserException {
+      String dbType) throws SentryUserException, IOException {
     if (sentryScripPath == null || sentryScripPath.isEmpty()) {
       throw new SentryUserException("No Sentry script dir provided");
     }
@@ -83,8 +84,16 @@ public class SentrySchemaTool {
         dbType);
     userName = sentryConf.get(ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_USER,
         ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_USER_DEFAULT);
-    passWord = sentryConf.get(ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_PASS,
-        ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_PASS_DEFAULT);
+    //Password will be read from Credential provider specified using property
+    // CREDENTIAL_PROVIDER_PATH("hadoop.security.credential.provider.path" in sentry-site.xml
+    // it falls back to reading directly from sentry-site.xml
+    char[] passTmp = sentryConf.getPassword(ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_PASS);
+    if(passTmp != null) {
+      passWord = new String(passTmp);
+    } else {
+      throw new SentryConfigurationException("Error reading " + ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_PASS);
+    }
+
     try {
       connectionURL = getValidConfVar(ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_URL);
       if(dbType.equalsIgnoreCase(SentrySchemaHelper.DB_DERBY)) {

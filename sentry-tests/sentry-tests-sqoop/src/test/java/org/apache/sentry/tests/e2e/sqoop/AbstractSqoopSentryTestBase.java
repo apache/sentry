@@ -139,6 +139,7 @@ public class AbstractSqoopSentryTestBase {
     conf.set(ServerConfig.RPC_PORT, String.valueOf(PORT));
     conf.set(ServerConfig.SENTRY_STORE_JDBC_URL,
         "jdbc:derby:;databaseName=" + dbDir.getPath() + ";create=true");
+    conf.set(ServerConfig.SENTRY_STORE_JDBC_PASS, "dummy");
     conf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING,
         ServerConfig.SENTRY_STORE_LOCAL_GROUP_MAPPING);
     conf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE,

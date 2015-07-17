@@ -375,6 +375,7 @@ public abstract class AbstractTestWithStaticConfiguration {
     properties.put(ServerConfig.SENTRY_STORE_JDBC_URL,
         "jdbc:derby:;databaseName=" + baseDir.getPath()
         + "/sentrystore_db;create=true");
+    properties.put(ServerConfig.SENTRY_STORE_JDBC_PASS, "dummy");
     properties.put(ServerConfig.SENTRY_STORE_GROUP_MAPPING, ServerConfig.SENTRY_STORE_LOCAL_GROUP_MAPPING);
     properties.put(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE, policyFileLocation.getPath());
     properties.put(ServerConfig.RPC_MIN_THREADS, "3");

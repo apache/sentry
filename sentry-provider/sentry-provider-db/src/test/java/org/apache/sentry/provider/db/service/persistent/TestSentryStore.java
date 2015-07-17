@@ -27,10 +27,14 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.security.alias.CredentialProvider;
+import org.apache.hadoop.security.alias.CredentialProviderFactory;
+import org.apache.hadoop.security.alias.UserProvider;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.db.SentryAlreadyExistsException;
 import org.apache.sentry.provider.db.SentryGrantDeniedException;
@@ -46,6 +50,7 @@ import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.junit.After;
 import org.junit.AfterClass;
+import static org.junit.Assert.assertArrayEquals;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -63,14 +68,24 @@ public class TestSentryStore {
   private static PolicyFile policyFile;
   private static File policyFilePath;
   final long NUM_PRIVS = 60;  // > SentryStore.PrivCleaner.NOTIFY_THRESHOLD
+  private static Configuration conf = null;
+  private static char[] passwd = new char[] { '1', '2', '3'};
 
   @BeforeClass
   public static void setup() throws Exception {
+    conf = new Configuration(false);
+    final String ourUrl = UserProvider.SCHEME_NAME + ":///";
+    conf.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, ourUrl);
+    CredentialProvider provider = CredentialProviderFactory.getProviders(conf).get(0);
+    provider.createCredentialEntry(ServerConfig.
+        SENTRY_STORE_JDBC_PASS, passwd);
+    provider.flush();
+
     dataDir = new File(Files.createTempDir(), "sentry_policy_db");
-    Configuration conf = new Configuration(false);
     conf.set(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "false");
     conf.set(ServerConfig.SENTRY_STORE_JDBC_URL,
         "jdbc:derby:;databaseName=" + dataDir.getPath() + ";create=true");
+    conf.set(ServerConfig.SENTRY_STORE_JDBC_PASS, "dummy");
     conf.setStrings(ServerConfig.ADMIN_GROUPS, adminGroups);
     conf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING,
         ServerConfig.SENTRY_STORE_LOCAL_GROUP_MAPPING);
@@ -102,6 +117,13 @@ public class TestSentryStore {
       FileUtils.deleteQuietly(dataDir);
     }
   }
+
+  @Test
+  public void testCredentialProvider() throws Exception {
+    assertArrayEquals(passwd, conf.getPassword(ServerConfig.
+        SENTRY_STORE_JDBC_PASS));
+  }
+
   @Test
   public void testCaseInsensitiveRole() throws Exception {
     String roleName = "newRole";

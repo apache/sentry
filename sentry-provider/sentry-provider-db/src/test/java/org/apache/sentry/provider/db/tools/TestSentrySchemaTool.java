@@ -41,6 +41,7 @@ public class TestSentrySchemaTool {
     File dbDir = new File(Files.createTempDir(), "sentry_policy_db");
     sentryConf.set(ServerConfig.SENTRY_STORE_JDBC_URL,
         "jdbc:derby:;databaseName=" + dbDir.getPath() + ";create=true");
+    sentryConf.set(ServerConfig.SENTRY_STORE_JDBC_PASS, "dummy");
     schemaTool = new SentrySchemaTool("./src/main/resources", sentryConf,
         "derby");
   }
@@ -50,6 +51,7 @@ public class TestSentrySchemaTool {
     File dbDir = new File(Files.createTempDir(), "sentry_policy_db");
     sentryConf.set(ServerConfig.SENTRY_STORE_JDBC_URL,
         "jdbc:derby:;databaseName=" + dbDir.getPath() + ";create=true");
+    sentryConf.set(ServerConfig.SENTRY_STORE_JDBC_PASS, "dummy");
     schemaTool = new SentrySchemaTool("./src/main/resources", sentryConf,
         "derby");
   }

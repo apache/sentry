@@ -80,6 +80,7 @@ public abstract class AbstractTestWithDbProvider extends AbstractTestWithHiveSer
     dbDir = new File(Files.createTempDir(), "sentry_policy_db");
     properties.put(ServerConfig.SENTRY_STORE_JDBC_URL,
         "jdbc:derby:;databaseName=" + dbDir.getPath() + ";create=true");
+    properties.put(ServerConfig.SENTRY_STORE_JDBC_PASS, "dummy");
     properties.put(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "false");
     properties.put(ServerConfig.SENTRY_STORE_GROUP_MAPPING,
         ServerConfig.SENTRY_STORE_LOCAL_GROUP_MAPPING);
