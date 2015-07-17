@@ -443,6 +443,7 @@ public class TestHDFSIntegration {
           properties.put(ServerConfig.SENTRY_STORE_JDBC_URL,
               "jdbc:derby:;databaseName=" + baseDir.getPath()
                   + "/sentrystore_db;create=true");
+          properties.put(ServerConfig.SENTRY_STORE_JDBC_PASS, "dummy");
           properties.put("sentry.service.processor.factories",
               "org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessorFactory,org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory");
           properties.put("sentry.policy.store.plugins", "org.apache.sentry.hdfs.SentryPlugin");

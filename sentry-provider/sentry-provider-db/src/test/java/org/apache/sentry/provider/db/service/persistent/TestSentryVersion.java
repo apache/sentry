@@ -41,6 +41,7 @@ public class TestSentryVersion {
     conf = new Configuration(false);
     conf.set(ServerConfig.SENTRY_STORE_JDBC_URL, "jdbc:derby:;databaseName="
         + dataDir.getPath() + ";create=true");
+    conf.set(ServerConfig.SENTRY_STORE_JDBC_PASS, "dummy");
   }
 
   /**

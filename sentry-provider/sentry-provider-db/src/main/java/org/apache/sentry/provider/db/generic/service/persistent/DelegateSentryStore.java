@@ -17,6 +17,7 @@
  */
 package org.apache.sentry.provider.db.generic.service.persistent;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -39,6 +40,7 @@ import org.apache.sentry.provider.db.service.model.MSentryGroup;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
 import org.apache.sentry.provider.db.service.persistent.CommitContext;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
+import org.apache.sentry.provider.db.service.thrift.SentryConfigurationException;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessor;
 import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
@@ -65,7 +67,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
   private PrivilegeOperatePersistence privilegeOperator;
 
   public DelegateSentryStore(Configuration conf) throws SentryNoSuchObjectException,
-      SentryAccessDeniedException {
+      SentryAccessDeniedException, SentryConfigurationException, IOException {
     this.privilegeOperator = new PrivilegeOperatePersistence();
     // The generic model doesn't turn on the thread that cleans hive privileges
     conf.set(ServerConfig.SENTRY_STORE_ORPHANED_PRIVILEGE_REMOVAL,"false");
