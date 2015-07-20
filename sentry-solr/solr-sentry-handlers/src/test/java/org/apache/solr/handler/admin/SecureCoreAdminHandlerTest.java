@@ -39,8 +39,8 @@ public class SecureCoreAdminHandlerTest extends SentryTestBase {
   private static CloudDescriptor cloudDescriptor;
 
   public final static List<CoreAdminAction> QUERY_ACTIONS = Arrays.asList(
-      CoreAdminAction.STATUS
-      );
+      CoreAdminAction.STATUS,
+      CoreAdminAction.REQUESTSTATUS);
   public final static List<CoreAdminAction> UPDATE_ACTIONS = Arrays.asList(
       CoreAdminAction.LOAD,
       CoreAdminAction.UNLOAD,
@@ -60,7 +60,6 @@ public class SecureCoreAdminHandlerTest extends SentryTestBase {
       CoreAdminAction.LOAD_ON_STARTUP,
       CoreAdminAction.TRANSIENT,
       CoreAdminAction.OVERSEEROP,
-      CoreAdminAction.REQUESTSTATUS,
       // RELOAD needs to go last, because our bogus calls leaves things in a bad state for later calls.
       // We could handle this more cleanly at the cost of a lot more creating and deleting cores.
       CoreAdminAction.RELOAD
@@ -73,6 +72,8 @@ public class SecureCoreAdminHandlerTest extends SentryTestBase {
 
   // actions which don't check the actual collection
   public final static List<CoreAdminAction> NO_CHECK_COLLECTIONS = Arrays.asList(
+      CoreAdminAction.STATUS,
+      CoreAdminAction.REQUESTSTATUS,
       CoreAdminAction.LOAD,
       CoreAdminAction.PERSIST,
       CoreAdminAction.CREATEALIAS,
@@ -80,7 +81,6 @@ public class SecureCoreAdminHandlerTest extends SentryTestBase {
       CoreAdminAction.LOAD_ON_STARTUP,
       CoreAdminAction.REQUESTBUFFERUPDATES,
       CoreAdminAction.OVERSEEROP,
-      CoreAdminAction.REQUESTSTATUS,
       CoreAdminAction.TRANSIENT
       );
 
@@ -130,12 +130,11 @@ public class SecureCoreAdminHandlerTest extends SentryTestBase {
     return req;
   }
 
-  private void verifyQueryAccess(CoreAdminAction action) throws Exception {
+  private void verifyQueryAccess(CoreAdminAction action, boolean checkCollection) throws Exception {
     CoreAdminHandler handler = new SecureCoreAdminHandler(h.getCoreContainer());
     verifyAuthorized(handler, getCoreAdminRequest("collection1", "junit", action));
     verifyAuthorized(handler, getCoreAdminRequest("queryCollection", "junit", action));
-    if (action.equals(CoreAdminAction.STATUS)) {
-      // STATUS doesn't check collection permissions
+    if (!checkCollection) {
       verifyAuthorized(handler, getCoreAdminRequest("bogusCollection", "junit", action));
       verifyAuthorized(handler, getCoreAdminRequest("updateCollection", "junit", action));
     } else {
@@ -157,7 +156,7 @@ public class SecureCoreAdminHandlerTest extends SentryTestBase {
   @Test
   public void testSecureAdminHandler() throws Exception {
     for (CoreAdminAction action : QUERY_ACTIONS) {
-      verifyQueryAccess(action);
+      verifyQueryAccess(action, !NO_CHECK_COLLECTIONS.contains(action));
     }
     for (CoreAdminAction action : UPDATE_ACTIONS) {
       verifyUpdateAccess(action, !NO_CHECK_COLLECTIONS.contains(action));
