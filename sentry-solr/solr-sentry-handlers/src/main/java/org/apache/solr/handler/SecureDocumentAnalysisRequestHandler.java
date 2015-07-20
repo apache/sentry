@@ -26,7 +26,7 @@ import org.apache.solr.response.SolrQueryResponse;
 public class SecureDocumentAnalysisRequestHandler extends DocumentAnalysisRequestHandler {
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    SecureRequestHandlerUtil.checkSentryCollection(req, SecureRequestHandlerUtil.QUERY_ONLY);
+    SecureRequestHandlerUtil.checkSentryCollection(req, SecureRequestHandlerUtil.QUERY_ONLY, getClass().getName());
     super.handleRequestBody(req, rsp);
   }
 }

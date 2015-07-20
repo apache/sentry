@@ -31,7 +31,7 @@ public class SecureReplicationHandler extends ReplicationHandler {
       // request handler
       collection = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
     }
-    SecureRequestHandlerUtil.checkSentryAdmin(req, SecureRequestHandlerUtil.QUERY_AND_UPDATE, true, collection);
+    SecureRequestHandlerUtil.checkSentryAdmin(req, SecureRequestHandlerUtil.QUERY_AND_UPDATE, getClass().getName(), true, collection);
     super.handleRequestBody(req, rsp);
   }
 }

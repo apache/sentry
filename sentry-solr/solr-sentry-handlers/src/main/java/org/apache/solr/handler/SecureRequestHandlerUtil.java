@@ -43,17 +43,18 @@ public class SecureRequestHandlerUtil {
    * @param collection only relevant if checkCollection==true,
    *   use collection (if non-null) instead pulling collection name from req (if null)
    */
-  public static void checkSentryAdmin(SolrQueryRequest req, Set<SearchModelAction> andActions, boolean checkCollection, String collection) {
-    checkSentry(req, andActions, true, checkCollection, collection);
+  public static void checkSentryAdmin(SolrQueryRequest req, Set<SearchModelAction> andActions,
+      String operation, boolean checkCollection, String collection) {
+    checkSentry(req, andActions, operation, true, checkCollection, collection);
   }
 
   /**
    * Attempt to authorize a collection action.  The collection
    * name will be pulled from the request.
    */
-  public static void checkSentryCollection(SolrQueryRequest req, Set<SearchModelAction> andActions) {
-    checkSentry(req, andActions, false, false, null);
-  }
+  public static void checkSentryCollection(SolrQueryRequest req, Set<SearchModelAction> andActions, String operation) {
+    checkSentry(req, andActions, operation, false, false, null);
+   }
 
   /**
    * Attempt to sync collection privileges with Sentry when the metadata has changed.
@@ -68,16 +69,16 @@ public class SecureRequestHandlerUtil {
   }
 
   private static void checkSentry(SolrQueryRequest req, Set<SearchModelAction> andActions,
-      boolean admin, boolean checkCollection, String collection) {
+      String operation, boolean admin, boolean checkCollection, String collection) {
     // Sentry currently does have AND support for actions; need to check
     // actions one at a time
     final SentryIndexAuthorizationSingleton sentryInstance =
       (testOverride == null)?SentryIndexAuthorizationSingleton.getInstance():testOverride;
     for (SearchModelAction action : andActions) {
       if (admin) {
-        sentryInstance.authorizeAdminAction(req, EnumSet.of(action), checkCollection, collection);
+        sentryInstance.authorizeAdminAction(req, EnumSet.of(action), operation, checkCollection, collection);
       } else {
-        sentryInstance.authorizeCollectionAction(req, EnumSet.of(action));
+        sentryInstance.authorizeCollectionAction(req, EnumSet.of(action), operation);
       }
     }
   }

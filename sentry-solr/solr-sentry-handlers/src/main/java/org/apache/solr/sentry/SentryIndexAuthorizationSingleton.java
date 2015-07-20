@@ -46,6 +46,7 @@ public class SentryIndexAuthorizationSingleton {
     new SentryIndexAuthorizationSingleton(System.getProperty(propertyName));
 
   private final SolrAuthzBinding binding;
+  private final AuditLogger auditLogger = new AuditLogger();
 
   private SentryIndexAuthorizationSingleton(String sentrySiteLocation) {
     SolrAuthzBinding tmpBinding = null;
@@ -85,15 +86,15 @@ public class SentryIndexAuthorizationSingleton {
    *   use collection (if non-null) instead pulling collection name from req (if null)
    */
   public void authorizeAdminAction(SolrQueryRequest req,
-      Set<SearchModelAction> actions, boolean checkCollection, String collection)
+      Set<SearchModelAction> actions, String operation, boolean checkCollection, String collection)
       throws SolrException {
-    authorizeCollectionAction(req, actions, "admin", true);
+    authorizeCollectionAction(req, actions, operation, "admin", true);
     if (checkCollection) {
       // Let's not error out if we can't find the collection associated with an
       // admin action, it's pretty complicated to get all the possible administrative
       // actions correct.  Instead, let's warn in the log and address any issues we
       // find.
-      authorizeCollectionAction(req, actions, collection, false);
+      authorizeCollectionAction(req, actions, operation, collection, false);
     }
   }
 
@@ -102,8 +103,8 @@ public class SentryIndexAuthorizationSingleton {
    * name will be pulled from the request.
    */
   public void authorizeCollectionAction(SolrQueryRequest req,
-      Set<SearchModelAction> actions) throws SolrException {
-    authorizeCollectionAction(req, actions, null, true);
+      Set<SearchModelAction> actions, String operation) throws SolrException {
+    authorizeCollectionAction(req, actions, operation, null, true);
   }
 
   /**
@@ -117,34 +118,61 @@ public class SentryIndexAuthorizationSingleton {
    *   cannot be located
    */
   public void authorizeCollectionAction(SolrQueryRequest req,
-      Set<SearchModelAction> actions, String collectionName, boolean errorIfNoCollection)
+      Set<SearchModelAction> actions, String operation, String collectionName,
+      boolean errorIfNoCollection)
       throws SolrException {
 
     Subject superUser = new Subject(System.getProperty("solr.authorization.superuser", "solr"));
     Subject userName = new Subject(getUserName(req));
+    long eventTime = req.getStartTime();
+    String paramString = req.getParamString();
+    String impersonator = null; // FIXME
+
+    String ipAddress = null;
+    HttpServletRequest sreq = (HttpServletRequest) req.getContext().get("httpRequest");
+    if (sreq != null) {
+      try {
+        ipAddress = sreq.getRemoteAddr();
+      } catch (AssertionError e) {
+        ; // ignore
+        // This is a work-around for "Unexpected method call getRemoteAddr()"
+        // exception during unit test mocking at
+        // com.sun.proxy.$Proxy28.getRemoteAddr(Unknown Source)
+      }
+    }
+
     if (collectionName == null) {
       SolrCore solrCore = req.getCore();
       if (solrCore == null) {
         String msg = "Unable to locate collection for sentry to authorize because "
           + "no SolrCore attached to request";
         if (errorIfNoCollection) {
+          auditLogger.log(userName.getName(), impersonator, ipAddress,
+              operation, paramString, eventTime, AuditLogger.UNAUTHORIZED, collectionName);
           throw new SolrException(SolrException.ErrorCode.UNAUTHORIZED, msg);
         } else { // just warn
           log.warn(msg);
+          auditLogger.log(userName.getName(), impersonator, ipAddress,
+              operation, paramString, eventTime, AuditLogger.ALLOWED, collectionName);
           return;
         }
       }
       collectionName = solrCore.getCoreDescriptor().getCloudDescriptor().getCollectionName();
     }
+
     Collection collection = new Collection(collectionName);
     try {
       if (!superUser.getName().equals(userName.getName())) {
         binding.authorizeCollection(userName, collection, actions);
       }
     } catch (SentrySolrAuthorizationException ex) {
+      auditLogger.log(userName.getName(), impersonator, ipAddress,
+          operation, paramString, eventTime, AuditLogger.UNAUTHORIZED, collectionName);
       throw new SolrException(SolrException.ErrorCode.UNAUTHORIZED, ex);
     }
 
+    auditLogger.log(userName.getName(), impersonator, ipAddress,
+        operation, paramString, eventTime, AuditLogger.ALLOWED, collectionName);
   }
 
   /**

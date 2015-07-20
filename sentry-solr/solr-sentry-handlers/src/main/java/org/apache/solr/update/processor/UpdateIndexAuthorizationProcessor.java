@@ -27,9 +27,8 @@ import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.MergeIndexesCommand;
 import org.apache.solr.update.RollbackUpdateCommand;
 import org.apache.sentry.core.model.search.SearchModelAction;
+
 import com.google.common.annotations.VisibleForTesting;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.EnumSet;
@@ -52,46 +51,53 @@ public class UpdateIndexAuthorizationProcessor extends UpdateRequestProcessor {
     this.req = req;
   }
 
-  public void authorizeCollectionAction() throws SolrException {
+  private void authorizeCollectionAction(String operation) throws SolrException {
     sentryInstance.authorizeCollectionAction(
-      req, EnumSet.of(SearchModelAction.UPDATE));
+      req, EnumSet.of(SearchModelAction.UPDATE), operation);
   }
 
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
-    authorizeCollectionAction();
+    authorizeCollectionAction(cmd.name());
     super.processAdd(cmd);
   }
 
   @Override
   public void processDelete(DeleteUpdateCommand cmd) throws IOException {
-    authorizeCollectionAction();
+    String operation = cmd.name();
+    if (cmd.isDeleteById()) {
+      operation += "ById";
+    } else {
+      operation += "ByQuery";
+    }
+    authorizeCollectionAction(operation);
     super.processDelete(cmd);
   }
 
   @Override
   public void processMergeIndexes(MergeIndexesCommand cmd) throws IOException {
-    authorizeCollectionAction();
+    authorizeCollectionAction(cmd.name());
     super.processMergeIndexes(cmd);
   }
 
   @Override
   public void processCommit(CommitUpdateCommand cmd) throws IOException
   {
-    authorizeCollectionAction();
+    authorizeCollectionAction(cmd.name());
     super.processCommit(cmd);
   }
 
   @Override
   public void processRollback(RollbackUpdateCommand cmd) throws IOException
   {
-    authorizeCollectionAction();
+    authorizeCollectionAction(cmd.name());
     super.processRollback(cmd);
   }
 
   @Override
   public void finish() throws IOException {
-    authorizeCollectionAction();
+    authorizeCollectionAction("finish");
     super.finish();
   }
+
 }
