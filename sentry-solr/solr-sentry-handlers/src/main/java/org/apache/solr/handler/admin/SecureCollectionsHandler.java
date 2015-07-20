@@ -75,7 +75,7 @@ public class SecureCollectionsHandler extends CollectionsHandler {
     }
     // all actions require UPDATE privileges
     SecureRequestHandlerUtil.checkSentryAdmin(req, SecureRequestHandlerUtil.UPDATE_ONLY,
-      true, collection);
+      (action != null ? "CollectionAction." + action.toString() : getClass().getName() + "/" + a), true, collection);
     super.handleRequestBody(req, rsp);
 
     /**

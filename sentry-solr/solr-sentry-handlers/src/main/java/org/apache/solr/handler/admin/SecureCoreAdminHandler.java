@@ -17,16 +17,14 @@ package org.apache.solr.handler.admin;
  * limitations under the License.
  */
 
-import java.util.EnumSet;
-import org.apache.solr.core.SolrCore;
-import org.apache.sentry.core.model.search.SearchModelAction;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.SecureRequestHandlerUtil;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.core.CoreContainer;
 
 /**
  * Secure (sentry-aware) version of CoreAdminHandler
@@ -67,7 +65,12 @@ public class SecureCoreAdminHandler extends CoreAdminHandler {
       action = CoreAdminAction.get(a);
       if (action == null) {
         // some custom action -- let's reqiure QUERY and UPDATE
-        SecureRequestHandlerUtil.checkSentryAdmin(req, SecureRequestHandlerUtil.QUERY_AND_UPDATE, true, null);
+        SecureRequestHandlerUtil.checkSentryAdmin(
+            req,
+            SecureRequestHandlerUtil.QUERY_AND_UPDATE,
+            "CoreAdminAction." + a,
+            true,
+            null);
       }
     }
     String collection = null;
@@ -117,7 +120,12 @@ public class SecureCoreAdminHandler extends CoreAdminHandler {
       switch (action) {
         case STATUS:
         case REQUESTSTATUS: {
-          SecureRequestHandlerUtil.checkSentryAdmin(req, SecureRequestHandlerUtil.QUERY_ONLY, checkCollection, collection);
+          SecureRequestHandlerUtil.checkSentryAdmin(
+              req,
+              SecureRequestHandlerUtil.QUERY_ONLY,
+              "CoreAdminAction." + action.toString(),
+              checkCollection,
+              collection);
           break;
         }
         case LOAD:
@@ -141,12 +149,22 @@ public class SecureCoreAdminHandler extends CoreAdminHandler {
         case TRANSIENT:
         case REQUESTBUFFERUPDATES:
         case OVERSEEROP: {
-          SecureRequestHandlerUtil.checkSentryAdmin(req, SecureRequestHandlerUtil.UPDATE_ONLY, checkCollection, collection);
+          SecureRequestHandlerUtil.checkSentryAdmin(
+              req,
+              SecureRequestHandlerUtil.UPDATE_ONLY,
+              "CoreAdminAction." + action.toString(),
+              checkCollection,
+              collection);
           break;
         }
         default: {
           // some custom action -- let's reqiure QUERY and UPDATE
-          SecureRequestHandlerUtil.checkSentryAdmin(req, SecureRequestHandlerUtil.QUERY_AND_UPDATE, checkCollection, collection);
+          SecureRequestHandlerUtil.checkSentryAdmin(
+              req,
+              SecureRequestHandlerUtil.QUERY_AND_UPDATE,
+              "CoreAdminAction." + action.toString(),
+              checkCollection,
+              collection);
           break;
         }
       }

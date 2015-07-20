@@ -23,11 +23,10 @@ import java.util.Set;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.sentry.core.model.search.SearchModelAction;
+import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.core.SolrCore;
-// import org.apache.solr.servlet.SolrHadoopAuthenticationFilter;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
@@ -46,6 +45,8 @@ public class SentryIndexAuthorizationSingletonTest extends SentryTestBase {
   private static SolrCore core;
   private static CloudDescriptor cloudDescriptor;
   private static SentryIndexAuthorizationSingleton sentryInstance;
+
+  private static final String OPERATION_NAME = "myOperation";
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -80,7 +81,7 @@ public class SentryIndexAuthorizationSingletonTest extends SentryTestBase {
   private void doExpectUnauthorized(SentryIndexAuthorizationSingleton singleton, SolrQueryRequest request,
       Set<SearchModelAction> actions, String msgContains) throws Exception {
     try {
-      singleton.authorizeCollectionAction(request, actions);
+      singleton.authorizeCollectionAction(request, actions, OPERATION_NAME);
       Assert.fail("Expected SolrException");
     } catch (SolrException ex) {
       assertEquals(ex.code(), SolrException.ErrorCode.UNAUTHORIZED.code);
@@ -144,7 +145,7 @@ public class SentryIndexAuthorizationSingletonTest extends SentryTestBase {
     prepareCollAndUser(core, request, "collection1", "junit");
 
     sentryInstance.authorizeCollectionAction(
-      request, EnumSet.of(SearchModelAction.ALL));
+      request, EnumSet.of(SearchModelAction.ALL), OPERATION_NAME);
   }
 
   /**
@@ -157,7 +158,7 @@ public class SentryIndexAuthorizationSingletonTest extends SentryTestBase {
     prepareCollAndUser(core, request, "bogusCollection", "junit");
 
     sentryInstance.authorizeCollectionAction(
-      request, EnumSet.of(SearchModelAction.ALL));
+      request, EnumSet.of(SearchModelAction.ALL), OPERATION_NAME);
   }
 
   /**

@@ -19,18 +19,25 @@ package org.apache.solr.update.processor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.TreeSet;
 
 import org.apache.commons.lang.mutable.MutableInt;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.sentry.SentryTestBase;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.sentry.SentrySingletonTestInstance;
+import org.apache.solr.sentry.SentryTestBase;
+import org.apache.solr.update.AddUpdateCommand;
+import org.apache.solr.update.CommitUpdateCommand;
+import org.apache.solr.update.DeleteUpdateCommand;
+import org.apache.solr.update.MergeIndexesCommand;
+import org.apache.solr.update.RollbackUpdateCommand;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -66,11 +73,15 @@ public class UpdateIndexAuthorizationProcessorTest extends SentryTestBase {
   }
 
   private void verifyAuthorized(String collection, String user) throws Exception {
-    getProcessor(collection, user).processAdd(null);
-    getProcessor(collection, user).processDelete(null);
-    getProcessor(collection, user).processMergeIndexes(null);
-    getProcessor(collection, user).processCommit(null);
-    getProcessor(collection, user).processRollback(null);
+    SolrQueryRequestBase req = new SolrQueryRequestBase(core, new MapSolrParams(new HashMap())) {};
+    getProcessor(collection, user).processAdd(new AddUpdateCommand(req));
+    getProcessor(collection, user).processDelete(new DeleteUpdateCommand(req));
+    DeleteUpdateCommand deleteByQueryCommand = new DeleteUpdateCommand(req);
+    deleteByQueryCommand.setQuery("*:*");
+    getProcessor(collection, user).processDelete(deleteByQueryCommand);
+    getProcessor(collection, user).processMergeIndexes(new MergeIndexesCommand(null, req));
+    getProcessor(collection, user).processCommit(new CommitUpdateCommand(req, false));
+    getProcessor(collection, user).processRollback(new RollbackUpdateCommand(req));
     getProcessor(collection, user).finish();
   }
 
@@ -83,29 +94,30 @@ public class UpdateIndexAuthorizationProcessorTest extends SentryTestBase {
   private void verifyUnauthorized(String collection, String user) throws Exception {
     MutableInt numExceptions = new MutableInt(0);
     String contains = "User " + user + " does not have privileges for " + collection;
+    SolrQueryRequestBase req = new SolrQueryRequestBase(core, new MapSolrParams(new HashMap())) {};
 
     try {
-      getProcessor(collection, user).processAdd(null);
+      getProcessor(collection, user).processAdd(new AddUpdateCommand(req));
     } catch(SolrException ex) {
       verifyUnauthorizedException(ex, contains, numExceptions);
     }
     try {
-      getProcessor(collection, user).processDelete(null);
+      getProcessor(collection, user).processDelete(new DeleteUpdateCommand(req));
     } catch(SolrException ex) {
       verifyUnauthorizedException(ex, contains, numExceptions);
     }
     try {
-      getProcessor(collection, user).processMergeIndexes(null);
+      getProcessor(collection, user).processMergeIndexes(new MergeIndexesCommand(null, req));
     } catch(SolrException ex) {
       verifyUnauthorizedException(ex, contains, numExceptions);
     }
     try {
-      getProcessor(collection, user).processCommit(null);
+      getProcessor(collection, user).processCommit(new CommitUpdateCommand(req, false));
     } catch(SolrException ex) {
       verifyUnauthorizedException(ex, contains, numExceptions);
     }
     try {
-      getProcessor(collection, user).processRollback(null);
+      getProcessor(collection, user).processRollback(new RollbackUpdateCommand(req));
     } catch(SolrException ex) {
       verifyUnauthorizedException(ex, contains, numExceptions);
     }

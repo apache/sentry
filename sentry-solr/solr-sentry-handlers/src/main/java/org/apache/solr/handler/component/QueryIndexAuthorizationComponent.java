@@ -29,6 +29,7 @@ import java.util.List;
 
 public class QueryIndexAuthorizationComponent extends SearchComponent
 {
+  private static final String OPERATION_NAME = "query";
   private static Logger log =
     LoggerFactory.getLogger(QueryIndexAuthorizationComponent.class);
   private SentryIndexAuthorizationSingleton sentryInstance;
@@ -46,7 +47,7 @@ public class QueryIndexAuthorizationComponent extends SearchComponent
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
     sentryInstance.authorizeCollectionAction(
-      rb.req, EnumSet.of(SearchModelAction.QUERY));
+      rb.req, EnumSet.of(SearchModelAction.QUERY), OPERATION_NAME);
     String collections = rb.req.getParams().get("collection");
     if (collections != null) {
       List<String> collectionList = StrUtils.splitSmart(collections, ",", true);
@@ -61,7 +62,7 @@ public class QueryIndexAuthorizationComponent extends SearchComponent
       // correct sentry check
       for (String coll : collectionList) {
         sentryInstance.authorizeCollectionAction(rb.req, EnumSet.of(SearchModelAction.QUERY),
-          coll, true);
+          OPERATION_NAME, coll, true);
       }
     }
   }
