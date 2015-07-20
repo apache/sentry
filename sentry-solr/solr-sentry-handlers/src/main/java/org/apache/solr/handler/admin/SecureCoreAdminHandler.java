@@ -87,13 +87,11 @@ public class SecureCoreAdminHandler extends CoreAdminHandler {
           collection = getCollectionFromCoreName(cname);
           break;
         }
-        case REQUESTAPPLYUPDATES: {
+        case CREATE:
+        case REQUESTAPPLYUPDATES:
+        case REQUESTBUFFERUPDATES: {
           String cname = params.get(CoreAdminParams.NAME, "");
           collection = getCollectionFromCoreName(cname);
-          break;
-        }
-        case CREATE: {
-          collection = params.get(CoreAdminParams.COLLECTION);
           break;
         }
         case STATUS:
@@ -103,8 +101,11 @@ public class SecureCoreAdminHandler extends CoreAdminHandler {
         case PERSIST:
         case CREATEALIAS:
         case DELETEALIAS:
+        case LOAD:
         case LOAD_ON_STARTUP:
         case TRANSIENT:
+        case REQUESTSTATUS:
+        case OVERSEEROP:
         default: {
           // these are actions that are not core related or not actually
           // handled by the CoreAdminHandler
@@ -114,7 +115,8 @@ public class SecureCoreAdminHandler extends CoreAdminHandler {
       }
 
       switch (action) {
-        case STATUS: {
+        case STATUS:
+        case REQUESTSTATUS: {
           SecureRequestHandlerUtil.checkSentryAdmin(req, SecureRequestHandlerUtil.QUERY_ONLY, checkCollection, collection);
           break;
         }
@@ -136,10 +138,9 @@ public class SecureCoreAdminHandler extends CoreAdminHandler {
         case CREATEALIAS:
         case DELETEALIAS:
         case LOAD_ON_STARTUP:
+        case TRANSIENT:
         case REQUESTBUFFERUPDATES:
-        case OVERSEEROP:
-        case REQUESTSTATUS:
-        case TRANSIENT: {
+        case OVERSEEROP: {
           SecureRequestHandlerUtil.checkSentryAdmin(req, SecureRequestHandlerUtil.UPDATE_ONLY, checkCollection, collection);
           break;
         }
