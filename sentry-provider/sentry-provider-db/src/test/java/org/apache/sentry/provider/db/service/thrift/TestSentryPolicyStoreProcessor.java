@@ -20,8 +20,9 @@ package org.apache.sentry.provider.db.service.thrift;
 import junit.framework.Assert;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.sentry.provider.db.SentryThriftAPIMismatchException;
 import org.apache.sentry.provider.db.service.thrift.PolicyStoreConstants.PolicyStoreServerConfig;
-import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
+import org.apache.sentry.service.thrift.ServiceConstants;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -67,5 +68,13 @@ public class TestSentryPolicyStoreProcessor {
     public NoopNotificationHandler(Configuration config) throws Exception {
       super(config);
     }
+  }
+  @Test(expected=SentryThriftAPIMismatchException.class)
+  public void testSentryThriftAPIMismatch() throws Exception {
+    SentryPolicyStoreProcessor.validateClientVersion(ServiceConstants.ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT -1);
+  }
+  @Test
+  public void testSentryThriftAPIMatchVersion() throws Exception {
+    SentryPolicyStoreProcessor.validateClientVersion(ServiceConstants.ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
   }
 }

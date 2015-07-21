@@ -143,7 +143,7 @@ public class TAlterSentryRoleRevokePrivilegeRequest implements org.apache.thrift
   }
 
   public TAlterSentryRoleRevokePrivilegeRequest() {
-    this.protocol_version = 1;
+    this.protocol_version = 2;
 
   }
 
@@ -189,7 +189,7 @@ public class TAlterSentryRoleRevokePrivilegeRequest implements org.apache.thrift
 
   @Override
   public void clear() {
-    this.protocol_version = 1;
+    this.protocol_version = 2;
 
     this.requestorUserName = null;
     this.roleName = null;

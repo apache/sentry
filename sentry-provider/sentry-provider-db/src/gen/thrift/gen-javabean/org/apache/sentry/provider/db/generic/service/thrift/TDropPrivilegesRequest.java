@@ -136,7 +136,7 @@ public class TDropPrivilegesRequest implements org.apache.thrift.TBase<TDropPriv
   }
 
   public TDropPrivilegesRequest() {
-    this.protocol_version = 1;
+    this.protocol_version = 2;
 
   }
 
@@ -177,7 +177,7 @@ public class TDropPrivilegesRequest implements org.apache.thrift.TBase<TDropPriv
 
   @Override
   public void clear() {
-    this.protocol_version = 1;
+    this.protocol_version = 2;
 
     this.requestorUserName = null;
     this.privilege = null;

@@ -1,5 +1,3 @@
-#!/usr/local/bin/thrift -java
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -17,28 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.sentry.provider.db;
 
-include "share/fb303/if/fb303.thrift"
+import org.apache.sentry.SentryUserException;
 
-namespace java org.apache.sentry.service.thrift
-namespace php sentry.service.thrift
-namespace cpp Apache.Sentry.Service.Thrift
-
-const i32 TSENTRY_SERVICE_V1 = 1;
-const i32 TSENTRY_SERVICE_V2 = 2;
-
-const i32 TSENTRY_STATUS_OK = 0;
-const i32 TSENTRY_STATUS_ALREADY_EXISTS = 1;
-const i32 TSENTRY_STATUS_NO_SUCH_OBJECT = 2;
-const i32 TSENTRY_STATUS_RUNTIME_ERROR = 3;
-const i32 TSENTRY_STATUS_INVALID_INPUT = 4;
-const i32 TSENTRY_STATUS_ACCESS_DENIED = 5;
-const i32 TSENTRY_STATUS_THRIFT_VERSION_MISMATCH = 6;
-
-struct TSentryResponseStatus {
-1: required i32 value,
-// message will be set to empty string when status is OK
-2: required string message
-3: optional string stack
+public class SentryThriftAPIMismatchException extends SentryUserException {
+  private static final long serialVersionUID = 7535410604425511738L;
+  public SentryThriftAPIMismatchException(String msg) {
+    super(msg);
+  }
+  public SentryThriftAPIMismatchException(String msg, String reason) {
+    super(msg, reason);
+  }
 }
-
