@@ -136,7 +136,7 @@ public class TDropSentryRoleRequest implements org.apache.thrift.TBase<TDropSent
   }
 
   public TDropSentryRoleRequest() {
-    this.protocol_version = 1;
+    this.protocol_version = 2;
 
   }
 
@@ -177,7 +177,7 @@ public class TDropSentryRoleRequest implements org.apache.thrift.TBase<TDropSent
 
   @Override
   public void clear() {
-    this.protocol_version = 1;
+    this.protocol_version = 2;
 
     this.requestorUserName = null;
     this.roleName = null;

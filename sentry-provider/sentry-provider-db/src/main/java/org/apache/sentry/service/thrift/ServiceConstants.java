@@ -189,7 +189,7 @@ public class ServiceConstants {
    * Thrift generates terrible constant class names
    */
   public static class ThriftConstants extends org.apache.sentry.service.thrift.sentry_common_serviceConstants {
-    public static final int TSENTRY_SERVICE_VERSION_CURRENT = TSENTRY_SERVICE_V1;
+    public static final int TSENTRY_SERVICE_VERSION_CURRENT = TSENTRY_SERVICE_V2;
   }
 
   /* Privilege operation scope */

@@ -144,7 +144,7 @@ public class TAlterSentryRoleDeleteGroupsRequest implements org.apache.thrift.TB
   }
 
   public TAlterSentryRoleDeleteGroupsRequest() {
-    this.protocol_version = 1;
+    this.protocol_version = 2;
 
   }
 
@@ -194,7 +194,7 @@ public class TAlterSentryRoleDeleteGroupsRequest implements org.apache.thrift.TB
 
   @Override
   public void clear() {
-    this.protocol_version = 1;
+    this.protocol_version = 2;
 
     this.requestorUserName = null;
     this.roleName = null;

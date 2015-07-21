@@ -27,6 +27,7 @@ import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.provider.db.SentryAlreadyExistsException;
 import org.apache.sentry.provider.db.SentryInvalidInputException;
 import org.apache.sentry.provider.db.SentryNoSuchObjectException;
+import org.apache.sentry.provider.db.SentryThriftAPIMismatchException;
 import org.apache.sentry.service.thrift.ServiceConstants.ThriftConstants;
 
 /**
@@ -39,6 +40,7 @@ public enum Status {
   RUNTIME_ERROR(ThriftConstants.TSENTRY_STATUS_RUNTIME_ERROR),
   INVALID_INPUT(ThriftConstants.TSENTRY_STATUS_INVALID_INPUT),
   ACCESS_DENIED(ThriftConstants.TSENTRY_STATUS_ACCESS_DENIED),
+  THRIFT_VERSION_MISMATCH(ThriftConstants.TSENTRY_STATUS_THRIFT_VERSION_MISMATCH),
   UNKNOWN(-1)
   ;
   private int code;
@@ -77,6 +79,9 @@ public enum Status {
   public static TSentryResponseStatus InvalidInput(String message, Throwable t) {
     return Create(Status.INVALID_INPUT, message, t);
   }
+  public static TSentryResponseStatus THRIFT_VERSION_MISMATCH(String message, Throwable t) {
+    return Create(Status.THRIFT_VERSION_MISMATCH, message, t);
+  }
   public static TSentryResponseStatus Create(Status value, String message, @Nullable Throwable t) {
     TSentryResponseStatus status = new TSentryResponseStatus();
     status.setValue(value.getCode());
@@ -106,6 +111,8 @@ public enum Status {
       throw new SentryInvalidInputException(serverErrorToString(thriftStatus), thriftStatus.getMessage());
     case ACCESS_DENIED:
       throw new SentryAccessDeniedException(serverErrorToString(thriftStatus), thriftStatus.getMessage());
+    case THRIFT_VERSION_MISMATCH:
+      throw new SentryThriftAPIMismatchException(serverErrorToString(thriftStatus), thriftStatus.getMessage());
     case UNKNOWN:
       throw new AssertionError(serverErrorToString(thriftStatus));
     default:
