@@ -530,4 +530,33 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     rs1.close();
     return hasResults;
   }
+
+  @Test
+  public void testDummyPartition() throws Exception {
+
+    policyFile
+        .addRolesToGroup(USERGROUP1, "select_tab1", "select_tab2")
+        .addPermissionsToRole("select_tab1", "server=server1->db=DB_1->table=TAB_1->action=select")
+        .addPermissionsToRole("select_tab2", "server=server1->db=DB_1->table=TAB_3->action=insert")
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
+
+    // setup db objects needed by the test
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+
+    statement.execute("USE " + DB1);
+    statement.execute("CREATE table TAB_3 (a2 int) PARTITIONED BY (b2 string, c2 string)");
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+
+    statement.execute("USE " + DB1);
+    statement.execute("INSERT OVERWRITE TABLE TAB_3 PARTITION(b2='abc', c2) select a, b as c2 from TAB_1");
+    statement.close();
+    connection.close();
+
+  }
 }
