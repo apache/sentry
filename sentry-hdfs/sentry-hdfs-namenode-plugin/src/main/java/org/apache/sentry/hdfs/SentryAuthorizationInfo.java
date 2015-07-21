@@ -31,7 +31,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.AclEntry;
 import org.apache.hadoop.util.StringUtils;
-import org.apache.sentry.hdfs.SentryAuthzUpdate;
 import org.apache.sentry.hdfs.Updateable.Update;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -139,11 +138,11 @@ public class SentryAuthorizationInfo implements Runnable {
       if ((newAuthzPaths != authzPaths)||(newAuthzPerms != authzPermissions)) {
         lock.writeLock().lock();
         try {
-          LOG.warn("FULL Updated paths seq Num [old="
+          LOG.debug("FULL Updated paths seq Num [old="
               + authzPaths.getLastUpdatedSeqNum() + "], [new="
               + newAuthzPaths.getLastUpdatedSeqNum() + "]");
           authzPaths = newAuthzPaths;
-          LOG.warn("FULL Updated perms seq Num [old="
+          LOG.debug("FULL Updated perms seq Num [old="
               + authzPermissions.getLastUpdatedSeqNum() + "], [new="
               + newAuthzPerms.getLastUpdatedSeqNum() + "]");
           authzPermissions = newAuthzPerms;
@@ -162,20 +161,20 @@ public class SentryAuthorizationInfo implements Runnable {
     // one in the List.. all the remaining will be partial updates
     if (updates.size() > 0) {
       if (updates.get(0).hasFullImage()) {
-        LOG.warn("Process Update : FULL IMAGE "
+        LOG.debug("Process Update : FULL IMAGE "
             + "[" + updateable.getClass() + "]"
             + "[" + updates.get(0).getSeqNum() + "]");
         updateable = (V)updateable.updateFull(updates.remove(0));
       }
       // Any more elements ?
       if (!updates.isEmpty()) {
-        LOG.warn("Process Update : More updates.. "
+        LOG.debug("Process Update : More updates.. "
             + "[" + updateable.getClass() + "]"
             + "[" + updateable.getLastUpdatedSeqNum() + "]"
             + "[" + updates.size() + "]");
         updateable.updatePartial(updates, lock);
       }
-      LOG.warn("Process Update : Finished updates.. "
+      LOG.debug("Process Update : Finished updates.. "
           + "[" + updateable.getClass() + "]"
           + "[" + updateable.getLastUpdatedSeqNum() + "]");
     }
