@@ -36,6 +36,7 @@ import org.apache.sentry.provider.db.service.thrift.TCreateSentryRoleResponse;
 import org.apache.sentry.provider.db.service.thrift.TDropSentryRoleRequest;
 import org.apache.sentry.provider.db.service.thrift.TDropSentryRoleResponse;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
+import org.apache.sentry.provider.db.service.thrift.ThriftUtil;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.apache.sentry.service.thrift.Status;
 import org.apache.sentry.service.thrift.TSentryResponseStatus;
@@ -158,8 +159,8 @@ public class JsonLogEntityFactory {
     amle.setUserName(userName);
     amle.setServiceName(conf.get(ServerConfig.SENTRY_SERVICE_NAME,
         ServerConfig.SENTRY_SERVICE_NAME_DEFAULT).trim());
-    amle.setImpersonator(CommandUtil.getImpersonator());
-    amle.setIpAddress(CommandUtil.getIpAddress());
+    amle.setImpersonator(ThriftUtil.getImpersonator());
+    amle.setIpAddress(ThriftUtil.getIpAddress());
     amle.setOperation(Constants.requestTypeToOperationMap.get(requestClassName));
     amle.setEventTime(Long.toString(System.currentTimeMillis()));
     amle.setAllowed(isAllowed(responseStatus));
