@@ -20,16 +20,13 @@ package org.apache.sentry.provider.db.log.entity;
 
 import static junit.framework.Assert.assertEquals;
 
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
 import org.apache.sentry.core.model.db.AccessConstants;
-import org.apache.sentry.provider.db.log.util.CommandUtil;
 import org.apache.sentry.provider.db.log.util.Constants;
-import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleAddGroupsRequest;
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleAddGroupsResponse;
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleDeleteGroupsRequest;
@@ -44,6 +41,7 @@ import org.apache.sentry.provider.db.service.thrift.TDropSentryRoleRequest;
 import org.apache.sentry.provider.db.service.thrift.TDropSentryRoleResponse;
 import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
+import org.apache.sentry.provider.db.service.thrift.ThriftUtil;
 import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.apache.sentry.service.thrift.Status;
@@ -70,8 +68,8 @@ public class TestJsonLogEntityFactory {
     conf = new Configuration();
     conf.set(ServerConfig.SENTRY_SERVICE_NAME,
         ServerConfig.SENTRY_SERVICE_NAME_DEFAULT);
-    CommandUtil.setIpAddress(TEST_IP);
-    CommandUtil.setImpersonator(TEST_IMPERSONATOR);
+    ThriftUtil.setIpAddress(TEST_IP);
+    ThriftUtil.setImpersonator(TEST_IMPERSONATOR);
   }
 
   @Test

@@ -18,21 +18,19 @@
 package org.apache.sentry.tests.e2e.dbprovider;
 
 import static org.hamcrest.core.Is.is;
-import static org.hamcrest.text.IsEqualIgnoringCase.equalToIgnoringCase;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.sql.Connection;
 import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.apache.log4j.spi.LoggingEvent;
+import org.apache.sentry.provider.db.log.appender.AuditLoggerTestAppender;
+import org.apache.sentry.provider.db.log.util.CommandUtil;
 import org.apache.sentry.provider.db.log.util.Constants;
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 import org.codehaus.jettison.json.JSONObject;
@@ -42,36 +40,12 @@ import org.junit.Test;
 
 public class TestDbDDLAuditLog extends AbstractTestWithStaticConfiguration {
 
-  public static class TestAppender extends AppenderSkeleton {
-    public static List<LoggingEvent> events = new ArrayList<LoggingEvent>();
-
-    public void close() {
-    }
-
-    public boolean requiresLayout() {
-      return false;
-    }
-
-    @Override
-    protected void append(LoggingEvent event) {
-      events.add(event);
-    }
-
-    static String getLastLogEvent() {
-      return events.get(events.size() - 1).getMessage().toString();
-    }
-
-    static Level getLastLogLevel() {
-      return events.get(events.size() - 1).getLevel();
-    }
-  }
-
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception {
     useSentryService = true;
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
     Logger logger = Logger.getLogger("sentry.hive.authorization.ddl.logger");
-    TestAppender testAppender = new TestAppender();
+    AuditLoggerTestAppender testAppender = new AuditLoggerTestAppender();
     logger.addAppender(testAppender);
     logger.setLevel(Level.INFO);
   }
@@ -98,6 +72,7 @@ public class TestDbDDLAuditLog extends AbstractTestWithStaticConfiguration {
     fieldValueMap.put(Constants.LOG_FIELD_OPERATION, Constants.OPERATION_CREATE_ROLE);
     fieldValueMap.put(Constants.LOG_FIELD_OPERATION_TEXT, "CREATE ROLE " + roleName);
     fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.TRUE);
+    fieldValueMap.put(Constants.LOG_FIELD_IP_ADDRESS, null);
     assertAuditLog(fieldValueMap);
 
     statement.execute("GRANT ROLE " + roleName + " TO GROUP " + groupName);
@@ -106,6 +81,7 @@ public class TestDbDDLAuditLog extends AbstractTestWithStaticConfiguration {
     fieldValueMap.put(Constants.LOG_FIELD_OPERATION_TEXT, "GRANT ROLE " + roleName + " TO GROUP "
         + groupName);
     fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.TRUE);
+    fieldValueMap.put(Constants.LOG_FIELD_IP_ADDRESS, null);
     assertAuditLog(fieldValueMap);
 
     statement.execute("GRANT ALL ON DATABASE " + dbName + " TO ROLE " + roleName);
@@ -115,6 +91,7 @@ public class TestDbDDLAuditLog extends AbstractTestWithStaticConfiguration {
         + " TO ROLE " + roleName);
     fieldValueMap.put(Constants.LOG_FIELD_DATABASE_NAME, dbName);
     fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.TRUE);
+    fieldValueMap.put(Constants.LOG_FIELD_IP_ADDRESS, null);
     assertAuditLog(fieldValueMap);
 
     statement.execute("GRANT SELECT ON TABLE " + tableName + " TO ROLE " + roleName
@@ -125,6 +102,7 @@ public class TestDbDDLAuditLog extends AbstractTestWithStaticConfiguration {
         + " TO ROLE " + roleName + " WITH GRANT OPTION");
     fieldValueMap.put(Constants.LOG_FIELD_TABLE_NAME, tableName);
     fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.TRUE);
+    fieldValueMap.put(Constants.LOG_FIELD_IP_ADDRESS, null);
     assertAuditLog(fieldValueMap);
 
     // for error audit log
@@ -136,6 +114,7 @@ public class TestDbDDLAuditLog extends AbstractTestWithStaticConfiguration {
       fieldValueMap.put(Constants.LOG_FIELD_OPERATION, Constants.OPERATION_CREATE_ROLE);
       fieldValueMap.put(Constants.LOG_FIELD_OPERATION_TEXT, "CREATE ROLE " + roleName);
       fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.FALSE);
+      fieldValueMap.put(Constants.LOG_FIELD_IP_ADDRESS, null);
       assertAuditLog(fieldValueMap);
     }
     try {
@@ -147,6 +126,7 @@ public class TestDbDDLAuditLog extends AbstractTestWithStaticConfiguration {
       fieldValueMap.put(Constants.LOG_FIELD_OPERATION_TEXT, "GRANT ROLE errorROLE TO GROUP "
           + groupName);
       fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.FALSE);
+      fieldValueMap.put(Constants.LOG_FIELD_IP_ADDRESS, null);
       assertAuditLog(fieldValueMap);
     }
     try {
@@ -158,6 +138,7 @@ public class TestDbDDLAuditLog extends AbstractTestWithStaticConfiguration {
       fieldValueMap.put(Constants.LOG_FIELD_OPERATION_TEXT, "GRANT ALL ON DATABASE " + dbName
           + " TO ROLE errorRole");
       fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.FALSE);
+      fieldValueMap.put(Constants.LOG_FIELD_IP_ADDRESS, null);
       assertAuditLog(fieldValueMap);
     }
     try {
@@ -169,6 +150,7 @@ public class TestDbDDLAuditLog extends AbstractTestWithStaticConfiguration {
       fieldValueMap.put(Constants.LOG_FIELD_OPERATION_TEXT, "GRANT INSERT ON DATABASE " + dbName
           + " TO ROLE errorRole");
       fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.FALSE);
+      fieldValueMap.put(Constants.LOG_FIELD_IP_ADDRESS, null);
       assertAuditLog(fieldValueMap);
     }
     try {
@@ -180,6 +162,7 @@ public class TestDbDDLAuditLog extends AbstractTestWithStaticConfiguration {
       fieldValueMap.put(Constants.LOG_FIELD_OPERATION_TEXT, "GRANT SELECT ON DATABASE " + dbName
           + " TO ROLE errorRole");
       fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.FALSE);
+      fieldValueMap.put(Constants.LOG_FIELD_IP_ADDRESS, null);
       assertAuditLog(fieldValueMap);
     }
     try {
@@ -191,6 +174,7 @@ public class TestDbDDLAuditLog extends AbstractTestWithStaticConfiguration {
       fieldValueMap.put(Constants.LOG_FIELD_OPERATION_TEXT, "GRANT SELECT ON TABLE " + tableName
           + " TO ROLE errorRole");
       fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.FALSE);
+      fieldValueMap.put(Constants.LOG_FIELD_IP_ADDRESS, null);
       assertAuditLog(fieldValueMap);
     }
 
@@ -201,6 +185,7 @@ public class TestDbDDLAuditLog extends AbstractTestWithStaticConfiguration {
         + " FROM ROLE " + roleName);
     fieldValueMap.put(Constants.LOG_FIELD_TABLE_NAME, tableName);
     fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.TRUE);
+    fieldValueMap.put(Constants.LOG_FIELD_IP_ADDRESS, null);
     assertAuditLog(fieldValueMap);
 
     statement.execute("REVOKE ALL ON DATABASE " + dbName + " FROM ROLE " + roleName);
@@ -210,6 +195,7 @@ public class TestDbDDLAuditLog extends AbstractTestWithStaticConfiguration {
         + " FROM ROLE " + roleName);
     fieldValueMap.put(Constants.LOG_FIELD_DATABASE_NAME, dbName);
     fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.TRUE);
+    fieldValueMap.put(Constants.LOG_FIELD_IP_ADDRESS, null);
     assertAuditLog(fieldValueMap);
 
     statement.execute("REVOKE ROLE " + roleName + " FROM GROUP " + groupName);
@@ -218,14 +204,16 @@ public class TestDbDDLAuditLog extends AbstractTestWithStaticConfiguration {
     fieldValueMap.put(Constants.LOG_FIELD_OPERATION_TEXT, "REVOKE ROLE " + roleName
         + " FROM GROUP " + groupName);
     fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.TRUE);
+    fieldValueMap.put(Constants.LOG_FIELD_IP_ADDRESS, null);
     assertAuditLog(fieldValueMap);
 
     statement.execute("DROP ROLE " + roleName);
     fieldValueMap.clear();
     fieldValueMap.put(Constants.LOG_FIELD_OPERATION, Constants.OPERATION_DROP_ROLE);
     fieldValueMap.put(Constants.LOG_FIELD_OPERATION_TEXT, "DROP ROLE " + roleName);
-    assertAuditLog(fieldValueMap);
     fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.TRUE);
+    fieldValueMap.put(Constants.LOG_FIELD_IP_ADDRESS, null);
+    assertAuditLog(fieldValueMap);
 
     // for error audit log
     try {
@@ -237,6 +225,7 @@ public class TestDbDDLAuditLog extends AbstractTestWithStaticConfiguration {
       fieldValueMap.put(Constants.LOG_FIELD_OPERATION_TEXT, "REVOKE SELECT ON TABLE " + tableName
           + " FROM ROLE errorRole");
       fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.FALSE);
+      fieldValueMap.put(Constants.LOG_FIELD_IP_ADDRESS, null);
       assertAuditLog(fieldValueMap);
     }
 
@@ -249,6 +238,7 @@ public class TestDbDDLAuditLog extends AbstractTestWithStaticConfiguration {
       fieldValueMap.put(Constants.LOG_FIELD_OPERATION_TEXT, "REVOKE ALL ON DATABASE " + dbName
           + " FROM ROLE errorRole");
       fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.FALSE);
+      fieldValueMap.put(Constants.LOG_FIELD_IP_ADDRESS, null);
       assertAuditLog(fieldValueMap);
     }
 
@@ -261,6 +251,7 @@ public class TestDbDDLAuditLog extends AbstractTestWithStaticConfiguration {
       fieldValueMap.put(Constants.LOG_FIELD_OPERATION_TEXT, "REVOKE ROLE errorRole FROM GROUP "
           + groupName);
       fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.FALSE);
+      fieldValueMap.put(Constants.LOG_FIELD_IP_ADDRESS, null);
       assertAuditLog(fieldValueMap);
     }
 
@@ -272,6 +263,7 @@ public class TestDbDDLAuditLog extends AbstractTestWithStaticConfiguration {
       fieldValueMap.put(Constants.LOG_FIELD_OPERATION, Constants.OPERATION_DROP_ROLE);
       fieldValueMap.put(Constants.LOG_FIELD_OPERATION_TEXT, "DROP ROLE errorRole");
       fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.FALSE);
+      fieldValueMap.put(Constants.LOG_FIELD_IP_ADDRESS, null);
       assertAuditLog(fieldValueMap);
     }
 
@@ -280,11 +272,16 @@ public class TestDbDDLAuditLog extends AbstractTestWithStaticConfiguration {
   }
 
   private void assertAuditLog(Map<String, String> fieldValueMap) throws Exception {
-    assertThat(TestAppender.getLastLogLevel(), is(Level.INFO));
-    JSONObject jsonObject = new JSONObject(TestAppender.getLastLogEvent());
+    assertThat(AuditLoggerTestAppender.getLastLogLevel(), is(Level.INFO));
+    JSONObject jsonObject = new JSONObject(AuditLoggerTestAppender.getLastLogEvent());
     if (fieldValueMap != null) {
       for (Map.Entry<String, String> entry : fieldValueMap.entrySet()) {
-        assertThat(jsonObject.get(entry.getKey()).toString(), equalToIgnoringCase(entry.getValue()));
+        String entryKey = entry.getKey();
+        if (Constants.LOG_FIELD_IP_ADDRESS.equals(entryKey)) {
+          assertTrue(CommandUtil.assertIPInAuditLog(jsonObject.get(entryKey).toString()));
+        } else {
+          assertTrue(entry.getValue().equalsIgnoreCase(jsonObject.get(entryKey).toString()));
+        }
       }
     }
   }

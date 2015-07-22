@@ -18,6 +18,9 @@
 
 package org.apache.sentry.provider.db.log.util;
 
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -30,6 +33,8 @@ import org.apache.sentry.provider.db.service.thrift.TSentryGrantOption;
 import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
+
+import com.google.common.annotations.VisibleForTesting;
 
 public class CommandUtil {
 
@@ -154,33 +159,22 @@ public class CommandUtil {
     return sb.toString();
   }
 
-  private static ThreadLocal<String> threadLocalIpAddress = new ThreadLocal<String>() {
-    @Override
-    protected synchronized String initialValue() {
-      return "";
+  // Check if the given IP is one of the local IP.
+  @VisibleForTesting
+  public static boolean assertIPInAuditLog(String ipInAuditLog) throws Exception {
+    if (ipInAuditLog == null) {
+      return false;
     }
-  };
-
-  public static void setIpAddress(String ipAddress) {
-    threadLocalIpAddress.set(ipAddress);
-  }
-
-  public static String getIpAddress() {
-    return threadLocalIpAddress.get();
-  }
-
-  private static ThreadLocal<String> threadLocalImpersonator = new ThreadLocal<String>() {
-    @Override
-    protected synchronized String initialValue() {
-      return "";
+    Enumeration<NetworkInterface> netInterfaces = NetworkInterface.getNetworkInterfaces();
+    while (netInterfaces.hasMoreElements()) {
+      NetworkInterface ni = netInterfaces.nextElement();
+      Enumeration<InetAddress> ips = ni.getInetAddresses();
+      while (ips.hasMoreElements()) {
+        if (ipInAuditLog.indexOf(ips.nextElement().getHostAddress()) != -1) {
+          return true;
+        }
+      }
     }
-  };
-
-  public static void setImpersonator(String impersonator) {
-    threadLocalImpersonator.set(impersonator);
-  }
-
-  public static String getImpersonator() {
-    return threadLocalImpersonator.get();
+    return false;
   }
 }
