@@ -63,6 +63,7 @@ public class TestDbEndToEnd extends AbstractTestWithStaticConfiguration {
   public void testBasic() throws Exception {
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
+    statement.execute("DROP TABLE IF EXISTS t1");
     statement.execute("CREATE TABLE t1 (c1 string)");
     statement.execute("CREATE ROLE user_role");
     statement.execute("GRANT SELECT ON TABLE t1 TO ROLE user_role");
@@ -96,6 +97,7 @@ public class TestDbEndToEnd extends AbstractTestWithStaticConfiguration {
   public void testNonDefault() throws Exception {
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
     statement.execute("CREATE database " + DB1);
     statement.execute("USE " + DB1);
     statement.execute("CREATE TABLE t1 (c1 string)");
@@ -116,6 +118,7 @@ public class TestDbEndToEnd extends AbstractTestWithStaticConfiguration {
   public void testUPrivileges() throws Exception {
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
+    statement.execute("DROP TABLE IF EXISTS t1");
     statement.execute("CREATE TABLE t1 (c1 string)");
     statement.execute("CREATE ROLE user_role");
     statement.execute("CREATE ROLE uri_role");
