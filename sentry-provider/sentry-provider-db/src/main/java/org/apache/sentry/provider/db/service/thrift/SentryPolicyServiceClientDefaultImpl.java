@@ -529,7 +529,7 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
     ImmutableList.Builder<String> listBuilder = ImmutableList.builder();
     listBuilder.add(columnName);
     revokePrivilege(requestorUserName, roleName,
-        PrivilegeScope.TABLE, server, null,
+        PrivilegeScope.COLUMN, server, null,
         db, table, listBuilder.build(), action);
   }
 
@@ -539,7 +539,7 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
     ImmutableList.Builder<String> listBuilder = ImmutableList.builder();
     listBuilder.add(columnName);
     revokePrivilege(requestorUserName, roleName,
-        PrivilegeScope.TABLE, server, null,
+        PrivilegeScope.COLUMN, server, null,
         db, table, listBuilder.build(), action, grantOption);
   }
 
@@ -547,7 +547,7 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
       String server, String db, String table, List<String> columns, String action)
   throws SentryUserException {
     revokePrivilege(requestorUserName, roleName,
-        PrivilegeScope.TABLE, server, null,
+        PrivilegeScope.COLUMN, server, null,
         db, table, columns, action);
   }
 
@@ -555,7 +555,7 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
       String server, String db, String table, List<String> columns, String action, Boolean grantOption)
   throws SentryUserException {
     revokePrivilege(requestorUserName, roleName,
-        PrivilegeScope.TABLE, server, null,
+        PrivilegeScope.COLUMN, server, null,
         db, table, columns, action, grantOption);
   }
 

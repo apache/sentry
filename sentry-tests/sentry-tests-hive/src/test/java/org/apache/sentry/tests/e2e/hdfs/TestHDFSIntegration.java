@@ -105,6 +105,7 @@ public class TestHDFSIntegration {
   private static final Logger LOGGER = LoggerFactory
       .getLogger(TestHDFSIntegration.class);
 
+
   public static class WordCountMapper extends MapReduceBase implements
       Mapper<LongWritable, Text, String, Long> {
 
@@ -147,6 +148,8 @@ public class TestHDFSIntegration {
   protected static SentrySrv sentryServer;
   protected static boolean testSentryHA = false;
   private static final long STALE_THRESHOLD = 5000;
+  private static final long CACHE_REFRESH = 100; //Default is 500, but we want it to be low
+                                                // in our tests so that changes reflect soon
 
   private static String fsURI;
   private static int hmsPort;
@@ -272,9 +275,9 @@ public class TestHDFSIntegration {
         out.close();
 
         Reflection.staticField("hiveSiteURL")
-          .ofType(URL.class)
-          .in(HiveConf.class)
-          .set(hiveSite.toURI().toURL());
+            .ofType(URL.class)
+            .in(HiveConf.class)
+            .set(hiveSite.toURI().toURL());
 
         metastore = new InternalMetastoreServer(hiveConf);
         new Thread() {
@@ -360,6 +363,8 @@ public class TestHDFSIntegration {
 
         conf.set("sentry.authorization-provider.hdfs-path-prefixes", "/user/hive/warehouse,/tmp/external");
         conf.set("sentry.authorization-provider.cache-refresh-retry-wait.ms", "5000");
+        conf.set("sentry.authorization-provider.cache-refresh-interval.ms", String.valueOf(CACHE_REFRESH));
+
         conf.set("sentry.authorization-provider.cache-stale-threshold.ms", String.valueOf(STALE_THRESHOLD));
 
         conf.set("sentry.hdfs.service.security.mode", "none");
@@ -485,7 +490,7 @@ public class TestHDFSIntegration {
     conn = hiveServer2.createConnection("hive", "hive");
     stmt = conn.createStatement();
     for( String role:roles) {
-      stmt.execute("drop role " + role);
+       stmt.execute("drop role " + role);
     }
     stmt.close();
     conn.close();
@@ -910,6 +915,114 @@ public class TestHDFSIntegration {
 
   }
 
+  @Test
+  public void testColumnPrivileges() throws Throwable {
+    String dbName = "db2";
+
+    tmpHDFSDir = new Path("/tmp/external");
+    dbNames = new String[]{dbName};
+    roles = new String[]{"admin_role", "tab_role", "db_role", "col_role"};
+    admin = StaticUserGroup.ADMIN1;
+
+    Connection conn;
+    Statement stmt;
+
+    conn = hiveServer2.createConnection("hive", "hive");
+    stmt = conn.createStatement();
+    stmt.execute("create role admin_role");
+    stmt.execute("grant all on server server1 to role admin_role with grant option");
+    stmt.execute("grant role admin_role to group " + StaticUserGroup.ADMINGROUP);
+
+    conn = hiveServer2.createConnection(StaticUserGroup.ADMIN1, StaticUserGroup.ADMIN1);
+    stmt = conn.createStatement();
+    stmt.execute("create database " + dbName);
+    stmt.execute("use "+ dbName);
+    stmt.execute("create table p1 (s string) partitioned by (month int, day int)");
+    stmt.execute("alter table p1 add partition (month=1, day=1)");
+    stmt.execute("alter table p1 add partition (month=1, day=2)");
+    stmt.execute("alter table p1 add partition (month=2, day=1)");
+    stmt.execute("alter table p1 add partition (month=2, day=2)");
+    loadData(stmt);
+
+    stmt.execute("create role db_role");
+    stmt.execute("grant select on database " + dbName + " to role db_role");
+    stmt.execute("create role tab_role");
+    stmt.execute("grant select on p1 to role tab_role");
+    stmt.execute("create role col_role");
+    stmt.execute("grant select(s) on p1 to role col_role");
+
+    stmt.execute("grant role col_role to group "+ StaticUserGroup.USERGROUP1);
+
+    stmt.execute("grant role tab_role to group "+ StaticUserGroup.USERGROUP2);
+    stmt.execute("grant role col_role to group "+ StaticUserGroup.USERGROUP2);
+
+    stmt.execute("grant role db_role to group "+ StaticUserGroup.USERGROUP3);
+    stmt.execute("grant role col_role to group "+ StaticUserGroup.USERGROUP3);
+
+    stmt.execute("grant role col_role to group " + StaticUserGroup.ADMINGROUP);
+
+    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
+
+    //User with just column level privileges cannot read HDFS
+    verifyOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/p1", null, StaticUserGroup.USERGROUP1, false);
+
+    //User with permissions on table and column can read HDFS file
+    verifyOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/p1", FsAction.READ_EXECUTE, StaticUserGroup.USERGROUP2, true);
+
+    //User with permissions on db and column can read HDFS file
+    verifyOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/p1", FsAction.READ_EXECUTE, StaticUserGroup.USERGROUP3, true);
+
+    //User with permissions on server and column cannot read HDFS file
+    //TODO:SENTRY-751
+    verifyOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/p1", null, StaticUserGroup.ADMINGROUP, false);
+
+    stmt.close();
+    conn.close();
+
+  }
+
+  /*
+  TODO:SENTRY-819
+  */
+  @Test
+  public void testAllColumn() throws Throwable {
+    String dbName = "db2";
+
+    tmpHDFSDir = new Path("/tmp/external");
+    dbNames = new String[]{dbName};
+    roles = new String[]{"admin_role", "col_role"};
+    admin = StaticUserGroup.ADMIN1;
+
+    Connection conn;
+    Statement stmt;
+
+    conn = hiveServer2.createConnection("hive", "hive");
+    stmt = conn.createStatement();
+    stmt.execute("create role admin_role");
+    stmt.execute("grant all on server server1 to role admin_role with grant option");
+    stmt.execute("grant role admin_role to group " + StaticUserGroup.ADMINGROUP);
+
+    conn = hiveServer2.createConnection(StaticUserGroup.ADMIN1, StaticUserGroup.ADMIN1);
+    stmt = conn.createStatement();
+    stmt.execute("create database " + dbName);
+    stmt.execute("use "+ dbName);
+    stmt.execute("create table p1 (c1 string, c2 string) partitioned by (month int, day int)");
+    stmt.execute("alter table p1 add partition (month=1, day=1)");
+    loadDataTwoCols(stmt);
+
+    stmt.execute("create role col_role");
+    stmt.execute("grant select(c1,c2) on p1 to role col_role");
+    stmt.execute("grant role col_role to group "+ StaticUserGroup.USERGROUP1);
+    Thread.sleep(100);
+
+    //User with privileges on all columns of the data cannot still read the HDFS files
+    verifyOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/p1", null, StaticUserGroup.USERGROUP1, false);
+
+    stmt.close();
+    conn.close();
+
+  }
+
   private void verifyQuery(Statement stmt, String table, int n) throws Throwable {
     verifyQuery(stmt, table, n, NUM_RETRIES);
   }
@@ -952,6 +1065,23 @@ public class TestHDFSIntegration {
       vals.add(rs.getString(1));
     }
     Assert.assertEquals(6, vals.size());
+    rs.close();
+  }
+
+  private void loadDataTwoCols(Statement stmt) throws IOException, SQLException {
+    FSDataOutputStream f1 = miniDFS.getFileSystem().create(new Path("/tmp/f2.txt"));
+    f1.writeChars("m1d1_t1, m1d1_t2\n");
+    f1.writeChars("m1d1_t2, m1d1_t2\n");
+    f1.writeChars("m1d1_t3, m1d1_t2\n");
+    f1.flush();
+    f1.close();
+    stmt.execute("load data inpath \'/tmp/f2.txt\' overwrite into table p1 partition (month=1, day=1)");
+    ResultSet rs = stmt.executeQuery("select * from p1");
+    List<String> vals = new ArrayList<String>();
+    while (rs.next()) {
+      vals.add(rs.getString(1));
+    }
+    Assert.assertEquals(3, vals.size());
     rs.close();
   }
 
