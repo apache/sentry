@@ -165,7 +165,9 @@ public class SentryPlugin implements SentryPolicyStorePlugin {
     if (request.isSetPrivileges()) {
       String roleName = request.getRoleName();
       for (TSentryPrivilege privilege : request.getPrivileges()) {
-        onAlterSentryRoleGrantPrivilegeCore(roleName, privilege);
+        if(!("COLUMN".equalsIgnoreCase(privilege.getPrivilegeScope()))) {
+          onAlterSentryRoleGrantPrivilegeCore(roleName, privilege);
+        }
       }
     }
   }
@@ -202,7 +204,9 @@ public class SentryPlugin implements SentryPolicyStorePlugin {
     if (request.isSetPrivileges()) {
       String roleName = request.getRoleName();
       for (TSentryPrivilege privilege : request.getPrivileges()) {
-        onAlterSentryRoleRevokePrivilegeCore(roleName, privilege);
+        if(!("COLUMN".equalsIgnoreCase(privilege.getPrivilegeScope()))) {
+          onAlterSentryRoleRevokePrivilegeCore(roleName, privilege);
+        }
       }
     }
   }

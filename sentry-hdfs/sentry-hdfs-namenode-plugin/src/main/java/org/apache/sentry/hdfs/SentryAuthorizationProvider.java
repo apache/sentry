@@ -300,7 +300,15 @@ public class SentryAuthorizationProvider
     builder.setName(null);
     return list;
   }
-
+  /*
+  Returns hadoop acls if
+  - Not managed
+  - Not stale and not an auth obj
+  Returns hive:hive
+  - If stale
+  Returns sentry acls
+  - Otherwise, if not stale and auth obj
+   */
   @Override
   public AclFeature getAclFeature(INodeAuthorizationInfo node, int snapshotId) {
     AclFeature f = null;
