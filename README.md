@@ -14,8 +14,8 @@ Building Sentry
 
 Building Sentry requires the following tools:
 
-* Apache Maven 3.0+
-* Java JDK 1.6+
+* Apache Maven 3.2.5+ (Might hit issues with pentaho library with older maven versions)
+* Java JDK7 (can't access TBase errors with JDK8)
 
 To compile Sentry, run:
 
