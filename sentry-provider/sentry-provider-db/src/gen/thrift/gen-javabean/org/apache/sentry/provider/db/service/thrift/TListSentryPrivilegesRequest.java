@@ -137,7 +137,7 @@ public class TListSentryPrivilegesRequest implements org.apache.thrift.TBase<TLi
   }
 
   public TListSentryPrivilegesRequest() {
-    this.protocol_version = 1;
+    this.protocol_version = 2;
 
   }
 
@@ -176,7 +176,7 @@ public class TListSentryPrivilegesRequest implements org.apache.thrift.TBase<TLi
 
   @Override
   public void clear() {
-    this.protocol_version = 1;
+    this.protocol_version = 2;
 
     this.requestorUserName = null;
     this.roleName = null;

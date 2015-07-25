@@ -138,7 +138,7 @@ public class TListSentryPrivilegesForProviderRequest implements org.apache.thrif
   }
 
   public TListSentryPrivilegesForProviderRequest() {
-    this.protocol_version = 1;
+    this.protocol_version = 2;
 
   }
 
@@ -181,7 +181,7 @@ public class TListSentryPrivilegesForProviderRequest implements org.apache.thrif
 
   @Override
   public void clear() {
-    this.protocol_version = 1;
+    this.protocol_version = 2;
 
     this.groups = null;
     this.roleSet = null;

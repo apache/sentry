@@ -25,6 +25,8 @@ namespace php sentry.service.thrift
 namespace cpp Apache.Sentry.Service.Thrift
 
 const i32 TSENTRY_SERVICE_V1 = 1;
+// Made a backward incompatible change when adding column level privileges.
+// We also added generalized model in this version
 const i32 TSENTRY_SERVICE_V2 = 2;
 
 const i32 TSENTRY_STATUS_OK = 0;
