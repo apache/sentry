@@ -137,7 +137,7 @@ public class TAlterSentryRoleAddGroupsRequest implements org.apache.thrift.TBase
   }
 
   public TAlterSentryRoleAddGroupsRequest() {
-    this.protocol_version = 1;
+    this.protocol_version = 2;
 
   }
 
@@ -182,7 +182,7 @@ public class TAlterSentryRoleAddGroupsRequest implements org.apache.thrift.TBase
 
   @Override
   public void clear() {
-    this.protocol_version = 1;
+    this.protocol_version = 2;
 
     this.requestorUserName = null;
     this.roleName = null;

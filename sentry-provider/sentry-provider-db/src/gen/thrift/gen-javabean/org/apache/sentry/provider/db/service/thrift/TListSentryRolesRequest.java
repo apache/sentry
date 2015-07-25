@@ -130,7 +130,7 @@ public class TListSentryRolesRequest implements org.apache.thrift.TBase<TListSen
   }
 
   public TListSentryRolesRequest() {
-    this.protocol_version = 1;
+    this.protocol_version = 2;
 
   }
 
@@ -164,7 +164,7 @@ public class TListSentryRolesRequest implements org.apache.thrift.TBase<TListSen
 
   @Override
   public void clear() {
-    this.protocol_version = 1;
+    this.protocol_version = 2;
 
     this.requestorUserName = null;
     this.groupName = null;

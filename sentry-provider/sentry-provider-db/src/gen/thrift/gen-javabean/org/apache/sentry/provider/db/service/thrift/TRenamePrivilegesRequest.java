@@ -136,7 +136,7 @@ public class TRenamePrivilegesRequest implements org.apache.thrift.TBase<TRename
   }
 
   public TRenamePrivilegesRequest() {
-    this.protocol_version = 1;
+    this.protocol_version = 2;
 
   }
 
@@ -177,7 +177,7 @@ public class TRenamePrivilegesRequest implements org.apache.thrift.TBase<TRename
 
   @Override
   public void clear() {
-    this.protocol_version = 1;
+    this.protocol_version = 2;
 
     this.requestorUserName = null;
     this.oldAuthorizable = null;

@@ -130,7 +130,7 @@ public class TSentryConfigValueRequest implements org.apache.thrift.TBase<TSentr
   }
 
   public TSentryConfigValueRequest() {
-    this.protocol_version = 1;
+    this.protocol_version = 2;
 
   }
 
@@ -164,7 +164,7 @@ public class TSentryConfigValueRequest implements org.apache.thrift.TBase<TSentr
 
   @Override
   public void clear() {
-    this.protocol_version = 1;
+    this.protocol_version = 2;
 
     this.propertyName = null;
     this.defaultValue = null;

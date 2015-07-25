@@ -146,7 +146,7 @@ public class TListSentryPrivilegesByAuthRequest implements org.apache.thrift.TBa
   }
 
   public TListSentryPrivilegesByAuthRequest() {
-    this.protocol_version = 1;
+    this.protocol_version = 2;
 
   }
 
@@ -196,7 +196,7 @@ public class TListSentryPrivilegesByAuthRequest implements org.apache.thrift.TBa
 
   @Override
   public void clear() {
-    this.protocol_version = 1;
+    this.protocol_version = 2;
 
     this.requestorUserName = null;
     this.authorizableSet = null;
