@@ -531,7 +531,7 @@ public class TestHDFSIntegration {
   public void testEnd2End() throws Throwable {
     tmpHDFSDir = new Path("/tmp/external");
     dbNames = new String[]{"db1"};
-    roles = new String[]{"admin_role"};
+    roles = new String[]{"admin_role", "db_role", "tab_role", "p1_admin"};
     admin = "hive";
 
     Connection conn;
