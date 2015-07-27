@@ -25,7 +25,7 @@ limitations under the License.
 
   <groupId>org.apache.sentry</groupId>
   <artifactId>sentry</artifactId>
-  <version>1.5.1-incubating</version>
+  <version>1.5.1-cdh5.5.0-SNAPSHOT</version>
   <description>Sentry component</description>
   <name>Sentry</name>
   <packaging>pom</packaging>
@@ -68,8 +68,8 @@ limitations under the License.
     <jdo-api.version>3.0.1</jdo-api.version>
     <derby.version>10.10.2.0</derby.version>
     <commons-cli.version>1.2</commons-cli.version>
-    <hive.version>1.1.0</hive.version>
-    <hadoop.version>2.6.0</hadoop.version>
+    <hive.version>${cdh.hive.version}</hive.version>
+    <hadoop.version>${cdh.hadoop.version}</hadoop.version>
     <fest.reflect.version>1.4.1</fest.reflect.version>
     <guava.version>11.0.2</guava.version>
     <junit.version>4.9</junit.version>
@@ -80,14 +80,15 @@ limitations under the License.
     <log4j.version>1.2.16</log4j.version>
     <mockito.version>1.8.5</mockito.version>
     <shiro.version>1.2.1</shiro.version>
-    <slf4j.version>1.6.1</slf4j.version>
-    <solr.version>4.10.2</solr.version>
-    <zookeeper.version>3.4.5</zookeeper.version>
-    <pig.version>0.12.0</pig.version>
+    <slf4j.version>${cdh.slf4j.version}</slf4j.version>
+    <solr.version>${cdh.solr.version}</solr.version>
+    <zookeeper.version>${cdh.zookeeper.version}</zookeeper.version>
+    <pig.version>${cdh.pig.version}</pig.version>
     <jackson.version>1.8.8</jackson.version>
     <metrics.version>3.1.0</metrics.version>
     <jettyVersion>7.6.16.v20140903</jettyVersion>
     <curator.version>2.6.0</curator.version>
+   <!--  <curator.version>cdh.curator.version</curator.version> -->
     <joda-time.version>2.5</joda-time.version>
     <test.sentry.hadoop.classpath>${maven.test.classpath}</test.sentry.hadoop.classpath>
     <easymock.version>3.0</easymock.version>
@@ -738,6 +739,25 @@ limitations under the License.
   </build>
 
   <repositories>
+    <repository>
+      <id>cdh.repo</id>
+      <url>https://repository.cloudera.com/artifactory/cloudera-repos</url>
+      <name>Cloudera Repositories</name>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+    <repository>
+      <id>cdh.snapshots.repo</id>
+      <url>https://repository.cloudera.com/artifactory/libs-snapshot-local</url>
+      <name>Cloudera Snapshots Repository</name>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+    </repository>
     <repository>
       <id>apache</id>
       <url>https://repository.apache.org/content/repositories/</url>
