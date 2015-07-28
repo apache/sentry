@@ -719,7 +719,7 @@ limitations under the License.
             </environmentVariables>
             <forkedProcessTimeoutInSeconds>900</forkedProcessTimeoutInSeconds>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
-            <argLine>-Xms512m -Xmx2g</argLine>
+            <argLine>-Xms512m -Xmx2g -XX:MaxPermSize=256m</argLine>
             <systemPropertyVariables>
               <java.net.preferIPv4Stack>true</java.net.preferIPv4Stack>
             </systemPropertyVariables>
