@@ -34,6 +34,7 @@ import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.provider.db.SentryAlreadyExistsException;
 import org.apache.sentry.provider.db.SentryInvalidInputException;
 import org.apache.sentry.provider.db.SentryNoSuchObjectException;
+import org.apache.sentry.provider.db.SentryThriftAPIMismatchException;
 import org.apache.sentry.provider.db.generic.service.persistent.PrivilegeObject;
 import org.apache.sentry.provider.db.generic.service.persistent.SentryStoreLayer;
 import org.apache.sentry.provider.db.generic.service.persistent.PrivilegeObject.Builder;
@@ -42,6 +43,8 @@ import org.apache.sentry.provider.db.service.thrift.PolicyStoreConstants;
 import org.apache.sentry.provider.db.service.thrift.SentryConfigurationException;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessor;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
+import org.apache.sentry.service.thrift.ServiceConstants.ThriftConstants;
+import org.apache.sentry.service.thrift.ServiceConstants;
 import org.apache.sentry.service.thrift.Status;
 import org.apache.sentry.service.thrift.TSentryResponseStatus;
 import org.apache.thrift.TException;
@@ -184,6 +187,9 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
       String msg = "Invalid input privilege object";
       LOGGER.error(msg, e);
       response.status = Status.InvalidInput(msg, e);
+    } catch (SentryThriftAPIMismatchException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.status = Status.THRIFT_VERSION_MISMATCH(e.getMessage(), e);
     } catch (Exception e) {
       String msg = "Unknown error:" + e.getMessage();
       LOGGER.error(msg, e);
@@ -279,6 +285,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     Response<Void> respose = requestHandle(new RequestHandler<Void>() {
       @Override
       public Response<Void> handle() throws Exception {
+        validateClientVersion(request.getProtocol_version());
         authorize(request.getRequestorUserName(),
             getRequestorGroups(conf, request.getRequestorUserName()));
         CommitContext context = store.createRole(request.getComponent(), request.getRoleName(), request.getRequestorUserName());
@@ -299,6 +306,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     Response<Void> respose = requestHandle(new RequestHandler<Void>() {
       @Override
       public Response<Void> handle() throws Exception {
+        validateClientVersion(request.getProtocol_version());
         authorize(request.getRequestorUserName(),
             getRequestorGroups(conf, request.getRequestorUserName()));
         CommitContext context = store.dropRole(request.getComponent(), request.getRoleName(), request.getRequestorUserName());
@@ -319,6 +327,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     Response<Void> respose = requestHandle(new RequestHandler<Void>() {
       @Override
       public Response<Void> handle() throws Exception {
+        validateClientVersion(request.getProtocol_version());
         CommitContext context = store.alterRoleGrantPrivilege(request.getComponent(), request.getRoleName(),
                                            toPrivilegeObject(request.getPrivilege()),
                                            request.getRequestorUserName());
@@ -339,6 +348,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     Response<Void> respose = requestHandle(new RequestHandler<Void>() {
       @Override
       public Response<Void> handle() throws Exception {
+        validateClientVersion(request.getProtocol_version());
         CommitContext context = store.alterRoleRevokePrivilege(request.getComponent(), request.getRoleName(),
                                            toPrivilegeObject(request.getPrivilege()),
                                            request.getRequestorUserName());
@@ -359,6 +369,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     Response<Void> respose = requestHandle(new RequestHandler<Void>() {
       @Override
       public Response<Void> handle() throws Exception {
+        validateClientVersion(request.getProtocol_version());
         authorize(request.getRequestorUserName(),
             getRequestorGroups(conf, request.getRequestorUserName()));
         CommitContext context = store.alterRoleAddGroups(
@@ -381,6 +392,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     Response<Void> respose = requestHandle(new RequestHandler<Void>() {
       @Override
       public Response<Void> handle() throws Exception {
+        validateClientVersion(request.getProtocol_version());
         authorize(request.getRequestorUserName(),
             getRequestorGroups(conf, request.getRequestorUserName()));
         CommitContext context = store.alterRoleDeleteGroups(
@@ -403,6 +415,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     Response<Set<TSentryRole>> respose = requestHandle(new RequestHandler<Set<TSentryRole>>() {
       @Override
       public Response<Set<TSentryRole>> handle() throws Exception {
+        validateClientVersion(request.getProtocol_version());
         Set<String> groups = getRequestorGroups(conf, request.getRequestorUserName());
         if (AccessConstants.ALL.equalsIgnoreCase(request.getGroupName())) {
           //check all groups which requestorUserName belongs to
@@ -438,6 +451,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     Response<Set<TSentryPrivilege>> respose = requestHandle(new RequestHandler<Set<TSentryPrivilege>>() {
       @Override
       public Response<Set<TSentryPrivilege>> handle() throws Exception {
+        validateClientVersion(request.getProtocol_version());
         Set<String> groups = getRequestorGroups(conf, request.getRequestorUserName());
         if (!inAdminGroups(groups)) {
           Set<String> roleNamesForGroups = toTrimedLower(store.getRolesByGroups(request.getComponent(), groups));
@@ -469,6 +483,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     Response<Set<String>> respose = requestHandle(new RequestHandler<Set<String>>() {
       @Override
       public Response<Set<String>> handle() throws Exception {
+        validateClientVersion(request.getProtocol_version());
         Set<String> activeRoleNames = toTrimedLower(request.getRoleSet().getRoles());
         Set<String> roleNamesForGroups = store.getRolesByGroups(request.getComponent(), request.getGroups());
         Set<String> rolesToQuery = request.getRoleSet().isAll() ? roleNamesForGroups : Sets.intersection(activeRoleNames, roleNamesForGroups);
@@ -491,6 +506,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     Response<Void> respose = requestHandle(new RequestHandler<Void>() {
       @Override
       public Response<Void> handle() throws Exception {
+        validateClientVersion(request.getProtocol_version());
         authorize(request.getRequestorUserName(),
             getRequestorGroups(conf, request.getRequestorUserName()));
         CommitContext context = store.dropPrivilege(request.getComponent(),
@@ -513,6 +529,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     Response<Void> respose = requestHandle(new RequestHandler<Void>() {
       @Override
       public Response<Void> handle() throws Exception {
+        validateClientVersion(request.getProtocol_version());
         authorize(request.getRequestorUserName(),
             getRequestorGroups(conf, request.getRequestorUserName()));
         CommitContext context = store.renamePrivilege(request.getComponent(), request.getServiceName(),
@@ -554,5 +571,14 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
   }
   private interface RequestHandler <T>{
     public Response<T> handle() throws Exception ;
+  }
+
+  private static void validateClientVersion(int protocol_version) throws SentryThriftAPIMismatchException {
+    if (ServiceConstants.ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT != protocol_version) {
+      String msg = "Sentry thrift API protocol version mismatch: Client thrift version " +
+          "is: " + protocol_version + " , server thrift verion " +
+              "is " + ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT;
+      throw new SentryThriftAPIMismatchException(msg);
+    }
   }
 }
