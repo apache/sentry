@@ -232,6 +232,33 @@ struct TSentryConfigValueResponse {
 2: optional string value
 }
 
+# struct for the mapping data like group to role, role to privilege
+struct TSentryMappingData {
+1: optional map<string, set<string>> groupRolesMap,          	   # for the groupName -> role mapping
+2: optional map<string, set<TSentryPrivilege>>  rolePrivilegesMap  # for the roleName -> privilege mapping
+}
+
+struct TSentryExportMappingDataRequest {
+1: required i32 protocol_version = sentry_common_service.TSENTRY_SERVICE_V1,
+2: required string requestorUserName # user on whose behalf the request is issued
+}
+
+struct TSentryExportMappingDataResponse {
+1: required sentry_common_service.TSentryResponseStatus status,
+2: required TSentryMappingData mappingData
+}
+
+struct TSentryImportMappingDataRequest {
+1: required i32 protocol_version = sentry_common_service.TSENTRY_SERVICE_V1,
+2: required string requestorUserName, # user on whose behalf the request is issued
+3: required bool overwriteRole = false, # if overwrite the exist role with the imported privileges, default is false 
+4: required TSentryMappingData mappingData
+}
+
+struct TSentryImportMappingDataResponse {
+1: required sentry_common_service.TSentryResponseStatus status
+}
+
 service SentryPolicyService
 {
   TCreateSentryRoleResponse create_sentry_role(1:TCreateSentryRoleRequest request)
@@ -250,11 +277,17 @@ service SentryPolicyService
   # For use with ProviderBackend.getPrivileges only
   TListSentryPrivilegesForProviderResponse list_sentry_privileges_for_provider(1:TListSentryPrivilegesForProviderRequest request)
 
- TDropPrivilegesResponse drop_sentry_privilege(1:TDropPrivilegesRequest request);
+  TDropPrivilegesResponse drop_sentry_privilege(1:TDropPrivilegesRequest request);
 
- TRenamePrivilegesResponse rename_sentry_privilege(1:TRenamePrivilegesRequest request);
+  TRenamePrivilegesResponse rename_sentry_privilege(1:TRenamePrivilegesRequest request);
 
- TListSentryPrivilegesByAuthResponse list_sentry_privileges_by_authorizable(1:TListSentryPrivilegesByAuthRequest request);
+  TListSentryPrivilegesByAuthResponse list_sentry_privileges_by_authorizable(1:TListSentryPrivilegesByAuthRequest request);
 
- TSentryConfigValueResponse get_sentry_config_value(1:TSentryConfigValueRequest request)
+  TSentryConfigValueResponse get_sentry_config_value(1:TSentryConfigValueRequest request);
+
+  # export the mapping data in sentry
+  TSentryExportMappingDataResponse export_sentry_mapping_data(1:TSentryExportMappingDataRequest request);
+
+  # import the mapping data in sentry
+  TSentryImportMappingDataResponse import_sentry_mapping_data(1:TSentryImportMappingDataRequest request);
 }

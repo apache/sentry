@@ -27,6 +27,7 @@ import java.util.Set;
 
 import javax.security.auth.callback.CallbackHandler;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.SaslRpcServer;
@@ -38,6 +39,8 @@ import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
+import org.apache.sentry.provider.common.PolicyFileConstants;
+import org.apache.sentry.service.thrift.SentryServiceUtil;
 import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
 import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
@@ -58,6 +61,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyServiceClient {
@@ -815,5 +819,112 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
     if (transport != null) {
       transport.close();
     }
+  }
+
+  /**
+   * Import the sentry mapping data, convert the mapping data from map structure to
+   * TSentryMappingData, and call the import API.
+   * 
+   * @param policyFileMappingData
+   *        Include 2 maps to save the mapping data, the following is the example of the data
+   *        structure:
+   *        for the following mapping data:
+   *        group1=role1,role2
+   *        group2=role2,role3
+   *        role1=server=server1->db=db1
+   *        role2=server=server1->db=db1->table=tbl1,server=server1->db=db1->table=tbl2
+   *        role3=server=server1->url=hdfs://localhost/path
+   * 
+   *        The policyFileMappingData will be inputed as:
+   *        {
+   *          groups={[group1={role1, role2}], group2=[role2, role3]},
+   *          roles={role1=[server=server1->db=db1],
+   *                 role2=[server=server1->db=db1->table=tbl1,server=server1->db=db1->table=tbl2],
+   *                 role3=[server=server1->url=hdfs://localhost/path]
+   *                }
+   *        }
+   * @param requestorUserName
+   *        The name of the request user
+   */
+  public void importPolicy(Map<String, Map<String, Set<String>>> policyFileMappingData,
+      String requestorUserName, boolean isOverwriteRole)
+      throws SentryUserException {
+    try {
+      TSentryMappingData tSentryMappingData = new TSentryMappingData();
+      // convert the mapping data for [group,role] from map structure to
+      // TSentryMappingData.GroupRolesMap
+      tSentryMappingData.setGroupRolesMap(policyFileMappingData.get(PolicyFileConstants.GROUPS));
+      // convert the mapping data for [role,privilege] from map structure to
+      // TSentryMappingData.RolePrivilegesMap
+      tSentryMappingData
+          .setRolePrivilegesMap(convertRolePrivilegesMapForSentryDB(policyFileMappingData
+              .get(PolicyFileConstants.ROLES)));
+      TSentryImportMappingDataRequest request = new TSentryImportMappingDataRequest(
+          ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT, requestorUserName, isOverwriteRole,
+          tSentryMappingData);
+      TSentryImportMappingDataResponse response = client.import_sentry_mapping_data(request);
+      Status.throwIfNotOk(response.getStatus());
+    } catch (TException e) {
+      throw new SentryUserException(THRIFT_EXCEPTION_MESSAGE, e);
+    }
+  }
+
+  // convert the mapping data for [role,privilege] from map structure to
+  // TSentryMappingData.RolePrivilegesMap
+  private Map<String, Set<TSentryPrivilege>> convertRolePrivilegesMapForSentryDB(
+      Map<String, Set<String>> rolePrivilegesMap) {
+    Map<String, Set<TSentryPrivilege>> rolePrivilegesMapResult = Maps.newHashMap();
+    if (rolePrivilegesMap != null) {
+      for (String tempRoleName : rolePrivilegesMap.keySet()) {
+        Set<TSentryPrivilege> tempTSentryPrivileges = Sets.newHashSet();
+        Set<String> tempPrivileges = rolePrivilegesMap.get(tempRoleName);
+        for (String tempPrivilege : tempPrivileges) {
+          tempTSentryPrivileges.add(SentryServiceUtil.convertToTSentryPrivilege(tempPrivilege));
+        }
+        rolePrivilegesMapResult.put(tempRoleName, tempTSentryPrivileges);
+      }
+    }
+    return rolePrivilegesMapResult;
+  }
+
+  // export the sentry mapping data with map structure
+  public Map<String, Map<String, Set<String>>> exportPolicy(String requestorUserName)
+      throws SentryUserException {
+    TSentryExportMappingDataRequest request = new TSentryExportMappingDataRequest(
+        ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT, requestorUserName);
+    try {
+      TSentryExportMappingDataResponse response = client.export_sentry_mapping_data(request);
+      Status.throwIfNotOk(response.getStatus());
+      TSentryMappingData tSentryMappingData = response.getMappingData();
+      Map<String, Map<String, Set<String>>> resultMap = Maps.newHashMap();
+      resultMap.put(PolicyFileConstants.GROUPS, tSentryMappingData.getGroupRolesMap());
+      resultMap.put(PolicyFileConstants.ROLES,
+          convertRolePrivilegesMapForPolicyFile(tSentryMappingData.getRolePrivilegesMap()));
+      return resultMap;
+    } catch (TException e) {
+      throw new SentryUserException(THRIFT_EXCEPTION_MESSAGE, e);
+    }
+  }
+
+  // convert the mapping data for [roleName,privilege] from TSentryMappingData.RolePrivilegesMap to
+  // map structure
+  private Map<String, Set<String>> convertRolePrivilegesMapForPolicyFile(
+      Map<String, Set<TSentryPrivilege>> rolePrivilegesMap) {
+    Map<String, Set<String>> rolePrivilegesMapForFile = Maps.newHashMap();
+    if (rolePrivilegesMap != null) {
+      for (String tempRoleName : rolePrivilegesMap.keySet()) {
+        Set<TSentryPrivilege> tempSentryPrivileges = rolePrivilegesMap.get(tempRoleName);
+        Set<String> tempStrPrivileges = Sets.newHashSet();
+        for (TSentryPrivilege tSentryPrivilege : tempSentryPrivileges) {
+          // convert TSentryPrivilege to privilege in string
+          String privilegeStr = SentryServiceUtil.convertTSentryPrivilegeToStr(tSentryPrivilege);
+          if (!StringUtils.isEmpty(privilegeStr)) {
+            tempStrPrivileges.add(privilegeStr);
+          }
+        }
+        rolePrivilegesMapForFile.put(tempRoleName, tempStrPrivileges);
+      }
+    }
+    return rolePrivilegesMapForFile;
   }
 }

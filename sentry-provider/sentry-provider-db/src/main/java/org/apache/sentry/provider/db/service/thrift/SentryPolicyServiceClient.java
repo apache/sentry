@@ -178,4 +178,12 @@ public interface SentryPolicyServiceClient {
   public String getConfigValue(String propertyName, String defaultValue) throws SentryUserException;
 
   public void close();
+
+  // Import the sentry mapping data with map structure
+  public void importPolicy(Map<String, Map<String, Set<String>>> policyFileMappingData,
+      String requestorUserName, boolean isOverwriteRole) throws SentryUserException;
+
+  // export the sentry mapping data with map structure
+  public Map<String, Map<String, Set<String>>> exportPolicy(String requestorUserName)
+      throws SentryUserException;
 }

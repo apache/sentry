@@ -857,4 +857,57 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     }
   }
 
+  // get the sentry mapping data and return the data with map structure
+  @Override
+  public TSentryExportMappingDataResponse export_sentry_mapping_data(
+      TSentryExportMappingDataRequest request) throws TException {
+    TSentryExportMappingDataResponse response = new TSentryExportMappingDataResponse();
+    try {
+      String requestor = request.getRequestorUserName();
+      Set<String> memberGroups = getRequestorGroups(requestor);
+      if (!inAdminGroups(memberGroups)) {
+        // disallow non-admin to import the metadata of sentry
+        throw new SentryAccessDeniedException("Access denied to " + requestor
+            + " for export the metadata of sentry.");
+      }
+      TSentryMappingData tSentryMappingData = new TSentryMappingData();
+      tSentryMappingData.setGroupRolesMap(sentryStore.getGroupNameRoleNamesMap());
+      tSentryMappingData.setRolePrivilegesMap(sentryStore.getRoleNameTPrivilegesMap());
+      response.setMappingData(tSentryMappingData);
+      response.setStatus(Status.OK());
+    } catch (Exception e) {
+      String msg = "Unknown error for request: " + request + ", message: " + e.getMessage();
+      LOGGER.error(msg, e);
+      response.setMappingData(new TSentryMappingData());
+      response.setStatus(Status.RuntimeError(msg, e));
+    }
+    return response;
+  }
+
+  // import the sentry mapping data
+  @Override
+  public TSentryImportMappingDataResponse import_sentry_mapping_data(
+      TSentryImportMappingDataRequest request) throws TException {
+    TSentryImportMappingDataResponse response = new TSentryImportMappingDataResponse();
+    try {
+      String requestor = request.getRequestorUserName();
+      Set<String> memberGroups = getRequestorGroups(requestor);
+      if (!inAdminGroups(memberGroups)) {
+        // disallow non-admin to import the metadata of sentry
+        throw new SentryAccessDeniedException("Access denied to " + requestor
+            + " for import the metadata of sentry.");
+      }
+      sentryStore.importSentryMetaData(request.getMappingData(), request.isOverwriteRole());
+      response.setStatus(Status.OK());
+    } catch (SentryInvalidInputException e) {
+      String msg = "Invalid input privilege object";
+      LOGGER.error(msg, e);
+      response.setStatus(Status.InvalidInput(msg, e));
+    } catch (Exception e) {
+      String msg = "Unknown error for request: " + request + ", message: " + e.getMessage();
+      LOGGER.error(msg, e);
+      response.setStatus(Status.RuntimeError(msg, e));
+    }
+    return response;
+  }
 }
