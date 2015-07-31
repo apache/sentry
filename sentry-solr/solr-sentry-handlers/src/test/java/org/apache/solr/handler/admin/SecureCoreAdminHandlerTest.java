@@ -16,14 +16,21 @@
  */
 package org.apache.solr.handler.admin;
 
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+
+import net.sf.cglib.proxy.Enhancer;
+import net.sf.cglib.proxy.MethodInterceptor;
+import net.sf.cglib.proxy.MethodProxy;
 
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.sentry.SentryTestBase;
@@ -65,7 +72,7 @@ public class SecureCoreAdminHandlerTest extends SentryTestBase {
       CoreAdminAction.RELOAD
       );
 
-  // only specify the collection on these, no cores
+  // These actions require that the collection is specified on the request.
   public final static List<CoreAdminAction> REQUIRES_COLLECTION = Arrays.asList(
       CoreAdminAction.CREATE
       );
@@ -115,23 +122,25 @@ public class SecureCoreAdminHandlerTest extends SentryTestBase {
     modParams.set(CoreAdminParams.COLLECTION, "");
     modParams.set(CoreAdminParams.CORE, "");
     modParams.set(CoreAdminParams.NAME, "");
-    if (!REQUIRES_COLLECTION.contains(action)) {
-      for (SolrCore core : h.getCoreContainer().getCores()) {
-        if(core.getCoreDescriptor().getCloudDescriptor().getCollectionName().equals(collection)) {
-          modParams.set(CoreAdminParams.CORE, core.getName());
-          modParams.set(CoreAdminParams.NAME, core.getName());
-          break;
-        }
+    for (SolrCore core : h.getCoreContainer().getCores()) {
+      if(core.getCoreDescriptor().getCloudDescriptor().getCollectionName().equals(collection)) {
+        modParams.set(CoreAdminParams.CORE, core.getName());
+        modParams.set(CoreAdminParams.NAME, core.getName());
+        break;
       }
-    } else {
+    }
+    if (REQUIRES_COLLECTION.contains(action)) {
       modParams.set(CoreAdminParams.COLLECTION, collection);
+      modParams.set(CoreAdminParams.CORE, core.getName());
+      modParams.set(CoreAdminParams.NAME, core.getName());
     }
     req.setParams(modParams);
     return req;
   }
 
   private void verifyQueryAccess(CoreAdminAction action, boolean checkCollection) throws Exception {
-    CoreAdminHandler handler = new SecureCoreAdminHandler(h.getCoreContainer());
+    CoreContainer cc = getCleanCoreContainer(action, h.getCoreContainer());
+    CoreAdminHandler handler = new SecureCoreAdminHandler(cc);
     verifyAuthorized(handler, getCoreAdminRequest("collection1", "junit", action));
     verifyAuthorized(handler, getCoreAdminRequest("queryCollection", "junit", action));
     if (!checkCollection) {
@@ -144,13 +153,43 @@ public class SecureCoreAdminHandlerTest extends SentryTestBase {
   }
 
   private void verifyUpdateAccess(CoreAdminAction action, boolean checkCollection) throws Exception {
-    CoreAdminHandler handler = new SecureCoreAdminHandler(h.getCoreContainer());
+    CoreContainer cc = getCleanCoreContainer(action, h.getCoreContainer());
+    CoreAdminHandler handler = new SecureCoreAdminHandler(cc);
     verifyAuthorized(handler, getCoreAdminRequest("collection1", "junit", action));
     verifyAuthorized(handler, getCoreAdminRequest("updateCollection", "junit", action));
     verifyUnauthorized(handler, getCoreAdminRequest("bogusCollection", "bogusUser", action), "bogusCollection", "bogusUser", true);
     if (checkCollection) {
       verifyUnauthorized(handler, getCoreAdminRequest("queryCollection", "junit", action), "queryCollection", "junit");
     }
+  }
+
+  private CoreContainer getZkAwareCoreContainer(final CoreContainer cc) {
+    Enhancer e = new Enhancer();
+    e.setClassLoader(cc.getClass().getClassLoader());
+    e.setSuperclass(CoreContainer.class);
+    e.setCallback(new MethodInterceptor() {
+      public Object intercept(Object obj, Method method, Object [] args, MethodProxy proxy) throws Throwable {
+        if (method.getName().equals("isZooKeeperAware")) {
+          return Boolean.TRUE;
+        }
+        return method.invoke(cc, args);
+      }
+    });
+    return (CoreContainer)e.create();
+  }
+
+  private CoreContainer getCleanCoreContainer(CoreAdminAction action, CoreContainer cc) {
+    // Ensure CoreContainer is empty
+    for (String coreName : h.getCoreContainer().getCoreNames()) {
+      h.getCoreContainer().unload(coreName);
+    }
+    for (Map.Entry entry : h.getCoreContainer().getCoreInitFailures().entrySet()) {
+      String coreName = entry.getKey().toString();
+      h.getCoreContainer().unload(coreName);
+    }
+    // actions that require the collection attempt to read the collection off the CloudDescriptor, which is only
+    // present when the CoreContainer is ZkAware.
+    return REQUIRES_COLLECTION.contains(action) ? getZkAwareCoreContainer(h.getCoreContainer()) : h.getCoreContainer();
   }
 
   @Test
