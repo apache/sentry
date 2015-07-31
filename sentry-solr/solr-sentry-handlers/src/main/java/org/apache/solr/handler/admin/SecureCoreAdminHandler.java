@@ -21,6 +21,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.SecureRequestHandlerUtil;
 import org.apache.solr.request.SolrQueryRequest;
@@ -90,7 +91,13 @@ public class SecureCoreAdminHandler extends CoreAdminHandler {
           collection = getCollectionFromCoreName(cname);
           break;
         }
-        case CREATE:
+        case CREATE: {
+          CoreDescriptor coreDescriptor = buildCoreDescriptor(params, coreContainer);
+          if (coreDescriptor != null) {
+            collection = coreDescriptor.getCloudDescriptor().getCollectionName();
+          }
+          break;
+        }
         case REQUESTAPPLYUPDATES:
         case REQUESTBUFFERUPDATES: {
           String cname = params.get(CoreAdminParams.NAME, "");
