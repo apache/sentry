@@ -83,12 +83,6 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     }
   }
 
-  @Ignore
-  @Test
-  public void beelineTest() throws Exception{
-    while(true) {}
-  }
-
   @Test
   public void testBasic() throws Exception {
     Connection connection = context.createConnection(ADMIN1);
@@ -319,7 +313,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     ResultSet resultSet = statement.executeQuery("SHOW GRANT ROLE user_role");
     assertResultSize(resultSet, 2);
     statement.close();
-    connection.close();;
+    connection.close();
 
     // Revoke on Server
     connection = context.createConnection(ADMIN1);
@@ -2069,4 +2063,89 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     connection.close();
   }
 
+  /*  SENTRY-827 */
+  @Test
+  public void serverActions() throws Exception {
+    String[] dbs = {DB1, DB2};
+    String tbl = TBL1;
+
+    //To test Insert
+    File dataDir = context.getDataDir();
+    File dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
+    FileOutputStream to = new FileOutputStream(dataFile);
+    Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
+    to.close();
+
+    //setup roles and group mapping
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+
+    statement.execute("CREATE ROLE server_all");
+    statement.execute("CREATE ROLE server_select");
+    statement.execute("CREATE ROLE server_insert");
+
+    statement.execute("GRANT ALL ON SERVER server1 to ROLE server_all");
+    statement.execute("GRANT SELECT ON SERVER server1 to ROLE server_select");
+    statement.execute("GRANT INSERT ON SERVER server1 to ROLE server_insert");
+    statement.execute("GRANT ALL ON URI 'file://" + dataFile.getPath() + "' TO ROLE server_select");
+    statement.execute("GRANT ALL ON URI 'file://" + dataFile.getPath() + "' TO ROLE server_insert");
+
+    statement.execute("GRANT ROLE server_all to GROUP " + ADMINGROUP);
+    statement.execute("GRANT ROLE server_select to GROUP " + USERGROUP1);
+    statement.execute("GRANT ROLE server_insert to GROUP " + USERGROUP2);
+
+    for (String db : dbs) {
+      statement.execute("CREATE DATABASE IF NOT EXISTS " + db);
+      statement.execute("CREATE TABLE IF NOT EXISTS " + db + "." + tbl + "(a String)");
+    }
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    //Test SELECT, ensure INSERT fails
+    for (String db : dbs) {
+      statement.execute("SELECT * FROM " + db + "." + tbl);
+      try{
+        statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() +
+          "' INTO TABLE " + db + "." + tbl);
+        assertTrue("INSERT should not be capable here:",true);
+        }catch(SQLException e){}
+      }
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER2_1);
+    statement = context.createStatement(connection);
+    //Test INSERT, ensure SELECT fails
+    for (String db : dbs){
+      statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() +
+        "' INTO TABLE " + db + "." + tbl);
+      try{
+        statement.execute("SELECT * FROM " + db + "." + tbl);
+      }catch(SQLException e){}
+    }
+
+    statement.close();
+    connection.close();
+
+    //Enusre revoke worked
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    statement.execute("REVOKE SELECT ON SERVER server1 from ROLE server_select");
+
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+
+    try {
+      statement.execute("SELECT * FROM " + dbs[0] + "." + tbl);
+      assertTrue("Revoke Select on server Failed", false);
+    } catch (SQLException e) {}
+
+    statement.close();
+    connection.close();
+  }
 }
