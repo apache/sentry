@@ -51,7 +51,7 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
   }
   @Override
   @After
-  public void clearDB() throws Exception {
+  public void clearAfterPerTest() throws Exception {
     if (context != null) {
       context.close();
     }
