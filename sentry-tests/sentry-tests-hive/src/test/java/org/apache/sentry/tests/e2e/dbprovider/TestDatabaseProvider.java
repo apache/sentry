@@ -52,6 +52,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception{
     useSentryService = true;
+    clearDbAfterPerTest = false;
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
   }
 
@@ -61,7 +62,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
    */
   @Override
   @After
-  public void clearDB() throws Exception {
+  public void clearAfterPerTest() throws Exception {
     Connection connection;
     Statement statement;
     connection = context.createConnection(ADMIN1);

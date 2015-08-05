@@ -54,14 +54,9 @@ public abstract class AbstractMetastoreTestWithStaticConfiguration extends
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception {
     useSentryService = true;
+    clearDbAfterPerTest = false;
     testServerType = HiveServer2Type.InternalMetastore.name();
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
-  }
-
-  @Override
-  @After
-  public void clearDB() throws Exception {
-
   }
 
   protected static void writePolicyFile(PolicyFile policyFile) throws Exception {
