@@ -193,6 +193,7 @@ public abstract class AbstractTestWithStaticConfiguration {
 
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception {
+    LOGGER.info("AbstractTestWithStaticConfiguration setupTestStaticConfiguration");
     properties = Maps.newHashMap();
     if(!policyOnHdfs) {
       policyOnHdfs = new Boolean(System.getProperty("sentry.e2etest.policyonhdfs", "false"));
@@ -427,6 +428,7 @@ public abstract class AbstractTestWithStaticConfiguration {
     }
     startSentryService();
     if (setMetastoreListener) {
+      LOGGER.info("setMetastoreListener is enabled");
       properties.put(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS.varname,
           SentryMetastorePostEventListener.class.getName());
     }
@@ -446,7 +448,7 @@ public abstract class AbstractTestWithStaticConfiguration {
 
   @Before
   public void setup() throws Exception{
-    LOGGER.info("Before per test run setup");
+    LOGGER.info("AbstractTestStaticConfiguration setup");
     dfs.createBaseDir();
     if (clearDbBeforePerTest) {
       LOGGER.info("Before per test run clean up");
@@ -456,8 +458,9 @@ public abstract class AbstractTestWithStaticConfiguration {
 
   @After
   public void clearAfterPerTest() throws Exception {
-    LOGGER.info("After per test run clearAfterPerTest");
+    LOGGER.info("AbstractTestStaticConfiguration clearAfterPerTest");
     if (clearDbAfterPerTest) {
+      LOGGER.info("After per test run clean up");
       clearAll(true);
     }
   }
@@ -552,4 +555,22 @@ public abstract class AbstractTestWithStaticConfiguration {
   public static SentrySrv getSentrySrv() {
     return sentryServer;
   }
+
+  /**
+   * A convenience method to validate:
+   * if expected is equivalent to returned;
+   * Firstly check if each expected item is in the returned list;
+   * Secondly check if each returned item in in the expected list.
+   */
+  protected void validateReturnedResult(List<String> expected, List<String> returned) {
+    for (String obj : expected) {
+      assertTrue("expected " + obj + " not found in the returned list: " + returned.toString(),
+              returned.contains(obj));
+    }
+    for (String obj : returned) {
+      assertTrue("returned " + obj + " not found in the expected list: " + expected.toString(),
+              expected.contains(obj));
+    }
+  }
+
 }
