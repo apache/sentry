@@ -29,8 +29,11 @@ import org.apache.sentry.hdfs.service.thrift.TPathChanges;
 import org.apache.sentry.hdfs.service.thrift.TPathsUpdate;
 import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.commons.httpclient.URIException;
+import org.apache.commons.lang.StringUtils;
 
 import com.google.common.collect.Lists;
+
+
 
 /**
  * A wrapper class over the TPathsUpdate thrift generated class. Please see
@@ -92,8 +95,14 @@ public class PathsUpdate implements Updateable.Update {
    */
   public static List<String> parsePath(String path) {
     try {
-      URI uri = new URI(URIUtil.encodePath(path));
+
+      URI uri = null;
+      if (StringUtils.isNotEmpty(path)) {
+        uri = new URI(URIUtil.encodePath(path));
+      }
+
       Preconditions.checkNotNull(uri.getScheme());
+
       if(uri.getScheme().equalsIgnoreCase("hdfs")) {
         return Lists.newArrayList(uri.getPath().split("^/")[1]
             .split("/"));
