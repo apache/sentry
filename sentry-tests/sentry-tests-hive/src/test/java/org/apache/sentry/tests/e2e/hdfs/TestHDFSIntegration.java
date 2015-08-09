@@ -1023,6 +1023,42 @@ public class TestHDFSIntegration {
     conn.close();
 
   }
+  //SENTRY-780
+  @Test
+  public void testViews() throws Throwable {
+    String dbName= "db1";
+
+    tmpHDFSDir = new Path("/tmp/external");
+    dbNames = new String[]{dbName};
+    roles = new String[]{"admin_role"};
+    admin = StaticUserGroup.ADMIN1;
+
+    Connection conn;
+    Statement stmt;
+
+    conn = hiveServer2.createConnection("hive", "hive");
+    stmt = conn.createStatement();
+
+    stmt.execute("create role admin_role");
+    stmt.execute("grant all on server server1 to role admin_role");
+    stmt.execute("grant role admin_role to group " + StaticUserGroup.ADMINGROUP);
+
+    conn = hiveServer2.createConnection(StaticUserGroup.ADMIN1, StaticUserGroup.ADMIN1);
+    stmt = conn.createStatement();
+    try {
+      stmt.execute("create database " + dbName);
+      stmt.execute("create table test(a string)");
+      stmt.execute("create view testView as select * from test");
+      stmt.execute("create or replace view testView as select * from test");
+      stmt.execute("drop view testView");
+    } catch(Exception s) {
+      throw s;
+    }
+
+    stmt.close();
+    conn.close();
+  }
+
 
   private void verifyQuery(Statement stmt, String table, int n) throws Throwable {
     verifyQuery(stmt, table, n, NUM_RETRIES);
