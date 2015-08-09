@@ -21,19 +21,26 @@ import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 import org.apache.sentry.tests.e2e.hive.TestMetadataObjectRetrieval;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestDbMetadataObjectRetrieval extends TestMetadataObjectRetrieval {
+  private static final Logger LOGGER = LoggerFactory
+          .getLogger(TestDbMetadataObjectRetrieval.class);
   @Override
   @Before
   public void setup() throws Exception {
+    LOGGER.info("TestDbMetadataObjectRetrieval setup");
     super.setupAdmin();
     super.setup();
   }
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception {
+    LOGGER.info("TestDbMetadataObjectRetrieval setupTestStaticConfiguration");
     useSentryService = true;
+    clearDbAfterPerTest = true;
+    clearDbBeforePerTest = true;
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
-
   }
 
 }

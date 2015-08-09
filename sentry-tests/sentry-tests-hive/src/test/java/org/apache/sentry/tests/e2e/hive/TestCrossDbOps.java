@@ -77,13 +77,6 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     clearAll(true);
   }
 
-  private void validateReturnedResult(List<String> expected, List<String> returned) {
-    for (String obj : expected) {
-      assertTrue("expected " + obj + " not found in the " + returned.toString(),
-              returned.contains(obj));
-    }
-  }
-
   /*
    * Admin creates DB_1, DB2, tables (tab_1 ) and (tab_2, tab_3) in DB_1 and
    * DB_2 respectively. User user1 has select on DB_1.tab_1, insert on
@@ -227,6 +220,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
 
     expectedResult.add(DB1);
     expectedResult.add(DB2);
+    expectedResult.add("default");
     while (res.next()) {
       returnedResult.add(res.getString(1).trim());
     }

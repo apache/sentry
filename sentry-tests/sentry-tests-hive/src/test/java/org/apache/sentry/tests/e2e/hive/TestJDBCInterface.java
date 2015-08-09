@@ -32,20 +32,34 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class TestJDBCInterface extends AbstractTestWithStaticConfiguration {
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+public class TestJDBCInterface extends AbstractTestWithStaticConfiguration {
+  private static final Logger LOGGER = LoggerFactory.
+          getLogger(TestJDBCInterface.class);
   private static PolicyFile policyFile;
 
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception {
+    LOGGER.info("TestJDBCInterface setupTestStaticConfiguration");
     policyOnHdfs = true;
+    clearDbAfterPerTest = true;
+    clearDbBeforePerTest = true;
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
-
   }
 
   @Before
   public void setup() throws Exception {
+    LOGGER.info("TestJDBCInterface setup");
     policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    if (clearDbBeforePerTest) {
+      // Precreate policy file
+      policyFile.setUserGroupMapping(StaticUserGroup.getStaticMapping());
+      writePolicyFile(policyFile);
+      LOGGER.info("Before per test run clean up");
+      clearAll(true);
+    }
   }
 
   /*
@@ -56,19 +70,6 @@ public class TestJDBCInterface extends AbstractTestWithStaticConfiguration {
    */
   @Test
   public void testJDBCGetSchemasAndGetTables() throws Exception {
-    // edit policy file
-    policyFile
-        .addRolesToGroup(USERGROUP1, "select_tab1", "insert_tab2")
-        .addRolesToGroup(USERGROUP2, "select_tab3")
-        .addPermissionsToRole("select_tab1",
-            "server=server1->db=" + DB1 + "->table=tab1->action=select")
-        .addPermissionsToRole("select_tab3",
-            "server=server1->db=" + DB2 + "->table=tab3->action=select")
-        .addPermissionsToRole("insert_tab2",
-            "server=server1->db=" + DB2 + "->table=tab2->action=insert")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
-    writePolicyFile(policyFile);
-
     // admin create two databases
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
@@ -86,10 +87,23 @@ public class TestJDBCInterface extends AbstractTestWithStaticConfiguration {
     statement.execute("CREATE TABLE TAB2(id int)");
     statement.execute("CREATE TABLE TAB3(id int)");
 
+    // edit policy file
+    policyFile
+            .addRolesToGroup(USERGROUP1, "select_tab1", "insert_tab2")
+            .addRolesToGroup(USERGROUP2, "select_tab3")
+            .addPermissionsToRole("select_tab1",
+                    "server=server1->db=" + DB1 + "->table=tab1->action=select")
+            .addPermissionsToRole("select_tab3",
+                    "server=server1->db=" + DB2 + "->table=tab3->action=select")
+            .addPermissionsToRole("insert_tab2",
+                    "server=server1->db=" + DB2 + "->table=tab2->action=insert");
+    writePolicyFile(policyFile);
+
     // test show databases
     // show databases shouldn't filter any of the dbs from the resultset
     Connection conn = context.createConnection(USER1_1);
-    List<String> result = new ArrayList<String>();
+    List<String> expectedResult = new ArrayList<String>();
+    List<String> returnedResult = new ArrayList<String>();
 
     // test direct JDBC metadata API
     ResultSet res = conn.getMetaData().getSchemas();
@@ -98,60 +112,65 @@ public class TestJDBCInterface extends AbstractTestWithStaticConfiguration {
     assertEquals("TABLE_SCHEM", resMeta.getColumnName(1));
     assertEquals("TABLE_CATALOG", resMeta.getColumnName(2));
 
-    result.add(DB1);
-    result.add(DB2);
-    result.add("default");
+    expectedResult.add(DB1);
+    expectedResult.add(DB2);
+    expectedResult.add("default");
 
     while (res.next()) {
-      String dbName = res.getString(1);
-      assertTrue(dbName, result.remove(dbName));
+      returnedResult.add(res.getString(1));
     }
-    assertTrue(result.toString(), result.isEmpty());
+    validateReturnedResult(expectedResult, returnedResult);
+    expectedResult.clear();
+    returnedResult.clear();
     res.close();
 
     // test direct JDBC metadata API
     res = conn.getMetaData().getTables(null, DB1, "tab%", null);
-    result.add("tab1");
+    expectedResult.add("tab1");
 
     while (res.next()) {
-      String tableName = res.getString(3);
-      assertTrue(tableName, result.remove(tableName));
+      returnedResult.add(res.getString(3));
     }
-    assertTrue(result.toString(), result.isEmpty());
+    validateReturnedResult(expectedResult, returnedResult);
+    expectedResult.clear();
+    returnedResult.clear();
     res.close();
 
     // test direct JDBC metadata API
     res = conn.getMetaData().getTables(null, DB2, "tab%", null);
-    result.add("tab2");
+    expectedResult.add("tab2");
 
     while (res.next()) {
-      String tableName = res.getString(3);
-      assertTrue(tableName, result.remove(tableName));
+      returnedResult.add(res.getString(3));
     }
-    assertTrue(result.toString(), result.isEmpty());
+    validateReturnedResult(expectedResult, returnedResult);
+    expectedResult.clear();
+    returnedResult.clear();
     res.close();
 
     res = conn.getMetaData().getTables(null, "DB%", "tab%", null);
-    result.add("tab2");
-    result.add("tab1");
+    expectedResult.add("tab2");
+    expectedResult.add("tab1");
 
     while (res.next()) {
-      String tableName = res.getString(3);
-      assertTrue(tableName, result.remove(tableName));
+      returnedResult.add(res.getString(3));
     }
-    assertTrue(result.toString(), result.isEmpty());
+    validateReturnedResult(expectedResult, returnedResult);
+    expectedResult.clear();
+    returnedResult.clear();
     res.close();
 
     // test show columns
     res = conn.getMetaData().getColumns(null, "DB%", "tab%", "i%");
-    result.add("id");
-    result.add("id");
+    expectedResult.add("id");
+    expectedResult.add("id");
 
     while (res.next()) {
-      String columnName = res.getString(4);
-      assertTrue(columnName, result.remove(columnName));
+      returnedResult.add(res.getString(4));
     }
-    assertTrue(result.toString(), result.isEmpty());
+    validateReturnedResult(expectedResult, returnedResult);
+    expectedResult.clear();
+    returnedResult.clear();
     res.close();
 
     conn.close();
@@ -166,46 +185,49 @@ public class TestJDBCInterface extends AbstractTestWithStaticConfiguration {
     assertEquals("TABLE_SCHEM", resMeta.getColumnName(1));
     assertEquals("TABLE_CATALOG", resMeta.getColumnName(2));
 
-    result.add(DB2);
-    result.add("default");
+    expectedResult.add(DB2);
+    expectedResult.add("default");
 
     while (res.next()) {
-      String dbName = res.getString(1);
-      assertTrue(dbName, result.remove(dbName));
+      returnedResult.add(res.getString(1));
     }
-    assertTrue(result.toString(), result.isEmpty());
+    validateReturnedResult(expectedResult, returnedResult);
+    expectedResult.clear();
+    returnedResult.clear();
     res.close();
 
     // test JDBC direct API
     res = conn.getMetaData().getTables(null, "DB%", "tab%", null);
-    result.add("tab3");
+    expectedResult.add("tab3");
 
     while (res.next()) {
-      String tableName = res.getString(3);
-      assertTrue(tableName, result.remove(tableName));
+      returnedResult.add(res.getString(3));
     }
-    assertTrue(result.toString(), result.isEmpty());
+    validateReturnedResult(expectedResult, returnedResult);
+    expectedResult.clear();
+    returnedResult.clear();
     res.close();
 
     // test show columns
     res = conn.getMetaData().getColumns(null, "DB%", "tab%", "i%");
-    result.add("id");
+    expectedResult.add("id");
 
     while (res.next()) {
-      String columnName = res.getString(4);
-      assertTrue(columnName, result.remove(columnName));
+      returnedResult.add(res.getString(4));
     }
-    assertTrue(result.toString(), result.isEmpty());
+    validateReturnedResult(expectedResult, returnedResult);
+    expectedResult.clear();
+    returnedResult.clear();
     res.close();
 
     // test show columns
     res = conn.getMetaData().getColumns(null, DB1, "tab%", "i%");
 
     while (res.next()) {
-      String columnName = res.getString(4);
-      assertTrue(columnName, result.remove(columnName));
+      returnedResult.add(res.getString(4));
     }
-    assertTrue(result.toString(), result.isEmpty());
+    assertTrue("returned result shouldn't contain any value, actually returned result = " + returnedResult.toString(),
+            returnedResult.isEmpty());
     res.close();
 
     context.close();

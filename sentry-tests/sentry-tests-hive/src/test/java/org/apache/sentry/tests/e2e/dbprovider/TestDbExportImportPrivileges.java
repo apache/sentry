@@ -21,17 +21,25 @@ import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 import org.apache.sentry.tests.e2e.hive.TestExportImportPrivileges;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestDbExportImportPrivileges extends TestExportImportPrivileges {
+  private static final Logger LOGGER = LoggerFactory.
+          getLogger(TestDbExportImportPrivileges.class);
   @Override
   @Before
   public void setup() throws Exception {
+    LOGGER.info("TestDbExportImportPrivileges setup");
     super.setupAdmin();
     super.setup();
   }
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception {
+    LOGGER.info("TestDbExportImportPrivileges setupTestStaticConfiguration");
     useSentryService = true;
+    clearDbAfterPerTest = true;
+    clearDbBeforePerTest = true;
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
   }
 
