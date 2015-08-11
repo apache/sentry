@@ -25,7 +25,7 @@ limitations under the License.
   </parent>
 
   <artifactId>sentry-hdfs-service</artifactId>
-  <name>Sentry HDFS service</name>
+  <name>Sentry HDFS Service</name>
 
   <dependencies>
     <dependency>

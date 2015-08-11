@@ -25,7 +25,7 @@ limitations under the License.
   </parent>
 
   <artifactId>sentry-core</artifactId>
-  <name>Sentry core</name>
+  <name>Sentry Core</name>
   <packaging>pom</packaging>
 
   <modules>
