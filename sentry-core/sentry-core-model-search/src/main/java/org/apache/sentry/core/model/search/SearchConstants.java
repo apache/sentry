@@ -27,5 +27,5 @@ public class SearchConstants {
    * sentry.search.cluster=cluster1 or cluster2 to communicate with sentry service for authorization
    */
   public static final String SENTRY_SEARCH_CLUSTER_KEY = "sentry.search.cluster";
-  public static final String SENTRY_SEARCH_CLUSTER_DEFAULT = "clutser1";
+  public static final String SENTRY_SEARCH_CLUSTER_DEFAULT = "cluster1";
 }

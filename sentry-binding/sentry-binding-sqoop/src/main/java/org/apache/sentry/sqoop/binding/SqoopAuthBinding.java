@@ -33,6 +33,7 @@ import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.common.AuthorizationComponent;
 import org.apache.sentry.provider.common.AuthorizationProvider;
 import org.apache.sentry.provider.common.ProviderBackend;
+import org.apache.sentry.provider.db.generic.SentryGenericProviderBackend;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
 import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryGrantOption;
@@ -84,18 +85,29 @@ public class SqoopAuthBinding {
     String resourceName = authConf.get(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar(), AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getDefault());
     String providerBackendName = authConf.get(AuthzConfVars.AUTHZ_PROVIDER_BACKEND.getVar(), AuthzConfVars.AUTHZ_PROVIDER_BACKEND.getDefault());
     String policyEngineName = authConf.get(AuthzConfVars.AUTHZ_POLICY_ENGINE.getVar(), AuthzConfVars.AUTHZ_POLICY_ENGINE.getDefault());
+    String serviceName = authConf.get(AuthzConfVars.AUTHZ_SERVER_NAME.getVar());
     if (LOG.isDebugEnabled()) {
       LOG.debug("Using authorization provider " + authProviderName +
           " with resource " + resourceName + ", policy engine "
           + policyEngineName + ", provider backend " + providerBackendName);
     }
 
+    // the SqoopProviderBackend is deleted in SENTRY-828, this is for the compatible with the
+    // previous Sentry.
+    if ("org.apache.sentry.sqoop.binding.SqoopProviderBackend".equals(providerBackendName)) {
+      providerBackendName = SentryGenericProviderBackend.class.getName();
+    }
+
     //Instantiate the configured providerBackend
-    Constructor<?> providerBackendConstructor =
-        Class.forName(providerBackendName).getDeclaredConstructor(Configuration.class, String.class);
+    Constructor<?> providerBackendConstructor = Class.forName(providerBackendName)
+        .getDeclaredConstructor(Configuration.class, String.class);
     providerBackendConstructor.setAccessible(true);
-    providerBackend =
-          (ProviderBackend) providerBackendConstructor.newInstance(new Object[] {authConf, resourceName});
+    providerBackend = (ProviderBackend) providerBackendConstructor.newInstance(new Object[] {
+        authConf, resourceName });
+    if (providerBackend instanceof SentryGenericProviderBackend) {
+      ((SentryGenericProviderBackend) providerBackend).setComponentType(COMPONENT_TYPE);
+      ((SentryGenericProviderBackend) providerBackend).setServiceName(serviceName);
+    }
 
     //Instantiate the configured policyEngine
     Constructor<?> policyConstructor =

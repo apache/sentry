@@ -64,14 +64,14 @@ public class TestSolrDocLevelOperations extends AbstractSolrSentryTestWithDbProv
 
       // as user0
       setAuthenticationUser("user0");
-      client.grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role0", SearchConstants.QUERY);
+      grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role0", SearchConstants.QUERY);
       rsp = server.query(query);
       docList = rsp.getResults();
       assertEquals(NUM_DOCS/4, rsp.getResults().getNumFound());
 
       //as user1
       setAuthenticationUser("user1");
-      client.grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role1", SearchConstants.QUERY);
+      grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role1", SearchConstants.QUERY);
       rsp = server.query(query);
       docList = rsp.getResults();
       assertEquals(NUM_DOCS/4, rsp.getResults().getNumFound());  docList = rsp.getResults();
@@ -79,14 +79,14 @@ public class TestSolrDocLevelOperations extends AbstractSolrSentryTestWithDbProv
 
       //as user2
       setAuthenticationUser("user2");
-      client.grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role2", SearchConstants.QUERY);
+      grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role2", SearchConstants.QUERY);
       rsp = server.query(query);
       docList = rsp.getResults();
       assertEquals(NUM_DOCS/4, rsp.getResults().getNumFound());
 
       //as user3
       setAuthenticationUser("user3");
-      client.grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role3", SearchConstants.QUERY);
+      grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role3", SearchConstants.QUERY);
       rsp = server.query(query);
       docList = rsp.getResults();
       assertEquals(NUM_DOCS/4, rsp.getResults().getNumFound());
@@ -106,7 +106,7 @@ public class TestSolrDocLevelOperations extends AbstractSolrSentryTestWithDbProv
     CloudSolrServer server = getCloudSolrServer(TEST_COLLECTION_NAME1);
     try {
       setAuthenticationUser("user0");
-      client.grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role0", SearchConstants.QUERY);
+      grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role0", SearchConstants.QUERY);
       String docIdStr = Long.toString(1);
 
       // verify we can't view one of the odd documents

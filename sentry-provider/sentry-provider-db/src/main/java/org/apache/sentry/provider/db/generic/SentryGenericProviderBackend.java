@@ -39,12 +39,17 @@ import com.google.common.collect.Sets;
 /**
  * This class used when any component such as Hive, Solr or Sqoop want to integration with the Sentry service
  */
-public abstract class SentryGenericProviderBackend implements ProviderBackend {
+public class SentryGenericProviderBackend implements ProviderBackend {
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryGenericProviderBackend.class);
   private final Configuration conf;
   private volatile boolean initialized = false;
+  private String componentType;
+  private String serviceName;
 
-  public SentryGenericProviderBackend(Configuration conf) throws Exception {
+  // ProviderBackend should have the same construct to support the reflect in authBinding,
+  // eg:SqoopAuthBinding
+  public SentryGenericProviderBackend(Configuration conf, String resource)
+      throws Exception {
     this.conf = conf;
   }
 
@@ -73,9 +78,8 @@ public abstract class SentryGenericProviderBackend implements ProviderBackend {
     SentryGenericServiceClient client = null;
     try {
       client = getClient();
-      return ImmutableSet.copyOf(client.listPrivilegesForProvider(
-          getComponentType(), getComponentIdentifier(), roleSet, groups,
-          Arrays.asList(authorizableHierarchy)));
+      return ImmutableSet.copyOf(client.listPrivilegesForProvider(componentType, serviceName,
+          roleSet, groups, Arrays.asList(authorizableHierarchy)));
     } catch (SentryUserException e) {
       String msg = "Unable to obtain privileges from server: " + e.getMessage();
       LOGGER.error(msg, e);
@@ -138,16 +142,20 @@ public abstract class SentryGenericProviderBackend implements ProviderBackend {
   public void close() {
   }
 
-  /**
-   * Get the component type for the Generic Provider backend, such as Hive,Solr or Sqoop
-   */
-  public abstract String getComponentType();
+  public void setComponentType(String componentType) {
+    this.componentType = componentType;
+  }
 
-  /**
-   * When the providerBackend want to get privileges from the Sentry service.
-   * The component identifier is very important to Sentry service. Take the component type is Hive for example,
-   * when there are multiple HiveServers implemented role-based authorization via Sentry. Each HiveServer must uses a
-   * identifier to distinguish itself from multiple HiveServers.
-   */
-  public abstract String getComponentIdentifier();
+  public String getComponentType() {
+    return componentType;
+  }
+
+  public String getServiceName() {
+    return serviceName;
+  }
+
+  public void setServiceName(String serviceName) {
+    this.serviceName = serviceName;
+  }
+
 }

@@ -17,6 +17,8 @@
 package org.apache.sentry.tests.e2e.solr.db.integration;
 
 
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.util.Arrays;
 
@@ -26,8 +28,6 @@ import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.junit.Assert.assertTrue;
 
 public class TestSolrAdminOperations extends AbstractSolrSentryTestWithDbProvider {
   private static final Logger LOG = LoggerFactory.getLogger(TestSolrAdminOperations.class);
@@ -52,8 +52,8 @@ public class TestSolrAdminOperations extends AbstractSolrSentryTestWithDbProvide
      * user0->group0->role0
      * grant ALL privilege on collection admin and collection1 to role0
      */
-    client.grantCollectionPrivilege(ADMIN_COLLECTION_NAME, ADMIN_USER, "role0", SearchConstants.ALL);
-    client.grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role0", SearchConstants.ALL);
+    grantCollectionPrivilege(ADMIN_COLLECTION_NAME, ADMIN_USER, "role0", SearchConstants.ALL);
+    grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role0", SearchConstants.ALL);
 
     verifyCollectionAdminOpPass(grantor, CollectionAction.CREATE, TEST_COLLECTION_NAME1);
     verifyCollectionAdminOpPass(grantor, CollectionAction.RELOAD, TEST_COLLECTION_NAME1);
@@ -62,7 +62,7 @@ public class TestSolrAdminOperations extends AbstractSolrSentryTestWithDbProvide
     verifyCollectionAdminOpPass(grantor, CollectionAction.DELETE, TEST_COLLECTION_NAME1);
 
     //revoke UPDATE privilege on collection collection1 from role1, create collection1 will be failed
-    client.revokeCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role0", SearchConstants.UPDATE);
+    revokeCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role0", SearchConstants.UPDATE);
 
     verifyCollectionAdminOpFail(grantor, CollectionAction.CREATE, TEST_COLLECTION_NAME1);
     verifyCollectionAdminOpFail(grantor, CollectionAction.RELOAD, TEST_COLLECTION_NAME1);
@@ -75,8 +75,8 @@ public class TestSolrAdminOperations extends AbstractSolrSentryTestWithDbProvide
      * grant UPDATE privilege on collection admin and collection1 to role1
      */
     grantor = "user1";
-    client.grantCollectionPrivilege(ADMIN_COLLECTION_NAME, ADMIN_USER, "role1", SearchConstants.UPDATE);
-    client.grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role1", SearchConstants.UPDATE);
+    grantCollectionPrivilege(ADMIN_COLLECTION_NAME, ADMIN_USER, "role1", SearchConstants.UPDATE);
+    grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role1", SearchConstants.UPDATE);
 
     verifyCollectionAdminOpPass(grantor, CollectionAction.CREATE, TEST_COLLECTION_NAME1);
     verifyCollectionAdminOpPass(grantor, CollectionAction.RELOAD, TEST_COLLECTION_NAME1);
@@ -85,7 +85,7 @@ public class TestSolrAdminOperations extends AbstractSolrSentryTestWithDbProvide
     verifyCollectionAdminOpPass(grantor, CollectionAction.DELETE, TEST_COLLECTION_NAME1);
 
     //revoke UPDATE privilege on collection admin from role1, create collection1 will be failed
-    client.revokeCollectionPrivilege(ADMIN_COLLECTION_NAME, ADMIN_USER, "role1", SearchConstants.UPDATE);
+    revokeCollectionPrivilege(ADMIN_COLLECTION_NAME, ADMIN_USER, "role1", SearchConstants.UPDATE);
     verifyCollectionAdminOpFail(grantor, CollectionAction.CREATE, TEST_COLLECTION_NAME1);
     verifyCollectionAdminOpFail(grantor, CollectionAction.RELOAD, TEST_COLLECTION_NAME1);
     verifyCollectionAdminOpFail(grantor, CollectionAction.CREATEALIAS, TEST_COLLECTION_NAME1);
@@ -98,8 +98,8 @@ public class TestSolrAdminOperations extends AbstractSolrSentryTestWithDbProvide
      * grant QUERY privilege on collection admin and collection1 to role2
      */
     grantor = "user2";
-    client.grantCollectionPrivilege(ADMIN_COLLECTION_NAME, ADMIN_USER, "role2", SearchConstants.QUERY);
-    client.grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role2", SearchConstants.QUERY);
+    grantCollectionPrivilege(ADMIN_COLLECTION_NAME, ADMIN_USER, "role2", SearchConstants.QUERY);
+    grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role2", SearchConstants.QUERY);
 
     verifyCollectionAdminOpFail(grantor, CollectionAction.CREATE, TEST_COLLECTION_NAME1);
     verifyCollectionAdminOpFail(grantor, CollectionAction.RELOAD, TEST_COLLECTION_NAME1);
@@ -108,11 +108,11 @@ public class TestSolrAdminOperations extends AbstractSolrSentryTestWithDbProvide
     verifyCollectionAdminOpFail(grantor, CollectionAction.DELETE, TEST_COLLECTION_NAME1);
 
     //grant UPDATE privilege on collection collection1 to role2, create collection1 will be failed
-    client.grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role2", SearchConstants.UPDATE);
+    grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role2", SearchConstants.UPDATE);
     verifyCollectionAdminOpFail(grantor, CollectionAction.CREATE, TEST_COLLECTION_NAME1);
 
     //grant UPDATE privilege on collection admin to role2, create collection1 will be successful.
-    client.grantCollectionPrivilege(ADMIN_COLLECTION_NAME, ADMIN_USER, "role2", SearchConstants.UPDATE);
+    grantCollectionPrivilege(ADMIN_COLLECTION_NAME, ADMIN_USER, "role2", SearchConstants.UPDATE);
 
     verifyCollectionAdminOpPass(grantor, CollectionAction.CREATE, TEST_COLLECTION_NAME1);
     verifyCollectionAdminOpPass(grantor, CollectionAction.RELOAD, TEST_COLLECTION_NAME1);
@@ -133,8 +133,8 @@ public class TestSolrAdminOperations extends AbstractSolrSentryTestWithDbProvide
      * grant UPDATE privilege on collection admin to role3
      * grant QUERY privilege on collection collection1 to role3
      */
-    client.grantCollectionPrivilege(ADMIN_COLLECTION_NAME, ADMIN_USER, "role3", SearchConstants.ALL);
-    client.grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role3", SearchConstants.ALL);
+    grantCollectionPrivilege(ADMIN_COLLECTION_NAME, ADMIN_USER, "role3", SearchConstants.ALL);
+    grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role3", SearchConstants.ALL);
 
     verifyCollectionAdminOpPass(grantor, CollectionAction.CREATE, TEST_COLLECTION_NAME1);
     verifyCollectionAdminOpPass(grantor, CollectionAction.RELOAD, TEST_COLLECTION_NAME1);
@@ -159,24 +159,27 @@ public class TestSolrAdminOperations extends AbstractSolrSentryTestWithDbProvide
      * Grant ALL privilege on collection admin to role0
      * user0 can execute create & delete collection1 operation
      */
-    client.grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role0", SearchConstants.ALL);
-    client.grantCollectionPrivilege(ADMIN_COLLECTION_NAME, ADMIN_USER, "role0", SearchConstants.ALL);
+    grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role0", SearchConstants.ALL);
+    grantCollectionPrivilege(ADMIN_COLLECTION_NAME, ADMIN_USER, "role0", SearchConstants.ALL);
 
     assertTrue("user0 has one privilege on collection admin",
-        client.listPrivilegesByRoleName("user0", "role0", Arrays.asList(new Collection(ADMIN_COLLECTION_NAME))).size() == 1);
+        client.listPrivilegesByRoleName("user0", "role0", COMPONENT_SOLR, CLUSTER_NAME,
+            Arrays.asList(new Collection(ADMIN_COLLECTION_NAME))).size() == 1);
 
     assertTrue("user0 has one privilege on collection collection1",
-        client.listPrivilegesByRoleName("user0", "role0", Arrays.asList(new Collection(TEST_COLLECTION_NAME1))).size() == 1);
+        client.listPrivilegesByRoleName("user0", "role0", COMPONENT_SOLR, CLUSTER_NAME,
+            Arrays.asList(new Collection(TEST_COLLECTION_NAME1))).size() == 1);
 
     /**
      * user1->group1->role1
      * grant QUERY privilege on collection collection1 to role1
      */
 
-    client.listPrivilegesByRoleName("user0", "role0", null);
-    client.grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role1", SearchConstants.ALL);
+    client.listPrivilegesByRoleName("user0", "role0", COMPONENT_SOLR, CLUSTER_NAME, null);
+    grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role1", SearchConstants.ALL);
     assertTrue("user1 has one privilege record",
-        client.listPrivilegesByRoleName("user1", "role1", Arrays.asList(new Collection(TEST_COLLECTION_NAME1))).size() == 1);
+        client.listPrivilegesByRoleName("user1", "role1", COMPONENT_SOLR, CLUSTER_NAME,
+            Arrays.asList(new Collection(TEST_COLLECTION_NAME1))).size() == 1);
 
     /**
      * create collection collection1
@@ -189,32 +192,36 @@ public class TestSolrAdminOperations extends AbstractSolrSentryTestWithDbProvide
 
     //check the user0
     assertTrue("user0 has one privilege on collection admin",
-        client.listPrivilegesByRoleName("user0", "role0", Arrays.asList(new Collection(ADMIN_COLLECTION_NAME))).size() == 1);
+        client.listPrivilegesByRoleName("user0", "role0", COMPONENT_SOLR, CLUSTER_NAME,
+            Arrays.asList(new Collection(ADMIN_COLLECTION_NAME))).size() == 1);
 
     assertTrue("user0 has no privilege on collection collection1",
-        client.listPrivilegesByRoleName("user0", "role0", Arrays.asList(new Collection(TEST_COLLECTION_NAME1))).size() == 0);
+        client.listPrivilegesByRoleName("user0", "role0", COMPONENT_SOLR, CLUSTER_NAME,
+            Arrays.asList(new Collection(TEST_COLLECTION_NAME1))).size() == 0);
 
     //check the user1
     assertTrue("user1 has no privilege on collection collection1",
-        client.listPrivilegesByRoleName("user1", "role1", Arrays.asList(new Collection(TEST_COLLECTION_NAME1))).size() == 0);
-
+        client.listPrivilegesByRoleName("user1", "role1", COMPONENT_SOLR, CLUSTER_NAME,
+            Arrays.asList(new Collection(TEST_COLLECTION_NAME1))).size() == 0);
 
     /**
      * user2->group2->role2
      * Grant UPDATE privilege on collection collection1 to role2
      */
-    client.grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role2", SearchConstants.UPDATE);
+    grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role2", SearchConstants.UPDATE);
 
     assertTrue("user2 has one privilege on collection collection1",
-        client.listPrivilegesByRoleName("user2", "role2", Arrays.asList(new Collection(TEST_COLLECTION_NAME1))).size() == 1);
+        client.listPrivilegesByRoleName("user2", "role2", COMPONENT_SOLR, CLUSTER_NAME,
+            Arrays.asList(new Collection(TEST_COLLECTION_NAME1))).size() == 1);
 
     /**
      * user3->group3->role3
      * grant QUERY privilege on collection collection1 to role3
      */
-    client.grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role3", SearchConstants.QUERY);
+    grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role3", SearchConstants.QUERY);
     assertTrue("user1 has one privilege record",
-        client.listPrivilegesByRoleName("user3", "role3", Arrays.asList(new Collection(TEST_COLLECTION_NAME1))).size() == 1);
+        client.listPrivilegesByRoleName("user3", "role3", COMPONENT_SOLR, CLUSTER_NAME,
+            Arrays.asList(new Collection(TEST_COLLECTION_NAME1))).size() == 1);
 
     /**
      * create collection collection1
@@ -227,10 +234,12 @@ public class TestSolrAdminOperations extends AbstractSolrSentryTestWithDbProvide
 
     //check the user2
     assertTrue("user2 has no privilege on collection collection1",
-        client.listPrivilegesByRoleName("user2", "role2", Arrays.asList(new Collection(TEST_COLLECTION_NAME1))).size() == 0);
+        client.listPrivilegesByRoleName("user2", "role2", COMPONENT_SOLR, CLUSTER_NAME,
+            Arrays.asList(new Collection(TEST_COLLECTION_NAME1))).size() == 0);
 
     //check the user3
     assertTrue("user3 has no privilege on collection collection1",
-        client.listPrivilegesByRoleName("user3", "role3", Arrays.asList(new Collection(TEST_COLLECTION_NAME1))).size() == 0);
+        client.listPrivilegesByRoleName("user3", "role3", COMPONENT_SOLR, CLUSTER_NAME,
+            Arrays.asList(new Collection(TEST_COLLECTION_NAME1))).size() == 0);
   }
 }

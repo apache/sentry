@@ -30,13 +30,12 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
-
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.UserGroupInformation;
-
 import org.apache.sentry.core.model.sqoop.SqoopActionConstant;
+import org.apache.sentry.provider.db.generic.SentryGenericProviderBackend;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
 import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
@@ -46,22 +45,14 @@ import org.apache.sentry.service.thrift.SentryService;
 import org.apache.sentry.service.thrift.SentryServiceFactory;
 import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
-
-import org.apache.sentry.sqoop.binding.SqoopProviderBackend;
 import org.apache.sentry.sqoop.conf.SqoopAuthConf.AuthzConfVars;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
 
 public class AbstractSqoopSentryTestBase {
-  private static final Logger LOGGER = LoggerFactory
-      .getLogger(AbstractSqoopSentryTestBase.class);
-
   private static final String SERVER_HOST = NetUtils
       .createSocketAddr("localhost:80").getAddress().getCanonicalHostName();
   private static final int PORT = 8038;
@@ -185,7 +176,8 @@ public class AbstractSqoopSentryTestBase {
 
     conf.set(AuthzConfVars.AUTHZ_PROVIDER.getVar(),
         LocalGroupResourceAuthorizationProvider.class.getName());
-    conf.set(AuthzConfVars.AUTHZ_PROVIDER_BACKEND.getVar(), SqoopProviderBackend.class.getName());
+    conf.set(AuthzConfVars.AUTHZ_PROVIDER_BACKEND.getVar(),
+        SentryGenericProviderBackend.class.getName());
     conf.set(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar(), policyFilePath.getPath());
     conf.set(AuthzConfVars.AUTHZ_TESTING_MODE.getVar(), "true");
     return conf;

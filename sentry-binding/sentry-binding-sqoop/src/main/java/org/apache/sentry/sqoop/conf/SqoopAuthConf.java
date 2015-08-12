@@ -17,6 +17,7 @@
 package org.apache.sentry.sqoop.conf;
 
 import java.net.URL;
+
 import org.apache.hadoop.conf.Configuration;
 
 public class SqoopAuthConf extends Configuration {
@@ -30,7 +31,9 @@ public class SqoopAuthConf extends Configuration {
   public static enum AuthzConfVars {
     AUTHZ_PROVIDER("sentry.sqoop.provider","org.apache.sentry.provider.common.HadoopGroupResourceAuthorizationProvider"),
     AUTHZ_PROVIDER_RESOURCE("sentry.sqoop.provider.resource", ""),
-    AUTHZ_PROVIDER_BACKEND("sentry.sqoop.provider.backend","org.apache.sentry.provider.file.SimpleFileProviderBackend"),
+    AUTHZ_PROVIDER_BACKEND(
+        "sentry.sqoop.provider.backend",
+        "org.apache.sentry.provider.db.generic.SentryGenericProviderBackend"),
     AUTHZ_POLICY_ENGINE("sentry.sqoop.policy.engine","org.apache.sentry.policy.sqoop.SimpleSqoopPolicyEngine"),
     AUTHZ_SERVER_NAME("sentry.sqoop.name", ""),
     AUTHZ_TESTING_MODE("sentry.sqoop.testing.mode", "false");
