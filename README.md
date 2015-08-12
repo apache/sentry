@@ -10,6 +10,10 @@ Bug and Issues tracker
 
 *  https://issues.apache.org/jira/browse/SENTRY
 
+Wiki
+
+*  https://cwiki.apache.org/confluence/display/SENTRY/Home
+
 Building Sentry
 
 Building Sentry requires the following tools:
