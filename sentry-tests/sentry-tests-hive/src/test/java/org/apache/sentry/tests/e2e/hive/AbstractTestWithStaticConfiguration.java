@@ -465,7 +465,7 @@ public abstract class AbstractTestWithStaticConfiguration {
     }
   }
 
-  protected void clearAll(boolean clearDb) throws Exception {
+  protected static void clearAll(boolean clearDb) throws Exception {
     LOGGER.info("About to run clearAll");
     ResultSet resultSet;
     Connection connection = context.createConnection(ADMIN1);
@@ -473,9 +473,15 @@ public abstract class AbstractTestWithStaticConfiguration {
 
     if (clearDb) {
       LOGGER.info("About to clear all databases and default database tables");
-      String[] dbs = { DB1, DB2, DB3 };
+      resultSet = statement.executeQuery("SHOW DATABASES");
+      ArrayList<String> dbs = new ArrayList<String>();
+      while(resultSet.next()) {
+        dbs.add(resultSet.getString(1));
+      }
       for (String db : dbs) {
-        statement.execute("DROP DATABASE if exists " + db + " CASCADE");
+        if(!db.equalsIgnoreCase("default")) {
+          statement.execute("DROP DATABASE if exists " + db + " CASCADE");
+        }
       }
       statement.execute("USE default");
       resultSet = statement.executeQuery("SHOW tables");
