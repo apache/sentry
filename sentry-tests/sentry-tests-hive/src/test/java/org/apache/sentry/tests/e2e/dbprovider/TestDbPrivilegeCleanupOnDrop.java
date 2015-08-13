@@ -31,8 +31,10 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.hadoop.hive.SentryHiveConstants;
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -58,7 +60,14 @@ public class TestDbPrivilegeCleanupOnDrop extends
   public static void setupTestStaticConfiguration() throws Exception {
     useSentryService = true;
     setMetastoreListener = true;
+    System.setProperty(SentryHiveConstants.ALLOW_ALL_DDL_FOR_TEST, "true");
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
+  }
+
+  @AfterClass
+  public static void tearDownTestStaticConfiguration() throws Exception {
+    AbstractTestWithStaticConfiguration.tearDownTestStaticConfiguration();
+    System.setProperty(SentryHiveConstants.ALLOW_ALL_DDL_FOR_TEST, "true");
   }
 
   @Before

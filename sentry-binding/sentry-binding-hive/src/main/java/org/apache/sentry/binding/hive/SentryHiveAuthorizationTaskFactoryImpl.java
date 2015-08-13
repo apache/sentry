@@ -354,7 +354,7 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
       if (privObj == null) {
         throw new SemanticException("undefined privilege " + privilegeType.getType());
       }
-      if (!SentryHiveConstants.ALLOWED_PRIVS.contains(privObj.getPriv())) {
+      if (!SentryHiveConstants.getAllowedPrivileges().contains(privObj.getPriv())) {
         String msg = SentryHiveConstants.PRIVILEGE_NOT_SUPPORTED + privObj.getPriv();
         throw new SemanticException(msg);
       }

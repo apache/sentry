@@ -26,9 +26,14 @@ import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.hadoop.hive.SentryHiveConstants;
 import org.apache.sentry.provider.file.PolicyFile;
+
 import static org.junit.Assert.assertTrue;
+
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -61,6 +66,18 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     privileges.put("insert_db2_tb2", "server=server1->db=" + DB2 + "->table=tb2->action=insert");
     privileges.put("select_db1_view1", "server=server1->db=" + DB1 + "->table=view1->action=select");
 
+  }
+
+  @BeforeClass
+  public static void setupTestStaticConfiguration() throws Exception {
+    System.setProperty(SentryHiveConstants.ALLOW_ALL_DDL_FOR_TEST, "true");
+    AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
+  }
+
+  @AfterClass
+  public static void tearDownTestStaticConfiguration() throws Exception {
+    AbstractTestWithStaticConfiguration.tearDownTestStaticConfiguration();
+    System.setProperty(SentryHiveConstants.ALLOW_ALL_DDL_FOR_TEST, "false");
   }
 
   @Before

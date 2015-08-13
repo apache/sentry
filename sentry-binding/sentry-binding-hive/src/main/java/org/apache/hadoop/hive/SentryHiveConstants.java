@@ -22,10 +22,25 @@ import java.util.EnumSet;
 import org.apache.hadoop.hive.ql.security.authorization.PrivilegeType;
 
 public class SentryHiveConstants {
-  public static final EnumSet<PrivilegeType> ALLOWED_PRIVS = EnumSet.allOf(PrivilegeType.class);
-
+  private static final EnumSet<PrivilegeType> LEGACY_PRIVS = EnumSet.of(
+      PrivilegeType.ALL, PrivilegeType.SELECT, PrivilegeType.INSERT);
+  private static final EnumSet<PrivilegeType> ALL_PRIVS = EnumSet.allOf(PrivilegeType.class);
+  
+  public static final String ALLOW_ALL_DDL_FOR_TEST = "sentry.hive.testmode.all.ddl";
   public static final String PRIVILEGE_NOT_SUPPORTED = "Sentry does not support privilege: ";
   public static final String PARTITION_PRIVS_NOT_SUPPORTED = "Sentry does not support partition level authorization";
   public static final String GRANT_REVOKE_NOT_SUPPORTED_ON_OBJECT = "Sentry does not allow grant/revoke on: ";
   public static final String GRANT_REVOKE_NOT_SUPPORTED_FOR_PRINCIPAL = "Sentry does not allow privileges to be granted/revoked to/from: ";
+
+  /***
+   * Enum set of allowed privileges operations
+   * @return EnumSet<PrivilegeType>
+   */
+  public static EnumSet<PrivilegeType> getAllowedPrivileges() {
+    if ("true".equalsIgnoreCase(System.getProperty(ALLOW_ALL_DDL_FOR_TEST, "false"))) {
+      return ALL_PRIVS;
+    } else {
+    return LEGACY_PRIVS;
+    }
+  }
 }

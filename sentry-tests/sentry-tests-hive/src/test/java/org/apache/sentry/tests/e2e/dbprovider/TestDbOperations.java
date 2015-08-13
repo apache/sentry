@@ -16,8 +16,10 @@
  */
 package org.apache.sentry.tests.e2e.dbprovider;
 
+import org.apache.hadoop.hive.SentryHiveConstants;
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 import org.apache.sentry.tests.e2e.hive.TestOperations;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
@@ -31,7 +33,14 @@ public class TestDbOperations extends TestOperations{
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception {
     useSentryService = true;
+    System.setProperty(SentryHiveConstants.ALLOW_ALL_DDL_FOR_TEST, "true");
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
 
+  }
+
+  @AfterClass
+  public static void tearDownTestStaticConfiguration() throws Exception {
+    AbstractTestWithStaticConfiguration.tearDownTestStaticConfiguration();
+    System.setProperty(SentryHiveConstants.ALLOW_ALL_DDL_FOR_TEST, "false");
   }
 }

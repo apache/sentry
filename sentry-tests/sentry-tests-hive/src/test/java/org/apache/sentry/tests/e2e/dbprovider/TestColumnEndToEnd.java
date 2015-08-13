@@ -24,9 +24,11 @@ import java.io.FileOutputStream;
 import java.sql.Connection;
 import java.sql.Statement;
 
+import org.apache.hadoop.hive.SentryHiveConstants;
 import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -47,6 +49,7 @@ public class TestColumnEndToEnd extends AbstractTestWithStaticConfiguration {
   @Override
   @Before
   public void setup() throws Exception {
+    System.setProperty(SentryHiveConstants.ALLOW_ALL_DDL_FOR_TEST, "true");
     super.setupAdmin();
     super.setup();
     dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
@@ -54,6 +57,11 @@ public class TestColumnEndToEnd extends AbstractTestWithStaticConfiguration {
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
     policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+  }
+
+  @After
+  public void cleanup() throws Exception {
+    System.setProperty(SentryHiveConstants.ALLOW_ALL_DDL_FOR_TEST, "false");
   }
 
   @Test

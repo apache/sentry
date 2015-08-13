@@ -432,7 +432,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
             "server=server1->db=" + DB1 + "->table=" + TBL2)
         .addRolesToGroup(USERGROUP2, "drop_tab1")
         .addPermissionsToRole("drop_tab1",
-            "server=server1->db=" + DB1 + "->table=" + TBL3 + "->action=drop",
+            "server=server1->db=" + DB1 + "->table=" + TBL3 + "->action=all",
             "server=server1->db=" + DB1 + "->table=" + TBL3 + "->action=select")
         .addRolesToGroup(USERGROUP3, "select_tab1")
         .addPermissionsToRole("select_tab1",
