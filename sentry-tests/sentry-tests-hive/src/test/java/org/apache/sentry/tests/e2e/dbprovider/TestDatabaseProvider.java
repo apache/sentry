@@ -52,45 +52,16 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception{
     useSentryService = true;
-    clearDbAfterPerTest = false;
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
+    AbstractTestWithStaticConfiguration.setupAdmin();
   }
 
-  /**
-   * This test is only used for manual testing of beeline with Sentry Service
-   * @throws Exception
-   */
-  @Override
-  @After
-  public void clearAfterPerTest() throws Exception {
-    Connection connection;
-    Statement statement;
-    connection = context.createConnection(ADMIN1);
-    statement = context.createStatement(connection);
-    ResultSet resultSet;
-    resultSet = statement.executeQuery("SHOW roles");
-    List<String> roles = new ArrayList<String>();
-    while ( resultSet.next()) {
-      roles.add(resultSet.getString(1));
-    }
-    for(String role:roles) {
-      statement.execute("DROP Role " + role);
-    }
 
-    statement.close();
-    connection.close();
-    if (context != null) {
-      context.close();
-    }
-  }
 
   @Test
   public void testBasic() throws Exception {
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    statement.execute("CREATE ROLE admin_role");
-    statement.execute("GRANT ALL ON DATABASE default TO ROLE admin_role");
-    statement.execute("GRANT ROLE admin_role TO GROUP " + ADMINGROUP);
     statement.execute("DROP TABLE t1");
     statement.execute("CREATE TABLE t1 (c1 string)");
     statement.execute("CREATE ROLE user_role");
@@ -240,7 +211,6 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
   }
 
   private File doSetupForGrantDbTests() throws Exception {
-    super.setupAdmin();
 
     //copy data file to test dir
     File dataDir = context.getDataDir();
@@ -358,7 +328,6 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
    * @throws Exception
    */
   private void doSetup() throws Exception {
-    super.setupAdmin();
 
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
@@ -402,7 +371,6 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
 
   @Test
   public void testRevokeFailAnotherRoleExist() throws Exception {
-    super.setupAdmin();
 
     //copy data file to test dir
     File dataDir = context.getDataDir();
@@ -503,7 +471,6 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
 
   @Test
   public void testRevokeFailMultipleGrantsExist() throws Exception {
-    super.setupAdmin();
 
     //copy data file to test dir
     File dataDir = context.getDataDir();
@@ -585,7 +552,6 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
    */
   @Test
   public void testRevokeAllOnServer() throws Exception{
-    super.setupAdmin();
 
     //copy data file to test dir
     File dataDir = context.getDataDir();
@@ -672,7 +638,6 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
    */
   @Test
   public void testRevokeAllOnDb() throws Exception{
-    super.setupAdmin();
 
     //copy data file to test dir
     File dataDir = context.getDataDir();
@@ -754,7 +719,6 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
    */
   @Test
   public void testRevokeAllOnTable() throws Exception{
-    super.setupAdmin();
 
     //copy data file to test dir
     File dataDir = context.getDataDir();
@@ -835,7 +799,6 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
    */
   @Test
   public void testRevokeSELECTOnTable() throws Exception{
-    super.setupAdmin();
 
     //copy data file to test dir
     File dataDir = context.getDataDir();
@@ -915,7 +878,6 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
    */
   @Test
   public void testRevokeINSERTOnTable() throws Exception{
-    super.setupAdmin();
 
     //copy data file to test dir
     File dataDir = context.getDataDir();
@@ -1232,10 +1194,10 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     Statement statement = context.createStatement(connection);
     statement.execute("CREATE ROLE role1");
     ResultSet resultSet = statement.executeQuery("SHOW roles");
-    assertResultSize(resultSet, 1);
+    assertResultSize(resultSet, 2);
     statement.execute("DROP ROLE role1");
     resultSet = statement.executeQuery("SHOW roles");
-    assertResultSize(resultSet, 0);
+    assertResultSize(resultSet, 1);
   }
 
   /**
@@ -1380,7 +1342,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     ResultSet resultSet = statement.executeQuery("SHOW ROLES");
-    assertResultSize(resultSet, 0);
+    assertResultSize(resultSet, 1);
     statement.execute("CREATE ROLE role1");
     statement.execute("CREATE ROLE role2");
     resultSet = statement.executeQuery("SHOW ROLES");
@@ -1392,7 +1354,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     while ( resultSet.next()) {
       roles.add(resultSet.getString(1));
     }
-    assertThat(roles.size(), is(2));
+    assertThat(roles.size(), is(3));
     assertTrue(roles.contains("role1"));
     assertTrue(roles.contains("role2"));
     statement.close();
@@ -1416,9 +1378,9 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     statement.execute("CREATE ROLE role1");
     statement.execute("CREATE ROLE role2");
     statement.execute("CREATE ROLE role3");
-    statement.execute("GRANT ROLE role1 to GROUP " + ADMINGROUP);
+    statement.execute("GRANT ROLE role1 to GROUP " + USERGROUP1);
 
-    ResultSet resultSet = statement.executeQuery("SHOW ROLE GRANT GROUP " + ADMINGROUP);
+    ResultSet resultSet = statement.executeQuery("SHOW ROLE GRANT GROUP " + USERGROUP1);
     ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
     assertThat(resultSetMetaData.getColumnCount(), is(4));
     assertThat(resultSetMetaData.getColumnName(1), equalToIgnoringCase("role"));
@@ -1912,7 +1874,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     statement.execute("GRANT ROLE " + testRole2 + " TO GROUP " + USERGROUP1);
 
     ResultSet resultSet = statement.executeQuery("SHOW CURRENT ROLES");
-    assertResultSize(resultSet, 2);
+    assertResultSize(resultSet, 3);
 
     statement.execute("SET ROLE " + testRole1);
     resultSet = statement.executeQuery("SHOW CURRENT ROLES");
@@ -2014,7 +1976,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
 
     ResultSet resultSet;
     resultSet = statement.executeQuery("SHOW ROLE GRANT GROUP " + ADMINGROUP);
-    assertResultSize(resultSet, 1);
+    assertResultSize(resultSet, 2);
 
     context.assertSentryException(statement, "SHOW ROLE GRANT GROUP Admin",
         SentryNoSuchObjectException.class.getSimpleName());
@@ -2029,7 +1991,6 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
    */
   @Test
   public void testGrantRevokeRoleToGroups() throws Exception {
-    super.setupAdmin();
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
