@@ -22,6 +22,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.sql.Statement;
 
 import org.apache.sentry.provider.db.SentryAccessDeniedException;
@@ -82,11 +83,13 @@ public class TestColumnEndToEnd extends AbstractTestWithStaticConfiguration {
   public void testNegative() throws Exception {
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    statement.execute("CREATE TABLE t1 (c1 string, c2 string, c3 string)");
+    statement.execute("CREATE TABLE t1 (c1 string, c2 string)");
     statement.execute("CREATE ROLE user_role1");
     statement.execute("CREATE ROLE user_role2");
     statement.execute("GRANT SELECT (c1) ON TABLE t1 TO ROLE user_role1");
     statement.execute("GRANT SELECT (c1,c2) ON TABLE t1 TO ROLE user_role2");
+
+    //Make sure insert/all are not supported
     try {
       statement.execute("GRANT INSERT (c2) ON TABLE t1 TO ROLE user_role2");
       assertTrue("Sentry should not support privilege: Insert on Column", false);
@@ -106,50 +109,69 @@ public class TestColumnEndToEnd extends AbstractTestWithStaticConfiguration {
     statement.close();
     connection.close();
 
+    /*
+    Behavior of select col, select count(col), select *, and select count(*), count(1)
+     */
     // 1.1 user_role1 select c1,c2 from t1, will throw exception
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     try {
       statement.execute("SELECT c1,c2 FROM t1");
-      assertTrue("only SELECT allowed on t1.c1!!", false);
-    } catch (Exception e) {
-      // Ignore
+      assertTrue("User with privilege on one column is able to access other column!!", false);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
     }
 
-    // 1.2 user_role1 select * from t1, will throw exception
+    // 1.2 user_role1 count(col) works, *, count(*) and count(1) fails
+    statement.execute("SELECT count(c1) FROM t1");
     try {
       statement.execute("SELECT * FROM t1");
-      assertTrue("only SELECT allowed on t1.c1!!", false);
-    } catch (Exception e) {
-      // Ignore
+      assertTrue("Select * should fail - only SELECT allowed on t1.c1!!", false);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("SELECT count(*) FROM t1");
+      assertTrue("Select count(*) should fail - only SELECT allowed on t1.c1!!", false);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("SELECT count(1) FROM t1");
+      assertTrue("Select count(1) should fail - only SELECT allowed on t1.c1!!", false);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
     }
 
-    // 2.1 user_role2 select c1,c2,c3 from t1, will throw exception
+    statement.close();
+    connection.close();
+
+
+    // 2.1 user_role2 can do *, count(col), but count(*) and count(1) fails
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
+    statement.execute("SELECT count(c1) FROM t1");
+    statement.execute("SELECT * FROM t1");
+
+    //SENTRY-838
     try {
-      statement.execute("SELECT c1,c2,c3 FROM t1");
-      assertTrue("no permission on table t1!!", false);
+      statement.execute("SELECT count(*) FROM t1");
+      assertTrue("Select count(*) works only with table level privileges - User has select on all columns!!", false);
     } catch (Exception e) {
       // Ignore
     }
-
-    // 2.2 user_role2 select * from t1, will throw exception
-    connection = context.createConnection(USER2_1);
-    statement = context.createStatement(connection);
     try {
-      statement.execute("SELECT * FROM t1");
-      assertTrue("no permission on table t1!!", false);
+      statement.execute("SELECT count(1) FROM t1");
+      assertTrue("Select count(1) works only with table level privileges - User has select on all columns!!", false);
     } catch (Exception e) {
       // Ignore
     }
-
     statement.close();
     connection.close();
   }
 
   @Test
-  public void testPostive() throws Exception {
+  public void testPositive() throws Exception {
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("CREATE database " + DB1);
