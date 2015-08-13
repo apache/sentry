@@ -20,11 +20,16 @@ package org.apache.sentry.tests.e2e.hive;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 
 import junit.framework.Assert;
 
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.Path;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -82,6 +87,12 @@ public class TestPrivilegesAtColumnScope extends AbstractTestWithStaticConfigura
     statement.execute("CREATE TABLE TAB_2(A STRING, B STRING)");
     statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE TAB_2");
     statement.execute("CREATE VIEW VIEW_2(A,B) AS SELECT A,B FROM TAB_2");
+    //create table with partitions
+    statement.execute("CREATE TABLE TAB_3 (A STRING, B STRING) partitioned by (C STRING)");
+    statement.execute("ALTER TABLE TAB_3 ADD PARTITION (C=1)");
+    statement.execute("ALTER TABLE TAB_3 ADD PARTITION (C=2)");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE TAB_3 PARTITION (C=1)");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE TAB_3 PARTITION (C=2)");
     statement.close();
     connection.close();
   }
@@ -459,5 +470,43 @@ public class TestPrivilegesAtColumnScope extends AbstractTestWithStaticConfigura
 
     statement.close();
     connection.close();
+  }
+
+  @Test
+  public void testPartition() throws Exception{
+    policyFile
+        .addRolesToGroup(USERGROUP1, "select_tab3_A", "select_tab3_C")
+        .addRolesToGroup(USERGROUP2, "select_tab3_A")
+        .addRolesToGroup(USERGROUP3, "select_tab3_C")
+        .addPermissionsToRole("select_tab3_A", "server=server1->db=DB_1->table=TAB_3->column=A->action=select")
+        .addPermissionsToRole("select_tab3_C", "server=server1->db=DB_1->table=TAB_3->column=C->action=select")
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
+
+    // Users with privileges on partition column can access it
+    String [] positiveUsers = {USER1_1, USER3_1};
+    for(String user:positiveUsers) {
+      Connection connection = context.createConnection(user);
+      Statement statement = context.createStatement(connection);
+      statement.execute("USE DB_1");
+      statement.execute("SELECT C FROM TAB_3");
+      statement.close();
+      connection.close();
+    }
+
+    // Users with out privileges on partition column can not access it
+    String [] negativeUsers = {USER2_1};
+    for(String user:negativeUsers) {
+      Connection connection = context.createConnection(USER1_1);
+      Statement statement = context.createStatement(connection);
+      statement.execute("USE DB_1");
+      try {
+        statement.execute("SELECT C FROM TAB_3");
+      } catch (SQLException e) {
+        context.verifyAuthzException(e);
+      }
+      statement.close();
+      connection.close();
+    }
   }
 }

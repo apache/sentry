@@ -1013,6 +1013,8 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
 
     //Grant/Revoke All on server by admin
     statement.execute("GRANT ALL ON SERVER server1 to role role1");
+    statement.execute("GRANT Role role1 to group " + ADMINGROUP);
+    statement.execute("Create table tab1(col1 int)");
     resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
     assertResultSize(resultSet, 1);
     while(resultSet.next()) {
@@ -1142,6 +1144,29 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
     assertResultSize(resultSet, 0);
 
+
+    //Grant/Revoke SELECT on column by admin
+    statement.execute("GRANT SELECT(col1) ON TABLE tab1 to role role1");
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    assertResultSize(resultSet, 1);
+    while(resultSet.next()) {
+      assertThat(resultSet.getString(1), equalToIgnoringCase("default"));
+      assertThat(resultSet.getString(2), equalToIgnoringCase("tab1"));
+      assertThat(resultSet.getString(3), equalToIgnoringCase(""));//partition
+      assertThat(resultSet.getString(4), equalToIgnoringCase("col1"));//column
+      assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
+      assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
+      assertThat(resultSet.getString(7), equalToIgnoringCase("select"));
+      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      //Create time is not tested
+      //assertThat(resultSet.getLong(9), is(new Long(0)));
+      assertThat(resultSet.getString(10), equalToIgnoringCase("--"));//grantor
+    }
+
+    statement.execute("REVOKE SELECT(col1) ON TABLE tab1 from role role1");
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    assertResultSize(resultSet, 0);
+
     //Revoke Partial privilege on table by admin
     statement.execute("GRANT ALL ON TABLE tab1 to role role1");
     resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
@@ -1184,6 +1209,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       assertThat(resultSet.getString(10), equalToIgnoringCase("--"));//grantor
 
     }
+
     statement.close();
     connection.close();
   }
