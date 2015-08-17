@@ -555,7 +555,7 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
         if (columns != null && !columns.isEmpty()) {
           columnNames = columns;
         }
-        if (!SentryHiveConstants.getAllowedPrivileges().contains(privDesc.getPrivilege().getPriv())) {
+        if (!SentryHiveConstants.ALLOWED_PRIVS.contains(privDesc.getPrivilege().getPriv())) {
           String msg = SentryHiveConstants.PRIVILEGE_NOT_SUPPORTED + privDesc.getPrivilege().getPriv();
           throw new HiveException(msg);
         }
