@@ -94,6 +94,11 @@ public class TestDbSentryOnFailureHookLoading extends AbstractTestWithDbProvider
     // setup db objects needed by the test
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
+    try {
+      statement.execute("DROP ROLE admin_role");
+    } catch (Exception ex) {
+      //It is ok if admin_role already exists
+    }
     statement.execute("CREATE ROLE admin_role");
     statement.execute("GRANT ALL ON SERVER "
         + HiveServerFactory.DEFAULT_AUTHZ_SERVER_NAME + " TO ROLE admin_role");

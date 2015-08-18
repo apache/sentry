@@ -42,8 +42,11 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
   private File dataFile;
   private PolicyFile policyFile;
 
+  @Override
   @Before
-  public void setUp() throws Exception {
+  public void setup() throws Exception {
+    policyFile = super.setupPolicy();
+    super.setup();
     dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);

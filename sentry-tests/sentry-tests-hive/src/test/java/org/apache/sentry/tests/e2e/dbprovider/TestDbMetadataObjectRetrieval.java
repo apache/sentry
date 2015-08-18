@@ -38,8 +38,6 @@ public class TestDbMetadataObjectRetrieval extends TestMetadataObjectRetrieval {
   public static void setupTestStaticConfiguration() throws Exception {
     LOGGER.info("TestDbMetadataObjectRetrieval setupTestStaticConfiguration");
     useSentryService = true;
-    clearDbAfterPerTest = true;
-    clearDbBeforePerTest = true;
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
   }
 

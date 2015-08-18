@@ -29,19 +29,28 @@ import junit.framework.Assert;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
+  private static final Logger LOGGER = LoggerFactory.
+          getLogger(TestUriPermissions.class);
+
   private PolicyFile policyFile;
   private File dataFile;
   private String loadData;
 
+  @BeforeClass
+  public static void setupTestStaticConfiguration () throws Exception {
+    AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
+  }
+
   @Before
   public void setup() throws Exception {
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
-    policyFile.setUserGroupMapping(StaticUserGroup.getStaticMapping());
-    writePolicyFile(policyFile);
-
+    policyFile = super.setupPolicy();
+    super.setup();
   }
 
   // test load data into table
@@ -57,23 +66,22 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
     Connection userConn = null;
     Statement userStmt = null;
 
-    policyFile
-        .addRolesToGroup(USERGROUP1, "db1_read", "db1_write", "data_read")
-        .addRolesToGroup(USERGROUP2, "db1_write")
-        .addPermissionsToRole("db1_write", "server=server1->db=" + DB1 + "->table=" + tabName + "->action=INSERT")
-        .addPermissionsToRole("db1_read", "server=server1->db=" + DB1 + "->table=" + tabName + "->action=SELECT")
-        .addPermissionsToRole("data_read", loadData);
-    writePolicyFile(policyFile);
-
     // create dbs
     Connection adminCon = context.createConnection(ADMIN1);
     Statement adminStmt = context.createStatement(adminCon);
     adminStmt.execute("use default");
-    adminStmt.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
     adminStmt.execute("CREATE DATABASE " + DB1);
     adminStmt.execute("use " + DB1);
     adminStmt.execute("CREATE TABLE " + tabName + "(id int)");
     context.close();
+
+    policyFile
+            .addRolesToGroup(USERGROUP1, "db1_read", "db1_write", "data_read")
+            .addRolesToGroup(USERGROUP2, "db1_write")
+            .addPermissionsToRole("db1_write", "server=server1->db=" + DB1 + "->table=" + tabName + "->action=INSERT")
+            .addPermissionsToRole("db1_read", "server=server1->db=" + DB1 + "->table=" + tabName + "->action=SELECT")
+            .addPermissionsToRole("data_read", loadData);
+    writePolicyFile(policyFile);
 
     // positive test, user1 has access to file being loaded
     userConn = context.createConnection(USER1_1);
@@ -111,7 +119,6 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
     Connection adminCon = context.createConnection(ADMIN1);
     Statement adminStmt = context.createStatement(adminCon);
     adminStmt.execute("use default");
-    adminStmt.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
     adminStmt.execute("CREATE DATABASE " + DB1);
     adminStmt.execute("use " + DB1);
     adminStmt.execute("CREATE TABLE " + tabName + " (id int) PARTITIONED BY (dt string)");
@@ -176,23 +183,22 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
     Connection userConn = null;
     Statement userStmt = null;
 
-    policyFile
-        .addRolesToGroup(USERGROUP1, "server1_all")
-        .addRolesToGroup(USERGROUP2, "db1_all, data_read")
-        .addPermissionsToRole("db1_all", "server=server1->db=" + DB1)
-        .addPermissionsToRole("data_read", "server=server1->URI=" + tabDir)
-        .addPermissionsToRole("server1_all", "server=server1");
-    writePolicyFile(policyFile);
-
     // create dbs
     Connection adminCon = context.createConnection(ADMIN1);
     Statement adminStmt = context.createStatement(adminCon);
     adminStmt.execute("use default");
-    adminStmt.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
     adminStmt.execute("CREATE DATABASE " + DB1);
     adminStmt.execute("use " + DB1);
     adminStmt.execute("CREATE TABLE " + tabName + " (id int)  PARTITIONED BY (dt string)");
     adminCon.close();
+
+    policyFile
+            .addRolesToGroup(USERGROUP1, "server1_all")
+            .addRolesToGroup(USERGROUP2, "db1_all, data_read")
+            .addPermissionsToRole("db1_all", "server=server1->db=" + DB1)
+            .addPermissionsToRole("data_read", "server=server1->URI=" + tabDir)
+            .addPermissionsToRole("server1_all", "server=server1");
+    writePolicyFile(policyFile);
 
     // positive test: user2 has privilege to alter table set partition
     userConn = context.createConnection(USER2_1);
@@ -223,21 +229,20 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
     baseDir.setWritable(true, false);
     dataDir.setWritable(true, false);
 
-    policyFile
-        .addRolesToGroup(USERGROUP1, "db1_all", "data_read")
-        .addRolesToGroup(USERGROUP2, "db1_all")
-        .addPermissionsToRole("db1_all", "server=server1->db=" + DB1)
-        .addPermissionsToRole("data_read", "server=server1->URI=" + dataDirPath);
-    writePolicyFile(policyFile);
-
     // create dbs
     Connection adminCon = context.createConnection(ADMIN1);
     Statement adminStmt = context.createStatement(adminCon);
     adminStmt.execute("use default");
-    adminStmt.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
     adminStmt.execute("CREATE DATABASE " + DB1);
     adminStmt.close();
     adminCon.close();
+
+    policyFile
+            .addRolesToGroup(USERGROUP1, "db1_all", "data_read")
+            .addRolesToGroup(USERGROUP2, "db1_all")
+            .addPermissionsToRole("db1_all", "server=server1->db=" + DB1)
+            .addPermissionsToRole("data_read", "server=server1->URI=" + dataDirPath);
+    writePolicyFile(policyFile);
 
     // negative test: user2 doesn't have privilege to create external table in given path
     userConn = context.createConnection(USER2_1);

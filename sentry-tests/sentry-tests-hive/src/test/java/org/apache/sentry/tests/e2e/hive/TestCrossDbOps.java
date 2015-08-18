@@ -53,28 +53,24 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
 
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception{
+    LOGGER.info("TestCrossDbOps setupTestStaticConfiguration");
     policyOnHdfs = true;
-    clearDbAfterPerTest = true;
-    clearDbBeforePerTest = true;
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
+
   }
 
   @Before
   public void setup() throws Exception {
+    LOGGER.info("TestCrossDbOps setup");
+    policyFile = super.setupPolicy();
+    super.setup();
     File dataDir = context.getDataDir();
     // copy data file to test dir
     dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
-    // Precreate policy file
-    policyFile.setUserGroupMapping(StaticUserGroup.getStaticMapping());
-    writePolicyFile(policyFile);
     loadData = "server=server1->uri=file://" + dataFile.getPath();
-    // debug
-    LOGGER.info("setMetastoreListener = " + String.valueOf(setMetastoreListener));
-    clearAll(true);
   }
 
   /*

@@ -45,19 +45,19 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
   private static PolicyFile policyFile;
   private final static String MULTI_TYPE_DATA_FILE_NAME = "emp.dat";
 
-  @BeforeClass
-  public static void setupTestStaticConfiguration() throws Exception {
-    AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
+  @Before
+  public void setup() throws Exception {
+    policyFile = super.setupPolicy();
+    super.setup();
     prepareDBDataForTest();
   }
 
+  @BeforeClass
+  public static void setupTestStaticConfiguration() throws Exception {
+    AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
+  }
+
   protected static void prepareDBDataForTest() throws Exception {
-    clearDbAfterPerTest = false;
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP).setUserGroupMapping(
-        StaticUserGroup.getStaticMapping());
-    // The setupAdmin is for TestDbPrivilegesAtTableScope to add role admin_role
-    setupAdmin();
-    writePolicyFile(policyFile);
     // copy data file to test dir
     File dataDir = context.getDataDir();
     File dataFile = new File(dataDir, MULTI_TYPE_DATA_FILE_NAME);
@@ -83,13 +83,6 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
 
     statement.close();
     connection.close();
-  }
-
-  @Before
-  public void setup() throws Exception {
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP)
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
-    writePolicyFile(policyFile);
   }
 
   /*

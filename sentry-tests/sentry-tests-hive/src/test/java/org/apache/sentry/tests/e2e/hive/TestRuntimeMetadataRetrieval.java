@@ -29,6 +29,7 @@ import java.util.List;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.io.Resources;
@@ -44,16 +45,20 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
   private File dataDir;
   private File dataFile;
 
+  @BeforeClass
+  public static void setupTestStaticConfiguration () throws Exception {
+    AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
+  }
+
   @Before
   public void setup() throws Exception {
+    policyFile = super.setupPolicy();
+    super.setup();
     dataDir = context.getDataDir();
     dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP)
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
-    writePolicyFile(policyFile);
   }
 
   /**
@@ -67,22 +72,10 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
     String tableNames[] = {"tb_1", "tb_2", "tb_3", "tb_4"};
     List<String> tableNamesValidation = new ArrayList<String>();
 
-    policyFile
-        .addRolesToGroup(USERGROUP1, "tab1_priv,tab2_priv,tab3_priv")
-        .addPermissionsToRole("tab1_priv", "server=server1->db=" + DB1 + "->table="
-            + tableNames[0] + "->action=select")
-        .addPermissionsToRole("tab2_priv", "server=server1->db=" + DB1 + "->table="
-            + tableNames[1] + "->action=insert")
-        .addPermissionsToRole("tab3_priv", "server=server1->db=" + DB1 + "->table="
-            + tableNames[2] + "->action=select")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
-    writePolicyFile(policyFile);
-
     String user1TableNames[] = {"tb_1", "tb_2", "tb_3"};
 
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
     statement.execute("CREATE DATABASE " + DB1);
     statement.execute("USE " + DB1);
     createTabs(statement, DB1, tableNames);
@@ -92,6 +85,17 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
 
     validateTables(rs, DB1, tableNamesValidation);
     statement.close();
+
+    policyFile
+            .addRolesToGroup(USERGROUP1, "tab1_priv,tab2_priv,tab3_priv")
+            .addPermissionsToRole("tab1_priv", "server=server1->db=" + DB1 + "->table="
+                    + tableNames[0] + "->action=select")
+            .addPermissionsToRole("tab2_priv", "server=server1->db=" + DB1 + "->table="
+                    + tableNames[1] + "->action=insert")
+            .addPermissionsToRole("tab3_priv", "server=server1->db=" + DB1 + "->table="
+                    + tableNames[2] + "->action=select")
+            .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
@@ -114,17 +118,10 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
     String tableNames[] = {"tb_1", "tb_2", "tb_3", "tb_4"};
     List<String> tableNamesValidation = new ArrayList<String>();
 
-    policyFile
-        .addRolesToGroup(USERGROUP1, "db_priv")
-        .addPermissionsToRole("db_priv", "server=server1->db=" + DB1)
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
-    writePolicyFile(policyFile);
-
     String user1TableNames[] = {"tb_1", "tb_2", "tb_3", "tb_4"};
 
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
     statement.execute("CREATE DATABASE " + DB1);
     statement.execute("USE " + DB1);
     createTabs(statement, DB1, tableNames);
@@ -133,6 +130,12 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
     tableNamesValidation.addAll(Arrays.asList(tableNames));
     validateTables(rs, DB1, tableNamesValidation);
     statement.close();
+
+    policyFile
+            .addRolesToGroup(USERGROUP1, "db_priv")
+            .addPermissionsToRole("db_priv", "server=server1->db=" + DB1)
+            .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
@@ -155,19 +158,11 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
     String tableNames[] = {"tb_1", "tb_2", "tb_3", "newtab_3"};
     List<String> tableNamesValidation = new ArrayList<String>();
 
-    policyFile
-        .addRolesToGroup(USERGROUP1, "tab_priv")
-        .addPermissionsToRole("tab_priv", "server=server1->db=" + DB1 + "->table="
-            + tableNames[3] + "->action=insert")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
-    writePolicyFile(policyFile);
-
     String adminTableNames[] = {"tb_3", "newtab_3", "tb_2", "tb_1"};
     String user1TableNames[] = {"newtab_3"};
 
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
     statement.execute("CREATE DATABASE " + DB1);
     statement.execute("USE " + DB1);
     createTabs(statement, DB1, tableNames);
@@ -176,6 +171,13 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
     tableNamesValidation.addAll(Arrays.asList(adminTableNames));
     validateTables(rs, DB1, tableNamesValidation);
     statement.close();
+
+    policyFile
+            .addRolesToGroup(USERGROUP1, "tab_priv")
+            .addPermissionsToRole("tab_priv", "server=server1->db=" + DB1 + "->table="
+                    + tableNames[3] + "->action=insert")
+            .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
@@ -197,18 +199,11 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
     String tableNames[] = {"tb_1", "tb_2", "tb_3", "newtab_3"};
     List<String> tableNamesValidation = new ArrayList<String>();
 
-    policyFile
-        .addRolesToGroup(USERGROUP1, "tab_priv")
-        .addPermissionsToRole("tab_priv", "server=server1->db=" + DB1)
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
-    writePolicyFile(policyFile);
-
     String adminTableNames[] = {"tb_3", "newtab_3", "tb_1", "tb_2"};
     String user1TableNames[] = {"tb_3", "newtab_3", "tb_1", "tb_2"};
 
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
     statement.execute("CREATE DATABASE " + DB1);
     statement.execute("USE " + DB1);
     createTabs(statement, DB1, tableNames);
@@ -217,6 +212,12 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
     tableNamesValidation.addAll(Arrays.asList(adminTableNames));
     validateTables(rs, DB1, tableNamesValidation);
     statement.close();
+
+    policyFile
+            .addRolesToGroup(USERGROUP1, "tab_priv")
+            .addPermissionsToRole("tab_priv", "server=server1->db=" + DB1)
+            .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
@@ -236,12 +237,13 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
   public void testShowTables5() throws Exception {
     String tableNames[] = {"tb_1", "tb_2", "tb_3", "tb_4"};
 
-    policyFile
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
-    writePolicyFile(policyFile);
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     createTabs(statement, "default", tableNames);
+
+    policyFile
+            .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
@@ -263,22 +265,10 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
     String tableNames[] = {"tb_1", "tb_2", "tb_3", "tb_4", "table_5"};
     List<String> tableNamesValidation = new ArrayList<String>();
 
-    policyFile
-        .addRolesToGroup(USERGROUP1, "tab1_priv,tab2_priv,tab3_priv")
-        .addPermissionsToRole("tab1_priv", "server=server1->db=" + DB1 + "->table="
-            + tableNames[0] + "->action=select")
-        .addPermissionsToRole("tab2_priv", "server=server1->db=" + DB1 + "->table="
-            + tableNames[1] + "->action=insert")
-        .addPermissionsToRole("tab3_priv", "server=server1->db=" + DB1 + "->table="
-            + tableNames[2] + "->action=select")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
-    writePolicyFile(policyFile);
-
     String user1TableNames[] = {"tb_1", "tb_2", "tb_3"};
 
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
     statement.execute("CREATE DATABASE " + DB1);
     statement.execute("USE " + DB1);
     createTabs(statement, DB1, tableNames);
@@ -287,6 +277,17 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
     tableNamesValidation.addAll(Arrays.asList(tableNames).subList(0, 4));
     validateTablesInRs(rs, DB1, tableNamesValidation);
     statement.close();
+
+    policyFile
+            .addRolesToGroup(USERGROUP1, "tab1_priv,tab2_priv,tab3_priv")
+            .addPermissionsToRole("tab1_priv", "server=server1->db=" + DB1 + "->table="
+                    + tableNames[0] + "->action=select")
+            .addPermissionsToRole("tab2_priv", "server=server1->db=" + DB1 + "->table="
+                    + tableNames[1] + "->action=insert")
+            .addPermissionsToRole("tab3_priv", "server=server1->db=" + DB1 + "->table="
+                    + tableNames[2] + "->action=select")
+            .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
@@ -309,12 +310,6 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
     String[] dbNames = {DB1, DB2, DB3};
     String[] user1DbNames = {DB1};
 
-    policyFile
-        .addRolesToGroup(USERGROUP1, "db1_all")
-        .addPermissionsToRole("db1_all", "server=server1->db=" + DB1)
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
-    writePolicyFile(policyFile);
-
     createDb(ADMIN1, dbNames);
     dbNamesValidation.addAll(Arrays.asList(dbNames));
     dbNamesValidation.add("default");
@@ -323,6 +318,12 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
     ResultSet rs = statement.executeQuery("SHOW DATABASES");
     validateDBs(rs, dbNamesValidation); // admin should see all dbs
     rs.close();
+
+    policyFile
+            .addRolesToGroup(USERGROUP1, "db1_all")
+            .addPermissionsToRole("db1_all", "server=server1->db=" + DB1)
+            .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);

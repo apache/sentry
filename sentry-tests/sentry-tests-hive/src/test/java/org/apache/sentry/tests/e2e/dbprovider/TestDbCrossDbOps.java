@@ -31,13 +31,10 @@ public class TestDbCrossDbOps extends TestCrossDbOps {
   public void setup() throws Exception {
     super.setupAdmin();
     super.setup();
-    clearAll(true);
   }
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception{
     useSentryService = true;
-    clearDbAfterPerTest = true;
-    clearDbBeforePerTest = true;
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
   }
 }

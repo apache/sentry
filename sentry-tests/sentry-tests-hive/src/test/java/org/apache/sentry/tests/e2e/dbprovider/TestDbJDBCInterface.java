@@ -39,8 +39,6 @@ public class TestDbJDBCInterface extends TestJDBCInterface {
   public static void setupTestStaticConfiguration() throws Exception {
     LOGGER.info("TestDbJDBCInterface setupTestStaticConfiguration");
     useSentryService = true;
-    clearDbAfterPerTest = true;
-    clearDbBeforePerTest = true;
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
   }
 

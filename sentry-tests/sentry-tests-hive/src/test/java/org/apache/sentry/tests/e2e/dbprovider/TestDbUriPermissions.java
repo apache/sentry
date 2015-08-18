@@ -21,15 +21,23 @@ import org.apache.sentry.tests.e2e.hive.TestUriPermissions;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class TestDbUriPermissions extends TestUriPermissions {
+  private static final Logger LOGGER = LoggerFactory.
+          getLogger(TestDbUriPermissions.class);
+
   @Override
   @Before
   public void setup() throws Exception {
+    LOGGER.info("TestDbUriPermissions setup");
     super.setupAdmin();
     super.setup();
   }
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception {
+    LOGGER.info("TestDbUriPermissions setupTestStaticConfiguration");
     useSentryService = true;
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
 
