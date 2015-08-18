@@ -33,14 +33,20 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.io.Resources;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestColumnEndToEnd extends AbstractTestWithStaticConfiguration {
+  private static final Logger LOGGER = LoggerFactory.
+          getLogger(TestColumnEndToEnd.class);
+
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private File dataFile;
   private PolicyFile policyFile;
 
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception{
+    LOGGER.info("TestColumnEndToEnd setupTestStaticConfiguration");
     useSentryService = true;
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
   }
@@ -50,11 +56,11 @@ public class TestColumnEndToEnd extends AbstractTestWithStaticConfiguration {
   public void setup() throws Exception {
     super.setupAdmin();
     super.setup();
+    policyFile = super.setupPolicy();
     dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
   }
 
   @Test

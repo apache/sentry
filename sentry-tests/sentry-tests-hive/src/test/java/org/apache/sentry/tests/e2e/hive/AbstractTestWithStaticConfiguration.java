@@ -115,12 +115,11 @@ public abstract class AbstractTestWithStaticConfiguration {
 
   protected static boolean policyOnHdfs = false;
   protected static boolean useSentryService = false;
-  protected static boolean setMetastoreListener = false;
+  protected static boolean setMetastoreListener = true;
   protected static String testServerType = null;
   protected static boolean enableHiveConcurrency = false;
   // indicate if the database need to be clear for every test case in one test class
-  protected static boolean clearDbAfterPerTest = true;
-  protected static boolean clearDbBeforePerTest = false;
+  protected static boolean clearDbPerTest = true;
 
   protected static File baseDir;
   protected static File logDir;
@@ -450,7 +449,7 @@ public abstract class AbstractTestWithStaticConfiguration {
   public void setup() throws Exception{
     LOGGER.info("AbstractTestStaticConfiguration setup");
     dfs.createBaseDir();
-    if (clearDbBeforePerTest) {
+    if (clearDbPerTest) {
       LOGGER.info("Before per test run clean up");
       clearAll(true);
     }
@@ -459,7 +458,7 @@ public abstract class AbstractTestWithStaticConfiguration {
   @After
   public void clearAfterPerTest() throws Exception {
     LOGGER.info("AbstractTestStaticConfiguration clearAfterPerTest");
-    if (clearDbAfterPerTest) {
+    if (clearDbPerTest) {
       LOGGER.info("After per test run clean up");
       clearAll(true);
     }
@@ -513,6 +512,7 @@ public abstract class AbstractTestWithStaticConfiguration {
 
   protected static void setupAdmin() throws Exception {
     if(useSentryService) {
+      LOGGER.info("setupAdmin to create admin_role");
       Connection connection = context.createConnection(ADMIN1);
       Statement statement = connection.createStatement();
       try {
@@ -526,6 +526,14 @@ public abstract class AbstractTestWithStaticConfiguration {
       statement.close();
       connection.close();
     }
+  }
+
+  protected PolicyFile setupPolicy() throws Exception {
+    LOGGER.info("Pre create policy file with admin group mapping");
+    PolicyFile policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    policyFile.setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
+    return policyFile;
   }
 
   @AfterClass

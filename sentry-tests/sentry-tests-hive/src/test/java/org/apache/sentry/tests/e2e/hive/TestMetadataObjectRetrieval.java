@@ -44,26 +44,18 @@ public class TestMetadataObjectRetrieval extends AbstractTestWithStaticConfigura
   @BeforeClass
   public static void setupTestStaticConfiguration () throws Exception {
     LOGGER.info("TestMetadataObjectRetrieval setupTestStaticConfiguration");
-    clearDbAfterPerTest = true;
-    clearDbBeforePerTest = true;
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
   }
 
   @Before
   public void setup() throws Exception {
     LOGGER.info("TestMetadataObjectRetrieval setup");
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    policyFile = super.setupPolicy();
+    super.setup();
     dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
-    if (clearDbBeforePerTest) {
-      // Precreate policy file
-      policyFile.setUserGroupMapping(StaticUserGroup.getStaticMapping());
-      writePolicyFile(policyFile);
-      LOGGER.info("Before per test run clean up");
-      clearAll(true);
-    }
   }
 
   /**

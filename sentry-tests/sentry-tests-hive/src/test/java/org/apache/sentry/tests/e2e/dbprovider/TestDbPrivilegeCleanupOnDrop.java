@@ -33,15 +33,20 @@ import java.util.List;
 
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestDbPrivilegeCleanupOnDrop extends
     AbstractTestWithStaticConfiguration {
+  private static final Logger LOGGER = LoggerFactory
+          .getLogger(TestDbPrivilegeCleanupOnDrop.class);
 
   private final static int SHOW_GRANT_TABLE_POSITION = 2;
   private final static int SHOW_GRANT_DB_POSITION = 1;
@@ -57,15 +62,19 @@ public class TestDbPrivilegeCleanupOnDrop extends
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception {
     useSentryService = true;
-    setMetastoreListener = true;
+    if (!setMetastoreListener) {
+      setMetastoreListener = true;
+    }
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
   }
 
+  @Override
   @Before
-  public void setUp() throws Exception {
+  public void setup() throws Exception {
+    super.setupAdmin();
+    super.setup();
     // context = createContext();
     File dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
-    setupAdmin();
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
@@ -181,8 +190,6 @@ public class TestDbPrivilegeCleanupOnDrop extends
    */
   @Test
   public void testDropAndRenameWithMultiAction() throws Exception {
-    super.setupAdmin();
-
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("CREATE ROLE user_role");
@@ -311,7 +318,9 @@ public class TestDbPrivilegeCleanupOnDrop extends
       ResultSet resultSet = statement.executeQuery("SHOW GRANT ROLE "
           + roleName);
       while (resultSet.next()) {
-        assertFalse(objectName.equalsIgnoreCase(resultSet.getString(resultPos)));
+        String returned = resultSet.getString(resultPos);
+        assertFalse("value " + objectName + " shouldn't be detected, but actually " + returned + " is found from resultSet",
+                objectName.equalsIgnoreCase(returned));
       }
       resultSet.close();
     }

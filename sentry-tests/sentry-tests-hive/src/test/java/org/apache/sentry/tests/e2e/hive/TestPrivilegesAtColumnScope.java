@@ -47,26 +47,17 @@ public class TestPrivilegesAtColumnScope extends AbstractTestWithStaticConfigura
 
   @Before
   public void setup() throws Exception {
-    if (useSentryService) {
-      policyFile = new PolicyFile();
-    } else {
-      policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
-    }
+    policyFile = super.setupPolicy();
+    super.setup();
+    prepareDBDataForTest();
   }
 
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception {
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
-    prepareDBDataForTest();
   }
 
   private static void prepareDBDataForTest() throws Exception {
-    clearDbAfterPerTest = false;
-    // if use sentry service, need setup admin role first
-    setupAdmin();
-    PolicyFile policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP).setUserGroupMapping(
-        StaticUserGroup.getStaticMapping());
-    writePolicyFile(policyFile);
     // copy data file to test dir
     File dataDir = context.getDataDir();
     File dataFile = new File(dataDir, MULTI_TYPE_DATA_FILE_NAME);

@@ -50,7 +50,6 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception {
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
-    prepareDBDataForTest();
   }
 
   @Before
@@ -64,14 +63,12 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
       prefix = "file://" + context.getPolicyFile().getParent() + "/";
     }
 
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    policyFile = super.setupPolicy();
+    super.setup();
+    prepareDBDataForTest();
   }
 
   protected static void prepareDBDataForTest() throws Exception {
-    clearDbAfterPerTest = false;
-    PolicyFile policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP).setUserGroupMapping(
-        StaticUserGroup.getStaticMapping());
-    writePolicyFile(policyFile);
     // copy data file to test dir
     dataDir = context.getDataDir();
     dataFile = new File(dataDir, MULTI_TYPE_DATA_FILE_NAME);

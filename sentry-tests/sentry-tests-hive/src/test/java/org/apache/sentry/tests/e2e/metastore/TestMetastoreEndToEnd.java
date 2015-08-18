@@ -42,6 +42,7 @@ import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
@@ -64,29 +65,19 @@ public class TestMetastoreEndToEnd extends
   private static final String tabName2 = "tab2";
   private static final String tabName3 = "tab3";
 
+  @BeforeClass
+  public static void setupTestStaticConfiguration() throws Exception {
+    setMetastoreListener = false;
+    AbstractMetastoreTestWithStaticConfiguration.setupTestStaticConfiguration();
+  }
+
+  @Override
   @Before
   public void setup() throws Exception {
-    policyFile = setAdminOnServer1(ADMINGROUP); // PolicyFile.setAdminOnServer1(ADMINGROUP);
-    policyFile
-        .addRolesToGroup(USERGROUP1, db_all_role)
-        .addRolesToGroup(USERGROUP2, "read_db_role")
-        .addRolesToGroup(USERGROUP2, tab1_all_role)
-        .addRolesToGroup(USERGROUP2, tab2_all_role)
-        .addRolesToGroup(USERGROUP3, tab1_read_role)
-        .addRolesToGroup(USERGROUP3, tab2_read_role)
-        .addPermissionsToRole(db_all_role, "server=server1->db=" + dbName)
-        .addPermissionsToRole("read_db_role",
-            "server=server1->db=" + dbName + "->action=SELECT")
-        .addPermissionsToRole(tab1_all_role,
-            "server=server1->db=" + dbName + "->table=" + tabName1)
-        .addPermissionsToRole(tab2_all_role,
-            "server=server1->db=" + dbName + "->table=" + tabName2)
-        .addPermissionsToRole(tab1_read_role,
-            "server=server1->db=" + dbName + "->table=" + tabName1 + "->action=SELECT")
-        .addPermissionsToRole(tab2_read_role,
-            "server=server1->db=" + dbName + "->table=" + tabName2 + "->action=SELECT")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    policyFile = setAdminOnServer1(ADMINGROUP);
+    policyFile.setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
+    super.setup();
 
     dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
@@ -98,6 +89,26 @@ public class TestMetastoreEndToEnd extends
     createMetastoreDB(client, dbName);
     client.close();
 
+    policyFile
+            .addRolesToGroup(USERGROUP1, db_all_role)
+            .addRolesToGroup(USERGROUP2, "read_db_role")
+            .addRolesToGroup(USERGROUP2, tab1_all_role)
+            .addRolesToGroup(USERGROUP2, tab2_all_role)
+            .addRolesToGroup(USERGROUP3, tab1_read_role)
+            .addRolesToGroup(USERGROUP3, tab2_read_role)
+            .addPermissionsToRole(db_all_role, "server=server1->db=" + dbName)
+            .addPermissionsToRole("read_db_role",
+                    "server=server1->db=" + dbName + "->action=SELECT")
+            .addPermissionsToRole(tab1_all_role,
+                    "server=server1->db=" + dbName + "->table=" + tabName1)
+            .addPermissionsToRole(tab2_all_role,
+                    "server=server1->db=" + dbName + "->table=" + tabName2)
+            .addPermissionsToRole(tab1_read_role,
+                    "server=server1->db=" + dbName + "->table=" + tabName1 + "->action=SELECT")
+            .addPermissionsToRole(tab2_read_role,
+                    "server=server1->db=" + dbName + "->table=" + tabName2 + "->action=SELECT")
+            .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
   }
 
   @After

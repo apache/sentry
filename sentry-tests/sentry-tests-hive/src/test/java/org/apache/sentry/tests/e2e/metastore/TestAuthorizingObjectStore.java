@@ -33,6 +33,7 @@ import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 import org.apache.thrift.TException;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
@@ -53,42 +54,19 @@ public class TestAuthorizingObjectStore extends
   // this user is configured for sentry.metastore.service.users,
   // for this test, the value is set when creating the HiveServer.
   private static final String userWithoutAccess = "accessAllMetaUser";
-  private boolean isSetup = false;
 
+  @BeforeClass
+  public static void setupTestStaticConfiguration () throws Exception {
+    AbstractMetastoreTestWithStaticConfiguration.setupTestStaticConfiguration();
+  }
+
+  @Override
   @Before
   public void setup() throws Exception {
-    if (isSetup) {
-      return;
-    }
-    isSetup = true;
     policyFile = setAdminOnServer1(ADMINGROUP);
-    policyFile
-        .addRolesToGroup(USERGROUP1, all_role)
-        .addRolesToGroup(USERGROUP2, db1_t1_role)
-        .addPermissionsToRole(all_role, "server=server1->db=" + dbName1)
-        .addPermissionsToRole(all_role, "server=server1->db=" + dbName2)
-        .addPermissionsToRole(
-            all_role,
-            "server=server1->db=" + dbName1 + "->table=" + tabName1
-                + "->action=SELECT")
-        .addPermissionsToRole(
-            all_role,
-            "server=server1->db=" + dbName1 + "->table=" + tabName2
-                + "->action=SELECT")
-        .addPermissionsToRole(
-            all_role,
-            "server=server1->db=" + dbName2 + "->table=" + tabName3
-                + "->action=SELECT")
-        .addPermissionsToRole(
-            all_role,
-            "server=server1->db=" + dbName2 + "->table=" + tabName4
-                + "->action=SELECT")
-        .addPermissionsToRole(
-            db1_t1_role,
-            "server=server1->db=" + dbName1 + "->table=" + tabName1
-                + "->action=SELECT")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    policyFile.setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
+    super.setup();
 
     HiveMetaStoreClient client = context.getMetaStoreClient(ADMIN1);
     client.dropDatabase(dbName1, true, true, true);
@@ -117,6 +95,34 @@ public class TestAuthorizingObjectStore extends
     addPartition(client, dbName2, tabName4, Lists.newArrayList(partitionVal), tbl4);
 
     client.close();
+
+    policyFile
+            .addRolesToGroup(USERGROUP1, all_role)
+            .addRolesToGroup(USERGROUP2, db1_t1_role)
+            .addPermissionsToRole(all_role, "server=server1->db=" + dbName1)
+            .addPermissionsToRole(all_role, "server=server1->db=" + dbName2)
+            .addPermissionsToRole(
+                    all_role,
+                    "server=server1->db=" + dbName1 + "->table=" + tabName1
+                            + "->action=SELECT")
+            .addPermissionsToRole(
+                    all_role,
+                    "server=server1->db=" + dbName1 + "->table=" + tabName2
+                            + "->action=SELECT")
+            .addPermissionsToRole(
+                    all_role,
+                    "server=server1->db=" + dbName2 + "->table=" + tabName3
+                            + "->action=SELECT")
+            .addPermissionsToRole(
+                    all_role,
+                    "server=server1->db=" + dbName2 + "->table=" + tabName4
+                            + "->action=SELECT")
+            .addPermissionsToRole(
+                    db1_t1_role,
+                    "server=server1->db=" + dbName1 + "->table=" + tabName1
+                            + "->action=SELECT")
+            .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
   }
 
   /**

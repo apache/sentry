@@ -33,43 +33,52 @@ import java.util.Map;
 import junit.framework.Assert;
 
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.io.Resources;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /* Tests privileges at table scope within a single database.
  */
 
 public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfiguration {
+  private static final Logger LOGGER = LoggerFactory.
+          getLogger(TestPrivilegesAtDatabaseScope.class);
 
   private PolicyFile policyFile;
 
   Map <String, String >testProperties;
   private static final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
 
+  @BeforeClass
+  public static void setupTestStaticConfiguration () throws Exception {
+    AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
+  }
+
   @Override
   @Before
   public void setup() throws Exception {
+    policyFile = super.setupPolicy();
+    super.setup();
     testProperties = new HashMap<String, String>();
-
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
   }
 
   // SENTRY-285 test
   @Test
   public void testAllOnDb() throws Exception {
-
-    policyFile
-        .addRolesToGroup(USERGROUP1, "all_db1")
-        .addPermissionsToRole("all_db1", "server=server1->db=" + DB1 + "->action=all")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
-    writePolicyFile(policyFile);
-
     // setup db objects needed by the test
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("create database " + DB1);
     statement.execute("create table " + DB1 + ".tab1(a int)");
+
+    policyFile
+            .addRolesToGroup(USERGROUP1, "all_db1")
+            .addPermissionsToRole("all_db1", "server=server1->db=" + DB1 + "->action=all")
+            .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
@@ -97,24 +106,22 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
 
-    policyFile
-        .addRolesToGroup(USERGROUP1, "all_db1", "load_data")
-        .addRolesToGroup(USERGROUP2, "all_db2")
-        .addPermissionsToRole("all_db1", "server=server1->db=" + DB1)
-        .addPermissionsToRole("all_db2", "server=server1->db=" + DB2)
-        .addPermissionsToRole("load_data", "server=server1->uri=file://" + dataFile.getPath())
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
-    writePolicyFile(policyFile);
-
     // setup db objects needed by the test
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
-    statement.execute("DROP DATABASE IF EXISTS " + DB2 + " CASCADE");
     statement.execute("CREATE DATABASE " + DB1);
     statement.execute("CREATE DATABASE " + DB2);
     statement.close();
     connection.close();
+
+    policyFile
+            .addRolesToGroup(USERGROUP1, "all_db1", "load_data")
+            .addRolesToGroup(USERGROUP2, "all_db2")
+            .addPermissionsToRole("all_db1", "server=server1->db=" + DB1)
+            .addPermissionsToRole("all_db2", "server=server1->db=" + DB2)
+            .addPermissionsToRole("load_data", "server=server1->uri=file://" + dataFile.getPath())
+            .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     // test execution
     connection = context.createConnection(USER1_1);
@@ -182,14 +189,6 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
 
     statement.close();
     connection.close();
-
-    //test cleanup
-    connection = context.createConnection(ADMIN1);
-    statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE " + DB2 + " CASCADE");
-    statement.close();
-    connection.close();
-    context.close();
   }
 
   /* Admin creates database DB_1, creates table TAB_1, loads data into it
@@ -206,21 +205,9 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
 
-    policyFile
-        .addRolesToGroup(USERGROUP1, "all_db1", "load_data", "exttab")
-        .addRolesToGroup(USERGROUP2, "all_db2")
-        .addPermissionsToRole("all_db1", "server=server1->db=" + DB1)
-        .addPermissionsToRole("all_db2", "server=server1->db=" + DB2)
-        .addPermissionsToRole("exttab", "server=server1->uri=file://" + dataDir.getPath())
-        .addPermissionsToRole("load_data", "server=server1->uri=file://" + dataFile.getPath())
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
-    writePolicyFile(policyFile);
-
     // setup db objects needed by the test
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
-    statement.execute("DROP DATABASE IF EXISTS " + DB2 + " CASCADE");
     statement.execute("CREATE DATABASE " + DB1);
     statement.execute("CREATE DATABASE " + DB2);
     statement.execute("USE " + DB1);
@@ -231,6 +218,16 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
     statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE PART_TAB_1 PARTITION(B=2)");
     statement.close();
     connection.close();
+
+    policyFile
+            .addRolesToGroup(USERGROUP1, "all_db1", "load_data", "exttab")
+            .addRolesToGroup(USERGROUP2, "all_db2")
+            .addPermissionsToRole("all_db1", "server=server1->db=" + DB1)
+            .addPermissionsToRole("all_db2", "server=server1->db=" + DB2)
+            .addPermissionsToRole("exttab", "server=server1->uri=file://" + dataDir.getPath())
+            .addPermissionsToRole("load_data", "server=server1->uri=file://" + dataFile.getPath())
+            .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     // test execution
     connection = context.createConnection(USER1_1);
@@ -289,15 +286,6 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
 
     statement.close();
     connection.close();
-
-    //test cleanup
-    connection = context.createConnection(ADMIN1);
-    statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE " + DB1 + " CASCADE");
-    statement.execute("DROP DATABASE " + DB2 + " CASCADE");
-    statement.close();
-    connection.close();
-    context.close();
   }
 
   /**
@@ -310,31 +298,26 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
    */
   @Test
   public void testUseDbPrivilege() throws Exception {
-
-    policyFile
-        .addRolesToGroup(USERGROUP1, "all_db1")
-        .addRolesToGroup(USERGROUP2, "select_db2")
-        .addRolesToGroup(USERGROUP3, "all_db3")
-        .addPermissionsToRole("all_db1", "server=server1->db=" + DB1)
-        .addPermissionsToRole("select_db2", "server=server1->db=" + DB2 + "->table=tab_2->action=select")
-        .addPermissionsToRole("all_db3", "server=server1->db=DB_3")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
-    writePolicyFile(policyFile);
-
-
-
     // setup db objects needed by the test
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
     statement.execute("CREATE DATABASE " + DB1);
     statement.execute("use " + DB1);
     statement.execute("CREATE TABLE TAB_1(A STRING)");
-    statement.execute("DROP DATABASE IF EXISTS " + DB2 + " CASCADE");
     statement.execute("CREATE DATABASE " + DB2);
     statement.execute("use " + DB1);
     statement.execute("CREATE TABLE TAB_2(A STRING)");
     context.close();
+
+    policyFile
+            .addRolesToGroup(USERGROUP1, "all_db1")
+            .addRolesToGroup(USERGROUP2, "select_db2")
+            .addRolesToGroup(USERGROUP3, "all_db3")
+            .addPermissionsToRole("all_db1", "server=server1->db=" + DB1)
+            .addPermissionsToRole("select_db2", "server=server1->db=" + DB2 + "->table=tab_2->action=select")
+            .addPermissionsToRole("all_db3", "server=server1->db=DB_3")
+            .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     // user1 should be able to connect db_1
     connection = context.createConnection(USER1_1);
@@ -374,23 +357,21 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
    */
   @Test
   public void testDefaultDbPrivilege() throws Exception {
-
-    policyFile
-        .addRolesToGroup(USERGROUP1, "all_db1")
-        .addRolesToGroup(USERGROUP2, "select_db2")
-        .addRolesToGroup(USERGROUP3, "all_default")
-        .addPermissionsToRole("all_db1", "server=server1->db=" + DB1)
-        .addPermissionsToRole("select_db2", "server=server1->db=" + DB2 + "->table=tab_2->action=select")
-        .addPermissionsToRole("all_default", "server=server1->db=default")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
-    writePolicyFile(policyFile);
-
-
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("use default");
     statement.execute("create table tab1(a int)");
     context.close();
+
+    policyFile
+            .addRolesToGroup(USERGROUP1, "all_db1")
+            .addRolesToGroup(USERGROUP2, "select_db2")
+            .addRolesToGroup(USERGROUP3, "all_default")
+            .addPermissionsToRole("all_db1", "server=server1->db=" + DB1)
+            .addPermissionsToRole("select_db2", "server=server1->db=" + DB2 + "->table=tab_2->action=select")
+            .addPermissionsToRole("all_default", "server=server1->db=default")
+            .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
 
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);

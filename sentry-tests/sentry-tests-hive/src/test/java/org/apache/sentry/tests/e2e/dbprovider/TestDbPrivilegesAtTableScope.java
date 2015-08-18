@@ -28,12 +28,12 @@ public class TestDbPrivilegesAtTableScope extends TestPrivilegesAtTableScope {
   public void setup() throws Exception {
     super.setupAdmin();
     super.setup();
+    prepareDBDataForTest();
   }
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception {
     useSentryService = true;
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
-    prepareDBDataForTest();
   }
 
 }

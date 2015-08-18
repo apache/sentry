@@ -38,8 +38,6 @@ public class TestDbExportImportPrivileges extends TestExportImportPrivileges {
   public static void setupTestStaticConfiguration() throws Exception {
     LOGGER.info("TestDbExportImportPrivileges setupTestStaticConfiguration");
     useSentryService = true;
-    clearDbAfterPerTest = true;
-    clearDbBeforePerTest = true;
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
   }
 

@@ -44,22 +44,14 @@ public class TestJDBCInterface extends AbstractTestWithStaticConfiguration {
   public static void setupTestStaticConfiguration() throws Exception {
     LOGGER.info("TestJDBCInterface setupTestStaticConfiguration");
     policyOnHdfs = true;
-    clearDbAfterPerTest = true;
-    clearDbBeforePerTest = true;
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
   }
 
   @Before
   public void setup() throws Exception {
     LOGGER.info("TestJDBCInterface setup");
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
-    if (clearDbBeforePerTest) {
-      // Precreate policy file
-      policyFile.setUserGroupMapping(StaticUserGroup.getStaticMapping());
-      writePolicyFile(policyFile);
-      LOGGER.info("Before per test run clean up");
-      clearAll(true);
-    }
+    policyFile = super.setupPolicy();
+    super.setup();
   }
 
   /*
