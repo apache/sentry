@@ -42,6 +42,7 @@ import org.apache.sentry.core.common.Action;
 import org.apache.sentry.core.model.search.SearchConstants;
 import org.apache.sentry.provider.db.generic.SentryGenericProviderBackend;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
+import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClientFactory;
 import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryGrantOption;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
@@ -204,7 +205,7 @@ public class AbstractSolrSentryTestWithDbProvider extends AbstractSolrSentryTest
   }
 
   public static void connectToSentryService() throws Exception {
-    client = new SentryGenericServiceClient(conf);
+    client = SentryGenericServiceClientFactory.create(conf);
   }
 
   public static void stopAllService() throws Exception {

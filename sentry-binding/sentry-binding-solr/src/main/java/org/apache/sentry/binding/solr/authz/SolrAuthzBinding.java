@@ -49,6 +49,7 @@ import org.apache.sentry.provider.common.HadoopGroupResourceAuthorizationProvide
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.db.generic.SentryGenericProviderBackend;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
+import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClientFactory;
 import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryGrantOption;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
@@ -285,7 +286,7 @@ public class SolrAuthzBinding {
   }
 
   public SentryGenericServiceClient getClient() throws Exception {
-    return new SentryGenericServiceClient(authzConf);
+    return SentryGenericServiceClientFactory.create(authzConf);
   }
 
   /**
