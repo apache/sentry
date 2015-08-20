@@ -35,6 +35,7 @@ import org.apache.sentry.provider.common.AuthorizationProvider;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.db.generic.SentryGenericProviderBackend;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
+import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClientFactory;
 import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryGrantOption;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
@@ -154,7 +155,7 @@ public class SqoopAuthBinding {
    *  was committed to master, the getClient method was needed to refactor using the connection pool
    */
   private SentryGenericServiceClient getClient() throws Exception {
-    return new SentryGenericServiceClient(authConf);
+    return SentryGenericServiceClientFactory.create(authConf);
   }
 
   public void createRole(final Subject subject, final String role) throws SqoopException {

@@ -29,6 +29,7 @@ import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
+import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClientFactory;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryRole;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +67,7 @@ public class SentryGenericProviderBackend implements ProviderBackend {
    *  was committed to master, the getClient method was needed to refactor using the connection pool
    */
   private SentryGenericServiceClient getClient() throws Exception {
-    return new SentryGenericServiceClient(conf);
+    return SentryGenericServiceClientFactory.create(conf);
   }
 
   @Override

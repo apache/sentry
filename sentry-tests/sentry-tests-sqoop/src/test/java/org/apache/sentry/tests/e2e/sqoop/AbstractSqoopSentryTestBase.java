@@ -37,6 +37,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.core.model.sqoop.SqoopActionConstant;
 import org.apache.sentry.provider.db.generic.SentryGenericProviderBackend;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
+import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClientFactory;
 import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.file.LocalGroupResourceAuthorizationProvider;
@@ -199,7 +200,7 @@ public class AbstractSqoopSentryTestBase {
     SentryGenericServiceClient sentryClient = null;
     try {
       /** grant all privilege to admin user */
-      sentryClient = new SentryGenericServiceClient(getClientConfig());
+      sentryClient = SentryGenericServiceClientFactory.create(getClientConfig());
       sentryClient.createRoleIfNotExist(ADMIN_USER, ADMIN_ROLE, COMPONENT);
       sentryClient.addRoleToGroups(ADMIN_USER, ADMIN_ROLE, COMPONENT, Sets.newHashSet(ADMIN_GROUP));
       sentryClient.grantPrivilege(ADMIN_USER, ADMIN_ROLE, COMPONENT,
