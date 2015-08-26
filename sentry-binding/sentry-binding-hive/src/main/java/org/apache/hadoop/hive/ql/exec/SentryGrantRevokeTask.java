@@ -165,7 +165,10 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
       }
     } catch(SentryUserException e) {
       setException(new Exception(e.getClass().getSimpleName() + ": " + e.getReason(), e));
-      String msg = "Error processing Sentry command: " + e.getMessage();
+      String msg = "Error processing Sentry command: " + e.getReason() + ".";
+      if (e instanceof SentryAccessDeniedException) {
+        msg += "Please grant admin privilege to " + subject.getName() + ".";
+      }
       LOG.error(msg, e);
       console.printError(msg);
       return RETURN_CODE_FAILURE;
