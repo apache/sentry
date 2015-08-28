@@ -140,6 +140,12 @@ public class HiveAuthzPrivilegesMap {
         setOperationType(HiveOperationType.INFO).
         build();
 
+    HiveAuthzPrivileges ColumnMetaDataPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
+        addInputObjectPriviledge(AuthorizableType.Column, EnumSet.of(DBModelAction.SELECT, DBModelAction.INSERT)).
+        setOperationScope(HiveOperationScope.COLUMN).
+        setOperationType(HiveOperationType.INFO).
+        build();
+
     HiveAuthzPrivileges dbImportPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
         addOutputObjectPriviledge(AuthorizableType.Db, EnumSet.of(DBModelAction.CREATE)).
         addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.ALL)).
@@ -255,9 +261,11 @@ public class HiveAuthzPrivilegesMap {
     hiveAuthzStmtPrivMap.put(HiveOperation.CREATEFUNCTION, functionPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.DROPFUNCTION, functionPrivilege);
 
+    // SHOWCOLUMNS
+    hiveAuthzStmtPrivMap.put(HiveOperation.SHOWCOLUMNS, ColumnMetaDataPrivilege);
+
     // SHOWDATABASES
     // SHOWTABLES
-    hiveAuthzStmtPrivMap.put(HiveOperation.SHOWCOLUMNS, tableMetaDataPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.SHOW_TABLESTATUS, tableMetaDataPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.SHOW_TBLPROPERTIES, tableMetaDataPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.SHOW_CREATETABLE, tableMetaDataPrivilege);
