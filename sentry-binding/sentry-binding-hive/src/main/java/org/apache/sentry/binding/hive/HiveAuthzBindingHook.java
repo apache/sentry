@@ -31,6 +31,9 @@ import java.util.Set;
 import org.apache.hadoop.hive.common.JavaUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
+import org.apache.hadoop.hive.metastore.api.FieldSchema;
+import org.apache.hadoop.hive.ql.exec.DDLTask;
+import org.apache.hadoop.hive.ql.exec.SentryFilterDDLTask;
 import org.apache.hadoop.hive.ql.exec.SentryGrantRevokeTask;
 import org.apache.hadoop.hive.ql.exec.Task;
 import org.apache.hadoop.hive.ql.hooks.Entity;
@@ -45,6 +48,7 @@ import org.apache.hadoop.hive.ql.parse.BaseSemanticAnalyzer;
 import org.apache.hadoop.hive.ql.parse.HiveParser;
 import org.apache.hadoop.hive.ql.parse.HiveSemanticAnalyzerHookContext;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
+import org.apache.hadoop.hive.ql.plan.DDLWork;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.sentry.binding.hive.authz.HiveAuthzBinding;
@@ -335,6 +339,22 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
         // We don't handle authorizing this statement
         return;
       }
+
+      /**
+       * Replace DDLTask using the SentryFilterDDLTask for protection,
+       * such as "show column" only allow show some column that user can access to.
+       * SENTRY-847
+       */
+      for (int i = 0; i < rootTasks.size(); i++) {
+        Task<? extends Serializable> task = rootTasks.get(i);
+        if (task instanceof DDLTask) {
+          SentryFilterDDLTask filterTask =
+              new SentryFilterDDLTask(hiveAuthzBinding, subject, stmtOperation);
+          filterTask.setWork((DDLWork)task.getWork());
+          rootTasks.set(i, filterTask);
+        }
+      }
+
       authorizeWithHiveBindings(context, stmtAuthObject, stmtOperation);
     } catch (AuthorizationException e) {
       executeOnFailureHooks(context, stmtOperation, e);
@@ -506,7 +526,19 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
       inputHierarchy.add(connectHierarchy);
       outputHierarchy.add(connectHierarchy);
       break;
-
+    case COLUMN:
+      for (ReadEntity readEntity: inputs) {
+        if (readEntity.getAccessedColumns() != null && !readEntity.getAccessedColumns().isEmpty()) {
+          addColumnHierarchy(inputHierarchy, readEntity);
+        } else {
+          List<DBModelAuthorizable> entityHierarchy = new ArrayList<DBModelAuthorizable>();
+          entityHierarchy.add(hiveAuthzBinding.getAuthServer());
+          entityHierarchy.addAll(getAuthzHierarchyFromEntity(readEntity));
+          entityHierarchy.add(Column.ALL);
+          inputHierarchy.add(entityHierarchy);
+        }
+      }
+      break;
     default:
       throw new AuthorizationException("Unknown operation scope type " +
           stmtAuthObject.getOperationScope().toString());
@@ -684,6 +716,42 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
         filteredResult.add(table.getName());
       } catch (AuthorizationException e) {
         // squash the exception, user doesn't have privileges, so the table is
+        // not added to
+        // filtered list.
+        ;
+      }
+    }
+    return filteredResult;
+  }
+
+  public static List<FieldSchema> filterShowColumns(
+      HiveAuthzBinding hiveAuthzBinding, List<FieldSchema> cols,
+      HiveOperation operation, String userName, String tableName, String dbName)
+          throws SemanticException {
+    List<FieldSchema> filteredResult = new ArrayList<FieldSchema>();
+    Subject subject = new Subject(userName);
+    HiveAuthzPrivileges ColumnMetaDataPrivilege =
+        HiveAuthzPrivilegesMap.getHiveAuthzPrivileges(HiveOperation.SHOWCOLUMNS);
+
+    Database database = new Database(dbName);
+    Table table = new Table(tableName);
+    for (FieldSchema col : cols) {
+      // if user has privileges on column, add to filtered list, else discard
+      List<List<DBModelAuthorizable>> inputHierarchy = new ArrayList<List<DBModelAuthorizable>>();
+      List<List<DBModelAuthorizable>> outputHierarchy = new ArrayList<List<DBModelAuthorizable>>();
+      List<DBModelAuthorizable> externalAuthorizableHierarchy = new ArrayList<DBModelAuthorizable>();
+      externalAuthorizableHierarchy.add(hiveAuthzBinding.getAuthServer());
+      externalAuthorizableHierarchy.add(database);
+      externalAuthorizableHierarchy.add(table);
+      externalAuthorizableHierarchy.add(new Column(col.getName()));
+      inputHierarchy.add(externalAuthorizableHierarchy);
+
+      try {
+        hiveAuthzBinding.authorize(operation, ColumnMetaDataPrivilege, subject,
+            inputHierarchy, outputHierarchy);
+        filteredResult.add(col);
+      } catch (AuthorizationException e) {
+        // squash the exception, user doesn't have privileges, so the column is
         // not added to
         // filtered list.
         ;

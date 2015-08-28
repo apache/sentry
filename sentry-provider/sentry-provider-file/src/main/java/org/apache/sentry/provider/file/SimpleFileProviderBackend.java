@@ -183,7 +183,7 @@ public class SimpleFileProviderBackend implements ProviderBackend {
 
   @Override
   public void close() {
-    groupRolePrivilegeTable.clear();
+    // SENTRY-847 will use HiveAuthBinding again, so groupRolePrivilegeTable shouldn't clear itself
   }
 
   @Override

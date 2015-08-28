@@ -17,17 +17,22 @@
 
 package org.apache.sentry.tests.e2e.dbprovider;
 
+import static junit.framework.Assert.fail;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -269,6 +274,83 @@ public class TestColumnEndToEnd extends AbstractTestWithStaticConfiguration {
     statement.execute("use " + DB2);
     statement.execute("CREATE TABLE t3_1 AS SELECT c1 FROM " + DB1 + ".t1");
     statement.execute("CREATE TABLE t3_2 AS SELECT * FROM " + DB1 + ".t1");
+
+    statement.close();
+    connection.close();
+  }
+
+  @Test
+  public void testShowColumns() throws Exception {
+    // grant select on test_tb(s) to USER1_1
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("CREATE database " + DB1);
+    statement.execute("use " + DB1);
+    statement.execute("CREATE TABLE test_tb (s string, i string)");
+    statement.execute("CREATE ROLE user_role1");
+    statement.execute("GRANT SELECT (s) ON TABLE test_tb TO ROLE user_role1");
+    statement.execute("GRANT ROLE user_role1 TO GROUP " + USERGROUP1);
+    statement.close();
+    connection.close();
+
+    // USER1_1 executes "show columns in test_tb" and gets the s column information
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    statement.execute("use " + DB1);
+    ResultSet res = statement.executeQuery("show columns in test_tb");
+
+    List<String> expectedResult = new ArrayList<String>();
+    List<String> returnedResult = new ArrayList<String>();
+    expectedResult.add("s");
+    while (res.next()) {
+      returnedResult.add(res.getString(1).trim());
+    }
+    validateReturnedResult(expectedResult, returnedResult);
+    returnedResult.clear();
+    expectedResult.clear();
+    res.close();
+
+    statement.close();
+    connection.close();
+
+    // grant select on test_tb(s, i) to USER2_1
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    statement.execute("use " + DB1);
+    statement.execute("CREATE ROLE user_role2");
+    statement.execute("GRANT SELECT(s, i) ON TABLE test_tb TO ROLE user_role2");
+    statement.execute("GRANT ROLE user_role2 TO GROUP " + USERGROUP2);
+    statement.close();
+    connection.close();
+
+    // USER2_1 executes "show columns in test_tb" and gets the s,i columns information
+    connection = context.createConnection(USER2_1);
+    statement = context.createStatement(connection);
+    statement.execute("use " + DB1);
+    res = statement.executeQuery("show columns in test_tb");
+
+    expectedResult.add("s");
+    expectedResult.add("i");
+    while (res.next()) {
+      returnedResult.add(res.getString(1).trim());
+    }
+    validateReturnedResult(expectedResult, returnedResult);
+    returnedResult.clear();
+    expectedResult.clear();
+    res.close();
+
+    statement.close();
+    connection.close();
+
+    // USER3_1 executes "show columns in test_tb" and the exception will be thrown
+    connection = context.createConnection(USER3_1);
+    statement = context.createStatement(connection);
+    try {
+      // USER3_1 has no privilege on any column, so "show columns in test_tb" will throw an exception
+      statement.execute("show columns in db_1.test_tb");
+      fail("No valid privileges exception should have been thrown");
+    } catch (Exception e) {
+    }
 
     statement.close();
     connection.close();
