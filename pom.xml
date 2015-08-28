@@ -69,6 +69,7 @@ limitations under the License.
     <derby.version>10.10.2.0</derby.version>
     <commons-cli.version>1.2</commons-cli.version>
     <hive.version>1.1.0</hive.version>
+    <hive-v2.version>1.3.0-SNAPSHOT</hive-v2.version>
     <hadoop.version>2.6.0</hadoop.version>
     <fest.reflect.version>1.4.1</fest.reflect.version>
     <guava.version>11.0.2</guava.version>
@@ -378,6 +379,11 @@ limitations under the License.
       <dependency>
         <groupId>org.apache.sentry</groupId>
         <artifactId>sentry-binding-hive</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.sentry</groupId>
+        <artifactId>sentry-binding-hive-v2</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
