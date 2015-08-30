@@ -31,6 +31,7 @@ import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.search.Collection;
+import org.apache.sentry.core.model.search.Config;
 import org.apache.sentry.core.model.search.SearchModelAction;
 import org.apache.sentry.provider.common.MockGroupMappingServiceProvider;
 import org.apache.sentry.provider.common.ResourceAuthorizationProvider;
@@ -65,6 +66,12 @@ public class TestSearchAuthorizationProviderGeneralCases {
   private static final Collection COLL_JRANALYST1 = new Collection("jranalyst1");
   private static final Collection COLL_TMP = new Collection("tmpcollection");
   private static final Collection COLL_PURCHASES_PARTIAL = new Collection("purchases_partial");
+
+  private static final Config CONF_PURCHASES = new Config("purchasesConfig");
+  private static final Config CONF_ANALYST1 = new Config("analyst1Config");
+  private static final Config CONF_JRANALYST1 = new Config("jranalyst1Config");
+  private static final Config CONF_TMP = new Config("tmpconfig");
+  private static final Config CONF_PURCHASES_PARTIAL = new Config("purchases_partialConfig");
 
   private static final SearchModelAction ALL = SearchModelAction.ALL;
   private static final SearchModelAction QUERY = SearchModelAction.QUERY;
@@ -101,12 +108,12 @@ public class TestSearchAuthorizationProviderGeneralCases {
       Collection collection, Set<? extends Action> expectedPass) throws Exception {
     Set<SearchModelAction> allActions = EnumSet.of(SearchModelAction.ALL, SearchModelAction.QUERY, SearchModelAction.UPDATE);
     for(SearchModelAction action : allActions) {
-      doTestResourceAuthorizationProvider(subject, collection,
+      doTestResourceAuthorizationProviderCollection(subject, collection,
         EnumSet.of(action), expectedPass.contains(action));
     }
   }
 
-  private void doTestResourceAuthorizationProvider(Subject subject,
+  private void doTestResourceAuthorizationProviderCollection(Subject subject,
       Collection collection,
       Set<? extends Action> privileges, boolean expected) throws Exception {
     List<Authorizable> authzHierarchy = Arrays.asList(new Authorizable[] {
@@ -114,6 +121,30 @@ public class TestSearchAuthorizationProviderGeneralCases {
     });
     Objects.ToStringHelper helper = Objects.toStringHelper("TestParameters");
     helper.add("Subject", subject).add("Collection", collection)
+      .add("Privileges", privileges).add("authzHierarchy", authzHierarchy);
+    LOGGER.info("Running with " + helper.toString());
+    Assert.assertEquals(helper.toString(), expected,
+        authzProvider.hasAccess(subject, authzHierarchy, privileges, ActiveRoleSet.ALL));
+    LOGGER.info("Passed " + helper.toString());
+  }
+
+  private void doTestAuthProviderOnConfig(Subject subject,
+      Config config, Set<? extends Action> expectedPass) throws Exception {
+    Set<SearchModelAction> allActions = EnumSet.of(SearchModelAction.ALL, SearchModelAction.QUERY, SearchModelAction.UPDATE);
+    for(SearchModelAction action : allActions) {
+      doTestResourceAuthorizationProviderConfig(subject, config,
+        EnumSet.of(action), expectedPass.contains(action));
+    }
+  }
+
+  private void doTestResourceAuthorizationProviderConfig(Subject subject,
+      Config config,
+      Set<? extends Action> privileges, boolean expected) throws Exception {
+    List<Authorizable> authzHierarchy = Arrays.asList(new Authorizable[] {
+        config
+    });
+    Objects.ToStringHelper helper = Objects.toStringHelper("TestParameters");
+    helper.add("Subject", subject).add("Config", config)
       .add("Privileges", privileges).add("authzHierarchy", authzHierarchy);
     LOGGER.info("Running with " + helper.toString());
     Assert.assertEquals(helper.toString(), expected,
@@ -129,6 +160,12 @@ public class TestSearchAuthorizationProviderGeneralCases {
     doTestAuthProviderOnCollection(SUB_ADMIN, COLL_JRANALYST1, allActions);
     doTestAuthProviderOnCollection(SUB_ADMIN, COLL_TMP, allActions);
     doTestAuthProviderOnCollection(SUB_ADMIN, COLL_PURCHASES_PARTIAL, allActions);
+
+    doTestAuthProviderOnConfig(SUB_ADMIN, CONF_PURCHASES, allActions);
+    doTestAuthProviderOnConfig(SUB_ADMIN, CONF_ANALYST1, allActions);
+    doTestAuthProviderOnConfig(SUB_ADMIN, CONF_JRANALYST1, allActions);
+    doTestAuthProviderOnConfig(SUB_ADMIN, CONF_TMP, allActions);
+    doTestAuthProviderOnConfig(SUB_ADMIN, CONF_PURCHASES_PARTIAL, allActions);
   }
 
   @Test
@@ -145,6 +182,12 @@ public class TestSearchAuthorizationProviderGeneralCases {
 
     Set<SearchModelAction> queryOnly = EnumSet.of(SearchModelAction.QUERY);
     doTestAuthProviderOnCollection(SUB_MANAGER, COLL_PURCHASES_PARTIAL, queryOnly);
+
+    doTestAuthProviderOnConfig(SUB_MANAGER, CONF_PURCHASES, allActions);
+    doTestAuthProviderOnConfig(SUB_MANAGER, CONF_ANALYST1, allActions);
+    doTestAuthProviderOnConfig(SUB_MANAGER, CONF_JRANALYST1, allActions);
+    doTestAuthProviderOnConfig(SUB_MANAGER, CONF_TMP, allActions);
+    doTestAuthProviderOnConfig(SUB_MANAGER, CONF_PURCHASES_PARTIAL, allActions);
   }
 
   @Test
@@ -161,6 +204,13 @@ public class TestSearchAuthorizationProviderGeneralCases {
 
     Set<SearchModelAction> noActions = EnumSet.noneOf(SearchModelAction.class);
     doTestAuthProviderOnCollection(SUB_ANALYST, COLL_PURCHASES_PARTIAL, noActions);
+
+    doTestAuthProviderOnConfig(SUB_ANALYST, CONF_PURCHASES, allActions);
+    doTestAuthProviderOnConfig(SUB_ANALYST, CONF_ANALYST1, allActions);
+    doTestAuthProviderOnConfig(SUB_ANALYST, CONF_JRANALYST1, allActions);
+    doTestAuthProviderOnConfig(SUB_ANALYST, CONF_TMP, allActions);
+
+    doTestAuthProviderOnConfig(SUB_ANALYST, CONF_PURCHASES_PARTIAL, noActions);
   }
 
   @Test
@@ -175,5 +225,12 @@ public class TestSearchAuthorizationProviderGeneralCases {
     doTestAuthProviderOnCollection(SUB_JUNIOR_ANALYST, COLL_PURCHASES, noActions);
     doTestAuthProviderOnCollection(SUB_JUNIOR_ANALYST, COLL_ANALYST1, noActions);
     doTestAuthProviderOnCollection(SUB_JUNIOR_ANALYST, COLL_TMP, noActions);
+
+    doTestAuthProviderOnConfig(SUB_JUNIOR_ANALYST, CONF_PURCHASES, noActions);
+    doTestAuthProviderOnConfig(SUB_JUNIOR_ANALYST, CONF_ANALYST1, noActions);
+    doTestAuthProviderOnConfig(SUB_JUNIOR_ANALYST, CONF_TMP, noActions);
+
+    doTestAuthProviderOnConfig(SUB_JUNIOR_ANALYST, CONF_JRANALYST1, allActions);
+    doTestAuthProviderOnConfig(SUB_JUNIOR_ANALYST, CONF_PURCHASES_PARTIAL, allActions);
   }
 }

@@ -94,6 +94,10 @@ public abstract class SentryTestBase extends SolrTestCaseJ4 {
     cloudDescField.setAccessible(true);
     cloudDescField.set(coreDescriptor, mCloudDescriptor);
 
+    return prepareUser(request, user, onlyOnce);
+  }
+
+  protected SolrQueryRequest prepareUser(SolrQueryRequest request, String user, boolean onlyOnce) throws Exception {
     HttpServletRequest httpServletRequest = EasyMock.createMock(HttpServletRequest.class);
     IExpectationSetters getAttributeExpect =
         EasyMock.expect(httpServletRequest.getAttribute(USER_NAME)).andReturn(user);

@@ -66,7 +66,7 @@ public class SecureCoreAdminHandler extends CoreAdminHandler {
       action = CoreAdminAction.get(a);
       if (action == null) {
         // some custom action -- let's reqiure QUERY and UPDATE
-        SecureRequestHandlerUtil.checkSentryAdmin(
+        SecureRequestHandlerUtil.checkSentryAdminCollection(
             req,
             SecureRequestHandlerUtil.QUERY_AND_UPDATE,
             "CoreAdminAction." + a,
@@ -127,7 +127,7 @@ public class SecureCoreAdminHandler extends CoreAdminHandler {
       switch (action) {
         case STATUS:
         case REQUESTSTATUS: {
-          SecureRequestHandlerUtil.checkSentryAdmin(
+          SecureRequestHandlerUtil.checkSentryAdminCollection(
               req,
               SecureRequestHandlerUtil.QUERY_ONLY,
               "CoreAdminAction." + action.toString(),
@@ -156,7 +156,7 @@ public class SecureCoreAdminHandler extends CoreAdminHandler {
         case TRANSIENT:
         case REQUESTBUFFERUPDATES:
         case OVERSEEROP: {
-          SecureRequestHandlerUtil.checkSentryAdmin(
+          SecureRequestHandlerUtil.checkSentryAdminCollection(
               req,
               SecureRequestHandlerUtil.UPDATE_ONLY,
               "CoreAdminAction." + action.toString(),
@@ -166,7 +166,7 @@ public class SecureCoreAdminHandler extends CoreAdminHandler {
         }
         default: {
           // some custom action -- let's reqiure QUERY and UPDATE
-          SecureRequestHandlerUtil.checkSentryAdmin(
+          SecureRequestHandlerUtil.checkSentryAdminCollection(
               req,
               SecureRequestHandlerUtil.QUERY_AND_UPDATE,
               "CoreAdminAction." + action.toString(),

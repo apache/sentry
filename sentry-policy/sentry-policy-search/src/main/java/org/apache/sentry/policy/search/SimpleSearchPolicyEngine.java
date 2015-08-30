@@ -89,7 +89,7 @@ public class SimpleSearchPolicyEngine implements PolicyEngine {
   }
 
   public static ImmutableList<PrivilegeValidator> createPrivilegeValidators() {
-    return ImmutableList.<PrivilegeValidator>of(new CollectionRequiredInPrivilege());
+    return ImmutableList.<PrivilegeValidator>of(new CollectionOrConfigRequiredInPrivilege(), new ConfigOnlyAllActionAllowed(), new CollectionConfigNoMixing());
   }
 
   @Override

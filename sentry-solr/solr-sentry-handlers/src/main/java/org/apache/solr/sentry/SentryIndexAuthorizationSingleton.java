@@ -17,6 +17,7 @@
 package org.apache.solr.sentry;
 
 import java.net.URL;
+import java.util.EnumSet;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
@@ -26,6 +27,7 @@ import org.apache.sentry.binding.solr.authz.SolrAuthzBinding;
 import org.apache.sentry.binding.solr.conf.SolrAuthzConf;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.search.Collection;
+import org.apache.sentry.core.model.search.Config;
 import org.apache.sentry.core.model.search.SearchModelAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
@@ -77,7 +79,7 @@ public class SentryIndexAuthorizationSingleton {
   }
 
   /**
-   * Attempt to authorize an administrative action.
+   * Attempt to authorize a collection-related administrative action.
    *
    * @param req request to check
    * @param actions set of actions to check
@@ -85,7 +87,7 @@ public class SentryIndexAuthorizationSingleton {
    * @param collection only relevant if checkCollection==true,
    *   use collection (if non-null) instead pulling collection name from req (if null)
    */
-  public void authorizeAdminAction(SolrQueryRequest req,
+  public void authorizeCollectionAdminAction(SolrQueryRequest req,
       Set<SearchModelAction> actions, String operation, boolean checkCollection, String collection)
       throws SolrException {
     authorizeCollectionAction(req, actions, operation, "admin", true);
@@ -173,6 +175,73 @@ public class SentryIndexAuthorizationSingleton {
 
     auditLogger.log(userName.getName(), impersonator, ipAddress,
         operation, paramString, eventTime, AuditLogger.ALLOWED, collectionName);
+  }
+
+  /**
+   * Attempt to authorize a config-related administrative action.
+   *
+   * @param req request to check
+   * @param operation the operation to check
+   * @param config the Configuration to check
+   */
+  public void authorizeConfigAdminAction(SolrQueryRequest req,
+      String operation, String config)
+      throws SolrException {
+    authorizeCollectionAction(req, EnumSet.of(SearchModelAction.UPDATE), operation, "admin", true);
+    authorizeConfigAction(req, operation, config);
+  }
+
+  /**
+   * Attempt to authorize a config action.
+   *
+   * @param req request to check
+   * @param operation the operation to check
+   * @param configName the config to check.
+   */
+  public void authorizeConfigAction(SolrQueryRequest req,
+      String operation, String configName)
+      throws SolrException {
+
+    Subject superUser = new Subject(System.getProperty("solr.authorization.superuser", "solr"));
+    Subject userName = new Subject(getUserName(req));
+    long eventTime = req.getStartTime();
+    String paramString = req.getParamString();
+    String impersonator = null; // FIXME
+
+    String ipAddress = null;
+    HttpServletRequest sreq = (HttpServletRequest) req.getContext().get("httpRequest");
+    if (sreq != null) {
+      try {
+        ipAddress = sreq.getRemoteAddr();
+      } catch (AssertionError e) {
+        ; // ignore
+        // This is a work-around for "Unexpected method call getRemoteAddr()"
+        // exception during unit test mocking at
+        // com.sun.proxy.$Proxy28.getRemoteAddr(Unknown Source)
+      }
+    }
+
+    if (configName == null) {
+      String msg = "Unable to locate config for sentry to authorize";
+      // FixMe: how to enable audit logging for Configs?
+      //auditLogger.log(userName.getName(), impersonator, ipAddress,
+      //    operation, paramString, eventTime, AuditLogger.UNAUTHORIZED, configName);
+      throw new SolrException(SolrException.ErrorCode.UNAUTHORIZED, msg);
+    }
+
+    Config config = new Config(configName);
+    try {
+      if (!superUser.getName().equals(userName.getName())) {
+        binding.authorizeConfig(userName, config);
+      }
+    } catch (SentrySolrAuthorizationException ex) {
+      //auditLogger.log(userName.getName(), impersonator, ipAddress,
+      //    operation, paramString, eventTime, AuditLogger.UNAUTHORIZED, configName);
+      throw new SolrException(SolrException.ErrorCode.UNAUTHORIZED, ex);
+    }
+
+    //auditLogger.log(userName.getName(), impersonator, ipAddress,
+    //    operation, paramString, eventTime, AuditLogger.ALLOWED, configName);
   }
 
   /**

@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
@@ -32,6 +33,7 @@ import org.apache.sentry.binding.solr.conf.SolrAuthzConf.AuthzConfVars;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.search.Collection;
+import org.apache.sentry.core.model.search.Config;
 import org.apache.sentry.core.model.search.SearchModelAction;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.common.AuthorizationProvider;
@@ -133,6 +135,28 @@ public class SolrAuthzBinding {
         ActiveRoleSet.ALL)) {
       throw new SentrySolrAuthorizationException("User " + subject.getName() +
         " does not have privileges for " + collection.getName());
+    }
+  }
+
+  /**
+   * Authorize access to an config
+   * @param subject
+   * @param config
+   * @throws SentrySolrAuthorizationException
+   */
+  public void authorizeConfig(Subject subject, Config config) throws SentrySolrAuthorizationException {
+    Set<SearchModelAction> actions = EnumSet.of(SearchModelAction.ALL);
+    boolean isDebug = LOG.isDebugEnabled();
+    if(isDebug) {
+      LOG.debug("Going to authorize config " + config.getName() +
+          " for subject " + subject.getName());
+      LOG.debug("Actions: " + actions);
+    }
+
+    if (!authProvider.hasAccess(subject, Arrays.asList(new Config[] {config}), actions,
+        ActiveRoleSet.ALL)) {
+      throw new SentrySolrAuthorizationException("User " + subject.getName() +
+        " does not have privileges for " + config.getName());
     }
   }
 

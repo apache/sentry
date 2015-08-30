@@ -89,6 +89,28 @@ public class TestSearchPolicyNegative {
   }
 
   @Test
+  public void testConfigOnlyAllActionAllowed() throws Exception {
+    append("[groups]", globalPolicyFile);
+    append("group = some_role", globalPolicyFile);
+    append("[roles]", globalPolicyFile);
+    append("some_role = config=someConfig->action=query", globalPolicyFile);
+    PolicyEngine policy = new SearchPolicyFileBackend(globalPolicyFile.getPath());
+    ImmutableSet<String> permissions = policy.getPrivileges(Sets.newHashSet("group"), ActiveRoleSet.ALL);
+    Assert.assertTrue(permissions.toString(), permissions.isEmpty());
+  }
+
+  @Test
+  public void testCollectionConfigNoMixing() throws Exception {
+    append("[groups]", globalPolicyFile);
+    append("group = some_role", globalPolicyFile);
+    append("[roles]", globalPolicyFile);
+    append("some_role = collection=someCollection->config=someConfig", globalPolicyFile);
+    PolicyEngine policy = new SearchPolicyFileBackend(globalPolicyFile.getPath());
+    ImmutableSet<String> permissions = policy.getPrivileges(Sets.newHashSet("group"), ActiveRoleSet.ALL);
+    Assert.assertTrue(permissions.toString(), permissions.isEmpty());
+  }
+
+  @Test
   public void testGroupIncorrect() throws Exception {
     append("[groups]", globalPolicyFile);
     append("group = malicious_role", globalPolicyFile);

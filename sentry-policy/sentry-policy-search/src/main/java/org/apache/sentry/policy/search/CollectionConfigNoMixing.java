@@ -16,36 +16,31 @@
  */
 package org.apache.sentry.policy.search;
 
+import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.core.model.search.Collection;
 import org.apache.sentry.core.model.search.Config;
 import org.apache.sentry.core.model.search.SearchModelAuthorizable;
-import org.apache.sentry.core.model.search.SearchModelAuthorizable.AuthorizableType;
-import org.apache.sentry.provider.file.KeyValue;
+import org.apache.sentry.policy.common.PrivilegeValidatorContext;
 
-public class SearchModelAuthorizables {
+public class CollectionConfigNoMixing extends AbstractSearchPrivilegeValidator {
 
-  public static SearchModelAuthorizable from(KeyValue keyValue) {
-    String prefix = keyValue.getKey().toLowerCase();
-    String name = keyValue.getValue().toLowerCase();
-    for(AuthorizableType type : AuthorizableType.values()) {
-      if(prefix.equalsIgnoreCase(type.name())) {
-        return from(type, name);
+  @Override
+  public void validate(PrivilegeValidatorContext context) throws SentryConfigurationException {
+    String privilege = context.getPrivilege();
+    Iterable<SearchModelAuthorizable> authorizables = parsePrivilege(privilege);
+    boolean foundCollection = false;
+    boolean foundConfig = false;
+
+    for(SearchModelAuthorizable authorizable : authorizables) {
+      if(authorizable instanceof Collection) {
+        foundCollection = true;
+      } else if (authorizable instanceof Config) {
+        foundConfig = true;
       }
     }
-    return null;
-  }
-  public static SearchModelAuthorizable from(String s) {
-    return from(new KeyValue(s));
-  }
-
-  private static SearchModelAuthorizable from(AuthorizableType type, String name) {
-    switch (type) {
-    case Collection:
-      return new Collection(name);
-    case Config:
-      return new Config(name);
-    default:
-      return null;
+    if(foundCollection && foundConfig) {
+      String msg = "Collection and Config not allowed in same privilege: " + privilege;
+      throw new SentryConfigurationException(msg);
     }
   }
 }

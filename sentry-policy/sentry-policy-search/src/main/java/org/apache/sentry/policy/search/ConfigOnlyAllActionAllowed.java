@@ -17,27 +17,40 @@
 package org.apache.sentry.policy.search;
 
 import org.apache.sentry.core.common.SentryConfigurationException;
-import org.apache.sentry.core.model.search.Collection;
+import org.apache.sentry.core.model.search.Config;
+import org.apache.sentry.core.model.search.SearchModelAction;
 import org.apache.sentry.core.model.search.SearchModelAuthorizable;
 import org.apache.sentry.policy.common.PrivilegeValidatorContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class CollectionRequiredInPrivilege extends AbstractSearchPrivilegeValidator {
+public class ConfigOnlyAllActionAllowed extends AbstractSearchPrivilegeValidator {
+
+  private static final Logger LOGGER = LoggerFactory
+      .getLogger(ConfigOnlyAllActionAllowed.class);
 
   @Override
   public void validate(PrivilegeValidatorContext context) throws SentryConfigurationException {
     String privilege = context.getPrivilege();
-    Iterable<SearchModelAuthorizable> authorizables = parsePrivilege(privilege);
-    boolean foundCollectionInAuthorizables = false;
+    Iterable<SearchAuthorizableOrAction> authorizables = parsePrivilegeAndAction(privilege);
+    boolean foundConfig = false;
+    boolean foundNonAllAction = false;
 
-    for(SearchModelAuthorizable authorizable : authorizables) {
-      if(authorizable instanceof Collection) {
-        foundCollectionInAuthorizables = true;
-        break;
+    for(SearchAuthorizableOrAction authorizableOrAction : authorizables) {
+      SearchModelAuthorizable authorizable = authorizableOrAction.getAuthorizable();
+      if(authorizable instanceof Config) {
+        foundConfig = true;
       }
-    }
-    if(!foundCollectionInAuthorizables) {
-      String msg = "Missing collection object in " + privilege;
-      throw new SentryConfigurationException(msg);
+
+      SearchModelAction action = authorizableOrAction.getAction();
+      if (action != null && !action.getValue().equalsIgnoreCase(SearchModelAction.ALL.getValue())) {
+        foundNonAllAction = true;
+      }
+
+      if(foundConfig && foundNonAllAction) {
+        String msg = "Config cannot have non-all action " + privilege;
+        throw new SentryConfigurationException(msg);
+      }
     }
   }
 }

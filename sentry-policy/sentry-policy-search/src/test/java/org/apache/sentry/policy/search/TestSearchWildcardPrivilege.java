@@ -17,12 +17,15 @@
  * under the License.
  */
 package org.apache.sentry.policy.search;
+
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertTrue;
 import static org.apache.sentry.provider.file.PolicyFileConstants.AUTHORIZABLE_JOINER;
 import static org.apache.sentry.provider.file.PolicyFileConstants.KV_JOINER;
 import static org.apache.sentry.provider.file.PolicyFileConstants.KV_SEPARATOR;
 
+import java.util.Arrays;
+import java.util.List;
 import org.apache.sentry.core.model.search.SearchConstants;
 import org.apache.sentry.policy.common.Privilege;
 import org.apache.sentry.provider.file.KeyValue;
@@ -33,7 +36,7 @@ public class TestSearchWildcardPrivilege {
   private static final String ALL = SearchConstants.ALL;
 
   @Test
-  public void testSimpleNoAction() throws Exception {
+  public void testSimpleCollectionNoAction() throws Exception {
     Privilege collection1 = create(new KeyValue("collection", "coll1"));
     Privilege collection2 = create(new KeyValue("collection", "coll2"));
     Privilege collection1Case = create(new KeyValue("colleCtIon", "coLl1"));
@@ -50,7 +53,24 @@ public class TestSearchWildcardPrivilege {
   }
 
   @Test
-  public void testSimpleAction() throws Exception {
+  public void testSimpleConfigNoAction() throws Exception {
+    Privilege config1 = create(new KeyValue("config", "conf1"));
+    Privilege config2 = create(new KeyValue("config", "conf2"));
+    Privilege config1Case = create(new KeyValue("coNfIg", "coNf1"));
+
+    assertTrue(config1.implies(config1));
+    assertTrue(config2.implies(config2));
+    assertTrue(config1.implies(config1Case));
+    assertTrue(config1Case.implies(config1));
+
+    assertFalse(config1.implies(config2));
+    assertFalse(config1Case.implies(config2));
+    assertFalse(config2.implies(config1));
+    assertFalse(config2.implies(config1Case));
+  }
+
+  @Test
+  public void testSimpleCollectionAction() throws Exception {
     Privilege query =
       create(new KeyValue("collection", "coll1"), new KeyValue("action", "query"));
     Privilege update =
@@ -70,7 +90,18 @@ public class TestSearchWildcardPrivilege {
   }
 
   @Test
-  public void testRoleShorterThanRequest() throws Exception {
+  public void testSimpleConfigAction() throws Exception {
+    Privilege all =
+      create(new KeyValue("config", "conf1"), new KeyValue("action", ALL));
+    Privilege allCase =
+      create(new KeyValue("cONfiG", "coNf1"), new KeyValue("AcTiOn", ALL));
+
+    assertTrue(all.implies(allCase));
+    assertTrue(allCase.implies(all));
+  }
+
+  @Test
+  public void testCollectionRoleShorterThanRequest() throws Exception {
     Privilege collection1 = create(new KeyValue("collection", "coll1"));
     Privilege query =
       create(new KeyValue("collection", "coll1"), new KeyValue("action", "query"));
@@ -78,7 +109,6 @@ public class TestSearchWildcardPrivilege {
       create(new KeyValue("collection", "coll1"), new KeyValue("action", "update"));
     Privilege all =
       create(new KeyValue("collection", "coll1"), new KeyValue("action", ALL));
-
     assertTrue(collection1.implies(query));
     assertTrue(collection1.implies(update));
     assertTrue(collection1.implies(all));
@@ -86,6 +116,16 @@ public class TestSearchWildcardPrivilege {
     assertFalse(query.implies(collection1));
     assertFalse(update.implies(collection1));
     assertTrue(all.implies(collection1));
+  }
+
+  @Test
+  public void testConfigRoleShorterThanRequest() throws Exception {
+    Privilege conf1 = create(new KeyValue("config", "conf1"));
+    Privilege all =
+      create(new KeyValue("config", "conf1"), new KeyValue("action", ALL));
+
+    assertTrue(conf1.implies(all));
+    assertTrue(all.implies(conf1));
   }
 
   @Test
@@ -128,7 +168,21 @@ public class TestSearchWildcardPrivilege {
   }
 
   @Test
-  public void testActionAll() throws Exception {
+  public void testConfigAll() throws Exception {
+    Privilege configAll = create(new KeyValue("config", ALL));
+    Privilege config1 = create(new KeyValue("config", "conf1"));
+    Privilege configAllAction = create(new KeyValue("config", ALL), new KeyValue("action", ALL));
+    Privilege config1Action =  create(new KeyValue("config", "conf1"), new KeyValue("action", ALL));
+    List<Privilege> list = Arrays.asList(configAll, config1, configAllAction, config1Action);
+    for(Privilege p1 : list) {
+      for(Privilege p2 : list) {
+        assertTrue(p1.implies(p2));
+      }
+    }
+  }
+
+  @Test
+  public void testCollectionActionAll() throws Exception {
     Privilege coll1All =
        create(new KeyValue("collection", "coll1"), new KeyValue("action", ALL));
     Privilege coll1Update =
@@ -149,7 +203,7 @@ public class TestSearchWildcardPrivilege {
   }
 
   @Test
-  public void testUnexpected() throws Exception {
+  public void testUnexpectedCollection() throws Exception {
     Privilege p = new Privilege() {
       @Override
       public boolean implies(Privilege p) {
@@ -161,6 +215,48 @@ public class TestSearchWildcardPrivilege {
     assertFalse(collection1.implies(p));
     assertFalse(collection1.equals(null));
     assertFalse(collection1.equals(p));
+  }
+
+  @Test
+  public void testUnexpectedConfig() throws Exception {
+    Privilege p = new Privilege() {
+      @Override
+      public boolean implies(Privilege p) {
+        return false;
+      }
+    };
+    Privilege config1 = create(new KeyValue("config", "conf1"));
+    assertFalse(config1.implies(null));
+    assertFalse(config1.implies(p));
+    assertFalse(config1.equals(null));
+    assertFalse(config1.equals(p));
+  }
+
+  @Test
+  public void testCollectionConfigNoImply() throws Exception {
+    // completely different
+    Privilege coll1 = create(new KeyValue("collection", "coll1"));
+    Privilege conf1 = create(new KeyValue("config", "conf1"), new KeyValue("action", ALL));
+    assertFalse(coll1.implies(conf1));
+    assertFalse(conf1.implies(coll1));
+
+    // same name
+    Privilege coll1Short = create(new KeyValue("collection", "c1"));
+    Privilege conf1Short = create(new KeyValue("config", "c1"));
+    assertFalse(coll1Short.implies(conf1Short));
+    assertFalse(conf1Short.implies(coll1Short));
+
+    // all vs not-all
+    Privilege collAll = create(new KeyValue("collection", ALL));
+    Privilege confAll = create(new KeyValue("config", ALL));
+    assertFalse(collAll.implies(conf1));
+    assertFalse(conf1.implies(collAll));
+    assertFalse(confAll.implies(coll1));
+    assertFalse(coll1.implies(confAll));
+
+    // all vs all
+    assertFalse(collAll.implies(confAll));
+    assertFalse(confAll.implies(collAll));
   }
 
   @Test(expected=IllegalArgumentException.class)

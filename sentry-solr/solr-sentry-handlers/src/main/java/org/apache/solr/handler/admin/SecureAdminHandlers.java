@@ -112,7 +112,7 @@ public class SecureAdminHandlers extends AdminHandlers {
     @Override
     public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
       // logging handler can be used both to read and change logs
-      SecureRequestHandlerUtil.checkSentryAdmin(req, SecureRequestHandlerUtil.QUERY_AND_UPDATE, getClass().getName(), false, null);
+      SecureRequestHandlerUtil.checkSentryAdminCollection(req, SecureRequestHandlerUtil.QUERY_AND_UPDATE, getClass().getName(), false, null);
       super.handleRequestBody(req, rsp);
     }
   }
@@ -120,7 +120,7 @@ public class SecureAdminHandlers extends AdminHandlers {
   public static class SecureLukeRequestHandler extends LukeRequestHandler {
     @Override
     public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-      SecureRequestHandlerUtil.checkSentryAdmin(req, SecureRequestHandlerUtil.QUERY_ONLY, getClass().getName(), true, null);
+      SecureRequestHandlerUtil.checkSentryAdminCollection(req, SecureRequestHandlerUtil.QUERY_ONLY, getClass().getName(), true, null);
       super.handleRequestBody(req, rsp);
     }
   }
@@ -128,7 +128,7 @@ public class SecureAdminHandlers extends AdminHandlers {
   public static class SecurePluginInfoHandler extends PluginInfoHandler {
     @Override
     public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-      SecureRequestHandlerUtil.checkSentryAdmin(req, SecureRequestHandlerUtil.QUERY_ONLY, getClass().getName(), true, null);
+      SecureRequestHandlerUtil.checkSentryAdminCollection(req, SecureRequestHandlerUtil.QUERY_ONLY, getClass().getName(), true, null);
       super.handleRequestBody(req, rsp);
     }
   }
@@ -136,7 +136,7 @@ public class SecureAdminHandlers extends AdminHandlers {
   public static class SecurePropertiesRequestHandler extends PropertiesRequestHandler {
     @Override
     public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
-      SecureRequestHandlerUtil.checkSentryAdmin(req, SecureRequestHandlerUtil.QUERY_ONLY, getClass().getName(), false, null);
+      SecureRequestHandlerUtil.checkSentryAdminCollection(req, SecureRequestHandlerUtil.QUERY_ONLY, getClass().getName(), false, null);
       super.handleRequestBody(req, rsp);
     }
   }
@@ -145,7 +145,7 @@ public class SecureAdminHandlers extends AdminHandlers {
     @Override
     public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp)
      throws IOException, KeeperException, InterruptedException {
-      SecureRequestHandlerUtil.checkSentryAdmin(req, SecureRequestHandlerUtil.QUERY_ONLY, getClass().getName(), true, null);
+      SecureRequestHandlerUtil.checkSentryAdminCollection(req, SecureRequestHandlerUtil.QUERY_ONLY, getClass().getName(), true, null);
       super.handleRequestBody(req, rsp);
     }
   }
@@ -153,7 +153,7 @@ public class SecureAdminHandlers extends AdminHandlers {
   public static class SecureSolrInfoMBeanHandler extends SolrInfoMBeanHandler {
     @Override
     public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-      SecureRequestHandlerUtil.checkSentryAdmin(req, SecureRequestHandlerUtil.QUERY_ONLY, getClass().getName(), true, null);
+      SecureRequestHandlerUtil.checkSentryAdminCollection(req, SecureRequestHandlerUtil.QUERY_ONLY, getClass().getName(), true, null);
       super.handleRequestBody(req, rsp);
     }
   }
@@ -171,7 +171,7 @@ public class SecureAdminHandlers extends AdminHandlers {
     public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
       // this may or may not have the core
       SolrCore core = req.getCore();
-      SecureRequestHandlerUtil.checkSentryAdmin(req, SecureRequestHandlerUtil.QUERY_ONLY, getClass().getName(), core != null, null);
+      SecureRequestHandlerUtil.checkSentryAdminCollection(req, SecureRequestHandlerUtil.QUERY_ONLY, getClass().getName(), core != null, null);
       super.handleRequestBody(req, rsp);
     }
   }
@@ -179,7 +179,7 @@ public class SecureAdminHandlers extends AdminHandlers {
   public static class SecureThreadDumpHandler extends ThreadDumpHandler {
     @Override
     public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
-      SecureRequestHandlerUtil.checkSentryAdmin(req, SecureRequestHandlerUtil.QUERY_ONLY, getClass().getName(), false, null);
+      SecureRequestHandlerUtil.checkSentryAdminCollection(req, SecureRequestHandlerUtil.QUERY_ONLY, getClass().getName(), false, null);
       super.handleRequestBody(req, rsp);
     }
   }

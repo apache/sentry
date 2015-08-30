@@ -45,6 +45,14 @@ public abstract class AbstractTestSearchPolicyEngine {
   private static final String JRANALYST_PURCHASES_PARTIAL_QUERY = "collection=purchases_partial->action=query";
   private static final String ADMIN_COLLECTION_ALL = "collection=*";
 
+  private static final String ANALYST_PURCHASES_CONFIG = "config=purchasesConfig->action=*";
+  private static final String ANALYST_ANALYST1_CONFIG = "config=analyst1Config";
+  private static final String ANALYST_JRANALYST1_CONFIG = "config=jranalyst1Config->action=*";
+  private static final String ANALYST_TMPCONFIG = "config=tmpconfig";
+  private static final String JRANALYST_JRANALYST1_CONFIG = "config=jranalyst1Config";
+  private static final String JRANALYST_PURCHASES_PARTIAL_CONFIG = "config=purchases_partialConfig->action=*";
+  private static final String ADMIN_CONFIG_ALL = "config=*";
+
   private PolicyEngine policy;
   private static File baseDir;
 
@@ -88,7 +96,10 @@ public abstract class AbstractTestSearchPolicyEngine {
         ANALYST_PURCHASES_UPDATE, ANALYST_ANALYST1_ALL,
         ANALYST_JRANALYST1_ACTION_ALL, ANALYST_TMPCOLLECTION_UPDATE,
         ANALYST_TMPCOLLECTION_QUERY, JRANALYST_JRANALYST1_ALL,
-        JRANALYST_PURCHASES_PARTIAL_QUERY));
+        JRANALYST_PURCHASES_PARTIAL_QUERY, ANALYST_PURCHASES_CONFIG,
+        ANALYST_ANALYST1_CONFIG, ANALYST_JRANALYST1_CONFIG,
+        ANALYST_TMPCONFIG, JRANALYST_JRANALYST1_CONFIG,
+        JRANALYST_PURCHASES_PARTIAL_CONFIG));
     Assert.assertEquals(expected.toString(),
         new TreeSet<String>(policy.getPrivileges(set("manager"), ActiveRoleSet.ALL))
         .toString());
@@ -99,7 +110,9 @@ public abstract class AbstractTestSearchPolicyEngine {
     Set<String> expected = Sets.newTreeSet(Sets.newHashSet(
         ANALYST_PURCHASES_UPDATE, ANALYST_ANALYST1_ALL,
         ANALYST_JRANALYST1_ACTION_ALL, ANALYST_TMPCOLLECTION_UPDATE,
-        ANALYST_TMPCOLLECTION_QUERY));
+        ANALYST_TMPCOLLECTION_QUERY, ANALYST_PURCHASES_CONFIG,
+        ANALYST_ANALYST1_CONFIG, ANALYST_JRANALYST1_CONFIG,
+        ANALYST_TMPCONFIG));
     Assert.assertEquals(expected.toString(),
         new TreeSet<String>(policy.getPrivileges(set("analyst"), ActiveRoleSet.ALL))
         .toString());
@@ -109,7 +122,8 @@ public abstract class AbstractTestSearchPolicyEngine {
   public void testJuniorAnalyst() throws Exception {
     Set<String> expected = Sets.newTreeSet(Sets
         .newHashSet(JRANALYST_JRANALYST1_ALL,
-            JRANALYST_PURCHASES_PARTIAL_QUERY));
+            JRANALYST_PURCHASES_PARTIAL_QUERY, JRANALYST_JRANALYST1_CONFIG,
+            JRANALYST_PURCHASES_PARTIAL_CONFIG));
     Assert.assertEquals(expected.toString(),
         new TreeSet<String>(policy.getPrivileges(set("jranalyst"), ActiveRoleSet.ALL))
         .toString());
@@ -117,7 +131,9 @@ public abstract class AbstractTestSearchPolicyEngine {
 
   @Test
   public void testAdmin() throws Exception {
-    Set<String> expected = Sets.newTreeSet(Sets.newHashSet(ADMIN_COLLECTION_ALL));
+    Set<String> expected = Sets.newTreeSet(Sets
+        .newHashSet(ADMIN_COLLECTION_ALL,
+            ADMIN_CONFIG_ALL));
     Assert.assertEquals(expected.toString(),
         new TreeSet<String>(policy.getPrivileges(set("admin"), ActiveRoleSet.ALL))
         .toString());

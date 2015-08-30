@@ -35,7 +35,7 @@ public class SecureRequestHandlerUtil {
   public static SentryIndexAuthorizationSingleton testOverride = null;
 
   /**
-   * Attempt to authorize an administrative action.
+   * Attempt to authorize an administrative collection-related action.
    *
    * @param req request to check
    * @param andActions set of actions to check
@@ -43,9 +43,9 @@ public class SecureRequestHandlerUtil {
    * @param collection only relevant if checkCollection==true,
    *   use collection (if non-null) instead pulling collection name from req (if null)
    */
-  public static void checkSentryAdmin(SolrQueryRequest req, Set<SearchModelAction> andActions,
+  public static void checkSentryAdminCollection(SolrQueryRequest req, Set<SearchModelAction> andActions,
       String operation, boolean checkCollection, String collection) {
-    checkSentry(req, andActions, operation, true, checkCollection, collection);
+    checkSentryAdminCollection(req, andActions, operation, true, checkCollection, collection);
   }
 
   /**
@@ -53,7 +53,7 @@ public class SecureRequestHandlerUtil {
    * name will be pulled from the request.
    */
   public static void checkSentryCollection(SolrQueryRequest req, Set<SearchModelAction> andActions, String operation) {
-    checkSentry(req, andActions, operation, false, false, null);
+    checkSentryAdminCollection(req, andActions, operation, false, false, null);
    }
 
   /**
@@ -68,7 +68,7 @@ public class SecureRequestHandlerUtil {
     sentryInstance.deleteCollection(collection);
   }
 
-  private static void checkSentry(SolrQueryRequest req, Set<SearchModelAction> andActions,
+  private static void checkSentryAdminCollection(SolrQueryRequest req, Set<SearchModelAction> andActions,
       String operation, boolean admin, boolean checkCollection, String collection) {
     // Sentry currently does have AND support for actions; need to check
     // actions one at a time
@@ -76,10 +76,21 @@ public class SecureRequestHandlerUtil {
       (testOverride == null)?SentryIndexAuthorizationSingleton.getInstance():testOverride;
     for (SearchModelAction action : andActions) {
       if (admin) {
-        sentryInstance.authorizeAdminAction(req, EnumSet.of(action), operation, checkCollection, collection);
+        sentryInstance.authorizeCollectionAdminAction(req, EnumSet.of(action), operation, checkCollection, collection);
       } else {
         sentryInstance.authorizeCollectionAction(req, EnumSet.of(action), operation);
       }
+    }
+  }
+
+  public static void checkSentryAdminConfig(SolrQueryRequest req, String operation, boolean admin, String config) {
+    final SentryIndexAuthorizationSingleton sentryInstance =
+      (testOverride == null)?SentryIndexAuthorizationSingleton.getInstance():testOverride;
+
+    if (admin) {
+      sentryInstance.authorizeConfigAdminAction(req, operation, config);
+    } else {
+      sentryInstance.authorizeConfigAction(req, operation, config);
     }
   }
 }

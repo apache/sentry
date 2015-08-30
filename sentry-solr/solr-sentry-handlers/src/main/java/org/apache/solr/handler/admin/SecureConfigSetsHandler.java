@@ -17,26 +17,22 @@ package org.apache.solr.handler.admin;
  * limitations under the License.
  */
 
-import java.util.EnumSet;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.sentry.core.model.search.Config;
+import org.apache.solr.common.params.ConfigSetParams.ConfigSetAction;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.sentry.core.model.search.SearchModelAction;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.handler.SecureRequestHandlerUtil;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.core.CoreContainer;
+import static org.apache.solr.common.params.CommonParams.NAME;
 
 /**
- * Secure (sentry-aware) version of CollectionsHandler
+ * Secure (sentry-aware) version of ConfigSetsHandler
  */
-public class SecureCollectionsHandler extends CollectionsHandler {
+public class SecureConfigSetsHandler extends ConfigSetsHandler {
 
-  public SecureCollectionsHandler() {
-    super();
-  }
-
-  public SecureCollectionsHandler(final CoreContainer coreContainer) {
+  public SecureConfigSetsHandler(final CoreContainer coreContainer) {
     super(coreContainer);
   }
 
@@ -44,48 +40,33 @@ public class SecureCollectionsHandler extends CollectionsHandler {
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     // Pick the action
     SolrParams params = req.getParams();
-    CollectionAction action = null;
+    ConfigSetAction action = null;
     String a = params.get(CoreAdminParams.ACTION);
-    String collection = null;
+    String config = null;
     if (a != null) {
-      action = CollectionAction.get(a);
+      action = ConfigSetAction.get(a);
     }
     if (action != null) {
       switch (action) {
         case CREATE:
         case DELETE:
-        case RELOAD:
-        case CREATEALIAS: // FixMe: do we need to check the underlying "collections" as well?
-        case DELETEALIAS:
         {
-          collection = req.getParams().required().get("name");
-          break;
-        }
-        case SYNCSHARD:
-        case SPLITSHARD:
-        case DELETESHARD: {
-          collection = req.getParams().required().get("collection");
+          config = req.getParams().required().get(NAME);
           break;
         }
         default: {
-          collection = null;
+          config = null;
           break;
         }
       }
     }
-    // all actions require UPDATE privileges
-    SecureRequestHandlerUtil.checkSentryAdminCollection(req, SecureRequestHandlerUtil.UPDATE_ONLY,
-      (action != null ? "CollectionAction." + action.toString() : getClass().getName() + "/" + a), true, collection);
+    SecureRequestHandlerUtil.checkSentryAdminConfig(req,
+        (action != null ? "ConfigAction." + action.toString() : getClass().getName() + "/" + a), true, config);
     super.handleRequestBody(req, rsp);
 
     /**
-     * Attempt to sync collection privileges with Sentry when the metadata has changed.
-     * ex: When the collection has been deleted, the privileges related to the collection
-     * were also needed to drop.
+     * FixMe:
+     * Need to add service support, e.g. here in SecureCollectionsHandler we sync delete collection
      */
-    if (action.equals(CollectionAction.DELETE)) {
-      SecureRequestHandlerUtil.syncDeleteCollection(collection);
-    }
-
   }
 }

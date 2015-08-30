@@ -30,7 +30,9 @@ import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.search.Collection;
+import org.apache.sentry.core.model.search.Config;
 import org.apache.sentry.core.model.search.SearchModelAction;
+import org.apache.sentry.core.model.search.SearchModelAuthorizable;
 import org.apache.sentry.provider.common.AuthorizationProvider;
 import org.apache.sentry.provider.file.LocalGroupResourceAuthorizationProvider;
 import org.apache.sentry.provider.file.PolicyFile;
@@ -63,20 +65,26 @@ public class TestSearchAuthorizationProviderSpecialCases {
   }
 
   @Test
-  public void testDuplicateEntries() throws Exception {
-    Subject user1 = new Subject("user1");
-    Collection collection1 = new Collection("collection1");
+  public void testCollectionDuplicateEntries() throws Exception {
+    verifyDuplicateEntries(new Collection("collection1"), "collection=collection1");
+  }
+
+  @Test
+  public void testConfigDuplicateEntries() throws Exception {
+    verifyDuplicateEntries(new Config("config1"), "config=config1");
+  }
+
+  private void verifyDuplicateEntries(SearchModelAuthorizable authorizable, String entry) throws Exception {
+        Subject user1 = new Subject("user1");
     Set<? extends Action> actions = EnumSet.allOf(SearchModelAction.class);
     policyFile.addGroupsToUser(user1.getName(), true, "group1", "group1")
       .addRolesToGroup("group1",  true, "role1", "role1")
-      .addPermissionsToRole("role1", true, "collection=" + collection1.getName(),
-          "collection=" + collection1.getName());
+      .addPermissionsToRole("role1", true, entry, entry);
     policyFile.write(iniFile);
     SearchPolicyFileBackend policy = new SearchPolicyFileBackend(initResource);
     authzProvider = new LocalGroupResourceAuthorizationProvider(initResource, policy);
-    List<? extends Authorizable> authorizableHierarchy = ImmutableList.of(collection1);
+    List<? extends Authorizable> authorizableHierarchy = ImmutableList.of(authorizable);
     Assert.assertTrue(authorizableHierarchy.toString(),
         authzProvider.hasAccess(user1, authorizableHierarchy, actions, ActiveRoleSet.ALL));
   }
-
 }

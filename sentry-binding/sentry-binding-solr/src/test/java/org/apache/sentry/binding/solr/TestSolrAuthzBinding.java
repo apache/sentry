@@ -38,6 +38,7 @@ import org.apache.sentry.binding.solr.conf.SolrAuthzConf;
 import org.apache.sentry.binding.solr.conf.SolrAuthzConf.AuthzConfVars;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.search.Collection;
+import org.apache.sentry.core.model.search.Config;
 import org.apache.sentry.core.model.search.SearchModelAction;
 import org.apache.sentry.provider.file.PolicyFiles;
 import org.junit.After;
@@ -58,6 +59,10 @@ public class TestSolrAuthzBinding {
 
   private Collection infoCollection = new Collection("info");
   private Collection generalInfoCollection = new Collection("generalInfo");
+
+  private Config infoConfigQ = new Config("infoConfigQ");
+  private Config infoConfigU = new Config("infoConfigU");
+  private Config generalInfoConfig = new Config("generalInfoConfig");
 
   private Subject corporal1 = new Subject("corporal1");
   private Subject sergeant1 = new Subject("sergeant1");
@@ -237,10 +242,19 @@ public class TestSolrAuthzBinding {
      new SolrAuthzBinding(solrAuthzConf);
   }
 
-  private void expectAuthException(SolrAuthzBinding binding, Subject subject,
+  private void expectAuthExceptionCollection(SolrAuthzBinding binding, Subject subject,
       Collection collection, EnumSet<SearchModelAction> action) throws Exception {
      try {
        binding.authorizeCollection(subject, collection, action);
+       Assert.fail("Expected SentrySolrAuthorizationException");
+     } catch(SentrySolrAuthorizationException e) {
+     }
+  }
+
+  private void expectAuthExceptionConfig(SolrAuthzBinding binding, Subject subject,
+      Config config) throws Exception {
+     try {
+       binding.authorizeConfig(subject, config);
        Assert.fail("Expected SentrySolrAuthorizationException");
      } catch(SentrySolrAuthorizationException e) {
      }
@@ -256,19 +270,21 @@ public class TestSolrAuthzBinding {
        new SolrAuthzConf(Resources.getResource("sentry-site.xml"));
      setUsableAuthzConf(solrAuthzConf);
      SolrAuthzBinding binding = new SolrAuthzBinding(solrAuthzConf);
-     expectAuthException(binding, new Subject("bogus"), infoCollection, querySet);
+     expectAuthExceptionCollection(binding, new Subject("bogus"), infoCollection, querySet);
+     expectAuthExceptionConfig(binding, new Subject("bogus"), infoConfigQ);
   }
 
   /**
    * Test that a bogus collection name throws an exception
    */
   @Test
-  public void testNoCollection() throws Exception {
+  public void testNoCollectionConfig() throws Exception {
      SolrAuthzConf solrAuthzConf =
        new SolrAuthzConf(Resources.getResource("sentry-site.xml"));
      setUsableAuthzConf(solrAuthzConf);
      SolrAuthzBinding binding = new SolrAuthzBinding(solrAuthzConf);
-     expectAuthException(binding, corporal1, new Collection("bogus"), querySet);
+     expectAuthExceptionCollection(binding, corporal1, new Collection("bogus"), querySet);
+     expectAuthExceptionConfig(binding, corporal1, new Config("bogus"));
   }
 
   /**
@@ -288,30 +304,31 @@ public class TestSolrAuthzBinding {
   }
 
   /**
-   * Test that standard unauthorized attempts fail
+   * Test that standard unauthorized attempts on collections fail
    */
   @Test
-  public void testAuthException() throws Exception {
+  public void testAuthExceptionCollection() throws Exception {
     SolrAuthzConf solrAuthzConf =
        new SolrAuthzConf(Resources.getResource("sentry-site.xml"));
      setUsableAuthzConf(solrAuthzConf);
      SolrAuthzBinding binding = new SolrAuthzBinding(solrAuthzConf);
-     expectAuthException(binding, corporal1, infoCollection, updateSet);
-     expectAuthException(binding, corporal1, infoCollection, allSet);
-     expectAuthException(binding, corporal1, generalInfoCollection, querySet);
-     expectAuthException(binding, corporal1, generalInfoCollection, updateSet);
-     expectAuthException(binding, corporal1, generalInfoCollection, allSet);
-     expectAuthException(binding, sergeant1, infoCollection, allSet);
-     expectAuthException(binding, sergeant1, generalInfoCollection, querySet);
-     expectAuthException(binding, sergeant1, generalInfoCollection, updateSet);
-     expectAuthException(binding, sergeant1, generalInfoCollection, allSet);
+     expectAuthExceptionCollection(binding, corporal1, infoCollection, updateSet);
+     expectAuthExceptionCollection(binding, corporal1, infoCollection, allSet);
+     expectAuthExceptionCollection(binding, corporal1, generalInfoCollection, querySet);
+     expectAuthExceptionCollection(binding, corporal1, generalInfoCollection, updateSet);
+     expectAuthExceptionCollection(binding, corporal1, generalInfoCollection, allSet);
+     expectAuthExceptionCollection(binding, sergeant1, infoCollection, allSet);
+     expectAuthExceptionCollection(binding, sergeant1, generalInfoCollection, querySet);
+     expectAuthExceptionCollection(binding, sergeant1, generalInfoCollection, updateSet);
+     expectAuthExceptionCollection(binding, sergeant1, generalInfoCollection, allSet);
   }
 
+
   /**
-   * Test that standard authorized attempts succeed
+   * Test that standard authorized attempts on collections succeed
    */
   @Test
-  public void testAuthAllowed() throws Exception {
+  public void testAuthAllowedCollection() throws Exception {
      SolrAuthzConf solrAuthzConf =
        new SolrAuthzConf(Resources.getResource("sentry-site.xml"));
      setUsableAuthzConf(solrAuthzConf);
@@ -327,6 +344,37 @@ public class TestSolrAuthzBinding {
      binding.authorizeCollection(general1, generalInfoCollection, updateSet);
      binding.authorizeCollection(general1, generalInfoCollection, allSet);
      binding.authorizeCollection(general1, generalInfoCollection, allOfSet);
+  }
+
+  /**
+   * Test that standard unauthorized attempts on configs fail
+   */
+  @Test
+  public void testAuthExceptionConfig() throws Exception {
+    SolrAuthzConf solrAuthzConf =
+       new SolrAuthzConf(Resources.getResource("sentry-site.xml"));
+     setUsableAuthzConf(solrAuthzConf);
+     SolrAuthzBinding binding = new SolrAuthzBinding(solrAuthzConf);
+     expectAuthExceptionConfig(binding, corporal1, infoConfigU);
+     expectAuthExceptionConfig(binding, corporal1, generalInfoConfig);
+     expectAuthExceptionConfig(binding, sergeant1, generalInfoConfig);
+  }
+
+  /**
+   * Test that standard authorized attempts on configs succeed
+   */
+  @Test
+  public void testAuthAllowedConfig() throws Exception {
+     SolrAuthzConf solrAuthzConf =
+       new SolrAuthzConf(Resources.getResource("sentry-site.xml"));
+     setUsableAuthzConf(solrAuthzConf);
+     SolrAuthzBinding binding = new SolrAuthzBinding(solrAuthzConf);
+     binding.authorizeConfig(corporal1, infoConfigQ);
+     binding.authorizeConfig(sergeant1, infoConfigQ);
+     binding.authorizeConfig(sergeant1, infoConfigU);
+     binding.authorizeConfig(general1, infoConfigQ);
+     binding.authorizeConfig(general1, infoConfigU);
+     binding.authorizeConfig(general1, generalInfoConfig);
   }
 
   /**

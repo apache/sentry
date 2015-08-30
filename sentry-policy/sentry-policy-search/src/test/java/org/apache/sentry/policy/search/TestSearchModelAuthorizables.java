@@ -21,6 +21,7 @@ import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNull;
 
 import org.apache.sentry.core.model.search.Collection;
+import org.apache.sentry.core.model.search.Config;
 import org.junit.Test;
 
 public class TestSearchModelAuthorizables {
@@ -29,6 +30,12 @@ public class TestSearchModelAuthorizables {
   public void testCollection() throws Exception {
     Collection coll = (Collection)SearchModelAuthorizables.from("CoLleCtiOn=collection1");
     assertEquals("collection1", coll.getName());
+  }
+
+  @Test
+  public void testConfig() throws Exception {
+    Config conf = (Config)SearchModelAuthorizables.from("CoNfiG=config1");
+    assertEquals("config1", conf.getName());
   }
 
   @Test(expected=IllegalArgumentException.class)

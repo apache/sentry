@@ -16,15 +16,36 @@
  */
 package org.apache.sentry.core.model.search;
 
-import org.apache.sentry.core.common.Authorizable;
+public class Config implements SearchModelAuthorizable {
 
-public interface SearchModelAuthorizable extends Authorizable {
+  /**
+   * Represents all configs
+   */
+  public static final Config ALL = new Config(SearchConstants.ALL);
 
-  public enum AuthorizableType {
-    Collection,
-    Field,
-    Config
-  };
+  private final String name;
 
-  public AuthorizableType getAuthzType();
+  public Config(String name) {
+    this.name = name;
+  }
+
+  @Override
+  public String getName() {
+    return name;
+  }
+
+  @Override
+  public String toString() {
+    return "Config [name=" + name + "]";
+  }
+
+  @Override
+  public AuthorizableType getAuthzType() {
+    return AuthorizableType.Config;
+  }
+
+  @Override
+  public String getTypeName() {
+    return getAuthzType().name();
+  }
 }

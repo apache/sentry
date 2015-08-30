@@ -16,36 +16,22 @@
  */
 package org.apache.sentry.policy.search;
 
-import org.apache.sentry.core.model.search.Collection;
-import org.apache.sentry.core.model.search.Config;
-import org.apache.sentry.core.model.search.SearchModelAuthorizable;
-import org.apache.sentry.core.model.search.SearchModelAuthorizable.AuthorizableType;
+import org.apache.sentry.core.model.search.SearchModelAction;
 import org.apache.sentry.provider.file.KeyValue;
 
-public class SearchModelAuthorizables {
+public class SearchModelActions {
 
-  public static SearchModelAuthorizable from(KeyValue keyValue) {
+  public static SearchModelAction from(KeyValue keyValue) {
     String prefix = keyValue.getKey().toLowerCase();
     String name = keyValue.getValue().toLowerCase();
-    for(AuthorizableType type : AuthorizableType.values()) {
-      if(prefix.equalsIgnoreCase(type.name())) {
-        return from(type, name);
+    for (SearchModelAction action : SearchModelAction.values()) {
+      if (action.getValue().equalsIgnoreCase(name)) {
+        return action;
       }
     }
     return null;
   }
-  public static SearchModelAuthorizable from(String s) {
+  public static SearchModelAction from(String s) {
     return from(new KeyValue(s));
-  }
-
-  private static SearchModelAuthorizable from(AuthorizableType type, String name) {
-    switch (type) {
-    case Collection:
-      return new Collection(name);
-    case Config:
-      return new Config(name);
-    default:
-      return null;
-    }
   }
 }
