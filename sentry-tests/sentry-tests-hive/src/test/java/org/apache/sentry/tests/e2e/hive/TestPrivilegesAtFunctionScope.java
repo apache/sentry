@@ -18,11 +18,13 @@ printf_test_3 * Licensed to the Apache Software Foundation (ASF) under one or mo
 package org.apache.sentry.tests.e2e.hive;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.security.CodeSource;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -32,7 +34,13 @@ import org.junit.Test;
 
 import com.google.common.io.Resources;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfiguration {
+  private static final Logger LOGGER = LoggerFactory
+          .getLogger(TestPrivilegesAtFunctionScope.class);
+
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private File dataDir;
   private File dataFile;
@@ -92,10 +100,20 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
-    statement.execute(
-        "CREATE TEMPORARY FUNCTION printf_test AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
-    statement.execute("SELECT printf_test(value) FROM " + tableName1);
-    statement.execute("DROP TEMPORARY FUNCTION printf_test");
+
+    try {
+      statement.execute("CREATE TEMPORARY FUNCTION printf_test AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
+      LOGGER.info("Testing select from temp func printf_test");
+      ResultSet res = statement.executeQuery("SELECT printf_test('%d', under_col) FROM " + tableName1);
+      while (res.next()) {
+        LOGGER.info(res.getString(1));
+      }
+      res.close();
+      statement.execute("DROP TEMPORARY FUNCTION printf_test");
+    } catch (Exception ex) {
+      LOGGER.error("test temp func printf_test failed with reason: " + ex.getStackTrace() + " " + ex.getMessage());
+      fail("fail to test temp func printf_test");
+    }
 
     statement.execute(
         "CREATE FUNCTION printf_test_perm AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf' ");
