@@ -22,7 +22,7 @@ limitations under the License.
   <parent>
     <groupId>org.apache.sentry</groupId>
     <artifactId>sentry-hdfs</artifactId>
-    <version>1.6.0-incubating-SNAPSHOT</version>
+    <version>1.7.0-incubating-SNAPSHOT</version>
   </parent>
 
   <artifactId>sentry-hdfs-dist</artifactId>
