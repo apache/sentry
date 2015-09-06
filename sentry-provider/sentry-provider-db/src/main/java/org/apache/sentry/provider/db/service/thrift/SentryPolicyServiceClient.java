@@ -113,6 +113,9 @@ public interface SentryPolicyServiceClient {
   public void revokeServerPrivilege(String requestorUserName, String roleName, String server,
       String action, Boolean grantOption) throws SentryUserException;
 
+  public void revokeServerPrivilege(String requestorUserName, String roleName, String server,
+      boolean grantOption) throws SentryUserException;
+
   public void revokeDatabasePrivilege(String requestorUserName, String roleName, String server,
       String db, String action) throws SentryUserException;
 
