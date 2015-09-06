@@ -1,53 +1,133 @@
-Release Notes - Sentry - Version v1.2.0
 
-** Bug
-    * [SENTRY-15] - log4j.properties file under sentry-tests references the old access package
-    * [SENTRY-1] - use default on HiveServer2 fails with invalid privileges exception
-    * [SENTRY-2] - Code cleanup in various poms
-    * [ACCESS-8] - Log warning if authorization is not used with strong authentication
-    * [ACCESS-49] - Modify test cases to restrict LOAD from specific locations
-    * [ACCESS-140] - malformatted policy is permitted conditionally
-    * [ACCESS-164] - policy file doesn't check non-exist entity mapping
-    * [ACCESS-174] - access only throw first error message in HiveServer2 log, and ignore the rest
-    * [ACCESS-180] - per DB policy file usability issues
-    * [ACCESS-197] - Child authorizeable objects are not inheriting permissions from parent
-    * [ACCESS-201] - Bad error message in HiveAuthzBinding
-    * [ACCESS-203] - Update trunk version to 1.1 and update dependencies
-    * [ACCESS-230] - CREATE TABLE AS works even if user does not have DB-level access
-    * [ACCESS-231] - ALTER TABLE SET TBLPROPERTIES allows updates to tables even when the user doesn't have the right privileges
-    * [ACCESS-232] - The per-db policy fies can't be accessed if they are not in the same file system as the global policy file.
-    * [ACCESS-233] - The URI permission checks should append path separator before checking the parent path
-    * [ACCESS-235] - Format unqualified URI as DFS uri by default
-
-
-** Improvement
-    * [SENTRY-5] - Normalize the usernames used in the end to end tests
-    * [ACCESS-100] - ResourceAuthzProvider should ensure the subject name is non-null before doing the group lookup
-    * [ACCESS-157] - Access hard codes hive authentication method none
-    * [ACCESS-211] - Add maven profile for compiling access with upstream Apache hadoop/hive
-    * [ACCESS-221] - Restrict the URI access granted from a per-database policy file
-
-
-
-** Task
-    * [ACCESS-16] - Implement the test cases in the test plan
-    * [ACCESS-34] - Analyze Path Security
-    * [ACCESS-115] - Format all files using a consistent code style formatter for the project
-    * [ACCESS-122] - Remove context.close() mid-test
-    * [ACCESS-123] - Fix confusing communication mechanism to request if ANY access is exists
-    * [ACCESS-125] - TestUserManagement major issues
-    * [ACCESS-127] - TestSandboxOps Major issues
-    * [ACCESS-130] - TestMovingToProduction major issues
-    * [ACCESS-136] - TestCrossDbOps major issues
-    * [ACCESS-145] - TestMetadataObjectRetrieval major issues
-    * [ACCESS-147] - TestPrivilegeAtTransform major issues
-    * [ACCESS-149] - TestPrivilegesAtDatabaseScope major issues
-    * [ACCESS-152] - TestPrivilegesAtTableScope minor issues
-    * [ACCESS-166] - Policy Engine should do expanded validation of policy file
-    * [ACCESS-194] - Explore options for metastore access restriction
-    * [ACCESS-195] - Support username mapping at access level
+Release Notes - Sentry - Version 1.6.0
 
 ** Sub-task
-    * [ACCESS-101] - Implement more test cases regarding subquery
-    * [ACCESS-209] - be able to run e2e test in cluster mode
-    * [ACCESS-225] - Update master branch version to 1.2.0-SNAPSHOT
+    * [SENTRY-537] - Refactor AbstractTestWithHiveServer to cut down some test cases runtime
+    * [SENTRY-600] - Extend SentryClient by SentryClientInvocationHandler
+    * [SENTRY-601] - Create connection pool factory
+    * [SENTRY-621] - Add new thrift interface for import/export in sentry
+    * [SENTRY-622] - Update SentryService for import/export feature
+    * [SENTRY-623] - Create processor to deal with the file format for import/export feature
+    * [SENTRY-631] - Run full tests locally: mvn verify to see if it can pass nowadays
+    * [SENTRY-644] - Sentry Sqoop binding framework for role-based authorization
+    * [SENTRY-645] - Add sqoop authorizable model for sentry authorization
+    * [SENTRY-646] - Add Sqoop policy engine  for sentry authorization
+    * [SENTRY-656] - Update SentryStore for import/export feature
+    * [SENTRY-657] - Update SentryConfigTool for import/export feature
+    * [SENTRY-661] - Ensure Sqoop Sentry authorizaiton works with sentry service
+    * [SENTRY-681] - Update the versions on trunk after branching
+    * [SENTRY-697] - Test parallel cache loading with large metastore
+    * [SENTRY-828] - Cleanup the unnecessary ProviderBackend
+    * [SENTRY-863] - Create release branch for 1.6.0
+    * [SENTRY-864] - Update the version to 1.7.0-incubating-SNAPSHOT on trunk after branch-1.6.0 created
+    * [SENTRY-865] - Update changelog.txt, notice.txt, etc... for 1.5.0 release
+    * [SENTRY-866] - Update sentry website after 1.6.0 release
+    * [SENTRY-867] - Remove SNAPSHOT tag of branch-1.6.0
+    * [SENTRY-868] - Create rc for 1.6.0
+
+** Bug
+    * [SENTRY-227] - Fix for "Unsupported entity type DUMMYPARTITION"
+    * [SENTRY-296] - Sentry Service Client does not allow for connection pooling
+    * [SENTRY-453] - Hadoop and hive tars are downloaded even if download-hadoop profile not used.
+    * [SENTRY-467] - Fix minor failures in cluster-hadoop profile
+    * [SENTRY-508] - Improve runtime of 'Sentry Hive Tests' (currently it is >30m)
+    * [SENTRY-546] - Permissions on external tables does not always translate to HDFS acls
+    * [SENTRY-596] - The jar files of sentry binary and source code should publish to maven central
+    * [SENTRY-605] - For locations using HDFS synchronization, users should not be allowed access to HDFS files if column-level restrictions are present
+    * [SENTRY-611] - The SecureCoreAdminHandler.getCollectionFromCoreName will throw null-point exception when Solr running in non-solrCloud mode.
+    * [SENTRY-670] - Fix the Sentry build to remove snapshot and non apache dependencies
+    * [SENTRY-676] - Address Sentry HA issues in secure cluster
+    * [SENTRY-678] - Sentry-Solr Binding may not load group mapping service correctly
+    * [SENTRY-683] - HDFS service client should ensure the kerberos ticket validity before new service connection
+    * [SENTRY-687] - Handle authorization for 'select <expr>' hive queries
+    * [SENTRY-698] - Uncaught OutOfMemoryError
+    * [SENTRY-699] - Memory leak when running Sentry w/ HiveServer2
+    * [SENTRY-702] - Hive binding should support RELOAD command
+    * [SENTRY-703] - Calls to add_partition fail when passed a Partition object with a null location
+    * [SENTRY-714] - Support TCompactProtocol for Sentry RPC
+    * [SENTRY-717] - Fix the UDF whitelist format for functions row_number and unbase64
+    * [SENTRY-721] - HDFS Cascading permissions not applied to child file ACLs if a direct grant exists
+    * [SENTRY-736] - Add a new constructor to HadoopGroupMappingService
+    * [SENTRY-739] - when user doesn't have admin privileges, show grant throw exception, better improve error message
+    * [SENTRY-744] - DB provider client should support grantServerPrivilege() method without action for backward compatibility
+    * [SENTRY-746] - After revoke select from view, select fails with a confusing error message
+    * [SENTRY-750] - Use the Sqoop Server principal as the requester when removing the Sqoop resource
+    * [SENTRY-752] - Sentry service audit log file name format should be consistent
+    * [SENTRY-763] - Remove multiple .gitignore files
+    * [SENTRY-766] - Fixed the broken builds link on the sentry site web page
+    * [SENTRY-770] - When use sentry to configuration hive,to ensure safety of data access.The functions(row_number and unbase64) can't be used.The Problem caused by a sentry bug. I have already found a way to solve the problem,except to modify the sentry source code.
+    * [SENTRY-777] - SentryServiceIntegrationBase#after() should be run under client subject
+    * [SENTRY-780] - HDFS Plugin should not execute path callbacks for views
+    * [SENTRY-788] - Fix mysql and postgres scripts of generalized model
+    * [SENTRY-789] - Jenkins should support test branch with special character
+    * [SENTRY-790] - Remove MetaStoreClient interface
+    * [SENTRY-791] - java.lang.AbstractMethodError when using HDFS sync
+    * [SENTRY-792] - Throw underlying exception if SentryService start fails
+    * [SENTRY-794] - TestHDFSIntegrationWithHA#testEnd2End fails
+    * [SENTRY-796] - Fix log levels in SentryAuthorizationInfo
+    * [SENTRY-797] - TestHDFSIntegration#testEndToEnd is flaky
+    * [SENTRY-799] - Fix sentry unit test error: TestDbEndToEnd.testBasic: Table t1 already exists
+    * [SENTRY-800] - Oracle: first run A1.Scope invalid identifier
+    * [SENTRY-801] - Update README: Does not compile with JDK8
+    * [SENTRY-802] - SentryService: Log error if you processor cannot be registered.
+    * [SENTRY-803] - TestLinkEndToEnd.testUpdateDtestUpdateDeleteLinkeleteLink test failure: SentryAlreadyExistsException: Role: role4
+    * [SENTRY-805] - Reclassify CoreAdminHandler Actions
+    * [SENTRY-806] - Fix unit test failure: TestMetastoreEndToEnd.testPartionInsert, java.lang.RuntimeException: Cannot make directory: hdfs://localhost:60362/tmp/hive-jenkins/hive_2015-07-09_21-50-34_878_9035087593722312500-1
+    * [SENTRY-808] - Change default protocol version to V2
+    * [SENTRY-810] - CTAS without location is not verified properly
+    * [SENTRY-819] - select on all columns is not same as select on table
+    * [SENTRY-822] - OutOfMemory in hive e2e test
+    * [SENTRY-823] - Clean up roles properly in TestHDFSIntegration
+    * [SENTRY-825] - SecureAdminHandler no longer pulls collection name for create correctly
+    * [SENTRY-827] - Server Scope always grants ALL
+    * [SENTRY-829] - Fix all sentry hive test failure in TestDbCrossDbOps class: create database/table, grant select on table to role, but drop database then recreate it, privileges are removed.
+    * [SENTRY-830] - Enable setMetastoreListener in the tests so that we can debug flaky test failures from local testing enviroment
+    * [SENTRY-834] - Fix hive e2e real cluster failures in TestDbConnections, TestDbExportImportPrivileges, TestDbJDBCInterface
+    * [SENTRY-836] - Refactor test TestDatabaseProvider.java: make each test case independent from other tests, not assume any external states/data
+    * [SENTRY-839] - posexplode() missing from HIVE_UDF_WHITE_LIST
+    * [SENTRY-841] - Revoke on SERVER scope breaks Client API, allows any string to be passed in
+    * [SENTRY-842] - Fix typos in pom.xml
+    * [SENTRY-847] - [column level privilege] if grant column level privilege to user, show columns in table shouldn't require extra table level privilege
+    * [SENTRY-850] - Fix dbprovider test failures when run on a real cluster or setMetastoreListener = true, when db/tab gets recreated their associated privileges will be deleted.
+    * [SENTRY-856] - [unit test] Sentry unit tests failures when it run at new Jenkins nodes
+    * [SENTRY-860] - Fix intermittent test failure for TestPrivilegesAtFunctionScope.testFuncPrivileges1
+
+** Improvement
+    * [SENTRY-530] - Add thrift protocol version check
+    * [SENTRY-590] - Client factory for generic authorization model
+    * [SENTRY-626] - Test case improvement
+    * [SENTRY-647] - Add e2e tests for Sqoop Sentry integration
+    * [SENTRY-695] - Sentry service should read the hadoop group mapping properties from core-site
+    * [SENTRY-696] - Improve Metastoreplugin Cache Initialization time
+    * [SENTRY-720] - Patch related files should be excluded from version control
+    * [SENTRY-723] - Clean unused methods in HiveAuthzBindingHook
+    * [SENTRY-740] - Move the class PolicyFileConstants and KeyValue to provider-common
+    * [SENTRY-755] - HDFS access of data files should be disabled for user with privileges only on some columns
+    * [SENTRY-767] - SENTRY jenkins support test the patch for branch
+    * [SENTRY-774] - *.rej files should be added to rat ignore list
+    * [SENTRY-776] - Sentry client should support cache based kerberos ticket for secure zookeeper connection
+    * [SENTRY-821] - Add thrift protocol version check for generic model
+    * [SENTRY-843] - Add the link of wiki page in README.md
+    * [SENTRY-874] - Handle HMS updates correctly while full update is being built
+
+** New Feature
+    * [SENTRY-197] - Create tool to dump and load of entire Sentry service
+    * [SENTRY-612] - Sqoop2 integration with sentry
+    * [SENTRY-778] - CredentialProvider for Sentry DB password
+    * [SENTRY-804] - Add Audit Log Support for Solr Sentry Handlers
+
+** Task
+    * [SENTRY-684] - Upgrade to Apache Curator 2.7.1
+    * [SENTRY-692] - Add schema creation scripts for 1.6.0 version
+    * [SENTRY-757] - Add documentation for import/export feature
+    * [SENTRY-758] - Add test cases for partition columns with column level privileges
+    * [SENTRY-771] - Add documentation for Delegated GRANT and REVOKE
+    * [SENTRY-772] - Add documentation for Sentry Webserver Authentication and Authorization
+    * [SENTRY-779] - Add documentation for Sentry Client Connection Pool
+    * [SENTRY-818] - Add document for “Sqoop2 integration with Sentry”
+    * [SENTRY-857] - Apache Sentry 1.6.0 Release
+
+** Test
+    * [SENTRY-485] - Add test coverage for auditing in E2E, secure environment
+    * [SENTRY-741] - Add a test case for hive query which creates dummy partition
+    * [SENTRY-824] - Enable column level privileges e2e tests on real cluster runs
