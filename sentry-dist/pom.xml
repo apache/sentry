@@ -20,7 +20,7 @@ limitations under the License.
   <parent>
     <groupId>org.apache.sentry</groupId>
     <artifactId>sentry</artifactId>
-    <version>1.6.0-incubating-SNAPSHOT</version>
+    <version>1.6.0-incubating</version>
   </parent>
   <artifactId>sentry-dist</artifactId>
   <name>Sentry Distribution</name>
