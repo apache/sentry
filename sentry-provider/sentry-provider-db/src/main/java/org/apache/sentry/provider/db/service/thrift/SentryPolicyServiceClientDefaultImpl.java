@@ -493,6 +493,13 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
         PrivilegeScope.SERVER, server, null, null, null, null, action, grantOption);
   }
 
+  public void revokeServerPrivilege(String requestorUserName,
+      String roleName, String server, boolean grantOption)
+  throws SentryUserException {
+    revokePrivilege(requestorUserName, roleName,
+      PrivilegeScope.SERVER, server, null, null, null, null, AccessConstants.ALL, grantOption);
+  }
+
   public void revokeDatabasePrivilege(String requestorUserName,
       String roleName, String server, String db, String action)
   throws SentryUserException {
