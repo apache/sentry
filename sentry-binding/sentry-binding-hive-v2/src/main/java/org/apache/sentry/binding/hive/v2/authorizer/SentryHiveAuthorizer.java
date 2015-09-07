@@ -17,6 +17,7 @@ package org.apache.sentry.binding.hive.v2.authorizer;
 import java.util.List;
 
 import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.hive.ql.exec.SentryHivePrivilegeObjectDesc;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.plan.PrincipalDesc;
 import org.apache.hadoop.hive.ql.plan.PrivilegeDesc;
@@ -31,7 +32,9 @@ import org.apache.hadoop.hive.ql.security.authorization.plugin.HivePrincipal;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HivePrivilege;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HivePrivilegeInfo;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HivePrivilegeObject;
+import org.apache.hadoop.hive.ql.security.authorization.plugin.HivePrivilegeObject.HivePrivilegeObjectType;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveRoleGrant;
+import org.apache.sentry.binding.hive.v2.SentryHivePrivilegeObject;
 
 /**
  * Convenience implementation of HiveAuthorizer. You can customize the behavior by passing different
@@ -162,7 +165,31 @@ public abstract class SentryHiveAuthorizer implements HiveAuthorizer {
   @Override
   public HivePrivilegeObject getHivePrivilegeObject(PrivilegeObjectDesc privSubjectDesc)
       throws HiveException {
-    return AuthorizationUtils.getHivePrivilegeObject(privSubjectDesc);
+    SentryHivePrivilegeObjectDesc sPrivSubjectDesc = null;
+    if (privSubjectDesc instanceof SentryHivePrivilegeObjectDesc) {
+      sPrivSubjectDesc = (SentryHivePrivilegeObjectDesc) privSubjectDesc;
+    }
+    if (sPrivSubjectDesc != null && sPrivSubjectDesc.isSentryPrivObjectDesc()) {
+      HivePrivilegeObjectType objectType = getPrivObjectType(sPrivSubjectDesc);
+      return new SentryHivePrivilegeObject(objectType, privSubjectDesc.getObject());
+    } else {
+      return AuthorizationUtils.getHivePrivilegeObject(privSubjectDesc);
+    }
+  }
+
+  protected static HivePrivilegeObjectType getPrivObjectType(
+      SentryHivePrivilegeObjectDesc privSubjectDesc) {
+    if (privSubjectDesc.getObject() == null) {
+      return null;
+    }
+    if (privSubjectDesc.getServer()) {
+      return HivePrivilegeObjectType.GLOBAL;
+    } else if (privSubjectDesc.getUri()) {
+      return HivePrivilegeObjectType.LOCAL_URI;
+    } else {
+      return privSubjectDesc.getTable() ? HivePrivilegeObjectType.TABLE_OR_VIEW
+          : HivePrivilegeObjectType.DATABASE;
+    }
   }
 
 }

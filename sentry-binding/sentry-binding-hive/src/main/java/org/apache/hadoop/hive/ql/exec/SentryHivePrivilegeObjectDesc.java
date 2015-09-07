@@ -47,4 +47,8 @@ public class SentryHivePrivilegeObjectDesc extends PrivilegeObjectDesc {
     this.isServer = isServer;
   }
 
+  public boolean isSentryPrivObjectDesc() {
+    return isServer || isUri;
+  }
+
 }
