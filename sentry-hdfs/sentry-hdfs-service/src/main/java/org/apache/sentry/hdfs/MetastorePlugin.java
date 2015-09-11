@@ -221,10 +221,10 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
     }
     LOGGER.debug("#### HMS Path Update ["
         + "OP : addPath, "
-        + "authzObj : " + authzObj + ", "
+        + "authzObj : " + authzObj.toLowerCase() + ", "
         + "path : " + path + "]");
     PathsUpdate update = createHMSUpdate();
-    update.newPathChange(authzObj).addToAddPaths(pathTree);
+    update.newPathChange(authzObj.toLowerCase()).addToAddPaths(pathTree);
     notifySentryAndApplyLocal(update);
   }
 
@@ -232,16 +232,16 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
   public void removeAllPaths(String authzObj, List<String> childObjects) {
     LOGGER.debug("#### HMS Path Update ["
         + "OP : removeAllPaths, "
-        + "authzObj : " + authzObj + ", "
+        + "authzObj : " + authzObj.toLowerCase() + ", "
         + "childObjs : " + (childObjects == null ? "[]" : childObjects) + "]");
     PathsUpdate update = createHMSUpdate();
     if (childObjects != null) {
       for (String childObj : childObjects) {
-        update.newPathChange(authzObj + "." + childObj).addToDelPaths(
+        update.newPathChange(authzObj.toLowerCase() + "." + childObj).addToDelPaths(
             Lists.newArrayList(PathsUpdate.ALL_PATHS));
       }
     }
-    update.newPathChange(authzObj).addToDelPaths(
+    update.newPathChange(authzObj.toLowerCase()).addToDelPaths(
             Lists.newArrayList(PathsUpdate.ALL_PATHS));
     notifySentryAndApplyLocal(update);
   }
@@ -249,7 +249,7 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
   @Override
   public void removePath(String authzObj, String path) {
     if ("*".equals(path)) {
-      removeAllPaths(authzObj, null);
+      removeAllPaths(authzObj.toLowerCase(), null);
     } else {
       List<String> pathTree = PathsUpdate.parsePath(path);
       if(pathTree == null) {
@@ -257,10 +257,10 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
       }
       LOGGER.debug("#### HMS Path Update ["
           + "OP : removePath, "
-          + "authzObj : " + authzObj + ", "
+          + "authzObj : " + authzObj.toLowerCase() + ", "
           + "path : " + path + "]");
       PathsUpdate update = createHMSUpdate();
-      update.newPathChange(authzObj).addToDelPaths(pathTree);
+      update.newPathChange(authzObj.toLowerCase()).addToDelPaths(pathTree);
       notifySentryAndApplyLocal(update);
     }
   }
@@ -268,6 +268,12 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
   @Override
   public void renameAuthzObject(String oldName, String oldPath, String newName,
       String newPath) {
+    if (oldName != null) {
+      oldName = oldName.toLowerCase();
+    }
+    if (newName != null) {
+      newName = newName.toLowerCase();
+    }
     PathsUpdate update = createHMSUpdate();
     LOGGER.debug("#### HMS Path Update ["
         + "OP : renameAuthzObject, "

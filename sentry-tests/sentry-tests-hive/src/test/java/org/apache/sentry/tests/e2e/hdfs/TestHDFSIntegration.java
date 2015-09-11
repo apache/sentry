@@ -631,6 +631,30 @@ public class TestHDFSIntegration {
     verifyOnAllSubDirs("/user/hive/warehouse/p3", FsAction.WRITE_EXECUTE, "hbase", true);
     verifyOnAllSubDirs("/user/hive/warehouse/p3/month=1/day=3", FsAction.WRITE_EXECUTE, "hbase", true);
 
+    // Test DB case insensitivity
+    stmt.execute("create database extdb");
+    stmt.execute("grant all on database ExtDb to role p1_admin");
+    writeToPath("/tmp/external/ext100", 5, "foo", "bar");
+    writeToPath("/tmp/external/ext101", 5, "foo", "bar");
+    stmt.execute("use extdb");
+    stmt.execute(
+            "create table ext100 (s string) location \'/tmp/external/ext100\'");
+    verifyQuery(stmt, "ext100", 5);
+    verifyOnAllSubDirs("/tmp/external/ext100", FsAction.ALL, "hbase", true);
+    stmt.execute("use default");
+
+    stmt.execute("use EXTDB");
+    stmt.execute(
+            "create table ext101 (s string) location \'/tmp/external/ext101\'");
+    verifyQuery(stmt, "ext101", 5);
+    verifyOnAllSubDirs("/tmp/external/ext101", FsAction.ALL, "hbase", true);
+
+    // Test table case insensitivity
+    stmt.execute("grant all on table exT100 to role tab_role");
+    verifyOnAllSubDirs("/tmp/external/ext100", FsAction.ALL, "flume", true);
+
+    stmt.execute("use default");
+
     //TODO: SENTRY-795: HDFS permissions do not sync when Sentry restarts in HA mode.
     if(!testSentryHA) {
       long beforeStop = System.currentTimeMillis();
