@@ -264,7 +264,7 @@ public class SentryPlugin implements SentryPolicyStorePlugin {
         authzObj = dbName + "." + tblName;
       }
     }
-    return authzObj;
+    return authzObj == null ? null : authzObj.toLowerCase();
   }
 
   private String getAuthzObj(TSentryAuthorizable authzble) {
@@ -278,6 +278,6 @@ public class SentryPlugin implements SentryPolicyStorePlugin {
         authzObj = dbName + "." + tblName;
       }
     }
-    return authzObj;
+    return authzObj == null ? null : authzObj.toLowerCase();
   }
 }

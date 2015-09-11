@@ -17,6 +17,7 @@
  */
 package org.apache.sentry.hdfs;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.metastore.IHMSHandler;
@@ -127,23 +128,24 @@ class MetastoreCacheInitializer implements Closeable {
       }
       for (Table tbl : tables) {
         TPathChanges tblPathChange;
+        // Table names are case insensitive
+        String tableName = tbl.getTableName().toLowerCase();
         synchronized (update) {
-          tblPathChange = update.newPathChange(tbl.getDbName() + "." + tbl
-                  .getTableName());
+          Preconditions.checkArgument(tbl.getDbName().equalsIgnoreCase(db.getName()));
+          tblPathChange = update.newPathChange(db.getName() + "." + tableName);
         }
         if (tbl.getSd().getLocation() != null) {
           List<String> tblPath =
                   PathsUpdate.parsePath(tbl.getSd().getLocation());
           tblPathChange.addToAddPaths(tblPath);
           List<String> tblPartNames =
-                  hmsHandler.get_partition_names(db.getName(), tbl
-                          .getTableName(), (short) -1);
+                  hmsHandler.get_partition_names(db.getName(), tableName, (short) -1);
           for (int i = 0; i < tblPartNames.size(); i += maxPartitionsPerCall) {
             List<String> partsToFetch =
                     tblPartNames.subList(i, Math.min(
                             i + maxPartitionsPerCall, tblPartNames.size()));
             Callable<CallResult> partTask =
-                    new PartitionTask(db.getName(), tbl.getTableName(),
+                    new PartitionTask(db.getName(), tableName,
                             partsToFetch, tblPathChange);
             synchronized (results) {
               results.add(threadPool.submit(partTask));
@@ -162,7 +164,8 @@ class MetastoreCacheInitializer implements Closeable {
     DbTask(PathsUpdate update, String dbName) {
       super();
       this.update = update;
-      this.dbName = dbName;
+      //Database names are case insensitive
+      this.dbName = dbName.toLowerCase();
     }
 
     @Override
@@ -171,10 +174,11 @@ class MetastoreCacheInitializer implements Closeable {
       List<String> dbPath = PathsUpdate.parsePath(db.getLocationUri());
       if (dbPath != null) {
         synchronized (update) {
-          update.newPathChange(db.getName()).addToAddPaths(dbPath);
+          Preconditions.checkArgument(dbName.equalsIgnoreCase(db.getName()));
+          update.newPathChange(dbName).addToAddPaths(dbPath);
         }
       }
-      List<String> allTblStr = hmsHandler.get_all_tables(db.getName());
+      List<String> allTblStr = hmsHandler.get_all_tables(dbName);
       for (int i = 0; i < allTblStr.size(); i += maxTablesPerCall) {
         List<String> tablesToFetch =
                 allTblStr.subList(i, Math.min(
