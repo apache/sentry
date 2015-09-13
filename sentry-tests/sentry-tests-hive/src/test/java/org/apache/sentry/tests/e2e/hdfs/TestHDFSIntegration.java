@@ -44,6 +44,7 @@ import junit.framework.Assert;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.AclEntry;
 import org.apache.hadoop.fs.permission.AclEntryType;
@@ -51,6 +52,7 @@ import org.apache.hadoop.fs.permission.AclStatus;
 import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
+import org.apache.hadoop.hdfs.DFSTestUtil;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.server.namenode.EditLogFileOutputStream;
@@ -164,6 +166,8 @@ public class TestHDFSIntegration {
   private String[] dbNames;
   private String[] roles;
   private String admin;
+
+  private static Configuration hadoopConf;
 
   protected static File assertCreateDir(File dir) {
     if(!dir.isDirectory()) {
@@ -350,28 +354,28 @@ public class TestHDFSIntegration {
       @Override
       public Void run() throws Exception {
         System.setProperty(MiniDFSCluster.PROP_TEST_BUILD_DATA, "target/test/data");
-        Configuration conf = new HdfsConfiguration();
-        conf.set(DFSConfigKeys.DFS_NAMENODE_AUTHORIZATION_PROVIDER_KEY,
+        hadoopConf = new HdfsConfiguration();
+        hadoopConf.set(DFSConfigKeys.DFS_NAMENODE_AUTHORIZATION_PROVIDER_KEY,
             SentryAuthorizationProvider.class.getName());
-        conf.setBoolean(DFSConfigKeys.DFS_NAMENODE_ACLS_ENABLED_KEY, true);
-        conf.setInt(DFSConfigKeys.DFS_REPLICATION_KEY, 1);
+        hadoopConf.setBoolean(DFSConfigKeys.DFS_NAMENODE_ACLS_ENABLED_KEY, true);
+        hadoopConf.setInt(DFSConfigKeys.DFS_REPLICATION_KEY, 1);
         File dfsDir = assertCreateDir(new File(baseDir, "dfs"));
-        conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, dfsDir.getPath());
-        conf.set("hadoop.security.group.mapping",
+        hadoopConf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, dfsDir.getPath());
+        hadoopConf.set("hadoop.security.group.mapping",
             MiniDFS.PseudoGroupMappingService.class.getName());
         Configuration.addDefaultResource("test.xml");
 
-        conf.set("sentry.authorization-provider.hdfs-path-prefixes", "/user/hive/warehouse,/tmp/external");
-        conf.set("sentry.authorization-provider.cache-refresh-retry-wait.ms", "5000");
-        conf.set("sentry.authorization-provider.cache-refresh-interval.ms", String.valueOf(CACHE_REFRESH));
+        hadoopConf.set("sentry.authorization-provider.hdfs-path-prefixes", "/user/hive/warehouse,/tmp/external");
+        hadoopConf.set("sentry.authorization-provider.cache-refresh-retry-wait.ms", "5000");
+        hadoopConf.set("sentry.authorization-provider.cache-refresh-interval.ms", String.valueOf(CACHE_REFRESH));
 
-        conf.set("sentry.authorization-provider.cache-stale-threshold.ms", String.valueOf(STALE_THRESHOLD));
+        hadoopConf.set("sentry.authorization-provider.cache-stale-threshold.ms", String.valueOf(STALE_THRESHOLD));
 
-        conf.set("sentry.hdfs.service.security.mode", "none");
-        conf.set("sentry.hdfs.service.client.server.rpc-address", "localhost");
-        conf.set("sentry.hdfs.service.client.server.rpc-port", String.valueOf(sentryPort));
+        hadoopConf.set("sentry.hdfs.service.security.mode", "none");
+        hadoopConf.set("sentry.hdfs.service.client.server.rpc-address", "localhost");
+        hadoopConf.set("sentry.hdfs.service.client.server.rpc-port", String.valueOf(sentryPort));
         EditLogFileOutputStream.setShouldSkipFsyncForTesting(true);
-        miniDFS = new MiniDFSCluster.Builder(conf).build();
+        miniDFS = new MiniDFSCluster.Builder(hadoopConf).build();
         Path tmpPath = new Path("/tmp");
         Path hivePath = new Path("/user/hive");
         Path warehousePath = new Path(hivePath, "warehouse");
@@ -380,7 +384,7 @@ public class TestHDFSIntegration {
         LOGGER.info("\n\n Is dir :" + directory + "\n\n");
         LOGGER.info("\n\n DefaultFS :" + miniDFS.getFileSystem().getUri() + "\n\n");
         fsURI = miniDFS.getFileSystem().getUri().toString();
-        conf.set("fs.defaultFS", fsURI);
+        hadoopConf.set("fs.defaultFS", fsURI);
 
         // Create Yarn cluster
         // miniMR = MiniMRClientClusterFactory.create(this.getClass(), 1, conf);
@@ -1058,6 +1062,59 @@ public class TestHDFSIntegration {
     conn.close();
   }
 
+  //SENTRY-884
+  @Test
+  public void testAccessToTableDirectory() throws Throwable {
+    String dbName= "db1";
+
+    tmpHDFSDir = new Path("/tmp/external");
+    dbNames = new String[]{dbName};
+    roles = new String[]{"admin_role", "table_role"};
+    admin = StaticUserGroup.ADMIN1;
+
+    Connection conn;
+    Statement stmt;
+
+    conn = hiveServer2.createConnection("hive", "hive");
+    stmt = conn.createStatement();
+
+    stmt.execute("create role admin_role");
+    stmt.execute("grant all on server server1 to role admin_role");
+    stmt.execute("grant role admin_role to group " + StaticUserGroup.ADMINGROUP);
+
+    conn = hiveServer2.createConnection(StaticUserGroup.ADMIN1, StaticUserGroup.ADMIN1);
+    stmt = conn.createStatement();
+    stmt.execute("create database " + dbName);
+    stmt.execute("use " + dbName);
+    stmt.execute("create table tb1(a string)");
+
+    stmt.execute("create role table_role");
+    stmt.execute("grant all on table tb1 to role table_role");
+    stmt.execute("grant role table_role to group " + StaticUserGroup.USERGROUP1);
+
+    //Verify user1 is able to access table directory
+    verifyAccessToPath(StaticUserGroup.USER1_1, StaticUserGroup.USERGROUP1, "/user/hive/warehouse/db1.db/tb1", true);
+
+    stmt.close();
+    conn.close();
+  }
+
+  private void verifyAccessToPath(String user, String group, String path, boolean hasPermission) throws Exception{
+    Path p = new Path(path);
+    UserGroupInformation hadoopUser =
+        UserGroupInformation.createUserForTesting(user, new String[] {group});
+    FileSystem fs = DFSTestUtil.getFileSystemAs(hadoopUser, hadoopConf);
+    try {
+      fs.listFiles(p, true);
+      if(!hasPermission) {
+        Assert.assertFalse("Expected listing files to fail", false);
+      }
+    } catch (Exception e) {
+      if(hasPermission) {
+        throw e;
+      }
+    }
+  }
 
   private void verifyQuery(Statement stmt, String table, int n) throws Throwable {
     verifyQuery(stmt, table, n, NUM_RETRIES);

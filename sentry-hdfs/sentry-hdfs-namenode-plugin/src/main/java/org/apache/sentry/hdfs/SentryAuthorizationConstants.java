@@ -31,7 +31,7 @@ public class SentryAuthorizationConstants {
 
   public static final String HDFS_PERMISSION_KEY = CONFIG_PREFIX + 
       "hdfs-permission";
-  public static final long HDFS_PERMISSION_DEFAULT = 0770;
+  public static final long HDFS_PERMISSION_DEFAULT = 0771;
 
   public static final String HDFS_PATH_PREFIXES_KEY = CONFIG_PREFIX + 
       "hdfs-path-prefixes";
