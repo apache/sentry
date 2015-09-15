@@ -70,6 +70,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 
@@ -84,6 +85,13 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
   private AccessURI partitionURI;
   private Table currOutTab = null;
   private Database currOutDB = null;
+
+  // True if this is a basic DESCRIBE <table> operation. False for other DESCRIBE variants
+  // like DESCRIBE [FORMATTED|EXTENDED]. Required because Hive treats these stmts as the same
+  // HiveOperationType, but we want to enforces different privileges on each statement.
+  // Basic DESCRIBE <table> is allowed with only column-level privs, while the variants
+  // require table-level privileges.
+  public boolean isDescTableBasic = false;
 
   public HiveAuthzBindingHook() throws Exception {
     SessionState session = SessionState.get();
@@ -246,6 +254,12 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
       case HiveParser.TOK_LOAD:
         String dbName = BaseSemanticAnalyzer.unescapeIdentifier(ast.getChild(1).getChild(0).getChild(0).getText());
         currDB = new Database(dbName);
+        break;
+      case HiveParser.TOK_DESCTABLE:
+        currDB = getCanonicalDb();
+        // For DESCRIBE FORMATTED/EXTENDED ast will have an additional child node with value
+        // "FORMATTED/EXTENDED".
+        isDescTableBasic = (ast.getChildCount() == 1);
         break;
       default:
         currDB = getCanonicalDb();
@@ -434,6 +448,14 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
       LOG.debug("context.getOutputs() = " + context.getOutputs());
     }
 
+    // Workaround to allow DESCRIBE <table> to be executed with only column-level privileges, while
+    // still authorizing DESCRIBE [EXTENDED|FORMATTED] as table-level.
+    // This is done by treating DESCRIBE <table> the same as SHOW COLUMNS, which only requires column
+    // level privs.
+    if (isDescTableBasic) {
+      stmtAuthObject = HiveAuthzPrivilegesMap.getHiveAuthzPrivileges(HiveOperation.SHOWCOLUMNS);
+    }
+
     switch (stmtAuthObject.getOperationScope()) {
 
     case SERVER :
@@ -477,6 +499,8 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
         externalAuthorizableHierarchy.add(currTab);
         inputHierarchy.add(externalAuthorizableHierarchy);
       }
+
+
 
       // workaround for DDL statements
       // Capture the table name in pre-analyze and include that in the output entity list
@@ -735,7 +759,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
           throws SemanticException {
     List<FieldSchema> filteredResult = new ArrayList<FieldSchema>();
     Subject subject = new Subject(userName);
-    HiveAuthzPrivileges ColumnMetaDataPrivilege =
+    HiveAuthzPrivileges columnMetaDataPrivilege =
         HiveAuthzPrivilegesMap.getHiveAuthzPrivileges(HiveOperation.SHOWCOLUMNS);
 
     Database database = new Database(dbName);
@@ -752,7 +776,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
       inputHierarchy.add(externalAuthorizableHierarchy);
 
       try {
-        hiveAuthzBinding.authorize(operation, ColumnMetaDataPrivilege, subject,
+        hiveAuthzBinding.authorize(operation, columnMetaDataPrivilege, subject,
             inputHierarchy, outputHierarchy);
         filteredResult.add(col);
       } catch (AuthorizationException e) {

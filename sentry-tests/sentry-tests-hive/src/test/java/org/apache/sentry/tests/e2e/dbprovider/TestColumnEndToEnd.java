@@ -17,8 +17,7 @@
 
 package org.apache.sentry.tests.e2e.dbprovider;
 
-import static junit.framework.Assert.fail;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -32,12 +31,12 @@ import java.util.List;
 import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.io.Resources;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,6 +85,68 @@ public class TestColumnEndToEnd extends AbstractTestWithStaticConfiguration {
         SentryAccessDeniedException.class.getSimpleName());
 
     statement.execute("SELECT * FROM " + DB1 + ".t1");
+    statement.close();
+    connection.close();
+  }
+
+  @Test
+  public void testDescribeTbl() throws Exception {
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("CREATE TABLE IF NOT EXISTS t1 (c1 string, c2 string)");
+    statement.execute("CREATE TABLE t2 (c1 string, c2 string)");
+    statement.execute("CREATE ROLE user_role1");
+    statement.execute("GRANT SELECT (c1) ON TABLE t1 TO ROLE user_role1");
+    statement.execute("GRANT ROLE user_role1 TO GROUP " + USERGROUP1);
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+
+    // Expect that DESCRIBE table works with only column-level privileges, but other
+    // DESCRIBE variants like DESCRIBE FORMATTED fail. Note that if a user has privileges
+    // on any column they can describe all columns.
+    ResultSet rs = statement.executeQuery("DESCRIBE t1");
+    assertTrue(rs.next());
+    assertEquals("c1", rs.getString(1));
+    assertEquals("string", rs.getString(2));
+    assertTrue(rs.next());
+    assertEquals("c2", rs.getString(1));
+    assertEquals("string", rs.getString(2));
+
+    statement.executeQuery("DESCRIBE t1 c1");
+    statement.executeQuery("DESCRIBE t1 c2");
+
+    try {
+      statement.executeQuery("DESCRIBE t2");
+      fail("Expected DESCRIBE to fail on t2");
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+
+    try {
+      statement.executeQuery("DESCRIBE FORMATTED t1");
+      fail("Expected DESCRIBE FORMATTED to fail");
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+
+    try {
+      statement.executeQuery("DESCRIBE EXTENDED t1");
+      fail("Expected DESCRIBE EXTENDED to fail");
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    statement.close();
+    connection.close();
+
+    // Cleanup
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    statement.execute("DROP TABLE t1");
+    statement.execute("DROP TABLE t2");
+    statement.execute("DROP ROLE user_role1");
     statement.close();
     connection.close();
   }
@@ -205,6 +266,7 @@ public class TestColumnEndToEnd extends AbstractTestWithStaticConfiguration {
     statement = context.createStatement(connection);
     statement.execute("use " + DB1);
     statement.execute("SELECT c1 FROM t1");
+    statement.execute("DESCRIBE t1");
 
     // 2.1 user_role2 select c1,c2 on t1
     connection = context.createConnection(USER2_1);

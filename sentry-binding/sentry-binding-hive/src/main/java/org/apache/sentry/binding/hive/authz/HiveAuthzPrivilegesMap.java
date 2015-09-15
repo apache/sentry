@@ -140,7 +140,8 @@ public class HiveAuthzPrivilegesMap {
         setOperationType(HiveOperationType.INFO).
         build();
 
-    HiveAuthzPrivileges ColumnMetaDataPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
+    // Metadata statements which only require column-level privileges.
+    HiveAuthzPrivileges columnMetaDataPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
         addInputObjectPriviledge(AuthorizableType.Column, EnumSet.of(DBModelAction.SELECT, DBModelAction.INSERT)).
         setOperationScope(HiveOperationScope.COLUMN).
         setOperationType(HiveOperationType.INFO).
@@ -262,7 +263,7 @@ public class HiveAuthzPrivilegesMap {
     hiveAuthzStmtPrivMap.put(HiveOperation.DROPFUNCTION, functionPrivilege);
 
     // SHOWCOLUMNS
-    hiveAuthzStmtPrivMap.put(HiveOperation.SHOWCOLUMNS, ColumnMetaDataPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.SHOWCOLUMNS, columnMetaDataPrivilege);
 
     // SHOWDATABASES
     // SHOWTABLES
