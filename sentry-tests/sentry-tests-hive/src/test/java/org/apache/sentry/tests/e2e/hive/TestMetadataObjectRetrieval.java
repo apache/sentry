@@ -66,7 +66,7 @@ public class TestMetadataObjectRetrieval extends AbstractTestWithStaticConfigura
    *  show create table table
    *  show tblproperties table
    *
-   * The table is assumed to have two colums under_col int and value string.
+   * The table is assumed to have two columns under_col int and value string.
    */
   private void positiveDescribeShowTests(String user, String db, String table) throws Exception {
     Connection connection = context.createConnection(user);
@@ -90,6 +90,27 @@ public class TestMetadataObjectRetrieval extends AbstractTestWithStaticConfigura
     assertTrue(rs.next());
     assertTrue("describe table fail", rs.getString(1).trim().equals("value"));
     assertTrue("describe table fail", rs.getString(2).trim().equals("string"));
+
+    rs = statement.executeQuery("DESCRIBE EXTENDED " + table);
+    assertTrue(rs.next());
+    assertTrue(rs.getString(1), rs.getString(1).contains("under_col"));
+    assertTrue(rs.getString(2), rs.getString(2).contains("int"));
+    assertTrue(rs.next());
+    assertTrue(rs.getString(1), rs.getString(1).contains("value"));
+    assertTrue(rs.getString(2), rs.getString(2).contains("string"));
+    assertTrue(rs.next());
+
+    rs = statement.executeQuery("DESCRIBE FORMATTED " + table);
+    // Skip the header
+    assertTrue(rs.next());
+    assertTrue(rs.next());
+    assertTrue(rs.next());
+    assertTrue(rs.getString(1), rs.getString(1).contains("under_col"));
+    assertTrue(rs.getString(2), rs.getString(2).contains("int"));
+    assertTrue(rs.next());
+    assertTrue(rs.getString(1), rs.getString(1).contains("value"));
+    assertTrue(rs.getString(2), rs.getString(2).contains("string"));
+    assertTrue(rs.next());
 
     rs = statement.executeQuery("SHOW COLUMNS FROM " + table);
     assertTrue(rs.next());
@@ -120,9 +141,10 @@ public class TestMetadataObjectRetrieval extends AbstractTestWithStaticConfigura
     Connection connection = context.createConnection(user);
     Statement statement = context.createStatement(connection);
     statement.execute("USE " + db);
-    context.assertAuthzException(statement, "DESCRIBE " + table);
     context.assertAuthzException(statement, "DESCRIBE " + table + " under_col");
     context.assertAuthzException(statement, "DESCRIBE " + table + " value");
+    context.assertAuthzException(statement, "DESCRIBE FORMATTED " + table);
+    context.assertAuthzException(statement, "DESCRIBE EXTENDED " + table);
     context.assertAuthzException(statement, "SHOW COLUMNS FROM " + table);
     context.assertAuthzException(statement, "SHOW CREATE TABLE " + table);
     context.assertAuthzException(statement, "SHOW TBLPROPERTIES " + table);
