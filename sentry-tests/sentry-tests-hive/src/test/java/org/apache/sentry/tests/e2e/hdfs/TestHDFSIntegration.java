@@ -1091,7 +1091,7 @@ public class TestHDFSIntegration {
     stmt.execute("create role table_role");
     stmt.execute("grant all on table tb1 to role table_role");
     stmt.execute("grant role table_role to group " + StaticUserGroup.USERGROUP1);
-
+    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
     //Verify user1 is able to access table directory
     verifyAccessToPath(StaticUserGroup.USER1_1, StaticUserGroup.USERGROUP1, "/user/hive/warehouse/db1.db/tb1", true);
 
