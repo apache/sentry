@@ -30,8 +30,10 @@ import java.util.Map;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore("CDH-30406/CDH-28502")
 public class TestLockPrivileges extends AbstractTestWithStaticConfiguration {
   private PolicyFile policyFile;
   final String tableName = "tb1";
