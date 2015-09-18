@@ -110,6 +110,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     statement.execute("USE " +DB1);
     statement.execute("ALTER TABLE tb1 RENAME TO tb2");
     statement.execute("ALTER DATABASE " + DB1 + " SET DBPROPERTIES ('comment'='comment')");
+
     statement.execute("DROP database " + DB1 + " cascade");
     statement.close();
     connection.close();
@@ -258,7 +259,6 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
 
     assertSemanticException(statement, "CREATE INDEX tb1_index ON TABLE tb1 (a) AS 'COMPACT' WITH DEFERRED REBUILD");
     //assertSemanticException(statement, "ALTER INDEX tb1_index ON tb1 REBUILD");
-    assertSemanticException(statement, "ALTER TABLE tb1 RENAME TO tb2");
 
     assertSemanticException(statement, "DROP TABLE " + DB1 + ".tb1");
 
@@ -298,12 +298,9 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     statement.execute("CREATE INDEX tb1_index ON TABLE tb1 (a) AS 'COMPACT' WITH DEFERRED REBUILD");
     //statement.execute("ALTER INDEX tb1_index ON tb1 REBUILD");
 
-    //Drop of the new tablename works only when Hive meta store syncs the alters with the sentry privileges.
-    //This is currently not set for pseudo cluster runs
-    if( hiveServer2Type.equals(HiveServerFactory.HiveServer2Type.UnmanagedHiveServer2 ) &&
-        !policyOnHdfs) {
-      statement.execute("DROP TABLE " + DB1 + ".tb2");
-    }
+    assertSemanticException(statement, "ALTER TABLE tb1 RENAME TO tb2");
+
+
     statement.close();
     connection.close();
 
