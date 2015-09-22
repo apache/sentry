@@ -91,7 +91,7 @@ public class PathsUpdate implements Updateable.Update {
    *
    * @param path : Needs to be a HDFS location with scheme
    * @return Path in the form a list containing the path tree with scheme/ authority stripped off.
-   * Returns null if a non HDFS path
+   * Returns null if a non HDFS path or if path is null/empty
    */
   public static List<String> parsePath(String path) {
     try {
@@ -99,6 +99,8 @@ public class PathsUpdate implements Updateable.Update {
       URI uri = null;
       if (StringUtils.isNotEmpty(path)) {
         uri = new URI(URIUtil.encodePath(path));
+      } else {
+        return null;
       }
 
       Preconditions.checkNotNull(uri.getScheme());
