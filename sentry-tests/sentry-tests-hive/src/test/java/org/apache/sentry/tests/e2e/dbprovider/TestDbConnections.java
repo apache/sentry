@@ -91,6 +91,11 @@ public class TestDbConnections extends AbstractTestWithStaticConfiguration {
     assertTrue(preConnectionClientId < getSentrySrv().getTotalClients());
     // assertEquals(0, getSentrySrv().getNumActiveClients());
 
+    // client invocation via metastore filter
+    preConnectionClientId = getSentrySrv().getTotalClients();
+    statement.executeQuery("show tables");
+    assertTrue(preConnectionClientId < getSentrySrv().getTotalClients());
+
     preConnectionClientId = getSentrySrv().getTotalClients();
     statement.execute("DROP TABLE t1");
     assertTrue(preConnectionClientId < getSentrySrv().getTotalClients());
@@ -110,7 +115,8 @@ public class TestDbConnections extends AbstractTestWithStaticConfiguration {
     // client invocation via metastore filter
     preConnectionClientId = getSentrySrv().getTotalClients();
     statement.executeQuery("show tables");
-    assertTrue(preConnectionClientId < getSentrySrv().getTotalClients());
+    //There are no tables, so auth check does not happen
+    assertTrue(preConnectionClientId == getSentrySrv().getTotalClients());
     // assertEquals(0, getSentrySrv().getNumActiveClients());
 
     statement.close();
