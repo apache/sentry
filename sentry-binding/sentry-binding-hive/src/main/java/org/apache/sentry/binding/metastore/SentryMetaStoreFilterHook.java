@@ -141,7 +141,7 @@ public class SentryMetaStoreFilterHook implements MetaStoreFilterHook {
   /**
    * Invoke Hive table filtering that removes the entries which use has no
    * privileges to access
-   * @param dbList
+   * @param tabList
    * @return
    * @throws MetaException
    */
