@@ -51,13 +51,14 @@ public class SentryAuthFilter extends AuthenticationFilter {
   @Override
   protected void doFilter(FilterChain filterChain, HttpServletRequest request,
       HttpServletResponse response) throws IOException, ServletException {
-    super.doFilter(filterChain, request, response);
     String userName = request.getRemoteUser();
     LOG.debug("Authenticating user: " + userName + " from request.");
     if (!allowUsers.contains(userName)) {
       response.sendError(HttpServletResponse.SC_FORBIDDEN,
           userName + " is unauthorized. status code: " + HttpServletResponse.SC_FORBIDDEN);
+      throw new ServletException(userName + " is unauthorized. status code: " + HttpServletResponse.SC_FORBIDDEN);
     }
+    super.doFilter(filterChain, request, response);
   }
 
   /**
