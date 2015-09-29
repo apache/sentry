@@ -30,6 +30,7 @@ import org.apache.sentry.provider.db.service.thrift.TDropSentryRoleRequest;
 
 public class Constants {
   public final static String AUDIT_LOGGER_NAME = "sentry.hive.authorization.ddl.logger";
+  public final static String AUDIT_LOGGER_NAME_GENERIC = "sentry.generic.authorization.ddl.logger";
 
   public final static String LOG_FIELD_SERVICE_NAME = "serviceName";
   public final static String LOG_FIELD_USER_NAME = "userName";
@@ -44,6 +45,7 @@ public class Constants {
   public final static String LOG_FIELD_COLUMN_NAME = "column";
   public final static String LOG_FIELD_RESOURCE_PATH = "resourcePath";
   public final static String LOG_FIELD_OBJECT_TYPE = "objectType";
+  public final static String LOG_FIELD_COMPONENT = "component";
 
   public final static String OPERATION_CREATE_ROLE = "CREATE_ROLE";
   public final static String OPERATION_DROP_ROLE = "DROP_ROLE";
@@ -62,6 +64,7 @@ public class Constants {
   public static final Map<String, String> requestTypeToObjectTypeMap = new HashMap<String, String>();
 
   static {
+    // for hive audit log
     requestTypeToOperationMap.put(TCreateSentryRoleRequest.class.getName(),
         Constants.OPERATION_CREATE_ROLE);
     requestTypeToOperationMap.put(
@@ -78,7 +81,30 @@ public class Constants {
     requestTypeToOperationMap.put(
         TAlterSentryRoleDeleteGroupsRequest.class.getName(),
         Constants.OPERATION_DELETE_ROLE);
+    // for generic model audit log
+    requestTypeToOperationMap.put(
+        org.apache.sentry.provider.db.generic.service.thrift.TCreateSentryRoleRequest.class
+            .getName(), Constants.OPERATION_CREATE_ROLE);
+    requestTypeToOperationMap
+        .put(org.apache.sentry.provider.db.generic.service.thrift.TDropSentryRoleRequest.class
+            .getName(), Constants.OPERATION_DROP_ROLE);
+    requestTypeToOperationMap
+        .put(
+            org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleGrantPrivilegeRequest.class
+                .getName(), Constants.OPERATION_GRANT_PRIVILEGE);
+    requestTypeToOperationMap
+        .put(
+            org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleRevokePrivilegeRequest.class
+                .getName(), Constants.OPERATION_REVOKE_PRIVILEGE);
+    requestTypeToOperationMap.put(
+        org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleAddGroupsRequest.class
+            .getName(), Constants.OPERATION_ADD_ROLE);
+    requestTypeToOperationMap
+        .put(
+            org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleDeleteGroupsRequest.class
+                .getName(), Constants.OPERATION_DELETE_ROLE);
 
+    // for hive audit log
     requestTypeToObjectTypeMap.put(TCreateSentryRoleRequest.class.getName(),
         Constants.OBJECT_TYPE_ROLE);
     requestTypeToObjectTypeMap.put(TDropSentryRoleRequest.class.getName(),
@@ -95,5 +121,27 @@ public class Constants {
     requestTypeToObjectTypeMap.put(
         TAlterSentryRoleRevokePrivilegeRequest.class.getName(),
         Constants.OBJECT_TYPE_PRINCIPAL);
+    // for generic model audit log
+    requestTypeToObjectTypeMap.put(
+        org.apache.sentry.provider.db.generic.service.thrift.TCreateSentryRoleRequest.class
+            .getName(), Constants.OBJECT_TYPE_ROLE);
+    requestTypeToObjectTypeMap
+        .put(org.apache.sentry.provider.db.generic.service.thrift.TDropSentryRoleRequest.class
+            .getName(), Constants.OBJECT_TYPE_ROLE);
+    requestTypeToObjectTypeMap.put(
+        org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleAddGroupsRequest.class
+            .getName(), Constants.OBJECT_TYPE_ROLE);
+    requestTypeToObjectTypeMap
+        .put(
+            org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleDeleteGroupsRequest.class
+                .getName(), Constants.OBJECT_TYPE_ROLE);
+    requestTypeToObjectTypeMap
+        .put(
+            org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleGrantPrivilegeRequest.class
+                .getName(), Constants.OBJECT_TYPE_PRINCIPAL);
+    requestTypeToObjectTypeMap
+        .put(
+            org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleRevokePrivilegeRequest.class
+                .getName(), Constants.OBJECT_TYPE_PRINCIPAL);
   }
 }

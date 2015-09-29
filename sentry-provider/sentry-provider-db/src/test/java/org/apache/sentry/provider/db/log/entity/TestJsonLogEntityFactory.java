@@ -24,7 +24,6 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.log4j.Logger;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.db.log.util.Constants;
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleAddGroupsRequest;
@@ -53,7 +52,6 @@ import com.google.common.collect.Sets;
 public class TestJsonLogEntityFactory {
 
   private static Configuration conf;
-  private Logger sentryLogger = Logger.getRootLogger();
 
   private static String TEST_IP = "localhost/127.0.0.1";
   private static String TEST_IMPERSONATOR = "impersonator";
@@ -79,18 +77,16 @@ public class TestJsonLogEntityFactory {
     request.setRequestorUserName(TEST_USER_NAME);
     request.setRoleName(TEST_ROLE_NAME);
     response.setStatus(Status.OK());
-    AuditMetadataLogEntity amle = (AuditMetadataLogEntity) JsonLogEntityFactory
+    DBAuditMetadataLogEntity amle = (DBAuditMetadataLogEntity) JsonLogEntityFactory
         .getInstance().createJsonLogEntity(request, response, conf);
     assertCommon(amle, Constants.TRUE, Constants.OPERATION_CREATE_ROLE,
         "CREATE ROLE testRole", null, null, null, Constants.OBJECT_TYPE_ROLE);
-    sentryLogger.debug(amle.toJsonFormatLog());
 
     response.setStatus(Status.InvalidInput("", null));
-    amle = (AuditMetadataLogEntity) JsonLogEntityFactory.getInstance()
+    amle = (DBAuditMetadataLogEntity) JsonLogEntityFactory.getInstance()
         .createJsonLogEntity(request, response, conf);
     assertCommon(amle, Constants.FALSE, Constants.OPERATION_CREATE_ROLE,
         "CREATE ROLE testRole", null, null, null, Constants.OBJECT_TYPE_ROLE);
-    sentryLogger.debug(amle.toJsonFormatLog());
   }
 
   @Test
@@ -100,18 +96,16 @@ public class TestJsonLogEntityFactory {
     request.setRequestorUserName(TEST_USER_NAME);
     request.setRoleName(TEST_ROLE_NAME);
     response.setStatus(Status.OK());
-    AuditMetadataLogEntity amle = (AuditMetadataLogEntity) JsonLogEntityFactory
+    DBAuditMetadataLogEntity amle = (DBAuditMetadataLogEntity) JsonLogEntityFactory
         .getInstance().createJsonLogEntity(request, response, conf);
     assertCommon(amle, Constants.TRUE, Constants.OPERATION_DROP_ROLE,
         "DROP ROLE testRole", null, null, null, Constants.OBJECT_TYPE_ROLE);
-    sentryLogger.debug(amle.toJsonFormatLog());
 
     response.setStatus(Status.InvalidInput("", null));
-    amle = (AuditMetadataLogEntity) JsonLogEntityFactory.getInstance()
+    amle = (DBAuditMetadataLogEntity) JsonLogEntityFactory.getInstance()
         .createJsonLogEntity(request, response, conf);
     assertCommon(amle, Constants.FALSE, Constants.OPERATION_DROP_ROLE,
         "DROP ROLE testRole", null, null, null, Constants.OBJECT_TYPE_ROLE);
-    sentryLogger.debug(amle.toJsonFormatLog());
   }
 
   @Test
@@ -128,18 +122,17 @@ public class TestJsonLogEntityFactory {
     privileges.add(privilege);
     request.setPrivileges(privileges);
     response.setStatus(Status.OK());
-    AuditMetadataLogEntity amle = new AuditMetadataLogEntity();
+    DBAuditMetadataLogEntity amle = new DBAuditMetadataLogEntity();
     Set<JsonLogEntity> amles =  JsonLogEntityFactory
         .getInstance().createJsonLogEntitys(request, response, conf);
     assertEquals(amles.size(),1);
     for (JsonLogEntity amle1 : amles) {
-      amle = (AuditMetadataLogEntity) amle1;
+      amle = (DBAuditMetadataLogEntity) amle1;
       break;
     }
     assertCommon(amle, Constants.TRUE, Constants.OPERATION_GRANT_PRIVILEGE,
         "GRANT ALL ON DATABASE testDB TO ROLE testRole", TEST_DATABASE_NAME,
         null, null, Constants.OBJECT_TYPE_PRINCIPAL);
-    sentryLogger.debug(amle.toJsonFormatLog());
 
     privilege = getPrivilege(AccessConstants.ALL, PrivilegeScope.TABLE.name(),
         null, TEST_TABLE_NAME, null, null);
@@ -151,13 +144,12 @@ public class TestJsonLogEntityFactory {
         .createJsonLogEntitys(request, response, conf);
     assertEquals(amles.size(),1);
     for (JsonLogEntity amle1 : amles) {
-      amle = (AuditMetadataLogEntity) amle1;
+      amle = (DBAuditMetadataLogEntity) amle1;
       break;
     }
     assertCommon(amle, Constants.FALSE, Constants.OPERATION_GRANT_PRIVILEGE,
         "GRANT ALL ON TABLE testTable TO ROLE testRole", null, TEST_TABLE_NAME,
         null, Constants.OBJECT_TYPE_PRINCIPAL);
-    sentryLogger.debug(amle.toJsonFormatLog());
   }
 
   @Test
@@ -173,18 +165,17 @@ public class TestJsonLogEntityFactory {
     privileges.add(privilege);
     request.setPrivileges(privileges);
     response.setStatus(Status.OK());
-    AuditMetadataLogEntity amle = new AuditMetadataLogEntity();
+    DBAuditMetadataLogEntity amle = new DBAuditMetadataLogEntity();
     Set<JsonLogEntity> amles =  JsonLogEntityFactory
         .getInstance().createJsonLogEntitys(request, response, conf);
     assertEquals(amles.size(),1);
     for (JsonLogEntity amle1 : amles) {
-      amle = (AuditMetadataLogEntity) amle1;
+      amle = (DBAuditMetadataLogEntity) amle1;
       break;
     }
     assertCommon(amle, Constants.TRUE, Constants.OPERATION_REVOKE_PRIVILEGE,
         "REVOKE ALL ON DATABASE testDB FROM ROLE testRole", TEST_DATABASE_NAME,
         null, null, Constants.OBJECT_TYPE_PRINCIPAL);
-    sentryLogger.debug(amle.toJsonFormatLog());
 
     privilege = getPrivilege(AccessConstants.ALL, PrivilegeScope.TABLE.name(),
         null, TEST_TABLE_NAME, null, null);
@@ -196,13 +187,12 @@ public class TestJsonLogEntityFactory {
         .createJsonLogEntitys(request, response, conf);
     assertEquals(amles.size(),1);
     for (JsonLogEntity amle1 : amles) {
-      amle = (AuditMetadataLogEntity) amle1;
+      amle = (DBAuditMetadataLogEntity) amle1;
       break;
     }
     assertCommon(amle, Constants.FALSE, Constants.OPERATION_REVOKE_PRIVILEGE,
         "REVOKE ALL ON TABLE testTable FROM ROLE testRole", null,
         TEST_TABLE_NAME, null, Constants.OBJECT_TYPE_PRINCIPAL);
-    sentryLogger.debug(amle.toJsonFormatLog());
   }
 
   @Test
@@ -213,20 +203,18 @@ public class TestJsonLogEntityFactory {
     request.setRoleName(TEST_ROLE_NAME);
     request.setGroups(getGroups());
     response.setStatus(Status.OK());
-    AuditMetadataLogEntity amle = (AuditMetadataLogEntity) JsonLogEntityFactory
+    DBAuditMetadataLogEntity amle = (DBAuditMetadataLogEntity) JsonLogEntityFactory
         .getInstance().createJsonLogEntity(request, response, conf);
     assertCommon(amle, Constants.TRUE, Constants.OPERATION_ADD_ROLE,
         "GRANT ROLE testRole TO GROUP testGroup", null, null, null,
         Constants.OBJECT_TYPE_ROLE);
-    sentryLogger.debug(amle.toJsonFormatLog());
 
     response.setStatus(Status.InvalidInput("", null));
-    amle = (AuditMetadataLogEntity) JsonLogEntityFactory.getInstance()
+    amle = (DBAuditMetadataLogEntity) JsonLogEntityFactory.getInstance()
         .createJsonLogEntity(request, response, conf);
     assertCommon(amle, Constants.FALSE, Constants.OPERATION_ADD_ROLE,
         "GRANT ROLE testRole TO GROUP testGroup", null, null, null,
         Constants.OBJECT_TYPE_ROLE);
-    sentryLogger.debug(amle.toJsonFormatLog());
   }
 
   @Test
@@ -237,23 +225,21 @@ public class TestJsonLogEntityFactory {
     request.setRoleName(TEST_ROLE_NAME);
     request.setGroups(getGroups());
     response.setStatus(Status.OK());
-    AuditMetadataLogEntity amle = (AuditMetadataLogEntity) JsonLogEntityFactory
+    DBAuditMetadataLogEntity amle = (DBAuditMetadataLogEntity) JsonLogEntityFactory
         .getInstance().createJsonLogEntity(request, response, conf);
     assertCommon(amle, Constants.TRUE, Constants.OPERATION_DELETE_ROLE,
         "REVOKE ROLE testRole FROM GROUP testGroup", null, null, null,
         Constants.OBJECT_TYPE_ROLE);
-    sentryLogger.debug(amle.toJsonFormatLog());
 
     response.setStatus(Status.InvalidInput("", null));
-    amle = (AuditMetadataLogEntity) JsonLogEntityFactory.getInstance()
+    amle = (DBAuditMetadataLogEntity) JsonLogEntityFactory.getInstance()
         .createJsonLogEntity(request, response, conf);
     assertCommon(amle, Constants.FALSE, Constants.OPERATION_DELETE_ROLE,
         "REVOKE ROLE testRole FROM GROUP testGroup", null, null, null,
         Constants.OBJECT_TYPE_ROLE);
-    sentryLogger.debug(amle.toJsonFormatLog());
   }
 
-  private void assertCommon(AuditMetadataLogEntity amle,
+  private void assertCommon(DBAuditMetadataLogEntity amle,
       String allowedExcepted, String operationExcepted,
       String operationTextExcepted, String databaseNameExcepted,
       String tableNameExcepted, String resourcePathExcepted,
@@ -271,37 +257,6 @@ public class TestJsonLogEntityFactory {
     assertEquals(resourcePathExcepted, amle.getResourcePath());
     assertEquals(objectTypeExcepted, amle.getObjectType());
   }
-
-  // private TAlterSentryRoleGrantPrivilegeRequest getGrantPrivilegeRequest() {
-  // TAlterSentryRoleGrantPrivilegeRequest request = new
-  // TAlterSentryRoleGrantPrivilegeRequest();
-  // request.setRoleName(TEST_ROLE_NAME);
-  // return request;
-  // }
-  //
-  // private TAlterSentryRoleGrantPrivilegeResponse getGrantPrivilegeResponse(
-  // TSentryResponseStatus status) {
-  // TAlterSentryRoleGrantPrivilegeResponse response = new
-  // TAlterSentryRoleGrantPrivilegeResponse();
-  // response.setStatus(status);
-  // return response;
-  // }
-
-  // private TAlterSentryRoleRevokePrivilegeRequest getRevokePrivilegeRequest()
-  // {
-  // TAlterSentryRoleRevokePrivilegeRequest request = new
-  // TAlterSentryRoleRevokePrivilegeRequest();
-  // request.setRoleName(TEST_ROLE_NAME);
-  // return request;
-  // }
-  //
-  // private TAlterSentryRoleRevokePrivilegeResponse getRevokePrivilegeResponse(
-  // TSentryResponseStatus status) {
-  // TAlterSentryRoleRevokePrivilegeResponse response = new
-  // TAlterSentryRoleRevokePrivilegeResponse();
-  // response.setStatus(status);
-  // return response;
-  // }
 
   private TSentryPrivilege getPrivilege(String action, String privilegeScope,
       String dbName, String tableName, String serverName, String URI) {

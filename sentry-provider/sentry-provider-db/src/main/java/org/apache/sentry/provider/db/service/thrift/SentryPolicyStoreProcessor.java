@@ -249,8 +249,14 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       timerContext.stop();
     }
 
-    AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance().createJsonLogEntity(
-    		request, response, conf).toJsonFormatLog());
+    try {
+      AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance()
+          .createJsonLogEntity(request, response, conf).toJsonFormatLog());
+    } catch (Exception e) {
+      // if any exception, log the exception.
+      String msg = "Error creating audit log for create role: " + e.getMessage();
+      LOGGER.error(msg, e);
+    }
     return response;
   }
 
@@ -305,10 +311,16 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       timerContext.stop();
     }
 
-    Set<JsonLogEntity> jsonLogEntitys = JsonLogEntityFactory.getInstance().createJsonLogEntitys(
-        request, response, conf);
-    for (JsonLogEntity jsonLogEntity : jsonLogEntitys) {
-      AUDIT_LOGGER.info(jsonLogEntity.toJsonFormatLog());
+    try {
+      Set<JsonLogEntity> jsonLogEntitys = JsonLogEntityFactory.getInstance().createJsonLogEntitys(
+          request, response, conf);
+      for (JsonLogEntity jsonLogEntity : jsonLogEntitys) {
+        AUDIT_LOGGER.info(jsonLogEntity.toJsonFormatLog());
+      }
+    } catch (Exception e) {
+      // if any exception, log the exception.
+      String msg = "Error creating audit log for grant privilege to role: " + e.getMessage();
+      LOGGER.error(msg, e);
     }
     return response;
   }
@@ -374,10 +386,16 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       timerContext.stop();
     }
 
-    Set<JsonLogEntity> jsonLogEntitys = JsonLogEntityFactory.getInstance().createJsonLogEntitys(
-        request, response, conf);
-    for (JsonLogEntity jsonLogEntity : jsonLogEntitys) {
-      AUDIT_LOGGER.info(jsonLogEntity.toJsonFormatLog());
+    try {
+      Set<JsonLogEntity> jsonLogEntitys = JsonLogEntityFactory.getInstance().createJsonLogEntitys(
+          request, response, conf);
+      for (JsonLogEntity jsonLogEntity : jsonLogEntitys) {
+        AUDIT_LOGGER.info(jsonLogEntity.toJsonFormatLog());
+      }
+    } catch (Exception e) {
+      // if any exception, log the exception.
+      String msg = "Error creating audit log for revoke privilege from role: " + e.getMessage();
+      LOGGER.error(msg, e);
     }
     return response;
   }
@@ -417,8 +435,14 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       timerContext.stop();
     }
 
-    AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance().createJsonLogEntity(
-    		request, response, conf).toJsonFormatLog());
+    try {
+      AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance()
+          .createJsonLogEntity(request, response, conf).toJsonFormatLog());
+    } catch (Exception e) {
+      // if any exception, log the exception.
+      String msg = "Error creating audit log for drop role: " + e.getMessage();
+      LOGGER.error(msg, e);
+    }
     return response;
   }
 
@@ -457,8 +481,14 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       timerContext.stop();
     }
 
-    AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance().createJsonLogEntity(
-    		request, response, conf).toJsonFormatLog());
+    try {
+      AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance()
+          .createJsonLogEntity(request, response, conf).toJsonFormatLog());
+    } catch (Exception e) {
+      // if any exception, log the exception.
+      String msg = "Error creating audit log for add role to group: " + e.getMessage();
+      LOGGER.error(msg, e);
+    }
     return response;
   }
 
@@ -497,8 +527,14 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       timerContext.stop();
     }
 
-    AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance().createJsonLogEntity(
-    		request, response, conf).toJsonFormatLog());
+    try {
+      AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance()
+          .createJsonLogEntity(request, response, conf).toJsonFormatLog());
+    } catch (Exception e) {
+      // if any exception, log the exception.
+      String msg = "Error creating audit log for delete role from group: " + e.getMessage();
+      LOGGER.error(msg, e);
+    }
     return response;
   }
 
