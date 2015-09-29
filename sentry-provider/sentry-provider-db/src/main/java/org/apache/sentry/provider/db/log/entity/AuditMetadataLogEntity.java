@@ -19,45 +19,30 @@
 package org.apache.sentry.provider.db.log.entity;
 
 import java.io.IOException;
-import java.io.StringWriter;
 
-import org.apache.sentry.provider.db.log.util.Constants;
 import org.codehaus.jackson.JsonFactory;
-import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.MappingJsonFactory;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ContainerNode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public class AuditMetadataLogEntity implements JsonLogEntity {
+abstract public class AuditMetadataLogEntity implements JsonLogEntity {
 
-  private static final Logger LOGGER = LoggerFactory
-      .getLogger(AuditMetadataLogEntity.class);
-  private static final JsonFactory factory = new MappingJsonFactory();
-  private String serviceName;
-  private String userName;
-  private String impersonator;
-  private String ipAddress;
-  private String operation;
-  private String eventTime;
-  private String operationText;
-  private String allowed;
-  private String databaseName;
-  private String tableName;
-  private String columnName;
-  private String resourcePath;
-  private String objectType;
+  static final JsonFactory factory = new MappingJsonFactory();
+  String serviceName;
+  String userName;
+  String impersonator;
+  String ipAddress;
+  String operation;
+  String eventTime;
+  String operationText;
+  String allowed;
+  String objectType;
+  String component;
 
-  public AuditMetadataLogEntity() {
-  }
-
-  public AuditMetadataLogEntity(String serviceName, String userName,
-      String impersonator, String ipAddress, String operation,
-      String eventTime, String operationText, String allowed,
-      String databaseName, String tableName, String columnName,
-      String resourcePath, String objectType) {
+  void setCommonAttr(String serviceName, String userName, String impersonator, String ipAddress,
+      String operation, String eventTime, String operationText, String allowed, String objectType,
+      String component) {
     this.serviceName = serviceName;
     this.userName = userName;
     this.impersonator = impersonator;
@@ -66,52 +51,8 @@ public class AuditMetadataLogEntity implements JsonLogEntity {
     this.eventTime = eventTime;
     this.operationText = operationText;
     this.allowed = allowed;
-    this.databaseName = databaseName;
-    this.tableName = tableName;
-    this.columnName = columnName;
-    this.resourcePath = resourcePath;
     this.objectType = objectType;
-  }
-
-  @Override
-  public String toJsonFormatLog() {
-    StringWriter stringWriter = new StringWriter();
-    JsonGenerator json = null;
-    try {
-      json = factory.createJsonGenerator(stringWriter);
-      json.writeStartObject();
-      json.writeStringField(Constants.LOG_FIELD_SERVICE_NAME, serviceName);
-      json.writeStringField(Constants.LOG_FIELD_USER_NAME, userName);
-      json.writeStringField(Constants.LOG_FIELD_IMPERSONATOR, impersonator);
-      json.writeStringField(Constants.LOG_FIELD_IP_ADDRESS, ipAddress);
-      json.writeStringField(Constants.LOG_FIELD_OPERATION, operation);
-      json.writeStringField(Constants.LOG_FIELD_EVENT_TIME, eventTime);
-      json.writeStringField(Constants.LOG_FIELD_OPERATION_TEXT, operationText);
-      json.writeStringField(Constants.LOG_FIELD_ALLOWED, allowed);
-      json.writeStringField(Constants.LOG_FIELD_DATABASE_NAME, databaseName);
-      json.writeStringField(Constants.LOG_FIELD_TABLE_NAME, tableName);
-      json.writeStringField(Constants.LOG_FIELD_COLUMN_NAME, columnName);
-      json.writeStringField(Constants.LOG_FIELD_RESOURCE_PATH, resourcePath);
-      json.writeStringField(Constants.LOG_FIELD_OBJECT_TYPE, objectType);
-      json.writeEndObject();
-      json.flush();
-    } catch (IOException e) {
-      // if there has error when creating the audit log in json, set the audit
-      // log to empty.
-      stringWriter = new StringWriter();
-      String msg = "Error creating audit log in json format: " + e.getMessage();
-      LOGGER.error(msg, e);
-    } finally {
-      try {
-        if (json != null) {
-          json.close();
-        }
-      } catch (IOException e) {
-        LOGGER.error("Error closing JsonGenerator", e);
-      }
-    }
-
-    return stringWriter.toString();
+    this.component = component;
   }
 
   public String getServiceName() {
@@ -178,44 +119,20 @@ public class AuditMetadataLogEntity implements JsonLogEntity {
     this.allowed = allowed;
   }
 
-  public String getDatabaseName() {
-    return databaseName;
-  }
-
-  public void setDatabaseName(String databaseName) {
-    this.databaseName = databaseName;
-  }
-
-  public String getTableName() {
-    return tableName;
-  }
-
-  public void setTableName(String tableName) {
-    this.tableName = tableName;
-  }
-
-  public String getColumnName() {
-    return columnName;
-  }
-
-  public void setColumnName(String columnName) {
-    this.columnName = columnName;
-  }
-
-  public String getResourcePath() {
-    return resourcePath;
-  }
-
-  public void setResourcePath(String resourcePath) {
-    this.resourcePath = resourcePath;
-  }
-
   public String getObjectType() {
     return objectType;
   }
 
   public void setObjectType(String objectType) {
     this.objectType = objectType;
+  }
+
+  public String getComponent() {
+    return component;
+  }
+
+  public void setComponent(String component) {
+    this.component = component;
   }
 
   /**

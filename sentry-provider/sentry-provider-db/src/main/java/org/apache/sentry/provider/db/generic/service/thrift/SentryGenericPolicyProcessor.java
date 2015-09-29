@@ -35,8 +35,10 @@ import org.apache.sentry.provider.db.SentryInvalidInputException;
 import org.apache.sentry.provider.db.SentryNoSuchObjectException;
 import org.apache.sentry.provider.db.SentryThriftAPIMismatchException;
 import org.apache.sentry.provider.db.generic.service.persistent.PrivilegeObject;
-import org.apache.sentry.provider.db.generic.service.persistent.SentryStoreLayer;
 import org.apache.sentry.provider.db.generic.service.persistent.PrivilegeObject.Builder;
+import org.apache.sentry.provider.db.generic.service.persistent.SentryStoreLayer;
+import org.apache.sentry.provider.db.log.entity.JsonLogEntityFactory;
+import org.apache.sentry.provider.db.log.util.Constants;
 import org.apache.sentry.provider.db.service.persistent.CommitContext;
 import org.apache.sentry.provider.db.service.thrift.PolicyStoreConstants;
 import org.apache.sentry.provider.db.service.thrift.SentryConfigurationException;
@@ -59,6 +61,8 @@ import com.google.common.collect.Sets;
 
 public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.Iface {
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryGenericPolicyProcessor.class);
+  private static final Logger AUDIT_LOGGER = LoggerFactory
+      .getLogger(Constants.AUDIT_LOGGER_NAME_GENERIC);
   private final Configuration conf;
   private final ImmutableSet<String> adminGroups;
   private final SentryStoreLayer store;
@@ -288,6 +292,15 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     if (Status.OK.getCode() == respose.status.getValue()) {
       handerInvoker.create_sentry_role(respose.context, request, tResponse);
     }
+
+    try {
+      AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance()
+        .createJsonLogEntity(request, tResponse, conf).toJsonFormatLog());
+    } catch (Exception e) {
+      // if any exception, log the exception.
+      String msg = "Error creating audit log for create role: " + e.getMessage();
+      LOGGER.error(msg, e);
+    }
     return tResponse;
   }
 
@@ -308,6 +321,15 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     TDropSentryRoleResponse tResponse = new TDropSentryRoleResponse(respose.status);
     if (Status.OK.getCode() == respose.status.getValue()) {
       handerInvoker.drop_sentry_role(respose.context, request, tResponse);
+    }
+
+    try {
+      AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance()
+        .createJsonLogEntity(request, tResponse, conf).toJsonFormatLog());
+    } catch (Exception e) {
+      // if any exception, log the exception.
+      String msg = "Error creating audit log for drop role: " + e.getMessage();
+      LOGGER.error(msg, e);
     }
     return tResponse;
   }
@@ -330,6 +352,15 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     if (Status.OK.getCode() == respose.status.getValue()) {
       handerInvoker.alter_sentry_role_grant_privilege(respose.context, request, tResponse);
     }
+
+    try {
+      AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance()
+        .createJsonLogEntity(request, tResponse, conf).toJsonFormatLog());
+    } catch (Exception e) {
+      // if any exception, log the exception.
+      String msg = "Error creating audit log for grant privilege to role: " + e.getMessage();
+      LOGGER.error(msg, e);
+    }
     return tResponse;
   }
 
@@ -350,6 +381,15 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     TAlterSentryRoleRevokePrivilegeResponse tResponse = new TAlterSentryRoleRevokePrivilegeResponse(respose.status);
     if (Status.OK.getCode() == respose.status.getValue()) {
       handerInvoker.alter_sentry_role_revoke_privilege(respose.context, request, tResponse);
+    }
+
+    try {
+      AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance()
+        .createJsonLogEntity(request, tResponse, conf).toJsonFormatLog());
+    } catch (Exception e) {
+      // if any exception, log the exception.
+      String msg = "Error creating audit log for revoke privilege from role: " + e.getMessage();
+      LOGGER.error(msg, e);
     }
     return tResponse;
   }
@@ -374,6 +414,15 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     if (Status.OK.getCode() == respose.status.getValue()) {
       handerInvoker.alter_sentry_role_add_groups(respose.context, request, tResponse);
     }
+
+    try {
+      AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance()
+        .createJsonLogEntity(request, tResponse, conf).toJsonFormatLog());
+    } catch (Exception e) {
+      // if any exception, log the exception.
+      String msg = "Error creating audit log for add role to group: " + e.getMessage();
+      LOGGER.error(msg, e);
+    }
     return tResponse;
   }
 
@@ -396,6 +445,15 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     TAlterSentryRoleDeleteGroupsResponse tResponse = new TAlterSentryRoleDeleteGroupsResponse(respose.status);
     if (Status.OK.getCode() == respose.status.getValue()) {
       handerInvoker.alter_sentry_role_delete_groups(respose.context, request, tResponse);
+    }
+
+    try {
+      AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance()
+        .createJsonLogEntity(request, tResponse, conf).toJsonFormatLog());
+    } catch (Exception e) {
+      // if any exception, log the exception.
+      String msg = "Error creating audit log for delete role from group: " + e.getMessage();
+      LOGGER.error(msg, e);
     }
     return tResponse;
   }
