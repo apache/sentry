@@ -15,26 +15,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.sentry.provider.db.generic.service.thrift;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.service.thrift.ProcessorFactory;
-import org.apache.thrift.TMultiplexedProcessor;
-import org.apache.thrift.TProcessor;
+import org.apache.sentry.provider.db.service.thrift.ThriftUtil;
+import org.apache.thrift.TException;
+import org.apache.thrift.protocol.TProtocol;
 
-public class SentryGenericPolicyProcessorFactory extends ProcessorFactory {
+public class SentryGenericPolicyProcessorWrapper<I extends SentryGenericPolicyService.Iface>
+    extends SentryGenericPolicyService.Processor<SentryGenericPolicyService.Iface> {
 
-  public SentryGenericPolicyProcessorFactory(Configuration conf) {
-    super(conf);
+  public SentryGenericPolicyProcessorWrapper(I iface) {
+    super(iface);
   }
 
   @Override
-  public boolean register(TMultiplexedProcessor multiplexedProcessor) throws Exception {
-    SentryGenericPolicyProcessor processHandler = new SentryGenericPolicyProcessor(conf);
-    TProcessor processor = new SentryGenericPolicyProcessorWrapper<SentryGenericPolicyService.Iface>(
-        processHandler);
-    multiplexedProcessor.registerProcessor(SentryGenericPolicyProcessor.SENTRY_GENERIC_SERVICE_NAME, processor);
-    return true;
+  public boolean process(TProtocol in, TProtocol out) throws TException {
+    // set the ip and impersonator for audit log
+    ThriftUtil.setIpAddress(in);
+    ThriftUtil.setImpersonator(in);
+    return super.process(in, out);
   }
-
 }

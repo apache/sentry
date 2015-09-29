@@ -18,40 +18,45 @@
 
 package org.apache.sentry.provider.db.log.entity;
 
-import junit.framework.TestCase;
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.fail;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.sentry.provider.db.log.util.Constants;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.node.ContainerNode;
 import org.junit.Test;
 
-public class TestAuditMetadataLogEntity extends TestCase {
-
+public class TestGMAuditMetadataLogEntity {
   @Test
   public void testToJsonFormatLog() throws Throwable {
-    AuditMetadataLogEntity amle = new AuditMetadataLogEntity("serviceName",
-        "userName", "impersonator", "ipAddress", "operation", "eventTime",
-        "operationText", "allowed", "databaseName", "tableName", "columnName",
-        "resourcePath", "objectType");
-    String jsonAuditLog = amle.toJsonFormatLog();
+
+    Map<String, String> privilegesMap = new HashMap<String, String>();
+    privilegesMap.put("resourceType1", "resourceName1");
+    privilegesMap.put("resourceType2", "resourceName2");
+    privilegesMap.put("resourceType3", "resourceName3");
+    privilegesMap.put("resourceType4", "resourceName4");
+    GMAuditMetadataLogEntity gmamle = new GMAuditMetadataLogEntity("serviceName", "userName",
+        "impersonator", "ipAddress", "operation", "eventTime", "operationText", "allowed",
+        "objectType", "component", privilegesMap);
+    String jsonAuditLog = gmamle.toJsonFormatLog();
     ContainerNode rootNode = AuditMetadataLogEntity.parse(jsonAuditLog);
     assertEntryEquals(rootNode, Constants.LOG_FIELD_SERVICE_NAME, "serviceName");
     assertEntryEquals(rootNode, Constants.LOG_FIELD_USER_NAME, "userName");
-    assertEntryEquals(rootNode, Constants.LOG_FIELD_IMPERSONATOR,
-        "impersonator");
+    assertEntryEquals(rootNode, Constants.LOG_FIELD_IMPERSONATOR, "impersonator");
     assertEntryEquals(rootNode, Constants.LOG_FIELD_IP_ADDRESS, "ipAddress");
     assertEntryEquals(rootNode, Constants.LOG_FIELD_OPERATION, "operation");
     assertEntryEquals(rootNode, Constants.LOG_FIELD_EVENT_TIME, "eventTime");
-    assertEntryEquals(rootNode, Constants.LOG_FIELD_OPERATION_TEXT,
-        "operationText");
+    assertEntryEquals(rootNode, Constants.LOG_FIELD_OPERATION_TEXT, "operationText");
     assertEntryEquals(rootNode, Constants.LOG_FIELD_ALLOWED, "allowed");
-    assertEntryEquals(rootNode, Constants.LOG_FIELD_DATABASE_NAME,
-        "databaseName");
-    assertEntryEquals(rootNode, Constants.LOG_FIELD_TABLE_NAME, "tableName");
-    assertEntryEquals(rootNode, Constants.LOG_FIELD_COLUMN_NAME, "columnName");
-    assertEntryEquals(rootNode, Constants.LOG_FIELD_RESOURCE_PATH,
-        "resourcePath");
     assertEntryEquals(rootNode, Constants.LOG_FIELD_OBJECT_TYPE, "objectType");
+    assertEntryEquals(rootNode, Constants.LOG_FIELD_COMPONENT, "component");
+    assertEntryEquals(rootNode, "resourceType1", "resourceName1");
+    assertEntryEquals(rootNode, "resourceType2", "resourceName2");
+    assertEntryEquals(rootNode, "resourceType3", "resourceName3");
+    assertEntryEquals(rootNode, "resourceType4", "resourceName4");
   }
 
   void assertEntryEquals(ContainerNode rootNode, String key, String value) {
