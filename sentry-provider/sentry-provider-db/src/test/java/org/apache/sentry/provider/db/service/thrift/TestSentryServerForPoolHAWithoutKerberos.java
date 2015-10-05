@@ -19,7 +19,9 @@
 package org.apache.sentry.provider.db.service.thrift;
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
+@Ignore
 public class TestSentryServerForPoolHAWithoutKerberos extends TestSentryServerForHaWithoutKerberos {
 
   @BeforeClass
