@@ -19,11 +19,9 @@
 package org.apache.sentry.tests.e2e.metastore;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hive.hcatalog.pig.HCatStorer;
@@ -43,8 +41,9 @@ public class TestMetaStoreWithPigHCat extends
   private PolicyFile policyFile;
   private File dataFile;
   private static final String dbName = "db_1";
+  private static final String tabName1 = "tab1";
+  private static final String tabName2 = "tab2";
   private static final String db_all_role = "all_db1";
-  private static final String uri_role = "uri_role";
 
   @BeforeClass
   public static void beforeClass() {
@@ -64,7 +63,7 @@ public class TestMetaStoreWithPigHCat extends
         .addRolesToGroup(USERGROUP2, "read_db_role")
         .addPermissionsToRole(db_all_role, "server=server1->db=" + dbName)
         .addPermissionsToRole("read_db_role",
-            "server=server1->db=" + dbName + "->table=*->action=SELECT")
+            "server=server1->db=" + dbName + "->table=" + tabName2 + "->action=SELECT")
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
@@ -82,34 +81,33 @@ public class TestMetaStoreWithPigHCat extends
   @Ignore
   @Test
   public void testPartionLoad() throws Exception {
-    String tabName = "tab1";
-    execHiveSQL("CREATE TABLE " + dbName + "." + tabName
-        + " (id int) PARTITIONED BY (part_col STRING)", USER1_1);
+    execHiveSQL("CREATE TABLE " + dbName + "." + tabName1
+        + " (id int) PARTITIONED BY (part_col STRING)", ADMIN1);
+    execHiveSQL("CREATE TABLE " + dbName + "." + tabName2
+        + " (id int) PARTITIONED BY (part_col STRING)", ADMIN1);
 
     // user with ALL on DB should be able to add partion using Pig/HCatStore
     PigServer pigServer = context.getPigServer(USER1_1, ExecType.LOCAL);
     execPigLatin(USER1_1, pigServer, "A = load '" + dataFile.getPath()
         + "' as (id:int);");
-    execPigLatin(USER1_1, pigServer, "store A into '" + dbName + "." + tabName
+    execPigLatin(USER1_1, pigServer, "store A into '" + dbName + "." + tabName1
         + "' using " + HCatStorer.class.getName() + " ('part_col=part1');");
     HiveMetaStoreClient client = context.getMetaStoreClient(ADMIN1);
-    assertEquals(1, client.listPartitionNames(dbName, tabName, (short) 10)
+    assertEquals(1, client.listPartitionNames(dbName, tabName1, (short) 10)
         .size());
-    client.close();
 
-    // user without ALL on DB should NOT be able to add partition with
-    // Pig/HCatStore
+    // user without select on DB should NOT be able to add partition with Pig/HCatStore
     pigServer = context.getPigServer(USER2_1, ExecType.LOCAL);
     execPigLatin(USER2_1, pigServer, "A = load '" + dataFile.getPath()
         + "' as (id:int);");
-    try {
-      execPigLatin(USER2_1, pigServer, "store A into '" + dbName + "." + tabName + "' using "
-          + HCatStorer.class.getName() + " ('part_col=part2');");
-      fail("USER2_1 has no access to the metadata, exception will be thrown.");
-    } catch (IOException e) {
-      // ignore the exception
-    }
-
+    // This action won't be successful because of no permission, but there is no exception will
+    // be thrown in this thread. The detail exception can be found in
+    // sentry-tests/sentry-tests-hive/target/surefire-reports/org.apache.sentry.tests.e2e.metastore.TestMetaStoreWithPigHCat-output.txt.
+    execPigLatin(USER2_1, pigServer, "store A into '" + dbName + "." + tabName2 + "' using "
+        + HCatStorer.class.getName() + " ('part_col=part2');");
+    // The previous action is failed, and there will be no data.
+    assertEquals(0, client.listPartitionNames(dbName, tabName2, (short) 10).size());
+    client.close();
   }
 
 }
