@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +35,7 @@ import org.apache.hadoop.fs.permission.AclEntryType;
 import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
+import org.apache.hadoop.hdfs.server.namenode.AclEntryStatusFormat;
 import org.apache.hadoop.hdfs.server.namenode.AclFeature;
 import org.apache.hadoop.hdfs.server.namenode.AuthorizationProvider;
 import org.apache.hadoop.hdfs.server.namenode.DefaultAuthorizationProvider;
@@ -51,7 +51,7 @@ public class SentryAuthorizationProvider
 
   static class SentryAclFeature extends AclFeature {
     public SentryAclFeature(ImmutableList<AclEntry> entries) {
-      super(entries);
+      super(AclEntryStatusFormat.toInt(entries));
     }
   }
 
@@ -355,8 +355,7 @@ public class SentryAuthorizationProvider
           + ", isStale=" + isStale
           + ", hasAuthzObj=" + hasAuthzObj
           + ", origAuthzAsAcl=" + originalAuthzAsAcl + "]\n"
-          + "[" + (aclMap == null ? "null" : aclMap) + "]\n"
-          + "[" + (f == null ? "null" : f.getEntries()) + "]\n");
+          + "[" + (aclMap == null ? "null" : aclMap) + "]\n");
     }
     return f;
   }
