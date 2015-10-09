@@ -46,7 +46,7 @@ class MetastoreCacheInitializer implements Closeable {
     final Exception failure;
 
     CallResult(Exception ex) {
-      failure = null;
+      failure = ex;
     }
   }
 
@@ -56,16 +56,18 @@ class MetastoreCacheInitializer implements Closeable {
 
     @Override
     public CallResult call() throws Exception {
+      Exception e = null;
       try {
         doTask();
       } catch (Exception ex) {
         // Ignore if object requested does not exists
-        return new CallResult(
-                (ex instanceof NoSuchObjectException) ? null : ex);
+         if (!(ex instanceof NoSuchObjectException) ){
+           e = ex;
+         }
       } finally {
         taskCounter.decrementAndGet();
       }
-      return new CallResult(null);
+      return new CallResult(e);
     }
 
     abstract void doTask() throws Exception;
@@ -225,7 +227,6 @@ class MetastoreCacheInitializer implements Closeable {
             String[]{"/"});
     PathsUpdate tempUpdate = new PathsUpdate(-1, false);
     List<String> allDbStr = hmsHandler.get_all_databases();
-    List<Future<CallResult>> results = new ArrayList<Future<CallResult>>();
     for (String dbName : allDbStr) {
       Callable<CallResult> dbTask = new DbTask(tempUpdate, dbName);
       results.add(threadPool.submit(dbTask));
