@@ -130,4 +130,46 @@ public class TestMetastoreCacheInitializer {
     cacheInitializer.close();
 
   }
+
+  // Make sure exceptions in initializer parallel tasks are propagated well
+  @Test
+  public void testExceptionInTask() throws Exception {
+    //Set up mocks: db1.tb1, with tb1 returning a wrong dbname (db2)
+    Database db1 = Mockito.mock(Database.class);
+    Mockito.when(db1.getName()).thenReturn("db1");
+    Mockito.when(db1.getLocationUri()).thenReturn("hdfs:///db1");
+
+    Table tab1 = Mockito.mock(Table.class);
+    //Return a wrong db name, so that this triggers an exception
+    Mockito.when(tab1.getDbName()).thenReturn("db2");
+    Mockito.when(tab1.getTableName()).thenReturn("tab1");
+
+    IHMSHandler hmsHandler = Mockito.mock(IHMSHandler.class);
+    Mockito.when(hmsHandler.get_all_databases()).thenReturn(Lists
+        .newArrayList("db1"));
+    Mockito.when(hmsHandler.get_database("db1")).thenReturn(db1);
+    Mockito.when(hmsHandler.get_table_objects_by_name("db1",
+        Lists.newArrayList("tab1")))
+        .thenReturn(Lists.newArrayList(tab1));
+    Mockito.when(hmsHandler.get_all_tables("db1")).thenReturn(Lists
+        .newArrayList("tab1"));
+
+    Configuration conf = new Configuration();
+    conf.setInt(ServiceConstants.ServerConfig
+        .SENTRY_HDFS_SYNC_METASTORE_CACHE_MAX_PART_PER_RPC, 1);
+    conf.setInt(ServiceConstants.ServerConfig
+        .SENTRY_HDFS_SYNC_METASTORE_CACHE_MAX_TABLES_PER_RPC, 1);
+    conf.setInt(ServiceConstants.ServerConfig
+        .SENTRY_HDFS_SYNC_METASTORE_CACHE_INIT_THREADS, 1);
+
+    try {
+      MetastoreCacheInitializer cacheInitializer = new
+          MetastoreCacheInitializer(hmsHandler, conf);
+      UpdateableAuthzPaths update = cacheInitializer.createInitialUpdate();
+      Assert.fail("Expected cacheInitializer to fail");
+    } catch (Exception e) {
+      Assert.assertTrue(e instanceof RuntimeException);
+    }
+
+  }
 }
