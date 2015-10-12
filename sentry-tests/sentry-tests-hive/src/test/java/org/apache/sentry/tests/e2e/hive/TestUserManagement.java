@@ -17,10 +17,9 @@
 
 package org.apache.sentry.tests.e2e.hive;
 
-import org.apache.sentry.provider.file.PolicyFile;
-import org.junit.After;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -29,12 +28,16 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 
 import org.apache.hadoop.mapreduce.JobContext;
+import org.apache.hive.service.cli.HiveSQLException;
+import org.apache.sentry.provider.file.PolicyFile;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.io.Resources;
 
 public class TestUserManagement extends AbstractTestWithStaticConfiguration {
+
   private static final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private static final String dbName = "db1";
   private static final String tableName = "t1";
@@ -341,6 +344,45 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
       statement.close();
       connection.close();
     }
+  }
+
+  /**
+   * Tests that users without group information will cause the configuration exception
+   **/
+  @Test
+  public void testGroup9() throws Exception {
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    policyFile.addGroupsToUser("admin1", ADMINGROUP);
+    writePolicyFile(policyFile);
+
+    Connection connection = context.createConnection("admin1");
+    Statement statement = connection.createStatement();
+    statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
+    statement.execute("CREATE DATABASE db1");
+    statement.execute("USE db1");
+    statement.execute("CREATE TABLE t1 (under_col int)");
+    statement.close();
+    connection.close();
+
+    // user1 hasn't any group
+    connection = context.createConnection("user1");
+    statement = context.createStatement(connection);
+    // for any sql need to be authorized, exception will be thrown if the uer hasn't any group
+    // information
+    try {
+      statement.execute("CREATE TABLE db1.t1 (under_col int, value string)");
+      fail("User without group configuration, SentryGroupNotFoundException should be thrown ");
+    } catch (HiveSQLException hse) {
+      assertTrue(hse.getMessage().indexOf("SentryGroupNotFoundException") >= 0);
+    }
+    try {
+      statement.execute("SELECT under_col from db1.t1");
+      fail("User without group configuration, SentryGroupNotFoundException should be thrown ");
+    } catch (HiveSQLException hse) {
+      assertTrue(hse.getMessage().indexOf("SentryGroupNotFoundException") >= 0);
+    }
+    statement.close();
+    connection.close();
   }
 
   @Test

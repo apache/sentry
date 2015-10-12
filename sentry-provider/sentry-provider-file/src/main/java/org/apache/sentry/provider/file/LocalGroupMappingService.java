@@ -18,7 +18,6 @@
 package org.apache.sentry.provider.file;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -28,6 +27,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.sentry.provider.common.GroupMappingService;
+import org.apache.sentry.provider.common.SentryGroupNotFoundException;
 import org.apache.shiro.config.Ini;
 import org.apache.shiro.config.Ini.Section;
 import org.slf4j.Logger;
@@ -83,11 +83,11 @@ public class LocalGroupMappingService implements GroupMappingService {
 
   @Override
   public Set<String> getGroups(String user) {
-    if (groupMap.containsKey(user)) {
-      return groupMap.get(user);
-    } else {
-      return Collections.emptySet();
+    Set<String> groups = groupMap.get(user);
+    if (groups == null || groups.isEmpty()) {
+      throw new SentryGroupNotFoundException("Unable to obtain groups for " + user);
     }
+    return groups;
   }
 
   private void parseGroups(FileSystem fileSystem, Path resourcePath) throws IOException {

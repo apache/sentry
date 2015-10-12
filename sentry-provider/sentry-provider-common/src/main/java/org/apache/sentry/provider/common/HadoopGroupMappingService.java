@@ -17,8 +17,8 @@
 package org.apache.sentry.provider.common;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
@@ -26,6 +26,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.Groups;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Lists;
 
 public class HadoopGroupMappingService implements GroupMappingService {
 
@@ -56,11 +58,15 @@ public class HadoopGroupMappingService implements GroupMappingService {
 
   @Override
   public Set<String> getGroups(String user) {
+    List<String> groupList = Lists.newArrayList();
     try {
-      return new HashSet<String>(groups.getGroups(user));
+      groupList = groups.getGroups(user);
     } catch (IOException e) {
-      LOGGER.warn("Unable to obtain groups for " + user, e);
+      throw new SentryGroupNotFoundException("Unable to obtain groups for " + user, e);
     }
-    return Collections.emptySet();
+    if (groupList == null || groupList.isEmpty()) {
+      throw new SentryGroupNotFoundException("Unable to obtain groups for " + user);
+    }
+    return new HashSet<String>(groupList);
   }
 }
