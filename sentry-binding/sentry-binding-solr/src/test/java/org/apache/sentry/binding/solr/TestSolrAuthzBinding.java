@@ -40,7 +40,6 @@ import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.search.Collection;
 import org.apache.sentry.core.model.search.Config;
 import org.apache.sentry.core.model.search.SearchModelAction;
-import org.apache.sentry.provider.common.SentryGroupNotFoundException;
 import org.apache.sentry.provider.file.PolicyFiles;
 import org.junit.After;
 import org.junit.Before;
@@ -183,38 +182,14 @@ public class TestSolrAuthzBinding {
     Set<String> emptyList = Collections.emptySet();
 
     // check non-existant users
-    try {
-      binding.getGroups(null);
-      Assert.fail("Expected SentryGroupNotFoundException");
-    } catch (SentryGroupNotFoundException e) {
-    }
-    try {
-      binding.getGroups("nonExistantUser");
-      Assert.fail("Expected SentryGroupNotFoundException");
-    } catch (SentryGroupNotFoundException e) {
-    }
+    assertEquals(binding.getGroups(null), emptyList);
+    assertEquals(binding.getGroups("nonExistantUser"), emptyList);
 
     // check group names don't map to user names
-    try {
-      binding.getGroups("corporal");
-      Assert.fail("Expected SentryGroupNotFoundException");
-    } catch (SentryGroupNotFoundException e) {
-    }
-    try {
-      binding.getGroups("sergeant");
-      Assert.fail("Expected SentryGroupNotFoundException");
-    } catch (SentryGroupNotFoundException e) {
-    }
-    try {
-      binding.getGroups("general");
-      Assert.fail("Expected SentryGroupNotFoundException");
-    } catch (SentryGroupNotFoundException e) {
-    }
-    try {
-      binding.getGroups("othergeneralgroup");
-      Assert.fail("Expected SentryGroupNotFoundException");
-    } catch (SentryGroupNotFoundException e) {
-    }
+    assertEquals(binding.getGroups("corporal"), emptyList);
+    assertEquals(binding.getGroups("sergeant"), emptyList);
+    assertEquals(binding.getGroups("general"), emptyList);
+    assertEquals(binding.getGroups("othergeneralgroup"), emptyList);
 
     // check valid group names
     assertEquals(binding.getGroups("corporal1"), Sets.newHashSet("corporal"));
@@ -233,27 +208,19 @@ public class TestSolrAuthzBinding {
     SolrAuthzBinding binding = new SolrAuthzBinding(solrAuthzConf);
     Set<String> emptySet = Collections.emptySet();
 
+    // check non-existant users
+    assertEquals(binding.getRoles(null), emptySet);
+    assertEquals(binding.getRoles("nonExistantUser"), emptySet);
+
     // check user with undefined group
     assertEquals(binding.getRoles("undefinedGroupUser"), emptySet);
     // check group with undefined role
     assertEquals(binding.getRoles("undefinedRoleUser"), emptySet);
 
     // check role names don't map in the other direction
-    try {
-      binding.getRoles("corporal_role");
-      Assert.fail("Expected SentryGroupNotFoundException");
-    } catch (SentryGroupNotFoundException e) {
-    }
-    try {
-      binding.getRoles("sergeant_role");
-      Assert.fail("Expected SentryGroupNotFoundException");
-    } catch (SentryGroupNotFoundException e) {
-    }
-    try {
-      binding.getRoles("general_role");
-      Assert.fail("Expected SentryGroupNotFoundException");
-    } catch (SentryGroupNotFoundException e) {
-    }
+    assertEquals(binding.getRoles("corporal_role"), emptySet);
+    assertEquals(binding.getRoles("sergeant_role"), emptySet);
+    assertEquals(binding.getRoles("general_role"), emptySet);
 
     // check valid users
     assertEquals(binding.getRoles("corporal1"), Sets.newHashSet("corporal_role"));
@@ -303,11 +270,7 @@ public class TestSolrAuthzBinding {
        new SolrAuthzConf(Resources.getResource("sentry-site.xml"));
      setUsableAuthzConf(solrAuthzConf);
      SolrAuthzBinding binding = new SolrAuthzBinding(solrAuthzConf);
-    try {
-      binding.authorizeCollection(new Subject("bogus"), infoCollection, querySet);
-      Assert.fail("Expected SentryGroupNotFoundException");
-    } catch (SentryGroupNotFoundException e) {
-    }
+     expectAuthExceptionCollection(binding, new Subject("bogus"), infoCollection, querySet);
      expectAuthExceptionConfig(binding, new Subject("bogus"), infoConfigQ);
   }
 

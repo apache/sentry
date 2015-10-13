@@ -64,9 +64,7 @@ public class TestAuthorizingObjectStore extends
   @Before
   public void setup() throws Exception {
     policyFile = setAdminOnServer1(ADMINGROUP);
-    // add user ACCESSAllMETAUSER for the test case testPrivilegesForUserNameCaseSensitive
-    policyFile.addGroupsToUser(userWithoutAccess.toUpperCase(), "tempGroup").setUserGroupMapping(
-        StaticUserGroup.getStaticMapping());
+    policyFile.setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
     super.setup();
 
@@ -99,21 +97,31 @@ public class TestAuthorizingObjectStore extends
     client.close();
 
     policyFile
-        .addRolesToGroup(USERGROUP1, all_role)
-        .addRolesToGroup(USERGROUP2, db1_t1_role)
-        .addPermissionsToRole(all_role, "server=server1->db=" + dbName1)
-        .addPermissionsToRole(all_role, "server=server1->db=" + dbName2)
-        .addPermissionsToRole(all_role,
-            "server=server1->db=" + dbName1 + "->table=" + tabName1 + "->action=SELECT")
-        .addPermissionsToRole(all_role,
-            "server=server1->db=" + dbName1 + "->table=" + tabName2 + "->action=SELECT")
-        .addPermissionsToRole(all_role,
-            "server=server1->db=" + dbName2 + "->table=" + tabName3 + "->action=SELECT")
-        .addPermissionsToRole(all_role,
-            "server=server1->db=" + dbName2 + "->table=" + tabName4 + "->action=SELECT")
-        .addPermissionsToRole(db1_t1_role,
-            "server=server1->db=" + dbName1 + "->table=" + tabName1 + "->action=SELECT")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+            .addRolesToGroup(USERGROUP1, all_role)
+            .addRolesToGroup(USERGROUP2, db1_t1_role)
+            .addPermissionsToRole(all_role, "server=server1->db=" + dbName1)
+            .addPermissionsToRole(all_role, "server=server1->db=" + dbName2)
+            .addPermissionsToRole(
+                    all_role,
+                    "server=server1->db=" + dbName1 + "->table=" + tabName1
+                            + "->action=SELECT")
+            .addPermissionsToRole(
+                    all_role,
+                    "server=server1->db=" + dbName1 + "->table=" + tabName2
+                            + "->action=SELECT")
+            .addPermissionsToRole(
+                    all_role,
+                    "server=server1->db=" + dbName2 + "->table=" + tabName3
+                            + "->action=SELECT")
+            .addPermissionsToRole(
+                    all_role,
+                    "server=server1->db=" + dbName2 + "->table=" + tabName4
+                            + "->action=SELECT")
+            .addPermissionsToRole(
+                    db1_t1_role,
+                    "server=server1->db=" + dbName1 + "->table=" + tabName1
+                            + "->action=SELECT")
+            .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
   }
 

@@ -23,7 +23,6 @@ import java.util.Set;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.sentry.core.model.search.SearchModelAction;
-import org.apache.sentry.provider.common.SentryGroupNotFoundException;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -90,17 +89,6 @@ public class SentryIndexAuthorizationSingletonTest extends SentryTestBase {
     }
   }
 
-  private void doExpectExceptionWithoutGroup(SentryIndexAuthorizationSingleton singleton,
-      SolrQueryRequest request, Set<SearchModelAction> actions)
-      throws Exception {
-    try {
-      singleton.authorizeCollectionAction(request, actions, OPERATION_NAME);
-      Assert.fail("Expected SentryGroupNotFoundException");
-    } catch (SentryGroupNotFoundException ex) {
-      // excepted exception, do nothing
-    }
-  }
-
   @Test
   public void testNoBinding() throws Exception {
     // Use reflection to construct a non-singleton version of SentryIndexAuthorizationSingleton
@@ -134,7 +122,8 @@ public class SentryIndexAuthorizationSingletonTest extends SentryTestBase {
   public void testNullUserName() throws Exception {
     SolrQueryRequest request = getRequest();
     prepareCollAndUser(core, request, "collection1", null);
-    doExpectExceptionWithoutGroup(sentryInstance, request, EnumSet.of(SearchModelAction.ALL));
+    doExpectUnauthorized(request, EnumSet.of(SearchModelAction.ALL),
+      "User null does not have privileges for collection1");
   }
 
   @Test
@@ -142,7 +131,8 @@ public class SentryIndexAuthorizationSingletonTest extends SentryTestBase {
     System.setProperty("solr.authorization.superuser", "");
     SolrQueryRequest request = getRequest();
     prepareCollAndUser(core, request, "collection1", "solr");
-    doExpectExceptionWithoutGroup(sentryInstance, request, EnumSet.of(SearchModelAction.ALL));
+    doExpectUnauthorized(request, EnumSet.of(SearchModelAction.ALL),
+      "User solr does not have privileges for collection1");
   }
 
   /**
@@ -222,21 +212,15 @@ public class SentryIndexAuthorizationSingletonTest extends SentryTestBase {
     Collection<String> emptyCollection = ImmutableSet.<String>of();
 
     // null user
-    try {
-      sentryInstance.getRoles(null);
-      Assert.fail("Excepted SentryGroupNotFoundException");
-    } catch (SentryGroupNotFoundException e) {
-    }
+    Collection<String> roles = sentryInstance.getRoles(null);
+    assertTrue(CollectionUtils.isEqualCollection(emptyCollection, roles));
 
     // no group
-    try {
-      sentryInstance.getRoles("withoutGroupUser");
-      Assert.fail("Excepted SentryGroupNotFoundException");
-    } catch (SentryGroupNotFoundException e) {
-    }
+    roles = sentryInstance.getRoles("bogusUser");
+    assertTrue(CollectionUtils.isEqualCollection(emptyCollection, roles));
 
     // no role
-    Collection<String> roles = sentryInstance.getRoles("undefinedRoleUser");
+    roles = sentryInstance.getRoles("undefinedRoleUser");
     assertTrue(CollectionUtils.isEqualCollection(emptyCollection, roles));
 
     // single member

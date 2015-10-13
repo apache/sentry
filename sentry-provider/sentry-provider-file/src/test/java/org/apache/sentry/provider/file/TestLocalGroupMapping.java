@@ -23,7 +23,6 @@ import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.fs.Path;
-import org.apache.sentry.provider.common.SentryGroupNotFoundException;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -64,10 +63,7 @@ public class TestLocalGroupMapping {
     Set<String> barGroupsFromResource = localGroupMapping.getGroups("bar");
     Assert.assertEquals(barGroupsFromResource, barGroups);
 
-    try {
-      localGroupMapping.getGroups("unknown");
-      Assert.fail("SentryGroupNotFoundException should be thrown.");
-    } catch (SentryGroupNotFoundException sgnfe) {
-    }
+    Set<String> unknownGroupsFromResource = localGroupMapping.getGroups("unknown");
+    Assert.assertTrue("List not empty " + unknownGroupsFromResource, unknownGroupsFromResource.isEmpty());
   }
 }
