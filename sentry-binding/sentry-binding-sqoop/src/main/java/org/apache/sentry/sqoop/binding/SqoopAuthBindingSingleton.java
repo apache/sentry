@@ -83,10 +83,13 @@ public class SqoopAuthBindingSingleton {
   }
 
   public static SqoopAuthBindingSingleton getInstance() {
-    if (instance != null) {
-      return instance;
+    if (instance == null) {
+      synchronized (SqoopAuthBindingSingleton.class) {
+        if (instance == null) {
+          instance = new SqoopAuthBindingSingleton();
+        }
+      }
     }
-    instance = new SqoopAuthBindingSingleton();
     return instance;
   }
 
