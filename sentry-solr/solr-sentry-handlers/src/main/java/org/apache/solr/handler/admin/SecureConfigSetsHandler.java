@@ -43,6 +43,7 @@ public class SecureConfigSetsHandler extends ConfigSetsHandler {
     ConfigSetAction action = null;
     String a = params.get(CoreAdminParams.ACTION);
     String config = null;
+    boolean checkConfig = true;
     if (a != null) {
       action = ConfigSetAction.get(a);
     }
@@ -54,14 +55,16 @@ public class SecureConfigSetsHandler extends ConfigSetsHandler {
           config = req.getParams().required().get(NAME);
           break;
         }
+        case LIST:
+          checkConfig = false;
+          break;
         default: {
-          config = null;
           break;
         }
       }
     }
     SecureRequestHandlerUtil.checkSentryAdminConfig(req,
-        (action != null ? "ConfigAction." + action.toString() : getClass().getName() + "/" + a), true, config);
+        (action != null ? "ConfigAction." + action.toString() : getClass().getName() + "/" + a), true, checkConfig, config);
     super.handleRequestBody(req, rsp);
 
     /**

@@ -17,6 +17,8 @@
 package org.apache.solr.handler.admin;
 
 import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.Set;
 
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -32,6 +34,8 @@ import org.junit.Test;
 public class SecureConfigSetsHandlerTest extends SentryTestBase {
 
   private static SolrCore core;
+  // Set of actions without an associated config
+  private static Set<ConfigSetAction> actionsWithoutConfigs = EnumSet.of(ConfigSetAction.LIST);
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -74,7 +78,7 @@ public class SecureConfigSetsHandlerTest extends SentryTestBase {
       configSet = hasAdminCollectionPrivs ? "nonAdminConfig" : "adminConfig";
     }
 
-    if (hasAdminCollectionPrivs && hasConfigSetPrivs) {
+    if (hasAdminCollectionPrivs && (hasConfigSetPrivs || actionsWithoutConfigs.contains(action))) {
       verifyAuthorized(handler, getConfigSetsRequest(configSet, user, action));
     } else {
       verifyUnauthorized(handler, getConfigSetsRequest(configSet, user, action), configSet, user, !hasAdminCollectionPrivs);
@@ -90,7 +94,9 @@ public class SecureConfigSetsHandlerTest extends SentryTestBase {
     }
 
     // bogusConfigSet
-    verifyUnauthorized(handler, getConfigSetsRequest("bogusConfigSet", "junit", action), "bogusConfigSet", "junit");
+    if (!actionsWithoutConfigs.contains(action)) {
+      verifyUnauthorized(handler, getConfigSetsRequest("bogusConfigSet", "junit", action), "bogusConfigSet", "junit");
+    }
   }
 
   @Test

@@ -185,10 +185,12 @@ public class SentryIndexAuthorizationSingleton {
    * @param config the Configuration to check
    */
   public void authorizeConfigAdminAction(SolrQueryRequest req,
-      String operation, String config)
+      String operation, boolean checkConfig, String config)
       throws SolrException {
     authorizeCollectionAction(req, EnumSet.of(SearchModelAction.UPDATE), operation, "admin", true);
-    authorizeConfigAction(req, operation, config);
+    if (checkConfig) {
+      authorizeConfigAction(req, operation, config);
+    }
   }
 
   /**

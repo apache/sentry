@@ -83,12 +83,12 @@ public class SecureRequestHandlerUtil {
     }
   }
 
-  public static void checkSentryAdminConfig(SolrQueryRequest req, String operation, boolean admin, String config) {
+  public static void checkSentryAdminConfig(SolrQueryRequest req, String operation, boolean admin, boolean checkConfig, String config) {
     final SentryIndexAuthorizationSingleton sentryInstance =
       (testOverride == null)?SentryIndexAuthorizationSingleton.getInstance():testOverride;
 
     if (admin) {
-      sentryInstance.authorizeConfigAdminAction(req, operation, config);
+      sentryInstance.authorizeConfigAdminAction(req, operation, checkConfig, config);
     } else {
       sentryInstance.authorizeConfigAction(req, operation, config);
     }
