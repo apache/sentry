@@ -30,6 +30,12 @@ import org.junit.Test;
 
 import com.google.common.collect.Lists;
 
+import java.io.IOException;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+
 public class TestHMSPathsFullDump {
   
   private static boolean useCompact = true;
@@ -76,6 +82,59 @@ public class TestHMSPathsFullDump {
 
   @Test
   public void testThrftSerialization() throws TException {
+    HMSPathsDumper serDe = genHMSPathsDumper();
+    long t1 = System.currentTimeMillis();
+    TPathsDump pathsDump = serDe.createPathsDump();
+    
+    TProtocolFactory protoFactory = useCompact ? new TCompactProtocol.Factory(
+        ServiceConstants.ClientConfig.SENTRY_HDFS_THRIFT_MAX_MESSAGE_SIZE_DEFAULT,
+        ServiceConstants.ClientConfig.SENTRY_HDFS_THRIFT_MAX_MESSAGE_SIZE_DEFAULT)
+        : new TBinaryProtocol.Factory(true, true,
+        ServiceConstants.ClientConfig.SENTRY_HDFS_THRIFT_MAX_MESSAGE_SIZE_DEFAULT,
+        ServiceConstants.ClientConfig.SENTRY_HDFS_THRIFT_MAX_MESSAGE_SIZE_DEFAULT);
+    byte[] ser = new TSerializer(protoFactory).serialize(pathsDump);
+    long serTime = System.currentTimeMillis() - t1;
+    System.out.println("Serialization Time: " + serTime + ", " + ser.length);
+
+    t1 = System.currentTimeMillis();
+    TPathsDump tPathsDump = new TPathsDump();
+    new TDeserializer(protoFactory).deserialize(tPathsDump, ser);
+    HMSPaths fromDump = serDe.initializeFromDump(tPathsDump);
+    System.out.println("Deserialization Time: " + (System.currentTimeMillis() - t1));
+    Assert.assertEquals("db9.tbl999", fromDump.findAuthzObject(new String[]{"user", "hive", "warehouse", "db9", "tbl999"}, false));
+    Assert.assertEquals("db9.tbl999", fromDump.findAuthzObject(new String[]{"user", "hive", "warehouse", "db9", "tbl999", "part99"}, false));
+  }
+
+  /**
+   * Test ThriftSerializer with a larger message than thrift max message size.
+   */
+  @Test
+  public void testThriftSerializerWithInvalidMsgSize() throws TException, IOException {
+    HMSPathsDumper serDe = genHMSPathsDumper();
+    TPathsDump pathsDump = serDe.createPathsDump();
+    byte[] ser =ThriftSerializer.serialize(pathsDump);
+
+    boolean exceptionThrown = false;
+    try {
+      // deserialize a msg with a larger size should throw IO exception
+      ThriftSerializer.maxMessageSize = 1024;
+      ThriftSerializer.deserialize(new TPathsDump(), ser);
+    } catch (IOException e) {
+      exceptionThrown = true;
+      Assert.assertTrue(e.getCause().getMessage().contains("Length exceeded max allowed:"));
+      Assert.assertTrue(e.getMessage().contains("Error deserializing thrift object TPathsDump"));
+    } finally {
+      Assert.assertEquals(true, exceptionThrown);
+    }
+    // deserialize a normal msg should succeed
+    ThriftSerializer.maxMessageSize = ServiceConstants.ClientConfig.SENTRY_HDFS_THRIFT_MAX_MESSAGE_SIZE_DEFAULT;
+    ThriftSerializer.deserialize(new TPathsDump(), ser);
+  }
+
+  /**
+   * Generate HMSPathsDumper for ThrftSerialization tests
+   */
+  private HMSPathsDumper genHMSPathsDumper() {
     HMSPaths hmsPaths = new HMSPaths(new String[] {"/"});
     String prefix = "/user/hive/warehouse/";
     for (int dbNum = 0; dbNum < 10; dbNum++) {
@@ -94,22 +153,7 @@ public class TestHMSPathsFullDump {
         }
       }
     }
-    HMSPathsDumper serDe = hmsPaths.getPathsDump();
-    long t1 = System.currentTimeMillis();
-    TPathsDump pathsDump = serDe.createPathsDump();
-    
-    TProtocolFactory protoFactory = useCompact ? new TCompactProtocol.Factory() : new TBinaryProtocol.Factory(); 
-    byte[] ser = new TSerializer(protoFactory).serialize(pathsDump);
-    long serTime = System.currentTimeMillis() - t1;
-    System.out.println("Serialization Time: " + serTime + ", " + ser.length);
-
-    t1 = System.currentTimeMillis();
-    TPathsDump tPathsDump = new TPathsDump();
-    new TDeserializer(protoFactory).deserialize(tPathsDump, ser);
-    HMSPaths fromDump = serDe.initializeFromDump(tPathsDump);
-    System.out.println("Deserialization Time: " + (System.currentTimeMillis() - t1));
-    Assert.assertEquals("db9.tbl999", fromDump.findAuthzObject(new String[]{"user", "hive", "warehouse", "db9", "tbl999"}, false));
-    Assert.assertEquals("db9.tbl999", fromDump.findAuthzObject(new String[]{"user", "hive", "warehouse", "db9", "tbl999", "part99"}, false));
+    return hmsPaths.getPathsDump();
   }
 
 }
