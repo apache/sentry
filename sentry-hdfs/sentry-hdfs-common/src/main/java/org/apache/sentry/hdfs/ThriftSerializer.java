@@ -19,18 +19,24 @@ package org.apache.sentry.hdfs;
 
 import java.io.IOException;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TDeserializer;
 import org.apache.thrift.TException;
 import org.apache.thrift.TSerializer;
-import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TCompactProtocol;
 
 public class ThriftSerializer {
 
+  // Use default max thrift message size here.
+  // TODO: Figure out a way to make maxMessageSize configurable, eg. create a serializer singleton at startup by
+  // passing a max_size parameter
+  @VisibleForTesting
+  static long maxMessageSize = ServiceConstants.ClientConfig.SENTRY_HDFS_THRIFT_MAX_MESSAGE_SIZE_DEFAULT;
+
   @SuppressWarnings("rawtypes")
   public static byte[] serialize(TBase baseObject) throws IOException {
-    TSerializer serializer = new TSerializer(new TCompactProtocol.Factory());
+    TSerializer serializer = new TSerializer(new TCompactProtocol.Factory(maxMessageSize, maxMessageSize));
     try {
       return serializer.serialize(baseObject);
     } catch (TException e) {
@@ -40,10 +46,8 @@ public class ThriftSerializer {
   }
 
   @SuppressWarnings("rawtypes")
-  public static TBase deserialize(TBase baseObject, byte[] serialized)
-      throws IOException {
-    TDeserializer deserializer = new TDeserializer(
-        new TCompactProtocol.Factory());
+  public static TBase deserialize(TBase baseObject, byte[] serialized) throws IOException {
+    TDeserializer deserializer = new TDeserializer(new TCompactProtocol.Factory(maxMessageSize, maxMessageSize));
     try {
       deserializer.deserialize(baseObject, serialized);
     } catch (TException e) {

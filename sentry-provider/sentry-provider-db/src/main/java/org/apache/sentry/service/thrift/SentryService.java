@@ -91,6 +91,7 @@ public class SentryService implements Callable {
   private Status status;
   private int webServerPort;
   private SentryWebServer sentryWebServer;
+  private long maxMessageSize;
 
   public SentryService(Configuration conf) {
     this.conf = conf;
@@ -110,6 +111,8 @@ public class SentryService implements Callable {
         ServerConfig.RPC_MAX_THREADS_DEFAULT);
     minThreads = conf.getInt(ServerConfig.RPC_MIN_THREADS,
         ServerConfig.RPC_MIN_THREADS_DEFAULT);
+    maxMessageSize = conf.getLong(ServerConfig.SENTRY_POLICY_SERVER_THRIFT_MAX_MESSAGE_SIZE,
+        ServerConfig.SENTRY_POLICY_SERVER_THRIFT_MAX_MESSAGE_SIZE_DEFAULT);
     if (kerberos) {
       // Use Hadoop libraries to translate the _HOST placeholder with actual hostname
       try {
@@ -222,7 +225,7 @@ public class SentryService implements Callable {
     TThreadPoolServer.Args args = new TThreadPoolServer.Args(
         serverTransport).processor(processor)
         .transportFactory(transportFactory)
-        .protocolFactory(new TBinaryProtocol.Factory())
+        .protocolFactory(new TBinaryProtocol.Factory(true, true, maxMessageSize, maxMessageSize))
         .minWorkerThreads(minThreads).maxWorkerThreads(maxThreads);
     thriftServer = new TThreadPoolServer(args);
     LOGGER.info("Serving on " + address);
