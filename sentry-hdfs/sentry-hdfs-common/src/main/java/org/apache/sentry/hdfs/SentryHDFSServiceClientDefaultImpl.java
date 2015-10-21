@@ -154,11 +154,13 @@ public class SentryHDFSServiceClientDefaultImpl implements SentryHDFSServiceClie
     }
     LOGGER.info("Successfully opened transport: " + transport + " to " + serverAddress);
     TProtocol tProtocol = null;
+    long maxMessageSize = conf.getLong(ServiceConstants.ClientConfig.SENTRY_HDFS_THRIFT_MAX_MESSAGE_SIZE,
+        ServiceConstants.ClientConfig.SENTRY_HDFS_THRIFT_MAX_MESSAGE_SIZE_DEFAULT);
     if (conf.getBoolean(ClientConfig.USE_COMPACT_TRANSPORT,
         ClientConfig.USE_COMPACT_TRANSPORT_DEFAULT)) {
-      tProtocol = new TCompactProtocol(transport);
+      tProtocol = new TCompactProtocol(transport, maxMessageSize, maxMessageSize);
     } else {
-      tProtocol = new TBinaryProtocol(transport);
+      tProtocol = new TBinaryProtocol(transport, maxMessageSize, maxMessageSize, true, true);
     }
     TMultiplexedProtocol protocol = new TMultiplexedProtocol(
       tProtocol, SentryHDFSServiceClient.SENTRY_HDFS_SERVICE_NAME);

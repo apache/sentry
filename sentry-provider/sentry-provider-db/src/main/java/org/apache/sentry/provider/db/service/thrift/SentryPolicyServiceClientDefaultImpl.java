@@ -42,6 +42,7 @@ import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
 import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.apache.sentry.service.thrift.ServiceConstants.ThriftConstants;
+import org.apache.sentry.service.thrift.ServiceConstants;
 import org.apache.sentry.service.thrift.Status;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
@@ -163,9 +164,11 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
       throw new IOException("Transport exception while opening transport: " + e.getMessage(), e);
     }
     LOGGER.debug("Successfully opened transport: " + transport + " to " + serverAddress);
+    long maxMessageSize = conf.getLong(ServiceConstants.ClientConfig.SENTRY_POLICY_CLIENT_THRIFT_MAX_MESSAGE_SIZE,
+        ServiceConstants.ClientConfig.SENTRY_POLICY_CLIENT_THRIFT_MAX_MESSAGE_SIZE_DEFAULT);
     TMultiplexedProtocol protocol = new TMultiplexedProtocol(
-      new TBinaryProtocol(transport),
-      SentryPolicyStoreProcessor.SENTRY_POLICY_SERVICE_NAME);
+        new TBinaryProtocol(transport, maxMessageSize, maxMessageSize, true, true),
+        SentryPolicyStoreProcessor.SENTRY_POLICY_SERVICE_NAME);
     client = new SentryPolicyService.Client(protocol);
     LOGGER.debug("Successfully created client");
   }
