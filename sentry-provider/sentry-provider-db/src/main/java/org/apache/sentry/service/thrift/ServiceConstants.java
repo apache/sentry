@@ -154,7 +154,7 @@ public class ServiceConstants {
     public static final String SENTRY_WEB_ENABLE = "sentry.service.web.enable";
     public static final Boolean SENTRY_WEB_ENABLE_DEFAULT = false;
     public static final String SENTRY_WEB_PORT = "sentry.service.web.port";
-    public static final int SENTRY_WEB_PORT_DEFAULT = 51000;
+    public static final int SENTRY_WEB_PORT_DEFAULT = 29000;
     public static final String SENTRY_REPORTER = "sentry.service.reporter";
     public static final String SENTRY_REPORTER_JMX = SentryMetrics.Reporting.JMX.name(); //case insensitive
     public static final String SENTRY_REPORTER_CONSOLE = SentryMetrics.Reporting.CONSOLE.name();//case insensitive
