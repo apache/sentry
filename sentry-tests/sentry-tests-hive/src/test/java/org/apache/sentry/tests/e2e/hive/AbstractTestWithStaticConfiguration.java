@@ -461,7 +461,7 @@ public abstract class AbstractTestWithStaticConfiguration {
     if (clearDbPerTest) {
       LOGGER.info("After per test run clean up");
       clearAll(true);
-    }
+     }
   }
 
   protected static void clearAll(boolean clearDb) throws Exception {
@@ -479,14 +479,18 @@ public abstract class AbstractTestWithStaticConfiguration {
       }
       for (String db : dbs) {
         if(!db.equalsIgnoreCase("default")) {
-          statement.execute("DROP DATABASE if exists " + db + " CASCADE");
+          String sql = "DROP DATABASE if exists " + db + " CASCADE";
+          LOGGER.info("Running [" + sql + "]");
+          statement.execute(sql);
         }
       }
       statement.execute("USE default");
       resultSet = statement.executeQuery("SHOW tables");
       while (resultSet.next()) {
         Statement statement2 = context.createStatement(connection);
-        statement2.execute("DROP table " + resultSet.getString(1));
+        String sql = "DROP table " + resultSet.getString(1);
+        LOGGER.info("Running [" + sql + "]");
+        statement2.execute(sql);
         statement2.close();
       }
     }
@@ -502,7 +506,9 @@ public abstract class AbstractTestWithStaticConfiguration {
         }
       }
       for (String role : roles) {
-        statement.execute("DROP Role " + role);
+        String sql = "DROP Role " + role;
+        LOGGER.info("Running [" + sql + "]");
+        statement.execute(sql);
       }
     }
     statement.close();
@@ -585,6 +591,41 @@ public abstract class AbstractTestWithStaticConfiguration {
       assertTrue("returned " + obj + " not found in the expected list: " + expected.toString(),
               expected.contains(obj));
     }
+  }
+
+  /**
+   * A convenient function to run a sequence of sql commands
+   * @param user
+   * @param sqls
+   * @throws Exception
+   */
+  protected void execBatch(String user, List<String> sqls) throws Exception {
+    Connection conn = context.createConnection(user);
+    Statement stmt = context.createStatement(conn);
+    for (String sql : sqls) {
+      exec(stmt, sql);
+    }
+    if (stmt != null) {
+      stmt.close();
+    }
+    if (conn != null) {
+      conn.close();
+    }
+  }
+
+  /**
+   * A convenient funciton to run one sql with log
+   * @param stmt
+   * @param sql
+   * @throws Exception
+   */
+  protected void exec(Statement stmt, String sql) throws Exception {
+    if (stmt == null) {
+      LOGGER.error("Statement is null");
+      return;
+    }
+    LOGGER.info("Running [" + sql + "]");
+    stmt.execute(sql);
   }
 
 }
