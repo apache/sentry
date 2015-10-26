@@ -272,22 +272,23 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
     statement.execute("CREATE DATABASE " + DB1);
     statement.execute("USE " + DB1);
     createTabs(statement, DB1, tableNames);
+
+    policyFile
+        .addRolesToGroup(USERGROUP1, "tab1_priv,tab2_priv,tab3_priv")
+        .addPermissionsToRole("tab1_priv", "server=server1->db=" + DB1 + "->table="
+            + tableNames[0] + "->action=select")
+        .addPermissionsToRole("tab2_priv", "server=server1->db=" + DB1 + "->table="
+            + tableNames[1] + "->action=insert")
+        .addPermissionsToRole("tab3_priv", "server=server1->db=" + DB1 + "->table="
+            + tableNames[2] + "->action=select")
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
+
     // Admin should see all tables except table_5, the one does not match the pattern
     ResultSet rs = statement.executeQuery("SHOW TABLE EXTENDED IN " + DB1 + " LIKE 'tb*'");
     tableNamesValidation.addAll(Arrays.asList(tableNames).subList(0, 4));
     validateTablesInRs(rs, DB1, tableNamesValidation);
     statement.close();
-
-    policyFile
-            .addRolesToGroup(USERGROUP1, "tab1_priv,tab2_priv,tab3_priv")
-            .addPermissionsToRole("tab1_priv", "server=server1->db=" + DB1 + "->table="
-                    + tableNames[0] + "->action=select")
-            .addPermissionsToRole("tab2_priv", "server=server1->db=" + DB1 + "->table="
-                    + tableNames[1] + "->action=insert")
-            .addPermissionsToRole("tab3_priv", "server=server1->db=" + DB1 + "->table="
-                    + tableNames[2] + "->action=select")
-            .setUserGroupMapping(StaticUserGroup.getStaticMapping());
-    writePolicyFile(policyFile);
 
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
