@@ -84,6 +84,9 @@ public class TestDbDDLAuditLog extends AbstractTestWithStaticConfiguration {
     fieldValueMap.put(Constants.LOG_FIELD_IP_ADDRESS, null);
     assertAuditLog(fieldValueMap);
 
+    statement.execute("create database " + dbName);
+    statement.execute("use " + dbName);
+    statement.execute("CREATE TABLE " + tableName + " (c1 string)");
     statement.execute("GRANT ALL ON DATABASE " + dbName + " TO ROLE " + roleName);
     fieldValueMap.clear();
     fieldValueMap.put(Constants.LOG_FIELD_OPERATION, Constants.OPERATION_GRANT_PRIVILEGE);
