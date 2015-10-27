@@ -1225,6 +1225,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
 
+    statement.execute("CREATE TABLE IF NOT EXISTS tab1(c1 string)");
     //Drop a role which does not exist
     context.assertSentryException(statement, "DROP ROLE role1",
         SentryNoSuchObjectException.class.getSimpleName());
@@ -1474,6 +1475,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     ResultSet resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
     assertResultSize(resultSet, 0);
     statement.execute("CREATE ROLE role2");
+    statement.execute("CREATE TABLE IF NOT EXISTS t1(c1 string, c2 int)");
     statement.execute("GRANT SELECT ON TABLE t1 TO ROLE role1");
     statement.execute("GRANT ROLE role1 to GROUP " + USERGROUP1);
 
@@ -1532,6 +1534,10 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("CREATE ROLE role1");
+    statement.execute("CREATE TABLE IF NOT EXISTS t1(c1 string, c2 int)");
+    statement.execute("CREATE TABLE IF NOT EXISTS t2(c1 string, c2 int)");
+    statement.execute("CREATE TABLE IF NOT EXISTS t3(c1 string, c2 int)");
+    statement.execute("CREATE TABLE IF NOT EXISTS t4(c1 string, c2 int)");
     statement.execute("GRANT SELECT (c1) ON TABLE t1 TO ROLE role1");
     statement.execute("GRANT SELECT (c2) ON TABLE t2 TO ROLE role1");
     statement.execute("GRANT SELECT (c1,c2) ON TABLE t3 TO ROLE role1");
@@ -1667,6 +1673,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("CREATE ROLE role1");
+    statement.execute("CREATE TABLE IF NOT EXISTS t1(c1 string)");
     statement.execute("GRANT SELECT ON TABLE t1 TO ROLE role1");
 
     //On table - positive
