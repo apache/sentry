@@ -104,21 +104,21 @@ public class TestDbSentryOnFailureHookLoading extends AbstractTestWithDbProvider
         + HiveServerFactory.DEFAULT_AUTHZ_SERVER_NAME + " TO ROLE admin_role");
     statement.execute("GRANT ROLE admin_role TO GROUP " + ADMINGROUP);
 
-    statement.execute("CREATE ROLE all_db1");
-    statement.execute("GRANT ALL ON DATABASE DB_1 TO ROLE all_db1");
-    statement.execute("GRANT ROLE all_db1 TO GROUP " + USERGROUP1);
-
-    statement.execute("CREATE ROLE read_db2_tab2");
-    statement.execute("GRANT ROLE read_db2_tab2 TO GROUP " + USERGROUP1);
-
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("DROP DATABASE IF EXISTS DB_2 CASCADE");
     statement.execute("CREATE DATABASE DB_1");
     statement.execute("CREATE DATABASE DB_2");
     statement.execute("CREATE TABLE db_2.tab1(a int )");
 
+    statement.execute("CREATE ROLE all_db1");
+    statement.execute("GRANT ALL ON DATABASE DB_1 TO ROLE all_db1");
+    statement.execute("GRANT ROLE all_db1 TO GROUP " + USERGROUP1);
+
+    statement.execute("CREATE ROLE lock_db2_tab1");
+    statement.execute("GRANT ROLE lock_db2_tab1 TO GROUP " + USERGROUP1);
+
     statement.execute("USE db_2");
-    statement.execute("GRANT SELECT ON TABLE tab2 TO ROLE read_db2_tab2");// To give user1 privilege to do USE db_2
+    statement.execute("GRANT LOCK ON TABLE tab1 TO ROLE lock_db2_tab1");// To give user1 privilege to do USE db_2
     statement.close();
     connection.close();
 
@@ -171,6 +171,7 @@ public class TestDbSentryOnFailureHookLoading extends AbstractTestWithDbProvider
     statement.execute("DROP DATABASE IF EXISTS DB_1 CASCADE");
     statement.execute("DROP DATABASE IF EXISTS DB_2 CASCADE");
     statement.execute("CREATE DATABASE DB_1");
+    statement.execute("CREATE TABLE DB_1.tab1(a int )");
     statement.execute("CREATE ROLE all_db1");
     statement.execute("GRANT ALL ON DATABASE DB_1 TO ROLE all_db1");
     statement.execute("GRANT ROLE all_db1 TO GROUP " + USERGROUP1);
@@ -217,12 +218,12 @@ public class TestDbSentryOnFailureHookLoading extends AbstractTestWithDbProvider
 
         //Grant privilege on table doesnt expose db and table objects
     verifyFailureHook(statement,
-        "GRANT ALL ON TABLE tab1 TO ROLE admin_role",
+        "GRANT ALL ON TABLE db_1.tab1 TO ROLE admin_role",
         HiveOperation.GRANT_PRIVILEGE, null, null, true);
 
     //Revoke privilege on table doesnt expose db and table objects
     verifyFailureHook(statement,
-        "REVOKE ALL ON TABLE server1 FROM ROLE admin_role",
+        "REVOKE ALL ON TABLE db_1.tab1 FROM ROLE admin_role",
         HiveOperation.REVOKE_PRIVILEGE, null, null, true);
 
     //Grant privilege on database doesnt expose db and table objects
@@ -249,7 +250,7 @@ public class TestDbSentryOnFailureHookLoading extends AbstractTestWithDbProvider
       statement.execute(sqlStr);
       Assert.fail("Expected SQL exception for " + sqlStr);
     } catch (SQLException e) {
-      assertTrue(DummySentryOnFailureHook.invoked);
+      assertTrue("FailureHook is not ran : " + e.getMessage(), DummySentryOnFailureHook.invoked);
     } finally {
       DummySentryOnFailureHook.invoked = false;
     }
