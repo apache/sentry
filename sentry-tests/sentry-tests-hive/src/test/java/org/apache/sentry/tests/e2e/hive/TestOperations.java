@@ -189,12 +189,12 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     statement.close();
     connection.close();
 
+    adminCreate(DB1, null);
+
     policyFile
         .addPermissionsToRole("all_db1", privileges.get("all_db1"))
         .addRolesToGroup(USERGROUP2, "all_db1");
     writePolicyFile(policyFile);
-
-    adminCreate(DB1, null);
 
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
@@ -259,7 +259,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
    */
   @Test
   public void testDescDB() throws Exception {
-    adminCreate(DB1, null);
+    adminCreate(DB1, tableName);
     policyFile
         .addPermissionsToRole("select_db1", privileges.get("select_db1"))
         .addPermissionsToRole("insert_db1", privileges.get("insert_db1"))
@@ -445,13 +445,6 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
   @Test
   public void testAlterTable() throws Exception {
     adminCreate(DB1, tableName, true);
-    policyFile
-        .addPermissionsToRole("alter_db1_tb1", privileges.get("alter_db1_tb1"))
-        .addPermissionsToRole("alter_db1_ptab", privileges.get("alter_db1_ptab"))
-        .addRolesToGroup(USERGROUP1, "alter_db1_tb1", "alter_db1_ptab")
-        .addPermissionsToRole("insert_db1_tb1", privileges.get("insert_db1_tb1"))
-        .addRolesToGroup(USERGROUP2, "insert_db1_tb1");
-    writePolicyFile(policyFile);
 
     Connection connection;
     Statement statement;
@@ -461,7 +454,17 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     statement.execute("Use " + DB1);
     statement.execute("ALTER TABLE tb1 ADD IF NOT EXISTS PARTITION (b = '10') ");
     statement.execute("ALTER TABLE tb1 ADD IF NOT EXISTS PARTITION (b = '1') ");
+    statement.execute("DROP TABLE IF EXISTS ptab");
     statement.execute("CREATE TABLE ptab (a int) STORED AS PARQUET");
+
+    policyFile
+      .addPermissionsToRole("alter_db1_tb1", privileges.get("alter_db1_tb1"))
+      .addPermissionsToRole("alter_db1_ptab", privileges.get("alter_db1_ptab"))
+      .addRolesToGroup(USERGROUP1, "alter_db1_tb1", "alter_db1_ptab")
+      .addPermissionsToRole("insert_db1_tb1", privileges.get("insert_db1_tb1"))
+      .addRolesToGroup(USERGROUP2, "insert_db1_tb1");
+    writePolicyFile(policyFile);
+
     //Negative test cases
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);

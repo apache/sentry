@@ -305,7 +305,7 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
     statement.execute("use " + DB1);
     statement.execute("CREATE TABLE TAB_1(A STRING)");
     statement.execute("CREATE DATABASE " + DB2);
-    statement.execute("use " + DB1);
+    statement.execute("use " + DB2);
     statement.execute("CREATE TABLE TAB_2(A STRING)");
     context.close();
 
@@ -361,6 +361,12 @@ public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfigu
     Statement statement = context.createStatement(connection);
     statement.execute("use default");
     statement.execute("create table tab1(a int)");
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("use " + DB1);
+    statement.execute("CREATE TABLE TAB_1(A STRING)");
+    statement.execute("CREATE DATABASE " + DB2);
+    statement.execute("use " + DB2);
+    statement.execute("CREATE TABLE TAB_2(A STRING)");
     context.close();
 
     policyFile

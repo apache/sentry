@@ -407,6 +407,7 @@ public class TestCrossDbOps extends AbstractTestWithStaticConfiguration {
     adminStmt.execute("use default");
     adminStmt.execute("CREATE DATABASE " + DB1);
     adminStmt.execute("create table " + DB1 + ".table_1 (id int)");
+    adminStmt.execute("create table " + DB1 + ".table_2 (id int)");
     adminStmt.close();
     adminCon.close();
 

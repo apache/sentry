@@ -179,6 +179,7 @@ public class TestMetadataObjectRetrieval extends AbstractTestWithStaticConfigura
       throws Exception {
     createDb(ADMIN1, DB1);
     createTable(ADMIN1, DB1, dataFile, TBL1);
+    createTable(ADMIN1, DB1, dataFile, TBL2);
     positiveDescribeShowTests(ADMIN1, DB1, TBL1);
 
     policyFile
@@ -307,14 +308,15 @@ public class TestMetadataObjectRetrieval extends AbstractTestWithStaticConfigura
   @Test
   public void testDescribeDatabasesWithAllOnServerAndAllOnDb()
       throws Exception {
+    dropDb(ADMIN1, DB1, DB2);
+    createDb(ADMIN1, DB1, DB2);
+    createTable(ADMIN1, DB1, dataFile, TBL1);
+    createTable(ADMIN1, DB2, dataFile, TBL1);
     policyFile
       .addPermissionsToRole(GROUP1_ROLE, "server=server1->db=" + DB1)
       .addRolesToGroup(USERGROUP1, GROUP1_ROLE)
       .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
-    dropDb(ADMIN1, DB1, DB2);
-    createDb(ADMIN1, DB1, DB2);
-    createTable(ADMIN1, DB1, dataFile, TBL1);
 
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
@@ -344,6 +346,8 @@ public class TestMetadataObjectRetrieval extends AbstractTestWithStaticConfigura
   @Test
   public void testDescribeDefaultDatabase() throws Exception {
     createDb(ADMIN1, DB1, DB2);
+    createTable(ADMIN1, "default", dataFile, TBL1);
+    createTable(ADMIN1, DB1, dataFile, TBL1);
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     assertTrue(statement.executeQuery("DESCRIBE DATABASE default").next());
@@ -380,6 +384,7 @@ public class TestMetadataObjectRetrieval extends AbstractTestWithStaticConfigura
   public void testShowIndexes1() throws Exception {
     createDb(ADMIN1, DB1);
     createTable(ADMIN1, DB1, dataFile, TBL1);
+    createTable(ADMIN1, DB1, dataFile, TBL2);
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
@@ -395,8 +400,8 @@ public class TestMetadataObjectRetrieval extends AbstractTestWithStaticConfigura
     statement.close();
     connection.close();
 
-    // grant privilege to non-existent table to allow use db1
-    policyFile.addPermissionsToRole(GROUP1_ROLE, SELECT_DB1_NONTABLE)
+    // grant privilege to table2 to allow use db1
+    policyFile.addPermissionsToRole(GROUP1_ROLE, SELECT_DB1_TBL2)
             .addRolesToGroup(USERGROUP1, GROUP1_ROLE)
             .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
@@ -445,6 +450,9 @@ public class TestMetadataObjectRetrieval extends AbstractTestWithStaticConfigura
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
+    statement.execute("DROP TABLE IF EXISTS " + TBL2);
+    statement.execute("create table " + TBL2
+        + " (under_col int, value string) PARTITIONED BY (dt INT)");
     statement.execute("DROP TABLE IF EXISTS " + TBL1);
     statement.execute("create table " + TBL1
         + " (under_col int, value string) PARTITIONED BY (dt INT)");
@@ -455,8 +463,8 @@ public class TestMetadataObjectRetrieval extends AbstractTestWithStaticConfigura
     statement.close();
     connection.close();
 
-    // grant privilege to non-existent table to allow use db1
-    policyFile.addPermissionsToRole(GROUP1_ROLE, SELECT_DB1_NONTABLE)
+    // grant privilege to table2 to allow use db1
+    policyFile.addPermissionsToRole(GROUP1_ROLE, SELECT_DB1_TBL2)
             .addRolesToGroup(USERGROUP1, GROUP1_ROLE)
             .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);

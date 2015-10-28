@@ -197,6 +197,14 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
   public void testUdfWhiteList () throws Exception {
     String tableName1 = "tab1";
 
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = connection.createStatement();
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("USE " + DB1);
+    statement.execute("create table " + tableName1
+        + " (under_col int comment 'the under column', value string)");
+
     policyFile
         .addRolesToGroup(USERGROUP1, "db1_all", "UDF_JAR")
         .addRolesToGroup(USERGROUP2, "db1_tab1", "UDF_JAR")
@@ -206,13 +214,6 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
         .addPermissionsToRole("UDF_JAR", "server=server1->uri=file://${user.home}/.m2");
     writePolicyFile(policyFile);
 
-    Connection connection = context.createConnection(ADMIN1);
-    Statement statement = connection.createStatement();
-    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
-    statement.execute("CREATE DATABASE " + DB1);
-    statement.execute("USE " + DB1);
-    statement.execute("create table " + tableName1
-        + " (under_col int comment 'the under column', value string)");
     statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE "
         + DB1 + "." + tableName1);
     statement.execute("SELECT rand(), concat(value, '_foo') FROM " + tableName1);

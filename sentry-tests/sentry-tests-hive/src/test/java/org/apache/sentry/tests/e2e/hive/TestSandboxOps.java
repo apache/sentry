@@ -305,6 +305,7 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
   public void testSandboxOpt13() throws Exception {
     createDb(ADMIN1, DB1);
     createTable(ADMIN1, DB1, dataFile, TBL1);
+    createTable(ADMIN1, DB1, dataFile, TBL2);
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
@@ -360,16 +361,16 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
   @Test
   public void testSandboxOpt17() throws Exception {
     createDb(ADMIN1, DB1);
+    createTable(ADMIN1, DB1, dataFile, TBL1, TBL2);
 
     policyFile
         .addRolesToGroup(USERGROUP1, "all_db1", "load_data")
         .addRolesToGroup(USERGROUP2, "select_tb1")
-        .addPermissionsToRole("select_tb1", "server=server1->db=" + DB1 + "->table=tbl_1->action=select")
+        .addPermissionsToRole("select_tb1", "server=server1->db=" + DB1 + "->table=" + TBL1 + "->action=select")
         .addPermissionsToRole("all_db1", "server=server1->db=" + DB1)
         .addPermissionsToRole("load_data", "server=server1->uri=file://" + dataFile.toString());
     writePolicyFile(policyFile);
 
-    createTable(USER1_1, DB1, dataFile, TBL1, TBL2);
     Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
     // c
