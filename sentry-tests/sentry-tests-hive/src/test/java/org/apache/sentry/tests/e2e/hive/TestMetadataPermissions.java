@@ -32,13 +32,7 @@ public class TestMetadataPermissions extends AbstractTestWithStaticConfiguration
   @Before
   public void setup() throws Exception {
     policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
-
-    policyFile
-        .addRolesToGroup(USERGROUP1, "db1_all", "db2_all")
-        .addRolesToGroup(USERGROUP2, "db1_all")
-        .addPermissionsToRole("db1_all", "server=server1->db=" + DB1)
-        .addPermissionsToRole("db2_all", "server=server1->db=" + DB2)
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    policyFile.setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
     Connection adminCon = context.createConnection(ADMIN1);
@@ -52,6 +46,14 @@ public class TestMetadataPermissions extends AbstractTestWithStaticConfiguration
         adminStmt.execute("CREATE TABLE " + tabName + " (id int)");
       }
     }
+
+    policyFile
+        .addRolesToGroup(USERGROUP1, "db1_all", "db2_all")
+        .addRolesToGroup(USERGROUP2, "db1_all")
+        .addPermissionsToRole("db1_all", "server=server1->db=" + DB1)
+        .addPermissionsToRole("db2_all", "server=server1->db=" + DB2);
+
+    writePolicyFile(policyFile);
   }
 
   /**

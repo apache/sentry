@@ -73,30 +73,30 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     statement.execute("CREATE DATABASE DB_1");
     statement.execute("USE DB_1");
 
-    statement.execute("CREATE TABLE TAB_1(B INT, A STRING) "
+    statement.execute("CREATE TABLE " + TBL1 + "(B INT, A STRING) "
         + " row format delimited fields terminated by '|'  stored as textfile");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE TAB_1");
-    statement.execute("CREATE TABLE TAB_2(B INT, A STRING) "
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE " + TBL1);
+    statement.execute("CREATE TABLE " + TBL2 + "(B INT, A STRING) "
         + " row format delimited fields terminated by '|'  stored as textfile");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE TAB_2");
-    statement.execute("CREATE VIEW VIEW_1 AS SELECT A, B FROM TAB_1");
+    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE " + TBL2);
+    statement.execute("CREATE VIEW VIEW_1 AS SELECT A, B FROM " + TBL1);
 
     statement.close();
     connection.close();
   }
 
   /*
-   * Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, loads data into
-   * TAB_1, TAB_2 Admin grants SELECT on TAB_1, TAB_2, INSERT on TAB_1 to
+   * Admin creates database DB_1, table TBL1, TBL2 in DB_1, loads data into
+   * TBL1, TBL2 Admin grants SELECT on TBL1, TBL2, INSERT on TBL1 to
    * USER_GROUP of which user1 is a member.
    */
   @Test
   public void testInsertAndSelect() throws Exception {
     policyFile
         .addRolesToGroup(USERGROUP1, "select_tab1", "insert_tab1", "select_tab2")
-        .addPermissionsToRole("select_tab1", "server=server1->db=DB_1->table=TAB_1->action=select")
-        .addPermissionsToRole("insert_tab1", "server=server1->db=DB_1->table=TAB_1->action=insert")
-        .addPermissionsToRole("select_tab2", "server=server1->db=DB_1->table=TAB_2->action=select")
+        .addPermissionsToRole("select_tab1", "server=server1->db=DB_1->table=" + TBL1 + "->action=select")
+        .addPermissionsToRole("insert_tab1", "server=server1->db=DB_1->table=" + TBL1 + "->action=insert")
+        .addPermissionsToRole("select_tab2", "server=server1->db=DB_1->table=" + TBL2 + "->action=select")
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
@@ -105,12 +105,12 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     Statement statement = context.createStatement(connection);
     statement.execute("USE DB_1");
     // test user can insert
-    statement.execute("INSERT INTO TABLE TAB_1 SELECT A, B FROM TAB_2");
+    statement.execute("INSERT INTO TABLE " + TBL1 + " SELECT A, B FROM " + TBL2);
     // test user can query table
-    statement.executeQuery("SELECT A FROM TAB_2");
+    statement.executeQuery("SELECT A FROM " + TBL2);
     // negative test: test user can't drop
     try {
-      statement.execute("DROP TABLE TAB_1");
+      statement.execute("DROP TABLE " + TBL1);
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
       context.verifyAuthzException(e);
@@ -118,20 +118,20 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     statement.close();
     connection.close();
 
-    // connect as admin and drop tab_1
+    // connect as admin and drop TBL1
     connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
     statement.execute("USE DB_1");
-    statement.execute("DROP TABLE TAB_1");
+    statement.execute("DROP TABLE " + TBL1);
     statement.close();
     connection.close();
 
-    // negative test: connect as user1 and try to recreate tab_1
+    // negative test: connect as user1 and try to recreate TBL1
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("USE DB_1");
     try {
-      statement.execute("CREATE TABLE TAB_1(A STRING)");
+      statement.execute("CREATE TABLE " + TBL1 + "(A STRING)");
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
       context.verifyAuthzException(e);
@@ -140,29 +140,29 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     statement.close();
     connection.close();
 
-    // connect as admin to restore the tab_1
+    // connect as admin to restore the TBL1
     connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
     statement.execute("USE DB_1");
-    statement.execute("CREATE TABLE TAB_1(B INT, A STRING) "
+    statement.execute("CREATE TABLE " + TBL1 + "(B INT, A STRING) "
         + " row format delimited fields terminated by '|'  stored as textfile");
-    statement.execute("INSERT INTO TABLE TAB_1 SELECT A, B FROM TAB_2");
+    statement.execute("INSERT INTO TABLE " + TBL1 + " SELECT A, B FROM " + TBL2);
     statement.close();
     connection.close();
 
   }
 
   /*
-   * Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, loads data into
-   * TAB_1, TAB_2. Admin grants INSERT on TAB_1, SELECT on TAB_2 to USER_GROUP
+   * Admin creates database DB_1, table TBL1, TBL2 in DB_1, loads data into
+   * TBL1, TBL2. Admin grants INSERT on TBL1, SELECT on TBL2 to USER_GROUP
    * of which user1 is a member.
    */
   @Test
   public void testInsert() throws Exception {
     policyFile
         .addRolesToGroup(USERGROUP1, "insert_tab1", "select_tab2")
-        .addPermissionsToRole("insert_tab1", "server=server1->db=DB_1->table=TAB_1->action=insert")
-        .addPermissionsToRole("select_tab2", "server=server1->db=DB_1->table=TAB_2->action=select")
+        .addPermissionsToRole("insert_tab1", "server=server1->db=DB_1->table=" + TBL1 + "->action=insert")
+        .addPermissionsToRole("select_tab2", "server=server1->db=DB_1->table=" + TBL2 + "->action=select")
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
@@ -171,11 +171,11 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     Statement statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
     // test user can execute insert on table
-    statement.execute("INSERT INTO TABLE TAB_1 SELECT A, B FROM TAB_2");
+    statement.execute("INSERT INTO TABLE " + TBL1 + " SELECT A, B FROM " + TBL2);
 
     // negative test: user can't query table
     try {
-      statement.executeQuery("SELECT A FROM TAB_1");
+      statement.executeQuery("SELECT A FROM " + TBL1);
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
       context.verifyAuthzException(e);
@@ -200,7 +200,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
 
     // negative test: test user can't create a new view
     try {
-      statement.executeQuery("CREATE VIEW VIEW_2(A) AS SELECT A FROM TAB_1");
+      statement.executeQuery("CREATE VIEW VIEW_2(A) AS SELECT A FROM " + TBL1);
       Assert.fail("Expected SQL Exception");
     } catch (SQLException e) {
       context.verifyAuthzException(e);
@@ -210,17 +210,17 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
   }
 
   /*
-   * Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, loads data into
-   * TAB_1, TAB_2. Admin grants SELECT on TAB_1, TAB_2 to USER_GROUP of which
+   * Admin creates database DB_1, table TBL1, TBL2 in DB_1, loads data into
+   * TBL1, TBL2. Admin grants SELECT on TBL1, TBL2 to USER_GROUP of which
    * user1 is a member.
    */
   @Test
   public void testSelect() throws Exception {
     policyFile
         .addRolesToGroup(USERGROUP1, "select_tab1", "select_tab2")
-        .addPermissionsToRole("select_tab1", "server=server1->db=DB_1->table=TAB_1->action=select")
-        .addPermissionsToRole("insert_tab1", "server=server1->db=DB_1->table=TAB_1->action=insert")
-        .addPermissionsToRole("select_tab2", "server=server1->db=DB_1->table=TAB_2->action=select")
+        .addPermissionsToRole("select_tab1", "server=server1->db=DB_1->table=" + TBL1 + "->action=select")
+        .addPermissionsToRole("insert_tab1", "server=server1->db=DB_1->table=" + TBL1 + "->action=insert")
+        .addPermissionsToRole("select_tab2", "server=server1->db=DB_1->table=" + TBL2 + "->action=select")
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
@@ -229,11 +229,11 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     Statement statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
     // test user can execute query on table
-    statement.executeQuery("SELECT A FROM TAB_1");
+    statement.executeQuery("SELECT A FROM " + TBL1);
 
     // negative test: test insert into table
     try {
-      statement.executeQuery("INSERT INTO TABLE TAB_1 SELECT A, B FROM TAB_2");
+      statement.executeQuery("INSERT INTO TABLE " + TBL1 + " SELECT A, B FROM " + TBL2);
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
       context.verifyAuthzException(e);
@@ -249,7 +249,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
 
     // negative test: test user can't create a new view
     try {
-      statement.executeQuery("CREATE VIEW VIEW_2(A) AS SELECT A FROM TAB_1");
+      statement.executeQuery("CREATE VIEW VIEW_2(A) AS SELECT A FROM " + TBL1);
       Assert.fail("Expected SQL Exception");
     } catch (SQLException e) {
       context.verifyAuthzException(e);
@@ -259,16 +259,16 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
   }
 
   /*
-   * Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, VIEW_1 on TAB_1
-   * loads data into TAB_1, TAB_2. Admin grants SELECT on TAB_1,TAB_2 to
+   * Admin creates database DB_1, table TBL1, TBL2 in DB_1, VIEW_1 on TBL1
+   * loads data into TBL1, TBL2. Admin grants SELECT on TBL1,TBL2 to
    * USER_GROUP of which user1 is a member.
    */
   @Test
   public void testTableViewJoin() throws Exception {
     policyFile
         .addRolesToGroup(USERGROUP1, "select_tab1", "select_tab2")
-        .addPermissionsToRole("select_tab1", "server=server1->db=DB_1->table=TAB_1->action=select")
-        .addPermissionsToRole("select_tab2", "server=server1->db=DB_1->table=TAB_2->action=select")
+        .addPermissionsToRole("select_tab1", "server=server1->db=DB_1->table=" + TBL1 + "->action=select")
+        .addPermissionsToRole("select_tab2", "server=server1->db=DB_1->table=" + TBL2 + "->action=select")
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
@@ -276,12 +276,12 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
-    // test user can execute query TAB_1 JOIN TAB_2
-    statement.executeQuery("SELECT T1.B FROM TAB_1 T1 JOIN TAB_2 T2 ON (T1.B = T2.B)");
+    // test user can execute query TBL1 JOIN TBL2
+    statement.executeQuery("SELECT T1.B FROM " + TBL1 + " T1 JOIN " + TBL2 + " T2 ON (T1.B = T2.B)");
 
-    // negative test: test user can't execute query VIEW_1 JOIN TAB_2
+    // negative test: test user can't execute query VIEW_1 JOIN TBL2
     try {
-      statement.executeQuery("SELECT V1.B FROM VIEW_1 V1 JOIN TAB_2 T2 ON (V1.B = T2.B)");
+      statement.executeQuery("SELECT V1.B FROM VIEW_1 V1 JOIN " + TBL2 + " T2 ON (V1.B = T2.B)");
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
       context.verifyAuthzException(e);
@@ -292,16 +292,16 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
   }
 
   /*
-   * Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, VIEW_1 on TAB_1
-   * loads data into TAB_1, TAB_2. Admin grants SELECT on TAB_2 to USER_GROUP of
+   * Admin creates database DB_1, table TBL1, TBL2 in DB_1, VIEW_1 on TBL1
+   * loads data into TBL1, TBL2. Admin grants SELECT on TBL2 to USER_GROUP of
    * which user1 is a member.
    */
   @Test
   public void testTableViewJoin2() throws Exception {
     policyFile
         .addRolesToGroup(USERGROUP1, "select_tab2")
-        .addPermissionsToRole("select_tab1", "server=server1->db=DB_1->table=TAB_1->action=select")
-        .addPermissionsToRole("select_tab2", "server=server1->db=DB_1->table=TAB_2->action=select")
+        .addPermissionsToRole("select_tab1", "server=server1->db=DB_1->table=" + TBL1 + "->action=select")
+        .addPermissionsToRole("select_tab2", "server=server1->db=DB_1->table=" + TBL2 + "->action=select")
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
@@ -309,20 +309,20 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
-    // test user can execute query on TAB_2
-    statement.executeQuery("SELECT A FROM TAB_2");
+    // test user can execute query on TBL2
+    statement.executeQuery("SELECT A FROM " + TBL2);
 
-    // negative test: test user can't execute query VIEW_1 JOIN TAB_2
+    // negative test: test user can't execute query VIEW_1 JOIN TBL2
     try {
-      statement.executeQuery("SELECT VIEW_1.B FROM VIEW_1 JOIN TAB_2 ON (VIEW_1.B = TAB_2.B)");
+      statement.executeQuery("SELECT VIEW_1.B FROM VIEW_1 JOIN " + TBL2 + " ON (VIEW_1.B = " + TBL2 + ".B)");
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
       context.verifyAuthzException(e);
     }
 
-    // negative test: test user can't execute query TAB_1 JOIN TAB_2
+    // negative test: test user can't execute query TBL1 JOIN TBL2
     try {
-      statement.executeQuery("SELECT TAB_1.B FROM TAB_1 JOIN TAB_2 ON (TAB_1.B = TAB_2.B)");
+      statement.executeQuery("SELECT " + TBL1 + ".B FROM " + TBL1 + " JOIN " + TBL2 + " ON (" + TBL1 + ".B = " + TBL2 + ".B)");
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
       context.verifyAuthzException(e);
@@ -333,8 +333,8 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
   }
 
   /*
-   * Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, VIEW_1 on TAB_1
-   * loads data into TAB_1, TAB_2. Admin grants SELECT on TAB_2, VIEW_1 to
+   * Admin creates database DB_1, table TBL1, TBL2 in DB_1, VIEW_1 on TBL1
+   * loads data into TBL1, TBL2. Admin grants SELECT on TBL2, VIEW_1 to
    * USER_GROUP of which user1 is a member.
    */
   @Test
@@ -342,7 +342,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     policyFile
         .addRolesToGroup(USERGROUP1, "select_tab2", "select_view1")
         .addPermissionsToRole("select_view1", "server=server1->db=DB_1->table=VIEW_1->action=select")
-        .addPermissionsToRole("select_tab2", "server=server1->db=DB_1->table=TAB_2->action=select")
+        .addPermissionsToRole("select_tab2", "server=server1->db=DB_1->table=" + TBL2 + "->action=select")
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
@@ -350,18 +350,18 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
-    // test user can execute query on TAB_2
-    statement.executeQuery("SELECT A FROM TAB_2");
+    // test user can execute query on TBL2
+    statement.executeQuery("SELECT A FROM " + TBL2);
 
-    // test user can execute query VIEW_1 JOIN TAB_2
-    statement.executeQuery("SELECT V1.B FROM VIEW_1 V1 JOIN TAB_2 T2 ON (V1.B = T2.B)");
+    // test user can execute query VIEW_1 JOIN TBL2
+    statement.executeQuery("SELECT V1.B FROM VIEW_1 V1 JOIN " + TBL2 + " T2 ON (V1.B = T2.B)");
 
     // test user can execute query on VIEW_1
     statement.executeQuery("SELECT A FROM VIEW_1");
 
-    // negative test: test user can't execute query TAB_1 JOIN TAB_2
+    // negative test: test user can't execute query TBL1 JOIN TBL2
     try {
-      statement.executeQuery("SELECT T1.B FROM TAB_1 T1 JOIN TAB_2 T2 ON (T1.B = T2.B)");
+      statement.executeQuery("SELECT T1.B FROM " + TBL1 + " T1 JOIN " + TBL2 + " T2 ON (T1.B = T2.B)");
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
       context.verifyAuthzException(e);
@@ -372,8 +372,8 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
   }
 
   /*
-   * Admin creates database DB_1, table TAB_1, TAB_2 in DB_1, VIEW_1 on TAB_1
-   * loads data into TAB_1, TAB_2. Admin grants SELECT on TAB_1, VIEW_1 to
+   * Admin creates database DB_1, table TBL1, TBL2 in DB_1, VIEW_1 on TBL1
+   * loads data into TBL1, TBL2. Admin grants SELECT on TBL1, VIEW_1 to
    * USER_GROUP of which user1 is a member.
    */
   @Test
@@ -381,7 +381,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     policyFile
         .addRolesToGroup(USERGROUP1, "select_tab1", "select_view1")
         .addPermissionsToRole("select_view1", "server=server1->db=DB_1->table=VIEW_1->action=select")
-        .addPermissionsToRole("select_tab1", "server=server1->db=DB_1->table=TAB_1->action=select")
+        .addPermissionsToRole("select_tab1", "server=server1->db=DB_1->table=" + TBL1 + "->action=select")
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
@@ -390,12 +390,12 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     Statement statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
 
-    // test user can execute query VIEW_1 JOIN TAB_1
-    statement.executeQuery("SELECT VIEW_1.B FROM VIEW_1 JOIN TAB_1 ON (VIEW_1.B = TAB_1.B)");
+    // test user can execute query VIEW_1 JOIN TBL1
+    statement.executeQuery("SELECT VIEW_1.B FROM VIEW_1 JOIN " + TBL1 + " ON (VIEW_1.B = " + TBL1 + ".B)");
 
-    // negative test: test user can't execute query TAB_1 JOIN TAB_2
+    // negative test: test user can't execute query TBL1 JOIN TBL2
     try {
-      statement.executeQuery("SELECT TAB_1.B FROM TAB_1 JOIN TAB_2 ON (TAB_1.B = TAB_2.B)");
+      statement.executeQuery("SELECT " + TBL1 + ".B FROM " + TBL1 + " JOIN " + TBL2 + " ON (" + TBL1 + ".B = " + TBL2 + ".B)");
       Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
       context.verifyAuthzException(e);
@@ -419,18 +419,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     Resources.copy(Resources.getResource(MULTI_TYPE_DATA_FILE_NAME), to);
     to.close();
 
-    policyFile
-        .addRolesToGroup(USERGROUP1, "all_tab1")
-        .addPermissionsToRole("all_tab1",
-            "server=server1->db=" + DB1 + "->table=" + TBL2)
-        .addRolesToGroup(USERGROUP2, "drop_tab1")
-        .addPermissionsToRole("drop_tab1",
-            "server=server1->db=" + DB1 + "->table=" + TBL3 + "->action=drop",
-            "server=server1->db=" + DB1 + "->table=" + TBL3 + "->action=select")
-        .addRolesToGroup(USERGROUP3, "select_tab1")
-        .addPermissionsToRole("select_tab1",
-            "server=server1->db=" + DB1 + "->table=" + TBL1 + "->action=select")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    policyFile.setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
     // setup db objects needed by the test
@@ -438,6 +427,9 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     Statement statement = context.createStatement(connection);
 
     statement.execute("USE " + DB1);
+    statement.execute("DROP TABLE if exists " + TBL1);
+    statement.execute("DROP TABLE if exists " + TBL2);
+    statement.execute("DROP TABLE if exists " + TBL3);
     statement.execute("CREATE TABLE " + TBL1 + "(B INT, A STRING) "
         + " row format delimited fields terminated by '|'  stored as textfile");
     statement.execute("CREATE TABLE " + TBL2 + "(B INT, A STRING) "
@@ -454,8 +446,22 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     // verify admin can execute truncate table
     statement.execute("TRUNCATE TABLE " + TBL1);
     assertFalse(hasData(statement, TBL1));
+
     statement.close();
     connection.close();
+
+    policyFile
+        .addRolesToGroup(USERGROUP1, "all_tab1")
+        .addPermissionsToRole("all_tab1",
+            "server=server1->db=" + DB1 + "->table=" + TBL2)
+        .addRolesToGroup(USERGROUP2, "drop_tab1")
+        .addPermissionsToRole("drop_tab1",
+            "server=server1->db=" + DB1 + "->table=" + TBL3 + "->action=drop",
+            "server=server1->db=" + DB1 + "->table=" + TBL3 + "->action=select")
+        .addRolesToGroup(USERGROUP3, "select_tab1")
+        .addPermissionsToRole("select_tab1",
+            "server=server1->db=" + DB1 + "->table=" + TBL1 + "->action=select");
+    writePolicyFile(policyFile);
 
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
@@ -527,11 +533,7 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
   @Test
   public void testDummyPartition() throws Exception {
 
-    policyFile
-        .addRolesToGroup(USERGROUP1, "select_tab1", "select_tab2")
-        .addPermissionsToRole("select_tab1", "server=server1->db=DB_1->table=TAB_1->action=select")
-        .addPermissionsToRole("select_tab2", "server=server1->db=DB_1->table=TAB_3->action=insert")
-        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    policyFile.setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
     // setup db objects needed by the test
@@ -539,15 +541,25 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     Statement statement = context.createStatement(connection);
 
     statement.execute("USE " + DB1);
-    statement.execute("CREATE table TAB_3 (a2 int) PARTITIONED BY (b2 string, c2 string)");
+
+    statement.execute("DROP TABLE if exists " + TBL1);
+    statement.execute("CREATE table " + TBL1 + " (a int) PARTITIONED BY (b string, c string)");
+    statement.execute("DROP TABLE if exists " + TBL3);
+    statement.execute("CREATE table " + TBL3 + " (a2 int) PARTITIONED BY (b2 string, c2 string)");
     statement.close();
     connection.close();
+
+    policyFile
+        .addRolesToGroup(USERGROUP1, "select_tab1", "select_tab2")
+        .addPermissionsToRole("select_tab1", "server=server1->db=DB_1->table=" + TBL1 + "->action=select")
+        .addPermissionsToRole("select_tab2", "server=server1->db=DB_1->table=" + TBL3 + "->action=insert");
+    writePolicyFile(policyFile);
 
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
 
     statement.execute("USE " + DB1);
-    statement.execute("INSERT OVERWRITE TABLE TAB_3 PARTITION(b2='abc', c2) select a, b as c2 from TAB_1");
+    statement.execute("INSERT OVERWRITE TABLE " + TBL3 + " PARTITION(b2='abc', c2) select a, b as c2 from " + TBL1);
     statement.close();
     connection.close();
 

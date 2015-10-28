@@ -174,7 +174,10 @@ public class TestDbEndToEnd extends AbstractTestWithStaticConfiguration {
     statement.execute("DROP DATABASE IF EXISTS " + DB2 + " CASCADE");
     statement.execute("CREATE DATABASE " + DB2);
     statement.execute("USE " + DB2);
+    statement.execute("DROP TABLE IF EXISTS " + DB2 + "." + tableName1);
     statement.execute("DROP TABLE IF EXISTS " + DB2 + "." + tableName2);
+    statement.execute("create table " + DB2 + "." + tableName1
+        + " (under_col int comment 'the under column', value string)");
     statement.execute("create table " + DB2 + "." + tableName2
         + " (under_col int comment 'the under column', value string)");
     statement.execute("load data local inpath '" + dataFile.getPath()
@@ -198,6 +201,9 @@ public class TestDbEndToEnd extends AbstractTestWithStaticConfiguration {
         + "' TO ROLE data_uri");
 
     statement.execute("USE " + DB1);
+    statement.execute("DROP TABLE IF EXISTS " + DB1 + "." + tableName1);
+    statement.execute("create table " + DB1 + "." + tableName1
+        + " (under_col int comment 'the under column', value string)");
     statement.execute("GRANT SELECT ON TABLE " + tableName1
         + " TO ROLE select_tb1");
 
@@ -226,7 +232,7 @@ public class TestDbEndToEnd extends AbstractTestWithStaticConfiguration {
     // 7
     connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
-    statement.execute("USE " + DB2);
+    statement.execute("USE " + DB1);
     statement.execute("DROP TABLE IF EXISTS " + DB1 + "." + tableName1);
     statement.execute("create table " + DB1 + "." + tableName1
         + " (under_col int comment 'the under column', value string)");

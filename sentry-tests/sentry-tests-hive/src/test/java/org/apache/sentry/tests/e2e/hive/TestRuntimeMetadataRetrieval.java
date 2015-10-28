@@ -347,6 +347,7 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
     String[] dbNames = {DB1, DB2, DB3};
     List<String> dbNamesValidation = new ArrayList<String>();
     String[] user1DbNames = {DB1, DB2};
+    String tableNames[] = {"tb_1"};
 
     // verify by SQL
     // 1, 2
@@ -355,6 +356,8 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
     dbNamesValidation.add("default");
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
+    createTabs(statement, DB1, tableNames);
+    createTabs(statement, DB2, tableNames);
     ResultSet rs = statement.executeQuery("SHOW DATABASES");
     validateDBs(rs, dbNamesValidation); // admin should see all dbs
     rs.close();
