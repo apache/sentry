@@ -205,16 +205,10 @@ public class SentryAuthorizationProvider
     String[] pathElements = getPathElements(node);
     if (!authzInfo.isManaged(pathElements)) {
       user = defaultAuthzProvider.getUser(node, snapshotId);
+    } else if (!authzInfo.doesBelongToAuthzObject(pathElements)) {
+      user = defaultAuthzProvider.getUser(node, snapshotId);
     } else {
-      if (!authzInfo.isStale()) {
-        if (authzInfo.doesBelongToAuthzObject(pathElements)) {
-          user = this.user;
-        } else {
-          user = defaultAuthzProvider.getUser(node, snapshotId);
-        }
-      } else {
         user = this.user;
-      }
     }
     return user;
   }
@@ -230,16 +224,10 @@ public class SentryAuthorizationProvider
     String[] pathElements = getPathElements(node);
     if (!authzInfo.isManaged(pathElements)) {
       group = getDefaultProviderGroup(node, snapshotId);
+    } else if (!authzInfo.doesBelongToAuthzObject(pathElements)) {
+      group = getDefaultProviderGroup(node, snapshotId);
     } else {
-      if (!authzInfo.isStale()) {
-        if (authzInfo.doesBelongToAuthzObject(pathElements)) {
-          group = this.group;
-        } else {
-          group = getDefaultProviderGroup(node, snapshotId);
-        }
-      } else {
-        group = this.group;
-      }
+      group = this.group;
     }
     return group;
   }
@@ -257,7 +245,10 @@ public class SentryAuthorizationProvider
     String[] pathElements = getPathElements(node);
     if (!authzInfo.isManaged(pathElements)) {
       permission = defaultAuthzProvider.getFsPermission(node, snapshotId);
-    } else {
+    } else if (!authzInfo.doesBelongToAuthzObject(pathElements)) {
+      permission = defaultAuthzProvider.getFsPermission(node, snapshotId);
+    }
+     else {
       FsPermission returnPerm = this.permission;
       // Handle case when prefix directory is itself associated with an
       // authorizable object (default db directory in hive)
@@ -270,15 +261,7 @@ public class SentryAuthorizationProvider
           break;
         }
       }
-      if (!authzInfo.isStale()) {
-        if (authzInfo.doesBelongToAuthzObject(pathElements)) {
-          permission = returnPerm;
-        } else {
-          permission = defaultAuthzProvider.getFsPermission(node, snapshotId);
-        }
-      } else {
-        permission = returnPerm;
-      }
+      permission = returnPerm;
     }
     return permission;
   }
@@ -322,8 +305,12 @@ public class SentryAuthorizationProvider
     if (!authzInfo.isManaged(pathElements)) {
       isManaged = false;
       f = defaultAuthzProvider.getAclFeature(node, snapshotId);
+    } else if (!authzInfo.doesBelongToAuthzObject(pathElements)) {
+      isManaged = true;
+      f = defaultAuthzProvider.getAclFeature(node, snapshotId);
     } else {
       isManaged = true;
+      hasAuthzObj = true;
       aclMap = new HashMap<String, AclEntry>();
       if (originalAuthzAsAcl) {
         String user = defaultAuthzProvider.getUser(node, snapshotId);
@@ -336,14 +323,8 @@ public class SentryAuthorizationProvider
       }
       if (!authzInfo.isStale()) {
         isStale = false;
-        if (authzInfo.doesBelongToAuthzObject(pathElements)) {
-          hasAuthzObj = true;
-          addToACLMap(aclMap, authzInfo.getAclEntries(pathElements));
-          f = new SentryAclFeature(ImmutableList.copyOf(aclMap.values()));
-        } else {
-          hasAuthzObj = false;
-          f = defaultAuthzProvider.getAclFeature(node, snapshotId);
-        }
+        addToACLMap(aclMap, authzInfo.getAclEntries(pathElements));
+        f = new SentryAclFeature(ImmutableList.copyOf(aclMap.values()));
       } else {
         isStale = true;
         f = new SentryAclFeature(ImmutableList.copyOf(aclMap.values()));
