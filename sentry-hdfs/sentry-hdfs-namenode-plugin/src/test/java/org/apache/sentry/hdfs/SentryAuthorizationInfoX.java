@@ -29,6 +29,7 @@ public class SentryAuthorizationInfoX extends SentryAuthorizationInfo {
 
   public SentryAuthorizationInfoX() {
     super(new String[]{"/user/authz"});
+    System.setProperty("test.stale", "false");
   }
 
   @Override
@@ -48,7 +49,8 @@ public class SentryAuthorizationInfoX extends SentryAuthorizationInfo {
 
   @Override
   public boolean isStale() {
-    return false;
+    String stale = System.getProperty("test.stale");
+    return stale.equalsIgnoreCase("true");
   }
 
   private static final String[] MANAGED = {"user", "authz"};

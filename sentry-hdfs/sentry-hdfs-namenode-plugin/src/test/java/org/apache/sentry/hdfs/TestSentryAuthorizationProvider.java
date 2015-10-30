@@ -133,7 +133,7 @@ public class TestSentryAuthorizationProvider {
         path = new Path("/user/authz/obj");
         Assert.assertEquals("hive", fs.getFileStatus(path).getOwner());
         Assert.assertEquals("hive", fs.getFileStatus(path).getGroup());
-        Assert.assertEquals(new FsPermission((short) 0770), fs.getFileStatus(path).getPermission());
+        Assert.assertEquals(new FsPermission((short) 0771), fs.getFileStatus(path).getPermission());
         Assert.assertFalse(fs.getAclStatus(path).getEntries().isEmpty());
 
         List<AclEntry> acls = new ArrayList<AclEntry>();
@@ -146,7 +146,7 @@ public class TestSentryAuthorizationProvider {
         path = new Path("/user/authz/obj/xxx");
         Assert.assertEquals("hive", fs.getFileStatus(path).getOwner());
         Assert.assertEquals("hive", fs.getFileStatus(path).getGroup());
-        Assert.assertEquals(new FsPermission((short) 0770), fs.getFileStatus(path).getPermission());
+        Assert.assertEquals(new FsPermission((short) 0771), fs.getFileStatus(path).getPermission());
         Assert.assertFalse(fs.getAclStatus(path).getEntries().isEmpty());
         
         Path path2 = new Path("/user/authz/obj/path2");
@@ -159,6 +159,16 @@ public class TestSentryAuthorizationProvider {
         Assert.assertEquals("supergroup", fs.getFileStatus(path).getGroup());
         Assert.assertEquals(new FsPermission((short) 0755), fs.getFileStatus(path).getPermission());
         Assert.assertTrue(fs.getAclStatus(path).getEntries().isEmpty());
+
+        //stale and dir inside of prefix, obj
+        System.setProperty("test.stale", "true");
+        path = new Path("/user/authz/xxx");
+        status = fs.getFileStatus(path);
+        Assert.assertEquals(sysUser, status.getOwner());
+        Assert.assertEquals("supergroup", status.getGroup());
+        Assert.assertEquals(new FsPermission((short) 0755), status.getPermission());
+        Assert.assertTrue(fs.getAclStatus(path).getEntries().isEmpty());
+
         return null;
       }
     });
