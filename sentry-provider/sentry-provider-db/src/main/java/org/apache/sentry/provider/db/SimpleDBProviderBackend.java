@@ -26,6 +26,7 @@ import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.service.thrift.SentryServiceClientFactory;
+import org.apache.sentry.service.thrift.ServiceConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +38,8 @@ public class SimpleDBProviderBackend implements ProviderBackend {
       .getLogger(SimpleDBProviderBackend.class);
 
   private Configuration conf;
+  private int retryCount;
+  private int retryIntervalSec;
 
   public SimpleDBProviderBackend(Configuration conf, String resourcePath) throws Exception {
     // DB Provider doesn't use policy file path
@@ -45,6 +48,8 @@ public class SimpleDBProviderBackend implements ProviderBackend {
 
   public SimpleDBProviderBackend(Configuration conf) throws Exception {
     this.conf = conf;
+    this.retryCount = conf.getInt(ServiceConstants.ClientConfig.RETRY_COUNT_CONF, ServiceConstants.ClientConfig.RETRY_COUNT_DEFAULT);
+    this.retryIntervalSec = conf.getInt(ServiceConstants.ClientConfig.RETRY_INTERVAL_SEC_CONF, ServiceConstants.ClientConfig.RETRY_INTERVAL_SEC_DEFAULT);
   }
   /**
    * {@inheritDoc}
@@ -59,26 +64,31 @@ public class SimpleDBProviderBackend implements ProviderBackend {
    */
   @Override
   public ImmutableSet<String> getPrivileges(Set<String> groups, ActiveRoleSet roleSet, Authorizable... authorizableHierarchy) {
-    return getPrivileges(1, groups, roleSet, authorizableHierarchy);
+    return getPrivileges(retryCount, groups, roleSet, authorizableHierarchy);
   }
 
   private ImmutableSet<String> getPrivileges(int retryCount, Set<String> groups, ActiveRoleSet roleSet, Authorizable... authorizableHierarchy) {
-    SentryPolicyServiceClient policyServiceClient = null;
-    try {
-      policyServiceClient = SentryServiceClientFactory.create(conf);
-    } catch (Exception e) {
-      LOGGER.error("Error connecting to Sentry ['{}'] !!",
-          e.getMessage());
-    }
-    if(policyServiceClient!= null) {
+    int retries = Math.max(retryCount + 1, 1); // if customer configs retryCount as Integer.MAX_VALUE, try only once
+    while (retries > 0) {
+      retries--;
+      SentryPolicyServiceClient policyServiceClient = null;
       try {
+        policyServiceClient = SentryServiceClientFactory.create(conf);
         return ImmutableSet.copyOf(policyServiceClient.listPrivilegesForProvider(groups, roleSet, authorizableHierarchy));
       } catch (Exception e) {
-        if (retryCount > 0) {
-          return getPrivileges(retryCount - 1, groups, roleSet, authorizableHierarchy);
+        //TODO: differentiate transient errors and permanent errors
+        String msg = "Unable to obtain privileges from server: " + e.getMessage() + ".";
+        if (retries > 0) {
+          LOGGER.warn(msg +  " Will retry for " + retries + " time(s)");
         } else {
-          String msg = "Unable to obtain privileges from server: " + e.getMessage();
           LOGGER.error(msg, e);
+        }
+        if (retries > 0) {
+          try {
+            Thread.sleep(retryIntervalSec * 1000);
+          } catch (InterruptedException e1) {
+            LOGGER.info("Sleeping is interrupted.", e1);
+          }
         }
       } finally {
         if(policyServiceClient != null) {
@@ -86,6 +96,7 @@ public class SimpleDBProviderBackend implements ProviderBackend {
         }
       }
     }
+
     return ImmutableSet.of();
   }
 
@@ -101,7 +112,7 @@ public class SimpleDBProviderBackend implements ProviderBackend {
   public void close() {
     //Noop
   }
-  
+
   /**
    * SimpleDBProviderBackend does not implement validatePolicy()
    */
