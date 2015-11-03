@@ -22,6 +22,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import com.codahale.metrics.Timer;
 import org.apache.sentry.hdfs.service.thrift.SentryHDFSService;
 import org.apache.sentry.hdfs.service.thrift.TAuthzUpdateResponse;
 import org.apache.sentry.hdfs.service.thrift.TPathsUpdate;
@@ -45,9 +46,15 @@ public class SentryHDFSServiceProcessor implements SentryHDFSService.Iface {
         throw new TException(
             "This Sentry server is not communicating with other nodes and out of sync ");
       }
-      List<PermissionsUpdate> permUpdates = SentryPlugin.instance.getAllPermsUpdatesFrom(permSeqNum);
-      List<PathsUpdate> pathUpdates = SentryPlugin.instance.getAllPathsUpdatesFrom(pathSeqNum);
+      final Timer.Context timerContext =
+          SentryHdfsMetricsUtil.getAllAuthzUpdatesTimer.time();
       try {
+        List<PermissionsUpdate> permUpdates =
+            SentryPlugin.instance.getAllPermsUpdatesFrom(permSeqNum);
+        SentryHdfsMetricsUtil.getPermUpdateHistogram.update(permUpdates.size());
+        List<PathsUpdate> pathUpdates =
+            SentryPlugin.instance.getAllPathsUpdatesFrom(pathSeqNum);
+        SentryHdfsMetricsUtil.getPathUpdateHistogram.update(pathUpdates.size());
         for (PathsUpdate update : pathUpdates) {
           if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("### Sending PATH preUpdate seq [" + update.getSeqNum() + "] ###");
@@ -80,6 +87,8 @@ public class SentryHDFSServiceProcessor implements SentryHDFSService.Iface {
       } catch (Exception e) {
         LOGGER.error("Error Sending updates to downstream Cache", e);
         throw new TException(e);
+      } finally {
+        timerContext.stop();
       }
     } else {
       LOGGER.error("SentryPlugin not initialized yet !!");
@@ -90,6 +99,8 @@ public class SentryHDFSServiceProcessor implements SentryHDFSService.Iface {
 
   @Override
   public void handle_hms_notification(TPathsUpdate update) throws TException {
+    final Timer.Context timerContext =
+        SentryHdfsMetricsUtil.getHandleHmsNotificationTimer.time();
     try {
       PathsUpdate hmsUpdate = new PathsUpdate(update);
       if (SentryPlugin.instance != null) {
@@ -100,7 +111,15 @@ public class SentryHDFSServiceProcessor implements SentryHDFSService.Iface {
       }
     } catch (Exception e) {
       LOGGER.error("Error handling notification from HMS", e);
+      SentryHdfsMetricsUtil.getFailedHandleHmsNotificationCounter.inc();
       throw new TException(e);
+    } finally {
+      timerContext.stop();
+      SentryHdfsMetricsUtil.getHandleHmsPathChangeHistogram.update(
+          update.getPathChangesSize());
+      if (update.isHasFullImage()) {
+        SentryHdfsMetricsUtil.getHandleHmsHasFullImageCounter.inc();
+      }
     }
   }
 

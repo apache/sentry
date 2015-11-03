@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.codahale.metrics.Timer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.hdfs.ServiceConstants.ServerConfig;
 import org.apache.sentry.hdfs.UpdateForwarder.ExternalImageRetriever;
@@ -66,6 +67,8 @@ public class SentryPlugin implements SentryPolicyStorePlugin {
 
     @Override
     public PermissionsUpdate retrieveFullImage(long currSeqNum) {
+      final Timer.Context timerContext =
+          SentryHdfsMetricsUtil.getRetrieveFullImageTimer.time();
       Map<String, HashMap<String, String>> privilegeImage = sentryStore.retrieveFullPrivilegeImage();
       Map<String, LinkedList<String>> roleImage = sentryStore.retrieveFullRoleImage();
 
@@ -85,6 +88,11 @@ public class SentryPlugin implements SentryPolicyStorePlugin {
       }
       PermissionsUpdate permissionsUpdate = new PermissionsUpdate(tPermUpdate);
       permissionsUpdate.setSeqNum(currSeqNum);
+      timerContext.stop();
+      SentryHdfsMetricsUtil.getPrivilegeChangesHistogram.update(
+          tPermUpdate.getPrivilegeChangesSize());
+      SentryHdfsMetricsUtil.getRoleChangesHistogram.update(
+          tPermUpdate.getRoleChangesSize());
       return permissionsUpdate;
     }
 

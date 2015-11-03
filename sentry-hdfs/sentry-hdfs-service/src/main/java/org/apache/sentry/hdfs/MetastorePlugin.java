@@ -31,6 +31,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import com.codahale.metrics.Timer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStore.HMSHandler;
@@ -282,10 +283,15 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
   }
 
   protected void notifySentryNoLock(PathsUpdate update) {
+    final Timer.Context timerContext =
+        SentryHdfsMetricsUtil.getNotifyHMSUpdateTimer.time();
     try {
       getClient().notifyHMSUpdate(update);
     } catch (Exception e) {
       LOGGER.error("Could not send update to Sentry HDFS Service !!", e);
+      SentryHdfsMetricsUtil.getFailedNotifyHMSUpdateCounter.inc();
+    } finally {
+      timerContext.stop();
     }
   }
 
@@ -304,7 +310,12 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
   }
 
   protected void applyLocal(PathsUpdate update) {
+    final Timer.Context timerContext =
+        SentryHdfsMetricsUtil.getApplyLocalUpdateTimer.time();
     authzPaths.updatePartial(Lists.newArrayList(update), new ReentrantReadWriteLock());
+    timerContext.stop();
+    SentryHdfsMetricsUtil.getApplyLocalUpdateHistogram.update(
+        update.getPathChanges().size());
   }
 
   private void notifySentryAndApplyLocal(PathsUpdate update) {

@@ -22,6 +22,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import com.codahale.metrics.Timer;
 import org.apache.curator.framework.recipes.atomic.DistributedAtomicLong;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
@@ -118,6 +119,7 @@ public class PluginCacheSyncUtil {
   }
 
   public void handleCacheUpdate(Update update) throws SentryPluginException {
+    final Timer.Context timerContext = SentryHdfsMetricsUtil.getCacheSyncToZKTimer.time();
     // post message to ZK cache
     try {
       // Acquire ZK lock for update cache sync. This ensures that the counter
@@ -127,10 +129,13 @@ public class PluginCacheSyncUtil {
             "Failed to get ZK lock for update cache syncup");
       }
     } catch (Exception e1) {
+      // Stop timer in advance
+      timerContext.stop();
+      SentryHdfsMetricsUtil.getFailedCacheSyncToZK.inc();
       throw new SentryPluginException(
           "Error getting ZK lock for update cache syncup" + e1, e1);
     }
-
+    boolean failed = false;
     try {
       try {
         // increment the global sequence counter if this is not a full update
@@ -142,6 +147,7 @@ public class PluginCacheSyncUtil {
           }
         }
       } catch (Exception e1) {
+        failed = true;
         throw new SentryPluginException(
             "Error setting ZK counter for update cache syncup" + e1, e1);
       }
@@ -154,6 +160,7 @@ public class PluginCacheSyncUtil {
         haContext.getCuratorFramework().create().creatingParentsIfNeeded()
             .forPath(newPath, update.serialize());
       } catch (Exception e) {
+        failed = true;
         throw new SentryPluginException("error posting update to ZK ", e);
       }
     } finally {
@@ -161,9 +168,14 @@ public class PluginCacheSyncUtil {
       try {
         updatorLock.release();
       } catch (Exception e) {
+        // Stop timer in advance
+        timerContext.stop();
+        SentryHdfsMetricsUtil.getFailedCacheSyncToZK.inc();
         throw new SentryPluginException(
             "Error releasing ZK lock for update cache syncup" + e, e);
       }
+      timerContext.stop();
+      if (failed) SentryHdfsMetricsUtil.getFailedCacheSyncToZK.inc();
     }
   }
 

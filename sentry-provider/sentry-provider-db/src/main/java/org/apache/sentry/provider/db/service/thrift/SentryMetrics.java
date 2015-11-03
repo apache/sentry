@@ -18,7 +18,9 @@
 package org.apache.sentry.provider.db.service.thrift;
 
 import com.codahale.metrics.ConsoleReporter;
+import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Histogram;
 import com.codahale.metrics.JmxReporter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
@@ -68,6 +70,27 @@ public class SentryMetrics {
       MetricRegistry.name(SentryPolicyStoreProcessor.class, "list-privileges-for-provider"));
   public final Timer listPrivilegesByAuthorizableTimer = SentryMetricsServletContextListener.METRIC_REGISTRY.timer(
       MetricRegistry.name(SentryPolicyStoreProcessor.class, "list-privileges-by-authorizable"));
+
+  /**
+   * Return a Timer with name.
+   */
+  public final Timer getTimer(String name) {
+    return SentryMetricsServletContextListener.METRIC_REGISTRY.timer(name);
+  }
+
+  /**
+   * Return a Histogram with name.
+   */
+  public final Histogram getHistogram(String name) {
+    return SentryMetricsServletContextListener.METRIC_REGISTRY.histogram(name);
+  }
+
+  /**
+   * Return a Counter with name.
+   */
+  public final Counter getCounter(String name) {
+    return SentryMetricsServletContextListener.METRIC_REGISTRY.counter(name);
+  }
 
   private SentryMetrics() {
     registerMetricSet("gc", new GarbageCollectorMetricSet(), SentryMetricsServletContextListener.METRIC_REGISTRY);
