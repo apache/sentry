@@ -74,18 +74,18 @@ public class PrivilegeResultSet {
         }
     }
 
-    protected List<ArrayList<String>> getResultSet() {
+    public List<ArrayList<String>> getResultSet() {
         return this.privilegeResultSet;
     }
 
-    protected List<String> getHeader() {
+    public List<String> getHeader() {
         return this.header;
     }
 
     /**
      * Given a column name, validate if one of its values equals to given colVal
      */
-    protected boolean verifyResultSetColumn(String colName, String colVal) {
+    public boolean verifyResultSetColumn(String colName, String colVal) {
         for (int i = 0; i < this.colNum; i ++) {
             if (this.header.get(i).equalsIgnoreCase(colName)) {
                 for (int j = 0; j < this.privilegeResultSet.size(); j ++) {
