@@ -196,7 +196,18 @@ public class SentryAuthorizationProvider
 
   @Override
   public void setUser(INodeAuthorizationInfo node, String user) {
-    defaultAuthzProvider.setUser(node, user);
+    String[] pathElements = getPathElements(node);
+
+    // For the non sentry managed paths, set the user based on
+    // the requests. Otherwise should be a no op.
+    if (!authzInfo.isManaged(pathElements)
+            || !authzInfo.doesBelongToAuthzObject(pathElements)) {
+      defaultAuthzProvider.setUser(node, user);
+    } else {
+      if (LOG.isErrorEnabled()) {
+        LOG.error("### setUser is a no op for the sentry managed path.\n");
+      }
+    }
   }
 
   @Override
@@ -215,7 +226,18 @@ public class SentryAuthorizationProvider
 
   @Override
   public void setGroup(INodeAuthorizationInfo node, String group) {
-    defaultAuthzProvider.setGroup(node, group);
+    String[] pathElements = getPathElements(node);
+
+    // For the non sentry managed paths, set the group based on
+    // the requests. Otherwise should be a no op.
+    if (!authzInfo.isManaged(pathElements)
+            || !authzInfo.doesBelongToAuthzObject(pathElements)) {
+      defaultAuthzProvider.setGroup(node, group);
+    } else {
+      if (LOG.isErrorEnabled()) {
+        LOG.error("### setGroup is a no op for the sentry managed path.\n");
+      }
+    }
   }
 
   @Override
@@ -233,9 +255,19 @@ public class SentryAuthorizationProvider
   }
 
   @Override
-  public void setPermission(INodeAuthorizationInfo node,
-      FsPermission permission) {
-    defaultAuthzProvider.setPermission(node, permission);
+  public void setPermission(INodeAuthorizationInfo node, FsPermission permission) {
+    String[] pathElements = getPathElements(node);
+
+    // For the non sentry managed paths, set the permission based on
+    // the requests. Otherwise should be a no op.
+    if (!authzInfo.isManaged(pathElements)
+            || !authzInfo.doesBelongToAuthzObject(pathElements)) {
+      defaultAuthzProvider.setPermission(node, permission);
+    } else {
+      if (LOG.isErrorEnabled()) {
+        LOG.error("### setPermission is a no op for the sentry managed path.\n");
+      }
+    }
   }
 
   @Override
@@ -375,8 +407,18 @@ public class SentryAuthorizationProvider
   @Override
   public void removeAclFeature(INodeAuthorizationInfo node) {
     AclFeature aclFeature = node.getAclFeature(CURRENT_STATE_ID);
-    if (aclFeature.getClass() != SentryAclFeature.class) {
+    String[] pathElements = getPathElements(node);
+
+    // For non sentry managed paths, remove the ACLs based on
+    // the requests. Otherwise should be a no op.
+    if (aclFeature.getClass() != SentryAclFeature.class
+            && !authzInfo.isManaged(pathElements)) {
       defaultAuthzProvider.removeAclFeature(node);
+    } else {
+      if (LOG.isErrorEnabled()) {
+        LOG.error("### removeAclFeature is a no op for " +
+                "the path under prefix.\n");
+      }
     }
   }
 
