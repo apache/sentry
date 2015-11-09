@@ -20,9 +20,10 @@ package org.apache.sentry.tests.e2e.dbprovider;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.hive.service.cli.HiveSQLException;
-import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 import org.apache.sentry.tests.e2e.hive.PrivilegeResultSet;
 
@@ -63,6 +64,19 @@ public class TestDbColumnLevelMetaDataOps extends AbstractTestWithStaticConfigur
     super.setup();
     createTestData();
   }
+  private static Statement statement = null;
+  private static Connection connection = null;
+
+  private static void establishSession(String user) throws Exception{
+    if (statement != null) {
+      statement.close();
+    }
+    if (connection != null) {
+      connection.close();
+    }
+    connection = context.createConnection(user);
+    statement = context.createStatement(connection);
+  }
 
   /**
    * Create test database, table and role
@@ -70,14 +84,14 @@ public class TestDbColumnLevelMetaDataOps extends AbstractTestWithStaticConfigur
    * @throws Exception
    */
   private void createTestData() throws Exception {
-    Connection connection = context.createConnection(ADMIN1);
-    Statement statement = context.createStatement(connection);
+    establishSession(ADMIN1);
     statement.execute("CREATE DATABASE " + TEST_COL_METADATA_OPS_DB);
     statement.execute("USE " + TEST_COL_METADATA_OPS_DB);
     statement.execute("CREATE TABLE " + TEST_COL_METADATA_OPS_TB
             + " (privileged STRING, unprivileged INT) partitioned by (privileged_par STRING, unprivileged_par INT)");
     statement.execute("INSERT INTO TABLE " + TEST_COL_METADATA_OPS_TB
             + " PARTITION(privileged_par = 'privileged_par', unprivileged_par = 1) VALUES ('test1', 1)");
+
     statement.execute("CREATE ROLE " + TEST_COL_METADATA_OPS_ROLE);
     statement.execute("GRANT SELECT(privileged) ON TABLE " + TEST_COL_METADATA_OPS_TB + " TO ROLE " + TEST_COL_METADATA_OPS_ROLE);
     statement.execute("GRANT ROLE " + TEST_COL_METADATA_OPS_ROLE + " TO GROUP " + USERGROUP1);
@@ -88,12 +102,9 @@ public class TestDbColumnLevelMetaDataOps extends AbstractTestWithStaticConfigur
     prset.verifyResultSetColumn("table", TEST_COL_METADATA_OPS_TB);
     prset.verifyResultSetColumn("column", "privileged");
     prset.verifyResultSetColumn("privilege", "select");
-
-    statement.close();
-    connection.close();
   }
 
-  private ResultSet executeQueryWithLog(Statement statement, String query) throws Exception {
+  private ResultSet executeQueryWithLog(String query) throws Exception {
     ResultSet rs;
     try {
       LOGGER.info("Running " + query);
@@ -105,12 +116,29 @@ public class TestDbColumnLevelMetaDataOps extends AbstractTestWithStaticConfigur
     }
   }
 
-  private void validateColumnMetaData(String query, String colMetaField, String user,
-                                      String privileged, String unprivileged) throws Exception {
-    Connection conneciton = context.createConnection(user);
-    Statement statement = context.createStatement(conneciton);
+  private void validateFiltersInaccessibleColumns(String query, String colMetaField, String user,
+                                      String privileged) throws Exception {
+    establishSession(user);
     statement.execute("USE " + TEST_COL_METADATA_OPS_DB);
-    ResultSet rs = executeQueryWithLog(statement, query);
+    ResultSet rs = executeQueryWithLog(query);
+    int numColumns = 0;
+    while (rs.next()) {
+      String val = rs.getString(colMetaField);
+      numColumns++;
+      // Relax validation for now:
+      // user with any select privilege can perform metadata operations,
+      // even though it might show some columns which he doesn't have privileges
+      assertTrue("Can access non privileged column", val.equalsIgnoreCase(privileged));
+    }
+    rs.close();
+    assertTrue("Looks like we accessed more columns than needed", numColumns == 1);
+  }
+
+  private void validateShowsAllColumns(String query, String colMetaField, String user,
+                                       String privileged, String unprivileged) throws Exception {
+    establishSession(user);
+    statement.execute("USE " + TEST_COL_METADATA_OPS_DB);
+    ResultSet rs = executeQueryWithLog(query);
     boolean found = false;
     while (rs.next()) {
       String val = rs.getString(colMetaField);
@@ -130,29 +158,25 @@ public class TestDbColumnLevelMetaDataOps extends AbstractTestWithStaticConfigur
       }
     }
     rs.close();
-    statement.close();
-    conneciton.close();
     assertTrue("failed to detect column privileged from result", found);
   }
 
-  private void validateColumnMetaData(String query, String colMetaField, String user) throws Exception {
-    validateColumnMetaData(query, colMetaField, user, "privileged", "unprivileged");
+  private void validateShowsAllColumns(String query, String colMetaField, String user) throws Exception {
+    validateShowsAllColumns(query, colMetaField, user, "privileged", "unprivileged");
   }
 
+
   private void validateSemanticException(String query, String user) throws Exception {
-    Connection conneciton = context.createConnection(user);
-    Statement statement = context.createStatement(conneciton);
+    establishSession(user);
     try {
       LOGGER.info("Running " + query);
       statement.execute(query);
       fail("failed to throw SemanticException");
     } catch (Exception ex) {
       String err = "SemanticException No valid privileges";
-      assertTrue("failed to detect " + err,
-              ex.getMessage().contains("SemanticException No valid privileges"));
+      assertTrue("failed to detect " + err + "\n" + ex.getMessage(),
+          ex.getMessage().contains("SemanticException No valid privileges"));
     }
-    statement.close();
-    conneciton.close();
   }
 
   /**
@@ -177,7 +201,7 @@ public class TestDbColumnLevelMetaDataOps extends AbstractTestWithStaticConfigur
   public void testShowColumns() throws Exception {
     String query = "SHOW COLUMNS IN " + TEST_COL_METADATA_OPS_DB + "." + TEST_COL_METADATA_OPS_TB;
     // with column level privileges, user can show columns
-    validateColumnMetaData(query, "field", USER1_1);
+    validateFiltersInaccessibleColumns(query, "field", USER1_1, "privileged");
     // without column/table level privileges, any user can NOT show columns
     validateSemanticException(query, USER2_1);
   }
@@ -201,7 +225,7 @@ public class TestDbColumnLevelMetaDataOps extends AbstractTestWithStaticConfigur
   public void testDescribeTable() throws Exception {
     String query = "DESCRIBE " + TEST_COL_METADATA_OPS_DB + "." + TEST_COL_METADATA_OPS_TB;
     // with column level privilege, user can describe table, but columns are not filtered for now
-    validateColumnMetaData(query, "col_name", USER1_1);
+    validateShowsAllColumns(query, "col_name", USER1_1);
     // without column/table level privileges, any user can NOT describe table
     validateSemanticException(query, USER2_1);
 
@@ -234,7 +258,7 @@ public class TestDbColumnLevelMetaDataOps extends AbstractTestWithStaticConfigur
   public void testExplainSelect() throws Exception {
     String query = "EXPLAIN SELECT privileged FROM " + TEST_COL_METADATA_OPS_DB + "." + TEST_COL_METADATA_OPS_TB;
     // With column level privilege, user can explain select column
-    validateColumnMetaData(query, "Explain", USER1_1);
+    validateShowsAllColumns(query, "Explain", USER1_1);
     // Without column/table level privilege, user can NOT explain select column
     validateSemanticException(query, USER2_1);
 
@@ -260,23 +284,18 @@ public class TestDbColumnLevelMetaDataOps extends AbstractTestWithStaticConfigur
 
   /**
    * Test if add a new column and grant privilege,
-   * test user can immediately has metadata access to this column
+   * user1 needs explicit grant on new column to access this column
    */
   @Test
   public void testShowNewColumn() throws Exception {
     String colName = "newcol";
-    Connection connection = context.createConnection(ADMIN1);
-    Statement statement = context.createStatement(connection);
+    establishSession(ADMIN1);
     statement.execute("USE " + TEST_COL_METADATA_OPS_DB);
     statement.execute("ALTER TABLE " + TEST_COL_METADATA_OPS_TB + " ADD COLUMNS (" + colName + " STRING)");
-    statement.execute("GRANT SELECT(" + colName + ") ON TABLE " + TEST_COL_METADATA_OPS_TB + " TO ROLE " + TEST_COL_METADATA_OPS_ROLE);
-    statement.close();
-    connection.close();
 
-    Connection newconn = context.createConnection(ADMIN1);
-    Statement newstmt = context.createStatement(newconn);
-    newstmt.execute("USE " + TEST_COL_METADATA_OPS_DB);
-    ResultSet rs = executeQueryWithLog(newstmt, "SHOW COLUMNS IN " + TEST_COL_METADATA_OPS_TB);
+    String query = "SHOW COLUMNS IN " + TEST_COL_METADATA_OPS_DB + "." + TEST_COL_METADATA_OPS_TB;
+    establishSession(USER1_1);
+    ResultSet rs = executeQueryWithLog(query);
     boolean found = false;
     while (rs.next() && !found) {
       String val = rs.getString("field");
@@ -285,10 +304,25 @@ public class TestDbColumnLevelMetaDataOps extends AbstractTestWithStaticConfigur
         found = true;
       }
     }
-    assertTrue("Failed to show " + colName, found);
+    assertTrue("Should not have implicit access to new column " + colName, !found);
     rs.close();
-    newstmt.close();
-    newconn.close();
+
+    establishSession(ADMIN1);
+    statement.execute("GRANT SELECT(" + colName + ") ON TABLE " + TEST_COL_METADATA_OPS_TB + " TO ROLE " + TEST_COL_METADATA_OPS_ROLE);
+
+    establishSession(USER1_1);
+    rs = executeQueryWithLog(query);
+    found = false;
+    while (rs.next() && !found) {
+      String val = rs.getString("field");
+      LOGGER.info("found " + val);
+      if (val.equalsIgnoreCase(colName)) {
+        found = true;
+      }
+    }
+    assertTrue("Should not have implicit access to new column " + colName, !found);
+    rs.close();
+    validateSemanticException(query, USER2_1);
   }
 
   /**
@@ -301,17 +335,40 @@ public class TestDbColumnLevelMetaDataOps extends AbstractTestWithStaticConfigur
   public void testShowPartitions() throws Exception {
     final String PAR_ROLE_NAME = TEST_COL_METADATA_OPS_ROLE + "_2";
 
-    Connection connection = context.createConnection(ADMIN1);
-    Statement statement = context.createStatement(connection);
+    establishSession(ADMIN1);
     statement.execute("USE " + TEST_COL_METADATA_OPS_DB);
     statement.execute("CREATE ROLE " + PAR_ROLE_NAME);
     statement.execute("GRANT SELECT(privileged_par) ON TABLE " + TEST_COL_METADATA_OPS_TB + " TO ROLE " + PAR_ROLE_NAME);
     statement.execute("GRANT ROLE " + PAR_ROLE_NAME + " TO GROUP " + USERGROUP1);
-    statement.close();
-    connection.close();
 
     String query = "SHOW PARTITIONS " + TEST_COL_METADATA_OPS_DB + "." + TEST_COL_METADATA_OPS_TB;
-    validateColumnMetaData(query, "partition", USER1_1, "privileged_par", "unprivileged_par");
+    validateFiltersInaccessibleColumns(query, "partition", USER1_1, "privileged_par");
   }
 
+  /**
+   * Requires table level privileges
+   */
+  @Test
+  public void testShowTblProperties() throws Exception {
+    String query = "SHOW TBLPROPERTIES " + TEST_COL_METADATA_OPS_DB + "." + TEST_COL_METADATA_OPS_TB;
+    validateSemanticException(query, USER1_1);
+  }
+
+  /**
+   * Requires table level privileges
+   */
+  @Test
+  public void testShowCreateTable() throws Exception {
+    String query = "SHOW CREATE TABLE " + TEST_COL_METADATA_OPS_DB + "." + TEST_COL_METADATA_OPS_TB;
+    validateSemanticException(query, USER1_1);
+  }
+
+  /**
+   * Requires table level privileges
+   */
+  @Test
+  public void testTableExtendLike() throws Exception {
+    String query = "SHOW TABLE EXTENDED IN " + TEST_COL_METADATA_OPS_DB + " LIKE " + TEST_COL_METADATA_OPS_TB;
+    validateSemanticException(query, USER1_1);
+  }
 }
