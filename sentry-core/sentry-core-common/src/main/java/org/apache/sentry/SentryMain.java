@@ -27,6 +27,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
+import java.io.FileInputStream;
+import java.util.Properties;
 
 public class SentryMain {
   private static final String HELP_SHORT = "h";
@@ -58,7 +60,25 @@ public class SentryMain {
 
     String log4jconf = commandLine.getOptionValue(LOG4J_CONF);
     if ((log4jconf != null)&&(log4jconf.length() > 0)) {
-      PropertyConfigurator.configure(log4jconf);
+      Properties log4jProperties = new Properties();
+
+      // Firstly load log properties from properties file
+      FileInputStream istream = new FileInputStream(log4jconf);
+      log4jProperties.load(istream);
+      istream.close();
+
+      // Set the log level of DataNucleus.Query to INFO only if it is not set in the
+      // properties file
+      if (!log4jProperties.containsKey("log4j.category.DataNucleus.Query")) {
+        log4jProperties.setProperty("log4j.category.DataNucleus.Query", "INFO");
+
+        // Enable debug log for DataNucleus.Query only when log.threshold is TRACE
+        if (log4jProperties.getProperty("log.threshold").equalsIgnoreCase("TRACE")) {
+          log4jProperties.setProperty("log4j.category.DataNucleus.Query", "DEBUG");
+        }
+      }
+
+      PropertyConfigurator.configure(log4jProperties);
       Logger sentryLogger = LoggerFactory.getLogger(SentryMain.class);
       sentryLogger.info("Configuring log4j to use [" + log4jconf + "]");
     }
