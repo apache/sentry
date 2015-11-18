@@ -980,9 +980,10 @@ public class SentryStore {
               filters.append(" && ((tableName == \"" + authHierarchy.getTable().toLowerCase() + "\") || (tableName == \"__NULL__\")) && (URI == \"__NULL__\")");
             }
             if ((authHierarchy.getColumn() != null)
-                && !AccessConstants.ALL
-                    .equalsIgnoreCase(authHierarchy.getColumn())) {
-              filters.append(" && ((columnName == \"" + authHierarchy.getColumn().toLowerCase() + "\") || (columnName == \"__NULL__\")) && (URI == \"__NULL__\")");
+                && !AccessConstants.ALL.equalsIgnoreCase(authHierarchy.getColumn())) {
+              if (!AccessConstants.SOME.equalsIgnoreCase(authHierarchy.getColumn())) {
+                filters.append(" && ((columnName == \"" + authHierarchy.getColumn().toLowerCase() + "\") || (columnName == \"__NULL__\")) && (URI == \"__NULL__\")");
+              }
             }
           }
         }

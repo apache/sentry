@@ -1697,6 +1697,47 @@ public class TestSentryStore {
 
   }
 
+
+  @Test
+  public void testSentryColumnPrivilegeSome() throws Exception {
+    String roleName = "test-column-privilege-some";
+    String grantor = "g1";
+    String dbName = "db1";
+    String table = "tb1";
+    String column = "col1";
+    sentryStore.createSentryRole(roleName);
+    TSentryPrivilege tSentryPrivilege = new TSentryPrivilege("TABLE", "server1", "ALL");
+    tSentryPrivilege.setDbName(dbName);
+    tSentryPrivilege.setTableName(table);
+    tSentryPrivilege.setColumnName(column);
+    sentryStore.alterSentryRoleGrantPrivilege(grantor, roleName, tSentryPrivilege);
+
+    TSentryAuthorizable tSentryAuthorizable = new TSentryAuthorizable();
+    tSentryAuthorizable.setDb(dbName);
+    tSentryAuthorizable.setTable(table);
+    tSentryAuthorizable.setColumn(AccessConstants.SOME);
+    tSentryAuthorizable.setServer("server1");
+
+    Set<TSentryPrivilege> privileges =
+        sentryStore.getTSentryPrivileges(new HashSet<String>(Arrays.asList(roleName)), tSentryAuthorizable);
+
+    assertTrue(privileges.size() == 1);
+
+    Set<TSentryGroup> tSentryGroups = new HashSet<TSentryGroup>();
+    tSentryGroups.add(new TSentryGroup("group1"));
+    sentryStore.alterSentryRoleAddGroups(grantor, roleName, tSentryGroups);
+
+    TSentryActiveRoleSet thriftRoleSet = new TSentryActiveRoleSet(true, new HashSet<String>(Arrays.asList(roleName)));
+
+    Set<String> privs =
+        sentryStore.listSentryPrivilegesForProvider(new HashSet<String>(Arrays.asList("group1")), thriftRoleSet, tSentryAuthorizable);
+
+    assertTrue(privs.size() == 1);
+    assertTrue(privs.contains("server=server1->db=" + dbName + "->table=" + table + "->column="
+        + column + "->action=all"));
+
+  }
+
   protected static void addGroupsToUser(String user, String... groupNames) {
     policyFile.addGroupsToUser(user, groupNames);
   }
