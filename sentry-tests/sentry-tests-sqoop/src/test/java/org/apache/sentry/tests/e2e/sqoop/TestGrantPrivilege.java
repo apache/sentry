@@ -194,7 +194,9 @@ public class TestGrantPrivilege extends AbstractSqoopSentryTestBase {
     for (MPrivilege privilege : client.getPrivilegesByPrincipal(role4Princ, allConnector)) {
       actions.add(privilege.getAction().toLowerCase());
     }
-    assertEquals(Lists.newArrayList(SqoopActionConstant.READ, SqoopActionConstant.WRITE), actions);
+    assertEquals(2, actions.size());
+    assertTrue(actions.contains(SqoopActionConstant.READ));
+    assertTrue(actions.contains(SqoopActionConstant.WRITE));
 
     /**
      * admin user grant all privilege on connector all to role role4
