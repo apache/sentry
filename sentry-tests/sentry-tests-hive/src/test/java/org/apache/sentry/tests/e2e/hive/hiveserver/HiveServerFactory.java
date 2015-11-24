@@ -188,7 +188,6 @@ public class HiveServerFactory {
     properties.put(METASTORE_CLIENT_TIMEOUT, "100");
     properties.put(ConfVars.HIVE_WAREHOUSE_SUBDIR_INHERIT_PERMS.varname, "true");
 
-    properties.put(ConfVars.HIVE_SERVER2_BUILTIN_UDF_BLACKLIST.varname, "reflect,reflect2,java_method");
     properties.put(ConfVars.HIVESTATSAUTOGATHER.varname, "false");
     properties.put(ConfVars.HIVE_STATS_COLLECT_SCANCOLS.varname, "true");
     String hadoopBinPath = properties.get(HADOOPBIN);

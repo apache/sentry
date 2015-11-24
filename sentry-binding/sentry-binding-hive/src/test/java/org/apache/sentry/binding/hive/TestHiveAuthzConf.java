@@ -39,7 +39,7 @@ public class TestHiveAuthzConf {
     currentProps = Arrays.asList(new AuthzConfVars[] {
         AuthzConfVars.AUTHZ_PROVIDER, AuthzConfVars.AUTHZ_PROVIDER_RESOURCE,
         AuthzConfVars.AUTHZ_SERVER_NAME, AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB,
-        AuthzConfVars.SENTRY_TESTING_MODE, AuthzConfVars.AUTHZ_UDF_WHITELIST,
+        AuthzConfVars.SENTRY_TESTING_MODE,
         AuthzConfVars.AUTHZ_ALLOW_HIVE_IMPERSONATION, AuthzConfVars.AUTHZ_ONFAILURE_HOOKS });
 
   }
