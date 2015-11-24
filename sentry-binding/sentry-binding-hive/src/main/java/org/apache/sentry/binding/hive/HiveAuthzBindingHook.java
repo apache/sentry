@@ -32,10 +32,7 @@ import org.apache.hadoop.hive.common.JavaUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
-import org.apache.hadoop.hive.ql.exec.DDLTask;
-import org.apache.hadoop.hive.ql.exec.SentryFilterDDLTask;
-import org.apache.hadoop.hive.ql.exec.SentryGrantRevokeTask;
-import org.apache.hadoop.hive.ql.exec.Task;
+import org.apache.hadoop.hive.ql.exec.*;
 import org.apache.hadoop.hive.ql.hooks.Entity;
 import org.apache.hadoop.hive.ql.hooks.Entity.Type;
 import org.apache.hadoop.hive.ql.hooks.Hook;
@@ -109,6 +106,8 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
     }
     authzConf = loadAuthzConf(hiveConf);
     hiveAuthzBinding = new HiveAuthzBinding(hiveConf, authzConf);
+
+    FunctionRegistry.setupPermissionsForBuiltinUDFs("", HiveAuthzConf.HIVE_UDF_BLACK_LIST);
   }
 
   public static HiveAuthzConf loadAuthzConf(HiveConf hiveConf) {

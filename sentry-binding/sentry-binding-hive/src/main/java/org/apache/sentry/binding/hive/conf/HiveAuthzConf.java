@@ -52,6 +52,31 @@ public class HiveAuthzConf extends Configuration {
   public static final String HIVE_SENTRY_SECURITY_COMMAND_WHITELIST_DEFAULT =
       "set,reset,reload";
 
+  public static final String HIVE_UDF_WHITE_LIST =
+      "concat,substr,substring,space,repeat,ascii,lpad,rpad,size,round,floor,sqrt,ceil," +
+          "ceiling,rand,abs,pmod,ln,log2,sin,asin,cos,acos,log10,log,exp,power,pow,sign,pi," +
+          "degrees,radians,atan,tan,e,conv,bin,hex,unhex,base64,unbase64,encode,decode,upper," +
+          "lower,ucase,lcase,trim,ltrim,rtrim,length,reverse,field,find_in_set,initcap,like," +
+          "rlike,regexp,regexp_replace,regexp_extract,parse_url,nvl,split,str_to_map,translate" +
+          ",positive,negative,day,dayofmonth,month,year,hour,minute,second,from_unixtime," +
+          "to_date,weekofyear,last_day,date_add,date_sub,datediff,add_months,get_json_object," +
+          "xpath_string,xpath_boolean,xpath_number,xpath_double,xpath_float,xpath_long," +
+          "xpath_int,xpath_short,xpath,+,-,*,/,%,div,&,|,^,~,current_database,isnull," +
+          "isnotnull,if,in,and,or,=,==,<=>,!=,<>,<,<=,>,>=,not,!,between,ewah_bitmap_and," +
+          "ewah_bitmap_or,ewah_bitmap_empty,boolean,tinyint,smallint,int,bigint,float,double," +
+          "string,date,timestamp,binary,decimal,varchar,char,max,min,sum,count,avg,std,stddev," +
+          "stddev_pop,stddev_samp,variance,var_pop,var_samp,covar_pop,covar_samp,corr," +
+          "histogram_numeric,percentile_approx,collect_set,collect_list,ngrams," +
+          "context_ngrams,ewah_bitmap,compute_stats,percentile," +
+          "array,assert_true,map,struct,named_struct,create_union,case,when,hash,coalesce," +
+          "index,in_file,instr,locate,elt,concat_ws,sort_array," +
+          "array_contains,sentences,map_keys,map_values,format_number,printf,greatest,least," +
+          "from_utc_timestamp,to_utc_timestamp,unix_timestamp,to_unix_timestamp,explode," +
+          "inline,json_tuple,parse_url_tuple,posexplode,stack,lead,lag,row_number,rank," +
+          "dense_rank,percent_rank,cume_dist,ntile,first_value,last_value,noop,noopwithmap," +
+          "noopstreaming,noopwithmapstreaming,windowingtablefunction,matchpath";
+
+  public static final String HIVE_UDF_BLACK_LIST = "reflect,reflect2,java_method";
   /**
    * Config setting definitions
    */
@@ -64,7 +89,6 @@ public class HiveAuthzConf extends Configuration {
     AUTHZ_SERVER_NAME("sentry.hive.server", "HS2"),
     AUTHZ_RESTRICT_DEFAULT_DB("sentry.hive.restrict.defaultDB", "false"),
     SENTRY_TESTING_MODE("sentry.hive.testing.mode", "false"),
-    AUTHZ_UDF_WHITELIST("sentry.hive.udf.whitelist", HIVE_UDF_WHITE_LIST),
     AUTHZ_ALLOW_HIVE_IMPERSONATION("sentry.hive.allow.hive.impersonation", "false"),
     AUTHZ_ONFAILURE_HOOKS("sentry.hive.failure.hooks", ""),
     AUTHZ_METASTORE_SERVICE_USERS("sentry.metastore.service.users", null),
@@ -78,7 +102,6 @@ public class HiveAuthzConf extends Configuration {
     AUTHZ_SERVER_NAME_DEPRECATED("hive.sentry.server", "HS2"),
     AUTHZ_RESTRICT_DEFAULT_DB_DEPRECATED("hive.sentry.restrict.defaultDB", "false"),
     SENTRY_TESTING_MODE_DEPRECATED("hive.sentry.testing.mode", "false"),
-    AUTHZ_UDF_WHITELIST_DEPRECATED("hive.sentry.udf.whitelist", HIVE_UDF_WHITE_LIST),
     AUTHZ_ALLOW_HIVE_IMPERSONATION_DEPRECATED("hive.sentry.allow.hive.impersonation", "false"),
     AUTHZ_ONFAILURE_HOOKS_DEPRECATED("hive.sentry.failure.hooks", "");
 
@@ -108,29 +131,6 @@ public class HiveAuthzConf extends Configuration {
     }
   }
 
-  private static final String HIVE_UDF_WHITE_LIST =
-    "date,decimal,timestamp," + // SENTRY-312
-    "abs,acos,and,array,array_contains,ascii,asin,assert_true,atan,avg," +
-    "between,bin,case,cast,ceil,ceiling,coalesce,collect_list,collect_set,compute_stats,concat,concat_ws," +
-    "UDFConv,UDFHex,UDFSign,UDFToBoolean,UDFToByte,UDFToDouble,UDFToFloat,UDFToInteger,UDFToLong,UDFToShort,UDFToString," +
-    "context_ngrams,conv,corr,cos,count,covar_pop,covar_samp,create_union,date_add,date_sub," +
-    "datediff,day,dayofmonth,degrees,div,e,elt,ewah_bitmap,ewah_bitmap_and,ewah_bitmap_empty," +
-    "ewah_bitmap_or,exp,explode,field,find_in_set,floor,format_number,from_unixtime," +
-    "from_utc_timestamp,get_json_object,hash,hex,histogram_numeric,hour,if,in,in_file,index," +
-    "inline,instr,isnotnull,isnull," + // java_method is skipped
-    "json_tuple,lcase,length,like,ln,locate,log," +
-    "log10,log2,lower,lpad,ltrim,map,map_keys,map_values,max,min," +
-    "minute,month,named_struct,negative,ngrams,not,or,parse_url,parse_url_tuple,percentile," +
-    "percentile_approx,pi,pmod,posexplode,positive,pow,power,printf,radians,rand," + // reflect is skipped
-    "regexp,regexp_extract,regexp_replace,repeat,reverse,rlike,round,rpad,rtrim,second," +
-    "sentences,sign,sin,size,sort_array,space,split,sqrt,stack,std," +
-    "stddev,stddev_pop,stddev_samp,str_to_map,struct,substr,substring,sum,tan,to_date," +
-    "to_utc_timestamp,translate,trim,ucase,unhex,union_map,unix_timestamp,upper,var_pop,var_samp," +
-    "variance,weekofyear,when,xpath,xpath_boolean,xpath_double,xpath_float,xpath_int,xpath_long," +
-    "xpath_number,xpath_short,xpath_string,year,base64,cume_dist, decode, dense_rank, first_value," +
-    "lag, last_value, lead, noop, noopwithmap, ntile, nvl, percent_rank, rank, to_unix_timestamp," +
-    "current_database,char,varchar,matchpath,row_number,unbase64,windowingtablefunction";
-
   // map of current property names - > deprecated property names.
   // The binding layer code should work if the deprecated property names are provided,
   // as long as the new property names aren't also provided.  Since the binding code
@@ -144,7 +144,6 @@ public class HiveAuthzConf extends Configuration {
     currentToDeprecatedProps.put(AuthzConfVars.AUTHZ_SERVER_NAME.getVar(), AuthzConfVars.AUTHZ_SERVER_NAME_DEPRECATED);
     currentToDeprecatedProps.put(AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB_DEPRECATED);
     currentToDeprecatedProps.put(AuthzConfVars.SENTRY_TESTING_MODE.getVar(), AuthzConfVars.SENTRY_TESTING_MODE_DEPRECATED);
-    currentToDeprecatedProps.put(AuthzConfVars.AUTHZ_UDF_WHITELIST.getVar(), AuthzConfVars.AUTHZ_UDF_WHITELIST_DEPRECATED);
     currentToDeprecatedProps.put(AuthzConfVars.AUTHZ_ALLOW_HIVE_IMPERSONATION.getVar(), AuthzConfVars.AUTHZ_ALLOW_HIVE_IMPERSONATION_DEPRECATED);
     currentToDeprecatedProps.put(AuthzConfVars.AUTHZ_ONFAILURE_HOOKS.getVar(), AuthzConfVars.AUTHZ_ONFAILURE_HOOKS_DEPRECATED);
   };
