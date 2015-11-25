@@ -26,6 +26,7 @@ import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.core.common.Subject;
+import org.apache.sentry.policy.common.PolicyEngine;
 
 public class NoAuthorizationProvider implements AuthorizationProvider {
   private GroupMappingService noGroupMappingService = new NoGroupMappingService();
@@ -66,5 +67,12 @@ public class NoAuthorizationProvider implements AuthorizationProvider {
   @Override
   public void close() {
 
+  }
+
+  // the class is only for the test TestNoAuthorizationProvider. this method won't be called,
+  // just for override. Return null has no problem here.
+  @Override
+  public PolicyEngine getPolicyEngine() {
+    return null;
   }
 }

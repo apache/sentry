@@ -19,8 +19,6 @@ package org.apache.sentry.tests.e2e.dbprovider;
 
 import static org.junit.Assert.*;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.sql.Connection;
 import java.sql.Statement;
 
@@ -31,8 +29,6 @@ import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import com.google.common.io.Resources;
 
 public class TestDbConnections extends AbstractTestWithStaticConfiguration {
   private PolicyFile policyFile;
@@ -115,8 +111,8 @@ public class TestDbConnections extends AbstractTestWithStaticConfiguration {
     // client invocation via metastore filter
     preConnectionClientId = getSentrySrv().getTotalClients();
     statement.executeQuery("show tables");
-    //There are no tables, so auth check does not happen
-    assertTrue(preConnectionClientId == getSentrySrv().getTotalClients());
+    // sentry will create connection to get privileges for cache
+    assertTrue(preConnectionClientId < getSentrySrv().getTotalClients());
     // assertEquals(0, getSentrySrv().getNumActiveClients());
 
     statement.close();

@@ -26,6 +26,7 @@ import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.core.common.Subject;
+import org.apache.sentry.policy.common.PolicyEngine;
 
 /**
  * Implementations of AuthorizationProvider must be threadsafe.
@@ -90,4 +91,9 @@ public interface AuthorizationProvider {
    * Frees any resources held by the the provider
    */
   public void close();
+
+  /**
+   * Get the policy engine
+   */
+  public PolicyEngine getPolicyEngine();
 }
