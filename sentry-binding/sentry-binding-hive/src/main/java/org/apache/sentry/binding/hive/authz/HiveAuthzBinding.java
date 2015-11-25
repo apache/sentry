@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.hadoop.conf.Configuration;
@@ -31,7 +30,6 @@ import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
-import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.sentry.SentryUserException;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
@@ -44,8 +42,11 @@ import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
 import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.policy.common.PolicyEngine;
+import org.apache.sentry.provider.cache.PrivilegeCache;
+import org.apache.sentry.provider.cache.SimpleCacheProviderBackend;
 import org.apache.sentry.provider.common.AuthorizationProvider;
 import org.apache.sentry.provider.common.ProviderBackend;
+import org.apache.sentry.provider.common.ProviderBackendContext;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,6 +89,18 @@ public class HiveAuthzBinding {
     this.open = true;
     this.activeRoleSet = parseActiveRoleSet(hiveConf.get(HiveAuthzConf.SENTRY_ACTIVE_ROLE_SET,
         authzConf.get(HiveAuthzConf.SENTRY_ACTIVE_ROLE_SET, "")).trim());
+  }
+
+  public HiveAuthzBinding (HiveHook hiveHook, HiveConf hiveConf, HiveAuthzConf authzConf,
+      PrivilegeCache privilegeCache) throws Exception {
+    validateHiveConfig(hiveHook, hiveConf, authzConf);
+    this.hiveConf = hiveConf;
+    this.authzConf = authzConf;
+    this.authServer = new Server(authzConf.get(AuthzConfVars.AUTHZ_SERVER_NAME.getVar()));
+    this.authProvider = getAuthProviderWithPrivilegeCache(authzConf, authServer.getName(), privilegeCache);
+    this.open = true;
+    this.activeRoleSet = parseActiveRoleSet(hiveConf.get(HiveAuthzConf.SENTRY_ACTIVE_ROLE_SET,
+            authzConf.get(HiveAuthzConf.SENTRY_ACTIVE_ROLE_SET, "")).trim());
   }
 
   private static ActiveRoleSet parseActiveRoleSet(String name)
@@ -220,6 +233,38 @@ public class HiveAuthzBinding {
     return (AuthorizationProvider) constrctor.newInstance(new Object[] {resourceName, policyEngine});
   }
 
+  // Instantiate the authz provider using PrivilegeCache, this method is used for metadata filter function.
+  public static AuthorizationProvider getAuthProviderWithPrivilegeCache(HiveAuthzConf authzConf,
+      String serverName, PrivilegeCache privilegeCache) throws Exception {
+    // get the provider class and resources from the authz config
+    String authProviderName = authzConf.get(AuthzConfVars.AUTHZ_PROVIDER.getVar());
+    String resourceName =
+            authzConf.get(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar());
+    String policyEngineName = authzConf.get(AuthzConfVars.AUTHZ_POLICY_ENGINE.getVar());
+
+    LOG.debug("Using authorization provider " + authProviderName +
+            " with resource " + resourceName + ", policy engine "
+            + policyEngineName + ", provider backend SimpleCacheProviderBackend");
+
+    ProviderBackend providerBackend = new SimpleCacheProviderBackend(authzConf, resourceName);
+    ProviderBackendContext context = new ProviderBackendContext();
+    context.setBindingHandle(privilegeCache);
+    providerBackend.initialize(context);
+
+    // load the policy engine class
+    Constructor<?> policyConstructor =
+            Class.forName(policyEngineName).getDeclaredConstructor(String.class, ProviderBackend.class);
+    policyConstructor.setAccessible(true);
+    PolicyEngine policyEngine = (PolicyEngine) policyConstructor.
+            newInstance(new Object[] {serverName, providerBackend});
+
+    // load the authz provider class
+    Constructor<?> constrctor =
+            Class.forName(authProviderName).getDeclaredConstructor(String.class, PolicyEngine.class);
+    constrctor.setAccessible(true);
+    return (AuthorizationProvider) constrctor.newInstance(new Object[] {resourceName, policyEngine});
+  }
+
 
   /**
    * Validate the privilege for the given operation for the given subject
@@ -338,6 +383,10 @@ public class HiveAuthzBinding {
     return authzConf;
   }
 
+  public HiveConf getHiveConf() {
+    return hiveConf;
+  }
+
   private AuthorizableType getAuthzType (List<DBModelAuthorizable> hierarchy){
     return hierarchy.get(hierarchy.size() -1).getAuthzType();
   }
@@ -351,5 +400,9 @@ public class HiveAuthzBinding {
 
   public void close() {
     authProvider.close();
+  }
+
+  public AuthorizationProvider getCurrentAuthProvider() {
+    return authProvider;
   }
 }
