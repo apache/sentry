@@ -79,7 +79,7 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
   /**
    * Build the set of object hierarchies ie fully qualified db model objects
    */
-  private static class HierarcyBuilder {
+  protected static class HierarcyBuilder {
     private List<List<DBModelAuthorizable>> authHierarchy;
 
     public HierarcyBuilder() {
@@ -337,7 +337,7 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
     }
   }
 
-  private void authorizeDropPartition(PreDropPartitionEvent context)
+  protected void authorizeDropPartition(PreDropPartitionEvent context)
       throws InvalidOperationException, MetaException {
     authorizeMetastoreAccess(
         HiveOperation.ALTERTABLE_DROPPARTS,
@@ -392,7 +392,7 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
    * @param outputHierarchy
    * @throws InvalidOperationException
    */
-  private void authorizeMetastoreAccess(HiveOperation hiveOp,
+  protected void authorizeMetastoreAccess(HiveOperation hiveOp,
       List<List<DBModelAuthorizable>> inputHierarchy,
       List<List<DBModelAuthorizable>> outputHierarchy)
       throws InvalidOperationException {

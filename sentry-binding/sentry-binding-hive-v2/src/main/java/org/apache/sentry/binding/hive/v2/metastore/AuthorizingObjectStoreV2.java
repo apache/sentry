@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.sentry.binding.metastore;
+package org.apache.sentry.binding.hive.v2.metastore;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -61,7 +61,7 @@ import com.google.common.collect.Sets;
  * will be filtered to exclude object the requestor doesn't have privilege to
  * access.
  */
-public class AuthorizingObjectStore extends ObjectStore {
+public class AuthorizingObjectStoreV2 extends ObjectStore {
   private static ImmutableSet<String> serviceUsers;
   private static HiveConf hiveConf;
   private static HiveAuthzConf authzConf;
@@ -126,7 +126,7 @@ public class AuthorizingObjectStore extends ObjectStore {
       throws MetaException {
     return filterTables(dbName, super.getTables(dbName, pattern));
   }
-  
+
   @Override
   public List<Table> getTableObjectsByName(String dbname, List<String> tableNames)
       throws MetaException, UnknownDBException {
@@ -224,7 +224,7 @@ public class AuthorizingObjectStore extends ObjectStore {
   @Override
   public List<Partition> getPartitionsWithAuth(String dbName, String tblName,
       short maxParts, String userName, List<String> groupNames)
-      throws MetaException, NoSuchObjectException, InvalidObjectException {
+      throws MetaException, InvalidObjectException {
     if (filterTables(dbName, Lists.newArrayList(tblName)).isEmpty()) {
       throw new MetaException(getNoAccessMessageForTable(dbName, tblName));
     }
@@ -319,7 +319,7 @@ public class AuthorizingObjectStore extends ObjectStore {
 
   /**
    * load Hive auth provider
-   * 
+   *
    * @return
    * @throws MetaException
    */

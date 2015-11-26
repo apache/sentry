@@ -23,6 +23,8 @@ public class Column implements DBModelAuthorizable {
    */
   public static final Column ALL = new Column(AccessConstants.ALL);
 
+  public static final Column SOME = new Column(AccessConstants.SOME);
+
   private final String name;
 
   public Column(String name) {

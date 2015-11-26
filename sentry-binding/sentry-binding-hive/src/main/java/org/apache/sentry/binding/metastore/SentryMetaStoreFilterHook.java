@@ -111,7 +111,7 @@ public class SentryMetaStoreFilterHook implements MetaStoreFilterHook {
   @Override
   public List<String> filterIndexNames(String dbName, String tblName,
       List<String> indexList) {
-    return null;
+    return indexList;
   }
 
   @Override

@@ -379,8 +379,9 @@ public class SentryConfigTool {
   // verify senty session hook is set
   private boolean isSentryEnabledOnHiveServer(Statement stmt)
       throws SQLException {
-    return HiveAuthzBindingSessionHook.class.getName().equalsIgnoreCase(
-        readConfig(stmt, HiveConf.ConfVars.HIVE_SERVER2_SESSION_HOOK.varname));
+    String bindingString = readConfig(stmt, HiveConf.ConfVars.HIVE_SERVER2_SESSION_HOOK.varname).toUpperCase();
+    return bindingString.contains("org.apache.sentry.binding.hive".toUpperCase())
+        && bindingString.contains("HiveAuthzBindingSessionHook".toUpperCase());
   }
 
   // read a config value using 'set' statement

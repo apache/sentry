@@ -56,7 +56,7 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
   private final HiveAuthzConf authzConf;
   private final Server server;
 
-  private List<SentryMetastoreListenerPlugin> sentryPlugins = new ArrayList<SentryMetastoreListenerPlugin>();
+  protected List<SentryMetastoreListenerPlugin> sentryPlugins = new ArrayList<SentryMetastoreListenerPlugin>();
 
   public SentryMetastorePostEventListener(Configuration config) {
     super(config);
