@@ -19,7 +19,6 @@ package org.apache.sentry.sqoop.binding;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.sqoop.conf.SqoopAuthConf;
 import org.apache.sentry.sqoop.conf.SqoopAuthConf.AuthzConfVars;
 import org.apache.sqoop.core.SqoopConfiguration;
@@ -31,7 +30,11 @@ import com.google.common.base.Strings;
 
 public class SqoopAuthBindingSingleton {
   private static Logger log = LoggerFactory.getLogger(SqoopAuthBindingSingleton.class);
-  private static SqoopAuthBindingSingleton instance = null;
+
+  // Lazy init holder class idiom to avoid DTL
+  private static class SqoopAuthBindingSingletonHolder {
+    static final SqoopAuthBindingSingleton instance = new SqoopAuthBindingSingleton();
+  }
 
   private SqoopAuthBinding binding;
 
@@ -83,14 +86,7 @@ public class SqoopAuthBindingSingleton {
   }
 
   public static SqoopAuthBindingSingleton getInstance() {
-    if (instance == null) {
-      synchronized (SqoopAuthBindingSingleton.class) {
-        if (instance == null) {
-          instance = new SqoopAuthBindingSingleton();
-        }
-      }
-    }
-    return instance;
+    return SqoopAuthBindingSingletonHolder.instance;
   }
 
   public SqoopAuthBinding getAuthBinding() {
