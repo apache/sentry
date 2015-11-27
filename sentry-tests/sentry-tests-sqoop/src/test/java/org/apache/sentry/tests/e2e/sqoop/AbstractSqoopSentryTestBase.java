@@ -47,6 +47,7 @@ import org.apache.sentry.service.thrift.SentryServiceFactory;
 import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.apache.sentry.sqoop.conf.SqoopAuthConf.AuthzConfVars;
+import org.apache.sqoop.common.test.utils.NetworkUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -56,7 +57,6 @@ import com.google.common.collect.Sets;
 public class AbstractSqoopSentryTestBase {
   private static final String SERVER_HOST = NetUtils
       .createSocketAddr("localhost:80").getAddress().getCanonicalHostName();
-  private static final int PORT = 8038;
 
   protected static final String COMPONENT = "sqoop";
   protected static final String ADMIN_USER = "sqoop";
@@ -128,7 +128,7 @@ public class AbstractSqoopSentryTestBase {
     conf.set(ServerConfig.ADMIN_GROUPS, Joiner.on(",").join(ADMIN_GROUP,
         UserGroupInformation.getLoginUser().getPrimaryGroupName()));
     conf.set(ServerConfig.RPC_ADDRESS, SERVER_HOST);
-    conf.set(ServerConfig.RPC_PORT, String.valueOf(PORT));
+    conf.set(ServerConfig.RPC_PORT, String.valueOf(NetworkUtils.findAvailablePort()));
     conf.set(ServerConfig.SENTRY_STORE_JDBC_URL,
         "jdbc:derby:;databaseName=" + dbDir.getPath() + ";create=true");
     conf.set(ServerConfig.SENTRY_STORE_JDBC_PASS, "dummy");
