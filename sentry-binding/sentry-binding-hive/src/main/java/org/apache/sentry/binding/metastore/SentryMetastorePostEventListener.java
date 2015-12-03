@@ -300,6 +300,9 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
         .getShortUserName();
     SentryPolicyServiceClient sentryClient = getSentryServiceClient();
     sentryClient.dropPrivileges(requestorUserName, authorizableTable);
+
+    // Close the connection after dropping privileges is done.
+    sentryClient.close();
   }
 
   private void renameSentryTablePrivilege(String oldDbName, String oldTabName,
@@ -317,10 +320,12 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
 
     if (!oldTabName.equalsIgnoreCase(newTabName)
         && syncWithPolicyStore(AuthzConfVars.AUTHZ_SYNC_ALTER_WITH_POLICY_STORE)) {
+
+      SentryPolicyServiceClient sentryClient = getSentryServiceClient();
+
       try {
         String requestorUserName = UserGroupInformation.getCurrentUser()
             .getShortUserName();
-        SentryPolicyServiceClient sentryClient = getSentryServiceClient();
         sentryClient.renamePrivileges(requestorUserName, oldAuthorizableTable, newAuthorizableTable);
       } catch (SentryUserException e) {
         throw new MetaException(
@@ -329,6 +334,10 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
             + " Error: " + e.getMessage());
       } catch (IOException e) {
         throw new MetaException("Failed to find local user " + e.getMessage());
+      } finally {
+
+        // Close the connection after renaming privileges is done.
+        sentryClient.close();
       }
     }
     // The HDFS plugin needs to know if it's a path change (set location)
