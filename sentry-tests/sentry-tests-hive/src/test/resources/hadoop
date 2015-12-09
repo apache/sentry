@@ -15,12 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This script runs the hadoop core commands. 
+# This script runs the hadoop core commands.
 
 bin=`which $0`
 bin=`dirname ${bin}`
 bin=`cd "$bin"; pwd`
- 
+
 JAVA=$JAVA_HOME/bin/java
 JAVA_HEAP_MAX=-Xmx1000m
 
@@ -32,9 +32,9 @@ fi
 if [ "$SENTRY_HADOOP_TEST_CLASSPATH" != "" ]; then
   CLASSPATH=${CLASSPATH}:${SENTRY_HADOOP_TEST_CLASSPATH}
   echo "Got Sentry classpath ${SENTRY_HADOOP_TEST_CLASSPATH}"
-else    
+else
   echo "Error: SENTRY_HADOOP_TEST_CLASSPATH not defined."
-  exit 1  
+  exit 1
 fi
 DEFAULT_LIBEXEC_DIR="$bin"/../libexec
 HADOOP_LIBEXEC_DIR=${HADOOP_LIBEXEC_DIR:-$DEFAULT_LIBEXEC_DIR}
@@ -68,7 +68,7 @@ case $COMMAND in
     exit
     ;;
 
-  #core commands  
+  #core commands
   *)
     # the core commands
     if [ "$COMMAND" = "fs" ] ; then
@@ -93,7 +93,7 @@ case $COMMAND in
       CLASS=$COMMAND
     fi
     shift
-    
+
     # Always respect HADOOP_OPTS and HADOOP_CLIENT_OPTS
     HADOOP_OPTS="$HADOOP_OPTS $HADOOP_CLIENT_OPTS"
 

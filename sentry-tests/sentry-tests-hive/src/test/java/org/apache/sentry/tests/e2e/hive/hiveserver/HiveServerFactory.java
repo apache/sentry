@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.URL;
+import java.nio.file.FileSystems;
 import java.util.Map;
 
 import org.apache.hadoop.fs.FileSystem;
@@ -151,8 +152,15 @@ public class HiveServerFactory {
       properties.put(SUPPORT_CONCURRENCY, "false");
     }
     if(!properties.containsKey(HADOOPBIN)) {
-      properties.put(HADOOPBIN, "./target/hadoop");
+      properties.put(HADOOPBIN, "./target/test-classes/hadoop");
     }
+
+    // Modify the test resource to have executable permission
+    java.nio.file.Path hadoopPath = FileSystems.getDefault().getPath("target/test-classes", "hadoop");
+    if (hadoopPath != null) {
+      hadoopPath.toFile().setExecutable(true);
+    }
+
     properties.put(METASTORE_RAW_STORE_IMPL,
         "org.apache.sentry.binding.metastore.AuthorizingObjectStore");
     if (!properties.containsKey(METASTORE_URI)) {

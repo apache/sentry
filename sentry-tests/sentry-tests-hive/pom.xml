@@ -322,45 +322,6 @@ limitations under the License.
      <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <configuration>
-          <exportAntProperties>true</exportAntProperties>
-          <skipTests>true</skipTests>
-        </configuration>
-        <executions>
-          <execution>
-            <id>link-hadoop</id>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <configuration>
-              <target>
-                <echo file="target/hadoop-setup.sh">
-                  set -e
-                  set -x
-                  /bin/pwd
-                  BASE_DIR=./target
-                  TEST_UTIL_DIR=./testutil
-                  setup_hadoop() {
-                    set -e
-                    set -x
-                    /bin/pwd
-                    cp -f $TEST_UTIL_DIR/* $BASE_DIR/.
-                    chmod 777 $BASE_DIR/hadoop
-                  }
-                  setup_hadoop
-                </echo>
-                <exec executable="bash" dir="${basedir}" failonerror="true">
-                  <arg line="target/hadoop-setup.sh"/>
-                </exec>
-              </target>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <environmentVariables>
