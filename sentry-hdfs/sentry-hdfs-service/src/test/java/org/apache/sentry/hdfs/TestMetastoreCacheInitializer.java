@@ -161,6 +161,8 @@ public class TestMetastoreCacheInitializer {
         .SENTRY_HDFS_SYNC_METASTORE_CACHE_MAX_TABLES_PER_RPC, 1);
     conf.setInt(ServiceConstants.ServerConfig
         .SENTRY_HDFS_SYNC_METASTORE_CACHE_INIT_THREADS, 1);
+    conf.setInt(ServiceConstants.ServerConfig
+            .SENTRY_HDFS_SYNC_METASTORE_CACHE_RETRY_MAX_NUM, 2);
 
     try {
       MetastoreCacheInitializer cacheInitializer = new
