@@ -42,32 +42,98 @@ class MetastoreCacheInitializer implements Closeable {
   private static final Logger LOGGER = LoggerFactory.getLogger
           (MetastoreCacheInitializer.class);
 
-  static class CallResult {
-    final Exception failure;
+  final static class CallResult {
+    final private Exception failure;
+    final private boolean successStatus;
 
-    CallResult(Exception ex) {
+    CallResult(Exception ex, boolean successStatus) {
       failure = ex;
+      this.successStatus = successStatus;
+    }
+
+    public boolean getSuccessStatus() {
+      return successStatus;
+    }
+
+    public Exception getFailure() {
+      return failure;
     }
   }
 
   abstract class BaseTask implements Callable<CallResult> {
 
-    BaseTask() { taskCounter.incrementAndGet(); }
+    /**
+     *  Class represents retry strategy for BaseTask.
+     */
+    private class RetryStrategy {
+      private int maxRetries = 0;
+      private int waitDurationMillis;
+      private int retries;
+      private Exception exception;
+
+      private RetryStrategy(int maxRetries, int waitDurationMillis) {
+        this.maxRetries = maxRetries;
+        retries = 0;
+
+        // Assign default wait duration if negative value is provided.
+        if (waitDurationMillis > 0) {
+          this.waitDurationMillis = waitDurationMillis;
+        } else {
+          this.waitDurationMillis = 1000;
+        }
+      }
+
+      public CallResult exec()  {
+
+        // Retry logic is happening inside callable/task to avoid
+        // synchronous waiting on getting the result.
+        // Retry the failure task until reach the max retry number.
+        // Wait configurable duration for next retry.
+        for (int i = 0; i < maxRetries; i++) {
+          try {
+            doTask();
+
+            // Task succeeds, reset the exception and return
+            // the successful flag.
+            exception = null;
+            return new CallResult(exception, true);
+          } catch (Exception ex) {
+            LOGGER.debug("Failed to execute task on " + (i + 1) + " attempts." +
+                    " Sleeping for " + waitDurationMillis + " ms. Exception: " + ex.toString(), ex);
+            exception = ex;
+
+            try {
+              Thread.sleep(waitDurationMillis);
+            } catch (InterruptedException exception) {
+              // Skip the rest retries if get InterruptedException.
+              // And set the corresponding retries number.
+              retries = i;
+              i = maxRetries;
+            }
+          }
+
+          retries = i;
+        }
+
+        // Task fails, return the failure flag.
+        LOGGER.error("Task did not complete successfully after " + retries
+                + " tries. Exception got: " + exception.toString());
+        return new CallResult(exception, false);
+      }
+    }
+
+    private RetryStrategy retryStrategy;
+
+    BaseTask() {
+      taskCounter.incrementAndGet();
+      retryStrategy = new RetryStrategy(maxRetries, waitDurationMillis);
+    }
 
     @Override
     public CallResult call() throws Exception {
-      Exception e = null;
-      try {
-        doTask();
-      } catch (Exception ex) {
-        // Ignore if object requested does not exists
-         if (!(ex instanceof NoSuchObjectException) ){
-           e = ex;
-         }
-      } finally {
-        taskCounter.decrementAndGet();
-      }
-      return new CallResult(e);
+      CallResult callResult = retryStrategy.exec();
+      taskCounter.decrementAndGet();
+      return callResult;
     }
 
     abstract void doTask() throws Exception;
@@ -201,6 +267,9 @@ class MetastoreCacheInitializer implements Closeable {
   private final List<Future<CallResult>> results =
           new ArrayList<Future<CallResult>>();
   private final AtomicInteger taskCounter = new AtomicInteger(0);
+  private final int maxRetries;
+  private final int waitDurationMillis;
+  private final boolean failOnRetry;
 
   MetastoreCacheInitializer(IHMSHandler hmsHandler, Configuration conf) {
     this.hmsHandler = hmsHandler;
@@ -219,6 +288,21 @@ class MetastoreCacheInitializer implements Closeable {
                     .SENTRY_HDFS_SYNC_METASTORE_CACHE_INIT_THREADS,
             ServiceConstants.ServerConfig
                     .SENTRY_HDFS_SYNC_METASTORE_CACHE_INIT_THREADS_DEFAULT));
+    maxRetries = conf.getInt(
+            ServiceConstants.ServerConfig
+                    .SENTRY_HDFS_SYNC_METASTORE_CACHE_RETRY_MAX_NUM,
+            ServiceConstants.ServerConfig
+                    .SENTRY_HDFS_SYNC_METASTORE_CACHE_RETRY_MAX_NUM_DEFAULT);
+    waitDurationMillis = conf.getInt(
+            ServiceConstants.ServerConfig
+                    .SENTRY_HDFS_SYNC_METASTORE_CACHE_RETRY_WAIT_DURAION_IN_MILLIS,
+            ServiceConstants.ServerConfig
+                    .SENTRY_HDFS_SYNC_METASTORE_CACHE_RETRY_WAIT_DURAION_IN_MILLIS_DEFAULT);
+    failOnRetry = conf.getBoolean(
+            ServiceConstants.ServerConfig
+                    .SENTRY_HDFS_SYNC_METASTORE_CACHE_FAIL_ON_PARTIAL_UPDATE,
+            ServiceConstants.ServerConfig
+                    .SENTRY_HDFS_SYNC_METASTORE_CACHE_FAIL_ON_PARTIAL_UPDATE_DEFAULT);
   }
 
   UpdateableAuthzPaths createInitialUpdate() throws
@@ -236,12 +320,17 @@ class MetastoreCacheInitializer implements Closeable {
       Thread.sleep(1000);
       // Wait until no more tasks remain
     }
+
     for (Future<CallResult> result : results) {
       CallResult callResult = result.get();
-      if (callResult.failure != null) {
-        throw new RuntimeException(callResult.failure);
+
+      // Fail the HMS startup if tasks are not all successful and
+      // fail on partial updates flag is set in the config.
+      if (callResult.getSuccessStatus() == false && failOnRetry) {
+        throw new RuntimeException(callResult.getFailure());
       }
     }
+
     authzPaths.updatePartial(Lists.newArrayList(tempUpdate),
             new ReentrantReadWriteLock());
     return authzPaths;
