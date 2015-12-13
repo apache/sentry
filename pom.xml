@@ -719,7 +719,6 @@ limitations under the License.
           <artifactId>maven-surefire-plugin</artifactId>
           <version>2.18</version>
           <configuration>
-            <reuseForks>false</reuseForks>
             <environmentVariables>
               <HADOOP_CLIENT_OPTS>-Xmx1500m -Dhive.log.dir=./target/</HADOOP_CLIENT_OPTS>
             </environmentVariables>
