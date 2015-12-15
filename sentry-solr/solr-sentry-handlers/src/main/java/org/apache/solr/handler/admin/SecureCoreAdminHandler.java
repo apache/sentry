@@ -23,9 +23,9 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.SecureRequestHandlerUtil;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.sentry.SecureRequestHandlerUtil;
 
 /**
  * Secure (sentry-aware) version of CoreAdminHandler

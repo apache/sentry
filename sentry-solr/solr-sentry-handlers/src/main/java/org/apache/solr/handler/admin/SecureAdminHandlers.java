@@ -25,10 +25,10 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.sentry.core.model.search.SearchModelAction;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.handler.SecureRequestHandlerUtil;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.sentry.SecureRequestHandlerUtil;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.zookeeper.KeeperException;
 

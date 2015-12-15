@@ -14,14 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler;
+package org.apache.solr.sentry;
 
 import java.util.EnumSet;
 import java.util.Set;
 import org.apache.sentry.core.model.search.SearchModelAction;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.sentry.SentryIndexAuthorizationSingleton;
 
 /**
  * Utility functions for Secure (sentry-aware) versions of RequestHandlers

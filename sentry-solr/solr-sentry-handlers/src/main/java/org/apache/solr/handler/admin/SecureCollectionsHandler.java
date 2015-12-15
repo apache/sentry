@@ -22,9 +22,9 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.sentry.core.model.search.SearchModelAction;
-import org.apache.solr.handler.SecureRequestHandlerUtil;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.sentry.SecureRequestHandlerUtil;
 import org.apache.solr.core.CoreContainer;
 
 /**

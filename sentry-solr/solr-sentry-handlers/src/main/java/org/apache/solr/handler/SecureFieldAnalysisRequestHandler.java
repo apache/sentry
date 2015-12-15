@@ -19,6 +19,7 @@ package org.apache.solr.handler;
 
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.sentry.SecureRequestHandlerUtil;
 
 /**
  * Secure (sentry-aware) version of FieldAnalysisRequestHandler
