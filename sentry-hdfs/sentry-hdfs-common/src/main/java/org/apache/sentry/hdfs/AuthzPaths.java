@@ -17,6 +17,8 @@
  */
 package org.apache.sentry.hdfs;
 
+import java.util.Set;
+
 /**
  * A public interface of the fundamental APIs exposed by the implementing
  * data structure. The primary client of this interface is the Namenode
@@ -25,34 +27,39 @@ package org.apache.sentry.hdfs;
 public interface AuthzPaths {
 
   /**
-   * Check if a Path belongs to the configured prefix set
-   * @param pathElements : A path split into segments
-   * @return Is Path under configured prefix
+   * Check if a Path belongs to the configured prefix set.
+   *
+   * @param pathElements A path split into segments
+   * @return Returns if Path under configured prefix or not.
    */
-  public boolean isUnderPrefix(String[] pathElements);
+   boolean isUnderPrefix(String[] pathElements);
 
   /**
-   * Returns the authorizable Object (database/table) associated with this path.
-   * Unlike {@link #findAuthzObjectExactMatch(String[])}, if not match is
-   * found, it will return the first ancestor that has an associated
-   * authorizable object.
-   * @param pathElements : A path split into segments
-   * @return A authzObject associated with this path
+   * Returns all authorizable Objects (database/table/partition) associated
+   * with this path. Unlike {@link #findAuthzObjectExactMatches(String[])},
+   * if not match is found, it will return the first ancestor that has the
+   * associated authorizable objects.
+   *
+   * @param pathElements A path split into segments
+   * @return Returns a set of authzObjects authzObject associated with this path
    */
-  public String findAuthzObject(String[] pathElements);
+   Set<String> findAuthzObject(String[] pathElements);
 
   /**
-   * Returns the authorizable Object (database/table) associated with this path.
-   * @param pathElements : A path split into segments
-   * @return A authzObject associated with this path
+   * Returns all authorizable Objects (database/table/partition) associated
+   * with this path.
+   *
+   * @param pathElements A path split into segments
+   * @return Returns a set of authzObjects associated with this path
    */
-  public String findAuthzObjectExactMatch(String[] pathElements);
+   Set<String> findAuthzObjectExactMatches(String[] pathElements);
 
   /**
    * Return a Dumper that may return a more optimized over the
    * wire representation of the internal data-structures.
-   * @return
+   *
+   * @return Returns the AuthzPathsDumper.
    */
-  public AuthzPathsDumper<? extends AuthzPaths> getPathsDump();
+   AuthzPathsDumper<? extends AuthzPaths> getPathsDump();
 
 }

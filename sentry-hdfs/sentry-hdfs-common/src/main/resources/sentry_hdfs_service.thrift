@@ -22,23 +22,39 @@
 # Thrift Service that the MetaStore is built on
 #
 
-include "share/fb303/if/fb303.thrift"
+#include "share/fb303/if/fb303.thrift"
 
 namespace java org.apache.sentry.hdfs.service.thrift
 namespace php sentry.hdfs.thrift
 namespace cpp Apache.Sentry.HDFS.Thrift
 
 struct TPathChanges {
+
+# The authorizable object that needs to be updated.
 1: required string authzObj;
+
+# The path (splits into string segments) that needs to be
+# added to the authorizable object.
 2: required list<list<string>> addPaths;
+
+# The path (splits into string segments) that needs to be
+# deleted to the authorizable object.
 3: required list<list<string>> delPaths;
 }
 
 struct TPathEntry {
+
+# The type of the Path Entry.
 1: required byte type;
+
+# The path element in string.
 2: required string pathElement;
-3: optional string authzObj;
+
+# The child tuple id of the Path Entry.
 4: required set<i32> children;
+
+# A set of authzObjs associated with the Path Entry.
+5: optional set<string> authzObjs;
 }
 
 struct TPathsDump {
@@ -54,14 +70,28 @@ struct TPathsUpdate {
 }
 
 struct TPrivilegeChanges {
+
+# The authorizable object that needs to be updated.
 1: required string authzObj;
+
+# The privileges that needs to be added to
+# the authorizable object.
 2: required map<string, string> addPrivileges;
+
+# The privileges that needs to be deleted to
+# the authorizable object.
 3: required map<string, string> delPrivileges;
 }
 
 struct TRoleChanges {
+
+# The role that needs to be updated.
 1: required string role;
+
+# The groups that needs to be added.
 2: required list<string> addGroups;
+
+# The groups that needs to be deleted.
 3: required list<string> delGroups;
 }
 
@@ -69,7 +99,7 @@ struct TPermissionsUpdate {
 1: required bool hasfullImage;
 2: required i64 seqNum;
 3: required map<string, TPrivilegeChanges> privilegeChanges;
-4: required map<string, TRoleChanges> roleChanges; 
+4: required map<string, TRoleChanges> roleChanges;
 }
 
 struct TAuthzUpdateResponse {

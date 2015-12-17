@@ -6,7 +6,6 @@
  */
 package org.apache.sentry.hdfs.service.thrift;
 
-import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.thrift.scheme.IScheme;
 import org.apache.thrift.scheme.SchemeFactory;
 import org.apache.thrift.scheme.StandardScheme;
@@ -45,10 +44,10 @@ public class TPathsUpdate implements org.apache.thrift.TBase<TPathsUpdate, TPath
     schemes.put(TupleScheme.class, new TPathsUpdateTupleSchemeFactory());
   }
 
-  private boolean hasFullImage; // required
-  private TPathsDump pathsDump; // optional
-  private long seqNum; // required
-  private List<TPathChanges> pathChanges; // required
+  public boolean hasFullImage; // required
+  public TPathsDump pathsDump; // optional
+  public long seqNum; // required
+  public List<TPathChanges> pathChanges; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -191,9 +190,10 @@ public class TPathsUpdate implements org.apache.thrift.TBase<TPathsUpdate, TPath
     return this.hasFullImage;
   }
 
-  public void setHasFullImage(boolean hasFullImage) {
+  public TPathsUpdate setHasFullImage(boolean hasFullImage) {
     this.hasFullImage = hasFullImage;
     setHasFullImageIsSet(true);
+    return this;
   }
 
   public void unsetHasFullImage() {
@@ -213,8 +213,9 @@ public class TPathsUpdate implements org.apache.thrift.TBase<TPathsUpdate, TPath
     return this.pathsDump;
   }
 
-  public void setPathsDump(TPathsDump pathsDump) {
+  public TPathsUpdate setPathsDump(TPathsDump pathsDump) {
     this.pathsDump = pathsDump;
+    return this;
   }
 
   public void unsetPathsDump() {
@@ -236,9 +237,10 @@ public class TPathsUpdate implements org.apache.thrift.TBase<TPathsUpdate, TPath
     return this.seqNum;
   }
 
-  public void setSeqNum(long seqNum) {
+  public TPathsUpdate setSeqNum(long seqNum) {
     this.seqNum = seqNum;
     setSeqNumIsSet(true);
+    return this;
   }
 
   public void unsetSeqNum() {
@@ -273,8 +275,9 @@ public class TPathsUpdate implements org.apache.thrift.TBase<TPathsUpdate, TPath
     return this.pathChanges;
   }
 
-  public void setPathChanges(List<TPathChanges> pathChanges) {
+  public TPathsUpdate setPathChanges(List<TPathChanges> pathChanges) {
     this.pathChanges = pathChanges;
+    return this;
   }
 
   public void unsetPathChanges() {
@@ -420,29 +423,7 @@ public class TPathsUpdate implements org.apache.thrift.TBase<TPathsUpdate, TPath
 
   @Override
   public int hashCode() {
-    HashCodeBuilder builder = new HashCodeBuilder();
-
-    boolean present_hasFullImage = true;
-    builder.append(present_hasFullImage);
-    if (present_hasFullImage)
-      builder.append(hasFullImage);
-
-    boolean present_pathsDump = true && (isSetPathsDump());
-    builder.append(present_pathsDump);
-    if (present_pathsDump)
-      builder.append(pathsDump);
-
-    boolean present_seqNum = true;
-    builder.append(present_seqNum);
-    if (present_seqNum)
-      builder.append(seqNum);
-
-    boolean present_pathChanges = true && (isSetPathChanges());
-    builder.append(present_pathChanges);
-    if (present_pathChanges)
-      builder.append(pathChanges);
-
-    return builder.toHashCode();
+    return 0;
   }
 
   public int compareTo(TPathsUpdate other) {
@@ -544,18 +525,11 @@ public class TPathsUpdate implements org.apache.thrift.TBase<TPathsUpdate, TPath
 
   public void validate() throws org.apache.thrift.TException {
     // check for required fields
-    if (!isSetHasFullImage()) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'hasFullImage' is unset! Struct:" + toString());
+    // alas, we cannot check 'hasFullImage' because it's a primitive and you chose the non-beans generator.
+    // alas, we cannot check 'seqNum' because it's a primitive and you chose the non-beans generator.
+    if (pathChanges == null) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'pathChanges' was not present! Struct: " + toString());
     }
-
-    if (!isSetSeqNum()) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'seqNum' is unset! Struct:" + toString());
-    }
-
-    if (!isSetPathChanges()) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'pathChanges' is unset! Struct:" + toString());
-    }
-
     // check for sub-struct validity
     if (pathsDump != null) {
       pathsDump.validate();
@@ -626,14 +600,14 @@ public class TPathsUpdate implements org.apache.thrift.TBase<TPathsUpdate, TPath
           case 4: // PATH_CHANGES
             if (schemeField.type == org.apache.thrift.protocol.TType.LIST) {
               {
-                org.apache.thrift.protocol.TList _list50 = iprot.readListBegin();
-                struct.pathChanges = new ArrayList<TPathChanges>(_list50.size);
-                for (int _i51 = 0; _i51 < _list50.size; ++_i51)
+                org.apache.thrift.protocol.TList _list58 = iprot.readListBegin();
+                struct.pathChanges = new ArrayList<TPathChanges>(_list58.size);
+                for (int _i59 = 0; _i59 < _list58.size; ++_i59)
                 {
-                  TPathChanges _elem52; // required
-                  _elem52 = new TPathChanges();
-                  _elem52.read(iprot);
-                  struct.pathChanges.add(_elem52);
+                  TPathChanges _elem60; // required
+                  _elem60 = new TPathChanges();
+                  _elem60.read(iprot);
+                  struct.pathChanges.add(_elem60);
                 }
                 iprot.readListEnd();
               }
@@ -648,6 +622,14 @@ public class TPathsUpdate implements org.apache.thrift.TBase<TPathsUpdate, TPath
         iprot.readFieldEnd();
       }
       iprot.readStructEnd();
+
+      // check for required fields of primitive type, which can't be checked in the validate method
+      if (!struct.isSetHasFullImage()) {
+        throw new org.apache.thrift.protocol.TProtocolException("Required field 'hasFullImage' was not found in serialized data! Struct: " + toString());
+      }
+      if (!struct.isSetSeqNum()) {
+        throw new org.apache.thrift.protocol.TProtocolException("Required field 'seqNum' was not found in serialized data! Struct: " + toString());
+      }
       struct.validate();
     }
 
@@ -672,9 +654,9 @@ public class TPathsUpdate implements org.apache.thrift.TBase<TPathsUpdate, TPath
         oprot.writeFieldBegin(PATH_CHANGES_FIELD_DESC);
         {
           oprot.writeListBegin(new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRUCT, struct.pathChanges.size()));
-          for (TPathChanges _iter53 : struct.pathChanges)
+          for (TPathChanges _iter61 : struct.pathChanges)
           {
-            _iter53.write(oprot);
+            _iter61.write(oprot);
           }
           oprot.writeListEnd();
         }
@@ -701,9 +683,9 @@ public class TPathsUpdate implements org.apache.thrift.TBase<TPathsUpdate, TPath
       oprot.writeI64(struct.seqNum);
       {
         oprot.writeI32(struct.pathChanges.size());
-        for (TPathChanges _iter54 : struct.pathChanges)
+        for (TPathChanges _iter62 : struct.pathChanges)
         {
-          _iter54.write(oprot);
+          _iter62.write(oprot);
         }
       }
       BitSet optionals = new BitSet();
@@ -724,14 +706,14 @@ public class TPathsUpdate implements org.apache.thrift.TBase<TPathsUpdate, TPath
       struct.seqNum = iprot.readI64();
       struct.setSeqNumIsSet(true);
       {
-        org.apache.thrift.protocol.TList _list55 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
-        struct.pathChanges = new ArrayList<TPathChanges>(_list55.size);
-        for (int _i56 = 0; _i56 < _list55.size; ++_i56)
+        org.apache.thrift.protocol.TList _list63 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
+        struct.pathChanges = new ArrayList<TPathChanges>(_list63.size);
+        for (int _i64 = 0; _i64 < _list63.size; ++_i64)
         {
-          TPathChanges _elem57; // required
-          _elem57 = new TPathChanges();
-          _elem57.read(iprot);
-          struct.pathChanges.add(_elem57);
+          TPathChanges _elem65; // required
+          _elem65 = new TPathChanges();
+          _elem65.read(iprot);
+          struct.pathChanges.add(_elem65);
         }
       }
       struct.setPathChangesIsSet(true);

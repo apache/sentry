@@ -62,12 +62,15 @@ public class PathsUpdate implements Updateable.Update {
   public boolean hasFullImage() {
     return tPathsUpdate.isHasFullImage();
   }
+
   public TPathChanges newPathChange(String authzObject) {
+
     TPathChanges pathChanges = new TPathChanges(authzObject,
         new LinkedList<List<String>>(), new LinkedList<List<String>>());
     tPathsUpdate.addToPathChanges(pathChanges);
     return pathChanges;
   }
+
   public List<TPathChanges> getPathChanges() {
     return tPathsUpdate.getPathChanges();
   }

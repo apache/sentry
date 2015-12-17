@@ -6,7 +6,6 @@
  */
 package org.apache.sentry.hdfs.service.thrift;
 
-import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.thrift.scheme.IScheme;
 import org.apache.thrift.scheme.SchemeFactory;
 import org.apache.thrift.scheme.StandardScheme;
@@ -43,8 +42,8 @@ public class TAuthzUpdateResponse implements org.apache.thrift.TBase<TAuthzUpdat
     schemes.put(TupleScheme.class, new TAuthzUpdateResponseTupleSchemeFactory());
   }
 
-  private List<TPathsUpdate> authzPathUpdate; // optional
-  private List<TPermissionsUpdate> authzPermUpdate; // optional
+  public List<TPathsUpdate> authzPathUpdate; // optional
+  public List<TPermissionsUpdate> authzPermUpdate; // optional
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -174,8 +173,9 @@ public class TAuthzUpdateResponse implements org.apache.thrift.TBase<TAuthzUpdat
     return this.authzPathUpdate;
   }
 
-  public void setAuthzPathUpdate(List<TPathsUpdate> authzPathUpdate) {
+  public TAuthzUpdateResponse setAuthzPathUpdate(List<TPathsUpdate> authzPathUpdate) {
     this.authzPathUpdate = authzPathUpdate;
+    return this;
   }
 
   public void unsetAuthzPathUpdate() {
@@ -212,8 +212,9 @@ public class TAuthzUpdateResponse implements org.apache.thrift.TBase<TAuthzUpdat
     return this.authzPermUpdate;
   }
 
-  public void setAuthzPermUpdate(List<TPermissionsUpdate> authzPermUpdate) {
+  public TAuthzUpdateResponse setAuthzPermUpdate(List<TPermissionsUpdate> authzPermUpdate) {
     this.authzPermUpdate = authzPermUpdate;
+    return this;
   }
 
   public void unsetAuthzPermUpdate() {
@@ -315,19 +316,7 @@ public class TAuthzUpdateResponse implements org.apache.thrift.TBase<TAuthzUpdat
 
   @Override
   public int hashCode() {
-    HashCodeBuilder builder = new HashCodeBuilder();
-
-    boolean present_authzPathUpdate = true && (isSetAuthzPathUpdate());
-    builder.append(present_authzPathUpdate);
-    if (present_authzPathUpdate)
-      builder.append(authzPathUpdate);
-
-    boolean present_authzPermUpdate = true && (isSetAuthzPermUpdate());
-    builder.append(present_authzPermUpdate);
-    if (present_authzPermUpdate)
-      builder.append(authzPermUpdate);
-
-    return builder.toHashCode();
+    return 0;
   }
 
   public int compareTo(TAuthzUpdateResponse other) {
@@ -443,14 +432,14 @@ public class TAuthzUpdateResponse implements org.apache.thrift.TBase<TAuthzUpdat
           case 1: // AUTHZ_PATH_UPDATE
             if (schemeField.type == org.apache.thrift.protocol.TType.LIST) {
               {
-                org.apache.thrift.protocol.TList _list114 = iprot.readListBegin();
-                struct.authzPathUpdate = new ArrayList<TPathsUpdate>(_list114.size);
-                for (int _i115 = 0; _i115 < _list114.size; ++_i115)
+                org.apache.thrift.protocol.TList _list122 = iprot.readListBegin();
+                struct.authzPathUpdate = new ArrayList<TPathsUpdate>(_list122.size);
+                for (int _i123 = 0; _i123 < _list122.size; ++_i123)
                 {
-                  TPathsUpdate _elem116; // required
-                  _elem116 = new TPathsUpdate();
-                  _elem116.read(iprot);
-                  struct.authzPathUpdate.add(_elem116);
+                  TPathsUpdate _elem124; // required
+                  _elem124 = new TPathsUpdate();
+                  _elem124.read(iprot);
+                  struct.authzPathUpdate.add(_elem124);
                 }
                 iprot.readListEnd();
               }
@@ -462,14 +451,14 @@ public class TAuthzUpdateResponse implements org.apache.thrift.TBase<TAuthzUpdat
           case 2: // AUTHZ_PERM_UPDATE
             if (schemeField.type == org.apache.thrift.protocol.TType.LIST) {
               {
-                org.apache.thrift.protocol.TList _list117 = iprot.readListBegin();
-                struct.authzPermUpdate = new ArrayList<TPermissionsUpdate>(_list117.size);
-                for (int _i118 = 0; _i118 < _list117.size; ++_i118)
+                org.apache.thrift.protocol.TList _list125 = iprot.readListBegin();
+                struct.authzPermUpdate = new ArrayList<TPermissionsUpdate>(_list125.size);
+                for (int _i126 = 0; _i126 < _list125.size; ++_i126)
                 {
-                  TPermissionsUpdate _elem119; // required
-                  _elem119 = new TPermissionsUpdate();
-                  _elem119.read(iprot);
-                  struct.authzPermUpdate.add(_elem119);
+                  TPermissionsUpdate _elem127; // required
+                  _elem127 = new TPermissionsUpdate();
+                  _elem127.read(iprot);
+                  struct.authzPermUpdate.add(_elem127);
                 }
                 iprot.readListEnd();
               }
@@ -484,6 +473,8 @@ public class TAuthzUpdateResponse implements org.apache.thrift.TBase<TAuthzUpdat
         iprot.readFieldEnd();
       }
       iprot.readStructEnd();
+
+      // check for required fields of primitive type, which can't be checked in the validate method
       struct.validate();
     }
 
@@ -496,9 +487,9 @@ public class TAuthzUpdateResponse implements org.apache.thrift.TBase<TAuthzUpdat
           oprot.writeFieldBegin(AUTHZ_PATH_UPDATE_FIELD_DESC);
           {
             oprot.writeListBegin(new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRUCT, struct.authzPathUpdate.size()));
-            for (TPathsUpdate _iter120 : struct.authzPathUpdate)
+            for (TPathsUpdate _iter128 : struct.authzPathUpdate)
             {
-              _iter120.write(oprot);
+              _iter128.write(oprot);
             }
             oprot.writeListEnd();
           }
@@ -510,9 +501,9 @@ public class TAuthzUpdateResponse implements org.apache.thrift.TBase<TAuthzUpdat
           oprot.writeFieldBegin(AUTHZ_PERM_UPDATE_FIELD_DESC);
           {
             oprot.writeListBegin(new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRUCT, struct.authzPermUpdate.size()));
-            for (TPermissionsUpdate _iter121 : struct.authzPermUpdate)
+            for (TPermissionsUpdate _iter129 : struct.authzPermUpdate)
             {
-              _iter121.write(oprot);
+              _iter129.write(oprot);
             }
             oprot.writeListEnd();
           }
@@ -547,18 +538,18 @@ public class TAuthzUpdateResponse implements org.apache.thrift.TBase<TAuthzUpdat
       if (struct.isSetAuthzPathUpdate()) {
         {
           oprot.writeI32(struct.authzPathUpdate.size());
-          for (TPathsUpdate _iter122 : struct.authzPathUpdate)
+          for (TPathsUpdate _iter130 : struct.authzPathUpdate)
           {
-            _iter122.write(oprot);
+            _iter130.write(oprot);
           }
         }
       }
       if (struct.isSetAuthzPermUpdate()) {
         {
           oprot.writeI32(struct.authzPermUpdate.size());
-          for (TPermissionsUpdate _iter123 : struct.authzPermUpdate)
+          for (TPermissionsUpdate _iter131 : struct.authzPermUpdate)
           {
-            _iter123.write(oprot);
+            _iter131.write(oprot);
           }
         }
       }
@@ -570,28 +561,28 @@ public class TAuthzUpdateResponse implements org.apache.thrift.TBase<TAuthzUpdat
       BitSet incoming = iprot.readBitSet(2);
       if (incoming.get(0)) {
         {
-          org.apache.thrift.protocol.TList _list124 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
-          struct.authzPathUpdate = new ArrayList<TPathsUpdate>(_list124.size);
-          for (int _i125 = 0; _i125 < _list124.size; ++_i125)
+          org.apache.thrift.protocol.TList _list132 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
+          struct.authzPathUpdate = new ArrayList<TPathsUpdate>(_list132.size);
+          for (int _i133 = 0; _i133 < _list132.size; ++_i133)
           {
-            TPathsUpdate _elem126; // required
-            _elem126 = new TPathsUpdate();
-            _elem126.read(iprot);
-            struct.authzPathUpdate.add(_elem126);
+            TPathsUpdate _elem134; // required
+            _elem134 = new TPathsUpdate();
+            _elem134.read(iprot);
+            struct.authzPathUpdate.add(_elem134);
           }
         }
         struct.setAuthzPathUpdateIsSet(true);
       }
       if (incoming.get(1)) {
         {
-          org.apache.thrift.protocol.TList _list127 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
-          struct.authzPermUpdate = new ArrayList<TPermissionsUpdate>(_list127.size);
-          for (int _i128 = 0; _i128 < _list127.size; ++_i128)
+          org.apache.thrift.protocol.TList _list135 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
+          struct.authzPermUpdate = new ArrayList<TPermissionsUpdate>(_list135.size);
+          for (int _i136 = 0; _i136 < _list135.size; ++_i136)
           {
-            TPermissionsUpdate _elem129; // required
-            _elem129 = new TPermissionsUpdate();
-            _elem129.read(iprot);
-            struct.authzPermUpdate.add(_elem129);
+            TPermissionsUpdate _elem137; // required
+            _elem137 = new TPermissionsUpdate();
+            _elem137.read(iprot);
+            struct.authzPermUpdate.add(_elem137);
           }
         }
         struct.setAuthzPermUpdateIsSet(true);

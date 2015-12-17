@@ -63,7 +63,7 @@ public class TestHMSPaths {
     root.toString();
     Assert.assertNull(root.getParent());
     Assert.assertEquals(HMSPaths.EntryType.DIR, root.getType());
-    Assert.assertNull(root.getAuthzObj());
+    Assert.assertTrue(root.getAuthzObjs().size() == 0);
     Assert.assertEquals(Path.SEPARATOR, root.getFullPath());
     Assert.assertTrue(root.getChildren().isEmpty());
     root.delete();
@@ -127,7 +127,7 @@ public class TestHMSPaths {
     Assert.assertEquals(root, entry.getParent());
     Assert.assertEquals(HMSPaths.EntryType.PREFIX, entry.getType());
     Assert.assertEquals("a", entry.getPathElement());
-    Assert.assertNull(entry.getAuthzObj());
+    Assert.assertEquals(0, entry.getAuthzObjs().size());
     Assert.assertEquals(Path.SEPARATOR + "a", entry.getFullPath());
     Assert.assertTrue(entry.getChildren().isEmpty());
 
@@ -167,13 +167,13 @@ public class TestHMSPaths {
 
     Assert.assertEquals(root, entry.getParent().getParent());
     Assert.assertEquals(HMSPaths.EntryType.PREFIX, entry.getType());
-    Assert.assertEquals(HMSPaths.EntryType.DIR, 
+    Assert.assertEquals(HMSPaths.EntryType.DIR,
         entry.getParent().getType());
     Assert.assertEquals("b", entry.getPathElement());
     Assert.assertEquals("a", entry.getParent().getPathElement());
-    Assert.assertNull(entry.getAuthzObj());
-    Assert.assertNull(entry.getParent().getAuthzObj());
-    Assert.assertEquals(Path.SEPARATOR + "a" + Path.SEPARATOR + "b", 
+    Assert.assertTrue(entry.getAuthzObjs().size() == 0);
+    Assert.assertTrue(entry.getParent().getAuthzObjs().size() == 0);
+    Assert.assertEquals(Path.SEPARATOR + "a" + Path.SEPARATOR + "b",
         entry.getFullPath());
     Assert.assertEquals(Path.SEPARATOR + "a", entry.getParent().getFullPath());
     Assert.assertTrue(entry.getChildren().isEmpty());
@@ -212,7 +212,7 @@ public class TestHMSPaths {
     Assert.assertEquals(prefix, entry.getParent());
     Assert.assertEquals(HMSPaths.EntryType.AUTHZ_OBJECT, entry.getType());
     Assert.assertEquals("p1", entry.getPathElement());
-    Assert.assertEquals("A", entry.getAuthzObj());
+    Assert.assertTrue(entry.getAuthzObjs().contains("A"));
     Assert.assertEquals(Path.SEPARATOR + "a" + Path.SEPARATOR + "b" +
         Path.SEPARATOR + "p1", entry.getFullPath());
 
@@ -249,7 +249,7 @@ public class TestHMSPaths {
     Assert.assertEquals(prefix, entry.getParent().getParent());
     Assert.assertEquals(HMSPaths.EntryType.AUTHZ_OBJECT, entry.getType());
     Assert.assertEquals("p1", entry.getPathElement());
-    Assert.assertEquals("A", entry.getAuthzObj());
+    Assert.assertTrue(entry.getAuthzObjs().contains("A"));
     Assert.assertEquals(Path.SEPARATOR + "a" + Path.SEPARATOR + "b" +
         Path.SEPARATOR + "t" + Path.SEPARATOR + "p1", entry.getFullPath());
 
@@ -265,11 +265,11 @@ public class TestHMSPaths {
 
     Assert.assertEquals(HMSPaths.EntryType.AUTHZ_OBJECT, entry.getType());
     Assert.assertEquals("p1", entry.getPathElement());
-    Assert.assertEquals("A", entry.getAuthzObj());
+    Assert.assertTrue(entry.getAuthzObjs().contains("A"));
 
     Assert.assertEquals(HMSPaths.EntryType.AUTHZ_OBJECT, ep2.getType());
     Assert.assertEquals("p2", ep2.getPathElement());
-    Assert.assertEquals("A", entry.getAuthzObj());
+    Assert.assertTrue(entry.getAuthzObjs().contains("A"));
 
     Assert.assertEquals(entry, root.find(new String[]{"a", "b", "t", "p1"},
         true));
@@ -296,7 +296,7 @@ public class TestHMSPaths {
     Assert.assertNull(root.find(new String[]{"a", "b", "t", "p1"},
         true));
     Assert.assertEquals(HMSPaths.EntryType.DIR, entry.getType());
-    Assert.assertNull(entry.getAuthzObj());
+    Assert.assertEquals(entry.getAuthzObjs().size(), 0);
 
     Assert.assertNull(root.find(new String[]{"a", "b", "t", "p1"}, false));
     Assert.assertNull(root.find(new String[]{"a", "b", "t"}, false));
@@ -352,6 +352,20 @@ public class TestHMSPaths {
 
     Assert.assertEquals(prefix, root.findPrefixEntry(
         Lists.newArrayList("a", "b", "t", "p3")));
+  }
+
+  @Test
+  public void testAuthzObjCaseInsensitive() {
+    HMSPaths.Entry root = HMSPaths.Entry.createRoot(false);
+    HMSPaths.Entry prefix = root.createPrefix(Lists.newArrayList("a", "b"));
+
+    HMSPaths.Entry entry = root.createAuthzObjPath(
+        Lists.newArrayList("a", "b", "t", "p1"), "A");
+    Assert.assertEquals(prefix, entry.getParent().getParent());
+    Assert.assertEquals(HMSPaths.EntryType.AUTHZ_OBJECT, entry.getType());
+
+    // Authz Object is case insensitive.
+    Assert.assertTrue(entry.getAuthzObjs().contains("a"));
   }
   
 }

@@ -6,7 +6,6 @@
  */
 package org.apache.sentry.hdfs.service.thrift;
 
-import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.thrift.scheme.IScheme;
 import org.apache.thrift.scheme.SchemeFactory;
 import org.apache.thrift.scheme.StandardScheme;
@@ -43,8 +42,8 @@ public class TPathsDump implements org.apache.thrift.TBase<TPathsDump, TPathsDum
     schemes.put(TupleScheme.class, new TPathsDumpTupleSchemeFactory());
   }
 
-  private int rootId; // required
-  private Map<Integer,TPathEntry> nodeMap; // required
+  public int rootId; // required
+  public Map<Integer,TPathEntry> nodeMap; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -174,9 +173,10 @@ public class TPathsDump implements org.apache.thrift.TBase<TPathsDump, TPathsDum
     return this.rootId;
   }
 
-  public void setRootId(int rootId) {
+  public TPathsDump setRootId(int rootId) {
     this.rootId = rootId;
     setRootIdIsSet(true);
+    return this;
   }
 
   public void unsetRootId() {
@@ -207,8 +207,9 @@ public class TPathsDump implements org.apache.thrift.TBase<TPathsDump, TPathsDum
     return this.nodeMap;
   }
 
-  public void setNodeMap(Map<Integer,TPathEntry> nodeMap) {
+  public TPathsDump setNodeMap(Map<Integer,TPathEntry> nodeMap) {
     this.nodeMap = nodeMap;
+    return this;
   }
 
   public void unsetNodeMap() {
@@ -310,19 +311,7 @@ public class TPathsDump implements org.apache.thrift.TBase<TPathsDump, TPathsDum
 
   @Override
   public int hashCode() {
-    HashCodeBuilder builder = new HashCodeBuilder();
-
-    boolean present_rootId = true;
-    builder.append(present_rootId);
-    if (present_rootId)
-      builder.append(rootId);
-
-    boolean present_nodeMap = true && (isSetNodeMap());
-    builder.append(present_nodeMap);
-    if (present_nodeMap)
-      builder.append(nodeMap);
-
-    return builder.toHashCode();
+    return 0;
   }
 
   public int compareTo(TPathsDump other) {
@@ -390,14 +379,10 @@ public class TPathsDump implements org.apache.thrift.TBase<TPathsDump, TPathsDum
 
   public void validate() throws org.apache.thrift.TException {
     // check for required fields
-    if (!isSetRootId()) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'rootId' is unset! Struct:" + toString());
+    // alas, we cannot check 'rootId' because it's a primitive and you chose the non-beans generator.
+    if (nodeMap == null) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'nodeMap' was not present! Struct: " + toString());
     }
-
-    if (!isSetNodeMap()) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'nodeMap' is unset! Struct:" + toString());
-    }
-
     // check for sub-struct validity
   }
 
@@ -448,16 +433,16 @@ public class TPathsDump implements org.apache.thrift.TBase<TPathsDump, TPathsDum
           case 2: // NODE_MAP
             if (schemeField.type == org.apache.thrift.protocol.TType.MAP) {
               {
-                org.apache.thrift.protocol.TMap _map40 = iprot.readMapBegin();
-                struct.nodeMap = new HashMap<Integer,TPathEntry>(2*_map40.size);
-                for (int _i41 = 0; _i41 < _map40.size; ++_i41)
+                org.apache.thrift.protocol.TMap _map48 = iprot.readMapBegin();
+                struct.nodeMap = new HashMap<Integer,TPathEntry>(2*_map48.size);
+                for (int _i49 = 0; _i49 < _map48.size; ++_i49)
                 {
-                  int _key42; // required
-                  TPathEntry _val43; // required
-                  _key42 = iprot.readI32();
-                  _val43 = new TPathEntry();
-                  _val43.read(iprot);
-                  struct.nodeMap.put(_key42, _val43);
+                  int _key50; // required
+                  TPathEntry _val51; // required
+                  _key50 = iprot.readI32();
+                  _val51 = new TPathEntry();
+                  _val51.read(iprot);
+                  struct.nodeMap.put(_key50, _val51);
                 }
                 iprot.readMapEnd();
               }
@@ -472,6 +457,11 @@ public class TPathsDump implements org.apache.thrift.TBase<TPathsDump, TPathsDum
         iprot.readFieldEnd();
       }
       iprot.readStructEnd();
+
+      // check for required fields of primitive type, which can't be checked in the validate method
+      if (!struct.isSetRootId()) {
+        throw new org.apache.thrift.protocol.TProtocolException("Required field 'rootId' was not found in serialized data! Struct: " + toString());
+      }
       struct.validate();
     }
 
@@ -486,10 +476,10 @@ public class TPathsDump implements org.apache.thrift.TBase<TPathsDump, TPathsDum
         oprot.writeFieldBegin(NODE_MAP_FIELD_DESC);
         {
           oprot.writeMapBegin(new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.I32, org.apache.thrift.protocol.TType.STRUCT, struct.nodeMap.size()));
-          for (Map.Entry<Integer, TPathEntry> _iter44 : struct.nodeMap.entrySet())
+          for (Map.Entry<Integer, TPathEntry> _iter52 : struct.nodeMap.entrySet())
           {
-            oprot.writeI32(_iter44.getKey());
-            _iter44.getValue().write(oprot);
+            oprot.writeI32(_iter52.getKey());
+            _iter52.getValue().write(oprot);
           }
           oprot.writeMapEnd();
         }
@@ -515,10 +505,10 @@ public class TPathsDump implements org.apache.thrift.TBase<TPathsDump, TPathsDum
       oprot.writeI32(struct.rootId);
       {
         oprot.writeI32(struct.nodeMap.size());
-        for (Map.Entry<Integer, TPathEntry> _iter45 : struct.nodeMap.entrySet())
+        for (Map.Entry<Integer, TPathEntry> _iter53 : struct.nodeMap.entrySet())
         {
-          oprot.writeI32(_iter45.getKey());
-          _iter45.getValue().write(oprot);
+          oprot.writeI32(_iter53.getKey());
+          _iter53.getValue().write(oprot);
         }
       }
     }
@@ -529,16 +519,16 @@ public class TPathsDump implements org.apache.thrift.TBase<TPathsDump, TPathsDum
       struct.rootId = iprot.readI32();
       struct.setRootIdIsSet(true);
       {
-        org.apache.thrift.protocol.TMap _map46 = new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.I32, org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
-        struct.nodeMap = new HashMap<Integer,TPathEntry>(2*_map46.size);
-        for (int _i47 = 0; _i47 < _map46.size; ++_i47)
+        org.apache.thrift.protocol.TMap _map54 = new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.I32, org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
+        struct.nodeMap = new HashMap<Integer,TPathEntry>(2*_map54.size);
+        for (int _i55 = 0; _i55 < _map54.size; ++_i55)
         {
-          int _key48; // required
-          TPathEntry _val49; // required
-          _key48 = iprot.readI32();
-          _val49 = new TPathEntry();
-          _val49.read(iprot);
-          struct.nodeMap.put(_key48, _val49);
+          int _key56; // required
+          TPathEntry _val57; // required
+          _key56 = iprot.readI32();
+          _val57 = new TPathEntry();
+          _val57.read(iprot);
+          struct.nodeMap.put(_key56, _val57);
         }
       }
       struct.setNodeMapIsSet(true);

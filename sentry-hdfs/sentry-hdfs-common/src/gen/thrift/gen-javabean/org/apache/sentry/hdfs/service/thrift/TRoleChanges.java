@@ -6,7 +6,6 @@
  */
 package org.apache.sentry.hdfs.service.thrift;
 
-import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.thrift.scheme.IScheme;
 import org.apache.thrift.scheme.SchemeFactory;
 import org.apache.thrift.scheme.StandardScheme;
@@ -44,9 +43,9 @@ public class TRoleChanges implements org.apache.thrift.TBase<TRoleChanges, TRole
     schemes.put(TupleScheme.class, new TRoleChangesTupleSchemeFactory());
   }
 
-  private String role; // required
-  private List<String> addGroups; // required
-  private List<String> delGroups; // required
+  public String role; // required
+  public List<String> addGroups; // required
+  public List<String> delGroups; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -180,8 +179,9 @@ public class TRoleChanges implements org.apache.thrift.TBase<TRoleChanges, TRole
     return this.role;
   }
 
-  public void setRole(String role) {
+  public TRoleChanges setRole(String role) {
     this.role = role;
+    return this;
   }
 
   public void unsetRole() {
@@ -218,8 +218,9 @@ public class TRoleChanges implements org.apache.thrift.TBase<TRoleChanges, TRole
     return this.addGroups;
   }
 
-  public void setAddGroups(List<String> addGroups) {
+  public TRoleChanges setAddGroups(List<String> addGroups) {
     this.addGroups = addGroups;
+    return this;
   }
 
   public void unsetAddGroups() {
@@ -256,8 +257,9 @@ public class TRoleChanges implements org.apache.thrift.TBase<TRoleChanges, TRole
     return this.delGroups;
   }
 
-  public void setDelGroups(List<String> delGroups) {
+  public TRoleChanges setDelGroups(List<String> delGroups) {
     this.delGroups = delGroups;
+    return this;
   }
 
   public void unsetDelGroups() {
@@ -381,24 +383,7 @@ public class TRoleChanges implements org.apache.thrift.TBase<TRoleChanges, TRole
 
   @Override
   public int hashCode() {
-    HashCodeBuilder builder = new HashCodeBuilder();
-
-    boolean present_role = true && (isSetRole());
-    builder.append(present_role);
-    if (present_role)
-      builder.append(role);
-
-    boolean present_addGroups = true && (isSetAddGroups());
-    builder.append(present_addGroups);
-    if (present_addGroups)
-      builder.append(addGroups);
-
-    boolean present_delGroups = true && (isSetDelGroups());
-    builder.append(present_delGroups);
-    if (present_delGroups)
-      builder.append(delGroups);
-
-    return builder.toHashCode();
+    return 0;
   }
 
   public int compareTo(TRoleChanges other) {
@@ -488,18 +473,15 @@ public class TRoleChanges implements org.apache.thrift.TBase<TRoleChanges, TRole
 
   public void validate() throws org.apache.thrift.TException {
     // check for required fields
-    if (!isSetRole()) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'role' is unset! Struct:" + toString());
+    if (role == null) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'role' was not present! Struct: " + toString());
     }
-
-    if (!isSetAddGroups()) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'addGroups' is unset! Struct:" + toString());
+    if (addGroups == null) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'addGroups' was not present! Struct: " + toString());
     }
-
-    if (!isSetDelGroups()) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'delGroups' is unset! Struct:" + toString());
+    if (delGroups == null) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'delGroups' was not present! Struct: " + toString());
     }
-
     // check for sub-struct validity
   }
 
@@ -548,13 +530,13 @@ public class TRoleChanges implements org.apache.thrift.TBase<TRoleChanges, TRole
           case 2: // ADD_GROUPS
             if (schemeField.type == org.apache.thrift.protocol.TType.LIST) {
               {
-                org.apache.thrift.protocol.TList _list78 = iprot.readListBegin();
-                struct.addGroups = new ArrayList<String>(_list78.size);
-                for (int _i79 = 0; _i79 < _list78.size; ++_i79)
+                org.apache.thrift.protocol.TList _list86 = iprot.readListBegin();
+                struct.addGroups = new ArrayList<String>(_list86.size);
+                for (int _i87 = 0; _i87 < _list86.size; ++_i87)
                 {
-                  String _elem80; // required
-                  _elem80 = iprot.readString();
-                  struct.addGroups.add(_elem80);
+                  String _elem88; // required
+                  _elem88 = iprot.readString();
+                  struct.addGroups.add(_elem88);
                 }
                 iprot.readListEnd();
               }
@@ -566,13 +548,13 @@ public class TRoleChanges implements org.apache.thrift.TBase<TRoleChanges, TRole
           case 3: // DEL_GROUPS
             if (schemeField.type == org.apache.thrift.protocol.TType.LIST) {
               {
-                org.apache.thrift.protocol.TList _list81 = iprot.readListBegin();
-                struct.delGroups = new ArrayList<String>(_list81.size);
-                for (int _i82 = 0; _i82 < _list81.size; ++_i82)
+                org.apache.thrift.protocol.TList _list89 = iprot.readListBegin();
+                struct.delGroups = new ArrayList<String>(_list89.size);
+                for (int _i90 = 0; _i90 < _list89.size; ++_i90)
                 {
-                  String _elem83; // required
-                  _elem83 = iprot.readString();
-                  struct.delGroups.add(_elem83);
+                  String _elem91; // required
+                  _elem91 = iprot.readString();
+                  struct.delGroups.add(_elem91);
                 }
                 iprot.readListEnd();
               }
@@ -587,6 +569,8 @@ public class TRoleChanges implements org.apache.thrift.TBase<TRoleChanges, TRole
         iprot.readFieldEnd();
       }
       iprot.readStructEnd();
+
+      // check for required fields of primitive type, which can't be checked in the validate method
       struct.validate();
     }
 
@@ -603,9 +587,9 @@ public class TRoleChanges implements org.apache.thrift.TBase<TRoleChanges, TRole
         oprot.writeFieldBegin(ADD_GROUPS_FIELD_DESC);
         {
           oprot.writeListBegin(new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRING, struct.addGroups.size()));
-          for (String _iter84 : struct.addGroups)
+          for (String _iter92 : struct.addGroups)
           {
-            oprot.writeString(_iter84);
+            oprot.writeString(_iter92);
           }
           oprot.writeListEnd();
         }
@@ -615,9 +599,9 @@ public class TRoleChanges implements org.apache.thrift.TBase<TRoleChanges, TRole
         oprot.writeFieldBegin(DEL_GROUPS_FIELD_DESC);
         {
           oprot.writeListBegin(new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRING, struct.delGroups.size()));
-          for (String _iter85 : struct.delGroups)
+          for (String _iter93 : struct.delGroups)
           {
-            oprot.writeString(_iter85);
+            oprot.writeString(_iter93);
           }
           oprot.writeListEnd();
         }
@@ -643,16 +627,16 @@ public class TRoleChanges implements org.apache.thrift.TBase<TRoleChanges, TRole
       oprot.writeString(struct.role);
       {
         oprot.writeI32(struct.addGroups.size());
-        for (String _iter86 : struct.addGroups)
+        for (String _iter94 : struct.addGroups)
         {
-          oprot.writeString(_iter86);
+          oprot.writeString(_iter94);
         }
       }
       {
         oprot.writeI32(struct.delGroups.size());
-        for (String _iter87 : struct.delGroups)
+        for (String _iter95 : struct.delGroups)
         {
-          oprot.writeString(_iter87);
+          oprot.writeString(_iter95);
         }
       }
     }
@@ -663,24 +647,24 @@ public class TRoleChanges implements org.apache.thrift.TBase<TRoleChanges, TRole
       struct.role = iprot.readString();
       struct.setRoleIsSet(true);
       {
-        org.apache.thrift.protocol.TList _list88 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRING, iprot.readI32());
-        struct.addGroups = new ArrayList<String>(_list88.size);
-        for (int _i89 = 0; _i89 < _list88.size; ++_i89)
+        org.apache.thrift.protocol.TList _list96 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRING, iprot.readI32());
+        struct.addGroups = new ArrayList<String>(_list96.size);
+        for (int _i97 = 0; _i97 < _list96.size; ++_i97)
         {
-          String _elem90; // required
-          _elem90 = iprot.readString();
-          struct.addGroups.add(_elem90);
+          String _elem98; // required
+          _elem98 = iprot.readString();
+          struct.addGroups.add(_elem98);
         }
       }
       struct.setAddGroupsIsSet(true);
       {
-        org.apache.thrift.protocol.TList _list91 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRING, iprot.readI32());
-        struct.delGroups = new ArrayList<String>(_list91.size);
-        for (int _i92 = 0; _i92 < _list91.size; ++_i92)
+        org.apache.thrift.protocol.TList _list99 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRING, iprot.readI32());
+        struct.delGroups = new ArrayList<String>(_list99.size);
+        for (int _i100 = 0; _i100 < _list99.size; ++_i100)
         {
-          String _elem93; // required
-          _elem93 = iprot.readString();
-          struct.delGroups.add(_elem93);
+          String _elem101; // required
+          _elem101 = iprot.readString();
+          struct.delGroups.add(_elem101);
         }
       }
       struct.setDelGroupsIsSet(true);

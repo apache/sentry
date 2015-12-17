@@ -17,13 +17,7 @@
  */
 package org.apache.sentry.hdfs;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.hadoop.fs.permission.AclEntry;
 import org.apache.hadoop.fs.permission.AclEntryScope;
@@ -79,9 +73,12 @@ public class SentryPermissions implements AuthzPermissions {
     }
   }
 
-  private final Map<String, PrivilegeInfo> privileges = new HashMap<String, PrivilegeInfo>();
+  // Comparison of authorizable object should be case insensitive.
+  private final Map<String, PrivilegeInfo> privileges = new TreeMap<String, PrivilegeInfo>(String.CASE_INSENSITIVE_ORDER);
+  private Map<String, Set<String>> authzObjChildren = new TreeMap<String, Set<String>>(String.CASE_INSENSITIVE_ORDER);
+
+  // Should the comparison of role be case insensitive?
   private final Map<String, RoleInfo> roles = new HashMap<String, RoleInfo>();
-  private Map<String, Set<String>> authzObjChildren = new HashMap<String, Set<String>>();
 
   String getParentAuthzObject(String authzObject) {
     int dot = authzObject.indexOf('.');
