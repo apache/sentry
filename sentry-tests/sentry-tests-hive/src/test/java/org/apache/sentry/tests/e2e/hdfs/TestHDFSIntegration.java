@@ -76,8 +76,8 @@ import org.apache.hadoop.mapred.TextOutputFormat;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.binding.hive.SentryHiveAuthorizationTaskFactoryImpl;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
-import org.apache.sentry.hdfs.SentryAuthorizationConstants;
 import org.apache.sentry.hdfs.SentryAuthorizationProvider;
+import org.apache.sentry.provider.db.SentryAlreadyExistsException;
 import org.apache.sentry.provider.db.SimpleDBProviderBackend;
 import org.apache.sentry.provider.file.LocalGroupResourceAuthorizationProvider;
 import org.apache.sentry.provider.file.PolicyFile;
@@ -1123,6 +1123,203 @@ public class TestHDFSIntegration {
     conn.close();
   }
 
+  /* SENTRY-953 */
+  @Test
+  public void testAuthzObjOnPartitionMultipleTables() throws Throwable {
+    String dbName = "db1";
+
+    tmpHDFSDir = new Path("/tmp/external");
+    miniDFS.getFileSystem().mkdirs(tmpHDFSDir);
+    Path partitionDir = new Path("/tmp/external/p1");
+    miniDFS.getFileSystem().mkdirs(partitionDir);
+
+    dbNames = new String[]{dbName};
+    roles = new String[]{"admin_role", "tab1_role", "tab2_role", "tab3_role"};
+    admin = StaticUserGroup.ADMIN1;
+
+    Connection conn;
+    Statement stmt;
+
+    conn = hiveServer2.createConnection("hive", "hive");
+    stmt = conn.createStatement();
+
+    stmt.execute("create role admin_role");
+    stmt.execute("grant all on server server1 to role admin_role");
+    stmt.execute("grant role admin_role to group " + StaticUserGroup.ADMINGROUP);
+
+    // Create external table tab1 on location '/tmp/external/p1'.
+    // Create tab1_role, and grant it with insert permission on table tab1 to user_group1.
+    conn = hiveServer2.createConnection(StaticUserGroup.ADMIN1, StaticUserGroup.ADMIN1);
+    stmt = conn.createStatement();
+    stmt.execute("create database " + dbName);
+    stmt.execute("use " + dbName);
+    stmt.execute("create external table tab1 (s string) partitioned by (month int) location '/tmp/external/p1'");
+    stmt.execute("create role tab1_role");
+    stmt.execute("grant insert on table tab1 to role tab1_role");
+    stmt.execute("grant role tab1_role to group " + StaticUserGroup.USERGROUP1);
+    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
+
+    // Verify that user_group1 has insert(write_execute) permission on '/tmp/external/p1'.
+    verifyOnAllSubDirs("/tmp/external/p1", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP1, true);
+
+    // Create external table tab2 and partition on location '/tmp/external'.
+    // Create tab2_role, and grant it with select permission on table tab2 to user_group2.
+    stmt.execute("create external table tab2 (s string) partitioned by (month int)");
+    stmt.execute("alter table tab2 add partition (month = 1) location '/tmp/external'");
+    stmt.execute("create role tab2_role");
+    stmt.execute("grant select on table tab2 to role tab2_role");
+    stmt.execute("grant role tab2_role to group " + StaticUserGroup.USERGROUP2);
+    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
+
+    // Verify that user_group2 have select(read_execute) permission on both paths.
+    verifyOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/tab2", FsAction.READ_EXECUTE, StaticUserGroup.USERGROUP2, true);
+    verifyOnPath("/tmp/external", FsAction.READ_EXECUTE, StaticUserGroup.USERGROUP2, true);
+
+    // Create table tab3 and partition on the same location '/tmp/external' as tab2.
+    // Create tab3_role, and grant it with insert permission on table tab3 to user_group3.
+    stmt.execute("create table tab3 (s string) partitioned by (month int)");
+    stmt.execute("alter table tab3 add partition (month = 1) location '/tmp/external'");
+    stmt.execute("create role tab3_role");
+    stmt.execute("grant insert on table tab3 to role tab3_role");
+    stmt.execute("grant role tab3_role to group " + StaticUserGroup.USERGROUP3);
+    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
+
+    // When two partitions of different tables pointing to the same location with different grants,
+    // ACLs should have union (no duplicates) of both rules.
+    verifyOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/tab3", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP3, true);
+    verifyOnPath("/tmp/external", FsAction.READ_EXECUTE, StaticUserGroup.USERGROUP2, true);
+    verifyOnPath("/tmp/external", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP3, true);
+
+    // When alter the table name (tab2 to be tabx), ACLs should remain the same.
+    stmt.execute("alter table tab2 rename to tabx");
+    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
+    verifyOnPath("/tmp/external", FsAction.READ_EXECUTE, StaticUserGroup.USERGROUP2, true);
+    verifyOnPath("/tmp/external", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP3, true);
+
+    // When drop a partition that shares the same location with other partition belonging to
+    // other table, should still have the other table permissions.
+    stmt.execute("ALTER TABLE tabx DROP PARTITION (month = 1)");
+    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
+    verifyOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/tab3", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP3, true);
+    verifyOnPath("/tmp/external", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP3, true);
+
+    // When drop a table that has a partition shares the same location with other partition
+    // belonging to other table, should still have the other table permissions.
+    stmt.execute("DROP TABLE IF EXISTS tabx");
+    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
+    verifyOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/tab3", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP3, true);
+    verifyOnPath("/tmp/external", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP3, true);
+
+    stmt.close();
+    conn.close();
+
+    miniDFS.getFileSystem().delete(partitionDir, true);
+  }
+
+  /* SENTRY-953 */
+  @Test
+  public void testAuthzObjOnPartitionSameTable() throws Throwable {
+    String dbName = "db1";
+
+    tmpHDFSDir = new Path("/tmp/external/p1");
+    miniDFS.getFileSystem().mkdirs(tmpHDFSDir);
+
+    dbNames = new String[]{dbName};
+    roles = new String[]{"admin_role", "tab1_role"};
+    admin = StaticUserGroup.ADMIN1;
+
+    Connection conn;
+    Statement stmt;
+
+    conn = hiveServer2.createConnection("hive", "hive");
+    stmt = conn.createStatement();
+
+    stmt.execute("create role admin_role");
+    stmt.execute("grant all on server server1 to role admin_role");
+    stmt.execute("grant role admin_role to group " + StaticUserGroup.ADMINGROUP);
+
+    // Create table tab1 and partition on the same location '/tmp/external/p1'.
+    // Create tab1_role, and grant it with insert permission on table tab1 to user_group1.
+    conn = hiveServer2.createConnection(StaticUserGroup.ADMIN1, StaticUserGroup.ADMIN1);
+    stmt = conn.createStatement();
+    stmt.execute("create database " + dbName);
+    stmt.execute("use " + dbName);
+    stmt.execute("create table tab1 (s string) partitioned by (month int)");
+    stmt.execute("alter table tab1 add partition (month = 1) location '/tmp/external/p1'");
+    stmt.execute("create role tab1_role");
+    stmt.execute("grant insert on table tab1 to role tab1_role");
+    stmt.execute("grant role tab1_role to group " + StaticUserGroup.USERGROUP1);
+    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
+
+    // Verify that user_group1 has insert(write_execute) permission on '/tmp/external/p1'.
+    verifyOnAllSubDirs("/tmp/external/p1", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP1, true);
+
+    // When two partitions of the same table pointing to the same location,
+    // ACLS should not be repeated. Exception will be thrown if there are duplicates.
+    stmt.execute("alter table tab1 add partition (month = 2) location '/tmp/external/p1'");
+    verifyOnPath("/tmp/external/p1", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP1, true);
+
+    stmt.close();
+    conn.close();
+  }
+
+  /* SENTRY-953 */
+  @Test
+  public void testAuthzObjOnMultipleTables() throws Throwable {
+    String dbName = "db1";
+
+    tmpHDFSDir = new Path("/tmp/external/p1");
+    miniDFS.getFileSystem().mkdirs(tmpHDFSDir);
+
+    dbNames = new String[]{dbName};
+    roles = new String[]{"admin_role", "tab1_role", "tab2_role"};
+    admin = StaticUserGroup.ADMIN1;
+
+    Connection conn;
+    Statement stmt;
+
+    conn = hiveServer2.createConnection("hive", "hive");
+    stmt = conn.createStatement();
+
+    stmt.execute("create role admin_role");
+    stmt.execute("grant all on server server1 to role admin_role");
+    stmt.execute("grant role admin_role to group " + StaticUserGroup.ADMINGROUP);
+
+    // Create external table tab1 on location '/tmp/external/p1'.
+    // Create tab1_role, and grant it with insert permission on table tab1 to user_group1.
+    conn = hiveServer2.createConnection(StaticUserGroup.ADMIN1, StaticUserGroup.ADMIN1);
+    stmt = conn.createStatement();
+    stmt.execute("create database " + dbName);
+    stmt.execute("use " + dbName);
+    stmt.execute("create external table tab1 (s string) partitioned by (month int) location '/tmp/external/p1'");
+    stmt.execute("create role tab1_role");
+    stmt.execute("grant insert on table tab1 to role tab1_role");
+    stmt.execute("grant role tab1_role to group " + StaticUserGroup.USERGROUP1);
+    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
+
+    // Verify that user_group1 has insert(write_execute) permission on '/tmp/external/p1'.
+    verifyOnAllSubDirs("/tmp/external/p1", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP1, true);
+
+    // Create table tab2 on the same location '/tmp/external/p1' as table tab1.
+    // Create tab2_role, and grant it with select permission on table tab2 to user_group1.
+    stmt.execute("create table tab2 (s string) partitioned by (month int) location '/tmp/external/p1'");
+    stmt.execute("create role tab2_role");
+    stmt.execute("grant select on table tab2 to role tab2_role");
+    stmt.execute("grant role tab2_role to group " + StaticUserGroup.USERGROUP1);
+
+    // When two tables pointing to the same location, ACLS should have union (no duplicates)
+    // of both rules.
+    verifyOnPath("/tmp/external/p1", FsAction.ALL, StaticUserGroup.USERGROUP1, true);
+
+    // When drop table tab1, ACLs of tab2 still remain.
+    stmt.execute("DROP TABLE IF EXISTS tab1");
+    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
+    verifyOnPath("/tmp/external/p1", FsAction.READ_EXECUTE, StaticUserGroup.USERGROUP1, true);
+
+    stmt.close();
+    conn.close();
+  }
+
   private void verifyAccessToPath(String user, String group, String path, boolean hasPermission) throws Exception{
     Path p = new Path(path);
     UserGroupInformation hadoopUser =
@@ -1304,7 +1501,13 @@ public class TestHDFSIntegration {
     Map<String, FsAction> acls = new HashMap<String, FsAction>();
     for (AclEntry ent : aclStatus.getEntries()) {
       if (ent.getType().equals(AclEntryType.GROUP)) {
-        acls.put(ent.getName(), ent.getPermission());
+
+        // In case of duplicate acl exist, exception should be thrown.
+        if (acls.containsKey(ent.getName())) {
+          throw new SentryAlreadyExistsException("The acl " + ent.getName() + " already exists.\n");
+        } else {
+          acls.put(ent.getName(), ent.getPermission());
+        }
       }
     }
     return acls;

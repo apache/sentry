@@ -29,6 +29,8 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 
 public class TestMetastoreCacheInitializer {
 
@@ -113,19 +115,19 @@ public class TestMetastoreCacheInitializer {
             MetastoreCacheInitializer(hmsHandler, conf);
     UpdateableAuthzPaths update = cacheInitializer.createInitialUpdate();
 
-    Assert.assertEquals("db1", update.findAuthzObjectExactMatch(new
+    Assert.assertEquals(new HashSet<String>(Arrays.asList("db1")), update.findAuthzObjectExactMatches(new
             String[]{"db1"}));
-    Assert.assertEquals("db2", update.findAuthzObjectExactMatch(new
+    Assert.assertEquals(new HashSet<String>(Arrays.asList("db2")), update.findAuthzObjectExactMatches(new
             String[]{"db2"}));
-    Assert.assertEquals("db2.tab21", update.findAuthzObjectExactMatch(new
+    Assert.assertEquals(new HashSet<String>(Arrays.asList("db2.tab21")), update.findAuthzObjectExactMatches(new
             String[]{"db2", "tab21"}));
-    Assert.assertEquals("db3", update.findAuthzObjectExactMatch(new
+    Assert.assertEquals(new HashSet<String>(Arrays.asList("db3")), update.findAuthzObjectExactMatches(new
             String[]{"db3"}));
-    Assert.assertEquals("db3.tab31", update.findAuthzObjectExactMatch(new
+    Assert.assertEquals(new HashSet<String>(Arrays.asList("db3.tab31")), update.findAuthzObjectExactMatches(new
             String[]{"db3", "tab31"}));
-    Assert.assertEquals("db3.tab31", update.findAuthzObjectExactMatch(new
+    Assert.assertEquals(new HashSet<String>(Arrays.asList("db3.tab31")), update.findAuthzObjectExactMatches(new
             String[]{"db3", "tab31", "part311"}));
-    Assert.assertEquals("db3.tab31", update.findAuthzObjectExactMatch(new
+    Assert.assertEquals(new HashSet<String>(Arrays.asList("db3.tab31")), update.findAuthzObjectExactMatches(new
             String[]{"db3", "tab31", "part312"}));
     cacheInitializer.close();
 

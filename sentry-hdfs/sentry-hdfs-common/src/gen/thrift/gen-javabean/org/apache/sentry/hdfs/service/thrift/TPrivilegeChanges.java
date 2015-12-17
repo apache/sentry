@@ -6,7 +6,6 @@
  */
 package org.apache.sentry.hdfs.service.thrift;
 
-import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.thrift.scheme.IScheme;
 import org.apache.thrift.scheme.SchemeFactory;
 import org.apache.thrift.scheme.StandardScheme;
@@ -44,9 +43,9 @@ public class TPrivilegeChanges implements org.apache.thrift.TBase<TPrivilegeChan
     schemes.put(TupleScheme.class, new TPrivilegeChangesTupleSchemeFactory());
   }
 
-  private String authzObj; // required
-  private Map<String,String> addPrivileges; // required
-  private Map<String,String> delPrivileges; // required
+  public String authzObj; // required
+  public Map<String,String> addPrivileges; // required
+  public Map<String,String> delPrivileges; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -198,8 +197,9 @@ public class TPrivilegeChanges implements org.apache.thrift.TBase<TPrivilegeChan
     return this.authzObj;
   }
 
-  public void setAuthzObj(String authzObj) {
+  public TPrivilegeChanges setAuthzObj(String authzObj) {
     this.authzObj = authzObj;
+    return this;
   }
 
   public void unsetAuthzObj() {
@@ -232,8 +232,9 @@ public class TPrivilegeChanges implements org.apache.thrift.TBase<TPrivilegeChan
     return this.addPrivileges;
   }
 
-  public void setAddPrivileges(Map<String,String> addPrivileges) {
+  public TPrivilegeChanges setAddPrivileges(Map<String,String> addPrivileges) {
     this.addPrivileges = addPrivileges;
+    return this;
   }
 
   public void unsetAddPrivileges() {
@@ -266,8 +267,9 @@ public class TPrivilegeChanges implements org.apache.thrift.TBase<TPrivilegeChan
     return this.delPrivileges;
   }
 
-  public void setDelPrivileges(Map<String,String> delPrivileges) {
+  public TPrivilegeChanges setDelPrivileges(Map<String,String> delPrivileges) {
     this.delPrivileges = delPrivileges;
+    return this;
   }
 
   public void unsetDelPrivileges() {
@@ -391,24 +393,7 @@ public class TPrivilegeChanges implements org.apache.thrift.TBase<TPrivilegeChan
 
   @Override
   public int hashCode() {
-    HashCodeBuilder builder = new HashCodeBuilder();
-
-    boolean present_authzObj = true && (isSetAuthzObj());
-    builder.append(present_authzObj);
-    if (present_authzObj)
-      builder.append(authzObj);
-
-    boolean present_addPrivileges = true && (isSetAddPrivileges());
-    builder.append(present_addPrivileges);
-    if (present_addPrivileges)
-      builder.append(addPrivileges);
-
-    boolean present_delPrivileges = true && (isSetDelPrivileges());
-    builder.append(present_delPrivileges);
-    if (present_delPrivileges)
-      builder.append(delPrivileges);
-
-    return builder.toHashCode();
+    return 0;
   }
 
   public int compareTo(TPrivilegeChanges other) {
@@ -498,18 +483,15 @@ public class TPrivilegeChanges implements org.apache.thrift.TBase<TPrivilegeChan
 
   public void validate() throws org.apache.thrift.TException {
     // check for required fields
-    if (!isSetAuthzObj()) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'authzObj' is unset! Struct:" + toString());
+    if (authzObj == null) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'authzObj' was not present! Struct: " + toString());
     }
-
-    if (!isSetAddPrivileges()) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'addPrivileges' is unset! Struct:" + toString());
+    if (addPrivileges == null) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'addPrivileges' was not present! Struct: " + toString());
     }
-
-    if (!isSetDelPrivileges()) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'delPrivileges' is unset! Struct:" + toString());
+    if (delPrivileges == null) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'delPrivileges' was not present! Struct: " + toString());
     }
-
     // check for sub-struct validity
   }
 
@@ -558,15 +540,15 @@ public class TPrivilegeChanges implements org.apache.thrift.TBase<TPrivilegeChan
           case 2: // ADD_PRIVILEGES
             if (schemeField.type == org.apache.thrift.protocol.TType.MAP) {
               {
-                org.apache.thrift.protocol.TMap _map58 = iprot.readMapBegin();
-                struct.addPrivileges = new HashMap<String,String>(2*_map58.size);
-                for (int _i59 = 0; _i59 < _map58.size; ++_i59)
+                org.apache.thrift.protocol.TMap _map66 = iprot.readMapBegin();
+                struct.addPrivileges = new HashMap<String,String>(2*_map66.size);
+                for (int _i67 = 0; _i67 < _map66.size; ++_i67)
                 {
-                  String _key60; // required
-                  String _val61; // required
-                  _key60 = iprot.readString();
-                  _val61 = iprot.readString();
-                  struct.addPrivileges.put(_key60, _val61);
+                  String _key68; // required
+                  String _val69; // required
+                  _key68 = iprot.readString();
+                  _val69 = iprot.readString();
+                  struct.addPrivileges.put(_key68, _val69);
                 }
                 iprot.readMapEnd();
               }
@@ -578,15 +560,15 @@ public class TPrivilegeChanges implements org.apache.thrift.TBase<TPrivilegeChan
           case 3: // DEL_PRIVILEGES
             if (schemeField.type == org.apache.thrift.protocol.TType.MAP) {
               {
-                org.apache.thrift.protocol.TMap _map62 = iprot.readMapBegin();
-                struct.delPrivileges = new HashMap<String,String>(2*_map62.size);
-                for (int _i63 = 0; _i63 < _map62.size; ++_i63)
+                org.apache.thrift.protocol.TMap _map70 = iprot.readMapBegin();
+                struct.delPrivileges = new HashMap<String,String>(2*_map70.size);
+                for (int _i71 = 0; _i71 < _map70.size; ++_i71)
                 {
-                  String _key64; // required
-                  String _val65; // required
-                  _key64 = iprot.readString();
-                  _val65 = iprot.readString();
-                  struct.delPrivileges.put(_key64, _val65);
+                  String _key72; // required
+                  String _val73; // required
+                  _key72 = iprot.readString();
+                  _val73 = iprot.readString();
+                  struct.delPrivileges.put(_key72, _val73);
                 }
                 iprot.readMapEnd();
               }
@@ -601,6 +583,8 @@ public class TPrivilegeChanges implements org.apache.thrift.TBase<TPrivilegeChan
         iprot.readFieldEnd();
       }
       iprot.readStructEnd();
+
+      // check for required fields of primitive type, which can't be checked in the validate method
       struct.validate();
     }
 
@@ -617,10 +601,10 @@ public class TPrivilegeChanges implements org.apache.thrift.TBase<TPrivilegeChan
         oprot.writeFieldBegin(ADD_PRIVILEGES_FIELD_DESC);
         {
           oprot.writeMapBegin(new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRING, org.apache.thrift.protocol.TType.STRING, struct.addPrivileges.size()));
-          for (Map.Entry<String, String> _iter66 : struct.addPrivileges.entrySet())
+          for (Map.Entry<String, String> _iter74 : struct.addPrivileges.entrySet())
           {
-            oprot.writeString(_iter66.getKey());
-            oprot.writeString(_iter66.getValue());
+            oprot.writeString(_iter74.getKey());
+            oprot.writeString(_iter74.getValue());
           }
           oprot.writeMapEnd();
         }
@@ -630,10 +614,10 @@ public class TPrivilegeChanges implements org.apache.thrift.TBase<TPrivilegeChan
         oprot.writeFieldBegin(DEL_PRIVILEGES_FIELD_DESC);
         {
           oprot.writeMapBegin(new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRING, org.apache.thrift.protocol.TType.STRING, struct.delPrivileges.size()));
-          for (Map.Entry<String, String> _iter67 : struct.delPrivileges.entrySet())
+          for (Map.Entry<String, String> _iter75 : struct.delPrivileges.entrySet())
           {
-            oprot.writeString(_iter67.getKey());
-            oprot.writeString(_iter67.getValue());
+            oprot.writeString(_iter75.getKey());
+            oprot.writeString(_iter75.getValue());
           }
           oprot.writeMapEnd();
         }
@@ -659,18 +643,18 @@ public class TPrivilegeChanges implements org.apache.thrift.TBase<TPrivilegeChan
       oprot.writeString(struct.authzObj);
       {
         oprot.writeI32(struct.addPrivileges.size());
-        for (Map.Entry<String, String> _iter68 : struct.addPrivileges.entrySet())
+        for (Map.Entry<String, String> _iter76 : struct.addPrivileges.entrySet())
         {
-          oprot.writeString(_iter68.getKey());
-          oprot.writeString(_iter68.getValue());
+          oprot.writeString(_iter76.getKey());
+          oprot.writeString(_iter76.getValue());
         }
       }
       {
         oprot.writeI32(struct.delPrivileges.size());
-        for (Map.Entry<String, String> _iter69 : struct.delPrivileges.entrySet())
+        for (Map.Entry<String, String> _iter77 : struct.delPrivileges.entrySet())
         {
-          oprot.writeString(_iter69.getKey());
-          oprot.writeString(_iter69.getValue());
+          oprot.writeString(_iter77.getKey());
+          oprot.writeString(_iter77.getValue());
         }
       }
     }
@@ -681,28 +665,28 @@ public class TPrivilegeChanges implements org.apache.thrift.TBase<TPrivilegeChan
       struct.authzObj = iprot.readString();
       struct.setAuthzObjIsSet(true);
       {
-        org.apache.thrift.protocol.TMap _map70 = new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRING, org.apache.thrift.protocol.TType.STRING, iprot.readI32());
-        struct.addPrivileges = new HashMap<String,String>(2*_map70.size);
-        for (int _i71 = 0; _i71 < _map70.size; ++_i71)
+        org.apache.thrift.protocol.TMap _map78 = new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRING, org.apache.thrift.protocol.TType.STRING, iprot.readI32());
+        struct.addPrivileges = new HashMap<String,String>(2*_map78.size);
+        for (int _i79 = 0; _i79 < _map78.size; ++_i79)
         {
-          String _key72; // required
-          String _val73; // required
-          _key72 = iprot.readString();
-          _val73 = iprot.readString();
-          struct.addPrivileges.put(_key72, _val73);
+          String _key80; // required
+          String _val81; // required
+          _key80 = iprot.readString();
+          _val81 = iprot.readString();
+          struct.addPrivileges.put(_key80, _val81);
         }
       }
       struct.setAddPrivilegesIsSet(true);
       {
-        org.apache.thrift.protocol.TMap _map74 = new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRING, org.apache.thrift.protocol.TType.STRING, iprot.readI32());
-        struct.delPrivileges = new HashMap<String,String>(2*_map74.size);
-        for (int _i75 = 0; _i75 < _map74.size; ++_i75)
+        org.apache.thrift.protocol.TMap _map82 = new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRING, org.apache.thrift.protocol.TType.STRING, iprot.readI32());
+        struct.delPrivileges = new HashMap<String,String>(2*_map82.size);
+        for (int _i83 = 0; _i83 < _map82.size; ++_i83)
         {
-          String _key76; // required
-          String _val77; // required
-          _key76 = iprot.readString();
-          _val77 = iprot.readString();
-          struct.delPrivileges.put(_key76, _val77);
+          String _key84; // required
+          String _val85; // required
+          _key84 = iprot.readString();
+          _val85 = iprot.readString();
+          struct.delPrivileges.put(_key84, _val85);
         }
       }
       struct.setDelPrivilegesIsSet(true);

@@ -30,8 +30,10 @@ import org.junit.Test;
 
 import com.google.common.collect.Lists;
 
+import java.util.Arrays;
+import java.util.HashSet;
+
 public class TestHMSPathsFullDump {
-  
   private static boolean useCompact = true;
 
   @Test
@@ -50,27 +52,27 @@ public class TestHMSPathsFullDump {
     hmsPaths._addAuthzObject("db2.tbl21", Lists.newArrayList("/user/hive/w2/db2/tbl21"));
     hmsPaths._addPathsToAuthzObject("db2.tbl21", Lists.newArrayList("/user/hive/w2/db2/tbl21/p1=1/p2=x"));
 
-    Assert.assertEquals("default", hmsPaths.findAuthzObject(new String[]{"user", "hive", "warehouse"}, false));
-    Assert.assertEquals("db1", hmsPaths.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1"}, false));
-    Assert.assertEquals("db1.tbl11", hmsPaths.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11"}, false));
-    Assert.assertEquals("db1.tbl11", hmsPaths.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11", "part111"}, false));
-    Assert.assertEquals("db1.tbl11", hmsPaths.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11", "part112"}, false));
+    Assert.assertEquals(new HashSet<String>(Arrays.asList("default")), hmsPaths.findAuthzObject(new String[]{"user", "hive", "warehouse"}, false));
+    Assert.assertEquals(new HashSet<String>(Arrays.asList("db1")), hmsPaths.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1"}, false));
+    Assert.assertEquals(new HashSet<String>(Arrays.asList("db1.tbl11")), hmsPaths.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11"}, false));
+    Assert.assertEquals(new HashSet<String>(Arrays.asList("db1.tbl11")), hmsPaths.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11", "part111"}, false));
+    Assert.assertEquals(new HashSet<String>(Arrays.asList("db1.tbl11")), hmsPaths.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11", "part112"}, false));
 
-    Assert.assertEquals("db1.tbl11", hmsPaths.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11", "p1=1", "p2=x"}, false));
-    Assert.assertEquals("db1.tbl11", hmsPaths.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11", "p1=1"}, true));
-    Assert.assertEquals("db2.tbl21", hmsPaths.findAuthzObject(new String[]{"user", "hive", "w2", "db2", "tbl21", "p1=1"}, true));
+    Assert.assertEquals(new HashSet<String>(Arrays.asList("db1.tbl11")), hmsPaths.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11", "p1=1", "p2=x"}, false));
+    Assert.assertEquals(new HashSet<String>(Arrays.asList("db1.tbl11")), hmsPaths.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11", "p1=1"}, true));
+    Assert.assertEquals(new HashSet<String>(Arrays.asList("db2.tbl21")), hmsPaths.findAuthzObject(new String[]{"user", "hive", "w2", "db2", "tbl21", "p1=1"}, true));
 
     HMSPathsDumper serDe = hmsPaths.getPathsDump();
     TPathsDump pathsDump = serDe.createPathsDump();
     HMSPaths hmsPaths2 = new HMSPaths(new String[] {"/user/hive/warehouse"}).getPathsDump().initializeFromDump(pathsDump);
 
-    Assert.assertEquals("default", hmsPaths2.findAuthzObject(new String[]{"user", "hive", "warehouse"}, false));
-    Assert.assertEquals("db1", hmsPaths2.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1"}, false));
-    Assert.assertEquals("db1.tbl11", hmsPaths2.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11"}, false));
-    Assert.assertEquals("db1.tbl11", hmsPaths2.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11", "part111"}, false));
-    Assert.assertEquals("db1.tbl11", hmsPaths2.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11", "part112"}, false));
+    Assert.assertEquals(new HashSet<String>(Arrays.asList("default")), hmsPaths2.findAuthzObject(new String[]{"user", "hive", "warehouse"}, false));
+    Assert.assertEquals(new HashSet<String>(Arrays.asList("db1")), hmsPaths2.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1"}, false));
+    Assert.assertEquals(new HashSet<String>(Arrays.asList("db1.tbl11")), hmsPaths2.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11"}, false));
+    Assert.assertEquals(new HashSet<String>(Arrays.asList("db1.tbl11")), hmsPaths2.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11", "part111"}, false));
+    Assert.assertEquals(new HashSet<String>(Arrays.asList("db1.tbl11")), hmsPaths2.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11", "part112"}, false));
 
-    // This path is not under prefix, so should not be deserialized.. 
+    // This path is not under prefix, so should not be deserialized..
     Assert.assertNull(hmsPaths2.findAuthzObject(new String[]{"user", "hive", "w2", "db2", "tbl21", "p1=1"}, true));
   }
 
@@ -97,8 +99,8 @@ public class TestHMSPathsFullDump {
     HMSPathsDumper serDe = hmsPaths.getPathsDump();
     long t1 = System.currentTimeMillis();
     TPathsDump pathsDump = serDe.createPathsDump();
-    
-    TProtocolFactory protoFactory = useCompact ? new TCompactProtocol.Factory() : new TBinaryProtocol.Factory(); 
+
+    TProtocolFactory protoFactory = useCompact ? new TCompactProtocol.Factory() : new TBinaryProtocol.Factory();
     byte[] ser = new TSerializer(protoFactory).serialize(pathsDump);
     long serTime = System.currentTimeMillis() - t1;
     System.out.println("Serialization Time: " + serTime + ", " + ser.length);
@@ -108,8 +110,7 @@ public class TestHMSPathsFullDump {
     new TDeserializer(protoFactory).deserialize(tPathsDump, ser);
     HMSPaths fromDump = serDe.initializeFromDump(tPathsDump);
     System.out.println("Deserialization Time: " + (System.currentTimeMillis() - t1));
-    Assert.assertEquals("db9.tbl999", fromDump.findAuthzObject(new String[]{"user", "hive", "warehouse", "db9", "tbl999"}, false));
-    Assert.assertEquals("db9.tbl999", fromDump.findAuthzObject(new String[]{"user", "hive", "warehouse", "db9", "tbl999", "part99"}, false));
+    Assert.assertEquals(new HashSet<String>(Arrays.asList("db9.tbl999")), fromDump.findAuthzObject(new String[]{"user", "hive", "warehouse", "db9", "tbl999"}, false));
+    Assert.assertEquals(new HashSet<String>(Arrays.asList("db9.tbl999")), fromDump.findAuthzObject(new String[]{"user", "hive", "warehouse", "db9", "tbl999", "part99"}, false));
   }
-
 }

@@ -6,7 +6,6 @@
  */
 package org.apache.sentry.hdfs.service.thrift;
 
-import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.thrift.scheme.IScheme;
 import org.apache.thrift.scheme.SchemeFactory;
 import org.apache.thrift.scheme.StandardScheme;
@@ -44,9 +43,9 @@ public class TPathChanges implements org.apache.thrift.TBase<TPathChanges, TPath
     schemes.put(TupleScheme.class, new TPathChangesTupleSchemeFactory());
   }
 
-  private String authzObj; // required
-  private List<List<String>> addPaths; // required
-  private List<List<String>> delPaths; // required
+  public String authzObj; // required
+  public List<List<String>> addPaths; // required
+  public List<List<String>> delPaths; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -190,8 +189,9 @@ public class TPathChanges implements org.apache.thrift.TBase<TPathChanges, TPath
     return this.authzObj;
   }
 
-  public void setAuthzObj(String authzObj) {
+  public TPathChanges setAuthzObj(String authzObj) {
     this.authzObj = authzObj;
+    return this;
   }
 
   public void unsetAuthzObj() {
@@ -228,8 +228,9 @@ public class TPathChanges implements org.apache.thrift.TBase<TPathChanges, TPath
     return this.addPaths;
   }
 
-  public void setAddPaths(List<List<String>> addPaths) {
+  public TPathChanges setAddPaths(List<List<String>> addPaths) {
     this.addPaths = addPaths;
+    return this;
   }
 
   public void unsetAddPaths() {
@@ -266,8 +267,9 @@ public class TPathChanges implements org.apache.thrift.TBase<TPathChanges, TPath
     return this.delPaths;
   }
 
-  public void setDelPaths(List<List<String>> delPaths) {
+  public TPathChanges setDelPaths(List<List<String>> delPaths) {
     this.delPaths = delPaths;
+    return this;
   }
 
   public void unsetDelPaths() {
@@ -391,24 +393,7 @@ public class TPathChanges implements org.apache.thrift.TBase<TPathChanges, TPath
 
   @Override
   public int hashCode() {
-    HashCodeBuilder builder = new HashCodeBuilder();
-
-    boolean present_authzObj = true && (isSetAuthzObj());
-    builder.append(present_authzObj);
-    if (present_authzObj)
-      builder.append(authzObj);
-
-    boolean present_addPaths = true && (isSetAddPaths());
-    builder.append(present_addPaths);
-    if (present_addPaths)
-      builder.append(addPaths);
-
-    boolean present_delPaths = true && (isSetDelPaths());
-    builder.append(present_delPaths);
-    if (present_delPaths)
-      builder.append(delPaths);
-
-    return builder.toHashCode();
+    return 0;
   }
 
   public int compareTo(TPathChanges other) {
@@ -498,18 +483,15 @@ public class TPathChanges implements org.apache.thrift.TBase<TPathChanges, TPath
 
   public void validate() throws org.apache.thrift.TException {
     // check for required fields
-    if (!isSetAuthzObj()) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'authzObj' is unset! Struct:" + toString());
+    if (authzObj == null) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'authzObj' was not present! Struct: " + toString());
     }
-
-    if (!isSetAddPaths()) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'addPaths' is unset! Struct:" + toString());
+    if (addPaths == null) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'addPaths' was not present! Struct: " + toString());
     }
-
-    if (!isSetDelPaths()) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'delPaths' is unset! Struct:" + toString());
+    if (delPaths == null) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'delPaths' was not present! Struct: " + toString());
     }
-
     // check for sub-struct validity
   }
 
@@ -617,6 +599,8 @@ public class TPathChanges implements org.apache.thrift.TBase<TPathChanges, TPath
         iprot.readFieldEnd();
       }
       iprot.readStructEnd();
+
+      // check for required fields of primitive type, which can't be checked in the validate method
       struct.validate();
     }
 

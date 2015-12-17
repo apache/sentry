@@ -70,8 +70,8 @@ public class HMSPathsDumper implements AuthzPathsDumper<HMSPaths> {
     int myId = idCounter.incrementAndGet();
     TPathEntry tEntry = new TPathEntry(entry.getType().getByte(),
         entry.getPathElement(), new HashSet<Integer>());
-    if (entry.getAuthzObj() != null) {
-      tEntry.setAuthzObj(entry.getAuthzObj());
+    if (entry.getAuthzObjs().size() != 0) {
+      tEntry.setAuthzObjs(entry.getAuthzObjs());
     }
     idMap.put(myId, tEntry);
     return new Tuple(tEntry, myId);
@@ -82,13 +82,12 @@ public class HMSPathsDumper implements AuthzPathsDumper<HMSPaths> {
     HMSPaths hmsPaths = new HMSPaths(this.hmsPaths.getPrefixes());
     TPathEntry tRootEntry = pathDump.getNodeMap().get(pathDump.getRootId());
     Entry rootEntry = hmsPaths.getRootEntry();
-//    Entry rootEntry = new Entry(null, tRootEntry.getPathElement(),
-//        EntryType.fromByte(tRootEntry.getType()), tRootEntry.getAuthzObj());
     Map<String, Set<Entry>> authzObjToPath = new HashMap<String, Set<Entry>>();
     cloneToEntry(tRootEntry, rootEntry, pathDump.getNodeMap(), authzObjToPath,
         rootEntry.getType() == EntryType.PREFIX);
     hmsPaths.setRootEntry(rootEntry);
     hmsPaths.setAuthzObjToPathMapping(authzObjToPath);
+
     return hmsPaths;
   }
 
@@ -108,20 +107,21 @@ public class HMSPathsDumper implements AuthzPathsDumper<HMSPaths> {
         // Handle case when prefix entry has an authzObject
         // For Eg (default table mapped to /user/hive/warehouse)
         if (isChildPrefix) {
-          child.setAuthzObj(tChild.getAuthzObj());
+          child.addAuthzObjs(tChild.getAuthzObjs());
         }
       }
       if (child == null) {
         child = new Entry(parent, tChild.getPathElement(),
-            EntryType.fromByte(tChild.getType()), tChild.getAuthzObj());
+            EntryType.fromByte(tChild.getType()), tChild.getAuthzObjs());
       }
-      if (child.getAuthzObj() != null) {
-        Set<Entry> paths = authzObjToPath.get(child.getAuthzObj());
-        if (paths == null) {
-          paths = new HashSet<Entry>();
-          authzObjToPath.put(child.getAuthzObj(), paths);
+      if (child.getAuthzObjs().size() != 0) {
+        for (String authzObj: child.getAuthzObjs()) {
+          Set<Entry> paths = authzObjToPath.get(authzObj);
+          if (paths == null) {
+            paths = new HashSet<Entry>();
+          }
+          paths.add(child);
         }
-        paths.add(child);
       }
       parent.getChildren().put(child.getPathElement(), child);
       cloneToEntry(tChild, child, idMap, authzObjToPath, isChildPrefix);

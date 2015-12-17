@@ -6,7 +6,6 @@
  */
 package org.apache.sentry.hdfs.service.thrift;
 
-import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.thrift.scheme.IScheme;
 import org.apache.thrift.scheme.SchemeFactory;
 import org.apache.thrift.scheme.StandardScheme;
@@ -36,8 +35,8 @@ public class TPathEntry implements org.apache.thrift.TBase<TPathEntry, TPathEntr
 
   private static final org.apache.thrift.protocol.TField TYPE_FIELD_DESC = new org.apache.thrift.protocol.TField("type", org.apache.thrift.protocol.TType.BYTE, (short)1);
   private static final org.apache.thrift.protocol.TField PATH_ELEMENT_FIELD_DESC = new org.apache.thrift.protocol.TField("pathElement", org.apache.thrift.protocol.TType.STRING, (short)2);
-  private static final org.apache.thrift.protocol.TField AUTHZ_OBJ_FIELD_DESC = new org.apache.thrift.protocol.TField("authzObj", org.apache.thrift.protocol.TType.STRING, (short)3);
   private static final org.apache.thrift.protocol.TField CHILDREN_FIELD_DESC = new org.apache.thrift.protocol.TField("children", org.apache.thrift.protocol.TType.SET, (short)4);
+  private static final org.apache.thrift.protocol.TField AUTHZ_OBJS_FIELD_DESC = new org.apache.thrift.protocol.TField("authzObjs", org.apache.thrift.protocol.TType.SET, (short)5);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
@@ -45,17 +44,17 @@ public class TPathEntry implements org.apache.thrift.TBase<TPathEntry, TPathEntr
     schemes.put(TupleScheme.class, new TPathEntryTupleSchemeFactory());
   }
 
-  private byte type; // required
-  private String pathElement; // required
-  private String authzObj; // optional
-  private Set<Integer> children; // required
+  public byte type; // required
+  public String pathElement; // required
+  public Set<Integer> children; // required
+  public Set<String> authzObjs; // optional
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
     TYPE((short)1, "type"),
     PATH_ELEMENT((short)2, "pathElement"),
-    AUTHZ_OBJ((short)3, "authzObj"),
-    CHILDREN((short)4, "children");
+    CHILDREN((short)4, "children"),
+    AUTHZ_OBJS((short)5, "authzObjs");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -74,10 +73,10 @@ public class TPathEntry implements org.apache.thrift.TBase<TPathEntry, TPathEntr
           return TYPE;
         case 2: // PATH_ELEMENT
           return PATH_ELEMENT;
-        case 3: // AUTHZ_OBJ
-          return AUTHZ_OBJ;
         case 4: // CHILDREN
           return CHILDREN;
+        case 5: // AUTHZ_OBJS
+          return AUTHZ_OBJS;
         default:
           return null;
       }
@@ -120,7 +119,7 @@ public class TPathEntry implements org.apache.thrift.TBase<TPathEntry, TPathEntr
   // isset id assignments
   private static final int __TYPE_ISSET_ID = 0;
   private byte __isset_bitfield = 0;
-  private _Fields optionals[] = {_Fields.AUTHZ_OBJ};
+  private _Fields optionals[] = {_Fields.AUTHZ_OBJS};
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
@@ -128,11 +127,12 @@ public class TPathEntry implements org.apache.thrift.TBase<TPathEntry, TPathEntr
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.BYTE)));
     tmpMap.put(_Fields.PATH_ELEMENT, new org.apache.thrift.meta_data.FieldMetaData("pathElement", org.apache.thrift.TFieldRequirementType.REQUIRED, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
-    tmpMap.put(_Fields.AUTHZ_OBJ, new org.apache.thrift.meta_data.FieldMetaData("authzObj", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
-        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
     tmpMap.put(_Fields.CHILDREN, new org.apache.thrift.meta_data.FieldMetaData("children", org.apache.thrift.TFieldRequirementType.REQUIRED, 
         new org.apache.thrift.meta_data.SetMetaData(org.apache.thrift.protocol.TType.SET, 
             new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32))));
+    tmpMap.put(_Fields.AUTHZ_OBJS, new org.apache.thrift.meta_data.FieldMetaData("authzObjs", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
+        new org.apache.thrift.meta_data.SetMetaData(org.apache.thrift.protocol.TType.SET, 
+            new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING))));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(TPathEntry.class, metaDataMap);
   }
@@ -161,15 +161,19 @@ public class TPathEntry implements org.apache.thrift.TBase<TPathEntry, TPathEntr
     if (other.isSetPathElement()) {
       this.pathElement = other.pathElement;
     }
-    if (other.isSetAuthzObj()) {
-      this.authzObj = other.authzObj;
-    }
     if (other.isSetChildren()) {
       Set<Integer> __this__children = new HashSet<Integer>();
       for (Integer other_element : other.children) {
         __this__children.add(other_element);
       }
       this.children = __this__children;
+    }
+    if (other.isSetAuthzObjs()) {
+      Set<String> __this__authzObjs = new HashSet<String>();
+      for (String other_element : other.authzObjs) {
+        __this__authzObjs.add(other_element);
+      }
+      this.authzObjs = __this__authzObjs;
     }
   }
 
@@ -182,17 +186,18 @@ public class TPathEntry implements org.apache.thrift.TBase<TPathEntry, TPathEntr
     setTypeIsSet(false);
     this.type = 0;
     this.pathElement = null;
-    this.authzObj = null;
     this.children = null;
+    this.authzObjs = null;
   }
 
   public byte getType() {
     return this.type;
   }
 
-  public void setType(byte type) {
+  public TPathEntry setType(byte type) {
     this.type = type;
     setTypeIsSet(true);
+    return this;
   }
 
   public void unsetType() {
@@ -212,8 +217,9 @@ public class TPathEntry implements org.apache.thrift.TBase<TPathEntry, TPathEntr
     return this.pathElement;
   }
 
-  public void setPathElement(String pathElement) {
+  public TPathEntry setPathElement(String pathElement) {
     this.pathElement = pathElement;
+    return this;
   }
 
   public void unsetPathElement() {
@@ -228,29 +234,6 @@ public class TPathEntry implements org.apache.thrift.TBase<TPathEntry, TPathEntr
   public void setPathElementIsSet(boolean value) {
     if (!value) {
       this.pathElement = null;
-    }
-  }
-
-  public String getAuthzObj() {
-    return this.authzObj;
-  }
-
-  public void setAuthzObj(String authzObj) {
-    this.authzObj = authzObj;
-  }
-
-  public void unsetAuthzObj() {
-    this.authzObj = null;
-  }
-
-  /** Returns true if field authzObj is set (has been assigned a value) and false otherwise */
-  public boolean isSetAuthzObj() {
-    return this.authzObj != null;
-  }
-
-  public void setAuthzObjIsSet(boolean value) {
-    if (!value) {
-      this.authzObj = null;
     }
   }
 
@@ -273,8 +256,9 @@ public class TPathEntry implements org.apache.thrift.TBase<TPathEntry, TPathEntr
     return this.children;
   }
 
-  public void setChildren(Set<Integer> children) {
+  public TPathEntry setChildren(Set<Integer> children) {
     this.children = children;
+    return this;
   }
 
   public void unsetChildren() {
@@ -289,6 +273,45 @@ public class TPathEntry implements org.apache.thrift.TBase<TPathEntry, TPathEntr
   public void setChildrenIsSet(boolean value) {
     if (!value) {
       this.children = null;
+    }
+  }
+
+  public int getAuthzObjsSize() {
+    return (this.authzObjs == null) ? 0 : this.authzObjs.size();
+  }
+
+  public java.util.Iterator<String> getAuthzObjsIterator() {
+    return (this.authzObjs == null) ? null : this.authzObjs.iterator();
+  }
+
+  public void addToAuthzObjs(String elem) {
+    if (this.authzObjs == null) {
+      this.authzObjs = new HashSet<String>();
+    }
+    this.authzObjs.add(elem);
+  }
+
+  public Set<String> getAuthzObjs() {
+    return this.authzObjs;
+  }
+
+  public TPathEntry setAuthzObjs(Set<String> authzObjs) {
+    this.authzObjs = authzObjs;
+    return this;
+  }
+
+  public void unsetAuthzObjs() {
+    this.authzObjs = null;
+  }
+
+  /** Returns true if field authzObjs is set (has been assigned a value) and false otherwise */
+  public boolean isSetAuthzObjs() {
+    return this.authzObjs != null;
+  }
+
+  public void setAuthzObjsIsSet(boolean value) {
+    if (!value) {
+      this.authzObjs = null;
     }
   }
 
@@ -310,19 +333,19 @@ public class TPathEntry implements org.apache.thrift.TBase<TPathEntry, TPathEntr
       }
       break;
 
-    case AUTHZ_OBJ:
-      if (value == null) {
-        unsetAuthzObj();
-      } else {
-        setAuthzObj((String)value);
-      }
-      break;
-
     case CHILDREN:
       if (value == null) {
         unsetChildren();
       } else {
         setChildren((Set<Integer>)value);
+      }
+      break;
+
+    case AUTHZ_OBJS:
+      if (value == null) {
+        unsetAuthzObjs();
+      } else {
+        setAuthzObjs((Set<String>)value);
       }
       break;
 
@@ -337,11 +360,11 @@ public class TPathEntry implements org.apache.thrift.TBase<TPathEntry, TPathEntr
     case PATH_ELEMENT:
       return getPathElement();
 
-    case AUTHZ_OBJ:
-      return getAuthzObj();
-
     case CHILDREN:
       return getChildren();
+
+    case AUTHZ_OBJS:
+      return getAuthzObjs();
 
     }
     throw new IllegalStateException();
@@ -358,10 +381,10 @@ public class TPathEntry implements org.apache.thrift.TBase<TPathEntry, TPathEntr
       return isSetType();
     case PATH_ELEMENT:
       return isSetPathElement();
-    case AUTHZ_OBJ:
-      return isSetAuthzObj();
     case CHILDREN:
       return isSetChildren();
+    case AUTHZ_OBJS:
+      return isSetAuthzObjs();
     }
     throw new IllegalStateException();
   }
@@ -397,15 +420,6 @@ public class TPathEntry implements org.apache.thrift.TBase<TPathEntry, TPathEntr
         return false;
     }
 
-    boolean this_present_authzObj = true && this.isSetAuthzObj();
-    boolean that_present_authzObj = true && that.isSetAuthzObj();
-    if (this_present_authzObj || that_present_authzObj) {
-      if (!(this_present_authzObj && that_present_authzObj))
-        return false;
-      if (!this.authzObj.equals(that.authzObj))
-        return false;
-    }
-
     boolean this_present_children = true && this.isSetChildren();
     boolean that_present_children = true && that.isSetChildren();
     if (this_present_children || that_present_children) {
@@ -415,34 +429,21 @@ public class TPathEntry implements org.apache.thrift.TBase<TPathEntry, TPathEntr
         return false;
     }
 
+    boolean this_present_authzObjs = true && this.isSetAuthzObjs();
+    boolean that_present_authzObjs = true && that.isSetAuthzObjs();
+    if (this_present_authzObjs || that_present_authzObjs) {
+      if (!(this_present_authzObjs && that_present_authzObjs))
+        return false;
+      if (!this.authzObjs.equals(that.authzObjs))
+        return false;
+    }
+
     return true;
   }
 
   @Override
   public int hashCode() {
-    HashCodeBuilder builder = new HashCodeBuilder();
-
-    boolean present_type = true;
-    builder.append(present_type);
-    if (present_type)
-      builder.append(type);
-
-    boolean present_pathElement = true && (isSetPathElement());
-    builder.append(present_pathElement);
-    if (present_pathElement)
-      builder.append(pathElement);
-
-    boolean present_authzObj = true && (isSetAuthzObj());
-    builder.append(present_authzObj);
-    if (present_authzObj)
-      builder.append(authzObj);
-
-    boolean present_children = true && (isSetChildren());
-    builder.append(present_children);
-    if (present_children)
-      builder.append(children);
-
-    return builder.toHashCode();
+    return 0;
   }
 
   public int compareTo(TPathEntry other) {
@@ -473,22 +474,22 @@ public class TPathEntry implements org.apache.thrift.TBase<TPathEntry, TPathEntr
         return lastComparison;
       }
     }
-    lastComparison = Boolean.valueOf(isSetAuthzObj()).compareTo(typedOther.isSetAuthzObj());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetAuthzObj()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.authzObj, typedOther.authzObj);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
     lastComparison = Boolean.valueOf(isSetChildren()).compareTo(typedOther.isSetChildren());
     if (lastComparison != 0) {
       return lastComparison;
     }
     if (isSetChildren()) {
       lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.children, typedOther.children);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetAuthzObjs()).compareTo(typedOther.isSetAuthzObjs());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetAuthzObjs()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.authzObjs, typedOther.authzObjs);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -524,16 +525,6 @@ public class TPathEntry implements org.apache.thrift.TBase<TPathEntry, TPathEntr
       sb.append(this.pathElement);
     }
     first = false;
-    if (isSetAuthzObj()) {
-      if (!first) sb.append(", ");
-      sb.append("authzObj:");
-      if (this.authzObj == null) {
-        sb.append("null");
-      } else {
-        sb.append(this.authzObj);
-      }
-      first = false;
-    }
     if (!first) sb.append(", ");
     sb.append("children:");
     if (this.children == null) {
@@ -542,24 +533,29 @@ public class TPathEntry implements org.apache.thrift.TBase<TPathEntry, TPathEntr
       sb.append(this.children);
     }
     first = false;
+    if (isSetAuthzObjs()) {
+      if (!first) sb.append(", ");
+      sb.append("authzObjs:");
+      if (this.authzObjs == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.authzObjs);
+      }
+      first = false;
+    }
     sb.append(")");
     return sb.toString();
   }
 
   public void validate() throws org.apache.thrift.TException {
     // check for required fields
-    if (!isSetType()) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'type' is unset! Struct:" + toString());
+    // alas, we cannot check 'type' because it's a primitive and you chose the non-beans generator.
+    if (pathElement == null) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'pathElement' was not present! Struct: " + toString());
     }
-
-    if (!isSetPathElement()) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'pathElement' is unset! Struct:" + toString());
+    if (children == null) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'children' was not present! Struct: " + toString());
     }
-
-    if (!isSetChildren()) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'children' is unset! Struct:" + toString());
-    }
-
     // check for sub-struct validity
   }
 
@@ -615,14 +611,6 @@ public class TPathEntry implements org.apache.thrift.TBase<TPathEntry, TPathEntr
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
-          case 3: // AUTHZ_OBJ
-            if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
-              struct.authzObj = iprot.readString();
-              struct.setAuthzObjIsSet(true);
-            } else { 
-              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
-            }
-            break;
           case 4: // CHILDREN
             if (schemeField.type == org.apache.thrift.protocol.TType.SET) {
               {
@@ -641,12 +629,35 @@ public class TPathEntry implements org.apache.thrift.TBase<TPathEntry, TPathEntr
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
+          case 5: // AUTHZ_OBJS
+            if (schemeField.type == org.apache.thrift.protocol.TType.SET) {
+              {
+                org.apache.thrift.protocol.TSet _set35 = iprot.readSetBegin();
+                struct.authzObjs = new HashSet<String>(2*_set35.size);
+                for (int _i36 = 0; _i36 < _set35.size; ++_i36)
+                {
+                  String _elem37; // required
+                  _elem37 = iprot.readString();
+                  struct.authzObjs.add(_elem37);
+                }
+                iprot.readSetEnd();
+              }
+              struct.setAuthzObjsIsSet(true);
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+            }
+            break;
           default:
             org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
         }
         iprot.readFieldEnd();
       }
       iprot.readStructEnd();
+
+      // check for required fields of primitive type, which can't be checked in the validate method
+      if (!struct.isSetType()) {
+        throw new org.apache.thrift.protocol.TProtocolException("Required field 'type' was not found in serialized data! Struct: " + toString());
+      }
       struct.validate();
     }
 
@@ -662,24 +673,31 @@ public class TPathEntry implements org.apache.thrift.TBase<TPathEntry, TPathEntr
         oprot.writeString(struct.pathElement);
         oprot.writeFieldEnd();
       }
-      if (struct.authzObj != null) {
-        if (struct.isSetAuthzObj()) {
-          oprot.writeFieldBegin(AUTHZ_OBJ_FIELD_DESC);
-          oprot.writeString(struct.authzObj);
-          oprot.writeFieldEnd();
-        }
-      }
       if (struct.children != null) {
         oprot.writeFieldBegin(CHILDREN_FIELD_DESC);
         {
           oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.I32, struct.children.size()));
-          for (int _iter35 : struct.children)
+          for (int _iter38 : struct.children)
           {
-            oprot.writeI32(_iter35);
+            oprot.writeI32(_iter38);
           }
           oprot.writeSetEnd();
         }
         oprot.writeFieldEnd();
+      }
+      if (struct.authzObjs != null) {
+        if (struct.isSetAuthzObjs()) {
+          oprot.writeFieldBegin(AUTHZ_OBJS_FIELD_DESC);
+          {
+            oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRING, struct.authzObjs.size()));
+            for (String _iter39 : struct.authzObjs)
+            {
+              oprot.writeString(_iter39);
+            }
+            oprot.writeSetEnd();
+          }
+          oprot.writeFieldEnd();
+        }
       }
       oprot.writeFieldStop();
       oprot.writeStructEnd();
@@ -702,18 +720,24 @@ public class TPathEntry implements org.apache.thrift.TBase<TPathEntry, TPathEntr
       oprot.writeString(struct.pathElement);
       {
         oprot.writeI32(struct.children.size());
-        for (int _iter36 : struct.children)
+        for (int _iter40 : struct.children)
         {
-          oprot.writeI32(_iter36);
+          oprot.writeI32(_iter40);
         }
       }
       BitSet optionals = new BitSet();
-      if (struct.isSetAuthzObj()) {
+      if (struct.isSetAuthzObjs()) {
         optionals.set(0);
       }
       oprot.writeBitSet(optionals, 1);
-      if (struct.isSetAuthzObj()) {
-        oprot.writeString(struct.authzObj);
+      if (struct.isSetAuthzObjs()) {
+        {
+          oprot.writeI32(struct.authzObjs.size());
+          for (String _iter41 : struct.authzObjs)
+          {
+            oprot.writeString(_iter41);
+          }
+        }
       }
     }
 
@@ -725,20 +749,29 @@ public class TPathEntry implements org.apache.thrift.TBase<TPathEntry, TPathEntr
       struct.pathElement = iprot.readString();
       struct.setPathElementIsSet(true);
       {
-        org.apache.thrift.protocol.TSet _set37 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.I32, iprot.readI32());
-        struct.children = new HashSet<Integer>(2*_set37.size);
-        for (int _i38 = 0; _i38 < _set37.size; ++_i38)
+        org.apache.thrift.protocol.TSet _set42 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.I32, iprot.readI32());
+        struct.children = new HashSet<Integer>(2*_set42.size);
+        for (int _i43 = 0; _i43 < _set42.size; ++_i43)
         {
-          int _elem39; // required
-          _elem39 = iprot.readI32();
-          struct.children.add(_elem39);
+          int _elem44; // required
+          _elem44 = iprot.readI32();
+          struct.children.add(_elem44);
         }
       }
       struct.setChildrenIsSet(true);
       BitSet incoming = iprot.readBitSet(1);
       if (incoming.get(0)) {
-        struct.authzObj = iprot.readString();
-        struct.setAuthzObjIsSet(true);
+        {
+          org.apache.thrift.protocol.TSet _set45 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRING, iprot.readI32());
+          struct.authzObjs = new HashSet<String>(2*_set45.size);
+          for (int _i46 = 0; _i46 < _set45.size; ++_i46)
+          {
+            String _elem47; // required
+            _elem47 = iprot.readString();
+            struct.authzObjs.add(_elem47);
+          }
+        }
+        struct.setAuthzObjsIsSet(true);
       }
     }
   }

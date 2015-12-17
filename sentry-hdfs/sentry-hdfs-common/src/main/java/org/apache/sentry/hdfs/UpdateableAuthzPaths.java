@@ -18,6 +18,7 @@
 package org.apache.sentry.hdfs;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 
@@ -48,13 +49,13 @@ public class UpdateableAuthzPaths implements AuthzPaths, Updateable<PathsUpdate>
   }
 
   @Override
-  public String findAuthzObject(String[] pathElements) {
+  public Set<String> findAuthzObject(String[] pathElements) {
     return  paths.findAuthzObject(pathElements);
   }
 
   @Override
-  public String findAuthzObjectExactMatch(String[] pathElements) {
-    return  paths.findAuthzObjectExactMatch(pathElements);
+  public Set<String> findAuthzObjectExactMatches(String[] pathElements) {
+    return  paths.findAuthzObjectExactMatches(pathElements);
   }
 
   @Override

@@ -17,9 +17,7 @@
  */
 package org.apache.sentry.hdfs;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -126,6 +124,7 @@ public class SentryAuthorizationInfo implements Runnable {
   }
 
   private boolean update() {
+    //Looks like getting same updates multiple times
     SentryAuthzUpdate updates = updater.getUpdates();
     // Updates can be null if Sentry Service is un-reachable
     if (updates != null) {
@@ -274,13 +273,24 @@ public class SentryAuthorizationInfo implements Runnable {
   public List<AclEntry> getAclEntries(String[] pathElements) {
     lock.readLock().lock();
     try {
-      String authzObj = authzPaths.findAuthzObject(pathElements);
+      Set<String> authzObjs = authzPaths.findAuthzObject(pathElements);
       // Apparently setFAcl throws error if 'group::---' is not present
       AclEntry noGroup = AclEntry.parseAclEntry("group::---", true);
-      ArrayList<AclEntry> retList = Lists.newArrayList(noGroup);
-      retList.addAll((authzObj != null) ? authzPermissions.getAcls(authzObj)
-          : Collections.EMPTY_LIST);
-      return retList;
+
+      Set<AclEntry> retSet = new HashSet<AclEntry>();
+      retSet.add(noGroup);
+
+      if (authzObjs == null) {
+        retSet.addAll(Collections.EMPTY_LIST);
+        return new ArrayList<AclEntry>(retSet);
+      }
+
+      // No duplicate acls should be added.
+      for (String authzObj: authzObjs) {
+        retSet.addAll(authzPermissions.getAcls(authzObj));
+      }
+
+      return new ArrayList<AclEntry>(retSet);
     } finally {
       lock.readLock().unlock();
     }

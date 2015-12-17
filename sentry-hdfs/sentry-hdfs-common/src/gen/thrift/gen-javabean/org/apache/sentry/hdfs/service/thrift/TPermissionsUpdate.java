@@ -6,7 +6,6 @@
  */
 package org.apache.sentry.hdfs.service.thrift;
 
-import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.thrift.scheme.IScheme;
 import org.apache.thrift.scheme.SchemeFactory;
 import org.apache.thrift.scheme.StandardScheme;
@@ -45,10 +44,10 @@ public class TPermissionsUpdate implements org.apache.thrift.TBase<TPermissionsU
     schemes.put(TupleScheme.class, new TPermissionsUpdateTupleSchemeFactory());
   }
 
-  private boolean hasfullImage; // required
-  private long seqNum; // required
-  private Map<String,TPrivilegeChanges> privilegeChanges; // required
-  private Map<String,TRoleChanges> roleChanges; // required
+  public boolean hasfullImage; // required
+  public long seqNum; // required
+  public Map<String,TPrivilegeChanges> privilegeChanges; // required
+  public Map<String,TRoleChanges> roleChanges; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -215,9 +214,10 @@ public class TPermissionsUpdate implements org.apache.thrift.TBase<TPermissionsU
     return this.hasfullImage;
   }
 
-  public void setHasfullImage(boolean hasfullImage) {
+  public TPermissionsUpdate setHasfullImage(boolean hasfullImage) {
     this.hasfullImage = hasfullImage;
     setHasfullImageIsSet(true);
+    return this;
   }
 
   public void unsetHasfullImage() {
@@ -237,9 +237,10 @@ public class TPermissionsUpdate implements org.apache.thrift.TBase<TPermissionsU
     return this.seqNum;
   }
 
-  public void setSeqNum(long seqNum) {
+  public TPermissionsUpdate setSeqNum(long seqNum) {
     this.seqNum = seqNum;
     setSeqNumIsSet(true);
+    return this;
   }
 
   public void unsetSeqNum() {
@@ -270,8 +271,9 @@ public class TPermissionsUpdate implements org.apache.thrift.TBase<TPermissionsU
     return this.privilegeChanges;
   }
 
-  public void setPrivilegeChanges(Map<String,TPrivilegeChanges> privilegeChanges) {
+  public TPermissionsUpdate setPrivilegeChanges(Map<String,TPrivilegeChanges> privilegeChanges) {
     this.privilegeChanges = privilegeChanges;
+    return this;
   }
 
   public void unsetPrivilegeChanges() {
@@ -304,8 +306,9 @@ public class TPermissionsUpdate implements org.apache.thrift.TBase<TPermissionsU
     return this.roleChanges;
   }
 
-  public void setRoleChanges(Map<String,TRoleChanges> roleChanges) {
+  public TPermissionsUpdate setRoleChanges(Map<String,TRoleChanges> roleChanges) {
     this.roleChanges = roleChanges;
+    return this;
   }
 
   public void unsetRoleChanges() {
@@ -451,29 +454,7 @@ public class TPermissionsUpdate implements org.apache.thrift.TBase<TPermissionsU
 
   @Override
   public int hashCode() {
-    HashCodeBuilder builder = new HashCodeBuilder();
-
-    boolean present_hasfullImage = true;
-    builder.append(present_hasfullImage);
-    if (present_hasfullImage)
-      builder.append(hasfullImage);
-
-    boolean present_seqNum = true;
-    builder.append(present_seqNum);
-    if (present_seqNum)
-      builder.append(seqNum);
-
-    boolean present_privilegeChanges = true && (isSetPrivilegeChanges());
-    builder.append(present_privilegeChanges);
-    if (present_privilegeChanges)
-      builder.append(privilegeChanges);
-
-    boolean present_roleChanges = true && (isSetRoleChanges());
-    builder.append(present_roleChanges);
-    if (present_roleChanges)
-      builder.append(roleChanges);
-
-    return builder.toHashCode();
+    return 0;
   }
 
   public int compareTo(TPermissionsUpdate other) {
@@ -573,22 +554,14 @@ public class TPermissionsUpdate implements org.apache.thrift.TBase<TPermissionsU
 
   public void validate() throws org.apache.thrift.TException {
     // check for required fields
-    if (!isSetHasfullImage()) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'hasfullImage' is unset! Struct:" + toString());
+    // alas, we cannot check 'hasfullImage' because it's a primitive and you chose the non-beans generator.
+    // alas, we cannot check 'seqNum' because it's a primitive and you chose the non-beans generator.
+    if (privilegeChanges == null) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'privilegeChanges' was not present! Struct: " + toString());
     }
-
-    if (!isSetSeqNum()) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'seqNum' is unset! Struct:" + toString());
+    if (roleChanges == null) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'roleChanges' was not present! Struct: " + toString());
     }
-
-    if (!isSetPrivilegeChanges()) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'privilegeChanges' is unset! Struct:" + toString());
-    }
-
-    if (!isSetRoleChanges()) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'roleChanges' is unset! Struct:" + toString());
-    }
-
     // check for sub-struct validity
   }
 
@@ -647,16 +620,16 @@ public class TPermissionsUpdate implements org.apache.thrift.TBase<TPermissionsU
           case 3: // PRIVILEGE_CHANGES
             if (schemeField.type == org.apache.thrift.protocol.TType.MAP) {
               {
-                org.apache.thrift.protocol.TMap _map94 = iprot.readMapBegin();
-                struct.privilegeChanges = new HashMap<String,TPrivilegeChanges>(2*_map94.size);
-                for (int _i95 = 0; _i95 < _map94.size; ++_i95)
+                org.apache.thrift.protocol.TMap _map102 = iprot.readMapBegin();
+                struct.privilegeChanges = new HashMap<String,TPrivilegeChanges>(2*_map102.size);
+                for (int _i103 = 0; _i103 < _map102.size; ++_i103)
                 {
-                  String _key96; // required
-                  TPrivilegeChanges _val97; // required
-                  _key96 = iprot.readString();
-                  _val97 = new TPrivilegeChanges();
-                  _val97.read(iprot);
-                  struct.privilegeChanges.put(_key96, _val97);
+                  String _key104; // required
+                  TPrivilegeChanges _val105; // required
+                  _key104 = iprot.readString();
+                  _val105 = new TPrivilegeChanges();
+                  _val105.read(iprot);
+                  struct.privilegeChanges.put(_key104, _val105);
                 }
                 iprot.readMapEnd();
               }
@@ -668,16 +641,16 @@ public class TPermissionsUpdate implements org.apache.thrift.TBase<TPermissionsU
           case 4: // ROLE_CHANGES
             if (schemeField.type == org.apache.thrift.protocol.TType.MAP) {
               {
-                org.apache.thrift.protocol.TMap _map98 = iprot.readMapBegin();
-                struct.roleChanges = new HashMap<String,TRoleChanges>(2*_map98.size);
-                for (int _i99 = 0; _i99 < _map98.size; ++_i99)
+                org.apache.thrift.protocol.TMap _map106 = iprot.readMapBegin();
+                struct.roleChanges = new HashMap<String,TRoleChanges>(2*_map106.size);
+                for (int _i107 = 0; _i107 < _map106.size; ++_i107)
                 {
-                  String _key100; // required
-                  TRoleChanges _val101; // required
-                  _key100 = iprot.readString();
-                  _val101 = new TRoleChanges();
-                  _val101.read(iprot);
-                  struct.roleChanges.put(_key100, _val101);
+                  String _key108; // required
+                  TRoleChanges _val109; // required
+                  _key108 = iprot.readString();
+                  _val109 = new TRoleChanges();
+                  _val109.read(iprot);
+                  struct.roleChanges.put(_key108, _val109);
                 }
                 iprot.readMapEnd();
               }
@@ -692,6 +665,14 @@ public class TPermissionsUpdate implements org.apache.thrift.TBase<TPermissionsU
         iprot.readFieldEnd();
       }
       iprot.readStructEnd();
+
+      // check for required fields of primitive type, which can't be checked in the validate method
+      if (!struct.isSetHasfullImage()) {
+        throw new org.apache.thrift.protocol.TProtocolException("Required field 'hasfullImage' was not found in serialized data! Struct: " + toString());
+      }
+      if (!struct.isSetSeqNum()) {
+        throw new org.apache.thrift.protocol.TProtocolException("Required field 'seqNum' was not found in serialized data! Struct: " + toString());
+      }
       struct.validate();
     }
 
@@ -709,10 +690,10 @@ public class TPermissionsUpdate implements org.apache.thrift.TBase<TPermissionsU
         oprot.writeFieldBegin(PRIVILEGE_CHANGES_FIELD_DESC);
         {
           oprot.writeMapBegin(new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRING, org.apache.thrift.protocol.TType.STRUCT, struct.privilegeChanges.size()));
-          for (Map.Entry<String, TPrivilegeChanges> _iter102 : struct.privilegeChanges.entrySet())
+          for (Map.Entry<String, TPrivilegeChanges> _iter110 : struct.privilegeChanges.entrySet())
           {
-            oprot.writeString(_iter102.getKey());
-            _iter102.getValue().write(oprot);
+            oprot.writeString(_iter110.getKey());
+            _iter110.getValue().write(oprot);
           }
           oprot.writeMapEnd();
         }
@@ -722,10 +703,10 @@ public class TPermissionsUpdate implements org.apache.thrift.TBase<TPermissionsU
         oprot.writeFieldBegin(ROLE_CHANGES_FIELD_DESC);
         {
           oprot.writeMapBegin(new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRING, org.apache.thrift.protocol.TType.STRUCT, struct.roleChanges.size()));
-          for (Map.Entry<String, TRoleChanges> _iter103 : struct.roleChanges.entrySet())
+          for (Map.Entry<String, TRoleChanges> _iter111 : struct.roleChanges.entrySet())
           {
-            oprot.writeString(_iter103.getKey());
-            _iter103.getValue().write(oprot);
+            oprot.writeString(_iter111.getKey());
+            _iter111.getValue().write(oprot);
           }
           oprot.writeMapEnd();
         }
@@ -752,18 +733,18 @@ public class TPermissionsUpdate implements org.apache.thrift.TBase<TPermissionsU
       oprot.writeI64(struct.seqNum);
       {
         oprot.writeI32(struct.privilegeChanges.size());
-        for (Map.Entry<String, TPrivilegeChanges> _iter104 : struct.privilegeChanges.entrySet())
+        for (Map.Entry<String, TPrivilegeChanges> _iter112 : struct.privilegeChanges.entrySet())
         {
-          oprot.writeString(_iter104.getKey());
-          _iter104.getValue().write(oprot);
+          oprot.writeString(_iter112.getKey());
+          _iter112.getValue().write(oprot);
         }
       }
       {
         oprot.writeI32(struct.roleChanges.size());
-        for (Map.Entry<String, TRoleChanges> _iter105 : struct.roleChanges.entrySet())
+        for (Map.Entry<String, TRoleChanges> _iter113 : struct.roleChanges.entrySet())
         {
-          oprot.writeString(_iter105.getKey());
-          _iter105.getValue().write(oprot);
+          oprot.writeString(_iter113.getKey());
+          _iter113.getValue().write(oprot);
         }
       }
     }
@@ -776,30 +757,30 @@ public class TPermissionsUpdate implements org.apache.thrift.TBase<TPermissionsU
       struct.seqNum = iprot.readI64();
       struct.setSeqNumIsSet(true);
       {
-        org.apache.thrift.protocol.TMap _map106 = new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRING, org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
-        struct.privilegeChanges = new HashMap<String,TPrivilegeChanges>(2*_map106.size);
-        for (int _i107 = 0; _i107 < _map106.size; ++_i107)
+        org.apache.thrift.protocol.TMap _map114 = new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRING, org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
+        struct.privilegeChanges = new HashMap<String,TPrivilegeChanges>(2*_map114.size);
+        for (int _i115 = 0; _i115 < _map114.size; ++_i115)
         {
-          String _key108; // required
-          TPrivilegeChanges _val109; // required
-          _key108 = iprot.readString();
-          _val109 = new TPrivilegeChanges();
-          _val109.read(iprot);
-          struct.privilegeChanges.put(_key108, _val109);
+          String _key116; // required
+          TPrivilegeChanges _val117; // required
+          _key116 = iprot.readString();
+          _val117 = new TPrivilegeChanges();
+          _val117.read(iprot);
+          struct.privilegeChanges.put(_key116, _val117);
         }
       }
       struct.setPrivilegeChangesIsSet(true);
       {
-        org.apache.thrift.protocol.TMap _map110 = new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRING, org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
-        struct.roleChanges = new HashMap<String,TRoleChanges>(2*_map110.size);
-        for (int _i111 = 0; _i111 < _map110.size; ++_i111)
+        org.apache.thrift.protocol.TMap _map118 = new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRING, org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
+        struct.roleChanges = new HashMap<String,TRoleChanges>(2*_map118.size);
+        for (int _i119 = 0; _i119 < _map118.size; ++_i119)
         {
-          String _key112; // required
-          TRoleChanges _val113; // required
-          _key112 = iprot.readString();
-          _val113 = new TRoleChanges();
-          _val113.read(iprot);
-          struct.roleChanges.put(_key112, _val113);
+          String _key120; // required
+          TRoleChanges _val121; // required
+          _key120 = iprot.readString();
+          _val121 = new TRoleChanges();
+          _val121.read(iprot);
+          struct.roleChanges.put(_key120, _val121);
         }
       }
       struct.setRoleChangesIsSet(true);

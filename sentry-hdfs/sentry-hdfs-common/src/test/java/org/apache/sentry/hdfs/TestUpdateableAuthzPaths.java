@@ -24,6 +24,7 @@ import static org.junit.Assert.assertNull;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.sentry.hdfs.service.thrift.TPathChanges;
+import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
@@ -33,10 +34,10 @@ public class TestUpdateableAuthzPaths {
   @Test
   public void testFullUpdate() {
     HMSPaths hmsPaths = createBaseHMSPaths(1, 1);
-    assertEquals("db1", hmsPaths.findAuthzObjectExactMatch(new String[]{"db1"}));
-    assertEquals("db1.tbl11", hmsPaths.findAuthzObjectExactMatch(new String[]{"db1", "tbl11"}));
-    assertEquals("db1.tbl11", hmsPaths.findAuthzObjectExactMatch(new String[]{"db1", "tbl11", "part111"}));
-    assertEquals("db1.tbl11", hmsPaths.findAuthzObjectExactMatch(new String[]{"db1", "tbl11", "part112"}));
+    assertTrue(hmsPaths.findAuthzObjectExactMatches(new String[]{"db1"}).contains("db1"));
+    assertTrue(hmsPaths.findAuthzObjectExactMatches(new String[]{"db1", "tbl11"}).contains("db1.tbl11"));
+    assertTrue(hmsPaths.findAuthzObjectExactMatches(new String[]{"db1", "tbl11", "part111"}).contains("db1.tbl11"));
+    assertTrue(hmsPaths.findAuthzObjectExactMatches(new String[]{"db1", "tbl11", "part112"}).contains("db1.tbl11"));
 
     UpdateableAuthzPaths authzPaths = new UpdateableAuthzPaths(hmsPaths);
     PathsUpdate update = new PathsUpdate(1, true);
@@ -47,10 +48,10 @@ public class TestUpdateableAuthzPaths {
     assertFalse(pre == authzPaths2);
     authzPaths2 = pre;
 
-    assertEquals("db1", authzPaths2.findAuthzObjectExactMatch(new String[]{"db1"}));
-    assertEquals("db1.tbl11", authzPaths2.findAuthzObjectExactMatch(new String[]{"db1", "tbl11"}));
-    assertEquals("db1.tbl11", authzPaths2.findAuthzObjectExactMatch(new String[]{"db1", "tbl11", "part111"}));
-    assertEquals("db1.tbl11", authzPaths2.findAuthzObjectExactMatch(new String[]{"db1", "tbl11", "part112"}));
+    assertTrue(authzPaths2.findAuthzObjectExactMatches(new String[]{"db1"}).contains("db1"));
+    assertTrue(authzPaths2.findAuthzObjectExactMatches(new String[]{"db1", "tbl11"}).contains("db1.tbl11"));
+    assertTrue(authzPaths2.findAuthzObjectExactMatches(new String[]{"db1", "tbl11", "part111"}).contains("db1.tbl11"));
+    assertTrue(authzPaths2.findAuthzObjectExactMatches(new String[]{"db1", "tbl11", "part112"}).contains("db1.tbl11"));
 
     // Ensure Full Update wipes old stuff
     UpdateableAuthzPaths authzPaths3 = new UpdateableAuthzPaths(createBaseHMSPaths(2, 1));
@@ -60,13 +61,13 @@ public class TestUpdateableAuthzPaths {
     assertFalse(pre == authzPaths2);
     authzPaths2 = pre;
 
-    assertNull(authzPaths2.findAuthzObjectExactMatch(new String[]{"db1"}));
-    assertNull(authzPaths2.findAuthzObjectExactMatch(new String[]{"db1", "tbl11"}));
+    assertNull(authzPaths2.findAuthzObjectExactMatches(new String[]{"db1"}));
+    assertNull(authzPaths2.findAuthzObjectExactMatches(new String[]{"db1", "tbl11"}));
 
-    assertEquals("db2", authzPaths2.findAuthzObjectExactMatch(new String[]{"db2"}));
-    assertEquals("db2.tbl21", authzPaths2.findAuthzObjectExactMatch(new String[]{"db2", "tbl21"}));
-    assertEquals("db2.tbl21", authzPaths2.findAuthzObjectExactMatch(new String[]{"db2", "tbl21", "part211"}));
-    assertEquals("db2.tbl21", authzPaths2.findAuthzObjectExactMatch(new String[]{"db2", "tbl21", "part212"}));
+    assertTrue(authzPaths2.findAuthzObjectExactMatches(new String[]{"db2"}).contains("db2"));
+    assertTrue(authzPaths2.findAuthzObjectExactMatches(new String[]{"db2", "tbl21"}).contains("db2.tbl21"));
+    assertTrue(authzPaths2.findAuthzObjectExactMatches(new String[]{"db2", "tbl21", "part211"}).contains("db2.tbl21"));
+    assertTrue(authzPaths2.findAuthzObjectExactMatches(new String[]{"db2", "tbl21", "part212"}).contains("db2.tbl21"));
   }
 
   @Test
@@ -87,14 +88,14 @@ public class TestUpdateableAuthzPaths {
     authzPaths.updatePartial(Lists.newArrayList(update), lock);
 
     // Ensure no change in existing Paths
-    assertEquals("db1", authzPaths.findAuthzObjectExactMatch(new String[]{"db1"}));
-    assertEquals("db1.tbl11", authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "tbl11"}));
-    assertEquals("db1.tbl11", authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "tbl11", "part111"}));
-    assertEquals("db1.tbl11", authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "tbl11", "part112"}));
+    assertTrue(authzPaths.findAuthzObjectExactMatches(new String[]{"db1"}).contains("db1"));
+    assertTrue(authzPaths.findAuthzObjectExactMatches(new String[]{"db1", "tbl11"}).contains("db1.tbl11"));
+    assertTrue(authzPaths.findAuthzObjectExactMatches(new String[]{"db1", "tbl11", "part111"}).contains("db1.tbl11"));
+    assertTrue(authzPaths.findAuthzObjectExactMatches(new String[]{"db1", "tbl11", "part112"}).contains("db1.tbl11"));
 
     // Verify new Paths
-    assertEquals("db1.tbl12", authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "tbl12"}));
-    assertEquals("db1.tbl12", authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "tbl12", "part121"}));
+    assertTrue(authzPaths.findAuthzObjectExactMatches(new String[]{"db1", "tbl12"}).contains("db1.tbl12"));
+    assertTrue(authzPaths.findAuthzObjectExactMatches(new String[]{"db1", "tbl12", "part121"}).contains("db1.tbl12"));
 
     // Rename table
     update = new PathsUpdate(4, false);
@@ -103,17 +104,17 @@ public class TestUpdateableAuthzPaths {
     authzPaths.updatePartial(Lists.newArrayList(update), lock);
 
     // Verify name change
-    assertEquals("db1", authzPaths.findAuthzObjectExactMatch(new String[]{"db1"}));
-    assertEquals("db1.xtbl11", authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "xtbl11"}));
+    assertTrue(authzPaths.findAuthzObjectExactMatches(new String[]{"db1"}).contains("db1"));
+    assertTrue(authzPaths.findAuthzObjectExactMatches(new String[]{"db1", "xtbl11"}).contains("db1.xtbl11"));
     // Explicit set location has to be done on the partition else it will be associated to
     // the old location
-    assertEquals("db1.xtbl11", authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "tbl11", "part111"}));
-    assertEquals("db1.xtbl11", authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "tbl11", "part112"}));
+    assertTrue(authzPaths.findAuthzObjectExactMatches(new String[]{"db1", "tbl11", "part111"}).contains("db1.xtbl11"));
+    assertTrue(authzPaths.findAuthzObjectExactMatches(new String[]{"db1", "tbl11", "part112"}).contains("db1.xtbl11"));
     // Verify other tables are not touched
-    assertNull(authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "xtbl12"}));
-    assertNull(authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "xtbl12", "part121"}));
-    assertEquals("db1.tbl12", authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "tbl12"}));
-    assertEquals("db1.tbl12", authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "tbl12", "part121"}));
+    assertNull(authzPaths.findAuthzObjectExactMatches(new String[]{"db1", "xtbl12"}));
+    assertNull(authzPaths.findAuthzObjectExactMatches(new String[]{"db1", "xtbl12", "part121"}));
+    assertTrue(authzPaths.findAuthzObjectExactMatches(new String[]{"db1", "tbl12"}).contains("db1.tbl12"));
+    assertTrue(authzPaths.findAuthzObjectExactMatches(new String[]{"db1", "tbl12", "part121"}).contains("db1.tbl12"));
 
   }
 
@@ -122,9 +123,9 @@ public class TestUpdateableAuthzPaths {
     HMSPaths hmsPaths = createBaseHMSPaths(1, 1);
     UpdateableAuthzPaths authzPaths = new UpdateableAuthzPaths(hmsPaths);
     ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-    assertEquals("db1.tbl11", authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "tbl11"}));
-    assertEquals("db1.tbl11", authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "tbl11", "part111"}));
-    
+    assertTrue(authzPaths.findAuthzObjectExactMatches(new String[]{"db1", "tbl11"}).contains("db1.tbl11"));
+    assertTrue(authzPaths.findAuthzObjectExactMatches(new String[]{"db1", "tbl11", "part111"}).contains("db1.tbl11"));
+
     // Drop partition
     PathsUpdate update = new PathsUpdate(2, false);
     TPathChanges pathChange = update.newPathChange("db1.tbl11");
@@ -132,17 +133,17 @@ public class TestUpdateableAuthzPaths {
     authzPaths.updatePartial(Lists.newArrayList(update), lock);
 
     // Verify Paths deleted
-    assertNull(authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "tbl11", "part111"}));
+    assertNull(authzPaths.findAuthzObjectExactMatches(new String[]{"db1", "tbl11", "part111"}));
 
     // Verify rest ok
-    assertEquals("db1.tbl11", authzPaths.findAuthzObjectExactMatch(new String[]{"db1", "tbl11", "part112"}));
+    assertTrue(authzPaths.findAuthzObjectExactMatches(new String[]{"db1", "tbl11", "part112"}).contains("db1.tbl11"));
   }
 
   @Test
   public void testDefaultDbPath() {
     HMSPaths hmsPaths = new HMSPaths(new String[] {"/user/hive/warehouse"});
     hmsPaths._addAuthzObject("default", Lists.newArrayList("/user/hive/warehouse"));
-    assertEquals("default", hmsPaths.findAuthzObject(new String[]{"user", "hive", "warehouse"}));
+    assertTrue(hmsPaths.findAuthzObject(new String[]{"user", "hive", "warehouse"}).contains("default"));
   }
 
   private HMSPaths createBaseHMSPaths(int dbNum, int tblNum) {
