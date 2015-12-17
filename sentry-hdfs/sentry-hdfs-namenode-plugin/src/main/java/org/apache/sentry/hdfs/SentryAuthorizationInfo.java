@@ -251,7 +251,7 @@ public class SentryAuthorizationInfo implements Runnable {
     return stale;
   }
 
-  public boolean isManaged(String[] pathElements) {
+  public boolean isUnderPrefix(String[] pathElements) {
     lock.readLock().lock();
     try {
       return authzPaths.isUnderPrefix(pathElements);
@@ -260,10 +260,25 @@ public class SentryAuthorizationInfo implements Runnable {
     }
   }
 
+  @Deprecated
+  public boolean isManaged(String[] pathElements) {
+    return isUnderPrefix(pathElements);
+  }
+  
   public boolean doesBelongToAuthzObject(String[] pathElements) {
     lock.readLock().lock();
     try {
       return authzPaths.findAuthzObject(pathElements) != null;
+    } finally {
+      lock.readLock().unlock();
+    }
+  }
+
+  public boolean isSentryManaged(final String[] pathElements) {
+    lock.readLock().lock();
+    try {
+      return authzPaths.isUnderPrefix(pathElements) &&
+          authzPaths.findAuthzObject(pathElements) != null;
     } finally {
       lock.readLock().unlock();
     }

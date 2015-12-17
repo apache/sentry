@@ -67,7 +67,7 @@ public class SentryAuthorizationInfoX extends SentryAuthorizationInfo {
   }
   
   @Override
-  public boolean isManaged(String[] pathElements) {
+  public boolean isUnderPrefix(String[] pathElements) {
     return hasPrefix(MANAGED, pathElements);
   }
 
