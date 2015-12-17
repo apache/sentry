@@ -39,6 +39,7 @@ import org.apache.hadoop.hdfs.server.namenode.AclEntryStatusFormat;
 import org.apache.hadoop.hdfs.server.namenode.AclFeature;
 import org.apache.hadoop.hdfs.server.namenode.AuthorizationProvider;
 import org.apache.hadoop.hdfs.server.namenode.DefaultAuthorizationProvider;
+import org.apache.hadoop.hdfs.server.namenode.snapshot.Snapshot;
 import org.apache.hadoop.security.AccessControlException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,6 +67,9 @@ public class SentryAuthorizationProvider
   private FsPermission permission;
   private boolean originalAuthzAsAcl;
   private SentryAuthorizationInfo authzInfo;
+
+  private static String WARN_VISIBILITY = 
+      " The result won't be visible when the path is managed by Sentry";
 
   public SentryAuthorizationProvider() {
     this(null);
@@ -194,80 +198,61 @@ public class SentryAuthorizationProvider
     return paths;
   }
 
+  private boolean isSentryManaged(final String[] pathElements) {
+    return authzInfo.isSentryManaged(pathElements);
+  }
+
+  private boolean isSentryManaged(INodeAuthorizationInfo node) {
+    String[] pathElements = getPathElements(node);
+    return isSentryManaged(pathElements);
+  }
+
   @Override
   public void setUser(INodeAuthorizationInfo node, String user) {
-    String[] pathElements = getPathElements(node);
-
-    // For the non sentry managed paths, set the user based on
-    // the requests. Otherwise should be a no op.
-    if (!authzInfo.isManaged(pathElements)
-            || !authzInfo.doesBelongToAuthzObject(pathElements)) {
-      defaultAuthzProvider.setUser(node, user);
-    } else {
-      if (LOG.isErrorEnabled()) {
-        LOG.error("### setUser is a no op for the sentry managed path.\n");
-      }
+    // always fall through to defaultAuthZProvider, 
+    // issue warning when the path is sentry managed
+    if (isSentryManaged(node)) {
+      LOG.warn("### setUser {} (sentry managed path) to {}, update HDFS." +
+          WARN_VISIBILITY,
+          node.getFullPathName(), user);
     }
+    defaultAuthzProvider.setUser(node, user);
   }
 
   @Override
   public String getUser(INodeAuthorizationInfo node, int snapshotId) {
-    String user;
-    String[] pathElements = getPathElements(node);
-    if (!authzInfo.isManaged(pathElements)) {
-      user = defaultAuthzProvider.getUser(node, snapshotId);
-    } else if (!authzInfo.doesBelongToAuthzObject(pathElements)) {
-      user = defaultAuthzProvider.getUser(node, snapshotId);
-    } else {
-        user = this.user;
-    }
-    return user;
+    return isSentryManaged(node)?
+        this.user : defaultAuthzProvider.getUser(node, snapshotId);
   }
 
   @Override
   public void setGroup(INodeAuthorizationInfo node, String group) {
-    String[] pathElements = getPathElements(node);
-
-    // For the non sentry managed paths, set the group based on
-    // the requests. Otherwise should be a no op.
-    if (!authzInfo.isManaged(pathElements)
-            || !authzInfo.doesBelongToAuthzObject(pathElements)) {
-      defaultAuthzProvider.setGroup(node, group);
-    } else {
-      if (LOG.isErrorEnabled()) {
-        LOG.error("### setGroup is a no op for the sentry managed path.\n");
-      }
+    // always fall through to defaultAuthZProvider, 
+    // issue warning when the path is sentry managed
+    if (isSentryManaged(node)) {
+      LOG.warn("### setGroup {} (sentry managed path) to {}, update HDFS." +
+          WARN_VISIBILITY,
+          node.getFullPathName(), group);
     }
+    defaultAuthzProvider.setGroup(node, group);
   }
 
   @Override
   public String getGroup(INodeAuthorizationInfo node, int snapshotId) {
-    String group;
-    String[] pathElements = getPathElements(node);
-    if (!authzInfo.isManaged(pathElements)) {
-      group = getDefaultProviderGroup(node, snapshotId);
-    } else if (!authzInfo.doesBelongToAuthzObject(pathElements)) {
-      group = getDefaultProviderGroup(node, snapshotId);
-    } else {
-      group = this.group;
-    }
-    return group;
+    return isSentryManaged(node)?
+        this.group : defaultAuthzProvider.getGroup(node, snapshotId);
   }
 
   @Override
   public void setPermission(INodeAuthorizationInfo node, FsPermission permission) {
-    String[] pathElements = getPathElements(node);
-
-    // For the non sentry managed paths, set the permission based on
-    // the requests. Otherwise should be a no op.
-    if (!authzInfo.isManaged(pathElements)
-            || !authzInfo.doesBelongToAuthzObject(pathElements)) {
-      defaultAuthzProvider.setPermission(node, permission);
-    } else {
-      if (LOG.isErrorEnabled()) {
-        LOG.error("### setPermission is a no op for the sentry managed path.\n");
-      }
+    // always fall through to defaultAuthZProvider, 
+    // issue warning when the path is sentry managed
+    if (isSentryManaged(node)) {
+      LOG.warn("### setPermission {} (sentry managed path) to {}, update HDFS." +
+          WARN_VISIBILITY,
+          node.getFullPathName(), permission.toString());
     }
+    defaultAuthzProvider.setPermission(node, permission);
   }
 
   @Override
@@ -275,12 +260,9 @@ public class SentryAuthorizationProvider
       INodeAuthorizationInfo node, int snapshotId) {
     FsPermission permission;
     String[] pathElements = getPathElements(node);
-    if (!authzInfo.isManaged(pathElements)) {
+    if (!isSentryManaged(pathElements)) {
       permission = defaultAuthzProvider.getFsPermission(node, snapshotId);
-    } else if (!authzInfo.doesBelongToAuthzObject(pathElements)) {
-      permission = defaultAuthzProvider.getFsPermission(node, snapshotId);
-    }
-     else {
+    } else {
       FsPermission returnPerm = this.permission;
       // Handle case when prefix directory is itself associated with an
       // authorizable object (default db directory in hive)
@@ -330,18 +312,18 @@ public class SentryAuthorizationProvider
     AclFeature f = null;
     String[] pathElements = getPathElements(node);
     String p = Arrays.toString(pathElements);
-    boolean isManaged = false;
+    boolean isPrefixed = false;
     boolean isStale = false;
     boolean hasAuthzObj = false;
     Map<String, AclEntry> aclMap = null;
-    if (!authzInfo.isManaged(pathElements)) {
-      isManaged = false;
+    if (!authzInfo.isUnderPrefix(pathElements)) {
+      isPrefixed = false;
       f = defaultAuthzProvider.getAclFeature(node, snapshotId);
     } else if (!authzInfo.doesBelongToAuthzObject(pathElements)) {
-      isManaged = true;
+      isPrefixed = true;
       f = defaultAuthzProvider.getAclFeature(node, snapshotId);
     } else {
-      isManaged = true;
+      isPrefixed = true;
       hasAuthzObj = true;
       aclMap = new HashMap<String, AclEntry>();
       if (originalAuthzAsAcl) {
@@ -364,7 +346,7 @@ public class SentryAuthorizationProvider
     }
     if (LOG.isDebugEnabled()) {
       LOG.debug("### getAclEntry \n[" + (p == null ? "null" : p) + "] : ["
-          + "isManaged=" + isManaged
+          + "isPreifxed=" + isPrefixed
           + ", isStale=" + isStale
           + ", hasAuthzObj=" + hasAuthzObj
           + ", origAuthzAsAcl=" + originalAuthzAsAcl + "]\n"
@@ -404,30 +386,55 @@ public class SentryAuthorizationProvider
     return group;
   }
 
-  @Override
-  public void removeAclFeature(INodeAuthorizationInfo node) {
-    AclFeature aclFeature = node.getAclFeature(CURRENT_STATE_ID);
-    String[] pathElements = getPathElements(node);
-
-    // For non sentry managed paths, remove the ACLs based on
-    // the requests. Otherwise should be a no op.
-    if (aclFeature.getClass() != SentryAclFeature.class
-            && !authzInfo.isManaged(pathElements)) {
+  /*
+   * Check if the given node has ACL, remove the ACL if so. Issue a warning
+   * message when the node doesn't have ACL and warn is true.
+   * TODO: We need this to maintain backward compatibility (not throw error in
+   * some cases). We may remove this when we release sentry major version.
+   */
+  private void checkAndRemoveHdfsAcl(INodeAuthorizationInfo node,
+      boolean warn) {
+    AclFeature f = defaultAuthzProvider.getAclFeature(node,
+        Snapshot.CURRENT_STATE_ID);
+    if (f != null) {
       defaultAuthzProvider.removeAclFeature(node);
     } else {
-      if (LOG.isErrorEnabled()) {
-        LOG.error("### removeAclFeature is a no op for " +
-                "the path under prefix.\n");
+      if (warn) {
+        LOG.warn("### removeAclFeature is requested on {}, but it doesn't " +
+            "have any acl.", node);
       }
     }
   }
 
   @Override
-  public void addAclFeature(INodeAuthorizationInfo node, AclFeature f) {
-    String[] pathElements = getPathElements(node);
-    if (!authzInfo.isManaged(pathElements)) {
-      defaultAuthzProvider.addAclFeature(node, f);
+  public void removeAclFeature(INodeAuthorizationInfo node) {
+    // always fall through to defaultAuthZProvider, 
+    // issue warning when the path is sentry managed
+    if (isSentryManaged(node)) {
+      LOG.warn("### removeAclFeature {} (sentry managed path), update HDFS." +
+          WARN_VISIBILITY,
+          node.getFullPathName());
+      // For Sentry-managed paths, client code may try to remove a 
+      // non-existing ACL, ignore the request with a warning if the ACL
+      // doesn't exist
+      checkAndRemoveHdfsAcl(node, true);
+    } else {
+      defaultAuthzProvider.removeAclFeature(node);
     }
+  }
+
+  @Override
+  public void addAclFeature(INodeAuthorizationInfo node, AclFeature f) {
+    // always fall through to defaultAuthZProvider, 
+    // issue warning when the path is sentry managed
+    if (isSentryManaged(node)) {
+      LOG.warn("### addAclFeature {} (sentry managed path) {}, update HDFS." +
+          WARN_VISIBILITY,
+          node.getFullPathName(), f.toString());
+      // For Sentry-managed path, remove ACL silently before adding new ACL
+      checkAndRemoveHdfsAcl(node, false);
+    }
+    defaultAuthzProvider.addAclFeature(node, f);
   }
 
 }
