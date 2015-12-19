@@ -119,7 +119,7 @@ public class DBWildcardPrivilege implements Privilege {
     Preconditions.checkState(policyPart.getKey().equalsIgnoreCase(requestPart.getKey()),
         "Please report, this method should not be called with two different keys");
     if(policyPart.getValue().equals(AccessConstants.ALL) ||
-        policyPart.getValue().equalsIgnoreCase("ALL") || policyPart.equals(requestPart)) {
+        policyPart.getValue().equalsIgnoreCase("ALL")) {
       return true;
     } else if (!ProviderConstants.PRIVILEGE_NAME.equalsIgnoreCase(policyPart.getKey())
         && AccessConstants.ALL.equalsIgnoreCase(requestPart.getValue())) {
@@ -132,7 +132,7 @@ public class DBWildcardPrivilege implements Privilege {
     } else if(policyPart.getKey().equalsIgnoreCase(AuthorizableType.URI.name())) {
       return impliesURI(policyPart.getValue(), requestPart.getValue());
     }
-    return false;
+    return policyPart.equals(requestPart);
   }
 
   @VisibleForTesting

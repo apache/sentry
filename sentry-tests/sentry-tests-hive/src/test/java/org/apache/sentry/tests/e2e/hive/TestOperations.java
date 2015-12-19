@@ -26,6 +26,7 @@ import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.hadoop.fs.Path;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
 import org.junit.Before;
@@ -740,5 +741,27 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     statement.execute("create table " + DB1 + ".tb1(a int)");
     statement.execute("use " + DB1);
     statement.execute("drop table tb1");
+  }
+  @Test
+  public void testCaseSensitivity() throws Exception {
+    Statement statement = null;
+    Connection connection = null;
+    try {
+      createDb(ADMIN1, DB1);
+      Path extParentDir = dfs.assertCreateDir("/ABC/hhh");
+      Path extTableDir = dfs.assertCreateDir("/abc/hhh");
+      policyFile
+          .addPermissionsToRole("create_db1", privileges.get("create_db1"))
+          .addPermissionsToRole("all_uri", "server=server1->uri=" + extParentDir)
+          .addRolesToGroup(USERGROUP1, "create_db1", "all_uri");
+      writePolicyFile(policyFile);
+      connection = context.createConnection(USER1_1);
+      statement = context.createStatement(connection);
+      assertSemanticException(statement,
+          "create external table " + DB1 + ".tb1(a int) location '" + extTableDir + "'");
+    } finally {
+      if (statement != null) statement.close();
+      if (connection != null) connection.close();
+    }
   }
 }
