@@ -56,12 +56,6 @@ import com.google.common.io.Files;
 public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase {
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryServiceIntegrationBase.class);
 
-  static {
-    if (System.getProperty("sun.security.krb5.debug", "").trim().isEmpty()) {
-      System.setProperty("sun.security.krb5.debug", String.valueOf("true"));
-    }
-  }
-
   protected static final String SERVER_HOST = NetUtils.createSocketAddr("localhost:80").getAddress().getCanonicalHostName();
   protected static final String REALM = "EXAMPLE.COM";
   protected static final String SERVER_PRINCIPAL = "sentry/" + SERVER_HOST;
