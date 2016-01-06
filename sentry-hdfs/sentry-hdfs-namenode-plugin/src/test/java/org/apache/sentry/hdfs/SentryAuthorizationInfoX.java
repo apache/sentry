@@ -77,6 +77,11 @@ public class SentryAuthorizationInfoX extends SentryAuthorizationInfo {
   }
 
   @Override
+  public boolean isSentryManaged(final String[] pathElements) {
+    return isUnderPrefix(pathElements) && doesBelongToAuthzObject(pathElements);
+  }
+
+  @Override
   public List<AclEntry> getAclEntries(String[] pathElements) {
     AclEntry acl = new AclEntry.Builder().setType(AclEntryType.USER).
         setPermission(FsAction.ALL).setName("user-authz").
