@@ -450,44 +450,70 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     statement.close();
     connection.close();
 
-    policyFile
-        .addRolesToGroup(USERGROUP1, "all_tab1")
-        .addPermissionsToRole("all_tab1",
-            "server=server1->db=" + DB1 + "->table=" + TBL2)
-        .addRolesToGroup(USERGROUP2, "drop_tab1")
-        .addPermissionsToRole("drop_tab1",
-            "server=server1->db=" + DB1 + "->table=" + TBL3 + "->action=drop",
-            "server=server1->db=" + DB1 + "->table=" + TBL3 + "->action=select")
-        .addRolesToGroup(USERGROUP3, "select_tab1")
-        .addPermissionsToRole("select_tab1",
-            "server=server1->db=" + DB1 + "->table=" + TBL1 + "->action=select");
+    // add roles and grant permissions
+    updatePolicyFile();
+
+    // test truncate table without partitions
+    truncateTableTests(false);
+  }
+
+  /***
+   * Verify truncate partitioned permissions for different users with different
+   * privileges
+   * @throws Exception
+   */
+  @Test
+  public void testTruncatePartitionedTable() throws Exception {
+    File dataDir = context.getDataDir();
+    // copy data file to test dir
+    File dataFile = new File(dataDir, MULTI_TYPE_DATA_FILE_NAME);
+    FileOutputStream to = new FileOutputStream(dataFile);
+    Resources.copy(Resources.getResource(MULTI_TYPE_DATA_FILE_NAME), to);
+    to.close();
+
+    policyFile.setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
-    connection = context.createConnection(USER1_1);
-    statement = context.createStatement(connection);
+    // create partitioned tables
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
-    // verify all on tab can truncate table
-    statement.execute("TRUNCATE TABLE " + TBL2);
-    assertFalse(hasData(statement, TBL2));
+    statement.execute("DROP TABLE if exists " + TBL1);
+    statement.execute("CREATE TABLE " + TBL1 + " (i int) PARTITIONED BY (j int)");
+    statement.execute("DROP TABLE if exists " + TBL2);
+    statement.execute("CREATE TABLE " + TBL2 + " (i int) PARTITIONED BY (j int)");
+    statement.execute("DROP TABLE if exists " + TBL3);
+    statement.execute("CREATE TABLE " + TBL3 + " (i int) PARTITIONED BY (j int)");
+
+    // verify admin can execute truncate empty partitioned table
+    statement.execute("TRUNCATE TABLE " + TBL1);
+    assertFalse(hasData(statement, TBL1));
     statement.close();
     connection.close();
 
-    connection = context.createConnection(USER2_1);
+    // add roles and grant permissions
+    updatePolicyFile();
+
+    // test truncate empty partitioned tables
+    truncateTableTests(false);
+
+    // add partitions to tables
+    connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
-    // verify drop on tab can truncate table
-    statement.execute("TRUNCATE TABLE " + TBL3);
-    assertFalse(hasData(statement, TBL3));
+    statement.execute("ALTER TABLE " + TBL1 + " ADD PARTITION (j=1) PARTITION (j=2)");
+    statement.execute("ALTER TABLE " + TBL2 + " ADD PARTITION (j=1) PARTITION (j=2)");
+    statement.execute("ALTER TABLE " + TBL3 + " ADD PARTITION (j=1) PARTITION (j=2)");
+
+    // verify admin can execute truncate NOT empty partitioned table
+    statement.execute("TRUNCATE TABLE " + TBL1 + " partition (j=1)");
+    statement.execute("TRUNCATE TABLE " + TBL1);
+    assertFalse(hasData(statement, TBL1));
     statement.close();
     connection.close();
 
-    connection = context.createConnection(USER3_1);
-    statement = context.createStatement(connection);
-    statement.execute("USE " + DB1);
-    // verify select on tab can NOT truncate table
-    context.assertAuthzException(statement, "TRUNCATE TABLE " + TBL3);
-    statement.close();
-    connection.close();
+    // test truncate NOT empty partitioned tables
+    truncateTableTests(true);
   }
 
   /**
@@ -563,5 +589,74 @@ public class TestPrivilegesAtTableScope extends AbstractTestWithStaticConfigurat
     statement.close();
     connection.close();
 
+  }
+
+  /**
+   * update policy file for truncate table tests
+   */
+  private void updatePolicyFile() throws Exception{
+    policyFile
+        .addRolesToGroup(USERGROUP1, "all_tab1")
+        .addPermissionsToRole("all_tab1",
+            "server=server1->db=" + DB1 + "->table=" + TBL2)
+        .addRolesToGroup(USERGROUP2, "drop_tab1")
+        .addPermissionsToRole("drop_tab1",
+            "server=server1->db=" + DB1 + "->table=" + TBL3 + "->action=drop",
+            "server=server1->db=" + DB1 + "->table=" + TBL3 + "->action=select")
+        .addRolesToGroup(USERGROUP3, "select_tab1")
+        .addPermissionsToRole("select_tab1",
+            "server=server1->db=" + DB1 + "->table=" + TBL1 + "->action=select");
+    writePolicyFile(policyFile);
+  }
+
+  /**
+   * Test truncate table with or without partitions for users with different privileges.
+   * Only test truncate table partition if truncPartition is true.
+   */
+  private void truncateTableTests(boolean truncPartition) throws Exception{
+    Connection connection = null;
+    Statement statement = null;
+    try {
+      connection = context.createConnection(USER1_1);
+      statement = context.createStatement(connection);
+      statement.execute("USE " + DB1);
+      // verify all privileges on table can truncate table
+      if (truncPartition) {
+        statement.execute("TRUNCATE TABLE " + TBL2 + " PARTITION (j=1)");
+      }
+      statement.execute("TRUNCATE TABLE " + TBL2);
+      assertFalse(hasData(statement, TBL2));
+      statement.close();
+      connection.close();
+
+      connection = context.createConnection(USER2_1);
+      statement = context.createStatement(connection);
+      statement.execute("USE " + DB1);
+      // verify drop privilege on table can truncate table
+      if (truncPartition) {
+        statement.execute("TRUNCATE TABLE " + TBL3 + " partition (j=1)");
+      }
+      statement.execute("TRUNCATE TABLE " + TBL3);
+      assertFalse(hasData(statement, TBL3));
+      statement.close();
+      connection.close();
+
+      connection = context.createConnection(USER3_1);
+      statement = context.createStatement(connection);
+      statement.execute("USE " + DB1);
+      // verify select privilege on table can NOT truncate table
+      if (truncPartition) {
+        context.assertAuthzException(
+            statement, "TRUNCATE TABLE " + TBL1 + " PARTITION (j=1)");
+      }
+      context.assertAuthzException(statement, "TRUNCATE TABLE " + TBL1);
+    } finally {
+      if (statement != null) {
+        statement.close();
+      }
+      if (connection != null) {
+        connection.close();
+      }
+    }
   }
 }

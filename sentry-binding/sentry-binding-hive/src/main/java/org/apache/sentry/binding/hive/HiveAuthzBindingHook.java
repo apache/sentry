@@ -28,6 +28,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
+import com.google.common.base.Preconditions;
 import org.apache.hadoop.hive.common.JavaUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
@@ -265,6 +266,19 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
         // For DESCRIBE FORMATTED/EXTENDED ast will have an additional child node with value
         // "FORMATTED/EXTENDED".
         isDescTableBasic = (ast.getChildCount() == 1);
+        break;
+      case HiveParser.TOK_TRUNCATETABLE:
+        // SENTRY-826:
+        // Truncate empty partitioned table should throw SemanticException only if the
+        // user does not have permission.
+        // In postAnalyze, currOutDB and currOutTbl will be added into outputHierarchy
+        // which will be validated in the hiveAuthzBinding.authorize method.
+        Preconditions.checkArgument(ast.getChildCount() == 1);
+        // childcount is 1 for table without partition, 2 for table with partitions
+        Preconditions.checkArgument(ast.getChild(0).getChildCount() >= 1);
+        Preconditions.checkArgument(ast.getChild(0).getChild(0).getChildCount() == 1);
+        currOutDB = extractDatabase((ASTNode) ast.getChild(0));
+        currOutTab = extractTable((ASTNode) ast.getChild(0).getChild(0).getChild(0));
         break;
       default:
         currDB = getCanonicalDb();
