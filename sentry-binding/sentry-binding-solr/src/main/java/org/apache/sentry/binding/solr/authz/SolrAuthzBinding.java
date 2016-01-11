@@ -38,6 +38,7 @@ import org.apache.sentry.core.model.search.SearchModelAction;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.common.AuthorizationProvider;
 import org.apache.sentry.provider.common.GroupMappingService;
+import org.apache.sentry.provider.common.HadoopGroupResourceAuthorizationProvider;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.db.generic.service.thrift.SearchPolicyServiceClient;
 import org.apache.sentry.provider.db.generic.service.thrift.SearchProviderBackend;
@@ -91,13 +92,17 @@ public class SolrAuthzBinding {
       " with resource " + resourceName + ", policy engine "
       + policyEngineName + ", provider backend " + providerBackendName);
     // load the provider backend class
+    if (kerberosEnabledProp.equalsIgnoreCase("true")) {
+      initKerberos(keytabProp, principalProp);
+    } else {
+      // set configuration so that group mappings are properly setup even if
+      // we don't use kerberos, for testing
+      UserGroupInformation.setConfiguration(authzConf);
+    }
     Constructor<?> providerBackendConstructor =
       Class.forName(providerBackendName).getDeclaredConstructor(Configuration.class, String.class);
     providerBackendConstructor.setAccessible(true);
 
-    if (kerberosEnabledProp.equalsIgnoreCase("true")) {
-      initKerberos(keytabProp, principalProp);
-    }
     providerBackend =
       (ProviderBackend) providerBackendConstructor.newInstance(new Object[] {authzConf, resourceName});
 
@@ -107,6 +112,12 @@ public class SolrAuthzBinding {
     policyConstructor.setAccessible(true);
     PolicyEngine policyEngine =
       (PolicyEngine) policyConstructor.newInstance(new Object[] {providerBackend});
+
+    // if unset, set the hadoop auth provider to use new groups, so we don't
+    // conflict with the group mappings that may already be set up
+    if (authzConf.get(HadoopGroupResourceAuthorizationProvider.USE_NEW_GROUPS) == null) {
+      authzConf.setBoolean(HadoopGroupResourceAuthorizationProvider.USE_NEW_GROUPS ,true);
+    }
 
     // load the authz provider class
     Constructor<?> constrctor =

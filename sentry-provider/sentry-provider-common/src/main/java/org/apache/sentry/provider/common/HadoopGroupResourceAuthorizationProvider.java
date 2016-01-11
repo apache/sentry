@@ -30,16 +30,19 @@ import com.google.common.annotations.VisibleForTesting;
 public class HadoopGroupResourceAuthorizationProvider extends
   ResourceAuthorizationProvider {
 
+  // if set to true in the Configuration, constructs a new Group object
+  // for the GroupMappingService rather than using Hadoop's static mapping.
+  public static final String CONF_PREFIX = HadoopGroupResourceAuthorizationProvider.class.getName();
+  public static final String USE_NEW_GROUPS = CONF_PREFIX + ".useNewGroups";
+
   // resource parameter present so that other AuthorizationProviders (e.g.
   // LocalGroupResourceAuthorizationProvider) has the same constructor params.
   public HadoopGroupResourceAuthorizationProvider(String resource, PolicyEngine policy) throws IOException {
-    this(policy, new HadoopGroupMappingService(
-        Groups.getUserToGroupsMappingService(new Configuration())));
+    this(new Configuration(), resource, policy);
   }
 
   public HadoopGroupResourceAuthorizationProvider(Configuration conf, String resource, PolicyEngine policy) throws IOException {
-    this(policy, new HadoopGroupMappingService(
-        Groups.getUserToGroupsMappingService(conf)));
+    this(policy, new HadoopGroupMappingService(getGroups(conf)));
   }
 
   @VisibleForTesting
@@ -48,4 +51,11 @@ public class HadoopGroupResourceAuthorizationProvider extends
     super(policy, groupService);
   }
 
+  private static Groups getGroups(Configuration conf) {
+    if (conf.getBoolean(USE_NEW_GROUPS, false)) {
+      return new Groups(conf);
+    } else {
+      return Groups.getUserToGroupsMappingService(conf);
+    }
+  }
 }

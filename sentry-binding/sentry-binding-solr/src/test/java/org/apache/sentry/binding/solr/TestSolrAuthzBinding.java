@@ -21,9 +21,12 @@ import static junit.framework.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -32,6 +35,7 @@ import junit.framework.Assert;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.hadoop.security.GroupMappingServiceProvider;
 import org.apache.sentry.binding.solr.authz.SentrySolrAuthorizationException;
 import org.apache.sentry.binding.solr.authz.SolrAuthzBinding;
 import org.apache.sentry.binding.solr.conf.SolrAuthzConf;
@@ -406,5 +410,35 @@ public class TestSolrAuthzBinding {
         HdfsTestUtil.teardownClass(dfsCluster);
       }
     }
+  }
+
+  @Test
+  public void testCustomGroupMapping() throws Exception {
+    SolrAuthzConf solrAuthzConf =
+      new SolrAuthzConf(Resources.getResource("sentry-site.xml"));
+    setUsableAuthzConf(solrAuthzConf);
+    solrAuthzConf.set(AuthzConfVars.AUTHZ_PROVIDER.getVar(), "org.apache.sentry.provider.common.HadoopGroupResourceAuthorizationProvider");
+    solrAuthzConf.set("hadoop.security.group.mapping",
+      FoobarGroupMappingServiceProvider.class.getName());
+    SolrAuthzBinding binding = new SolrAuthzBinding(solrAuthzConf);
+    final String user = "userTestSolrAuthzBinding";
+    assertEquals(1, binding.getGroups(user).size());
+    assertTrue(binding.getGroups(user).contains("foobar"));
+  }
+
+  /**
+   * GroupMappingServiceProvider that returns "foobar" for any group
+   */
+  private static class FoobarGroupMappingServiceProvider implements GroupMappingServiceProvider {
+    @Override
+    public List<String> getGroups(String user) throws IOException {
+      return Arrays.asList("foobar");
+    }
+
+    @Override
+    public void cacheGroupsRefresh() throws IOException {}
+
+    @Override
+    public void cacheGroupsAdd(List<String> groups) throws IOException {}
   }
 }
