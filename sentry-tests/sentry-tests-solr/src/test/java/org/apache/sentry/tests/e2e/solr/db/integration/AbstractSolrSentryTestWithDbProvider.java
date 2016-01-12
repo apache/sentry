@@ -18,9 +18,12 @@
 package org.apache.sentry.tests.e2e.solr.db.integration;
 
 
+import static org.apache.sentry.core.model.search.SearchModelAuthorizable.AuthorizableType.Collection;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.Comparator;
+import java.util.List;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
@@ -32,12 +35,16 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.sentry.SentryUserException;
 import org.apache.sentry.binding.solr.HdfsTestUtil;
 import org.apache.sentry.binding.solr.conf.SolrAuthzConf.AuthzConfVars;
+import org.apache.sentry.core.common.Action;
 import org.apache.sentry.core.model.search.SearchConstants;
-import org.apache.sentry.provider.common.AuthorizationComponent;
-import org.apache.sentry.provider.db.generic.service.thrift.SearchPolicyServiceClient;
-import org.apache.sentry.provider.db.generic.service.thrift.SearchProviderBackend;
+import org.apache.sentry.provider.db.generic.SentryGenericProviderBackend;
+import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
+import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
+import org.apache.sentry.provider.db.generic.service.thrift.TSentryGrantOption;
+import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.file.LocalGroupResourceAuthorizationProvider;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.service.thrift.SentryService;
@@ -52,6 +59,7 @@ import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 /**
@@ -68,11 +76,13 @@ public class AbstractSolrSentryTestWithDbProvider extends AbstractSolrSentryTest
   protected static final String ADMIN_GROUP = "admin_group";
   protected static final String ADMIN_ROLE  = "admin_role";
   protected static final String ADMIN_COLLECTION_NAME = "admin";
+  protected static final String COMPONENT_SOLR = "solr";
+  protected static final String CLUSTER_NAME = SearchConstants.SENTRY_SEARCH_CLUSTER_DEFAULT;
 
   protected static final Configuration conf = new Configuration(false);
 
   protected static SentryService server;
-  protected static SearchPolicyServiceClient client;
+  protected static SentryGenericServiceClient client;
 
   protected static File baseDir;
   protected static File hdfsDir;
@@ -129,7 +139,8 @@ public class AbstractSolrSentryTestWithDbProvider extends AbstractSolrSentryTest
         ServerConfig.SENTRY_STORE_LOCAL_GROUP_MAPPING);
     conf.set(AuthzConfVars.AUTHZ_PROVIDER.getVar(),
         LocalGroupResourceAuthorizationProvider.class.getName());
-    conf.set(AuthzConfVars.AUTHZ_PROVIDER_BACKEND.getVar(), SearchProviderBackend.class.getName());
+    conf.set(AuthzConfVars.AUTHZ_PROVIDER_BACKEND.getVar(),
+        SentryGenericProviderBackend.class.getName());
     conf.set(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar(), policyFilePath.getPath());
   }
 
@@ -193,7 +204,7 @@ public class AbstractSolrSentryTestWithDbProvider extends AbstractSolrSentryTest
   }
 
   public static void connectToSentryService() throws Exception {
-    client = new SearchPolicyServiceClient(conf);
+    client = new SentryGenericServiceClient(conf);
   }
 
   public static void stopAllService() throws Exception {
@@ -261,16 +272,47 @@ public class AbstractSolrSentryTestWithDbProvider extends AbstractSolrSentryTest
     writePolicyFile();
 
     for (int i = 0; i < roles.length; i++) {
-      client.createRole(ADMIN_USER, roles[i]);
-      client.addRoleToGroups(ADMIN_USER, roles[i], Sets.newHashSet(groups[i]));
+      client.createRole(ADMIN_USER, roles[i], COMPONENT_SOLR);
+      client.addRoleToGroups(ADMIN_USER, roles[i], COMPONENT_SOLR, Sets.newHashSet(groups[i]));
     }
 
     /**
      * user[admin]->group[admin]->role[admin]
      * grant ALL privilege on collection ALL to role admin
      */
-    client.createRole(ADMIN_USER, ADMIN_ROLE);
-    client.addRoleToGroups(ADMIN_USER, ADMIN_ROLE, Sets.newHashSet(ADMIN_GROUP));
-    client.grantCollectionPrivilege(SearchConstants.ALL, ADMIN_USER, ADMIN_ROLE, SearchConstants.ALL);
+    client.createRole(ADMIN_USER, ADMIN_ROLE, COMPONENT_SOLR);
+    client.addRoleToGroups(ADMIN_USER, ADMIN_ROLE, COMPONENT_SOLR, Sets.newHashSet(ADMIN_GROUP));
+    grantCollectionPrivilege(SearchConstants.ALL, ADMIN_USER, ADMIN_ROLE, SearchConstants.ALL);
+  }
+
+  protected static void grantCollectionPrivilege(String collection, String requestor,
+      String roleName, String action) throws SentryUserException {
+    TSentryPrivilege tPrivilege = toTSentryPrivilege(collection, action);
+    client.grantPrivilege(requestor, roleName, COMPONENT_SOLR, tPrivilege);
+  }
+
+  protected static void revokeCollectionPrivilege(String collection, String requestor,
+      String roleName, String action) throws SentryUserException {
+    TSentryPrivilege tPrivilege = toTSentryPrivilege(collection, action);
+    client.revokePrivilege(requestor, roleName, COMPONENT_SOLR, tPrivilege);
+  }
+
+  protected static void dropCollectionPrivilege(String collection, String requestor)
+      throws SentryUserException {
+    final TSentryPrivilege tPrivilege = toTSentryPrivilege(collection, Action.ALL);
+    client.dropPrivilege(requestor, COMPONENT_SOLR, tPrivilege);
+  }
+
+  private static TSentryPrivilege toTSentryPrivilege(String collection, String action) {
+    TSentryPrivilege tPrivilege = new TSentryPrivilege();
+    tPrivilege.setComponent(COMPONENT_SOLR);
+    tPrivilege.setServiceName(CLUSTER_NAME);
+    tPrivilege.setAction(action);
+    tPrivilege.setGrantOption(TSentryGrantOption.FALSE);
+
+    List<TAuthorizable> authorizables = Lists.newArrayList(new TAuthorizable(Collection.name(),
+        collection));
+    tPrivilege.setAuthorizables(authorizables);
+    return tPrivilege;
   }
 }

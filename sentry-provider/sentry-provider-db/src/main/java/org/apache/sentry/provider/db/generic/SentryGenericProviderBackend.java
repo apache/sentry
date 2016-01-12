@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.provider.db.generic.service.thrift;
+package org.apache.sentry.provider.db.generic;
 
 import java.util.Arrays;
 import java.util.Set;
@@ -26,9 +26,10 @@ import org.apache.sentry.SentryUserException;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.SentryConfigurationException;
-import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;
+import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
+import org.apache.sentry.provider.db.generic.service.thrift.TSentryRole;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,44 +37,49 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 /**
- * when Solr integration with Database store, this backend will communicate with Sentry service to get
- * privileges according to the requested groups
- *
+ * This class used when any component such as Hive, Solr or Sqoop want to integration with the Sentry service
  */
-public class SearchProviderBackend implements ProviderBackend {
-  private static final Logger LOGGER = LoggerFactory.getLogger(SearchProviderBackend.class);
+public class SentryGenericProviderBackend implements ProviderBackend {
+  private static final Logger LOGGER = LoggerFactory.getLogger(SentryGenericProviderBackend.class);
   private final Configuration conf;
-  private final Subject subject;
   private volatile boolean initialized = false;
+  private String componentType;
+  private String serviceName;
 
-  public SearchProviderBackend(Configuration conf, String resourcePath) throws Exception {
+  // ProviderBackend should have the same construct to support the reflect in authBinding,
+  // eg:SqoopAuthBinding
+  public SentryGenericProviderBackend(Configuration conf, String resource)
+      throws Exception {
     this.conf = conf;
-    /**
-     * Who create the searchProviderBackend, this subject will been used the requester to communicate
-     * with Sentry Service
-     */
-    subject = new Subject(UserGroupInformation.getCurrentUser()
-        .getShortUserName());
   }
 
   @Override
   public void initialize(ProviderBackendContext context) {
     if (initialized) {
-      throw new IllegalStateException("SearchProviderBackend has already been initialized, cannot be initialized twice");
+      throw new IllegalStateException("SentryGenericProviderBackend has already been initialized, cannot be initialized twice");
     }
     this.initialized = true;
+  }
+
+  /**
+   *  The Sentry-296(generate client for connection pooling) has already finished development and reviewed by now. When it
+   *  was committed to master, the getClient method was needed to refactor using the connection pool
+   */
+  private SentryGenericServiceClient getClient() throws Exception {
+    return new SentryGenericServiceClient(conf);
   }
 
   @Override
   public ImmutableSet<String> getPrivileges(Set<String> groups,
       ActiveRoleSet roleSet, Authorizable... authorizableHierarchy) {
     if (!initialized) {
-      throw new IllegalStateException("SearchProviderBackend has not been properly initialized");
+      throw new IllegalStateException("SentryGenericProviderBackend has not been properly initialized");
     }
-    SearchPolicyServiceClient client = null;
+    SentryGenericServiceClient client = null;
     try {
       client = getClient();
-      return ImmutableSet.copyOf(client.listPrivilegesForProvider(roleSet, groups, Arrays.asList(authorizableHierarchy)));
+      return ImmutableSet.copyOf(client.listPrivilegesForProvider(componentType, serviceName,
+          roleSet, groups, Arrays.asList(authorizableHierarchy)));
     } catch (SentryUserException e) {
       String msg = "Unable to obtain privileges from server: " + e.getMessage();
       LOGGER.error(msg, e);
@@ -91,15 +97,16 @@ public class SearchProviderBackend implements ProviderBackend {
   @Override
   public ImmutableSet<String> getRoles(Set<String> groups, ActiveRoleSet roleSet) {
     if (!initialized) {
-      throw new IllegalStateException("SearchProviderBackend has not been properly initialized");
+      throw new IllegalStateException("SentryGenericProviderBackend has not been properly initialized");
     }
-    SearchPolicyServiceClient client = null;
+    SentryGenericServiceClient client = null;
     try {
       Set<TSentryRole> tRoles = Sets.newHashSet();
       client = getClient();
       //get the roles according to group
+      String requestor = UserGroupInformation.getCurrentUser().getShortUserName();
       for (String group : groups) {
-        tRoles.addAll(client.listRolesByGroupName(subject.getName(), group));
+        tRoles.addAll(client.listRolesByGroupName(requestor, group, getComponentType()));
       }
       Set<String> roles = Sets.newHashSet();
       for (TSentryRole tRole : tRoles) {
@@ -120,22 +127,35 @@ public class SearchProviderBackend implements ProviderBackend {
     return ImmutableSet.of();
   }
 
-  public SearchPolicyServiceClient getClient() throws Exception {
-    return new SearchPolicyServiceClient(conf);
-  }
-
   /**
-   * SearchProviderBackend does nothing in the validatePolicy()
+   * SentryGenericProviderBackend does nothing in the validatePolicy()
    */
   @Override
   public void validatePolicy(boolean strictValidation)
       throws SentryConfigurationException {
     if (!initialized) {
-      throw new IllegalStateException("Backend has not been properly initialized");
+      throw new IllegalStateException("SentryGenericProviderBackend has not been properly initialized");
     }
   }
 
   @Override
   public void close() {
   }
+
+  public void setComponentType(String componentType) {
+    this.componentType = componentType;
+  }
+
+  public String getComponentType() {
+    return componentType;
+  }
+
+  public String getServiceName() {
+    return serviceName;
+  }
+
+  public void setServiceName(String serviceName) {
+    this.serviceName = serviceName;
+  }
+
 }

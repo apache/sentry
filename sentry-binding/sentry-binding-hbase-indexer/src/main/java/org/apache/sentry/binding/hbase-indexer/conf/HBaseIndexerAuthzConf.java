@@ -38,7 +38,6 @@ public class HBaseIndexerAuthzConf extends Configuration {
     // support putting _HOST instead of fqdn and doing the translation at runtime.
     // Setting this property tells sentry how to do the translation.
     PRINCIPAL_HOSTNAME("sentry.hbaseindexer.principal.hostname", null);
-
     private final String varName;
     private final String defaultVal;
 

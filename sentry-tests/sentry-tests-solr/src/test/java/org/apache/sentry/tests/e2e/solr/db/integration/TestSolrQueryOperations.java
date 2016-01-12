@@ -18,13 +18,14 @@ package org.apache.sentry.tests.e2e.solr.db.integration;
 
 import java.io.File;
 
+import org.apache.sentry.core.model.search.Collection;
 import org.apache.sentry.core.model.search.SearchConstants;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Sets;
+import com.google.common.collect.Lists;
 
 public class TestSolrQueryOperations extends AbstractSolrSentryTestWithDbProvider {
   private static final Logger LOG = LoggerFactory.getLogger(TestSolrQueryOperations.class);
@@ -54,13 +55,13 @@ public class TestSolrQueryOperations extends AbstractSolrSentryTestWithDbProvide
      * grant ALL privilege on collection collection1 to role0
      */
     String grantor = "user0";
-    client.grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role0", SearchConstants.ALL);
+    grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role0", SearchConstants.ALL);
     verifyQueryPass(grantor, TEST_COLLECTION_NAME1, ALL_DOCS);
 
-    client.revokeCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role0", SearchConstants.UPDATE);
+    revokeCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role0", SearchConstants.UPDATE);
     verifyQueryPass(grantor, TEST_COLLECTION_NAME1, ALL_DOCS);
 
-    client.revokeCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role0", SearchConstants.QUERY);
+    revokeCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role0", SearchConstants.QUERY);
     verifyQueryFail(grantor, TEST_COLLECTION_NAME1, ALL_DOCS);
 
     /**
@@ -68,10 +69,10 @@ public class TestSolrQueryOperations extends AbstractSolrSentryTestWithDbProvide
      * grant QUERY privilege on collection collection1 to role1
      */
     grantor = "user1";
-    client.grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role1", SearchConstants.QUERY);
+    grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role1", SearchConstants.QUERY);
     verifyQueryPass(grantor, TEST_COLLECTION_NAME1, ALL_DOCS);
 
-    client.revokeCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role1", SearchConstants.QUERY);
+    revokeCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role1", SearchConstants.QUERY);
     verifyQueryFail(grantor, TEST_COLLECTION_NAME1, ALL_DOCS);
 
     /**
@@ -79,13 +80,15 @@ public class TestSolrQueryOperations extends AbstractSolrSentryTestWithDbProvide
      * grant UPDATE privilege on collection collection1 to role2
      */
     grantor = "user2";
-    client.grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role2", SearchConstants.UPDATE);
+    grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role2", SearchConstants.UPDATE);
     verifyQueryFail(grantor, TEST_COLLECTION_NAME1, ALL_DOCS);
 
-    client.grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role2", SearchConstants.QUERY);
+    grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role2", SearchConstants.QUERY);
     verifyQueryPass(grantor, TEST_COLLECTION_NAME1, ALL_DOCS);
 
-    client.renameCollectionPrivilege(TEST_COLLECTION_NAME1, "new_" + TEST_COLLECTION_NAME1, ADMIN_USER);
+    client.renamePrivilege(ADMIN_USER, COMPONENT_SOLR, CLUSTER_NAME,
+        Lists.newArrayList(new Collection(TEST_COLLECTION_NAME1)),
+        Lists.newArrayList(new Collection("new_" + TEST_COLLECTION_NAME1)));
     verifyQueryFail(grantor, TEST_COLLECTION_NAME1, ALL_DOCS);
 
     grantor = "user3";

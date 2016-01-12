@@ -16,36 +16,47 @@
  */
 package org.apache.sentry.binding.solr.authz;
 
+import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION;
+import static org.apache.sentry.core.model.search.SearchConstants.SENTRY_SEARCH_CLUSTER_DEFAULT;
+import static org.apache.sentry.core.model.search.SearchConstants.SENTRY_SEARCH_CLUSTER_KEY;
+import static org.apache.sentry.core.model.search.SearchModelAuthorizable.AuthorizableType.Collection;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
-import static org.apache.hadoop.fs.CommonConfigurationKeys.HADOOP_SECURITY_AUTHENTICATION;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.SentryUserException;
 import org.apache.sentry.binding.solr.conf.SolrAuthzConf;
 import org.apache.sentry.binding.solr.conf.SolrAuthzConf.AuthzConfVars;
+import org.apache.sentry.core.common.Action;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.search.Collection;
 import org.apache.sentry.core.model.search.Config;
 import org.apache.sentry.core.model.search.SearchModelAction;
 import org.apache.sentry.policy.common.PolicyEngine;
+import org.apache.sentry.provider.common.AuthorizationComponent;
 import org.apache.sentry.provider.common.AuthorizationProvider;
 import org.apache.sentry.provider.common.GroupMappingService;
 import org.apache.sentry.provider.common.HadoopGroupResourceAuthorizationProvider;
 import org.apache.sentry.provider.common.ProviderBackend;
-import org.apache.sentry.provider.db.generic.service.thrift.SearchPolicyServiceClient;
-import org.apache.sentry.provider.db.generic.service.thrift.SearchProviderBackend;
+import org.apache.sentry.provider.db.generic.SentryGenericProviderBackend;
+import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
+import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
+import org.apache.sentry.provider.db.generic.service.thrift.TSentryGrantOption;
+import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
 
 public class SolrAuthzBinding {
   private static final Logger LOG = LoggerFactory
@@ -87,6 +98,7 @@ public class SolrAuthzBinding {
       authzConf.get(AuthzConfVars.AUTHZ_PROVIDER_BACKEND.getVar());
     String policyEngineName =
       authzConf.get(AuthzConfVars.AUTHZ_POLICY_ENGINE.getVar());
+    String serviceName = authzConf.get(SENTRY_SEARCH_CLUSTER_KEY, SENTRY_SEARCH_CLUSTER_DEFAULT);
 
     LOG.debug("Using authorization provider " + authProviderName +
       " with resource " + resourceName + ", policy engine "
@@ -99,12 +111,25 @@ public class SolrAuthzBinding {
       // we don't use kerberos, for testing
       UserGroupInformation.setConfiguration(authzConf);
     }
+
+    // the SearchProviderBackend is deleted in SENTRY-828, this is for the compatible with the
+    // previous Sentry.
+    if ("org.apache.sentry.provider.db.generic.service.thrift.SearchProviderBackend"
+        .equals(providerBackendName)) {
+      providerBackendName = SentryGenericProviderBackend.class.getName();
+    }
     Constructor<?> providerBackendConstructor =
       Class.forName(providerBackendName).getDeclaredConstructor(Configuration.class, String.class);
     providerBackendConstructor.setAccessible(true);
 
     providerBackend =
       (ProviderBackend) providerBackendConstructor.newInstance(new Object[] {authzConf, resourceName});
+
+    if (providerBackend instanceof SentryGenericProviderBackend) {
+      ((SentryGenericProviderBackend) providerBackend)
+          .setComponentType(AuthorizationComponent.Search);
+      ((SentryGenericProviderBackend) providerBackend).setServiceName(serviceName);
+    }
 
     // load the policy engine class
     Constructor<?> policyConstructor =
@@ -256,11 +281,11 @@ public class SolrAuthzBinding {
    * If the binding uses the searchProviderBackend, it can sync privilege with Sentry Service
    */
   public boolean isSyncEnabled() {
-    return (providerBackend instanceof SearchProviderBackend);
+    return (providerBackend instanceof SentryGenericProviderBackend);
   }
 
-  public SearchPolicyServiceClient getClient() throws Exception {
-    return new SearchPolicyServiceClient(authzConf);
+  public SentryGenericServiceClient getClient() throws Exception {
+    return new SentryGenericServiceClient(authzConf);
   }
 
   /**
@@ -272,10 +297,19 @@ public class SolrAuthzBinding {
     if (!isSyncEnabled()) {
       return;
     }
-    SearchPolicyServiceClient client = null;
+    SentryGenericServiceClient client = null;
     try {
       client = getClient();
-      client.dropCollectionPrivilege(collection, bindingSubject.getName());
+      TSentryPrivilege tPrivilege = new TSentryPrivilege();
+      tPrivilege.setComponent(AuthorizationComponent.Search);
+      tPrivilege.setServiceName(authzConf.get(SENTRY_SEARCH_CLUSTER_KEY,
+          SENTRY_SEARCH_CLUSTER_DEFAULT));
+      tPrivilege.setAction(Action.ALL);
+      tPrivilege.setGrantOption(TSentryGrantOption.UNSET);
+      List<TAuthorizable> authorizables = Lists.newArrayList(new TAuthorizable(Collection.name(),
+          collection));
+      tPrivilege.setAuthorizables(authorizables);
+      client.dropPrivilege(bindingSubject.getName(), AuthorizationComponent.Search, tPrivilege);
     } catch (SentryUserException ex) {
       throw new SentrySolrAuthorizationException("User " + bindingSubject.getName() +
           " can't delete privileges for collection " + collection);
