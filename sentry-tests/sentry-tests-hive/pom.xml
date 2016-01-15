@@ -496,6 +496,7 @@ limitations under the License.
           <include>**/TestDbPrivilegesAtColumnScope.java</include>
           <include>**/TestColumnEndToEnd.java</include>
           <include>**/TestDbComplexView.java</include>
+          <include>**/TestConcurrentClients</include>
         </includes>
         <argLine>-Dsentry.e2etest.hiveServer2Type=UnmanagedHiveServer2 -Dsentry.e2etest.DFSType=ClusterDFS -Dsentry.e2etest.external.sentry=true</argLine>
        </configuration>
