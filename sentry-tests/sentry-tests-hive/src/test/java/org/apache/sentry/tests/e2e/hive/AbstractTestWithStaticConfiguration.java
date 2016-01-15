@@ -23,6 +23,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
+import java.security.PrivilegedExceptionAction;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -32,7 +33,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.HashSet;
 
+import com.google.common.collect.Sets;
 import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
@@ -51,6 +54,7 @@ import org.apache.sentry.policy.db.DBModelAuthorizables;
 import org.apache.sentry.provider.db.SimpleDBProviderBackend;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.service.thrift.KerberosConfiguration;
 import org.apache.sentry.service.thrift.SentryServiceClientFactory;
 import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
@@ -71,6 +75,10 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
+
+import javax.security.auth.Subject;
+import javax.security.auth.kerberos.KerberosPrincipal;
+import javax.security.auth.login.LoginContext;
 
 public abstract class AbstractTestWithStaticConfiguration {
   private static final Logger LOGGER = LoggerFactory
@@ -136,6 +144,38 @@ public abstract class AbstractTestWithStaticConfiguration {
   protected static boolean enableSentryHA = false;
   protected static Context context;
   protected final String semanticException = "SemanticException No valid privileges";
+
+  protected static boolean clientKerberos = false;
+  protected static String REALM = System.getProperty("sentry.service.realm", "EXAMPLE.COM");
+  protected static final String SERVER_KERBEROS_NAME = "sentry/" + SERVER_HOST + "@" + REALM;
+  protected static final String SERVER_KEY_TAB = System.getProperty("sentry.service.server.keytab");
+
+  private static LoginContext clientLoginContext;
+  protected static SentryPolicyServiceClient client;
+
+  /**
+   * Get sentry client with authenticated Subject
+   * (its security-related attributes(for example, kerberos principal and key)
+   * @param clientShortName
+   * @param clientKeyTabDir
+   * @return client's Subject
+   */
+  public static Subject getClientSubject(String clientShortName, String clientKeyTabDir) {
+    String clientKerberosPrincipal = clientShortName + "@" + REALM;
+    File clientKeyTabFile = new File(clientKeyTabDir);
+    Subject clientSubject = new Subject(false, Sets.newHashSet(
+            new KerberosPrincipal(clientKerberosPrincipal)), new HashSet<Object>(),
+            new HashSet<Object>());
+    try {
+      clientLoginContext = new LoginContext("", clientSubject, null,
+              KerberosConfiguration.createClientConfig(clientKerberosPrincipal, clientKeyTabFile));
+      clientLoginContext.login();
+    } catch (Exception ex) {
+      LOGGER.error("Exception: " + ex);
+    }
+    clientSubject = clientLoginContext.getSubject();
+    return clientSubject;
+  }
 
   public static void createContext() throws Exception {
     context = new Context(hiveServer, fileSystem,
@@ -445,6 +485,51 @@ public abstract class AbstractTestWithStaticConfiguration {
     return SentryServiceClientFactory.create(sentryServer.get(0).getConf());
   }
 
+  /**
+   * Get Sentry authorized client to communicate with sentry server,
+   * the client can be for a minicluster, real distributed cluster,
+   * sentry server can use policy file or it's a service.
+   * @param clientShortName: principal prefix string
+   * @param clientKeyTabDir: authorization key path
+   * @return sentry client to talk to sentry server
+   * @throws Exception
+   */
+  public static SentryPolicyServiceClient getSentryClient(String clientShortName,
+                                                          String clientKeyTabDir) throws Exception {
+    if (!useSentryService) {
+      LOGGER.info("Running on a minicluser env.");
+      return getSentryClient();
+    }
+
+    if (clientKerberos) {
+      if (sentryConf == null ) {
+        sentryConf = new Configuration(false);
+      }
+      final String SENTRY_HOST = System.getProperty("sentry.host", SERVER_HOST);
+      final String SERVER_KERBEROS_PRINCIPAL = "sentry/" + SENTRY_HOST + "@" + REALM;
+      sentryConf.set(ServerConfig.PRINCIPAL, SERVER_KERBEROS_PRINCIPAL);
+      sentryConf.set(ServerConfig.KEY_TAB, SERVER_KEY_TAB);
+      sentryConf.set(ServerConfig.ALLOW_CONNECT, "hive");
+      sentryConf.set(ServerConfig.SECURITY_USE_UGI_TRANSPORT, "false");
+      sentryConf.set(ClientConfig.SERVER_RPC_ADDRESS,
+              System.getProperty("sentry.service.server.rpc.address"));
+      sentryConf.set(ClientConfig.SERVER_RPC_PORT,
+              System.getProperty("sentry.service.server.rpc.port", "8038"));
+      sentryConf.set(ClientConfig.SERVER_RPC_CONN_TIMEOUT, "720000"); //millis
+      Subject clientSubject = getClientSubject(clientShortName, clientKeyTabDir);
+      client = Subject.doAs(clientSubject,
+              new PrivilegedExceptionAction<SentryPolicyServiceClient>() {
+                @Override
+                public SentryPolicyServiceClient run() throws Exception {
+                  return SentryServiceClientFactory.create(sentryConf);
+                }
+              });
+    } else {
+      client = getSentryClient();
+    }
+    return client;
+  }
+
   @Before
   public void setup() throws Exception{
     LOGGER.info("AbstractTestStaticConfiguration setup");
@@ -627,5 +712,4 @@ public abstract class AbstractTestWithStaticConfiguration {
     LOGGER.info("Running [" + sql + "]");
     stmt.execute(sql);
   }
-
 }
