@@ -21,12 +21,9 @@ import static junit.framework.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.security.PrivilegedExceptionAction;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
-
-import javax.security.auth.Subject;
 
 import org.apache.sentry.SentryUserException;
 import org.apache.sentry.core.common.ActiveRoleSet;
@@ -34,8 +31,6 @@ import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.model.search.Collection;
 import org.apache.sentry.core.model.search.Field;
 import org.apache.sentry.core.model.search.SearchConstants;
-import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
-import org.junit.After;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,53 +38,9 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-public class TestSentryGenericServiceIntegration extends SentryServiceIntegrationBase {
+public class TestSentryGenericServiceIntegration extends SentryGenericServiceIntegrationBase {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(SentryServiceIntegrationBase.class);
-  private static final String SOLR = "SOLR";
-  private SentryGenericServiceClient client;
-
-  /**
-   * use the generic client to connect sentry service
-   */
-  @Override
-  public void connectToSentryService() throws Exception {
-    // The client should already be logged in when running in solr
-    // therefore we must manually login in the integration tests
-    final SentryGenericServiceClientFactory clientFactory;
-    if (kerberos) {
-      this.client = Subject.doAs(clientSubject, new PrivilegedExceptionAction<SentryGenericServiceClient>() {
-        @Override
-        public SentryGenericServiceClient run() throws Exception {
-          return SentryGenericServiceClientFactory.create(conf);
-        }
-      });
-    } else {
-      this.client = SentryGenericServiceClientFactory.create(conf);
-    }
-  }
-
-  @After
-  public void after() {
-    try {
-      runTestAsSubject(new TestOperation(){
-        @Override
-        public void runTestAsSubject() throws Exception {
-          Set<TSentryRole> tRoles = client.listAllRoles(ADMIN_USER, SOLR);
-          for (TSentryRole tRole : tRoles) {
-            client.dropRole(ADMIN_USER, tRole.getRoleName(), SOLR);
-          }
-          if(client != null) {
-            client.close();
-          }
-        }
-      });
-    } catch (Exception e) {
-      LOGGER.error(e.getMessage(), e);
-    } finally {
-      policyFilePath.delete();
-    }
-  }
+  private static final Logger LOGGER = LoggerFactory.getLogger(TestSentryGenericServiceIntegration.class);
 
   @Test
   public void testCreateDropShowRole() throws Exception {
