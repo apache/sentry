@@ -18,6 +18,8 @@
 
 package org.apache.sentry.provider.db.tools;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -228,9 +230,10 @@ abstract public class SentryShellCommon {
   }
 
   // hive model and generic model should implement this method
-  abstract void run() throws Exception;
+  public abstract void run() throws Exception;
 
-  protected boolean executeShell(String[] args) throws Exception {
+  @VisibleForTesting
+  public boolean executeShell(String[] args) throws Exception {
     boolean result = true;
     if (parseArgs(args)) {
       run();
