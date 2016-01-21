@@ -398,7 +398,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
           + "\n Required privileges for this query: "
           + permsRequired;
       String msgForConsole = HiveAuthzConf.HIVE_SENTRY_PRIVILEGE_ERROR_MESSAGE + "\n "
-          + e.getMessage();
+          + e.getMessage()+ "\n The required privileges: " + permsRequired;
       // AuthorizationException is not a real exception, use the info level to record this.
       LOG.info(msgForLog);
       throw new SemanticException(msgForConsole, e);
