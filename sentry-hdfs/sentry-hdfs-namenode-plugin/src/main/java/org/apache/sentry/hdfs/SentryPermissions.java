@@ -77,8 +77,8 @@ public class SentryPermissions implements AuthzPermissions {
   private final Map<String, PrivilegeInfo> privileges = new TreeMap<String, PrivilegeInfo>(String.CASE_INSENSITIVE_ORDER);
   private Map<String, Set<String>> authzObjChildren = new TreeMap<String, Set<String>>(String.CASE_INSENSITIVE_ORDER);
 
-  // Should the comparison of role be case insensitive?
-  private final Map<String, RoleInfo> roles = new HashMap<String, RoleInfo>();
+  // RoleInfo should be case insensitive.
+  private final Map<String, RoleInfo> roles = new TreeMap<String, RoleInfo>(String.CASE_INSENSITIVE_ORDER);
 
   String getParentAuthzObject(String authzObject) {
     int dot = authzObject.indexOf('.');
