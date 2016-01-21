@@ -19,22 +19,6 @@ package org.apache.sentry.provider.db.generic.service.thrift;
 
 import java.util.List;
 
-import org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleAddGroupsRequest;
-import org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleAddGroupsResponse;
-import org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleDeleteGroupsRequest;
-import org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleDeleteGroupsResponse;
-import org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleGrantPrivilegeRequest;
-import org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleGrantPrivilegeResponse;
-import org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleRevokePrivilegeRequest;
-import org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleRevokePrivilegeResponse;
-import org.apache.sentry.provider.db.generic.service.thrift.TCreateSentryRoleRequest;
-import org.apache.sentry.provider.db.generic.service.thrift.TCreateSentryRoleResponse;
-import org.apache.sentry.provider.db.generic.service.thrift.TDropPrivilegesRequest;
-import org.apache.sentry.provider.db.generic.service.thrift.TDropPrivilegesResponse;
-import org.apache.sentry.provider.db.generic.service.thrift.TDropSentryRoleRequest;
-import org.apache.sentry.provider.db.generic.service.thrift.TDropSentryRoleResponse;
-import org.apache.sentry.provider.db.generic.service.thrift.TRenamePrivilegesRequest;
-import org.apache.sentry.provider.db.generic.service.thrift.TRenamePrivilegesResponse;
 import org.apache.sentry.provider.db.service.persistent.CommitContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

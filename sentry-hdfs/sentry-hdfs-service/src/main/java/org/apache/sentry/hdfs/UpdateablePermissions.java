@@ -20,8 +20,6 @@ package org.apache.sentry.hdfs;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 
-import org.apache.sentry.hdfs.PermissionsUpdate;
-import org.apache.sentry.hdfs.Updateable;
 import org.apache.sentry.hdfs.UpdateForwarder.ExternalImageRetriever;
 
 public class UpdateablePermissions implements Updateable<PermissionsUpdate>{

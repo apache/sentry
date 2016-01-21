@@ -432,7 +432,7 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
     request.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
     request.setRequestorUserName(requestorUserName);
     request.setRoleName(roleName);
-    Set<TSentryPrivilege> privileges = convertColumnPrivilege(requestorUserName, scope,
+    Set<TSentryPrivilege> privileges = convertColumnPrivilege(scope,
         serverName, uri, db, table, column, action, grantOption);
     request.setPrivileges(privileges);
     try {
@@ -465,7 +465,7 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
     request.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
     request.setRequestorUserName(requestorUserName);
     request.setRoleName(roleName);
-    Set<TSentryPrivilege> privileges = convertColumnPrivileges(requestorUserName, scope,
+    Set<TSentryPrivilege> privileges = convertColumnPrivileges(scope,
         serverName, uri, db, table, columns, action, grantOption);
     request.setPrivileges(privileges);
     try {
@@ -593,7 +593,7 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
     request.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
     request.setRequestorUserName(requestorUserName);
     request.setRoleName(roleName);
-    Set<TSentryPrivilege> privileges = convertColumnPrivileges(requestorUserName, scope,
+    Set<TSentryPrivilege> privileges = convertColumnPrivileges(scope,
         serverName, uri, db, table, columns, action, grantOption);
     request.setPrivileges(privileges);
     try {
@@ -604,7 +604,7 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
     }
   }
 
-  private Set<TSentryPrivilege> convertColumnPrivileges(String requestorUserName,
+  private Set<TSentryPrivilege> convertColumnPrivileges(
       PrivilegeScope scope, String serverName, String uri, String db, String table, List<String> columns,
       String action, Boolean grantOption) {
     ImmutableSet.Builder<TSentryPrivilege> setBuilder = ImmutableSet.builder();
@@ -638,7 +638,7 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
     return setBuilder.build();
   }
 
-  private Set<TSentryPrivilege> convertColumnPrivilege(String requestorUserName,
+  private Set<TSentryPrivilege> convertColumnPrivilege(
       PrivilegeScope scope, String serverName, String uri, String db, String table, String column,
       String action, Boolean grantOption) {
     ImmutableSet.Builder<TSentryPrivilege> setBuilder = ImmutableSet.builder();
@@ -673,7 +673,7 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
     TListSentryPrivilegesForProviderRequest request =
         new TListSentryPrivilegesForProviderRequest(ThriftConstants.
             TSENTRY_SERVICE_VERSION_CURRENT, groups, thriftRoleSet);
-    if ((authorizable != null)&&(authorizable.length > 0)) {
+    if (authorizable != null && authorizable.length > 0) {
       TSentryAuthorizable tSentryAuthorizable = setupSentryAuthorizable(Lists
           .newArrayList(authorizable));
       request.setAuthorizableHierarchy(tSentryAuthorizable);

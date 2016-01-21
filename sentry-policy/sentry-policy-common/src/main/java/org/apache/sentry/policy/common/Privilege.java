@@ -17,5 +17,5 @@
 package org.apache.sentry.policy.common;
 
 public interface Privilege {
-  public boolean implies(Privilege p);
+  boolean implies(Privilege p);
 }

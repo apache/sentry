@@ -34,7 +34,6 @@ import org.apache.hadoop.hive.ql.hooks.WriteEntity;
 import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
 import org.apache.hadoop.hive.ql.parse.BaseSemanticAnalyzer;
-import org.apache.hadoop.hive.ql.parse.DDLSemanticAnalyzer;
 import org.apache.hadoop.hive.ql.parse.HiveParser;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.parse.authorization.HiveAuthorizationTaskFactory;
@@ -61,7 +60,7 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
 
   private static final Logger LOG = LoggerFactory.getLogger(SentryHiveAuthorizationTaskFactoryImpl.class);
 
-  public SentryHiveAuthorizationTaskFactoryImpl(HiveConf conf, Hive db) {
+  public SentryHiveAuthorizationTaskFactoryImpl(HiveConf conf, Hive db) { //NOPMD
 
   }
 
@@ -207,13 +206,11 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
     PrincipalDesc principalDesc = new PrincipalDesc(principalName, type);
 
     // Partition privileges are not supported by Sentry
-    List<String> cols = null;
     if (ast.getChildCount() > 1) {
       ASTNode child = (ASTNode) ast.getChild(1);
       if (child.getToken().getType() == HiveParser.TOK_PRIV_OBJECT_COL) {
         privHiveObj = analyzePrivilegeObject(child);
-        cols = privHiveObj.getColumns();
-      }else {
+      } else {
         throw new SemanticException("Unrecognized Token: " + child.getToken().getType());
       }
     }

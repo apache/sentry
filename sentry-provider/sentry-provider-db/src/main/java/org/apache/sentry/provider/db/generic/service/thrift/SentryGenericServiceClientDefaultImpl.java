@@ -378,8 +378,8 @@ public class SentryGenericServiceClientDefaultImpl implements SentryGenericServi
   public void renamePrivilege(String requestorUserName, String component,
       String serviceName, List<? extends Authorizable> oldAuthorizables,
       List<? extends Authorizable> newAuthorizables) throws SentryUserException {
-    if ((oldAuthorizables == null) || (oldAuthorizables.size() == 0)
-        || (newAuthorizables == null) || (newAuthorizables.size() == 0)) {
+    if (oldAuthorizables == null || oldAuthorizables.isEmpty()
+        || newAuthorizables == null || newAuthorizables.isEmpty()) {
       throw new SentryUserException("oldAuthorizables and newAuthorizables can't be null or empty");
     }
 
@@ -466,7 +466,7 @@ public class SentryGenericServiceClientDefaultImpl implements SentryGenericServi
     request.setServiceName(serviceName);
     request.setRequestorUserName(requestorUserName);
     request.setRoleName(roleName);
-    if ((authorizables != null) && (authorizables.size() > 0)) {
+    if (authorizables != null && !authorizables.isEmpty()) {
       List<TAuthorizable> tAuthorizables = Lists.newArrayList();
       for (Authorizable authorizable : authorizables) {
         tAuthorizables.add(new TAuthorizable(authorizable.getTypeName(), authorizable.getName()));
@@ -515,7 +515,7 @@ public class SentryGenericServiceClientDefaultImpl implements SentryGenericServi
       request.setGroups(groups);
     }
     List<TAuthorizable> tAuthoriables = Lists.newArrayList();
-    if ((authorizables != null) && (authorizables.size() > 0)) {
+    if (authorizables != null && !authorizables.isEmpty()) {
       for (Authorizable authorizable : authorizables) {
         tAuthoriables.add(new TAuthorizable(authorizable.getTypeName(), authorizable.getName()));
       }

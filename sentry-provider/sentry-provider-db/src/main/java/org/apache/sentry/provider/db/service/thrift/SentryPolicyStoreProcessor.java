@@ -130,7 +130,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     sentryMetrics.addSentryStoreGauges(sentryStore);
 
     String sentryReporting = conf.get(ServerConfig.SENTRY_REPORTER);
-    if( sentryReporting != null) {
+    if (sentryReporting != null) {
       SentryMetrics.Reporting reporting;
       try {
         reporting = SentryMetrics.Reporting.valueOf(sentryReporting.toUpperCase());
@@ -151,6 +151,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       try {
         haContext.getCuratorFramework().close();
       } catch (Exception e) {
+        LOGGER.warn("Error in stopping processor", e);
       }
     }
   }
@@ -206,7 +207,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     requestorGroups = toTrimedLower(requestorGroups);
     if (Sets.intersection(adminGroups, requestorGroups).isEmpty()) {
       return false;
-    } else return true;
+    }
+    return true;
   }
   private void authorize(String requestorUser, Set<String> requestorGroups)
   throws SentryAccessDeniedException {
@@ -650,19 +652,18 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       Set<String> privilegesForProvider = sentryStore.listSentryPrivilegesForProvider(
           request.getGroups(), request.getRoleSet(), request.getAuthorizableHierarchy());
       response.setPrivileges(privilegesForProvider);
-      if (((privilegesForProvider == null)||(privilegesForProvider.size() == 0))&&(request.getAuthorizableHierarchy() != null)) {
-        if (sentryStore.hasAnyServerPrivileges(
-            request.getGroups(), request.getRoleSet(), request.getAuthorizableHierarchy().getServer())) {
+      if (privilegesForProvider == null || privilegesForProvider.size() == 0 && request.getAuthorizableHierarchy() != null
+        && sentryStore.hasAnyServerPrivileges(
+          request.getGroups(), request.getRoleSet(), request.getAuthorizableHierarchy().getServer())) {
 
-          // REQUIRED for ensuring 'default' Db is accessible by any user
-          // with privileges to atleast 1 object with the specific server as root
+        // REQUIRED for ensuring 'default' Db is accessible by any user
+        // with privileges to atleast 1 object with the specific server as root
 
-          // Need some way to specify that even though user has no privilege
-          // For the specific AuthorizableHierarchy.. he has privilege on
-          // atleast 1 object in the server hierarchy
-          HashSet<String> serverPriv = Sets.newHashSet("server=+");
-          response.setPrivileges(serverPriv);
-        }
+        // Need some way to specify that even though user has no privilege
+        // For the specific AuthorizableHierarchy.. he has privilege on
+        // atleast 1 object in the server hierarchy
+        HashSet<String> serverPriv = Sets.newHashSet("server=+");
+        response.setPrivileges(serverPriv);
       }
       response.setStatus(Status.OK());
     } catch (SentryThriftAPIMismatchException e) {

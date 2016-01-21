@@ -104,11 +104,10 @@ public class CommandUtil {
               || StringUtils.isEmpty(tableName)) {
         throw new IllegalArgumentException("The hierarchy of privilege is not correct.");
       }
-    } else if (ServiceConstants.PrivilegeScope.COLUMN.toString().equals(tSentryPrivilege.getPrivilegeScope())) {
-      if (StringUtils.isEmpty(serverName) || StringUtils.isEmpty(dbName)
-              || StringUtils.isEmpty(tableName) || StringUtils.isEmpty(columnName)) {
+    } else if (ServiceConstants.PrivilegeScope.COLUMN.toString().equals(tSentryPrivilege.getPrivilegeScope())
+      && (StringUtils.isEmpty(serverName) || StringUtils.isEmpty(dbName)
+              || StringUtils.isEmpty(tableName) || StringUtils.isEmpty(columnName))) {
         throw new IllegalArgumentException("The hierarchy of privilege is not correct.");
-      }
     }
   }
 }

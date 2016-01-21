@@ -24,13 +24,9 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.sentry.SentryIndexAuthorizationSingleton;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
-import java.util.EnumSet;
-import java.util.Iterator;
 import java.util.Set;
-import java.net.URLEncoder;
 
 public class QueryDocAuthorizationComponent extends SearchComponent
 {
@@ -75,10 +71,12 @@ public class QueryDocAuthorizationComponent extends SearchComponent
 
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
-    if (!enabled) return;
+    if (!enabled) {
+      return;
+    }
 
     String userName = sentryInstance.getUserName(rb.req);
-    String superUser = (System.getProperty("solr.authorization.superuser", "solr"));
+    String superUser = System.getProperty("solr.authorization.superuser", "solr");
     if (superUser.equals(userName)) {
       return;
     }

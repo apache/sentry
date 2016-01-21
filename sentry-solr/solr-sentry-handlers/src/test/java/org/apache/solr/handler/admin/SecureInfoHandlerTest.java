@@ -17,15 +17,11 @@
 package org.apache.solr.handler.admin;
 
 import org.apache.solr.cloud.CloudDescriptor;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.sentry.SentryTestBase;
 import org.apache.solr.sentry.SentrySingletonTestInstance;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

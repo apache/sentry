@@ -49,7 +49,7 @@ public class SentryGenericProviderBackend implements ProviderBackend {
 
   // ProviderBackend should have the same construct to support the reflect in authBinding,
   // eg:SqoopAuthBinding
-  public SentryGenericProviderBackend(Configuration conf, String resource)
+  public SentryGenericProviderBackend(Configuration conf, String resource) //NOPMD
       throws Exception {
     this.conf = conf;
   }

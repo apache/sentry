@@ -17,7 +17,7 @@
 package org.apache.sentry.core.common;
 
 public interface Authorizable {
-  public String getName();
+  String getName();
 
-  public String getTypeName();
+  String getTypeName();
 }

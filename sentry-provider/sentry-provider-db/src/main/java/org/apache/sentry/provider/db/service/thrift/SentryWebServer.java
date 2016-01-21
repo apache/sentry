@@ -116,7 +116,7 @@ public class SentryWebServer {
       Preconditions.checkArgument(keytabFile.length() != 0, "Keytab File is not right.");
       try {
         UserGroupInformation.setConfiguration(conf);
-        String hostPrincipal = SecurityUtil.getServerPrincipal(principal, "0.0.0.0");
+        String hostPrincipal = SecurityUtil.getServerPrincipal(principal, ServerConfig.RPC_ADDRESS_DEFAULT);
         UserGroupInformation.loginUserFromKeytab(hostPrincipal, keytabFile);
       } catch (IOException ex) {
         throw new IllegalArgumentException("Can't use Kerberos authentication, principal ["

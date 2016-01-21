@@ -17,9 +17,6 @@ package org.apache.solr.handler.admin;
  * limitations under the License.
  */
 
-import java.util.EnumSet;
-import org.apache.sentry.core.model.search.SearchModelAction;
-import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.core.CoreContainer;
 
 /**

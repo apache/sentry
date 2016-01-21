@@ -20,12 +20,7 @@ package org.apache.sentry.provider.db.service.persistent;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
-import javax.security.auth.login.AppConfigurationEntry;
 
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;

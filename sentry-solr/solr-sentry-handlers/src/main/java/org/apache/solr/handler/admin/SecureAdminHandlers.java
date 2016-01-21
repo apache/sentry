@@ -17,14 +17,11 @@
 package org.apache.solr.handler.admin;
 
 import java.io.IOException;
-import java.util.EnumSet;
 import java.util.Map;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.sentry.core.model.search.SearchModelAction;
-import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;

@@ -17,8 +17,6 @@
  */
 package org.apache.sentry.core.search;
 
-import java.util.List;
-
 import org.apache.sentry.core.model.search.SearchActionFactory;
 import org.apache.sentry.core.model.search.SearchActionFactory.SearchAction;
 import org.apache.sentry.core.model.search.SearchActionFactory.SearchBitFieldAction;

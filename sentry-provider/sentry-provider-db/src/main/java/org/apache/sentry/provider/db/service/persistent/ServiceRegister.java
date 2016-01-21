@@ -18,7 +18,6 @@
 
 package org.apache.sentry.provider.db.service.persistent;
 
-import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.curator.x.discovery.ServiceDiscoveryBuilder;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.details.InstanceSerializer;

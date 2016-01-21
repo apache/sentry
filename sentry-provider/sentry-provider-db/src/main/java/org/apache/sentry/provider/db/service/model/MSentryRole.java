@@ -166,18 +166,23 @@ public class MSentryRole {
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj)
+    if (this == obj) {
       return true;
-    if (obj == null)
+    }
+    if (obj == null) {
       return false;
-    if (getClass() != obj.getClass())
+    }
+    if (getClass() != obj.getClass()) {
       return false;
+    }
     MSentryRole other = (MSentryRole) obj;
     if (roleName == null) {
-      if (other.roleName != null)
+      if (other.roleName != null) {
         return false;
-    } else if (!roleName.equals(other.roleName))
+      }
+    } else if (!roleName.equals(other.roleName)) {
       return false;
+    }
     return true;
   }
 

@@ -20,7 +20,6 @@ import java.util.EnumSet;
 import java.util.Set;
 import org.apache.sentry.core.model.search.SearchModelAction;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
 
 /**
  * Utility functions for Secure (sentry-aware) versions of RequestHandlers

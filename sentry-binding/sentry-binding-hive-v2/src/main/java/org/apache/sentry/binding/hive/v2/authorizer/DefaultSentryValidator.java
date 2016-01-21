@@ -338,9 +338,9 @@ public class DefaultSentryValidator extends SentryHiveAuthorizationValidator {
         Table currTbl = Table.ALL;
         Database currDB = new Database(currDatabase);
         Column currCol = Column.ALL;
-        if ((DEFAULT_DATABASE_NAME.equalsIgnoreCase(currDatabase) && "false"
+        if (DEFAULT_DATABASE_NAME.equalsIgnoreCase(currDatabase) && "false"
             .equalsIgnoreCase(authzConf.get(
-                HiveAuthzConf.AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), "false")))) {
+                HiveAuthzConf.AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), "false"))) {
           currDB = Database.ALL;
           currTbl = Table.SOME;
         }
@@ -419,7 +419,6 @@ public class DefaultSentryValidator extends SentryHiveAuthorizationValidator {
         // squash the exception, user doesn't have privileges, so the table is
         // not added to
         // filtered list.
-        ;
       }
     }
     return filteredResult;
@@ -473,7 +472,6 @@ public class DefaultSentryValidator extends SentryHiveAuthorizationValidator {
         // squash the exception, user doesn't have privileges, so the table is
         // not added to
         // filtered list.
-        ;
       }
     }
     return filteredResult;

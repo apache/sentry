@@ -175,7 +175,9 @@ public class PluginCacheSyncUtil {
             "Error releasing ZK lock for update cache syncup" + e, e);
       }
       timerContext.stop();
-      if (failed) SentryHdfsMetricsUtil.getFailedCacheSyncToZK.inc();
+      if (failed) {
+        SentryHdfsMetricsUtil.getFailedCacheSyncToZK.inc();
+      }
     }
   }
 

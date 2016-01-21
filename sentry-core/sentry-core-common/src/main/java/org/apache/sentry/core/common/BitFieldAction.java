@@ -55,7 +55,7 @@ public abstract class BitFieldAction implements Action {
       return false;
     }
     BitFieldAction that = (BitFieldAction)obj;
-    return (code == that.code) && (name.equalsIgnoreCase(that.name));
+    return code == that.code && name.equalsIgnoreCase(that.name);
   }
 
   @Override

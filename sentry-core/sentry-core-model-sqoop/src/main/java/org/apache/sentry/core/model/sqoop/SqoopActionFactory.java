@@ -56,8 +56,7 @@ public class SqoopActionFactory extends BitFieldActionFactory {
     static List<SqoopActionType> getActionByCode(int code) {
       List<SqoopActionType> actions = Lists.newArrayList();
       for (SqoopActionType action : SqoopActionType.values()) {
-        if (((action.code & code) == action.code ) &&
-            (action != SqoopActionType.ALL)) {
+        if ((action.code & code) == action.code && action != SqoopActionType.ALL) {
           //SqoopActionType.ALL action should not return in the list
           actions.add(action);
         }

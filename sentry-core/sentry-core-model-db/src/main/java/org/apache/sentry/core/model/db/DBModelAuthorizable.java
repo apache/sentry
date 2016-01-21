@@ -29,5 +29,5 @@ public interface DBModelAuthorizable extends Authorizable {
     URI
   };
 
-  public AuthorizableType getAuthzType();
+  AuthorizableType getAuthzType();
 }

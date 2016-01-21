@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeys;
@@ -58,7 +57,6 @@ import com.google.common.collect.Sets;
 public class HiveAuthzBinding {
   private static final Logger LOG = LoggerFactory
       .getLogger(HiveAuthzBinding.class);
-  private static final AtomicInteger queryID = new AtomicInteger();
   private static final Splitter ROLE_SET_SPLITTER = Splitter.on(",").trimResults()
       .omitEmptyStrings();
   public static final String HIVE_BINDING_TAG = "hive.authz.bindings.tag";

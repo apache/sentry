@@ -312,7 +312,7 @@ public class SqoopAuthBinding {
   }
 
   private MResource toSqoopResource(List<TAuthorizable> authorizables) {
-    if ((authorizables == null) || authorizables.isEmpty()) {
+    if (authorizables == null || authorizables.isEmpty()) {
       //server resource
       return new MResource(sqoopServer.getName(), MResource.TYPE.SERVER);
     } else {
@@ -385,7 +385,7 @@ public class SqoopAuthBinding {
    * functions to execute, which centralizes connection error
    * handling. Command is parameterized on the return type of the function.
    */
-  private static interface Command<T> {
+  private interface Command<T> {
     T run(SentryGenericServiceClient client) throws Exception;
   }
 

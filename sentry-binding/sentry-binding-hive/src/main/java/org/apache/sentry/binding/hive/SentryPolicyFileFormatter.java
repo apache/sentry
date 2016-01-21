@@ -29,11 +29,11 @@ import org.apache.hadoop.conf.Configuration;
 public interface SentryPolicyFileFormatter {
 
   // write the sentry mapping data to file
-  public void write(String resourcePath, Map<String, Map<String, Set<String>>> sentryMappingData)
+  void write(String resourcePath, Map<String, Map<String, Set<String>>> sentryMappingData)
       throws Exception;
 
   // parse the sentry mapping data from file
-  public Map<String, Map<String, Set<String>>> parse(String resourcePath, Configuration conf)
+  Map<String, Map<String, Set<String>>> parse(String resourcePath, Configuration conf)
       throws Exception;
 
 }

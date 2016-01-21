@@ -18,7 +18,6 @@ package org.apache.solr.handler;
 
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.sentry.SentryTestBase;
 import org.apache.solr.sentry.SentrySingletonTestInstance;

@@ -22,7 +22,6 @@ import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.metastore.IHMSHandler;
 import org.apache.hadoop.hive.metastore.api.Database;
-import org.apache.hadoop.hive.metastore.api.NoSuchObjectException;
 import org.apache.hadoop.hive.metastore.api.Partition;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.sentry.hdfs.service.thrift.TPathChanges;
@@ -66,20 +65,20 @@ class MetastoreCacheInitializer implements Closeable {
      *  Class represents retry strategy for BaseTask.
      */
     private class RetryStrategy {
-      private int maxRetries = 0;
-      private int waitDurationMillis;
+      private int retryStrategyMaxRetries = 0;
+      private int retryStrategyWaitDurationMillis;
       private int retries;
       private Exception exception;
 
-      private RetryStrategy(int maxRetries, int waitDurationMillis) {
-        this.maxRetries = maxRetries;
+      private RetryStrategy(int retryStrategyMaxRetries, int retryStrategyWaitDurationMillis) {
+        this.retryStrategyMaxRetries = retryStrategyMaxRetries;
         retries = 0;
 
         // Assign default wait duration if negative value is provided.
-        if (waitDurationMillis > 0) {
-          this.waitDurationMillis = waitDurationMillis;
+        if (retryStrategyWaitDurationMillis > 0) {
+          this.retryStrategyWaitDurationMillis = retryStrategyWaitDurationMillis;
         } else {
-          this.waitDurationMillis = 1000;
+          this.retryStrategyWaitDurationMillis = 1000;
         }
       }
 
@@ -89,7 +88,7 @@ class MetastoreCacheInitializer implements Closeable {
         // synchronous waiting on getting the result.
         // Retry the failure task until reach the max retry number.
         // Wait configurable duration for next retry.
-        for (int i = 0; i < maxRetries; i++) {
+        for (int i = 0; i < retryStrategyMaxRetries; i++) {
           try {
             doTask();
 
@@ -99,16 +98,16 @@ class MetastoreCacheInitializer implements Closeable {
             return new CallResult(exception, true);
           } catch (Exception ex) {
             LOGGER.debug("Failed to execute task on " + (i + 1) + " attempts." +
-                    " Sleeping for " + waitDurationMillis + " ms. Exception: " + ex.toString(), ex);
+                    " Sleeping for " + retryStrategyWaitDurationMillis + " ms. Exception: " + ex.toString(), ex);
             exception = ex;
 
             try {
-              Thread.sleep(waitDurationMillis);
+              Thread.sleep(retryStrategyWaitDurationMillis);
             } catch (InterruptedException exception) {
               // Skip the rest retries if get InterruptedException.
               // And set the corresponding retries number.
               retries = i;
-              i = maxRetries;
+              i = retryStrategyMaxRetries;
             }
           }
 

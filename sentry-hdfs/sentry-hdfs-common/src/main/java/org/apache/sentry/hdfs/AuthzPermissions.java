@@ -23,6 +23,6 @@ import java.util.List;
 
 public interface AuthzPermissions {
 
-  public List<AclEntry> getAcls(String authzObj);
+  List<AclEntry> getAcls(String authzObj);
 
 }

@@ -17,6 +17,6 @@
 package org.apache.sentry.core.common;
 
 public interface Action {
-  public static final String ALL = "*";
-  public String getValue();
+  String ALL = "*";
+  String getValue();
 }

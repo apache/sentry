@@ -42,11 +42,10 @@ public class PathUtils {
       return false;
     }
     // ensure that either both schemes are null or equal
-    if (privilegeURI.getScheme() == null) {
-      if (requestURI.getScheme() != null) {
-        return false;
-      }
-    } else if (!privilegeURI.getScheme().equals(requestURI.getScheme())) {
+    if (privilegeURI.getScheme() == null && requestURI.getScheme() != null) {
+      return false;
+    }
+    if (privilegeURI.getScheme() != null && !privilegeURI.getScheme().equals(requestURI.getScheme())) {
       return false;
     }
     // request path does not contain relative parts /a/../b &&

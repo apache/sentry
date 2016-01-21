@@ -25,5 +25,5 @@ public interface SearchModelAuthorizable extends Authorizable {
     Field
   };
 
-  public AuthorizableType getAuthzType();
+  AuthorizableType getAuthzType();
 }

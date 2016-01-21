@@ -20,6 +20,6 @@ package org.apache.sentry.provider.db.log.entity;
 
 public interface JsonLogEntity {
 
-  public String toJsonFormatLog() throws Exception;
+  String toJsonFormatLog() throws Exception;
 
 }

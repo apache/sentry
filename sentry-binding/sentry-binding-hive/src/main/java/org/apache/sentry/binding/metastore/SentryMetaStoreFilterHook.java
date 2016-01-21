@@ -33,14 +33,11 @@ import org.apache.hadoop.hive.metastore.api.NoSuchObjectException;
 import org.apache.hadoop.hive.metastore.api.Partition;
 import org.apache.hadoop.hive.metastore.api.PartitionSpec;
 import org.apache.hadoop.hive.metastore.api.Table;
-import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.sentry.binding.hive.HiveAuthzBindingHook;
 import org.apache.sentry.binding.hive.authz.HiveAuthzBinding;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
-
-import com.google.common.collect.Lists;
 
 public class SentryMetaStoreFilterHook implements MetaStoreFilterHook {
 
@@ -48,10 +45,8 @@ public class SentryMetaStoreFilterHook implements MetaStoreFilterHook {
 
   private HiveAuthzBinding hiveAuthzBinding;
   private HiveAuthzConf authzConf;
-  private final HiveConf hiveConf;
 
-  public SentryMetaStoreFilterHook(HiveConf hiveConf) {
-    this.hiveConf = hiveConf;
+  public SentryMetaStoreFilterHook(HiveConf hiveConf) { //NOPMD
   }
 
   @Override

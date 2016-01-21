@@ -39,7 +39,6 @@ import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
 import org.apache.hadoop.hive.metastore.events.PreAddPartitionEvent;
 import org.apache.hadoop.hive.metastore.events.PreAlterPartitionEvent;
 import org.apache.hadoop.hive.metastore.events.PreAlterTableEvent;
-import org.apache.hadoop.hive.metastore.events.PreCreateDatabaseEvent;
 import org.apache.hadoop.hive.metastore.events.PreCreateTableEvent;
 import org.apache.hadoop.hive.metastore.events.PreDropDatabaseEvent;
 import org.apache.hadoop.hive.metastore.events.PreDropPartitionEvent;
@@ -47,7 +46,6 @@ import org.apache.hadoop.hive.metastore.events.PreDropTableEvent;
 import org.apache.hadoop.hive.metastore.events.PreEventContext;
 import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
-import org.apache.hadoop.hive.shims.ShimLoader;
 import org.apache.hadoop.hive.shims.Utils;
 import org.apache.sentry.SentryUserException;
 import org.apache.sentry.binding.hive.authz.HiveAuthzBinding;
@@ -197,7 +195,7 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
       authorizeAlterPartition((PreAlterPartitionEvent) context);
       break;
     case CREATE_DATABASE:
-      authorizeCreateDatabase((PreCreateDatabaseEvent) context);
+      authorizeCreateDatabase();
       break;
     case DROP_DATABASE:
       authorizeDropDatabase((PreDropDatabaseEvent) context);
@@ -210,7 +208,7 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
     }
   }
 
-  private void authorizeCreateDatabase(PreCreateDatabaseEvent context)
+  private void authorizeCreateDatabase()
       throws InvalidOperationException, MetaException {
     authorizeMetastoreAccess(HiveOperation.CREATEDATABASE,
         new HierarcyBuilder().addServerToOutput(getAuthServer()).build(),

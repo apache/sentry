@@ -20,5 +20,5 @@ import org.apache.shiro.config.ConfigurationException;
 
 public interface PrivilegeValidator {
 
-  public void validate(PrivilegeValidatorContext context) throws ConfigurationException;
+  void validate(PrivilegeValidatorContext context) throws ConfigurationException;
 }

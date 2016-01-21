@@ -27,7 +27,6 @@ import net.sf.cglib.proxy.MethodProxy;
 
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.core.CoreContainer;
@@ -35,7 +34,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.sentry.SentryTestBase;
 import org.apache.solr.sentry.SentrySingletonTestInstance;
-import org.eclipse.jetty.util.log.Log;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;

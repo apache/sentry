@@ -19,25 +19,15 @@ package org.apache.sentry.hdfs;
 
 import java.io.IOException;
 import java.util.LinkedList;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.atomic.DistributedAtomicLong;
-import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
-import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
-import org.apache.curator.utils.ZKPaths;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.SentryUserException;
 import org.apache.sentry.hdfs.ServiceConstants.ServerConfig;
-import org.apache.sentry.hdfs.UpdateForwarder;
 import org.apache.sentry.provider.db.SentryPolicyStorePlugin.SentryPluginException;
-import org.apache.sentry.provider.db.service.persistent.HAContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.cache.Cache;
 
 public class UpdateForwarderWithHA<K extends Updateable.Update> extends
 UpdateForwarder<K> implements Updateable<K> {

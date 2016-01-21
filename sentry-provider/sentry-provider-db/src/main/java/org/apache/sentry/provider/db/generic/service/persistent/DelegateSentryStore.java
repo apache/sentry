@@ -320,7 +320,9 @@ public class DelegateSentryStore implements SentryStoreLayer {
       throws SentryUserException {
     roles = toTrimedLower(roles);
     Set<String> groupNames = Sets.newHashSet();
-    if (roles.size() == 0) return groupNames;
+    if (roles.size() == 0) {
+      return groupNames;
+    }
 
     PersistenceManager pm = null;
     try{
@@ -354,7 +356,9 @@ public class DelegateSentryStore implements SentryStoreLayer {
       Set<String> roles) throws SentryUserException {
     Preconditions.checkNotNull(roles);
     Set<PrivilegeObject> privileges = Sets.newHashSet();
-    if (roles.isEmpty()) return privileges;
+    if (roles.isEmpty()) {
+      return privileges;
+    }
 
     PersistenceManager pm = null;
     try {

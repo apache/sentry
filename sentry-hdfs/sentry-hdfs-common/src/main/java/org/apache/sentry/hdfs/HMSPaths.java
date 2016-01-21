@@ -232,7 +232,7 @@ public class HMSPaths implements AuthzPaths {
     }
 
     public static Entry createRoot(boolean asPrefix) {
-      return new Entry(null, "/", (asPrefix)
+      return new Entry(null, "/", asPrefix
                                    ? EntryType.PREFIX : EntryType.DIR, (String) null);
     }
 
@@ -366,7 +366,7 @@ public class HMSPaths implements AuthzPaths {
         boolean isPartialMatchOk, Entry lastAuthObj) {
       Entry found = null;
       if (index == pathElements.length) {
-        if (isPartialMatchOk && (getAuthzObjs().size() != 0)) {
+        if (isPartialMatchOk && getAuthzObjs().size() != 0) {
           found = this;
         }
       } else {
@@ -444,7 +444,7 @@ public class HMSPaths implements AuthzPaths {
       if (e != null) {
         newEntries.add(e);
       } else {
-        // LOG WARN IGNORING PATH, no prefix
+        LOG.warn("Ignoring path, no prefix");
       }
     }
     authzObjToPath.put(authzObj, newEntries);
@@ -468,7 +468,7 @@ public class HMSPaths implements AuthzPaths {
         if (e != null) {
           newEntries.add(e);
         } else {
-          // LOG WARN IGNORING PATH, no prefix
+          LOG.warn("Ignoring path, no prefix");
         }
       }
       entries.addAll(newEntries);
@@ -476,7 +476,7 @@ public class HMSPaths implements AuthzPaths {
       if (createNew) {
         addAuthzObject(authzObj, authzObjPathElements);
       }
-      // LOG WARN object does not exist
+      LOG.warn("Object does not exist");
     }
   }
 
@@ -500,12 +500,12 @@ public class HMSPaths implements AuthzPaths {
           entry.deleteAuthzObject(authzObj);
           toDelEntries.add(entry);
         } else {
-          // LOG WARN IGNORING PATH, it was not in registered
+          LOG.warn("Ignoring path, it was not registered");
         }
       }
       entries.removeAll(toDelEntries);
     } else {
-      // LOG WARN object does not exist
+      LOG.warn("Object does not exist");
     }
   }
 
@@ -540,7 +540,9 @@ public class HMSPaths implements AuthzPaths {
    */
   public Set<String> findAuthzObject(String[] pathElements, boolean isPartialOk) {
     // Handle '/'
-    if ((pathElements == null)||(pathElements.length == 0)) return null;
+    if (pathElements == null || pathElements.length == 0) {
+        return null;
+    }
     Entry entry = root.find(pathElements, isPartialOk);
     return (entry != null) ? entry.getAuthzObjs() : null;
   }
@@ -548,10 +550,12 @@ public class HMSPaths implements AuthzPaths {
   boolean renameAuthzObject(String oldName, List<String> oldPathElems,
       String newName, List<String> newPathElems) {
     // Handle '/'
-    if ((oldPathElems == null)||(oldPathElems.size() == 0)) return false;
+    if (oldPathElems == null || oldPathElems.size() == 0) {
+        return false;
+    }
     Entry entry =
         root.find(oldPathElems.toArray(new String[oldPathElems.size()]), false);
-    if ((entry != null) && (entry.getAuthzObjs().contains(oldName))) {
+    if (entry != null && entry.getAuthzObjs().contains(oldName)) {
       // Update pathElements
       String[] newPath = newPathElems.toArray(new String[newPathElems.size()]);
       // Can't use Lists.newArrayList() because of whacky generics

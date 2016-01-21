@@ -62,7 +62,7 @@ public class ServiceConstants {
     public static final String RPC_PORT = "sentry.service.server.rpc-port";
     public static final int RPC_PORT_DEFAULT = 8038;
     public static final String RPC_ADDRESS = "sentry.service.server.rpc-address";
-    public static final String RPC_ADDRESS_DEFAULT = "0.0.0.0";
+    public static final String RPC_ADDRESS_DEFAULT = "0.0.0.0"; //NOPMD
     public static final String RPC_MAX_THREADS = "sentry.service.server-max-threads";
     public static final int RPC_MAX_THREADS_DEFAULT = 500;
     public static final String RPC_MIN_THREADS = "sentry.service.server-min-threads";

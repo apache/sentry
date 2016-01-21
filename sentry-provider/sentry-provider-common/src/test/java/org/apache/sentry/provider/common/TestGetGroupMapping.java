@@ -19,7 +19,6 @@ package org.apache.sentry.provider.common;
 import static org.junit.Assert.assertSame;
 
 import java.util.Set;
-import java.util.List;
 
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.SentryConfigurationException;

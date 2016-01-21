@@ -57,36 +57,34 @@ public class HAClientInvocationHandler extends SentryClientInvocationHandler {
   public Object invokeImpl(Object proxy, Method method, Object[] args) throws
       SentryUserException {
     Object result = null;
-    while (true) {
-      try {
-        if (!method.isAccessible()) {
-          method.setAccessible(true);
-        }
-        // The client is initialized in the first call instead of constructor.
-        // This way we can propagate the connection exception to caller cleanly
-        if (client == null) {
-          renewSentryClient();
-        }
-        result = method.invoke(client, args);
-      } catch (IllegalAccessException e) {
-        throw new SentryUserException(e.getMessage(), e.getCause());
-      } catch (InvocationTargetException e) {
-        if (e.getTargetException() instanceof SentryUserException) {
-          throw (SentryUserException)e.getTargetException();
-        } else {
-          LOGGER.warn(THRIFT_EXCEPTION_MESSAGE + ": Error in connect current" +
-              " service, will retry other service.", e);
-          if (client != null) {
-            client.close();
-            client = null;
-          }
-        }
-      } catch (IOException e1) {
-        throw new SentryUserException("Error connecting to sentry service "
-            + e1.getMessage(), e1);
+    try {
+      if (!method.isAccessible()) {
+        method.setAccessible(true);
       }
-      return result;
+      // The client is initialized in the first call instead of constructor.
+      // This way we can propagate the connection exception to caller cleanly
+      if (client == null) {
+        renewSentryClient();
+      }
+      result = method.invoke(client, args);
+    } catch (IllegalAccessException e) {
+      throw new SentryUserException(e.getMessage(), e.getCause());
+    } catch (InvocationTargetException e) {
+      if (e.getTargetException() instanceof SentryUserException) {
+        throw (SentryUserException)e.getTargetException();
+      } else {
+        LOGGER.warn(THRIFT_EXCEPTION_MESSAGE + ": Error in connect current" +
+            " service, will retry other service.", e);
+        if (client != null) {
+          client.close();
+          client = null;
+        }
+      }
+    } catch (IOException e1) {
+      throw new SentryUserException("Error connecting to sentry service "
+          + e1.getMessage(), e1);
     }
+    return result;
   }
 
   // Retrieve the new connection endpoint from ZK and connect to new server

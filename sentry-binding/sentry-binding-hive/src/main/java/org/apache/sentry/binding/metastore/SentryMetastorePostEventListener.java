@@ -212,7 +212,7 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
       newLoc = partitionEvent.getNewPartition().getSd().getLocation();
     }
 
-    if ((oldLoc != null) && (newLoc != null) && (!oldLoc.equals(newLoc))) {
+    if (oldLoc != null && newLoc != null && !oldLoc.equals(newLoc)) {
       String authzObj =
           partitionEvent.getOldPartition().getDbName() + "."
               + partitionEvent.getOldPartition().getTableName();
@@ -227,7 +227,7 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
   public void onAddPartition(AddPartitionEvent partitionEvent)
       throws MetaException {
     for (Partition part : partitionEvent.getPartitions()) {
-      if ((part.getSd() != null) && (part.getSd().getLocation() != null)) {
+      if (part.getSd() != null && part.getSd().getLocation() != null) {
         String authzObj = part.getDbName() + "." + part.getTableName();
         String path = part.getSd().getLocation();
         for (SentryMetastoreListenerPlugin plugin : sentryPlugins) {
@@ -349,7 +349,7 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
 
   private boolean syncWithPolicyStore(AuthzConfVars syncConfVar) {
     return "true"
-        .equalsIgnoreCase((authzConf.get(syncConfVar.getVar(), "true")));
+        .equalsIgnoreCase(authzConf.get(syncConfVar.getVar(), "true"));
   }
 
 }

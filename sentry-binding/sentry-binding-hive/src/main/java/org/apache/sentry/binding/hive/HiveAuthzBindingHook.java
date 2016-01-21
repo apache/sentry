@@ -295,7 +295,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
   private Database extractDatabase(ASTNode ast) throws SemanticException {
     String tableName = BaseSemanticAnalyzer.getUnescapedName(ast);
     if (tableName.contains(".")) {
-      return new Database((tableName.split("\\."))[0]);
+      return new Database(tableName.split("\\.")[0]);
     } else {
       return getCanonicalDb();
     }
@@ -303,7 +303,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
   private Table extractTable(ASTNode ast) throws SemanticException {
     String tableName = BaseSemanticAnalyzer.getUnescapedName(ast);
     if (tableName.contains(".")) {
-      return new Table((tableName.split("\\."))[1]);
+      return new Table(tableName.split("\\.")[1]);
     } else {
       return new Table(tableName);
     }
@@ -560,9 +560,9 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
       // by default allow connect access to default db
       Table currTbl = Table.ALL;
       Column currCol = Column.ALL;
-      if ((DEFAULT_DATABASE_NAME.equalsIgnoreCase(currDB.getName()) &&
+      if (DEFAULT_DATABASE_NAME.equalsIgnoreCase(currDB.getName()) &&
           "false".equalsIgnoreCase(authzConf.
-              get(HiveAuthzConf.AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), "false")))) {
+              get(HiveAuthzConf.AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), "false"))) {
         currDB = Database.ALL;
         currTbl = Table.SOME;
       }
@@ -769,7 +769,6 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
         // squash the exception, user doesn't have privileges, so the table is
         // not added to
         // filtered list.
-        ;
       }
     }
     return filteredResult;
@@ -807,7 +806,6 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
         // squash the exception, user doesn't have privileges, so the column is
         // not added to
         // filtered list.
-        ;
       }
     }
     return filteredResult;
@@ -860,7 +858,6 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
         // squash the exception, user doesn't have privileges, so the table is
         // not added to
         // filtered list.
-        ;
       }
     }
 
@@ -880,7 +877,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
     if (!readEntity.getType().equals(Type.TABLE) && !readEntity.getType().equals(Type.PARTITION)) {
       return false;
     }
-    if ((readEntity.getParents() != null) && (readEntity.getParents().size() > 0)) {
+    if (readEntity.getParents() != null && readEntity.getParents().size() > 0) {
       for (ReadEntity parentEntity : readEntity.getParents()) {
         if (!parentEntity.getType().equals(Type.TABLE)) {
           return false;
@@ -893,31 +890,15 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
   }
 
   /**
-   * Returns a set of hooks specified in a configuration variable.
-   *
-   * See getHooks(HiveAuthzConf.AuthzConfVars hookConfVar, Class<T> clazz)
-   * @param hookConfVar
-   * @return
-   * @throws Exception
-   */
-  private static List<Hook> getHooks(String csHooks) throws Exception {
-    return getHooks(csHooks, Hook.class);
-  }
-
-  /**
    * Returns the hooks specified in a configuration variable.  The hooks are returned in a list in
    * the order they were specified in the configuration variable.
    *
    * @param hookConfVar The configuration variable specifying a comma separated list of the hook
    *                    class names.
-   * @param clazz       The super type of the hooks.
-   * @return            A list of the hooks cast as the type specified in clazz, in the order
-   *                    they are listed in the value of hookConfVar
+   * @return            A list of the hooks, in the order they are listed in the value of hookConfVar
    * @throws Exception
    */
-  private static <T extends Hook> List<T> getHooks(String csHooks,
-      Class<T> clazz)
-      throws Exception {
+  private static <T extends Hook> List<T> getHooks(String csHooks) throws Exception {
 
     List<T> hooks = new ArrayList<T>();
     if (csHooks.isEmpty()) {

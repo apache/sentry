@@ -31,5 +31,5 @@ public interface GroupMappingService {
   /**
    * @return non-null list of groups for user
    */
-  public Set<String> getGroups(String user);
+  Set<String> getGroups(String user);
 }

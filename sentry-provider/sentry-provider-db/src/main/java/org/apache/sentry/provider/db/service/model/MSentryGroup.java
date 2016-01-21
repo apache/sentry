@@ -91,20 +91,26 @@ public class MSentryGroup {
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj)
+    if (this == obj) {
       return true;
-    if (obj == null)
+    }
+    if (obj == null) {
       return false;
-    if (getClass() != obj.getClass())
+    }
+    if (getClass() != obj.getClass()) {
       return false;
+    }
     MSentryGroup other = (MSentryGroup) obj;
-    if (createTime != other.createTime)
+    if (createTime != other.createTime) {
       return false;
+    }
     if (groupName == null) {
-      if (other.groupName != null)
+      if (other.groupName != null) {
         return false;
-    } else if (!groupName.equals(other.groupName))
+      }
+    } else if (!groupName.equals(other.groupName)) {
       return false;
+    }
     return true;
   }
 }

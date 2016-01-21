@@ -30,8 +30,6 @@ import org.apache.sentry.policy.common.Privilege;
 import org.apache.sentry.policy.common.PrivilegeFactory;
 import org.apache.sentry.provider.common.KeyValue;
 import org.apache.sentry.provider.common.ProviderConstants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -41,8 +39,6 @@ import com.google.common.collect.Lists;
 
 // XXX this class is made ugly by the fact that Action is not a Authorizable.
 public class DBWildcardPrivilege implements Privilege {
-  private static final Logger LOGGER = LoggerFactory
-      .getLogger(DBWildcardPrivilege.class);
 
   private final ImmutableList<KeyValue> parts;
 

@@ -38,61 +38,61 @@ public interface SentryOnFailureHookContext  {
   /**
    * @return the command attempted by user
    */
-  public String getCommand();
+  String getCommand();
 
   /**
     * @return the set of read entities
     */
-  public Set<ReadEntity> getInputs();
+  Set<ReadEntity> getInputs();
 
   /**
    * @return the set of write entities
    */
-  public Set<WriteEntity> getOutputs();
+  Set<WriteEntity> getOutputs();
 
   /**
    * @return the operation
    */
-  public HiveOperation getHiveOp();
+  HiveOperation getHiveOp();
 
   /**
    * @return the user name
    */
-  public String getUserName();
+  String getUserName();
 
   /**
    * @return the ip address
    */
-  public String getIpAddress();
+  String getIpAddress();
 
   /**
    * @return the database object
    */
-  public Database getDatabase();
+  Database getDatabase();
 
   /**
    * @return the table object
    */
-  public Table getTable();
+  Table getTable();
 
   /**
    * @return the udf URI
    */
-  public AccessURI getUdfURI();
+  AccessURI getUdfURI();
 
   /**
    * @return the partition URI
    */
-  public AccessURI getPartitionURI();
+  AccessURI getPartitionURI();
 
   /**
    * @return the authorization failure exception
    */
-  public AuthorizationException getException();
+  AuthorizationException getException();
 
   /**
    * @return the config
    */
-  public Configuration getConf();
+  Configuration getConf();
 
 }

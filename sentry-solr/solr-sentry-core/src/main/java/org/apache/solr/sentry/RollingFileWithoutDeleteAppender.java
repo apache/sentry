@@ -22,7 +22,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.Writer;
-import java.nio.file.Files;
 
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Layout;

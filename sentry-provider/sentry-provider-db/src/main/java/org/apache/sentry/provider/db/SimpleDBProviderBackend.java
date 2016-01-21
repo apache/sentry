@@ -41,7 +41,7 @@ public class SimpleDBProviderBackend implements ProviderBackend {
   private int retryCount;
   private int retryIntervalSec;
 
-  public SimpleDBProviderBackend(Configuration conf, String resourcePath) throws Exception {
+  public SimpleDBProviderBackend(Configuration conf, String resourcePath) throws Exception { //NOPMD
     // DB Provider doesn't use policy file path
     this(conf);
   }
@@ -64,10 +64,6 @@ public class SimpleDBProviderBackend implements ProviderBackend {
    */
   @Override
   public ImmutableSet<String> getPrivileges(Set<String> groups, ActiveRoleSet roleSet, Authorizable... authorizableHierarchy) {
-    return getPrivileges(retryCount, groups, roleSet, authorizableHierarchy);
-  }
-
-  private ImmutableSet<String> getPrivileges(int retryCount, Set<String> groups, ActiveRoleSet roleSet, Authorizable... authorizableHierarchy) {
     int retries = Math.max(retryCount + 1, 1); // if customer configs retryCount as Integer.MAX_VALUE, try only once
     while (retries > 0) {
       retries--;

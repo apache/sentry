@@ -19,5 +19,5 @@ package org.apache.sentry;
 
 
 public interface Command {
-  public void run(String[] args) throws Exception;
+  void run(String[] args) throws Exception;
 }

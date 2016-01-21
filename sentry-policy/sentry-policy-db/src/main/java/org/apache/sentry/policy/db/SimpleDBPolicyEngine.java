@@ -16,7 +16,6 @@
  */
 package org.apache.sentry.policy.db;
 
-import java.util.List;
 import java.util.Set;
 
 import org.apache.sentry.core.common.ActiveRoleSet;
@@ -63,7 +62,7 @@ public class SimpleDBPolicyEngine implements PolicyEngine {
   @Override
   public ImmutableSet<String> getAllPrivileges(Set<String> groups,
       ActiveRoleSet roleSet) throws SentryConfigurationException {
-    return getPrivileges(groups, roleSet, null);
+    return getPrivileges(groups, roleSet);
   }
 
   /**

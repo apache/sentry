@@ -19,7 +19,6 @@ package org.apache.sentry.hdfs;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.IOException;
 import java.util.List;
 
 import org.apache.curator.test.TestingServer;
@@ -28,7 +27,6 @@ import org.apache.sentry.provider.db.service.persistent.HAContext;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;

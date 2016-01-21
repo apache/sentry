@@ -26,8 +26,8 @@ public interface PrivilegeCache {
    * Get the privileges for the give set of groups with the give active roles
    * from the cache
    */
-  public Set<String> listPrivileges(Set<String> groups,
+  Set<String> listPrivileges(Set<String> groups,
       ActiveRoleSet roleSet);
 
-  public void close();
+  void close();
 }

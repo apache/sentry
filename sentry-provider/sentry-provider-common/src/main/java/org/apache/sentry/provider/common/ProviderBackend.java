@@ -42,17 +42,17 @@ public interface ProviderBackend {
    * that would be backwards incompatible.
    * @param validators
    */
-  public void initialize(ProviderBackendContext context);
+  void initialize(ProviderBackendContext context);
 
   /**
    * Get the privileges from the backend.
    */
-  public ImmutableSet<String> getPrivileges(Set<String> groups, ActiveRoleSet roleSet, Authorizable... authorizableHierarchy);
+  ImmutableSet<String> getPrivileges(Set<String> groups, ActiveRoleSet roleSet, Authorizable... authorizableHierarchy);
 
   /**
    * Get the roles associated with the groups from the backend.
    */
-  public ImmutableSet<String> getRoles(Set<String> groups, ActiveRoleSet roleSet);
+  ImmutableSet<String> getRoles(Set<String> groups, ActiveRoleSet roleSet);
 
   /**
    * If strictValidation is true then an error is thrown for warnings
@@ -61,7 +61,7 @@ public interface ProviderBackend {
    * @param strictValidation
    * @throws SentryConfigurationException
    */
-  public void validatePolicy(boolean strictValidation) throws SentryConfigurationException;
+  void validatePolicy(boolean strictValidation) throws SentryConfigurationException;
 
-  public void close();
+  void close();
 }

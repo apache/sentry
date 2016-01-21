@@ -22,8 +22,6 @@ import java.io.IOException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.Groups;
 import org.apache.sentry.policy.common.PolicyEngine;
-import org.apache.sentry.provider.common.GroupMappingService;
-import org.apache.sentry.provider.common.HadoopGroupMappingService;
 
 import com.google.common.annotations.VisibleForTesting;
 
@@ -41,7 +39,7 @@ public class HadoopGroupResourceAuthorizationProvider extends
     this(new Configuration(), resource, policy);
   }
 
-  public HadoopGroupResourceAuthorizationProvider(Configuration conf, String resource, PolicyEngine policy) throws IOException {
+  public HadoopGroupResourceAuthorizationProvider(Configuration conf, String resource, PolicyEngine policy) throws IOException { //NOPMD
     this(policy, new HadoopGroupMappingService(getGroups(conf)));
   }
 

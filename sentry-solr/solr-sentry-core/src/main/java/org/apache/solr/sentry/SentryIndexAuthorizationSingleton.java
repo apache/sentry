@@ -134,7 +134,7 @@ public class SentryIndexAuthorizationSingleton {
       try {
         ipAddress = sreq.getRemoteAddr();
       } catch (AssertionError e) {
-        ; // ignore
+        // ignore
         // This is a work-around for "Unexpected method call getRemoteAddr()"
         // exception during unit test mocking at
         // com.sun.proxy.$Proxy28.getRemoteAddr(Unknown Source)
@@ -212,7 +212,7 @@ public class SentryIndexAuthorizationSingleton {
       throw new SolrException(SolrException.ErrorCode.UNAUTHORIZED, builder.toString());
     }
 
-    String superUser = (System.getProperty("solr.authorization.superuser", "solr"));
+    String superUser = System.getProperty("solr.authorization.superuser", "solr");
     // If a local request, treat it like a super user request; i.e. it is equivalent to an
     // http request from the same process.
     return req instanceof LocalSolrQueryRequest?

@@ -32,7 +32,7 @@ import org.apache.sentry.provider.db.service.thrift.TRenamePrivilegesRequest;
 public interface SentryPolicyStorePlugin {
 
   @SuppressWarnings("serial")
-  public static class SentryPluginException extends SentryUserException {
+  class SentryPluginException extends SentryUserException {
     public SentryPluginException(String msg) {
       super(msg);
     }
@@ -41,20 +41,20 @@ public interface SentryPolicyStorePlugin {
     }
   }
 
-  public void initialize(Configuration conf, SentryStore sentryStore) throws SentryPluginException;
+  void initialize(Configuration conf, SentryStore sentryStore) throws SentryPluginException;
 
-  public void onAlterSentryRoleAddGroups(TAlterSentryRoleAddGroupsRequest tRequest) throws SentryPluginException;
+  void onAlterSentryRoleAddGroups(TAlterSentryRoleAddGroupsRequest tRequest) throws SentryPluginException;
 
-  public void onAlterSentryRoleDeleteGroups(TAlterSentryRoleDeleteGroupsRequest tRequest) throws SentryPluginException;
+  void onAlterSentryRoleDeleteGroups(TAlterSentryRoleDeleteGroupsRequest tRequest) throws SentryPluginException;
 
-  public void onAlterSentryRoleGrantPrivilege(TAlterSentryRoleGrantPrivilegeRequest tRequest) throws SentryPluginException;
+  void onAlterSentryRoleGrantPrivilege(TAlterSentryRoleGrantPrivilegeRequest tRequest) throws SentryPluginException;
 
-  public void onAlterSentryRoleRevokePrivilege(TAlterSentryRoleRevokePrivilegeRequest tRequest) throws SentryPluginException;
+  void onAlterSentryRoleRevokePrivilege(TAlterSentryRoleRevokePrivilegeRequest tRequest) throws SentryPluginException;
 
-  public void onDropSentryRole(TDropSentryRoleRequest tRequest) throws SentryPluginException;
+  void onDropSentryRole(TDropSentryRoleRequest tRequest) throws SentryPluginException;
 
-  public void onRenameSentryPrivilege(TRenamePrivilegesRequest request) throws SentryPluginException;
+  void onRenameSentryPrivilege(TRenamePrivilegesRequest request) throws SentryPluginException;
 
-  public void onDropSentryPrivilege(TDropPrivilegesRequest request) throws SentryPluginException;
+  void onDropSentryPrivilege(TDropPrivilegesRequest request) throws SentryPluginException;
 
 }

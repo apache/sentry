@@ -39,13 +39,13 @@ public class UpdateIndexAuthorizationProcessor extends UpdateRequestProcessor {
   private SentryIndexAuthorizationSingleton sentryInstance;
 
   public UpdateIndexAuthorizationProcessor(SolrQueryRequest req,
-      SolrQueryResponse rsp, UpdateRequestProcessor next) {
-    this(SentryIndexAuthorizationSingleton.getInstance(), req, rsp, next);
+      SolrQueryResponse rsp, UpdateRequestProcessor next) { //NOPMD
+    this(SentryIndexAuthorizationSingleton.getInstance(), req, next);
   }
 
   @VisibleForTesting
   public UpdateIndexAuthorizationProcessor(SentryIndexAuthorizationSingleton sentryInstance,
-      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
+      SolrQueryRequest req, UpdateRequestProcessor next) {
     super(next);
     this.sentryInstance = sentryInstance;
     this.req = req;

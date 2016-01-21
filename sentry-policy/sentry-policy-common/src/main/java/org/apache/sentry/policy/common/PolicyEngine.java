@@ -17,7 +17,6 @@
 
 package org.apache.sentry.policy.common;
 
-import java.util.List;
 import java.util.Set;
 
 import javax.annotation.concurrent.ThreadSafe;
@@ -39,7 +38,7 @@ public interface PolicyEngine {
    * This is typically a factory that returns a privilege used to evaluate wildcards.
    * @return the privilege factory
    */
-  public PrivilegeFactory getPrivilegeFactory();
+  PrivilegeFactory getPrivilegeFactory();
 
   /**
    * Get privileges associated with a group. Returns Strings which can be resolved
@@ -50,7 +49,7 @@ public interface PolicyEngine {
    * @param active role-set
    * @return non-null immutable set of privileges
    */
-  public ImmutableSet<String> getAllPrivileges(Set<String> groups, ActiveRoleSet roleSet)
+  ImmutableSet<String> getAllPrivileges(Set<String> groups, ActiveRoleSet roleSet)
       throws SentryConfigurationException;
 
   /**
@@ -63,10 +62,10 @@ public interface PolicyEngine {
    * @param authorizable Hierarchy (Can be null)
    * @return non-null immutable set of privileges
    */
-  public ImmutableSet<String> getPrivileges(Set<String> groups, ActiveRoleSet roleSet, Authorizable... authorizableHierarchy)
+  ImmutableSet<String> getPrivileges(Set<String> groups, ActiveRoleSet roleSet, Authorizable... authorizableHierarchy)
       throws SentryConfigurationException;
 
-  public void close();
+  void close();
 
-  public void validatePolicy(boolean strictValidation) throws SentryConfigurationException;
+  void validatePolicy(boolean strictValidation) throws SentryConfigurationException;
 }

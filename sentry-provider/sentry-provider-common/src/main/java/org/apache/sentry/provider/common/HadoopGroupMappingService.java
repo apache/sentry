@@ -24,15 +24,11 @@ import java.util.Set;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.Groups;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 
 public class HadoopGroupMappingService implements GroupMappingService {
 
-  private static final Logger LOGGER = LoggerFactory
-      .getLogger(HadoopGroupMappingService.class);
   private static Configuration hadoopConf;
   private final Groups groups;
 

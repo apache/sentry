@@ -31,8 +31,6 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class SecureAdminHandlersTest extends SentryTestBase {
 
@@ -144,10 +142,6 @@ public class SecureAdminHandlersTest extends SentryTestBase {
 
   private void verifyLuke() throws Exception {
     verifyQueryAccess("/admin/luke", true);
-  }
-
-  private void verifySystem() throws Exception {
-    verifyQueryAccess("/admin/system", true);
   }
 
   private void verifyMBeans() throws Exception {

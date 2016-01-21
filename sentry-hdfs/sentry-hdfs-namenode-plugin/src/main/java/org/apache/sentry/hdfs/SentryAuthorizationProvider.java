@@ -188,7 +188,7 @@ public class SentryAuthorizationProvider
     String[] paths;
     INodeAuthorizationInfo parent = node.getParent();
     if (parent == null) {
-      paths = (idx > 0) ? new String[idx] : EMPTY_STRING_ARRAY;
+      paths = idx > 0 ? new String[idx] : EMPTY_STRING_ARRAY;
     } else {
       paths = getPathElements(parent, idx + 1);
       paths[paths.length - 1 - idx] = node.getLocalName();

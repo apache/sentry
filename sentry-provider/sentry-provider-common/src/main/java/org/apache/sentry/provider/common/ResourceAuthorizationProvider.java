@@ -109,7 +109,7 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
          * Does the permission granted in the policy file imply the requested action?
          */
         boolean result = permission.implies(privilegeFactory.createPrivilege(requestPrivilege));
-        if(LOGGER.isDebugEnabled()) {
+        if (LOGGER.isDebugEnabled()) {
           LOGGER.debug("ProviderPrivilege {}, RequestPrivilege {}, RoleSet, {}, Result {}",
               new Object[]{ permission, requestPrivilege, roleSet, result});
         }
@@ -135,23 +135,22 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
 
   private ImmutableSet<String> appendDefaultDBPriv(ImmutableSet<String> privileges, Authorizable[] authorizables) {
     // Only for switch db
-    if ((authorizables != null)&&(authorizables.length == 4)&&(authorizables[2].getName().equals("+"))) {
-      if ((privileges.size() == 1) && hasOnlyServerPrivilege(privileges.asList().get(0))) {
-        // Assuming authorizable[0] will always be the server
-        // This Code is only reachable only when user fires a 'use default'
-        // and the user has a privilege on atleast 1 privilized Object
-        String defaultPriv = "Server=" + authorizables[0].getName()
-            + "->Db=default->Table=*->Column=*->action=select";
-        HashSet<String> newPrivs = Sets.newHashSet(defaultPriv);
-        return ImmutableSet.copyOf(newPrivs);
-      }
+    if (authorizables != null && authorizables.length == 4 && authorizables[2].getName().equals("+")
+      && privileges.size() == 1 && hasOnlyServerPrivilege(privileges.asList().get(0))) {
+      // Assuming authorizable[0] will always be the server
+      // This Code is only reachable only when user fires a 'use default'
+      // and the user has a privilege on atleast 1 privilized Object
+      String defaultPriv = "Server=" + authorizables[0].getName()
+          + "->Db=default->Table=*->Column=*->action=select";
+      Set<String> newPrivs = Sets.newHashSet(defaultPriv);
+      return ImmutableSet.copyOf(newPrivs);
     }
     return privileges;
   }
 
   private boolean hasOnlyServerPrivilege(String priv) {
     ArrayList<String> l = Lists.newArrayList(AUTHORIZABLE_SPLITTER.split(priv));
-    if ((l.size() == 1)&&(l.get(0).toLowerCase().startsWith("server"))) {
+    if (l.size() == 1 && l.get(0).toLowerCase().startsWith("server")) {
       return l.get(0).toLowerCase().split("=")[1].endsWith("+");
     }
     return false;
@@ -173,12 +172,12 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
 
   @Override
   public Set<String> listPrivilegesForSubject(Subject subject) throws SentryConfigurationException {
-    return policy.getPrivileges(getGroups(subject), ActiveRoleSet.ALL, null);
+    return policy.getPrivileges(getGroups(subject), ActiveRoleSet.ALL);
   }
 
   @Override
   public Set<String> listPrivilegesForGroup(String groupName) throws SentryConfigurationException {
-    return policy.getPrivileges(Sets.newHashSet(groupName), ActiveRoleSet.ALL, null);
+    return policy.getPrivileges(Sets.newHashSet(groupName), ActiveRoleSet.ALL);
   }
 
   @Override

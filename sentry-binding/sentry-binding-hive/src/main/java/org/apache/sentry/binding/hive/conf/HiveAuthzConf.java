@@ -150,7 +150,6 @@ public class HiveAuthzConf extends Configuration {
     currentToDeprecatedProps.put(AuthzConfVars.AUTHZ_ONFAILURE_HOOKS.getVar(), AuthzConfVars.AUTHZ_ONFAILURE_HOOKS_DEPRECATED);
   };
 
-  @SuppressWarnings("unused")
   private static final Logger LOG = LoggerFactory
       .getLogger(HiveAuthzConf.class);
   public static final String AUTHZ_SITE_FILE = "sentry-site.xml";

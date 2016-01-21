@@ -42,17 +42,14 @@ public class SentryHiveMetaStoreClient extends HiveMetaStoreClient implements
 
   private HiveAuthzBinding hiveAuthzBinding;
   private HiveAuthzConf authzConf;
-  private final HiveConf hiveConf;
 
   public SentryHiveMetaStoreClient(HiveConf conf) throws MetaException {
     super(conf);
-    this.hiveConf = conf;
   }
 
   public SentryHiveMetaStoreClient(HiveConf conf, HiveMetaHookLoader hookLoader)
       throws MetaException {
     super(conf, hookLoader);
-    this.hiveConf = conf;
   }
 
   @Override

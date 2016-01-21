@@ -23,5 +23,5 @@ import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
  * The interface for all admin commands, eg, CreateRoleCmd.
  */
 public interface Command {
-  abstract void execute(SentryPolicyServiceClient client, String requestorName) throws Exception;
+  void execute(SentryPolicyServiceClient client, String requestorName) throws Exception;
 }

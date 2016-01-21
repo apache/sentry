@@ -23,7 +23,7 @@ import org.apache.sentry.core.common.Authorizable;
  * It used conjunction with the generic authorization model(SENTRY-398).
  */
 public interface SqoopAuthorizable extends Authorizable {
-  public static final String ALL = "*";
+  String ALL = "*";
   public enum AuthorizableType {
     SERVER,
     CONNECTOR,
@@ -31,5 +31,5 @@ public interface SqoopAuthorizable extends Authorizable {
     JOB
   };
 
-  public AuthorizableType getAuthzType();
+  AuthorizableType getAuthzType();
 }

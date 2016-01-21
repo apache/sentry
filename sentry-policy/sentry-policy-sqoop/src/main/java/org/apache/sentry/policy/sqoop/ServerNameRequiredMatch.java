@@ -40,7 +40,7 @@ public class ServerNameRequiredMatch implements PrivilegeValidator {
     Iterable<SqoopAuthorizable> authorizables = parsePrivilege(context.getPrivilege());
     boolean match = false;
     for (SqoopAuthorizable authorizable : authorizables) {
-      if ((authorizable instanceof Server) && authorizable.getName().equalsIgnoreCase(sqoopServerName)) {
+      if (authorizable instanceof Server && authorizable.getName().equalsIgnoreCase(sqoopServerName)) {
         match = true;
         break;
       }

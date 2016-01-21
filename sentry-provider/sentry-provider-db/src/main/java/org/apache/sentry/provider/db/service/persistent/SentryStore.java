@@ -176,7 +176,7 @@ public class SentryStore {
     prop.setProperty("datanucleus.NontransactionalWrite", "false");
 
     pmf = JDOHelper.getPersistenceManagerFactory(prop);
-    verifySentryStoreSchema(conf, checkSchemaVersion);
+    verifySentryStoreSchema(checkSchemaVersion);
 
     // Kick off the thread that cleans orphaned privileges (unless told not to)
     privCleaner = this.new PrivCleaner();
@@ -189,8 +189,7 @@ public class SentryStore {
   }
 
   // ensure that the backend DB schema is set
-  private void verifySentryStoreSchema(Configuration serverConf,
-      boolean checkVersion)
+  private void verifySentryStoreSchema(boolean checkVersion)
           throws SentryNoSuchObjectException, SentryAccessDeniedException {
     if (!checkVersion) {
       setSentryVersion(SentryStoreSchemaInfo.getSentryVersion(),
@@ -337,7 +336,7 @@ public class SentryStore {
 
   private <T> Long getCount(Class<T> tClass) {
     PersistenceManager pm = null;
-    Long size = new Long(-1);
+    Long size = Long.valueOf(-1);
     try {
       pm = openTransaction();
       Query query = pm.newQuery();
@@ -448,8 +447,8 @@ public class SentryStore {
       throw new SentryNoSuchObjectException("Role: " + roleName);
     } else {
 
-      if ((!isNULL(privilege.getColumnName())) || (!isNULL(privilege.getTableName()))
-          || (!isNULL(privilege.getDbName()))) {
+      if (!isNULL(privilege.getColumnName()) || !isNULL(privilege.getTableName())
+          || !isNULL(privilege.getDbName())) {
         // If Grant is for ALL and Either INSERT/SELECT already exists..
         // need to remove it and GRANT ALL..
         if (AccessConstants.ALL.equalsIgnoreCase(privilege.getAction())
@@ -459,12 +458,12 @@ public class SentryStore {
           MSentryPrivilege mSelect = getMSentryPrivilege(tNotAll, pm);
           tNotAll.setAction(AccessConstants.INSERT);
           MSentryPrivilege mInsert = getMSentryPrivilege(tNotAll, pm);
-          if ((mSelect != null) && (mRole.getPrivileges().contains(mSelect))) {
+          if (mSelect != null && mRole.getPrivileges().contains(mSelect)) {
             mSelect.removeRole(mRole);
             privCleaner.incPrivRemoval();
             pm.makePersistent(mSelect);
           }
-          if ((mInsert != null) && (mRole.getPrivileges().contains(mInsert))) {
+          if (mInsert != null && mRole.getPrivileges().contains(mInsert)) {
             mInsert.removeRole(mRole);
             privCleaner.incPrivRemoval();
             pm.makePersistent(mInsert);
@@ -477,10 +476,10 @@ public class SentryStore {
           MSentryPrivilege mAll1 = getMSentryPrivilege(tAll, pm);
           tAll.setAction(AccessConstants.ACTION_ALL);
           MSentryPrivilege mAll2 = getMSentryPrivilege(tAll, pm);
-          if ((mAll1 != null) && (mRole.getPrivileges().contains(mAll1))) {
+          if (mAll1 != null && mRole.getPrivileges().contains(mAll1)) {
             return null;
           }
-          if ((mAll2 != null) && (mRole.getPrivileges().contains(mAll2))) {
+          if (mAll2 != null && mRole.getPrivileges().contains(mAll2)) {
             return null;
           }
         }
@@ -584,10 +583,10 @@ public class SentryStore {
       privCleaner.incPrivRemoval();
       pm.makePersistent(persistedPriv);
     } else if (requestedPrivToRevoke.getAction().equalsIgnoreCase(AccessConstants.SELECT)
-        && (!currentPrivilege.getAction().equalsIgnoreCase(AccessConstants.INSERT))) {
+        && !currentPrivilege.getAction().equalsIgnoreCase(AccessConstants.INSERT)) {
       revokeRolePartial(pm, mRole, currentPrivilege, persistedPriv, AccessConstants.INSERT);
     } else if (requestedPrivToRevoke.getAction().equalsIgnoreCase(AccessConstants.INSERT)
-        && (!currentPrivilege.getAction().equalsIgnoreCase(AccessConstants.SELECT))) {
+        && !currentPrivilege.getAction().equalsIgnoreCase(AccessConstants.SELECT)) {
       revokeRolePartial(pm, mRole, currentPrivilege, persistedPriv, AccessConstants.SELECT);
     }
   }
@@ -602,7 +601,7 @@ public class SentryStore {
 
     currentPrivilege.setAction(AccessConstants.ALL);
     persistedPriv = getMSentryPrivilege(convertToTSentryPrivilege(currentPrivilege), pm);
-    if ((persistedPriv != null)&&(mRole.getPrivileges().contains(persistedPriv))) {
+    if (persistedPriv != null && mRole.getPrivileges().contains(persistedPriv)) {
       persistedPriv.removeRole(mRole);
       privCleaner.incPrivRemoval();
       pm.makePersistent(persistedPriv);
@@ -646,14 +645,14 @@ public class SentryStore {
   private void populateChildren(PersistenceManager pm, Set<String> roleNames, MSentryPrivilege priv,
       Set<MSentryPrivilege> children) throws SentryInvalidInputException {
     Preconditions.checkNotNull(pm);
-    if ((!isNULL(priv.getServerName())) || (!isNULL(priv.getDbName()))
-        || (!isNULL(priv.getTableName()))) {
+    if (!isNULL(priv.getServerName()) || !isNULL(priv.getDbName())
+        || !isNULL(priv.getTableName())) {
       // Get all TableLevel Privs
       Set<MSentryPrivilege> childPrivs = getChildPrivileges(pm, roleNames, priv);
       for (MSentryPrivilege childPriv : childPrivs) {
         // Only recurse for table level privs..
-        if ((!isNULL(childPriv.getDbName())) && (!isNULL(childPriv.getTableName()))
-            && (!isNULL(childPriv.getColumnName()))) {
+        if (!isNULL(childPriv.getDbName()) && !isNULL(childPriv.getTableName())
+            && !isNULL(childPriv.getColumnName())) {
           populateChildren(pm, roleNames, childPriv, children);
         }
         // The method getChildPrivileges() didn't do filter on "action",
@@ -682,7 +681,7 @@ public class SentryStore {
   private Set<MSentryPrivilege> getChildPrivileges(PersistenceManager pm, Set<String> roleNames,
       MSentryPrivilege parent) throws SentryInvalidInputException {
     // Column and URI do not have children
-    if ((!isNULL(parent.getColumnName())) || (!isNULL(parent.getURI()))) {
+    if (!isNULL(parent.getColumnName()) || !isNULL(parent.getURI())) {
       return new HashSet<MSentryPrivilege>();
     }
 
@@ -768,8 +767,9 @@ public class SentryStore {
       grantOption = false;
     }
     Object obj = query.execute(grantOption);
-    if (obj != null)
+    if (obj != null) {
       return (MSentryPrivilege) obj;
+    }
     return null;
   }
 
@@ -928,7 +928,9 @@ public class SentryStore {
   }
 
   private boolean hasAnyServerPrivileges(Set<String> roleNames, String serverName) {
-    if ((roleNames.size() == 0)||(roleNames == null)) return false;
+    if (roleNames == null || roleNames.isEmpty()) {
+      return false;
+    }
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
     try {
@@ -948,7 +950,7 @@ public class SentryStore {
       Long numPrivs = (Long) query.execute();
       rollbackTransaction = false;
       commitTransaction(pm);
-      return (numPrivs > 0);
+      return numPrivs > 0;
     } finally {
       if (rollbackTransaction) {
         rollbackTransaction(pm);
@@ -957,7 +959,9 @@ public class SentryStore {
   }
 
   List<MSentryPrivilege> getMSentryPrivileges(Set<String> roleNames, TSentryAuthorizable authHierarchy) {
-    if ((roleNames.size() == 0)||(roleNames == null)) return new ArrayList<MSentryPrivilege>();
+    if (roleNames == null || roleNames.isEmpty()) {
+      return new ArrayList<MSentryPrivilege>();
+    }
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
     try {
@@ -970,20 +974,19 @@ public class SentryStore {
       }
       StringBuilder filters = new StringBuilder("roles.contains(role) "
           + "&& (" + Joiner.on(" || ").join(rolesFiler) + ") ");
-      if ((authHierarchy != null) && (authHierarchy.getServer() != null)) {
+      if (authHierarchy != null && authHierarchy.getServer() != null) {
         filters.append("&& serverName == \"" + authHierarchy.getServer().toLowerCase() + "\"");
         if (authHierarchy.getDb() != null) {
           filters.append(" && ((dbName == \"" + authHierarchy.getDb().toLowerCase() + "\") || (dbName == \"__NULL__\")) && (URI == \"__NULL__\")");
-          if ((authHierarchy.getTable() != null)
+          if (authHierarchy.getTable() != null
               && !AccessConstants.ALL.equalsIgnoreCase(authHierarchy.getTable())) {
             if (!AccessConstants.SOME.equalsIgnoreCase(authHierarchy.getTable())) {
               filters.append(" && ((tableName == \"" + authHierarchy.getTable().toLowerCase() + "\") || (tableName == \"__NULL__\")) && (URI == \"__NULL__\")");
             }
-            if ((authHierarchy.getColumn() != null)
-                && !AccessConstants.ALL.equalsIgnoreCase(authHierarchy.getColumn())) {
-              if (!AccessConstants.SOME.equalsIgnoreCase(authHierarchy.getColumn())) {
-                filters.append(" && ((columnName == \"" + authHierarchy.getColumn().toLowerCase() + "\") || (columnName == \"__NULL__\")) && (URI == \"__NULL__\")");
-              }
+            if (authHierarchy.getColumn() != null
+                && !AccessConstants.ALL.equalsIgnoreCase(authHierarchy.getColumn())
+                && !AccessConstants.SOME.equalsIgnoreCase(authHierarchy.getColumn())) {
+              filters.append(" && ((columnName == \"" + authHierarchy.getColumn().toLowerCase() + "\") || (columnName == \"__NULL__\")) && (URI == \"__NULL__\")");
             }
           }
         }
@@ -1010,7 +1013,7 @@ public class SentryStore {
       pm = openTransaction();
       Query query = pm.newQuery(MSentryPrivilege.class);
       StringBuilder filters = new StringBuilder();
-      if ((roleNames.size() == 0)||(roleNames == null)) {
+      if (roleNames.size() == 0 || roleNames == null) {
         filters.append(" !roles.isEmpty() ");
       } else {
         query.declareVariables("org.apache.sentry.provider.db.service.model.MSentryRole role");
@@ -1021,7 +1024,7 @@ public class SentryStore {
         filters.append("roles.contains(role) "
           + "&& (" + Joiner.on(" || ").join(rolesFiler) + ") ");
       }
-      if ((authHierarchy.getServer() != null)) {
+      if (authHierarchy.getServer() != null) {
         filters.append("&& serverName == \"" +
             authHierarchy.getServer().toLowerCase() + "\"");
         if (authHierarchy.getDb() != null) {
@@ -1043,9 +1046,7 @@ public class SentryStore {
         // if no server, then return empty resultset
         return new ArrayList<MSentryPrivilege>();
       }
-      FetchGroup grp = pm.getFetchGroup(
-          org.apache.sentry.provider.db.service.model.MSentryPrivilege.class,
-          "fetchRole");
+      FetchGroup grp = pm.getFetchGroup(MSentryPrivilege.class, "fetchRole");
       grp.addMember("roles");
       pm.getFetchPlan().addGroup("fetchRole");
       query.setFilter(filters.toString());
@@ -1128,13 +1129,13 @@ public class SentryStore {
     if (authHierarchy.getServer() == null) {
       throw new SentryInvalidInputException("serverName cannot be null !!");
     }
-    if ((authHierarchy.getTable() != null) && (authHierarchy.getDb() == null)) {
+    if (authHierarchy.getTable() != null && authHierarchy.getDb() == null) {
       throw new SentryInvalidInputException("dbName cannot be null when tableName is present !!");
     }
-    if ((authHierarchy.getColumn() != null) && (authHierarchy.getTable() == null)) {
+    if (authHierarchy.getColumn() != null && authHierarchy.getTable() == null) {
       throw new SentryInvalidInputException("tableName cannot be null when columnName is present !!");
     }
-    if ((authHierarchy.getUri() == null) && (authHierarchy.getDb() == null)) {
+    if (authHierarchy.getUri() == null && authHierarchy.getDb() == null) {
       throw new SentryInvalidInputException("One of uri or dbName must not be null !!");
     }
     return convertToTSentryPrivileges(getMSentryPrivileges(roleNames, authHierarchy));
@@ -1314,7 +1315,9 @@ public class SentryStore {
 
   @VisibleForTesting
   static Set<String> toTrimedLower(Set<String> s) {
-    if (null == s) return new HashSet<String>();
+    if (null == s) {
+      return new HashSet<String>();
+    }
     Set<String> result = Sets.newHashSet();
     for (String v : s) {
       result.add(v.trim().toLowerCase());
@@ -1609,7 +1612,7 @@ public class SentryStore {
     List<MSentryPrivilege> mPrivileges = getMSentryPrivileges(tPrivilege, pm);
     if (mPrivileges != null && !mPrivileges.isEmpty()) {
       for (MSentryPrivilege mPrivilege : mPrivileges) {
-        roleSet.addAll(ImmutableSet.copyOf((mPrivilege.getRoles())));
+        roleSet.addAll(ImmutableSet.copyOf(mPrivilege.getRoles()));
       }
     }
 

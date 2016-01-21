@@ -53,7 +53,7 @@ public class MSentryPrivilege {
     this.roles = new HashSet<MSentryRole>();
   }
 
-  public MSentryPrivilege(String privilegeName, String privilegeScope,
+  public MSentryPrivilege(String privilegeScope,
       String serverName, String dbName, String tableName, String columnName,
       String URI, String action, Boolean grantOption) {
     this.privilegeScope = privilegeScope;
@@ -67,10 +67,10 @@ public class MSentryPrivilege {
     this.roles = new HashSet<MSentryRole>();
   }
 
-  public MSentryPrivilege(String privilegeName, String privilegeScope,
+  public MSentryPrivilege(String privilegeScope,
       String serverName, String dbName, String tableName, String columnName,
       String URI, String action) {
-    this(privilegeName, privilegeScope, serverName, dbName, tableName,
+    this(privilegeScope, serverName, dbName, tableName,
         columnName, URI, action, false);
   }
 
@@ -202,48 +202,65 @@ public class MSentryPrivilege {
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj)
+    if (this == obj) {
       return true;
-    if (obj == null)
+    }
+    if (obj == null) {
       return false;
-    if (getClass() != obj.getClass())
+    }
+    if (getClass() != obj.getClass()) {
       return false;
+    }
     MSentryPrivilege other = (MSentryPrivilege) obj;
     if (URI == null) {
-      if (other.URI != null)
+      if (other.URI != null) {
         return false;
-    } else if (!URI.equals(other.URI))
+      }
+    } else if (!URI.equals(other.URI)) {
       return false;
+    }
     if (action == null) {
-      if (other.action != null)
+      if (other.action != null) {
         return false;
-    } else if (!action.equals(other.action))
+      }
+    } else if (!action.equals(other.action)) {
       return false;
+    }
     if (dbName == null) {
-      if (other.dbName != null)
+      if (other.dbName != null) {
         return false;
-    } else if (!dbName.equals(other.dbName))
+      }
+    } else if (!dbName.equals(other.dbName)) {
       return false;
+    }
     if (serverName == null) {
-      if (other.serverName != null)
+      if (other.serverName != null) {
         return false;
-    } else if (!serverName.equals(other.serverName))
+      }
+    } else if (!serverName.equals(other.serverName)) {
       return false;
+    }
     if (tableName == null) {
-      if (other.tableName != null)
+      if (other.tableName != null) {
         return false;
-    } else if (!tableName.equals(other.tableName))
+      }
+    } else if (!tableName.equals(other.tableName)) {
       return false;
+    }
     if (columnName == null) {
-      if (other.columnName != null)
+      if (other.columnName != null) {
         return false;
-    } else if (!columnName.equals(other.columnName))
+      }
+    } else if (!columnName.equals(other.columnName)) {
       return false;
+    }
     if (grantOption == null) {
-      if (other.grantOption != null)
+      if (other.grantOption != null) {
         return false;
-    } else if (!grantOption.equals(other.grantOption))
+      }
+    } else if (!grantOption.equals(other.grantOption)) {
       return false;
+    }
     return true;
   }
 

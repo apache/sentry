@@ -21,7 +21,6 @@ import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_J
 import static org.apache.sentry.provider.common.ProviderConstants.KV_JOINER;
 
 import java.lang.reflect.Field;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -51,14 +50,15 @@ public class MSentryGMPrivilege {
    * We assume that the generic model privilege for any component(hive/impala or solr) doesn't exceed four level.
    * This generic model privilege currently can support maximum 4 level.
    **/
-  private String resourceName0 = NULL_COL;
-  private String resourceType0 = NULL_COL;
-  private String resourceName1 = NULL_COL;
-  private String resourceType1 = NULL_COL;
-  private String resourceName2 = NULL_COL;
-  private String resourceType2 = NULL_COL;
-  private String resourceName3 = NULL_COL;
-  private String resourceType3 = NULL_COL;
+  private String resourceName0 = NULL_COL; //NOPMD
+  private String resourceType0 = NULL_COL; //NOPMD
+  private String resourceName1 = NULL_COL; //NOPMD
+  private String resourceType1 = NULL_COL; //NOPMD
+  private String resourceName2 = NULL_COL; //NOPMD
+  private String resourceType2 = NULL_COL; //NOPMD
+  private String resourceName3 = NULL_COL; //NOPMD
+  private String resourceType3 = NULL_COL; //NOPMD
+
 
   private String serviceName;
   private String componentName;
@@ -180,7 +180,7 @@ public class MSentryGMPrivilege {
    * @param authorizables
    */
   public void setAuthorizables(List<? extends Authorizable> authorizables) {
-    if ((authorizables == null) || (authorizables.isEmpty())) {
+    if (authorizables == null || authorizables.isEmpty()) {
       //service scope
       scope = SERVICE_SCOPE;
       return;
@@ -253,38 +253,51 @@ public class MSentryGMPrivilege {
 
   @Override
   public boolean equals(Object obj) {
-      if (this == obj)
+      if (this == obj) {
           return true;
-      if (obj == null)
+      }
+      if (obj == null) {
           return false;
-      if (getClass() != obj.getClass())
+      }
+      if (getClass() != obj.getClass()) {
           return false;
+      }
       MSentryGMPrivilege other = (MSentryGMPrivilege) obj;
       if (action == null) {
-          if (other.action != null)
+          if (other.action != null) {
               return false;
-      } else if (!action.equalsIgnoreCase(other.action))
+          }
+      } else if (!action.equalsIgnoreCase(other.action)) {
           return false;
+      }
       if (scope == null) {
-        if (other.scope != null)
+        if (other.scope != null) {
             return false;
-      } else if (!scope.equals(other.scope))
+        }
+      } else if (!scope.equals(other.scope)) {
         return false;
+      }
       if (serviceName == null) {
-          if (other.serviceName != null)
+          if (other.serviceName != null) {
               return false;
-      } else if (!serviceName.equals(other.serviceName))
+          }
+      } else if (!serviceName.equals(other.serviceName)) {
           return false;
+      }
       if (componentName == null) {
-          if (other.componentName != null)
+          if (other.componentName != null) {
               return false;
-      } else if (!componentName.equals(other.componentName))
+          }
+      } else if (!componentName.equals(other.componentName)) {
           return false;
+      }
       if (grantOption == null) {
-        if (other.grantOption != null)
+        if (other.grantOption != null) {
           return false;
-      } else if (!grantOption.equals(other.grantOption))
+        }
+      } else if (!grantOption.equals(other.grantOption)) {
         return false;
+      }
 
       List<? extends Authorizable> authorizables = getAuthorizables();
       List<? extends Authorizable> other_authorizables = other.getAuthorizables();
@@ -349,7 +362,7 @@ public class MSentryGMPrivilege {
       }
     }
 
-    if ( (!existIterator.hasNext()) && (!requestIterator.hasNext()) ){
+    if ( !existIterator.hasNext() && !requestIterator.hasNext() ){
       /**
        * The persistent privilege has the same authorizables size as the requested privilege
        * The check is pass

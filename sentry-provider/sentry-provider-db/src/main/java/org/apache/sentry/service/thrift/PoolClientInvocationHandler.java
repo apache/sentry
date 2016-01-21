@@ -67,7 +67,7 @@ public class PoolClientInvocationHandler extends SentryClientInvocationHandler {
     while (retryCount < connectionRetryTotal) {
       try {
         // The wapper here is for the retry of thrift call, the default retry number is 3.
-        result = invokeFromPool(proxy, method, args);
+        result = invokeFromPool(method, args);
         break;
       } catch (TTransportException e) {
         // TTransportException means there has connection problem, create a new connection and try
@@ -89,7 +89,7 @@ public class PoolClientInvocationHandler extends SentryClientInvocationHandler {
     return result;
   }
 
-  private Object invokeFromPool(Object proxy, Method method, Object[] args) throws Exception {
+  private Object invokeFromPool(Method method, Object[] args) throws Exception {
     Object result = null;
     SentryPolicyServiceClient client;
     try {

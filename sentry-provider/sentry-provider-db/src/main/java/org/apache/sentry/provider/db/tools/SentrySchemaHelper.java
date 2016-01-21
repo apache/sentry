@@ -34,58 +34,58 @@ public class SentrySchemaHelper {
       COMMENT
     }
 
-    static final String DEFAUTL_DELIMITER = ";";
+    String DEFAUTL_DELIMITER = ";";
     /***
      * Find the type of given command
      * @param dbCommand
      * @return
      */
-    public boolean isPartialCommand(String dbCommand) throws IllegalArgumentException;
+    boolean isPartialCommand(String dbCommand) throws IllegalArgumentException;
 
     /** Parse the DB specific nesting format and extract the inner script name if any
      * @param dbCommand command from parent script
      * @return
      * @throws IllegalFormatException
      */
-    public String getScriptName(String dbCommand) throws IllegalArgumentException;
+    String getScriptName(String dbCommand) throws IllegalArgumentException;
 
     /***
      * Find if the given command is a nested script execution
      * @param dbCommand
      * @return
      */
-    public boolean isNestedScript(String dbCommand);
+    boolean isNestedScript(String dbCommand);
 
     /***
      * Find if the given command is should be passed to DB
      * @param dbCommand
      * @return
      */
-    public boolean isNonExecCommand(String dbCommand);
+    boolean isNonExecCommand(String dbCommand);
 
     /***
      * Get the SQL statement delimiter
      * @return
      */
-    public String getDelimiter();
+    String getDelimiter();
 
     /***
      * Clear any client specific tags
      * @return
      */
-    public String cleanseCommand(String dbCommand);
+    String cleanseCommand(String dbCommand);
 
     /***
      * Does the DB required table/column names quoted
      * @return
      */
-    public boolean needsQuotedIdentifier();
+    boolean needsQuotedIdentifier();
 
     /***
      * Set DB specific options if any
      * @param dbOps
      */
-    public void setDbOpts(String dbOps);
+    void setDbOpts(String dbOps);
   }
 
 
@@ -112,7 +112,7 @@ public class SentrySchemaHelper {
 
     @Override
     public boolean isNonExecCommand(String dbCommand) {
-      return (dbCommand.startsWith("--") || dbCommand.startsWith("#"));
+      return dbCommand.startsWith("--") || dbCommand.startsWith("#");
     }
 
     @Override
@@ -214,7 +214,7 @@ public class SentrySchemaHelper {
     @Override
     public boolean isNonExecCommand(String dbCommand) {
       return super.isNonExecCommand(dbCommand) ||
-          (dbCommand.startsWith("/*") && dbCommand.endsWith("*/")) ||
+          dbCommand.startsWith("/*") && dbCommand.endsWith("*/") ||
           dbCommand.startsWith(DELIMITER_TOKEN);
     }
 
@@ -255,10 +255,9 @@ public class SentrySchemaHelper {
     @Override
     public boolean isNonExecCommand(String dbCommand) {
       // Skip "standard_conforming_strings" command which is not supported in older postgres
-      if (POSTGRES_SKIP_STANDARD_STRING.equalsIgnoreCase(getDbOpts())) {
-        if (dbCommand.startsWith(POSTGRES_STRING_COMMAND_FILTER) || dbCommand.startsWith(POSTGRES_STRING_CLIENT_ENCODING)) {
-          return true;
-        }
+      if (POSTGRES_SKIP_STANDARD_STRING.equalsIgnoreCase(getDbOpts()) 
+        && (dbCommand.startsWith(POSTGRES_STRING_COMMAND_FILTER) || dbCommand.startsWith(POSTGRES_STRING_CLIENT_ENCODING))) {
+        return true;
       }
       return super.isNonExecCommand(dbCommand);
     }

@@ -66,7 +66,6 @@ public class TestSearchAuthorizationProviderGeneralCases {
   private static final Collection COLL_TMP = new Collection("tmpcollection");
   private static final Collection COLL_PURCHASES_PARTIAL = new Collection("purchases_partial");
 
-  private static final SearchModelAction ALL = SearchModelAction.ALL;
   private static final SearchModelAction QUERY = SearchModelAction.QUERY;
   private static final SearchModelAction UPDATE = SearchModelAction.UPDATE;
 

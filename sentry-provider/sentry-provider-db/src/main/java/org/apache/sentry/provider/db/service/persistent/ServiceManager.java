@@ -21,8 +21,6 @@ package org.apache.sentry.provider.db.service.persistent;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.curator.x.discovery.ServiceDiscovery;
 import org.apache.curator.x.discovery.ServiceDiscoveryBuilder;
 import org.apache.curator.x.discovery.ServiceInstance;

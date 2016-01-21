@@ -75,14 +75,14 @@ public class FixedJsonInstanceSerializer<T> implements InstanceSerializer<T>
     private Integer getIntegerField(final JsonNode pNode, final String pFieldName) {
         Preconditions.checkNotNull(pNode);
         Preconditions.checkNotNull(pFieldName);
-        return (pNode.get(pFieldName) != null && pNode.get(pFieldName).isNumber()) ? pNode.get(pFieldName)
+        return pNode.get(pFieldName) != null && pNode.get(pFieldName).isNumber() ? pNode.get(pFieldName)
             .getIntValue() : null;
     }
 
     private Long getLongField(final JsonNode pNode, final String pFieldName) {
         Preconditions.checkNotNull(pNode);
         Preconditions.checkNotNull(pFieldName);
-        return (pNode.get(pFieldName) != null && pNode.get(pFieldName).isLong()) ? pNode.get(pFieldName).getLongValue()
+        return pNode.get(pFieldName) != null && pNode.get(pFieldName).isLong() ? pNode.get(pFieldName).getLongValue()
             : null;
     }
 

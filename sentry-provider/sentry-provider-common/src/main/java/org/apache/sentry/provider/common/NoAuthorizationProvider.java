@@ -44,7 +44,6 @@ public class NoAuthorizationProvider implements AuthorizationProvider {
 
   @Override
   public void validateResource(boolean strictValidation) throws SentryConfigurationException {
-    return;
   }
 
   @Override

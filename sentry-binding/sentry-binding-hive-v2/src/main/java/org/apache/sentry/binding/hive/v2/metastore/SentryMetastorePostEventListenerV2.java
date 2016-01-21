@@ -40,7 +40,7 @@ public class SentryMetastorePostEventListenerV2 extends SentryMetastorePostEvent
       Iterator<Partition> it = partitionEvent.getPartitionIterator();
       while (it.hasNext()) {
         Partition part = it.next();
-        if ((part.getSd() != null) && (part.getSd().getLocation() != null)) {
+        if (part.getSd() != null && part.getSd().getLocation() != null) {
           String authzObj = part.getDbName() + "." + part.getTableName();
           String path = part.getSd().getLocation();
           for (SentryMetastoreListenerPlugin plugin : sentryPlugins) {
@@ -60,7 +60,7 @@ public class SentryMetastorePostEventListenerV2 extends SentryMetastorePostEvent
       Iterator<Partition> it = partitionEvent.getPartitionIterator();
       while (it.hasNext()) {
         Partition part = it.next();
-        if ((part.getSd() != null) && (part.getSd().getLocation() != null)) {
+        if (part.getSd() != null && part.getSd().getLocation() != null) {
           String path = part.getSd().getLocation();
           for (SentryMetastoreListenerPlugin plugin : sentryPlugins) {
             plugin.removePath(authzObj, path);

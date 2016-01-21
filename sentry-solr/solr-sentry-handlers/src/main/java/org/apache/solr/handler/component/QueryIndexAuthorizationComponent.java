@@ -20,8 +20,6 @@ package org.apache.solr.handler.component;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.sentry.SentryIndexAuthorizationSingleton;
 import org.apache.sentry.core.model.search.SearchModelAction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.util.EnumSet;
@@ -30,8 +28,6 @@ import java.util.List;
 public class QueryIndexAuthorizationComponent extends SearchComponent
 {
   private static final String OPERATION_NAME = "query";
-  private static Logger log =
-    LoggerFactory.getLogger(QueryIndexAuthorizationComponent.class);
   private SentryIndexAuthorizationSingleton sentryInstance;
 
   public QueryIndexAuthorizationComponent() {

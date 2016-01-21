@@ -135,7 +135,7 @@ public class UpdateIndexAuthorizationProcessorTest extends SentryTestBase {
     SolrQueryRequest request = getRequest();
     prepareCollAndUser(core, request, collection, user);
     return new UpdateIndexAuthorizationProcessor(
-      SentrySingletonTestInstance.getInstance().getSentryInstance(), request, null, null);
+      SentrySingletonTestInstance.getInstance().getSentryInstance(), request, null);
   }
 
  /**

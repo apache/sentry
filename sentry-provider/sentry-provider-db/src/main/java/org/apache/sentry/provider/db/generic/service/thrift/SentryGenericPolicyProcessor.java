@@ -99,7 +99,9 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
   }
 
   private Set<String> toTrimedLower(Set<String> s) {
-    if (null == s) return new HashSet<String>();
+    if (null == s) {
+      return new HashSet<String>();
+    }
     Set<String> result = Sets.newHashSet();
     for (String v : s) {
       result.add(v.trim().toLowerCase());
@@ -122,7 +124,8 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     requestorGroups = toTrimedLower(requestorGroups);
     if (Sets.intersection(adminGroups, requestorGroups).isEmpty()) {
       return false;
-    } else return true;
+    }
+    return true;
   }
 
   public static SentryStoreLayer createStore(Configuration conf) throws SentryConfigurationException {
@@ -475,9 +478,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
       public Response<Set<TSentryRole>> handle() throws Exception {
         validateClientVersion(request.getProtocol_version());
         Set<String> groups = getRequestorGroups(conf, request.getRequestorUserName());
-        if (AccessConstants.ALL.equalsIgnoreCase(request.getGroupName())) {
-          //check all groups which requestorUserName belongs to
-        } else {
+        if (!AccessConstants.ALL.equalsIgnoreCase(request.getGroupName())) {
           boolean admin = inAdminGroups(groups);
           //Only admin users can list all roles in the system ( groupname = null)
           //Non admin users are only allowed to list only groups which they belong to
@@ -628,7 +629,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     }
   }
   private interface RequestHandler <T>{
-    public Response<T> handle() throws Exception ;
+    Response<T> handle() throws Exception ;
   }
 
   private static void validateClientVersion(int protocol_version) throws SentryThriftAPIMismatchException {

@@ -17,8 +17,6 @@
  */
 package org.apache.sentry.core.indexer;
 
-import java.util.List;
-
 import org.apache.sentry.core.model.indexer.IndexerActionFactory;
 import org.apache.sentry.core.model.indexer.IndexerActionFactory.IndexerAction;
 import org.apache.sentry.core.model.indexer.IndexerActionFactory.IndexerBitFieldAction;

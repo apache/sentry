@@ -23,7 +23,6 @@ import java.util.Map;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.sentry.binding.hive.authz.HiveAuthzPrivileges.HiveOperationScope;
 import org.apache.sentry.binding.hive.authz.HiveAuthzPrivileges.HiveOperationType;
-import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.model.db.DBModelAction;
 import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
 
@@ -31,12 +30,6 @@ public class HiveAuthzPrivilegesMap {
   private static final Map <HiveOperation, HiveAuthzPrivileges> hiveAuthzStmtPrivMap =
     new HashMap<HiveOperation, HiveAuthzPrivileges>();
   static {
-    HiveAuthzPrivileges serverPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
-        addInputObjectPriviledge(AuthorizableType.Server, EnumSet.of(DBModelAction.ALL)).
-        setOperationScope(HiveOperationScope.SERVER).
-        setOperationType(HiveOperationType.DDL).
-        build();
-
     HiveAuthzPrivileges createServerPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
         addInputObjectPriviledge(AuthorizableType.Server, EnumSet.of(DBModelAction.CREATE)).
         setOperationScope(HiveOperationScope.SERVER).

@@ -59,44 +59,42 @@ public class HdfsHAClientInvocationHandler implements InvocationHandler {
   public Object invoke(Object proxy, Method method, Object[] args) throws
  SentryHdfsServiceException {
     Object result = null;
-    while (true) {
-      try {
-        if (!method.isAccessible()) {
-          method.setAccessible(true);
-        }
-        // The client is initialized in the first call instead of constructor.
-        // This way we can propagate the connection exception to caller cleanly
-        if (client == null) {
-          renewSentryClient();
-        }
-        result = method.invoke(client, args);
-      } catch (IllegalAccessException e) {
-        throw new SentryHdfsServiceException(e.getMessage(), e.getCause());
-      } catch (InvocationTargetException e) {
-        if (!(e.getTargetException() instanceof SentryHdfsServiceException)) {
-          throw new SentryHdfsServiceException("Error in Sentry HDFS client",
-              e.getTargetException());
-        } else {
-          LOGGER.warn(THRIFT_EXCEPTION_MESSAGE + ": Error in connect current" +
-              " service, will retry other service.", e);
-          if (client != null) {
-            client.close();
-            client = null;
-          }
-          throw (SentryHdfsServiceException) e.getTargetException();
-        }
-      } catch (IOException e1) {
-        // close() doesn't throw exception we supress that in case of connection
-        // loss. Changing SentryPolicyServiceClient#close() to throw an
-        // exception would be a backward incompatible change for Sentry clients.
-        if ("close".equals(method.getName())) {
-          return null;
-        }
-        throw new SentryHdfsServiceException(
-            "Error connecting to sentry service " + e1.getMessage(), e1);
+    try {
+      if (!method.isAccessible()) {
+        method.setAccessible(true);
       }
-      return result;
+      // The client is initialized in the first call instead of constructor.
+      // This way we can propagate the connection exception to caller cleanly
+      if (client == null) {
+        renewSentryClient();
+      }
+      result = method.invoke(client, args);
+    } catch (IllegalAccessException e) {
+      throw new SentryHdfsServiceException(e.getMessage(), e.getCause());
+    } catch (InvocationTargetException e) {
+      if (!(e.getTargetException() instanceof SentryHdfsServiceException)) {
+        throw new SentryHdfsServiceException("Error in Sentry HDFS client",
+            e.getTargetException());
+      } else {
+        LOGGER.warn(THRIFT_EXCEPTION_MESSAGE + ": Error in connect current" +
+            " service, will retry other service.", e);
+        if (client != null) {
+          client.close();
+          client = null;
+        }
+        throw (SentryHdfsServiceException) e.getTargetException();
+      }
+    } catch (IOException e1) {
+      // close() doesn't throw exception we supress that in case of connection
+      // loss. Changing SentryPolicyServiceClient#close() to throw an
+      // exception would be a backward incompatible change for Sentry clients.
+      if ("close".equals(method.getName())) {
+        return null;
+      }
+      throw new SentryHdfsServiceException(
+          "Error connecting to sentry service " + e1.getMessage(), e1);
     }
+    return result;
   }
 
   // Retrieve the new connection endpoint from ZK and connect to new server

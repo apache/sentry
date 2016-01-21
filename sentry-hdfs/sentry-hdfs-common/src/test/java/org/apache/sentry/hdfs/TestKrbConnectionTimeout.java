@@ -17,16 +17,7 @@
  */
 package org.apache.sentry.hdfs;
 
-import static org.junit.Assert.*;
-
-import java.security.PrivilegedExceptionAction;
-
-import javax.security.auth.Subject;
-
 import org.apache.hadoop.minikdc.MiniKdc;
-import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
-import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;

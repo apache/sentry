@@ -109,27 +109,27 @@ public abstract class AuthorizationProvider {
      * 
      * @return the inode unique ID.
      */
-    public long getId();
+    long getId();
 
     /**
      * Return the inode path element name. This value may change.
      * @return the inode path element name.
      */
-    public String getLocalName();
+    String getLocalName();
 
     /**
      * Return the parent inode. This value may change.
      * 
      * @return the parent inode.
      */
-    public INodeAuthorizationInfo getParent();
+    INodeAuthorizationInfo getParent();
 
     /**
      * Return the inode full path. This value may change.
      *
      * @return the inode full path
      */
-    public String getFullPathName();
+    String getFullPathName();
 
     /**
      * Return if the inode is a directory or not.
@@ -137,7 +137,7 @@ public abstract class AuthorizationProvider {
      * @return <code>TRUE</code> if the inode is a directory, 
      * <code>FALSE</code> otherwise.
      */
-    public boolean isDirectory();
+    boolean isDirectory();
 
     /**
      * Return the inode user for the specified snapshot.
@@ -146,7 +146,7 @@ public abstract class AuthorizationProvider {
      * value.
      * @return the inode user for the specified snapshot.
      */
-    public String getUserName(int snapshotId);
+    String getUserName(int snapshotId);
 
     /**
      * Return the inode group for the specified snapshot.
@@ -155,7 +155,7 @@ public abstract class AuthorizationProvider {
      * value.
      * @return the inode group for the specified snapshot.
      */
-    public String getGroupName(int snapshotId);
+    String getGroupName(int snapshotId);
 
     /**
      * Return the inode permission for the specified snapshot.
@@ -164,7 +164,7 @@ public abstract class AuthorizationProvider {
      * value.
      * @return the inode permission for the specified snapshot.
      */
-    public FsPermission getFsPermission(int snapshotId);
+    FsPermission getFsPermission(int snapshotId);
 
     /**
      * Return the inode ACL feature for the specified snapshot.
@@ -173,8 +173,8 @@ public abstract class AuthorizationProvider {
      * value.
      * @return the inode ACL feature for the specified snapshot.
      */
-    public AclFeature getAclFeature(int snapshotId);
-    
+    AclFeature getAclFeature(int snapshotId);
+
   }
 
   /**

@@ -28,7 +28,7 @@ public interface Updateable<K extends Updateable.Update> {
    * implementing this interface and containing the generated thrift class as
    * a work around
    */
-  public interface Update {
+  interface Update {
 
     boolean hasFullImage();
 
@@ -47,27 +47,27 @@ public interface Updateable<K extends Updateable.Update> {
    * @param lock External Lock.
    * @return
    */
-  public void updatePartial(Iterable<K> update, ReadWriteLock lock);
+  void updatePartial(Iterable<K> update, ReadWriteLock lock);
 
   /**
    * This returns a new object with the full update applied
    * @param update
    * @return
    */
-  public Updateable<K> updateFull(K update);
+  Updateable<K> updateFull(K update);
 
   /**
    * Return sequence number of Last Update
    */
-  public long getLastUpdatedSeqNum();
+  long getLastUpdatedSeqNum();
 
   /**
    * Create and Full image update of the local data structure
    * @param currSeqNum
    * @return
    */
-  public K createFullImageUpdate(long currSeqNum);
+  K createFullImageUpdate(long currSeqNum);
 
-  public String getUpdateableTypeName();
+  String getUpdateableTypeName();
 
 }

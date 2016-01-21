@@ -24,5 +24,5 @@ public interface IndexerModelAuthorizable extends Authorizable {
     Indexer
   };
 
-  public AuthorizableType getAuthzType();
+  AuthorizableType getAuthzType();
 }

@@ -143,8 +143,8 @@ public class SentryPermissions implements AuthzPermissions {
       builder.setType(AclEntryType.GROUP);
       builder.setScope(AclEntryScope.ACCESS);
       FsAction action = groupPerm.getValue();
-      if ((action == FsAction.READ) || (action == FsAction.WRITE)
-          || (action == FsAction.READ_WRITE)) {
+      if (action == FsAction.READ || action == FsAction.WRITE
+          || action == FsAction.READ_WRITE) {
         action = action.or(FsAction.EXECUTE);
       }
       builder.setPermission(action);

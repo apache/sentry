@@ -16,10 +16,6 @@
  */
 package org.apache.sentry.provider.file;
 
-import static org.apache.sentry.provider.common.PolicyFileConstants.DATABASES;
-import static org.apache.sentry.provider.common.PolicyFileConstants.GROUPS;
-import static org.apache.sentry.provider.common.PolicyFileConstants.ROLES;
-import static org.apache.sentry.provider.common.PolicyFileConstants.USERS;
 import static org.apache.sentry.provider.common.ProviderConstants.ROLE_SPLITTER;
 
 import java.io.IOException;
@@ -40,6 +36,7 @@ import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.policy.common.PrivilegeUtils;
 import org.apache.sentry.policy.common.PrivilegeValidator;
 import org.apache.sentry.policy.common.PrivilegeValidatorContext;
+import org.apache.sentry.provider.common.PolicyFileConstants;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;
 import org.apache.shiro.config.Ini;
@@ -193,7 +190,7 @@ public class SimpleFileProviderBackend implements ProviderBackend {
     }
     List<String> localConfigErrors = Lists.newArrayList(configErrors);
     List<String> localConfigWarnings = Lists.newArrayList(configWarnings);
-    if ((strictValidation && !localConfigWarnings.isEmpty()) || !localConfigErrors.isEmpty()) {
+    if (strictValidation && !localConfigWarnings.isEmpty() || !localConfigErrors.isEmpty()) {
       localConfigErrors.add("Failed to process global policy file " + resourcePath);
       SentryConfigurationException e = new SentryConfigurationException("");
       e.setConfigErrors(localConfigErrors);
@@ -235,9 +232,9 @@ public class SimpleFileProviderBackend implements ProviderBackend {
       parseIni(null, ini, validators, resourcePath, groupRolePrivilegeTableTemp);
       mergeResult(groupRolePrivilegeTableTemp);
       groupRolePrivilegeTableTemp.clear();
-      Ini.Section filesSection = ini.getSection(DATABASES);
+      Ini.Section filesSection = ini.getSection(PolicyFileConstants.DATABASES);
       if(filesSection == null) {
-        LOGGER.info("Section " + DATABASES + " needs no further processing");
+        LOGGER.info("Section " + PolicyFileConstants.DATABASES + " needs no further processing");
       } else if (!allowPerDatabaseSection) {
         String msg = "Per-db policy file is not expected in this configuration.";
         throw new SentryConfigurationException(msg);
@@ -251,14 +248,14 @@ public class SimpleFileProviderBackend implements ProviderBackend {
           try {
             LOGGER.debug("Parsing " + perDbPolicy);
             Ini perDbIni = PolicyFiles.loadFromPath(perDbPolicy.getFileSystem(conf), perDbPolicy);
-            if(perDbIni.containsKey(USERS)) {
-              configErrors.add("Per-db policy file cannot contain " + USERS + " section in " +  perDbPolicy);
-              throw new SentryConfigurationException("Per-db policy files cannot contain " + USERS + " section");
+            if(perDbIni.containsKey(PolicyFileConstants.USERS)) {
+              configErrors.add("Per-db policy file cannot contain " + PolicyFileConstants.USERS + " section in " +  perDbPolicy);
+              throw new SentryConfigurationException("Per-db policy files cannot contain " + PolicyFileConstants.USERS + " section");
             }
-            if(perDbIni.containsKey(DATABASES)) {
-              configErrors.add("Per-db policy files cannot contain " + DATABASES
+            if(perDbIni.containsKey(PolicyFileConstants.DATABASES)) {
+              configErrors.add("Per-db policy files cannot contain " + PolicyFileConstants.DATABASES
                   + " section in " + perDbPolicy);
-              throw new SentryConfigurationException("Per-db policy files cannot contain " + DATABASES + " section");
+              throw new SentryConfigurationException("Per-db policy files cannot contain " + PolicyFileConstants.DATABASES + " section");
             }
             parseIni(database, perDbIni, validators, perDbPolicy, groupRolePrivilegeTableTemp);
           } catch (Exception e) {
@@ -301,17 +298,17 @@ public class SimpleFileProviderBackend implements ProviderBackend {
   private void parseIni(String database, Ini ini,
       List<? extends PrivilegeValidator> validators, Path policyPath,
       Table<String, String, Set<String>> groupRolePrivilegeTable) {
-    Ini.Section privilegesSection = ini.getSection(ROLES);
+    Ini.Section privilegesSection = ini.getSection(PolicyFileConstants.ROLES);
     boolean invalidConfiguration = false;
     if (privilegesSection == null) {
-      String errMsg = String.format("Section %s empty for %s", ROLES, policyPath);
+      String errMsg = String.format("Section %s empty for %s", PolicyFileConstants.ROLES, policyPath);
       LOGGER.warn(errMsg);
       configErrors.add(errMsg);
       invalidConfiguration = true;
     }
-    Ini.Section groupsSection = ini.getSection(GROUPS);
+    Ini.Section groupsSection = ini.getSection(PolicyFileConstants.GROUPS);
     if (groupsSection == null) {
-      String warnMsg = String.format("Section %s empty for %s", GROUPS, policyPath);
+      String warnMsg = String.format("Section %s empty for %s", PolicyFileConstants.GROUPS, policyPath);
       LOGGER.warn(warnMsg);
       configErrors.add(warnMsg);
       invalidConfiguration = true;

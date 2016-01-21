@@ -21,8 +21,8 @@ import org.apache.sentry.hdfs.service.thrift.TPathsDump;
 
 public interface AuthzPathsDumper<K extends AuthzPaths> {
 
-  public TPathsDump createPathsDump();
+  TPathsDump createPathsDump();
 
-  public K initializeFromDump(TPathsDump pathsDump);
+  K initializeFromDump(TPathsDump pathsDump);
 
 }

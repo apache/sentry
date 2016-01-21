@@ -17,19 +17,17 @@
  */
 package org.apache.sentry.hdfs;
 
-import java.io.IOException;
-
 public interface SentryHDFSServiceClient {
-  public static final String SENTRY_HDFS_SERVICE_NAME = "SentryHDFSService";
+  String SENTRY_HDFS_SERVICE_NAME = "SentryHDFSService";
 
-  public void notifyHMSUpdate(PathsUpdate update)
+  void notifyHMSUpdate(PathsUpdate update)
       throws SentryHdfsServiceException;
 
-  public long getLastSeenHMSPathSeqNum() throws SentryHdfsServiceException;
+  long getLastSeenHMSPathSeqNum() throws SentryHdfsServiceException;
 
-  public SentryAuthzUpdate getAllUpdatesFrom(long permSeqNum, long pathSeqNum)
+  SentryAuthzUpdate getAllUpdatesFrom(long permSeqNum, long pathSeqNum)
       throws SentryHdfsServiceException;
 
-  public void close();
+  void close();
 }
 

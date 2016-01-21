@@ -17,11 +17,9 @@ package org.apache.solr.handler.admin;
  * limitations under the License.
  */
 
-import java.util.EnumSet;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.sentry.core.model.search.SearchModelAction;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.sentry.SecureRequestHandlerUtil;

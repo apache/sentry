@@ -34,7 +34,7 @@ import org.apache.sentry.policy.common.PolicyEngine;
 @ThreadSafe
 public interface AuthorizationProvider {
 
-  public static String SENTRY_PROVIDER = "sentry.provider";
+  String SENTRY_PROVIDER = "sentry.provider";
 
   /***
    * Returns validate subject privileges on given Authorizable object
@@ -48,7 +48,7 @@ public interface AuthorizationProvider {
    * @return
    *        True if the subject is authorized to perform requested action on the given object
    */
-  public boolean hasAccess(Subject subject, List<? extends Authorizable> authorizableHierarchy,
+  boolean hasAccess(Subject subject, List<? extends Authorizable> authorizableHierarchy,
       Set<? extends Action> actions, ActiveRoleSet roleSet);
 
   /***
@@ -56,14 +56,14 @@ public interface AuthorizationProvider {
    *
    * @return GroupMappingService used by the AuthorizationProvider
    */
-  public GroupMappingService getGroupMapping();
+  GroupMappingService getGroupMapping();
 
   /***
    * Validate the policy file format for syntax and semantic errors
    * @param strictValidation
    * @throws SentryConfigurationException
    */
-  public void validateResource(boolean strictValidation) throws SentryConfigurationException;
+  void validateResource(boolean strictValidation) throws SentryConfigurationException;
 
   /***
    * Returns the list privileges for the given subject
@@ -71,7 +71,7 @@ public interface AuthorizationProvider {
    * @return
    * @throws SentryConfigurationException
    */
-  public Set<String> listPrivilegesForSubject(Subject subject) throws SentryConfigurationException;
+  Set<String> listPrivilegesForSubject(Subject subject) throws SentryConfigurationException;
 
   /**
    * Returns the list privileges for the given group
@@ -79,21 +79,21 @@ public interface AuthorizationProvider {
    * @return
    * @throws SentryConfigurationException
    */
-  public Set<String> listPrivilegesForGroup(String groupName) throws SentryConfigurationException;
+  Set<String> listPrivilegesForGroup(String groupName) throws SentryConfigurationException;
 
   /***
    * Returns the list of missing privileges of the last access request
    * @return
    */
-  public List<String> getLastFailedPrivileges();
+  List<String> getLastFailedPrivileges();
 
   /**
    * Frees any resources held by the the provider
    */
-  public void close();
+  void close();
 
   /**
    * Get the policy engine
    */
-  public PolicyEngine getPolicyEngine();
+  PolicyEngine getPolicyEngine();
 }

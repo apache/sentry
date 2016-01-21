@@ -59,7 +59,7 @@ public class SentryMain {
     CommandLine commandLine = parser.parse(options, args, true);
 
     String log4jconf = commandLine.getOptionValue(LOG4J_CONF);
-    if ((log4jconf != null)&&(log4jconf.length() > 0)) {
+    if (log4jconf != null && log4jconf.length() > 0) {
       Properties log4jProperties = new Properties();
 
       // Firstly load log properties from properties file
@@ -121,8 +121,9 @@ public class SentryMain {
 
   private static void printHelp(Options options, String msg) {
     String sentry = "sentry";
-    if(msg != null)
+    if (msg != null) {
       sentry = msg + sentry;
+    }
     (new HelpFormatter()).printHelp(sentry, options);
     System.exit(1);
   }

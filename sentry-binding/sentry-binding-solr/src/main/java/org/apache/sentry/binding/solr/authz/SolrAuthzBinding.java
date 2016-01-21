@@ -228,7 +228,7 @@ public class SolrAuthzBinding {
     }
     synchronized (SolrAuthzBinding.class) {
       if (kerberosInit == null) {
-        kerberosInit = new Boolean(true);
+        kerberosInit = Boolean.TRUE;
         final String authVal = authzConf.get(HADOOP_SECURITY_AUTHENTICATION);
         final String kerberos = "kerberos";
         if (authVal != null && !authVal.equals(kerberos)) {
@@ -258,7 +258,7 @@ public class SolrAuthzBinding {
    * If the binding uses the searchProviderBackend, it can sync privilege with Sentry Service
    */
   public boolean isSyncEnabled() {
-    return (providerBackend instanceof SentryGenericProviderBackend);
+    return providerBackend instanceof SentryGenericProviderBackend;
   }
 
   public SentryGenericServiceClient getClient() throws Exception {

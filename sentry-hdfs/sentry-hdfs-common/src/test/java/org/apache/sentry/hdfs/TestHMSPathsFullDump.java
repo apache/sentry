@@ -33,10 +33,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.io.IOException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-
 public class TestHMSPathsFullDump {
   private static boolean useCompact = true;
 

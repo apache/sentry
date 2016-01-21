@@ -42,7 +42,7 @@ public class SentryAuthorizationValidator extends AuthorizationValidator {
 
   @Override
   public void checkPrivileges(MPrincipal principal, List<MPrivilege> privileges) throws SqoopException {
-    if ((privileges == null) || privileges.isEmpty()) {
+    if (privileges == null || privileges.isEmpty()) {
       return;
     }
     PrincipalDesc principalDesc = new PrincipalDesc(principal.getName(), principal.getType());

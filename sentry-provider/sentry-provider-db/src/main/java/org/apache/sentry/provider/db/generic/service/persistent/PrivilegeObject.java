@@ -20,7 +20,6 @@ package org.apache.sentry.provider.db.generic.service.persistent;
 import static org.apache.sentry.provider.common.ProviderConstants.KV_JOINER;
 import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_JOINER;
 
-import java.util.ArrayList;
 import java.util.List;
 import org.apache.sentry.core.common.Authorizable;
 import com.google.common.base.Preconditions;
@@ -91,33 +90,44 @@ public class PrivilegeObject {
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj)
+    if (this == obj) {
       return true;
-    if (obj == null)
+    }
+    if (obj == null) {
       return false;
-    if (getClass() != obj.getClass())
+    }
+    if (getClass() != obj.getClass()) {
       return false;
+    }
     PrivilegeObject other = (PrivilegeObject) obj;
     if (action == null) {
-      if (other.action != null)
+      if (other.action != null) {
         return false;
-    } else if (!action.equals(other.action))
+      }
+    } else if (!action.equals(other.action)) {
       return false;
+    }
     if (service == null) {
-      if (other.service != null)
+      if (other.service != null) {
         return false;
-    } else if (!service.equals(other.service))
+      }
+    } else if (!service.equals(other.service)) {
       return false;
+    }
     if (component == null) {
-      if (other.component != null)
+      if (other.component != null) {
         return false;
-    } else if (!component.equals(other.component))
+      }
+    } else if (!component.equals(other.component)) {
       return false;
+    }
     if (grantOption == null) {
-      if (other.grantOption != null)
+      if (other.grantOption != null) {
         return false;
-    } else if (!grantOption.equals(other.grantOption))
+      }
+    } else if (!grantOption.equals(other.grantOption)) {
       return false;
+    }
 
     if (authorizables.size() != other.authorizables.size()) {
       return false;
@@ -186,7 +196,7 @@ public class PrivilegeObject {
      */
     private List<? extends Authorizable> toLowerAuthorizableName(List<? extends Authorizable> authorizables) {
       List<Authorizable> newAuthorizable = Lists.newArrayList();
-      if ((authorizables == null) || (authorizables.size() == 0)) {
+      if (authorizables == null || authorizables.size() == 0) {
         return newAuthorizable;
       }
       for (final Authorizable authorizable : authorizables) {

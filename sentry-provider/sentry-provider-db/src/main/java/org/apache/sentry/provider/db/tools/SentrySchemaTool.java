@@ -204,7 +204,7 @@ public class SentrySchemaTool {
       System.out.println("Sentry store Connection Driver :\t " + driver);
       System.out.println("Sentry store connection User:\t " + userName);
     }
-    if ((userName == null) || userName.isEmpty()) {
+    if (userName == null || userName.isEmpty()) {
       throw new SentryUserException("UserName empty ");
     }
     try {
@@ -519,11 +519,11 @@ public class SentrySchemaTool {
 
       if (line.hasOption("dbType")) {
         dbType = line.getOptionValue("dbType");
-        if ((!dbType.equalsIgnoreCase(SentrySchemaHelper.DB_DERBY)
+        if (!dbType.equalsIgnoreCase(SentrySchemaHelper.DB_DERBY)
             && !dbType.equalsIgnoreCase(SentrySchemaHelper.DB_MYSQL)
             && !dbType.equalsIgnoreCase(SentrySchemaHelper.DB_POSTGRACE)
             && !dbType.equalsIgnoreCase(SentrySchemaHelper.DB_ORACLE)
-            && !dbType.equalsIgnoreCase(SentrySchemaHelper.DB_DB2))) {
+            && !dbType.equalsIgnoreCase(SentrySchemaHelper.DB_DB2)) {
           System.err.println("Unsupported dbType " + dbType);
           printAndExit(cmdLineOptions);
         }

@@ -33,10 +33,10 @@ public interface SentryGenericServiceClient {
    * @param component: The request is issued to which component
    * @throws SentryUserException
    */
-  public void createRole(String requestorUserName, String roleName,
+  void createRole(String requestorUserName, String roleName,
       String component) throws SentryUserException;
 
-  public void createRoleIfNotExist(String requestorUserName,
+  void createRoleIfNotExist(String requestorUserName,
       String roleName, String component) throws SentryUserException;
 
   /**
@@ -46,10 +46,10 @@ public interface SentryGenericServiceClient {
    * @param component: The request is issued to which component
    * @throws SentryUserException
    */
-  public void dropRole(String requestorUserName, String roleName,
+  void dropRole(String requestorUserName, String roleName,
       String component) throws SentryUserException;
 
-  public void dropRoleIfExists(String requestorUserName, String roleName,
+  void dropRoleIfExists(String requestorUserName, String roleName,
       String component) throws SentryUserException;
 
   /**
@@ -60,7 +60,7 @@ public interface SentryGenericServiceClient {
    * @param groups: The name of groups
    * @throws SentryUserException
    */
-  public void addRoleToGroups(String requestorUserName, String roleName,
+  void addRoleToGroups(String requestorUserName, String roleName,
       String component, Set<String> groups) throws SentryUserException;
 
   /**
@@ -71,7 +71,7 @@ public interface SentryGenericServiceClient {
    * @param groups: The name of groups
    * @throws SentryUserException
    */
-  public void deleteRoleToGroups(String requestorUserName, String roleName,
+  void deleteRoleToGroups(String requestorUserName, String roleName,
       String component, Set<String> groups) throws SentryUserException;
 
   /**
@@ -82,7 +82,7 @@ public interface SentryGenericServiceClient {
    * @param privilege
    * @throws SentryUserException
    */
-  public void grantPrivilege(String requestorUserName, String roleName,
+  void grantPrivilege(String requestorUserName, String roleName,
       String component, TSentryPrivilege privilege) throws SentryUserException;
 
   /**
@@ -93,7 +93,7 @@ public interface SentryGenericServiceClient {
    * @param privilege
    * @throws SentryUserException
    */
-  public void revokePrivilege(String requestorUserName, String roleName,
+  void revokePrivilege(String requestorUserName, String roleName,
       String component, TSentryPrivilege privilege) throws SentryUserException;
 
   /**
@@ -104,7 +104,7 @@ public interface SentryGenericServiceClient {
    * @param privilege
    * @throws SentryUserException
    */
-  public void dropPrivilege(String requestorUserName,String component,
+  void dropPrivilege(String requestorUserName,String component,
       TSentryPrivilege privilege) throws SentryUserException;
 
   /**
@@ -116,7 +116,7 @@ public interface SentryGenericServiceClient {
    * @param newAuthorizables
    * @throws SentryUserException
    */
-  public void renamePrivilege(String requestorUserName, String component,
+  void renamePrivilege(String requestorUserName, String component,
       String serviceName, List<? extends Authorizable> oldAuthorizables,
       List<? extends Authorizable> newAuthorizables) throws SentryUserException;
 
@@ -128,16 +128,16 @@ public interface SentryGenericServiceClient {
    * @return Set of thrift sentry role objects
    * @throws SentryUserException
    */
-  public Set<TSentryRole> listRolesByGroupName(
+  Set<TSentryRole> listRolesByGroupName(
       String requestorUserName,
       String groupName,
       String component)
   throws SentryUserException;
 
-  public Set<TSentryRole> listUserRoles(String requestorUserName, String component)
+  Set<TSentryRole> listUserRoles(String requestorUserName, String component)
       throws SentryUserException;
 
-  public Set<TSentryRole> listAllRoles(String requestorUserName, String component)
+  Set<TSentryRole> listAllRoles(String requestorUserName, String component)
       throws SentryUserException;
 
   /**
@@ -150,12 +150,12 @@ public interface SentryGenericServiceClient {
    * @return
    * @throws SentryUserException
    */
-  public Set<TSentryPrivilege> listPrivilegesByRoleName(
+  Set<TSentryPrivilege> listPrivilegesByRoleName(
       String requestorUserName, String roleName, String component,
       String serviceName, List<? extends Authorizable> authorizables)
       throws SentryUserException;
 
-  public Set<TSentryPrivilege> listPrivilegesByRoleName(
+  Set<TSentryPrivilege> listPrivilegesByRoleName(
       String requestorUserName, String roleName, String component,
       String serviceName) throws SentryUserException;
 
@@ -169,9 +169,9 @@ public interface SentryGenericServiceClient {
    * @returns the set of permissions
    * @throws SentryUserException
    */
-  public Set<String> listPrivilegesForProvider(String component,
+  Set<String> listPrivilegesForProvider(String component,
       String serviceName, ActiveRoleSet roleSet, Set<String> groups,
       List<? extends Authorizable> authorizables) throws SentryUserException;
 
-  public void close();
+  void close();
 }

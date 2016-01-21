@@ -35,7 +35,6 @@ import org.apache.sentry.core.model.search.SearchActionFactory;
 import org.apache.sentry.core.model.sqoop.SqoopActionFactory;
 import org.apache.sentry.provider.db.generic.service.persistent.PrivilegeObject.Builder;
 import org.apache.sentry.provider.db.service.model.MSentryGMPrivilege;
-import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
 
 import com.google.common.base.Joiner;
@@ -60,7 +59,7 @@ public class PrivilegeOperatePersistence {
     //get persistent privileges by roles
     Query query = pm.newQuery(MSentryGMPrivilege.class);
     StringBuilder filters = new StringBuilder();
-    if ((roles != null) && (roles.size() > 0)) {
+    if (roles != null && roles.size() > 0) {
       query.declareVariables("org.apache.sentry.provider.db.service.model.MSentryRole role");
       List<String> rolesFiler = new LinkedList<String>();
       for (MSentryRole role : roles) {
@@ -102,7 +101,7 @@ public class PrivilegeOperatePersistence {
       for (BitFieldAction ac : actions) {
         grantPrivilege.setAction(ac.getValue());
         MSentryGMPrivilege existPriv = getPrivilege(grantPrivilege, pm);
-        if ((existPriv != null) && (role.getGmPrivileges().contains(existPriv))) {
+        if (existPriv != null && role.getGmPrivileges().contains(existPriv)) {
           /**
            * force to load all roles related this privilege
            * avoid the lazy-loading risk,such as:
@@ -122,7 +121,7 @@ public class PrivilegeOperatePersistence {
        */
       grantPrivilege.setAction(allAction.getValue());
       MSentryGMPrivilege allPrivilege = getPrivilege(grantPrivilege, pm);
-      if ((allPrivilege != null) && (role.getGmPrivileges().contains(allPrivilege))) {
+      if (allPrivilege != null && role.getGmPrivileges().contains(allPrivilege)) {
         return;
       }
     }
@@ -184,7 +183,7 @@ public class PrivilegeOperatePersistence {
     //add populateIncludePrivilegesQuery
     filters.append(MSentryGMPrivilege.populateIncludePrivilegesQuery(parent));
     // add filter for role names
-    if ((roles != null) && (roles.size() > 0)) {
+    if (roles != null && roles.size() > 0) {
       query.declareVariables("org.apache.sentry.provider.db.service.model.MSentryRole role");
       List<String> rolesFiler = new LinkedList<String>();
       for (MSentryRole role : roles) {
@@ -257,12 +256,11 @@ public class PrivilegeOperatePersistence {
          */
         persistedPriv.removeRole(role);
         pm.makePersistent(persistedPriv);
-      } else {
-        /**
-         * if the revoke action is not equal to the persisted action,
-         * do nothing
-         */
       }
+      /**
+       * if the revoke action is not equal to the persisted action,
+       * do nothing
+       */
     }
   }
 
@@ -311,7 +309,7 @@ public class PrivilegeOperatePersistence {
   @SuppressWarnings("unchecked")
   public Set<PrivilegeObject> getPrivilegesByRole(Set<MSentryRole> roles, PersistenceManager pm) {
     Set<PrivilegeObject> privileges = Sets.newHashSet();
-    if ((roles == null) || (roles.size() == 0)) {
+    if (roles == null || roles.size() == 0) {
       return privileges;
     }
     Query query = pm.newQuery(MSentryGMPrivilege.class);
@@ -326,7 +324,7 @@ public class PrivilegeOperatePersistence {
 
     query.setFilter(filters.toString());
     List<MSentryGMPrivilege> mPrivileges = (List<MSentryGMPrivilege>) query.execute();
-    if ((mPrivileges == null) || (mPrivileges.size() ==0)) {
+    if (mPrivileges == null || mPrivileges.isEmpty()) {
       return privileges;
     }
     for (MSentryGMPrivilege mPrivilege : mPrivileges) {
@@ -345,7 +343,9 @@ public class PrivilegeOperatePersistence {
       String service, Set<MSentryRole> roles,
       List<? extends Authorizable> authorizables, PersistenceManager pm) {
     Set<PrivilegeObject> privileges = Sets.newHashSet();
-    if ((roles == null) || (roles.size() == 0)) return privileges;
+    if (roles == null || roles.isEmpty()) {
+      return privileges;
+    }
 
     MSentryGMPrivilege parentPrivilege = new MSentryGMPrivilege(component, service, authorizables, null, null);
     Set<MSentryGMPrivilege> privilegeGraph = Sets.newHashSet();

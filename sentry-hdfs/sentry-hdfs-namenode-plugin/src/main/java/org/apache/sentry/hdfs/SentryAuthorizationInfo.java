@@ -35,7 +35,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 
 public class SentryAuthorizationInfo implements Runnable {
   private static Logger LOG =
@@ -134,7 +133,7 @@ public class SentryAuthorizationInfo implements Runnable {
           updates.getPermUpdates(), authzPermissions);
       // If there were any FULL updates the returned instance would be
       // different
-      if ((newAuthzPaths != authzPaths)||(newAuthzPerms != authzPermissions)) {
+      if (newAuthzPaths != authzPaths || newAuthzPerms != authzPermissions) {
         lock.writeLock().lock();
         try {
           LOG.debug("FULL Updated paths seq Num [old="
@@ -206,7 +205,7 @@ public class SentryAuthorizationInfo implements Runnable {
   }
 
   public void start() {
-    if ((authzPaths != null)||(authzPermissions != null)) {
+    if (authzPaths != null || authzPermissions != null) {
       boolean success = false;
       try {
         success = update();

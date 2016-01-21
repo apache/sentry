@@ -50,6 +50,7 @@ limitations under the License.
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <buildtools.dir>${basedir}/build-tools</buildtools.dir>
     <maven.compile.source>1.7</maven.compile.source>
     <maven.compile.target>1.7</maven.compile.target>
     <!-- versions are in alphabetical order -->
@@ -623,6 +624,33 @@ limitations under the License.
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-pmd-plugin</artifactId>
+        <version>3.5</version>
+        <configuration>
+          <rulesets>
+            <ruleset>${buildtools.dir}/sentry-pmd-ruleset.xml</ruleset>
+          </rulesets>
+          <sourceEncoding>UTF-8</sourceEncoding>
+          <failOnViolation>true</failOnViolation>
+          <linkXRef>false</linkXRef>
+          <verbose>true</verbose>
+          <targetJdk>${targetJdk}</targetJdk>
+          <excludeRoots>
+            <excludeRoot>${basedir}/src/main/generated</excludeRoot>
+          </excludeRoots>
+        </configuration>
+        <executions>
+          <execution>
+            <id>validate</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-eclipse-plugin</artifactId>
         <version>${maven.eclipse.plugin.version}</version>
         <configuration>
@@ -817,6 +845,38 @@ limitations under the License.
       </plugins>
     </pluginManagement>
   </build>
+
+  <profiles>
+    <profile>
+      <id>nochecks</id>
+      <properties>
+        <pmd.skip>true</pmd.skip>
+      </properties>
+    </profile>
+    <profile>
+      <id>activate-buildtools-in-module</id>
+      <activation>
+        <file>
+          <exists>${basedir}/../build-tools/sentry-pmd-ruleset.xml</exists>
+        </file>
+      </activation>
+      <properties>
+        <buildtools.dir>${basedir}/../build-tools</buildtools.dir>
+      </properties>
+    </profile>
+    <profile>
+      <id>activate-buildtools-in-submodule</id>
+      <activation>
+        <file>
+          <exists>${basedir}/../../build-tools/sentry-pmd-ruleset.xml</exists>
+        </file>
+      </activation>
+      <properties>
+        <buildtools.dir>${basedir}/../../build-tools</buildtools.dir>
+      </properties>
+    </profile>
+
+  </profiles>
 
   <repositories>
     <repository>

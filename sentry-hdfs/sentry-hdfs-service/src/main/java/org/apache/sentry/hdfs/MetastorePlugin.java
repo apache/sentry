@@ -103,7 +103,7 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
   private volatile Throwable initError = null;
   private final Queue<PathsUpdate> updateQueue = new LinkedList<PathsUpdate>();
 
-  private final ExecutorService threadPool;
+  private final ExecutorService threadPool; //NOPMD
   private final Configuration sentryConf;
 
   static class ProxyHMSHandler extends HMSHandler {
@@ -166,7 +166,7 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
               "cache initialization is completed !!");
       initUpdater.start();
     } else {
-      initUpdater.run();
+      initUpdater.run(); //NOPMD
     }
     try {
       sentryClient = SentryHDFSServiceClientFactory.create(sentryConf);

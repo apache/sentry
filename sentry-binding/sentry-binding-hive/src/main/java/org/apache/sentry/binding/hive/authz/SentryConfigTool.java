@@ -45,7 +45,6 @@ import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.sentry.Command;
 import org.apache.sentry.binding.hive.HiveAuthzBindingHook;
-import org.apache.sentry.binding.hive.HiveAuthzBindingSessionHook;
 import org.apache.sentry.binding.hive.SentryPolicyFileFormatFactory;
 import org.apache.sentry.binding.hive.SentryPolicyFileFormatter;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
@@ -221,7 +220,7 @@ public class SentryConfigTool {
     getHiveConf().setVar(ConfVars.SEMANTIC_ANALYZER_HOOK,
         HiveAuthzBindingHook.class.getName());
     try {
-      System.out.println("Hive config: " + getHiveConf().getHiveSiteLocation());
+      System.out.println("Hive config: " + HiveConf.getHiveSiteLocation());
     } catch (NullPointerException e) {
       // Hack, hiveConf doesn't provide a reliable way check if it found a valid
       // hive-site
@@ -559,10 +558,10 @@ public class SentryConfigTool {
         }
       }
 
-      if (isListPrivs() && (getUser() == null)) {
+      if (isListPrivs() && getUser() == null) {
         throw new ParseException("Can't use -l without -u ");
       }
-      if ((getQuery() != null) && (getUser() == null)) {
+      if (getQuery() != null && getUser() == null) {
         throw new ParseException("Must use -u with -e ");
       }
     } catch (ParseException e1) {

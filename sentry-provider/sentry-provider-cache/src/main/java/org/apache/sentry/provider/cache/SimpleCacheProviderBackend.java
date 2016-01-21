@@ -31,11 +31,9 @@ import com.google.common.collect.ImmutableSet;
 public class SimpleCacheProviderBackend implements ProviderBackend {
 
   private PrivilegeCache cacheHandle;
-  private Configuration conf;
   private boolean isInitialized = false;
 
-  public SimpleCacheProviderBackend(Configuration conf, String resourcePath) {
-    this.conf = conf;
+  public SimpleCacheProviderBackend(Configuration conf, String resourcePath) { //NOPMD
   }
 
   /**
@@ -44,7 +42,9 @@ public class SimpleCacheProviderBackend implements ProviderBackend {
    */
   @Override
   public void initialize(ProviderBackendContext context) {
-    if (isInitialized) return;
+    if (isInitialized) {
+      return;
+    }
     isInitialized = true;
     cacheHandle = (PrivilegeCache) context.getBindingHandle();
     assert cacheHandle != null;

@@ -85,7 +85,6 @@ public class HiveAuthzBindingSessionHook
 
     @Override
     public void applyAuthorizationConfigPolicy(HiveConf conf) {
-      return;
     }
   }
 

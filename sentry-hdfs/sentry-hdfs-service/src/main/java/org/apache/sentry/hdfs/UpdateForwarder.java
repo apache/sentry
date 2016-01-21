@@ -19,6 +19,7 @@ package org.apache.sentry.hdfs;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -34,14 +35,12 @@ import org.apache.sentry.provider.db.service.persistent.HAContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Lists;
-
 public class UpdateForwarder<K extends Updateable.Update> implements
     Updateable<K>, Closeable {
 
-  public static interface ExternalImageRetriever<K> {
+  interface ExternalImageRetriever<K> {
 
-    public K retrieveFullImage(long currSeqNum);
+    K retrieveFullImage(long currSeqNum);
 
   }
 
@@ -77,9 +76,9 @@ public class UpdateForwarder<K extends Updateable.Update> implements
       ExternalImageRetriever<K> imageRetreiver, int maxUpdateLogSize) {
     this(conf, updateable, imageRetreiver, maxUpdateLogSize, INIT_UPDATE_RETRY_DELAY);
   }
-  public UpdateForwarder(Configuration conf, Updateable<K> updateable,
+  public UpdateForwarder(Configuration conf, Updateable<K> updateable, //NOPMD
       ExternalImageRetriever<K> imageRetreiver, int maxUpdateLogSize,
-      int initUpdateRetryDelay) {
+      int initUpdateRetryDelay) { 
     this.maxUpdateLogSize = maxUpdateLogSize;
     this.imageRetreiver = imageRetreiver;
     if (imageRetreiver != null) {
@@ -177,7 +176,7 @@ public class UpdateForwarder<K extends Updateable.Update> implements
         } else {
           if (editNotMissed) {
             // apply partial preUpdate
-            updateable.updatePartial(Lists.newArrayList(update), lock);
+            updateable.updatePartial(Collections.singletonList(update), lock);
           } else {
             // Retrieve full update from External Source and
             if (imageRetreiver != null) {
@@ -197,7 +196,7 @@ public class UpdateForwarder<K extends Updateable.Update> implements
     synchronized (getUpdateLog()) {
       boolean logCompacted = false;
       if (getMaxUpdateLogSize() > 0) {
-        if (update.hasFullImage() || (getUpdateLog().size() == getMaxUpdateLogSize())) {
+        if (update.hasFullImage() || getUpdateLog().size() == getMaxUpdateLogSize()) {
           // Essentially a log compaction
           getUpdateLog().clear();
           getUpdateLog().add(update.hasFullImage() ? update
@@ -227,7 +226,7 @@ public class UpdateForwarder<K extends Updateable.Update> implements
     List<K> retVal = new LinkedList<K>();
     synchronized (getUpdateLog()) {
       long currSeqNum = lastCommittedSeqNum.get();
-      if (LOGGER.isDebugEnabled() && (updateable != null)) {
+      if (LOGGER.isDebugEnabled() && updateable != null) {
         LOGGER.debug("#### GetAllUpdatesFrom ["
             + "type=" + updateable.getClass() + ", "
             + "reqSeqNum=" + seqNum + ", "
