@@ -46,8 +46,12 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.io.Resources;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
+  private static final Logger LOGGER = LoggerFactory
+      .getLogger(TestDatabaseProvider.class);
 
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception{
@@ -55,8 +59,6 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
     AbstractTestWithStaticConfiguration.setupAdmin();
   }
-
-
 
   @Test
   public void testBasic() throws Exception {
@@ -1184,6 +1186,20 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     assertThat(count, is(expected));
   }
 
+  private void assertTestRoles(ResultSet resultSet, List<String> expected, boolean isAdmin) throws SQLException{
+    List<String> returned = new ArrayList<>();
+    while(resultSet.next()) {
+      String role = resultSet.getString(1);
+      if (role.startsWith("role") || (isAdmin && role.startsWith("admin_role"))) {
+        LOGGER.info("Found role " + role);
+        returned.add(role);
+      } else {
+        LOGGER.error("Found an incorrect role so ignore it from validation: " + role);
+      }
+    }
+    validateReturnedResult(expected, returned);
+  }
+
   /**
    * Create and Drop role by admin
    * @throws Exception
@@ -1194,10 +1210,16 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     Statement statement = context.createStatement(connection);
     statement.execute("CREATE ROLE role1");
     ResultSet resultSet = statement.executeQuery("SHOW roles");
-    assertResultSize(resultSet, 2);
+    List<String> expected = new ArrayList<String>();
+    expected.add("role1");
+    expected.add("admin_role");
+    assertTestRoles(resultSet, expected, true);
+
     statement.execute("DROP ROLE role1");
     resultSet = statement.executeQuery("SHOW roles");
-    assertResultSize(resultSet, 1);
+    expected.clear();
+    expected.add("admin_role");
+    assertTestRoles(resultSet, expected, true);
   }
 
   /**
@@ -1342,7 +1364,10 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     ResultSet resultSet = statement.executeQuery("SHOW ROLES");
-    assertResultSize(resultSet, 1);
+    List<String> expected = new ArrayList<>();
+    expected.add("admin_role");
+    assertTestRoles(resultSet, expected, true);
+
     statement.execute("CREATE ROLE role1");
     statement.execute("CREATE ROLE role2");
     resultSet = statement.executeQuery("SHOW ROLES");
@@ -1350,13 +1375,9 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     assertThat(resultSetMetaData.getColumnCount(), is(1));
     assertThat(resultSetMetaData.getColumnName(1), equalToIgnoringCase("role"));
 
-    Set<String> roles = new HashSet<String>();
-    while ( resultSet.next()) {
-      roles.add(resultSet.getString(1));
-    }
-    assertThat(roles.size(), is(3));
-    assertTrue(roles.contains("role1"));
-    assertTrue(roles.contains("role2"));
+    expected.add("role1");
+    expected.add("role2");
+    assertTestRoles(resultSet, expected, true);
     statement.close();
     connection.close();
   }
@@ -1865,7 +1886,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
   public void testShowAllCurrentRoles() throws Exception {
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    String testRole1 = "testRole1", testRole2 = "testRole2";
+    String testRole1 = "role1", testRole2 = "role2";
     statement.execute("CREATE ROLE " + testRole1);
     statement.execute("CREATE ROLE " + testRole2);
     statement.execute("GRANT ROLE " + testRole1 + " TO GROUP " + ADMINGROUP);
@@ -1874,11 +1895,17 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     statement.execute("GRANT ROLE " + testRole2 + " TO GROUP " + USERGROUP1);
 
     ResultSet resultSet = statement.executeQuery("SHOW CURRENT ROLES");
-    assertResultSize(resultSet, 3);
+    List<String> expected = new ArrayList<>();
+    expected.add("admin_role");
+    expected.add(testRole1);
+    expected.add(testRole2);
+    assertTestRoles(resultSet, expected, true);
 
     statement.execute("SET ROLE " + testRole1);
     resultSet = statement.executeQuery("SHOW CURRENT ROLES");
-    assertResultSize(resultSet, 1);
+    expected.clear();
+    expected.add(testRole1);
+    assertTestRoles(resultSet, expected, true);
 
     statement.close();
     connection.close();
@@ -1894,11 +1921,16 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     statement = context.createStatement(connection);
 
     resultSet = statement.executeQuery("SHOW CURRENT ROLES");
-    assertResultSize(resultSet, 2);
+    expected.clear();
+    expected.add(testRole1);
+    expected.add(testRole2);
+    assertTestRoles(resultSet, expected, false);
 
     statement.execute("SET ROLE " + testRole2);
     resultSet = statement.executeQuery("SHOW CURRENT ROLES");
-    assertResultSize(resultSet, 1);
+    expected.clear();
+    expected.add(testRole2);
+    assertTestRoles(resultSet, expected, false);
 
     statement.close();
     connection.close();
@@ -1908,7 +1940,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
   public void testSetRole() throws Exception {
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    String testRole0 = "testRole1", testRole1 = "testRole2";
+    String testRole0 = "role1", testRole1 = "role2";
     statement.execute("CREATE ROLE " + testRole0);
     statement.execute("CREATE ROLE " + testRole1);
 
@@ -1967,16 +1999,21 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
   }
 
   @Test
-  public void caseSensitiveGroupNames() throws Exception {
+  public void testCaseSensitiveGroupNames() throws Exception {
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    String testRole1 = "testRole1";
-    statement.execute("CREATE ROLE " + testRole1);
-    statement.execute("GRANT ROLE " + testRole1 + " TO GROUP " + ADMINGROUP);
-
     ResultSet resultSet;
     resultSet = statement.executeQuery("SHOW ROLE GRANT GROUP " + ADMINGROUP);
-    assertResultSize(resultSet, 2);
+    List<String> expected = new ArrayList<>();
+    assertTestRoles(resultSet, expected, false);
+
+    String testRole1 = "role1";
+    statement.execute("CREATE ROLE " + testRole1);
+    statement.execute("GRANT ROLE " + testRole1 + " TO GROUP " + ADMINGROUP);
+    resultSet = statement.executeQuery("SHOW ROLE GRANT GROUP " + ADMINGROUP);
+    expected.clear();
+    expected.add(testRole1);
+    assertTestRoles(resultSet, expected, false);
 
     context.assertSentryException(statement, "SHOW ROLE GRANT GROUP Admin",
         SentryNoSuchObjectException.class.getSimpleName());
@@ -1997,7 +2034,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     statement.execute("CREATE DATABASE " + DB1);
     statement.execute("USE " + DB1);
     statement.execute("DROP TABLE IF EXISTS t1");
-    statement.execute("CREATE TABLE t1 (c1 string)");
+    statement.execute("CREATE TABLE t1 (c1 string,c2 string,c3 string,c4 string,c5 string)");
     statement.execute("CREATE ROLE user_role");
     statement.execute("GRANT ALL ON TABLE t1 TO ROLE user_role");
 
