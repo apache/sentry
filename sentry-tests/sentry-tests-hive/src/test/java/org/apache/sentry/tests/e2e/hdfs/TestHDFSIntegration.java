@@ -251,6 +251,12 @@ public class TestHDFSIntegration {
         hiveConf.set("datanucleus.autoStartMechanism", "SchemaTable");
         hmsPort = findPort();
         LOGGER.info("\n\n HMS port : " + hmsPort + "\n\n");
+
+        // Sets hive.metastore.authorization.storage.checks to true, so that
+        // disallow the operations such as drop-partition if the user in question
+        // doesn't have permissions to delete the corresponding directory
+        // on the storage.
+        hiveConf.set("hive.metastore.authorization.storage.checks", "true");
         hiveConf.set("hive.metastore.uris", "thrift://localhost:" + hmsPort);
         hiveConf.set("hive.metastore.pre.event.listeners", "org.apache.sentry.binding.metastore.MetastoreAuthzBinding");
         hiveConf.set("hive.metastore.event.listeners", "org.apache.sentry.binding.metastore.SentryMetastorePostEventListener");
@@ -941,6 +947,232 @@ public class TestHDFSIntegration {
     stmt.close();
     conn.close();
 
+  }
+
+  /**
+   * Make sure when events such as table creation fail, the path should not be sync to NameNode plugin.
+   */
+  @Test
+  public void testTableCreationFailure() throws Throwable {
+    String dbName = "db1";
+
+    tmpHDFSDir = new Path("/tmp/external");
+    if (!miniDFS.getFileSystem().exists(tmpHDFSDir)) {
+      miniDFS.getFileSystem().mkdirs(tmpHDFSDir);
+    }
+
+    miniDFS.getFileSystem().setPermission(tmpHDFSDir, FsPermission.valueOf("drwxrwx---"));
+    Path partitionDir = new Path("/tmp/external/p1");
+    if (!miniDFS.getFileSystem().exists(partitionDir)) {
+      miniDFS.getFileSystem().mkdirs(partitionDir);
+    }
+
+    dbNames = new String[]{dbName};
+    roles = new String[]{"admin_role"};
+    admin = StaticUserGroup.ADMIN1;
+
+    Connection conn;
+    Statement stmt;
+
+    conn = hiveServer2.createConnection("hive", "hive");
+    stmt = conn.createStatement();
+    stmt.execute("create role admin_role");
+    stmt.execute("grant all on server server1 to role admin_role");
+    stmt.execute("grant all on uri 'hdfs:///tmp/external' to role admin_role");
+    stmt.execute("grant role admin_role to group " + StaticUserGroup.ADMINGROUP);
+    stmt.execute("grant role admin_role to group " + StaticUserGroup.HIVE);
+    stmt.close();
+    conn.close();
+
+    conn = hiveServer2.createConnection(StaticUserGroup.ADMIN1, StaticUserGroup.ADMIN1);
+    stmt = conn.createStatement();
+    stmt.execute("create database " + dbName);
+
+    // Expect table creation to fail because hive:hive does not have
+    // permission to write at parent directory.
+    try {
+      stmt.execute("create external table tab1(a int) location 'hdfs:///tmp/external/p1'");
+      Assert.fail("Expect table creation to fail");
+    } catch  (Exception ex) {
+      LOGGER.error("Exception when creating table: " + ex.getMessage());
+    }
+
+    // When the table creation failed, the path will not be managed by sentry. And the
+    // permission of the path will not be hive:hive.
+    verifyOnAllSubDirs("/tmp/external/p1", null, StaticUserGroup.HIVE, true);
+
+    stmt.close();
+    conn.close();
+  }
+
+  /**
+   * Make sure when events such as add partition fail, the path should not be sync to NameNode plugin.
+   */
+  @Test
+  public void testAddPartitionFailure() throws Throwable {
+    String dbName = "db1";
+
+    tmpHDFSDir = new Path("/tmp/external");
+    if (!miniDFS.getFileSystem().exists(tmpHDFSDir)) {
+      miniDFS.getFileSystem().mkdirs(tmpHDFSDir);
+    }
+
+    miniDFS.getFileSystem().setPermission(tmpHDFSDir, FsPermission.valueOf("drwxrwx---"));
+    Path partitionDir = new Path("/tmp/external/p1");
+    if (!miniDFS.getFileSystem().exists(partitionDir)) {
+      miniDFS.getFileSystem().mkdirs(partitionDir);
+    }
+
+    dbNames = new String[]{dbName};
+    roles = new String[]{"admin_role"};
+    admin = StaticUserGroup.ADMIN1;
+
+    Connection conn;
+    Statement stmt;
+
+    conn = hiveServer2.createConnection("hive", "hive");
+    stmt = conn.createStatement();
+    stmt.execute("create role admin_role");
+    stmt.execute("grant all on server server1 to role admin_role");
+    stmt.execute("grant role admin_role to group " + StaticUserGroup.ADMINGROUP);
+    stmt.close();
+    conn.close();
+
+    conn = hiveServer2.createConnection(StaticUserGroup.ADMIN1, StaticUserGroup.ADMIN1);
+    stmt = conn.createStatement();
+    stmt.execute("create database " + dbName);
+    stmt.execute("create external table tab2 (s string) partitioned by (month int)");
+
+    // Expect adding partition to fail because hive:hive does not have
+    // permission to write at parent directory.
+    try {
+      stmt.execute("alter table tab2 add partition (month = 1) location '/tmp/external/p1'");
+      Assert.fail("Expect adding partition to fail");
+    } catch  (Exception ex) {
+      LOGGER.error("Exception when adding partition: " + ex.getMessage());
+    }
+
+    // When the table creation failed, the path will not be managed by sentry. And the
+    // permission of the path will not be hive:hive.
+    verifyOnAllSubDirs("/tmp/external/p1", null, StaticUserGroup.HIVE, true);
+
+    stmt.close();
+    conn.close();
+  }
+
+  /**
+   * Make sure when events such as drop table fail, the path should not be sync to NameNode plugin.
+   */
+  @Test
+  public void testDropTableFailure() throws Throwable {
+    String dbName = "db1";
+    tmpHDFSDir = new Path("/tmp/external");
+    if (!miniDFS.getFileSystem().exists(tmpHDFSDir)) {
+      miniDFS.getFileSystem().mkdirs(tmpHDFSDir);
+    }
+
+    miniDFS.getFileSystem().setPermission(tmpHDFSDir, FsPermission.valueOf("drwxrwxrwx"));
+    Path partitionDir = new Path("/tmp/external/p1");
+    if (!miniDFS.getFileSystem().exists(partitionDir)) {
+      miniDFS.getFileSystem().mkdirs(partitionDir);
+    }
+    dbNames = new String[]{dbName};
+    roles = new String[]{"admin_role"};
+    admin = StaticUserGroup.ADMIN1;
+
+    Connection conn;
+    Statement stmt;
+
+    conn = hiveServer2.createConnection("hive", "hive");
+    stmt = conn.createStatement();
+    stmt.execute("create role admin_role");
+    stmt.execute("grant all on server server1 to role admin_role");
+    stmt.execute("grant role admin_role to group " + StaticUserGroup.ADMINGROUP);
+    stmt.close();
+    conn.close();
+
+    conn = hiveServer2.createConnection(StaticUserGroup.ADMIN1, StaticUserGroup.ADMIN1);
+    stmt = conn.createStatement();
+    stmt.execute("create database " + dbName);
+    stmt.execute("create external table tab1(a int) location 'hdfs:///tmp/external/p1'");
+
+    miniDFS.getFileSystem().setPermission(tmpHDFSDir, FsPermission.valueOf("drwxrwx---"));
+
+    // Expect dropping table to fail because hive:hive does not have
+    // permission to write at parent directory when
+    // hive.metastore.authorization.storage.checks property is true.
+    try {
+      stmt.execute("drop table tab1");
+      Assert.fail("Expect dropping table to fail");
+    } catch  (Exception ex) {
+      LOGGER.error("Exception when creating table: " + ex.getMessage());
+    }
+
+    // When the table dropping failed, the path will still be managed by sentry. And the
+    // permission of the path still should be hive:hive.
+    verifyOnAllSubDirs("/tmp/external/p1", FsAction.ALL, StaticUserGroup.HIVE, true);
+
+    stmt.close();
+    conn.close();
+  }
+
+  /**
+   * Make sure when events such as drop table fail, the path should not be sync to NameNode plugin.
+   */
+  @Test
+  public void testDropPartitionFailure() throws Throwable {
+    String dbName = "db1";
+
+    tmpHDFSDir = new Path("/tmp/external");
+    if (!miniDFS.getFileSystem().exists(tmpHDFSDir)) {
+      miniDFS.getFileSystem().mkdirs(tmpHDFSDir);
+    }
+
+    miniDFS.getFileSystem().setPermission(tmpHDFSDir, FsPermission.valueOf("drwxrwxrwx"));
+    Path partitionDir = new Path("/tmp/external/p1");
+    if (!miniDFS.getFileSystem().exists(partitionDir)) {
+      miniDFS.getFileSystem().mkdirs(partitionDir);
+    }
+
+    dbNames = new String[]{dbName};
+    roles = new String[]{"admin_role"};
+    admin = StaticUserGroup.ADMIN1;
+
+    Connection conn;
+    Statement stmt;
+
+    conn = hiveServer2.createConnection("hive", "hive");
+    stmt = conn.createStatement();
+    stmt.execute("create role admin_role");
+    stmt.execute("grant all on server server1 to role admin_role");
+    stmt.execute("grant role admin_role to group " + StaticUserGroup.ADMINGROUP);
+    stmt.close();
+    conn.close();
+
+    conn = hiveServer2.createConnection(StaticUserGroup.ADMIN1, StaticUserGroup.ADMIN1);
+    stmt = conn.createStatement();
+    stmt.execute("create database " + dbName);
+    stmt.execute("create table tab3 (s string) partitioned by (month int)");
+    stmt.execute("alter table tab3 add partition (month = 1) location '/tmp/external/p1'");
+
+    miniDFS.getFileSystem().setPermission(tmpHDFSDir, FsPermission.valueOf("drwxrwx---"));
+
+
+    // Expect dropping partition to fail because because hive:hive does not have
+    // permission to write at parent directory.
+    try {
+      stmt.execute("ALTER TABLE tab3 DROP PARTITION (month = 1)");
+      Assert.fail("Expect dropping partition to fail");
+    } catch  (Exception ex) {
+      LOGGER.error("Exception when dropping partition: " + ex.getMessage());
+    }
+
+    // When the partition dropping failed, the path for the partition will still
+    // be managed by sentry. And the permission of the path still should be hive:hive.
+    verifyOnAllSubDirs("/tmp/external/p1", FsAction.ALL, StaticUserGroup.HIVE, true);
+
+    stmt.close();
+    conn.close();
   }
 
   @Test

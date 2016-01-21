@@ -88,6 +88,14 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
 
   @Override
   public void onCreateTable (CreateTableEvent tableEvent) throws MetaException {
+
+    // don't sync paths/privileges if the operation has failed
+    if (!tableEvent.getStatus()) {
+      LOGGER.debug("Skip sync paths/privileges with Sentry server for onCreateTable event," +
+        " since the operation failed. \n");
+      return;
+    }
+
     if (tableEvent.getTable().getSd().getLocation() != null) {
       String authzObj = tableEvent.getTable().getDbName() + "."
           + tableEvent.getTable().getTableName();
@@ -96,21 +104,27 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
         plugin.addPath(authzObj, path);
       }
     }
+
     // drop the privileges on the given table, in case if anything was left
     // behind during the drop
     if (!syncWithPolicyStore(AuthzConfVars.AUTHZ_SYNC_CREATE_WITH_POLICY_STORE)) {
       return;
     }
-    // don't sync privileges if the operation has failed
-    if (!tableEvent.getStatus()) {
-      return;
-    }
+
     dropSentryTablePrivilege(tableEvent.getTable().getDbName(),
         tableEvent.getTable().getTableName());
   }
 
   @Override
   public void onDropTable(DropTableEvent tableEvent) throws MetaException {
+
+    // don't sync paths/privileges if the operation has failed
+    if (!tableEvent.getStatus()) {
+      LOGGER.debug("Skip syncing paths/privileges with Sentry server for onDropTable event," +
+        " since the operation failed. \n");
+      return;
+    }
+
     if (tableEvent.getTable().getSd().getLocation() != null) {
       String authzObj = tableEvent.getTable().getDbName() + "."
           + tableEvent.getTable().getTableName();
@@ -122,10 +136,11 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
     if (!syncWithPolicyStore(AuthzConfVars.AUTHZ_SYNC_DROP_WITH_POLICY_STORE)) {
       return;
     }
-    // don't sync privileges if the operation has failed
+
     if (!tableEvent.getStatus()) {
       return;
     }
+
     dropSentryTablePrivilege(tableEvent.getTable().getDbName(),
         tableEvent.getTable().getTableName());
   }
@@ -133,6 +148,14 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
   @Override
   public void onCreateDatabase(CreateDatabaseEvent dbEvent)
       throws MetaException {
+
+    // don't sync paths/privileges if the operation has failed
+    if (!dbEvent.getStatus()) {
+      LOGGER.debug("Skip syncing paths/privileges with Sentry server for onCreateDatabase event," +
+        " since the operation failed. \n");
+      return;
+    }
+
     if (dbEvent.getDatabase().getLocationUri() != null) {
       String authzObj = dbEvent.getDatabase().getName();
       String path = dbEvent.getDatabase().getLocationUri();
@@ -140,25 +163,30 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
         plugin.addPath(authzObj, path);
       }
     }
-    // drop the privileges on the database, incase anything left behind during
+    // drop the privileges on the database, in case anything left behind during
     // last drop db
     if (!syncWithPolicyStore(AuthzConfVars.AUTHZ_SYNC_CREATE_WITH_POLICY_STORE)) {
       return;
     }
-    // don't sync privileges if the operation has failed
-    if (!dbEvent.getStatus()) {
-      return;
-    }
+
     dropSentryDbPrivileges(dbEvent.getDatabase().getName());
   }
 
   /**
-   * Drop the privileges on the database // note that child tables will be
-   * dropped individually by client, so we // just need to handle the removing
-   * the db privileges. The table drop // should cleanup the table privileges
+   * Drop the privileges on the database. Note that child tables will be
+   * dropped individually by client, so we just need to handle the removing
+   * the db privileges. The table drop should cleanup the table privileges.
    */
   @Override
   public void onDropDatabase(DropDatabaseEvent dbEvent) throws MetaException {
+
+    // don't sync paths/privileges if the operation has failed
+    if (!dbEvent.getStatus()) {
+      LOGGER.debug("Skip syncing paths/privileges with Sentry server for onDropDatabase event," +
+        " since the operation failed. \n");
+      return;
+    }
+
     String authzObj = dbEvent.getDatabase().getName();
     for (SentryMetastoreListenerPlugin plugin : sentryPlugins) {
       List<String> tNames = dbEvent.getHandler().get_all_tables(authzObj);
@@ -167,10 +195,7 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
     if (!syncWithPolicyStore(AuthzConfVars.AUTHZ_SYNC_DROP_WITH_POLICY_STORE)) {
       return;
     }
-    // don't sync privileges if the operation has failed
-    if (!dbEvent.getStatus()) {
-      return;
-    }
+
     dropSentryDbPrivileges(dbEvent.getDatabase().getName());
   }
 
@@ -180,17 +205,22 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
   @Override
   public void onAlterTable (AlterTableEvent tableEvent) throws MetaException {
     String oldTableName = null, newTableName = null;
+
     // don't sync privileges if the operation has failed
     if (!tableEvent.getStatus()) {
+      LOGGER.debug("Skip syncing privileges with Sentry server for onAlterTable event," +
+        " since the operation failed. \n");
       return;
     }
 
     if (tableEvent.getOldTable() != null) {
       oldTableName = tableEvent.getOldTable().getTableName();
     }
+
     if (tableEvent.getNewTable() != null) {
       newTableName = tableEvent.getNewTable().getTableName();
     }
+
     renameSentryTablePrivilege(tableEvent.getOldTable().getDbName(),
         oldTableName, tableEvent.getOldTable().getSd().getLocation(),
         tableEvent.getNewTable().getDbName(), newTableName,
@@ -200,10 +230,14 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
   @Override
   public void onAlterPartition(AlterPartitionEvent partitionEvent)
       throws MetaException {
+
     // don't sync privileges if the operation has failed
     if (!partitionEvent.getStatus()) {
+      LOGGER.debug("Skip syncing privileges with Sentry server for onAlterPartition event," +
+        " since the operation failed. \n");
       return;
     }
+
     String oldLoc = null, newLoc = null;
     if (partitionEvent.getOldPartition() != null) {
       oldLoc = partitionEvent.getOldPartition().getSd().getLocation();
@@ -226,6 +260,14 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
   @Override
   public void onAddPartition(AddPartitionEvent partitionEvent)
       throws MetaException {
+
+    // don't sync path if the operation has failed
+    if (!partitionEvent.getStatus()) {
+      LOGGER.debug("Skip syncing path with Sentry server for onAddPartition event," +
+        " since the operation failed. \n");
+      return;
+    }
+
     for (Partition part : partitionEvent.getPartitions()) {
       if ((part.getSd() != null) && (part.getSd().getLocation() != null)) {
         String authzObj = part.getDbName() + "." + part.getTableName();
@@ -241,6 +283,14 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
   @Override
   public void onDropPartition(DropPartitionEvent partitionEvent)
       throws MetaException {
+
+    // don't sync path if the operation has failed
+    if (!partitionEvent.getStatus()) {
+      LOGGER.debug("Skip syncing path with Sentry server for onDropPartition event," +
+        " since the operation failed. \n");
+      return;
+    }
+
     String authzObj = partitionEvent.getTable().getDbName() + "."
         + partitionEvent.getTable().getTableName();
     String path = partitionEvent.getPartition().getSd().getLocation();
