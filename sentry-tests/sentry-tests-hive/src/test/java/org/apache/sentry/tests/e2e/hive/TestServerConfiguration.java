@@ -35,10 +35,9 @@ import org.apache.sentry.binding.hive.HiveAuthzBindingSessionHook;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
-import org.junit.AfterClass;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.base.Charsets;
@@ -46,26 +45,28 @@ import com.google.common.collect.Maps;
 
 public class TestServerConfiguration extends AbstractTestWithHiveServer {
 
+  // Context is created inside individual test cases, because the
+  // test cases for server configuration are properties based.
   private static Context context;
   private static Map<String, String> properties;
   private PolicyFile policyFile;
 
-  @BeforeClass
-  public static void setup() throws Exception {
+  @Before
+  public void setupPolicyFile() throws Exception {
     properties = Maps.newHashMap();
-    context = createContext(properties);
+    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
   }
 
-  @AfterClass
-  public static void tearDown() throws Exception {
+  @After
+  public void tearDown() throws Exception {
     if(context != null) {
       context.close();
     }
-  }
 
-  @Before
-  public void setupPolicyFile() throws Exception {
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    if(hiveServer != null) {
+      hiveServer.shutdown();
+      hiveServer = null;
+    }
   }
 
   /**
@@ -73,7 +74,6 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
    */
   @Test
   public void testImpersonationIsDisabled() throws Exception {
-    Map<String, String> properties = Maps.newHashMap();
     properties.put(HiveServerFactory.ACCESS_TESTING_MODE, "false");
     properties.put("hive.server2.enable.impersonation", "true");
     verifyInvalidConfigurationException(properties);
@@ -84,14 +84,13 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
    */
   @Test
   public void testAuthenticationIsStrong() throws Exception {
-    Map<String, String> properties = Maps.newHashMap();
     properties.put(HiveServerFactory.ACCESS_TESTING_MODE, "false");
     properties.put("hive.server2.authentication", "NONE");
     verifyInvalidConfigurationException(properties);
   }
 
   private void verifyInvalidConfigurationException(Map<String, String> properties) throws Exception{
-    Context context = createContext(properties);
+    context = createContext(properties);
     policyFile
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
@@ -114,6 +113,7 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
    */
   @Test
   public void testRemovalOfPolicyFile() throws Exception {
+    context = createContext(properties);
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     try {
@@ -130,6 +130,7 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
    */
   @Test
   public void testCorruptionOfPolicyFile() throws Exception {
+    context = createContext(properties);
     File policyFile = context.getPolicyFile();
     FileOutputStream out = new FileOutputStream(policyFile);
     out.write("this is not valid".getBytes(Charsets.UTF_8));
@@ -147,6 +148,7 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
 
   @Test
   public void testAddDeleteDFSRestriction() throws Exception {
+    context = createContext(properties);
     policyFile
         .addRolesToGroup(USERGROUP1, "all_db1")
         .addRolesToGroup(USERGROUP2, "select_tb1")
@@ -173,6 +175,7 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
    */
   @Test
   public void testAccessConfigRestrictions() throws Exception {
+    context = createContext(properties);
     policyFile
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile());
@@ -216,9 +219,8 @@ public class TestServerConfiguration extends AbstractTestWithHiveServer {
    */
   @Test
   public void testDefaultDbRestrictivePrivilege() throws Exception {
-    Map<String, String> properties = Maps.newHashMap();
     properties.put(HiveAuthzConf.AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), "true");
-    Context context = createContext(properties);
+    context = createContext(properties);
 
     policyFile
         .addRolesToGroup(USERGROUP1, "all_default")
