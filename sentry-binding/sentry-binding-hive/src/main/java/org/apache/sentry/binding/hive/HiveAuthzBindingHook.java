@@ -38,6 +38,7 @@ import org.apache.hadoop.hive.ql.HiveDriverFilterHookResult;
 import org.apache.hadoop.hive.ql.HiveDriverFilterHookResultImpl;
 import org.apache.hadoop.hive.ql.exec.SentryGrantRevokeTask;
 import org.apache.hadoop.hive.ql.exec.Task;
+import org.apache.hadoop.hive.ql.exec.Utilities;
 import org.apache.hadoop.hive.ql.hooks.Entity;
 import org.apache.hadoop.hive.ql.hooks.Entity.Type;
 import org.apache.hadoop.hive.ql.hooks.Hook;
@@ -192,7 +193,9 @@ implements HiveDriverFilterHook {
       case HiveParser.TOK_CREATEFUNCTION:
         String udfClassName = BaseSemanticAnalyzer.unescapeSQLString(ast.getChild(1).getText());
         try {
-          CodeSource udfSrc = Class.forName(udfClassName).getProtectionDomain().getCodeSource();
+          CodeSource udfSrc =
+              Class.forName(udfClassName, true, Utilities.getSessionSpecifiedClassLoader())
+                  .getProtectionDomain().getCodeSource();
           if (udfSrc == null) {
             throw new SemanticException("Could not resolve the jar for UDF class " + udfClassName);
           }
@@ -203,7 +206,7 @@ implements HiveDriverFilterHook {
           }
           udfURI = parseURI(udfSrc.getLocation().toString(), true);
         } catch (ClassNotFoundException e) {
-          throw new SemanticException("Error retrieving udf class", e);
+          throw new SemanticException("Error retrieving udf class:" + e.getMessage(), e);
         }
         // create/drop function is allowed with any database
         currDB = Database.ALL;
