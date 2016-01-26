@@ -48,7 +48,7 @@ import com.google.common.collect.Sets;
 public class TestAuditLogForSentryGenericService extends SentryServiceIntegrationBase {
 
   private SentryGenericServiceClient client;
-  private static final String COMPONENT = "SQOOP";
+  private static final String COMPONENT = "SOLR";
   private static final org.slf4j.Logger LOGGER = LoggerFactory
       .getLogger(TestAuditLogForSentryGenericService.class);
 
@@ -112,7 +112,7 @@ public class TestAuditLogForSentryGenericService extends SentryServiceIntegratio
         Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
         String roleName = "admin_r";
         String testGroupName = "g1";
-        String action = "all";
+        String action = "*";
         String service = "sentryService";
         setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
         writePolicyFile();
