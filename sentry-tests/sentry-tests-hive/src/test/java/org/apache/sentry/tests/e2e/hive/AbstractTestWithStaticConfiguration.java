@@ -242,6 +242,8 @@ public abstract class AbstractTestWithStaticConfiguration {
           "org.apache.hadoop.hive.ql.lockmgr.EmbeddedLockManager");
     }
 
+    properties.put(ConfVars.HIVE_SERVER2_WEBUI_PORT.varname, "0");
+
     hiveServer = create(properties, baseDir, confDir, logDir, policyURI, fileSystem);
     hiveServer.start();
     createContext();
