@@ -62,6 +62,8 @@ abstract public class SentryShellCommon {
   public final static String OPTION_DESC_PRIVILEGE = "Privilege string";
   public final static String PREFIX_MESSAGE_MISSING_OPTION = "Missing required option: ";
 
+  public final static String GROUP_SPLIT_CHAR = ",";
+
   /**
    * parse arguments
    *
@@ -69,8 +71,8 @@ abstract public class SentryShellCommon {
    *   -conf,--sentry_conf             <filepath>                 sentry config file path
    *   -cr,--create_role            -r <rolename>                 create role
    *   -dr,--drop_role              -r <rolename>                 drop role
-   *   -arg,--add_role_group        -r <rolename>  -g <groupname> add group to role
-   *   -drg,--delete_role_group     -r <rolename>  -g <groupname> delete group from role
+   *   -arg,--add_role_group        -r <rolename>  -g <groupname> add role to group
+   *   -drg,--delete_role_group     -r <rolename>  -g <groupname> delete role from group
    *   -gpr,--grant_privilege_role  -r <rolename>  -p <privilege> grant privilege to role
    *   -rpr,--revoke_privilege_role -r <rolename>  -p <privilege> revoke privilege from role
    *   -lr,--list_role              -g <groupname>                list roles for group
@@ -89,10 +91,10 @@ abstract public class SentryShellCommon {
     Option drOpt = new Option("dr", "drop_role", false, "Drop role");
     drOpt.setRequired(false);
 
-    Option argOpt = new Option("arg", "add_role_group", false, "Add group to role");
+    Option argOpt = new Option("arg", "add_role_group", false, "Add role to group");
     argOpt.setRequired(false);
 
-    Option drgOpt = new Option("drg", "delete_role_group", false, "Delete group from role");
+    Option drgOpt = new Option("drg", "delete_role_group", false, "Delete role from group");
     drgOpt.setRequired(false);
 
     Option gprOpt = new Option("gpr", "grant_privilege_role", false, "Grant privilege to role");

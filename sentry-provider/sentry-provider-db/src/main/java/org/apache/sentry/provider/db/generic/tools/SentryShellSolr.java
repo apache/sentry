@@ -54,9 +54,9 @@ public class SentryShellSolr extends SentryShellCommon {
     } else if (isDropRole) {
       command = new DropRoleCmd(roleName, component);
     } else if (isAddRoleGroup) {
-      throw new UnsupportedOperationException("Add group to role not supported for Solr client");
+      command = new AddRoleToGroupCmd(roleName, groupName, component);
     } else if (isDeleteRoleGroup) {
-      throw new UnsupportedOperationException("Delete group from role not supported for Solr client");
+      command = new DeleteRoleFromGroupCmd(roleName, groupName, component);
     } else if (isGrantPrivilegeRole) {
       command = new GrantPrivilegeToRoleCmd(roleName, component,
           privilegeStr, new SolrTSentryPrivilegeConvertor(component, service));

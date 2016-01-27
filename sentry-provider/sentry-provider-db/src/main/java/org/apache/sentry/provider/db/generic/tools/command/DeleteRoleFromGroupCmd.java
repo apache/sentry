@@ -15,30 +15,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.provider.db.tools.command.hive;
+package org.apache.sentry.provider.db.generic.tools.command;
 
 import com.google.common.collect.Sets;
-import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
+import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
 import org.apache.sentry.provider.db.tools.SentryShellCommon;
 
 import java.util.Set;
 
 /**
- * The class for admin command to grant role to group.
+ * Command for deleting groups from a role.
  */
-public class GrantRoleToGroupsCmd implements Command {
+public class DeleteRoleFromGroupCmd implements Command {
 
   private String roleName;
-  private String groupNamesStr;
+  private String groups;
+  private String component;
 
-  public GrantRoleToGroupsCmd(String roleName, String groupNamesStr) {
+  public DeleteRoleFromGroupCmd(String roleName, String groups, String component) {
+    this.groups = groups;
     this.roleName = roleName;
-    this.groupNamesStr = groupNamesStr;
+    this.component = component;
   }
 
   @Override
-  public void execute(SentryPolicyServiceClient client, String requestorName) throws Exception {
-    Set<String> groups = Sets.newHashSet(groupNamesStr.split(SentryShellCommon.GROUP_SPLIT_CHAR));
-    client.grantRoleToGroups(requestorName, roleName, groups);
+  public void execute(SentryGenericServiceClient client, String requestorName) throws Exception {
+    Set<String> groupSet = Sets.newHashSet(groups.split(SentryShellCommon.GROUP_SPLIT_CHAR));
+    client.deleteRoleToGroups(requestorName, roleName, component, groupSet);
   }
 }

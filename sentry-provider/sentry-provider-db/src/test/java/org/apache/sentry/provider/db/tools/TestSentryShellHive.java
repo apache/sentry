@@ -26,6 +26,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -92,21 +93,13 @@ public class TestSentryShellHive extends SentryServiceIntegrationBase {
         args = new String[] { "-lr", "-conf", confPath.getAbsolutePath() };
         SentryShellHive sentryShell = new SentryShellHive();
         Set<String> roleNames = getShellResultWithOSRedirect(sentryShell, args, true);
-        assertEquals("Incorrect number of roles", 2, roleNames.size());
-        for (String roleName : roleNames) {
-          assertTrue(TEST_ROLE_NAME_1.equalsIgnoreCase(roleName)
-              || TEST_ROLE_NAME_2.equalsIgnoreCase(roleName));
-        }
+        validateRoleNames(roleNames, TEST_ROLE_NAME_1, TEST_ROLE_NAME_2);
 
         // validate the result, list roles with --list_role
         args = new String[] { "--list_role", "-conf", confPath.getAbsolutePath() };
         sentryShell = new SentryShellHive();
         roleNames = getShellResultWithOSRedirect(sentryShell, args, true);
-        assertEquals("Incorrect number of roles", 2, roleNames.size());
-        for (String roleName : roleNames) {
-          assertTrue(TEST_ROLE_NAME_1.equalsIgnoreCase(roleName)
-              || TEST_ROLE_NAME_2.equalsIgnoreCase(roleName));
-        }
+        validateRoleNames(roleNames, TEST_ROLE_NAME_1, TEST_ROLE_NAME_2);
 
         // test: drop role with -dr
         args = new String[] { "-dr", "-r", TEST_ROLE_NAME_1, "-conf", confPath.getAbsolutePath() };
@@ -131,7 +124,7 @@ public class TestSentryShellHive extends SentryServiceIntegrationBase {
         // create the role for test
         client.createRole(requestorName, TEST_ROLE_NAME_1);
         client.createRole(requestorName, TEST_ROLE_NAME_2);
-        // test: add group to role with -arg
+        // test: add role to group with -arg
         String[] args = { "-arg", "-r", TEST_ROLE_NAME_1, "-g", "testGroup1", "-conf",
             confPath.getAbsolutePath() };
         SentryShellHive.main(args);
@@ -150,32 +143,23 @@ public class TestSentryShellHive extends SentryServiceIntegrationBase {
         args = new String[] { "-lr", "-g", "testGroup1", "-conf", confPath.getAbsolutePath() };
         SentryShellHive sentryShell = new SentryShellHive();
         Set<String> roleNames = getShellResultWithOSRedirect(sentryShell, args, true);
-        assertEquals("Incorrect number of roles", 2, roleNames.size());
-        for (String roleName : roleNames) {
-          assertTrue(TEST_ROLE_NAME_1.equalsIgnoreCase(roleName)
-              || TEST_ROLE_NAME_2.equalsIgnoreCase(roleName));
-        }
+        validateRoleNames(roleNames, TEST_ROLE_NAME_1, TEST_ROLE_NAME_2);
+
 
         // list roles with --list_role and -g
         args = new String[] { "--list_role", "-g", "testGroup2", "-conf",
             confPath.getAbsolutePath() };
         sentryShell = new SentryShellHive();
         roleNames = getShellResultWithOSRedirect(sentryShell, args, true);
-        assertEquals("Incorrect number of roles", 1, roleNames.size());
-        for (String roleName : roleNames) {
-          assertTrue(TEST_ROLE_NAME_1.equalsIgnoreCase(roleName));
-        }
+        validateRoleNames(roleNames, TEST_ROLE_NAME_1);
 
         args = new String[] { "--list_role", "-g", "testGroup3", "-conf",
             confPath.getAbsolutePath() };
         sentryShell = new SentryShellHive();
         roleNames = getShellResultWithOSRedirect(sentryShell, args, true);
-        assertEquals("Incorrect number of roles", 1, roleNames.size());
-        for (String roleName : roleNames) {
-          assertTrue(TEST_ROLE_NAME_1.equalsIgnoreCase(roleName));
-        }
+        validateRoleNames(roleNames, TEST_ROLE_NAME_1);
 
-        // test: delete group from role with -drg
+        // test: delete role from group with -drg
         args = new String[] { "-drg", "-r", TEST_ROLE_NAME_1, "-g", "testGroup1", "-conf",
             confPath.getAbsolutePath() };
         SentryShellHive.main(args);
@@ -184,7 +168,7 @@ public class TestSentryShellHive extends SentryServiceIntegrationBase {
             "-conf",
             confPath.getAbsolutePath() };
         SentryShellHive.main(args);
-        // test: delete group from role with --delete_role_group
+        // test: delete role from group with --delete_role_group
         args = new String[] { "--delete_role_group", "-r", TEST_ROLE_NAME_2, "-g", "testGroup1",
             "-conf", confPath.getAbsolutePath() };
         SentryShellHive.main(args);
@@ -426,7 +410,7 @@ public class TestSentryShellHive extends SentryServiceIntegrationBase {
           // excepted exception
         }
 
-        // test: add group to non-exist role with -arg
+        // test: add non-exist role to group with -arg
         args = new String[] { "-arg", "-r", TEST_ROLE_NAME_2, "-g", "testGroup1", "-conf",
             confPath.getAbsolutePath() };
         sentryShell = new SentryShellHive();
@@ -502,25 +486,25 @@ public class TestSentryShellHive extends SentryServiceIntegrationBase {
         validateMissingParameterMsg(sentryShell, args,
                 SentryShellCommon.PREFIX_MESSAGE_MISSING_OPTION + SentryShellCommon.OPTION_DESC_ROLE_NAME);
 
-        // test: -r is required when add group to role
+        // test: -r is required when add role to group
         args = new String[] { "-arg", "-g", "testGroup1", "-conf", confPath.getAbsolutePath() };
         sentryShell = new SentryShellHive();
         validateMissingParameterMsg(sentryShell, args,
                 SentryShellCommon.PREFIX_MESSAGE_MISSING_OPTION + SentryShellCommon.OPTION_DESC_ROLE_NAME);
 
-        // test: -g is required when add group to role
+        // test: -g is required when add role to group
         args = new String[] { "-arg", "-r", TEST_ROLE_NAME_2, "-conf", confPath.getAbsolutePath() };
         sentryShell = new SentryShellHive();
         validateMissingParameterMsg(sentryShell, args,
                 SentryShellCommon.PREFIX_MESSAGE_MISSING_OPTION + SentryShellCommon.OPTION_DESC_GROUP_NAME);
 
-        // test: -r is required when delete group from role
+        // test: -r is required when delete role from group
         args = new String[] { "-drg", "-g", "testGroup1", "-conf", confPath.getAbsolutePath() };
         sentryShell = new SentryShellHive();
         validateMissingParameterMsg(sentryShell, args,
                 SentryShellCommon.PREFIX_MESSAGE_MISSING_OPTION + SentryShellCommon.OPTION_DESC_ROLE_NAME);
 
-        // test: -g is required when delete group from role
+        // test: -g is required when delete role from group
         args = new String[] { "-drg", "-r", TEST_ROLE_NAME_2, "-conf", confPath.getAbsolutePath() };
         sentryShell = new SentryShellHive();
         validateMissingParameterMsg(sentryShell, args,
@@ -555,10 +539,10 @@ public class TestSentryShellHive extends SentryServiceIntegrationBase {
         sentryShell = new SentryShellHive();
         validateMissingParameterMsgsContains(sentryShell, args,
                 SentryShellCommon.PREFIX_MESSAGE_MISSING_OPTION + "[",
-                "-arg Add group to role",
+                "-arg Add role to group",
                 "-cr Create role",
                 "-rpr Revoke privilege from role",
-                "-drg Delete group from role",
+                "-drg Delete role from group",
                 "-lr List role",
                 "-lp List privilege",
                 "-gpr Grant privilege to role",
@@ -580,6 +564,22 @@ public class TestSentryShellHive extends SentryServiceIntegrationBase {
     Set<String> resultSet = Sets.newHashSet(outContent.toString().split("\n"));
     System.setOut(oldOut);
     return resultSet;
+  }
+
+  private void validateRoleNames(Set<String> roleNames, String ... expectedRoleNames) {
+    if (expectedRoleNames != null && expectedRoleNames.length > 0) {
+      assertEquals("Found: " + roleNames.size() + " roles, expected: " + expectedRoleNames.length,
+          expectedRoleNames.length, roleNames.size());
+      Set<String> lowerCaseRoles = new HashSet<String>();
+      for (String role : roleNames) {
+        lowerCaseRoles.add(role.toLowerCase());
+      }
+
+      for (String expectedRole : expectedRoleNames) {
+        assertTrue("Expected role: " + expectedRole,
+            lowerCaseRoles.contains(expectedRole.toLowerCase()));
+      }
+    }
   }
 
   private void validateMissingParameterMsg(SentryShellHive sentryShell, String[] args,

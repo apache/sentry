@@ -42,7 +42,7 @@ public class ListRolesCmd implements Command {
     if (StringUtils.isEmpty(groupName)) {
       roles = client.listAllRoles(requestorName, component);
     } else {
-      throw new UnsupportedOperationException("List roles by group name not supported");
+      roles = client.listRolesByGroupName(requestorName, groupName, component);
     }
     if (roles != null) {
       for (TSentryRole role : roles) {
