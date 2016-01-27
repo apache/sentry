@@ -17,37 +17,30 @@
  */
 package org.apache.sentry.provider.db.generic.tools.command;
 
-import org.apache.commons.lang.StringUtils;
+import com.google.common.collect.Sets;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
-import org.apache.sentry.provider.db.generic.service.thrift.TSentryRole;
+import org.apache.sentry.provider.db.tools.SentryShellCommon;
 
 import java.util.Set;
 
 /**
- * The class for admin command to list roles.
+ * Command for deleting groups from a role.
  */
-public class ListRolesCmd implements Command {
+public class DeleteRoleFromGroupCmd implements Command {
 
-  private String groupName;
+  private String roleName;
+  private String groups;
   private String component;
 
-  public ListRolesCmd(String groupName, String component) {
-    this.groupName = groupName;
+  public DeleteRoleFromGroupCmd(String roleName, String groups, String component) {
+    this.groups = groups;
+    this.roleName = roleName;
     this.component = component;
   }
 
   @Override
   public void execute(SentryGenericServiceClient client, String requestorName) throws Exception {
-    Set<TSentryRole> roles;
-    if (StringUtils.isEmpty(groupName)) {
-      roles = client.listAllRoles(requestorName, component);
-    } else {
-      roles = client.listRolesByGroupName(requestorName, groupName, component);
-    }
-    if (roles != null) {
-      for (TSentryRole role : roles) {
-        System.out.println(role.getRoleName());
-      }
-    }
+    Set<String> groupSet = Sets.newHashSet(groups.split(SentryShellCommon.GROUP_SPLIT_CHAR));
+    client.deleteRoleToGroups(requestorName, roleName, component, groupSet);
   }
 }

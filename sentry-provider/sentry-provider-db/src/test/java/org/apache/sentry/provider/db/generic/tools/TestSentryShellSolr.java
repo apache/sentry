@@ -30,6 +30,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.security.PrivilegedExceptionAction;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import javax.security.auth.Subject;
@@ -98,21 +99,13 @@ public class TestSentryShellSolr extends SentryGenericServiceIntegrationBase {
         args = new String[] { "-lr", "-conf", confPath.getAbsolutePath() };
         SentryShellSolr sentryShell = new SentryShellSolr();
         Set<String> roleNames = getShellResultWithOSRedirect(sentryShell, args, true);
-        assertEquals("Incorrect number of roles", 2, roleNames.size());
-        for (String roleName : roleNames) {
-          assertTrue(TEST_ROLE_NAME_1.equalsIgnoreCase(roleName)
-              || TEST_ROLE_NAME_2.equalsIgnoreCase(roleName));
-        }
+        validateRoleNames(roleNames, TEST_ROLE_NAME_1, TEST_ROLE_NAME_2);
 
         // validate the result, list roles with --list_role
         args = new String[] { "--list_role", "-conf", confPath.getAbsolutePath() };
         sentryShell = new SentryShellSolr();
         roleNames = getShellResultWithOSRedirect(sentryShell, args, true);
-        assertEquals("Incorrect number of roles", 2, roleNames.size());
-        for (String roleName : roleNames) {
-          assertTrue(TEST_ROLE_NAME_1.equalsIgnoreCase(roleName)
-              || TEST_ROLE_NAME_2.equalsIgnoreCase(roleName));
-        }
+        validateRoleNames(roleNames, TEST_ROLE_NAME_1, TEST_ROLE_NAME_2);
 
         // test: drop role with -dr
         args = new String[] { "-dr", "-r", TEST_ROLE_NAME_1, "-conf", confPath.getAbsolutePath() };
@@ -129,87 +122,78 @@ public class TestSentryShellSolr extends SentryGenericServiceIntegrationBase {
     });
   }
 
-  // this is not supported, just check that all the permutations
-  // give a reasonable error
   @Test
   public void testAddDeleteRoleForGroup() throws Exception {
     runTestAsSubject(new TestOperation() {
       @Override
       public void runTestAsSubject() throws Exception {
-         // test: add role to multiple groups
-        String[] args = new String[] { "-arg", "-r", TEST_ROLE_NAME_1, "-g", "testGroup2,testGroup3",
+        // Must lower case group names, see SENTRY-1035
+        final boolean lowerCaseGroupNames = true;
+        String TEST_GROUP_1 = lowerCaseGroupNames ? "testgroup1" : "testGroup1";
+        String TEST_GROUP_2 = lowerCaseGroupNames ? "testgroup2" : "testGroup2";
+        String TEST_GROUP_3 = lowerCaseGroupNames ? "testgroup3" : "testGroup3";
+
+        // create the role for test
+        client.createRole(requestorName, TEST_ROLE_NAME_1, SOLR);
+        client.createRole(requestorName, TEST_ROLE_NAME_2, SOLR);
+        // test: add role to group with -arg
+        String[] args = { "-arg", "-r", TEST_ROLE_NAME_1, "-g", TEST_GROUP_1, "-conf",
+            confPath.getAbsolutePath() };
+        SentryShellSolr.main(args);
+        // test: add role to multiple groups
+        args = new String[] { "-arg", "-r", TEST_ROLE_NAME_1, "-g", TEST_GROUP_2 + "," + TEST_GROUP_3,
             "-conf",
             confPath.getAbsolutePath() };
-        SentryShellSolr sentryShell = new SentryShellSolr();
-        try {
-          getShellResultWithOSRedirect(sentryShell, args, false);
-          fail("Expected UnsupportedOperationException");
-        } catch (UnsupportedOperationException e) {
-          // expected
-        }
-
+        SentryShellSolr.main(args);
         // test: add role to group with --add_role_group
-        args = new String[] { "--add_role_group", "-r", TEST_ROLE_NAME_2, "-g", "testGroup1",
+        args = new String[] { "--add_role_group", "-r", TEST_ROLE_NAME_2, "-g", TEST_GROUP_1,
             "-conf",
             confPath.getAbsolutePath() };
-        sentryShell = new SentryShellSolr();
-        try {
-          getShellResultWithOSRedirect(sentryShell, args, false);
-          fail("Expected UnsupportedOperationException");
-        } catch (UnsupportedOperationException e) {
-          // expected
-        }
+        SentryShellSolr.main(args);
 
-        args = new String[] { "-lr", "-g", "testGroup1", "-conf", confPath.getAbsolutePath() };
-        sentryShell = new SentryShellSolr();
-        try {
-          getShellResultWithOSRedirect(sentryShell, args, false);
-          fail("Expected UnsupportedOperationException");
-        } catch (UnsupportedOperationException e) {
-          // expected
-        }
+        // validate the result list roles with -lr and -g
+        args = new String[] { "-lr", "-g", TEST_GROUP_1, "-conf", confPath.getAbsolutePath() };
+        SentryShellSolr sentryShell = new SentryShellSolr();
+        Set<String> roleNames = getShellResultWithOSRedirect(sentryShell, args, true);
+        validateRoleNames(roleNames, TEST_ROLE_NAME_1, TEST_ROLE_NAME_2);
 
         // list roles with --list_role and -g
-        args = new String[] { "--list_role", "-g", "testGroup2", "-conf",
+        args = new String[] { "--list_role", "-g", TEST_GROUP_2, "-conf",
             confPath.getAbsolutePath() };
         sentryShell = new SentryShellSolr();
-        try {
-          getShellResultWithOSRedirect(sentryShell, args, false);
-          fail("Expected UnsupportedOperationException");
-        } catch (UnsupportedOperationException e) {
-          // expected
-        }
+        roleNames = getShellResultWithOSRedirect(sentryShell, args, true);
+        validateRoleNames(roleNames, TEST_ROLE_NAME_1);
 
-        // test: delete group from role with -drg
-        args = new String[] { "-drg", "-r", TEST_ROLE_NAME_1, "-g", "testGroup1", "-conf",
+        args = new String[] { "--list_role", "-g", TEST_GROUP_3, "-conf",
             confPath.getAbsolutePath() };
         sentryShell = new SentryShellSolr();
-        try {
-          getShellResultWithOSRedirect(sentryShell, args, false);
-          fail("Expected UnsupportedOperationException");
-        } catch (UnsupportedOperationException e) {
-          // expected
-        }
+        roleNames = getShellResultWithOSRedirect(sentryShell, args, true);
+        validateRoleNames(roleNames, TEST_ROLE_NAME_1);
 
-        args = new String[] { "-drg", "-r", TEST_ROLE_NAME_1, "-g", "testGroup2,testGroup3",
+        // test: delete role from group with -drg
+        args = new String[] { "-drg", "-r", TEST_ROLE_NAME_1, "-g", TEST_GROUP_1, "-conf",
+            confPath.getAbsolutePath() };
+        SentryShellSolr.main(args);
+        // test: delete role to multiple groups
+        args = new String[] { "-drg", "-r", TEST_ROLE_NAME_1, "-g", TEST_GROUP_2 + "," + TEST_GROUP_3,
             "-conf",
             confPath.getAbsolutePath() };
-        try {
-          getShellResultWithOSRedirect(sentryShell, args, false);
-          fail("Expected UnsupportedOperationException");
-        } catch (UnsupportedOperationException e) {
-          // expected
-        }
-
-        // test: delete group from role with --delete_role_group
-        args = new String[] { "--delete_role_group", "-r", TEST_ROLE_NAME_2, "-g", "testGroup1",
+        SentryShellSolr.main(args);
+        // test: delete role from group with --delete_role_group
+        args = new String[] { "--delete_role_group", "-r", TEST_ROLE_NAME_2, "-g", TEST_GROUP_1,
             "-conf", confPath.getAbsolutePath() };
-        try {
-          getShellResultWithOSRedirect(sentryShell, args, false);
-          fail("Expected UnsupportedOperationException");
-        } catch (UnsupportedOperationException e) {
-          // expected
-        }
+        SentryShellSolr.main(args);
+
+        // validate the result
+        Set<TSentryRole> roles = client.listRolesByGroupName(requestorName, TEST_GROUP_1, SOLR);
+        assertEquals("Incorrect number of roles", 0, roles.size());
+        roles = client.listRolesByGroupName(requestorName, TEST_GROUP_2, SOLR);
+        assertEquals("Incorrect number of roles", 0, roles.size());
+        roles = client.listRolesByGroupName(requestorName, TEST_GROUP_3, SOLR);
+        assertEquals("Incorrect number of roles", 0, roles.size());
+        // clear the test data
+        client.dropRole(requestorName, TEST_ROLE_NAME_1, SOLR);
+        client.dropRole(requestorName, TEST_ROLE_NAME_2, SOLR);
       }
     });
   }
@@ -311,6 +295,28 @@ public class TestSentryShellSolr extends SentryGenericServiceIntegrationBase {
           // excepted exception
         }
 
+        // test: add non-exist role to group with -arg
+        args = new String[] { "-arg", "-r", TEST_ROLE_NAME_2, "-g", "testGroup1", "-conf",
+            confPath.getAbsolutePath() };
+        sentryShell = new SentryShellSolr();
+        try {
+          sentryShell.executeShell(args);
+          fail("Exception should be thrown for granting non-exist role to group");
+        } catch (SentryUserException e) {
+          // excepted exception
+        }
+
+        // test: drop group from non-exist role with -drg
+        args = new String[] { "-drg", "-r", TEST_ROLE_NAME_2, "-g", "testGroup1", "-conf",
+            confPath.getAbsolutePath() };
+        sentryShell = new SentryShellSolr();
+        try {
+          sentryShell.executeShell(args);
+          fail("Exception should be thrown for drop group from non-exist role");
+        } catch (SentryUserException e) {
+          // excepted exception
+        }
+
         // test: grant privilege to role with the error privilege format
         args = new String[] { "-gpr", "-r", TEST_ROLE_NAME_1, "-p", "serverserver1->action=*",
             "-conf", confPath.getAbsolutePath() };
@@ -365,25 +371,25 @@ public class TestSentryShellSolr extends SentryGenericServiceIntegrationBase {
         validateMissingParameterMsg(sentryShell, args,
                 SentryShellCommon.PREFIX_MESSAGE_MISSING_OPTION + SentryShellCommon.OPTION_DESC_ROLE_NAME);
 
-        // test: -r is required when add group to role
+        // test: -r is required when add role to group
         args = new String[] { "-arg", "-g", "testGroup1", "-conf", confPath.getAbsolutePath() };
         sentryShell = new SentryShellSolr();
         validateMissingParameterMsg(sentryShell, args,
                 SentryShellCommon.PREFIX_MESSAGE_MISSING_OPTION + SentryShellCommon.OPTION_DESC_ROLE_NAME);
 
-        // test: -g is required when add group to role
+        // test: -g is required when add role to group
         args = new String[] { "-arg", "-r", TEST_ROLE_NAME_2, "-conf", confPath.getAbsolutePath() };
         sentryShell = new SentryShellSolr();
         validateMissingParameterMsg(sentryShell, args,
                 SentryShellCommon.PREFIX_MESSAGE_MISSING_OPTION + SentryShellCommon.OPTION_DESC_GROUP_NAME);
 
-        // test: -r is required when delete group from role
+        // test: -r is required when delete role from group
         args = new String[] { "-drg", "-g", "testGroup1", "-conf", confPath.getAbsolutePath() };
         sentryShell = new SentryShellSolr();
         validateMissingParameterMsg(sentryShell, args,
                 SentryShellCommon.PREFIX_MESSAGE_MISSING_OPTION + SentryShellCommon.OPTION_DESC_ROLE_NAME);
 
-        // test: -g is required when delete group from role
+        // test: -g is required when delete role from group
         args = new String[] { "-drg", "-r", TEST_ROLE_NAME_2, "-conf", confPath.getAbsolutePath() };
         sentryShell = new SentryShellSolr();
         validateMissingParameterMsg(sentryShell, args,
@@ -428,10 +434,10 @@ public class TestSentryShellSolr extends SentryGenericServiceIntegrationBase {
         sentryShell = new SentryShellSolr();
         validateMissingParameterMsgsContains(sentryShell, args,
                 SentryShellCommon.PREFIX_MESSAGE_MISSING_OPTION + "[",
-                "-arg Add group to role",
+                "-arg Add role to group",
                 "-cr Create role",
                 "-rpr Revoke privilege from role",
-                "-drg Delete group from role",
+                "-drg Delete role from group",
                 "-lr List role",
                 "-lp List privilege",
                 "-gpr Grant privilege to role",
@@ -453,6 +459,22 @@ public class TestSentryShellSolr extends SentryGenericServiceIntegrationBase {
     Set<String> resultSet = Sets.newHashSet(outContent.toString().split("\n"));
     System.setOut(oldOut);
     return resultSet;
+  }
+
+  private void validateRoleNames(Set<String> roleNames, String ... expectedRoleNames) {
+    if (expectedRoleNames != null && expectedRoleNames.length > 0) {
+      assertEquals("Found: " + roleNames.size() + " roles, expected: " + expectedRoleNames.length,
+          expectedRoleNames.length, roleNames.size());
+      Set<String> lowerCaseRoles = new HashSet<String>();
+      for (String role : roleNames) {
+        lowerCaseRoles.add(role.toLowerCase());
+      }
+
+      for (String expectedRole : expectedRoleNames) {
+        assertTrue("Expected role: " + expectedRole,
+            lowerCaseRoles.contains(expectedRole.toLowerCase()));
+      }
+    }
   }
 
   private void validateMissingParameterMsg(SentryShellSolr sentryShell, String[] args,
