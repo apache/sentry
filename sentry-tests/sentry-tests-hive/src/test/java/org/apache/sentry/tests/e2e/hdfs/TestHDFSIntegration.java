@@ -51,13 +51,12 @@ import org.apache.hadoop.fs.permission.AclEntryType;
 import org.apache.hadoop.fs.permission.AclStatus;
 import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.hdfs.DFSConfigKeys;
-import org.apache.hadoop.hdfs.DFSTestUtil;
-import org.apache.hadoop.hdfs.HdfsConfiguration;
-import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.hadoop.hdfs.*;
 import org.apache.hadoop.hdfs.server.namenode.EditLogFileOutputStream;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
+import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
+import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.FileInputFormat;
@@ -76,6 +75,7 @@ import org.apache.hadoop.mapred.TextOutputFormat;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.binding.hive.SentryHiveAuthorizationTaskFactoryImpl;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
+import org.apache.sentry.hdfs.PathsUpdate;
 import org.apache.sentry.hdfs.SentryAuthorizationProvider;
 import org.apache.sentry.provider.db.SentryAlreadyExistsException;
 import org.apache.sentry.provider.db.SimpleDBProviderBackend;
@@ -101,6 +101,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
+import org.apache.hadoop.hive.metastore.api.Table;
 
 public class TestHDFSIntegration {
 
@@ -141,10 +142,13 @@ public class TestHDFSIntegration {
   private static final int NUM_RETRIES = 10;
   private static final int RETRY_WAIT = 1000;
 
+  private static final String EXTERNAL_SENTRY_SERVICE = "sentry.e2etest.external.sentry";
+
   private static MiniDFSCluster miniDFS;
   private MiniMRClientCluster miniMR;
   private static InternalHiveServer hiveServer2;
   private static InternalMetastoreServer metastore;
+  private static HiveMetaStoreClient hmsClient;
 
   private static int sentryPort = -1;
   protected static SentrySrv sentryServer;
@@ -303,6 +307,7 @@ public class TestHDFSIntegration {
           }
         }.start();
 
+        hmsClient = new HiveMetaStoreClient(hiveConf);
         startHiveServer2(retries, hiveConf);
         return null;
       }
@@ -1265,7 +1270,7 @@ public class TestHDFSIntegration {
     conn = hiveServer2.createConnection(StaticUserGroup.ADMIN1, StaticUserGroup.ADMIN1);
     stmt = conn.createStatement();
     stmt.execute("create database " + dbName);
-    stmt.execute("use "+ dbName);
+    stmt.execute("use " + dbName);
     stmt.execute("create table p1 (c1 string, c2 string) partitioned by (month int, day int)");
     stmt.execute("alter table p1 add partition (month=1, day=1)");
     loadDataTwoCols(stmt);
@@ -1589,6 +1594,70 @@ public class TestHDFSIntegration {
       }
     }
   }
+
+  /**
+   * SENTRY-1002:
+   * Ensure the paths with no scheme will not cause NPE during paths update.
+   */
+   @Test
+   public void testMissingScheme() throws Throwable {
+
+     // In the local test environment, EXTERNAL_SENTRY_SERVICE is false,
+     // set the default URI scheme to be hdfs.
+     boolean testConfOff = new Boolean(System.getProperty(EXTERNAL_SENTRY_SERVICE, "false"));
+     if (!testConfOff) {
+       PathsUpdate.getConfiguration().set("fs.defaultFS", "hdfs:///");
+     }
+
+     tmpHDFSDir = new Path("/tmp/external");
+     if (!miniDFS.getFileSystem().exists(tmpHDFSDir)) {
+       miniDFS.getFileSystem().mkdirs(tmpHDFSDir);
+     }
+
+     Path partitionDir = new Path("/tmp/external/p1");
+     if (!miniDFS.getFileSystem().exists(partitionDir)) {
+       miniDFS.getFileSystem().mkdirs(partitionDir);
+     }
+
+     String dbName = "db1";
+     String tblName = "tab1";
+     dbNames = new String[]{dbName};
+     roles = new String[]{"admin_role"};
+     admin = StaticUserGroup.ADMIN1;
+
+     Connection conn;
+     Statement stmt;
+
+     conn = hiveServer2.createConnection("hive", "hive");
+     stmt = conn.createStatement();
+     stmt.execute("create role admin_role");
+     stmt.execute("grant all on server server1 to role admin_role");
+     stmt.execute("grant role admin_role to group " + StaticUserGroup.ADMINGROUP);
+     stmt.close();
+     conn.close();
+
+     conn = hiveServer2.createConnection(StaticUserGroup.ADMIN1, StaticUserGroup.ADMIN1);
+     stmt = conn.createStatement();
+     stmt.execute("create database " + dbName);
+     stmt.execute("create external table " + dbName + "." + tblName + "(s string) location '/tmp/external/p1'");
+
+     // Deep copy of table tab1
+     Table tbCopy = hmsClient.getTable(dbName, tblName);
+
+     // Change the location of the table to strip the scheme.
+     StorageDescriptor sd = hmsClient.getTable(dbName, tblName).getSd();
+     sd.setLocation("/tmp/external");
+     tbCopy.setSd(sd);
+
+     // Alter table tab1 to be tbCopy which is at scheme-less location.
+     // And the corresponding path will be updated to sentry server.
+     hmsClient.alter_table(dbName, "tab1", tbCopy);
+     Assert.assertEquals(hmsClient.getTable(dbName, tblName).getSd().getLocation(), "/tmp/external");
+     verifyOnPath("/tmp/external", FsAction.ALL, StaticUserGroup.HIVE, true);
+
+     stmt.close();
+     conn.close();
+   }
 
   private void loadData(Statement stmt) throws IOException, SQLException {
     FSDataOutputStream f1 = miniDFS.getFileSystem().create(new Path("/tmp/f1.txt"));
