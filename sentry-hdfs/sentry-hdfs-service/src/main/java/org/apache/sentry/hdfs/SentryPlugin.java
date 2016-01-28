@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.codahale.metrics.Timer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.hdfs.ServiceConstants.ServerConfig;
 import org.apache.sentry.hdfs.UpdateForwarder.ExternalImageRetriever;
@@ -34,7 +35,6 @@ import org.apache.sentry.hdfs.service.thrift.TRoleChanges;
 import org.apache.sentry.provider.db.SentryPolicyStorePlugin;
 import org.apache.sentry.provider.db.SentryPolicyStorePlugin.SentryPluginException;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
-import org.apache.sentry.provider.db.service.thrift.SentryMetrics;
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleAddGroupsRequest;
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleDeleteGroupsRequest;
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleGrantPrivilegeRequest;
@@ -67,6 +67,8 @@ public class SentryPlugin implements SentryPolicyStorePlugin {
 
     @Override
     public PermissionsUpdate retrieveFullImage(long currSeqNum) {
+      final Timer.Context timerContext =
+          SentryHdfsMetricsUtil.getRetrieveFullImageTimer.time();
       Map<String, HashMap<String, String>> privilegeImage = sentryStore.retrieveFullPrivilegeImage();
       Map<String, LinkedList<String>> roleImage = sentryStore.retrieveFullRoleImage();
 
@@ -86,6 +88,11 @@ public class SentryPlugin implements SentryPolicyStorePlugin {
       }
       PermissionsUpdate permissionsUpdate = new PermissionsUpdate(tPermUpdate);
       permissionsUpdate.setSeqNum(currSeqNum);
+      timerContext.stop();
+      SentryHdfsMetricsUtil.getPrivilegeChangesHistogram.update(
+          tPermUpdate.getPrivilegeChangesSize());
+      SentryHdfsMetricsUtil.getRoleChangesHistogram.update(
+          tPermUpdate.getRoleChangesSize());
       return permissionsUpdate;
     }
 
@@ -121,15 +128,11 @@ public class SentryPlugin implements SentryPolicyStorePlugin {
   }
 
   public List<PathsUpdate> getAllPathsUpdatesFrom(long pathSeqNum) {
-    List<PathsUpdate> allPathUpdates = pathsUpdater.getAllUpdatesFrom(pathSeqNum);
-    SentryMetrics.getInstance().numPathUpdatesCounter.inc(allPathUpdates.size());
-    return allPathUpdates;
+    return pathsUpdater.getAllUpdatesFrom(pathSeqNum);
   }
 
   public List<PermissionsUpdate> getAllPermsUpdatesFrom(long permSeqNum) {
-    List<PermissionsUpdate> allPermUpdates = permsUpdater.getAllUpdatesFrom(permSeqNum);
-    SentryMetrics.getInstance().privilegeUpdateCounter.inc(allPermUpdates.size());
-    return allPermUpdates;
+    return permsUpdater.getAllUpdatesFrom(permSeqNum);
   }
 
   public void handlePathUpdateNotification(PathsUpdate update)
