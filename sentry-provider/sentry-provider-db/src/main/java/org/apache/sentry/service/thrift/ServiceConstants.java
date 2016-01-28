@@ -207,6 +207,12 @@ public class ServiceConstants {
     // max message size for thrift messages
     public static String SENTRY_POLICY_CLIENT_THRIFT_MAX_MESSAGE_SIZE = "sentry.policy.client.thrift.max.message.size";
     public static long SENTRY_POLICY_CLIENT_THRIFT_MAX_MESSAGE_SIZE_DEFAULT = 100 * 1024 * 1024;
+
+    // client retry settings
+    public static final String RETRY_COUNT_CONF = "sentry.provider.backend.db.retry.count";
+    public static final int RETRY_COUNT_DEFAULT = 3;
+    public static final String RETRY_INTERVAL_SEC_CONF = "sentry.provider.backend.db.retry.interval.seconds";
+    public static final int RETRY_INTERVAL_SEC_DEFAULT = 30;
   }
 
   /**
