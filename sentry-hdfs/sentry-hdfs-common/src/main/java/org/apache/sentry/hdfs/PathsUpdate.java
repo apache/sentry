@@ -23,13 +23,15 @@ import java.net.URISyntaxException;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-
 import org.apache.sentry.hdfs.service.thrift.TPathChanges;
 import org.apache.sentry.hdfs.service.thrift.TPathsUpdate;
 import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.commons.httpclient.URIException;
 import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.conf.Configuration;
 
 import com.google.common.collect.Lists;
 
@@ -42,7 +44,7 @@ import com.google.common.collect.Lists;
 public class PathsUpdate implements Updateable.Update {
 
   public static String ALL_PATHS = "__ALL_PATHS__";
-
+  private static final Configuration CONF = new Configuration();
   private final TPathsUpdate tPathsUpdate;
 
   public PathsUpdate() {
@@ -89,6 +91,10 @@ public class PathsUpdate implements Updateable.Update {
     return tPathsUpdate;
   }
 
+  @VisibleForTesting
+  public static Configuration getConfiguration() {
+    return CONF;
+  }
 
   /**
    *
@@ -106,9 +112,18 @@ public class PathsUpdate implements Updateable.Update {
         return null;
       }
 
-      Preconditions.checkNotNull(uri.getScheme());
+      String scheme = uri.getScheme();
+      if (scheme == null) {
+        // Use the default URI scheme only if the paths has no scheme.
+        URI defaultUri = FileSystem.getDefaultUri(CONF);
+        scheme = defaultUri.getScheme();
+      }
 
-      if(uri.getScheme().equalsIgnoreCase("hdfs")) {
+      // The paths without a scheme will be default to default scheme.
+      Preconditions.checkNotNull(scheme);
+
+      // Non-HDFS paths will be skipped.
+      if(scheme.equalsIgnoreCase("hdfs")) {
         return Lists.newArrayList(uri.getPath().split("^/")[1]
             .split("/"));
       } else {
