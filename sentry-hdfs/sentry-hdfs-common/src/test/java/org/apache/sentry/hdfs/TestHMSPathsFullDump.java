@@ -102,8 +102,8 @@ public class TestHMSPathsFullDump {
     new TDeserializer(protoFactory).deserialize(tPathsDump, ser);
     HMSPaths fromDump = serDe.initializeFromDump(tPathsDump);
     System.out.println("Deserialization Time: " + (System.currentTimeMillis() - t1));
-    Assert.assertEquals("db9.tbl999", fromDump.findAuthzObject(new String[]{"user", "hive", "warehouse", "db9", "tbl999"}, false));
-    Assert.assertEquals("db9.tbl999", fromDump.findAuthzObject(new String[]{"user", "hive", "warehouse", "db9", "tbl999", "part99"}, false));
+    Assert.assertEquals(new HashSet<String>(Arrays.asList("db9.tbl999")), fromDump.findAuthzObject(new String[]{"user", "hive", "warehouse", "db9", "tbl999"}, false));
+    Assert.assertEquals(new HashSet<String>(Arrays.asList("db9.tbl999")), fromDump.findAuthzObject(new String[]{"user", "hive", "warehouse", "db9", "tbl999", "part99"}, false));
   }
 
   /**
