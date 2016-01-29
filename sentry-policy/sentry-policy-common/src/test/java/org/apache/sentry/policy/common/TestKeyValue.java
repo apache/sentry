@@ -14,11 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.provider.common;
+package org.apache.sentry.policy.common;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertFalse;
-import static org.apache.sentry.provider.common.ProviderConstants.KV_JOINER;
+import static org.apache.sentry.policy.common.PolicyConstants.KV_JOINER;
 
 import org.junit.Test;
 

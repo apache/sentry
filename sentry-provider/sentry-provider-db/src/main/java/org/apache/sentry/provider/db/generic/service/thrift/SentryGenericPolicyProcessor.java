@@ -17,8 +17,8 @@
  */
 package org.apache.sentry.provider.db.generic.service.thrift;
 
-import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_JOINER;
-import static org.apache.sentry.provider.common.ProviderConstants.KV_JOINER;
+import static org.apache.sentry.policy.common.PolicyConstants.AUTHORIZABLE_JOINER;
+import static org.apache.sentry.policy.common.PolicyConstants.KV_JOINER;
 
 import java.lang.reflect.Constructor;
 import java.util.HashSet;

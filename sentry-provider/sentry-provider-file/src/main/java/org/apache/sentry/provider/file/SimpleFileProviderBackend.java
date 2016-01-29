@@ -16,7 +16,7 @@
  */
 package org.apache.sentry.provider.file;
 
-import static org.apache.sentry.provider.common.ProviderConstants.ROLE_SPLITTER;
+import static org.apache.sentry.policy.common.PolicyConstants.ROLE_SPLITTER;
 
 import java.io.IOException;
 import java.net.URI;

@@ -19,13 +19,13 @@
 package org.apache.sentry.policy.sqoop;
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertTrue;
-import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_JOINER;
-import static org.apache.sentry.provider.common.ProviderConstants.KV_JOINER;
-import static org.apache.sentry.provider.common.ProviderConstants.KV_SEPARATOR;
+import static org.apache.sentry.policy.common.PolicyConstants.AUTHORIZABLE_JOINER;
+import static org.apache.sentry.policy.common.PolicyConstants.KV_JOINER;
+import static org.apache.sentry.policy.common.PolicyConstants.KV_SEPARATOR;
 
 import org.apache.sentry.core.model.sqoop.SqoopActionConstant;
 import org.apache.sentry.policy.common.Privilege;
-import org.apache.sentry.provider.common.KeyValue;
+import org.apache.sentry.policy.common.KeyValue;
 import org.junit.Test;
 
 public class TestSqoopWildcardPrivilege {

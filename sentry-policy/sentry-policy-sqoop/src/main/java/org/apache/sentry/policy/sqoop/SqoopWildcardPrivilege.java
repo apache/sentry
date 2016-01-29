@@ -16,14 +16,14 @@
  */
 package org.apache.sentry.policy.sqoop;
 
-import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_SPLITTER;
+import static org.apache.sentry.policy.common.PolicyConstants.AUTHORIZABLE_SPLITTER;
 
 import java.util.List;
 
 import org.apache.sentry.core.model.sqoop.SqoopActionConstant;
 import org.apache.sentry.policy.common.Privilege;
 import org.apache.sentry.policy.common.PrivilegeFactory;
-import org.apache.sentry.provider.common.KeyValue;
+import org.apache.sentry.policy.common.KeyValue;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;

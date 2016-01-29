@@ -24,10 +24,10 @@ package org.apache.sentry.policy.indexer;
 import java.util.List;
 
 import org.apache.sentry.core.model.indexer.IndexerConstants;
+import org.apache.sentry.policy.common.PolicyConstants;
 import org.apache.sentry.policy.common.Privilege;
 import org.apache.sentry.policy.common.PrivilegeFactory;
-import org.apache.sentry.provider.common.KeyValue;
-import org.apache.sentry.provider.common.ProviderConstants;
+import org.apache.sentry.policy.common.KeyValue;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -44,7 +44,7 @@ public class IndexerWildcardPrivilege implements Privilege {
       throw new IllegalArgumentException("Wildcard string cannot be null or empty.");
     }
     List<KeyValue>parts = Lists.newArrayList();
-    for (String authorizable : ProviderConstants.AUTHORIZABLE_SPLITTER.trimResults().split(
+    for (String authorizable : PolicyConstants.AUTHORIZABLE_SPLITTER.trimResults().split(
         wildcardString)) {
       if (authorizable.isEmpty()) {
         throw new IllegalArgumentException("Privilege '" + wildcardString + "' has an empty section");
@@ -108,7 +108,7 @@ public class IndexerWildcardPrivilege implements Privilege {
         "Please report, this method should not be called with two different keys");
     if(policyPart.getValue().equals(IndexerConstants.ALL) || policyPart.equals(requestPart)) {
       return true;
-    } else if (!ProviderConstants.PRIVILEGE_NAME.equalsIgnoreCase(policyPart.getKey())
+    } else if (!PolicyConstants.PRIVILEGE_NAME.equalsIgnoreCase(policyPart.getKey())
         && IndexerConstants.ALL.equalsIgnoreCase(requestPart.getValue())) {
       /* privilege request is to match with any object of given type */
       return true;
@@ -118,7 +118,7 @@ public class IndexerWildcardPrivilege implements Privilege {
 
   @Override
   public String toString() {
-    return ProviderConstants.AUTHORIZABLE_JOINER.join(parts);
+    return PolicyConstants.AUTHORIZABLE_JOINER.join(parts);
   }
 
   @Override

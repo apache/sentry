@@ -17,8 +17,8 @@ vim  * Licensed to the Apache Software Foundation (ASF) under one
  */
 package org.apache.sentry.provider.db.service.model;
 
-import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_JOINER;
-import static org.apache.sentry.provider.common.ProviderConstants.KV_JOINER;
+import static org.apache.sentry.policy.common.PolicyConstants.AUTHORIZABLE_JOINER;
+import static org.apache.sentry.policy.common.PolicyConstants.KV_JOINER;
 
 import java.lang.reflect.Field;
 import java.util.HashSet;

@@ -19,7 +19,7 @@ package org.apache.sentry.policy.indexer;
 import org.apache.sentry.core.model.indexer.Indexer;
 import org.apache.sentry.core.model.indexer.IndexerModelAuthorizable;
 import org.apache.sentry.core.model.indexer.IndexerModelAuthorizable.AuthorizableType;
-import org.apache.sentry.provider.common.KeyValue;
+import org.apache.sentry.policy.common.KeyValue;
 
 public class IndexerModelAuthorizables {
 

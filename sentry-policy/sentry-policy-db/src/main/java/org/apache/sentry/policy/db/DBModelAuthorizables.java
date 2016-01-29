@@ -24,7 +24,7 @@ import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.core.model.db.Table;
 import org.apache.sentry.core.model.db.View;
-import org.apache.sentry.provider.common.KeyValue;
+import org.apache.sentry.policy.common.KeyValue;
 
 public class DBModelAuthorizables {
 

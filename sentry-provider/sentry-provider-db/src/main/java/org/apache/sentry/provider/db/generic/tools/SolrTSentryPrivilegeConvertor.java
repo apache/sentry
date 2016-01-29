@@ -23,10 +23,10 @@ import com.google.common.collect.Lists;
 import org.apache.sentry.core.model.search.Collection;
 import org.apache.sentry.core.model.search.SearchModelAuthorizable;
 import org.apache.sentry.core.model.search.SearchModelAuthorizable.AuthorizableType;
+import org.apache.sentry.policy.common.PolicyConstants;
 import org.apache.sentry.policy.search.SearchModelAuthorizables;
-import org.apache.sentry.provider.common.KeyValue;
+import org.apache.sentry.policy.common.KeyValue;
 import org.apache.sentry.provider.common.PolicyFileConstants;
-import org.apache.sentry.provider.common.ProviderConstants;
 import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryGrantOption;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
@@ -48,7 +48,7 @@ public  class SolrTSentryPrivilegeConvertor implements TSentryPrivilegeConvertor
   public TSentryPrivilege fromString(String privilegeStr) throws Exception {
     TSentryPrivilege tSentryPrivilege = new TSentryPrivilege();
     List<TAuthorizable> authorizables = new LinkedList<TAuthorizable>();
-    for (String authorizable : ProviderConstants.AUTHORIZABLE_SPLITTER.split(privilegeStr)) {
+    for (String authorizable : PolicyConstants.AUTHORIZABLE_SPLITTER.split(privilegeStr)) {
       KeyValue keyValue = new KeyValue(authorizable);
       String key = keyValue.getKey();
       String value = keyValue.getValue();
@@ -88,23 +88,23 @@ public  class SolrTSentryPrivilegeConvertor implements TSentryPrivilegeConvertor
       if (it != null) {
         while (it.hasNext()) {
           TAuthorizable tAuthorizable = it.next();
-          privileges.add(ProviderConstants.KV_JOINER.join(
+          privileges.add(PolicyConstants.KV_JOINER.join(
               tAuthorizable.getType(), tAuthorizable.getName()));
         }
       }
 
       if (!authorizables.isEmpty()) {
-        privileges.add(ProviderConstants.KV_JOINER.join(
+        privileges.add(PolicyConstants.KV_JOINER.join(
             PolicyFileConstants.PRIVILEGE_ACTION_NAME, action));
       }
 
       // only append the grant option to privilege string if it's true
       if ("true".equals(grantOption)) {
-        privileges.add(ProviderConstants.KV_JOINER.join(
+        privileges.add(PolicyConstants.KV_JOINER.join(
             PolicyFileConstants.PRIVILEGE_GRANT_OPTION_NAME, grantOption));
       }
     }
-    return ProviderConstants.AUTHORIZABLE_JOINER.join(privileges);
+    return PolicyConstants.AUTHORIZABLE_JOINER.join(privileges);
   }
 
   private static void validatePrivilegeHierarchy(TSentryPrivilege tSentryPrivilege) throws Exception {

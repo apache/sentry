@@ -28,8 +28,8 @@ import java.util.Set;
 import org.apache.sentry.binding.hive.SentryPolicyFileFormatFactory;
 import org.apache.sentry.binding.hive.SentryPolicyFileFormatter;
 import org.apache.sentry.binding.hive.authz.SentryConfigTool;
+import org.apache.sentry.policy.common.PolicyConstants;
 import org.apache.sentry.provider.common.PolicyFileConstants;
-import org.apache.sentry.provider.common.ProviderConstants;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -183,8 +183,8 @@ public class TestPolicyImportExport extends AbstractTestWithStaticConfiguration 
       for (String actualPrivilege : actualPrivileges) {
         boolean isFound = exceptedPrivileges.contains(actualPrivilege);
         if (!isFound) {
-          String withOptionPrivilege = ProviderConstants.AUTHORIZABLE_JOINER.join(actualPrivilege,
-              ProviderConstants.KV_JOINER.join(PolicyFileConstants.PRIVILEGE_GRANT_OPTION_NAME,
+          String withOptionPrivilege = PolicyConstants.AUTHORIZABLE_JOINER.join(actualPrivilege,
+              PolicyConstants.KV_JOINER.join(PolicyFileConstants.PRIVILEGE_GRANT_OPTION_NAME,
                   "false"));
           isFound = exceptedPrivileges.contains(withOptionPrivilege);
         }

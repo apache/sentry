@@ -25,8 +25,8 @@ import static org.junit.Assert.fail;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.sentry.policy.common.PolicyConstants;
 import org.apache.sentry.provider.common.PolicyFileConstants;
-import org.apache.sentry.provider.common.ProviderConstants;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -526,8 +526,8 @@ public class TestSentryServiceImportExport extends SentryServiceIntegrationBase 
       for (String actualPrivilege : actualPrivileges) {
         boolean isFound = exceptedPrivileges.contains(actualPrivilege);
         if (!isFound) {
-          String withOptionPrivilege = ProviderConstants.AUTHORIZABLE_JOINER.join(actualPrivilege,
-              ProviderConstants.KV_JOINER.join(PolicyFileConstants.PRIVILEGE_GRANT_OPTION_NAME,
+          String withOptionPrivilege = PolicyConstants.AUTHORIZABLE_JOINER.join(actualPrivilege,
+              PolicyConstants.KV_JOINER.join(PolicyFileConstants.PRIVILEGE_GRANT_OPTION_NAME,
                   "false"));
           isFound = exceptedPrivileges.contains(withOptionPrivilege);
         }
