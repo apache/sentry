@@ -28,6 +28,7 @@ import java.util.Set;
 import javax.security.auth.callback.CallbackHandler;
 
 import org.apache.hadoop.conf.Configuration;
+import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.SaslRpcServer;
 import org.apache.hadoop.security.SaslRpcServer.AuthMethod;
@@ -75,11 +76,14 @@ public class SentryGenericServiceClientDefaultImpl implements SentryGenericServi
 
     public UgiSaslClientTransport(String mechanism, String authorizationId,
         String protocol, String serverName, Map<String, String> props,
-        CallbackHandler cbh, TTransport transport, boolean wrapUgi)
+        CallbackHandler cbh, TTransport transport, boolean wrapUgi, Configuration conf)
         throws IOException {
       super(mechanism, authorizationId, protocol, serverName, props, cbh,
           transport);
       if (wrapUgi) {
+       // If we don't set the configuration, the UGI will be created based on
+       // what's on the classpath, which may lack the kerberos changes we require
+        UserGroupInformation.setConfiguration(conf);
         ugi = UserGroupInformation.getLoginUser();
       }
     }
@@ -116,7 +120,8 @@ public class SentryGenericServiceClientDefaultImpl implements SentryGenericServi
   }
 
   public SentryGenericServiceClientDefaultImpl(Configuration conf) throws IOException {
-    this.conf = conf;
+    // copy the configuration because we may make modifications to it.
+    this.conf = new Configuration(conf);
     Preconditions.checkNotNull(this.conf, "Configuration object cannot be null");
     this.serverAddress = NetUtils.createSocketAddr(Preconditions.checkNotNull(
                            conf.get(ClientConfig.SERVER_RPC_ADDRESS), "Config key "
@@ -130,6 +135,9 @@ public class SentryGenericServiceClientDefaultImpl implements SentryGenericServi
         serverAddress.getPort(), connectionTimeout);
     if (kerberos) {
       String serverPrincipal = Preconditions.checkNotNull(conf.get(ServerConfig.PRINCIPAL), ServerConfig.PRINCIPAL + " is required");
+      // since the client uses hadoop-auth, we need to set kerberos in
+      // hadoop-auth if we plan to use kerberos
+      conf.set(HADOOP_SECURITY_AUTHENTICATION, ServerConfig.SECURITY_MODE_KERBEROS);
 
       // Resolve server host in the same way as we are doing on server side
       serverPrincipal = SecurityUtil.getServerPrincipal(serverPrincipal, serverAddress.getAddress());
@@ -142,7 +150,7 @@ public class SentryGenericServiceClientDefaultImpl implements SentryGenericServi
           .get(ServerConfig.SECURITY_USE_UGI_TRANSPORT, "true"));
       transport = new UgiSaslClientTransport(AuthMethod.KERBEROS.getMechanismName(),
           null, serverPrincipalParts[0], serverPrincipalParts[1],
-          ClientConfig.SASL_PROPERTIES, null, transport, wrapUgi);
+          ClientConfig.SASL_PROPERTIES, null, transport, wrapUgi, conf);
     } else {
       serverPrincipalParts = null;
     }
