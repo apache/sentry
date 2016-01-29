@@ -45,6 +45,7 @@ public class SentryShellSolr extends SentryShellCommon {
     String requestorName = System.getProperty("user.name", "");
     String component = "SOLR";
     Configuration conf = getSentryConf();
+
     String service = conf.get(SOLR_SERVICE_NAME, "service1");
     SentryGenericServiceClient client = SentryGenericServiceClientFactory.create(conf);
 
@@ -94,7 +95,8 @@ public class SentryShellSolr extends SentryShellCommon {
       }
     } catch (Exception e) {
       LOGGER.error(e.getMessage(), e);
-      System.out.println("The operation failed, please refer to log file for the root cause.");
+      System.out.println("The operation failed." +
+          e.getMessage() == null ? "" : "Message: " + e.getMessage());
     }
   }
 
