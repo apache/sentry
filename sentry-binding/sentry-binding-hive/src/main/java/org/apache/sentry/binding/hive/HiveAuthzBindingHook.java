@@ -595,9 +595,16 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
           stmtAuthObject.getOperationScope().toString());
     }
 
+    HiveAuthzBinding binding = null;
+    try {
+      binding = getHiveBindingWithPrivilegeCache(hiveAuthzBinding, context.getUserName());
+    } catch (SemanticException e) {
+      // Will use the original hiveAuthzBinding
+      binding = hiveAuthzBinding;
+    }
     // validate permission
-    hiveAuthzBinding.authorize(stmtOperation, stmtAuthObject, getCurrentSubject(context),
-        inputHierarchy, outputHierarchy);
+    binding.authorize(stmtOperation, stmtAuthObject, getCurrentSubject(context), inputHierarchy,
+        outputHierarchy);
   }
 
   private HiveOperation getCurrentHiveStmtOp() {
