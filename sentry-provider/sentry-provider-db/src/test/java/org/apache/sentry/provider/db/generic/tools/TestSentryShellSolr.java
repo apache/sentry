@@ -30,6 +30,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.security.PrivilegedExceptionAction;
+import java.util.Iterator;
 import java.util.Set;
 import javax.security.auth.Subject;
 
@@ -415,10 +416,16 @@ public class TestSentryShellSolr extends SentryGenericServiceIntegrationBase {
         // test: command option is required for shell
         args = new String[] {"-conf", confPath.getAbsolutePath() };
         sentryShell = new SentryShellSolr();
-        validateMissingParameterMsg(sentryShell, args,
-                SentryShellCommon.PREFIX_MESSAGE_MISSING_OPTION + "[-arg Add group to role," +
-                        " -cr Create role, -rpr Revoke privilege from role, -drg Delete group from role," +
-                        " -lr List role, -lp List privilege, -gpr Grant privilege to role, -dr Drop role]");
+        validateMissingParameterMsgsContains(sentryShell, args,
+                SentryShellCommon.PREFIX_MESSAGE_MISSING_OPTION + "[",
+                "-arg Add group to role",
+                "-cr Create role",
+                "-rpr Revoke privilege from role",
+                "-drg Delete group from role",
+                "-lr List role",
+                "-lp List privilege",
+                "-gpr Grant privilege to role",
+                "-dr Drop role");
 
         // clear the test data
         client.dropRole(requestorName, TEST_ROLE_NAME_1, SOLR);
@@ -442,5 +449,27 @@ public class TestSentryShellSolr extends SentryGenericServiceIntegrationBase {
       String exceptedErrorMsg) throws Exception {
     Set<String> errorMsgs = getShellResultWithOSRedirect(sentryShell, args, false);
     assertTrue(errorMsgs.contains(exceptedErrorMsg));
+  }
+
+  private void validateMissingParameterMsgsContains(SentryShellSolr sentryShell, String[] args,
+      String ... expectedErrorMsgsContains) throws Exception {
+    Set<String> errorMsgs = getShellResultWithOSRedirect(sentryShell, args, false);
+    boolean foundAllMessages = false;
+    Iterator<String> it = errorMsgs.iterator();
+    while (it.hasNext()) {
+      String errorMessage = it.next();
+      boolean missingExpected = false;
+      for (String expectedContains : expectedErrorMsgsContains) {
+        if (!errorMessage.contains(expectedContains)) {
+          missingExpected = true;
+          break;
+        }
+      }
+      if (!missingExpected) {
+        foundAllMessages = true;
+        break;
+      }
+    }
+    assertTrue(foundAllMessages);
   }
 }
