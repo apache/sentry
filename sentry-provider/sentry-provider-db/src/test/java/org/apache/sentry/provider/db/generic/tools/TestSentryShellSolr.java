@@ -401,6 +401,16 @@ public class TestSentryShellSolr extends SentryGenericServiceIntegrationBase {
         validateMissingParameterMsg(sentryShell, args,
                 SentryShellCommon.PREFIX_MESSAGE_MISSING_OPTION + SentryShellCommon.OPTION_DESC_PRIVILEGE);
 
+        // test: action is required in privilege
+        args = new String[] { "-gpr", "-r", TEST_ROLE_NAME_1, "-conf", confPath.getAbsolutePath(), "-p", "collection=collection1" };
+        sentryShell = new SentryShellSolr();
+         try {
+          getShellResultWithOSRedirect(sentryShell, args, false);
+          fail("Expected IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+          assert("Privilege is invalid: action required but not specified.".equals(e.getMessage()));
+        }
+
         // test: -r is required when revoke privilege from role
         args = new String[] { "-rpr", "-p", "server=server1", "-conf", confPath.getAbsolutePath() };
         sentryShell = new SentryShellSolr();
@@ -446,9 +456,9 @@ public class TestSentryShellSolr extends SentryGenericServiceIntegrationBase {
   }
 
   private void validateMissingParameterMsg(SentryShellSolr sentryShell, String[] args,
-      String exceptedErrorMsg) throws Exception {
+      String expectedErrorMsg) throws Exception {
     Set<String> errorMsgs = getShellResultWithOSRedirect(sentryShell, args, false);
-    assertTrue(errorMsgs.contains(exceptedErrorMsg));
+    assertTrue("Expected error message: " + expectedErrorMsg, errorMsgs.contains(expectedErrorMsg));
   }
 
   private void validateMissingParameterMsgsContains(SentryShellSolr sentryShell, String[] args,

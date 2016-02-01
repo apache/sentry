@@ -96,7 +96,8 @@ public class SentryShellSolr extends SentryShellCommon {
     } catch (Exception e) {
       LOGGER.error(e.getMessage(), e);
       System.out.println("The operation failed." +
-          e.getMessage() == null ? "" : "Message: " + e.getMessage());
+          e.getMessage() == null ? "" : "  Message: " + e.getMessage());
+      System.exit(1);
     }
   }
 

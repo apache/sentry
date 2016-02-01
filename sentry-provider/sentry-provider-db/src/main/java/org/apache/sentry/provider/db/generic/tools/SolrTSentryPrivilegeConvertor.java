@@ -69,6 +69,10 @@ public  class SolrTSentryPrivilegeConvertor implements TSentryPrivilegeConvertor
         throw new IllegalArgumentException("Unknown key: " + key);
       }
     }
+
+    if (tSentryPrivilege.getAction() == null) {
+      throw new IllegalArgumentException("Privilege is invalid: action required but not specified.");
+    }
     tSentryPrivilege.setComponent(component);
     tSentryPrivilege.setServiceName(service);
     tSentryPrivilege.setAuthorizables(authorizables);
