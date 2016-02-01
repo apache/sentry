@@ -34,6 +34,7 @@ limitations under the License.
     <module>sentry-policy-db</module>
     <module>sentry-policy-indexer</module>
     <module>sentry-policy-search</module>
+    <module>sentry-policy-kafka</module>
   </modules>
 
 </project>
