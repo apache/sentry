@@ -205,7 +205,9 @@ class MetastoreCacheInitializer implements Closeable {
         if (tbl.getSd().getLocation() != null) {
           List<String> tblPath =
                   PathsUpdate.parsePath(tbl.getSd().getLocation());
-          tblPathChange.addToAddPaths(tblPath);
+          if (tblPath != null) {
+            tblPathChange.addToAddPaths(tblPath);
+          }
           List<String> tblPartNames =
                   hmsHandler.get_partition_names(db.getName(), tableName, (short) -1);
           for (int i = 0; i < tblPartNames.size(); i += maxPartitionsPerCall) {
