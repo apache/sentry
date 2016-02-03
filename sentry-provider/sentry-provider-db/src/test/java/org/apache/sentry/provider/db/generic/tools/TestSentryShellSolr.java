@@ -268,6 +268,79 @@ public class TestSentryShellSolr extends SentryGenericServiceIntegrationBase {
     assertGrantRevokePrivilege(false);
   }
 
+  @Test
+  public void testConfigValidation() throws Exception {
+    runTestAsSubject(new TestOperation() {
+      @Override
+      public void runTestAsSubject() throws Exception {
+        client.createRole(requestorName, TEST_ROLE_NAME_1, SOLR);
+
+        // just Configs are okay
+        String [] privs = {
+            "Config=config1->action=*",
+            "Config=config2->action=*"
+        };
+        validateGrantRevokePrivileges(privs);
+
+        // all configs supported
+        validateGrantRevokePrivileges(new String[] {"Config=*->action=*"});
+
+        // config, collection mixing not supported
+        validateGrantIllegalArgumentException("Config->config1->Collection=collection1->action=*");
+        validateGrantIllegalArgumentException("Collection=collection1->Config=config1->action=*");
+
+        // config only all action allowed
+        validateGrantIllegalArgumentException("Config=config1->action=UPDATE");
+        validateGrantIllegalArgumentException("Config=config2->action=QUERY");
+
+        client.dropRole(requestorName, TEST_ROLE_NAME_1, SOLR);
+      }
+    });
+  }
+
+  private void validateGrantRevokePrivileges(String [] privileges) throws Exception {
+    // add privileges
+    for (int i = 0; i < privileges.length; ++i) {
+      // test: grant privilege to role
+      String [] args = new String [] { grant(true), "-r", TEST_ROLE_NAME_1, "-p",
+          privileges[ i ],
+          "-conf", confPath.getAbsolutePath() };
+      SentryShellSolr.main(args);
+    }
+
+    String [] args = new String[] { list(true), "-r", TEST_ROLE_NAME_1, "-conf", confPath.getAbsolutePath() };
+    SentryShellSolr sentryShell = new SentryShellSolr();
+    Set<String> privilegeStrs = getShellResultWithOSRedirect(sentryShell, args, true);
+    assertEquals("Incorrect number of privileges", privileges.length, privilegeStrs.size());
+    for (int i = 0; i < privileges.length; ++i) {
+      assertTrue("Expected privilege: " + privileges[ i ], privilegeStrs.contains(privileges[ i ]));
+    }
+
+    // revoke privileges
+    for (int i = 0; i < privileges.length; ++i) {
+      args = new String [] { revoke(true), "-r", TEST_ROLE_NAME_1, "-p",
+          privileges[ i ],
+          "-conf", confPath.getAbsolutePath() };
+      SentryShellSolr.main(args);
+    }
+    args = new String[] { list(true), "-r", TEST_ROLE_NAME_1, "-conf", confPath.getAbsolutePath() };
+    sentryShell = new SentryShellSolr();
+    privilegeStrs = getShellResultWithOSRedirect(sentryShell, args, true);
+    assertEquals("Incorrect number of privileges", 0, privilegeStrs.size());
+  }
+
+  private void validateGrantIllegalArgumentException(String privilege) throws Exception {
+    // test: grant privilege to role with the error privilege hierarchy
+    String [] args = new String[] { "-gpr", "-r", TEST_ROLE_NAME_1, "-p",
+        privilege, "-conf", confPath.getAbsolutePath() };
+    SentryShellSolr sentryShell = new SentryShellSolr();
+    try {
+      sentryShell.executeShell(args);
+      fail("Exception should be thrown for the error privilege format, invalid key value.");
+    } catch (IllegalArgumentException e) {
+      // expected exception
+    }
+  }
 
   @Test
   public void testNegativeCaseWithInvalidArgument() throws Exception {
@@ -456,7 +529,8 @@ public class TestSentryShellSolr extends SentryGenericServiceIntegrationBase {
     ByteArrayOutputStream outContent = new ByteArrayOutputStream();
     System.setOut(new PrintStream(outContent));
     assertEquals(expectedExecuteResult, sentryShell.executeShell(args));
-    Set<String> resultSet = Sets.newHashSet(outContent.toString().split("\n"));
+    String outContentStr = outContent.toString();
+    Set<String> resultSet = outContentStr.length() > 0 ? Sets.<String>newHashSet(outContentStr.split("\n")) : Sets.<String>newHashSet();
     System.setOut(oldOut);
     return resultSet;
   }

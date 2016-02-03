@@ -21,7 +21,9 @@ package org.apache.sentry.provider.db.generic.tools;
 import com.google.common.collect.Lists;
 
 import org.apache.sentry.core.model.search.Collection;
+import org.apache.sentry.core.model.search.Config;
 import org.apache.sentry.core.model.search.SearchModelAuthorizable;
+import org.apache.sentry.provider.common.KeyValue;
 import org.apache.sentry.policy.common.PrivilegeValidator;
 import org.apache.sentry.policy.common.PrivilegeValidatorContext;
 import org.apache.sentry.policy.search.SearchModelAuthorizables;
@@ -63,7 +65,10 @@ public  class SolrTSentryPrivilegeConvertor implements TSentryPrivilegeConvertor
         if (authz instanceof Collection) {
           Collection coll = (Collection)authz;
           authorizables.add(new TAuthorizable(coll.getTypeName(), coll.getName()));
-        } else {
+        } else if (authz instanceof Config) {
+          Config config = (Config)authz;
+          authorizables.add(new TAuthorizable(config.getTypeName(), config.getName()));
+         } else {
           throw new IllegalArgumentException("Unknown authorizable type: " + authz.getTypeName());
         }
       } else if (PolicyFileConstants.PRIVILEGE_ACTION_NAME.equalsIgnoreCase(key)) {
