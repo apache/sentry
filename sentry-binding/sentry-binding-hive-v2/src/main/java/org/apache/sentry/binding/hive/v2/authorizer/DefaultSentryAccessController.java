@@ -181,8 +181,7 @@ public class DefaultSentryAccessController extends SentryHiveAccessController {
       List<HivePrivilege> hivePrivileges, HivePrivilegeObject hivePrivObject,
       HivePrincipal grantorPrincipal, boolean grantOption) throws HiveAuthzPluginException,
       HiveAccessControlException {
-    grantOrRevokePrivlegeOnRole(hivePrincipals, hivePrivileges, hivePrivObject, grantorPrincipal,
-        grantOption, true);
+    grantOrRevokePrivlegeOnRole(hivePrincipals, hivePrivileges, hivePrivObject, grantOption, true);
   }
 
   @Override
@@ -190,22 +189,21 @@ public class DefaultSentryAccessController extends SentryHiveAccessController {
       List<HivePrivilege> hivePrivileges, HivePrivilegeObject hivePrivObject,
       HivePrincipal grantorPrincipal, boolean grantOption) throws HiveAuthzPluginException,
       HiveAccessControlException {
-    grantOrRevokePrivlegeOnRole(hivePrincipals, hivePrivileges, hivePrivObject, grantorPrincipal,
-        grantOption, false);
+    grantOrRevokePrivlegeOnRole(hivePrincipals, hivePrivileges, hivePrivObject, grantOption, false);
   }
 
   @Override
   public void grantRole(List<HivePrincipal> hivePrincipals, List<String> roles,
       boolean grantOption, HivePrincipal grantorPrinc) throws HiveAuthzPluginException,
       HiveAccessControlException {
-    grantOrRevokeRoleOnGroup(hivePrincipals, roles, grantOption, grantorPrinc, true);
+    grantOrRevokeRoleOnGroup(hivePrincipals, roles, grantorPrinc, true);
   }
 
   @Override
   public void revokeRole(List<HivePrincipal> hivePrincipals, List<String> roles,
       boolean grantOption, HivePrincipal grantorPrinc) throws HiveAuthzPluginException,
       HiveAccessControlException {
-    grantOrRevokeRoleOnGroup(hivePrincipals, roles, grantOption, grantorPrinc, false);
+    grantOrRevokeRoleOnGroup(hivePrincipals, roles, grantorPrinc, false);
   }
 
 
@@ -358,14 +356,12 @@ public class DefaultSentryAccessController extends SentryHiveAccessController {
    * @param hivePrincipals
    * @param hivePrivileges
    * @param hivePrivObject
-   * @param grantorPrincipal
    * @param grantOption
    * @param isGrant
    */
   private void grantOrRevokePrivlegeOnRole(List<HivePrincipal> hivePrincipals,
-      List<HivePrivilege> hivePrivileges, HivePrivilegeObject hivePrivObject,
-      HivePrincipal grantorPrincipal, boolean grantOption, boolean isGrant)
-      throws HiveAuthzPluginException, HiveAccessControlException {
+      List<HivePrivilege> hivePrivileges, HivePrivilegeObject hivePrivObject, boolean grantOption,
+      boolean isGrant) throws HiveAuthzPluginException, HiveAccessControlException {
     try {
       sentryClient = getSentryClient();
 
@@ -477,13 +473,12 @@ public class DefaultSentryAccessController extends SentryHiveAccessController {
    *
    * @param hivePrincipals
    * @param roles
-   * @param grantOption
    * @param grantorPrinc
    * @param isGrant
    */
   private void grantOrRevokeRoleOnGroup(List<HivePrincipal> hivePrincipals, List<String> roles,
-      boolean grantOption, HivePrincipal grantorPrinc, boolean isGrant)
-      throws HiveAuthzPluginException, HiveAccessControlException {
+      HivePrincipal grantorPrinc, boolean isGrant) throws HiveAuthzPluginException,
+      HiveAccessControlException {
     try {
       sentryClient = getSentryClient();
       // get principals
