@@ -22,15 +22,18 @@ import com.google.common.collect.Lists;
 
 import org.apache.sentry.core.model.search.Collection;
 import org.apache.sentry.core.model.search.SearchModelAuthorizable;
-import org.apache.sentry.core.model.search.SearchModelAuthorizable.AuthorizableType;
 import org.apache.sentry.policy.common.PolicyConstants;
+import org.apache.sentry.policy.common.PrivilegeValidator;
+import org.apache.sentry.policy.common.PrivilegeValidatorContext;
 import org.apache.sentry.policy.search.SearchModelAuthorizables;
+import org.apache.sentry.policy.search.SimpleSearchPolicyEngine;
 import org.apache.sentry.policy.common.KeyValue;
 import org.apache.sentry.provider.common.PolicyFileConstants;
 import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryGrantOption;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.db.generic.tools.command.TSentryPrivilegeConvertor;
+import org.apache.shiro.config.ConfigurationException;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -46,6 +49,7 @@ public  class SolrTSentryPrivilegeConvertor implements TSentryPrivilegeConvertor
   }
 
   public TSentryPrivilege fromString(String privilegeStr) throws Exception {
+    validatePrivilegeHierarchy(privilegeStr);
     TSentryPrivilege tSentryPrivilege = new TSentryPrivilege();
     List<TAuthorizable> authorizables = new LinkedList<TAuthorizable>();
     for (String authorizable : PolicyConstants.AUTHORIZABLE_SPLITTER.split(privilegeStr)) {
@@ -76,7 +80,6 @@ public  class SolrTSentryPrivilegeConvertor implements TSentryPrivilegeConvertor
     tSentryPrivilege.setComponent(component);
     tSentryPrivilege.setServiceName(service);
     tSentryPrivilege.setAuthorizables(authorizables);
-    validatePrivilegeHierarchy(tSentryPrivilege);
     return tSentryPrivilege;
   }
 
@@ -111,22 +114,15 @@ public  class SolrTSentryPrivilegeConvertor implements TSentryPrivilegeConvertor
     return PolicyConstants.AUTHORIZABLE_JOINER.join(privileges);
   }
 
-  private static void validatePrivilegeHierarchy(TSentryPrivilege tSentryPrivilege) throws Exception {
-    boolean foundCollection = false;
-    Iterator<TAuthorizable> it = tSentryPrivilege.getAuthorizablesIterator();
-    if (it != null) {
-      while (it.hasNext()) {
-        TAuthorizable authorizable = it.next();
-        if (AuthorizableType.Collection.name().equals(authorizable.getType())) {
-          foundCollection = true;
-          break;
-        }
+  private static void validatePrivilegeHierarchy(String privilegeStr) throws Exception {
+    List<PrivilegeValidator> validators = SimpleSearchPolicyEngine.createPrivilegeValidators();
+    PrivilegeValidatorContext context = new PrivilegeValidatorContext(null, privilegeStr);
+    for (PrivilegeValidator validator : validators) {
+      try {
+        validator.validate(context);
+      } catch (ConfigurationException e) {
+        throw new IllegalArgumentException(e);
       }
-    }
-
-    if (!foundCollection) {
-      String msg = "Missing collection object in privilege";
-      throw new IllegalArgumentException(msg);
     }
   }
 }
