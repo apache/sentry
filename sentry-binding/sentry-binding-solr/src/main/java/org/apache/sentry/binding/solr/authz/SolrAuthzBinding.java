@@ -77,6 +77,7 @@ public class SolrAuthzBinding {
   private final GroupMappingService groupMapping;
   private ProviderBackend providerBackend;
   private Subject bindingSubject;
+  private boolean syncEnabled;
 
   public SolrAuthzBinding (SolrAuthzConf authzConf) throws Exception {
     this.authzConf = addHdfsPropsToConf(authzConf);
@@ -87,6 +88,7 @@ public class SolrAuthzBinding {
      */
     this.bindingSubject = new Subject(UserGroupInformation.getCurrentUser()
         .getShortUserName());
+    this.syncEnabled = authzConf.getBoolean("sentry.service.solr.hidden.syncEnabled", false);
   }
 
   // Instantiate the configured authz provider
@@ -282,7 +284,7 @@ public class SolrAuthzBinding {
    * If the binding uses the searchProviderBackend, it can sync privilege with Sentry Service
    */
   public boolean isSyncEnabled() {
-    return (providerBackend instanceof SentryGenericProviderBackend);
+    return (syncEnabled && providerBackend instanceof SentryGenericProviderBackend);
   }
 
   public SentryGenericServiceClient getClient() throws Exception {
