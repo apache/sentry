@@ -19,11 +19,10 @@ import java.util.List;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.exec.SentryHivePrivilegeObjectDesc;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
-import org.apache.hadoop.hive.ql.plan.PrincipalDesc;
-import org.apache.hadoop.hive.ql.plan.PrivilegeDesc;
 import org.apache.hadoop.hive.ql.plan.PrivilegeObjectDesc;
-import org.apache.hadoop.hive.ql.security.authorization.AuthorizationUtils;
+import org.apache.hadoop.hive.ql.security.authorization.DefaultHiveAuthorizationTranslator;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveAccessControlException;
+import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveAuthorizationTranslator;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveAuthorizer;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveAuthzContext;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveAuthzPluginException;
@@ -45,6 +44,8 @@ public class SentryHiveAuthorizer implements HiveAuthorizer {
 
   private SentryHiveAccessController accessController;
   private SentryHiveAuthorizationValidator authValidator;
+  static private HiveAuthorizationTranslator hiveTranslator =
+      new SentryHiveAuthorizationTranslator();
 
   public SentryHiveAuthorizer(SentryHiveAccessController accessController,
       SentryHiveAuthorizationValidator authValidator) {
@@ -152,31 +153,6 @@ public class SentryHiveAuthorizer implements HiveAuthorizer {
     return authValidator.filterListCmdObjects(listObjs, context);
   }
 
-  @Override
-  public List<HivePrincipal> getHivePrincipals(List<PrincipalDesc> principals) throws HiveException {
-    return AuthorizationUtils.getHivePrincipals(principals);
-  }
-
-  @Override
-  public List<HivePrivilege> getHivePrivileges(List<PrivilegeDesc> privileges) {
-    return AuthorizationUtils.getHivePrivileges(privileges);
-  }
-
-  @Override
-  public HivePrivilegeObject getHivePrivilegeObject(PrivilegeObjectDesc privSubjectDesc)
-      throws HiveException {
-    SentryHivePrivilegeObjectDesc sPrivSubjectDesc = null;
-    if (privSubjectDesc instanceof SentryHivePrivilegeObjectDesc) {
-      sPrivSubjectDesc = (SentryHivePrivilegeObjectDesc) privSubjectDesc;
-    }
-    if (sPrivSubjectDesc != null && sPrivSubjectDesc.isSentryPrivObjectDesc()) {
-      HivePrivilegeObjectType objectType = getPrivObjectType(sPrivSubjectDesc);
-      return new SentryHivePrivilegeObject(objectType, privSubjectDesc.getObject());
-    } else {
-      return AuthorizationUtils.getHivePrivilegeObject(privSubjectDesc);
-    }
-  }
-
   protected static HivePrivilegeObjectType getPrivObjectType(
       SentryHivePrivilegeObjectDesc privSubjectDesc) {
     if (privSubjectDesc.getObject() == null) {
@@ -192,4 +168,25 @@ public class SentryHiveAuthorizer implements HiveAuthorizer {
     }
   }
 
+  @Override
+  public Object getHiveAuthorizationTranslator() throws HiveAuthzPluginException {
+    return hiveTranslator;
+  }
+
+  private static class SentryHiveAuthorizationTranslator extends DefaultHiveAuthorizationTranslator {
+
+    @Override
+    public HivePrivilegeObject getHivePrivilegeObject(PrivilegeObjectDesc privSubjectDesc)
+        throws HiveException {
+      if (privSubjectDesc != null && privSubjectDesc instanceof SentryHivePrivilegeObjectDesc) {
+        SentryHivePrivilegeObjectDesc sPrivSubjectDesc =
+            (SentryHivePrivilegeObjectDesc) privSubjectDesc;
+        if (sPrivSubjectDesc.isSentryPrivObjectDesc()) {
+          HivePrivilegeObjectType objectType = getPrivObjectType(sPrivSubjectDesc);
+          return new SentryHivePrivilegeObject(objectType, privSubjectDesc.getObject());
+        }
+      }
+      return super.getHivePrivilegeObject(privSubjectDesc);
+    }
+  }
 }
