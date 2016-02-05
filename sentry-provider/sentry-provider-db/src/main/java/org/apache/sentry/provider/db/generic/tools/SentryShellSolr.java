@@ -21,6 +21,7 @@ package org.apache.sentry.provider.db.generic.tools;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClientFactory;
 import org.apache.sentry.provider.db.generic.tools.command.*;
@@ -42,12 +43,13 @@ public class SentryShellSolr extends SentryShellCommon {
   @Override
   public void run() throws Exception {
     Command command = null;
-    String requestorName = System.getProperty("user.name", "");
     String component = "SOLR";
     Configuration conf = getSentryConf();
 
     String service = conf.get(SOLR_SERVICE_NAME, "service1");
     SentryGenericServiceClient client = SentryGenericServiceClientFactory.create(conf);
+    UserGroupInformation ugi = UserGroupInformation.getLoginUser();
+    String requestorName = ugi.getShortUserName();
 
     if (isCreateRole) {
       command = new CreateRoleCmd(roleName, component);
@@ -90,13 +92,16 @@ public class SentryShellSolr extends SentryShellCommon {
   public static void main(String[] args) throws Exception {
     SentryShellSolr sentryShell = new SentryShellSolr();
     try {
-      if (sentryShell.executeShell(args)) {
-        System.out.println("The operation completed successfully.");
-      }
+      sentryShell.executeShell(args);
     } catch (Exception e) {
       LOGGER.error(e.getMessage(), e);
+      Throwable current =  e;
+      // find the first printable message;
+      while (current != null && current.getMessage() == null) {
+        current = current.getCause();
+      }
       System.out.println("The operation failed." +
-          e.getMessage() == null ? "" : "  Message: " + e.getMessage());
+          (current.getMessage() == null ? "" : "  Message: " + current.getMessage()));
       System.exit(1);
     }
   }

@@ -21,6 +21,7 @@ package org.apache.sentry.provider.db.tools;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.provider.db.tools.command.hive.*;
 import org.apache.sentry.service.thrift.SentryServiceClientFactory;
@@ -39,8 +40,9 @@ public class SentryShellHive extends SentryShellCommon {
 
   public void run() throws Exception {
     Command command = null;
-    String requestorName = System.getProperty("user.name", "");
     SentryPolicyServiceClient client = SentryServiceClientFactory.create(getSentryConf());
+    UserGroupInformation ugi = UserGroupInformation.getLoginUser();
+    String requestorName = ugi.getShortUserName();
 
     if (isCreateRole) {
       command = new CreateRoleCmd(roleName);
@@ -80,12 +82,16 @@ public class SentryShellHive extends SentryShellCommon {
   public static void main(String[] args) throws Exception {
     SentryShellHive sentryShell = new SentryShellHive();
     try {
-      if (sentryShell.executeShell(args)) {
-        System.out.println("The operation is compeleted successfully.");
-      }
+      sentryShell.executeShell(args);
     } catch (Exception e) {
       LOGGER.error(e.getMessage(), e);
-      System.out.println("The operation is failed, please refer to log file for the root cause.");
+      Throwable current =  e;
+      // find the first printable message;
+      while (current != null && current.getMessage() == null) {
+        current = current.getCause();
+      }
+       System.out.println("The operation failed." +
+          (current.getMessage() == null ? "" : "  Message: " + current.getMessage()));
     }
   }
 
