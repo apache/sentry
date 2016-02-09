@@ -557,48 +557,50 @@ public abstract class AbstractTestWithStaticConfiguration {
 
     if (clearDb) {
       LOGGER.info("About to clear all databases and default database tables");
-      resultSet = statement.executeQuery("SHOW DATABASES");
-      ArrayList<String> dbs = new ArrayList<String>();
-      while(resultSet.next()) {
-        dbs.add(resultSet.getString(1));
-      }
-      for (String db : dbs) {
-        if(!db.equalsIgnoreCase("default")) {
-          String sql = "DROP DATABASE if exists " + db + " CASCADE";
-          LOGGER.info("Running [" + sql + "]");
-          statement.execute(sql);
+      resultSet = execQuery(statement, "SHOW DATABASES");
+      while (resultSet.next()) {
+        String db = resultSet.getString(1);
+        if (!db.equalsIgnoreCase("default")) {
+          try (Statement statement1 = context.createStatement(connection)) {
+            exec(statement1, "DROP DATABASE IF EXISTS " + db + " CASCADE");
+          } catch (Exception ex) {
+            // For database and tables managed by other processes than Sentry
+            // drop them might run into exception
+            LOGGER.error("Exception: " + ex);
+          }
         }
       }
-      statement.execute("USE default");
-      resultSet = statement.executeQuery("SHOW tables");
+      if (resultSet != null) {  resultSet.close(); }
+      exec(statement, "USE default");
+      resultSet = execQuery(statement, "SHOW TABLES");
       while (resultSet.next()) {
-        Statement statement2 = context.createStatement(connection);
-        String sql = "DROP table " + resultSet.getString(1);
-        LOGGER.info("Running [" + sql + "]");
-        statement2.execute(sql);
-        statement2.close();
+        try (Statement statement1 = context.createStatement(connection)) {
+          exec(statement1, "DROP TABLE IF EXISTS " + resultSet.getString(1));
+        } catch (Exception ex) {
+          // For table managed by other processes than Sentry
+          // drop it might run into exception
+          LOGGER.error("Exception: " + ex);
+        }
       }
+      if (resultSet != null) {  resultSet.close(); }
     }
 
     if(useSentryService) {
       LOGGER.info("About to clear all roles");
-      resultSet = statement.executeQuery("SHOW roles");
-      List<String> roles = new ArrayList<String>();
+      resultSet = execQuery(statement, "SHOW ROLES");
       while (resultSet.next()) {
-        String roleName = resultSet.getString(1);
-        if (!roleName.toLowerCase().contains("admin")) {
-          roles.add(roleName);
+        try (Statement statement1 = context.createStatement(connection)) {
+          String role = resultSet.getString(1);
+          if (!role.toLowerCase().contains("admin")) {
+            exec(statement1, "DROP ROLE " + role);
+          }
         }
       }
-      for (String role : roles) {
-        String sql = "DROP Role " + role;
-        LOGGER.info("Running [" + sql + "]");
-        statement.execute(sql);
-      }
+      if (resultSet != null) { resultSet.close(); }
     }
-    statement.close();
-    connection.close();
 
+    if (statement != null) { statement.close(); }
+    if (connection != null) { connection.close(); }
   }
 
   protected static void setupAdmin() throws Exception {
@@ -684,7 +686,7 @@ public abstract class AbstractTestWithStaticConfiguration {
    * @param sqls
    * @throws Exception
    */
-  protected void execBatch(String user, List<String> sqls) throws Exception {
+  protected static void execBatch(String user, List<String> sqls) throws Exception {
     Connection conn = context.createConnection(user);
     Statement stmt = context.createStatement(conn);
     for (String sql : sqls) {
@@ -704,12 +706,24 @@ public abstract class AbstractTestWithStaticConfiguration {
    * @param sql
    * @throws Exception
    */
-  protected void exec(Statement stmt, String sql) throws Exception {
+  protected static void exec(Statement stmt, String sql) throws Exception {
     if (stmt == null) {
       LOGGER.error("Statement is null");
       return;
     }
     LOGGER.info("Running [" + sql + "]");
     stmt.execute(sql);
+  }
+
+  /**
+   * A convenient funciton to execute query with log then return ResultSet
+   * @param stmt
+   * @param sql
+   * @return ResetSet
+   * @throws Exception
+   */
+  protected static ResultSet execQuery(Statement stmt, String sql) throws Exception {
+    LOGGER.info("Running [" + sql + "]");
+    return stmt.executeQuery(sql);
   }
 }
