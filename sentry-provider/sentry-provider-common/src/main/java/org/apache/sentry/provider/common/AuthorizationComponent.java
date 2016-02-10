@@ -21,4 +21,5 @@ package org.apache.sentry.provider.common;
  */
 public class AuthorizationComponent{
   public static final String Search = "solr";
+  public static final String KAFKA = "kafka";
 }
