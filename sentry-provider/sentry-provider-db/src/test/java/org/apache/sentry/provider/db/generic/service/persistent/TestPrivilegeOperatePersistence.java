@@ -952,4 +952,60 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
         sentryStore.getPrivilegesByProvider(SEARCH, service1, Sets.newHashSet(roleName1,roleName2),
             Sets.newHashSet(group), authorizables));
   }
+
+  @Test
+  public void testGetPrivilegesByAuthorizable() throws Exception {
+    String roleName1 = "r1";
+    String roleName2 = "r2";
+    String roleName3 = "r3";
+    String grantor = ADMIN_USER;
+
+    String service1 = "service1";
+
+    PrivilegeObject queryPrivilege1 = new Builder()
+    .setComponent(SEARCH)
+    .setAction(SearchConstants.QUERY)
+    .setService(service1)
+    .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME)))
+    .build();
+
+    PrivilegeObject updatePrivilege1 = new Builder()
+    .setComponent(SEARCH)
+    .setAction(SearchConstants.UPDATE)
+    .setService(service1)
+    .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME), new Field(FIELD_NAME)))
+    .build();
+
+    PrivilegeObject queryPrivilege2 = new Builder()
+    .setComponent(SEARCH)
+    .setAction(SearchConstants.QUERY)
+    .setService(service1)
+    .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME)))
+    .build();
+
+    PrivilegeObject updatePrivilege2 = new Builder()
+    .setComponent(SEARCH)
+    .setAction(SearchConstants.UPDATE)
+    .setService(service1)
+    .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME), new Field(FIELD_NAME)))
+    .build();
+
+    sentryStore.createRole(SEARCH, roleName1, grantor);
+    sentryStore.createRole(SEARCH, roleName2, grantor);
+    sentryStore.createRole(SEARCH, roleName3, grantor);
+
+    sentryStore.alterRoleGrantPrivilege(SEARCH, roleName1, queryPrivilege1, grantor);
+    sentryStore.alterRoleGrantPrivilege(SEARCH, roleName1, updatePrivilege1, grantor);
+    sentryStore.alterRoleGrantPrivilege(SEARCH, roleName2, queryPrivilege2, grantor);
+    sentryStore.alterRoleGrantPrivilege(SEARCH, roleName3, updatePrivilege2, grantor);
+
+    assertEquals(0, sentryStore.getPrivilegesByAuthorizable(SEARCH, service1, null,
+        Arrays.asList(new Collection(COLLECTION_NAME), new Field(FIELD_NAME))).size());
+    assertEquals(2, sentryStore.getPrivilegesByAuthorizable(SEARCH, service1,
+        Sets.newHashSet(roleName1), null).size());
+    assertEquals(2, sentryStore.getPrivilegesByAuthorizable(SEARCH, service1,
+        Sets.newHashSet(roleName1,roleName2), null).size());
+    assertEquals(2, sentryStore.getPrivilegesByAuthorizable(SEARCH, service1,
+        Sets.newHashSet(roleName1,roleName2, roleName3), null).size());
+  }
 }

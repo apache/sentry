@@ -140,6 +140,11 @@ public class DelegateSentryStore implements SentryStoreLayer {
   }
 
   @Override
+  public Set<String> getAllRoleNames() {
+    return delegate.getAllRoleNames();
+  }
+
+  @Override
   public CommitContext alterRoleAddGroups(String component, String role,
       Set<String> groups, String requestor) throws SentryNoSuchObjectException {
     return delegate.alterSentryRoleAddGroups(requestor, role, toTSentryGroups(groups));
@@ -414,6 +419,41 @@ public class DelegateSentryStore implements SentryStoreLayer {
   }
 
   @Override
+  public Set<MSentryGMPrivilege> getPrivilegesByAuthorizable(String component, String service,
+      Set<String> validActiveRoles, List<? extends Authorizable> authorizables)
+      throws SentryUserException {
+
+    Preconditions.checkNotNull(component);
+    Preconditions.checkNotNull(service);
+
+    component = toTrimedLower(component);
+    service = toTrimedLower(service);
+
+    Set<MSentryGMPrivilege> privileges = Sets.newHashSet();
+    PersistenceManager pm = null;
+    try {
+      pm = openTransaction();
+
+      if (validActiveRoles == null || validActiveRoles.size() == 0) {
+        return privileges;
+      }
+
+      Set<MSentryRole> mRoles = Sets.newHashSet();
+      for (String role : validActiveRoles) {
+        MSentryRole mRole = getRole(role, pm);
+        if (mRole != null) {
+          mRoles.add(mRole);
+        }
+      }
+      //get the privileges
+      privileges.addAll(privilegeOperator.getPrivilegesByAuthorizable(component, service, mRoles, authorizables, pm));
+    } finally {
+      commitTransaction(pm);
+    }
+    return privileges;
+  }
+
+   @Override
   public void close() {
     delegate.stop();
   }

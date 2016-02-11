@@ -19,16 +19,22 @@ package org.apache.sentry.provider.db.generic.service.thrift;
 
 import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_JOINER;
 import static org.apache.sentry.provider.common.ProviderConstants.KV_JOINER;
+import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_SPLITTER;
 
 import java.lang.reflect.Constructor;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.SentryUserException;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.model.db.AccessConstants;
+
+
+import org.apache.sentry.provider.common.AuthorizationComponent;
+import org.apache.sentry.provider.common.KeyValue;
 import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.provider.db.SentryAlreadyExistsException;
 import org.apache.sentry.provider.db.SentryInvalidInputException;
@@ -39,6 +45,8 @@ import org.apache.sentry.provider.db.generic.service.persistent.PrivilegeObject.
 import org.apache.sentry.provider.db.generic.service.persistent.SentryStoreLayer;
 import org.apache.sentry.provider.db.log.entity.JsonLogEntityFactory;
 import org.apache.sentry.provider.db.log.util.Constants;
+import org.apache.sentry.provider.db.service.model.MSentryGMPrivilege;
+import org.apache.sentry.provider.db.service.model.MSentryRole;
 import org.apache.sentry.provider.db.service.persistent.CommitContext;
 import org.apache.sentry.provider.db.service.thrift.PolicyStoreConstants;
 import org.apache.sentry.provider.db.service.thrift.SentryConfigurationException;
@@ -57,6 +65,7 @@ import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.Iface {
@@ -69,6 +78,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
   private final NotificationHandlerInvoker handerInvoker;
 
   public static final String SENTRY_GENERIC_SERVICE_NAME = "SentryGenericPolicyService";
+  private static final String ACCESS_DENIAL_MESSAGE = "Access denied to ";
 
   public SentryGenericPolicyProcessor(Configuration conf) throws Exception {
     this.store = createStore(conf);
@@ -93,7 +103,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
       String msg = "User: " + requestorUser + " is part of " + requestorGroups +
           " which does not, intersect admin groups " + adminGroups;
       LOGGER.warn(msg);
-      throw new SentryAccessDeniedException("Access denied to " + requestorUser);
+      throw new SentryAccessDeniedException(ACCESS_DENIAL_MESSAGE + requestorUser);
     }
   }
 
@@ -126,8 +136,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
 
   public static SentryStoreLayer createStore(Configuration conf) throws SentryConfigurationException {
     SentryStoreLayer storeLayer = null;
-    String Store = conf.get(PolicyStoreConstants.SENTRY_GENERIC_POLICY_STORE,
-        PolicyStoreConstants.SENTRY_GENERIC_POLICY_STORE_DEFAULT);
+    String Store = conf.get(PolicyStoreConstants.SENTRY_GENERIC_POLICY_STORE, PolicyStoreConstants.SENTRY_GENERIC_POLICY_STORE_DEFAULT);
 
     if (Strings.isNullOrEmpty(Store)) {
       throw new SentryConfigurationException("the parameter configuration for sentry.generic.policy.store can't be empty");
@@ -241,6 +250,22 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     return tAuthorizables;
   }
 
+  private String fromAuthorizableToStr(List<? extends Authorizable> authorizables) {
+    if (authorizables != null && !authorizables.isEmpty()) {
+      List<String> privileges = Lists.newArrayList();
+
+      for (Authorizable authorizable : authorizables) {
+
+        privileges.add(KV_JOINER.join(authorizable.getTypeName(),
+            authorizable.getName()));
+      }
+
+      return AUTHORIZABLE_JOINER.join(privileges);
+    } else {
+      return "";
+    }
+  }
+
   private List<? extends Authorizable> toAuthorizables(List<TAuthorizable> tAuthorizables) {
     List<Authorizable> authorizables = Lists.newArrayList();
     if (tAuthorizables == null) {
@@ -259,6 +284,75 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
       });
     }
     return authorizables;
+  }
+
+  private List<? extends Authorizable> toAuthorizables(String privilegeStr) {
+    List<Authorizable> authorizables = Lists.newArrayList();
+    if (privilegeStr == null) {
+      return authorizables;
+    }
+
+    for (String authorizable : AUTHORIZABLE_SPLITTER.split(privilegeStr)) {
+      KeyValue tempKV = new KeyValue(authorizable);
+      final String key = tempKV.getKey();
+      final String value = tempKV.getValue();
+
+      authorizables.add(new Authorizable() {
+        @Override
+        public String getTypeName() {
+          return key;
+        }
+
+        @Override
+        public String getName() {
+          return value;
+        }
+      });
+    }
+
+    return authorizables;
+  }
+
+  // Construct the role to set of privileges mapping based on the
+  // MSentryGMPrivilege information.
+  private TSentryPrivilegeMap toTSentryPrivilegeMap(Set<MSentryGMPrivilege> mPrivileges) {
+
+    // Mapping of <Role, Set<Privilege>>.
+    Map<String, Set<TSentryPrivilege>> tPrivilegeMap = Maps.newTreeMap();
+
+    for (MSentryGMPrivilege mPrivilege : mPrivileges) {
+      for (MSentryRole role : mPrivilege.getRoles()) {
+
+        TSentryPrivilege tPrivilege = toTSentryPrivilege(mPrivilege);
+
+        if (tPrivilegeMap.containsKey(role.getRoleName())) {
+          tPrivilegeMap.get(role.getRoleName()).add(tPrivilege);
+        } else {
+          Set<TSentryPrivilege> tPrivilegeSet = Sets.newTreeSet();
+          tPrivilegeSet.add(tPrivilege);
+          tPrivilegeMap.put(role.getRoleName(), tPrivilegeSet);
+        }
+      }
+    }
+
+    return new TSentryPrivilegeMap(tPrivilegeMap);
+  }
+
+  // Construct TSentryPrivilege based on MSentryGMPrivilege information.
+  private TSentryPrivilege toTSentryPrivilege(MSentryGMPrivilege mPrivilege) {
+
+    TSentryPrivilege tPrivilege = new TSentryPrivilege(mPrivilege.getComponentName(),
+    mPrivilege.getServiceName(), fromAuthorizable(mPrivilege.getAuthorizables()), mPrivilege.getAction());
+
+    if (mPrivilege.getGrantOption() == null) {
+      tPrivilege.setGrantOption(TSentryGrantOption.UNSET);
+    } else if (mPrivilege.getGrantOption()) {
+      tPrivilege.setGrantOption(TSentryGrantOption.TRUE);
+    } else {
+      tPrivilege.setGrantOption(TSentryGrantOption.FALSE);
+    }
+
+    return tPrivilege;
   }
 
   private Set<String> buildPermissions(Set<PrivilegeObject> privileges) {
@@ -341,9 +435,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
       @Override
       public Response<Void> handle() throws Exception {
         validateClientVersion(request.getProtocol_version());
-        CommitContext context = store.alterRoleGrantPrivilege(request.getComponent(), request.getRoleName(),
-                                           toPrivilegeObject(request.getPrivilege()),
-                                           request.getRequestorUserName());
+        CommitContext context = store.alterRoleGrantPrivilege(request.getComponent(), request.getRoleName(), toPrivilegeObject(request.getPrivilege()), request.getRequestorUserName());
        return new Response<Void>(Status.OK(), context);
       }
     });
@@ -371,9 +463,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
       @Override
       public Response<Void> handle() throws Exception {
         validateClientVersion(request.getProtocol_version());
-        CommitContext context = store.alterRoleRevokePrivilege(request.getComponent(), request.getRoleName(),
-                                           toPrivilegeObject(request.getPrivilege()),
-                                           request.getRequestorUserName());
+        CommitContext context = store.alterRoleRevokePrivilege(request.getComponent(), request.getRoleName(), toPrivilegeObject(request.getPrivilege()), request.getRequestorUserName());
        return new Response<Void>(Status.OK(), context);
       }
     });
@@ -403,9 +493,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
         validateClientVersion(request.getProtocol_version());
         authorize(request.getRequestorUserName(),
             getRequestorGroups(conf, request.getRequestorUserName()));
-        CommitContext context = store.alterRoleAddGroups(
-            request.getComponent(), request.getRoleName(), request.getGroups(),
-            request.getRequestorUserName());
+        CommitContext context = store.alterRoleAddGroups(request.getComponent(), request.getRoleName(), request.getGroups(), request.getRequestorUserName());
         return new Response<Void>(Status.OK(), context);
       }
     });
@@ -435,9 +523,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
         validateClientVersion(request.getProtocol_version());
         authorize(request.getRequestorUserName(),
             getRequestorGroups(conf, request.getRequestorUserName()));
-        CommitContext context = store.alterRoleDeleteGroups(
-            request.getComponent(), request.getRoleName(), request.getGroups(),
-            request.getRequestorUserName());
+        CommitContext context = store.alterRoleDeleteGroups(request.getComponent(), request.getRoleName(), request.getGroups(), request.getRequestorUserName());
         return new Response<Void>(Status.OK(), context);
       }
     });
@@ -473,7 +559,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
           //Only admin users can list all roles in the system ( groupname = null)
           //Non admin users are only allowed to list only groups which they belong to
           if(!admin && (request.getGroupName() == null || !groups.contains(request.getGroupName()))) {
-            throw new SentryAccessDeniedException("Access denied to " + request.getRequestorUserName());
+            throw new SentryAccessDeniedException(ACCESS_DENIAL_MESSAGE + request.getRequestorUserName());
           }
           groups.clear();
           groups.add(request.getGroupName());
@@ -505,14 +591,13 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
         if (!inAdminGroups(groups)) {
           Set<String> roleNamesForGroups = toTrimedLower(store.getRolesByGroups(request.getComponent(), groups));
           if (!roleNamesForGroups.contains(toTrimedLower(request.getRoleName()))) {
-            throw new SentryAccessDeniedException("Access denied to " + request.getRequestorUserName());
+            throw new SentryAccessDeniedException(ACCESS_DENIAL_MESSAGE + request.getRequestorUserName());
           }
         }
         Set<PrivilegeObject> privileges = store.getPrivilegesByProvider(request.getComponent(),
                                                                         request.getServiceName(),
                                                                         Sets.newHashSet(request.getRoleName()),
-                                                                        null,
-                                                                        toAuthorizables(request.getAuthorizables()));
+                                                                        null, toAuthorizables(request.getAuthorizables()));
         Set<TSentryPrivilege> tSentryPrivileges = Sets.newHashSet();
         for (PrivilegeObject privilege : privileges) {
           tSentryPrivileges.add(fromPrivilegeObject(privilege));
@@ -537,9 +622,9 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
         Set<String> roleNamesForGroups = store.getRolesByGroups(request.getComponent(), request.getGroups());
         Set<String> rolesToQuery = request.getRoleSet().isAll() ? roleNamesForGroups : Sets.intersection(activeRoleNames, roleNamesForGroups);
         Set<PrivilegeObject> privileges = store.getPrivilegesByProvider(request.getComponent(),
-                                                                       request.getServiceName(),
-                                                                       rolesToQuery, null,
-                                                                       toAuthorizables(request.getAuthorizables()));
+                                                                        request.getServiceName(),
+                                                                        rolesToQuery, null,
+                                                                        toAuthorizables(request.getAuthorizables()));
         return new Response<Set<String>>(Status.OK(), buildPermissions(privileges));
       }
     });
@@ -547,6 +632,97 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     tResponse.setStatus(respose.status);
     tResponse.setPrivileges(respose.content);
     return tResponse;
+  }
+
+  @Override
+  public TListSentryPrivilegesByAuthResponse list_sentry_privileges_by_authorizable(TListSentryPrivilegesByAuthRequest request) throws TException {
+
+    TListSentryPrivilegesByAuthResponse response = new TListSentryPrivilegesByAuthResponse();
+    Map<String, TSentryPrivilegeMap> authRoleMap = Maps.newHashMap();
+
+    // Group names are case sensitive.
+    Set<String> requestedGroups = request.getGroups();
+    String subject = request.getRequestorUserName();
+    TSentryActiveRoleSet activeRoleSet = request.getRoleSet();
+    Set<String> validActiveRoles = Sets.newHashSet();
+
+    try {
+      validateClientVersion(request.getProtocol_version());
+      Set<String> memberGroups = getRequestorGroups(conf, subject);
+
+      // Disallow non-admin users to lookup groups that
+      // they are not part of.
+      if(!inAdminGroups(memberGroups)) {
+
+        if (requestedGroups != null && !requestedGroups.isEmpty()) {
+          for (String requestedGroup : requestedGroups) {
+
+            // If user doesn't belong to one of the requested groups,
+            // then raise security exception.
+            if (!memberGroups.contains(requestedGroup)) {
+              throw new SentryAccessDeniedException(ACCESS_DENIAL_MESSAGE + subject);
+            }
+          }
+        } else {
+          // Non-admin's search is limited to its own groups.
+          requestedGroups = memberGroups;
+        }
+
+        // Disallow non-admin to lookup roles that they are not part of
+        if (activeRoleSet != null && !activeRoleSet.isAll()) {
+          Set<String> grantedRoles = toTrimedLower(store.getRolesByGroups(request.getComponent(), requestedGroups));
+          Set<String> activeRoleNames = toTrimedLower(activeRoleSet.getRoles());
+
+          for (String activeRole : activeRoleNames) {
+            if (!grantedRoles.contains(activeRole)) {
+              throw new SentryAccessDeniedException(ACCESS_DENIAL_MESSAGE
+              + subject);
+            }
+          }
+
+          // For non-admin, valid active roles are intersection of active roles and granted roles.
+          validActiveRoles.addAll(activeRoleSet.isAll() ? grantedRoles : Sets.intersection(activeRoleNames, grantedRoles));
+        }
+      } else {
+        Set<String> allRoles = toTrimedLower(store.getAllRoleNames());
+        Set<String> activeRoleNames = toTrimedLower(activeRoleSet.getRoles());
+
+        // For admin, if requestedGroups are empty, valid active roles are intersection of active roles and all roles.
+        // Otherwise, valid active roles are intersection of active roles and the roles of requestedGroups.
+        if (requestedGroups == null || requestedGroups.isEmpty()) {
+          validActiveRoles.addAll(activeRoleSet.isAll() ? allRoles : Sets.intersection(activeRoleNames, allRoles));
+        } else {
+          Set<String> requestedRoles = toTrimedLower(store.getRolesByGroups(request.getComponent(), requestedGroups));
+          validActiveRoles.addAll(activeRoleSet.isAll() ? allRoles : Sets.intersection(activeRoleNames, requestedRoles));
+        }
+      }
+
+      // If user is not part of any group.. return empty response
+      if (request.getAuthorizablesSet() != null) {
+        for (String authorizablesStr : request.getAuthorizablesSet()) {
+
+          List<? extends Authorizable> authorizables = toAuthorizables(authorizablesStr);
+          Set<MSentryGMPrivilege> sentryPrivileges = store.getPrivilegesByAuthorizable(request.getComponent(), request.getServiceName(), validActiveRoles, authorizables);
+          authRoleMap.put(fromAuthorizableToStr(authorizables), toTSentryPrivilegeMap(sentryPrivileges));
+        }
+      }
+
+      response.setPrivilegesMapByAuth(authRoleMap);
+      response.setStatus(Status.OK());
+    } catch (SentryAccessDeniedException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
+    } catch (SentryThriftAPIMismatchException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.THRIFT_VERSION_MISMATCH(e.getMessage(), e));
+    } catch (Exception e) {
+      String msg = "Unknown error for request: " + request + ", message: "
+      + e.getMessage();
+      LOGGER.error(msg, e);
+      response.setStatus(Status.RuntimeError(msg, e));
+    }
+
+    return response;
   }
 
   @Override

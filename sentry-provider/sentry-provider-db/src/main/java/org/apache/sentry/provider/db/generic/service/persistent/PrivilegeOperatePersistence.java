@@ -361,6 +361,20 @@ public class PrivilegeOperatePersistence {
     return privileges;
   }
 
+  public Set<MSentryGMPrivilege> getPrivilegesByAuthorizable(String component,
+      String service, Set<MSentryRole> roles,
+      List<? extends Authorizable> authorizables, PersistenceManager pm) {
+
+    Set<MSentryGMPrivilege> privilegeGraph = Sets.newHashSet();
+
+    if (roles == null || roles.isEmpty()) {
+      return privilegeGraph;
+    }
+
+    MSentryGMPrivilege parentPrivilege = new MSentryGMPrivilege(component, service, authorizables, null, null);
+    privilegeGraph.addAll(populateIncludePrivileges(roles, parentPrivilege, pm));
+    return privilegeGraph;
+  }
 
   public void renamePrivilege(String component, String service,
       List<? extends Authorizable> oldAuthorizables, List<? extends Authorizable> newAuthorizables,

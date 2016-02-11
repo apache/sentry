@@ -24,6 +24,7 @@ import org.apache.sentry.SentryUserException;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.provider.db.SentryAlreadyExistsException;
 import org.apache.sentry.provider.db.SentryNoSuchObjectException;
+import org.apache.sentry.provider.db.service.model.MSentryGMPrivilege;
 import org.apache.sentry.provider.db.service.persistent.CommitContext;
 
 /**
@@ -167,6 +168,28 @@ public interface SentryStoreLayer {
   public Set<PrivilegeObject> getPrivilegesByProvider(String component, String service,Set<String> roles,
        Set<String> groups, List<? extends Authorizable> authorizables)
        throws SentryUserException;
+
+  /**
+   * Get all roles name.
+   *
+   * @returns The set of roles name,
+   */
+  Set<String> getAllRoleNames();
+
+  /**
+   * Get sentry privileges based on valid active roles and the authorize objects.
+   *
+   * @param component: The request respond to which component
+   * @param service: The name of service
+   * @param validActiveRoles: The valid active roles
+   * @param authorizables: The list of authorize objects
+   * @returns The set of MSentryGMPrivilege
+   * @throws SentryUserException
+   */
+  Set<MSentryGMPrivilege> getPrivilegesByAuthorizable(String component, String service,
+      Set<String> validActiveRoles, List<? extends Authorizable> authorizables)
+      throws SentryUserException;
+
   /**
    * close sentryStore
    */
