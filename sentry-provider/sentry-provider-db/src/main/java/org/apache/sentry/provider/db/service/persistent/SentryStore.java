@@ -2069,6 +2069,29 @@ public class SentryStore {
     }
   }
 
+  // Get the all exist role names, will return an empty set
+  // if no role names exist.
+  public Set<String> getAllRoleNames() {
+
+    boolean rollbackTransaction = true;
+    PersistenceManager pm = null;
+
+    try {
+      pm = openTransaction();
+
+      Set<String> existRoleNames = getAllRoleNames(pm);
+
+      commitTransaction(pm);
+      rollbackTransaction = false;
+
+      return existRoleNames;
+    } finally {
+      if (rollbackTransaction) {
+        rollbackTransaction(pm);
+      }
+    }
+  }
+
   // get the all exist role names
   private Set<String> getAllRoleNames(PersistenceManager pm) {
     Query query = pm.newQuery(MSentryRole.class);

@@ -20,13 +20,11 @@ package org.apache.sentry.provider.db.generic.service.thrift;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.PrivilegedExceptionAction;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import javax.security.auth.callback.CallbackHandler;
 
+import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION;
 import org.apache.hadoop.net.NetUtils;
@@ -534,6 +532,64 @@ public class SentryGenericServiceClientDefaultImpl implements SentryGenericServi
       TListSentryPrivilegesForProviderResponse response = client.list_sentry_privileges_for_provider(request);
       Status.throwIfNotOk(response.getStatus());
       return response.getPrivileges();
+    } catch (TException e) {
+      throw new SentryUserException(THRIFT_EXCEPTION_MESSAGE, e);
+    }
+  }
+
+  private List<TAuthorizable> fromAuthorizable(List<? extends Authorizable> authorizables) {
+    List<TAuthorizable> tAuthorizables = Lists.newArrayList();
+    for (Authorizable authorizable : authorizables) {
+      tAuthorizables.add(new TAuthorizable(authorizable.getTypeName(), authorizable.getName()));
+    }
+    return tAuthorizables;
+  }
+
+  /**
+   * Get sentry privileges based on valid active roles and the authorize objects. Note that
+   * it is client responsibility to ensure the requestor username, etc. is not impersonated.
+   *
+   * @param component: The request respond to which component.
+   * @param serviceName: The name of service.
+   * @param requestorUserName: The requestor user name.
+   * @param authorizablesSet: The set of authorize objects. Represented as a string. e.g
+   *     resourceType1=resourceName1->resourceType2=resourceName2->resourceType3=resourceName3.
+   * @param groups: The requested groups.
+   * @param roleSet: The active roles set.
+   *
+   * @returns The mapping of authorize objects and TSentryPrivilegeMap(<role, set<privileges>).
+   * @throws SentryUserException
+   */
+  public Map<String, TSentryPrivilegeMap> listPrivilegsbyAuthorizable(String component,
+      String serviceName, String requestorUserName, Set<List<? extends Authorizable>> authorizablesSet,
+      Set<String> groups, ActiveRoleSet roleSet) throws SentryUserException {
+
+    Set<List<TAuthorizable>> authSet = Sets.newHashSet();
+    for (List<? extends Authorizable> authorizables : authorizablesSet) {
+      authSet.add(fromAuthorizable(authorizables));
+    }
+
+    TListSentryPrivilegesByAuthRequest request = new TListSentryPrivilegesByAuthRequest();
+
+    request.setProtocol_version(sentry_common_serviceConstants.TSENTRY_SERVICE_V2);
+    request.setComponent(component);
+    request.setServiceName(serviceName);
+    request.setRequestorUserName(requestorUserName);
+
+    if (groups == null) {
+      request.setGroups(new HashSet<String>());
+    } else {
+      request.setGroups(groups);
+    }
+
+    if (roleSet != null) {
+      request.setRoleSet(new TSentryActiveRoleSet(roleSet.isAll(), roleSet.getRoles()));
+    }
+
+    try {
+      TListSentryPrivilegesByAuthResponse response = client.list_sentry_privileges_by_authorizable(request);
+      Status.throwIfNotOk(response.getStatus());
+      return response.getPrivilegesMapByAuth();
     } catch (TException e) {
       throw new SentryUserException(THRIFT_EXCEPTION_MESSAGE, e);
     }

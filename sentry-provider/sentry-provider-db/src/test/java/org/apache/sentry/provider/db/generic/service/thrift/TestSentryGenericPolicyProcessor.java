@@ -25,11 +25,9 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
+import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.model.search.Collection;
@@ -43,7 +41,8 @@ import org.apache.sentry.provider.db.SentryNoSuchObjectException;
 import org.apache.sentry.provider.db.generic.service.persistent.PrivilegeObject;
 import org.apache.sentry.provider.db.generic.service.persistent.SentryStoreLayer;
 import org.apache.sentry.provider.db.generic.service.persistent.PrivilegeObject.Builder;
-import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericPolicyProcessor;
+import org.apache.sentry.provider.db.service.model.MSentryGMPrivilege;
+import org.apache.sentry.provider.db.service.model.MSentryRole;
 import org.apache.sentry.provider.db.service.persistent.CommitContext;
 import org.apache.sentry.provider.db.service.thrift.PolicyStoreConstants;
 import org.apache.sentry.provider.db.service.thrift.SentryConfigurationException;
@@ -254,6 +253,13 @@ public class TestSentryGenericPolicyProcessor {
                                    .setAction(SearchConstants.UPDATE)
                                    .build();
 
+    MSentryGMPrivilege mSentryGMPrivilege = new MSentryGMPrivilege("SOLR", "service1",
+    Arrays.asList(new Collection("c1"), new Field("f1")),
+    SearchConstants.QUERY, true);
+
+    MSentryRole role = new MSentryRole("r1", 290);
+    mSentryGMPrivilege.setRoles(Sets.newHashSet(role));
+
     when(mockStore.getRolesByGroups(anyString(), anySetOf(String.class)))
     .thenReturn(Sets.newHashSet(roleName));
 
@@ -263,6 +269,12 @@ public class TestSentryGenericPolicyProcessor {
 
     when(mockStore.getGroupsByRoles(anyString(), anySetOf(String.class)))
     .thenReturn(Sets.newHashSet(groupName));
+
+    when(mockStore.getPrivilegesByAuthorizable(anyString(), anyString(), anySetOf(String.class), anyListOf(Authorizable.class)))
+    .thenReturn(Sets.newHashSet(mSentryGMPrivilege));
+
+    when(mockStore.getAllRoleNames())
+    .thenReturn(Sets.newHashSet(roleName));
 
     TListSentryPrivilegesRequest request1 = new TListSentryPrivilegesRequest();
     request1.setRoleName(roleName);
@@ -284,6 +296,18 @@ public class TestSentryGenericPolicyProcessor {
     TListSentryPrivilegesForProviderResponse response3 = processor.list_sentry_privileges_for_provider(request3);
     assertEquals(Status.OK, fromTSentryStatus(response3.getStatus()));
     assertEquals(2, response3.getPrivileges().size());
+
+    TListSentryPrivilegesByAuthRequest request4 = new TListSentryPrivilegesByAuthRequest();
+    request4.setGroups(Sets.newHashSet(groupName));
+    request4.setRoleSet(new TSentryActiveRoleSet(true, null));
+    request4.setRequestorUserName(ADMIN_USER);
+
+    Set<String> authorizablesSet = Sets.newHashSet("Collection=c1->Field=f1");
+    request4.setAuthorizablesSet(authorizablesSet);
+
+    TListSentryPrivilegesByAuthResponse response4 = processor.list_sentry_privileges_by_authorizable(request4);
+    assertEquals(Status.OK, fromTSentryStatus(response4.getStatus()));
+    assertEquals(1, response4.getPrivilegesMapByAuth().size());
   }
 
   @Test(expected=SentryConfigurationException.class)
