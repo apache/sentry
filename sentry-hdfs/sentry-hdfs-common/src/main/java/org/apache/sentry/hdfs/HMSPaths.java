@@ -414,7 +414,8 @@ public class HMSPaths implements AuthzPaths {
 
   public HMSPaths(String[] pathPrefixes) {
     boolean rootPrefix = false;
-    this.prefixes = pathPrefixes;
+    // Copy the array to avoid external modification
+    this.prefixes = Arrays.copyOf(pathPrefixes, pathPrefixes.length);
     for (String pathPrefix : pathPrefixes) {
       rootPrefix = rootPrefix || pathPrefix.equals(Path.SEPARATOR);
     }

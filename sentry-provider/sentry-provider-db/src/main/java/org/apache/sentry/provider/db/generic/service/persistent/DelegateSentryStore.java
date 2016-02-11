@@ -352,7 +352,9 @@ public class DelegateSentryStore implements SentryStoreLayer {
       }
       return groupNames;
     } finally {
-      commitTransaction(pm);
+      if (pm != null) {
+        commitTransaction(pm);
+      }
     }
   }
 
@@ -377,7 +379,9 @@ public class DelegateSentryStore implements SentryStoreLayer {
       }
       privileges.addAll(privilegeOperator.getPrivilegesByRole(mRoles, pm));
     } finally {
-      commitTransaction(pm);
+      if (pm != null) {
+        commitTransaction(pm);
+      }
     }
     return privileges;
   }
@@ -417,7 +421,9 @@ public class DelegateSentryStore implements SentryStoreLayer {
       //get the privileges
       privileges.addAll(privilegeOperator.getPrivilegesByProvider(component, service, mRoles, authorizables, pm));
     } finally {
-      commitTransaction(pm);
+      if (pm != null) {
+        commitTransaction(pm);
+      }
     }
     return privileges;
   }

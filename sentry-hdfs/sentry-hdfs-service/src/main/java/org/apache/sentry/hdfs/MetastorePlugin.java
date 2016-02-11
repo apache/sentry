@@ -114,7 +114,14 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
 
   public MetastorePlugin(Configuration conf, Configuration sentryConf) {
     this.notificiationLock = new ReentrantLock();
+
+    if (!(conf instanceof HiveConf)) {
+        String error = "Configuration is not an instanceof HiveConf";
+        LOGGER.error(error);
+        throw new RuntimeException(error);
+    }
     this.conf = new HiveConf((HiveConf)conf);
+
     this.sentryConf = new Configuration(sentryConf);
     this.conf.unset(HiveConf.ConfVars.METASTORE_PRE_EVENT_LISTENERS.varname);
     this.conf.unset(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS.varname);
@@ -297,10 +304,11 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
 
   protected void notifySentry(PathsUpdate update) {
     notificiationLock.lock();
-    if (!syncSent) {
-      new SyncTask().run();
-    }
     try {
+      if (!syncSent) {
+        new SyncTask().run();
+      }
+
       notifySentryNoLock(update);
     } finally {
       lastSentSeqNum = update.getSeqNum();

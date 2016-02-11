@@ -108,11 +108,11 @@ public class SentryKerberosContext implements Runnable {
       LOGGER.info("Sentry Ticket renewer thread started");
       while (!shutDownRenewer) {
         KerberosTicket tgt = getTGT();
-        long nextRefresh = getRefreshTime(tgt);
         if (tgt == null) {
           LOGGER.warn("No ticket found in the cache");
           return;
         }
+        long nextRefresh = getRefreshTime(tgt);
         while (System.currentTimeMillis() < nextRefresh) {
           Thread.sleep(1000);
           if (shutDownRenewer) {

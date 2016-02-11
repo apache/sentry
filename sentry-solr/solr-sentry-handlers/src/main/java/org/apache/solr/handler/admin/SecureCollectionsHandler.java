@@ -81,7 +81,7 @@ public class SecureCollectionsHandler extends CollectionsHandler {
      * ex: When the collection has been deleted, the privileges related to the collection
      * were also needed to drop.
      */
-    if (action.equals(CollectionAction.DELETE)) {
+    if (CollectionAction.DELETE.equals(action)) {
       SecureRequestHandlerUtil.syncDeleteCollection(collection);
     }
 

@@ -26,6 +26,7 @@ import java.io.File;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,9 +89,9 @@ public class PolicyFile {
     LOGGER.warn("Static user:group mapping is not being used");
     return add(usersToGroups.get(userName), allowDuplicates, groupNames);
   }
-  public PolicyFile setUserGroupMapping(Map<String, String> mapping){
-    for(String key: mapping.keySet()){
-      usersToGroups.put(key, mapping.get(key));
+  public PolicyFile setUserGroupMapping(Map<String, String> mapping) {
+    for (Entry<String, String> entry : mapping.entrySet()) {
+      usersToGroups.put(entry.getKey(), entry.getValue());
     }
     return this;
   }
@@ -155,8 +156,8 @@ public class PolicyFile {
     Joiner kvJoiner = Joiner.on(" = ");
     List<String> lines = Lists.newArrayList();
     lines.add("[" + name + "]");
-    for(String key : mapping.keySet()) {
-      lines.add(kvJoiner.join(key, mapping.get(key)));
+    for (Entry<String, String> entry : mapping.entrySet()) {
+      lines.add(kvJoiner.join(entry.getKey(), entry.getValue()));
     }
     return Joiner.on(NL).join(lines);
   }

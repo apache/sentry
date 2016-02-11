@@ -890,13 +890,13 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
       Map<String, Set<String>> rolePrivilegesMap) {
     Map<String, Set<TSentryPrivilege>> rolePrivilegesMapResult = Maps.newHashMap();
     if (rolePrivilegesMap != null) {
-      for (String tempRoleName : rolePrivilegesMap.keySet()) {
+      for (Map.Entry<String, Set<String>> entry : rolePrivilegesMap.entrySet()) {
         Set<TSentryPrivilege> tempTSentryPrivileges = Sets.newHashSet();
-        Set<String> tempPrivileges = rolePrivilegesMap.get(tempRoleName);
+        Set<String> tempPrivileges = entry.getValue();
         for (String tempPrivilege : tempPrivileges) {
           tempTSentryPrivileges.add(SentryServiceUtil.convertToTSentryPrivilege(tempPrivilege));
         }
-        rolePrivilegesMapResult.put(tempRoleName, tempTSentryPrivileges);
+        rolePrivilegesMapResult.put(entry.getKey(), tempTSentryPrivileges);
       }
     }
     return rolePrivilegesMapResult;
@@ -927,8 +927,8 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
       Map<String, Set<TSentryPrivilege>> rolePrivilegesMap) {
     Map<String, Set<String>> rolePrivilegesMapForFile = Maps.newHashMap();
     if (rolePrivilegesMap != null) {
-      for (String tempRoleName : rolePrivilegesMap.keySet()) {
-        Set<TSentryPrivilege> tempSentryPrivileges = rolePrivilegesMap.get(tempRoleName);
+      for (Map.Entry<String, Set<TSentryPrivilege>> entry : rolePrivilegesMap.entrySet()) {
+        Set<TSentryPrivilege> tempSentryPrivileges = entry.getValue();
         Set<String> tempStrPrivileges = Sets.newHashSet();
         for (TSentryPrivilege tSentryPrivilege : tempSentryPrivileges) {
           // convert TSentryPrivilege to privilege in string
@@ -937,7 +937,7 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
             tempStrPrivileges.add(privilegeStr);
           }
         }
-        rolePrivilegesMapForFile.put(tempRoleName, tempStrPrivileges);
+        rolePrivilegesMapForFile.put(entry.getKey(), tempStrPrivileges);
       }
     }
     return rolePrivilegesMapForFile;

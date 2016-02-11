@@ -343,7 +343,7 @@ public class SentryAuthorizationProvider
       }
     }
     if (LOG.isDebugEnabled()) {
-      LOG.debug("### getAclEntry \n[" + (p == null ? "null" : p) + "] : ["
+      LOG.debug("### getAclEntry \n[" + p + "] : ["
           + "isPreifxed=" + isPrefixed
           + ", isStale=" + isStale
           + ", hasAuthzObj=" + hasAuthzObj

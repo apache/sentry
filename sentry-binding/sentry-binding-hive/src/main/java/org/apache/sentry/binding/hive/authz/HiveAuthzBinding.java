@@ -310,17 +310,18 @@ public class HiveAuthzBinding {
     }
 
     boolean found = false;
-    for(AuthorizableType key: requiredInputPrivileges.keySet()) {
+    for (Map.Entry<AuthorizableType, EnumSet<DBModelAction>> entry : requiredInputPrivileges.entrySet()) {
+      AuthorizableType key = entry.getKey();
       for (List<DBModelAuthorizable> inputHierarchy : inputHierarchyList) {
         if (getAuthzType(inputHierarchy).equals(key)) {
           found = true;
-          if (!authProvider.hasAccess(subject, inputHierarchy, requiredInputPrivileges.get(key), activeRoleSet)) {
+          if (!authProvider.hasAccess(subject, inputHierarchy, entry.getValue(), activeRoleSet)) {
             throw new AuthorizationException("User " + subject.getName() +
                 " does not have privileges for " + hiveOp.name());
           }
         }
       }
-      if(!found && !(key.equals(AuthorizableType.URI)) &&  !(hiveOp.equals(HiveOperation.QUERY))
+      if (!found && !key.equals(AuthorizableType.URI) && !(hiveOp.equals(HiveOperation.QUERY))
           && !(hiveOp.equals(HiveOperation.CREATETABLE_AS_SELECT))) {
         //URI privileges are optional for some privileges: anyPrivilege, tableDDLAndOptionalUriPrivilege
         //Query can mean select/insert/analyze where all of them have different required privileges.

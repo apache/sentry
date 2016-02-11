@@ -151,9 +151,9 @@ public class SentryIniPolicyFileFormatter implements SentryPolicyFileFormatter {
     }
     List<String> lines = Lists.newArrayList();
     lines.add("[" + name + "]");
-    for (String key : mappingData.keySet()) {
-      lines.add(PolicyConstants.KV_JOINER.join(key,
-          PolicyConstants.ROLE_JOINER.join(mappingData.get(key))));
+    for (Map.Entry<String, Set<String>> entry : mappingData.entrySet()) {
+      lines.add(PolicyConstants.KV_JOINER.join(entry.getKey(),
+          PolicyConstants.ROLE_JOINER.join(entry.getValue())));
     }
     return Joiner.on(NL).join(lines);
   }

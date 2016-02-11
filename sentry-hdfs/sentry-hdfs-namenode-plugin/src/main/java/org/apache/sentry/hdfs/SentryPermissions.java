@@ -81,12 +81,13 @@ public class SentryPermissions implements AuthzPermissions {
   private final Map<String, RoleInfo> roles = new TreeMap<String, RoleInfo>(String.CASE_INSENSITIVE_ORDER);
 
   String getParentAuthzObject(String authzObject) {
-    int dot = authzObject.indexOf('.');
-    if (dot > 0) {
-      return authzObject.substring(0, dot);
-    } else {
-      return authzObject;
+    if (authzObject != null) {
+      int dot = authzObject.indexOf('.');
+      if (dot > 0) {
+        return authzObject.substring(0, dot);
+      }
     }
+    return authzObject;
   }
 
   void addParentChildMappings(String authzObject) {

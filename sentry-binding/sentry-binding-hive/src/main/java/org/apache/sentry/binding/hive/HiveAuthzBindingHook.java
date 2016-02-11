@@ -394,10 +394,12 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
       authorizeWithHiveBindings(context, stmtAuthObject, stmtOperation);
     } catch (AuthorizationException e) {
       executeOnFailureHooks(context, stmtOperation, e);
-      String permsRequired = "";
+      StringBuilder permsBuilder = new StringBuilder();
       for (String perm : hiveAuthzBinding.getLastQueryPrivilegeErrors()) {
-        permsRequired += perm + ";";
+        permsBuilder.append(perm);
+        permsBuilder.append(";");
       }
+      String permsRequired = permsBuilder.toString();
       SessionState.get().getConf().set(HiveAuthzConf.HIVE_SENTRY_AUTH_ERRORS, permsRequired);
       String msgForLog = HiveAuthzConf.HIVE_SENTRY_PRIVILEGE_ERROR_MESSAGE
           + "\n Required privileges for this query: "

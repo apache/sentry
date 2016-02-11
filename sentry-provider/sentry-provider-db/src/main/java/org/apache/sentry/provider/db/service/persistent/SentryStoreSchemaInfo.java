@@ -47,9 +47,7 @@ public class SentryStoreSchemaInfo {
     List<String> upgradeOrderList = new ArrayList<String>();
     String upgradeListFile = getSentryStoreScriptDir() + File.separator
         + VERSION_UPGRADE_LIST + "." + dbType;
-    try {
-      BufferedReader bfReader = new BufferedReader(new FileReader(
-          upgradeListFile));
+    try (BufferedReader bfReader = new BufferedReader(new FileReader(upgradeListFile))) {
       String currSchemaVersion;
       while ((currSchemaVersion = bfReader.readLine()) != null) {
         upgradeOrderList.add(currSchemaVersion.trim());

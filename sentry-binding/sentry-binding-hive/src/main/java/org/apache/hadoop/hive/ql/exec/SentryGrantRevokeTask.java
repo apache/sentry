@@ -387,10 +387,11 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
     FSDataOutputStream out = fs.create(resFile);
     try {
       if (data != null && !data.isEmpty()) {
-        OutputStreamWriter writer = new OutputStreamWriter(out, "UTF-8");
-        writer.write(data);
-        writer.write((char) terminator);
-        writer.flush();
+        try (OutputStreamWriter writer = new OutputStreamWriter(out, "UTF-8")) {
+          writer.write(data);
+          writer.write((char) terminator);
+          writer.flush();
+        }
       }
     } finally {
       closeQuiet(out);

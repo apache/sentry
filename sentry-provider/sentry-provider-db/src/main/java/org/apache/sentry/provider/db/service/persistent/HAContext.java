@@ -52,7 +52,7 @@ import com.google.common.collect.Lists;
 public class HAContext {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(HAContext.class);
-  private static HAContext serverHAContext = null;
+  private static volatile HAContext serverHAContext = null;
   private static boolean aclChecked = false;
 
   public final static String SENTRY_SERVICE_REGISTER_NAMESPACE = "sentry-service";

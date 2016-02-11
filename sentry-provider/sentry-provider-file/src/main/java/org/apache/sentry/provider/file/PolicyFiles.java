@@ -61,12 +61,13 @@ public class PolicyFiles {
 
   public static void copyFilesToDir(FileSystem fs, Path dest, File inputFile)
       throws IOException {
-    InputStream input = new FileInputStream(inputFile.getPath());
-    FSDataOutputStream out = fs.create(new Path(dest, inputFile.getName()));
-    ByteStreams.copy(input, out);
-    input.close();
-    out.hflush();
-    out.close();
+    try (InputStream input = new FileInputStream(inputFile.getPath());
+      FSDataOutputStream out = fs.create(new Path(dest, inputFile.getName()))) {
+      ByteStreams.copy(input, out);
+      input.close();
+      out.hflush();
+      out.close();
+    }
   }
 
 

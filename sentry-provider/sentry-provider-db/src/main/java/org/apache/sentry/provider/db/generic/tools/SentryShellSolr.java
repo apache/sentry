@@ -95,13 +95,16 @@ public class SentryShellSolr extends SentryShellCommon {
       sentryShell.executeShell(args);
     } catch (Exception e) {
       LOGGER.error(e.getMessage(), e);
-      Throwable current =  e;
+      Throwable current = e;
       // find the first printable message;
       while (current != null && current.getMessage() == null) {
         current = current.getCause();
       }
-      System.out.println("The operation failed." +
-          (current.getMessage() == null ? "" : "  Message: " + current.getMessage()));
+      String error = "";
+      if (current != null && current.getMessage() != null) {
+        error = "Message: " + current.getMessage();
+      }
+      System.out.println("The operation failed. " + error);
       System.exit(1);
     }
   }

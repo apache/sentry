@@ -345,7 +345,9 @@ public class SentryStore {
       size = (Long)query.execute();
 
     } finally {
-      commitTransaction(pm);
+      if (pm != null) {
+        commitTransaction(pm);
+      }
     }
     return size;
   }
@@ -1013,7 +1015,7 @@ public class SentryStore {
       pm = openTransaction();
       Query query = pm.newQuery(MSentryPrivilege.class);
       StringBuilder filters = new StringBuilder();
-      if (roleNames.size() == 0 || roleNames == null) {
+      if (roleNames == null || roleNames.isEmpty()) {
         filters.append(" !roles.isEmpty() ");
       } else {
         query.declareVariables("org.apache.sentry.provider.db.service.model.MSentryRole role");
@@ -1895,12 +1897,15 @@ public class SentryStore {
      */
     public void incPrivRemoval(int numDeletions) {
       if (privCleanerThread != null) {
-        lock.lock();
-        currentNotifies += numDeletions;
-        if (currentNotifies > NOTIFY_THRESHOLD) {
-          cond.signal();
+        try {
+          lock.lock();
+          currentNotifies += numDeletions;
+          if (currentNotifies > NOTIFY_THRESHOLD) {
+            cond.signal();
+          }
+        } finally {
+          lock.unlock();
         }
-        lock.unlock();
       }
     }
 
@@ -2258,15 +2263,15 @@ public class SentryStore {
       Map<String, Set<String>> groupRolesMap) {
     Map<String, Set<TSentryGroup>> roleGroupsMap = Maps.newHashMap();
     if (groupRolesMap != null) {
-      for (String groupName : groupRolesMap.keySet()) {
-        Set<String> roleNames = groupRolesMap.get(groupName);
+      for (Map.Entry<String, Set<String>> entry : groupRolesMap.entrySet()) {
+        Set<String> roleNames = entry.getValue();
         if (roleNames != null) {
           for (String roleName : roleNames) {
             Set<TSentryGroup> tSentryGroups = roleGroupsMap.get(roleName);
             if (tSentryGroups == null) {
               tSentryGroups = Sets.newHashSet();
             }
-            tSentryGroups.add(new TSentryGroup(groupName));
+            tSentryGroups.add(new TSentryGroup(entry.getKey()));
             roleGroupsMap.put(roleName, tSentryGroups);
           }
         }
@@ -2280,11 +2285,11 @@ public class SentryStore {
     if (importedRoleGroupsMap == null || importedRoleGroupsMap.keySet() == null) {
       return;
     }
-    for (String roleName : importedRoleGroupsMap.keySet()) {
-      if (!existRoleNames.contains(roleName)) {
-        createSentryRoleCore(pm, roleName);
+    for (Map.Entry<String, Set<TSentryGroup>> entry : importedRoleGroupsMap.entrySet()) {
+      if (!existRoleNames.contains(entry.getKey())) {
+        createSentryRoleCore(pm, entry.getKey());
       }
-      alterSentryRoleAddGroupsCore(pm, roleName, importedRoleGroupsMap.get(roleName));
+      alterSentryRoleAddGroupsCore(pm, entry.getKey(), entry.getValue());
     }
   }
 
@@ -2306,15 +2311,15 @@ public class SentryStore {
     Map<String, Set<String>> newSentryGroupRolesMap = Maps.newHashMap();
     Map<String, Set<TSentryPrivilege>> newSentryRolePrivilegesMap = Maps.newHashMap();
     // for mapping data [group,role]
-    for (String groupName : sentryGroupRolesMap.keySet()) {
-      Collection<String> lowcaseRoles = Collections2.transform(sentryGroupRolesMap.get(groupName),
+    for (Map.Entry<String, Set<String>> entry : sentryGroupRolesMap.entrySet()) {
+      Collection<String> lowcaseRoles = Collections2.transform(entry.getValue(),
           new Function<String, String>() {
             @Override
             public String apply(String input) {
               return input.toString().toLowerCase();
             }
           });
-      newSentryGroupRolesMap.put(groupName, Sets.newHashSet(lowcaseRoles));
+      newSentryGroupRolesMap.put(entry.getKey(), Sets.newHashSet(lowcaseRoles));
     }
 
     // for mapping data [role,privilege]
@@ -2331,16 +2336,16 @@ public class SentryStore {
   private void importSentryRolePrivilegeMapping(PersistenceManager pm, Set<String> existRoleNames,
       Map<String, Set<TSentryPrivilege>> sentryRolePrivilegesMap) throws Exception {
     if (sentryRolePrivilegesMap != null) {
-      for (String roleName : sentryRolePrivilegesMap.keySet()) {
+      for (Map.Entry<String, Set<TSentryPrivilege>> entry : sentryRolePrivilegesMap.entrySet()) {
         // if the rolenName doesn't exist, create it.
-        if (!existRoleNames.contains(roleName)) {
-          createSentryRoleCore(pm, roleName);
-          existRoleNames.add(roleName);
+        if (!existRoleNames.contains(entry.getKey())) {
+          createSentryRoleCore(pm, entry.getKey());
+          existRoleNames.add(entry.getKey());
         }
         // get the privileges for the role
-        Set<TSentryPrivilege> tSentryPrivileges = sentryRolePrivilegesMap.get(roleName);
+        Set<TSentryPrivilege> tSentryPrivileges = entry.getValue();
         for (TSentryPrivilege tSentryPrivilege : tSentryPrivileges) {
-          alterSentryRoleGrantPrivilegeCore(pm, roleName, tSentryPrivilege);
+          alterSentryRoleGrantPrivilegeCore(pm, entry.getKey(), tSentryPrivilege);
         }
       }
     }

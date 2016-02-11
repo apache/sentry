@@ -61,6 +61,12 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
   public SentryMetastorePostEventListener(Configuration config) {
     super(config);
 
+    if (!(config instanceof HiveConf)) {
+        String error = "Could not initialize Plugin - Configuration is not an instanceof HiveConf";
+        LOGGER.error(error);
+        throw new RuntimeException(error);
+    }
+
     authzConf = HiveAuthzConf.getAuthzConf((HiveConf)config);
     server = new Server(authzConf.get(AuthzConfVars.AUTHZ_SERVER_NAME.getVar()));
     Iterable<String> pluginClasses = ConfUtilties.CLASS_SPLITTER
@@ -204,7 +210,6 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
    */
   @Override
   public void onAlterTable (AlterTableEvent tableEvent) throws MetaException {
-    String oldTableName = null, newTableName = null;
 
     // don't sync privileges if the operation has failed
     if (!tableEvent.getStatus()) {
@@ -213,17 +218,11 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
       return;
     }
 
-    if (tableEvent.getOldTable() != null) {
-      oldTableName = tableEvent.getOldTable().getTableName();
-    }
-
-    if (tableEvent.getNewTable() != null) {
-      newTableName = tableEvent.getNewTable().getTableName();
-    }
-
     renameSentryTablePrivilege(tableEvent.getOldTable().getDbName(),
-        oldTableName, tableEvent.getOldTable().getSd().getLocation(),
-        tableEvent.getNewTable().getDbName(), newTableName,
+        tableEvent.getOldTable().getTableName(), 
+        tableEvent.getOldTable().getSd().getLocation(),
+        tableEvent.getNewTable().getDbName(), 
+        tableEvent.getNewTable().getTableName(),
         tableEvent.getNewTable().getSd().getLocation());
   }
 
