@@ -162,7 +162,7 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
       ASTNode astChild = (ASTNode) ast.getChild(2);
       privilegeObj = analyzePrivilegeObject(astChild);
     }
-    if (privilegeObj.getPartSpec() != null) {
+    if (privilegeObj != null && privilegeObj.getPartSpec() != null) {
       throw new SemanticException(SentryHiveConstants.PARTITION_PRIVS_NOT_SUPPORTED);
     }
     for (PrincipalDesc princ : principalDesc) {
