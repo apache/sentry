@@ -748,8 +748,9 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     Connection connection = null;
     try {
       createDb(ADMIN1, DB1);
-      Path extParentDir = dfs.assertCreateDir("/ABC/hhh");
-      Path extTableDir = dfs.assertCreateDir("/abc/hhh");
+      String baseDir = dataDir.getPath();
+      Path extParentDir = dfs.assertCreateDir(baseDir + "/ABC/hhh");
+      Path extTableDir = dfs.assertCreateDir(baseDir + "/abc/hhh");
       policyFile
           .addPermissionsToRole("create_db1", privileges.get("create_db1"))
           .addPermissionsToRole("all_uri", "server=server1->uri=" + extParentDir)
