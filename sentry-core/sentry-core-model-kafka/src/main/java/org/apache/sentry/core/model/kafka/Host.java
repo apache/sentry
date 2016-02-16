@@ -17,29 +17,45 @@
 package org.apache.sentry.core.model.kafka;
 
 /**
- * Represents the Host authorizable in the Kafka model
+ * Represents Host authorizable in Kafka model
  */
 public class Host implements KafkaAuthorizable {
-  /**
-   * Represents all hosts
-   */
-  public static Host ALL = new Host(KafkaAuthorizable.ALL);
-
   private String name;
+
+  /**
+   * Create a Kafka's Host authorizable of a given string representation.
+   *
+   * @param name String representation of host.
+   */
   public Host(String name) {
     this.name = name;
   }
 
+  /**
+   * Get authorizable type of Host authorizable.
+   *
+   * @return Type of Host authorizable.
+   */
   @Override
   public AuthorizableType getAuthzType() {
     return AuthorizableType.HOST;
   }
 
+  /**
+   * Get name of Kafka's host authorizable.
+   *
+   * @return Name of Kafka's host authorizable.
+   */
   @Override
   public String getName() {
     return name;
   }
 
+  /**
+   * Get type name of Kafka's host authorizable.
+   *
+   * @return Type name of Kafka's host authorizable.
+   */
   @Override
   public String getTypeName() {
     return getAuthzType().name();

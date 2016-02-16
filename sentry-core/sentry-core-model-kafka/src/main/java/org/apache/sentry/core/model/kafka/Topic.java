@@ -19,26 +19,42 @@ package org.apache.sentry.core.model.kafka;
  * Represents the Topic authorizable in the Kafka model
  */
 public class Topic implements KafkaAuthorizable {
-  /**
-   * Represents all topics
-   */
-  public static Topic ALL = new Topic(KafkaAuthorizable.ALL);
-
   private String name;
+
+  /**
+   * Create a Topic authorizable for Kafka cluster of a given name.
+   *
+   * @param name Name of Kafka topic.
+   */
   public Topic(String name) {
     this.name = name;
   }
 
+  /**
+   * Get type of Kafka's topic authorizable.
+   *
+   * @return Type of Kafka's topic authorizable.
+   */
   @Override
   public AuthorizableType getAuthzType() {
     return AuthorizableType.TOPIC;
   }
 
+  /**
+   * Get name of Kafka's topic.
+   *
+   * @return Name of Kafka's topic.
+   */
   @Override
   public String getName() {
     return name;
   }
 
+  /**
+   * Get type name of Kafka's topic authorizable.
+   *
+   * @return Type name of Kafka's topic authorizable.
+   */
   @Override
   public String getTypeName() {
     return getAuthzType().name();

@@ -19,11 +19,31 @@ package org.apache.sentry.core.model.kafka;
 import org.apache.sentry.core.common.Authorizable;
 
 /**
- * This interface represents authorizable resource in the Kafka component.
- * It used conjunction with the generic authorization model(SENTRY-398).
+ * This interface represents authorizable resource in Kafka component.
+ * It uses conjunction with generic authorization model (SENTRY-398).
+ *
+ * Authorizables here are mapped to Kafka resources based on below mentioned mapping.
+ *
+ * CLUSTER ->       Kafka Cluster resource, users are required to have access to this resource in
+ *                  order to perform cluster level actions like create topic, delete topic, etc.
+ *
+ * HOST ->          Kafka allows to authorize requests based on the host it is coming from. Though,
+ *                  Host is not a resource in Kafka, each Kafka Acl has host in it. In order to
+ *                  provide host based resource authorization, Host is treated as a Kafka resource
+ *                  in Sentry.
+ *
+ * TOPIC ->         Kafka Topic resource, users are required to have access to this resource in
+ *                  order to perform topic level actions like reading from a topic, writing to a
+ *                  topic, etc.
+ *
+ * CONSUMERGROUP -> Kafka ConsumerGroup resource, users are required to have access to this resource
+ *                  in order to perform ConsumerGroup level actions like joining a consumer group,
+ *                  querying offset for a partition for a particular consumer group.
  */
 public interface KafkaAuthorizable extends Authorizable {
-  public static final String ALL = "*"; // NOPMD - TODO(sdp) Remove before merge
+  /**
+   * Types of resources that Kafka supports authorization on.
+   */
   public enum AuthorizableType {
     CLUSTER,
     HOST,
@@ -31,5 +51,9 @@ public interface KafkaAuthorizable extends Authorizable {
     CONSUMERGROUP
   };
 
+  /**
+   * Get type of this Kafka authorizable.
+   * @return Type of this Kafka authorizable.
+   */
   public AuthorizableType getAuthzType(); // NOPMD - TODO(sdp) Remove before merge
 }

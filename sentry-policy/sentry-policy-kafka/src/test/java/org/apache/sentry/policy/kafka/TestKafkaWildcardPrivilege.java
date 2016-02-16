@@ -59,6 +59,10 @@ public class TestKafkaWildcardPrivilege {
       create(new KeyValue("HOST", "host1"), new KeyValue("GROUP", "cgroup1"), new KeyValue("action", KafkaActionConstant.WRITE));
 
 
+  private static final Privilege KAFKA_CLUSTER1_HOST1_ALL =
+      create(new KeyValue("CLUSTER", "cluster1"), new KeyValue("HOST", "host1"), new KeyValue("action", KafkaActionConstant.ALL));
+
+
   @Test
   public void testSimpleAction() throws Exception {
     //host

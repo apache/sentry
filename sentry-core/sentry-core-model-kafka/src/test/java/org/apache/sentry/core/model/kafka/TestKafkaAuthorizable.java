@@ -26,10 +26,13 @@ import org.apache.sentry.core.model.kafka.Host;
 import org.apache.sentry.core.model.kafka.Topic;
 import org.junit.Test;
 
+/**
+ * Test proper KafkaAuthorizable is created for various Kafka resources.
+ */
 public class TestKafkaAuthorizable {
 
   @Test
-  public void testSimpleName() throws Exception {
+  public void testName() throws Exception {
     String name = "simple";
     Host host = new Host(name);
     Assert.assertEquals(host.getName(), name);

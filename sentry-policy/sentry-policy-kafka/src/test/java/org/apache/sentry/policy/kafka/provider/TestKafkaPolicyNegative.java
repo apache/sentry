@@ -86,7 +86,7 @@ public class TestKafkaPolicyNegative {
     append("[groups]", globalPolicyFile);
     append("group = malicious_role", globalPolicyFile);
     append("[roles]", globalPolicyFile);
-    append("malicious_role = host=*", globalPolicyFile);
+    append("malicious_role = host=*->action=read", globalPolicyFile);
     PolicyEngine policy = new KafkaPolicyFileProviderBackend(globalPolicyFile.getPath());
     ImmutableSet<String> permissions = policy.getAllPrivileges(Sets.newHashSet("group"), ActiveRoleSet.ALL);
     Assert.assertTrue(permissions.toString(), permissions.size() == 1);

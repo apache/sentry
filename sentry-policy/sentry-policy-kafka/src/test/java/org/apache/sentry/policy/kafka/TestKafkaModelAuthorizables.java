@@ -21,7 +21,10 @@ package org.apache.sentry.policy.kafka;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNull;
 
+import org.apache.sentry.core.model.kafka.Cluster;
+import org.apache.sentry.core.model.kafka.ConsumerGroup;
 import org.apache.sentry.core.model.kafka.Host;
+import org.apache.sentry.core.model.kafka.Topic;
 import org.junit.Test;
 
 public class TestKafkaModelAuthorizables {
@@ -50,5 +53,20 @@ public class TestKafkaModelAuthorizables {
   @Test
   public void testNotAuthorizable() throws Exception {
     assertNull(KafkaModelAuthorizables.from("k=v"));
+  }
+
+  @Test
+  public void testResourceNameIsCaseSensitive() throws Exception {
+    Host host1 = (Host)KafkaModelAuthorizables.from("HOST=Host1");
+    assertEquals("Host1", host1.getName());
+
+    Cluster cluster1 = (Cluster)KafkaModelAuthorizables.from("Cluster=cLuster1");
+    assertEquals("cLuster1", cluster1.getName());
+
+    Topic topic1 = (Topic)KafkaModelAuthorizables.from("topic=topiC1");
+    assertEquals("topiC1", topic1.getName());
+
+    ConsumerGroup consumergroup1 = (ConsumerGroup)KafkaModelAuthorizables.from("ConsumerGroup=CG1");
+    assertEquals("CG1", consumergroup1.getName());
   }
 }

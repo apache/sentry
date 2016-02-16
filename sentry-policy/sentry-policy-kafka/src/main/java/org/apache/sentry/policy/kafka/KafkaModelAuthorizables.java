@@ -27,7 +27,7 @@ import org.apache.sentry.provider.common.KeyValue;
 public class KafkaModelAuthorizables {
   public static KafkaAuthorizable from(KeyValue keyValue) {
     String prefix = keyValue.getKey().toLowerCase();
-    String name = keyValue.getValue().toLowerCase();
+    String name = keyValue.getValue();
     for (AuthorizableType type : AuthorizableType.values()) {
       if (prefix.equalsIgnoreCase(type.name())) {
         return from(type, name);
