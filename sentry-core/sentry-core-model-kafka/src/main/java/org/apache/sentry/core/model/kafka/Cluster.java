@@ -17,32 +17,47 @@
 package org.apache.sentry.core.model.kafka;
 
 /**
- * Represents the Cluster authorizable in the Kafka model
+ * Represents Cluster authorizable in Kafka model.
  */
 public class Cluster implements KafkaAuthorizable {
-  /**
-   * Represents all clusters
-   */
-  public static final Cluster ALL = new Cluster(KafkaAuthorizable.ALL);
-
   private String name;
+
+  /**
+   * Create a Cluster authorizable for Kafka cluster of a given name.
+   *
+   * @param name Name of Kafka cluster.
+   */
   public Cluster(String name) {
     this.name = name;
   }
 
+  /**
+   * Get type of Kafka's cluster authorizable.
+   *
+   * @return Type of Kafka's cluster authorizable.
+   */
   @Override
   public AuthorizableType getAuthzType() {
     return AuthorizableType.CLUSTER;
   }
 
+  /**
+   * Get name of Kafka's cluster.
+   *
+   * @return Name of Kafka's cluster.
+   */
   @Override
   public String getName() {
     return name;
   }
 
+  /**
+   * Get type name of Kafka's cluster authorizable.
+   *
+   * @return Type name of Kafka's cluster authorizable.
+   */
   @Override
   public String getTypeName() {
     return getAuthzType().name();
   }
-
 }

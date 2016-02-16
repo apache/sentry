@@ -35,8 +35,8 @@ import com.google.common.io.Files;
 
 public abstract class AbstractTestKafkaPolicyEngine {
 
-  private static final String ADMIN = "host=*";
-  private static final String ADMIN_HOST1 = "host=host1";
+  private static final String ADMIN = "host=*->action=all";
+  private static final String ADMIN_HOST1 = "host=host1->action=all";
   private static final String CONSUMER_T1_ALL = "host=*->topic=t1->action=read";
   private static final String CONSUMER_T1_HOST1 = "host=host1->topic=t1->action=read";
   private static final String CONSUMER_T2_HOST2 = "host=host2->topic=t2->action=read";
