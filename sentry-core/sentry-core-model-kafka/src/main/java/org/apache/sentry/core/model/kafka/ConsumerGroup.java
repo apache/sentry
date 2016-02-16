@@ -19,26 +19,42 @@ package org.apache.sentry.core.model.kafka;
  * Represents the ConsumerGroup authorizable in the Kafka model
  */
 public class ConsumerGroup implements KafkaAuthorizable {
-  /**
-   * Represents all consumer groups
-   */
-  public static ConsumerGroup ALL = new ConsumerGroup(KafkaAuthorizable.ALL);
-
   private String name;
+
+  /**
+   * Create a Consumer-Group authorizable for Kafka cluster of a given name.
+   *
+   * @param name Name of Consumer-Group in a Kafka cluster.
+   */
   public ConsumerGroup(String name) {
     this.name = name;
   }
 
+  /**
+   * Get type of Kafka's consumer-group authorizable.
+   *
+   * @return Type of Kafka's consumer-group authorizable.
+   */
   @Override
   public AuthorizableType getAuthzType() {
     return AuthorizableType.CONSUMERGROUP;
   }
 
+  /**
+   * Get name of Kafka's consumer-group.
+   *
+   * @return Name of Kafka's consumer-group.
+   */
   @Override
   public String getName() {
     return name;
   }
 
+  /**
+   * Get type name of Kafka's consumer-group authorizable.
+   *
+   * @return Type name of Kafka's consumer-group authorizable.
+   */
   @Override
   public String getTypeName() {
     return getAuthzType().name();

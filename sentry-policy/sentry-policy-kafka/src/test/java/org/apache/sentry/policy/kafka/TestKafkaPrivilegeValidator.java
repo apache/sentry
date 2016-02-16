@@ -31,27 +31,24 @@ public class TestKafkaPrivilegeValidator {
     try {
       kafkaPrivilegeValidator.validate(new PrivilegeValidatorContext("host=host1"));
     } catch (ConfigurationException ex) {
-      Assert.fail("Unexpected ConfigurationException.");
+      Assert.assertEquals(KafkaPrivilegeValidator.KafkaPrivilegeHelpMsg, ex.getMessage());
     }
   }
 
   @Test
   public void testWithoutHostResource() throws Exception {
     KafkaPrivilegeValidator kafkaPrivilegeValidator = new KafkaPrivilegeValidator();
+    testHostResourceIsChecked(kafkaPrivilegeValidator, "cluster=c1->action=read");
+    testHostResourceIsChecked(kafkaPrivilegeValidator, "topic=t1->action=read");
+    testHostResourceIsChecked(kafkaPrivilegeValidator, "consumergroup=g1->action=read");
+  }
+
+  private void testHostResourceIsChecked(KafkaPrivilegeValidator kafkaPrivilegeValidator, String privilege) {
     try {
-      kafkaPrivilegeValidator.validate(new PrivilegeValidatorContext("cluster=c1->action=read"));
+      kafkaPrivilegeValidator.validate(new PrivilegeValidatorContext(privilege));
       Assert.fail("Expected ConfigurationException");
     } catch (ConfigurationException ex) {
-    }
-    try {
-      kafkaPrivilegeValidator.validate(new PrivilegeValidatorContext("topic=t1->action=read"));
-      Assert.fail("Expected ConfigurationException");
-    } catch (ConfigurationException ex) {
-    }
-    try {
-      kafkaPrivilegeValidator.validate(new PrivilegeValidatorContext("consumergroup=g1->action=read"));
-      Assert.fail("Expected ConfigurationException");
-    } catch (ConfigurationException ex) {
+      Assert.assertEquals("Kafka privilege must begin with host authorizable.\n" + KafkaPrivilegeValidator.KafkaPrivilegeHelpMsg, ex.getMessage());
     }
   }
 
@@ -115,4 +112,58 @@ public class TestKafkaPrivilegeValidator {
     }
   }
 
+  @Test
+  public void testPrivilegeMustHaveExcatlyOneHost() {
+    KafkaPrivilegeValidator kafkaPrivilegeValidator = new KafkaPrivilegeValidator();
+    try {
+      kafkaPrivilegeValidator.validate(new PrivilegeValidatorContext("host=host1->host=host2->action=read"));
+      Assert.fail("Multiple Host resources are not allowed within a Kafka privilege.");
+    } catch (ConfigurationException ex) {
+      Assert.assertEquals("Host authorizable can be specified just once in a Kafka privilege.\n" + KafkaPrivilegeValidator.KafkaPrivilegeHelpMsg, ex.getMessage());
+    }
+  }
+
+  @Test
+  public void testPrivilegeCanNotStartWithAction() {
+    KafkaPrivilegeValidator kafkaPrivilegeValidator = new KafkaPrivilegeValidator();
+    try {
+      kafkaPrivilegeValidator.validate(new PrivilegeValidatorContext("action=write->host=host1->topic=t1"));
+      Assert.fail("Kafka privilege can not start with an action.");
+    } catch (ConfigurationException ex) {
+      Assert.assertEquals("Kafka privilege can not start with an action.\n" + KafkaPrivilegeValidator.KafkaPrivilegeHelpMsg, ex.getMessage());
+    }
+  }
+
+  @Test
+  public void testPrivilegeWithMoreParts() {
+    KafkaPrivilegeValidator kafkaPrivilegeValidator = new KafkaPrivilegeValidator();
+    try {
+      kafkaPrivilegeValidator.validate(new PrivilegeValidatorContext("host=host1->topic=t1->consumergroup=cg1->action=read"));
+      Assert.fail("Kafka privilege can have one Host authorizable, at most one non Host authorizable and one action.");
+    } catch (ConfigurationException ex) {
+      Assert.assertEquals(KafkaPrivilegeValidator.KafkaPrivilegeHelpMsg, ex.getMessage());
+    }
+  }
+
+  @Test
+  public void testPrivilegeNotEndingWithAction() {
+    KafkaPrivilegeValidator kafkaPrivilegeValidator = new KafkaPrivilegeValidator();
+    try {
+      kafkaPrivilegeValidator.validate(new PrivilegeValidatorContext("host=host1->topic=t1->consumergroup=cg1"));
+      Assert.fail("Kafka privilege must end with a valid action.");
+    } catch (ConfigurationException ex) {
+      Assert.assertEquals("Kafka privilege must end with a valid action.\n" + KafkaPrivilegeValidator.KafkaPrivilegeHelpMsg, ex.getMessage());
+    }
+  }
+
+  @Test
+  public void testPrivilegeNotEndingWithValidAction() {
+    KafkaPrivilegeValidator kafkaPrivilegeValidator = new KafkaPrivilegeValidator();
+    try {
+      kafkaPrivilegeValidator.validate(new PrivilegeValidatorContext("host=host1->topic=t1->action=bla"));
+      Assert.fail("Kafka privilege must end with a valid action.");
+    } catch (ConfigurationException ex) {
+      Assert.assertEquals("Kafka privilege must end with a valid action.\n" + KafkaPrivilegeValidator.KafkaPrivilegeHelpMsg, ex.getMessage());
+    }
+  }
 }

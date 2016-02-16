@@ -25,8 +25,11 @@ import org.junit.Test;
 
 import com.google.common.collect.Lists;
 
+/**
+ * Test KafkaActionFactory creates expected Kafka action instances.
+ */
 public class TestKafkaAction {
-  private KafkaActionFactory factory = new KafkaActionFactory();
+  private KafkaActionFactory factory = KafkaActionFactory.getInstance();
 
   @Test
   public void testImpliesAction() {
@@ -39,7 +42,6 @@ public class TestKafkaAction {
         (KafkaAction) factory.getActionByName(KafkaActionConstant.DESCRIBE);
     KafkaAction adminAction = (KafkaAction) factory.getActionByName(KafkaActionConstant.CLUSTER_ACTION);
     KafkaAction allAction = (KafkaAction) factory.getActionByName(KafkaActionConstant.ALL);
-    KafkaAction allNameAction = (KafkaAction) factory.getActionByName(KafkaActionConstant.ALL_NAME);
 
     assertTrue(allAction.implies(readAction));
     assertTrue(allAction.implies(writeAction));
@@ -112,15 +114,6 @@ public class TestKafkaAction {
     assertFalse(adminAction.implies(describeAction));
     assertTrue(adminAction.implies(adminAction));
     assertFalse(adminAction.implies(allAction));
-
-    assertTrue(allNameAction.implies(readAction));
-    assertTrue(allNameAction.implies(writeAction));
-    assertTrue(allNameAction.implies(createAction));
-    assertTrue(allNameAction.implies(deleteAction));
-    assertTrue(allNameAction.implies(alterAction));
-    assertTrue(allNameAction.implies(describeAction));
-    assertTrue(allNameAction.implies(adminAction));
-    assertTrue(allNameAction.implies(allAction));
   }
 
   @Test
@@ -134,7 +127,6 @@ public class TestKafkaAction {
         (KafkaAction) factory.getActionByName(KafkaActionConstant.DESCRIBE);
     KafkaAction adminAction = (KafkaAction) factory.getActionByName(KafkaActionConstant.CLUSTER_ACTION);
     KafkaAction allAction = (KafkaAction) factory.getActionByName(KafkaActionConstant.ALL);
-    KafkaAction allNameAction = (KafkaAction) factory.getActionByName(KafkaActionConstant.ALL_NAME);
 
     assertTrue(readAction.equals(new KafkaAction(KafkaActionConstant.READ)));
     assertTrue(writeAction.equals(new KafkaAction(KafkaActionConstant.WRITE)));
@@ -144,7 +136,6 @@ public class TestKafkaAction {
     assertTrue(describeAction.equals(new KafkaAction(KafkaActionConstant.DESCRIBE)));
     assertTrue(adminAction.equals(new KafkaAction(KafkaActionConstant.CLUSTER_ACTION)));
     assertTrue(allAction.equals(new KafkaAction(KafkaActionConstant.ALL)));
-    assertTrue(allNameAction.equals(new KafkaAction(KafkaActionConstant.ALL)));
   }
 
   @Test
@@ -176,5 +167,15 @@ public class TestKafkaAction {
     assertEquals(Lists.newArrayList(readAction, writeAction, createAction, deleteAction,
         alterAction, describeAction, adminAction), factory.getActionsByCode(allAction
         .getActionCode()));
+  }
+
+  @Test
+  public void testGetActionForInvalidName() {
+    assertEquals("Failed to NOT create Kafka action for invalid name.", null, factory.getActionByName("INVALID"));
+  }
+
+  @Test
+  public void testGetActionForInvalidCode() {
+    assertEquals("Failed to NOT create Kafka actions for invalid code.", 0, factory.getActionsByCode(0).size());
   }
 }

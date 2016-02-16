@@ -16,10 +16,12 @@
  */
 package org.apache.sentry.core.model.kafka;
 
+/**
+ * Actions supported by Kafka on its authorizable resources.
+ */
 public class KafkaActionConstant {
 
-  public static final String ALL = "*";
-  public static final String ALL_NAME = "ALL";
+  public static final String ALL = "ALL";
   public static final String READ = "read";
   public static final String WRITE = "write";
   public static final String CREATE = "create";

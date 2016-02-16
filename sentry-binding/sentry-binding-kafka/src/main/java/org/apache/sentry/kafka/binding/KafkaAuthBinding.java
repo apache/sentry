@@ -50,7 +50,7 @@ public class KafkaAuthBinding {
     private final AuthorizationProvider authProvider;
     private ProviderBackend providerBackend;
 
-    private final KafkaActionFactory actionFactory = new KafkaActionFactory();
+    private final KafkaActionFactory actionFactory = KafkaActionFactory.getInstance();
 
     public KafkaAuthBinding(Configuration authConf) throws Exception {
         this.authConf = authConf;

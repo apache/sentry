@@ -21,6 +21,7 @@ import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_S
 import java.util.List;
 
 import org.apache.sentry.core.model.kafka.KafkaActionConstant;
+import org.apache.sentry.core.model.kafka.KafkaAuthorizable;
 import org.apache.sentry.policy.common.Privilege;
 import org.apache.sentry.policy.common.PrivilegeFactory;
 import org.apache.sentry.provider.common.KeyValue;
@@ -31,6 +32,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 public class KafkaWildcardPrivilege implements Privilege {
+
+  private static String ALL_HOSTS = "*";
 
   public static class Factory implements PrivilegeFactory {
     @Override
@@ -107,17 +110,29 @@ public class KafkaWildcardPrivilege implements Privilege {
   private boolean impliesKeyValue(KeyValue policyPart, KeyValue requestPart) {
     Preconditions.checkState(policyPart.getKey().equalsIgnoreCase(requestPart.getKey()),
         "Please report, this method should not be called with two different keys");
-    if(policyPart.getValue().equalsIgnoreCase(KafkaActionConstant.ALL) ||
-        policyPart.getValue().equalsIgnoreCase(KafkaActionConstant.ALL_NAME) ||
-        policyPart.equals(requestPart)) {
+
+    // Host is a special resource, not declared as resource in Kafka. Each Kafka resource can be
+    // authorized based on the host request originated from and to handle this, Sentry uses host as
+    // a resource. Kafka allows using '*' as wildcard for all hosts. '*' however is not a valid
+    // Kafka action.
+    if (hasHostWidCard(policyPart)) {
       return true;
-    } else if (!KafkaActionConstant.actionName.equalsIgnoreCase(policyPart.getKey())
-        && KafkaActionConstant.ALL.equalsIgnoreCase(requestPart.getValue())) {
-      /* privilege request is to match with any object of given type */
+    }
+
+    if (KafkaActionConstant.actionName.equalsIgnoreCase(policyPart.getKey())) { // is action
+      return policyPart.getValue().equalsIgnoreCase(KafkaActionConstant.ALL) ||
+          policyPart.equals(requestPart);
+    } else {
+      return policyPart.getValue().equals(requestPart.getValue());
+    }
+  }
+
+  private boolean hasHostWidCard(KeyValue policyPart) {
+    if (policyPart.getKey().equalsIgnoreCase(KafkaAuthorizable.AuthorizableType.HOST.toString()) &&
+        policyPart.getValue().equalsIgnoreCase(ALL_HOSTS)) {
       return true;
     }
     return false;
-
   }
 
   @Override
