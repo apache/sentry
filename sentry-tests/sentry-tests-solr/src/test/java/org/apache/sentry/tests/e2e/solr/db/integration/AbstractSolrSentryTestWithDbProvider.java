@@ -78,7 +78,7 @@ public class AbstractSolrSentryTestWithDbProvider extends AbstractSolrSentryTest
   protected static final String ADMIN_ROLE  = "admin_role";
   protected static final String ADMIN_COLLECTION_NAME = "admin";
   protected static final String COMPONENT_SOLR = "solr";
-  protected static final String CLUSTER_NAME = SearchConstants.SENTRY_SEARCH_CLUSTER_DEFAULT;
+  protected static final String SERVICE_NAME = SearchConstants.SENTRY_SEARCH_SERVICE_DEFAULT;
 
   protected static final Configuration conf = new Configuration(false);
 
@@ -307,7 +307,7 @@ public class AbstractSolrSentryTestWithDbProvider extends AbstractSolrSentryTest
   private static TSentryPrivilege toTSentryPrivilege(String collection, String action) {
     TSentryPrivilege tPrivilege = new TSentryPrivilege();
     tPrivilege.setComponent(COMPONENT_SOLR);
-    tPrivilege.setServiceName(CLUSTER_NAME);
+    tPrivilege.setServiceName(SERVICE_NAME);
     tPrivilege.setAction(action);
     tPrivilege.setGrantOption(TSentryGrantOption.FALSE);
 

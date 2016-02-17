@@ -163,11 +163,11 @@ public class TestSolrAdminOperations extends AbstractSolrSentryTestWithDbProvide
     grantCollectionPrivilege(ADMIN_COLLECTION_NAME, ADMIN_USER, "role0", SearchConstants.ALL);
 
     assertTrue("user0 has one privilege on collection admin",
-        client.listPrivilegesByRoleName("user0", "role0", COMPONENT_SOLR, CLUSTER_NAME,
+        client.listPrivilegesByRoleName("user0", "role0", COMPONENT_SOLR, SERVICE_NAME,
             Arrays.asList(new Collection(ADMIN_COLLECTION_NAME))).size() == 1);
 
     assertTrue("user0 has one privilege on collection collection1",
-        client.listPrivilegesByRoleName("user0", "role0", COMPONENT_SOLR, CLUSTER_NAME,
+        client.listPrivilegesByRoleName("user0", "role0", COMPONENT_SOLR, SERVICE_NAME,
             Arrays.asList(new Collection(TEST_COLLECTION_NAME1))).size() == 1);
 
     /**
@@ -175,10 +175,10 @@ public class TestSolrAdminOperations extends AbstractSolrSentryTestWithDbProvide
      * grant QUERY privilege on collection collection1 to role1
      */
 
-    client.listPrivilegesByRoleName("user0", "role0", COMPONENT_SOLR, CLUSTER_NAME, null);
+    client.listPrivilegesByRoleName("user0", "role0", COMPONENT_SOLR, SERVICE_NAME, null);
     grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role1", SearchConstants.ALL);
     assertTrue("user1 has one privilege record",
-        client.listPrivilegesByRoleName("user1", "role1", COMPONENT_SOLR, CLUSTER_NAME,
+        client.listPrivilegesByRoleName("user1", "role1", COMPONENT_SOLR, SERVICE_NAME,
             Arrays.asList(new Collection(TEST_COLLECTION_NAME1))).size() == 1);
 
     /**
@@ -192,16 +192,16 @@ public class TestSolrAdminOperations extends AbstractSolrSentryTestWithDbProvide
 
     //check the user0
     assertTrue("user0 has one privilege on collection admin",
-        client.listPrivilegesByRoleName("user0", "role0", COMPONENT_SOLR, CLUSTER_NAME,
+        client.listPrivilegesByRoleName("user0", "role0", COMPONENT_SOLR, SERVICE_NAME,
             Arrays.asList(new Collection(ADMIN_COLLECTION_NAME))).size() == 1);
 
     assertTrue("user0 has no privilege on collection collection1",
-        client.listPrivilegesByRoleName("user0", "role0", COMPONENT_SOLR, CLUSTER_NAME,
+        client.listPrivilegesByRoleName("user0", "role0", COMPONENT_SOLR, SERVICE_NAME,
             Arrays.asList(new Collection(TEST_COLLECTION_NAME1))).size() == 0);
 
     //check the user1
     assertTrue("user1 has no privilege on collection collection1",
-        client.listPrivilegesByRoleName("user1", "role1", COMPONENT_SOLR, CLUSTER_NAME,
+        client.listPrivilegesByRoleName("user1", "role1", COMPONENT_SOLR, SERVICE_NAME,
             Arrays.asList(new Collection(TEST_COLLECTION_NAME1))).size() == 0);
 
     /**
@@ -211,7 +211,7 @@ public class TestSolrAdminOperations extends AbstractSolrSentryTestWithDbProvide
     grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role2", SearchConstants.UPDATE);
 
     assertTrue("user2 has one privilege on collection collection1",
-        client.listPrivilegesByRoleName("user2", "role2", COMPONENT_SOLR, CLUSTER_NAME,
+        client.listPrivilegesByRoleName("user2", "role2", COMPONENT_SOLR, SERVICE_NAME,
             Arrays.asList(new Collection(TEST_COLLECTION_NAME1))).size() == 1);
 
     /**
@@ -220,7 +220,7 @@ public class TestSolrAdminOperations extends AbstractSolrSentryTestWithDbProvide
      */
     grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role3", SearchConstants.QUERY);
     assertTrue("user1 has one privilege record",
-        client.listPrivilegesByRoleName("user3", "role3", COMPONENT_SOLR, CLUSTER_NAME,
+        client.listPrivilegesByRoleName("user3", "role3", COMPONENT_SOLR, SERVICE_NAME,
             Arrays.asList(new Collection(TEST_COLLECTION_NAME1))).size() == 1);
 
     /**
@@ -234,12 +234,12 @@ public class TestSolrAdminOperations extends AbstractSolrSentryTestWithDbProvide
 
     //check the user2
     assertTrue("user2 has no privilege on collection collection1",
-        client.listPrivilegesByRoleName("user2", "role2", COMPONENT_SOLR, CLUSTER_NAME,
+        client.listPrivilegesByRoleName("user2", "role2", COMPONENT_SOLR, SERVICE_NAME,
             Arrays.asList(new Collection(TEST_COLLECTION_NAME1))).size() == 0);
 
     //check the user3
     assertTrue("user3 has no privilege on collection collection1",
-        client.listPrivilegesByRoleName("user3", "role3", COMPONENT_SOLR, CLUSTER_NAME,
+        client.listPrivilegesByRoleName("user3", "role3", COMPONENT_SOLR, SERVICE_NAME,
             Arrays.asList(new Collection(TEST_COLLECTION_NAME1))).size() == 0);
   }
 }

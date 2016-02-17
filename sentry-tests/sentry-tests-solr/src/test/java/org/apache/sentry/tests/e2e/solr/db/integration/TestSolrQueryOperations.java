@@ -86,7 +86,7 @@ public class TestSolrQueryOperations extends AbstractSolrSentryTestWithDbProvide
     grantCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER, "role2", SearchConstants.QUERY);
     verifyQueryPass(grantor, TEST_COLLECTION_NAME1, ALL_DOCS);
 
-    client.renamePrivilege(ADMIN_USER, COMPONENT_SOLR, CLUSTER_NAME,
+    client.renamePrivilege(ADMIN_USER, COMPONENT_SOLR, SERVICE_NAME,
         Lists.newArrayList(new Collection(TEST_COLLECTION_NAME1)),
         Lists.newArrayList(new Collection("new_" + TEST_COLLECTION_NAME1)));
     verifyQueryFail(grantor, TEST_COLLECTION_NAME1, ALL_DOCS);

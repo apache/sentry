@@ -17,8 +17,8 @@
 package org.apache.sentry.binding.solr.authz;
 
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION;
-import static org.apache.sentry.core.model.search.SearchConstants.SENTRY_SEARCH_CLUSTER_DEFAULT;
-import static org.apache.sentry.core.model.search.SearchConstants.SENTRY_SEARCH_CLUSTER_KEY;
+import static org.apache.sentry.core.model.search.SearchConstants.SENTRY_SEARCH_SERVICE_DEFAULT;
+import static org.apache.sentry.core.model.search.SearchConstants.SENTRY_SEARCH_SERVICE_KEY;
 import static org.apache.sentry.core.model.search.SearchModelAuthorizable.AuthorizableType.Collection;
 
 import java.io.File;
@@ -101,7 +101,7 @@ public class SolrAuthzBinding {
       authzConf.get(AuthzConfVars.AUTHZ_PROVIDER_BACKEND.getVar());
     String policyEngineName =
       authzConf.get(AuthzConfVars.AUTHZ_POLICY_ENGINE.getVar());
-    String serviceName = authzConf.get(SENTRY_SEARCH_CLUSTER_KEY, SENTRY_SEARCH_CLUSTER_DEFAULT);
+    String serviceName = authzConf.get(SENTRY_SEARCH_SERVICE_KEY, SENTRY_SEARCH_SERVICE_DEFAULT);
 
     LOG.debug("Using authorization provider " + authProviderName +
       " with resource " + resourceName + ", policy engine "
@@ -305,8 +305,8 @@ public class SolrAuthzBinding {
       client = getClient();
       TSentryPrivilege tPrivilege = new TSentryPrivilege();
       tPrivilege.setComponent(AuthorizationComponent.Search);
-      tPrivilege.setServiceName(authzConf.get(SENTRY_SEARCH_CLUSTER_KEY,
-          SENTRY_SEARCH_CLUSTER_DEFAULT));
+      tPrivilege.setServiceName(authzConf.get(SENTRY_SEARCH_SERVICE_KEY,
+          SENTRY_SEARCH_SERVICE_DEFAULT));
       tPrivilege.setAction(Action.ALL);
       tPrivilege.setGrantOption(TSentryGrantOption.UNSET);
       List<TAuthorizable> authorizables = Lists.newArrayList(new TAuthorizable(Collection.name(),
