@@ -16,10 +16,8 @@
  */
 package org.apache.sentry.policy.common;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertFalse;
 import static org.apache.sentry.policy.common.PolicyConstants.KV_JOINER;
-
+import junit.framework.Assert;
 import org.junit.Test;
 
 public class TestKeyValue {
@@ -27,8 +25,8 @@ public class TestKeyValue {
   @Test
   public void testWithSeparators() throws Exception {
     KeyValue kv = new KeyValue("URI=/u/h/w/t/partition=value/");
-    assertEquals("URI", kv.getKey());
-    assertEquals("/u/h/w/t/partition=value/", kv.getValue());
+    Assert.assertEquals("URI", kv.getKey());
+    Assert.assertEquals("/u/h/w/t/partition=value/", kv.getValue());
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -58,19 +56,19 @@ public class TestKeyValue {
   }
 
   private void doTest(KeyValue kv1, KeyValue kv2, KeyValue kv3) {
-    assertEquals(kv1, kv2);
-    assertFalse(kv1.equals(kv3));
+    Assert.assertEquals(kv1, kv2);
+    Assert.assertFalse(kv1.equals(kv3));
 
-    assertEquals(kv1.toString(), kv2.toString());
-    assertFalse(kv1.toString().equals(kv3.toString()));
+    Assert.assertEquals(kv1.toString(), kv2.toString());
+    Assert.assertFalse(kv1.toString().equals(kv3.toString()));
 
-    assertEquals(kv1.hashCode(), kv2.hashCode());
-    assertFalse(kv1.hashCode() == kv3.hashCode());
+    Assert.assertEquals(kv1.hashCode(), kv2.hashCode());
+    Assert.assertFalse(kv1.hashCode() == kv3.hashCode());
 
-    assertEquals(kv1.getKey(), kv2.getKey());
-    assertFalse(kv1.getKey().equals(kv3.getKey()));
+    Assert.assertEquals(kv1.getKey(), kv2.getKey());
+    Assert.assertFalse(kv1.getKey().equals(kv3.getKey()));
 
-    assertEquals(kv1.getValue(), kv2.getValue());
-    assertFalse(kv1.getValue().equals(kv3.getValue()));
+    Assert.assertEquals(kv1.getValue(), kv2.getValue());
+    Assert.assertFalse(kv1.getValue().equals(kv3.getValue()));
   }
 }
