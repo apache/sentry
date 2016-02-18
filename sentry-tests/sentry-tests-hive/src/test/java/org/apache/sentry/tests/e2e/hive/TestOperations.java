@@ -752,9 +752,9 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
       Path extParentDir = dfs.assertCreateDir(baseDir + "/ABC/hhh");
       Path extTableDir = dfs.assertCreateDir(baseDir + "/abc/hhh");
       policyFile
-          .addPermissionsToRole("create_db1", privileges.get("create_db1"))
+          .addPermissionsToRole("all_db1", privileges.get("all_db1"))
           .addPermissionsToRole("all_uri", "server=server1->uri=" + extParentDir)
-          .addRolesToGroup(USERGROUP1, "create_db1", "all_uri");
+          .addRolesToGroup(USERGROUP1, "all_db1", "all_uri");
       writePolicyFile(policyFile);
       connection = context.createConnection(USER1_1);
       statement = context.createStatement(connection);
