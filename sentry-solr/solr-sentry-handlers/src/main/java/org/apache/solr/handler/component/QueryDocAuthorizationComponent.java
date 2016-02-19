@@ -17,6 +17,12 @@
 
 package org.apache.solr.handler.component;
 
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.solr.common.SolrException;
@@ -73,6 +79,40 @@ public class QueryDocAuthorizationComponent extends SearchComponent
       .append(value).append("}");
   }
 
+  public String getFilterQueryStr(Set<String> roles) {
+    if (roles != null && roles.size() > 0) {
+      StringBuilder builder = new StringBuilder();
+      for (String role : roles) {
+        addRawClause(builder, authField, role);
+      }
+      if (allRolesToken != null && !allRolesToken.isEmpty()) {
+        addRawClause(builder, authField, allRolesToken);
+      }
+      return builder.toString();
+    }
+    return null;
+  }
+
+  private BooleanClause getBooleanClause(String authField, String value) {
+    Term t = new Term(authField, value);
+    return new BooleanClause(new TermQuery(t), BooleanClause.Occur.SHOULD);
+  }
+
+  public Query getFilterQuery(Set<String> roles) {
+    if (roles != null && roles.size() > 0) {
+      BooleanQuery query = new BooleanQuery();
+      for (String role : roles) {
+        query.add(getBooleanClause(authField, role));
+      }
+      if (allRolesToken != null && !allRolesToken.isEmpty()) {
+        query.add(getBooleanClause(authField, allRolesToken));
+      }
+      return query;
+    }
+
+    return null;
+  }
+
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
     if (!enabled) return;
@@ -84,16 +124,9 @@ public class QueryDocAuthorizationComponent extends SearchComponent
     }
     Set<String> roles = sentryInstance.getRoles(userName);
     if (roles != null && roles.size() > 0) {
-      StringBuilder builder = new StringBuilder();
-      for (String role : roles) {
-        addRawClause(builder, authField, role);
-      }
-      if (allRolesToken != null && !allRolesToken.isEmpty()) {
-        addRawClause(builder, authField, allRolesToken);
-      }
+      String filterQuery = getFilterQueryStr(roles);
       ModifiableSolrParams newParams = new ModifiableSolrParams(rb.req.getParams());
-      String result = builder.toString();
-      newParams.add("fq", result);
+      newParams.add("fq", filterQuery);
       rb.req.setParams(newParams);
     } else {
       throw new SolrException(SolrException.ErrorCode.UNAUTHORIZED,
@@ -114,5 +147,9 @@ public class QueryDocAuthorizationComponent extends SearchComponent
   @Override
   public String getSource() {
     return "$URL$";
+  }
+
+  public boolean getEnabled() {
+    return enabled;
   }
 }

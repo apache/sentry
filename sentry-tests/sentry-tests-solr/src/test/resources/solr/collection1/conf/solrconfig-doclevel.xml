@@ -387,14 +387,14 @@
          'soft' commit which only ensures that changes are visible
          but does not ensure that data is synced to disk.  This is
          faster and more near-realtime friendly than a hard commit.
-      -->   
-     <autoSoftCommit> 
-       <maxTime>${solr.autoSoftCommit.maxTime:1000}</maxTime> 
+      -->
+     <autoSoftCommit>
+       <maxTime>${solr.autoSoftCommit.maxTime:20000}</maxTime>
      </autoSoftCommit>
-     
+
 
     <!-- Update Related Event Listeners
-         
+
          Various IndexWriter related events can trigger Listeners to
          take actions.
 
@@ -899,7 +899,7 @@
   <!-- realtime get handler, guaranteed to return the latest stored fields of
        any document, without the need to commit or open a new searcher.  The
        current implementation relies on the updateLog feature being enabled. -->
-  <requestHandler name="/get" class="solr.RealTimeGetHandler">
+  <requestHandler name="/get" class="solr.SecureRealTimeGetHandler">
      <lst name="defaults">
        <str name="omitHeader">true</str>
        <str name="wt">json</str>
@@ -1351,14 +1351,17 @@
     <bool name="enabled">true</bool>
 
     <!-- Field where the auth tokens are stored in the document -->
-    <str name="sentryAuthField">sentry_auth</str>
+    <str name="sentryAuthField">${sentry.auth.field:sentry_auth}</str>
 
     <!-- Auth token defined to allow any role to access the document.
          Uncomment to enable. -->
     <str name="allRolesToken">OR</str>
   </searchComponent>
 
-  <!-- A request handler for demonstrating the spellcheck component.  
+  <searchComponent name="secureGet" class="org.apache.solr.handler.component.SecureRealTimeGetComponent" >
+  </searchComponent>
+
+  <!-- A request handler for demonstrating the spellcheck component.
 
        NOTE: This is purely as an example.  The whole purpose of the
        SpellCheckComponent is to hook it into the request handler that
