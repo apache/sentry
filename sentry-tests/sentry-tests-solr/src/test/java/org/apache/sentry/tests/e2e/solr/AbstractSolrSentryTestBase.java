@@ -28,6 +28,7 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -61,6 +62,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -90,6 +92,7 @@ public class AbstractSolrSentryTestBase {
   protected static final Random RANDOM = new Random();
   protected static final String RESOURCES_DIR = "target" + File.separator + "test-classes" + File.separator + "solr";
   protected static final String CONF_DIR_IN_ZK = "conf1";
+  protected static final String DEFAULT_COLLECTION = "collection1";
   protected static final int NUM_SERVERS = 4;
 
   private static void addPropertyToSentry(StringBuilder builder, String name, String value) {
@@ -413,17 +416,30 @@ public class AbstractSolrSentryTestBase {
    * @param solrUserName - User authenticated into Solr
    * @param adminOp - Admin operation to be performed
    * @param collectionName - Name of the collection to be queried
-   * @param ignoreError - boolean to specify whether to ignore the error if any occurred.
-   *                      (We may need this attribute for running DELETE command on a collection which doesn't exist)
    * @throws Exception
    */
   protected void verifyCollectionAdminOpPass(String solrUserName,
                                              CollectionAction adminOp,
                                              String collectionName) throws Exception {
+    verifyCollectionAdminOpPass(solrUserName, adminOp, collectionName, null);
+  }
+
+  /**
+   * Method to validate collection Admin operation pass
+   * @param solrUserName - User authenticated into Solr
+   * @param adminOp - Admin operation to be performed
+   * @param collectionName - Name of the collection to be queried
+   * @param params - SolrParams to use
+   * @throws Exception
+   */
+  protected void verifyCollectionAdminOpPass(String solrUserName,
+                                             CollectionAction adminOp,
+                                             String collectionName,
+                                             SolrParams params) throws Exception {
     String originalUser = getAuthenticatedUser();
     try {
       setAuthenticationUser(solrUserName);
-      QueryRequest request = populateCollectionAdminParams(adminOp, collectionName);
+      QueryRequest request = populateCollectionAdminParams(adminOp, collectionName, params);
       CloudSolrServer solrServer = createNewCloudSolrServer();
       try {
         NamedList<Object> result = solrServer.request(request);
@@ -449,12 +465,27 @@ public class AbstractSolrSentryTestBase {
   protected void verifyCollectionAdminOpFail(String solrUserName,
                                              CollectionAction adminOp,
                                              String collectionName) throws Exception {
+    verifyCollectionAdminOpFail(solrUserName, adminOp, collectionName, null);
+  }
+
+  /**
+   * Method to validate collection Admin operation fail
+   * @param solrUserName - User authenticated into Solr
+   * @param adminOp - Admin operation to be performed
+   * @param collectionName - Name of the collection to be queried
+   * @param params - SolrParams to use
+   * @throws Exception
+   */
+  protected void verifyCollectionAdminOpFail(String solrUserName,
+                                             CollectionAction adminOp,
+                                             String collectionName,
+                                             SolrParams params) throws Exception {
 
     String originalUser = getAuthenticatedUser();
     try {
       setAuthenticationUser(solrUserName);
       try {
-        QueryRequest request = populateCollectionAdminParams(adminOp, collectionName);
+        QueryRequest request = populateCollectionAdminParams(adminOp, collectionName, params);
         CloudSolrServer solrServer = createNewCloudSolrServer();
         try {
           NamedList<Object> result = solrServer.request(request);
@@ -483,7 +514,20 @@ public class AbstractSolrSentryTestBase {
    * @return - instance of QueryRequest.
    */
   public QueryRequest populateCollectionAdminParams(CollectionAction adminOp,
-                                                            String collectionName) {
+                                                    String collectionName) {
+    return populateCollectionAdminParams(adminOp, collectionName, null);
+  }
+
+  /**
+   * Method to populate the Solr params based on the collection admin being performed.
+   * @param adminOp - Collection admin operation
+   * @param collectionName - Name of the collection
+   * @param params - SolrParams to use
+   * @return - instance of QueryRequest.
+   */
+  public QueryRequest populateCollectionAdminParams(CollectionAction adminOp,
+                                                    String collectionName,
+                                                    SolrParams params) {
     ModifiableSolrParams modParams = new ModifiableSolrParams();
     modParams.set(CoreAdminParams.ACTION, adminOp.name());
     switch (adminOp) {
@@ -519,6 +563,14 @@ public class AbstractSolrSentryTestBase {
         throw new IllegalArgumentException("Admin operation: " + adminOp + " is not supported!");
     }
 
+    if (params != null) {
+      Iterator<String> it = params.getParameterNamesIterator();
+      while (it.hasNext()) {
+        String param = it.next();
+        String [] value = params.getParams(param);
+        modParams.set(param, value);
+      }
+    }
     QueryRequest request = new QueryRequest(modParams);
     request.setPath("/admin/collections");
     return request;
@@ -701,16 +753,22 @@ public class AbstractSolrSentryTestBase {
   }
 
   protected void uploadConfigDirToZk(String collectionConfigDir) throws Exception {
+    uploadConfigDirToZk(collectionConfigDir, CONF_DIR_IN_ZK);
+  }
+
+  protected void uploadConfigDirToZk(String collectionConfigDir, String confDirInZk) throws Exception {
     ZkController zkController = getZkController();
-    // conf1 is the config used by AbstractFullDistribZkTestBase
-    zkController.uploadConfigDir(new File(collectionConfigDir),
-      CONF_DIR_IN_ZK);
+    zkController.uploadConfigDir(new File(collectionConfigDir), confDirInZk);
   }
 
   protected void uploadConfigFileToZk(String file, String nameInZk) throws Exception {
+    uploadConfigFileToZk(file, nameInZk, CONF_DIR_IN_ZK);
+  }
+
+  protected void uploadConfigFileToZk(String file, String nameInZk, String confDirInZk) throws Exception {
     ZkController zkController = getZkController();
     zkController.getZkClient().makePath(ZkController.CONFIGS_ZKNODE + "/"
-      + CONF_DIR_IN_ZK + "/" + nameInZk, new File(file), false, true);
+      + confDirInZk + "/" + nameInZk, new File(file), false, true);
   }
 
   protected CloudSolrServer createNewCloudSolrServer() throws Exception {
