@@ -74,7 +74,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
     this.conf = conf;
     //delegated old sentryStore
     this.delegate = new SentryStore(conf);
-    adminGroups = ImmutableSet.copyOf(toTrimedLower(Sets.newHashSet(conf.getStrings(
+    adminGroups = ImmutableSet.copyOf(toTrimmed(Sets.newHashSet(conf.getStrings(
         ServerConfig.ADMIN_GROUPS, new String[]{}))));
   }
 
@@ -113,7 +113,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
       throws SentryNoSuchObjectException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
-    role = toTrimedLower(role);
+    role = toTrimmedLower(role);
     try {
       pm = openTransaction();
       Query query = pm.newQuery(MSentryRole.class);
@@ -161,7 +161,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
   public CommitContext alterRoleGrantPrivilege(String component, String role,
       PrivilegeObject privilege, String grantorPrincipal)
       throws SentryUserException {
-    role = toTrimedLower(role);
+    role = toTrimmedLower(role);
     PersistenceManager pm = null;
     boolean rollbackTransaction = true;
     try{
@@ -192,7 +192,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
   public CommitContext alterRoleRevokePrivilege(String component,
       String role, PrivilegeObject privilege, String grantorPrincipal)
       throws SentryUserException {
-    role = toTrimedLower(role);
+    role = toTrimmedLower(role);
     PersistenceManager pm = null;
     boolean rollbackTransaction = true;
     try{
@@ -241,7 +241,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
     try {
       pm = openTransaction();
 
-      privilegeOperator.renamePrivilege(toTrimedLower(component), toTrimedLower(service),
+      privilegeOperator.renamePrivilege(toTrimmedLower(component), toTrimmedLower(service),
           oldAuthorizables, newAuthorizables, requestor, pm);
 
       CommitContext commitContext = commitUpdateTransaction(pm);
@@ -296,7 +296,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
           + " has no grant!");
     }
     //admin group check
-    if (!Sets.intersection(adminGroups, toTrimedLower(groups)).isEmpty()) {
+    if (!Sets.intersection(adminGroups, toTrimmed(groups)).isEmpty()) {
       return;
     }
     //privilege grant option check
@@ -323,7 +323,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
   @Override
   public Set<String> getGroupsByRoles(String component, Set<String> roles)
       throws SentryUserException {
-    roles = toTrimedLower(roles);
+    roles = toTrimmedLower(roles);
     Set<String> groupNames = Sets.newHashSet();
     if (roles.size() == 0) return groupNames;
 
@@ -366,7 +366,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
       pm = openTransaction();
       Set<MSentryRole> mRoles = Sets.newHashSet();
       for (String role : roles) {
-        MSentryRole mRole = getRole(toTrimedLower(role), pm);
+        MSentryRole mRole = getRole(toTrimmedLower(role), pm);
         if (mRole != null) {
           mRoles.add(mRole);
         }
@@ -385,15 +385,15 @@ public class DelegateSentryStore implements SentryStoreLayer {
     Preconditions.checkNotNull(component);
     Preconditions.checkNotNull(service);
 
-    component = toTrimedLower(component);
-    service = toTrimedLower(service);
+    component = toTrimmedLower(component);
+    service = toTrimmedLower(service);
 
     Set<PrivilegeObject> privileges = Sets.newHashSet();
     PersistenceManager pm = null;
     try {
       pm = openTransaction();
       //CaseInsensitive roleNames
-      roles = toTrimedLower(roles);
+      roles = toTrimmedLower(roles);
 
       if (groups != null) {
         roles.addAll(delegate.getRoleNamesForGroups(groups));
@@ -426,8 +426,8 @@ public class DelegateSentryStore implements SentryStoreLayer {
     Preconditions.checkNotNull(component);
     Preconditions.checkNotNull(service);
 
-    component = toTrimedLower(component);
-    service = toTrimedLower(service);
+    component = toTrimmedLower(component);
+    service = toTrimmedLower(service);
 
     Set<MSentryGMPrivilege> privileges = Sets.newHashSet();
     PersistenceManager pm = null;
@@ -460,13 +460,13 @@ public class DelegateSentryStore implements SentryStoreLayer {
 
   private Set<TSentryGroup> toTSentryGroups(Set<String> groups) {
     Set<TSentryGroup> tSentryGroups = Sets.newHashSet();
-    for (String group : toTrimedLower(groups)) {
+    for (String group : groups) {
       tSentryGroups.add(new TSentryGroup(group));
     }
     return tSentryGroups;
   }
 
-  private Set<String> toTrimedLower(Set<String> s) {
+  private Set<String> toTrimmedLower(Set<String> s) {
     if (s == null) {
       return new HashSet<String>();
     }
@@ -477,7 +477,18 @@ public class DelegateSentryStore implements SentryStoreLayer {
     return result;
   }
 
-  private String toTrimedLower(String s) {
+  private Set<String> toTrimmed(Set<String> s) {
+    if (s == null) {
+      return new HashSet<String>();
+    }
+    Set<String> result = Sets.newHashSet();
+    for (String v : s) {
+      result.add(v.trim());
+    }
+    return result;
+  }
+
+  private String toTrimmedLower(String s) {
     if (s == null) {
       return "";
     }

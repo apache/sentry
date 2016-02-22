@@ -84,7 +84,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     this.store = createStore(conf);
     this.handerInvoker = new NotificationHandlerInvoker(createHandlers(conf));
     this.conf = conf;
-    adminGroups = ImmutableSet.copyOf(toTrimedLower(Sets.newHashSet(conf.getStrings(
+    adminGroups = ImmutableSet.copyOf((Sets.newHashSet(conf.getStrings(
         ServerConfig.ADMIN_GROUPS, new String[]{}))));
   }
 
@@ -93,7 +93,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     this.store = store;
     this.handerInvoker = new NotificationHandlerInvoker(createHandlers(conf));
     this.conf = conf;
-    adminGroups = ImmutableSet.copyOf(toTrimedLower(Sets.newHashSet(conf.getStrings(
+    adminGroups = ImmutableSet.copyOf(toTrimmed(Sets.newHashSet(conf.getStrings(
         ServerConfig.ADMIN_GROUPS, new String[]{}))));
   }
 
@@ -107,8 +107,11 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     }
   }
 
-  private Set<String> toTrimedLower(Set<String> s) {
-    if (null == s) return new HashSet<String>();
+
+  private Set<String> toTrimmedLower(Set<String> s) {
+    if (null == s) {
+      return new HashSet<String>();
+    }
     Set<String> result = Sets.newHashSet();
     for (String v : s) {
       result.add(v.trim().toLowerCase());
@@ -116,7 +119,18 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     return result;
   }
 
-  private String toTrimedLower(String s) {
+  private Set<String> toTrimmed(Set<String> s) {
+    if (null == s) {
+      return new HashSet<String>();
+    }
+    Set<String> result = Sets.newHashSet();
+    for (String v : s) {
+      result.add(v.trim());
+    }
+    return result;
+  }
+
+  private String toTrimmedLower(String s) {
     if (Strings.isNullOrEmpty(s)){
       return "";
     }
@@ -128,7 +142,6 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
   }
 
   private boolean inAdminGroups(Set<String> requestorGroups) {
-    requestorGroups = toTrimedLower(requestorGroups);
     if (Sets.intersection(adminGroups, requestorGroups).isEmpty()) {
       return false;
     } else return true;
@@ -589,8 +602,8 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
         validateClientVersion(request.getProtocol_version());
         Set<String> groups = getRequestorGroups(conf, request.getRequestorUserName());
         if (!inAdminGroups(groups)) {
-          Set<String> roleNamesForGroups = toTrimedLower(store.getRolesByGroups(request.getComponent(), groups));
-          if (!roleNamesForGroups.contains(toTrimedLower(request.getRoleName()))) {
+          Set<String> roleNamesForGroups = toTrimmedLower(store.getRolesByGroups(request.getComponent(), groups));
+          if (!roleNamesForGroups.contains(toTrimmedLower(request.getRoleName()))) {
             throw new SentryAccessDeniedException(ACCESS_DENIAL_MESSAGE + request.getRequestorUserName());
           }
         }
@@ -618,7 +631,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
       @Override
       public Response<Set<String>> handle() throws Exception {
         validateClientVersion(request.getProtocol_version());
-        Set<String> activeRoleNames = toTrimedLower(request.getRoleSet().getRoles());
+        Set<String> activeRoleNames = toTrimmedLower(request.getRoleSet().getRoles());
         Set<String> roleNamesForGroups = store.getRolesByGroups(request.getComponent(), request.getGroups());
         Set<String> rolesToQuery = request.getRoleSet().isAll() ? roleNamesForGroups : Sets.intersection(activeRoleNames, roleNamesForGroups);
         Set<PrivilegeObject> privileges = store.getPrivilegesByProvider(request.getComponent(),
@@ -670,8 +683,8 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
 
         // Disallow non-admin to lookup roles that they are not part of
         if (activeRoleSet != null && !activeRoleSet.isAll()) {
-          Set<String> grantedRoles = toTrimedLower(store.getRolesByGroups(request.getComponent(), requestedGroups));
-          Set<String> activeRoleNames = toTrimedLower(activeRoleSet.getRoles());
+          Set<String> grantedRoles = toTrimmedLower(store.getRolesByGroups(request.getComponent(), requestedGroups));
+          Set<String> activeRoleNames = toTrimmedLower(activeRoleSet.getRoles());
 
           for (String activeRole : activeRoleNames) {
             if (!grantedRoles.contains(activeRole)) {
@@ -684,15 +697,15 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
           validActiveRoles.addAll(activeRoleSet.isAll() ? grantedRoles : Sets.intersection(activeRoleNames, grantedRoles));
         }
       } else {
-        Set<String> allRoles = toTrimedLower(store.getAllRoleNames());
-        Set<String> activeRoleNames = toTrimedLower(activeRoleSet.getRoles());
+        Set<String> allRoles = toTrimmedLower(store.getAllRoleNames());
+        Set<String> activeRoleNames = toTrimmedLower(activeRoleSet.getRoles());
 
         // For admin, if requestedGroups are empty, valid active roles are intersection of active roles and all roles.
         // Otherwise, valid active roles are intersection of active roles and the roles of requestedGroups.
         if (requestedGroups == null || requestedGroups.isEmpty()) {
           validActiveRoles.addAll(activeRoleSet.isAll() ? allRoles : Sets.intersection(activeRoleNames, allRoles));
         } else {
-          Set<String> requestedRoles = toTrimedLower(store.getRolesByGroups(request.getComponent(), requestedGroups));
+          Set<String> requestedRoles = toTrimmedLower(store.getRolesByGroups(request.getComponent(), requestedGroups));
           validActiveRoles.addAll(activeRoleSet.isAll() ? allRoles : Sets.intersection(activeRoleNames, requestedRoles));
         }
       }

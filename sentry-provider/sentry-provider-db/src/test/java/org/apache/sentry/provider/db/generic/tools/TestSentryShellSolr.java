@@ -127,11 +127,10 @@ public class TestSentryShellSolr extends SentryGenericServiceIntegrationBase {
     runTestAsSubject(new TestOperation() {
       @Override
       public void runTestAsSubject() throws Exception {
-        // Must lower case group names, see SENTRY-1035
-        final boolean lowerCaseGroupNames = true;
-        String TEST_GROUP_1 = lowerCaseGroupNames ? "testgroup1" : "testGroup1";
-        String TEST_GROUP_2 = lowerCaseGroupNames ? "testgroup2" : "testGroup2";
-        String TEST_GROUP_3 = lowerCaseGroupNames ? "testgroup3" : "testGroup3";
+        // Group names are case sensitive - mixed case names should work
+        String TEST_GROUP_1 = "testGroup1";
+        String TEST_GROUP_2 = "testGroup2";
+        String TEST_GROUP_3 = "testGroup3";
 
         // create the role for test
         client.createRole(requestorName, TEST_ROLE_NAME_1, SOLR);
@@ -197,6 +196,33 @@ public class TestSentryShellSolr extends SentryGenericServiceIntegrationBase {
       }
     });
   }
+
+  @Test
+  public void testCaseSensitiveGroupName() throws Exception {
+    runTestAsSubject(new TestOperation() {
+      @Override
+      public void runTestAsSubject() throws Exception {
+
+        // create the role for test
+        client.createRole(requestorName, TEST_ROLE_NAME_1, SOLR);
+        // add role to a group (lower case)
+        String[] args = { "-arg", "-r", TEST_ROLE_NAME_1, "-g", "group1", "-conf",
+            confPath.getAbsolutePath() };
+        SentryShellSolr.main(args);
+
+        // validate the roles when group name is same case as above
+        args = new String[] { "-lr", "-g", "group1", "-conf", confPath.getAbsolutePath() };
+        SentryShellSolr sentryShell = new SentryShellSolr();
+        Set<String> roleNames = getShellResultWithOSRedirect(sentryShell, args, true);
+        validateRoleNames(roleNames, TEST_ROLE_NAME_1);
+
+        // roles should be empty when group name is different case than above
+        args = new String[] { "-lr", "-g", "GROUP1", "-conf", confPath.getAbsolutePath() };
+        roleNames = getShellResultWithOSRedirect(sentryShell, args, true);
+        validateRoleNames(roleNames);
+      }
+      });
+    }
 
   public static String grant(boolean shortOption) {
     return shortOption ? "-gpr" : "--grant_privilege_role";
