@@ -32,8 +32,9 @@ public class PolicyConstants {
   public static final Joiner AUTHORIZABLE_JOINER = Joiner.on(AUTHORIZABLE_SEPARATOR);
   public static final Joiner KV_JOINER = Joiner.on(KV_SEPARATOR);
 
-  // TODO change to privilege
   public static final String PRIVILEGE_NAME = "action";
   public static final String PRIVILEGE_PREFIX = (PRIVILEGE_NAME + KV_SEPARATOR).toLowerCase();
   public static final String PRIVILEGE_WILDCARD_VALUE = "*";
+
+  public static final String RESOURCE_WILDCARD_VALUE = "*";
 }

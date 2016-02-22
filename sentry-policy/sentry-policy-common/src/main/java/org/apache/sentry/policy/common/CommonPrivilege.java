@@ -82,7 +82,7 @@ public class CommonPrivilege implements Privilege {
             return false;
           }
         } else {
-          if (!impliesValue(model.getImplyMethodMap().get(policyKey), part.getValue(), otherPart.getValue())) {
+          if (!impliesResource(model.getImplyMethodMap().get(policyKey), part.getValue(), otherPart.getValue())) {
             return false;
           }
         }
@@ -103,15 +103,21 @@ public class CommonPrivilege implements Privilege {
     return true;
   }
 
-  private boolean impliesValue(ImplyMethodType implyMethodType, String policyValue, String requestValue) {
+  // The method is used for compare the value of resource by the ImplyMethodType.
+  // for Hive, databaseName, tableName, columnName will be compared using String.equal(wildcard support)
+  //           url will be compared using PathUtils.impliesURI
+  private boolean impliesResource(ImplyMethodType implyMethodType, String policyValue, String requestValue) {
     // compare as the url
     if (ImplyMethodType.URL == implyMethodType) {
       return PathUtils.impliesURI(policyValue, requestValue);
     }
-    // default: compare as the string
-    return policyValue.equals(requestValue);
+    // default: compare as the string with wildcard support
+    return impliesStringWithWildcard(policyValue, requestValue);
   }
 
+  // The method is used for compare the action for the privilege model.
+  // for Hive, the action will be select, insert, etc.
+  // for Solr, the action will be update, query, etc.
   private boolean impliesAction(String policyValue, String requestValue,
                                 BitFieldActionFactory bitFieldActionFactory) {
     BitFieldAction currentAction = bitFieldActionFactory.getActionByName(policyValue);
@@ -121,6 +127,13 @@ public class CommonPrivilege implements Privilege {
       return false;
     }
     return currentAction.implies(requestAction);
+  }
+
+  private boolean impliesStringWithWildcard(String policyValue, String requestValue) {
+    if (PolicyConstants.RESOURCE_WILDCARD_VALUE.equals(policyValue)) {
+      return true;
+    }
+    return policyValue.equals(requestValue);
   }
 
 
