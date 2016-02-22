@@ -82,7 +82,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     this.store = createStore(conf);
     this.handerInvoker = new NotificationHandlerInvoker(createHandlers(conf));
     this.conf = conf;
-    adminGroups = ImmutableSet.copyOf(toTrimedLower(Sets.newHashSet(conf.getStrings(
+    adminGroups = ImmutableSet.copyOf((Sets.newHashSet(conf.getStrings(
         ServerConfig.ADMIN_GROUPS, new String[]{}))));
   }
 
@@ -91,7 +91,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     this.store = store;
     this.handerInvoker = new NotificationHandlerInvoker(createHandlers(conf));
     this.conf = conf;
-    adminGroups = ImmutableSet.copyOf(toTrimedLower(Sets.newHashSet(conf.getStrings(
+    adminGroups = ImmutableSet.copyOf(toTrimmed(Sets.newHashSet(conf.getStrings(
         ServerConfig.ADMIN_GROUPS, new String[]{}))));
   }
 
@@ -105,7 +105,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     }
   }
 
-  private Set<String> toTrimedLower(Set<String> s) {
+  private Set<String> toTrimmedLower(Set<String> s) {
     if (null == s) {
       return new HashSet<String>();
     }
@@ -116,7 +116,18 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     return result;
   }
 
-  private String toTrimedLower(String s) {
+  private Set<String> toTrimmed(Set<String> s) {
+    if (null == s) {
+      return new HashSet<String>();
+    }
+    Set<String> result = Sets.newHashSet();
+    for (String v : s) {
+      result.add(v.trim());
+    }
+    return result;
+  }
+
+  private String toTrimmedLower(String s) {
     if (Strings.isNullOrEmpty(s)){
       return "";
     }
@@ -128,7 +139,6 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
   }
 
   private boolean inAdminGroups(Set<String> requestorGroups) {
-    requestorGroups = toTrimedLower(requestorGroups);
     if (Sets.intersection(adminGroups, requestorGroups).isEmpty()) {
       return false;
     }
@@ -625,7 +635,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
       @Override
       public Response<Set<String>> handle() throws Exception {
         validateClientVersion(request.getProtocol_version());
-        Set<String> activeRoleNames = toTrimedLower(request.getRoleSet().getRoles());
+        Set<String> activeRoleNames = toTrimmedLower(request.getRoleSet().getRoles());
         Set<String> roleNamesForGroups = store.getRolesByGroups(request.getComponent(), request.getGroups());
         Set<String> rolesToQuery = request.getRoleSet().isAll() ? roleNamesForGroups : Sets.intersection(activeRoleNames, roleNamesForGroups);
         Set<PrivilegeObject> privileges = store.getPrivilegesByProvider(request.getComponent(),

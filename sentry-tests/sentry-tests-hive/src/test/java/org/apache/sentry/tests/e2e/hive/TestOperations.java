@@ -132,6 +132,35 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
 
   }
 
+  @Test
+  public void testInsertInto() throws Exception{
+    File dataFile;
+    dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
+    FileOutputStream to = new FileOutputStream(dataFile);
+    Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
+    to.close();
+
+    adminCreate(DB1, null);
+    policyFile
+        .addPermissionsToRole("all_db1", privileges.get("all_db1"))
+        .addPermissionsToRole("all_uri", "server=server1->uri=file://" + dataDir)
+        .addRolesToGroup(USERGROUP1, "all_db1", "all_uri");
+
+
+    writePolicyFile(policyFile);
+
+    Connection connection = context.createConnection(USER1_1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("Use " + DB1);
+    statement.execute("create table bar (key int)");
+    statement.execute("load data local inpath '" + dataFile.getPath() + "' into table bar");
+    statement.execute("create table foo (key int) partitioned by (part int) stored as parquet");
+    statement.execute("insert into table foo PARTITION(part=1) select key from bar");
+
+    statement.close();
+    connection.close();
+  }
+
   /* Test all operations that require create on Database alone
   1. Create table : HiveOperation.CREATETABLE
   */
@@ -294,7 +323,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
   }
 
   private void assertSemanticException(Statement stmt, String command) throws SQLException{
-    context.assertSentrySemanticException(stmt,command, semanticException);
+    context.assertSentrySemanticException(stmt, command, semanticException);
   }
 
   /*
@@ -987,7 +1016,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
 
     Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
-    assertSemanticException(statement, "insert overwrite directory '" + location + "' select * from " + DB1 + ".tb1" );
+    assertSemanticException(statement, "insert overwrite directory '" + location + "' select * from " + DB1 + ".tb1");
     statement.execute("insert overwrite table " + DB2 + ".tb2 select * from " + DB1 + ".tb1");
     statement.close();
     connection.close();
@@ -995,7 +1024,7 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
     statement.execute("insert overwrite directory '" + location + "' select * from " + DB1 + ".tb1" );
-    assertSemanticException(statement,"insert overwrite table " + DB2 + ".tb2 select * from " + DB1 + ".tb1");
+    assertSemanticException(statement, "insert overwrite table " + DB2 + ".tb2 select * from " + DB1 + ".tb1");
     statement.close();
     connection.close();
   }
