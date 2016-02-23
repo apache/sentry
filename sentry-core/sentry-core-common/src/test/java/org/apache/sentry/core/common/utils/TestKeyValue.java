@@ -14,9 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.policy.common;
+package org.apache.sentry.core.common.utils;
 
-import static org.apache.sentry.policy.common.PolicyConstants.KV_JOINER;
+import static org.apache.sentry.core.common.utils.SentryConstants.KV_JOINER;
 import junit.framework.Assert;
 import org.junit.Test;
 

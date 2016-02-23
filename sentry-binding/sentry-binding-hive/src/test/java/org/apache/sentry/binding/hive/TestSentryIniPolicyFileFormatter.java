@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
-import org.apache.sentry.policy.common.PolicyConstants;
+import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.provider.common.PolicyFileConstants;
 import org.junit.Test;
 
@@ -208,8 +208,8 @@ public class TestSentryIniPolicyFileFormatter {
       for (String actualPrivilege : actualPrivileges) {
         boolean isFound = exceptedPrivileges.contains(actualPrivilege);
         if (!isFound) {
-          String withOptionPrivilege = PolicyConstants.AUTHORIZABLE_JOINER.join(actualPrivilege,
-              PolicyConstants.KV_JOINER.join(PolicyFileConstants.PRIVILEGE_GRANT_OPTION_NAME,
+          String withOptionPrivilege = SentryConstants.AUTHORIZABLE_JOINER.join(actualPrivilege,
+              SentryConstants.KV_JOINER.join(PolicyFileConstants.PRIVILEGE_GRANT_OPTION_NAME,
                   "false"));
           isFound = exceptedPrivileges.contains(withOptionPrivilege);
         }

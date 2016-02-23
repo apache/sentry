@@ -14,12 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.policy.common;
+package org.apache.sentry.core.common.utils;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 
-public class PolicyConstants {
+public class SentryConstants {
 
   public static final String ROLE_SEPARATOR = ",";
   public static final String AUTHORIZABLE_SEPARATOR = "->";

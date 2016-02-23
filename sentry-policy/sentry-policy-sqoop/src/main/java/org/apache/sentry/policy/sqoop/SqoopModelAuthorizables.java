@@ -22,7 +22,7 @@ import org.apache.sentry.core.model.sqoop.Link;
 import org.apache.sentry.core.model.sqoop.Server;
 import org.apache.sentry.core.model.sqoop.SqoopAuthorizable;
 import org.apache.sentry.core.model.sqoop.SqoopAuthorizable.AuthorizableType;
-import org.apache.sentry.policy.common.KeyValue;
+import org.apache.sentry.core.common.utils.KeyValue;
 
 public class SqoopModelAuthorizables {
   public static SqoopAuthorizable from(KeyValue keyValue) {

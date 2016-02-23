@@ -18,8 +18,8 @@
 
 package org.apache.sentry.provider.db.service.persistent;
 
-import static org.apache.sentry.policy.common.PolicyConstants.AUTHORIZABLE_JOINER;
-import static org.apache.sentry.policy.common.PolicyConstants.KV_JOINER;
+import static org.apache.sentry.core.common.utils.SentryConstants.AUTHORIZABLE_JOINER;
+import static org.apache.sentry.core.common.utils.SentryConstants.KV_JOINER;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -47,9 +47,9 @@ import javax.jdo.Transaction;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.SentryUserException;
+import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
-import org.apache.sentry.policy.common.PolicyConstants;
 import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.provider.db.SentryAlreadyExistsException;
 import org.apache.sentry.provider.db.SentryGrantDeniedException;
@@ -1309,7 +1309,7 @@ public class SentryStore {
     if (!isNULL(privilege.getAction())
         && !privilege.getAction().equalsIgnoreCase(AccessConstants.ALL)) {
       authorizable
-      .add(KV_JOINER.join(PolicyConstants.PRIVILEGE_NAME.toLowerCase(),
+      .add(KV_JOINER.join(SentryConstants.PRIVILEGE_NAME.toLowerCase(),
           privilege.getAction()));
     }
     return AUTHORIZABLE_JOINER.join(authorizable);

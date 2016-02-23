@@ -17,6 +17,7 @@
 package org.apache.sentry.policy.common;
 
 import org.apache.sentry.core.common.Model;
+import org.apache.sentry.core.common.utils.KeyValue;
 import org.junit.Before;
 import org.junit.Test;
 import java.util.List;

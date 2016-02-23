@@ -17,8 +17,8 @@
  */
 package org.apache.sentry.provider.db.generic.service.persistent;
 
-import static org.apache.sentry.policy.common.PolicyConstants.KV_JOINER;
-import static org.apache.sentry.policy.common.PolicyConstants.AUTHORIZABLE_JOINER;
+import static org.apache.sentry.core.common.utils.SentryConstants.KV_JOINER;
+import static org.apache.sentry.core.common.utils.SentryConstants.AUTHORIZABLE_JOINER;
 
 import java.util.List;
 import org.apache.sentry.core.common.Authorizable;

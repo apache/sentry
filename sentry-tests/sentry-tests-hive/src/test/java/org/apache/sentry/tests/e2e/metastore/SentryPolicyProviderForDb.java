@@ -16,9 +16,9 @@
  */
 package org.apache.sentry.tests.e2e.metastore;
 
-import static org.apache.sentry.policy.common.PolicyConstants.AUTHORIZABLE_SPLITTER;
-import static org.apache.sentry.policy.common.PolicyConstants.PRIVILEGE_PREFIX;
-import static org.apache.sentry.policy.common.PolicyConstants.ROLE_SPLITTER;
+import static org.apache.sentry.core.common.utils.SentryConstants.AUTHORIZABLE_SPLITTER;
+import static org.apache.sentry.core.common.utils.SentryConstants.PRIVILEGE_PREFIX;
+import static org.apache.sentry.core.common.utils.SentryConstants.ROLE_SPLITTER;
 import static org.apache.sentry.tests.e2e.hive.StaticUserGroup.ADMIN1;
 import static org.apache.sentry.tests.e2e.hive.StaticUserGroup.ADMINGROUP;
 

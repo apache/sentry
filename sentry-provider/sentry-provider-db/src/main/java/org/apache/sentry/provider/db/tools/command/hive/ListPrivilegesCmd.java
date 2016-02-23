@@ -19,7 +19,7 @@ package org.apache.sentry.provider.db.tools.command.hive;
 
 import com.google.common.collect.Lists;
 import org.apache.commons.lang.StringUtils;
-import org.apache.sentry.policy.common.PolicyConstants;
+import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.provider.common.PolicyFileConstants;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.provider.db.service.thrift.TSentryGrantOption;
@@ -64,34 +64,34 @@ public class ListPrivilegesCmd implements Command {
       String grantOption = (tSentryPrivilege.getGrantOption() == TSentryGrantOption.TRUE ? "true"
               : "false");
       if (!StringUtils.isEmpty(serverName)) {
-        privileges.add(PolicyConstants.KV_JOINER.join(PolicyFileConstants.PRIVILEGE_SERVER_NAME,
+        privileges.add(SentryConstants.KV_JOINER.join(PolicyFileConstants.PRIVILEGE_SERVER_NAME,
                 serverName));
         if (!StringUtils.isEmpty(uri)) {
-          privileges.add(PolicyConstants.KV_JOINER.join(PolicyFileConstants.PRIVILEGE_URI_NAME,
+          privileges.add(SentryConstants.KV_JOINER.join(PolicyFileConstants.PRIVILEGE_URI_NAME,
                   uri));
         } else if (!StringUtils.isEmpty(dbName)) {
-          privileges.add(PolicyConstants.KV_JOINER.join(
+          privileges.add(SentryConstants.KV_JOINER.join(
                   PolicyFileConstants.PRIVILEGE_DATABASE_NAME, dbName));
           if (!StringUtils.isEmpty(tableName)) {
-            privileges.add(PolicyConstants.KV_JOINER.join(
+            privileges.add(SentryConstants.KV_JOINER.join(
                     PolicyFileConstants.PRIVILEGE_TABLE_NAME, tableName));
             if (!StringUtils.isEmpty(columnName)) {
-              privileges.add(PolicyConstants.KV_JOINER.join(
+              privileges.add(SentryConstants.KV_JOINER.join(
                       PolicyFileConstants.PRIVILEGE_COLUMN_NAME, columnName));
             }
           }
         }
         if (!StringUtils.isEmpty(action)) {
-          privileges.add(PolicyConstants.KV_JOINER.join(
+          privileges.add(SentryConstants.KV_JOINER.join(
                   PolicyFileConstants.PRIVILEGE_ACTION_NAME, action));
         }
       }
       // only append the grant option to privilege string if it's true
       if ("true".equals(grantOption)) {
-        privileges.add(PolicyConstants.KV_JOINER.join(
+        privileges.add(SentryConstants.KV_JOINER.join(
                 PolicyFileConstants.PRIVILEGE_GRANT_OPTION_NAME, grantOption));
       }
     }
-    return PolicyConstants.AUTHORIZABLE_JOINER.join(privileges);
+    return SentryConstants.AUTHORIZABLE_JOINER.join(privileges);
   }
 }

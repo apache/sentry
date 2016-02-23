@@ -18,8 +18,8 @@
 package org.apache.sentry.provider.db.tools.command.hive;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.sentry.policy.common.KeyValue;
-import org.apache.sentry.policy.common.PolicyConstants;
+import org.apache.sentry.core.common.utils.SentryConstants;
+import org.apache.sentry.core.common.utils.KeyValue;
 import org.apache.sentry.provider.common.PolicyFileConstants;
 import org.apache.sentry.provider.db.service.thrift.TSentryGrantOption;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
@@ -32,7 +32,7 @@ public class CommandUtil {
   // parse the privilege in String and get the TSentryPrivilege as result
   public static TSentryPrivilege convertToTSentryPrivilege(String privilegeStr) throws Exception {
     TSentryPrivilege tSentryPrivilege = new TSentryPrivilege();
-    for (String authorizable : PolicyConstants.AUTHORIZABLE_SPLITTER.split(privilegeStr)) {
+    for (String authorizable : SentryConstants.AUTHORIZABLE_SPLITTER.split(privilegeStr)) {
       KeyValue tempKV = new KeyValue(authorizable);
       String key = tempKV.getKey();
       String value = tempKV.getValue();

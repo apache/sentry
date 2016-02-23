@@ -23,7 +23,10 @@ import org.apache.sentry.core.common.BitFieldAction;
 import org.apache.sentry.core.common.BitFieldActionFactory;
 import org.apache.sentry.core.common.ImplyMethodType;
 import org.apache.sentry.core.common.Model;
+import org.apache.sentry.core.common.utils.KeyValue;
 import org.apache.sentry.core.common.utils.PathUtils;
+import org.apache.sentry.core.common.utils.SentryConstants;
+
 import java.util.List;
 
 // The class is used to compare the privilege
@@ -37,7 +40,7 @@ public class CommonPrivilege implements Privilege {
       throw new IllegalArgumentException("Privilege string cannot be null or empty.");
     }
     List<KeyValue> parts = Lists.newArrayList();
-    for (String authorizable : PolicyConstants.AUTHORIZABLE_SPLITTER.trimResults().split(
+    for (String authorizable : SentryConstants.AUTHORIZABLE_SPLITTER.trimResults().split(
             privilegeStr)) {
       if (authorizable.isEmpty()) {
         throw new IllegalArgumentException("Privilege '" + privilegeStr + "' has an empty section");
@@ -77,7 +80,7 @@ public class CommonPrivilege implements Privilege {
         }
 
         // do the imply for action
-        if (PolicyConstants.PRIVILEGE_NAME.equalsIgnoreCase(policyKey)) {
+        if (SentryConstants.PRIVILEGE_NAME.equalsIgnoreCase(policyKey)) {
           if (!impliesAction(part.getValue(), otherPart.getValue(), model.getBitFieldActionFactory())) {
             return false;
           }
@@ -95,7 +98,7 @@ public class CommonPrivilege implements Privilege {
     // all of the other parts are wildcards
     for (; index < parts.size(); index++) {
       KeyValue part = parts.get(index);
-      if (!PolicyConstants.PRIVILEGE_WILDCARD_VALUE.equals(part.getValue())) {
+      if (!SentryConstants.PRIVILEGE_WILDCARD_VALUE.equals(part.getValue())) {
         return false;
       }
     }
@@ -130,7 +133,7 @@ public class CommonPrivilege implements Privilege {
   }
 
   private boolean impliesStringWithWildcard(String policyValue, String requestValue) {
-    if (PolicyConstants.RESOURCE_WILDCARD_VALUE.equals(policyValue)) {
+    if (SentryConstants.RESOURCE_WILDCARD_VALUE.equals(policyValue)) {
       return true;
     }
     return policyValue.equals(requestValue);
@@ -139,7 +142,7 @@ public class CommonPrivilege implements Privilege {
 
   @Override
   public String toString() {
-    return PolicyConstants.AUTHORIZABLE_JOINER.join(parts);
+    return SentryConstants.AUTHORIZABLE_JOINER.join(parts);
   }
 
   public boolean implies(Privilege p) {

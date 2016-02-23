@@ -16,10 +16,10 @@
  */
 package org.apache.sentry.provider.common;
 
-import static org.apache.sentry.policy.common.PolicyConstants.AUTHORIZABLE_JOINER;
-import static org.apache.sentry.policy.common.PolicyConstants.AUTHORIZABLE_SPLITTER;
-import static org.apache.sentry.policy.common.PolicyConstants.KV_JOINER;
-import static org.apache.sentry.policy.common.PolicyConstants.PRIVILEGE_NAME;
+import static org.apache.sentry.core.common.utils.SentryConstants.AUTHORIZABLE_JOINER;
+import static org.apache.sentry.core.common.utils.SentryConstants.AUTHORIZABLE_SPLITTER;
+import static org.apache.sentry.core.common.utils.SentryConstants.KV_JOINER;
+import static org.apache.sentry.core.common.utils.SentryConstants.PRIVILEGE_NAME;
 
 import java.util.ArrayList;
 import java.util.HashSet;

@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sentry.policy.common;
+package org.apache.sentry.core.common.utils;
 
 import java.util.List;
 
@@ -27,7 +27,7 @@ public class KeyValue {
   private final String value;
 
   public KeyValue(String keyValue) {
-    List<String> kvList = Lists.newArrayList(PolicyConstants.KV_SPLITTER.trimResults().limit(2).split(keyValue));
+    List<String> kvList = Lists.newArrayList(SentryConstants.KV_SPLITTER.trimResults().limit(2).split(keyValue));
     if (kvList.size() != 2) {
       throw new IllegalArgumentException("Invalid key value: " + keyValue + " " + kvList);
     }
@@ -56,7 +56,7 @@ public class KeyValue {
 
   @Override
   public String toString() {
-    return PolicyConstants.KV_JOINER.join(key, value);
+    return SentryConstants.KV_JOINER.join(key, value);
   }
 
   @Override

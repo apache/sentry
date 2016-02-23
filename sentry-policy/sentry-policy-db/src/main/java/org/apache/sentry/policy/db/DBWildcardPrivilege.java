@@ -24,12 +24,12 @@ package org.apache.sentry.policy.db;
 import java.util.List;
 
 import org.apache.sentry.core.common.utils.PathUtils;
+import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
-import org.apache.sentry.policy.common.PolicyConstants;
 import org.apache.sentry.policy.common.Privilege;
 import org.apache.sentry.policy.common.PrivilegeFactory;
-import org.apache.sentry.policy.common.KeyValue;
+import org.apache.sentry.core.common.utils.KeyValue;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -48,7 +48,7 @@ public class DBWildcardPrivilege implements Privilege {
       throw new IllegalArgumentException("Wildcard string cannot be null or empty.");
     }
     List<KeyValue>parts = Lists.newArrayList();
-    for (String authorizable : PolicyConstants.AUTHORIZABLE_SPLITTER.trimResults().split(
+    for (String authorizable : SentryConstants.AUTHORIZABLE_SPLITTER.trimResults().split(
         wildcardString)) {
       if (authorizable.isEmpty()) {
         throw new IllegalArgumentException("Privilege '" + wildcardString + "' has an empty section");
@@ -117,11 +117,11 @@ public class DBWildcardPrivilege implements Privilege {
     if(policyPart.getValue().equals(AccessConstants.ALL) ||
         policyPart.getValue().equalsIgnoreCase("ALL")) {
       return true;
-    } else if (!PolicyConstants.PRIVILEGE_NAME.equalsIgnoreCase(policyPart.getKey())
+    } else if (!SentryConstants.PRIVILEGE_NAME.equalsIgnoreCase(policyPart.getKey())
         && AccessConstants.ALL.equalsIgnoreCase(requestPart.getValue())) {
       /* privilege request is to match with any object of given type */
       return true;
-    } else if (!PolicyConstants.PRIVILEGE_NAME.equalsIgnoreCase(policyPart.getKey())
+    } else if (!SentryConstants.PRIVILEGE_NAME.equalsIgnoreCase(policyPart.getKey())
         && AccessConstants.SOME.equalsIgnoreCase(requestPart.getValue())) {
       /* privilege request is to match with any object of given type */
       return true;
@@ -138,7 +138,7 @@ public class DBWildcardPrivilege implements Privilege {
 
   @Override
   public String toString() {
-    return PolicyConstants.AUTHORIZABLE_JOINER.join(parts);
+    return SentryConstants.AUTHORIZABLE_JOINER.join(parts);
   }
 
   @Override
