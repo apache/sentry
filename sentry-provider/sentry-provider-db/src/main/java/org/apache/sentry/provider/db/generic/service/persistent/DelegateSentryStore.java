@@ -436,8 +436,8 @@ public class DelegateSentryStore implements SentryStoreLayer {
     Preconditions.checkNotNull(component);
     Preconditions.checkNotNull(service);
 
-    component = toTrimedLower(component);
-    service = toTrimedLower(service);
+    component = toTrimmedLower(component);
+    service = toTrimmedLower(service);
 
     Set<MSentryGMPrivilege> privileges = Sets.newHashSet();
     PersistenceManager pm = null;

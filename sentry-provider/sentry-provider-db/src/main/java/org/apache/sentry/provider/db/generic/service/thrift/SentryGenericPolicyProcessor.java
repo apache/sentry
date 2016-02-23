@@ -606,8 +606,8 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
         validateClientVersion(request.getProtocol_version());
         Set<String> groups = getRequestorGroups(conf, request.getRequestorUserName());
         if (!inAdminGroups(groups)) {
-          Set<String> roleNamesForGroups = toTrimedLower(store.getRolesByGroups(request.getComponent(), groups));
-          if (!roleNamesForGroups.contains(toTrimedLower(request.getRoleName()))) {
+          Set<String> roleNamesForGroups = toTrimmedLower(store.getRolesByGroups(request.getComponent(), groups));
+          if (!roleNamesForGroups.contains(toTrimmedLower(request.getRoleName()))) {
             throw new SentryAccessDeniedException(ACCESS_DENIAL_MESSAGE + request.getRequestorUserName());
           }
         }
@@ -687,8 +687,8 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
 
         // Disallow non-admin to lookup roles that they are not part of
         if (activeRoleSet != null && !activeRoleSet.isAll()) {
-          Set<String> grantedRoles = toTrimedLower(store.getRolesByGroups(request.getComponent(), requestedGroups));
-          Set<String> activeRoleNames = toTrimedLower(activeRoleSet.getRoles());
+          Set<String> grantedRoles = toTrimmedLower(store.getRolesByGroups(request.getComponent(), requestedGroups));
+          Set<String> activeRoleNames = toTrimmedLower(activeRoleSet.getRoles());
 
           for (String activeRole : activeRoleNames) {
             if (!grantedRoles.contains(activeRole)) {
@@ -701,15 +701,15 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
           validActiveRoles.addAll(activeRoleSet.isAll() ? grantedRoles : Sets.intersection(activeRoleNames, grantedRoles));
         }
       } else {
-        Set<String> allRoles = toTrimedLower(store.getAllRoleNames());
-        Set<String> activeRoleNames = toTrimedLower(activeRoleSet.getRoles());
+        Set<String> allRoles = toTrimmedLower(store.getAllRoleNames());
+        Set<String> activeRoleNames = toTrimmedLower(activeRoleSet.getRoles());
 
         // For admin, if requestedGroups are empty, valid active roles are intersection of active roles and all roles.
         // Otherwise, valid active roles are intersection of active roles and the roles of requestedGroups.
         if (requestedGroups == null || requestedGroups.isEmpty()) {
           validActiveRoles.addAll(activeRoleSet.isAll() ? allRoles : Sets.intersection(activeRoleNames, allRoles));
         } else {
-          Set<String> requestedRoles = toTrimedLower(store.getRolesByGroups(request.getComponent(), requestedGroups));
+          Set<String> requestedRoles = toTrimmedLower(store.getRolesByGroups(request.getComponent(), requestedGroups));
           validActiveRoles.addAll(activeRoleSet.isAll() ? allRoles : Sets.intersection(activeRoleNames, requestedRoles));
         }
       }
