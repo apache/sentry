@@ -26,7 +26,7 @@ import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
 import org.junit.Before;
@@ -34,8 +34,13 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.io.Resources;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestOperations extends AbstractTestWithStaticConfiguration {
+  private static final Logger LOGGER = LoggerFactory
+      .getLogger(TestOperations.class);
+
   private PolicyFile policyFile;
   final String tableName = "tb1";
 
@@ -748,9 +753,10 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     Connection connection = null;
     try {
       createDb(ADMIN1, DB1);
-      String baseDir = dataDir.getPath();
-      Path extParentDir = dfs.assertCreateDir(baseDir + "/ABC/hhh");
-      Path extTableDir = dfs.assertCreateDir(baseDir + "/abc/hhh");
+      String scratchLikeDir = context.getProperty(HiveConf.ConfVars.SCRATCHDIR.varname);
+      String extParentDir = dfs.assertCreateDir(scratchLikeDir + "/ABC/hhh").toUri().toString();
+      String extTableDir = dfs.assertCreateDir(scratchLikeDir + "/abc/hhh").toUri().toString();
+      LOGGER.info("Created extParentDir = " + extParentDir + ", extTableDir = " + extTableDir);
       policyFile
           .addPermissionsToRole("all_db1", privileges.get("all_db1"))
           .addPermissionsToRole("all_uri", "server=server1->uri=" + extParentDir)
