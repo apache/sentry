@@ -29,7 +29,6 @@ import java.util.Map;
 
 import junit.framework.Assert;
 
-import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
@@ -562,6 +561,7 @@ public class TestMetastoreEndToEnd extends
     String tabDir1 = hiveServer.getProperty(HiveServerFactory.WAREHOUSE_DIR)
         + File.separator + newPath1;
 
+    //URI privilege required when "using location"
     policyFile.addRolesToGroup(USERGROUP1, uri_role).addPermissionsToRole(
         uri_role, "server=server1->URI=" + tabDir1);
     writePolicyFile(policyFile);
@@ -570,8 +570,9 @@ public class TestMetastoreEndToEnd extends
     execHiveSQL("CREATE TABLE " + dbName + "." + tabName1
         + " (id int) PARTITIONED BY (part_col string)", USER1_1);
 
+    //User with all on table
     execHiveSQL("ALTER TABLE " + dbName + "." + tabName1
-        + " ADD PARTITION (part_col ='" + partVal1 +  "')", USER1_1);
+        + " ADD PARTITION (part_col ='" + partVal1 + "')", USER2_1);
     verifyPartitionExists(dbName, tabName1, partVal1);
 
     execHiveSQL("ALTER TABLE " + dbName + "." + tabName1
@@ -587,6 +588,23 @@ public class TestMetastoreEndToEnd extends
     } catch (IOException e) {
       // Expected error
     }
+
+  }
+
+
+  @Test
+  public void testInsertInto() throws Exception {
+    String partVal1 = "part1";
+
+    writePolicyFile(policyFile);
+
+    execHiveSQL("DROP TABLE IF EXISTS " + dbName + "." + tabName1, USER1_1);
+    execHiveSQL("CREATE TABLE " + dbName + "." + tabName1
+        + " (id int) PARTITIONED BY (part_col string)", USER1_1);
+
+    execHiveSQL("INSERT INTO " + dbName + "." + tabName1 +
+        " PARTITION(part_col ='" + partVal1 + "') select 1 from " + dbName + "." + tabName1, USER2_1);
+    verifyPartitionExists(dbName, tabName1, partVal1);
 
   }
 
