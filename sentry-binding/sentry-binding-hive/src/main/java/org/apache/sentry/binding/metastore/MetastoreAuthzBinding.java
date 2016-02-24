@@ -35,6 +35,7 @@ import org.apache.hadoop.hive.metastore.MetaStorePreEventListener;
 import org.apache.hadoop.hive.metastore.api.InvalidOperationException;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.NoSuchObjectException;
+import org.apache.hadoop.hive.metastore.api.Partition;
 import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
 import org.apache.hadoop.hive.metastore.events.PreAddPartitionEvent;
 import org.apache.hadoop.hive.metastore.events.PreAlterPartitionEvent;
@@ -312,7 +313,7 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
 	    // non-default, ie something not under the parent table
 
       String partitionLocation = null;
-	    if (mapiPart.isSetSd()) {
+      if (mapiPart.isSetSd()) {
         partitionLocation = mapiPart.getSd().getLocation();
 	    }
 	    if (!StringUtils.isEmpty(partitionLocation)) {
@@ -327,8 +328,8 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
 	      } catch (URISyntaxException e) {
 	        throw new MetaException(e.getMessage());
 	      }
-	      if (!partitionLocation.equals(tableLocation) &&
-	          !partitionLocation.startsWith(tableLocation + File.separator)) {
+        if (!partitionLocation.equals(tableLocation) &&
+            !partitionLocation.startsWith(tableLocation + File.separator)) {
           outputBuilder.addUriToOutput(getAuthServer(), uriPath, warehouseDir);
 	      }
 	    }
@@ -350,7 +351,7 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
   }
 
   private void authorizeAlterPartition(PreAlterPartitionEvent context)
-      throws InvalidOperationException, MetaException {
+      throws InvalidOperationException, MetaException, NoSuchObjectException {
     /*
      * There are multiple alter partition options and it's tricky to figure out
      * which is attempted here. Currently all alter partition need full level
@@ -363,15 +364,21 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
     HierarcyBuilder outputBuilder = new HierarcyBuilder().addTableToOutput(
         getAuthServer(), context.getDbName(), context.getTableName());
 
-    String partitionLocation = getSdLocation(context.getNewPartition().getSd());
+    Partition partition = context.getNewPartition();
+    String partitionLocation = getSdLocation(partition.getSd());
     if (!StringUtils.isEmpty(partitionLocation)) {
+      String tableLocation = context.getHandler().get_table(
+          partition.getDbName(), partition.getTableName()).getSd().getLocation();
+
       String uriPath;
       try {
         uriPath = PathUtils.parseDFSURI(warehouseDir, partitionLocation);
-      } catch (URISyntaxException e) {
+        } catch (URISyntaxException e) {
         throw new MetaException(e.getMessage());
       }
-      outputBuilder.addUriToOutput(getAuthServer(), uriPath, warehouseDir);
+      if (!partitionLocation.startsWith(tableLocation + File.separator)) {
+        outputBuilder.addUriToOutput(getAuthServer(), uriPath, warehouseDir);
+      }
     }
     authorizeMetastoreAccess(
         HiveOperation.ALTERPARTITION_LOCATION,
