@@ -21,6 +21,7 @@ import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNull;
 
 import org.apache.sentry.core.model.db.AccessURI;
+import org.apache.sentry.core.model.db.DBModelAuthorizables;
 import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.core.model.db.Table;
@@ -31,7 +32,7 @@ public class TestDBModelAuthorizables {
 
   @Test
   public void testServer() throws Exception {
-    Server server = (Server)DBModelAuthorizables.from("SeRvEr=server1");
+    Server server = (Server) DBModelAuthorizables.from("SeRvEr=server1");
     assertEquals("server1", server.getName());
   }
   @Test

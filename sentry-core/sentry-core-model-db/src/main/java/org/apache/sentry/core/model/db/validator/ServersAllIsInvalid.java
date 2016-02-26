@@ -14,11 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.policy.common;
+package org.apache.sentry.core.model.db.validator;
 
+import org.apache.sentry.core.model.db.DBModelAuthorizable;
+import org.apache.sentry.core.model.db.Server;
+import org.apache.sentry.core.common.validator.PrivilegeValidatorContext;
 import org.apache.shiro.config.ConfigurationException;
 
-public interface PrivilegeValidator {
+public class ServersAllIsInvalid extends AbstractDBPrivilegeValidator {
 
-  void validate(PrivilegeValidatorContext context) throws ConfigurationException;
+  @Override
+  public void validate(PrivilegeValidatorContext context) throws ConfigurationException {
+    String privilege = context.getPrivilege();
+    Iterable<DBModelAuthorizable> authorizables = parsePrivilege(privilege);
+    for(DBModelAuthorizable authorizable : authorizables) {
+      if(authorizable instanceof Server &&
+          authorizable.getName().equals(Server.ALL.getName())) {
+        String msg = "Invalid value for " + authorizable.getAuthzType() + " in " + privilege;
+        throw new ConfigurationException(msg);
+      }
+    }
+  }
+
 }

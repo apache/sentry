@@ -21,13 +21,14 @@ import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNull;
 
 import org.apache.sentry.core.model.sqoop.Server;
+import org.apache.sentry.core.model.sqoop.SqoopModelAuthorizables;
 import org.junit.Test;
 
 public class TestSqoopModelAuthorizables {
 
   @Test
   public void testServer() throws Exception {
-    Server server1 = (Server)SqoopModelAuthorizables.from("SERVER=server1");
+    Server server1 = (Server) SqoopModelAuthorizables.from("SERVER=server1");
     assertEquals("server1", server1.getName());
   }
 

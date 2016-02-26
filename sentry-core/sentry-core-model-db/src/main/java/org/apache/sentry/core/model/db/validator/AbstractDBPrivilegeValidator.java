@@ -14,30 +14,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.policy.search;
+package org.apache.sentry.core.model.db.validator;
 
 import static org.apache.sentry.core.common.utils.SentryConstants.AUTHORIZABLE_SPLITTER;
 import static org.apache.sentry.core.common.utils.SentryConstants.PRIVILEGE_PREFIX;
 
 import java.util.List;
 
-import org.apache.sentry.core.model.search.SearchModelAuthorizable;
-import org.apache.sentry.policy.common.PrivilegeValidator;
+import org.apache.sentry.core.model.db.DBModelAuthorizable;
+import org.apache.sentry.core.common.validator.PrivilegeValidator;
+import org.apache.sentry.core.model.db.DBModelAuthorizables;
 import org.apache.shiro.config.ConfigurationException;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 
-public abstract class AbstractSearchPrivilegeValidator implements PrivilegeValidator {
+public abstract class AbstractDBPrivilegeValidator implements PrivilegeValidator {
 
   @VisibleForTesting
-  public static Iterable<SearchModelAuthorizable> parsePrivilege(String string) {
-    List<SearchModelAuthorizable> result = Lists.newArrayList();
-    System.err.println("privilege = " + string);
+  public static Iterable<DBModelAuthorizable> parsePrivilege(String string) {
+    List<DBModelAuthorizable> result = Lists.newArrayList();
     for(String section : AUTHORIZABLE_SPLITTER.split(string)) {
-      // XXX this ugly hack is because action is not an authorizable
+      // XXX this ugly hack is because action is not an authorizeable
       if(!section.toLowerCase().startsWith(PRIVILEGE_PREFIX)) {
-        SearchModelAuthorizable authorizable = SearchModelAuthorizables.from(section);
+        DBModelAuthorizable authorizable = DBModelAuthorizables.from(section);
         if(authorizable == null) {
           String msg = "No authorizable found for " + section;
           throw new ConfigurationException(msg);

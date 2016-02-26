@@ -14,49 +14,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.policy.sqoop;
+package org.apache.sentry.core.model.indexer.validator;
 
 import static org.apache.sentry.core.common.utils.SentryConstants.AUTHORIZABLE_SPLITTER;
 import static org.apache.sentry.core.common.utils.SentryConstants.PRIVILEGE_PREFIX;
 
 import java.util.List;
 
-import org.apache.sentry.core.model.sqoop.Server;
-import org.apache.sentry.core.model.sqoop.SqoopAuthorizable;
-import org.apache.sentry.policy.common.PrivilegeValidatorContext;
-import org.apache.sentry.policy.common.PrivilegeValidator;
+import org.apache.sentry.core.model.indexer.IndexerModelAuthorizable;
+import org.apache.sentry.core.common.validator.PrivilegeValidator;
+import org.apache.sentry.core.model.indexer.IndexerModelAuthorizables;
 import org.apache.shiro.config.ConfigurationException;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 
-public class ServerNameRequiredMatch implements PrivilegeValidator {
-  private final String sqoopServerName;
-  public ServerNameRequiredMatch(String sqoopServerName) {
-    this.sqoopServerName = sqoopServerName;
-  }
-  @Override
-  public void validate(PrivilegeValidatorContext context)
-      throws ConfigurationException {
-    Iterable<SqoopAuthorizable> authorizables = parsePrivilege(context.getPrivilege());
-    boolean match = false;
-    for (SqoopAuthorizable authorizable : authorizables) {
-      if (authorizable instanceof Server && authorizable.getName().equalsIgnoreCase(sqoopServerName)) {
-        match = true;
-        break;
-      }
-    }
-    if (!match) {
-      String msg = "server=[name] in " + context.getPrivilege()
-          + " is required. The name is expected " + sqoopServerName;
-      throw new ConfigurationException(msg);
-    }
-  }
+public abstract class AbstractIndexerPrivilegeValidator implements PrivilegeValidator {
 
-  private Iterable<SqoopAuthorizable> parsePrivilege(String string) {
-    List<SqoopAuthorizable> result = Lists.newArrayList();
+  @VisibleForTesting
+  public static Iterable<IndexerModelAuthorizable> parsePrivilege(String string) {
+    List<IndexerModelAuthorizable> result = Lists.newArrayList();
     for(String section : AUTHORIZABLE_SPLITTER.split(string)) {
+      // XXX this ugly hack is because action is not an authorizable
       if(!section.toLowerCase().startsWith(PRIVILEGE_PREFIX)) {
-        SqoopAuthorizable authorizable = SqoopModelAuthorizables.from(section);
+        IndexerModelAuthorizable authorizable = IndexerModelAuthorizables.from(section);
         if(authorizable == null) {
           String msg = "No authorizable found for " + section;
           throw new ConfigurationException(msg);
@@ -66,4 +47,5 @@ public class ServerNameRequiredMatch implements PrivilegeValidator {
     }
     return result;
   }
+
 }

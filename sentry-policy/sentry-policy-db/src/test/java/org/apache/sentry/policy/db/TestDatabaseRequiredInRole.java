@@ -20,7 +20,8 @@ package org.apache.sentry.policy.db;
 
 import junit.framework.Assert;
 
-import org.apache.sentry.policy.common.PrivilegeValidatorContext;
+import org.apache.sentry.core.common.validator.PrivilegeValidatorContext;
+import org.apache.sentry.core.model.db.validator.DatabaseRequiredInPrivilege;
 import org.apache.shiro.config.ConfigurationException;
 import org.junit.Test;
 

@@ -20,7 +20,8 @@ package org.apache.sentry.policy.search;
 
 import junit.framework.Assert;
 
-import org.apache.sentry.policy.common.PrivilegeValidatorContext;
+import org.apache.sentry.core.common.validator.PrivilegeValidatorContext;
+import org.apache.sentry.core.model.search.validator.CollectionRequiredInPrivilege;
 import org.apache.shiro.config.ConfigurationException;
 import org.junit.Test;
 

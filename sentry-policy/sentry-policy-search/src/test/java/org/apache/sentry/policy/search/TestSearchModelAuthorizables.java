@@ -21,13 +21,14 @@ import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNull;
 
 import org.apache.sentry.core.model.search.Collection;
+import org.apache.sentry.core.model.search.SearchModelAuthorizables;
 import org.junit.Test;
 
 public class TestSearchModelAuthorizables {
 
   @Test
   public void testCollection() throws Exception {
-    Collection coll = (Collection)SearchModelAuthorizables.from("CoLleCtiOn=collection1");
+    Collection coll = (Collection) SearchModelAuthorizables.from("CoLleCtiOn=collection1");
     assertEquals("collection1", coll.getName());
   }
 

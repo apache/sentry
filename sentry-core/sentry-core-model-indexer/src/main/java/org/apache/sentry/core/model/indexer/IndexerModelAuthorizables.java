@@ -14,16 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.policy.search;
+package org.apache.sentry.core.model.indexer;
 
-import org.apache.sentry.core.model.search.Collection;
-import org.apache.sentry.core.model.search.SearchModelAuthorizable;
-import org.apache.sentry.core.model.search.SearchModelAuthorizable.AuthorizableType;
+import org.apache.sentry.core.model.indexer.IndexerModelAuthorizable.AuthorizableType;
 import org.apache.sentry.core.common.utils.KeyValue;
 
-public class SearchModelAuthorizables {
+public class IndexerModelAuthorizables {
 
-  public static SearchModelAuthorizable from(KeyValue keyValue) {
+  public static IndexerModelAuthorizable from(KeyValue keyValue) {
     String prefix = keyValue.getKey().toLowerCase();
     String name = keyValue.getValue().toLowerCase();
     for(AuthorizableType type : AuthorizableType.values()) {
@@ -33,14 +31,14 @@ public class SearchModelAuthorizables {
     }
     return null;
   }
-  public static SearchModelAuthorizable from(String s) {
+  public static IndexerModelAuthorizable from(String s) {
     return from(new KeyValue(s));
   }
 
-  private static SearchModelAuthorizable from(AuthorizableType type, String name) {
+  private static IndexerModelAuthorizable from(AuthorizableType type, String name) {
     switch (type) {
-    case Collection:
-      return new Collection(name);
+    case Indexer:
+      return new Indexer(name);
     default:
       return null;
     }

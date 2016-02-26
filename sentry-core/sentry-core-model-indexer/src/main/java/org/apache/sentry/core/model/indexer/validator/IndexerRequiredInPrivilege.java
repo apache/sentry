@@ -14,29 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.policy.search;
+package org.apache.sentry.core.model.indexer.validator;
 
 import org.apache.sentry.core.common.SentryConfigurationException;
-import org.apache.sentry.core.model.search.Collection;
-import org.apache.sentry.core.model.search.SearchModelAuthorizable;
-import org.apache.sentry.policy.common.PrivilegeValidatorContext;
+import org.apache.sentry.core.model.indexer.Indexer;
+import org.apache.sentry.core.model.indexer.IndexerModelAuthorizable;
+import org.apache.sentry.core.common.validator.PrivilegeValidatorContext;
 
-public class CollectionRequiredInPrivilege extends AbstractSearchPrivilegeValidator {
+public class IndexerRequiredInPrivilege extends AbstractIndexerPrivilegeValidator {
 
   @Override
   public void validate(PrivilegeValidatorContext context) throws SentryConfigurationException {
     String privilege = context.getPrivilege();
-    Iterable<SearchModelAuthorizable> authorizables = parsePrivilege(privilege);
-    boolean foundCollectionInAuthorizables = false;
+    Iterable<IndexerModelAuthorizable> authorizables = parsePrivilege(privilege);
+    boolean foundIndexerInAuthorizables = false;
 
-    for(SearchModelAuthorizable authorizable : authorizables) {
-      if(authorizable instanceof Collection) {
-        foundCollectionInAuthorizables = true;
+    for(IndexerModelAuthorizable authorizable : authorizables) {
+      if(authorizable instanceof Indexer) {
+        foundIndexerInAuthorizables = true;
         break;
       }
     }
-    if(!foundCollectionInAuthorizables) {
-      String msg = "Missing collection object in " + privilege;
+    if(!foundIndexerInAuthorizables) {
+      String msg = "Missing indexer object in " + privilege;
       throw new SentryConfigurationException(msg);
     }
   }

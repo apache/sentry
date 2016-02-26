@@ -14,16 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.policy.db;
+package org.apache.sentry.core.model.db;
 
-import org.apache.sentry.core.model.db.AccessURI;
-import org.apache.sentry.core.model.db.Column;
-import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
-import org.apache.sentry.core.model.db.Database;
-import org.apache.sentry.core.model.db.Server;
-import org.apache.sentry.core.model.db.Table;
-import org.apache.sentry.core.model.db.View;
 import org.apache.sentry.core.common.utils.KeyValue;
 
 public class DBModelAuthorizables {

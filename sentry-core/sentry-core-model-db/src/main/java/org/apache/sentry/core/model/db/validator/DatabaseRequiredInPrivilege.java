@@ -14,12 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.policy.db;
+package org.apache.sentry.core.model.db.validator;
 
+import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.core.model.db.AccessURI;
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.sentry.core.model.db.Database;
-import org.apache.sentry.policy.common.PrivilegeValidatorContext;
+import org.apache.sentry.core.common.validator.PrivilegeValidatorContext;
 import org.apache.shiro.config.ConfigurationException;
 
 public class DatabaseRequiredInPrivilege extends AbstractDBPrivilegeValidator {
@@ -46,7 +47,7 @@ public class DatabaseRequiredInPrivilege extends AbstractDBPrivilegeValidator {
       boolean allowURIInAuthorizables = false;
 
       if ("true".equalsIgnoreCase(
-          System.getProperty(SimpleDBPolicyEngine.ACCESS_ALLOW_URI_PER_DB_POLICYFILE))) {
+          System.getProperty(SentryConstants.ACCESS_ALLOW_URI_PER_DB_POLICYFILE))) {
         allowURIInAuthorizables = true;
       }
 
