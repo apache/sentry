@@ -21,16 +21,14 @@ import java.util.Set;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.SentryConfigurationException;
-import org.apache.sentry.core.model.search.validator.CollectionRequiredInPrivilege;
+import org.apache.sentry.core.model.search.SearchPrivilegeModel;
 import org.apache.sentry.policy.common.PrivilegeFactory;
 import org.apache.sentry.policy.common.PolicyEngine;
-import org.apache.sentry.core.common.validator.PrivilegeValidator;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 /**
@@ -47,7 +45,7 @@ public class SimpleSearchPolicyEngine implements PolicyEngine {
     this.providerBackend = providerBackend;
     ProviderBackendContext context = new ProviderBackendContext();
     context.setAllowPerDatabase(false);
-    context.setValidators(createPrivilegeValidators());
+    context.setValidators(SearchPrivilegeModel.getInstance().getPrivilegeValidators());
     this.providerBackend.initialize(context);
   }
 
@@ -87,10 +85,6 @@ public class SimpleSearchPolicyEngine implements PolicyEngine {
   public void validatePolicy(boolean strictValidation)
       throws SentryConfigurationException {
     providerBackend.validatePolicy(strictValidation);
-  }
-
-  public static ImmutableList<PrivilegeValidator> createPrivilegeValidators() {
-    return ImmutableList.<PrivilegeValidator>of(new CollectionRequiredInPrivilege());
   }
 
   @Override

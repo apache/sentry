@@ -16,9 +16,12 @@
  */
 package org.apache.sentry.core.model.indexer;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.sentry.core.common.BitFieldActionFactory;
 import org.apache.sentry.core.common.ImplyMethodType;
 import org.apache.sentry.core.common.Model;
+import org.apache.sentry.core.common.validator.PrivilegeValidator;
+import org.apache.sentry.core.model.indexer.validator.IndexerRequiredInPrivilege;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -46,8 +49,11 @@ public class IndexerPrivilegeModel implements Model {
     return bitFieldActionFactory;
   }
 
-  public static Model getInstance() {
+  public static IndexerPrivilegeModel getInstance() {
     return indexerPrivilegeModel;
   }
 
+  public ImmutableList<PrivilegeValidator> getPrivilegeValidators() {
+    return ImmutableList.<PrivilegeValidator>of(new IndexerRequiredInPrivilege());
+  }
 }

@@ -21,19 +21,14 @@ import java.util.Set;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.SentryConfigurationException;
-import org.apache.sentry.core.model.db.validator.DatabaseMustMatch;
-import org.apache.sentry.core.model.db.validator.DatabaseRequiredInPrivilege;
-import org.apache.sentry.core.model.db.validator.ServerNameMustMatch;
-import org.apache.sentry.core.model.db.validator.ServersAllIsInvalid;
+import org.apache.sentry.core.model.db.HivePrivilegeModel;
 import org.apache.sentry.policy.common.PrivilegeFactory;
 import org.apache.sentry.policy.common.PolicyEngine;
-import org.apache.sentry.core.common.validator.PrivilegeValidator;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 public class SimpleDBPolicyEngine implements PolicyEngine {
@@ -49,7 +44,7 @@ public class SimpleDBPolicyEngine implements PolicyEngine {
     this.providerBackend = providerBackend;
     ProviderBackendContext context = new ProviderBackendContext();
     context.setAllowPerDatabase(true);
-    context.setValidators(createPrivilegeValidators(serverName));
+    context.setValidators(HivePrivilegeModel.getInstance().getPrivilegeValidators(serverName));
     this.providerBackend.initialize(context);
   }
 
@@ -95,10 +90,5 @@ public class SimpleDBPolicyEngine implements PolicyEngine {
     if (providerBackend != null) {
       providerBackend.close();
     }
-  }
-
-  public static ImmutableList<PrivilegeValidator> createPrivilegeValidators(String serverName) {
-    return ImmutableList.<PrivilegeValidator>of(new ServersAllIsInvalid(), new DatabaseMustMatch(),
-        new DatabaseRequiredInPrivilege(), new ServerNameMustMatch(serverName));
   }
 }

@@ -21,16 +21,14 @@ import java.util.Set;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.SentryConfigurationException;
-import org.apache.sentry.core.model.sqoop.validator.ServerNameRequiredMatch;
+import org.apache.sentry.core.model.sqoop.SqoopPrivilegeModel;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.policy.common.PrivilegeFactory;
-import org.apache.sentry.core.common.validator.PrivilegeValidator;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 public class SimpleSqoopPolicyEngine implements PolicyEngine {
@@ -41,7 +39,7 @@ public class SimpleSqoopPolicyEngine implements PolicyEngine {
     this.providerBackend = providerBackend;
     ProviderBackendContext context = new ProviderBackendContext();
     context.setAllowPerDatabase(false);
-    context.setValidators(ImmutableList.<PrivilegeValidator>of(new ServerNameRequiredMatch(sqoopServerName)));
+    context.setValidators(SqoopPrivilegeModel.getInstance().getPrivilegeValidators(sqoopServerName));
     this.providerBackend.initialize(context);
   }
   @Override

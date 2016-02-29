@@ -26,7 +26,7 @@ import org.apache.sentry.core.model.search.SearchModelAuthorizable;
 import org.apache.sentry.core.common.validator.PrivilegeValidator;
 import org.apache.sentry.core.common.validator.PrivilegeValidatorContext;
 import org.apache.sentry.core.model.search.SearchModelAuthorizables;
-import org.apache.sentry.policy.search.SimpleSearchPolicyEngine;
+import org.apache.sentry.core.model.search.SearchPrivilegeModel;
 import org.apache.sentry.core.common.utils.KeyValue;
 import org.apache.sentry.provider.common.PolicyFileConstants;
 import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
@@ -115,7 +115,7 @@ public  class SolrTSentryPrivilegeConvertor implements TSentryPrivilegeConvertor
   }
 
   private static void validatePrivilegeHierarchy(String privilegeStr) throws Exception {
-    List<PrivilegeValidator> validators = SimpleSearchPolicyEngine.createPrivilegeValidators();
+    List<PrivilegeValidator> validators = SearchPrivilegeModel.getInstance().getPrivilegeValidators();
     PrivilegeValidatorContext context = new PrivilegeValidatorContext(null, privilegeStr);
     for (PrivilegeValidator validator : validators) {
       try {

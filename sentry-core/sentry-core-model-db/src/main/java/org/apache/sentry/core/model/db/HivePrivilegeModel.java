@@ -16,9 +16,15 @@
  */
 package org.apache.sentry.core.model.db;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.sentry.core.common.BitFieldActionFactory;
 import org.apache.sentry.core.common.ImplyMethodType;
 import org.apache.sentry.core.common.Model;
+import org.apache.sentry.core.common.validator.PrivilegeValidator;
+import org.apache.sentry.core.model.db.validator.DatabaseMustMatch;
+import org.apache.sentry.core.model.db.validator.DatabaseRequiredInPrivilege;
+import org.apache.sentry.core.model.db.validator.ServerNameMustMatch;
+import org.apache.sentry.core.model.db.validator.ServersAllIsInvalid;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -51,7 +57,12 @@ public class HivePrivilegeModel implements Model {
     return bitFieldActionFactory;
   }
 
-  public static Model getInstance() {
+  public static HivePrivilegeModel getInstance() {
     return hivePrivilegeModel;
+  }
+
+  public ImmutableList<PrivilegeValidator> getPrivilegeValidators(String serverName) {
+    return ImmutableList.<PrivilegeValidator>of(new ServersAllIsInvalid(), new DatabaseMustMatch(),
+            new DatabaseRequiredInPrivilege(), new ServerNameMustMatch(serverName));
   }
 }

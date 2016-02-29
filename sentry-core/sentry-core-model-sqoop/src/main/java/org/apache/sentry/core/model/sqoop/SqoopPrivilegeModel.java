@@ -16,9 +16,12 @@
  */
 package org.apache.sentry.core.model.sqoop;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.sentry.core.common.BitFieldActionFactory;
 import org.apache.sentry.core.common.ImplyMethodType;
 import org.apache.sentry.core.common.Model;
+import org.apache.sentry.core.common.validator.PrivilegeValidator;
+import org.apache.sentry.core.model.sqoop.validator.ServerNameRequiredMatch;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -49,8 +52,12 @@ public class SqoopPrivilegeModel implements Model {
     return bitFieldActionFactory;
   }
 
-  public static Model getInstance() {
+  public static SqoopPrivilegeModel getInstance() {
     return sqoopPrivilegeModel;
+  }
+
+  public ImmutableList<PrivilegeValidator> getPrivilegeValidators(String sqoopServerName) {
+    return ImmutableList.<PrivilegeValidator>of(new ServerNameRequiredMatch(sqoopServerName));
   }
 
 }
