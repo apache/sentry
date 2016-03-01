@@ -25,6 +25,7 @@ import java.util.Arrays;
 import org.apache.sentry.core.model.search.Collection;
 import org.apache.sentry.core.model.search.SearchConstants;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -147,6 +148,7 @@ public class TestSolrAdminOperations extends AbstractSolrSentryTestWithDbProvide
    * Test when the collection has been deleted, the privileges in the sentry service also should be deleted
    * @throws Exception
    */
+  @Ignore("CDH-36881: Disable automatic permission revoke on collection/config deletion")
   @Test
   public void testSyncPrivilegesWithDeleteCollection() throws Exception {
     /**

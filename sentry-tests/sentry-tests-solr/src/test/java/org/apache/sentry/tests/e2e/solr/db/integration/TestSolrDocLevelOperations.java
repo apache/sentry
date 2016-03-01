@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
+import org.junit.After;
 import org.junit.Test;
 
 public class TestSolrDocLevelOperations extends AbstractSolrSentryTestWithDbProvider {
@@ -95,6 +96,7 @@ public class TestSolrDocLevelOperations extends AbstractSolrSentryTestWithDbProv
     }
 
     deleteCollection(TEST_COLLECTION_NAME1);
+    dropCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER);
   }
 
   @Test
@@ -135,6 +137,7 @@ public class TestSolrDocLevelOperations extends AbstractSolrSentryTestWithDbProv
     }
 
     deleteCollection(TEST_COLLECTION_NAME1);
+    dropCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER);
   }
 
   /**
@@ -154,6 +157,7 @@ public class TestSolrDocLevelOperations extends AbstractSolrSentryTestWithDbProv
 
     } finally {
       deleteCollection(TEST_COLLECTION_NAME1);
+      dropCollectionPrivilege(TEST_COLLECTION_NAME1, ADMIN_USER);
     }
   }
 
