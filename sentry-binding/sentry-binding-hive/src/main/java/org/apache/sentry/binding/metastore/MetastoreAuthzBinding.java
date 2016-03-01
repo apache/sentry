@@ -300,7 +300,7 @@ public class MetastoreAuthzBinding extends MetaStorePreEventListener {
 
   private void authorizeAddPartition(PreAddPartitionEvent context)
       throws InvalidOperationException, MetaException, NoSuchObjectException {
-    for (org.apache.hadoop.hive.metastore.api.Partition mapiPart : context.getPartitions()) {
+    for (Partition mapiPart : context.getPartitions()) {
 	    HierarcyBuilder inputBuilder = new HierarcyBuilder();
       inputBuilder.addTableToOutput(getAuthServer(), mapiPart
           .getDbName(), mapiPart.getTableName());
