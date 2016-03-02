@@ -37,8 +37,8 @@ public class TestKafkaAuthorizable {
     Host host = new Host(name);
     Assert.assertEquals(host.getName(), name);
 
-    Cluster cluster = new Cluster(name);
-    Assert.assertEquals(cluster.getName(), name);
+    Cluster cluster = new Cluster();
+    Assert.assertEquals(cluster.getName(), Cluster.NAME);
 
     Topic topic = new Topic(name);
     Assert.assertEquals(topic.getName(), name);
@@ -52,7 +52,7 @@ public class TestKafkaAuthorizable {
     Host host = new Host("host1");
     Assert.assertEquals(host.getAuthzType(), AuthorizableType.HOST);
 
-    Cluster cluster = new Cluster("cluster1");
+    Cluster cluster = new Cluster();
     Assert.assertEquals(cluster.getAuthzType(), AuthorizableType.CLUSTER);
 
     Topic topic = new Topic("topic1");
