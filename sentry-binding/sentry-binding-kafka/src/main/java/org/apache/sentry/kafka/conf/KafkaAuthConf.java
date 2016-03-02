@@ -28,17 +28,17 @@ public class KafkaAuthConf extends Configuration {
   public static final String SENTRY_KAFKA_SITE_URL = "sentry.kafka.site.url";
   public static final String AUTHZ_SITE_FILE = "sentry-site.xml";
   public static final String KAFKA_SUPER_USERS = "kafka.superusers";
+  public static final String KAFKA_SERVICE_INSTANCE_NAME = "sentry.kafka.service.instance";
 
   /**
    * Config setting definitions
    */
   public static enum AuthzConfVars {
-    AUTHZ_PROVIDER("sentry.kafka.provider",
-        HadoopGroupResourceAuthorizationProvider.class.getName()),
+    AUTHZ_PROVIDER("sentry.kafka.provider", HadoopGroupResourceAuthorizationProvider.class.getName()),
     AUTHZ_PROVIDER_RESOURCE("sentry.kafka.provider.resource", ""),
     AUTHZ_PROVIDER_BACKEND("sentry.kafka.provider.backend", SentryGenericProviderBackend.class.getName()),
     AUTHZ_POLICY_ENGINE("sentry.kafka.policy.engine", SimpleKafkaPolicyEngine.class.getName()),
-    AUTHZ_INSTANCE_NAME("sentry.kafka.name", "");
+    AUTHZ_INSTANCE_NAME(KAFKA_SERVICE_INSTANCE_NAME, "kafka");
 
     private final String varName;
     private final String defaultVal;
