@@ -23,9 +23,10 @@ import org.apache.sentry.core.model.kafka.KafkaAuthorizable.AuthorizableType;
 import org.apache.sentry.core.model.kafka.Host;
 import org.apache.sentry.core.model.kafka.Topic;
 import org.apache.sentry.provider.common.KeyValue;
+import org.apache.shiro.config.ConfigurationException;
 
 public class KafkaModelAuthorizables {
-  public static KafkaAuthorizable from(KeyValue keyValue) {
+  public static KafkaAuthorizable from(KeyValue keyValue) throws ConfigurationException {
     String prefix = keyValue.getKey().toLowerCase();
     String name = keyValue.getValue();
     for (AuthorizableType type : AuthorizableType.values()) {
@@ -36,16 +37,20 @@ public class KafkaModelAuthorizables {
     return null;
   }
 
-  public static KafkaAuthorizable from(String keyValue) {
+  public static KafkaAuthorizable from(String keyValue) throws ConfigurationException {
     return from(new KeyValue(keyValue));
   }
 
-  public static KafkaAuthorizable from(AuthorizableType type, String name) {
+  public static KafkaAuthorizable from(AuthorizableType type, String name) throws ConfigurationException {
     switch (type) {
       case HOST:
         return new Host(name);
-      case CLUSTER:
-        return new Cluster(name);
+      case CLUSTER: {
+        if (!name.equals(Cluster.NAME)) {
+          throw new ConfigurationException("Kafka's cluster resource can only have name " + Cluster.NAME);
+        }
+        return new Cluster();
+      }
       case TOPIC:
         return new Topic(name);
       case CONSUMERGROUP:

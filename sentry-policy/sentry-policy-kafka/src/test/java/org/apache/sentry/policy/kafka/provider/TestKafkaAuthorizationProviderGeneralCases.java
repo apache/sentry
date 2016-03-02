@@ -56,7 +56,7 @@ public class TestKafkaAuthorizationProviderGeneralCases {
 
   private static final Host HOST_1 = new Host("host1");
   private static final Host HOST_2 = new Host("host2");
-  private static final Cluster cluster1 = new Cluster("kafka-cluster");
+  private static final Cluster cluster1 = new Cluster();
   private static final Topic topic1 = new Topic("t1");
   private static final Topic topic2 = new Topic("t2");
   private static final ConsumerGroup cgroup1 = new ConsumerGroup("cg1");

@@ -38,7 +38,7 @@ public class TestKafkaPrivilegeValidator {
   @Test
   public void testWithoutHostResource() throws Exception {
     KafkaPrivilegeValidator kafkaPrivilegeValidator = new KafkaPrivilegeValidator();
-    testHostResourceIsChecked(kafkaPrivilegeValidator, "cluster=c1->action=read");
+    testHostResourceIsChecked(kafkaPrivilegeValidator, "cluster=kafka-cluster->action=read");
     testHostResourceIsChecked(kafkaPrivilegeValidator, "topic=t1->action=read");
     testHostResourceIsChecked(kafkaPrivilegeValidator, "consumergroup=g1->action=read");
   }
@@ -56,7 +56,7 @@ public class TestKafkaPrivilegeValidator {
   public void testValidPrivileges() throws Exception {
     KafkaPrivilegeValidator kafkaPrivilegeValidator = new KafkaPrivilegeValidator();
     try {
-      kafkaPrivilegeValidator.validate(new PrivilegeValidatorContext("host=host1->cluster=c1->action=read"));
+      kafkaPrivilegeValidator.validate(new PrivilegeValidatorContext("host=host1->cluster=kafka-cluster->action=read"));
     } catch (ConfigurationException ex) {
       Assert.fail("Not expected ConfigurationException");
     }
@@ -76,7 +76,7 @@ public class TestKafkaPrivilegeValidator {
   public void testInvalidHostResource() throws Exception {
     KafkaPrivilegeValidator kafkaPrivilegeValidator = new KafkaPrivilegeValidator();
     try {
-      kafkaPrivilegeValidator.validate(new PrivilegeValidatorContext("hhost=host1->cluster=c1->action=read"));
+      kafkaPrivilegeValidator.validate(new PrivilegeValidatorContext("hhost=host1->cluster=kafka-cluster->action=read"));
       Assert.fail("Expected ConfigurationException");
     } catch (ConfigurationException ex) {
     }
@@ -86,7 +86,7 @@ public class TestKafkaPrivilegeValidator {
   public void testInvalidClusterResource() throws Exception {
     KafkaPrivilegeValidator kafkaPrivilegeValidator = new KafkaPrivilegeValidator();
     try {
-      kafkaPrivilegeValidator.validate(new PrivilegeValidatorContext("host=host1->clluster=c1->action=read"));
+      kafkaPrivilegeValidator.validate(new PrivilegeValidatorContext("host=host1->clluster=kafka-cluster->action=read"));
       Assert.fail("Expected ConfigurationException");
     } catch (ConfigurationException ex) {
     }
