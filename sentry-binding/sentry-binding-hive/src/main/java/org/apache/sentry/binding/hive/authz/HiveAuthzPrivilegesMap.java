@@ -39,6 +39,7 @@ public class HiveAuthzPrivilegesMap {
     HiveAuthzPrivileges tableCreatePrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
         addOutputObjectPriviledge(AuthorizableType.Db, EnumSet.of(DBModelAction.CREATE)).
         addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.ALL)).//TODO: make it optional
+        addOutputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.ALL)).
         setOperationScope(HiveOperationScope.DATABASE).
         setOperationType(HiveOperationType.DDL).
         build();
@@ -225,7 +226,6 @@ public class HiveAuthzPrivilegesMap {
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_PROTECTMODE, alterTablePrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_SERDEPROPERTIES, alterTablePrivilege);
 
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_SERIALIZER, alterTablePrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_MERGEFILES, alterTablePrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_SKEWED, alterTablePrivilege);
 
@@ -238,6 +238,7 @@ public class HiveAuthzPrivilegesMap {
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_ADDPARTS, addPartitionPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_RENAME, alterTableRenamePrivilege);
 
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_SERIALIZER, alterTableAndUriPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_LOCATION, alterTableAndUriPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_LOCATION, alterTableAndUriPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTBLPART_SKEWED_LOCATION, alterTableAndUriPrivilege);//TODO: Needs test case

@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Arrays;
 
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.hive.common.JavaUtils;
@@ -44,6 +45,7 @@ import org.apache.hadoop.hive.ql.hooks.Entity.Type;
 import org.apache.hadoop.hive.ql.hooks.Hook;
 import org.apache.hadoop.hive.ql.hooks.ReadEntity;
 import org.apache.hadoop.hive.ql.hooks.WriteEntity;
+import org.apache.hadoop.hive.ql.lib.Node;
 import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
 import org.apache.hadoop.hive.ql.parse.AbstractSemanticAnalyzerHook;
@@ -87,9 +89,12 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
   private Database currDB = Database.ALL;
   private Table currTab;
   private AccessURI udfURI;
+  private AccessURI serdeURI;
   private AccessURI partitionURI;
   private Table currOutTab = null;
   private Database currOutDB = null;
+  private final List<String> serdeWhiteList;
+  private boolean serdeURIPrivilegesEnabled;
 
   // True if this is a basic DESCRIBE <table> operation. False for other DESCRIBE variants
   // like DESCRIBE [FORMATTED|EXTENDED]. Required because Hive treats these stmts as the same
@@ -112,6 +117,12 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
     }
     authzConf = loadAuthzConf(hiveConf);
     hiveAuthzBinding = new HiveAuthzBinding(hiveConf, authzConf);
+
+    String serdeWhiteLists = authzConf.get(HiveAuthzConf.HIVE_SENTRY_SERDE_WHITELIST,
+        HiveAuthzConf.HIVE_SENTRY_SERDE_WHITELIST_DEFAULT);
+    serdeWhiteList = Arrays.asList(serdeWhiteLists.split(","));
+    serdeURIPrivilegesEnabled = authzConf.getBoolean(HiveAuthzConf.HIVE_SENTRY_SERDE_URI_PRIVILIEGES_ENABLED,
+        HiveAuthzConf.HIVE_SENTRY_SERDE_URI_PRIVILIEGES_ENABLED_DEFAULT);
 
     FunctionRegistry.setupPermissionsForBuiltinUDFs("", HiveAuthzConf.HIVE_UDF_BLACK_LIST);
   }
@@ -164,6 +175,16 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
         currDB = new Database(BaseSemanticAnalyzer.unescapeIdentifier(ast.getChild(0).getText()));
         break;
       case HiveParser.TOK_CREATETABLE:
+
+        for (Node childNode : ast.getChildren()) {
+          ASTNode childASTNode = (ASTNode) childNode;
+          if ("TOK_TABLESERIALIZER".equals(childASTNode.getText())) {
+            ASTNode serdeNode = (ASTNode)childASTNode.getChild(0);
+            String serdeClassName = BaseSemanticAnalyzer.unescapeSQLString(serdeNode.getChild(0).getText());
+            setSerdeURI(serdeClassName);
+          }
+        }
+
       case HiveParser.TOK_CREATEVIEW:
         /*
          * Compiler doesn't create read/write entities for create table.
@@ -283,7 +304,18 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
         currOutDB = extractDatabase((ASTNode) ast.getChild(0));
         currOutTab = extractTable((ASTNode) ast.getChild(0).getChild(0).getChild(0));
         break;
-      default:
+    case HiveParser.TOK_ALTERTABLE:
+
+      for (Node childNode : ast.getChildren()) {
+        ASTNode childASTNode = (ASTNode) childNode;
+        if ("TOK_ALTERTABLE_SERIALIZER".equals(childASTNode.getText())) {
+          ASTNode serdeNode = (ASTNode)childASTNode.getChild(0);
+          String serdeClassName = BaseSemanticAnalyzer.unescapeSQLString(serdeNode.getText());
+          setSerdeURI(serdeClassName);
+        }
+      }
+
+    default:
         currDB = getCanonicalDb();
         break;
     }
@@ -497,6 +529,13 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
       outputHierarchy.add(dbHierarchy);
 
       getInputHierarchyFromInputs(inputHierarchy, inputs);
+
+      if (serdeURI != null) {
+        List<DBModelAuthorizable> serdeUriHierarchy = new ArrayList<DBModelAuthorizable>();
+        serdeUriHierarchy.add(hiveAuthzBinding.getAuthServer());
+        serdeUriHierarchy.add(serdeURI);
+        outputHierarchy.add(serdeUriHierarchy);
+      }
       break;
     case TABLE:
       // workaround for add partitions
@@ -535,6 +574,14 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
         externalAuthorizableHierarchy.add(currOutTab);
         outputHierarchy.add(externalAuthorizableHierarchy);
       }
+
+      if (serdeURI != null) {
+        List<DBModelAuthorizable> serdeUriHierarchy = new ArrayList<DBModelAuthorizable>();
+        serdeUriHierarchy.add(hiveAuthzBinding.getAuthServer());
+        serdeUriHierarchy.add(serdeURI);
+        outputHierarchy.add(serdeUriHierarchy);
+      }
+
       break;
     case FUNCTION:
       /* The 'FUNCTION' privilege scope currently used for
@@ -954,6 +1001,49 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
     } catch (Exception e) {
       LOG.error("Can not create HiveAuthzBinding with privilege cache.");
       throw new SemanticException(e);
+    }
+  }
+
+  private static boolean hasPrefixMatch(List<String> prefixList, final String str) {
+    for (String prefix : prefixList) {
+      if (str.startsWith(prefix)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Set the Serde URI privileges. If the URI privileges are not set, which serdeURI will be null,
+   * the URI authorization checks will be skipped.
+   */
+  private void setSerdeURI(String serdeClassName) throws SemanticException {
+    if (!serdeURIPrivilegesEnabled) {
+      return;
+    }
+
+    // WhiteList Serde Jar can be used by any users. WhiteList checking is
+    // done by comparing the Java package name. The assumption is cluster
+    // admin will ensure there is no Java namespace collision.
+    // e.g org.apache.hadoop.hive.serde2 is used by hive and cluster admin should
+    // ensure no custom Serde class is introduced under the same namespace.
+    if (!hasPrefixMatch(serdeWhiteList, serdeClassName)) {
+      try {
+        CodeSource serdeSrc = Class.forName(serdeClassName, true, Utilities.getSessionSpecifiedClassLoader()).getProtectionDomain().getCodeSource();
+        if (serdeSrc == null) {
+          throw new SemanticException("Could not resolve the jar for Serde class " + serdeClassName);
+        }
+
+        String serdeJar = serdeSrc.getLocation().getPath();
+        if (serdeJar == null || serdeJar.isEmpty()) {
+          throw new SemanticException("Could not find the jar for Serde class " + serdeClassName + "to validate privileges");
+        }
+
+        serdeURI = parseURI(serdeSrc.getLocation().toString(), true);
+      } catch (ClassNotFoundException e) {
+        throw new SemanticException("Error retrieving Serde class:" + e.getMessage(), e);
+      }
     }
   }
 }

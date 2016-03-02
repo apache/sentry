@@ -225,4 +225,38 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     statement.close();
     connection.close();
   }
+
+  /**
+   * User with db level access should be able to create/alter tables with buildin Serde.
+   */
+  @Test
+  public void testSerdePrivileges() throws Exception {
+    String tableName1 = "tab1";
+    String tableName2 = "tab2";
+
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statement.execute("CREATE DATABASE " + DB1);
+
+    context.close();
+
+    policyFile
+        .addRolesToGroup(USERGROUP1, "db1_all")
+        .addPermissionsToRole("db1_all", "server=server1->db=" + DB1);
+    writePolicyFile(policyFile);
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    statement.execute("USE " + DB1);
+    statement.execute("create table " + DB1 + "." + tableName1
+        + " (a string, b string) ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde' "
+        + " STORED AS TEXTFILE");
+
+    statement.execute("create table " + DB1 + "." + tableName2 + " (a string, b string)");
+    statement.execute("alter table " + DB1 + "." + tableName2
+        + " SET SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'");
+
+    context.close();
+  }
 }
