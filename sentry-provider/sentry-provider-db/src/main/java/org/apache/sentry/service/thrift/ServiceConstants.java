@@ -177,6 +177,11 @@ public class ServiceConstants {
 
     // Blacklist SSL protocols that are not secure (e.g., POODLE vulnerability)
     public static final String[] SENTRY_SSL_PROTOCOL_BLACKLIST_DEFAULT = {"SSLv2", "SSLv2Hello", "SSLv3"};
+
+    // Flag to enable admin servlet
+    public static final String SENTRY_WEB_ADMIN_SERVLET_ENABLED = "sentry.web.admin.servlet.enabled";
+    public static final boolean SENTRY_WEB_ADMIN_SERVLET_ENABLED_DEFAULT = false;
+
     // max message size for thrift messages
     public static String SENTRY_POLICY_SERVER_THRIFT_MAX_MESSAGE_SIZE = "sentry.policy.server.thrift.max.message.size";
     public static long SENTRY_POLICY_SERVER_THRIFT_MAX_MESSAGE_SIZE_DEFAULT = 100 * 1024 * 1024;

@@ -22,6 +22,7 @@ import com.codahale.metrics.servlets.AdminServlet;
 import com.google.common.base.Preconditions;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.EnumSet;
 import java.util.EventListener;
 import java.util.HashMap;
@@ -39,12 +40,17 @@ import org.apache.hadoop.security.authentication.server.AuthenticationFilter;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.eclipse.jetty.server.DispatcherType;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +58,8 @@ import org.slf4j.LoggerFactory;
 public class SentryWebServer {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryWebServer.class);
+  private static final String RESOURCE_DIR = "/webapp";
+  private static final String WELCOME_PAGE = "SentryService.html";
 
   Server server;
   int port;
@@ -81,12 +89,37 @@ public class SentryWebServer {
     connector.setPort(port);
     server.addConnector(connector);
     ServletContextHandler servletContextHandler = new ServletContextHandler();
-    ServletHolder servletHolder =  new ServletHolder(AdminServlet.class);
+    ServletHolder servletHolder = new ServletHolder(AdminServlet.class);
     servletContextHandler.addServlet(servletHolder, "/*");
 
     for(EventListener listener:listeners) {
       servletContextHandler.addEventListener(listener);
     }
+
+    servletContextHandler.addServlet(new ServletHolder(ConfServlet.class), "/conf");
+
+    if (conf.getBoolean(ServerConfig.SENTRY_WEB_ADMIN_SERVLET_ENABLED,
+        ServerConfig.SENTRY_WEB_ADMIN_SERVLET_ENABLED_DEFAULT)) {
+      servletContextHandler.addServlet(
+          new ServletHolder(SentryAdminServlet.class), "/admin/*");
+    }
+    servletContextHandler.getServletContext()
+        .setAttribute(ConfServlet.CONF_CONTEXT_ATTRIBUTE, conf);
+
+    ResourceHandler resourceHandler = new ResourceHandler();
+    resourceHandler.setDirectoriesListed(true);
+    URL url = this.getClass().getResource(RESOURCE_DIR);
+    try {
+      resourceHandler.setBaseResource(Resource.newResource(url.toString()));
+    } catch (IOException e) {
+      LOGGER.error("Got exception while setBaseResource for Sentry Service web UI", e);
+    }
+    resourceHandler.setWelcomeFiles(new String[]{WELCOME_PAGE});
+    ContextHandler contextHandler= new ContextHandler();
+    contextHandler.setHandler(resourceHandler);
+
+    ContextHandlerCollection contextHandlerCollection = new ContextHandlerCollection();
+    contextHandlerCollection.setHandlers(new Handler[]{contextHandler, servletContextHandler});
 
     String authMethod = conf.get(ServerConfig.SENTRY_WEB_SECURITY_TYPE);
     if (!ServerConfig.SENTRY_WEB_SECURITY_TYPE_NONE.equals(authMethod)) {
@@ -99,7 +132,8 @@ public class SentryWebServer {
       FilterHolder filterHolder = servletContextHandler.addFilter(SentryAuthFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
       filterHolder.setInitParameters(loadWebAuthenticationConf(conf));
     }
-    server.setHandler(servletContextHandler);
+
+    server.setHandler(contextHandlerCollection);
   }
 
   public void start() throws Exception{

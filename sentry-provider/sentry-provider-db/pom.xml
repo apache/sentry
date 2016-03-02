@@ -216,6 +216,13 @@ limitations under the License.
           <include>package.jdo</include>
         </includes>
       </resource>
+      <resource>
+        <directory>${basedir}/src/main</directory>
+        <includes>
+          <include>webapp/*</include>
+          <include>webapp/css/*</include>
+        </includes>
+      </resource>
     </resources>
     <plugins>
       <plugin>
