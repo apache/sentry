@@ -56,10 +56,10 @@ public class KafkaAuthBindingSingleton {
     return kafkaAuthConf;
   }
 
-  public void configure(String sentry_site) {
+  public void configure(String instanceName, String sentry_site) {
     try {
       kafkaAuthConf = loadAuthzConf(sentry_site);
-      binding = new KafkaAuthBinding(kafkaAuthConf);
+      binding = new KafkaAuthBinding(instanceName, kafkaAuthConf);
       log.info("KafkaAuthBinding created successfully");
     } catch (Exception ex) {
       log.error("Unable to create KafkaAuthBinding", ex);

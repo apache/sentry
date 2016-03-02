@@ -52,9 +52,9 @@ public class KafkaAuthBinding {
 
     private final KafkaActionFactory actionFactory = KafkaActionFactory.getInstance();
 
-    public KafkaAuthBinding(Configuration authConf) throws Exception {
+    public KafkaAuthBinding(String instanceName, Configuration authConf) throws Exception {
         this.authConf = authConf;
-        this.authProvider = createAuthProvider();
+        this.authProvider = createAuthProvider(instanceName);
     }
 
     /**
@@ -62,7 +62,7 @@ public class KafkaAuthBinding {
      *
      * @return {@link AuthorizationProvider}
      */
-    private AuthorizationProvider createAuthProvider() throws Exception {
+    private AuthorizationProvider createAuthProvider(String instanceName) throws Exception {
         /**
          * get the authProvider class, policyEngine class, providerBackend class and resources from the
          * kafkaAuthConf config
@@ -79,7 +79,6 @@ public class KafkaAuthBinding {
         String policyEngineName =
             authConf.get(AuthzConfVars.AUTHZ_POLICY_ENGINE.getVar(),
                 AuthzConfVars.AUTHZ_POLICY_ENGINE.getDefault());
-        String instanceName = authConf.get(AuthzConfVars.AUTHZ_INSTANCE_NAME.getVar());
         if (resourceName != null && resourceName.startsWith("classpath:")) {
             String resourceFileName = resourceName.substring("classpath:".length());
             resourceName = AuthorizationProvider.class.getClassLoader().getResource(resourceFileName).getPath();
@@ -100,7 +99,7 @@ public class KafkaAuthBinding {
                 resourceName});
         if (providerBackend instanceof SentryGenericProviderBackend) {
             ((SentryGenericProviderBackend) providerBackend).setComponentType(COMPONENT_TYPE);
-            ((SentryGenericProviderBackend) providerBackend).setServiceName("kafka" + instanceName);
+            ((SentryGenericProviderBackend) providerBackend).setServiceName(instanceName);
         }
 
         // Instantiate the configured policyEngine
