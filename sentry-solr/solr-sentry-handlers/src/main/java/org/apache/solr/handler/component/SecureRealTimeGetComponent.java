@@ -160,7 +160,7 @@ public class SecureRealTimeGetComponent extends SearchComponent
       for (SolrDocument doc : docList) {
         // -1 doc id indicates this value was read from log; we need to open
         // a new real time searcher to run the filter query against
-        if (doc.get(ID_FIELD_NAME) == -1 && !openedRealTimeSearcher) {
+        if (Integer.valueOf(-1).equals(doc.get(ID_FIELD_NAME)) && !openedRealTimeSearcher) {
           searcherHolder.decref();
           // hack to clear ulog maps since we don't have
           // openRealtimeSearcher API from SOLR-8436
