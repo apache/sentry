@@ -44,6 +44,7 @@ public class SentryKafkaAuthorizer implements Authorizer {
 
   String sentry_site = null;
   List<KafkaPrincipal> super_users = null;
+  String kafkaServiceInstanceName = KafkaAuthConf.AuthzConfVars.getDefault(KafkaAuthConf.KAFKA_SERVICE_INSTANCE_NAME);
 
   public SentryKafkaAuthorizer() {
   }
@@ -105,9 +106,13 @@ public class SentryKafkaAuthorizer implements Authorizer {
     if (kafkaSuperUsersConfig != null) {
       getSuperUsers(kafkaSuperUsersConfig.toString());
     }
+    final Object kafkaServiceInstanceName = configs.get(KafkaAuthConf.KAFKA_SERVICE_INSTANCE_NAME);
+    if (kafkaServiceInstanceName != null) {
+      this.kafkaServiceInstanceName = kafkaServiceInstanceName.toString();
+    }
     LOG.info("Configuring Sentry KafkaAuthorizer: " + sentry_site);
     final KafkaAuthBindingSingleton instance = KafkaAuthBindingSingleton.getInstance();
-    instance.configure(sentry_site);
+    instance.configure(this.kafkaServiceInstanceName, sentry_site);
     this.binding = instance.getAuthBinding();
     this.kafkaAuthConf = instance.getKafkaAuthConf();
   }
