@@ -20,11 +20,13 @@ package org.apache.sentry.policy.kafka;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNull;
+import static junit.framework.Assert.fail;
 
 import org.apache.sentry.core.model.kafka.Cluster;
 import org.apache.sentry.core.model.kafka.ConsumerGroup;
 import org.apache.sentry.core.model.kafka.Host;
 import org.apache.sentry.core.model.kafka.Topic;
+import org.apache.shiro.config.ConfigurationException;
 import org.junit.Test;
 
 public class TestKafkaModelAuthorizables {
@@ -60,13 +62,25 @@ public class TestKafkaModelAuthorizables {
     Host host1 = (Host)KafkaModelAuthorizables.from("HOST=Host1");
     assertEquals("Host1", host1.getName());
 
-    Cluster cluster1 = (Cluster)KafkaModelAuthorizables.from("Cluster=cLuster1");
-    assertEquals("cLuster1", cluster1.getName());
+    Cluster cluster1 = (Cluster)KafkaModelAuthorizables.from("Cluster=kafka-cluster");
+    assertEquals("kafka-cluster", cluster1.getName());
 
     Topic topic1 = (Topic)KafkaModelAuthorizables.from("topic=topiC1");
     assertEquals("topiC1", topic1.getName());
 
     ConsumerGroup consumergroup1 = (ConsumerGroup)KafkaModelAuthorizables.from("ConsumerGroup=CG1");
     assertEquals("CG1", consumergroup1.getName());
+  }
+
+  @Test
+  public void testClusterResourceNameIsRestricted() throws Exception {
+    try {
+      Cluster cluster1 = (Cluster) KafkaModelAuthorizables.from("Cluster=cluster1");
+      fail("Cluster with name other than " + Cluster.NAME + " must not have been created.");
+    } catch (ConfigurationException cex) {
+      assertEquals("Exception message is not as expected.", "Kafka's cluster resource can only have name " + Cluster.NAME, cex.getMessage());
+    } catch (Exception ex) {
+      fail("Configuration exception was expected for invalid Cluster name.");
+    }
   }
 }

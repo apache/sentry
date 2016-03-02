@@ -20,16 +20,7 @@ package org.apache.sentry.core.model.kafka;
  * Represents Cluster authorizable in Kafka model.
  */
 public class Cluster implements KafkaAuthorizable {
-  private String name;
-
-  /**
-   * Create a Cluster authorizable for Kafka cluster of a given name.
-   *
-   * @param name Name of Kafka cluster.
-   */
-  public Cluster(String name) {
-    this.name = name;
-  }
+  public static final String NAME = "kafka-cluster";
 
   /**
    * Get type of Kafka's cluster authorizable.
@@ -48,7 +39,7 @@ public class Cluster implements KafkaAuthorizable {
    */
   @Override
   public String getName() {
-    return name;
+    return NAME;
   }
 
   /**
