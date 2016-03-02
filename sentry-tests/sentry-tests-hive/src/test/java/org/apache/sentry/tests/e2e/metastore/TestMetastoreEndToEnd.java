@@ -572,7 +572,7 @@ public class TestMetastoreEndToEnd extends
 
     //User with all on table
     execHiveSQL("ALTER TABLE " + dbName + "." + tabName1
-        + " ADD PARTITION (part_col ='" + partVal1 + "')", USER2_1);
+        + " ADD PARTITION (part_col ='" + partVal1 + "')", USER1_1);
     verifyPartitionExists(dbName, tabName1, partVal1);
 
     execHiveSQL("ALTER TABLE " + dbName + "." + tabName1
