@@ -198,20 +198,24 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     try {
       response = handler.handle();
     } catch (SentryAccessDeniedException e) {
-      LOGGER.error(e.getMessage(), e);
+      String msg = "Sentry access denied: " + e.getMessage();
+      LOGGER.error(msg, e);
       response.status = Status.AccessDenied(e.getMessage(), e);
     } catch (SentryAlreadyExistsException e) {
-      LOGGER.error(e.getMessage(), e);
+      String msg = "Sentry object already exists: " + e.getMessage();
+      LOGGER.error(msg, e);
       response.status = Status.AlreadyExists(e.getMessage(), e);
     } catch (SentryNoSuchObjectException e) {
-      LOGGER.error(e.getMessage(), e);
+      String msg = "Sentry object doesn't exist: " + e.getMessage();
+      LOGGER.error(msg, e);
       response.status = Status.NoSuchObject(e.getMessage(), e);
     } catch (SentryInvalidInputException e) {
-      String msg = "Invalid input privilege object";
+      String msg = "Invalid input privilege object: " + e.getMessage();
       LOGGER.error(msg, e);
       response.status = Status.InvalidInput(msg, e);
     } catch (SentryThriftAPIMismatchException e) {
-      LOGGER.error(e.getMessage(), e);
+      String msg = "Sentry thrift API mismatch error: " + e.getMessage();
+      LOGGER.error(msg, e);
       response.status = Status.THRIFT_VERSION_MISMATCH(e.getMessage(), e);
     } catch (Exception e) {
       String msg = "Unknown error:" + e.getMessage();

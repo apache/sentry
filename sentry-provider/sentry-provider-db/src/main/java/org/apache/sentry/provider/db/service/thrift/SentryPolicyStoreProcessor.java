@@ -292,7 +292,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
         plugin.onAlterSentryRoleGrantPrivilege(request);
       }
     } catch (SentryNoSuchObjectException e) {
-      String msg = "Role: " + request.getRoleName() + " doesn't exist.";
+      String msg = "Role: " + request.getRoleName() + " doesn't exist";
       LOGGER.error(msg, e);
       response.setStatus(Status.NoSuchObject(msg, e));
     } catch (SentryInvalidInputException e) {
@@ -420,7 +420,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
         plugin.onDropSentryRole(request);
       }
     } catch (SentryNoSuchObjectException e) {
-      String msg = "Role :" + request + " does not exist.";
+      String msg = "Role :" + request + " doesn't exist";
       LOGGER.error(msg, e);
       response.setStatus(Status.NoSuchObject(msg, e));
     } catch (SentryAccessDeniedException e) {
@@ -466,7 +466,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
         plugin.onAlterSentryRoleAddGroups(request);
       }
     } catch (SentryNoSuchObjectException e) {
-      String msg = "Role: " + request + " does not exist.";
+      String msg = "Role: " + request + " doesn't exist";
       LOGGER.error(msg, e);
       response.setStatus(Status.NoSuchObject(msg, e));
     } catch (SentryAccessDeniedException e) {
@@ -571,7 +571,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       response.setStatus(Status.OK());
     } catch (SentryNoSuchObjectException e) {
       response.setRoles(roleSet);
-      String msg = "Role: " + request + " couldn't be retrieved.";
+      String msg = "Request: " + request + " couldn't be completed, message: " + e.getMessage();
       LOGGER.error(msg, e);
       response.setStatus(Status.NoSuchObject(msg, e));
     } catch (SentryAccessDeniedException e) {

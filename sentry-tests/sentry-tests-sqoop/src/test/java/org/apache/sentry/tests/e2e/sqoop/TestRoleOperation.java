@@ -80,7 +80,7 @@ public class TestRoleOperation extends AbstractSqoopSentryTestBase {
     SqoopClient client = sqoopServerRunner.getSqoopClient(ADMIN_USER);
     try {
       client.dropRole(new MRole("drop_noexisted_role_1"));
-      fail("expected SentryNoSuchObjectException happend");
+      fail("expect SentryNoSuchObjectException to throw");
     } catch (Exception e) {
       assertCausedMessage(e, "SentryNoSuchObjectException");
     }

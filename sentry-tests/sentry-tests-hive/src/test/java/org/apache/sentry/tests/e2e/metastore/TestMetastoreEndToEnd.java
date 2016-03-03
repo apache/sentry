@@ -584,7 +584,7 @@ public class TestMetastoreEndToEnd extends
       execHiveSQL("ALTER TABLE " + dbName + "." + tabName1
           + " ADD PARTITION (part_col ='" + partVal2 + "') location '"
           + tabDir1 + "'", USER2_1);
-      fail("alter table should have failed due to missing URI privilege");
+      fail("alter table should have failed due to URI privilege missed");
     } catch (IOException e) {
       // Expected error
     }

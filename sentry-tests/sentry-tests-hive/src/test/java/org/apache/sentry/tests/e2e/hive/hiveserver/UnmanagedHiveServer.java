@@ -60,7 +60,7 @@ public class UnmanagedHiveServer implements HiveServer {
       }else {
         val = System.getProperty(hiveVar, defaultVal);
       }
-      Preconditions.checkNotNull(val, "Required system property missing: Provide it using -D"+ hiveVar);
+      Preconditions.checkNotNull(val, "Required system property is missed: Provide it using -D"+ hiveVar);
       LOGGER.info("Using from system property" + hiveVar + " = " + val );
     }else {
       LOGGER.info("Using from hive-site.xml" + hiveVar + " = " + val );

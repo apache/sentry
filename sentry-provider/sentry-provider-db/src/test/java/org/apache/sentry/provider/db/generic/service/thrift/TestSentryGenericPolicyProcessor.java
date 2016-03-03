@@ -165,26 +165,32 @@ public class TestSentryGenericPolicyProcessor {
 
   @Test
   public void testOperationWithException() throws Exception {
-    when(mockStore.createRole(anyString(), anyString(), anyString()))
-    .thenThrow(new SentryAlreadyExistsException("role already exists"));
+    String roleName = anyString();
+    when(mockStore.createRole(anyString(), roleName, anyString()))
+    .thenThrow(new SentryAlreadyExistsException("Role: " + roleName + " already exists"));
 
-    when(mockStore.dropRole(anyString(), anyString(), anyString()))
-    .thenThrow(new SentryNoSuchObjectException("role isn't exist"));
+    roleName = anyString();
+    when(mockStore.dropRole(anyString(), roleName, anyString()))
+    .thenThrow(new SentryNoSuchObjectException("Role: " + roleName + " doesn't exist"));
 
-    when(mockStore.alterRoleAddGroups(anyString(), anyString(), anySetOf(String.class),anyString()))
-    .thenThrow(new SentryNoSuchObjectException("role isn't exist"));
+    roleName = anyString();
+    when(mockStore.alterRoleAddGroups(anyString(), roleName, anySetOf(String.class),anyString()))
+    .thenThrow(new SentryNoSuchObjectException("Role: " + roleName + " doesn't exist"));
 
-    when(mockStore.alterRoleDeleteGroups(anyString(), anyString(),anySetOf(String.class), anyString()))
-    .thenThrow(new SentryNoSuchObjectException("role isn't exist"));
+    roleName = anyString();
+    when(mockStore.alterRoleDeleteGroups(anyString(), roleName, anySetOf(String.class), anyString()))
+    .thenThrow(new SentryNoSuchObjectException("Role: " + roleName + " doesn't exist"));
 
-    when(mockStore.alterRoleGrantPrivilege(anyString(), anyString(), any(PrivilegeObject.class), anyString()))
-    .thenThrow(new SentryGrantDeniedException("has no grant"));
+    roleName = anyString();
+    when(mockStore.alterRoleGrantPrivilege(anyString(), roleName, any(PrivilegeObject.class), anyString()))
+    .thenThrow(new SentryGrantDeniedException("Role: " + roleName + " is not allowed to do grant"));
 
-    when(mockStore.alterRoleRevokePrivilege(anyString(), anyString(),any(PrivilegeObject.class), anyString()))
-    .thenThrow(new SentryGrantDeniedException("has no grant"));
+    roleName = anyString();
+    when(mockStore.alterRoleRevokePrivilege(anyString(), roleName, any(PrivilegeObject.class), anyString()))
+    .thenThrow(new SentryGrantDeniedException("Role: " + roleName + " is not allowed to do grant"));
 
     when(mockStore.dropPrivilege(anyString(), any(PrivilegeObject.class), anyString()))
-    .thenThrow(new SentryInvalidInputException("nvalid input privilege object"));
+    .thenThrow(new SentryInvalidInputException("Invalid input privilege object"));
 
     when(mockStore.renamePrivilege(anyString(), anyString(), anyListOf(Authorizable.class),
         anyListOf(Authorizable.class), anyString()))

@@ -399,7 +399,7 @@ public class SentryAuthorizationProvider
       defaultAuthzProvider.removeAclFeature(node);
     } else {
       if (warn) {
-        LOG.warn("### removeAclFeature is requested on {}, but it doesn't " +
+        LOG.warn("### removeAclFeature is requested on {}, but it does not " +
             "have any acl.", node);
       }
     }

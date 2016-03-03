@@ -122,7 +122,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
       query.setUnique(true);
       MSentryRole sentryRole = (MSentryRole) query.execute(role);
       if (sentryRole == null) {
-        throw new SentryNoSuchObjectException("Role " + role);
+        throw new SentryNoSuchObjectException("Role: " + role + " doesn't exist");
       } else {
         pm.retrieve(sentryRole);
         sentryRole.removeGMPrivileges();
@@ -168,7 +168,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
       pm = openTransaction();
       MSentryRole mRole = getRole(role, pm);
       if (mRole == null) {
-        throw new SentryNoSuchObjectException("role:" + role + " isn't exist");
+        throw new SentryNoSuchObjectException("Role: " + role + " doesn't exist");
       }
       /**
        * check with grant option
@@ -199,7 +199,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
       pm = openTransaction();
       MSentryRole mRole = getRole(role, pm);
       if (mRole == null) {
-        throw new SentryNoSuchObjectException("role:" + role + " isn't exist");
+        throw new SentryNoSuchObjectException("Role: " + role + " doesn't exist");
       }
       /**
        * check with grant option

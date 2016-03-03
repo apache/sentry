@@ -132,7 +132,7 @@ public class SentryStore {
     prop.putAll(ServerConfig.SENTRY_STORE_DEFAULTS);
     String jdbcUrl = conf.get(ServerConfig.SENTRY_STORE_JDBC_URL, "").trim();
     Preconditions.checkArgument(!jdbcUrl.isEmpty(), "Required parameter " +
-        ServerConfig.SENTRY_STORE_JDBC_URL + " missing");
+        ServerConfig.SENTRY_STORE_JDBC_URL + " is missed");
     String user = conf.get(ServerConfig.SENTRY_STORE_JDBC_USER, ServerConfig.
         SENTRY_STORE_JDBC_USER_DEFAULT).trim();
     //Password will be read from Credential provider specified using property
@@ -446,7 +446,7 @@ public class SentryStore {
     MSentryPrivilege mPrivilege = null;
     MSentryRole mRole = getMSentryRole(pm, roleName);
     if (mRole == null) {
-      throw new SentryNoSuchObjectException("Role: " + roleName);
+      throw new SentryNoSuchObjectException("Role: " + roleName + " doesn't exist");
     } else {
 
       if (!isNULL(privilege.getColumnName()) || !isNULL(privilege.getTableName())
@@ -537,7 +537,7 @@ public class SentryStore {
     query.setUnique(true);
     MSentryRole mRole = (MSentryRole) query.execute(roleName);
     if (mRole == null) {
-      throw new SentryNoSuchObjectException("Role: " + roleName);
+      throw new SentryNoSuchObjectException("Role: " + roleName + " doesn't exist");
     } else {
       query = pm.newQuery(MSentryPrivilege.class);
       MSentryPrivilege mPrivilege = getMSentryPrivilege(tPrivilege, pm);
@@ -801,7 +801,7 @@ public class SentryStore {
     query.setUnique(true);
     MSentryRole sentryRole = (MSentryRole) query.execute(lRoleName);
     if (sentryRole == null) {
-      throw new SentryNoSuchObjectException("Role " + lRoleName);
+      throw new SentryNoSuchObjectException("Role: " + lRoleName + " doesn't exist");
     } else {
       pm.retrieve(sentryRole);
       int numPrivs = sentryRole.getPrivileges().size();
@@ -840,7 +840,7 @@ public class SentryStore {
     query.setUnique(true);
     MSentryRole role = (MSentryRole) query.execute(lRoleName);
     if (role == null) {
-      throw new SentryNoSuchObjectException("Role: " + lRoleName);
+      throw new SentryNoSuchObjectException("Role: " + lRoleName + " doesn't exist");
     } else {
       query = pm.newQuery(MSentryGroup.class);
       query.setFilter("this.groupName == t");
@@ -874,7 +874,7 @@ public class SentryStore {
       query.setUnique(true);
       MSentryRole role = (MSentryRole) query.execute(roleName);
       if (role == null) {
-        throw new SentryNoSuchObjectException("Role: " + roleName);
+        throw new SentryNoSuchObjectException("Role: " + roleName + " doesn't exist");
       } else {
         query = pm.newQuery(MSentryGroup.class);
         query.setFilter("this.groupName == t");
@@ -915,7 +915,7 @@ public class SentryStore {
       query.setUnique(true);
       MSentryRole sentryRole = (MSentryRole) query.execute(roleName);
       if (sentryRole == null) {
-        throw new SentryNoSuchObjectException("Role " + roleName);
+        throw new SentryNoSuchObjectException("Role: " + roleName + " doesn't exist");
       } else {
         pm.retrieve(sentryRole);
       }
@@ -1165,7 +1165,7 @@ public class SentryStore {
         query.setUnique(true);
         sentryGroup = (MSentryGroup) query.execute(groupName);
         if (sentryGroup == null) {
-          throw new SentryNoSuchObjectException("Group " + groupName);
+          throw new SentryNoSuchObjectException("Group: " + groupName + " doesn't exist");
         } else {
           pm.retrieve(sentryGroup);
         }
