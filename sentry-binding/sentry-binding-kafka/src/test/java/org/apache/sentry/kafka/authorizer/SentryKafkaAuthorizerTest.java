@@ -17,7 +17,6 @@
 package org.apache.sentry.kafka.authorizer;
 
 import kafka.network.RequestChannel;
-import kafka.security.auth.Operation;
 import kafka.security.auth.Operation$;
 import kafka.security.auth.Resource;
 import kafka.security.auth.Resource$;

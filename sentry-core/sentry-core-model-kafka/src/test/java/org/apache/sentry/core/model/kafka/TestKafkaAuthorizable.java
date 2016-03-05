@@ -19,11 +19,7 @@ package org.apache.sentry.core.model.kafka;
 
 import junit.framework.Assert;
 
-import org.apache.sentry.core.model.kafka.Cluster;
-import org.apache.sentry.core.model.kafka.ConsumerGroup;
 import org.apache.sentry.core.model.kafka.KafkaAuthorizable.AuthorizableType;
-import org.apache.sentry.core.model.kafka.Host;
-import org.apache.sentry.core.model.kafka.Topic;
 import org.junit.Test;
 
 /**
