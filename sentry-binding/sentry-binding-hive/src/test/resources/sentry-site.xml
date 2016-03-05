@@ -26,9 +26,5 @@
     <name>sentry.hive.provider.resource</name>
     <value>classpath:test-authz-provider.ini</value>
   </property>
-  <property>
-    <name>sentry.hive.server</name>
-    <value>myHS2</value>
-  </property>
 </configuration>
 
