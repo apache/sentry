@@ -26,11 +26,14 @@ import java.util.Set;
 import javax.jdo.PersistenceManager;
 import javax.jdo.Query;
 
+import org.apache.hadoop.conf.Configuration;
+
 import org.apache.sentry.SentryUserException;
 import org.apache.sentry.core.common.Action;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.BitFieldAction;
 import org.apache.sentry.core.common.BitFieldActionFactory;
+import org.apache.sentry.core.model.kafka.KafkaActionFactory;
 import org.apache.sentry.core.model.search.SearchActionFactory;
 import org.apache.sentry.provider.db.generic.service.persistent.PrivilegeObject.Builder;
 import org.apache.sentry.provider.db.service.model.MSentryGMPrivilege;
@@ -50,6 +53,13 @@ public class PrivilegeOperatePersistence {
   private static final Map<String, BitFieldActionFactory> actionFactories = Maps.newHashMap();
   static{
     actionFactories.put("solr", new SearchActionFactory());
+    actionFactories.put("kafka", KafkaActionFactory.getInstance());
+  }
+
+  private final Configuration conf;
+
+  public PrivilegeOperatePersistence(Configuration conf) {
+    this.conf = conf;
   }
 
   public boolean checkPrivilegeOption(Set<MSentryRole> roles, PrivilegeObject privilege, PersistenceManager pm) {
