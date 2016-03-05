@@ -185,6 +185,9 @@ public class KafkaActionFactory extends BitFieldActionFactory {
    */
   @Override
   public KafkaAction getActionByName(String name) {
+    if (name.equalsIgnoreCase("*")) {
+      return new KafkaAction("ALL");
+    }
     return KafkaActionType.hasActionType(name) ? new KafkaAction(name) : null;
   }
 }

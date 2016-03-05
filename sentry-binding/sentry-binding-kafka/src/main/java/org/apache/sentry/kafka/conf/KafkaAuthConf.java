@@ -29,6 +29,7 @@ public class KafkaAuthConf extends Configuration {
   public static final String AUTHZ_SITE_FILE = "sentry-site.xml";
   public static final String KAFKA_SUPER_USERS = "kafka.superusers";
   public static final String KAFKA_SERVICE_INSTANCE_NAME = "sentry.kafka.service.instance";
+  public static final String KAFKA_SERVICE_USER_NAME = "sentry.kafka.service.user.name";
 
   /**
    * Config setting definitions
@@ -38,7 +39,8 @@ public class KafkaAuthConf extends Configuration {
     AUTHZ_PROVIDER_RESOURCE("sentry.kafka.provider.resource", ""),
     AUTHZ_PROVIDER_BACKEND("sentry.kafka.provider.backend", SentryGenericProviderBackend.class.getName()),
     AUTHZ_POLICY_ENGINE("sentry.kafka.policy.engine", SimpleKafkaPolicyEngine.class.getName()),
-    AUTHZ_INSTANCE_NAME(KAFKA_SERVICE_INSTANCE_NAME, "kafka");
+    AUTHZ_INSTANCE_NAME(KAFKA_SERVICE_INSTANCE_NAME, "kafka"),
+    AUTHZ_SERVICE_USER_NAME(KAFKA_SERVICE_USER_NAME, "kafka");
 
     private final String varName;
     private final String defaultVal;

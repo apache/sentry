@@ -17,20 +17,32 @@
 package org.apache.sentry.kafka.binding;
 
 import java.lang.reflect.Constructor;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import kafka.security.auth.Acl;
+import kafka.security.auth.Allow;
+import kafka.security.auth.Allow$;
+import kafka.security.auth.Operation$;
+import kafka.security.auth.ResourceType$;
 import org.apache.hadoop.conf.Configuration;
 
 import com.google.common.collect.Sets;
 import kafka.network.RequestChannel;
 import kafka.security.auth.Operation;
 import kafka.security.auth.Resource;
+import org.apache.kafka.common.KafkaException;
+import org.apache.kafka.common.security.auth.KafkaPrincipal;
+import org.apache.sentry.SentryUserException;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.kafka.KafkaActionFactory;
 import org.apache.sentry.core.model.kafka.KafkaActionFactory.KafkaAction;
+import org.apache.sentry.core.model.kafka.KafkaAuthorizable;
 import org.apache.sentry.kafka.ConvertUtil;
 import org.apache.sentry.kafka.conf.KafkaAuthConf.AuthzConfVars;
 import org.apache.sentry.policy.common.PolicyEngine;
@@ -38,23 +50,40 @@ import org.apache.sentry.provider.common.AuthorizationComponent;
 import org.apache.sentry.provider.common.AuthorizationProvider;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.db.generic.SentryGenericProviderBackend;
+import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
+import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClientFactory;
+import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
+import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
+import org.apache.sentry.provider.db.generic.service.thrift.TSentryRole;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.Option;
+import scala.Predef;
+import scala.Tuple2;
+import scala.collection.Iterator;
+import scala.collection.JavaConversions;
+import scala.collection.immutable.Map;
 
 public class KafkaAuthBinding {
 
     private static final Logger LOG = LoggerFactory.getLogger(KafkaAuthBinding.class);
     private static final String COMPONENT_TYPE = AuthorizationComponent.KAFKA;
+    private static final String COMPONENT_NAME = COMPONENT_TYPE;
 
     private final Configuration authConf;
     private final AuthorizationProvider authProvider;
-    private ProviderBackend providerBackend;
-
     private final KafkaActionFactory actionFactory = KafkaActionFactory.getInstance();
 
-    public KafkaAuthBinding(String instanceName, Configuration authConf) throws Exception {
+    private ProviderBackend providerBackend;
+    private String instanceName;
+    private String requestorName;
+
+
+    public KafkaAuthBinding(String instanceName, String requestorName, Configuration authConf) throws Exception {
+        this.instanceName = instanceName;
+        this.requestorName = requestorName;
         this.authConf = authConf;
-        this.authProvider = createAuthProvider(instanceName);
+        this.authProvider = createAuthProvider();
     }
 
     /**
@@ -62,7 +91,7 @@ public class KafkaAuthBinding {
      *
      * @return {@link AuthorizationProvider}
      */
-    private AuthorizationProvider createAuthProvider(String instanceName) throws Exception {
+    private AuthorizationProvider createAuthProvider() throws Exception {
         /**
          * get the authProvider class, policyEngine class, providerBackend class and resources from the
          * kafkaAuthConf config
@@ -127,6 +156,324 @@ public class KafkaAuthBinding {
         return authProvider.hasAccess(new Subject(getName(session)), authorizables, actions, ActiveRoleSet.ALL);
     }
 
+    public void addAcls(scala.collection.immutable.Set<Acl> acls, final Resource resource) {
+        verifyAcls(acls);
+        LOG.info("Adding Acl: acl->" + acls + " resource->" + resource);
+
+        final Iterator<Acl> iterator = acls.iterator();
+        while (iterator.hasNext()) {
+            final Acl acl = iterator.next();
+            final String role = getRole(acl);
+            if (!roleExists(role)) {
+                throw new KafkaException("Can not add Acl for non-existent Role: " + role);
+            }
+            execute(new Command<Void>() {
+                @Override
+                public Void run(SentryGenericServiceClient client) throws Exception {
+                    client.grantPrivilege(
+                        requestorName, role, COMPONENT_NAME, toTSentryPrivilege(acl, resource));
+                    return null;
+                }
+            });
+        }
+    }
+
+    public boolean removeAcls(scala.collection.immutable.Set<Acl> acls, final Resource resource) {
+        verifyAcls(acls);
+        LOG.info("Removing Acl: acl->" + acls + " resource->" + resource);
+        final Iterator<Acl> iterator = acls.iterator();
+        while (iterator.hasNext()) {
+            final Acl acl = iterator.next();
+            final String role = getRole(acl);
+            try {
+                execute(new Command<Void>() {
+                    @Override
+                    public Void run(SentryGenericServiceClient client) throws Exception {
+                        client.dropPrivilege(
+                                requestorName, role, toTSentryPrivilege(acl, resource));
+                        return null;
+                    }
+                });
+            } catch (KafkaException kex) {
+                LOG.error("Failed to remove acls.", kex);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public void addRole(final String role) {
+        if (roleExists(role)) {
+            throw new KafkaException("Can not create an existing role, " + role + ", again.");
+        }
+
+        execute(new Command<Void>() {
+            @Override
+            public Void run(SentryGenericServiceClient client) throws Exception {
+                client.createRole(
+                    requestorName, role, COMPONENT_NAME);
+                return null;
+            }
+        });
+    }
+
+    public void addRoleToGroups(final String role, final java.util.Set<String> groups) {
+        execute(new Command<Void>() {
+            @Override
+            public Void run(SentryGenericServiceClient client) throws Exception {
+                client.addRoleToGroups(
+                    requestorName, role, COMPONENT_NAME, groups);
+                return null;
+            }
+        });
+    }
+
+    public void dropAllRoles() {
+        final List<String> roles = getAllRoles();
+        execute(new Command<Void>() {
+            @Override
+            public Void run(SentryGenericServiceClient client) throws Exception {
+                for (String role : roles) {
+                    client.dropRole(requestorName, role, COMPONENT_NAME);
+                }
+                return null;
+            }
+        });
+    }
+
+    private List<String> getRolesforGroup(final String groupName) {
+        final List<String> roles = new ArrayList<>();
+        execute(new Command<Void>() {
+            @Override
+            public Void run(SentryGenericServiceClient client) throws Exception {
+                for (TSentryRole tSentryRole : client.listRolesByGroupName(requestorName, groupName, COMPONENT_NAME)) {
+                    roles.add(tSentryRole.getRoleName());
+                }
+                return null;
+            }
+        });
+
+        return roles;
+    }
+
+    private SentryGenericServiceClient getClient() throws Exception {
+        return SentryGenericServiceClientFactory.create(this.authConf);
+    }
+
+    public boolean removeAcls(final Resource resource) {
+        LOG.info("Removing Acls for Resource: resource->" + resource);
+        List<String> roles = getAllRoles();
+        final List<TSentryPrivilege> tSentryPrivileges = getAllPrivileges(roles);
+        try {
+            execute(new Command<Void>() {
+                @Override
+                public Void run(SentryGenericServiceClient client) throws Exception {
+                    for (TSentryPrivilege tSentryPrivilege : tSentryPrivileges) {
+                        if (isPrivilegeForResource(tSentryPrivilege, resource)) {
+                            client.dropPrivilege(
+                                    requestorName, COMPONENT_NAME, tSentryPrivilege);
+                        }
+                    }
+                    return null;
+                }
+            });
+        } catch (KafkaException kex) {
+            LOG.error("Failed to remove acls.", kex);
+            return false;
+        }
+
+        return true;
+    }
+
+    public scala.collection.immutable.Set<Acl> getAcls(final Resource resource) {
+        final Option<scala.collection.immutable.Set<Acl>> acls = getAcls().get(resource);
+        if (acls.nonEmpty())
+            return acls.get();
+        return new scala.collection.immutable.HashSet<Acl>();
+    }
+
+    public Map<Resource, scala.collection.immutable.Set<Acl>> getAcls(KafkaPrincipal principal) {
+        if (principal.getPrincipalType().toLowerCase().equals("group")) {
+            List<String> roles = getRolesforGroup(principal.getName());
+            return getAclsForRoles(roles);
+        } else {
+            LOG.info("Did not recognize Principal type: " + principal.getPrincipalType() + ". Returning Acls for all principals.");
+            return getAcls();
+        }
+    }
+
+    public Map<Resource, scala.collection.immutable.Set<Acl>> getAcls() {
+        final List<String> roles = getAllRoles();
+        return getAclsForRoles(roles);
+    }
+
+    /**
+     * A Command is a closure used to pass a block of code from individual
+     * functions to execute, which centralizes connection error
+     * handling. Command is parameterized on the return type of the function.
+     */
+    private interface Command<T> {
+        T run(SentryGenericServiceClient client) throws Exception;
+    }
+
+    private <T> T execute(Command<T> cmd) throws KafkaException {
+        SentryGenericServiceClient client = null;
+        try {
+            client = getClient();
+            return cmd.run(client);
+        } catch (SentryUserException ex) {
+            String msg = "Unable to excute command on sentry server: " + ex.getMessage();
+            LOG.error(msg, ex);
+            throw new KafkaException(msg, ex);
+        } catch (Exception ex) {
+            String msg = "Unable to obtain client:" + ex.getMessage();
+            LOG.error(msg, ex);
+            throw new KafkaException(msg, ex);
+        } finally {
+            if (client != null) {
+                client.close();
+            }
+        }
+    }
+
+    private TSentryPrivilege toTSentryPrivilege(Acl acl, Resource resource) {
+        final List<Authorizable> authorizables = ConvertUtil.convertResourceToAuthorizable(acl.host(), resource);
+        final List<TAuthorizable> tAuthorizables = new ArrayList<>();
+        for (Authorizable authorizable : authorizables) {
+            tAuthorizables.add(new TAuthorizable(authorizable.getTypeName(), authorizable.getName()));
+        }
+        TSentryPrivilege tSentryPrivilege = new TSentryPrivilege(COMPONENT_NAME, instanceName, tAuthorizables, acl.operation().name());
+        return tSentryPrivilege;
+    }
+
+    private String getRole(Acl acl) {
+        return acl.principal().getName();
+    }
+
+    private boolean isPrivilegeForResource(TSentryPrivilege tSentryPrivilege, Resource resource) {
+        final java.util.Iterator<TAuthorizable> authorizablesIterator = tSentryPrivilege.getAuthorizablesIterator();
+        while (authorizablesIterator.hasNext()) {
+            TAuthorizable tAuthorizable = authorizablesIterator.next();
+            if (tAuthorizable.getType().equals(resource.resourceType().name())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private List<TSentryPrivilege> getAllPrivileges(final List<String> roles) {
+        final List<TSentryPrivilege> tSentryPrivileges = new ArrayList<>();
+        execute(new Command<Void>() {
+            @Override
+            public Void run(SentryGenericServiceClient client) throws Exception {
+                for (String role : roles) {
+                    tSentryPrivileges.addAll(client.listPrivilegesByRoleName(
+                        requestorName, role, COMPONENT_NAME, instanceName));
+                }
+                return null;
+            }
+        });
+
+        return tSentryPrivileges;
+    }
+
+    private List<String> getAllRoles() {
+        final List<String> roles = new ArrayList<>();
+        execute(new Command<Void>() {
+            @Override
+            public Void run(SentryGenericServiceClient client) throws Exception {
+                for (TSentryRole tSentryRole : client.listAllRoles(requestorName, COMPONENT_NAME)) {
+                    roles.add(tSentryRole.getRoleName());
+                }
+                return null;
+            }
+        });
+
+        return roles;
+    }
+
+    private Map<Resource, scala.collection.immutable.Set<Acl>> getAclsForRoles(final List<String> roles) {
+        return scala.collection.JavaConverters.mapAsScalaMapConverter(
+                rolePrivilegesToResourceAcls(getRoleToPrivileges(roles)))
+                .asScala().toMap(Predef.<Tuple2<Resource, scala.collection.immutable.Set<Acl>>>conforms());
+    }
+
+    private java.util.Map<Resource, scala.collection.immutable.Set<Acl>> rolePrivilegesToResourceAcls(java.util.Map<String, scala.collection.immutable.Set<TSentryPrivilege>> rolePrivilegesMap) {
+        final java.util.Map<Resource, scala.collection.immutable.Set<Acl>> resourceAclsMap = new HashMap<>();
+        for (String role : rolePrivilegesMap.keySet()) {
+            scala.collection.immutable.Set<TSentryPrivilege> privileges = rolePrivilegesMap.get(role);
+            final Iterator<TSentryPrivilege> iterator = privileges.iterator();
+            while (iterator.hasNext()) {
+                TSentryPrivilege privilege = iterator.next();
+                final List<TAuthorizable> authorizables = privilege.getAuthorizables();
+                String host = null;
+                String operation = privilege.getAction();
+                for (TAuthorizable tAuthorizable : authorizables) {
+                    if (tAuthorizable.getType().equals(KafkaAuthorizable.AuthorizableType.HOST.name())) {
+                        host = tAuthorizable.getName();
+                    } else {
+                        Resource resource = new Resource(ResourceType$.MODULE$.fromString(tAuthorizable.getType()), tAuthorizable.getName());
+                        if (operation.equals("*")) {
+                            operation = "All";
+                        }
+                        Acl acl = new Acl(new KafkaPrincipal("role", role), Allow$.MODULE$, host, Operation$.MODULE$.fromString(operation));
+                        Set<Acl> newAclsJava = new HashSet<Acl>();
+                        newAclsJava.add(acl);
+                        addExistingAclsForResource(resourceAclsMap, resource, newAclsJava);
+                        final scala.collection.mutable.Set<Acl> aclScala = JavaConversions.asScalaSet(newAclsJava);
+                        resourceAclsMap.put(resource, aclScala.<Acl>toSet());
+                    }
+                }
+            }
+        }
+
+        return resourceAclsMap;
+    }
+
+    private java.util.Map<String, scala.collection.immutable.Set<TSentryPrivilege>> getRoleToPrivileges(final List<String> roles) {
+        final java.util.Map<String, scala.collection.immutable.Set<TSentryPrivilege>> rolePrivilegesMap = new HashMap<>();
+        execute(new Command<Void>() {
+            @Override
+            public Void run(SentryGenericServiceClient client) throws Exception {
+                for (String role : roles) {
+                    final Set<TSentryPrivilege> rolePrivileges = client.listPrivilegesByRoleName(
+                        requestorName, role, COMPONENT_NAME, instanceName);
+                    final scala.collection.immutable.Set<TSentryPrivilege> rolePrivilegesScala =
+                        scala.collection.JavaConverters.asScalaSetConverter(rolePrivileges).asScala().toSet();
+                    rolePrivilegesMap.put(role, rolePrivilegesScala);
+                }
+                return null;
+            }
+        });
+
+        return rolePrivilegesMap;
+    }
+
+    private void addExistingAclsForResource(java.util.Map<Resource, scala.collection.immutable.Set<Acl>> resourceAclsMap, Resource resource, java.util.Set<Acl> newAclsJava) {
+        final scala.collection.immutable.Set<Acl> existingAcls = resourceAclsMap.get(resource);
+        if (existingAcls != null) {
+            final Iterator<Acl> aclsIter = existingAcls.iterator();
+            while (aclsIter.hasNext()) {
+                Acl curAcl = aclsIter.next();
+                newAclsJava.add(curAcl);
+            }
+        }
+    }
+
+    private boolean roleExists(String role) {
+        return getAllRoles().contains(role);
+    }
+
+    private void verifyAcls(scala.collection.immutable.Set<Acl> acls) {
+        final Iterator<Acl> iterator = acls.iterator();
+        while (iterator.hasNext()) {
+            final Acl acl = iterator.next();
+            assert acl.principal().getPrincipalType().toLowerCase().equals("role") : "Only Acls with KafkaPrincipal of type \"role;\" is supported.";
+            assert acl.permissionType().name().equals(Allow.name()) : "Only Acls with Permission of type \"Allow\" is supported.";
+        }
+    }
+
     /*
     * For SSL session's Kafka creates user names with "CN=" prepended to the user name.
     * "=" is used as splitter by Sentry to parse key value pairs and so it is required to strip off "CN=".
@@ -136,13 +483,13 @@ public class KafkaAuthBinding {
         int start = principalName.indexOf("CN=");
         if (start >= 0) {
             String tmpName, name = "";
-                tmpName = principalName.substring(start + 3);
-                int end = tmpName.indexOf(",");
-                if (end > 0) {
-                    name = tmpName.substring(0, end);
-                } else {
-                    name = tmpName;
-                }
+            tmpName = principalName.substring(start + 3);
+            int end = tmpName.indexOf(",");
+            if (end > 0) {
+                name = tmpName.substring(0, end);
+            } else {
+                name = tmpName;
+            }
             return name;
         } else {
             return principalName;

@@ -31,6 +31,7 @@ limitations under the License.
     <module>sentry-tests-hive</module>
     <module>sentry-tests-solr</module>
     <module>sentry-tests-sqoop</module>
+    <module>sentry-tests-kafka</module>
   </modules>
 
 </project>

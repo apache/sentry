@@ -31,6 +31,7 @@ import org.apache.sentry.core.common.Action;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.BitFieldAction;
 import org.apache.sentry.core.common.BitFieldActionFactory;
+import org.apache.sentry.core.model.kafka.KafkaActionFactory;
 import org.apache.sentry.core.model.search.SearchActionFactory;
 import org.apache.sentry.core.model.sqoop.SqoopActionFactory;
 import org.apache.sentry.provider.db.generic.service.persistent.PrivilegeObject.Builder;
@@ -51,6 +52,7 @@ public class PrivilegeOperatePersistence {
   static{
     actionFactories.put("solr", new SearchActionFactory());
     actionFactories.put("sqoop", new SqoopActionFactory());
+    actionFactories.put("kafka", KafkaActionFactory.getInstance());
   }
 
   public boolean checkPrivilegeOption(Set<MSentryRole> roles, PrivilegeObject privilege, PersistenceManager pm) {

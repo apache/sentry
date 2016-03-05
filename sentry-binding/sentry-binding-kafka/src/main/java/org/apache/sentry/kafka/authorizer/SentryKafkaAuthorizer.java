@@ -27,6 +27,7 @@ import org.apache.sentry.kafka.binding.KafkaAuthBindingSingleton;
 import org.apache.sentry.kafka.conf.KafkaAuthConf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import scala.collection.immutable.Map;
 import scala.collection.immutable.Set;
 
@@ -36,15 +37,15 @@ import java.util.List;
 
 public class SentryKafkaAuthorizer implements Authorizer {
 
-  private static Logger LOG =
-      LoggerFactory.getLogger(SentryKafkaAuthorizer.class);
+  private final static Logger LOG = LoggerFactory.getLogger(SentryKafkaAuthorizer.class);
+  private final static String INSTANCE_NAME = KafkaAuthConf.AuthzConfVars.getDefault(KafkaAuthConf.KAFKA_SERVICE_INSTANCE_NAME);
 
-  KafkaAuthBinding binding;
-  KafkaAuthConf kafkaAuthConf;
+  private KafkaAuthBinding binding;
+  private String kafkaServiceInstanceName = INSTANCE_NAME;
+  private String requestorName = KafkaAuthConf.AuthzConfVars.getDefault(KafkaAuthConf.KAFKA_SERVICE_USER_NAME);
 
   String sentry_site = null;
   List<KafkaPrincipal> super_users = null;
-  String kafkaServiceInstanceName = KafkaAuthConf.AuthzConfVars.getDefault(KafkaAuthConf.KAFKA_SERVICE_INSTANCE_NAME);
 
   public SentryKafkaAuthorizer() {
   }
@@ -60,36 +61,36 @@ public class SentryKafkaAuthorizer implements Authorizer {
     }
     LOG.debug("User: " + user + " is not a SuperUser");
     return binding.authorize(session, operation, resource);
-  }
+}
 
   @Override
   public void addAcls(Set<Acl> acls, final Resource resource) {
-    throw new UnsupportedOperationException("Please use Sentry CLI to perform this action.");
+    binding.addAcls(acls, resource);
   }
 
   @Override
   public boolean removeAcls(Set<Acl> acls, final Resource resource) {
-    throw new UnsupportedOperationException("Please use Sentry CLI to perform this action.");
+    return binding.removeAcls(acls, resource);
   }
 
   @Override
   public boolean removeAcls(final Resource resource) {
-    throw new UnsupportedOperationException("Please use Sentry CLI to perform this action.");
+    return binding.removeAcls(resource);
   }
 
   @Override
   public Set<Acl> getAcls(Resource resource) {
-    throw new UnsupportedOperationException("Please use Sentry CLI to perform this action.");
+    return binding.getAcls(resource);
   }
 
   @Override
   public Map<Resource, Set<Acl>> getAcls(KafkaPrincipal principal) {
-    throw new UnsupportedOperationException("Please use Sentry CLI to perform this action.");
+    return binding.getAcls(principal);
   }
 
   @Override
   public Map<Resource, Set<Acl>> getAcls() {
-    throw new UnsupportedOperationException("Please use Sentry CLI to perform this action.");
+    return binding.getAcls();
   }
 
   @Override
@@ -110,11 +111,14 @@ public class SentryKafkaAuthorizer implements Authorizer {
     if (kafkaServiceInstanceName != null) {
       this.kafkaServiceInstanceName = kafkaServiceInstanceName.toString();
     }
+    final Object kafkaServiceUserName = configs.get(KafkaAuthConf.KAFKA_SERVICE_USER_NAME);
+    if (kafkaServiceUserName != null) {
+      this.requestorName = kafkaServiceUserName.toString();
+    }
     LOG.info("Configuring Sentry KafkaAuthorizer: " + sentry_site);
     final KafkaAuthBindingSingleton instance = KafkaAuthBindingSingleton.getInstance();
-    instance.configure(this.kafkaServiceInstanceName, sentry_site);
+    instance.configure(this.kafkaServiceInstanceName, this.requestorName, sentry_site);
     this.binding = instance.getAuthBinding();
-    this.kafkaAuthConf = instance.getKafkaAuthConf();
   }
 
   private void getSuperUsers(String kafkaSuperUsers) {
@@ -138,5 +142,29 @@ public class SentryKafkaAuthorizer implements Authorizer {
       }
     }
     return false;
+  }
+
+  /**
+   * This is not used by Kafka, however as role is a Sentry centric entity having some mean to perform role CRUD will be required.
+   * This method will be used by a Sentry-Kafka cli that will allow users to perform CRUD of roles and adding roles to groups.
+   */
+  public void addRole(String role) {
+    binding.addRole(role);
+  }
+
+  /**
+   * This is not used by Kafka, however as role is a Sentry centric entity having some mean to add role to groups will be required.
+   * This method will be used by a Sentry-Kafka cli that will allow users to perform CRUD of roles and adding roles to groups.
+   */
+  public void addRoleToGroups(String role, java.util.Set<String> groups) {
+    binding.addRoleToGroups(role, groups);
+  }
+
+  /**
+   * This is not used by Kafka, however as role is a Sentry centric entity having some mean to perform role CRUD will be required.
+   * This method will be used by a Sentry-Kafka cli that will allow users to perform CRUD of roles and adding roles to groups.
+   */
+  public void dropAllRoles() {
+    binding.dropAllRoles();
   }
 }

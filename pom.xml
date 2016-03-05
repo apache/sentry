@@ -842,6 +842,9 @@ limitations under the License.
                   <exclude>**/metastore_db/</exclude>
                   <exclude>**/*.rej</exclude>
                   <exclude>**/thirdparty/</exclude>
+                  <!-- Exclude SSL .crtand .jks files -->
+                  <exclude>**/*.crt</exclude>
+                  <exclude>**/*.jks</exclude>
                 </excludes>
               </configuration>
             </execution>
