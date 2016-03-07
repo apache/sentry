@@ -195,7 +195,9 @@ public class SentryIndexAuthorizationSingletonTest extends SentryTestBase {
         String localName = sentryInstance.getUserName(localRequest);
         assertEquals(superUser, localName);
       } finally {
-        if (localRequest != null) localRequest.close();
+        if (localRequest != null) {
+          localRequest.close();
+        }
       }
 
       // null userName
@@ -210,7 +212,9 @@ public class SentryIndexAuthorizationSingletonTest extends SentryTestBase {
       String returnedName = sentryInstance.getUserName(sqr);
       assertEquals(userName, returnedName);
     } finally {
-      if (request != null) request.close();
+      if (request != null) {
+        request.close();
+      }
     }
   }
 

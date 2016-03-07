@@ -25,8 +25,6 @@ import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.policy.common.PrivilegeFactory;
 import org.apache.sentry.policy.common.PolicyEngine;
-import org.apache.sentry.provider.common.GroupMappingService;
-import org.apache.sentry.provider.common.ResourceAuthorizationProvider;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableSet;
@@ -66,7 +64,6 @@ public class TestGetGroupMapping {
       @Override
       public void validatePolicy(boolean strictValidation)
           throws SentryConfigurationException {
-        return;
       }
 
       @Override

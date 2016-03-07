@@ -19,7 +19,6 @@ package org.apache.solr.handler.component;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.sentry.SentryIndexAuthorizationSingleton;
 import org.apache.solr.sentry.SentryTestBase;
 import org.apache.solr.sentry.SentrySingletonTestInstance;

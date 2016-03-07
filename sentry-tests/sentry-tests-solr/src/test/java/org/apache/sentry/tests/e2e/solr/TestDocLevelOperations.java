@@ -16,8 +16,6 @@
  */
 package org.apache.sentry.tests.e2e.solr;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.junit.After;
 import org.junit.Before;
 import static org.junit.Assert.assertEquals;
@@ -33,7 +31,6 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 
 import java.io.File;
 import java.net.URLEncoder;
@@ -46,8 +43,6 @@ import org.junit.Test;
  * Test the document-level security features
  */
 public class TestDocLevelOperations extends AbstractSolrSentryTestBase {
-  private static final Logger LOG = LoggerFactory
-    .getLogger(TestDocLevelOperations.class);
   private static final String AUTH_FIELD = "sentry_auth";
   private static final int NUM_DOCS = 100;
   private static final int EXTRA_AUTH_FIELDS = 2;
@@ -114,7 +109,7 @@ public class TestDocLevelOperations extends AbstractSolrSentryTestBase {
 
     CloudSolrServer server = getCloudSolrServer(collectionName);
     try {
-      DocLevelGenerator generator = new DocLevelGenerator(collectionName, AUTH_FIELD);
+      DocLevelGenerator generator = new DocLevelGenerator(AUTH_FIELD);
       generator.generateDocs(server, NUM_DOCS, "junit_role", "admin_role", EXTRA_AUTH_FIELDS);
 
       querySimple(new QueryRequest(new SolrQuery("*:*")), server, checkNonAdminUsers);
@@ -169,20 +164,20 @@ public class TestDocLevelOperations extends AbstractSolrSentryTestBase {
         // test filter queries work as AND -- i.e. user can't avoid doc-level
         // checks by prefixing their own filterQuery
         setAuthenticationUser("junit");
-        String fq = URLEncoder.encode(" {!raw f=" + AUTH_FIELD + " v=docLevel_role}");
+        String fq = URLEncoder.encode(" {!raw f=" + AUTH_FIELD + " v=docLevel_role}", "UTF-8");
         String path = "/" + collectionName + "/select?q=*:*&fq="+fq;
         String retValue = makeHttpRequest(server, "GET", path, null, null);
         assertTrue(retValue.contains("numFound=\"" + NUM_DOCS / 2 + "\" "));
 
         // test that user can't inject an "OR" into the query
         final String syntaxErrorMsg = "org.apache.solr.search.SyntaxError: Cannot parse";
-        fq = URLEncoder.encode(" {!raw f=" + AUTH_FIELD + " v=docLevel_role} OR ");
+        fq = URLEncoder.encode(" {!raw f=" + AUTH_FIELD + " v=docLevel_role} OR ", "UTF-8");
         path = "/" + collectionName + "/select?q=*:*&fq="+fq;
         retValue = makeHttpRequest(server, "GET", path, null, null);
         assertTrue(retValue.contains(syntaxErrorMsg));
 
         // same test, prefix OR this time
-        fq = URLEncoder.encode(" OR {!raw f=" + AUTH_FIELD + " v=docLevel_role}");
+        fq = URLEncoder.encode(" OR {!raw f=" + AUTH_FIELD + " v=docLevel_role}", "UTF-8");
         path = "/" + collectionName + "/select?q=*:*&fq="+fq;
         retValue = makeHttpRequest(server, "GET", path, null, null);
         assertTrue(retValue.contains(syntaxErrorMsg));
@@ -229,7 +224,9 @@ public class TestDocLevelOperations extends AbstractSolrSentryTestBase {
         } if (i % allRolesFactor == 0) {
           doc.addField(AUTH_FIELD, allRolesToken);
           ++totalAllRolesAdded;
-          if (!addedViaJunit) ++totalOnlyAllRolesAdded;
+          if (!addedViaJunit) {
+            ++totalOnlyAllRolesAdded;
+          }
         }
         docs.add(doc);
       }

@@ -18,16 +18,10 @@
 
 package org.apache.sentry.provider.db.service.persistent;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertFalse;
-import static junit.framework.Assert.assertTrue;
-import static junit.framework.Assert.fail;
-
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
@@ -60,7 +54,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 
-public class TestSentryStore {
+public class TestSentryStore extends junit.framework.Assert {
 
   private static File dataDir;
   private static SentryStore sentryStore;
@@ -535,7 +529,7 @@ public class TestSentryStore {
     privilegeTable1.setTableName(table1);
     privilegeTable1.setAction(AccessConstants.ALL);
     privilegeTable1.setCreateTime(System.currentTimeMillis());
-    TSentryPrivilege privilegeTable2 = privilegeTable1.deepCopy();;
+    TSentryPrivilege privilegeTable2 = privilegeTable1.deepCopy();
     privilegeTable2.setTableName(table2);
 
     // Grant ALL on table1 and table2
@@ -614,7 +608,7 @@ public class TestSentryStore {
     privilegeCol1.setColumnName(column1);
     privilegeCol1.setAction(AccessConstants.ALL);
     privilegeCol1.setCreateTime(System.currentTimeMillis());
-    TSentryPrivilege privilegeCol2 = privilegeCol1.deepCopy();;
+    TSentryPrivilege privilegeCol2 = privilegeCol1.deepCopy();
     privilegeCol2.setColumnName(column2);
 
     // Grant ALL on column1 and column2
@@ -1566,17 +1560,17 @@ public class TestSentryStore {
 
     String grantor = "g1";
 
-    assertEquals(new Long(0), sentryStore.getPrivilegeCountGauge().getValue());
+    assertEquals(Long.valueOf(0), sentryStore.getPrivilegeCountGauge().getValue());
 
     sentryStore.alterSentryRoleGrantPrivilege(grantor, role1, privilege);
-    assertEquals(new Long(1), sentryStore.getPrivilegeCountGauge().getValue());
+    assertEquals(Long.valueOf(1), sentryStore.getPrivilegeCountGauge().getValue());
 
     sentryStore.alterSentryRoleGrantPrivilege(grantor, role2, privilege);
-    assertEquals(new Long(1), sentryStore.getPrivilegeCountGauge().getValue());
+    assertEquals(Long.valueOf(1), sentryStore.getPrivilegeCountGauge().getValue());
 
     privilege.setTableName("tb2");
     sentryStore.alterSentryRoleGrantPrivilege(grantor, role2, privilege);
-    assertEquals(new Long(2), sentryStore.getPrivilegeCountGauge().getValue());
+    assertEquals(Long.valueOf(2), sentryStore.getPrivilegeCountGauge().getValue());
   }
 
   @Test
@@ -1595,14 +1589,14 @@ public class TestSentryStore {
     String grantor = "g1";
 
     sentryStore.alterSentryRoleAddGroups(grantor, role1, groups);
-    assertEquals(new Long(1), sentryStore.getGroupCountGauge().getValue());
+    assertEquals(Long.valueOf(1), sentryStore.getGroupCountGauge().getValue());
 
     sentryStore.alterSentryRoleAddGroups(grantor, role2, groups);
-    assertEquals(new Long(1), sentryStore.getGroupCountGauge().getValue());
+    assertEquals(Long.valueOf(1), sentryStore.getGroupCountGauge().getValue());
 
     groups.add(new TSentryGroup("group2"));
     sentryStore.alterSentryRoleAddGroups(grantor, role2, groups);
-    assertEquals(new Long(2), sentryStore.getGroupCountGauge().getValue());
+    assertEquals(Long.valueOf(2), sentryStore.getGroupCountGauge().getValue());
 
   }
 

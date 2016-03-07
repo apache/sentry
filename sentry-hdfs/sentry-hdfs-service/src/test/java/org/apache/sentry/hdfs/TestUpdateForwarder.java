@@ -26,8 +26,6 @@ import java.util.concurrent.locks.ReadWriteLock;
 import junit.framework.Assert;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.hdfs.UpdateForwarder;
-import org.apache.sentry.hdfs.Updateable;
 import org.apache.sentry.hdfs.UpdateForwarder.ExternalImageRetriever;
 import org.apache.sentry.hdfs.Updateable.Update;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;

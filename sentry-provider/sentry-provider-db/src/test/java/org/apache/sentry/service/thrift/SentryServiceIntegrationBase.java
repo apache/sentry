@@ -355,7 +355,7 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
   }
 
   protected interface TestOperation {
-    public void runTestAsSubject() throws Exception;
+    void runTestAsSubject() throws Exception;
   }
 
 }

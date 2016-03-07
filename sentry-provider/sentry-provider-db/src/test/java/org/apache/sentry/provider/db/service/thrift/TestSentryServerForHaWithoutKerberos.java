@@ -22,8 +22,6 @@ import static junit.framework.Assert.assertEquals;
 import java.util.HashSet;
 import java.util.Set;
 
-import junit.framework.Assert;
-
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.model.db.Database;
@@ -107,18 +105,18 @@ public class TestSentryServerForHaWithoutKerberos extends SentryServiceIntegrati
     assertEquals("Privilege not assigned to role2 !!", 1, listPrivilegesByRoleName.size());
 
     Set<String> listPrivilegesForProvider = client.listPrivilegesForProvider(Sets.newHashSet(group1, group2), ActiveRoleSet.ALL, new Server("server"), new Database("db2"));
-    Assert.assertEquals("Privilege not correctly assigned to roles !!",
+    assertEquals("Privilege not correctly assigned to roles !!",
         Sets.newHashSet("server=server->db=db2->table=table4->action=all", "server=server->db=db2->table=table3->action=all"),
         listPrivilegesForProvider);
 
     listPrivilegesForProvider = client.listPrivilegesForProvider(Sets.newHashSet(group1, group2), ActiveRoleSet.ALL, new Server("server"), new Database("db3"));
-    Assert.assertEquals("Privilege not correctly assigned to roles !!", Sets.newHashSet("server=server->db=db3->table=table5->action=all"), listPrivilegesForProvider);
+    assertEquals("Privilege not correctly assigned to roles !!", Sets.newHashSet("server=server->db=db3->table=table5->action=all"), listPrivilegesForProvider);
 
     listPrivilegesForProvider = client.listPrivilegesForProvider(Sets.newHashSet(group1, group2), new ActiveRoleSet(Sets.newHashSet(roleName1)), new Server("server"), new Database("db3"));
-    Assert.assertEquals("Privilege not correctly assigned to roles !!", Sets.newHashSet("server=+"), listPrivilegesForProvider);
+    assertEquals("Privilege not correctly assigned to roles !!", Sets.newHashSet("server=+"), listPrivilegesForProvider);
 
     listPrivilegesForProvider = client.listPrivilegesForProvider(Sets.newHashSet(group1, group2), new ActiveRoleSet(Sets.newHashSet(roleName1)), new Server("server1"));
-    Assert.assertEquals("Privilege not correctly assigned to roles !!", new HashSet<String>(), listPrivilegesForProvider);
+    assertEquals("Privilege not correctly assigned to roles !!", new HashSet<String>(), listPrivilegesForProvider);
   }
 
 

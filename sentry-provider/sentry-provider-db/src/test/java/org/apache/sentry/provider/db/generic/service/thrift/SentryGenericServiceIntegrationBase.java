@@ -39,7 +39,6 @@ public class SentryGenericServiceIntegrationBase extends SentryServiceIntegratio
   public void connectToSentryService() throws Exception {
     // The client should already be logged in when running in solr
     // therefore we must manually login in the integration tests
-    final SentryGenericServiceClientFactory clientFactory;
     if (kerberos) {
       this.client = Subject.doAs(clientSubject, new PrivilegedExceptionAction<SentryGenericServiceClient>() {
         @Override

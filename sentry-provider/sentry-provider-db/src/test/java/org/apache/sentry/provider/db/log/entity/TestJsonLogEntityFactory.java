@@ -126,10 +126,8 @@ public class TestJsonLogEntityFactory {
     Set<JsonLogEntity> amles =  JsonLogEntityFactory
         .getInstance().createJsonLogEntitys(request, response, conf);
     assertEquals(amles.size(),1);
-    for (JsonLogEntity amle1 : amles) {
-      amle = (DBAuditMetadataLogEntity) amle1;
-      break;
-    }
+    amle = (DBAuditMetadataLogEntity) amles.iterator().next();
+
     assertCommon(amle, Constants.TRUE, Constants.OPERATION_GRANT_PRIVILEGE,
         "GRANT ALL ON DATABASE testDB TO ROLE testRole", TEST_DATABASE_NAME,
         null, null, Constants.OBJECT_TYPE_PRINCIPAL);
@@ -143,10 +141,8 @@ public class TestJsonLogEntityFactory {
     amles =  JsonLogEntityFactory.getInstance()
         .createJsonLogEntitys(request, response, conf);
     assertEquals(amles.size(),1);
-    for (JsonLogEntity amle1 : amles) {
-      amle = (DBAuditMetadataLogEntity) amle1;
-      break;
-    }
+    amle = (DBAuditMetadataLogEntity) amles.iterator().next();
+
     assertCommon(amle, Constants.FALSE, Constants.OPERATION_GRANT_PRIVILEGE,
         "GRANT ALL ON TABLE testTable TO ROLE testRole", null, TEST_TABLE_NAME,
         null, Constants.OBJECT_TYPE_PRINCIPAL);
@@ -169,10 +165,8 @@ public class TestJsonLogEntityFactory {
     Set<JsonLogEntity> amles =  JsonLogEntityFactory
         .getInstance().createJsonLogEntitys(request, response, conf);
     assertEquals(amles.size(),1);
-    for (JsonLogEntity amle1 : amles) {
-      amle = (DBAuditMetadataLogEntity) amle1;
-      break;
-    }
+    amle = (DBAuditMetadataLogEntity) amles.iterator().next();
+
     assertCommon(amle, Constants.TRUE, Constants.OPERATION_REVOKE_PRIVILEGE,
         "REVOKE ALL ON DATABASE testDB FROM ROLE testRole", TEST_DATABASE_NAME,
         null, null, Constants.OBJECT_TYPE_PRINCIPAL);
@@ -186,10 +180,8 @@ public class TestJsonLogEntityFactory {
     amles =  JsonLogEntityFactory.getInstance()
         .createJsonLogEntitys(request, response, conf);
     assertEquals(amles.size(),1);
-    for (JsonLogEntity amle1 : amles) {
-      amle = (DBAuditMetadataLogEntity) amle1;
-      break;
-    }
+    amle = (DBAuditMetadataLogEntity) amles.iterator().next();
+
     assertCommon(amle, Constants.FALSE, Constants.OPERATION_REVOKE_PRIVILEGE,
         "REVOKE ALL ON TABLE testTable FROM ROLE testRole", null,
         TEST_TABLE_NAME, null, Constants.OBJECT_TYPE_PRINCIPAL);

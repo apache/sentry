@@ -66,7 +66,6 @@ public class TestIndexerAuthorizationProviderGeneralCases {
   private static final Indexer IND_TMP = new Indexer("tmpindexer");
   private static final Indexer IND_PURCHASES_PARTIAL = new Indexer("purchases_partial");
 
-  private static final IndexerModelAction ALL = IndexerModelAction.ALL;
   private static final IndexerModelAction READ = IndexerModelAction.READ;
   private static final IndexerModelAction WRITE = IndexerModelAction.WRITE;
 

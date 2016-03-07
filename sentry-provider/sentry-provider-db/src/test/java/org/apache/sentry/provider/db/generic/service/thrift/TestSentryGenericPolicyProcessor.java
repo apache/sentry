@@ -17,17 +17,13 @@
  */
 package org.apache.sentry.provider.db.generic.service.thrift;
 
-import static junit.framework.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Matchers.anySetOf;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.util.*;
 
-import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.model.search.Collection;
@@ -51,16 +47,17 @@ import org.apache.sentry.service.thrift.Status;
 import org.apache.sentry.service.thrift.TSentryResponseStatus;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import com.google.common.collect.Sets;
 
-public class TestSentryGenericPolicyProcessor {
+public class TestSentryGenericPolicyProcessor extends junit.framework.Assert {
   private static final String ADMIN_GROUP = "admin_group";
   private static final String ADMIN_USER = "admin_user";
   private static final UUID SERVER_UUID = UUID.randomUUID();
   private static final long SEQ_ID = 10000;
 
-  private SentryStoreLayer mockStore = mock(SentryStoreLayer.class);
+  private SentryStoreLayer mockStore = Mockito.mock(SentryStoreLayer.class);
   private SentryGenericPolicyProcessor processor;
 
   @Before
@@ -117,22 +114,22 @@ public class TestSentryGenericPolicyProcessor {
 
   @Test
   public void testAdminOperation() throws Exception {
-    when(mockStore.createRole(anyString(), anyString(), anyString()))
+    Mockito.when(mockStore.createRole(anyString(), anyString(), anyString()))
         .thenReturn(new CommitContext(SERVER_UUID, SEQ_ID));
 
-    when(mockStore.dropRole(anyString(), anyString(), anyString()))
+    Mockito.when(mockStore.dropRole(anyString(), anyString(), anyString()))
         .thenReturn(new CommitContext(SERVER_UUID, SEQ_ID + 1));
 
-    when(mockStore.alterRoleAddGroups(anyString(), anyString(), anySetOf(String.class),anyString()))
+    Mockito.when(mockStore.alterRoleAddGroups(anyString(), anyString(), anySetOf(String.class),anyString()))
         .thenReturn(new CommitContext(SERVER_UUID, SEQ_ID + 2));
 
-    when(mockStore.alterRoleDeleteGroups(anyString(), anyString(),anySetOf(String.class), anyString()))
+    Mockito.when(mockStore.alterRoleDeleteGroups(anyString(), anyString(),anySetOf(String.class), anyString()))
         .thenReturn(new CommitContext(SERVER_UUID, SEQ_ID + 3));
 
-    when(mockStore.dropPrivilege(anyString(), any(PrivilegeObject.class), anyString()))
+    Mockito.when(mockStore.dropPrivilege(anyString(), any(PrivilegeObject.class), anyString()))
         .thenReturn(new CommitContext(SERVER_UUID, SEQ_ID + 4));
 
-    when(mockStore.renamePrivilege(anyString(), anyString(), anyListOf(Authorizable.class),
+    Mockito.when(mockStore.renamePrivilege(anyString(), anyString(), anyListOf(Authorizable.class),
         anyListOf(Authorizable.class), anyString()))
         .thenReturn(new CommitContext(SERVER_UUID, SEQ_ID + 5));
     testOperation(ADMIN_USER, Status.OK);
@@ -140,10 +137,10 @@ public class TestSentryGenericPolicyProcessor {
 
   @Test
   public void testGrantAndRevokePrivilege() throws Exception {
-    when(mockStore.alterRoleGrantPrivilege(anyString(), anyString(), any(PrivilegeObject.class), anyString()))
+    Mockito.when(mockStore.alterRoleGrantPrivilege(anyString(), anyString(), any(PrivilegeObject.class), anyString()))
     .thenReturn(new CommitContext(SERVER_UUID, SEQ_ID + 6));
 
-    when(mockStore.alterRoleRevokePrivilege(anyString(), anyString(),any(PrivilegeObject.class), anyString()))
+    Mockito.when(mockStore.alterRoleRevokePrivilege(anyString(), anyString(),any(PrivilegeObject.class), anyString()))
     .thenReturn(new CommitContext(SERVER_UUID, SEQ_ID + 7));
     setup();
 
@@ -166,33 +163,33 @@ public class TestSentryGenericPolicyProcessor {
   @Test
   public void testOperationWithException() throws Exception {
     String roleName = anyString();
-    when(mockStore.createRole(anyString(), roleName, anyString()))
+    Mockito.when(mockStore.createRole(anyString(), roleName, anyString()))
     .thenThrow(new SentryAlreadyExistsException("Role: " + roleName + " already exists"));
 
     roleName = anyString();
-    when(mockStore.dropRole(anyString(), roleName, anyString()))
+    Mockito.when(mockStore.dropRole(anyString(), roleName, anyString()))
     .thenThrow(new SentryNoSuchObjectException("Role: " + roleName + " doesn't exist"));
 
     roleName = anyString();
-    when(mockStore.alterRoleAddGroups(anyString(), roleName, anySetOf(String.class),anyString()))
+    Mockito.when(mockStore.alterRoleAddGroups(anyString(), roleName, anySetOf(String.class),anyString()))
     .thenThrow(new SentryNoSuchObjectException("Role: " + roleName + " doesn't exist"));
 
     roleName = anyString();
-    when(mockStore.alterRoleDeleteGroups(anyString(), roleName, anySetOf(String.class), anyString()))
+    Mockito.when(mockStore.alterRoleDeleteGroups(anyString(), roleName, anySetOf(String.class), anyString()))
     .thenThrow(new SentryNoSuchObjectException("Role: " + roleName + " doesn't exist"));
 
     roleName = anyString();
-    when(mockStore.alterRoleGrantPrivilege(anyString(), roleName, any(PrivilegeObject.class), anyString()))
+    Mockito.when(mockStore.alterRoleGrantPrivilege(anyString(), roleName, any(PrivilegeObject.class), anyString()))
     .thenThrow(new SentryGrantDeniedException("Role: " + roleName + " is not allowed to do grant"));
 
     roleName = anyString();
-    when(mockStore.alterRoleRevokePrivilege(anyString(), roleName, any(PrivilegeObject.class), anyString()))
+    Mockito.when(mockStore.alterRoleRevokePrivilege(anyString(), roleName, any(PrivilegeObject.class), anyString()))
     .thenThrow(new SentryGrantDeniedException("Role: " + roleName + " is not allowed to do grant"));
 
-    when(mockStore.dropPrivilege(anyString(), any(PrivilegeObject.class), anyString()))
+    Mockito.when(mockStore.dropPrivilege(anyString(), any(PrivilegeObject.class), anyString()))
     .thenThrow(new SentryInvalidInputException("Invalid input privilege object"));
 
-    when(mockStore.renamePrivilege(anyString(), anyString(), anyListOf(Authorizable.class),
+    Mockito.when(mockStore.renamePrivilege(anyString(), anyString(), anyListOf(Authorizable.class),
         anyListOf(Authorizable.class), anyString()))
     .thenThrow(new RuntimeException("Unknown error"));
 
@@ -266,20 +263,20 @@ public class TestSentryGenericPolicyProcessor {
     MSentryRole role = new MSentryRole("r1", 290);
     mSentryGMPrivilege.setRoles(Sets.newHashSet(role));
 
-    when(mockStore.getRolesByGroups(anyString(), anySetOf(String.class)))
+    Mockito.when(mockStore.getRolesByGroups(anyString(), anySetOf(String.class)))
     .thenReturn(Sets.newHashSet(roleName));
 
-    when(mockStore.getPrivilegesByProvider(anyString(), anyString(), anySetOf(String.class),
+    Mockito.when(mockStore.getPrivilegesByProvider(anyString(), anyString(), anySetOf(String.class),
         anySetOf(String.class), anyListOf(Authorizable.class)))
     .thenReturn(Sets.newHashSet(queryPrivilege, updatePrivilege));
 
-    when(mockStore.getGroupsByRoles(anyString(), anySetOf(String.class)))
+    Mockito.when(mockStore.getGroupsByRoles(anyString(), anySetOf(String.class)))
     .thenReturn(Sets.newHashSet(groupName));
 
-    when(mockStore.getPrivilegesByAuthorizable(anyString(), anyString(), anySetOf(String.class), anyListOf(Authorizable.class)))
+    Mockito.when(mockStore.getPrivilegesByAuthorizable(anyString(), anyString(), anySetOf(String.class), anyListOf(Authorizable.class)))
     .thenReturn(Sets.newHashSet(mSentryGMPrivilege));
 
-    when(mockStore.getAllRoleNames())
+    Mockito.when(mockStore.getAllRoleNames())
     .thenReturn(Sets.newHashSet(roleName));
 
     TListSentryPrivilegesRequest request1 = new TListSentryPrivilegesRequest();
@@ -331,7 +328,7 @@ public class TestSentryGenericPolicyProcessor {
   }
 
   public static class MockGroupMapping implements GroupMappingService {
-    public MockGroupMapping(Configuration conf, String resource) {
+    public MockGroupMapping(Configuration conf, String resource) { //NOPMD
     }
     @Override
     public Set<String> getGroups(String user) {

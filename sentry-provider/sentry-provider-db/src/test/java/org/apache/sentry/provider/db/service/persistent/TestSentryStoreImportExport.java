@@ -824,74 +824,90 @@ public class TestSentryStoreImportExport {
     boolean this_present_privilegeScope = true && tSentryPrivilege1.isSetPrivilegeScope();
     boolean that_present_privilegeScope = true && tSentryPrivilege2.isSetPrivilegeScope();
     if (this_present_privilegeScope || that_present_privilegeScope) {
-      if (!(this_present_privilegeScope && that_present_privilegeScope))
+      if (!(this_present_privilegeScope && that_present_privilegeScope)) {
         return false;
+      }
       if (!tSentryPrivilege1.getPrivilegeScope().equalsIgnoreCase(
-          tSentryPrivilege2.getPrivilegeScope()))
+          tSentryPrivilege2.getPrivilegeScope())) {
         return false;
+      }
     }
 
     boolean this_present_serverName = true && tSentryPrivilege1.isSetServerName();
     boolean that_present_serverName = true && tSentryPrivilege2.isSetServerName();
     if (this_present_serverName || that_present_serverName) {
-      if (!(this_present_serverName && that_present_serverName))
+      if (!(this_present_serverName && that_present_serverName)) {
         return false;
-      if (!tSentryPrivilege1.getServerName().equalsIgnoreCase(tSentryPrivilege2.getServerName()))
+      }
+      if (!tSentryPrivilege1.getServerName().equalsIgnoreCase(tSentryPrivilege2.getServerName())) {
         return false;
+      }
     }
 
     boolean this_present_dbName = true && tSentryPrivilege1.isSetDbName();
     boolean that_present_dbName = true && tSentryPrivilege2.isSetDbName();
     if (this_present_dbName || that_present_dbName) {
-      if (!(this_present_dbName && that_present_dbName))
+      if (!(this_present_dbName && that_present_dbName)) {
         return false;
-      if (!tSentryPrivilege1.getDbName().equalsIgnoreCase(tSentryPrivilege2.getDbName()))
+      }
+      if (!tSentryPrivilege1.getDbName().equalsIgnoreCase(tSentryPrivilege2.getDbName())) {
         return false;
+      }
     }
 
     boolean this_present_tableName = true && tSentryPrivilege1.isSetTableName();
     boolean that_present_tableName = true && tSentryPrivilege2.isSetTableName();
     if (this_present_tableName || that_present_tableName) {
-      if (!(this_present_tableName && that_present_tableName))
+      if (!(this_present_tableName && that_present_tableName)) {
         return false;
-      if (!tSentryPrivilege1.getTableName().equalsIgnoreCase(tSentryPrivilege2.getTableName()))
+      }
+      if (!tSentryPrivilege1.getTableName().equalsIgnoreCase(tSentryPrivilege2.getTableName())) {
         return false;
+      }
     }
 
     boolean this_present_URI = true && tSentryPrivilege1.isSetURI();
     boolean that_present_URI = true && tSentryPrivilege2.isSetURI();
     if (this_present_URI || that_present_URI) {
-      if (!(this_present_URI && that_present_URI))
+      if (!(this_present_URI && that_present_URI)) {
         return false;
-      if (!tSentryPrivilege1.getURI().equalsIgnoreCase(tSentryPrivilege2.getURI()))
+      }
+      if (!tSentryPrivilege1.getURI().equalsIgnoreCase(tSentryPrivilege2.getURI())) {
         return false;
+      }
     }
 
     boolean this_present_action = true && tSentryPrivilege1.isSetAction();
     boolean that_present_action = true && tSentryPrivilege2.isSetAction();
     if (this_present_action || that_present_action) {
-      if (!(this_present_action && that_present_action))
+      if (!(this_present_action && that_present_action)) {
         return false;
-      if (!tSentryPrivilege1.getAction().equalsIgnoreCase(tSentryPrivilege2.getAction()))
+      }
+      if (!tSentryPrivilege1.getAction().equalsIgnoreCase(tSentryPrivilege2.getAction())) {
         return false;
+      }
     }
 
     boolean this_present_grantOption = true && tSentryPrivilege1.isSetGrantOption();
     boolean that_present_grantOption = true && tSentryPrivilege2.isSetGrantOption();
     if (this_present_grantOption || that_present_grantOption) {
-      if (!(this_present_grantOption && that_present_grantOption))
+      if (!(this_present_grantOption && that_present_grantOption)) {
         return false;
-      if (!tSentryPrivilege1.getGrantOption().equals(tSentryPrivilege2.getGrantOption()))
+      }
+      if (!tSentryPrivilege1.getGrantOption().equals(tSentryPrivilege2.getGrantOption())) {
         return false;
+      }
     }
 
     boolean this_present_columnName = true && tSentryPrivilege1.isSetColumnName();
     boolean that_present_columnName = true && tSentryPrivilege2.isSetColumnName();
     if (this_present_columnName || that_present_columnName) {
-      if (!(this_present_columnName && that_present_columnName))
+      if (!(this_present_columnName && that_present_columnName)) {
         return false;
-      if (!tSentryPrivilege1.getColumnName().equalsIgnoreCase(tSentryPrivilege2.getColumnName()))
+      }
+      if (!tSentryPrivilege1.getColumnName().equalsIgnoreCase(tSentryPrivilege2.getColumnName())) {
         return false;
+      }
     }
 
     return true;

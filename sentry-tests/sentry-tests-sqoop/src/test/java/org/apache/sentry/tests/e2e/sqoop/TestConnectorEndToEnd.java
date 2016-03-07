@@ -17,9 +17,6 @@
 package org.apache.sentry.tests.e2e.sqoop;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import java.util.Collection;
 
 import org.apache.sentry.core.model.sqoop.SqoopActionConstant;
 import org.apache.sqoop.client.SqoopClient;

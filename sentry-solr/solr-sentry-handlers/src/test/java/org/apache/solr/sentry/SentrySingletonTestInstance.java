@@ -21,7 +21,6 @@ import java.lang.reflect.Constructor;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.sentry.SecureRequestHandlerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

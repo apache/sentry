@@ -170,6 +170,11 @@ public class AbstractSolrSentryTestWithDbProvider extends AbstractSolrSentryTest
       public boolean equals(Object obj) {
         return true;
       }
+
+      @Override
+      public int hashCode() {
+        return 17;
+      }
     });
     extraRequestFilters.put(ModifiableUserAuthenticationFilter.class, "*");
 

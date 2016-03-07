@@ -27,7 +27,7 @@ public class TestKrbConnectionTimeout extends
  SentryHdfsServiceIntegrationBase {
 
   @BeforeClass
-  public static void testSetup() throws Exception {
+  public static void setup() throws Exception {
     Assume.assumeTrue("true".equalsIgnoreCase(System.getProperty(
         "sentry.hive.test.ticket.timeout", "false")));
     kdcConfOverlay.setProperty(MiniKdc.MAX_TICKET_LIFETIME, "300001");

@@ -17,9 +17,6 @@
  * under the License.
  */
 package org.apache.sentry.policy.db;
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertFalse;
-import static junit.framework.Assert.assertTrue;
 import static org.apache.sentry.policy.common.PolicyConstants.AUTHORIZABLE_JOINER;
 import static org.apache.sentry.policy.common.PolicyConstants.KV_JOINER;
 import static org.apache.sentry.policy.common.PolicyConstants.KV_SEPARATOR;
@@ -29,7 +26,7 @@ import org.apache.sentry.policy.common.Privilege;
 import org.apache.sentry.policy.common.KeyValue;
 import org.junit.Test;
 
-public class TestDBWildcardPrivilege {
+public class TestDBWildcardPrivilege extends junit.framework.Assert {
 
   private static final String ALL = AccessConstants.ALL;
 

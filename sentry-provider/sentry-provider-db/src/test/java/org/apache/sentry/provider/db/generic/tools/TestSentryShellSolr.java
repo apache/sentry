@@ -29,16 +29,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
-import java.security.PrivilegedExceptionAction;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
-import javax.security.auth.Subject;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.sentry.SentryUserException;
-import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
-import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClientFactory;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceIntegrationBase;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryRole;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
@@ -48,11 +44,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class TestSentryShellSolr extends SentryGenericServiceIntegrationBase {
-  private static final Logger LOGGER = LoggerFactory.getLogger(TestSentryShellSolr.class);
   private File confDir;
   private File confPath;
   private static String TEST_ROLE_NAME_1 = "testRole1";

@@ -30,7 +30,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import junit.framework.Assert;
 import org.apache.commons.io.FileUtils;
 import org.apache.sentry.SentryUserException;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
@@ -39,15 +38,12 @@ import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 
 public class TestSentryShellHive extends SentryServiceIntegrationBase {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(TestSentryShellHive.class);
   private File confDir;
   private File confPath;
   private static String TEST_ROLE_NAME_1 = "testRole1";
@@ -585,7 +581,7 @@ public class TestSentryShellHive extends SentryServiceIntegrationBase {
   private void validateMissingParameterMsg(SentryShellHive sentryShell, String[] args,
       String exceptedErrorMsg) throws Exception {
     Set<String> errorMsgs = getShellResultWithOSRedirect(sentryShell, args, false);
-    Assert.assertTrue(errorMsgs.contains(exceptedErrorMsg));
+    assertTrue(errorMsgs.contains(exceptedErrorMsg));
   }
 
   private void validateMissingParameterMsgsContains(SentryShellHive sentryShell, String[] args,

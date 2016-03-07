@@ -19,10 +19,6 @@ package org.apache.sentry.core.model.sqoop;
 
 import junit.framework.Assert;
 
-import org.apache.sentry.core.model.sqoop.Connector;
-import org.apache.sentry.core.model.sqoop.Job;
-import org.apache.sentry.core.model.sqoop.Link;
-import org.apache.sentry.core.model.sqoop.Server;
 import org.apache.sentry.core.model.sqoop.SqoopAuthorizable.AuthorizableType;
 import org.junit.Test;
 

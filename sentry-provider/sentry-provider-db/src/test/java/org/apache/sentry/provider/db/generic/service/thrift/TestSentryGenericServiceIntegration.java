@@ -32,15 +32,11 @@ import org.apache.sentry.core.model.search.Collection;
 import org.apache.sentry.core.model.search.Field;
 import org.apache.sentry.core.model.search.SearchConstants;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 public class TestSentryGenericServiceIntegration extends SentryGenericServiceIntegrationBase {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(TestSentryGenericServiceIntegration.class);
 
   @Test
   public void testCreateDropShowRole() throws Exception {

@@ -28,7 +28,6 @@ import org.junit.Test;
 import com.google.common.collect.Lists;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 public class TestShowPrivilege extends AbstractSqoopSentryTestBase {

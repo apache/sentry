@@ -43,7 +43,7 @@ public class TestDatabaseRequiredInRole {
         "server=server1->db=db1->URI=file:///user/db/warehouse/tab1"));
       Assert.fail("Expected ConfigurationException");
     } catch (ConfigurationException e) {
-      ;
+      // expected
     }
   }
 }

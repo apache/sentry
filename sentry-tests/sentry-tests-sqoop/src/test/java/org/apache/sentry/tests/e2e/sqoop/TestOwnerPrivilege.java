@@ -23,8 +23,6 @@ import static org.junit.Assert.fail;
 
 import org.apache.sentry.core.model.sqoop.SqoopActionConstant;
 import org.apache.sqoop.client.SqoopClient;
-import org.apache.sqoop.model.MConnector;
-import org.apache.sqoop.model.MDriverConfig;
 import org.apache.sqoop.model.MJob;
 import org.apache.sqoop.model.MLink;
 import org.apache.sqoop.model.MPrincipal;

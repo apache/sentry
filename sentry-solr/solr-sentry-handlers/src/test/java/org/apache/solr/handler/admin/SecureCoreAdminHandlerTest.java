@@ -137,7 +137,7 @@ public class SecureCoreAdminHandlerTest extends SentryTestBase {
   }
 
   private void verifyQueryAccess(CoreAdminAction action, boolean checkCollection) throws Exception {
-    CoreContainer cc = getCleanCoreContainer(action, h.getCoreContainer());
+    CoreContainer cc = getCleanCoreContainer(action);
     CoreAdminHandler handler = new SecureCoreAdminHandler(cc);
     verifyAuthorized(handler, getCoreAdminRequest("collection1", "junit", action));
     verifyAuthorized(handler, getCoreAdminRequest("queryCollection", "junit", action));
@@ -151,7 +151,7 @@ public class SecureCoreAdminHandlerTest extends SentryTestBase {
   }
 
   private void verifyUpdateAccess(CoreAdminAction action, boolean checkCollection) throws Exception {
-    CoreContainer cc = getCleanCoreContainer(action, h.getCoreContainer());
+    CoreContainer cc = getCleanCoreContainer(action);
     CoreAdminHandler handler = new SecureCoreAdminHandler(cc);
     verifyAuthorized(handler, getCoreAdminRequest("collection1", "junit", action));
     verifyAuthorized(handler, getCoreAdminRequest("updateCollection", "junit", action));
@@ -176,7 +176,7 @@ public class SecureCoreAdminHandlerTest extends SentryTestBase {
     return (CoreContainer)e.create();
   }
 
-  private CoreContainer getCleanCoreContainer(CoreAdminAction action, CoreContainer cc) {
+  private CoreContainer getCleanCoreContainer(CoreAdminAction action) {
     // Ensure CoreContainer is empty
     for (String coreName : h.getCoreContainer().getCoreNames()) {
       h.getCoreContainer().unload(coreName);

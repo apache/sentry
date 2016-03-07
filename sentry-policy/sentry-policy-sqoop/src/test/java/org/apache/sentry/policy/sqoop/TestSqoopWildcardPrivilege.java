@@ -17,8 +17,6 @@
  * under the License.
  */
 package org.apache.sentry.policy.sqoop;
-import static junit.framework.Assert.assertFalse;
-import static junit.framework.Assert.assertTrue;
 import static org.apache.sentry.policy.common.PolicyConstants.AUTHORIZABLE_JOINER;
 import static org.apache.sentry.policy.common.PolicyConstants.KV_JOINER;
 import static org.apache.sentry.policy.common.PolicyConstants.KV_SEPARATOR;
@@ -28,7 +26,7 @@ import org.apache.sentry.policy.common.Privilege;
 import org.apache.sentry.policy.common.KeyValue;
 import org.junit.Test;
 
-public class TestSqoopWildcardPrivilege {
+public class TestSqoopWildcardPrivilege extends junit.framework.Assert {
   private static final Privilege SQOOP_SERVER1_ALL =
       create(new KeyValue("SERVER", "server1"), new KeyValue("action", SqoopActionConstant.ALL));
   private static final Privilege SQOOP_SERVER1_READ =

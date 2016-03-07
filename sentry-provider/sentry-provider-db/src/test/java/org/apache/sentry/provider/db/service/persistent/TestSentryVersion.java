@@ -61,12 +61,12 @@ public class TestSentryVersion {
 
   /**
    * Verify that store is not initialized by default without schema pre-created
-   * 
+   *
    * @throws Exception
    */
   @Test(expected = SentryNoSuchObjectException.class)
   public void testNegSentrySchemaDefault() throws Exception {
-    SentryStore sentryStore = new SentryStore(conf);
+    new SentryStore(conf);
   }
 
   /**

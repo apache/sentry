@@ -27,8 +27,6 @@ import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -48,8 +46,6 @@ import java.util.Random;
 import java.util.Set;
 
 public class TestRealTimeGet extends AbstractSolrSentryTestBase {
-  private static final Logger LOG = LoggerFactory
-    .getLogger(TestRealTimeGet.class);
   private static final String AUTH_FIELD = "sentry_auth";
   private static final Random rand = new Random();
   private String userName = null;
@@ -79,7 +75,9 @@ public class TestRealTimeGet extends AbstractSolrSentryTestBase {
     modParams.set("numShards", shards);
     StringBuilder builder = new StringBuilder();
     for (int i = 0; i < shards; ++i) {
-      if (i != 0) builder.append(",");
+      if (i != 0) {
+        builder.append(",");
+      }
       builder.append("shard").append(i+1);
     }
     modParams.set("shards", builder.toString());
@@ -108,7 +106,7 @@ public class TestRealTimeGet extends AbstractSolrSentryTestBase {
   }
 
   private void assertExpected(ExpectedResult expectedResult, QueryResponse rsp,
-        ExpectedResult controlExpectedResult, QueryResponse controlRsp) throws Exception {
+        QueryResponse controlRsp) throws Exception {
     SolrDocumentList docList = rsp.getResults();
     SolrDocumentList controlDocList = controlRsp.getResults();
     SolrDocument doc = (SolrDocument)rsp.getResponse().get("doc");
@@ -150,7 +148,9 @@ public class TestRealTimeGet extends AbstractSolrSentryTestBase {
   private QueryResponse getIdsResponse(ExpectedResult expectedResult) throws Exception {
     StringBuilder builder = new StringBuilder();
     for (int i = 0; i < expectedResult.ids.length; ++i) {
-      if (i != 0) builder.append(",");
+      if (i != 0) {
+        builder.append(",");
+      }
       builder.append(expectedResult.ids[ i ]);
     }
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -167,12 +167,12 @@ public class TestRealTimeGet extends AbstractSolrSentryTestBase {
     // test specifying with "id"
     QueryResponse idRsp = getIdResponse(expectedResult);
     QueryResponse idControlRsp = getIdResponse(controlExpectedResult);
-    assertExpected(expectedResult, idRsp, controlExpectedResult, idControlRsp);
+    assertExpected(expectedResult, idRsp, idControlRsp);
 
     // test specifying with "ids"
     QueryResponse idsRsp = getIdsResponse(expectedResult);
     QueryResponse idsControlRsp = getIdsResponse(controlExpectedResult);
-    assertExpected(expectedResult, idsRsp, controlExpectedResult, idsControlRsp);
+    assertExpected(expectedResult, idsRsp, idsControlRsp);
   }
 
   @Test
@@ -186,7 +186,7 @@ public class TestRealTimeGet extends AbstractSolrSentryTestBase {
 
     try {
       for (CloudSolrServer s : new CloudSolrServer [] {server, serverControl}) {
-        DocLevelGenerator generator = new DocLevelGenerator(s.getDefaultCollection(), AUTH_FIELD);
+        DocLevelGenerator generator = new DocLevelGenerator(AUTH_FIELD);
         generator.generateDocs(s, 100, "junit_role", "admin_role", 2);
       }
 
@@ -262,7 +262,7 @@ public class TestRealTimeGet extends AbstractSolrSentryTestBase {
     CloudSolrServer server = getCloudSolrServer(collection);
 
     try {
-      DocLevelGenerator generator = new DocLevelGenerator(collection, AUTH_FIELD);
+      DocLevelGenerator generator = new DocLevelGenerator(AUTH_FIELD);
       generator.generateDocs(server, 100, "junit_role", "admin_role", 2);
       String [] ids = new String[] {"1", "3", "5"};
 
@@ -282,7 +282,7 @@ public class TestRealTimeGet extends AbstractSolrSentryTestBase {
     CloudSolrServer server = getCloudSolrServer(collection);
 
     try {
-      DocLevelGenerator generator = new DocLevelGenerator(collection, AUTH_FIELD);
+      DocLevelGenerator generator = new DocLevelGenerator(AUTH_FIELD);
       generator.generateDocs(server, 100, "junit_role", "admin_role", 2);
 
       // make some uncommitted modifications and ensure they are reflected
@@ -352,7 +352,7 @@ public class TestRealTimeGet extends AbstractSolrSentryTestBase {
     int numQueries = 5;
 
     try {
-      DocLevelGenerator generator = new DocLevelGenerator(collection, authField);
+      DocLevelGenerator generator = new DocLevelGenerator(authField);
       generator.generateDocs(server, 100, "junit_role", "admin_role", 2);
 
       List<AuthFieldModifyThread> threads = new LinkedList<AuthFieldModifyThread>();
@@ -400,7 +400,7 @@ public class TestRealTimeGet extends AbstractSolrSentryTestBase {
     int docCount = 100;
 
     try {
-      DocLevelGenerator generator = new DocLevelGenerator(collection, AUTH_FIELD);
+      DocLevelGenerator generator = new DocLevelGenerator(AUTH_FIELD);
       generator.generateDocs(server, docCount, "junit_role", "admin_role", 2);
 
       setAuthenticationUser("solr");

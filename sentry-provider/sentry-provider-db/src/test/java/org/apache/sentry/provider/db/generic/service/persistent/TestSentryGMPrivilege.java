@@ -35,21 +35,21 @@ public class TestSentryGMPrivilege {
   @Test
   public void testValidateAuthorizables() throws Exception {
     try {
-      MSentryGMPrivilege fieldPrivilege = new MSentryGMPrivilege("solr",
+      new MSentryGMPrivilege("solr",
           "service1", Arrays.asList(new Collection("c1"), new Field("f1")),SearchConstants.QUERY, false);
     } catch (IllegalStateException e) {
       fail("unexpect happend: it is a validated privilege");
     }
 
     try {
-      MSentryGMPrivilege collectionPrivilege = new MSentryGMPrivilege("solr",
+      new MSentryGMPrivilege("solr",
           "service1", Arrays.asList(new Collection(""), new Field("f1")),SearchConstants.QUERY, false);
       fail("unexpect happend: it is not a validated privilege, The empty name of authorizable can't be empty");
     } catch (IllegalStateException e) {
     }
 
     try {
-      MSentryGMPrivilege fieldPrivilege = new MSentryGMPrivilege("solr",
+      new MSentryGMPrivilege("solr",
           "service1", Arrays.asList(null, new Field("f1")),SearchConstants.QUERY, false);
       fail("unexpect happend: it is not a validated privilege, The authorizable can't be null");
     } catch (IllegalStateException e) {

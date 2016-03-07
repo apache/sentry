@@ -136,8 +136,9 @@ public class TestSqoopAuthorizationProviderGeneralCases {
     Set<SqoopAction> allActions = Sets.newHashSet(ALL, READ, WRITE);
     for (SqoopAction action : allActions) {
       //developer only has the read action on all connectors
-      for (Connector connector : Sets.newHashSet(jdbc_connector, hdfs_connector, kafka_connector, kite_connector))
-      doTestResourceAuthorizationProvider(SUB_DEVELOPER, Arrays.asList(server1, connector), Sets.newHashSet(action), READ.equals(action));
+      for (Connector connector : Sets.newHashSet(jdbc_connector, hdfs_connector, kafka_connector, kite_connector)) {
+        doTestResourceAuthorizationProvider(SUB_DEVELOPER, Arrays.asList(server1, connector), Sets.newHashSet(action), READ.equals(action));
+      }
     }
 
     for (Link link : Sets.newHashSet(link1, link2)) {
@@ -156,8 +157,9 @@ public class TestSqoopAuthorizationProviderGeneralCases {
     Set<SqoopAction> allActions = Sets.newHashSet(ALL, READ, WRITE);
     for (SqoopAction action : allActions) {
       //analyst has not the any action on all connectors
-      for (Connector connector : Sets.newHashSet(jdbc_connector, hdfs_connector, kafka_connector, kite_connector))
-      doTestResourceAuthorizationProvider(SUB_ANALYST, Arrays.asList(server1, connector), Sets.newHashSet(action), false);
+      for (Connector connector : Sets.newHashSet(jdbc_connector, hdfs_connector, kafka_connector, kite_connector)) {
+        doTestResourceAuthorizationProvider(SUB_ANALYST, Arrays.asList(server1, connector), Sets.newHashSet(action), false);
+      }
     }
 
     for (Link link : Sets.newHashSet(link1, link2)) {

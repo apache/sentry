@@ -632,6 +632,7 @@ limitations under the License.
           <sourceEncoding>UTF-8</sourceEncoding>
           <failOnViolation>true</failOnViolation>
           <linkXRef>false</linkXRef>
+          <includeTests>true</includeTests>
           <verbose>true</verbose>
           <targetJdk>${targetJdk}</targetJdk>
           <excludeRoots>

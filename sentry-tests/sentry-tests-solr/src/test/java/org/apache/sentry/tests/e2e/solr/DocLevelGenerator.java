@@ -22,11 +22,9 @@ import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import java.util.ArrayList;
 
 public class DocLevelGenerator {
-  private String collection;
   private String authField;
 
-  public DocLevelGenerator(String collection, String authField) {
-    this.collection = collection;
+  public DocLevelGenerator(String authField) {
     this.authField = authField;
   }
 

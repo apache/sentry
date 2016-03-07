@@ -27,15 +27,11 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.solr.servlet.SolrRequestParsers;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Authentication Filter that authenticates any request as user "junit"
  */
 public class ModifiableUserAuthenticationFilter implements Filter {
-  private static final Logger LOG = LoggerFactory
-    .getLogger(ModifiableUserAuthenticationFilter.class);
 
   /**
    * String that saves the user to be authenticated into Solr

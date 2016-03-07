@@ -35,7 +35,7 @@ public class TestIndexerRequiredInRole {
       indexerRequiredInRole.validate(new PrivilegeValidatorContext("index=index1"));
       Assert.fail("Expected ConfigurationException");
     } catch (ConfigurationException e) {
-      ;
+      // expected
     }
 
     // check with db
@@ -43,7 +43,7 @@ public class TestIndexerRequiredInRole {
       indexerRequiredInRole.validate(new PrivilegeValidatorContext("db1","index=index2"));
       Assert.fail("Expected ConfigurationException");
     } catch (ConfigurationException e) {
-      ;
+      // expected
     }
   }
 

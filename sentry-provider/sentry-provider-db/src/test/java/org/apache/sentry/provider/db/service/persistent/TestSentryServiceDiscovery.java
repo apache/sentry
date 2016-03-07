@@ -25,7 +25,6 @@ import java.util.Map;
 import org.apache.hadoop.conf.Configuration;
 
 import org.apache.curator.test.TestingServer;
-import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.junit.After;

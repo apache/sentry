@@ -75,11 +75,9 @@ public class TestHiveAuthzBindings {
 
   // Tables
   private static final String PURCHASES_TAB = "purchases";
-  private static final String PAYMENT_TAB = "payments";
 
   // Columns
   private static final String AGE_COL = "age";
-  private static final String NAME_COL = "name";
 
   // Entities
   private List<List<DBModelAuthorizable>> inputTabHierarcyList = new ArrayList<List<DBModelAuthorizable>>();

@@ -70,7 +70,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -137,6 +136,10 @@ public class AbstractSolrSentryTestBase {
       // There's only one class, make this as simple as possible
       public int compare(Class o1, Class o2) {
         return 0;
+      }
+
+      public int hashCode() {
+        return 17;
       }
 
       public boolean equals(Object obj) {
@@ -442,7 +445,7 @@ public class AbstractSolrSentryTestBase {
       QueryRequest request = populateCollectionAdminParams(adminOp, collectionName, params);
       CloudSolrServer solrServer = createNewCloudSolrServer();
       try {
-        NamedList<Object> result = solrServer.request(request);
+        solrServer.request(request);
         if (adminOp.compareTo(CollectionAction.CREATE) == 0) {
           // Wait for collection creation to complete.
           waitForRecoveriesToFinish(collectionName, solrServer, false);
@@ -488,7 +491,7 @@ public class AbstractSolrSentryTestBase {
         QueryRequest request = populateCollectionAdminParams(adminOp, collectionName, params);
         CloudSolrServer solrServer = createNewCloudSolrServer();
         try {
-          NamedList<Object> result = solrServer.request(request);
+          solrServer.request(request);
           if (adminOp.compareTo(CollectionAction.CREATE) == 0) {
             // Wait for collection creation to complete.
             waitForRecoveriesToFinish(collectionName, solrServer, false);
@@ -811,7 +814,6 @@ public class AbstractSolrSentryTestBase {
     String retValue = "";
     try {
       final HttpResponse response = httpClient.execute(method);
-      int httpStatus = response.getStatusLine().getStatusCode();
       httpEntity = response.getEntity();
 
       if (httpEntity != null) {
@@ -866,7 +868,9 @@ public class AbstractSolrSentryTestBase {
       int cnt = 0;
 
       while (cont) {
-        if (verbose) LOG.debug("-");
+        if (verbose) {
+          LOG.debug("-");
+        }
         boolean sawLiveRecovering = false;
         zkStateReader.updateClusterState(true);
         ClusterState clusterState = zkStateReader.getClusterState();
@@ -875,9 +879,11 @@ public class AbstractSolrSentryTestBase {
         for (Map.Entry<String, Slice> entry : slices.entrySet()) {
           Map<String, Replica> shards = entry.getValue().getReplicasMap();
           for (Map.Entry<String, Replica> shard : shards.entrySet()) {
-            if (verbose) LOG.debug("rstate:"
+            if (verbose) {
+              LOG.debug("rstate:"
                 + shard.getValue().getStr(ZkStateReader.STATE_PROP) + " live:"
                 + clusterState.liveNodesContain(shard.getValue().getNodeName()));
+            }
             String state = shard.getValue().getStr(ZkStateReader.STATE_PROP);
             if ((state.equals(ZkStateReader.RECOVERING)
                 || state.equals(ZkStateReader.SYNC) || state
@@ -890,9 +896,13 @@ public class AbstractSolrSentryTestBase {
         }
         if (!sawLiveRecovering || cnt == timeoutSeconds) {
           if (!sawLiveRecovering) {
-            if (verbose) LOG.debug("no one is recovering");
+            if (verbose) {
+              LOG.debug("no one is recovering");
+            }
           } else {
-            if (verbose) LOG.debug("Gave up waiting for recovery to finish..");
+            if (verbose) {
+              LOG.debug("Gave up waiting for recovery to finish..");
+            }
             if (failOnTimeout) {
               fail("There are still nodes recovering - waited for "
                   + timeoutSeconds + " seconds");

@@ -22,13 +22,10 @@ import org.apache.sentry.core.model.search.Collection;
 import org.apache.sentry.core.model.search.SearchConstants;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 
 public class TestSolrQueryOperations extends AbstractSolrSentryTestWithDbProvider {
-  private static final Logger LOG = LoggerFactory.getLogger(TestSolrQueryOperations.class);
   private static final String TEST_COLLECTION_NAME1 = "collection1";
   private static final String COLLECTION_CONFIG_DIR = RESOURCES_DIR + File.separator + "collection1" + File.separator + "conf";
 

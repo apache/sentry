@@ -179,7 +179,6 @@ public class TestSolrAuthzBinding {
       new SolrAuthzConf(Resources.getResource("sentry-site.xml"));
     setUsableAuthzConf(solrAuthzConf);
     SolrAuthzBinding binding = new SolrAuthzBinding(solrAuthzConf);
-    Set<String> emptyList = Collections.emptySet();
 
     // check non-existant users
     try {
@@ -385,7 +384,6 @@ public class TestSolrAuthzBinding {
         + System.currentTimeMillis()).getAbsolutePath());
     String resourceOnHDFS = "/hdfs" + File.separator + UUID.randomUUID() + File.separator + "test-authz-provider.ini";
     try {
-      Path src = new Path(baseDir.getPath(), RESOURCE_PATH);
       // Copy resource to HDFSS
       dfsCluster.getFileSystem().copyFromLocalFile(false,
           new Path(baseDir.getPath(), RESOURCE_PATH),

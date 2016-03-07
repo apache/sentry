@@ -97,7 +97,9 @@ public abstract class SentryTestBase extends SolrTestCaseJ4 {
     HttpServletRequest httpServletRequest = EasyMock.createMock(HttpServletRequest.class);
     IExpectationSetters getAttributeExpect =
         EasyMock.expect(httpServletRequest.getAttribute(USER_NAME)).andReturn(user);
-    if(!onlyOnce) getAttributeExpect.anyTimes();
+    if (!onlyOnce) {
+      getAttributeExpect.anyTimes();
+    }
     EasyMock.replay(httpServletRequest);
     request.getContext().put("httpRequest", httpServletRequest);
     return request;

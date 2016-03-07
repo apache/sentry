@@ -24,14 +24,21 @@
   A PMD ruleset for Apache Sentry
   </description>
 
-  <rule ref="rulesets/java/basic.xml"/>
+  <rule ref="rulesets/java/basic.xml">
+    <exclude name="CheckResultSet"/>
+    <exclude name="AvoidUsingOctalValues"/>
+  </rule>
   <rule ref="rulesets/java/unusedcode.xml"/>
   <rule ref="rulesets/java/imports.xml"/>
   <rule ref="rulesets/java/braces.xml"/>
   <rule ref="rulesets/java/empty.xml">
     <exclude name="EmptyCatchBlock" />
   </rule>
-  <rule ref="rulesets/java/migrating.xml"/>
+  <rule ref="rulesets/java/migrating.xml">
+    <exclude name="JUnitUseExpected" />
+    <exclude name="JUnit4TestShouldUseAfterAnnotation" />
+    <exclude name="JUnit4TestShouldUseBeforeAnnotation" />
+  </rule>
   <rule ref="rulesets/java/unnecessary.xml">
     <exclude name="UselessParentheses" />
   </rule>
