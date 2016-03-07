@@ -42,7 +42,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.MetaException;
-import org.apache.hadoop.hive.shims.ShimLoader;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.pig.ExecType;
 import org.apache.pig.PigServer;
@@ -76,7 +75,7 @@ public class Context {
   private final Set<Statement> statements;
 
   public Context(HiveServer hiveServer, FileSystem fileSystem,
-      File baseDir, File confDir, File dataDir, File policyFile) throws Exception {
+      File baseDir, File dataDir, File policyFile) throws Exception {
     this.hiveServer = hiveServer;
     this.fileSystem = fileSystem;
     this.baseDir = baseDir;
@@ -192,7 +191,7 @@ public class Context {
       Assert.fail("Expected SQLException for '" + query + "'");
     } catch (SQLException e) {
       verifyAuthzExceptionForState(e, AUTHZ_LINK_FAILURE_SQL_STATE);
-      Assert.assertTrue("Expected " + exceptionType + " : " + e.getMessage(),
+      assertTrue("Expected " + exceptionType + " : " + e.getMessage(),
           Strings.nullToEmpty(e.getMessage()).contains(exceptionType));
     }
   }
@@ -204,7 +203,7 @@ public class Context {
       Assert.fail("Expected SQLException for '" + query + "'");
     } catch (SQLException e) {
       verifyAuthzExceptionForState(e, AUTHZ_EXCEPTION_SQL_STATE);
-      Assert.assertTrue("Expected " + exceptionType + " : " + e.getMessage(),
+      assertTrue("Expected " + exceptionType + " : " + e.getMessage(),
           Strings.nullToEmpty(e.getMessage()).contains(exceptionType));
     }
   }

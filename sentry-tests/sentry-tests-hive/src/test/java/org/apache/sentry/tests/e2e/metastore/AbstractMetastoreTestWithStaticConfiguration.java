@@ -43,10 +43,7 @@ import org.apache.pig.PigServer;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory.HiveServer2Type;
-import org.junit.After;
 import org.junit.BeforeClass;
-
-import com.google.common.collect.Maps;
 
 public abstract class AbstractMetastoreTestWithStaticConfiguration extends
     AbstractTestWithStaticConfiguration {
@@ -107,7 +104,7 @@ public abstract class AbstractMetastoreTestWithStaticConfiguration extends
   public void addPartition(HiveMetaStoreClient client, String dbName,
       String tblName, List<String> ptnVals, Table tbl) throws Exception {
     Partition part = makeMetastorePartitionObject(dbName, tblName, ptnVals, tbl);
-    Partition retp = client.add_partition(part);
+    client.add_partition(part);
   }
 
   public void addPartitionWithLocation(HiveMetaStoreClient client,

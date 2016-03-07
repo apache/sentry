@@ -23,10 +23,10 @@ import java.io.File;
 import java.io.IOException;
 
 public interface DFS {
-  public FileSystem getFileSystem();
-  public void tearDown() throws Exception;
-  public Path assertCreateDir(String dir) throws Exception;
-  public Path getBaseDir();
-  public void createBaseDir() throws Exception;
-  public void writePolicyFile(File srcFile) throws IOException;
+  FileSystem getFileSystem();
+  void tearDown() throws Exception;
+  Path assertCreateDir(String dir) throws Exception;
+  Path getBaseDir();
+  void createBaseDir() throws Exception;
+  void writePolicyFile(File srcFile) throws IOException;
 }

@@ -494,7 +494,7 @@ public class TestMetadataObjectRetrieval extends AbstractTestWithStaticConfigura
   }
 
   private void verifyParition(Statement statement, String table) throws Exception {
-    ResultSet rs = statement.executeQuery("SHOW PARTITIONS " + TBL1);
+    ResultSet rs = statement.executeQuery("SHOW PARTITIONS " + table);
     assertTrue(rs.next());
     assertEquals("dt=3", rs.getString(1).trim());
   }

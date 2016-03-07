@@ -27,11 +27,9 @@ import java.util.List;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assume.assumeTrue;
 
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
-import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -51,7 +49,6 @@ public class TestDbComplexView extends AbstractTestWithStaticConfiguration {
     private static final String TEST_VIEW_TB2 = "test_complex_view_table_2";
     private static final String TEST_VIEW = "test_complex_view";
     private static final String TEST_VIEW_ROLE = "test_complex_view_role";
-    private PolicyFile policyFile;
 
     /**
      * Run query and validate one column with given column name
@@ -91,13 +88,17 @@ public class TestDbComplexView extends AbstractTestWithStaticConfiguration {
             LOGGER.error("Exception: ", ex);
         } finally {
             try {
-                if (stmt != null) stmt.close();
-                if (conn != null) conn.close();
+                if (stmt != null) {
+                  stmt.close();
+                }
+                if (conn != null) {
+                  conn.close();
+                }
             } catch (Exception ex) {
                 LOGGER.error("failed to close connection and statement: " + ex);
             }
-            return status;
         }
+        return status;
     }
 
     @BeforeClass
@@ -111,7 +112,7 @@ public class TestDbComplexView extends AbstractTestWithStaticConfiguration {
     public void setup() throws Exception {
         super.setupAdmin();
         super.setup();
-        policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+        PolicyFile.setAdminOnServer1(ADMINGROUP);
 
         // prepare test db and base table
         List<String> sqls = new ArrayList<String>();
@@ -222,7 +223,6 @@ public class TestDbComplexView extends AbstractTestWithStaticConfiguration {
             testView2, TEST_VIEW));
 
         String testView3 = "view2_from_" + TEST_VIEW;
-        String testRole3 = testView3 + "_test_role";
         sqls.add(String.format("CREATE VIEW %s(userid,link) AS SELECT userid,link from %s",
             testView3, TEST_VIEW));
 

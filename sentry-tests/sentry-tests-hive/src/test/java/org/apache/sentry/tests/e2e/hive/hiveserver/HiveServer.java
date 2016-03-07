@@ -21,14 +21,14 @@ import java.sql.Connection;
 
 public interface HiveServer {
 
-  public void start() throws Exception;
+  void start() throws Exception;
 
-  public void shutdown() throws Exception;
+  void shutdown() throws Exception;
 
-  public String getURL();
+  String getURL();
 
-  public String getProperty(String key);
+  String getProperty(String key);
 
-  public Connection createConnection(String user, String password) throws Exception;
+  Connection createConnection(String user, String password) throws Exception;
 
 }

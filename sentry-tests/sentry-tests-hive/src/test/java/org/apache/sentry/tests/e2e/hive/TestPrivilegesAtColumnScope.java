@@ -20,16 +20,11 @@ package org.apache.sentry.tests.e2e.hive;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.List;
 
 import junit.framework.Assert;
 
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.Path;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -486,18 +481,15 @@ public class TestPrivilegesAtColumnScope extends AbstractTestWithStaticConfigura
     }
 
     // Users with out privileges on partition column can not access it
-    String [] negativeUsers = {USER2_1};
-    for(String user:negativeUsers) {
-      Connection connection = context.createConnection(USER1_1);
-      Statement statement = context.createStatement(connection);
-      statement.execute("USE DB_1");
-      try {
-        statement.execute("SELECT C FROM TAB_3");
-      } catch (SQLException e) {
-        context.verifyAuthzException(e);
-      }
-      statement.close();
-      connection.close();
+    Connection connection = context.createConnection(USER2_1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("USE DB_1");
+    try {
+      statement.execute("SELECT C FROM TAB_3");
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
     }
+    statement.close();
+    connection.close();
   }
 }

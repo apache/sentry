@@ -83,7 +83,7 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
     ResultSet rs = statement.executeQuery("SHOW TABLES");
     tableNamesValidation.addAll(Arrays.asList(tableNames));
 
-    validateTables(rs, DB1, tableNamesValidation);
+    validateTables(rs, tableNamesValidation);
     statement.close();
 
     policyFile
@@ -103,7 +103,7 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
     // User1 should see tables with any level of access
     rs = statement.executeQuery("SHOW TABLES");
     tableNamesValidation.addAll(Arrays.asList(user1TableNames));
-    validateTables(rs, DB1, tableNamesValidation);
+    validateTables(rs, tableNamesValidation);
     statement.close();
   }
 
@@ -128,7 +128,7 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
     // Admin should see all tables
     ResultSet rs = statement.executeQuery("SHOW TABLES");
     tableNamesValidation.addAll(Arrays.asList(tableNames));
-    validateTables(rs, DB1, tableNamesValidation);
+    validateTables(rs, tableNamesValidation);
     statement.close();
 
     policyFile
@@ -143,7 +143,7 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
     // User1 should see tables with any level of access
     rs = statement.executeQuery("SHOW TABLES");
     tableNamesValidation.addAll(Arrays.asList(user1TableNames));
-    validateTables(rs, DB1, tableNamesValidation);
+    validateTables(rs, tableNamesValidation);
     statement.close();
   }
 
@@ -169,7 +169,7 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
     // Admin should see all tables
     ResultSet rs = statement.executeQuery("SHOW TABLES");
     tableNamesValidation.addAll(Arrays.asList(adminTableNames));
-    validateTables(rs, DB1, tableNamesValidation);
+    validateTables(rs, tableNamesValidation);
     statement.close();
 
     policyFile
@@ -185,7 +185,7 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
     // User1 should see tables with any level of access
     rs = statement.executeQuery("SHOW TABLES");
     tableNamesValidation.addAll(Arrays.asList(user1TableNames));
-    validateTables(rs, DB1, tableNamesValidation);
+    validateTables(rs, tableNamesValidation);
     statement.close();
   }
 
@@ -210,7 +210,7 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
     // Admin should be able to see all tables
     ResultSet rs = statement.executeQuery("SHOW TABLES");
     tableNamesValidation.addAll(Arrays.asList(adminTableNames));
-    validateTables(rs, DB1, tableNamesValidation);
+    validateTables(rs, tableNamesValidation);
     statement.close();
 
     policyFile
@@ -225,7 +225,7 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
     // User1 should see tables with any level of access
     rs = statement.executeQuery("SHOW TABLES");
     tableNamesValidation.addAll(Arrays.asList(user1TableNames));
-    validateTables(rs, DB1, tableNamesValidation);
+    validateTables(rs, tableNamesValidation);
     statement.close();
   }
 
@@ -287,7 +287,7 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
     // Admin should see all tables except table_5, the one does not match the pattern
     ResultSet rs = statement.executeQuery("SHOW TABLE EXTENDED IN " + DB1 + " LIKE 'tb*'");
     tableNamesValidation.addAll(Arrays.asList(tableNames).subList(0, 4));
-    validateTablesInRs(rs, DB1, tableNamesValidation);
+    validateTablesInRs(rs, tableNamesValidation);
     statement.close();
 
     connection = context.createConnection(USER1_1);
@@ -296,7 +296,7 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
     // User1 should see tables with any level of access
     rs = statement.executeQuery("SHOW TABLE EXTENDED IN " + DB1 + " LIKE 'tb*'");
     tableNamesValidation.addAll(Arrays.asList(user1TableNames));
-    validateTablesInRs(rs, DB1, tableNamesValidation);
+    validateTablesInRs(rs, tableNamesValidation);
     statement.close();
   }
 
@@ -403,8 +403,7 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
   }
 
   // compare the table resultset with given array of table names
-  private void validateTables(ResultSet rs, String dbName,
-      List<String> tableNames) throws SQLException {
+  private void validateTables(ResultSet rs, List<String> tableNames) throws SQLException {
     while (rs.next()) {
       String tableName = rs.getString(1);
       Assert.assertTrue(tableName, tableNames.remove(tableName.toLowerCase()));
@@ -416,8 +415,7 @@ public class TestRuntimeMetadataRetrieval extends AbstractTestWithStaticConfigur
   // compare the tables in resultset with given array of table names
   // for some hive query like 'show table extended ...', the resultset does
   // not only contains tableName (See HIVE-8109)
-  private void validateTablesInRs(ResultSet rs, String dbName,
-      List<String> tableNames) throws SQLException {
+  private void validateTablesInRs(ResultSet rs, List<String> tableNames) throws SQLException {
     while (rs.next()) {
       String tableName = rs.getString(1);
       if (tableName.startsWith("tableName:")) {

@@ -33,20 +33,15 @@ import java.util.List;
 
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 import org.junit.After;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class TestDbPrivilegeCleanupOnDrop extends
     AbstractTestWithStaticConfiguration {
-  private static final Logger LOGGER = LoggerFactory
-          .getLogger(TestDbPrivilegeCleanupOnDrop.class);
 
   private final static int SHOW_GRANT_TABLE_POSITION = 2;
   private final static int SHOW_GRANT_DB_POSITION = 1;

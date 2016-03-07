@@ -25,7 +25,7 @@ public interface SentrySrv {
    * Start all the sentry services
    * @throws Exception
    */
-  public void startAll() throws Exception;
+  void startAll() throws Exception;
 
   /**
    * Start the given server
@@ -33,13 +33,13 @@ public interface SentrySrv {
    *          - Server number (0 to N-1)
    * @throws Exception
    */
-  public void start(int serverNum) throws Exception ;
+  void start(int serverNum) throws Exception ;
 
   /**
    * Stop all the Sentry servers
    * @throws Exception
    */
-  public void stopAll() throws Exception;
+  void stopAll() throws Exception;
 
   /**
    * Stop the specified Sentry server
@@ -47,7 +47,7 @@ public interface SentrySrv {
    *          - Server number (0 to N-1)
    * @throws Exception
    */
-  public void stop(int serverNum) throws Exception ;
+  void stop(int serverNum) throws Exception ;
 
   /**
    * Get the underlying Sentry service object
@@ -55,7 +55,7 @@ public interface SentrySrv {
    *          - Server number (0 to N-1)
    * @return
    */
-  public SentryService get(int serverNum);
+  SentryService get(int serverNum);
 
   /**
    * Get the ZK connection string
@@ -63,38 +63,38 @@ public interface SentrySrv {
    * @throws Exception
    *           - If HA is not enabled
    */
-  public String getZKQuorum() throws Exception;
+  String getZKQuorum() throws Exception;
 
   /**
    * Stop all the nodes and ZK if started. The SentrySrv can't be reused once
    * closed.
    */
-  public void close();
+  void close();
 
   /**
    * Check if the sentry server is created with HA enabled.
    * @return True - HA is enabled False - HA is not enabled
    */
-  public boolean isHaEnabled();
+  boolean isHaEnabled();
 
   /**
    * Get the number of active clients connections across servers
    */
-  public long getNumActiveClients();
+  long getNumActiveClients();
 
   /**
    * Get the number of active clients connections for the given server
    */
-  public long getNumActiveClients(int serverNum);
+  long getNumActiveClients(int serverNum);
 
   /**
    * Get the total number of clients connected so far
    */
-  public long getTotalClients();
+  long getTotalClients();
 
   /**
    * Get the total number of clients connected so far
    */
-  public long getTotalClients(int serverNum);
+  long getTotalClients(int serverNum);
 
 }

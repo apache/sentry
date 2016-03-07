@@ -24,7 +24,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.sql.Connection;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Statement;
 
 import org.apache.sentry.provider.db.SentryAccessDeniedException;
@@ -39,7 +38,6 @@ import com.google.common.io.Resources;
 public class TestDbEndToEnd extends AbstractTestWithStaticConfiguration {
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private File dataFile;
-  private PolicyFile policyFile;
 
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception{
@@ -56,7 +54,7 @@ public class TestDbEndToEnd extends AbstractTestWithStaticConfiguration {
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    PolicyFile.setAdminOnServer1(ADMINGROUP);
   }
 
   @Test

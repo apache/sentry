@@ -233,9 +233,6 @@ public class TestConcurrentClients extends AbstractTestWithStaticConfiguration {
     public synchronized Throwable getFirstException() {
       return firstException;
     }
-    public synchronized boolean isFailed() {
-      return failed;
-    }
    }
 
   /**
@@ -253,7 +250,9 @@ public class TestConcurrentClients extends AbstractTestWithStaticConfiguration {
         @Override
         public void run() {
           LOGGER.info("Starting tests: create role, show role, create db and tbl, and create partitions");
-          if (state.failed) return;
+          if (state.failed) {
+            return;
+          }
           try {
             Long startTime = System.currentTimeMillis();
             Long elapsedTime = 0L;

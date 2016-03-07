@@ -98,7 +98,7 @@ public class TestViewPrivileges extends AbstractTestWithHiveServer {
     ResultSet res = stmt.executeQuery("select count(*) from " + tabName);
     org.junit.Assert.assertThat(res, notNullValue());
     while(res.next()) {
-      Assume.assumeTrue(res.getInt(1) == new Integer(1000));
+      Assume.assumeTrue(res.getInt(1) == Integer.valueOf(1000));
     }
     stmt.execute("create view " + viewName + " as select * from " + tabName + " where id<100");
     res = stmt.executeQuery("select count(*) from " + viewName);

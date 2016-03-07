@@ -18,9 +18,7 @@
 package org.apache.sentry.tests.e2e.hive.hiveserver;
 
 import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.hadoop.hive.metastore.HiveMetaStore;
 import org.apache.hive.service.server.HiveServer2;
-import org.fest.reflect.core.Reflection;
 
 public class InternalHiveServer extends AbstractHiveServer {
 

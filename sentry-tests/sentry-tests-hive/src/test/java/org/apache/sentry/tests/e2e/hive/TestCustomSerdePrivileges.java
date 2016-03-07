@@ -20,8 +20,10 @@ package org.apache.sentry.tests.e2e.hive;
 import com.google.common.collect.Maps;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.provider.file.PolicyFile;
-import org.junit.*;
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.security.CodeSource;

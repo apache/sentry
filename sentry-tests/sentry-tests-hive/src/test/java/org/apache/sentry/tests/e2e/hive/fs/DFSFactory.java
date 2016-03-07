@@ -18,8 +18,6 @@ package org.apache.sentry.tests.e2e.hive.fs;
 
 import java.io.File;
 
-import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory.HiveServer2Type;
-
 import com.google.common.annotations.VisibleForTesting;
 
 public class DFSFactory {

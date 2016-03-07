@@ -17,9 +17,6 @@
 
 package org.apache.sentry.tests.e2e.dbprovider;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -135,12 +132,12 @@ public class TestPrivilegeWithHAGrantOption extends AbstractTestWithDbProvider {
   private void verifyFailureHook(Statement statement, String sqlStr, HiveOperation expectedOp,
        String dbName, String tableName, boolean checkSentryAccessDeniedException) throws Exception {
     // negative test case: non admin user can't create role
-    assertFalse(DummySentryOnFailureHook.invoked);
+    Assert.assertFalse(DummySentryOnFailureHook.invoked);
     try {
       statement.execute(sqlStr);
       Assert.fail("Expected SQL exception for " + sqlStr);
     } catch (SQLException e) {
-      assertTrue(DummySentryOnFailureHook.invoked);
+      Assert.assertTrue(DummySentryOnFailureHook.invoked);
     } finally {
       DummySentryOnFailureHook.invoked = false;
     }

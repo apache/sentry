@@ -37,16 +37,11 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.io.Resources;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /* Tests privileges at table scope within a single database.
  */
 
 public class TestPrivilegesAtDatabaseScope extends AbstractTestWithStaticConfiguration {
-  private static final Logger LOGGER = LoggerFactory.
-          getLogger(TestPrivilegesAtDatabaseScope.class);
-
   private PolicyFile policyFile;
 
   Map <String, String >testProperties;

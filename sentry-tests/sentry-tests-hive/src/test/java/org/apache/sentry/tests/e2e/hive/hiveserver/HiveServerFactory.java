@@ -40,7 +40,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.io.Files;
 import com.google.common.io.Resources;
 
 public class HiveServerFactory {
@@ -113,7 +112,7 @@ public class HiveServerFactory {
         fileSystem.mkdirs(new Path("/", "warehouse"), new FsPermission((short) 0777));
       }
     }
-    Boolean policyOnHDFS = new Boolean(System.getProperty("sentry.e2etest.policyonhdfs", "false"));
+    Boolean policyOnHDFS = Boolean.valueOf(System.getProperty("sentry.e2etest.policyonhdfs", "false"));
     if (policyOnHDFS) {
       // Initialize "hive.exec.scratchdir", according the description of
       // "hive.exec.scratchdir", the permission should be (733).
@@ -163,19 +162,17 @@ public class HiveServerFactory {
 
     properties.put(METASTORE_RAW_STORE_IMPL,
         "org.apache.sentry.binding.metastore.AuthorizingObjectStore");
-    if (!properties.containsKey(METASTORE_URI)) {
-      if (HiveServer2Type.InternalMetastore.equals(type)) {
-        // The configuration sentry.metastore.service.users is for the user who
-        // has all access to get the metadata.
-        properties.put(METASTORE_BYPASS, "accessAllMetaUser");
-        properties.put(METASTORE_URI,
-          "thrift://localhost:" + String.valueOf(findPort()));
-        if (!properties.containsKey(METASTORE_HOOK)) {
-          properties.put(METASTORE_HOOK,
-              "org.apache.sentry.binding.metastore.MetastoreAuthzBinding");
-        }
-        properties.put(ConfVars.METASTORESERVERMINTHREADS.varname, "5");
+    if (!properties.containsKey(METASTORE_URI) && HiveServer2Type.InternalMetastore.equals(type)) {
+      // The configuration sentry.metastore.service.users is for the user who
+      // has all access to get the metadata.
+      properties.put(METASTORE_BYPASS, "accessAllMetaUser");
+      properties.put(METASTORE_URI,
+        "thrift://localhost:" + String.valueOf(findPort()));
+      if (!properties.containsKey(METASTORE_HOOK)) {
+        properties.put(METASTORE_HOOK,
+            "org.apache.sentry.binding.metastore.MetastoreAuthzBinding");
       }
+      properties.put(ConfVars.METASTORESERVERMINTHREADS.varname, "5");
     }
 
     // set the SentryMetaStoreFilterHook for HiveServer2 only, not for metastore

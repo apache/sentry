@@ -16,8 +16,6 @@
  */
 package org.apache.sentry.tests.e2e.dbprovider;
 
-import static org.junit.Assert.assertTrue;
-
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 import org.apache.sentry.tests.e2e.hive.TestSandboxOps;
 import org.junit.Before;

@@ -19,8 +19,6 @@ package org.apache.sentry.tests.e2e.metastore;
 import static org.apache.sentry.policy.common.PolicyConstants.AUTHORIZABLE_SPLITTER;
 import static org.apache.sentry.policy.common.PolicyConstants.PRIVILEGE_PREFIX;
 import static org.apache.sentry.policy.common.PolicyConstants.ROLE_SPLITTER;
-import static org.apache.sentry.tests.e2e.hive.StaticUserGroup.ADMIN1;
-import static org.apache.sentry.tests.e2e.hive.StaticUserGroup.ADMINGROUP;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,6 +35,7 @@ import org.apache.sentry.policy.db.DBModelAuthorizables;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
 import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 import org.apache.tools.ant.util.StringUtils;
 import org.mortbay.log.Log;
 
@@ -44,7 +43,7 @@ import com.google.common.collect.Sets;
 
 public class SentryPolicyProviderForDb extends PolicyFile {
   protected static final Set<String> ADMIN_GROUP_SET = Sets
-      .newHashSet(ADMINGROUP);
+      .newHashSet(StaticUserGroup.ADMINGROUP);
   private SentryPolicyServiceClient sentryClient;
 
   protected SentryPolicyServiceClient getSentryClient() {
@@ -72,14 +71,14 @@ public class SentryPolicyProviderForDb extends PolicyFile {
     }
 
     // remove existing metadata
-    for (TSentryRole tRole : sentryClient.listRoles(ADMIN1)) {
-      sentryClient.dropRole(ADMIN1, tRole.getRoleName());
+    for (TSentryRole tRole : sentryClient.listRoles(StaticUserGroup.ADMIN1)) {
+      sentryClient.dropRole(StaticUserGroup.ADMIN1, tRole.getRoleName());
     }
 
     // create roles and add privileges
     for (Entry<String, Collection<String>> roleEntry : rolesToPermissions
         .asMap().entrySet()) {
-      sentryClient.createRole(ADMIN1, roleEntry.getKey());
+      sentryClient.createRole(StaticUserGroup.ADMIN1, roleEntry.getKey());
       for (String privilege : roleEntry.getValue()) {
         addPrivilege(roleEntry.getKey(), privilege);
       }
@@ -92,7 +91,7 @@ public class SentryPolicyProviderForDb extends PolicyFile {
         for (String roleName : roleNames.split(",")) {
           try {
             sentryClient
-                .grantRoleToGroup(ADMIN1, groupEntry.getKey(), roleName);
+                .grantRoleToGroup(StaticUserGroup.ADMIN1, groupEntry.getKey(), roleName);
           } catch (SentryUserException e) {
             Log.warn("Error granting role " + roleName + " to group "
                 + groupEntry.getKey());
@@ -141,18 +140,18 @@ public class SentryPolicyProviderForDb extends PolicyFile {
       }
 
       if (columnName != null) {
-        sentryClient.grantColumnPrivilege(ADMIN1, roleName, serverName, dbName,
+        sentryClient.grantColumnPrivilege(StaticUserGroup.ADMIN1, roleName, serverName, dbName,
             tableName, columnName, action);
       } else if (tableName != null) {
-        sentryClient.grantTablePrivilege(ADMIN1, roleName, serverName, dbName,
+        sentryClient.grantTablePrivilege(StaticUserGroup.ADMIN1, roleName, serverName, dbName,
             tableName, action);
       } else if (dbName != null) {
-        sentryClient.grantDatabasePrivilege(ADMIN1, roleName, serverName,
+        sentryClient.grantDatabasePrivilege(StaticUserGroup.ADMIN1, roleName, serverName,
             dbName, action);
       } else if (uriPath != null) {
-        sentryClient.grantURIPrivilege(ADMIN1, roleName, serverName, uriPath);
+        sentryClient.grantURIPrivilege(StaticUserGroup.ADMIN1, roleName, serverName, uriPath);
       } else if (serverName != null) {
-        sentryClient.grantServerPrivilege(ADMIN1, roleName, serverName, action);
+        sentryClient.grantServerPrivilege(StaticUserGroup.ADMIN1, roleName, serverName, action);
       }
     }
 

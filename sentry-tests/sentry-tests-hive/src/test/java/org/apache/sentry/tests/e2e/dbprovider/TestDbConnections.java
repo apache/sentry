@@ -31,7 +31,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestDbConnections extends AbstractTestWithStaticConfiguration {
-  private PolicyFile policyFile;
 
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception {
@@ -44,7 +43,7 @@ public class TestDbConnections extends AbstractTestWithStaticConfiguration {
   public void setup() throws Exception {
     super.setupAdmin();
     super.setup();
-    policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    PolicyFile.setAdminOnServer1(ADMINGROUP);
   }
 
   /**

@@ -17,10 +17,6 @@
 
 package org.apache.sentry.tests.e2e.dbprovider;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -221,7 +217,7 @@ public class TestPrivilegeWithGrantOption extends AbstractTestWithStaticConfigur
       HiveOperation expectedOp, String dbName, String tableName,
       boolean checkSentryAccessDeniedException) throws Exception {
     // negative test case: non admin user can't create role
-    assertFalse(DummySentryOnFailureHook.invoked);
+    Assert.assertFalse(DummySentryOnFailureHook.invoked);
     try {
       statement.execute(sqlStr);
       Assert.fail("Expected SQL exception for " + sqlStr);
@@ -241,7 +237,7 @@ public class TestPrivilegeWithGrantOption extends AbstractTestWithStaticConfigur
       return;
     }
 
-    assertTrue(DummySentryOnFailureHook.invoked);
+    Assert.assertTrue(DummySentryOnFailureHook.invoked);
     if (expectedOp != null) {
       Assert.assertNotNull("Hive op is null for op: " + expectedOp, DummySentryOnFailureHook.hiveOp);
       Assert.assertTrue(expectedOp.equals(DummySentryOnFailureHook.hiveOp));
@@ -265,8 +261,8 @@ public class TestPrivilegeWithGrantOption extends AbstractTestWithStaticConfigur
       String statementSql, int dbObjectPosition, String dbObjectName)
       throws Exception {
     ResultSet res = statetment.executeQuery(statementSql);
-    assertTrue(res.next());
-    assertEquals(dbObjectName, res.getString(dbObjectPosition));
+    Assert.assertTrue(res.next());
+    Assert.assertEquals(dbObjectName, res.getString(dbObjectPosition));
     res.close();
   }
 

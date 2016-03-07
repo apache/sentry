@@ -516,7 +516,7 @@ public class TestMetastoreEndToEnd extends
    */
   @Test
   public void testPartionInsert() throws Exception {
-    String partVal1 = "part1", partVal2 = "part2", partVal3 = "part5";
+    String partVal1 = "part1", partVal2 = "part2";
 
     policyFile.addRolesToGroup(USERGROUP1, uri_role).addPermissionsToRole(
         uri_role, "server=server1->uri=file://" + dataFile.getPath());
@@ -556,7 +556,7 @@ public class TestMetastoreEndToEnd extends
 
   @Test
   public void testAddPartion() throws Exception {
-    String partVal1 = "part1", partVal2 = "part2", partVal3 = "part5";
+    String partVal1 = "part1", partVal2 = "part2";
     String newPath1 = "fooTab1";
     String tabDir1 = hiveServer.getProperty(HiveServerFactory.WAREHOUSE_DIR)
         + File.separator + newPath1;

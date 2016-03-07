@@ -59,19 +59,11 @@ import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapred.FileInputFormat;
-import org.apache.hadoop.mapred.FileOutputFormat;
-import org.apache.hadoop.mapred.JobClient;
-import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.MapReduceBase;
 import org.apache.hadoop.mapred.Mapper;
-import org.apache.hadoop.mapred.MiniMRClientCluster;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
-import org.apache.hadoop.mapred.RunningJob;
-import org.apache.hadoop.mapred.TextInputFormat;
-import org.apache.hadoop.mapred.TextOutputFormat;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.binding.hive.SentryHiveAuthorizationTaskFactoryImpl;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
@@ -146,7 +138,6 @@ public class TestHDFSIntegration {
       "dfs.namenode.authorization.provider.class";
 
   private static MiniDFSCluster miniDFS;
-  private MiniMRClientCluster miniMR;
   private static InternalHiveServer hiveServer2;
   private static InternalMetastoreServer metastore;
   private static HiveMetaStoreClient hmsClient;
@@ -300,6 +291,7 @@ public class TestHDFSIntegration {
             try {
               metastore.start();
               while (true) {
+                Thread.sleep(1000L);
               }
             } catch (Exception e) {
               LOGGER.info("Could not start Hive Server");
@@ -326,7 +318,9 @@ public class TestHDFSIntegration {
         public void run() {
           try {
             hiveServer2.start();
-            while(keepRunning.get()){}
+            while (keepRunning.get()) {
+              Thread.sleep(1000L);
+            }
           } catch (Exception e) {
             LOGGER.info("Could not start Hive Server");
           }
@@ -352,13 +346,6 @@ public class TestHDFSIntegration {
     }
   }
 
-  private static String getSentryPort() throws Exception{
-    if(sentryServer!=null) {
-      return String.valueOf(sentryServer.get(0).getAddress().getPort());
-    } else {
-      throw new Exception("Sentry server not initialized");
-    }
-  }
   private static void startDFSandYARN() throws IOException,
       InterruptedException {
     adminUgi.doAs(new PrivilegedExceptionAction<Void>() {
@@ -1747,7 +1734,9 @@ public class TestHDFSIntegration {
         List<String> lines = new ArrayList<String>();
         do {
           line = in.readLine();
-          if (line != null) lines.add(line);
+          if (line != null) {
+            lines.add(line);
+          }
         } while (line != null);
         Assert.assertEquals(3, lines.size());
         in.close();
@@ -1787,12 +1776,10 @@ public class TestHDFSIntegration {
         throw th;
       }
     }
-    if (recurse) {
-      if (fStatus.isDirectory()) {
-        FileStatus[] children = miniDFS.getFileSystem().listStatus(p);
-        for (FileStatus fs : children) {
-          verifyOnAllSubDirs(fs.getPath(), fsAction, group, groupShouldExist, recurse, NUM_RETRIES);
-        }
+    if (recurse && fStatus.isDirectory()) {
+      FileStatus[] children = miniDFS.getFileSystem().listStatus(p);
+      for (FileStatus fs : children) {
+        verifyOnAllSubDirs(fs.getPath(), fsAction, group, groupShouldExist, recurse, NUM_RETRIES);
       }
     }
   }
@@ -1814,6 +1801,7 @@ public class TestHDFSIntegration {
     return acls;
   }
 
+/*
   private void runWordCount(JobConf job, String inPath, String outPath) throws Exception {
     Path in = new Path(inPath);
     Path out = new Path(outPath);
@@ -1842,5 +1830,6 @@ public class TestHDFSIntegration {
     }
     
   }
+*/
 
 }

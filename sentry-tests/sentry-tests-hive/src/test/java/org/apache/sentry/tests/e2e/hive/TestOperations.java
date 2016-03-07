@@ -1100,8 +1100,12 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
       assertSemanticException(statement,
           "create external table " + DB1 + ".tb1(a int) location '" + extTableDir + "'");
     } finally {
-      if (statement != null) statement.close();
-      if (connection != null) connection.close();
+      if (statement != null) {
+        statement.close();
+      }
+      if (connection != null) {
+        connection.close();
+      }
     }
   }
 }

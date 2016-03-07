@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.sentry.provider.db.SentryAccessDeniedException;
-import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -46,7 +45,6 @@ public class TestColumnEndToEnd extends AbstractTestWithStaticConfiguration {
 
   private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   private File dataFile;
-  private PolicyFile policyFile;
 
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception{
@@ -60,7 +58,7 @@ public class TestColumnEndToEnd extends AbstractTestWithStaticConfiguration {
   public void setup() throws Exception {
     super.setupAdmin();
     super.setup();
-    policyFile = super.setupPolicy();
+    super.setupPolicy();
     dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);

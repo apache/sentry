@@ -64,7 +64,7 @@ public abstract class AbstractTestWithHiveServer {
     hiveServer = HiveServerFactory.create(properties, baseDir, confDir, logDir, policyFile.getPath(), fileSystem);
     hiveServer.start();
     return new Context(hiveServer, fileSystem,
-        baseDir, confDir, dataDir, policyFile);
+        baseDir, dataDir, policyFile);
   }
 
   protected static File assertCreateDir(File dir) {

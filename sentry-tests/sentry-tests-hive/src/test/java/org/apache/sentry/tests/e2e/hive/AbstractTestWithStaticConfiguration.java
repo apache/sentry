@@ -19,7 +19,6 @@ package org.apache.sentry.tests.e2e.hive;
 import static org.apache.sentry.policy.common.PolicyConstants.AUTHORIZABLE_SPLITTER;
 import static org.apache.sentry.policy.common.PolicyConstants.PRIVILEGE_PREFIX;
 import static org.apache.sentry.policy.common.PolicyConstants.ROLE_SPLITTER;
-import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -179,7 +178,7 @@ public abstract class AbstractTestWithStaticConfiguration {
 
   public static void createContext() throws Exception {
     context = new Context(hiveServer, fileSystem,
-        baseDir, confDir, dataDir, policyFileLocation);
+        baseDir, dataDir, policyFileLocation);
   }
   protected void dropDb(String user, String...dbs) throws Exception {
     Connection connection = context.createConnection(user);
@@ -195,7 +194,7 @@ public abstract class AbstractTestWithStaticConfiguration {
     Statement statement = connection.createStatement();
     ArrayList<String> allowedDBs = new ArrayList<String>(Arrays.asList(DB1, DB2, DB3));
     for(String db : dbs) {
-      assertTrue(db + " is not part of known test dbs which will be cleaned up after the test", allowedDBs.contains(db));
+      Assert.assertTrue(db + " is not part of known test dbs which will be cleaned up after the test", allowedDBs.contains(db));
       statement.execute("CREATE DATABASE " + db);
     }
     statement.close();
@@ -235,7 +234,7 @@ public abstract class AbstractTestWithStaticConfiguration {
     LOGGER.info("AbstractTestWithStaticConfiguration setupTestStaticConfiguration");
     properties = Maps.newHashMap();
     if(!policyOnHdfs) {
-      policyOnHdfs = new Boolean(System.getProperty("sentry.e2etest.policyonhdfs", "false"));
+      policyOnHdfs = Boolean.valueOf(System.getProperty("sentry.e2etest.policyonhdfs", "false"));
     }
     if (testServerType != null) {
       properties.put("sentry.e2etest.hiveServer2Type", testServerType);
@@ -266,7 +265,7 @@ public abstract class AbstractTestWithStaticConfiguration {
       policyURI = policyFileLocation.getPath();
     }
 
-    boolean startSentry = new Boolean(System.getProperty(EXTERNAL_SENTRY_SERVICE, "false"));
+    boolean startSentry = Boolean.valueOf(System.getProperty(EXTERNAL_SENTRY_SERVICE, "false"));
     if ("true".equalsIgnoreCase(System.getProperty(ENABLE_SENTRY_HA, "false"))) {
       enableSentryHA = true;
     }
@@ -671,11 +670,11 @@ public abstract class AbstractTestWithStaticConfiguration {
    */
   protected void validateReturnedResult(List<String> expected, List<String> returned) {
     for (String obj : expected) {
-      assertTrue("expected " + obj + " not found in the returned list: " + returned.toString(),
+      Assert.assertTrue("expected " + obj + " not found in the returned list: " + returned.toString(),
               returned.contains(obj));
     }
     for (String obj : returned) {
-      assertTrue("returned " + obj + " not found in the expected list: " + expected.toString(),
+      Assert.assertTrue("returned " + obj + " not found in the expected list: " + expected.toString(),
               expected.contains(obj));
     }
   }

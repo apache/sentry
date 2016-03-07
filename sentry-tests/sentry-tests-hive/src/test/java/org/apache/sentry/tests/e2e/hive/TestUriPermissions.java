@@ -21,7 +21,6 @@ import java.io.FileOutputStream;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
-import java.util.Random;
 
 import com.google.common.io.Resources;
 import junit.framework.Assert;
@@ -31,13 +30,8 @@ import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
-  private static final Logger LOGGER = LoggerFactory.
-          getLogger(TestUriPermissions.class);
-
   private PolicyFile policyFile;
   private File dataFile;
   private String loadData;

@@ -26,7 +26,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStore;
 import org.apache.hadoop.hive.shims.ShimLoader;
-import org.fest.reflect.core.Reflection;
 
 public class InternalMetastoreServer extends AbstractHiveServer {
   private final HiveConf conf;

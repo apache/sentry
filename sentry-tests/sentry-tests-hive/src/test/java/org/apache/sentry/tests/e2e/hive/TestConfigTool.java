@@ -33,7 +33,6 @@ import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.provider.file.PolicyFile;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
