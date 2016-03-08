@@ -68,6 +68,11 @@ public class SentryWebServer {
       servletContextHandler.addEventListener(listener);
     }
 
+    ServletHolder confServletHolder = new ServletHolder(ConfServlet.class);
+    servletContextHandler.addServlet(confServletHolder, "/conf");
+    servletContextHandler.getServletContext()
+        .setAttribute(ConfServlet.CONF_CONTEXT_ATTRIBUTE, conf);
+
     ResourceHandler resourceHandler = new ResourceHandler();
     resourceHandler.setDirectoriesListed(true);
     URL url = this.getClass().getResource(RESOURCE_DIR);

@@ -55,4 +55,33 @@ public class TestSentryWebServerWithoutSecurity extends SentryServiceIntegration
     String response = IOUtils.toString(conn.getInputStream());
     Assert.assertEquals("pong\n", response);
   }
+
+  @Test
+  public void testConf() throws Exception {
+    // test bad format
+    final URL url = new URL("http://" + SERVER_HOST + ":" + webServerPort + "/conf?"
+        + ConfServlet.FORMAT_PARAM + "=badformat");
+    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+    Assert.assertEquals(HttpURLConnection.HTTP_BAD_REQUEST, conn.getResponseCode());
+
+    // test json format
+    final URL url1 = new URL("http://" + SERVER_HOST + ":" + webServerPort + "/conf?"
+        + ConfServlet.FORMAT_PARAM +"=" +  ConfServlet.FORMAT_JSON);
+    conn = (HttpURLConnection) url1.openConnection();
+    Assert.assertEquals(HttpURLConnection.HTTP_OK, conn.getResponseCode());
+
+    // test xml format
+    final URL url2 = new URL("http://" + SERVER_HOST + ":" + webServerPort + "/conf?"
+        + ConfServlet.FORMAT_PARAM +"=" + ConfServlet.FORMAT_XML);
+    conn = (HttpURLConnection) url2.openConnection();
+    Assert.assertEquals(HttpURLConnection.HTTP_OK, conn.getResponseCode());
+    String xmlResponse = IOUtils.toString(conn.getInputStream());
+
+    // test default is xml format
+    final URL url3 = new URL("http://" + SERVER_HOST + ":" + webServerPort + "/conf");
+    conn = (HttpURLConnection) url3.openConnection();
+    Assert.assertEquals(HttpURLConnection.HTTP_OK, conn.getResponseCode());
+    String defaultResponse = IOUtils.toString(conn.getInputStream());
+    Assert.assertEquals(xmlResponse, defaultResponse);
+  }
 }
