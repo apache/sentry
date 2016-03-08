@@ -36,12 +36,13 @@ import java.lang.reflect.Field;
 
 import org.junit.Assert;
 
+import static org.apache.solr.sentry.SentryIndexAuthorizationSingleton.USER_NAME;
+import static org.apache.solr.sentry.SentryIndexAuthorizationSingleton.DO_AS_USER_NAME;
+
 /**
  * Base class for Sentry tests
  */
 public abstract class SentryTestBase extends SolrTestCaseJ4 {
-
-  private static final String USER_NAME = "solr.user.name";
 
   private SolrQueryRequest request;
 
@@ -95,10 +96,15 @@ public abstract class SentryTestBase extends SolrTestCaseJ4 {
     cloudDescField.set(coreDescriptor, mCloudDescriptor);
 
     HttpServletRequest httpServletRequest = EasyMock.createMock(HttpServletRequest.class);
-    IExpectationSetters getAttributeExpect =
+    IExpectationSetters getAttributeUserExpect =
         EasyMock.expect(httpServletRequest.getAttribute(USER_NAME)).andReturn(user);
     if (!onlyOnce) {
-      getAttributeExpect.anyTimes();
+      getAttributeUserExpect.anyTimes();
+    }
+    IExpectationSetters getAttributeDoAsUserExpect =
+        EasyMock.expect(httpServletRequest.getAttribute(DO_AS_USER_NAME)).andReturn(null);
+    if (!onlyOnce) {
+      getAttributeDoAsUserExpect.anyTimes();
     }
     EasyMock.replay(httpServletRequest);
     request.getContext().put("httpRequest", httpServletRequest);
