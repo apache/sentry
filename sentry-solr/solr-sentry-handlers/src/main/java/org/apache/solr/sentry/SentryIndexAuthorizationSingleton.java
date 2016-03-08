@@ -41,8 +41,20 @@ public class SentryIndexAuthorizationSingleton {
   private static Logger log =
     LoggerFactory.getLogger(SentryIndexAuthorizationSingleton.class);
 
+  /**
+   * Java system property for specifying location of sentry-site.xml
+   */
   public static final String propertyName = "solr.authorization.sentry.site";
-  private static final String USER_NAME = "solr.user.name";
+
+  /**
+   * {@link HttpServletRequest} attribute for requesting user name
+   */
+  public static final String USER_NAME = "solr.user.name";
+
+  /**
+   * {@link HttpServletRequest} attribute for requesting do as user.
+   */
+  public static final String DO_AS_USER_NAME = "solr.do.as.user.name";
 
   private static final SentryIndexAuthorizationSingleton INSTANCE =
     new SentryIndexAuthorizationSingleton(System.getProperty(propertyName));
@@ -128,7 +140,7 @@ public class SentryIndexAuthorizationSingleton {
     Subject userName = new Subject(getUserName(req));
     long eventTime = req.getStartTime();
     String paramString = req.getParamString();
-    String impersonator = null; // FIXME
+    String impersonator = getImpersonatorName(req);
 
     String ipAddress = null;
     HttpServletRequest sreq = (HttpServletRequest) req.getContext().get("httpRequest");
@@ -288,6 +300,14 @@ public class SentryIndexAuthorizationSingleton {
     // http request from the same process.
     return req instanceof LocalSolrQueryRequest?
       superUser:(String)httpServletRequest.getAttribute(USER_NAME);
+  }
+
+  private String getImpersonatorName(SolrQueryRequest req) {
+    HttpServletRequest httpServletRequest = (HttpServletRequest)req.getContext().get("httpRequest");
+    if (httpServletRequest != null) {
+      return (String)httpServletRequest.getAttribute(DO_AS_USER_NAME);
+    }
+    return null;
   }
 
   /**
