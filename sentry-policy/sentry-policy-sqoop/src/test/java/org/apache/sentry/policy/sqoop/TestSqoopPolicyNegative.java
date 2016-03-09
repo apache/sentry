@@ -66,7 +66,7 @@ public class TestSqoopPolicyNegative {
     append("other_group = other_role", globalPolicyFile);
     append("[roles]", globalPolicyFile);
     append("other_role = server=server1->connector=c1->action=read, server=server1->link=l1->action=read", globalPolicyFile);
-    PolicyEngine policy = new SqoopPolicyFileProviderBackend("server1", globalPolicyFile.getPath());
+    PolicyEngine policy = SqoopPolicyTestUtil.createPolicyEngineForTest("server1", globalPolicyFile.getPath());
     //malicious_group has no privilege
     ImmutableSet<String> permissions = policy.getAllPrivileges(Sets.newHashSet("malicious_group"), ActiveRoleSet.ALL);
     Assert.assertTrue(permissions.toString(), permissions.isEmpty());
@@ -81,7 +81,7 @@ public class TestSqoopPolicyNegative {
     append("other_group = malicious_role", globalPolicyFile);
     append("[roles]", globalPolicyFile);
     append("malicious_role = connector=c1->action=read,link=l1->action=read", globalPolicyFile);
-    PolicyEngine policy = new SqoopPolicyFileProviderBackend("server1", globalPolicyFile.getPath());
+    PolicyEngine policy = SqoopPolicyTestUtil.createPolicyEngineForTest("server1", globalPolicyFile.getPath());
     ImmutableSet<String> permissions = policy.getAllPrivileges(Sets.newHashSet("other_group"), ActiveRoleSet.ALL);
     Assert.assertTrue(permissions.toString(), permissions.isEmpty());
   }
@@ -92,7 +92,7 @@ public class TestSqoopPolicyNegative {
     append("group = malicious_role", globalPolicyFile);
     append("[roles]", globalPolicyFile);
     append("malicious_role = server=*", globalPolicyFile);
-    PolicyEngine policy = new SqoopPolicyFileProviderBackend("server1", globalPolicyFile.getPath());
+    PolicyEngine policy = SqoopPolicyTestUtil.createPolicyEngineForTest("server1", globalPolicyFile.getPath());
     ImmutableSet<String> permissions = policy.getAllPrivileges(Sets.newHashSet("group"), ActiveRoleSet.ALL);
     Assert.assertTrue(permissions.toString(), permissions.isEmpty());
   }
@@ -103,7 +103,7 @@ public class TestSqoopPolicyNegative {
     append("group = malicious_role", globalPolicyFile);
     append("[roles]", globalPolicyFile);
     append("malicious_role = server=server2", globalPolicyFile);
-    PolicyEngine policy = new SqoopPolicyFileProviderBackend("server1", globalPolicyFile.getPath());
+    PolicyEngine policy = SqoopPolicyTestUtil.createPolicyEngineForTest("server1", globalPolicyFile.getPath());
     ImmutableSet<String> permissions = policy.getAllPrivileges(Sets.newHashSet("group"), ActiveRoleSet.ALL);
     Assert.assertTrue(permissions.toString(), permissions.isEmpty());
   }
@@ -114,7 +114,7 @@ public class TestSqoopPolicyNegative {
     append("group = malicious_role", globalPolicyFile);
     append("[roles]", globalPolicyFile);
     append("malicious_role = *", globalPolicyFile);
-    PolicyEngine policy = new SqoopPolicyFileProviderBackend("server1", globalPolicyFile.getPath());
+    PolicyEngine policy = SqoopPolicyTestUtil.createPolicyEngineForTest("server1", globalPolicyFile.getPath());
     ImmutableSet<String> permissions = policy.getAllPrivileges(Sets.newHashSet("group"), ActiveRoleSet.ALL);
     Assert.assertTrue(permissions.toString(), permissions.isEmpty());
   }

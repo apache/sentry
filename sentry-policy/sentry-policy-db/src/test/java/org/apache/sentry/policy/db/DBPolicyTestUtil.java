@@ -14,15 +14,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.policy.search;
+package org.apache.sentry.policy.db;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.sentry.core.model.db.HivePrivilegeModel;
+import org.apache.sentry.policy.common.PolicyEngine;
+import org.apache.sentry.provider.common.ProviderBackend;
+import org.apache.sentry.provider.common.ProviderBackendContext;
+import org.apache.sentry.provider.file.SimpleFileProviderBackend;
 
 import java.io.IOException;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.provider.file.SimpleFileProviderBackend;
+public class DBPolicyTestUtil {
 
-public class SearchPolicyFileBackend extends SimpleSearchPolicyEngine {
-  public SearchPolicyFileBackend(String resource) throws IOException{
-    super(new SimpleFileProviderBackend(new Configuration(), resource));
+  public static PolicyEngine createPolicyEngineForTest(String server, String resource) throws IOException {
+
+    ProviderBackend providerBackend = new SimpleFileProviderBackend(new Configuration(), resource);
+
+    // create backendContext
+    ProviderBackendContext context = new ProviderBackendContext();
+    context.setAllowPerDatabase(true);
+    context.setValidators(HivePrivilegeModel.getInstance().getPrivilegeValidators(server));
+    // initialize the backend with the context
+    providerBackend.initialize(context);
+
+
+    return new SimpleDBPolicyEngine(providerBackend);
   }
 }

@@ -32,7 +32,7 @@ public class TestIndexerPolicyEngineLocalFS extends AbstractTestIndexerPolicyEng
     Assert.assertNotNull(baseDir);
     Assert.assertTrue(baseDir.isDirectory() || baseDir.mkdirs());
     PolicyFiles.copyToDir(baseDir, "test-authz-provider.ini");
-    setPolicy(new IndexerPolicyFileBackend(new File(baseDir, "test-authz-provider.ini").getPath()));
+    setPolicy(IndexPolicyTestUtil.createPolicyEngineForTest(new File(baseDir, "test-authz-provider.ini").getPath()));
   }
   @Override
   protected void beforeTeardown() throws IOException {

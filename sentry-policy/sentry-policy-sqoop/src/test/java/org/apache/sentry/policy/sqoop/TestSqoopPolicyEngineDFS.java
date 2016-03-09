@@ -64,7 +64,7 @@ public class TestSqoopPolicyEngineDFS extends AbstractTestSqoopPolicyEngine {
     fileSystem.delete(etc, true);
     fileSystem.mkdirs(etc);
     PolicyFiles.copyToDir(fileSystem, etc, "test-authz-provider.ini");
-    setPolicy(new SqoopPolicyFileProviderBackend(sqoopServerName, new Path(etc,
+    setPolicy(SqoopPolicyTestUtil.createPolicyEngineForTest(sqoopServerName, new Path(etc,
         "test-authz-provider.ini").toString()));
   }
 

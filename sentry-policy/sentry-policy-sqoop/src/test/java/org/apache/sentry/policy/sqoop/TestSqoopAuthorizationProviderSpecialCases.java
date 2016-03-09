@@ -34,6 +34,7 @@ import org.apache.sentry.core.model.sqoop.Connector;
 import org.apache.sentry.core.model.sqoop.Server;
 import org.apache.sentry.core.model.sqoop.SqoopActionConstant;
 import org.apache.sentry.core.model.sqoop.SqoopActionFactory.SqoopAction;
+import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.common.AuthorizationProvider;
 import org.apache.sentry.provider.file.LocalGroupResourceAuthorizationProvider;
 import org.apache.sentry.provider.file.PolicyFile;
@@ -77,7 +78,7 @@ public class TestSqoopAuthorizationProviderSpecialCases {
       .addPermissionsToRole("role1", true, "server=server1->connector=c1->action=read",
           "server=server1->connector=c1->action=read");
     policyFile.write(iniFile);
-    SqoopPolicyFileProviderBackend policy = new SqoopPolicyFileProviderBackend(server1.getName(), initResource);
+    PolicyEngine policy = SqoopPolicyTestUtil.createPolicyEngineForTest(server1.getName(), initResource);
     authzProvider = new LocalGroupResourceAuthorizationProvider(initResource, policy);
     List<? extends Authorizable> authorizableHierarchy = ImmutableList.of(server1, connector1);
     Assert.assertTrue(authorizableHierarchy.toString(),

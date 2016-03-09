@@ -21,11 +21,9 @@ import java.util.Set;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.SentryConfigurationException;
-import org.apache.sentry.core.model.db.HivePrivilegeModel;
 import org.apache.sentry.policy.common.PrivilegeFactory;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.common.ProviderBackend;
-import org.apache.sentry.provider.common.ProviderBackendContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,12 +38,8 @@ public class SimpleDBPolicyEngine implements PolicyEngine {
 
   private final ProviderBackend providerBackend;
 
-  public SimpleDBPolicyEngine(String serverName, ProviderBackend providerBackend) {
+  public SimpleDBPolicyEngine(ProviderBackend providerBackend) {
     this.providerBackend = providerBackend;
-    ProviderBackendContext context = new ProviderBackendContext();
-    context.setAllowPerDatabase(true);
-    context.setValidators(HivePrivilegeModel.getInstance().getPrivilegeValidators(serverName));
-    this.providerBackend.initialize(context);
   }
 
   /**
@@ -55,8 +49,6 @@ public class SimpleDBPolicyEngine implements PolicyEngine {
   public PrivilegeFactory getPrivilegeFactory() {
     return new DBWildcardPrivilege.DBWildcardPrivilegeFactory();
   }
-
-
 
   @Override
   public ImmutableSet<String> getAllPrivileges(Set<String> groups,

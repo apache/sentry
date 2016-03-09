@@ -39,6 +39,7 @@ import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.model.db.DBModelAction;
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
+import org.apache.sentry.core.model.db.HivePrivilegeModel;
 import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.cache.PrivilegeCache;
@@ -216,12 +217,20 @@ public class HiveAuthzBinding {
     ProviderBackend providerBackend = (ProviderBackend) providerBackendConstructor.
         newInstance(new Object[] {authzConf, resourceName});
 
+    // create backendContext
+    ProviderBackendContext context = new ProviderBackendContext();
+    context.setAllowPerDatabase(true);
+    context.setValidators(HivePrivilegeModel.getInstance().getPrivilegeValidators(serverName));
+    // initialize the backend with the context
+    providerBackend.initialize(context);
+
+
     // load the policy engine class
     Constructor<?> policyConstructor =
-      Class.forName(policyEngineName).getDeclaredConstructor(String.class, ProviderBackend.class);
+      Class.forName(policyEngineName).getDeclaredConstructor(ProviderBackend.class);
     policyConstructor.setAccessible(true);
     PolicyEngine policyEngine = (PolicyEngine) policyConstructor.
-        newInstance(new Object[] {serverName, providerBackend});
+        newInstance(new Object[] {providerBackend});
 
 
     // load the authz provider class
@@ -251,10 +260,10 @@ public class HiveAuthzBinding {
 
     // load the policy engine class
     Constructor<?> policyConstructor =
-            Class.forName(policyEngineName).getDeclaredConstructor(String.class, ProviderBackend.class);
+            Class.forName(policyEngineName).getDeclaredConstructor(ProviderBackend.class);
     policyConstructor.setAccessible(true);
     PolicyEngine policyEngine = (PolicyEngine) policyConstructor.
-            newInstance(new Object[] {serverName, providerBackend});
+            newInstance(new Object[] {providerBackend});
 
     // load the authz provider class
     Constructor<?> constrctor =
@@ -262,7 +271,6 @@ public class HiveAuthzBinding {
     constrctor.setAccessible(true);
     return (AuthorizationProvider) constrctor.newInstance(new Object[] {resourceName, policyEngine});
   }
-
 
   /**
    * Validate the privilege for the given operation for the given subject

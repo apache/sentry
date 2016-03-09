@@ -21,11 +21,9 @@ import java.util.Set;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.SentryConfigurationException;
-import org.apache.sentry.core.model.indexer.IndexerPrivilegeModel;
 import org.apache.sentry.policy.common.PrivilegeFactory;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.common.ProviderBackend;
-import org.apache.sentry.provider.common.ProviderBackendContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,10 +41,6 @@ public class SimpleIndexerPolicyEngine implements PolicyEngine {
 
   public SimpleIndexerPolicyEngine(ProviderBackend providerBackend) {
     this.providerBackend = providerBackend;
-    ProviderBackendContext context = new ProviderBackendContext();
-    context.setAllowPerDatabase(false);
-    context.setValidators(IndexerPrivilegeModel.getInstance().getPrivilegeValidators());
-    this.providerBackend.initialize(context);
   }
 
   /**

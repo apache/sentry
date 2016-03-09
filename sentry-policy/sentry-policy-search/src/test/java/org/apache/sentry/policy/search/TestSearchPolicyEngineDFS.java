@@ -63,7 +63,7 @@ public class TestSearchPolicyEngineDFS extends AbstractTestSearchPolicyEngine {
     fileSystem.delete(etc, true);
     fileSystem.mkdirs(etc);
     PolicyFiles.copyToDir(fileSystem, etc, "test-authz-provider.ini");
-    setPolicy(new SearchPolicyFileBackend(new Path(etc,
+    setPolicy(SearchPolicyTestUtil.createPolicyEngineForTest(new Path(etc,
         "test-authz-provider.ini").toString()));
   }
 

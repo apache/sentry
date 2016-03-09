@@ -85,7 +85,7 @@ public class TestIndexerAuthorizationProviderGeneralCases {
     baseDir = Files.createTempDir();
     PolicyFiles.copyToDir(baseDir, "test-authz-provider.ini");
     authzProvider = new HadoopGroupResourceAuthorizationProvider(
-        new IndexerPolicyFileBackend(new File(baseDir, "test-authz-provider.ini").getPath()),
+        IndexPolicyTestUtil.createPolicyEngineForTest(new File(baseDir, "test-authz-provider.ini").getPath()),
         new MockGroupMappingServiceProvider(USER_TO_GROUP_MAP));
 
   }

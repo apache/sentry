@@ -21,11 +21,9 @@ import java.util.Set;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.SentryConfigurationException;
-import org.apache.sentry.core.model.sqoop.SqoopPrivilegeModel;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.policy.common.PrivilegeFactory;
 import org.apache.sentry.provider.common.ProviderBackend;
-import org.apache.sentry.provider.common.ProviderBackendContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,12 +33,8 @@ public class SimpleSqoopPolicyEngine implements PolicyEngine {
   private static final Logger LOGGER = LoggerFactory.getLogger(SimpleSqoopPolicyEngine.class);
   private final ProviderBackend providerBackend;
 
-  public SimpleSqoopPolicyEngine(String sqoopServerName, ProviderBackend providerBackend) {
+  public SimpleSqoopPolicyEngine(ProviderBackend providerBackend) {
     this.providerBackend = providerBackend;
-    ProviderBackendContext context = new ProviderBackendContext();
-    context.setAllowPerDatabase(false);
-    context.setValidators(SqoopPrivilegeModel.getInstance().getPrivilegeValidators(sqoopServerName));
-    this.providerBackend.initialize(context);
   }
   @Override
   public PrivilegeFactory getPrivilegeFactory() {

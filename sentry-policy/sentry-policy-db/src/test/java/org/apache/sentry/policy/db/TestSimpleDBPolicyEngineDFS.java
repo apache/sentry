@@ -27,6 +27,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.sentry.core.common.ActiveRoleSet;
+import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.provider.file.PolicyFiles;
 import org.junit.AfterClass;
@@ -70,7 +71,7 @@ public class TestSimpleDBPolicyEngineDFS extends AbstractTestSimplePolicyEngine 
     fileSystem.delete(etc, true);
     fileSystem.mkdirs(etc);
     PolicyFiles.copyToDir(fileSystem, etc, "test-authz-provider.ini", "test-authz-provider-other-group.ini");
-    setPolicy(new DBPolicyFileBackend("server1",
+    setPolicy(DBPolicyTestUtil.createPolicyEngineForTest("server1",
         new Path(etc, "test-authz-provider.ini").toString()));
   }
   @Override
@@ -102,8 +103,8 @@ public class TestSimpleDBPolicyEngineDFS extends AbstractTestSimplePolicyEngine 
 
     PolicyFiles.copyFilesToDir(fileSystem, etc, globalPolicyFile);
     PolicyFiles.copyFilesToDir(fileSystem, etc, dbPolicyFile);
-    DBPolicyFileBackend multiFSEngine =
-        new DBPolicyFileBackend("server1", globalPolicyFile.getPath());
+    PolicyEngine multiFSEngine =
+            DBPolicyTestUtil.createPolicyEngineForTest("server1", globalPolicyFile.getPath());
 
     Set<String> dbGroups = Sets.newHashSet();
     dbGroups.add("group1");

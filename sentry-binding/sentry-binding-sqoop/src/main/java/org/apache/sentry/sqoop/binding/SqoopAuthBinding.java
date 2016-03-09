@@ -29,10 +29,12 @@ import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.sqoop.Server;
 import org.apache.sentry.core.model.sqoop.SqoopActionConstant;
 import org.apache.sentry.core.model.sqoop.SqoopActionFactory;
+import org.apache.sentry.core.model.sqoop.SqoopPrivilegeModel;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.common.AuthorizationComponent;
 import org.apache.sentry.provider.common.AuthorizationProvider;
 import org.apache.sentry.provider.common.ProviderBackend;
+import org.apache.sentry.provider.common.ProviderBackendContext;
 import org.apache.sentry.provider.db.generic.SentryGenericProviderBackend;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClientFactory;
@@ -110,12 +112,18 @@ public class SqoopAuthBinding {
       ((SentryGenericProviderBackend) providerBackend).setServiceName(serviceName);
     }
 
+    // Create backend context
+    ProviderBackendContext context = new ProviderBackendContext();
+    context.setAllowPerDatabase(false);
+    context.setValidators(SqoopPrivilegeModel.getInstance().getPrivilegeValidators(serviceName));
+    providerBackend.initialize(context);
+
     //Instantiate the configured policyEngine
     Constructor<?> policyConstructor =
-        Class.forName(policyEngineName).getDeclaredConstructor(String.class, ProviderBackend.class);
+        Class.forName(policyEngineName).getDeclaredConstructor(ProviderBackend.class);
     policyConstructor.setAccessible(true);
     PolicyEngine policyEngine =
-        (PolicyEngine) policyConstructor.newInstance(new Object[] {sqoopServer.getName(), providerBackend});
+        (PolicyEngine) policyConstructor.newInstance(new Object[] {providerBackend});
 
     //Instantiate the configured authProvider
     Constructor<?> constrctor =

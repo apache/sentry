@@ -98,7 +98,8 @@ public class TestSqoopAuthorizationProviderGeneralCases {
     baseDir = Files.createTempDir();
     PolicyFiles.copyToDir(baseDir, "test-authz-provider.ini");
     authzProvider = new HadoopGroupResourceAuthorizationProvider(
-        new SqoopPolicyFileProviderBackend(server1.getName(), new File(baseDir, "test-authz-provider.ini").getPath()),
+        SqoopPolicyTestUtil.createPolicyEngineForTest(server1.getName(),
+        new File(baseDir, "test-authz-provider.ini").getPath()),
         new MockGroupMappingServiceProvider(USER_TO_GROUP_MAP));
   }
 

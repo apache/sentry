@@ -63,7 +63,7 @@ public class TestIndexerPolicyEngineDFS extends AbstractTestIndexerPolicyEngine 
     fileSystem.delete(etc, true);
     fileSystem.mkdirs(etc);
     PolicyFiles.copyToDir(fileSystem, etc, "test-authz-provider.ini");
-    setPolicy(new IndexerPolicyFileBackend(new Path(etc,
+    setPolicy(IndexPolicyTestUtil.createPolicyEngineForTest(new Path(etc,
         "test-authz-provider.ini").toString()));
   }
 
