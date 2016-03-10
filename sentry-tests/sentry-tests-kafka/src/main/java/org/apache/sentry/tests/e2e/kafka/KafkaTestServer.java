@@ -118,7 +118,7 @@ public class KafkaTestServer {
         }
     }
 
-    public String getBootstrapServers() {
-        return "localhost:" + kafkaPort;
+    public String getBootstrapServers() throws UnknownHostException {
+        return InetAddress.getLocalHost().getHostAddress() + ":" + kafkaPort;
     }
 }
