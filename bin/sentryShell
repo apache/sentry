@@ -40,7 +40,7 @@ if [ ! -f ${HADOOP} ]; then
   exit 4;
 fi
 
-export _CMD_JAR=${SENTRY_SHELL_JAR}:sentry-provider-db-*.jar
+export _CMD_JAR=${SENTRY_SHELL_JAR:-sentry-provider-db-*.jar}
 for f in ${SENTRY_HOME}/lib/*.jar; do
   HADOOP_CLASSPATH=${HADOOP_CLASSPATH}:${f}
 done
@@ -68,4 +68,4 @@ while [ $# -gt 0 ]; do    # Until you run out of parameters . . .
   shift
 done
 
-exec $HADOOP jar ${SENTRY_HOME}/lib/${_CMD_JAR} org.apache.sentry.SentryShellHive ${args[@]}
+exec $HADOOP jar ${SENTRY_HOME}/lib/${_CMD_JAR} org.apache.sentry.provider.db.tools.SentryShellHive ${args[@]}
