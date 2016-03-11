@@ -68,7 +68,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
 
   public DelegateSentryStore(Configuration conf) throws SentryNoSuchObjectException,
       SentryAccessDeniedException, SentryConfigurationException, IOException {
-    this.privilegeOperator = new PrivilegeOperatePersistence();
+    this.privilegeOperator = new PrivilegeOperatePersistence(conf);
     // The generic model doesn't turn on the thread that cleans hive privileges
     conf.set(ServerConfig.SENTRY_STORE_ORPHANED_PRIVILEGE_REMOVAL,"false");
     this.conf = conf;

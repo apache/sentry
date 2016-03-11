@@ -171,7 +171,11 @@ public class ServiceConstants {
     // max message size for thrift messages
     public static String SENTRY_POLICY_SERVER_THRIFT_MAX_MESSAGE_SIZE = "sentry.policy.server.thrift.max.message.size";
     public static long SENTRY_POLICY_SERVER_THRIFT_MAX_MESSAGE_SIZE_DEFAULT = 100 * 1024 * 1024;
+
+    // action factories for external components
+    public static final String SENTRY_COMPONENT_ACTION_FACTORY_FORMAT = "sentry.%s.action.factory";
   }
+
   public static class ClientConfig {
     public static final ImmutableMap<String, String> SASL_PROPERTIES = ServiceConstants.SASL_PROPERTIES;
     public static final String SERVER_RPC_PORT = "sentry.service.client.server.rpc-port";
