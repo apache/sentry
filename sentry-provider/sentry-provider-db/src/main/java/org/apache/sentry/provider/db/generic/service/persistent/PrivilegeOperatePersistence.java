@@ -17,6 +17,7 @@
  */
 package org.apache.sentry.provider.db.generic.service.persistent;
 
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -27,7 +28,6 @@ import javax.jdo.PersistenceManager;
 import javax.jdo.Query;
 
 import org.apache.hadoop.conf.Configuration;
-
 import org.apache.sentry.SentryUserException;
 import org.apache.sentry.core.common.Action;
 import org.apache.sentry.core.common.Authorizable;
@@ -37,19 +37,22 @@ import org.apache.sentry.core.model.kafka.KafkaActionFactory;
 import org.apache.sentry.core.model.search.SearchActionFactory;
 import org.apache.sentry.provider.db.generic.service.persistent.PrivilegeObject.Builder;
 import org.apache.sentry.provider.db.service.model.MSentryGMPrivilege;
-import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.sentry.service.thrift.ServiceConstants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class used do some operations related privilege and make the results
  * persistence
  */
 public class PrivilegeOperatePersistence {
+  private static final Logger LOGGER = LoggerFactory.getLogger(PrivilegeOperatePersistence.class);
   private static final Map<String, BitFieldActionFactory> actionFactories = Maps.newHashMap();
   static{
     actionFactories.put("solr", new SearchActionFactory());
@@ -426,7 +429,7 @@ public class PrivilegeOperatePersistence {
     }
   }
 
-  public static BitFieldAction getAction(String component, String name) {
+  private BitFieldAction getAction(String component, String name) {
     BitFieldActionFactory actionFactory = getActionFactory(component);
     BitFieldAction action = actionFactory.getActionByName(name);
     if (action == null) {
@@ -435,10 +438,44 @@ public class PrivilegeOperatePersistence {
     return action;
   }
 
-  public static BitFieldActionFactory getActionFactory(String component) {
-    BitFieldActionFactory actionFactory = actionFactories.get(component.toLowerCase());
-    if (actionFactory == null) {
-      throw new RuntimeException("can't get actionFactory for component:" + component);
+  private BitFieldActionFactory getActionFactory(String component) {
+    String caseInsensitiveComponent = component.toLowerCase();
+    if (actionFactories.containsKey(caseInsensitiveComponent)) {
+      return actionFactories.get(caseInsensitiveComponent);
+    }
+    BitFieldActionFactory actionFactory = createActionFactory(caseInsensitiveComponent);
+    actionFactories.put(caseInsensitiveComponent, actionFactory);
+    LOGGER.info("Action factory for component {} not found in cache. Loaded it from configuration as {}.",
+                component, actionFactory.getClass().getName());
+    return actionFactory;
+  }
+
+  private BitFieldActionFactory createActionFactory(String component) {
+    String actionFactoryClassName =
+      conf.get(String.format(ServiceConstants.ServerConfig.SENTRY_COMPONENT_ACTION_FACTORY_FORMAT, component));
+    if (actionFactoryClassName == null) {
+      throw new RuntimeException("ActionFactory not defined for component " + component +
+                                   ". Please define the parameter " +
+                                   "sentry." + component + ".action.factory in configuration");
+    }
+    Class<?> actionFactoryClass;
+    try {
+      actionFactoryClass = Class.forName(actionFactoryClassName);
+    } catch (ClassNotFoundException e) {
+      throw new RuntimeException("ActionFactory class " + actionFactoryClassName + " not found.");
+    }
+    if (!BitFieldActionFactory.class.isAssignableFrom(actionFactoryClass)) {
+      throw new RuntimeException("ActionFactory class " + actionFactoryClassName + " must extend "
+                                   + BitFieldActionFactory.class.getName());
+    }
+    BitFieldActionFactory actionFactory;
+    try {
+      Constructor<?> actionFactoryConstructor = actionFactoryClass.getDeclaredConstructor();
+      actionFactoryConstructor.setAccessible(true);
+      actionFactory = (BitFieldActionFactory) actionFactoryClass.newInstance();
+    } catch (NoSuchMethodException | InstantiationException | IllegalAccessException e) {
+      throw new RuntimeException("Could not instantiate actionFactory " + actionFactoryClassName +
+                                   " for component: " + component, e);
     }
     return actionFactory;
   }

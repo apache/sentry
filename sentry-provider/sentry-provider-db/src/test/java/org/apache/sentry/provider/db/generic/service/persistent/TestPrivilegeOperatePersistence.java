@@ -21,15 +21,23 @@ import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.fail;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
+import com.google.common.collect.Lists;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.sentry.SentryUserException;
+import org.apache.sentry.core.common.Action;
 import org.apache.sentry.core.common.Authorizable;
+import org.apache.sentry.core.common.BitFieldAction;
+import org.apache.sentry.core.common.BitFieldActionFactory;
 import org.apache.sentry.core.model.search.Collection;
 import org.apache.sentry.core.model.search.Field;
 import org.apache.sentry.core.model.search.SearchConstants;
 import org.apache.sentry.provider.db.SentryGrantDeniedException;
 import org.apache.sentry.provider.db.generic.service.persistent.PrivilegeObject.Builder;
 import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.service.thrift.ServiceConstants;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -68,50 +76,7 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
    */
   @Test
   public void testGrantPrivilege() throws Exception {
-    String roleName = "r1";
-    /**
-     * grantor is admin, there is no need to check grant option
-     */
-    String grantor = ADMIN_USER;
-    PrivilegeObject queryPrivilege = new Builder()
-        .setComponent(SEARCH)
-        .setAction(SearchConstants.QUERY)
-        .setService(SERVICE)
-        .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME)))
-        .withGrantOption(null)
-        .build();
-
-    sentryStore.createRole(SEARCH, roleName, grantor);
-    sentryStore.alterRoleGrantPrivilege(SEARCH, roleName, queryPrivilege, grantor);
-
-    assertEquals(Sets.newHashSet(queryPrivilege),
-        sentryStore.getPrivilegesByRole(SEARCH, Sets.newHashSet(roleName)));
-
-    PrivilegeObject queryPrivilegeWithOption = new Builder()
-    .setComponent(SEARCH)
-    .setAction(SearchConstants.QUERY)
-    .setService(SERVICE)
-    .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME)))
-    .withGrantOption(true)
-    .build();
-
-    sentryStore.alterRoleGrantPrivilege(SEARCH, roleName, queryPrivilegeWithOption, grantor);
-
-    assertEquals(Sets.newHashSet(queryPrivilege, queryPrivilegeWithOption),
-        sentryStore.getPrivilegesByRole(SEARCH, Sets.newHashSet(roleName)));
-
-    PrivilegeObject queryPrivilegeWithNoOption = new Builder()
-    .setComponent(SEARCH)
-    .setAction(SearchConstants.QUERY)
-    .setService(SERVICE)
-    .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME)))
-    .withGrantOption(false)
-    .build();
-
-    sentryStore.alterRoleGrantPrivilege(SEARCH, roleName, queryPrivilegeWithNoOption, grantor);
-
-    assertEquals(Sets.newHashSet(queryPrivilege, queryPrivilegeWithOption, queryPrivilegeWithNoOption),
-        sentryStore.getPrivilegesByRole(SEARCH, Sets.newHashSet(roleName)));
+    testGrantPrivilege(sentryStore, SEARCH);
   }
 
   @Test
@@ -1009,5 +974,166 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
         Sets.newHashSet(roleName1,roleName2), null).size());
     assertEquals(2, sentryStore.getPrivilegesByAuthorizable(SEARCH, service1,
         Sets.newHashSet(roleName1,roleName2, roleName3), null).size());
+  }
+
+  @Test(expected = RuntimeException.class)
+  public void testGrantPrivilegeExternalComponentMissingConf() throws SentryUserException {
+    testGrantPrivilege(sentryStore, "externalComponent");
+  }
+
+  @Test(expected = RuntimeException.class)
+  public void testGrantPrivilegeExternalComponentInvalidConf() throws Exception {
+    String externalComponent = "mycomponent";
+    Configuration confCopy = new Configuration(conf);
+    confCopy.set(String.format(ServiceConstants.ServerConfig.SENTRY_COMPONENT_ACTION_FACTORY_FORMAT, externalComponent),
+                 InvalidActionFactory.class.getName());
+    SentryStoreLayer store = new DelegateSentryStore(confCopy);
+    testGrantPrivilege(store, externalComponent);
+  }
+
+  @Test
+  public void testGrantPrivilegeExternalComponent() throws Exception {
+    String externalComponent = "mycomponent";
+    Configuration confCopy = new Configuration(conf);
+    confCopy.set(String.format(ServiceConstants.ServerConfig.SENTRY_COMPONENT_ACTION_FACTORY_FORMAT, externalComponent),
+                 MyComponentActionFactory.class.getName());
+    SentryStoreLayer store = new DelegateSentryStore(confCopy);
+    testGrantPrivilege(store, externalComponent);
+  }
+
+  @Test
+  public void testGrantPrivilegeExternalComponentCaseInsensitivity() throws Exception {
+    String externalComponent = "MyCoMpOnEnT";
+    Configuration confCopy = new Configuration(conf);
+    confCopy.set(String.format(ServiceConstants.ServerConfig.SENTRY_COMPONENT_ACTION_FACTORY_FORMAT, "mycomponent"),
+                 MyComponentActionFactory.class.getName());
+    SentryStoreLayer store = new DelegateSentryStore(confCopy);
+    testGrantPrivilege(store, externalComponent);
+  }
+
+  private void testGrantPrivilege(SentryStoreLayer sentryStore, String component) throws SentryUserException {
+    String roleName = "r1";
+    /**
+     * grantor is admin, there is no need to check grant option
+     */
+    String grantor = ADMIN_USER;
+    PrivilegeObject queryPrivilege = new Builder()
+      .setComponent(component)
+      .setAction(SearchConstants.QUERY)
+      .setService(SERVICE)
+      .setAuthorizables(Collections.singletonList(new Collection(COLLECTION_NAME)))
+      .withGrantOption(null)
+      .build();
+
+    sentryStore.createRole(component, roleName, grantor);
+    sentryStore.alterRoleGrantPrivilege(component, roleName, queryPrivilege, grantor);
+
+    assertEquals(Sets.newHashSet(queryPrivilege),
+                 sentryStore.getPrivilegesByRole(component, Sets.newHashSet(roleName)));
+
+    PrivilegeObject queryPrivilegeWithOption = new Builder()
+      .setComponent(component)
+      .setAction(SearchConstants.QUERY)
+      .setService(SERVICE)
+      .setAuthorizables(Collections.singletonList(new Collection(COLLECTION_NAME)))
+      .withGrantOption(true)
+      .build();
+
+    sentryStore.alterRoleGrantPrivilege(component, roleName, queryPrivilegeWithOption, grantor);
+
+    assertEquals(Sets.newHashSet(queryPrivilege, queryPrivilegeWithOption),
+                 sentryStore.getPrivilegesByRole(component, Sets.newHashSet(roleName)));
+
+    PrivilegeObject queryPrivilegeWithNoOption = new Builder()
+      .setComponent(component)
+      .setAction(SearchConstants.QUERY)
+      .setService(SERVICE)
+      .setAuthorizables(Collections.singletonList(new Collection(COLLECTION_NAME)))
+      .withGrantOption(false)
+      .build();
+
+    sentryStore.alterRoleGrantPrivilege(component, roleName, queryPrivilegeWithNoOption, grantor);
+
+    assertEquals(Sets.newHashSet(queryPrivilege, queryPrivilegeWithOption, queryPrivilegeWithNoOption),
+                 sentryStore.getPrivilegesByRole(component, Sets.newHashSet(roleName)));
+  }
+
+  public static final class InvalidActionFactory {
+
+  }
+
+  public static final class MyComponentActionFactory extends BitFieldActionFactory {
+
+    public enum MyComponentActionType {
+      FOO("foo", 1),
+      BAR("bar", 2),
+      QUERY(SearchConstants.QUERY, 4),
+      ALL("*", FOO.getCode() | BAR.getCode() | QUERY.getCode());
+
+      private String name;
+      private int code;
+      MyComponentActionType(String name, int code) {
+        this.name = name;
+        this.code = code;
+      }
+
+      public int getCode() {
+        return code;
+      }
+
+      public String getName() {
+        return name;
+      }
+
+      static MyComponentActionType getActionByName(String name) {
+        for (MyComponentActionType action : MyComponentActionType.values()) {
+          if (action.name.equalsIgnoreCase(name)) {
+            return action;
+          }
+        }
+        throw new RuntimeException("can't get MyComponentActionType by name:" + name);
+      }
+
+      static List<MyComponentActionType> getActionByCode(int code) {
+        List<MyComponentActionType> actions = Lists.newArrayList();
+        for (MyComponentActionType action : MyComponentActionType.values()) {
+          if ((action.code & code) == action.code && action != MyComponentActionType.ALL) {
+            //MyComponentActionType.ALL action should not return in the list
+            actions.add(action);
+          }
+        }
+        if (actions.isEmpty()) {
+          throw new RuntimeException("can't get sqoopActionType by code:" + code);
+        }
+        return actions;
+      }
+    }
+
+    public static class MyComponentAction extends BitFieldAction {
+      public MyComponentAction(String name) {
+        this(MyComponentActionType.getActionByName(name));
+      }
+      public MyComponentAction(MyComponentActionType myComponentActionType) {
+        super(myComponentActionType.name, myComponentActionType.code);
+      }
+    }
+
+    @Override
+    public List<? extends BitFieldAction> getActionsByCode(int actionCode) {
+      List<MyComponentAction> actions = Lists.newArrayList();
+      for (MyComponentActionType action : MyComponentActionType.getActionByCode(actionCode)) {
+        actions.add(new MyComponentAction(action));
+      }
+      return actions;
+    }
+
+    @Override
+    public BitFieldAction getActionByName(String name) {
+      // Check the name is All
+      if (Action.ALL.equalsIgnoreCase(name)) {
+        return new MyComponentAction(MyComponentActionType.ALL);
+      }
+      return new MyComponentAction(name);
+    }
   }
 }

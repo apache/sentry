@@ -33,7 +33,7 @@ public abstract class SentryStoreIntegrationBase {
   protected final static String[] adminGroups = { "adminGroup" };
   private static File dataDir;
   private static File policyFilePath;
-  private static Configuration conf;
+  protected static Configuration conf;
   protected static DelegateSentryStore sentryStore;
   protected static PolicyFile policyFile;
 
