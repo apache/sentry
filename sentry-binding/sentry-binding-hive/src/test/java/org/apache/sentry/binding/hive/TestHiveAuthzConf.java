@@ -50,6 +50,12 @@ public class TestHiveAuthzConf {
         authzDepConf.get(AuthzConfVars.AUTHZ_PROVIDER_DEPRECATED.getVar()));
     Assert.assertEquals("org.apache.sentry.provider.file.fooProvider",
         authzConf.get(AuthzConfVars.AUTHZ_PROVIDER.getVar()));
+
+    // Test the default value of authz server name is an empty string.
+    Assert.assertEquals("",
+        authzConf.get(AuthzConfVars.AUTHZ_SERVER_NAME.getVar()));
+    Assert.assertEquals("",
+        authzConf.get(AuthzConfVars.AUTHZ_SERVER_NAME_DEPRECATED.getVar()));
   }
 
   /**
