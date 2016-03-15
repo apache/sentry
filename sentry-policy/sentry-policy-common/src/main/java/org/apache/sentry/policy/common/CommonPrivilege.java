@@ -76,6 +76,10 @@ public class CommonPrivilege implements Privilege {
         String policyKey = part.getKey();
         // are the keys even equal
         if(!policyKey.equalsIgnoreCase(otherPart.getKey())) {
+          // Support for action inheritance from parent to child
+          if (SentryConstants.PRIVILEGE_NAME.equalsIgnoreCase(policyKey)) {
+            continue;
+          }
           return false;
         }
 
@@ -110,12 +114,23 @@ public class CommonPrivilege implements Privilege {
   // for Hive, databaseName, tableName, columnName will be compared using String.equal(wildcard support)
   //           url will be compared using PathUtils.impliesURI
   private boolean impliesResource(ImplyMethodType implyMethodType, String policyValue, String requestValue) {
+    // wildcard support, "*", "+", "all"("+" and "all" are for backward compatibility) are represented as wildcard
+    // if requestValue is wildcard, means privilege request is to match with any value of given resource
+    if (SentryConstants.RESOURCE_WILDCARD_VALUE.equals(policyValue)
+            || SentryConstants.RESOURCE_WILDCARD_VALUE.equals(requestValue)
+            || SentryConstants.RESOURCE_WILDCARD_VALUE_ALL.equals(policyValue)
+            || SentryConstants.RESOURCE_WILDCARD_VALUE_ALL.equals(requestValue)
+            || SentryConstants.RESOURCE_WILDCARD_VALUE_SOME.equals(policyValue)
+            || SentryConstants.RESOURCE_WILDCARD_VALUE_SOME.equals(requestValue)) {
+      return true;
+    }
+
     // compare as the url
     if (ImplyMethodType.URL == implyMethodType) {
       return PathUtils.impliesURI(policyValue, requestValue);
     }
-    // default: compare as the string with wildcard support
-    return impliesStringWithWildcard(policyValue, requestValue);
+    // default: compare as the string
+    return policyValue.equals(requestValue);
   }
 
   // The method is used for compare the action for the privilege model.
@@ -132,14 +147,6 @@ public class CommonPrivilege implements Privilege {
     return currentAction.implies(requestAction);
   }
 
-  private boolean impliesStringWithWildcard(String policyValue, String requestValue) {
-    if (SentryConstants.RESOURCE_WILDCARD_VALUE.equals(policyValue)) {
-      return true;
-    }
-    return policyValue.equals(requestValue);
-  }
-
-
   @Override
   public String toString() {
     return SentryConstants.AUTHORIZABLE_JOINER.join(parts);
@@ -151,5 +158,19 @@ public class CommonPrivilege implements Privilege {
 
   public List<KeyValue> getParts() {
     return parts;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o instanceof CommonPrivilege) {
+      CommonPrivilege cp = (CommonPrivilege) o;
+      return parts.equals(cp.parts);
+    }
+    return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return parts.hashCode();
   }
 }

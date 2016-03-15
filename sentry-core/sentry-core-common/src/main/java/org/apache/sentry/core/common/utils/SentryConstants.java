@@ -37,5 +37,7 @@ public class SentryConstants {
   public static final String PRIVILEGE_WILDCARD_VALUE = "*";
 
   public static final String RESOURCE_WILDCARD_VALUE = "*";
+  public static final String RESOURCE_WILDCARD_VALUE_ALL = "ALL";
+  public static final String RESOURCE_WILDCARD_VALUE_SOME = "+";
   public static final String ACCESS_ALLOW_URI_PER_DB_POLICYFILE = "sentry.allow.uri.db.policyfile";
 }
