@@ -32,9 +32,9 @@ public class TestSqoopPolicyEngineLocalFS extends AbstractTestSqoopPolicyEngine 
     File baseDir = getBaseDir();
     Assert.assertNotNull(baseDir);
     Assert.assertTrue(baseDir.isDirectory() || baseDir.mkdirs());
-    PolicyFiles.copyToDir(baseDir, "test-authz-provider.ini");
+    PolicyFiles.copyToDir(baseDir, "sqoop-policy-test-authz-provider.ini");
     setPolicy(SqoopPolicyTestUtil.createPolicyEngineForTest(sqoopServerName,
-      new File(baseDir, "test-authz-provider.ini").getPath()));
+      new File(baseDir, "sqoop-policy-test-authz-provider.ini").getPath()));
   }
   @Override
   protected void beforeTeardown() throws IOException {

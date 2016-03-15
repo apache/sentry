@@ -37,6 +37,7 @@ import org.apache.sentry.core.model.sqoop.Link;
 import org.apache.sentry.core.model.sqoop.Server;
 import org.apache.sentry.core.model.sqoop.SqoopActionConstant;
 import org.apache.sentry.core.model.sqoop.SqoopActionFactory.SqoopAction;
+import org.apache.sentry.provider.common.GroupMappingService;
 import org.apache.sentry.provider.common.ResourceAuthorizationProvider;
 import org.apache.sentry.provider.common.HadoopGroupResourceAuthorizationProvider;
 import org.apache.sentry.provider.file.PolicyFiles;
@@ -96,10 +97,10 @@ public class TestSqoopAuthorizationProviderGeneralCases {
 
   public TestSqoopAuthorizationProviderGeneralCases() throws IOException {
     baseDir = Files.createTempDir();
-    PolicyFiles.copyToDir(baseDir, "test-authz-provider.ini");
+    PolicyFiles.copyToDir(baseDir, "sqoop-policy-test-authz-provider.ini");
     authzProvider = new HadoopGroupResourceAuthorizationProvider(
         SqoopPolicyTestUtil.createPolicyEngineForTest(server1.getName(),
-        new File(baseDir, "test-authz-provider.ini").getPath()),
+        new File(baseDir, "sqoop-policy-test-authz-provider.ini").getPath()),
         new MockGroupMappingServiceProvider(USER_TO_GROUP_MAP));
   }
 
@@ -219,6 +220,19 @@ public class TestSqoopAuthorizationProviderGeneralCases {
       for (Link link : Sets.newHashSet(link1, link2)) {
         doTestResourceAuthorizationProvider(SUB_CONNECTOR_OPERATOR, Arrays.asList(server1, link), Sets.newHashSet(action), false);
       }
+    }
+  }
+
+  public class MockGroupMappingServiceProvider implements GroupMappingService {
+    private final Multimap<String, String> userToGroupMap;
+
+    public MockGroupMappingServiceProvider(Multimap<String, String> userToGroupMap) {
+      this.userToGroupMap = userToGroupMap;
+    }
+
+    @Override
+    public Set<String> getGroups(String user) {
+      return Sets.newHashSet(userToGroupMap.get(user));
     }
   }
 }

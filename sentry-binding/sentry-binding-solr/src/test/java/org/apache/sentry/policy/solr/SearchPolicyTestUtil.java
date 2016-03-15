@@ -14,11 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.policy.search;
+package org.apache.sentry.policy.solr;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.model.search.SearchPrivilegeModel;
 import org.apache.sentry.policy.common.PolicyEngine;
+import org.apache.sentry.policy.search.SimpleSearchPolicyEngine;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;
 import org.apache.sentry.provider.file.SimpleFileProviderBackend;

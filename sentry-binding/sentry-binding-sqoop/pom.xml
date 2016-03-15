@@ -68,12 +68,17 @@ limitations under the License.
       <scope>provided</scope>
     </dependency>
 	<dependency>
-        <groupId>org.apache.sqoop</groupId>
-        <artifactId>sqoop-common</artifactId>
+      <groupId>org.apache.sqoop</groupId>
+      <artifactId>sqoop-common</artifactId>
     </dependency>
 	<dependency>
-        <groupId>org.apache.sqoop</groupId>
-        <artifactId>sqoop-security</artifactId>
+      <groupId>org.apache.sqoop</groupId>
+      <artifactId>sqoop-security</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-minicluster</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 

@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sentry.policy.db;
+package org.apache.sentry.policy.hive;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNull;
 

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.policy.db;
+package org.apache.sentry.policy.hive;
 
 import java.io.File;
 import java.io.IOException;
@@ -70,9 +70,9 @@ public class TestSimpleDBPolicyEngineDFS extends AbstractTestSimplePolicyEngine 
   protected void  afterSetup() throws IOException {
     fileSystem.delete(etc, true);
     fileSystem.mkdirs(etc);
-    PolicyFiles.copyToDir(fileSystem, etc, "test-authz-provider.ini", "test-authz-provider-other-group.ini");
+    PolicyFiles.copyToDir(fileSystem, etc, "hive-policy-test-authz-provider.ini", "hive-policy-test-authz-provider-other-group.ini");
     setPolicy(DBPolicyTestUtil.createPolicyEngineForTest("server1",
-        new Path(etc, "test-authz-provider.ini").toString()));
+        new Path(etc, "hive-policy-test-authz-provider.ini").toString()));
   }
   @Override
   protected void beforeTeardown() throws IOException {

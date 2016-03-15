@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.policy.search;
+package org.apache.sentry.policy.hive;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,15 +24,16 @@ import junit.framework.Assert;
 import org.apache.commons.io.FileUtils;
 import org.apache.sentry.provider.file.PolicyFiles;
 
-public class TestSearchPolicyEngineLocalFS extends AbstractTestSearchPolicyEngine {
+public class TestSimpleDBPolicyEngineLocalFS extends AbstractTestSimplePolicyEngine {
 
   @Override
   protected void  afterSetup() throws IOException {
     File baseDir = getBaseDir();
     Assert.assertNotNull(baseDir);
     Assert.assertTrue(baseDir.isDirectory() || baseDir.mkdirs());
-    PolicyFiles.copyToDir(baseDir, "test-authz-provider.ini");
-    setPolicy(SearchPolicyTestUtil.createPolicyEngineForTest(new File(baseDir, "test-authz-provider.ini").getPath()));
+    PolicyFiles.copyToDir(baseDir, "hive-policy-test-authz-provider.ini", "hive-policy-test-authz-provider-other-group.ini");
+    setPolicy(DBPolicyTestUtil.createPolicyEngineForTest("server1",
+        new File(baseDir, "hive-policy-test-authz-provider.ini").getPath()));
   }
   @Override
   protected void beforeTeardown() throws IOException {

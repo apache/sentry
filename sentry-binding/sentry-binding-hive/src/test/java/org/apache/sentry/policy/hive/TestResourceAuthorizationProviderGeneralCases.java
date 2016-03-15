@@ -14,15 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.policy.db;
+package org.apache.sentry.policy.hive;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
+import com.google.common.collect.Sets;
 import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
@@ -35,7 +37,7 @@ import org.apache.sentry.core.model.db.DBModelAction;
 import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.core.model.db.Table;
-import org.apache.sentry.provider.common.MockGroupMappingServiceProvider;
+import org.apache.sentry.provider.common.GroupMappingService;
 import org.apache.sentry.provider.common.ResourceAuthorizationProvider;
 import org.apache.sentry.provider.file.HadoopGroupResourceAuthorizationProvider;
 import org.apache.sentry.provider.file.PolicyFiles;
@@ -89,10 +91,10 @@ public class TestResourceAuthorizationProviderGeneralCases {
 
   public TestResourceAuthorizationProviderGeneralCases() throws IOException {
     baseDir = Files.createTempDir();
-    PolicyFiles.copyToDir(baseDir, "test-authz-provider.ini", "test-authz-provider-other-group.ini");
+    PolicyFiles.copyToDir(baseDir, "hive-policy-test-authz-provider.ini", "hive-policy-test-authz-provider-other-group.ini");
     authzProvider = new HadoopGroupResourceAuthorizationProvider(
             DBPolicyTestUtil.createPolicyEngineForTest("server1",
-        new File(baseDir, "test-authz-provider.ini").getPath()),
+        new File(baseDir, "hive-policy-test-authz-provider.ini").getPath()),
         new MockGroupMappingServiceProvider(USER_TO_GROUP_MAP));
 
   }
@@ -176,5 +178,18 @@ public class TestResourceAuthorizationProviderGeneralCases {
     doTestResourceAuthorizationProvider(SUB_JUNIOR_ANALYST, SVR_SERVER1, DB_JR_ANALYST, TBL_PURCHASES, SELECT, true);
     doTestResourceAuthorizationProvider(SUB_JUNIOR_ANALYST, SVR_SERVER1, DB_JR_ANALYST, TBL_PURCHASES, INSERT, true);
     doTestResourceAuthorizationProvider(SUB_JUNIOR_ANALYST, SVR_ALL, DB_JR_ANALYST, TBL_PURCHASES, SELECT, true);
+  }
+
+  public class MockGroupMappingServiceProvider implements GroupMappingService {
+    private final Multimap<String, String> userToGroupMap;
+
+    public MockGroupMappingServiceProvider(Multimap<String, String> userToGroupMap) {
+      this.userToGroupMap = userToGroupMap;
+    }
+
+    @Override
+    public Set<String> getGroups(String user) {
+      return Sets.newHashSet(userToGroupMap.get(user));
+    }
   }
 }

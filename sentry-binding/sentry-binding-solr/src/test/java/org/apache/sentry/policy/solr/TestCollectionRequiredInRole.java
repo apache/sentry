@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sentry.policy.search;
+package org.apache.sentry.policy.solr;
 
 import junit.framework.Assert;
 

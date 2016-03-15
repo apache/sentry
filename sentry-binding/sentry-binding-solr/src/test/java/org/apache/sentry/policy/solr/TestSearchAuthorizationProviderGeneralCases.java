@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.policy.search;
+package org.apache.sentry.policy.solr;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,6 +23,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
+import com.google.common.collect.Sets;
 import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
@@ -32,7 +33,7 @@ import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.search.Collection;
 import org.apache.sentry.core.model.search.SearchModelAction;
-import org.apache.sentry.provider.common.MockGroupMappingServiceProvider;
+import org.apache.sentry.provider.common.GroupMappingService;
 import org.apache.sentry.provider.common.ResourceAuthorizationProvider;
 import org.apache.sentry.provider.file.HadoopGroupResourceAuthorizationProvider;
 import org.apache.sentry.provider.file.PolicyFiles;
@@ -82,9 +83,9 @@ public class TestSearchAuthorizationProviderGeneralCases {
 
   public TestSearchAuthorizationProviderGeneralCases() throws IOException {
     baseDir = Files.createTempDir();
-    PolicyFiles.copyToDir(baseDir, "test-authz-provider.ini");
+    PolicyFiles.copyToDir(baseDir, "solr-policy-test-authz-provider.ini");
     authzProvider = new HadoopGroupResourceAuthorizationProvider(
-            SearchPolicyTestUtil.createPolicyEngineForTest(new File(baseDir, "test-authz-provider.ini").getPath()),
+            SearchPolicyTestUtil.createPolicyEngineForTest(new File(baseDir, "solr-policy-test-authz-provider.ini").getPath()),
         new MockGroupMappingServiceProvider(USER_TO_GROUP_MAP));
 
   }
@@ -174,5 +175,18 @@ public class TestSearchAuthorizationProviderGeneralCases {
     doTestAuthProviderOnCollection(SUB_JUNIOR_ANALYST, COLL_PURCHASES, noActions);
     doTestAuthProviderOnCollection(SUB_JUNIOR_ANALYST, COLL_ANALYST1, noActions);
     doTestAuthProviderOnCollection(SUB_JUNIOR_ANALYST, COLL_TMP, noActions);
+  }
+
+  public class MockGroupMappingServiceProvider implements GroupMappingService {
+    private final Multimap<String, String> userToGroupMap;
+
+    public MockGroupMappingServiceProvider(Multimap<String, String> userToGroupMap) {
+      this.userToGroupMap = userToGroupMap;
+    }
+
+    @Override
+    public Set<String> getGroups(String user) {
+      return Sets.newHashSet(userToGroupMap.get(user));
+    }
   }
 }
