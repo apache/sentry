@@ -112,11 +112,11 @@ public class TListSentryPrivilegesByAuthResponse implements org.apache.thrift.TB
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-    tmpMap.put(_Fields.STATUS, new org.apache.thrift.meta_data.FieldMetaData("status", org.apache.thrift.TFieldRequirementType.REQUIRED,
+    tmpMap.put(_Fields.STATUS, new org.apache.thrift.meta_data.FieldMetaData("status", org.apache.thrift.TFieldRequirementType.REQUIRED, 
         new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, org.apache.sentry.service.thrift.TSentryResponseStatus.class)));
-    tmpMap.put(_Fields.PRIVILEGES_MAP_BY_AUTH, new org.apache.thrift.meta_data.FieldMetaData("privilegesMapByAuth", org.apache.thrift.TFieldRequirementType.OPTIONAL,
-        new org.apache.thrift.meta_data.MapMetaData(org.apache.thrift.protocol.TType.MAP,
-            new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING),
+    tmpMap.put(_Fields.PRIVILEGES_MAP_BY_AUTH, new org.apache.thrift.meta_data.FieldMetaData("privilegesMapByAuth", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
+        new org.apache.thrift.meta_data.MapMetaData(org.apache.thrift.protocol.TType.MAP, 
+            new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING), 
             new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TSentryPrivilegeMap.class))));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(TListSentryPrivilegesByAuthResponse.class, metaDataMap);
@@ -433,7 +433,7 @@ public class TListSentryPrivilegesByAuthResponse implements org.apache.thrift.TB
       while (true)
       {
         schemeField = iprot.readFieldBegin();
-        if (schemeField.type == org.apache.thrift.protocol.TType.STOP) {
+        if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
           break;
         }
         switch (schemeField.id) {
@@ -442,7 +442,7 @@ public class TListSentryPrivilegesByAuthResponse implements org.apache.thrift.TB
               struct.status = new org.apache.sentry.service.thrift.TSentryResponseStatus();
               struct.status.read(iprot);
               struct.setStatusIsSet(true);
-            } else {
+            } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
@@ -463,7 +463,7 @@ public class TListSentryPrivilegesByAuthResponse implements org.apache.thrift.TB
                 iprot.readMapEnd();
               }
               struct.setPrivilegesMapByAuthIsSet(true);
-            } else {
+            } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;

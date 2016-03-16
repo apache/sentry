@@ -6,6 +6,7 @@
  */
 package org.apache.sentry.hdfs.service.thrift;
 
+import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.thrift.scheme.IScheme;
 import org.apache.thrift.scheme.SchemeFactory;
 import org.apache.thrift.scheme.StandardScheme;
@@ -44,10 +45,10 @@ public class TPermissionsUpdate implements org.apache.thrift.TBase<TPermissionsU
     schemes.put(TupleScheme.class, new TPermissionsUpdateTupleSchemeFactory());
   }
 
-  public boolean hasfullImage; // required
-  public long seqNum; // required
-  public Map<String,TPrivilegeChanges> privilegeChanges; // required
-  public Map<String,TRoleChanges> roleChanges; // required
+  private boolean hasfullImage; // required
+  private long seqNum; // required
+  private Map<String,TPrivilegeChanges> privilegeChanges; // required
+  private Map<String,TRoleChanges> roleChanges; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -214,10 +215,9 @@ public class TPermissionsUpdate implements org.apache.thrift.TBase<TPermissionsU
     return this.hasfullImage;
   }
 
-  public TPermissionsUpdate setHasfullImage(boolean hasfullImage) {
+  public void setHasfullImage(boolean hasfullImage) {
     this.hasfullImage = hasfullImage;
     setHasfullImageIsSet(true);
-    return this;
   }
 
   public void unsetHasfullImage() {
@@ -237,10 +237,9 @@ public class TPermissionsUpdate implements org.apache.thrift.TBase<TPermissionsU
     return this.seqNum;
   }
 
-  public TPermissionsUpdate setSeqNum(long seqNum) {
+  public void setSeqNum(long seqNum) {
     this.seqNum = seqNum;
     setSeqNumIsSet(true);
-    return this;
   }
 
   public void unsetSeqNum() {
@@ -271,9 +270,8 @@ public class TPermissionsUpdate implements org.apache.thrift.TBase<TPermissionsU
     return this.privilegeChanges;
   }
 
-  public TPermissionsUpdate setPrivilegeChanges(Map<String,TPrivilegeChanges> privilegeChanges) {
+  public void setPrivilegeChanges(Map<String,TPrivilegeChanges> privilegeChanges) {
     this.privilegeChanges = privilegeChanges;
-    return this;
   }
 
   public void unsetPrivilegeChanges() {
@@ -306,9 +304,8 @@ public class TPermissionsUpdate implements org.apache.thrift.TBase<TPermissionsU
     return this.roleChanges;
   }
 
-  public TPermissionsUpdate setRoleChanges(Map<String,TRoleChanges> roleChanges) {
+  public void setRoleChanges(Map<String,TRoleChanges> roleChanges) {
     this.roleChanges = roleChanges;
-    return this;
   }
 
   public void unsetRoleChanges() {
@@ -454,7 +451,29 @@ public class TPermissionsUpdate implements org.apache.thrift.TBase<TPermissionsU
 
   @Override
   public int hashCode() {
-    return 0;
+    HashCodeBuilder builder = new HashCodeBuilder();
+
+    boolean present_hasfullImage = true;
+    builder.append(present_hasfullImage);
+    if (present_hasfullImage)
+      builder.append(hasfullImage);
+
+    boolean present_seqNum = true;
+    builder.append(present_seqNum);
+    if (present_seqNum)
+      builder.append(seqNum);
+
+    boolean present_privilegeChanges = true && (isSetPrivilegeChanges());
+    builder.append(present_privilegeChanges);
+    if (present_privilegeChanges)
+      builder.append(privilegeChanges);
+
+    boolean present_roleChanges = true && (isSetRoleChanges());
+    builder.append(present_roleChanges);
+    if (present_roleChanges)
+      builder.append(roleChanges);
+
+    return builder.toHashCode();
   }
 
   public int compareTo(TPermissionsUpdate other) {
@@ -554,14 +573,22 @@ public class TPermissionsUpdate implements org.apache.thrift.TBase<TPermissionsU
 
   public void validate() throws org.apache.thrift.TException {
     // check for required fields
-    // alas, we cannot check 'hasfullImage' because it's a primitive and you chose the non-beans generator.
-    // alas, we cannot check 'seqNum' because it's a primitive and you chose the non-beans generator.
-    if (privilegeChanges == null) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'privilegeChanges' was not present! Struct: " + toString());
+    if (!isSetHasfullImage()) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'hasfullImage' is unset! Struct:" + toString());
     }
-    if (roleChanges == null) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'roleChanges' was not present! Struct: " + toString());
+
+    if (!isSetSeqNum()) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'seqNum' is unset! Struct:" + toString());
     }
+
+    if (!isSetPrivilegeChanges()) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'privilegeChanges' is unset! Struct:" + toString());
+    }
+
+    if (!isSetRoleChanges()) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'roleChanges' is unset! Struct:" + toString());
+    }
+
     // check for sub-struct validity
   }
 
@@ -665,14 +692,6 @@ public class TPermissionsUpdate implements org.apache.thrift.TBase<TPermissionsU
         iprot.readFieldEnd();
       }
       iprot.readStructEnd();
-
-      // check for required fields of primitive type, which can't be checked in the validate method
-      if (!struct.isSetHasfullImage()) {
-        throw new org.apache.thrift.protocol.TProtocolException("Required field 'hasfullImage' was not found in serialized data! Struct: " + toString());
-      }
-      if (!struct.isSetSeqNum()) {
-        throw new org.apache.thrift.protocol.TProtocolException("Required field 'seqNum' was not found in serialized data! Struct: " + toString());
-      }
       struct.validate();
     }
 

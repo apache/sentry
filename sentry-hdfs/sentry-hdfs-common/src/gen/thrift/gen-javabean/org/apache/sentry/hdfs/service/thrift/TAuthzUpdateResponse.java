@@ -6,6 +6,7 @@
  */
 package org.apache.sentry.hdfs.service.thrift;
 
+import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.thrift.scheme.IScheme;
 import org.apache.thrift.scheme.SchemeFactory;
 import org.apache.thrift.scheme.StandardScheme;
@@ -42,8 +43,8 @@ public class TAuthzUpdateResponse implements org.apache.thrift.TBase<TAuthzUpdat
     schemes.put(TupleScheme.class, new TAuthzUpdateResponseTupleSchemeFactory());
   }
 
-  public List<TPathsUpdate> authzPathUpdate; // optional
-  public List<TPermissionsUpdate> authzPermUpdate; // optional
+  private List<TPathsUpdate> authzPathUpdate; // optional
+  private List<TPermissionsUpdate> authzPermUpdate; // optional
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -173,9 +174,8 @@ public class TAuthzUpdateResponse implements org.apache.thrift.TBase<TAuthzUpdat
     return this.authzPathUpdate;
   }
 
-  public TAuthzUpdateResponse setAuthzPathUpdate(List<TPathsUpdate> authzPathUpdate) {
+  public void setAuthzPathUpdate(List<TPathsUpdate> authzPathUpdate) {
     this.authzPathUpdate = authzPathUpdate;
-    return this;
   }
 
   public void unsetAuthzPathUpdate() {
@@ -212,9 +212,8 @@ public class TAuthzUpdateResponse implements org.apache.thrift.TBase<TAuthzUpdat
     return this.authzPermUpdate;
   }
 
-  public TAuthzUpdateResponse setAuthzPermUpdate(List<TPermissionsUpdate> authzPermUpdate) {
+  public void setAuthzPermUpdate(List<TPermissionsUpdate> authzPermUpdate) {
     this.authzPermUpdate = authzPermUpdate;
-    return this;
   }
 
   public void unsetAuthzPermUpdate() {
@@ -316,7 +315,19 @@ public class TAuthzUpdateResponse implements org.apache.thrift.TBase<TAuthzUpdat
 
   @Override
   public int hashCode() {
-    return 0;
+    HashCodeBuilder builder = new HashCodeBuilder();
+
+    boolean present_authzPathUpdate = true && (isSetAuthzPathUpdate());
+    builder.append(present_authzPathUpdate);
+    if (present_authzPathUpdate)
+      builder.append(authzPathUpdate);
+
+    boolean present_authzPermUpdate = true && (isSetAuthzPermUpdate());
+    builder.append(present_authzPermUpdate);
+    if (present_authzPermUpdate)
+      builder.append(authzPermUpdate);
+
+    return builder.toHashCode();
   }
 
   public int compareTo(TAuthzUpdateResponse other) {
@@ -473,8 +484,6 @@ public class TAuthzUpdateResponse implements org.apache.thrift.TBase<TAuthzUpdat
         iprot.readFieldEnd();
       }
       iprot.readStructEnd();
-
-      // check for required fields of primitive type, which can't be checked in the validate method
       struct.validate();
     }
 

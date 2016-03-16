@@ -6,6 +6,7 @@
  */
 package org.apache.sentry.hdfs.service.thrift;
 
+import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.thrift.scheme.IScheme;
 import org.apache.thrift.scheme.SchemeFactory;
 import org.apache.thrift.scheme.StandardScheme;
@@ -43,9 +44,9 @@ public class TPrivilegeChanges implements org.apache.thrift.TBase<TPrivilegeChan
     schemes.put(TupleScheme.class, new TPrivilegeChangesTupleSchemeFactory());
   }
 
-  public String authzObj; // required
-  public Map<String,String> addPrivileges; // required
-  public Map<String,String> delPrivileges; // required
+  private String authzObj; // required
+  private Map<String,String> addPrivileges; // required
+  private Map<String,String> delPrivileges; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -197,9 +198,8 @@ public class TPrivilegeChanges implements org.apache.thrift.TBase<TPrivilegeChan
     return this.authzObj;
   }
 
-  public TPrivilegeChanges setAuthzObj(String authzObj) {
+  public void setAuthzObj(String authzObj) {
     this.authzObj = authzObj;
-    return this;
   }
 
   public void unsetAuthzObj() {
@@ -232,9 +232,8 @@ public class TPrivilegeChanges implements org.apache.thrift.TBase<TPrivilegeChan
     return this.addPrivileges;
   }
 
-  public TPrivilegeChanges setAddPrivileges(Map<String,String> addPrivileges) {
+  public void setAddPrivileges(Map<String,String> addPrivileges) {
     this.addPrivileges = addPrivileges;
-    return this;
   }
 
   public void unsetAddPrivileges() {
@@ -267,9 +266,8 @@ public class TPrivilegeChanges implements org.apache.thrift.TBase<TPrivilegeChan
     return this.delPrivileges;
   }
 
-  public TPrivilegeChanges setDelPrivileges(Map<String,String> delPrivileges) {
+  public void setDelPrivileges(Map<String,String> delPrivileges) {
     this.delPrivileges = delPrivileges;
-    return this;
   }
 
   public void unsetDelPrivileges() {
@@ -393,7 +391,24 @@ public class TPrivilegeChanges implements org.apache.thrift.TBase<TPrivilegeChan
 
   @Override
   public int hashCode() {
-    return 0;
+    HashCodeBuilder builder = new HashCodeBuilder();
+
+    boolean present_authzObj = true && (isSetAuthzObj());
+    builder.append(present_authzObj);
+    if (present_authzObj)
+      builder.append(authzObj);
+
+    boolean present_addPrivileges = true && (isSetAddPrivileges());
+    builder.append(present_addPrivileges);
+    if (present_addPrivileges)
+      builder.append(addPrivileges);
+
+    boolean present_delPrivileges = true && (isSetDelPrivileges());
+    builder.append(present_delPrivileges);
+    if (present_delPrivileges)
+      builder.append(delPrivileges);
+
+    return builder.toHashCode();
   }
 
   public int compareTo(TPrivilegeChanges other) {
@@ -483,15 +498,18 @@ public class TPrivilegeChanges implements org.apache.thrift.TBase<TPrivilegeChan
 
   public void validate() throws org.apache.thrift.TException {
     // check for required fields
-    if (authzObj == null) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'authzObj' was not present! Struct: " + toString());
+    if (!isSetAuthzObj()) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'authzObj' is unset! Struct:" + toString());
     }
-    if (addPrivileges == null) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'addPrivileges' was not present! Struct: " + toString());
+
+    if (!isSetAddPrivileges()) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'addPrivileges' is unset! Struct:" + toString());
     }
-    if (delPrivileges == null) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'delPrivileges' was not present! Struct: " + toString());
+
+    if (!isSetDelPrivileges()) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'delPrivileges' is unset! Struct:" + toString());
     }
+
     // check for sub-struct validity
   }
 
@@ -583,8 +601,6 @@ public class TPrivilegeChanges implements org.apache.thrift.TBase<TPrivilegeChan
         iprot.readFieldEnd();
       }
       iprot.readStructEnd();
-
-      // check for required fields of primitive type, which can't be checked in the validate method
       struct.validate();
     }
 

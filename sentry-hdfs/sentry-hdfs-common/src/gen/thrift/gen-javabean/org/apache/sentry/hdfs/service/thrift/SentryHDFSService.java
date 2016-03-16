@@ -6,6 +6,7 @@
  */
 package org.apache.sentry.hdfs.service.thrift;
 
+import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.thrift.scheme.IScheme;
 import org.apache.thrift.scheme.SchemeFactory;
 import org.apache.thrift.scheme.StandardScheme;
@@ -433,7 +434,7 @@ public class SentryHDFSService {
       schemes.put(TupleScheme.class, new handle_hms_notification_argsTupleSchemeFactory());
     }
 
-    public TPathsUpdate pathsUpdate; // required
+    private TPathsUpdate pathsUpdate; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -535,9 +536,8 @@ public class SentryHDFSService {
       return this.pathsUpdate;
     }
 
-    public handle_hms_notification_args setPathsUpdate(TPathsUpdate pathsUpdate) {
+    public void setPathsUpdate(TPathsUpdate pathsUpdate) {
       this.pathsUpdate = pathsUpdate;
-      return this;
     }
 
     public void unsetPathsUpdate() {
@@ -617,7 +617,14 @@ public class SentryHDFSService {
 
     @Override
     public int hashCode() {
-      return 0;
+      HashCodeBuilder builder = new HashCodeBuilder();
+
+      boolean present_pathsUpdate = true && (isSetPathsUpdate());
+      builder.append(present_pathsUpdate);
+      if (present_pathsUpdate)
+        builder.append(pathsUpdate);
+
+      return builder.toHashCode();
     }
 
     public int compareTo(handle_hms_notification_args other) {
@@ -726,8 +733,6 @@ public class SentryHDFSService {
           iprot.readFieldEnd();
         }
         iprot.readStructEnd();
-
-        // check for required fields of primitive type, which can't be checked in the validate method
         struct.validate();
       }
 
@@ -911,7 +916,9 @@ public class SentryHDFSService {
 
     @Override
     public int hashCode() {
-      return 0;
+      HashCodeBuilder builder = new HashCodeBuilder();
+
+      return builder.toHashCode();
     }
 
     public int compareTo(handle_hms_notification_result other) {
@@ -991,8 +998,6 @@ public class SentryHDFSService {
           iprot.readFieldEnd();
         }
         iprot.readStructEnd();
-
-        // check for required fields of primitive type, which can't be checked in the validate method
         struct.validate();
       }
 
@@ -1038,7 +1043,7 @@ public class SentryHDFSService {
       schemes.put(TupleScheme.class, new check_hms_seq_num_argsTupleSchemeFactory());
     }
 
-    public long pathSeqNum; // required
+    private long pathSeqNum; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -1143,10 +1148,9 @@ public class SentryHDFSService {
       return this.pathSeqNum;
     }
 
-    public check_hms_seq_num_args setPathSeqNum(long pathSeqNum) {
+    public void setPathSeqNum(long pathSeqNum) {
       this.pathSeqNum = pathSeqNum;
       setPathSeqNumIsSet(true);
-      return this;
     }
 
     public void unsetPathSeqNum() {
@@ -1224,7 +1228,14 @@ public class SentryHDFSService {
 
     @Override
     public int hashCode() {
-      return 0;
+      HashCodeBuilder builder = new HashCodeBuilder();
+
+      boolean present_pathSeqNum = true;
+      builder.append(present_pathSeqNum);
+      if (present_pathSeqNum)
+        builder.append(pathSeqNum);
+
+      return builder.toHashCode();
     }
 
     public int compareTo(check_hms_seq_num_args other) {
@@ -1327,8 +1338,6 @@ public class SentryHDFSService {
           iprot.readFieldEnd();
         }
         iprot.readStructEnd();
-
-        // check for required fields of primitive type, which can't be checked in the validate method
         struct.validate();
       }
 
@@ -1390,7 +1399,7 @@ public class SentryHDFSService {
       schemes.put(TupleScheme.class, new check_hms_seq_num_resultTupleSchemeFactory());
     }
 
-    public long success; // required
+    private long success; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -1495,10 +1504,9 @@ public class SentryHDFSService {
       return this.success;
     }
 
-    public check_hms_seq_num_result setSuccess(long success) {
+    public void setSuccess(long success) {
       this.success = success;
       setSuccessIsSet(true);
-      return this;
     }
 
     public void unsetSuccess() {
@@ -1576,7 +1584,14 @@ public class SentryHDFSService {
 
     @Override
     public int hashCode() {
-      return 0;
+      HashCodeBuilder builder = new HashCodeBuilder();
+
+      boolean present_success = true;
+      builder.append(present_success);
+      if (present_success)
+        builder.append(success);
+
+      return builder.toHashCode();
     }
 
     public int compareTo(check_hms_seq_num_result other) {
@@ -1679,8 +1694,6 @@ public class SentryHDFSService {
           iprot.readFieldEnd();
         }
         iprot.readStructEnd();
-
-        // check for required fields of primitive type, which can't be checked in the validate method
         struct.validate();
       }
 
@@ -1745,8 +1758,8 @@ public class SentryHDFSService {
       schemes.put(TupleScheme.class, new get_all_authz_updates_from_argsTupleSchemeFactory());
     }
 
-    public long permSeqNum; // required
-    public long pathSeqNum; // required
+    private long permSeqNum; // required
+    private long pathSeqNum; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -1863,10 +1876,9 @@ public class SentryHDFSService {
       return this.permSeqNum;
     }
 
-    public get_all_authz_updates_from_args setPermSeqNum(long permSeqNum) {
+    public void setPermSeqNum(long permSeqNum) {
       this.permSeqNum = permSeqNum;
       setPermSeqNumIsSet(true);
-      return this;
     }
 
     public void unsetPermSeqNum() {
@@ -1886,10 +1898,9 @@ public class SentryHDFSService {
       return this.pathSeqNum;
     }
 
-    public get_all_authz_updates_from_args setPathSeqNum(long pathSeqNum) {
+    public void setPathSeqNum(long pathSeqNum) {
       this.pathSeqNum = pathSeqNum;
       setPathSeqNumIsSet(true);
-      return this;
     }
 
     public void unsetPathSeqNum() {
@@ -1989,7 +2000,19 @@ public class SentryHDFSService {
 
     @Override
     public int hashCode() {
-      return 0;
+      HashCodeBuilder builder = new HashCodeBuilder();
+
+      boolean present_permSeqNum = true;
+      builder.append(present_permSeqNum);
+      if (present_permSeqNum)
+        builder.append(permSeqNum);
+
+      boolean present_pathSeqNum = true;
+      builder.append(present_pathSeqNum);
+      if (present_pathSeqNum)
+        builder.append(pathSeqNum);
+
+      return builder.toHashCode();
     }
 
     public int compareTo(get_all_authz_updates_from_args other) {
@@ -2114,8 +2137,6 @@ public class SentryHDFSService {
           iprot.readFieldEnd();
         }
         iprot.readStructEnd();
-
-        // check for required fields of primitive type, which can't be checked in the validate method
         struct.validate();
       }
 
@@ -2190,7 +2211,7 @@ public class SentryHDFSService {
       schemes.put(TupleScheme.class, new get_all_authz_updates_from_resultTupleSchemeFactory());
     }
 
-    public TAuthzUpdateResponse success; // required
+    private TAuthzUpdateResponse success; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -2292,9 +2313,8 @@ public class SentryHDFSService {
       return this.success;
     }
 
-    public get_all_authz_updates_from_result setSuccess(TAuthzUpdateResponse success) {
+    public void setSuccess(TAuthzUpdateResponse success) {
       this.success = success;
-      return this;
     }
 
     public void unsetSuccess() {
@@ -2374,7 +2394,14 @@ public class SentryHDFSService {
 
     @Override
     public int hashCode() {
-      return 0;
+      HashCodeBuilder builder = new HashCodeBuilder();
+
+      boolean present_success = true && (isSetSuccess());
+      builder.append(present_success);
+      if (present_success)
+        builder.append(success);
+
+      return builder.toHashCode();
     }
 
     public int compareTo(get_all_authz_updates_from_result other) {
@@ -2483,8 +2510,6 @@ public class SentryHDFSService {
           iprot.readFieldEnd();
         }
         iprot.readStructEnd();
-
-        // check for required fields of primitive type, which can't be checked in the validate method
         struct.validate();
       }
 
@@ -2550,8 +2575,8 @@ public class SentryHDFSService {
       schemes.put(TupleScheme.class, new get_all_related_paths_argsTupleSchemeFactory());
     }
 
-    public String path; // required
-    public boolean exactMatch; // required
+    private String path; // required
+    private boolean exactMatch; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -2667,9 +2692,8 @@ public class SentryHDFSService {
       return this.path;
     }
 
-    public get_all_related_paths_args setPath(String path) {
+    public void setPath(String path) {
       this.path = path;
-      return this;
     }
 
     public void unsetPath() {
@@ -2691,10 +2715,9 @@ public class SentryHDFSService {
       return this.exactMatch;
     }
 
-    public get_all_related_paths_args setExactMatch(boolean exactMatch) {
+    public void setExactMatch(boolean exactMatch) {
       this.exactMatch = exactMatch;
       setExactMatchIsSet(true);
-      return this;
     }
 
     public void unsetExactMatch() {
@@ -2794,7 +2817,19 @@ public class SentryHDFSService {
 
     @Override
     public int hashCode() {
-      return 0;
+      HashCodeBuilder builder = new HashCodeBuilder();
+
+      boolean present_path = true && (isSetPath());
+      builder.append(present_path);
+      if (present_path)
+        builder.append(path);
+
+      boolean present_exactMatch = true;
+      builder.append(present_exactMatch);
+      if (present_exactMatch)
+        builder.append(exactMatch);
+
+      return builder.toHashCode();
     }
 
     public int compareTo(get_all_related_paths_args other) {
@@ -2923,8 +2958,6 @@ public class SentryHDFSService {
           iprot.readFieldEnd();
         }
         iprot.readStructEnd();
-
-        // check for required fields of primitive type, which can't be checked in the validate method
         struct.validate();
       }
 
@@ -3001,7 +3034,7 @@ public class SentryHDFSService {
       schemes.put(TupleScheme.class, new get_all_related_paths_resultTupleSchemeFactory());
     }
 
-    public Map<String,List<String>> success; // required
+    private Map<String,List<String>> success; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -3132,9 +3165,8 @@ public class SentryHDFSService {
       return this.success;
     }
 
-    public get_all_related_paths_result setSuccess(Map<String,List<String>> success) {
+    public void setSuccess(Map<String,List<String>> success) {
       this.success = success;
-      return this;
     }
 
     public void unsetSuccess() {
@@ -3214,7 +3246,14 @@ public class SentryHDFSService {
 
     @Override
     public int hashCode() {
-      return 0;
+      HashCodeBuilder builder = new HashCodeBuilder();
+
+      boolean present_success = true && (isSetSuccess());
+      builder.append(present_success);
+      if (present_success)
+        builder.append(success);
+
+      return builder.toHashCode();
     }
 
     public int compareTo(get_all_related_paths_result other) {
@@ -3341,8 +3380,6 @@ public class SentryHDFSService {
           iprot.readFieldEnd();
         }
         iprot.readStructEnd();
-
-        // check for required fields of primitive type, which can't be checked in the validate method
         struct.validate();
       }
 

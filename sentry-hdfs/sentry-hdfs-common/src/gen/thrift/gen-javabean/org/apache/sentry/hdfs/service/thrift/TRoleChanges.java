@@ -6,6 +6,7 @@
  */
 package org.apache.sentry.hdfs.service.thrift;
 
+import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.thrift.scheme.IScheme;
 import org.apache.thrift.scheme.SchemeFactory;
 import org.apache.thrift.scheme.StandardScheme;
@@ -43,9 +44,9 @@ public class TRoleChanges implements org.apache.thrift.TBase<TRoleChanges, TRole
     schemes.put(TupleScheme.class, new TRoleChangesTupleSchemeFactory());
   }
 
-  public String role; // required
-  public List<String> addGroups; // required
-  public List<String> delGroups; // required
+  private String role; // required
+  private List<String> addGroups; // required
+  private List<String> delGroups; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -179,9 +180,8 @@ public class TRoleChanges implements org.apache.thrift.TBase<TRoleChanges, TRole
     return this.role;
   }
 
-  public TRoleChanges setRole(String role) {
+  public void setRole(String role) {
     this.role = role;
-    return this;
   }
 
   public void unsetRole() {
@@ -218,9 +218,8 @@ public class TRoleChanges implements org.apache.thrift.TBase<TRoleChanges, TRole
     return this.addGroups;
   }
 
-  public TRoleChanges setAddGroups(List<String> addGroups) {
+  public void setAddGroups(List<String> addGroups) {
     this.addGroups = addGroups;
-    return this;
   }
 
   public void unsetAddGroups() {
@@ -257,9 +256,8 @@ public class TRoleChanges implements org.apache.thrift.TBase<TRoleChanges, TRole
     return this.delGroups;
   }
 
-  public TRoleChanges setDelGroups(List<String> delGroups) {
+  public void setDelGroups(List<String> delGroups) {
     this.delGroups = delGroups;
-    return this;
   }
 
   public void unsetDelGroups() {
@@ -383,7 +381,24 @@ public class TRoleChanges implements org.apache.thrift.TBase<TRoleChanges, TRole
 
   @Override
   public int hashCode() {
-    return 0;
+    HashCodeBuilder builder = new HashCodeBuilder();
+
+    boolean present_role = true && (isSetRole());
+    builder.append(present_role);
+    if (present_role)
+      builder.append(role);
+
+    boolean present_addGroups = true && (isSetAddGroups());
+    builder.append(present_addGroups);
+    if (present_addGroups)
+      builder.append(addGroups);
+
+    boolean present_delGroups = true && (isSetDelGroups());
+    builder.append(present_delGroups);
+    if (present_delGroups)
+      builder.append(delGroups);
+
+    return builder.toHashCode();
   }
 
   public int compareTo(TRoleChanges other) {
@@ -473,15 +488,18 @@ public class TRoleChanges implements org.apache.thrift.TBase<TRoleChanges, TRole
 
   public void validate() throws org.apache.thrift.TException {
     // check for required fields
-    if (role == null) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'role' was not present! Struct: " + toString());
+    if (!isSetRole()) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'role' is unset! Struct:" + toString());
     }
-    if (addGroups == null) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'addGroups' was not present! Struct: " + toString());
+
+    if (!isSetAddGroups()) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'addGroups' is unset! Struct:" + toString());
     }
-    if (delGroups == null) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'delGroups' was not present! Struct: " + toString());
+
+    if (!isSetDelGroups()) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'delGroups' is unset! Struct:" + toString());
     }
+
     // check for sub-struct validity
   }
 
@@ -569,8 +587,6 @@ public class TRoleChanges implements org.apache.thrift.TBase<TRoleChanges, TRole
         iprot.readFieldEnd();
       }
       iprot.readStructEnd();
-
-      // check for required fields of primitive type, which can't be checked in the validate method
       struct.validate();
     }
 

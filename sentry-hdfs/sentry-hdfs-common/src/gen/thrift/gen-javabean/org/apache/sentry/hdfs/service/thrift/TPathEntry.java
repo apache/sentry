@@ -6,6 +6,7 @@
  */
 package org.apache.sentry.hdfs.service.thrift;
 
+import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.thrift.scheme.IScheme;
 import org.apache.thrift.scheme.SchemeFactory;
 import org.apache.thrift.scheme.StandardScheme;
@@ -44,10 +45,10 @@ public class TPathEntry implements org.apache.thrift.TBase<TPathEntry, TPathEntr
     schemes.put(TupleScheme.class, new TPathEntryTupleSchemeFactory());
   }
 
-  public byte type; // required
-  public String pathElement; // required
-  public Set<Integer> children; // required
-  public Set<String> authzObjs; // optional
+  private byte type; // required
+  private String pathElement; // required
+  private Set<Integer> children; // required
+  private Set<String> authzObjs; // optional
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -194,10 +195,9 @@ public class TPathEntry implements org.apache.thrift.TBase<TPathEntry, TPathEntr
     return this.type;
   }
 
-  public TPathEntry setType(byte type) {
+  public void setType(byte type) {
     this.type = type;
     setTypeIsSet(true);
-    return this;
   }
 
   public void unsetType() {
@@ -217,9 +217,8 @@ public class TPathEntry implements org.apache.thrift.TBase<TPathEntry, TPathEntr
     return this.pathElement;
   }
 
-  public TPathEntry setPathElement(String pathElement) {
+  public void setPathElement(String pathElement) {
     this.pathElement = pathElement;
-    return this;
   }
 
   public void unsetPathElement() {
@@ -256,9 +255,8 @@ public class TPathEntry implements org.apache.thrift.TBase<TPathEntry, TPathEntr
     return this.children;
   }
 
-  public TPathEntry setChildren(Set<Integer> children) {
+  public void setChildren(Set<Integer> children) {
     this.children = children;
-    return this;
   }
 
   public void unsetChildren() {
@@ -295,9 +293,8 @@ public class TPathEntry implements org.apache.thrift.TBase<TPathEntry, TPathEntr
     return this.authzObjs;
   }
 
-  public TPathEntry setAuthzObjs(Set<String> authzObjs) {
+  public void setAuthzObjs(Set<String> authzObjs) {
     this.authzObjs = authzObjs;
-    return this;
   }
 
   public void unsetAuthzObjs() {
@@ -443,7 +440,29 @@ public class TPathEntry implements org.apache.thrift.TBase<TPathEntry, TPathEntr
 
   @Override
   public int hashCode() {
-    return 0;
+    HashCodeBuilder builder = new HashCodeBuilder();
+
+    boolean present_type = true;
+    builder.append(present_type);
+    if (present_type)
+      builder.append(type);
+
+    boolean present_pathElement = true && (isSetPathElement());
+    builder.append(present_pathElement);
+    if (present_pathElement)
+      builder.append(pathElement);
+
+    boolean present_children = true && (isSetChildren());
+    builder.append(present_children);
+    if (present_children)
+      builder.append(children);
+
+    boolean present_authzObjs = true && (isSetAuthzObjs());
+    builder.append(present_authzObjs);
+    if (present_authzObjs)
+      builder.append(authzObjs);
+
+    return builder.toHashCode();
   }
 
   public int compareTo(TPathEntry other) {
@@ -549,13 +568,18 @@ public class TPathEntry implements org.apache.thrift.TBase<TPathEntry, TPathEntr
 
   public void validate() throws org.apache.thrift.TException {
     // check for required fields
-    // alas, we cannot check 'type' because it's a primitive and you chose the non-beans generator.
-    if (pathElement == null) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'pathElement' was not present! Struct: " + toString());
+    if (!isSetType()) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'type' is unset! Struct:" + toString());
     }
-    if (children == null) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'children' was not present! Struct: " + toString());
+
+    if (!isSetPathElement()) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'pathElement' is unset! Struct:" + toString());
     }
+
+    if (!isSetChildren()) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'children' is unset! Struct:" + toString());
+    }
+
     // check for sub-struct validity
   }
 
@@ -653,11 +677,6 @@ public class TPathEntry implements org.apache.thrift.TBase<TPathEntry, TPathEntr
         iprot.readFieldEnd();
       }
       iprot.readStructEnd();
-
-      // check for required fields of primitive type, which can't be checked in the validate method
-      if (!struct.isSetType()) {
-        throw new org.apache.thrift.protocol.TProtocolException("Required field 'type' was not found in serialized data! Struct: " + toString());
-      }
       struct.validate();
     }
 
