@@ -19,6 +19,7 @@ package org.apache.sentry.binding.hive;
 import java.io.File;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.hadoop.fs.CommonConfigurationKeys;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
@@ -70,6 +71,14 @@ public class TestURI {
   public void testParseURICorrectHDFSPrefix() throws SemanticException {
     Assert.assertEquals("hdfs:///some/path",
         HiveAuthzBindingHook.parseURI("hdfs:///some/path").getName());
+  }
+
+  @Test
+  public void testWarehouseDirWithoutPrefix() throws SemanticException {
+    conf.set(CommonConfigurationKeys.FS_DEFAULT_NAME_KEY, "hdfs://localhost:8020");
+    conf.set(ConfVars.METASTOREWAREHOUSE.varname, "/path/to/warehouse");
+    Assert.assertEquals("hdfs://localhost:8020/some/path",
+        HiveAuthzBindingHook.parseURI("/some/path").getName());
   }
 
   @AfterClass

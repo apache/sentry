@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Set;
 
 import com.google.common.base.Preconditions;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.common.JavaUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
@@ -331,6 +333,11 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
     try {
       HiveConf conf = SessionState.get().getConf();
       String warehouseDir = conf.getVar(ConfVars.METASTOREWAREHOUSE);
+      Path warehousePath = new Path(warehouseDir);
+      if (warehousePath.isAbsoluteAndSchemeAuthorityNull()) {
+        FileSystem fs = FileSystem.get(conf);
+        warehouseDir = fs.makeQualified(warehousePath).toUri().toString();
+      }
       return new AccessURI(PathUtils.parseURI(warehouseDir, uri, isLocal));
     } catch (Exception e) {
       throw new SemanticException("Error parsing URI " + uri + ": " +
