@@ -17,7 +17,7 @@
 
 package org.apache.sentry.core.model.sqoop;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 import org.apache.sentry.core.model.sqoop.SqoopAuthorizable.AuthorizableType;
 import org.junit.Test;

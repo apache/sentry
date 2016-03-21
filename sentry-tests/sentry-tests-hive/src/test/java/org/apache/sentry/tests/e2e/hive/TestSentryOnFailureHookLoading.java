@@ -28,7 +28,7 @@ import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.provider.file.PolicyFile;

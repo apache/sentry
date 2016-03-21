@@ -17,7 +17,7 @@
  */
 package org.apache.sentry.hdfs;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 import org.apache.sentry.hdfs.service.thrift.TPathsDump;
 import org.apache.thrift.TDeserializer;

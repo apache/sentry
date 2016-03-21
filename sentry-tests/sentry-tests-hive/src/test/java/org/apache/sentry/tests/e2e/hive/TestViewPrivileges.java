@@ -28,7 +28,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.AfterClass;
@@ -96,13 +96,13 @@ public class TestViewPrivileges extends AbstractTestWithHiveServer {
     stmt.execute("load data local inpath '" + dataFile + "' into table " + tabName + " PARTITION (part=\"a\")");
     stmt.execute("load data local inpath '" + dataFile + "' into table " + tabName + " PARTITION (part=\"b\")");
     ResultSet res = stmt.executeQuery("select count(*) from " + tabName);
-    org.junit.Assert.assertThat(res, notNullValue());
+    Assert.assertThat(res, notNullValue());
     while(res.next()) {
       Assume.assumeTrue(res.getInt(1) == Integer.valueOf(1000));
     }
     stmt.execute("create view " + viewName + " as select * from " + tabName + " where id<100");
     res = stmt.executeQuery("select count(*) from " + viewName);
-    org.junit.Assert.assertThat(res, notNullValue());
+    Assert.assertThat(res, notNullValue());
     int rowsInView = 0;
     while(res.next()) {
       rowsInView = res.getInt(1);
@@ -114,9 +114,9 @@ public class TestViewPrivileges extends AbstractTestWithHiveServer {
     Statement userStmt = context.createStatement(userConn);
     userStmt.execute("use " + db);
     res = userStmt.executeQuery("select count(*) from " + viewName);
-    org.junit.Assert.assertThat(res, notNullValue());
+    Assert.assertThat(res, notNullValue());
     while(res.next()) {
-      org.junit.Assert.assertThat(res.getInt(1), is(rowsInView));
+      Assert.assertThat(res.getInt(1), is(rowsInView));
     }
     userStmt.close();
     userConn.close();

@@ -36,7 +36,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Set;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hive.conf.HiveConf;

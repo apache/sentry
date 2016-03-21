@@ -18,7 +18,7 @@
 
 package org.apache.sentry.provider.db.log.entity;
 
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 import java.util.LinkedHashSet;
 import java.util.Set;

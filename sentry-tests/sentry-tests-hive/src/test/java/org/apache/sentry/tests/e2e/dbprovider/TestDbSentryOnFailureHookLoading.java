@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;

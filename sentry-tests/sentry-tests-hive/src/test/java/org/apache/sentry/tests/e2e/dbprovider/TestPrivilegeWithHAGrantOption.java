@@ -22,7 +22,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;

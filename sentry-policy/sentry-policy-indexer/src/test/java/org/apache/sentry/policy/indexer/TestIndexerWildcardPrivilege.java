@@ -26,7 +26,7 @@ import org.apache.sentry.policy.common.Privilege;
 import org.apache.sentry.policy.common.KeyValue;
 import org.junit.Test;
 
-public class TestIndexerWildcardPrivilege extends junit.framework.Assert {
+public class TestIndexerWildcardPrivilege extends org.junit.Assert {
 
   private static final String ALL = IndexerConstants.ALL;
 

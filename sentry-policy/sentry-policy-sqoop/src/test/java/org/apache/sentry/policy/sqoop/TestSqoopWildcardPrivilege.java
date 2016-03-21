@@ -26,7 +26,7 @@ import org.apache.sentry.policy.common.Privilege;
 import org.apache.sentry.policy.common.KeyValue;
 import org.junit.Test;
 
-public class TestSqoopWildcardPrivilege extends junit.framework.Assert {
+public class TestSqoopWildcardPrivilege extends org.junit.Assert {
   private static final Privilege SQOOP_SERVER1_ALL =
       create(new KeyValue("SERVER", "server1"), new KeyValue("action", SqoopActionConstant.ALL));
   private static final Privilege SQOOP_SERVER1_READ =

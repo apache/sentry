@@ -26,7 +26,7 @@ import org.apache.sentry.policy.common.Privilege;
 import org.apache.sentry.policy.common.KeyValue;
 import org.junit.Test;
 
-public class TestDBWildcardPrivilege extends junit.framework.Assert {
+public class TestDBWildcardPrivilege extends org.junit.Assert {
 
   private static final String ALL = AccessConstants.ALL;
 

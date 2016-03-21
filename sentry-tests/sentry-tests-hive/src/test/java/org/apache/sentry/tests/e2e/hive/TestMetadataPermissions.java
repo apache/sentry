@@ -19,7 +19,7 @@ package org.apache.sentry.tests.e2e.hive;
 import java.sql.Connection;
 import java.sql.Statement;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.Before;

@@ -17,9 +17,9 @@
  */
 package org.apache.sentry.provider.db.generic.service.persistent;
 
-import static junit.framework.Assert.assertTrue;
-import static junit.framework.Assert.assertFalse;
-import static junit.framework.Assert.fail;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 
 import java.util.Arrays;
 

@@ -18,7 +18,7 @@
 
 package org.apache.sentry.provider.db.service.persistent;
 
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.db.service.model.MSentryPrivilege;

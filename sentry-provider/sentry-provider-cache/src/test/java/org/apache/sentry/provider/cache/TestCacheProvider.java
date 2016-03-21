@@ -17,7 +17,7 @@
 
 package org.apache.sentry.provider.cache;
 
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.util.HashSet;

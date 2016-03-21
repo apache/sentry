@@ -17,7 +17,7 @@
  */
 package org.apache.sentry.provider.db.service.thrift;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.provider.db.SentryThriftAPIMismatchException;

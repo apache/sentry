@@ -54,7 +54,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 
-public class TestSentryStore extends junit.framework.Assert {
+public class TestSentryStore extends org.junit.Assert {
 
   private static File dataDir;
   private static SentryStore sentryStore;

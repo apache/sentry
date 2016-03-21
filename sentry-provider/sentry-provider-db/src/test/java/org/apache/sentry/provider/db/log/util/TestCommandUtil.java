@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import junit.framework.TestCase;
+import org.junit.Assert;
 
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
@@ -35,7 +35,7 @@ import org.junit.Test;
 
 import com.google.common.collect.Sets;
 
-public class TestCommandUtil extends TestCase {
+public class TestCommandUtil extends Assert {
 
   @Test
   public void testCreateCmdForCreateOrDropRole() {

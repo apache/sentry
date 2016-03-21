@@ -23,7 +23,7 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 
 import com.google.common.io.Resources;
-import junit.framework.Assert;
+import org.junit.Assert;
 
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;

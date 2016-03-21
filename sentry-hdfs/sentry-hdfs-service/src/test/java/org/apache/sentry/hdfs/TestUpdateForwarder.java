@@ -23,7 +23,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.locks.ReadWriteLock;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.hdfs.UpdateForwarder.ExternalImageRetriever;

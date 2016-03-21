@@ -16,7 +16,7 @@
  */
 package org.apache.sentry.sqoop;
 
-import static junit.framework.Assert.fail;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 

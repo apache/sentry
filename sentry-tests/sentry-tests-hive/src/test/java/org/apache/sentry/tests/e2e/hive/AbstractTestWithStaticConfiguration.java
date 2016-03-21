@@ -35,7 +35,7 @@ import java.util.Map;
 import java.util.HashSet;
 
 import com.google.common.collect.Sets;
-import junit.framework.Assert;
+import org.junit.Assert;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;

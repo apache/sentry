@@ -17,7 +17,7 @@
  */
 package org.apache.sentry.binding.hive;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.hive.SentryHiveConstants;

@@ -19,7 +19,7 @@ package org.apache.sentry.hdfs;
 
 import java.util.List;
 import org.junit.Test;
-import junit.framework.Assert;
+import org.junit.Assert;
 
 public class TestPathsUpdate {
   @Test

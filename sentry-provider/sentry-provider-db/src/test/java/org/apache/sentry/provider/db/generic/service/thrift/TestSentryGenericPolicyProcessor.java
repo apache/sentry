@@ -51,7 +51,7 @@ import org.mockito.Mockito;
 
 import com.google.common.collect.Sets;
 
-public class TestSentryGenericPolicyProcessor extends junit.framework.Assert {
+public class TestSentryGenericPolicyProcessor extends org.junit.Assert {
   private static final String ADMIN_GROUP = "admin_group";
   private static final String ADMIN_USER = "admin_user";
   private static final UUID SERVER_UUID = UUID.randomUUID();

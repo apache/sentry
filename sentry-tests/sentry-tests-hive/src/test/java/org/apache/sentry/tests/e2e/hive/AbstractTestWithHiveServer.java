@@ -19,7 +19,7 @@ package org.apache.sentry.tests.e2e.hive;
 import java.io.File;
 import java.util.Map;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;

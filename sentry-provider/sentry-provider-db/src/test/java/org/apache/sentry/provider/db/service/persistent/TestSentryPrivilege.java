@@ -18,8 +18,8 @@
 
 package org.apache.sentry.provider.db.service.persistent;
 
-import static junit.framework.Assert.assertFalse;
-import static junit.framework.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.db.service.model.MSentryPrivilege;

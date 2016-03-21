@@ -21,7 +21,7 @@ package org.apache.sentry.provider.db.generic.tools;
 import com.google.common.io.Files;
 import com.google.common.collect.Sets;
 
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 

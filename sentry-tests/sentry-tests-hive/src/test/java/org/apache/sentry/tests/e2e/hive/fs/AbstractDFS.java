@@ -16,7 +16,7 @@
  */
 package org.apache.sentry.tests.e2e.hive.fs;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;

@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.base.Preconditions;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;

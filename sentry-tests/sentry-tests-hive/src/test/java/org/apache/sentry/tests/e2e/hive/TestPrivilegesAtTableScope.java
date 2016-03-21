@@ -28,7 +28,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.Before;

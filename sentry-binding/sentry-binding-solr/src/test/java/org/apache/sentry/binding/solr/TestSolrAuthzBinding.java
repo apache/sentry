@@ -16,8 +16,8 @@
  */
 package org.apache.sentry.binding.solr;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.fs.Path;

@@ -16,7 +16,7 @@ package org.apache.sentry.core.indexer;
  * limitations under the License.
  */
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 import org.apache.sentry.core.model.indexer.Indexer;
 import org.junit.Test;
