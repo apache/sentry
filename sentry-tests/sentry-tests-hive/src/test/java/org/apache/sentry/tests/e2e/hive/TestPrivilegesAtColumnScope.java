@@ -492,4 +492,26 @@ public class TestPrivilegesAtColumnScope extends AbstractTestWithStaticConfigura
     statement.close();
     connection.close();
   }
+
+  @Test
+  public void testMultipleColsPerRole() throws Exception {
+
+    policyFile
+        .addRolesToGroup(USERGROUP1, "select_tab1_AB")
+        .addPermissionsToRole("select_tab1_AB", "server=server1->db=DB_1->table=TAB_1->column=A->action=select")
+        .addPermissionsToRole("select_tab1_AB", "server=server1->db=DB_1->table=TAB_1->column=B->action=select")
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
+
+    // test execution on user1
+    Connection connection = context.createConnection(USER1_1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("USE DB_1");
+
+    // test user can execute query count on column A on tab_1
+    statement.executeQuery("SELECT A,B FROM TAB_1");
+
+    statement.close();
+    connection.close();
+  }
 }
