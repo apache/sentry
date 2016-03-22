@@ -39,10 +39,10 @@ public class KafkaTestServer {
     private File sentrySitePath = null;
 
     public KafkaTestServer(File sentrySitePath) throws Exception {
-        this.zkPort = TestUtils.getFreePort();
-        this.kafkaPort = TestUtils.getFreePort();
         this.sentrySitePath = sentrySitePath;
+        this.zkPort = TestUtils.getFreePort();
         createZkServer();
+        this.kafkaPort = TestUtils.getFreePort();
         createKafkaServer();
     }
 

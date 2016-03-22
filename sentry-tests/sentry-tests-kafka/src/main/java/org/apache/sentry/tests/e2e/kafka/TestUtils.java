@@ -23,7 +23,9 @@ public class TestUtils {
     public static int getFreePort() throws IOException {
         synchronized (TestUtils.class) {
             ServerSocket serverSocket = new ServerSocket(0);
-            return serverSocket.getLocalPort();
+            int port = serverSocket.getLocalPort();
+            serverSocket.close();
+            return port;
         }
     }
 }
