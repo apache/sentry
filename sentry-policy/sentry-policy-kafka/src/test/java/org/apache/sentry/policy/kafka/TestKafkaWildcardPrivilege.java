@@ -19,14 +19,11 @@
 package org.apache.sentry.policy.kafka;
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertTrue;
-import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_JOINER;
-import static org.apache.sentry.provider.common.ProviderConstants.KV_JOINER;
-import static org.apache.sentry.provider.common.ProviderConstants.KV_SEPARATOR;
 
 import org.apache.sentry.core.model.kafka.KafkaActionConstant;
+import org.apache.sentry.policy.common.PolicyConstants;
 import org.apache.sentry.policy.common.Privilege;
-import org.apache.sentry.policy.kafka.KafkaWildcardPrivilege;
-import org.apache.sentry.provider.common.KeyValue;
+import org.apache.sentry.policy.common.KeyValue;
 import org.junit.Test;
 
 public class TestKafkaWildcardPrivilege {
@@ -57,11 +54,6 @@ public class TestKafkaWildcardPrivilege {
       create(new KeyValue("HOST", "host1"), new KeyValue("GROUP", "cgroup1"), new KeyValue("action", KafkaActionConstant.READ));
   private static final Privilege KAFKA_HOST1_GROUP1_WRITE =
       create(new KeyValue("HOST", "host1"), new KeyValue("GROUP", "cgroup1"), new KeyValue("action", KafkaActionConstant.WRITE));
-
-
-  private static final Privilege KAFKA_CLUSTER1_HOST1_ALL =
-      create(new KeyValue("CLUSTER", "cluster1"), new KeyValue("HOST", "host1"), new KeyValue("action", KafkaActionConstant.ALL));
-
 
   @Test
   public void testSimpleAction() throws Exception {
@@ -153,28 +145,28 @@ public class TestKafkaWildcardPrivilege {
 
   @Test(expected=IllegalArgumentException.class)
   public void testEmptyKey() throws Exception {
-    System.out.println(create(KV_JOINER.join("", "host1")));
+    System.out.println(create(PolicyConstants.KV_JOINER.join("", "host1")));
   }
 
   @Test(expected=IllegalArgumentException.class)
   public void testEmptyValue() throws Exception {
-    System.out.println(create(KV_JOINER.join("HOST", "")));
+    System.out.println(create(PolicyConstants.KV_JOINER.join("HOST", "")));
   }
 
   @Test(expected=IllegalArgumentException.class)
   public void testEmptyPart() throws Exception {
-    System.out.println(create(AUTHORIZABLE_JOINER.
-        join(KV_JOINER.join("HOST", "host1"), "")));
+    System.out.println(create(PolicyConstants.AUTHORIZABLE_JOINER.
+        join(PolicyConstants.KV_JOINER.join("HOST", "host1"), "")));
   }
 
   @Test(expected=IllegalArgumentException.class)
   public void testOnlySeperators() throws Exception {
-    System.out.println(create(AUTHORIZABLE_JOINER.
-        join(KV_SEPARATOR, KV_SEPARATOR, KV_SEPARATOR)));
+    System.out.println(create(PolicyConstants.AUTHORIZABLE_JOINER.
+        join(PolicyConstants.KV_SEPARATOR, PolicyConstants.KV_SEPARATOR, PolicyConstants.KV_SEPARATOR)));
   }
 
   static KafkaWildcardPrivilege create(KeyValue... keyValues) {
-    return create(AUTHORIZABLE_JOINER.join(keyValues));
+    return create(PolicyConstants.AUTHORIZABLE_JOINER.join(keyValues));
 
   }
   static KafkaWildcardPrivilege create(String s) {

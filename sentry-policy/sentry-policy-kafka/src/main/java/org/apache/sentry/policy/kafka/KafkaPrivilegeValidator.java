@@ -16,14 +16,13 @@
  */
 package org.apache.sentry.policy.kafka;
 
-import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_SPLITTER;
-import static org.apache.sentry.provider.common.ProviderConstants.PRIVILEGE_PREFIX;
+import static org.apache.sentry.policy.common.PolicyConstants.AUTHORIZABLE_SPLITTER;
+import static org.apache.sentry.policy.common.PolicyConstants.PRIVILEGE_PREFIX;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.sentry.core.model.kafka.KafkaActionFactory;
 import org.apache.sentry.core.model.kafka.KafkaAuthorizable;
 import org.apache.sentry.core.model.kafka.Host;

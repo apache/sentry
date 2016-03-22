@@ -18,8 +18,6 @@ import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertTrue;
 
-import org.apache.sentry.core.model.kafka.KafkaActionConstant;
-import org.apache.sentry.core.model.kafka.KafkaActionFactory;
 import org.apache.sentry.core.model.kafka.KafkaActionFactory.KafkaAction;
 import org.junit.Test;
 

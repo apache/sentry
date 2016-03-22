@@ -22,7 +22,7 @@ import org.apache.sentry.core.model.kafka.KafkaAuthorizable;
 import org.apache.sentry.core.model.kafka.KafkaAuthorizable.AuthorizableType;
 import org.apache.sentry.core.model.kafka.Host;
 import org.apache.sentry.core.model.kafka.Topic;
-import org.apache.sentry.provider.common.KeyValue;
+import org.apache.sentry.policy.common.KeyValue;
 import org.apache.shiro.config.ConfigurationException;
 
 public class KafkaModelAuthorizables {

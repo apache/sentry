@@ -21,7 +21,6 @@ package org.apache.sentry.policy.kafka;
 import java.io.IOException;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.policy.kafka.SimpleKafkaPolicyEngine;
 import org.apache.sentry.provider.file.SimpleFileProviderBackend;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

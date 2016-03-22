@@ -75,7 +75,7 @@ public class TestKafkaModelAuthorizables {
   @Test
   public void testClusterResourceNameIsRestricted() throws Exception {
     try {
-      Cluster cluster1 = (Cluster) KafkaModelAuthorizables.from("Cluster=cluster1");
+      KafkaModelAuthorizables.from("Cluster=cluster1");
       fail("Cluster with name other than " + Cluster.NAME + " must not have been created.");
     } catch (ConfigurationException cex) {
       assertEquals("Exception message is not as expected.", "Kafka's cluster resource can only have name " + Cluster.NAME, cex.getMessage());

@@ -197,8 +197,9 @@ public class TestAuthorize extends AbstractKafkaSentryTestBase {
         @Override
         public Boolean call() throws Exception {
           ConsumerRecords<String, String> records = kafkaConsumer.poll(1000);
-          if (records.isEmpty())
+          if (records.isEmpty()) {
             LOGGER.debug("No record received from consumer.");
+          }
           for (ConsumerRecord<String, String> record : records) {
             if (record.value().equals(msg)) {
               LOGGER.debug("Received message: " + record);

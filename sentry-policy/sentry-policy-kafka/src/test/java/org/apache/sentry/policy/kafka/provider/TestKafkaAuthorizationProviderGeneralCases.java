@@ -166,38 +166,44 @@ public class TestKafkaAuthorizationProviderGeneralCases {
   @Test
   public void testConsumer() throws Exception {
     for (KafkaAction action : allActions) {
-      for (Host host : Sets.newHashSet(HOST_1, HOST_2))
+      for (Host host : Sets.newHashSet(HOST_1, HOST_2)) {
         doTestResourceAuthorizationProvider(CONSUMER0, Arrays.asList(host, topic1),
             Sets.newHashSet(action), READ.equals(action));
+      }
     }
     for (KafkaAction action : allActions) {
-      for (Host host : Sets.newHashSet(HOST_1, HOST_2))
+      for (Host host : Sets.newHashSet(HOST_1, HOST_2)) {
         doTestResourceAuthorizationProvider(CONSUMER1, Arrays.asList(host, topic1),
             Sets.newHashSet(action), HOST_1.equals(host) && READ.equals(action));
+      }
     }
     for (KafkaAction action : allActions) {
-      for (Host host : Sets.newHashSet(HOST_1, HOST_2))
+      for (Host host : Sets.newHashSet(HOST_1, HOST_2)) {
         doTestResourceAuthorizationProvider(CONSUMER2, Arrays.asList(host, topic2),
             Sets.newHashSet(action), HOST_2.equals(host) && READ.equals(action));
+      }
     }
   }
 
   @Test
   public void testProducer() throws Exception {
     for (KafkaAction action : allActions) {
-      for (Host host : Sets.newHashSet(HOST_1, HOST_2))
+      for (Host host : Sets.newHashSet(HOST_1, HOST_2)) {
         doTestResourceAuthorizationProvider(PRODUCER0, Arrays.asList(host, topic1),
             Sets.newHashSet(action), WRITE.equals(action));
+      }
     }
     for (KafkaAction action : allActions) {
-      for (Host host : Sets.newHashSet(HOST_1, HOST_2))
+      for (Host host : Sets.newHashSet(HOST_1, HOST_2)) {
         doTestResourceAuthorizationProvider(PRODUCER1, Arrays.asList(host, topic1),
             Sets.newHashSet(action), HOST_1.equals(host) && WRITE.equals(action));
+      }
     }
     for (KafkaAction action : allActions) {
-      for (Host host : Sets.newHashSet(HOST_1, HOST_2))
+      for (Host host : Sets.newHashSet(HOST_1, HOST_2)) {
         doTestResourceAuthorizationProvider(PRODUCER2, Arrays.asList(host, topic2),
             Sets.newHashSet(action), HOST_2.equals(host) && WRITE.equals(action));
+      }
     }
   }
 
