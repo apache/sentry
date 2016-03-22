@@ -34,7 +34,8 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.conf.Configuration;
 
 import com.google.common.collect.Lists;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -42,6 +43,8 @@ import com.google.common.collect.Lists;
  * {@link Updateable.Update} for more information
  */
 public class PathsUpdate implements Updateable.Update {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(PathsUpdate.class);
 
   public static String ALL_PATHS = "__ALL_PATHS__";
   private static final Configuration CONF = new Configuration();
@@ -104,7 +107,7 @@ public class PathsUpdate implements Updateable.Update {
    */
   public static List<String> parsePath(String path) {
     try {
-
+      LOGGER.debug("Parsing path " + path);
       URI uri = null;
       if (StringUtils.isNotEmpty(path)) {
         uri = new URI(URIUtil.encodePath(path));
@@ -124,9 +127,11 @@ public class PathsUpdate implements Updateable.Update {
 
       // Non-HDFS paths will be skipped.
       if(scheme.equalsIgnoreCase("hdfs")) {
+
         return Lists.newArrayList(uri.getPath().split("^/")[1]
             .split("/"));
       } else {
+        LOGGER.warn("Invalid FS: " + scheme +  "://; expected hdfs://");
         return null;
       }
     } catch (URISyntaxException e) {
