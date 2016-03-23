@@ -23,6 +23,7 @@ package org.apache.sentry.policy.indexer;
 
 import java.util.List;
 
+import org.apache.sentry.core.common.Model;
 import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.core.model.indexer.IndexerConstants;
 import org.apache.sentry.policy.common.Privilege;
@@ -59,7 +60,7 @@ public class IndexerWildcardPrivilege implements Privilege {
 
 
   @Override
-  public boolean implies(Privilege p) {
+  public boolean implies(Privilege p, Model model) {
     // By default only supports comparisons with other IndexerWildcardPermissions
     if (!(p instanceof IndexerWildcardPrivilege)) {
       return false;

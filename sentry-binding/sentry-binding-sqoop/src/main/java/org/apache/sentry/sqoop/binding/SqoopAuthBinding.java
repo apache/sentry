@@ -25,6 +25,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.SentryUserException;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
+import org.apache.sentry.core.common.Model;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.sqoop.Server;
 import org.apache.sentry.core.model.sqoop.SqoopActionConstant;
@@ -65,6 +66,7 @@ public class SqoopAuthBinding {
   private ProviderBackend providerBackend;
 
   private final SqoopActionFactory actionFactory = new SqoopActionFactory();
+  private final String SQOOP_POLICY_ENGINE_OLD = "org.apache.sentry.policy.sqoop.SimpleSqoopPolicyEngine";
 
   public SqoopAuthBinding(Configuration authConf, String serverName) throws Exception {
     this.authConf = authConf;
@@ -89,6 +91,12 @@ public class SqoopAuthBinding {
     String providerBackendName = authConf.get(AuthzConfVars.AUTHZ_PROVIDER_BACKEND.getVar(), AuthzConfVars.AUTHZ_PROVIDER_BACKEND.getDefault());
     String policyEngineName = authConf.get(AuthzConfVars.AUTHZ_POLICY_ENGINE.getVar(), AuthzConfVars.AUTHZ_POLICY_ENGINE.getDefault());
     String serviceName = authConf.get(AuthzConfVars.AUTHZ_SERVER_NAME.getVar());
+
+    // for the backward compatibility
+    if (SQOOP_POLICY_ENGINE_OLD.equals(policyEngineName)) {
+      policyEngineName = AuthzConfVars.AUTHZ_POLICY_ENGINE.getDefault();
+    }
+
     if (LOG.isDebugEnabled()) {
       LOG.debug("Using authorization provider " + authProviderName +
           " with resource " + resourceName + ", policy engine "
@@ -127,9 +135,11 @@ public class SqoopAuthBinding {
 
     //Instantiate the configured authProvider
     Constructor<?> constrctor =
-        Class.forName(authProviderName).getDeclaredConstructor(Configuration.class, String.class, PolicyEngine.class);
+        Class.forName(authProviderName).getDeclaredConstructor(Configuration.class, String.class,
+                PolicyEngine.class, Model.class);
     constrctor.setAccessible(true);
-    return (AuthorizationProvider) constrctor.newInstance(new Object[] {authConf, resourceName, policyEngine});
+    return (AuthorizationProvider) constrctor.newInstance(new Object[] {authConf, resourceName,
+            policyEngine, SqoopPrivilegeModel.getInstance()});
   }
 
   /**

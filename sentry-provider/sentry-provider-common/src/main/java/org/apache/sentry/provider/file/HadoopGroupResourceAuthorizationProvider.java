@@ -20,6 +20,7 @@ package org.apache.sentry.provider.file;
 import java.io.IOException;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.sentry.core.common.Model;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.common.GroupMappingService;
 
@@ -32,18 +33,19 @@ import com.google.common.annotations.VisibleForTesting;
 public class HadoopGroupResourceAuthorizationProvider extends
   org.apache.sentry.provider.common.HadoopGroupResourceAuthorizationProvider {
 
-  public HadoopGroupResourceAuthorizationProvider(String resource, PolicyEngine policy) throws IOException {
-    super(resource, policy);
+  public HadoopGroupResourceAuthorizationProvider(String resource, PolicyEngine policy, Model model) throws IOException {
+    super(resource, policy, model);
   }
 
-  public HadoopGroupResourceAuthorizationProvider(Configuration conf, String resource, PolicyEngine policy) throws IOException {
-    super(conf, resource, policy);
+  public HadoopGroupResourceAuthorizationProvider(Configuration conf, String resource,
+      PolicyEngine policy, Model model) throws IOException {
+    super(conf, resource, policy, model);
   }
 
   @VisibleForTesting
   public HadoopGroupResourceAuthorizationProvider(PolicyEngine policy,
-      GroupMappingService groupService) {
-    super(policy, groupService);
+      GroupMappingService groupService, Model model) {
+    super(policy, groupService, model);
   }
 
 }

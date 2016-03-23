@@ -31,6 +31,7 @@ import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.db.AccessURI;
 import org.apache.sentry.core.model.db.DBModelAction;
+import org.apache.sentry.core.model.db.HivePrivilegeModel;
 import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.common.AuthorizationProvider;
@@ -76,7 +77,7 @@ public class TestResourceAuthorizationProviderSpecialCases {
           "server=" + server1.getName() + "->uri=" + uri.getName());
     policyFile.write(iniFile);
     PolicyEngine policy = DBPolicyTestUtil.createPolicyEngineForTest(server1.getName(), initResource);
-    authzProvider = new LocalGroupResourceAuthorizationProvider(initResource, policy);
+    authzProvider = new LocalGroupResourceAuthorizationProvider(initResource, policy, HivePrivilegeModel.getInstance());
     List<? extends Authorizable> authorizableHierarchy = ImmutableList.of(server1, uri);
     Assert.assertTrue(authorizableHierarchy.toString(),
         authzProvider.hasAccess(user1, authorizableHierarchy, actions, ActiveRoleSet.ALL));
@@ -92,7 +93,7 @@ public class TestResourceAuthorizationProviderSpecialCases {
       .addPermissionsToRole("role1", "server=" + server1.getName() + "->uri=" + uri.getName());
     policyFile.write(iniFile);
     PolicyEngine policy = DBPolicyTestUtil.createPolicyEngineForTest(server1.getName(), initResource);
-    authzProvider = new LocalGroupResourceAuthorizationProvider(initResource, policy);
+    authzProvider = new LocalGroupResourceAuthorizationProvider(initResource, policy, HivePrivilegeModel.getInstance());
     // positive test
     List<? extends Authorizable> authorizableHierarchy = ImmutableList.of(server1, uri);
     Assert.assertTrue(authorizableHierarchy.toString(),

@@ -36,6 +36,7 @@ import org.apache.sentry.binding.solr.conf.SolrAuthzConf;
 import org.apache.sentry.binding.solr.conf.SolrAuthzConf.AuthzConfVars;
 import org.apache.sentry.core.common.Action;
 import org.apache.sentry.core.common.ActiveRoleSet;
+import org.apache.sentry.core.common.Model;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.search.Collection;
 import org.apache.sentry.core.model.search.SearchModelAction;
@@ -67,6 +68,7 @@ public class SolrAuthzBinding {
   public static final String KERBEROS_ENABLED = "solr.hdfs.security.kerberos.enabled";
   public static final String KERBEROS_KEYTAB = "solr.hdfs.security.kerberos.keytabfile";
   public static final String KERBEROS_PRINCIPAL = "solr.hdfs.security.kerberos.principal";
+  private static final String SOLR_POLICY_ENGINE_OLD = "org.apache.sentry.policy.search.SimpleSearchPolicyEngine";
   private static final String kerberosEnabledProp = Strings.nullToEmpty(System.getProperty(KERBEROS_ENABLED)).trim();
   private static final String keytabProp = Strings.nullToEmpty(System.getProperty(KERBEROS_KEYTAB)).trim();
   private static final String principalProp = Strings.nullToEmpty(System.getProperty(KERBEROS_PRINCIPAL)).trim();
@@ -98,7 +100,13 @@ public class SolrAuthzBinding {
     String providerBackendName =
       authzConf.get(AuthzConfVars.AUTHZ_PROVIDER_BACKEND.getVar());
     String policyEngineName =
-      authzConf.get(AuthzConfVars.AUTHZ_POLICY_ENGINE.getVar());
+      authzConf.get(AuthzConfVars.AUTHZ_POLICY_ENGINE.getVar(), AuthzConfVars.AUTHZ_POLICY_ENGINE.getDefault());
+
+    // for the backward compatibility
+    if (SOLR_POLICY_ENGINE_OLD.equals(policyEngineName)) {
+      policyEngineName = AuthzConfVars.AUTHZ_POLICY_ENGINE.getDefault();
+    }
+
     String serviceName = authzConf.get(SENTRY_SEARCH_CLUSTER_KEY, SENTRY_SEARCH_CLUSTER_DEFAULT);
 
     LOG.debug("Using authorization provider " + authProviderName +
@@ -153,9 +161,11 @@ public class SolrAuthzBinding {
 
     // load the authz provider class
     Constructor<?> constrctor =
-      Class.forName(authProviderName).getDeclaredConstructor(Configuration.class, String.class, PolicyEngine.class);
+      Class.forName(authProviderName).getDeclaredConstructor(Configuration.class,
+              String.class, PolicyEngine.class, Model.class);
     constrctor.setAccessible(true);
-    return (AuthorizationProvider) constrctor.newInstance(new Object[] {authzConf, resourceName, policyEngine});
+    return (AuthorizationProvider) constrctor.newInstance(new Object[] {authzConf, resourceName,
+            policyEngine, SearchPrivilegeModel.getInstance()});
   }
 
 

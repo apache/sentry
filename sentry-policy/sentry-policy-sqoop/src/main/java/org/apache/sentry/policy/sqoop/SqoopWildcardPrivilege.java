@@ -20,6 +20,7 @@ import static org.apache.sentry.core.common.utils.SentryConstants.AUTHORIZABLE_S
 
 import java.util.List;
 
+import org.apache.sentry.core.common.Model;
 import org.apache.sentry.core.model.sqoop.SqoopActionConstant;
 import org.apache.sentry.policy.common.Privilege;
 import org.apache.sentry.policy.common.PrivilegeFactory;
@@ -30,6 +31,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
+// todo: SqoopWildcardPrivilege is replaced by CommonPrivilege, it should be removed
 public class SqoopWildcardPrivilege implements Privilege {
 
   public static class Factory implements PrivilegeFactory {
@@ -59,7 +61,7 @@ public class SqoopWildcardPrivilege implements Privilege {
   }
 
   @Override
-  public boolean implies(Privilege p) {
+  public boolean implies(Privilege p, Model model) {
     if (!(p instanceof SqoopWildcardPrivilege)) {
       return false;
     }

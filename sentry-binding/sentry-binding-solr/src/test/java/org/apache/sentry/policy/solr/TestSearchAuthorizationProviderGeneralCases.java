@@ -33,6 +33,7 @@ import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.search.Collection;
 import org.apache.sentry.core.model.search.SearchModelAction;
+import org.apache.sentry.core.model.search.SearchPrivilegeModel;
 import org.apache.sentry.provider.common.GroupMappingService;
 import org.apache.sentry.provider.common.ResourceAuthorizationProvider;
 import org.apache.sentry.provider.file.HadoopGroupResourceAuthorizationProvider;
@@ -86,7 +87,7 @@ public class TestSearchAuthorizationProviderGeneralCases {
     PolicyFiles.copyToDir(baseDir, "solr-policy-test-authz-provider.ini");
     authzProvider = new HadoopGroupResourceAuthorizationProvider(
             SearchPolicyTestUtil.createPolicyEngineForTest(new File(baseDir, "solr-policy-test-authz-provider.ini").getPath()),
-        new MockGroupMappingServiceProvider(USER_TO_GROUP_MAP));
+        new MockGroupMappingServiceProvider(USER_TO_GROUP_MAP), SearchPrivilegeModel.getInstance());
 
   }
 

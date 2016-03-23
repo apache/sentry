@@ -53,6 +53,7 @@ public class CommonPrivilege implements Privilege {
     this.parts = ImmutableList.copyOf(parts);
   }
 
+  @Override
   public boolean implies(Privilege privilege, Model model) {
     // By default only supports comparisons with other IndexerWildcardPermissions
     if (!(privilege instanceof CommonPrivilege)) {
@@ -89,7 +90,8 @@ public class CommonPrivilege implements Privilege {
             return false;
           }
         } else {
-          if (!impliesResource(model.getImplyMethodMap().get(policyKey), part.getValue(), otherPart.getValue())) {
+          if (!impliesResource(model.getImplyMethodMap().get(policyKey.toLowerCase()),
+                  part.getValue(), otherPart.getValue())) {
             return false;
           }
         }
@@ -120,7 +122,6 @@ public class CommonPrivilege implements Privilege {
             || SentryConstants.RESOURCE_WILDCARD_VALUE.equals(requestValue)
             || SentryConstants.RESOURCE_WILDCARD_VALUE_ALL.equals(policyValue)
             || SentryConstants.RESOURCE_WILDCARD_VALUE_ALL.equals(requestValue)
-            || SentryConstants.RESOURCE_WILDCARD_VALUE_SOME.equals(policyValue)
             || SentryConstants.RESOURCE_WILDCARD_VALUE_SOME.equals(requestValue)) {
       return true;
     }
@@ -129,8 +130,8 @@ public class CommonPrivilege implements Privilege {
     if (ImplyMethodType.URL == implyMethodType) {
       return PathUtils.impliesURI(policyValue, requestValue);
     }
-    // default: compare as the string
-    return policyValue.equals(requestValue);
+    // default: compare as the string case insensitive
+    return policyValue.equalsIgnoreCase(requestValue);
   }
 
   // The method is used for compare the action for the privilege model.
@@ -150,10 +151,6 @@ public class CommonPrivilege implements Privilege {
   @Override
   public String toString() {
     return SentryConstants.AUTHORIZABLE_JOINER.join(parts);
-  }
-
-  public boolean implies(Privilege p) {
-    return false;
   }
 
   public List<KeyValue> getParts() {

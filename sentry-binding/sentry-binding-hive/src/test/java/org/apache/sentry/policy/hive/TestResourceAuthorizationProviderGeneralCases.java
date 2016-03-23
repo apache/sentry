@@ -35,6 +35,7 @@ import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.model.db.DBModelAction;
 import org.apache.sentry.core.model.db.Database;
+import org.apache.sentry.core.model.db.HivePrivilegeModel;
 import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.core.model.db.Table;
 import org.apache.sentry.provider.common.GroupMappingService;
@@ -95,7 +96,7 @@ public class TestResourceAuthorizationProviderGeneralCases {
     authzProvider = new HadoopGroupResourceAuthorizationProvider(
             DBPolicyTestUtil.createPolicyEngineForTest("server1",
         new File(baseDir, "hive-policy-test-authz-provider.ini").getPath()),
-        new MockGroupMappingServiceProvider(USER_TO_GROUP_MAP));
+        new MockGroupMappingServiceProvider(USER_TO_GROUP_MAP), HivePrivilegeModel.getInstance());
 
   }
 

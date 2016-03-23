@@ -23,6 +23,7 @@ package org.apache.sentry.policy.search;
 
 import java.util.List;
 
+import org.apache.sentry.core.common.Model;
 import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.core.model.search.SearchConstants;
 import org.apache.sentry.policy.common.Privilege;
@@ -34,6 +35,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
+// todo: SearchWildcardPrivilege is replaced by CommonPrivilege, it should be removed
 public class SearchWildcardPrivilege implements Privilege {
 
   private final ImmutableList<KeyValue> parts;
@@ -59,7 +61,7 @@ public class SearchWildcardPrivilege implements Privilege {
 
 
   @Override
-  public boolean implies(Privilege p) {
+  public boolean implies(Privilege p, Model model) {
     // By default only supports comparisons with other SearchWildcardPermissions
     if (!(p instanceof SearchWildcardPrivilege)) {
       return false;

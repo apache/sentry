@@ -84,7 +84,7 @@ public class HiveAuthzConf extends Configuration {
       "org.apache.sentry.provider.common.HadoopGroupResourceAuthorizationProvider"),
     AUTHZ_PROVIDER_RESOURCE("sentry.hive.provider.resource", ""),
     AUTHZ_PROVIDER_BACKEND("sentry.hive.provider.backend", "org.apache.sentry.provider.file.SimpleFileProviderBackend"),
-    AUTHZ_POLICY_ENGINE("sentry.hive.policy.engine", "org.apache.sentry.policy.db.SimpleDBPolicyEngine"),
+    AUTHZ_POLICY_ENGINE("sentry.hive.policy.engine", "org.apache.sentry.policy.engine.common.CommonPolicyEngine"),
     AUTHZ_POLICY_FILE_FORMATTER(
         "sentry.hive.policy.file.formatter",
         "org.apache.sentry.binding.hive.SentryIniPolicyFileFormatter"),

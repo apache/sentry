@@ -23,6 +23,7 @@ package org.apache.sentry.policy.db;
 
 import java.util.List;
 
+import org.apache.sentry.core.common.Model;
 import org.apache.sentry.core.common.utils.PathUtils;
 import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.core.model.db.AccessConstants;
@@ -38,6 +39,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 // XXX this class is made ugly by the fact that Action is not a Authorizable.
+// todo: DBWildcardPrivilege is replaced by CommonPrivilege, it should be removed
 public class DBWildcardPrivilege implements Privilege {
 
   private final ImmutableList<KeyValue> parts;
@@ -63,7 +65,7 @@ public class DBWildcardPrivilege implements Privilege {
 
 
   @Override
-  public boolean implies(Privilege p) {
+  public boolean implies(Privilege p, Model model) {
     // By default only supports comparisons with other DBWildcardPermissions
     if (!(p instanceof DBWildcardPrivilege)) {
       return false;

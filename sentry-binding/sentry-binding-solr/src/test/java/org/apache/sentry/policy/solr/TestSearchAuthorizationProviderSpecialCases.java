@@ -31,6 +31,7 @@ import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.search.Collection;
 import org.apache.sentry.core.model.search.SearchModelAction;
+import org.apache.sentry.core.model.search.SearchPrivilegeModel;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.common.AuthorizationProvider;
 import org.apache.sentry.provider.file.LocalGroupResourceAuthorizationProvider;
@@ -74,7 +75,7 @@ public class TestSearchAuthorizationProviderSpecialCases {
           "collection=" + collection1.getName());
     policyFile.write(iniFile);
     PolicyEngine policy = SearchPolicyTestUtil.createPolicyEngineForTest(initResource);
-    authzProvider = new LocalGroupResourceAuthorizationProvider(initResource, policy);
+    authzProvider = new LocalGroupResourceAuthorizationProvider(initResource, policy, SearchPrivilegeModel.getInstance());
     List<? extends Authorizable> authorizableHierarchy = ImmutableList.of(collection1);
     Assert.assertTrue(authorizableHierarchy.toString(),
         authzProvider.hasAccess(user1, authorizableHierarchy, actions, ActiveRoleSet.ALL));

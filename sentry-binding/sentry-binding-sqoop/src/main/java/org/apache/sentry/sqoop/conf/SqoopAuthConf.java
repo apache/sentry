@@ -34,7 +34,7 @@ public class SqoopAuthConf extends Configuration {
     AUTHZ_PROVIDER_BACKEND(
         "sentry.sqoop.provider.backend",
         "org.apache.sentry.provider.db.generic.SentryGenericProviderBackend"),
-    AUTHZ_POLICY_ENGINE("sentry.sqoop.policy.engine","org.apache.sentry.policy.sqoop.SimpleSqoopPolicyEngine"),
+    AUTHZ_POLICY_ENGINE("sentry.sqoop.policy.engine","org.apache.sentry.policy.engine.common.CommonPolicyEngine"),
     AUTHZ_SERVER_NAME("sentry.sqoop.name", ""),
     AUTHZ_TESTING_MODE("sentry.sqoop.testing.mode", "false");
 

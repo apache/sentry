@@ -162,13 +162,13 @@ public class TestCommonPrivilegeForIndexer {
   public void testUnexpected() throws Exception {
     Privilege p = new Privilege() {
       @Override
-      public boolean implies(Privilege p) {
+      public boolean implies(Privilege p, Model model) {
         return false;
       }
     };
     CommonPrivilege indexer1 = create(new KeyValue("indexer", "index1"));
-    assertFalse(indexer1.implies(null));
-    assertFalse(indexer1.implies(p));
+    assertFalse(indexer1.implies(null, indexerPrivilegeModel));
+    assertFalse(indexer1.implies(p, indexerPrivilegeModel));
     assertFalse(indexer1.equals(null));
     assertFalse(indexer1.equals(p));
   }

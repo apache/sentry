@@ -31,6 +31,7 @@ import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.indexer.Indexer;
 import org.apache.sentry.core.model.indexer.IndexerModelAction;
+import org.apache.sentry.core.model.indexer.IndexerPrivilegeModel;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.common.AuthorizationProvider;
 import org.apache.sentry.provider.file.LocalGroupResourceAuthorizationProvider;
@@ -74,7 +75,7 @@ public class TestIndexerAuthorizationProviderSpecialCases {
           "indexer=" + indexer1.getName());
     policyFile.write(iniFile);
     PolicyEngine policy = IndexPolicyTestUtil.createPolicyEngineForTest(initResource);
-    authzProvider = new LocalGroupResourceAuthorizationProvider(initResource, policy);
+    authzProvider = new LocalGroupResourceAuthorizationProvider(initResource, policy, IndexerPrivilegeModel.getInstance());
     List<? extends Authorizable> authorizableHierarchy = ImmutableList.of(indexer1);
     Assert.assertTrue(authorizableHierarchy.toString(),
         authzProvider.hasAccess(user1, authorizableHierarchy, actions, ActiveRoleSet.ALL));

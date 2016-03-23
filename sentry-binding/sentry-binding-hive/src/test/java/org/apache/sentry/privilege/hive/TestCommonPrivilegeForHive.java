@@ -208,12 +208,12 @@ public class TestCommonPrivilegeForHive {
   public void testUnexpected() throws Exception {
     Privilege p = new Privilege() {
       @Override
-      public boolean implies(Privilege p) {
+      public boolean implies(Privilege p, Model m) {
         return false;
       }
     };
-    assertFalse(ROLE_SERVER_SERVER1_DB_ALL.implies(null));
-    assertFalse(ROLE_SERVER_SERVER1_DB_ALL.implies(p));
+    assertFalse(ROLE_SERVER_SERVER1_DB_ALL.implies(null, hivePrivilegeModel));
+    assertFalse(ROLE_SERVER_SERVER1_DB_ALL.implies(p, hivePrivilegeModel));
     assertFalse(ROLE_SERVER_SERVER1_DB_ALL.equals(null));
     assertFalse(ROLE_SERVER_SERVER1_DB_ALL.equals(p));
 

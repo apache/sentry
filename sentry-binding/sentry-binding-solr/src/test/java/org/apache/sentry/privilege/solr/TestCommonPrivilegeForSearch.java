@@ -162,13 +162,13 @@ public class TestCommonPrivilegeForSearch {
   public void testUnexpected() throws Exception {
     Privilege p = new Privilege() {
       @Override
-      public boolean implies(Privilege p) {
+      public boolean implies(Privilege p, Model m) {
         return false;
       }
     };
     Privilege collection1 = create(new KeyValue("collection", "coll1"));
-    assertFalse(collection1.implies(null));
-    assertFalse(collection1.implies(p));
+    assertFalse(collection1.implies(null, searchPrivilegeModel));
+    assertFalse(collection1.implies(p, searchPrivilegeModel));
     assertFalse(collection1.equals(null));
     assertFalse(collection1.equals(p));
   }

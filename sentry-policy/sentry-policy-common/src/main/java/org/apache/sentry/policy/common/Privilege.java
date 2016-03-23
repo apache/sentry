@@ -16,6 +16,8 @@
  */
 package org.apache.sentry.policy.common;
 
+import org.apache.sentry.core.common.Model;
+
 public interface Privilege {
-  boolean implies(Privilege p);
+  boolean implies(Privilege p, Model model);
 }

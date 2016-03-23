@@ -34,6 +34,7 @@ import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
 import org.apache.sentry.binding.hive.conf.InvalidConfigurationException;
 import org.apache.sentry.core.common.ActiveRoleSet;
+import org.apache.sentry.core.common.Model;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.model.db.DBModelAction;
@@ -61,6 +62,7 @@ public class HiveAuthzBinding {
   private static final Splitter ROLE_SET_SPLITTER = Splitter.on(",").trimResults()
       .omitEmptyStrings();
   public static final String HIVE_BINDING_TAG = "hive.authz.bindings.tag";
+  public static final String HIVE_POLICY_ENGINE_OLD = "org.apache.sentry.policy.db.SimpleDBPolicyEngine";
 
   private final HiveConf hiveConf;
   private final Server authServer;
@@ -207,6 +209,11 @@ public class HiveAuthzBinding {
     String providerBackendName = authzConf.get(AuthzConfVars.AUTHZ_PROVIDER_BACKEND.getVar());
     String policyEngineName = authzConf.get(AuthzConfVars.AUTHZ_POLICY_ENGINE.getVar());
 
+    // for the backward compatibility
+    if (HIVE_POLICY_ENGINE_OLD.equals(policyEngineName)) {
+      policyEngineName = AuthzConfVars.AUTHZ_POLICY_ENGINE.getDefault();
+    }
+
     LOG.debug("Using authorization provider " + authProviderName +
         " with resource " + resourceName + ", policy engine "
         + policyEngineName + ", provider backend " + providerBackendName);
@@ -235,9 +242,10 @@ public class HiveAuthzBinding {
 
     // load the authz provider class
     Constructor<?> constrctor =
-      Class.forName(authProviderName).getDeclaredConstructor(String.class, PolicyEngine.class);
+      Class.forName(authProviderName).getDeclaredConstructor(String.class, PolicyEngine.class, Model.class);
     constrctor.setAccessible(true);
-    return (AuthorizationProvider) constrctor.newInstance(new Object[] {resourceName, policyEngine});
+    return (AuthorizationProvider) constrctor.newInstance(new Object[] {resourceName, policyEngine,
+            HivePrivilegeModel.getInstance()});
   }
 
   // Instantiate the authz provider using PrivilegeCache, this method is used for metadata filter function.
@@ -247,7 +255,13 @@ public class HiveAuthzBinding {
     String authProviderName = authzConf.get(AuthzConfVars.AUTHZ_PROVIDER.getVar());
     String resourceName =
             authzConf.get(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar());
-    String policyEngineName = authzConf.get(AuthzConfVars.AUTHZ_POLICY_ENGINE.getVar());
+    String policyEngineName = authzConf.get(AuthzConfVars.AUTHZ_POLICY_ENGINE.getVar(),
+            AuthzConfVars.AUTHZ_POLICY_ENGINE.getDefault());
+
+    // for the backward compatibility
+    if (HIVE_POLICY_ENGINE_OLD.equals(policyEngineName)) {
+      policyEngineName = AuthzConfVars.AUTHZ_POLICY_ENGINE.getDefault();
+    }
 
     LOG.debug("Using authorization provider " + authProviderName +
             " with resource " + resourceName + ", policy engine "
@@ -267,9 +281,10 @@ public class HiveAuthzBinding {
 
     // load the authz provider class
     Constructor<?> constrctor =
-            Class.forName(authProviderName).getDeclaredConstructor(String.class, PolicyEngine.class);
+            Class.forName(authProviderName).getDeclaredConstructor(String.class, PolicyEngine.class, Model.class);
     constrctor.setAccessible(true);
-    return (AuthorizationProvider) constrctor.newInstance(new Object[] {resourceName, policyEngine});
+    return (AuthorizationProvider) constrctor.newInstance(new Object[] {resourceName, policyEngine,
+            HivePrivilegeModel.getInstance()});
   }
 
   /**

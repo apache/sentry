@@ -37,6 +37,7 @@ import org.apache.sentry.core.model.sqoop.Link;
 import org.apache.sentry.core.model.sqoop.Server;
 import org.apache.sentry.core.model.sqoop.SqoopActionConstant;
 import org.apache.sentry.core.model.sqoop.SqoopActionFactory.SqoopAction;
+import org.apache.sentry.core.model.sqoop.SqoopPrivilegeModel;
 import org.apache.sentry.provider.common.GroupMappingService;
 import org.apache.sentry.provider.common.ResourceAuthorizationProvider;
 import org.apache.sentry.provider.common.HadoopGroupResourceAuthorizationProvider;
@@ -101,7 +102,7 @@ public class TestSqoopAuthorizationProviderGeneralCases {
     authzProvider = new HadoopGroupResourceAuthorizationProvider(
         SqoopPolicyTestUtil.createPolicyEngineForTest(server1.getName(),
         new File(baseDir, "sqoop-policy-test-authz-provider.ini").getPath()),
-        new MockGroupMappingServiceProvider(USER_TO_GROUP_MAP));
+        new MockGroupMappingServiceProvider(USER_TO_GROUP_MAP), SqoopPrivilegeModel.getInstance());
   }
 
   @After

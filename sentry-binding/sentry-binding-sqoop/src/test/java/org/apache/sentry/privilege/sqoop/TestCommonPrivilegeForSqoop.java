@@ -144,13 +144,13 @@ public class TestCommonPrivilegeForSqoop {
   public void testUnexpected() throws Exception {
     Privilege p = new Privilege() {
       @Override
-      public boolean implies(Privilege p) {
+      public boolean implies(Privilege p, Model m) {
         return false;
       }
     };
     Privilege job1 = create(new KeyValue("SERVER", "server"), new KeyValue("JOB", "job1"));
-    assertFalse(job1.implies(null));
-    assertFalse(job1.implies(p));
+    assertFalse(job1.implies(null, sqoopPrivilegeModel));
+    assertFalse(job1.implies(p, sqoopPrivilegeModel));
     assertFalse(job1.equals(null));
     assertFalse(job1.equals(p));
   }

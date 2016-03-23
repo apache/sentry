@@ -37,7 +37,7 @@ public class TestGetGroupMapping {
   private static class TestResourceAuthorizationProvider extends ResourceAuthorizationProvider {
     public TestResourceAuthorizationProvider(PolicyEngine policy,
       GroupMappingService groupService) {
-      super(policy, groupService);
+      super(policy, groupService, null);
     }
   };
 
