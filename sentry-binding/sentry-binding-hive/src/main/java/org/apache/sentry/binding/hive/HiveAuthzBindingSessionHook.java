@@ -104,7 +104,7 @@ public class HiveAuthzBindingSessionHook
 
     appendConfVar(sessionConf, ConfVars.SEMANTIC_ANALYZER_HOOK.varname,
         SEMANTIC_HOOK);
-    HiveAuthzConf authzConf = HiveAuthzBindingHook.loadAuthzConf(sessionConf);
+    HiveAuthzConf authzConf = HiveAuthzBindingHookBase.loadAuthzConf(sessionConf);
     String commandWhitelist =
         authzConf.get(HiveAuthzConf.HIVE_SENTRY_SECURITY_COMMAND_WHITELIST,
             HiveAuthzConf.HIVE_SENTRY_SECURITY_COMMAND_WHITELIST_DEFAULT);

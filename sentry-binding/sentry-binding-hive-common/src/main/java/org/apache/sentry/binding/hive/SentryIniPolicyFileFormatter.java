@@ -55,7 +55,7 @@ public class SentryIniPolicyFileFormatter implements SentryPolicyFileFormatter {
 
   /**
    * Write the sentry mapping data to ini file.
-   * 
+   *
    * @param resourcePath
    *        The path of the output file
    * @param sentryMappingData
@@ -66,7 +66,7 @@ public class SentryIniPolicyFileFormatter implements SentryPolicyFileFormatter {
    *        role1=server=server1->db=db1
    *        role2=server=server1->db=db1->table=tbl1,server=server1->db=db1->table=tbl2
    *        role3=server=server1->url=hdfs://localhost/path
-   * 
+   *
    *        The sentryMappingData will be inputed as:
    *        {
    *        groups={[group1={role1, role2}], group2=[role2, role3]},
@@ -97,7 +97,7 @@ public class SentryIniPolicyFileFormatter implements SentryPolicyFileFormatter {
 
   /**
    * parse the ini file and return a map with all data
-   * 
+   *
    * @param resourcePath
    *        The path of the input file
    * @param conf

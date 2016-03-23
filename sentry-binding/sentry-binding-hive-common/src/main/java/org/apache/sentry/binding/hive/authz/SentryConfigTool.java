@@ -44,7 +44,7 @@ import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.sentry.Command;
-import org.apache.sentry.binding.hive.HiveAuthzBindingHook;
+import org.apache.sentry.binding.hive.HiveAuthzBindingHookBase;
 import org.apache.sentry.binding.hive.SentryPolicyFileFormatFactory;
 import org.apache.sentry.binding.hive.SentryPolicyFileFormatter;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
@@ -58,7 +58,7 @@ import org.apache.sentry.service.thrift.SentryServiceClientFactory;
 
 /**
  * set the required system property to be read by HiveConf and AuthzConf
- * 
+ *
  * @throws Exception
  */
 // Hack, hiveConf doesn't provide a reliable way check if it found a valid
@@ -218,7 +218,7 @@ public class SentryConfigTool {
     System.setProperty(AuthzConfVars.SENTRY_TESTING_MODE.getVar(), "true");
     setHiveConf(new HiveConf(SessionState.class));
     getHiveConf().setVar(ConfVars.SEMANTIC_ANALYZER_HOOK,
-        HiveAuthzBindingHook.class.getName());
+        HiveAuthzBindingHookBase.class.getName());
     try {
       System.out.println("Hive config: " + HiveConf.getHiveSiteLocation());
     } catch (NullPointerException e) {
@@ -433,7 +433,7 @@ public class SentryConfigTool {
 
   /**
    * parse arguments
-   * 
+   *
    * <pre>
    *   -d,--debug                  Enable debug output
    *   -e,--query <arg>            Query privilege verification, requires -u
@@ -449,7 +449,7 @@ public class SentryConfigTool {
    *   -E,--export                 Export policy file
    *   -o,--overwrite              Overwrite the exist role data when do the import
    * </pre>
-   * 
+   *
    * @param args
    */
   private void parseArgs(String[] args) {

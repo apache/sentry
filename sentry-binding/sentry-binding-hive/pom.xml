@@ -30,14 +30,6 @@ limitations under the License.
 
   <dependencies>
     <dependency>
-      <groupId>org.apache.thrift</groupId>
-      <artifactId>libthrift</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.derby</groupId>
-      <artifactId>derby</artifactId>
-    </dependency>
-    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
@@ -54,32 +46,7 @@ limitations under the License.
     </dependency>
     <dependency>
       <groupId>org.apache.sentry</groupId>
-      <artifactId>sentry-core-common</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.sentry</groupId>
-      <artifactId>sentry-core-model-db</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.sentry</groupId>
-      <artifactId>sentry-provider-common</artifactId>
-    </dependency>
-    <!-- required for SentryGrantRevokeTask -->
-    <dependency>
-      <groupId>org.apache.sentry</groupId>
-      <artifactId>sentry-provider-db</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.sentry</groupId>
-      <artifactId>sentry-provider-file</artifactId>
-    </dependency>
-      <dependency>
-        <groupId>org.apache.sentry</groupId>
-        <artifactId>sentry-provider-cache</artifactId>
-      </dependency>
-    <dependency>
-      <groupId>org.apache.sentry</groupId>
-      <artifactId>sentry-policy-db</artifactId>
+      <artifactId>sentry-binding-hive-common</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
@@ -96,6 +63,11 @@ limitations under the License.
       <groupId>org.mockito</groupId>
       <artifactId>mockito-all</artifactId>
       <scope>test</scope>
+    </dependency>
+    <!-- required for SentryGrantRevokeTask -->
+    <dependency>
+      <groupId>org.apache.sentry</groupId>
+      <artifactId>sentry-provider-db</artifactId>
     </dependency>
   </dependencies>
 

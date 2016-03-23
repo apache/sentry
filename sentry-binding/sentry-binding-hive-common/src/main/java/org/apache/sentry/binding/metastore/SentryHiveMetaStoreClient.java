@@ -15,140 +15,105 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.sentry.binding.metastore;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.hadoop.hive.metastore.MetaStoreFilterHook;
-import org.apache.hadoop.hive.metastore.api.Database;
-import org.apache.hadoop.hive.metastore.api.Index;
+import org.apache.hadoop.hive.metastore.HiveMetaHookLoader;
+import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
+import org.apache.hadoop.hive.metastore.IMetaStoreClient;
+import org.apache.hadoop.hive.metastore.api.InvalidOperationException;
 import org.apache.hadoop.hive.metastore.api.MetaException;
-import org.apache.hadoop.hive.metastore.api.NoSuchObjectException;
-import org.apache.hadoop.hive.metastore.api.Partition;
-import org.apache.hadoop.hive.metastore.api.PartitionSpec;
-import org.apache.hadoop.hive.metastore.api.Table;
+import org.apache.hadoop.hive.metastore.api.UnknownDBException;
+import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.ql.session.SessionState;
-import org.apache.sentry.binding.hive.HiveAuthzBindingHook;
+import org.apache.sentry.binding.hive.HiveAuthzBindingHookBase;
 import org.apache.sentry.binding.hive.authz.HiveAuthzBinding;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
+import org.apache.thrift.TException;
 
-public class SentryMetaStoreFilterHook implements MetaStoreFilterHook {
-
-  static final protected Log LOG = LogFactory.getLog(SentryMetaStoreFilterHook.class);
+public class SentryHiveMetaStoreClient extends HiveMetaStoreClient implements
+    IMetaStoreClient {
 
   private HiveAuthzBinding hiveAuthzBinding;
   private HiveAuthzConf authzConf;
 
-  public SentryMetaStoreFilterHook(HiveConf hiveConf) { //NOPMD
+  public SentryHiveMetaStoreClient(HiveConf conf) throws MetaException {
+    super(conf);
+  }
+
+  public SentryHiveMetaStoreClient(HiveConf conf, HiveMetaHookLoader hookLoader)
+      throws MetaException {
+    super(conf, hookLoader);
   }
 
   @Override
-  public List<String> filterDatabases(List<String> dbList) {
-    return filterDb(dbList);
+  public List<String> getDatabases(String databasePattern) throws MetaException {
+    return filterDatabases(super.getDatabases(databasePattern));
   }
 
   @Override
-  public Database filterDatabase(Database dataBase)
-      throws NoSuchObjectException {
-    return dataBase;
+  public List<String> getAllDatabases() throws MetaException {
+    return filterDatabases(super.getAllDatabases());
   }
 
   @Override
-  public List<String> filterTableNames(String dbName, List<String> tableList) {
-    return filterTab(dbName, tableList);
+  public List<String> getTables(String dbName, String tablePattern)
+      throws MetaException {
+    return filterTables(dbName, super.getTables(dbName, tablePattern));
   }
 
   @Override
-  public Table filterTable(Table table) throws NoSuchObjectException {
-    return table;
+  public List<String> getAllTables(String dbName) throws MetaException {
+    return filterTables(dbName, super.getAllTables(dbName));
   }
 
   @Override
-  public List<Table> filterTables(List<Table> tableList) {
-    return tableList;
-  }
-
-  @Override
-  public List<Partition> filterPartitions(List<Partition> partitionList) {
-    return partitionList;
-  }
-
-  @Override
-  public List<PartitionSpec> filterPartitionSpecs(
-      List<PartitionSpec> partitionSpecList) {
-    return partitionSpecList;
-  }
-
-  @Override
-  public Partition filterPartition(Partition partition)
-      throws NoSuchObjectException {
-    return partition;
-  }
-
-  @Override
-  public List<String> filterPartitionNames(String dbName, String tblName,
-      List<String> partitionNames) {
-    return partitionNames;
-  }
-
-  @Override
-  public Index filterIndex(Index index) throws NoSuchObjectException {
-    return index;
-  }
-
-  @Override
-  public List<String> filterIndexNames(String dbName, String tblName,
-      List<String> indexList) {
-    return indexList;
-  }
-
-  @Override
-  public List<Index> filterIndexes(List<Index> indexeList) {
-    return indexeList;
+  public List<String> listTableNamesByFilter(String dbName, String filter,
+      short maxTables) throws InvalidOperationException, UnknownDBException,
+      TException {
+    return filterTables(dbName,
+        super.listTableNamesByFilter(dbName, filter, maxTables));
   }
 
   /**
    * Invoke Hive database filtering that removes the entries which use has no
    * privileges to access
+   *
    * @param dbList
    * @return
    * @throws MetaException
    */
-  private List<String> filterDb(List<String> dbList) {
+  private List<String> filterDatabases(List<String> dbList)
+      throws MetaException {
     try {
-      return HiveAuthzBindingHook.filterShowDatabases(getHiveAuthzBinding(),
+      return HiveAuthzBindingHookBase.filterShowDatabases(getHiveAuthzBinding(),
           dbList, HiveOperation.SHOWDATABASES, getUserName());
-    } catch (Exception e) {
-      LOG.warn("Error getting DB list ", e);
-      return new ArrayList<String>();
-    } finally {
-      close();
+    } catch (SemanticException e) {
+      throw new MetaException("Error getting DB list " + e.getMessage());
     }
   }
 
   /**
    * Invoke Hive table filtering that removes the entries which use has no
    * privileges to access
-   * @param tabList
+   *
+   * @param dbList
    * @return
    * @throws MetaException
    */
-  private List<String> filterTab(String dbName, List<String> tabList) {
+  private List<String> filterTables(String dbName, List<String> tabList)
+      throws MetaException {
     try {
-      return HiveAuthzBindingHook.filterShowTables(getHiveAuthzBinding(),
+      return HiveAuthzBindingHookBase.filterShowTables(getHiveAuthzBinding(),
           tabList, HiveOperation.SHOWTABLES, getUserName(), dbName);
-    } catch (Exception e) {
-      LOG.warn("Error getting Table list ", e);
-      return new ArrayList<String>();
-    } finally {
-      close();
+    } catch (SemanticException e) {
+      throw new MetaException("Error getting Table list " + e.getMessage());
     }
   }
 
@@ -158,6 +123,7 @@ public class SentryMetaStoreFilterHook implements MetaStoreFilterHook {
 
   /**
    * load Hive auth provider
+   *
    * @return
    * @throws MetaException
    */
@@ -192,10 +158,4 @@ public class SentryMetaStoreFilterHook implements MetaStoreFilterHook {
     return SessionState.get().getConf();
   }
 
-  private void close() {
-    if (hiveAuthzBinding != null) {
-      hiveAuthzBinding.close();
-      hiveAuthzBinding = null;
-    }
-  }
 }

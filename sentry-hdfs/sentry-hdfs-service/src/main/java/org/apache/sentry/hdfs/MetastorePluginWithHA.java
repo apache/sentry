@@ -23,7 +23,7 @@ import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.hdfs.ServiceConstants.ServerConfig;
 import org.apache.sentry.provider.db.SentryPolicyStorePlugin.SentryPluginException;
-import org.apache.sentry.binding.metastore.MetastoreAuthzBinding;
+import org.apache.sentry.binding.metastore.MetastoreAuthzBindingBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,11 +51,11 @@ public class MetastorePluginWithHA extends MetastorePlugin {
       case CHILD_REMOVED:
         break;
       case CONNECTION_RECONNECTED:
-        MetastoreAuthzBinding.setSentryCacheOutOfSync(false);
+        MetastoreAuthzBindingBase.setSentryCacheOutOfSync(false);
         break;
       case CONNECTION_SUSPENDED:
       case CONNECTION_LOST:
-        MetastoreAuthzBinding.setSentryCacheOutOfSync(true);
+        MetastoreAuthzBindingBase.setSentryCacheOutOfSync(true);
         break;
       default:
         break;

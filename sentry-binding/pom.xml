@@ -30,13 +30,22 @@ limitations under the License.
   <packaging>pom</packaging>
 
   <modules>
-    <module>sentry-binding-hive</module>
     <module>sentry-binding-kafka</module>
+    <module>sentry-binding-hive-common</module>
     <module>sentry-binding-solr</module>
     <module>sentry-binding-sqoop</module>
   </modules>
 
   <profiles>
+    <profile>
+      <id>hive-authz1</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <modules>
+        <module>sentry-binding-hive</module>
+      </modules>
+    </profile>
     <profile>
       <id>hive-authz2</id>
       <activation>

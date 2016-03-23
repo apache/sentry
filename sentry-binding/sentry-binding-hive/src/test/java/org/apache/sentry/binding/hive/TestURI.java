@@ -48,29 +48,29 @@ public class TestURI {
   @Test
   public void testParseURIIncorrectFilePrefix() throws SemanticException {
     Assert.assertEquals("file:///some/path",
-        HiveAuthzBindingHook.parseURI("file:/some/path").getName());
+        HiveAuthzBindingHookBase.parseURI("file:/some/path").getName());
   }
   @Test
   public void testParseURICorrectFilePrefix() throws SemanticException {
     Assert.assertEquals("file:///some/path",
-        HiveAuthzBindingHook.parseURI("file:///some/path").getName());
+        HiveAuthzBindingHookBase.parseURI("file:///some/path").getName());
   }
   @Test
   public void testParseURINoFilePrefix() throws SemanticException {
     conf.set(ConfVars.METASTOREWAREHOUSE.varname, "file:///path/to/warehouse");
     Assert.assertEquals("file:///some/path",
-        HiveAuthzBindingHook.parseURI("/some/path").getName());
+        HiveAuthzBindingHookBase.parseURI("/some/path").getName());
   }
   @Test
   public void testParseURINoHDFSPrefix() throws SemanticException {
     conf.set(ConfVars.METASTOREWAREHOUSE.varname, "hdfs://namenode:8080/path/to/warehouse");
     Assert.assertEquals("hdfs://namenode:8080/some/path",
-        HiveAuthzBindingHook.parseURI("/some/path").getName());
+        HiveAuthzBindingHookBase.parseURI("/some/path").getName());
   }
   @Test
   public void testParseURICorrectHDFSPrefix() throws SemanticException {
     Assert.assertEquals("hdfs:///some/path",
-        HiveAuthzBindingHook.parseURI("hdfs:///some/path").getName());
+        HiveAuthzBindingHookBase.parseURI("hdfs:///some/path").getName());
   }
 
   @Test
@@ -78,7 +78,7 @@ public class TestURI {
     conf.set(CommonConfigurationKeys.FS_DEFAULT_NAME_KEY, "hdfs://localhost:8020");
     conf.set(ConfVars.METASTOREWAREHOUSE.varname, "/path/to/warehouse");
     Assert.assertEquals("hdfs://localhost:8020/some/path",
-        HiveAuthzBindingHook.parseURI("/some/path").getName());
+        HiveAuthzBindingHookBase.parseURI("/some/path").getName());
   }
 
   @AfterClass

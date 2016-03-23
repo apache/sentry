@@ -55,7 +55,7 @@ import org.apache.hadoop.hive.ql.security.authorization.PrivilegeType;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.hive.ql.session.SessionState.LogHelper;
 import org.apache.sentry.SentryUserException;
-import org.apache.sentry.binding.hive.HiveAuthzBindingHook;
+import org.apache.sentry.binding.hive.HiveAuthzBindingHookBase;
 import org.apache.sentry.binding.hive.SentryOnFailureHookContext;
 import org.apache.sentry.binding.hive.SentryOnFailureHookContextImpl;
 import org.apache.sentry.binding.hive.authz.HiveAuthzBinding;
@@ -160,7 +160,7 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
             new HashSet<WriteEntity>(), stmtOperation,
             null, null, null, null, subject.getName(), ipAddress,
             new AuthorizationException(e), conf);
-        HiveAuthzBindingHook.runFailureHook(hookContext, csHooks);
+        HiveAuthzBindingHookBase.runFailureHook(hookContext, csHooks);
         throw e; // rethrow the exception for logging
       }
     } catch(SentryUserException e) {

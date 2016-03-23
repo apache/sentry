@@ -60,7 +60,7 @@ import com.google.common.collect.Sets;
  * will be filtered to exclude object the requestor doesn't have privilege to
  * access.
  */
-public class AuthorizingObjectStore extends ObjectStore {
+public class AuthorizingObjectStoreBase extends ObjectStore {
   private static ImmutableSet<String> serviceUsers;
   private static HiveConf hiveConf;
   private static HiveAuthzConf authzConf;
@@ -125,7 +125,7 @@ public class AuthorizingObjectStore extends ObjectStore {
       throws MetaException {
     return filterTables(dbName, super.getTables(dbName, pattern));
   }
-  
+ 
   @Override
   public List<Table> getTableObjectsByName(String dbname, List<String> tableNames)
       throws MetaException, UnknownDBException {
@@ -318,7 +318,7 @@ public class AuthorizingObjectStore extends ObjectStore {
 
   /**
    * load Hive auth provider
-   * 
+   *
    * @return
    * @throws MetaException
    */

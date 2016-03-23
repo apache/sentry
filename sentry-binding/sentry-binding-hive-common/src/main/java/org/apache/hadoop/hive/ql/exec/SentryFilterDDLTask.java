@@ -37,7 +37,7 @@ import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.ql.plan.ShowColumnsDesc;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.io.IOUtils;
-import org.apache.sentry.binding.hive.HiveAuthzBindingHook;
+import org.apache.sentry.binding.hive.HiveAuthzBindingHookBase;
 import org.apache.sentry.binding.hive.authz.HiveAuthzBinding;
 import org.apache.sentry.core.common.Subject;
 
@@ -131,7 +131,7 @@ public class SentryFilterDDLTask extends DDLTask {
 
   private List<FieldSchema> fiterColumns(List<FieldSchema> cols, Table table) throws HiveException {
     // filter some columns that the subject has privilege on
-    return HiveAuthzBindingHook.filterShowColumns(getHiveAuthzBinding(),
+    return HiveAuthzBindingHookBase.filterShowColumns(getHiveAuthzBinding(),
         cols, getStmtOperation(), getSubject().getName(), table.getTableName(), table.getDbName());
   }
 }
