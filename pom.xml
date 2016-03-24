@@ -63,9 +63,6 @@ limitations under the License.
     <commons.lang.version>2.6</commons.lang.version>
     <commons.logging.version>1.2</commons.logging.version>
     <curator.version>2.7.1</curator.version>
-    <datanucleus-api-jdo.version>3.2.6</datanucleus-api-jdo.version>
-    <datanucleus-core.version>3.2.12</datanucleus-core.version>
-    <datanucleus-rdbms.version>3.2.12</datanucleus-rdbms.version>
     <datanucleus.maven.plugin.version>4.0.1</datanucleus.maven.plugin.version>
     <derby.version>10.10.2.0</derby.version>
     <easymock.version>3.0</easymock.version>
@@ -510,21 +507,6 @@ limitations under the License.
         <groupId>javax.jdo</groupId>
         <artifactId>jdo-api</artifactId>
         <version>${jdo-api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.datanucleus</groupId>
-        <artifactId>datanucleus-core</artifactId>
-        <version>${datanucleus-core.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.datanucleus</groupId>
-        <artifactId>datanucleus-api-jdo</artifactId>
-        <version>${datanucleus-api-jdo.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.datanucleus</groupId>
-        <artifactId>datanucleus-rdbms</artifactId>
-        <version>${datanucleus-rdbms.version}</version>
       </dependency>
       <dependency>
         <groupId>org.mockito</groupId>

@@ -28,10 +28,30 @@ limitations under the License.
   <packaging>pom</packaging>
 
   <modules>
-    <module>sentry-tests-hive</module>
     <module>sentry-tests-solr</module>
     <module>sentry-tests-sqoop</module>
     <module>sentry-tests-kafka</module>
   </modules>
+
+  <profiles>
+    <profile>
+      <id>hive-authz1</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <modules>
+        <module>sentry-tests-hive</module>
+      </modules>
+    </profile>
+    <profile>
+      <id>hive-authz2</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <modules>
+        <module>sentry-tests-hive-v2</module>
+      </modules>
+    </profile>
+  </profiles>
 
 </project>

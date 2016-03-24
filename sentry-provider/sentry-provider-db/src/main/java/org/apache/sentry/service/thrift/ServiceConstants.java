@@ -134,6 +134,7 @@ public class ServiceConstants {
         .put("datanucleus.validateColumns", "false")
         .put("datanucleus.validateConstraints", "false")
         .put("datanucleus.storeManagerType", "rdbms")
+        .put("datanucleus.schema.autoCreateAll", "true")
         .put("datanucleus.autoCreateSchema", "false")
         .put("datanucleus.fixedDatastore", "true")
         .put("datanucleus.autoStartMechanismMode", "checked")
