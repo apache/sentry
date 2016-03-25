@@ -26,7 +26,7 @@ import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveAuthzPluginEx
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveAuthzSessionContext;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveAuthzSessionContext.CLIENT_TYPE;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveMetastoreClientFactory;
-import org.apache.sentry.binding.hive.HiveAuthzBindingHook;
+import org.apache.sentry.binding.hive.HiveAuthzBindingHookBase;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.binding.hive.v2.authorizer.DefaultSentryAccessController;
 import org.apache.sentry.binding.hive.v2.authorizer.DefaultSentryValidator;
@@ -49,7 +49,7 @@ public class SentryAuthorizerFactory implements HiveAuthorizerFactory {
           throws HiveAuthzPluginException {
     HiveAuthzSessionContext sessionContext;
     try {
-      this.authzConf = HiveAuthzBindingHook.loadAuthzConf(conf);
+      this.authzConf = HiveAuthzBindingHookBase.loadAuthzConf(conf);
       sessionContext = applyTestSettings(ctx, conf);
       assertHiveCliAuthDisabled(conf, sessionContext);
     } catch (Exception e) {

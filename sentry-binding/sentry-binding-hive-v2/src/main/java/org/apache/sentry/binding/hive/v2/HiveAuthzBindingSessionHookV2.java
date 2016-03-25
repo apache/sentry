@@ -21,7 +21,7 @@ import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hive.service.cli.HiveSQLException;
 import org.apache.hive.service.cli.session.HiveSessionHookContext;
-import org.apache.sentry.binding.hive.HiveAuthzBindingHook;
+import org.apache.sentry.binding.hive.HiveAuthzBindingHookBase;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 
 import com.google.common.base.Joiner;
@@ -39,7 +39,7 @@ public class HiveAuthzBindingSessionHookV2 implements
       ConfVars.SCRATCHDIR.varname, ConfVars.LOCALSCRATCHDIR.varname,
       ConfVars.METASTOREURIS.varname, ConfVars.METASTORECONNECTURLKEY.varname,
       ConfVars.HADOOPBIN.varname, ConfVars.HIVESESSIONID.varname, ConfVars.HIVEAUXJARS.varname,
-      ConfVars.HIVESTATSDBCONNECTIONSTRING.varname, ConfVars.SCRATCHDIRPERMISSION.varname,
+      ConfVars.SCRATCHDIRPERMISSION.varname,
       ConfVars.HIVE_SECURITY_COMMAND_WHITELIST.varname,
       ConfVars.HIVE_AUTHORIZATION_TASK_FACTORY.varname,
       ConfVars.HIVE_CAPTURE_TRANSFORM_ENTITY.varname, HiveAuthzConf.HIVE_ACCESS_CONF_URL,
@@ -72,7 +72,7 @@ public class HiveAuthzBindingSessionHookV2 implements
     sessionConf.setBoolVar(ConfVars.HIVE_CAPTURE_TRANSFORM_ENTITY, true);
 
     // set security command list
-    HiveAuthzConf authzConf = HiveAuthzBindingHook.loadAuthzConf(sessionConf);
+    HiveAuthzConf authzConf = HiveAuthzBindingHookBase.loadAuthzConf(sessionConf);
     String commandWhitelist =
         authzConf.get(HiveAuthzConf.HIVE_SENTRY_SECURITY_COMMAND_WHITELIST,
             HiveAuthzConf.HIVE_SENTRY_SECURITY_COMMAND_WHITELIST_DEFAULT);

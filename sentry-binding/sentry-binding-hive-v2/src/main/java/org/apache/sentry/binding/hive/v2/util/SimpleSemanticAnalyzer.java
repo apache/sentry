@@ -144,6 +144,11 @@ public class SimpleSemanticAnalyzer {
    */
   private static final String UNLOCKTABLE = "^UNLOCK\\s+" + "TABLE\\s+" + "([A-Za-z0-9._]+)";
 
+  /**
+   * TRUNCATE TABLE tblname;
+   */
+  private static final String TRUNCATETABLE = "^TRUNCATE\\s+" + "TABLE\\s+" + "([A-Za-z0-9._]+)";
+
   private static Map<HiveOperation, String> OP_REGEX_MAP = new HashMap<HiveOperation, String>();
   static {
     // database metadata
@@ -161,7 +166,6 @@ public class SimpleSemanticAnalyzer {
     OP_REGEX_MAP.put(HiveOperation.ALTERTABLE_CLUSTER_SORT, ALTER_TABLE_REGEX);
     OP_REGEX_MAP.put(HiveOperation.ALTERTABLE_FILEFORMAT, ALTER_TABLE_REGEX);
     OP_REGEX_MAP.put(HiveOperation.ALTERTABLE_TOUCH, ALTER_TABLE_REGEX);
-    OP_REGEX_MAP.put(HiveOperation.ALTERTABLE_PROTECTMODE, ALTER_TABLE_REGEX);
     OP_REGEX_MAP.put(HiveOperation.ALTERTABLE_RENAMECOL, ALTER_TABLE_REGEX);
     OP_REGEX_MAP.put(HiveOperation.ALTERTABLE_ADDCOLS, ALTER_TABLE_REGEX);
     OP_REGEX_MAP.put(HiveOperation.ALTERTABLE_REPLACECOLS, ALTER_TABLE_REGEX);
@@ -176,7 +180,6 @@ public class SimpleSemanticAnalyzer {
     OP_REGEX_MAP.put(HiveOperation.ALTERTABLE_RENAME, ALTER_TABLE_REGEX);
     OP_REGEX_MAP.put(HiveOperation.ALTERTABLE_LOCATION, ALTER_TABLE_REGEX);
     OP_REGEX_MAP.put(HiveOperation.ALTERPARTITION_FILEFORMAT, ALTER_TABLE_REGEX);
-    OP_REGEX_MAP.put(HiveOperation.ALTERPARTITION_PROTECTMODE, ALTER_TABLE_REGEX);
     OP_REGEX_MAP.put(HiveOperation.ALTERPARTITION_SERDEPROPERTIES, ALTER_TABLE_REGEX);
     OP_REGEX_MAP.put(HiveOperation.ALTERPARTITION_SERIALIZER, ALTER_TABLE_REGEX);
     OP_REGEX_MAP.put(HiveOperation.ALTERPARTITION_MERGEFILES, ALTER_TABLE_REGEX);
@@ -192,6 +195,7 @@ public class SimpleSemanticAnalyzer {
     OP_REGEX_MAP.put(HiveOperation.UNLOCKTABLE, UNLOCKTABLE);
     OP_REGEX_MAP.put(HiveOperation.SHOWCOLUMNS, SHOWCOLUMNS);
     OP_REGEX_MAP.put(HiveOperation.SHOW_TABLESTATUS, SHOW_TABLESTATUS);
+    OP_REGEX_MAP.put(HiveOperation.TRUNCATETABLE, TRUNCATETABLE);
   }
 
   public SimpleSemanticAnalyzer(HiveOperation hiveOp, String cmd) throws HiveAuthzPluginException {
@@ -218,7 +222,6 @@ public class SimpleSemanticAnalyzer {
       case ALTERTABLE_CLUSTER_SORT:
       case ALTERTABLE_FILEFORMAT:
       case ALTERTABLE_TOUCH:
-      case ALTERTABLE_PROTECTMODE:
       case ALTERTABLE_RENAMECOL:
       case ALTERTABLE_ADDCOLS:
       case ALTERTABLE_REPLACECOLS:
@@ -236,7 +239,6 @@ public class SimpleSemanticAnalyzer {
       case ALTERVIEW_PROPERTIES:
         // alter partition
       case ALTERPARTITION_FILEFORMAT:
-      case ALTERPARTITION_PROTECTMODE:
       case ALTERPARTITION_SERDEPROPERTIES:
       case ALTERPARTITION_SERIALIZER:
       case ALTERPARTITION_MERGEFILES:
@@ -250,6 +252,7 @@ public class SimpleSemanticAnalyzer {
       case LOCKTABLE:
       case UNLOCKTABLE:
       case SHOWCOLUMNS:
+      case TRUNCATETABLE:
         parseTableMeta(cmd, OP_REGEX_MAP.get(hiveOp));
         break;
       case SHOWINDEXES:

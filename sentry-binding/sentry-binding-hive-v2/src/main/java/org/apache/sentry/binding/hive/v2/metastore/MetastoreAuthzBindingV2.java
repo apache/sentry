@@ -17,12 +17,23 @@
  */
 package org.apache.sentry.binding.hive.v2.metastore;
 
+import java.io.IOException;
+import java.util.List;
+
+import javax.security.auth.login.LoginException;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.metastore.api.InvalidOperationException;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.events.PreDropPartitionEvent;
+import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
-import org.apache.sentry.binding.metastore.MetastoreAuthzBinding;
+import org.apache.sentry.SentryUserException;
+import org.apache.sentry.binding.hive.authz.HiveAuthzBinding;
+import org.apache.sentry.binding.hive.v2.HiveAuthzPrivilegesMapV2;
+import org.apache.sentry.binding.metastore.MetastoreAuthzBindingBase;
+import org.apache.sentry.core.common.Subject;
+import org.apache.sentry.core.model.db.DBModelAuthorizable;
 
 /**
  * Sentry binding for Hive Metastore. The binding is integrated into Metastore
@@ -33,12 +44,13 @@ import org.apache.sentry.binding.metastore.MetastoreAuthzBinding;
  * passed down to the hive binding which handles the authorization. This ensures
  * that we follow the same privilege model and policies.
  */
-public class MetastoreAuthzBindingV2 extends MetastoreAuthzBinding {
+public class MetastoreAuthzBindingV2 extends MetastoreAuthzBindingBase {
 
   public MetastoreAuthzBindingV2(Configuration config) throws Exception {
     super(config);
   }
 
+  @Override
   protected void authorizeDropPartition(PreDropPartitionEvent context)
       throws InvalidOperationException, MetaException {
     authorizeMetastoreAccess(
@@ -51,4 +63,37 @@ public class MetastoreAuthzBindingV2 extends MetastoreAuthzBinding {
             context.getTable().getTableName()).build());
   }
 
+  /**
+   * Assemble the required privileges and requested privileges. Validate using
+   * Hive bind auth provider
+   * @param hiveOp
+   * @param inputHierarchy
+   * @param outputHierarchy
+   * @throws InvalidOperationException
+   */
+  @Override
+  protected void authorizeMetastoreAccess(HiveOperation hiveOp,
+      List<List<DBModelAuthorizable>> inputHierarchy,
+      List<List<DBModelAuthorizable>> outputHierarchy)
+      throws InvalidOperationException {
+    if (isSentryCacheOutOfSync()) {
+      throw invalidOperationException(new SentryUserException(
+          "Metastore/Sentry cache is out of sync"));
+    }
+    try {
+      HiveAuthzBinding hiveAuthzBinding = getHiveAuthzBinding();
+      hiveAuthzBinding.authorize(hiveOp, HiveAuthzPrivilegesMapV2
+          .getHiveAuthzPrivileges(hiveOp), new Subject(getUserName()),
+          inputHierarchy, outputHierarchy);
+    } catch (AuthorizationException e1) {
+      throw invalidOperationException(e1);
+    } catch (LoginException e1) {
+      throw invalidOperationException(e1);
+    } catch (IOException e1) {
+      throw invalidOperationException(e1);
+    } catch (Exception e) {
+      throw invalidOperationException(e);
+    }
+
+  }
 }

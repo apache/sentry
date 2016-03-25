@@ -39,8 +39,8 @@ import org.apache.sentry.binding.hive.authz.HiveAuthzBinding;
 import org.apache.sentry.binding.hive.authz.HiveAuthzBinding.HiveHook;
 import org.apache.sentry.binding.hive.authz.HiveAuthzPrivileges;
 import org.apache.sentry.binding.hive.authz.HiveAuthzPrivileges.HiveOperationScope;
-import org.apache.sentry.binding.hive.authz.HiveAuthzPrivilegesMap;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
+import org.apache.sentry.binding.hive.v2.HiveAuthzPrivilegesMapV2;
 import org.apache.sentry.binding.hive.v2.util.SentryAuthorizerUtil;
 import org.apache.sentry.binding.hive.v2.util.SimpleSemanticAnalyzer;
 import org.apache.sentry.core.common.Subject;
@@ -111,7 +111,6 @@ public class DefaultSentryValidator extends SentryHiveAuthorizationValidator {
       HiveOperation.SHOWINDEXES, HiveOperation.ALTERTABLE_PROPERTIES,
       HiveOperation.ALTERTABLE_SERDEPROPERTIES, HiveOperation.ALTERTABLE_CLUSTER_SORT,
       HiveOperation.ALTERTABLE_FILEFORMAT, HiveOperation.ALTERTABLE_TOUCH,
-      HiveOperation.ALTERTABLE_PROTECTMODE, HiveOperation.ALTERTABLE_RENAMECOL,
       HiveOperation.ALTERTABLE_ADDCOLS, HiveOperation.ALTERTABLE_REPLACECOLS,
       HiveOperation.ALTERTABLE_RENAMEPART, HiveOperation.ALTERTABLE_ARCHIVE,
       HiveOperation.ALTERTABLE_UNARCHIVE, HiveOperation.ALTERTABLE_SERIALIZER,
@@ -119,11 +118,11 @@ public class DefaultSentryValidator extends SentryHiveAuthorizationValidator {
       HiveOperation.ALTERTABLE_DROPPARTS, HiveOperation.ALTERTABLE_ADDPARTS,
       HiveOperation.ALTERTABLE_RENAME, HiveOperation.ALTERTABLE_LOCATION,
       HiveOperation.ALTERVIEW_PROPERTIES, HiveOperation.ALTERPARTITION_FILEFORMAT,
-      HiveOperation.ALTERPARTITION_PROTECTMODE, HiveOperation.ALTERPARTITION_SERDEPROPERTIES,
       HiveOperation.ALTERPARTITION_SERIALIZER, HiveOperation.ALTERPARTITION_MERGEFILES,
       HiveOperation.ALTERPARTITION_LOCATION, HiveOperation.ALTERTBLPART_SKEWED_LOCATION,
       HiveOperation.MSCK, HiveOperation.ALTERINDEX_REBUILD, HiveOperation.LOCKTABLE,
-      HiveOperation.UNLOCKTABLE, HiveOperation.SHOWCOLUMNS, HiveOperation.SHOW_TABLESTATUS, HiveOperation.LOAD);
+      HiveOperation.UNLOCKTABLE, HiveOperation.SHOWCOLUMNS, HiveOperation.SHOW_TABLESTATUS,
+      HiveOperation.LOAD, HiveOperation.TRUNCATETABLE);
   // input operations need to extend at Table scope
   private static final Set<HiveOperation> EX_TB_INPUT = Sets.newHashSet(HiveOperation.DROPTABLE,
       HiveOperation.DROPVIEW, HiveOperation.SHOW_TBLPROPERTIES, HiveOperation.SHOWINDEXES,
@@ -158,9 +157,9 @@ public class DefaultSentryValidator extends SentryHiveAuthorizationValidator {
     HiveAuthzPrivileges stmtAuthPrivileges = null;
     if (HiveOperation.DESCTABLE.equals(hiveOp) &&
         !(context.getCommandString().contains("EXTENDED") || context.getCommandString().contains("FORMATTED")) ) {
-      stmtAuthPrivileges = HiveAuthzPrivilegesMap.getHiveAuthzPrivileges(HiveOperation.SHOWCOLUMNS);
+      stmtAuthPrivileges = HiveAuthzPrivilegesMapV2.getHiveAuthzPrivileges(HiveOperation.SHOWCOLUMNS);
     } else {
-      stmtAuthPrivileges = HiveAuthzPrivilegesMap.getHiveAuthzPrivileges(hiveOp);
+      stmtAuthPrivileges = HiveAuthzPrivilegesMapV2.getHiveAuthzPrivileges(hiveOp);
     }
 
     HiveAuthzBinding hiveAuthzBinding = null;
