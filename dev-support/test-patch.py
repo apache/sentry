@@ -130,13 +130,13 @@ def git_apply(result, cmd, patch_file, output_dir):
   if rc != 0:
     result.fatal("failed to apply patch (exit code %d):\n%s\n" % (rc, output))
 
-def mvn_clean(result, mvn_repo, output_dir):
-  rc = execute("mvn clean -Dmaven.repo.local=%s 1>%s/clean.txt 2>&1" % (mvn_repo, output_dir))
+def mvn_clean(result, mvn_repo, output_dir, mvn_profile):
+  rc = execute("mvn clean -Dmaven.repo.local=%s %s 1>%s/clean.txt 2>&1" % (mvn_repo, mvn_profile, output_dir))
   if rc != 0:
     result.fatal("failed to clean project (exit code %d)" % (rc))
 
-def mvn_install(result, mvn_repo, output_dir):
-  rc = execute("mvn install -U -DskipTests -Dmaven.repo.local=%s 1>%s/install.txt 2>&1" % (mvn_repo, output_dir))
+def mvn_install(result, mvn_repo, output_dir, mvn_profile):
+  rc = execute("mvn install -U -DskipTests -Dmaven.repo.local=%s %s 1>%s/install.txt 2>&1" % (mvn_repo, mvn_profile, output_dir))
   if rc != 0:
     result.fatal("failed to build with patch (exit code %d)" % (rc))
 
@@ -145,8 +145,8 @@ def find_all_files(top):
         for f in files:
             yield os.path.join(root, f)
 
-def mvn_test(result, mvn_repo, output_dir):
-  rc = execute("mvn verify -Dmaven.repo.local=%s 1>%s/test.txt 2>&1" % (mvn_repo, output_dir))
+def mvn_test(result, mvn_repo, output_dir, mvn_profile):
+  rc = execute("mvn verify -Dmaven.repo.local=%s %s 1>%s/test.txt 2>&1" % (mvn_repo, mvn_profile, output_dir))
   if rc == 0:
     result.success("all tests passed")
   else:
@@ -211,6 +211,8 @@ parser.add_option("--password", dest="password",
                   help="JIRA Password", metavar="PASSWORD")
 parser.add_option("--workspace", dest="workspace",
                   help="Jenkins workspace directory", metavar="DIR")
+parser.add_option("--hive-authz2", dest="hive_authz2",
+                  help="Test patch for Hive authz2", action="store_true")
 
 (options, args) = parser.parse_args()
 if not (options.defect or options.filename):
@@ -237,6 +239,7 @@ password = options.password
 run_tests = options.run_tests
 post_results = options.post_results
 workspace = options.workspace
+hive_authz2 = options.hive_authz2
 result = Result()
 
 def log_and_exit():
@@ -278,6 +281,9 @@ if defect:
     print "ERROR: Defect %s not in patch available state" % (defect)
     sys.exit(1)
   attachment = jira_get_attachment(result, defect, username, password)
+  if '"Hive V2"' in jira_json:
+    print "INFO: Hive V2 is detected from Jira"
+    hive_authz2 = True
   if not attachment:
     print "ERROR: No attachments found for %s" % (defect)
     sys.exit(1)
@@ -302,14 +308,25 @@ else:
   print "ERROR: Reached unreachable code. Please report."
   sys.exit(1)
 
-
-mvn_clean(result, mvn_repo, output_dir)
+mvn_profile=""
+mvn_clean(result, mvn_repo, output_dir, mvn_profile)
 git_checkout(result, branch)
 git_apply(result, patch_cmd, patch_file, output_dir)
-mvn_install(result, mvn_repo, output_dir)
+mvn_install(result, mvn_repo, output_dir, mvn_profile)
 if run_tests:
-  mvn_test(result, mvn_repo, output_dir)
+  mvn_test(result, mvn_repo, output_dir, mvn_profile)
 else:
   result.info("patch applied and built but tests did not execute")
+if hive_authz2:
+  result.info("INFO: Test patch for Hive authz2")
+  mvn_profile="-P-hive-authz1,hive-authz2,-datanucleus3,datanucleus4"
+  output_dir_v2 = output_dir + "/v2"
+  os.mkdir(output_dir_v2)
+  mvn_clean(result, mvn_repo, output_dir_v2, mvn_profile)
+  mvn_install(result, mvn_repo, output_dir_v2, mvn_profile)
+  if run_tests:
+    mvn_test(result, mvn_repo, output_dir_v2, mvn_profile)
+  else:
+    result.info("patch applied and built but tests did not execute for Hive authz2")
 
 result.exit_handler()
