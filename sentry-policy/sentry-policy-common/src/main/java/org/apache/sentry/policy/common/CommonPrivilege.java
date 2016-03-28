@@ -120,8 +120,8 @@ public class CommonPrivilege implements Privilege {
     // if requestValue is wildcard, means privilege request is to match with any value of given resource
     if (SentryConstants.RESOURCE_WILDCARD_VALUE.equals(policyValue)
             || SentryConstants.RESOURCE_WILDCARD_VALUE.equals(requestValue)
-            || SentryConstants.RESOURCE_WILDCARD_VALUE_ALL.equals(policyValue)
-            || SentryConstants.RESOURCE_WILDCARD_VALUE_ALL.equals(requestValue)
+            || SentryConstants.RESOURCE_WILDCARD_VALUE_ALL.equalsIgnoreCase(policyValue)
+            || SentryConstants.RESOURCE_WILDCARD_VALUE_ALL.equalsIgnoreCase(requestValue)
             || SentryConstants.RESOURCE_WILDCARD_VALUE_SOME.equals(requestValue)) {
       return true;
     }
@@ -129,6 +129,9 @@ public class CommonPrivilege implements Privilege {
     // compare as the url
     if (ImplyMethodType.URL == implyMethodType) {
       return PathUtils.impliesURI(policyValue, requestValue);
+    } else if (ImplyMethodType.STRING_CASE_SENSITIVE == implyMethodType) {
+      // compare as the string case sensitive
+      return policyValue.equals(requestValue);
     }
     // default: compare as the string case insensitive
     return policyValue.equalsIgnoreCase(requestValue);

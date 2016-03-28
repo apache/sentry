@@ -19,6 +19,7 @@ package org.apache.sentry.policy.sqoop;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.model.sqoop.SqoopPrivilegeModel;
 import org.apache.sentry.policy.common.PolicyEngine;
+import org.apache.sentry.policy.engine.common.CommonPolicyEngine;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;
 import org.apache.sentry.provider.file.SimpleFileProviderBackend;
@@ -39,6 +40,6 @@ public class SqoopPolicyTestUtil {
     providerBackend.initialize(context);
 
 
-    return new SimpleSqoopPolicyEngine(providerBackend);
+    return new CommonPolicyEngine(providerBackend);
   }
 }

@@ -35,7 +35,7 @@ public class ModelForTest implements Model {
     implyMethodMap.put(DBModelAuthorizable.AuthorizableType.Server.name().toLowerCase(), ImplyMethodType.STRING);
     implyMethodMap.put(DBModelAuthorizable.AuthorizableType.Db.name().toLowerCase(), ImplyMethodType.STRING);
     implyMethodMap.put(DBModelAuthorizable.AuthorizableType.Table.name().toLowerCase(), ImplyMethodType.STRING);
-    implyMethodMap.put(DBModelAuthorizable.AuthorizableType.Column.name().toLowerCase(), ImplyMethodType.STRING);
+    implyMethodMap.put(DBModelAuthorizable.AuthorizableType.Column.name().toLowerCase(), ImplyMethodType.STRING_CASE_SENSITIVE);
     implyMethodMap.put(DBModelAuthorizable.AuthorizableType.URI.name().toLowerCase(), ImplyMethodType.URL);
   }
 

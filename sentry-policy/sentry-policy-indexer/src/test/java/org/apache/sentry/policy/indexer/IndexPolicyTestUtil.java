@@ -19,6 +19,7 @@ package org.apache.sentry.policy.indexer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.model.indexer.IndexerPrivilegeModel;
 import org.apache.sentry.policy.common.PolicyEngine;
+import org.apache.sentry.policy.engine.common.CommonPolicyEngine;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;
 import org.apache.sentry.provider.file.SimpleFileProviderBackend;
@@ -38,7 +39,6 @@ public class IndexPolicyTestUtil {
     // initialize the backend with the context
     providerBackend.initialize(context);
 
-
-    return new SimpleIndexerPolicyEngine(providerBackend);
+    return new CommonPolicyEngine(providerBackend);
   }
 }

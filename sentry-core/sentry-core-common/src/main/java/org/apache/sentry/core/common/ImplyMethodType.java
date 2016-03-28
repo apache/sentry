@@ -18,6 +18,7 @@ package org.apache.sentry.core.common;
 
 public enum ImplyMethodType {
   STRING,
+  STRING_CASE_SENSITIVE,
   URL,
   ACTION,
 }

@@ -19,7 +19,7 @@ package org.apache.sentry.policy.hive;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.model.db.HivePrivilegeModel;
 import org.apache.sentry.policy.common.PolicyEngine;
-import org.apache.sentry.policy.db.SimpleDBPolicyEngine;
+import org.apache.sentry.policy.engine.common.CommonPolicyEngine;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;
 import org.apache.sentry.provider.file.SimpleFileProviderBackend;
@@ -40,6 +40,6 @@ public class DBPolicyTestUtil {
     providerBackend.initialize(context);
 
 
-    return new SimpleDBPolicyEngine(providerBackend);
+    return new CommonPolicyEngine(providerBackend);
   }
 }
