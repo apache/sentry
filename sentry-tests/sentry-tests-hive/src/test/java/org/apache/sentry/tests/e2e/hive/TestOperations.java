@@ -754,9 +754,23 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     try {
       createDb(ADMIN1, DB1);
       String scratchLikeDir = context.getProperty(HiveConf.ConfVars.SCRATCHDIR.varname);
-      String extParentDir = dfs.assertCreateDir(scratchLikeDir + "/ABC/hhh").toUri().toString();
-      String extTableDir = dfs.assertCreateDir(scratchLikeDir + "/abc/hhh").toUri().toString();
-      LOGGER.info("Created extParentDir = " + extParentDir + ", extTableDir = " + extTableDir);
+      LOGGER.info("scratch like dir = " + scratchLikeDir);
+      String extParentDir = scratchLikeDir + "/ABC/hhh";
+      String extTableDir = scratchLikeDir + "/abc/hhh";
+      LOGGER.info("Creating extParentDir = " + extParentDir + ", extTableDir = " + extTableDir);
+      dfs.assertCreateDir(extParentDir);
+      dfs.assertCreateDir(extTableDir);
+
+      if (! (extParentDir.toLowerCase().startsWith("hdfs://")
+          || extParentDir.toLowerCase().startsWith("s3://")
+          || extParentDir.contains("://"))) {
+        String scheme = fileSystem.getUri().toString();
+        LOGGER.info("scheme = " + scheme);
+        extParentDir = scheme + extParentDir;
+        extTableDir = scheme + extTableDir;
+        LOGGER.info("Add scheme in extParentDir = " + extParentDir + ", extTableDir = " + extTableDir);
+      }
+
       policyFile
           .addPermissionsToRole("all_db1", privileges.get("all_db1"))
           .addPermissionsToRole("all_uri", "server=server1->uri=" + extParentDir)

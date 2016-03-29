@@ -16,15 +16,24 @@
  */
 package org.apache.sentry.tests.e2e.dbprovider;
 
+import org.apache.hadoop.hive.conf.HiveConf;
+
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
+import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
+import org.apache.sentry.provider.db.service.thrift.TSentryRole;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 
 import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
-import static org.junit.Assume.assumeTrue;
+
+import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.*;
+import static org.junit.matchers.JUnitMatchers.containsString;
+
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,11 +44,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.RandomStringUtils;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertEquals;
 
 /**
  * The test class implements concurrency tests to test:
@@ -56,14 +64,19 @@ public class TestConcurrentClients extends AbstractTestWithStaticConfiguration {
           "sentry.e2e.concurrency.test.tables-per-db", "1"));
   private final int NUM_OF_PAR = Integer.parseInt(System.getProperty(
           "sentry.e2e.concurrency.test.partitions-per-tb", "3"));
+  // number of threads < half of number of tasks, so that there will be
+  // more than 1 threads for each task to be able to test synchronization
   private final int NUM_OF_THREADS = Integer.parseInt(System.getProperty(
-          "sentry.e2e.concurrency.test.threads", "30"));
+          "sentry.e2e.concurrency.test.threads", "2"));
+  // since test time out in 10 mins, no more than 600 / 10 = 60 tasks
   private final int NUM_OF_TASKS = Integer.parseInt(System.getProperty(
-          "sentry.e2e.concurrency.test.tasks", "100"));
+          "sentry.e2e.concurrency.test.tasks", "8"));
   private final Long HS2_CLIENT_TEST_DURATION_MS = Long.parseLong(System.getProperty(
-          "sentry.e2e.concurrency.test.hs2client.test.time.ms", "10000")); //millis
+          "sentry.e2e.concurrency.test.hs2client.test.time.ms", "4000")); //millis
   private final Long SENTRY_CLIENT_TEST_DURATION_MS = Long.parseLong(System.getProperty(
-          "sentry.e2e.concurrency.test.sentryclient.test.time.ms", "10000")); //millis
+          "sentry.e2e.concurrency.test.sentryclient.test.time.ms", "4000")); //millis
+  private final Long EXECUTOR_THREADS_MAX_WAIT_TIME = Long.parseLong(System.getProperty(
+      "sentry.e2e.concurrency.test.max.wait.time", Integer.toString(NUM_OF_TASKS * 10))); // secs
 
   private static Map<String, String> privileges = new HashMap<String, String>();
   static {
@@ -81,14 +94,13 @@ public class TestConcurrentClients extends AbstractTestWithStaticConfiguration {
 
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception {
-    assumeTrue(Boolean.parseBoolean(System.getProperty("sentry.scaletest.oncluster", "false")));
     useSentryService = true;    // configure sentry client
     clientKerberos = true; // need to get client configuration from testing environments
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
  }
 
   static String randomString( int len ){
-    return RandomStringUtils.random(len, true, false);
+    return RandomStringUtils.random(len, true, false).toLowerCase();
   }
 
   private void execStmt(Statement stmt, String sql) throws Exception {
@@ -243,8 +255,8 @@ public class TestConcurrentClients extends AbstractTestWithStaticConfiguration {
    * Privileges are correctly created and updated.
    * @throws Exception
    */
-  @Test
-  public void testConccurentHS2Client() throws Exception {
+  @Test(timeout=600000) // time out in 10 mins
+  public void testConcurrentHS2Client() throws Exception {
     ExecutorService executor = Executors.newFixedThreadPool(NUM_OF_THREADS);
     final TestRuntimeState state = new TestRuntimeState();
 
@@ -281,7 +293,8 @@ public class TestConcurrentClients extends AbstractTestWithStaticConfiguration {
       });
     }
     executor.shutdown();
-    while (!executor.isTerminated()) {
+    while (!executor.awaitTermination(EXECUTOR_THREADS_MAX_WAIT_TIME, TimeUnit.SECONDS)) {
+      LOGGER.info("Awaiting completion of threads.");
       Thread.sleep(1000); //millisecond
     }
     Throwable ex = state.getFirstException();
@@ -293,14 +306,18 @@ public class TestConcurrentClients extends AbstractTestWithStaticConfiguration {
    * Test when concurrent sentry clients talking to sentry server, threads data are synchronized
    * @throws Exception
    */
-  @Test
+  @Test(timeout=600000) // time out in 10 mins
   public void testConcurrentSentryClient() throws Exception {
     final String HIVE_KEYTAB_PATH =
-            System.getProperty("sentry.e2etest.hive.policyOwnerKeytab");
+        System.getProperty("sentry.e2etest.hive.policyOwnerKeytab");
     final SentryPolicyServiceClient client = getSentryClient("hive", HIVE_KEYTAB_PATH);
     ExecutorService executor = Executors.newFixedThreadPool(NUM_OF_THREADS);
 
     final TestRuntimeState state = new TestRuntimeState();
+    String scratchLikeDir = context.getProperty(HiveConf.ConfVars.SCRATCHDIR.varname);
+    final String uriPrefix = scratchLikeDir.contains("://") ?
+        scratchLikeDir : (fileSystem.getUri().toString() + scratchLikeDir);
+    LOGGER.info("uriPrefix = " + uriPrefix);
     for (int i = 0; i < NUM_OF_TASKS; i ++) {
       LOGGER.info("Start to test sentry client with task id [" + i + "]");
       executor.execute(new Runnable() {
@@ -313,16 +330,58 @@ public class TestConcurrentClients extends AbstractTestWithStaticConfiguration {
           try {
             String randStr = randomString(5);
             String test_role = "test_role_" + randStr;
+            String test_uri = uriPrefix + randStr;
+
             LOGGER.info("Start to test role: " + test_role);
             Long startTime = System.currentTimeMillis();
             Long elapsedTime = 0L;
             while (Long.compare(elapsedTime, SENTRY_CLIENT_TEST_DURATION_MS) <= 0) {
               LOGGER.info("Test role " + test_role + " runs " + elapsedTime + " ms.");
               client.createRole(ADMIN1, test_role);
-              client.listRoles(ADMIN1);
+              client.grantRoleToGroup(ADMIN1, ADMINGROUP, test_role);
+
+              // validate role
+              Set<TSentryRole> sentryRoles = client.listRoles(ADMIN1);
+              String results = "";
+              for (TSentryRole role : sentryRoles) {
+                results += role.toString() + "|";
+              }
+              LOGGER.info("listRoles = " + results);
+              assertThat(results, containsString("roleName:" + test_role));
+
+              // validate privileges
+              results = "";
               client.grantServerPrivilege(ADMIN1, test_role, "server1", false);
-              client.listAllPrivilegesByRoleName(ADMIN1, test_role);
+              client.grantURIPrivilege(ADMIN1, test_role, "server1", test_uri);
+              Set<TSentryPrivilege> sPerms = client.listAllPrivilegesByRoleName(ADMIN1, test_role);
+              for (TSentryPrivilege sp : sPerms) {
+                results += sp.toString() + "|";
+              }
+              LOGGER.info("listAllPrivilegesByRoleName = " + results);
+              assertThat(results, containsString("serverName:server1"));
+              assertThat(results, containsString("URI:" + test_uri));
+
+              client.revokeURIPrivilege(ADMIN1, test_role, "server1", test_uri);
+              client.revokeServerPrivilege(ADMIN1, test_role, "server1", false);
+
+              results = "";
+              Set<TSentryPrivilege> rPerms = client.listAllPrivilegesByRoleName(ADMIN1, test_role);
+              for (TSentryPrivilege rp : rPerms) {
+                results += rp.toString() + "|";
+              }
+              assertThat(results, not(containsString("URI:" + test_uri)));
+              assertThat(results, not(containsString("serverName:server1")));
+
               client.dropRole(ADMIN1, test_role);
+
+              results = "";
+              Set<TSentryRole> removedRoles = client.listUserRoles(ADMIN1);
+              for (TSentryRole role : removedRoles) {
+                results += role.toString() + "|";
+              }
+              LOGGER.info("listUserRoles = " + results);
+              assertThat(results, not(containsString(test_role)));
+
               elapsedTime = System.currentTimeMillis() - startTime;
             }
             state.setNumSuccess();
@@ -334,7 +393,8 @@ public class TestConcurrentClients extends AbstractTestWithStaticConfiguration {
       });
     }
     executor.shutdown();
-    while (!executor.isTerminated()) {
+    while (!executor.awaitTermination(EXECUTOR_THREADS_MAX_WAIT_TIME, TimeUnit.SECONDS)) {
+      LOGGER.info("Awaiting completion of threads.");
       Thread.sleep(1000); //millisecond
     }
     Throwable ex = state.getFirstException();

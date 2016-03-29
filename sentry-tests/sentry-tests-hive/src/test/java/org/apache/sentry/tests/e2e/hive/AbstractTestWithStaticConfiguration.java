@@ -152,6 +152,7 @@ public abstract class AbstractTestWithStaticConfiguration {
 
   private static LoginContext clientLoginContext;
   protected static SentryPolicyServiceClient client;
+  private static boolean startSentry = new Boolean(System.getProperty(EXTERNAL_SENTRY_SERVICE, "false"));
 
   /**
    * Get sentry client with authenticated Subject
@@ -266,7 +267,6 @@ public abstract class AbstractTestWithStaticConfiguration {
       policyURI = policyFileLocation.getPath();
     }
 
-    boolean startSentry = new Boolean(System.getProperty(EXTERNAL_SENTRY_SERVICE, "false"));
     if ("true".equalsIgnoreCase(System.getProperty(ENABLE_SENTRY_HA, "false"))) {
       enableSentryHA = true;
     }
@@ -498,7 +498,7 @@ public abstract class AbstractTestWithStaticConfiguration {
    */
   public static SentryPolicyServiceClient getSentryClient(String clientShortName,
                                                           String clientKeyTabDir) throws Exception {
-    if (!useSentryService) {
+    if (!startSentry) {
       LOGGER.info("Running on a minicluser env.");
       return getSentryClient();
     }
