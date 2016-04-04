@@ -279,7 +279,7 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
     LOGGER.debug("#### HMS Path Update ["
         + "OP : renameAuthzObject, "
         + "oldName : " + oldName + ","
-        + "newPath : " + oldPath + ","
+        + "oldPath : " + oldPath + ","
         + "newName : " + newName + ","
         + "newPath : " + newPath + "]");
     List<String> newPathTree = PathsUpdate.parsePath(newPath);
