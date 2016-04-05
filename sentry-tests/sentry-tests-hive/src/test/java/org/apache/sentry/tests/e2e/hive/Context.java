@@ -257,13 +257,25 @@ public class Context {
   // TODO: Handle kerberos login
   public HiveMetaStoreClient getMetaStoreClient(String userName) throws Exception {
     UserGroupInformation clientUgi = UserGroupInformation.createRemoteUser(userName);
-    HiveMetaStoreClient client = (HiveMetaStoreClient) clientUgi.
-        doAs(new PrivilegedExceptionAction<Object> () {
-          @Override
-          public HiveMetaStoreClient run() throws Exception {
-            return new HiveMetaStoreClient(new HiveConf());
-          }
-        });
+    HiveMetaStoreClient client = null;
+    try {
+      client = clientUgi.doAs(new PrivilegedExceptionAction<HiveMetaStoreClient>() {
+        @Override
+        public HiveMetaStoreClient run() throws Exception {
+          return new HiveMetaStoreClient(new HiveConf());
+        }
+      });
+    } catch (Throwable e) {
+      // The metastore may don't finish the initialization, wait for 10s for the
+      // initialization.
+      Thread.sleep(10 * 1000);
+      client = clientUgi.doAs(new PrivilegedExceptionAction<HiveMetaStoreClient>() {
+        @Override
+        public HiveMetaStoreClient run() throws Exception {
+          return new HiveMetaStoreClient(new HiveConf());
+        }
+      });
+    }
     return client;
   }
 
