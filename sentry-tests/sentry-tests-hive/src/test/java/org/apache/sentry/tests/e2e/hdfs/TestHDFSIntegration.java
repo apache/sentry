@@ -634,10 +634,14 @@ public class TestHDFSIntegration {
     stmt.execute("revoke select on table p1 from role p1_admin");
     verifyOnAllSubDirs("/user/hive/warehouse/p1", FsAction.WRITE_EXECUTE, "hbase", true);
 
-    // Verify table rename works
+
+    // Verify table rename works when locations are also changed
     stmt.execute("alter table p1 rename to p3");
     verifyOnAllSubDirs("/user/hive/warehouse/p3", FsAction.WRITE_EXECUTE, "hbase", true);
+    //This is true as parent hive object's (p3) ACLS are used.
+    verifyOnAllSubDirs("/user/hive/warehouse/p3/month=1/day=1", FsAction.WRITE_EXECUTE, "hbase", true);
 
+    // Verify when oldName == newName and oldPath != newPath
     stmt.execute("alter table p3 partition (month=1, day=1) rename to partition (month=1, day=3)");
     verifyOnAllSubDirs("/user/hive/warehouse/p3", FsAction.WRITE_EXECUTE, "hbase", true);
     verifyOnAllSubDirs("/user/hive/warehouse/p3/month=1/day=3", FsAction.WRITE_EXECUTE, "hbase", true);
@@ -829,6 +833,24 @@ public class TestHDFSIntegration {
     verifyOnPath("/tmp/external/tables/ext2_after/i=2/stuff.txt", FsAction.ALL, "hbase", true);
     // END : Verify external table set location..
 
+    //Create a new table partition on the existing partition
+    stmt.execute("create table tmp (s string) partitioned by (i int)");
+    stmt.execute("alter table tmp add partition (i=1)");
+    stmt.execute("alter table tmp partition (i=1) set location \'hdfs:///tmp/external/tables/ext2_after/i=1\'");
+    stmt.execute("grant all on table tmp to role tab_role");
+    verifyOnPath("/tmp/external/tables/ext2_after/i=1", FsAction.ALL, "flume", true);
+
+    //Alter table rename of external table => oldName != newName, oldPath == newPath
+    stmt.execute("alter table ext2 rename to ext3");
+    //Verify all original paths still have the privileges
+    verifyOnPath("/tmp/external/tables/ext2_after", FsAction.ALL, "hbase", true);
+    verifyOnPath("/tmp/external/tables/ext2_after/i=1", FsAction.ALL, "hbase", true);
+    verifyOnPath("/tmp/external/tables/ext2_after/i=1", FsAction.ALL, "flume", true);
+    verifyOnPath("/tmp/external/tables/ext2_after/i=2", FsAction.ALL, "hbase", true);
+    verifyOnPath("/tmp/external/tables/ext2_after/i=1/stuff.txt", FsAction.ALL, "hbase", true);
+    verifyOnPath("/tmp/external/tables/ext2_after/i=2/stuff.txt", FsAction.ALL, "hbase", true);
+
+
     // Restart HDFS to verify if things are fine after re-start..
 
     // TODO : this is currently commented out since miniDFS.restartNameNode() does
@@ -902,6 +924,7 @@ public class TestHDFSIntegration {
     //Partition on local file system
     stmt.execute("alter table tab2 add partition (i=1)");
     stmt.execute("alter table tab2 partition (i=1) set location 'file:///tmp/external/tab2_loc/i=1'");
+
     verifyOnAllSubDirs("/tmp/external/tab2_loc/i=1", null, StaticUserGroup.USERGROUP1, false);
 
     //HDFS to local file system, also make sure does not specifying scheme still works

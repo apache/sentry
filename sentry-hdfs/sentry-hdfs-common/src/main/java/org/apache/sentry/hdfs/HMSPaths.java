@@ -260,6 +260,9 @@ public class HMSPaths implements AuthzPaths {
       if (prefix != null) {
         // we only create the entry if is under a prefix, else we ignore it
         entry = createChild(pathElements, EntryType.AUTHZ_OBJECT, authzObj);
+      } else {
+        LOG.info("Skipping to create authzObjPath as it is outside of prefix. authObj = " + authzObj
+        + " pathElements=" + pathElements);
       }
       return entry;
     }
@@ -289,6 +292,7 @@ public class HMSPaths implements AuthzPaths {
         }
       }
     }
+
 
     public void delete() {
       if (getParent() != null) {
@@ -468,15 +472,17 @@ public class HMSPaths implements AuthzPaths {
         if (e != null) {
           newEntries.add(e);
         } else {
-          // LOG WARN IGNORING PATH, no prefix
+          LOG.info("Path outside prefix");
         }
       }
       entries.addAll(newEntries);
     } else {
       if (createNew) {
         addAuthzObject(authzObj, authzObjPathElements);
+      } else {
+        LOG.warn("Path was not added to AuthzObject, could not find key in authzObjToPath. authzObj = " + authzObj +
+                " authzObjPathElements=" + authzObjPathElements);
       }
-      // LOG WARN object does not exist
     }
   }
 
@@ -488,6 +494,11 @@ public class HMSPaths implements AuthzPaths {
     addPathsToAuthzObject(authzObj, authzObjPaths, false);
   }
 
+  /*
+  1. Removes authzObj from all entries corresponding to the authzObjPathElements
+  ( which also deletes the entry if no more authObjs to that path and does it recursively upwards)
+  2. Removes it from value of authzObjToPath Map for this authzObj key, does not reset entries to null even if entries is empty
+   */
   void deletePathsFromAuthzObject(String authzObj,
       List<List<String>> authzObjPathElements) {
     Set<Entry> entries = authzObjToPath.get(authzObj);
@@ -500,12 +511,13 @@ public class HMSPaths implements AuthzPaths {
           entry.deleteAuthzObject(authzObj);
           toDelEntries.add(entry);
         } else {
-          // LOG WARN IGNORING PATH, it was not in registered
+          LOG.info("Path was not deleted from AuthzObject, path not registered. This is possible for implicit partition locations. authzObj = " + authzObj + " authzObjPathElements=" + authzObjPathElements);
         }
       }
       entries.removeAll(toDelEntries);
     } else {
-      // LOG WARN object does not exist
+      LOG.info("Path was not deleted from AuthzObject, could not find key in authzObjToPath. authzObj = " + authzObj +
+              " authzObjPathElements=" + authzObjPathElements);
     }
   }
 
@@ -545,39 +557,59 @@ public class HMSPaths implements AuthzPaths {
     return (entry != null) ? entry.getAuthzObjs() : null;
   }
 
-  boolean renameAuthzObject(String oldName, List<String> oldPathElems,
-      String newName, List<String> newPathElems) {
-    // Handle '/'
-    if ((oldPathElems == null)||(oldPathElems.size() == 0)) return false;
-    Entry entry =
-        root.find(oldPathElems.toArray(new String[oldPathElems.size()]), false);
-    if ((entry != null) && (entry.getAuthzObjs().contains(oldName))) {
-      // Update pathElements
-      String[] newPath = newPathElems.toArray(new String[newPathElems.size()]);
-      // Can't use Lists.newArrayList() because of whacky generics
-      List<List<String>> pathElemsAsList = new LinkedList<List<String>>();
-      pathElemsAsList.add(oldPathElems);
-      deletePathsFromAuthzObject(oldName, pathElemsAsList);
-      if (isUnderPrefix(newPath)) {
-        // Can't use Lists.newArrayList() because of whacky generics
-        pathElemsAsList = new LinkedList<List<String>>();
-        pathElemsAsList.add(newPathElems);
-        addPathsToAuthzObject(oldName, pathElemsAsList);
+  /*
+  Following condition should be true: oldName != newName
+  If oldPath == newPath, Example: rename external table (only HMS meta data is updated)
+    => new_table.add(new_path), new_table.add(old_table_partition_paths), old_table.dropAllPaths.
+  If oldPath != newPath, Example: rename managed table (HMS metadata is updated as well as physical files are moved to new location)
+    => new_table.add(new_path), old_table.dropAllPaths.
+  */
+  void renameAuthzObject(String oldName, List<List<String>> oldPathElems,
+      String newName, List<List<String>> newPathElems) {
+
+    if ( oldPathElems == null || oldPathElems.size() == 0 || newPathElems == null || newPathElems.size() == 0
+            || newName == null || oldName == null || oldName == newName) {
+      LOG.warn("Unexpected state in renameAuthzObject, inputs invalid: oldName=" + oldName + " newName=" + newName +
+              " oldPath=" + oldPathElems + " newPath=" + newPathElems);
+      return;
+    }
+
+    //new_table.add(new_path)
+    addPathsToAuthzObject(newName, newPathElems, true);
+
+    //if oldPath == newPath, that is path has not changed as part of rename and hence new table needs to have old paths
+    // => new_table.add(old_table_partition_paths)
+    List<String> oldPathElements = oldPathElems.get(0);
+    List<String> newPathElements = newPathElems.get(0);
+    boolean samePaths = false;
+    if(oldPathElements.size() == newPathElements.size()) {
+      samePaths = true;
+      for(int i=0; i<oldPathElements.size() ; i++) {
+        if (!newPathElements.get(i).equalsIgnoreCase(oldPathElements.get(i))) {
+          samePaths = false;
+        }
       }
-      // This would be true only for table rename
-      if (!oldName.equals(newName)) {
-        Set<Entry> eSet = authzObjToPath.get(oldName);
+    }
+    if(samePaths) {
+      Set<Entry> eSet = authzObjToPath.get(oldName);
+      if (eSet == null) {
+        LOG.warn("Unexpected state in renameAuthzObject, cannot find oldName in authzObjToPath: oldName=" + oldName + " newName=" + newName +
+                " oldPath=" + oldPathElems + " newPath=" + newPathElems);
+      } else {
         authzObjToPath.put(newName, eSet);
         for (Entry e : eSet) {
           if (e.getAuthzObjs().contains(oldName)) {
-            e.removeAuthzObj(oldName);
             e.addAuthzObj(newName);
+          } else {
+            LOG.warn("Unexpected state in renameAuthzObject, authzObjToPath has an entry <oldName,entries> where one of the entry does not have oldName : oldName=" + oldName + " newName=" + newName +
+                    " oldPath=" + oldPathElems + " newPath=" + newPathElems);
           }
         }
-        authzObjToPath.remove(oldName);
       }
     }
-    return true;
+
+    //old_table.dropAllPaths
+    deleteAuthzObject(oldName);
   }
 
   @Override

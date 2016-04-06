@@ -61,7 +61,7 @@ public class UpdateableAuthzPaths implements AuthzPaths, Updateable<PathsUpdate>
   @Override
   public UpdateableAuthzPaths updateFull(PathsUpdate update) {
     UpdateableAuthzPaths other = getPathsDump().initializeFromDump(
-        update.toThrift().getPathsDump());
+            update.toThrift().getPathsDump());
     other.seqNum.set(update.getSeqNum());
     return other;
   }
@@ -87,8 +87,8 @@ public class UpdateableAuthzPaths implements AuthzPaths, Updateable<PathsUpdate>
   }
 
   private void applyPartialUpdate(PathsUpdate update) {
-    // Handle alter table rename : will have exactly 2 patch changes
-    // 1 an add path and the other a del path
+    // Handle alter table rename : will have exactly 2 path changes
+    // 1 is add path and the other is del path and oldName != newName
     if (update.getPathChanges().size() == 2) {
       List<TPathChanges> pathChanges = update.getPathChanges();
       TPathChanges newPathInfo = null;
@@ -102,10 +102,11 @@ public class UpdateableAuthzPaths implements AuthzPaths, Updateable<PathsUpdate>
         newPathInfo = pathChanges.get(1);
         oldPathInfo = pathChanges.get(0);
       }
-      if ((newPathInfo != null)&&(oldPathInfo != null)) {
+      if (newPathInfo != null && oldPathInfo != null &&
+              !newPathInfo.getAuthzObj().equalsIgnoreCase(oldPathInfo.getAuthzObj())) {
         paths.renameAuthzObject(
-            oldPathInfo.getAuthzObj(), oldPathInfo.getDelPaths().get(0),
-            newPathInfo.getAuthzObj(), newPathInfo.getAddPaths().get(0));
+            oldPathInfo.getAuthzObj(), oldPathInfo.getDelPaths(),
+            newPathInfo.getAuthzObj(), newPathInfo.getAddPaths());
         return;
       }
     }

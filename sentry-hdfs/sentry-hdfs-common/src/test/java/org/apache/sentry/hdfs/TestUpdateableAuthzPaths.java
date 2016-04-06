@@ -17,17 +17,14 @@
  */
 package org.apache.sentry.hdfs;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.sentry.hdfs.service.thrift.TPathChanges;
-import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
+
+import static org.junit.Assert.*;
 
 public class TestUpdateableAuthzPaths {
 
@@ -106,10 +103,9 @@ public class TestUpdateableAuthzPaths {
     // Verify name change
     assertTrue(authzPaths.findAuthzObjectExactMatches(new String[]{"db1"}).contains("db1"));
     assertTrue(authzPaths.findAuthzObjectExactMatches(new String[]{"db1", "xtbl11"}).contains("db1.xtbl11"));
-    // Explicit set location has to be done on the partition else it will be associated to
-    // the old location
-    assertTrue(authzPaths.findAuthzObjectExactMatches(new String[]{"db1", "tbl11", "part111"}).contains("db1.xtbl11"));
-    assertTrue(authzPaths.findAuthzObjectExactMatches(new String[]{"db1", "tbl11", "part112"}).contains("db1.xtbl11"));
+    // When both name and location are changed, old paths should not contain either new or old table name
+    assertNull(authzPaths.findAuthzObjectExactMatches(new String[]{"db1", "tbl11", "part111"}));
+    assertNull(authzPaths.findAuthzObjectExactMatches(new String[]{"db1", "tbl11", "part112"}));
     // Verify other tables are not touched
     assertNull(authzPaths.findAuthzObjectExactMatches(new String[]{"db1", "xtbl12"}));
     assertNull(authzPaths.findAuthzObjectExactMatches(new String[]{"db1", "xtbl12", "part121"}));
