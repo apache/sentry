@@ -42,14 +42,23 @@ import java.util.List;
 public  class SolrTSentryPrivilegeConvertor implements TSentryPrivilegeConvertor {
   private String component;
   private String service;
+  private boolean validate;
 
   public SolrTSentryPrivilegeConvertor(String component, String service) {
+    this(component, service, true);
+  }
+
+  public SolrTSentryPrivilegeConvertor(String component, String service, boolean validate) {
     this.component = component;
     this.service = service;
+    this.validate = validate;
   }
 
   public TSentryPrivilege fromString(String privilegeStr) throws Exception {
-    validatePrivilegeHierarchy(privilegeStr);
+    if (validate) {
+      validatePrivilegeHierarchy(privilegeStr);
+    }
+
     TSentryPrivilege tSentryPrivilege = new TSentryPrivilege();
     List<TAuthorizable> authorizables = new LinkedList<TAuthorizable>();
     for (String authorizable : PolicyConstants.AUTHORIZABLE_SPLITTER.split(privilegeStr)) {

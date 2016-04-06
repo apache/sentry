@@ -101,7 +101,6 @@ limitations under the License.
     <dependency>
       <groupId>org.apache.sentry</groupId>
       <artifactId>sentry-provider-file</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.sentry</groupId>
