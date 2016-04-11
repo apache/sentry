@@ -150,7 +150,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     String Store = conf.get(PolicyStoreConstants.SENTRY_GENERIC_POLICY_STORE, PolicyStoreConstants.SENTRY_GENERIC_POLICY_STORE_DEFAULT);
 
     if (Strings.isNullOrEmpty(Store)) {
-      throw new SentryConfigurationException("the parameter configuration for sentry.generic.policy.store can't be empty");
+      throw new SentryConfigurationException("sentry.generic.policy.store can not be empty");
     }
     try {
       storeLayer = createInstance(Store, conf, SentryStoreLayer.class);
@@ -415,7 +415,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
         .createJsonLogEntity(request, tResponse, conf).toJsonFormatLog());
     } catch (Exception e) {
       // if any exception, log the exception.
-      String msg = "Error creating audit log for create role: " + e.getMessage();
+      String msg = "Error in creating audit log for create role: " + e.getMessage();
       LOGGER.error(msg, e);
     }
     return tResponse;
@@ -445,7 +445,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
         .createJsonLogEntity(request, tResponse, conf).toJsonFormatLog());
     } catch (Exception e) {
       // if any exception, log the exception.
-      String msg = "Error creating audit log for drop role: " + e.getMessage();
+      String msg = "Error in creating audit log for drop role: " + e.getMessage();
       LOGGER.error(msg, e);
     }
     return tResponse;
@@ -473,7 +473,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
         .createJsonLogEntity(request, tResponse, conf).toJsonFormatLog());
     } catch (Exception e) {
       // if any exception, log the exception.
-      String msg = "Error creating audit log for grant privilege to role: " + e.getMessage();
+      String msg = "Error in creating audit log for grant privilege to role: " + e.getMessage();
       LOGGER.error(msg, e);
     }
     return tResponse;
@@ -501,7 +501,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
         .createJsonLogEntity(request, tResponse, conf).toJsonFormatLog());
     } catch (Exception e) {
       // if any exception, log the exception.
-      String msg = "Error creating audit log for revoke privilege from role: " + e.getMessage();
+      String msg = "Error in creating audit log for revoke privilege from role: " + e.getMessage();
       LOGGER.error(msg, e);
     }
     return tResponse;
@@ -531,7 +531,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
         .createJsonLogEntity(request, tResponse, conf).toJsonFormatLog());
     } catch (Exception e) {
       // if any exception, log the exception.
-      String msg = "Error creating audit log for add role to group: " + e.getMessage();
+      String msg = "Error in creating audit log for add role to group: " + e.getMessage();
       LOGGER.error(msg, e);
     }
     return tResponse;
@@ -561,7 +561,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
         .createJsonLogEntity(request, tResponse, conf).toJsonFormatLog());
     } catch (Exception e) {
       // if any exception, log the exception.
-      String msg = "Error creating audit log for delete role from group: " + e.getMessage();
+      String msg = "Error in creating audit log for delete role from group: " + e.getMessage();
       LOGGER.error(msg, e);
     }
     return tResponse;

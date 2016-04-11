@@ -436,7 +436,7 @@ public class PrivilegeOperatePersistence {
     BitFieldActionFactory actionFactory = getActionFactory(component);
     BitFieldAction action = actionFactory.getActionByName(name);
     if (action == null) {
-      throw new RuntimeException("can't get BitFieldAction for name:" + name);
+      throw new RuntimeException("Can not get BitFieldAction for name: " + name);
     }
     return action;
   }
@@ -448,7 +448,7 @@ public class PrivilegeOperatePersistence {
     }
     BitFieldActionFactory actionFactory = createActionFactory(caseInsensitiveComponent);
     actionFactories.put(caseInsensitiveComponent, actionFactory);
-    LOGGER.info("Action factory for component {} not found in cache. Loaded it from configuration as {}.",
+    LOGGER.info("Action factory for component {} is not found in cache. Loaded it from configuration as {}.",
                 component, actionFactory.getClass().getName());
     return actionFactory;
   }

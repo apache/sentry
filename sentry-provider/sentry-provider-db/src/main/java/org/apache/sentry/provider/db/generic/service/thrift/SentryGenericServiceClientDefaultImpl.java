@@ -104,10 +104,10 @@ public class SentryGenericServiceClientDefaultImpl implements SentryGenericServi
             }
           });
         } catch (IOException e) {
-          throw new TTransportException("Failed to open SASL transport", e);
+          throw new TTransportException("Failed to open SASL transport: "  + e.getMessage(), e);
         } catch (InterruptedException e) {
           throw new TTransportException(
-              "Interrupted while opening underlying transport", e);
+              "Interrupted while opening underlying transport: " + e.getMessage(), e);
         }
       }
     }
@@ -386,7 +386,7 @@ public class SentryGenericServiceClientDefaultImpl implements SentryGenericServi
       List<? extends Authorizable> newAuthorizables) throws SentryUserException {
     if (oldAuthorizables == null || oldAuthorizables.isEmpty()
         || newAuthorizables == null || newAuthorizables.isEmpty()) {
-      throw new SentryUserException("oldAuthorizables and newAuthorizables can't be null or empty");
+      throw new SentryUserException("oldAuthorizables or newAuthorizables can not be null or empty");
     }
 
     TRenamePrivilegesRequest request = new TRenamePrivilegesRequest();

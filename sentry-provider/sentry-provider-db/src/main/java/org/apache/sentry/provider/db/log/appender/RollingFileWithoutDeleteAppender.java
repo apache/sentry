@@ -108,7 +108,7 @@ public class RollingFileWithoutDeleteAppender extends FileAppender {
       if (e instanceof InterruptedIOException) {
         Thread.currentThread().interrupt();
       }
-      LogLog.error("setFile(" + newFileName + ", false) call failed.", e);
+      LogLog.error("setFile(" + newFileName + ", false) call failed: "  + e.getMessage(), e);
     }
   }
 

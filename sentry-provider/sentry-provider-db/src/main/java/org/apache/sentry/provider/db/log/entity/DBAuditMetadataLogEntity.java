@@ -113,6 +113,8 @@ public class DBAuditMetadataLogEntity extends AuditMetadataLogEntity {
           json.close();
         }
       } catch (IOException e) {
+        String msg = "Error when close json object: " + e.getMessage();
+        LOGGER.error(msg, e);
         throw e;
       }
     }
