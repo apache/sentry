@@ -292,6 +292,7 @@ public class TestDbColumnLevelMetaDataOps extends AbstractTestWithStaticConfigur
 
     String query = "SHOW COLUMNS IN " + TEST_COL_METADATA_OPS_DB + "." + TEST_COL_METADATA_OPS_TB;
     establishSession(USER1_1);
+    statement.execute("USE " + TEST_COL_METADATA_OPS_DB);
     ResultSet rs = executeQueryWithLog(query);
     boolean found = false;
     while (rs.next() && !found) {
@@ -305,9 +306,11 @@ public class TestDbColumnLevelMetaDataOps extends AbstractTestWithStaticConfigur
     rs.close();
 
     establishSession(ADMIN1);
+    statement.execute("USE " + TEST_COL_METADATA_OPS_DB);
     statement.execute("GRANT SELECT(" + colName + ") ON TABLE " + TEST_COL_METADATA_OPS_TB + " TO ROLE " + TEST_COL_METADATA_OPS_ROLE);
 
     establishSession(USER1_1);
+    statement.execute("USE " + TEST_COL_METADATA_OPS_DB);
     rs = executeQueryWithLog(query);
     found = false;
     while (rs.next() && !found) {
@@ -317,7 +320,7 @@ public class TestDbColumnLevelMetaDataOps extends AbstractTestWithStaticConfigur
         found = true;
       }
     }
-    assertTrue("Should not have implicit access to new column " + colName, !found);
+    assertTrue("Should have implicit access to new column " + colName, found);
     rs.close();
     validateSemanticException(query, USER2_1);
   }
