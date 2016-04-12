@@ -22,7 +22,7 @@ limitations under the License.
   <parent>
     <groupId>org.apache.sentry</groupId>
     <artifactId>sentry-binding</artifactId>
-    <version>1.7.0-incubating-SNAPSHOT</version>
+    <version>1.8.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>sentry-binding-hive-v2</artifactId>
