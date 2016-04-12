@@ -1,53 +1,206 @@
-Release Notes - Sentry - Version v1.2.0
+Release Notes - Sentry - Version 1.7.0
+
+** Sub-task
+    * [SENTRY-505] - Default implementation of SentryAuthorizationValidator to do authorization
+    * [SENTRY-506] - Default implementation of SentryAccessController to do grant/revoke role/privlege
+    * [SENTRY-514] - Enable e2e tests for authorization V2
+    * [SENTRY-532] - Add unit tests for DefaultSentryAuthorizationValidator
+    * [SENTRY-542] - Extend SentryPolicyServiceClient to implement grant wrapped privilege info for V2
+    * [SENTRY-568] - Implement taskFactory V2 to handle special privilege for Sentry
+    * [SENTRY-569] - Workaround some operations for Authorization V2
+    * [SENTRY-592] - Support column level security for V2
+    * [SENTRY-603] - Execute on failure hooks for V2
+    * [SENTRY-813] - Refactor the AuditMetadataLogEntity to support the audit log for generic mdoel
+    * [SENTRY-814] - Add new log entity for generic model
+    * [SENTRY-815] - Update the util to generate the command for audit log
+    * [SENTRY-816] - Update the util to manage the log entity for audit log
+    * [SENTRY-817] - Update processor for generic model to generate audit log
+    * [SENTRY-916] - Improve TestPrivilegesAtTableScope for keep consistent with Hive metadata.
+    * [SENTRY-917] - Improve TestRuntimeMetadataRetrieval for keeping database policies consistent with Hive metadata
+    * [SENTRY-925] - Improve TestMetadataPermissions for keep consistent with Hive metadata.
+    * [SENTRY-926] - Improve TestMetadataObjectRetrieval for keep consistent with Hive metadata.
+    * [SENTRY-928] - Improve TestDbSentryOnFailureHookLoading for keeping database policies consistent with Hive metadata
+    * [SENTRY-929] - Improve TestDbEndToEnd for keep consistent with Hive metadata.
+    * [SENTRY-930] - Improve TestDbDDLAuditLog for keep consistent with Hive metadata.
+    * [SENTRY-931] - Improve TestDatabaseProvider for keep consistent with Hive metadata.
+    * [SENTRY-987] - Move general (non specific handler) solr-sentry code to solr-sentry-core package
+    * [SENTRY-1004] - Create CommonPrivilege for external component
+    * [SENTRY-1011] - Add Kafka binding
+    * [SENTRY-1012] - Add core model for Kafka
+    * [SENTRY-1013] - Add policy engine for Kafka
+    * [SENTRY-1014] - Add end-to-end tests for Kafka
+    * [SENTRY-1023] - Create an initial branch for CI
+    * [SENTRY-1029] - Address review comments for Kafka model that came after patch got committed.
+    * [SENTRY-1030] - Restrict Kafka Cluster authorizable to only have "kafka-cluster" as authorizable's name.
+    * [SENTRY-1042] - Create CommonPolicy for external component
+    * [SENTRY-1056] - Get service name from Kafka's server properties.
+    * [SENTRY-1057] - Add implementations for acls' CRUD
+    * [SENTRY-1089] - Move validator from sentry-policy-xxx to sentry-core-model-xxx
+    * [SENTRY-1090] - Improvement for CommonPrivilege
+    * [SENTRY-1091] - Create Model for specific components
+    * [SENTRY-1092] - Move Class KeyValue and PolicyConstants to sentry-core-common
+    * [SENTRY-1093] - Refactor the constructor of PolicyEngine
+    * [SENTRY-1098] - Make Kafka dependency as provided
+    * [SENTRY-1102] - Merge kafka branch into trunk
+    * [SENTRY-1103] - Authorizable names' case sensitivity must be decided by plugins
+    * [SENTRY-1104] - Add method in Privilege model to create privilege validators
+    * [SENTRY-1113] - Fix test failures due to missing files.
+    * [SENTRY-1126] - Create a email list for jira updates (issues@)
+    * [SENTRY-1137] - Update hive dependence to 2.0.0
+    * [SENTRY-1138] - Extract common classes for binding-hive-v1 and binding-hive-v2
+    * [SENTRY-1142] - Rebase on master
+    * [SENTRY-1143] - Sentry TLP: Update the builds with new git repo
+    * [SENTRY-1144] - Sentry TLP: Update status page
+    * [SENTRY-1147] - Update Home page of Sentry Web
+    * [SENTRY-1148] - Update the maillist of Sentry
+    * [SENTRY-1149] - Update committer list of Sentry
+    * [SENTRY-1150] - Update the website svn directory
+    * [SENTRY-1151] - Update source code host at sentry website
+    * [SENTRY-1159] - Decouple datanucleus dependences for hive-binding V1 and V2
+    * [SENTRY-1163] - Enable Jenkins for Hive Authz2
+    * [SENTRY-1172] - Update mailing lists page with new issues@ list
+    * [SENTRY-1186] - Sentry TLP: Update release download links on website
+    * [SENTRY-1191] - update history page of Sentry release
+    * [SENTRY-1192] - Add SQL upgrade script for 1.7.0
+
 
 ** Bug
-    * [SENTRY-15] - log4j.properties file under sentry-tests references the old access package
-    * [SENTRY-1] - use default on HiveServer2 fails with invalid privileges exception
-    * [SENTRY-2] - Code cleanup in various poms
-    * [ACCESS-8] - Log warning if authorization is not used with strong authentication
-    * [ACCESS-49] - Modify test cases to restrict LOAD from specific locations
-    * [ACCESS-140] - malformatted policy is permitted conditionally
-    * [ACCESS-164] - policy file doesn't check non-exist entity mapping
-    * [ACCESS-174] - access only throw first error message in HiveServer2 log, and ignore the rest
-    * [ACCESS-180] - per DB policy file usability issues
-    * [ACCESS-197] - Child authorizeable objects are not inheriting permissions from parent
-    * [ACCESS-201] - Bad error message in HiveAuthzBinding
-    * [ACCESS-203] - Update trunk version to 1.1 and update dependencies
-    * [ACCESS-230] - CREATE TABLE AS works even if user does not have DB-level access
-    * [ACCESS-231] - ALTER TABLE SET TBLPROPERTIES allows updates to tables even when the user doesn't have the right privileges
-    * [ACCESS-232] - The per-db policy fies can't be accessed if they are not in the same file system as the global policy file.
-    * [ACCESS-233] - The URI permission checks should append path separator before checking the parent path
-    * [ACCESS-235] - Format unqualified URI as DFS uri by default
+    * [SENTRY-677] - Make the Sentry DB provider RPC methods synchronized
+    * [SENTRY-768] - [Improve error handling] Handle cases when getGroups throws an exception
+    * [SENTRY-769] - [Improve error handling] Make sure groups in list_sentry_privileges_for_provider is not empty
+    * [SENTRY-826] - TRUNCATE on empty partitioned table in Hive fails
+    * [SENTRY-835] - Drop table leaves a connection open when using metastorelistener
+    * [SENTRY-837] - Distributed path update counters in Sentry are indefinitely incremented
+    * [SENTRY-878] - collect_list missing from HIVE_UDF_WHITE_LIST
+    * [SENTRY-881] - Allow some metadata operations with column-level privileges
+    * [SENTRY-884] - Give execute permission by default to paths managed by sentry
+    * [SENTRY-885] - DB name should be case insensitive in HDFS sync plugin
+    * [SENTRY-886] - HDFSIntegration test testAccessToTableDirectory should wait for cache refresh before verification
+    * [SENTRY-888] - Exceptions in Callable tasks in MetaStoreCacheInitializer are being dropped
+    * [SENTRY-890] - Fix TestDbOperations.testAllOnTable on real clusters
+    * [SENTRY-892] - parsePath should handle empty paths well
+    * [SENTRY-893] - Synchronize calls in SentryClient and create sentry client once per request in SimpleDBProvider
+    * [SENTRY-900] - User could access sentry metric info by curl without authorization
+    * [SENTRY-904] - Set max message size for thrift messages
+    * [SENTRY-914] - Sentry default webserver port needs to change out of ephemeral port range
+    * [SENTRY-922] - INSERT OVERWRITE DIRECTORY permission not working correctly
+    * [SENTRY-923] - Fix SentryStore getPrivileges when table require "some"
+    * [SENTRY-932] - TestColumnEndToEnd error check should non-case sensitive
+    * [SENTRY-936] - getGroup and getUser should always return orginal hdfs values for paths in prefix which are not sentry managed
+    * [SENTRY-944] - Setting HDFS rules on Sentry managed hdfs paths should not affect original hdfs rules
+    * [SENTRY-945] - Avoid logging all DataNucleus queries when debug logging is enabled
+    * [SENTRY-953] - External Partitions which are referenced by more than one table can cause some unexpected behavior with Sentry HDFS sync
+    * [SENTRY-960] - Use hive.server2.builtin.udf.blacklist
+    * [SENTRY-962] - Fix SentryStore getPrivileges when column require "some"
+    * [SENTRY-965] - Solr /terms request handler broken because of components declaration
+    * [SENTRY-966] - SqoopAuthBindingSingleton uses bad double check locking idiom
+    * [SENTRY-968] - Uri check needs to be case sensitive
+    * [SENTRY-971] - Add profile to enable Hive AuthZ v2
+    * [SENTRY-974] - create a sentry test data dump to facilite sentry scale tests
+    * [SENTRY-981] - Fix the error in integration tests
+    * [SENTRY-988] - It's better to let SentryAuthorization setter path always fall through and update HDFS
+    * [SENTRY-989] - RealTimeGet with explicit ids can bypass document level authorization
+    * [SENTRY-991] - Roles of Sentry Permission needs to be case insensitive
+    * [SENTRY-994] - SentryAuthorizationInfoX should override isSentryManaged
+    * [SENTRY-997] - Update HiveAuthorizer of Sentry after HiveAuthorizer interface changes
+    * [SENTRY-998] - TestSentryShellHive test failure with JDK 8
+    * [SENTRY-1002] - PathsUpdate.parsePath(path) will throw an NPE when parsing relative paths
+    * [SENTRY-1003] - Support "reload" by updating the classpath of Sentry function aux jar path during runtime
+    * [SENTRY-1007] - Sentry column-level performance for wide tables
+    * [SENTRY-1008] - Path should be not be updated if the create/drop table/partition event fails
+    * [SENTRY-1009] - Improve TestDatabaseProvider to validate test object names instead of validating vague numbers.
+    * [SENTRY-1010] - Sentry column-level performance for wide tables for 1.5.1
+    * [SENTRY-1018] - HiveServer is not properly shutdown cause BindException in TestServerConfiguration
+    * [SENTRY-1027] - Fix PMD error for unused field when enable Hive authz V2
+    * [SENTRY-1035] - Generic service does not handle group name casing correctly
+    * [SENTRY-1037] - Set "hadoop.security.authentication" to "kerberos" in the Generic Client
+    * [SENTRY-1039] - Sentry shell tests assume order of option group privileges
+    * [SENTRY-1044] - Tables with non-hdfs locations breaks HMS startup
+    * [SENTRY-1046] - Hive Auxiliary JARs Directory is not working when Sentry is enabled: Caused by: java.lang.ClassNotFoundException
+    * [SENTRY-1050] - Improve clearAll method to avoid throwing exceptions because of deleting objects created outside of tests.
+    * [SENTRY-1054] - Updated Apache Shiro dependency
+    * [SENTRY-1055] - Sentry service solr constants refer to clusters rather than services
+    * [SENTRY-1058] - Duplicate junit versions in the root pom
+    * [SENTRY-1059] - 'dependencies.dependency.version' for org.apache.sentry:sentry-core-model-kafka:jar is missing. @ line 42, column 17
+    * [SENTRY-1060] - Improve the SentryAuthFilter error message when authentication failure
+    * [SENTRY-1064] - Fix TestDbOperations#testCaseSensitivity
+    * [SENTRY-1066] - Sentry oracle upgrade script failed with ORA-0955 duplicate name issue
+    * [SENTRY-1071] - Update thrift gen-file with maven plugin
+    * [SENTRY-1077] - create a wiki to describe how to run scale script to prepare data and how to run sentry hive e2e tests on the cluster
+    * [SENTRY-1087] - Capture URI when using Hive Serdes
+    * [SENTRY-1095] - Insert into requires URI privilege on partition location under table.
+    * [SENTRY-1096] - Fix TestDbOperations#testCaseSensitivity failure on a real cluster
+    * [SENTRY-1097] - Fix compilation errors from SentryGenericPolicyProcessor
+    * [SENTRY-1099] - JDK8 autoboxing compilation failure
+    * [SENTRY-1105] - Fix unittest TestMetastoreEndToEnd.testAddPartion
+    * [SENTRY-1111] - Apache Sentry should depend on the same version of metrics-core as hadoop
+    * [SENTRY-1112] - Change default value of "sentry.hive.server" to empty string
+    * [SENTRY-1114] - Wrong classname and incorrect _CMD_JAR var in sentryShell
+    * [SENTRY-1116] - Fix PMD violation for Sentry tests after missing commits
+    * [SENTRY-1122] - Allow Solr Audit Log to Read Impersonator Info
+    * [SENTRY-1128] - Add metastore_db to .gitignore
+    * [SENTRY-1155] - Add waiting time for getMetastoreClient for avoiding metastore isn't ready
+    * [SENTRY-1156] - TestDbColumnLevelMetaDataOps should add `use database` for user session created
+    * [SENTRY-1157] - Fix Unit Tests TestAclsCrud&TestAuthorize failed
+    * [SENTRY-1164] - Fix testCaseSensitivity test failure on a real cluster
+    * [SENTRY-1169] - MetastorePlugin#renameAuthzObject log message prints oldpathname as newpathname
 
 
 ** Improvement
-    * [SENTRY-5] - Normalize the usernames used in the end to end tests
-    * [ACCESS-100] - ResourceAuthzProvider should ensure the subject name is non-null before doing the group lookup
-    * [ACCESS-157] - Access hard codes hive authentication method none
-    * [ACCESS-211] - Add maven profile for compiling access with upstream Apache hadoop/hive
-    * [ACCESS-221] - Restrict the URI access granted from a per-database policy file
+    * [SENTRY-520] - Use the twitter Bootstrap kit (or similar) to beautify the Sentry Service webpage
+    * [SENTRY-565] - Improve performance of filtering Hive SHOW commands
+    * [SENTRY-685] - Refactor Sentry HDFS plugin to work with new Hadoop interface
+    * [SENTRY-832] - Clean dependences of sentry-provider-db
+    * [SENTRY-870] - Create UpdateForwarders for paths and permissions
+    * [SENTRY-913] - Thread safe improvement for sqoop binding singleton
+    * [SENTRY-934] - Update plugin versions
+    * [SENTRY-952] - Update source to JDK 7
+    * [SENTRY-957] - Exceptions in MetastoreCacheInitializer should probably not prevent HMS from starting up
+    * [SENTRY-970] - Use random free port for Sqoop tests
+    * [SENTRY-972] - Include sentry-tests-hive hadoop test script in maven project
+    * [SENTRY-973] - Bump hamcrest version
+    * [SENTRY-979] - Speed up the build (a bit)
+    * [SENTRY-986] - Apply PMD plugin to Sentry source
+    * [SENTRY-993] - list_sentry_privileges_by_authorizable() gone in API v2
+    * [SENTRY-1006] - Add user manual for simple shell
+    * [SENTRY-1015] - Improve Sentry + Hive error message when user does not have sufficient privileges to perform an operation
+    * [SENTRY-1021] - Add PMD to Sentry tests
+    * [SENTRY-1036] - Move ProviderConstants from sentry-provider-common to sentry-policy-common
+    * [SENTRY-1048] - Fix "Critical" issues identified by analysis.apache.org
+    * [SENTRY-1051] - The policy Privilege implementations could be consolidated
+    * [SENTRY-1052] - Sentry shell should use kerberos requestor and give better error messages for kerberos failures
+    * [SENTRY-1065] - Make SentryNoSuchObjectException exception error message consistent across all files 
+    * [SENTRY-1078] - Add servlet for dumping configurations
+    * [SENTRY-1088] - PathsUpdate should log invalid paths to make troubleshooting easier 
+    * [SENTRY-1119] - Allow data engines to specify the ActionFactory from configuration
+    * [SENTRY-1135] - Remove deprecated junit.framework dependencies
+    * [SENTRY-1136] - Remove /Ping and /HealthCheck from Sentry Service Webpage
 
+
+** New Feature
+    * [SENTRY-749] - Create simple shell for sentry
+    * [SENTRY-812] - Generate audit trail for Sentry generic model when authorization metadata change 
+    * [SENTRY-906] - Add concurrency sentry client tests
+    * [SENTRY-995] - Simple Solr Shell
 
 
 ** Task
-    * [ACCESS-16] - Implement the test cases in the test plan
-    * [ACCESS-34] - Analyze Path Security
-    * [ACCESS-115] - Format all files using a consistent code style formatter for the project
-    * [ACCESS-122] - Remove context.close() mid-test
-    * [ACCESS-123] - Fix confusing communication mechanism to request if ANY access is exists
-    * [ACCESS-125] - TestUserManagement major issues
-    * [ACCESS-127] - TestSandboxOps Major issues
-    * [ACCESS-130] - TestMovingToProduction major issues
-    * [ACCESS-136] - TestCrossDbOps major issues
-    * [ACCESS-145] - TestMetadataObjectRetrieval major issues
-    * [ACCESS-147] - TestPrivilegeAtTransform major issues
-    * [ACCESS-149] - TestPrivilegesAtDatabaseScope major issues
-    * [ACCESS-152] - TestPrivilegesAtTableScope minor issues
-    * [ACCESS-166] - Policy Engine should do expanded validation of policy file
-    * [ACCESS-194] - Explore options for metastore access restriction
-    * [ACCESS-195] - Support username mapping at access level
+    * [SENTRY-510] - Metrics collection for Sentry HDFS plugin
+    * [SENTRY-742] - Add describe, show/compute stats tests for column level privileges
+    * [SENTRY-984] - add sentry into analysis.apache.org
+    * [SENTRY-1016] - Update incubator status page with new committer news (Anne) and new resolution (Committer == PPMC during graduation)
+    * [SENTRY-1017] - Update Sentry website "people (commiters)" section with new committer (Anne) and PPMC section with a note on new resolution
+    * [SENTRY-1032] - Implement group/role commands in solr shell
+    * [SENTRY-1038] - More strict checking of SOLR actions in shell
+    * [SENTRY-1047] - Use existing validators in SentryShellSolr
 
-** Sub-task
-    * [ACCESS-101] - Implement more test cases regarding subquery
-    * [ACCESS-209] - be able to run e2e test in cluster mode
-    * [ACCESS-225] - Update master branch version to 1.2.0-SNAPSHOT
+
+** Test
+    * [SENTRY-570] - Bug fixing for the test case "TestMetaStoreWithPigHCat"
+    * [SENTRY-748] - Improve test coverage of Sentry + Hive using complex views
+    * [SENTRY-869] - Add a test where we have multiple column level privileges for a given role
+    * [SENTRY-915] - Improve Hive E2E tests for keep consistent with Hive metadata.
+    * [SENTRY-927] - Improve AbstractTestWithStaticConfiguration for keep consistent with Hive metadata.
+    * [SENTRY-955] - Add more meta data operation tests for column level privilege
+    * [SENTRY-958] - TestGrantPrivilege fails on JDK8
+    * [SENTRY-1109] - mvn clean install fails with PMD validation: Unnecessary use of fully qualified name 'org.apache.hadoop.hive.metastore.api.Partition' due to existing import 'org.apache.hadoop.hive.metastore.api.Partition'
