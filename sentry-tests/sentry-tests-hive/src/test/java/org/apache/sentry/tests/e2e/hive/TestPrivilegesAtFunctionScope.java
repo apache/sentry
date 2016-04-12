@@ -17,6 +17,7 @@ printf_test_3 * Licensed to the Apache Software Foundation (ASF) under one or mo
 
 package org.apache.sentry.tests.e2e.hive;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 
@@ -64,8 +65,18 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
    * user with table level access should be able to create/drop temp functions
    * user with no privilege should NOT be able to create/drop temp functions
    */
+  private void verifyPrintFuncValues(Statement statement, String qry) throws Exception {
+    ResultSet res = execQuery(statement, qry);
+    if (res.next()) {
+      String value = res.getString(1);
+      LOGGER.info("Function returns: " + value);
+      assertEquals("test1", value);
+    }
+    res.close();
+  }
+
   @Test
-  public void testFuncPrivileges1() throws Exception {
+  public void testAndVerifyFuncPrivileges() throws Exception {
     String tableName1 = "tb_1";
     String udfClassName = "org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf";
     CodeSource udfSrc = Class.forName(udfClassName).getProtectionDomain().getCodeSource();
@@ -79,9 +90,8 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     statement.execute("CREATE DATABASE " + DB1);
     statement.execute("USE " + DB1);
     statement.execute("create table " + DB1 + "." + tableName1
-        + " (under_col int comment 'the under column', value string)");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE "
-        + DB1 + "." + tableName1);
+        + " (number INT comment 'column as a number', value STRING comment 'column as a string')");
+    statement.execute("INSERT INTO TABLE " + DB1 + "." + tableName1 + " VALUES (1, 'test1')");
     statement.execute("DROP TEMPORARY FUNCTION IF EXISTS printf_test");
     statement.execute("DROP TEMPORARY FUNCTION IF EXISTS printf_test_2");
     context.close();
@@ -101,30 +111,42 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
 
+    LOGGER.info("Testing select from temp func printf_test");
     try {
       statement.execute("CREATE TEMPORARY FUNCTION printf_test AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
-      LOGGER.info("Testing select from temp func printf_test");
-      ResultSet res = statement.executeQuery("SELECT printf_test('%d', under_col) FROM " + tableName1);
-      while (res.next()) {
-        LOGGER.info(res.getString(1));
-      }
-      res.close();
-      statement.execute("DROP TEMPORARY FUNCTION printf_test");
+      verifyPrintFuncValues(statement, "SELECT printf_test('%s', value) FROM " + tableName1);
     } catch (Exception ex) {
       LOGGER.error("test temp func printf_test failed with reason: " + ex.getStackTrace() + " " + ex.getMessage());
       fail("fail to test temp func printf_test");
+    } finally {
+      statement.execute("DROP TEMPORARY FUNCTION IF EXISTS printf_test");
     }
 
-    statement.execute(
-        "CREATE FUNCTION printf_test_perm AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf' ");
-    statement.execute("SELECT printf_test_perm(value) FROM " + tableName1);
-    statement.execute("DROP FUNCTION printf_test_perm");
+    LOGGER.info("Testing select from perm func printf_test_perm");
+    try {
+      statement.execute(
+          "CREATE FUNCTION printf_test_perm AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf' ");
+      verifyPrintFuncValues(statement, "SELECT printf_test_perm('%s', value) FROM " + tableName1);
+    } catch (Exception ex) {
+      LOGGER.error("test perm func printf_test_perm failed with reason: " + ex.getStackTrace() + " " + ex.getMessage());
+      fail("Fail to test perm func printf_test_perm");
+    } finally {
+      statement.execute("DROP FUNCTION IF EXISTS printf_test_perm");
+    }
 
     // test perm UDF with 'using file' syntax
-    statement
-        .execute("CREATE FUNCTION printf_test_perm AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf' "
-            + " using file 'file:///tmp'");
-    statement.execute("DROP FUNCTION printf_test_perm");
+    LOGGER.info("Testing select from perm func printf_test_perm_use_file");
+    try {
+      statement
+          .execute("CREATE FUNCTION printf_test_perm_use_file AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf' "
+              + " using file 'file:///tmp'");
+    } catch (Exception ex) {
+      LOGGER.error("test perm func printf_test_perm_use_file failed with reason: "
+          + ex.getStackTrace() + " " + ex.getMessage());
+      fail("Fail to test perm func printf_test_perm_use_file");
+    } finally {
+      statement.execute("DROP FUNCTION IF EXISTS printf_test_perm_use_file");
+    }
 
     context.close();
 
@@ -132,15 +154,30 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
-    statement.execute(
-        "CREATE TEMPORARY FUNCTION printf_test_2 AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
-    statement.execute("SELECT printf_test_2(value) FROM " + tableName1);
-    statement.execute("DROP TEMPORARY FUNCTION printf_test_2");
 
-    statement.execute(
-        "CREATE FUNCTION " + DB1 + ".printf_test_2_perm AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
-    statement.execute("SELECT printf_test_2_perm(value) FROM " + tableName1);
-    statement.execute("DROP FUNCTION printf_test_2_perm");
+    try {
+      statement.execute(
+          "CREATE TEMPORARY FUNCTION printf_test_2 AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
+      verifyPrintFuncValues(statement, "SELECT printf_test_2('%s', value) FROM " + tableName1);
+    } catch (Exception ex) {
+      LOGGER.error("test perm func printf_test_2 failed with reason: "
+          + ex.getStackTrace() + " " + ex.getMessage());
+      fail("Fail to test temp func printf_test_2");
+    } finally {
+      statement.execute("DROP TEMPORARY FUNCTION IF EXISTS printf_test_2");
+    }
+
+    try {
+      statement.execute(
+          "CREATE FUNCTION " + DB1 + ".printf_test_2_perm AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
+      verifyPrintFuncValues(statement, "SELECT printf_test_2_perm('%s', value) FROM " + tableName1);
+    } catch (Exception ex) {
+      LOGGER.error("test perm func printf_test_2_perm failed with reason: "
+          + ex.getStackTrace() + " " + ex.getMessage());
+      fail("Fail to test temp func printf_test_2_perm");
+    } finally {
+      statement.execute("DROP FUNCTION IF EXISTS printf_test_2_perm");
+    }
 
     // USER2 doesn't have URI perm on dataFile
     try {
