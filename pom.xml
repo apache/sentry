@@ -778,9 +778,10 @@ limitations under the License.
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.16</version>
+          <version>2.19.1</version>
           <configuration>
             <forkCount>1</forkCount>
+            <rerunFailingTestsCount>3</rerunFailingTestsCount>
 	    <reuseForks>false</reuseForks>
             <environmentVariables>
               <HADOOP_CLIENT_OPTS>-Xmx1500m -Dhive.log.dir=./target/</HADOOP_CLIENT_OPTS>
@@ -881,6 +882,50 @@ limitations under the License.
       </plugins>
     </pluginManagement>
   </build>
+
+  <profiles>
+    <profile>
+      <id>skipSlowAndNotThreadSafeTests</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>2.19.1</version>
+            <configuration>
+              <argLine>-Xms256m -Xmx2g -XX:MaxPermSize=256m</argLine>
+              <environmentVariables>
+                <HADOOP_CLIENT_OPTS>-Xmx1500m -Dhive.log.dir=./target/</HADOOP_CLIENT_OPTS>
+              </environmentVariables>
+              <forkCount>2.5C</forkCount>
+              <forkedProcessTimeoutInSeconds>900</forkedProcessTimeoutInSeconds>
+              <redirectTestOutputToFile>true</redirectTestOutputToFile>
+              <rerunFailingTestsCount>3</rerunFailingTestsCount>
+              <reuseForks>false</reuseForks>
+              <systemPropertyVariables>
+                <java.net.preferIPv4Stack>true</java.net.preferIPv4Stack>
+              </systemPropertyVariables>
+              <excludes combine.children="append">
+                <exclude>%regex[org.apache.sentry.tests.e2e.*.class]</exclude>
+                <exclude>%regex[org.apache.sentry.binding.hive.TestURI.class]</exclude>
+                <exclude>%regex[org.apache.sentry.provider.db.service.thrift.*.class]</exclude>
+                <exclude>%regex[org.apache.solr.handler.admin.*.class]</exclude>
+                <exclude>%regex[org.apache.sentry.provider.db.generic.service.thrift.*.class]</exclude>
+                <exclude>%regex[org.apache.sentry.provider.db.generic.tools.TestSentryShellSolr.*.class]</exclude>
+              </excludes>
+            </configuration>
+            <dependencies>
+              <dependency>
+                <groupId>org.apache.maven.surefire</groupId>
+                <artifactId>surefire-junit47</artifactId>
+                <version>2.19.1</version>
+              </dependency>
+            </dependencies>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
   <repositories>
     <repository>

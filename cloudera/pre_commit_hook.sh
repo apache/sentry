@@ -9,3 +9,6 @@ find . -name test-classes | grep target/test-classes | xargs rm -rf
 
 # For now, just verify the code compiles.
 mvn clean compile package -DskipTests -Dmaven.test.failure.ignore=true
+
+# Run a subset of tests to quickly verify patches
+mvn test -PskipSlowAndNotThreadSafeTests --fail-at-end
