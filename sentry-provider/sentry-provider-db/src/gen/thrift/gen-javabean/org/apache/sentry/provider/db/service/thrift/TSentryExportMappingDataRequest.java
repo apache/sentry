@@ -36,6 +36,7 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
 
   private static final org.apache.thrift.protocol.TField PROTOCOL_VERSION_FIELD_DESC = new org.apache.thrift.protocol.TField("protocol_version", org.apache.thrift.protocol.TType.I32, (short)1);
   private static final org.apache.thrift.protocol.TField REQUESTOR_USER_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("requestorUserName", org.apache.thrift.protocol.TType.STRING, (short)2);
+  private static final org.apache.thrift.protocol.TField OBJECT_PATH_FIELD_DESC = new org.apache.thrift.protocol.TField("objectPath", org.apache.thrift.protocol.TType.STRING, (short)3);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
@@ -45,11 +46,13 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
 
   private int protocol_version; // required
   private String requestorUserName; // required
+  private String objectPath; // optional
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
     PROTOCOL_VERSION((short)1, "protocol_version"),
-    REQUESTOR_USER_NAME((short)2, "requestorUserName");
+    REQUESTOR_USER_NAME((short)2, "requestorUserName"),
+    OBJECT_PATH((short)3, "objectPath");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -68,6 +71,8 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
           return PROTOCOL_VERSION;
         case 2: // REQUESTOR_USER_NAME
           return REQUESTOR_USER_NAME;
+        case 3: // OBJECT_PATH
+          return OBJECT_PATH;
         default:
           return null;
       }
@@ -110,13 +115,16 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
   // isset id assignments
   private static final int __PROTOCOL_VERSION_ISSET_ID = 0;
   private byte __isset_bitfield = 0;
+  private _Fields optionals[] = {_Fields.OBJECT_PATH};
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-    tmpMap.put(_Fields.PROTOCOL_VERSION, new org.apache.thrift.meta_data.FieldMetaData("protocol_version", org.apache.thrift.TFieldRequirementType.REQUIRED, 
-        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
-    tmpMap.put(_Fields.REQUESTOR_USER_NAME, new org.apache.thrift.meta_data.FieldMetaData("requestorUserName", org.apache.thrift.TFieldRequirementType.REQUIRED, 
-        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
+    tmpMap.put(_Fields.PROTOCOL_VERSION, new org.apache.thrift.meta_data.FieldMetaData("protocol_version", org.apache.thrift.TFieldRequirementType.REQUIRED,
+            new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
+    tmpMap.put(_Fields.REQUESTOR_USER_NAME, new org.apache.thrift.meta_data.FieldMetaData("requestorUserName", org.apache.thrift.TFieldRequirementType.REQUIRED,
+            new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
+    tmpMap.put(_Fields.OBJECT_PATH, new org.apache.thrift.meta_data.FieldMetaData("objectPath", org.apache.thrift.TFieldRequirementType.OPTIONAL,
+            new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(TSentryExportMappingDataRequest.class, metaDataMap);
   }
@@ -127,8 +135,8 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
   }
 
   public TSentryExportMappingDataRequest(
-    int protocol_version,
-    String requestorUserName)
+          int protocol_version,
+          String requestorUserName)
   {
     this();
     this.protocol_version = protocol_version;
@@ -145,6 +153,9 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
     if (other.isSetRequestorUserName()) {
       this.requestorUserName = other.requestorUserName;
     }
+    if (other.isSetObjectPath()) {
+      this.objectPath = other.objectPath;
+    }
   }
 
   public TSentryExportMappingDataRequest deepCopy() {
@@ -156,6 +167,7 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
     this.protocol_version = 1;
 
     this.requestorUserName = null;
+    this.objectPath = null;
   }
 
   public int getProtocol_version() {
@@ -203,34 +215,68 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
     }
   }
 
+  public String getObjectPath() {
+    return this.objectPath;
+  }
+
+  public void setObjectPath(String objectPath) {
+    this.objectPath = objectPath;
+  }
+
+  public void unsetObjectPath() {
+    this.objectPath = null;
+  }
+
+  /** Returns true if field objectPath is set (has been assigned a value) and false otherwise */
+  public boolean isSetObjectPath() {
+    return this.objectPath != null;
+  }
+
+  public void setObjectPathIsSet(boolean value) {
+    if (!value) {
+      this.objectPath = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
-    case PROTOCOL_VERSION:
-      if (value == null) {
-        unsetProtocol_version();
-      } else {
-        setProtocol_version((Integer)value);
-      }
-      break;
+      case PROTOCOL_VERSION:
+        if (value == null) {
+          unsetProtocol_version();
+        } else {
+          setProtocol_version((Integer)value);
+        }
+        break;
 
-    case REQUESTOR_USER_NAME:
-      if (value == null) {
-        unsetRequestorUserName();
-      } else {
-        setRequestorUserName((String)value);
-      }
-      break;
+      case REQUESTOR_USER_NAME:
+        if (value == null) {
+          unsetRequestorUserName();
+        } else {
+          setRequestorUserName((String)value);
+        }
+        break;
+
+      case OBJECT_PATH:
+        if (value == null) {
+          unsetObjectPath();
+        } else {
+          setObjectPath((String)value);
+        }
+        break;
 
     }
   }
 
   public Object getFieldValue(_Fields field) {
     switch (field) {
-    case PROTOCOL_VERSION:
-      return Integer.valueOf(getProtocol_version());
+      case PROTOCOL_VERSION:
+        return Integer.valueOf(getProtocol_version());
 
-    case REQUESTOR_USER_NAME:
-      return getRequestorUserName();
+      case REQUESTOR_USER_NAME:
+        return getRequestorUserName();
+
+      case OBJECT_PATH:
+        return getObjectPath();
 
     }
     throw new IllegalStateException();
@@ -243,10 +289,12 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
     }
 
     switch (field) {
-    case PROTOCOL_VERSION:
-      return isSetProtocol_version();
-    case REQUESTOR_USER_NAME:
-      return isSetRequestorUserName();
+      case PROTOCOL_VERSION:
+        return isSetProtocol_version();
+      case REQUESTOR_USER_NAME:
+        return isSetRequestorUserName();
+      case OBJECT_PATH:
+        return isSetObjectPath();
     }
     throw new IllegalStateException();
   }
@@ -282,6 +330,15 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
         return false;
     }
 
+    boolean this_present_objectPath = true && this.isSetObjectPath();
+    boolean that_present_objectPath = true && that.isSetObjectPath();
+    if (this_present_objectPath || that_present_objectPath) {
+      if (!(this_present_objectPath && that_present_objectPath))
+        return false;
+      if (!this.objectPath.equals(that.objectPath))
+        return false;
+    }
+
     return true;
   }
 
@@ -298,6 +355,11 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
     builder.append(present_requestorUserName);
     if (present_requestorUserName)
       builder.append(requestorUserName);
+
+    boolean present_objectPath = true && (isSetObjectPath());
+    builder.append(present_objectPath);
+    if (present_objectPath)
+      builder.append(objectPath);
 
     return builder.toHashCode();
   }
@@ -326,6 +388,16 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
     }
     if (isSetRequestorUserName()) {
       lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.requestorUserName, typedOther.requestorUserName);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.valueOf(isSetObjectPath()).compareTo(typedOther.isSetObjectPath());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetObjectPath()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.objectPath, typedOther.objectPath);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -361,6 +433,16 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
       sb.append(this.requestorUserName);
     }
     first = false;
+    if (isSetObjectPath()) {
+      if (!first) sb.append(", ");
+      sb.append("objectPath:");
+      if (this.objectPath == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.objectPath);
+      }
+      first = false;
+    }
     sb.append(")");
     return sb.toString();
   }
@@ -410,7 +492,7 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
       while (true)
       {
         schemeField = iprot.readFieldBegin();
-        if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+        if (schemeField.type == org.apache.thrift.protocol.TType.STOP) {
           break;
         }
         switch (schemeField.id) {
@@ -418,7 +500,7 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
             if (schemeField.type == org.apache.thrift.protocol.TType.I32) {
               struct.protocol_version = iprot.readI32();
               struct.setProtocol_versionIsSet(true);
-            } else { 
+            } else {
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
@@ -426,7 +508,15 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
             if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
               struct.requestorUserName = iprot.readString();
               struct.setRequestorUserNameIsSet(true);
-            } else { 
+            } else {
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+            }
+            break;
+          case 3: // OBJECT_PATH
+            if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
+              struct.objectPath = iprot.readString();
+              struct.setObjectPathIsSet(true);
+            } else {
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
@@ -451,6 +541,13 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
         oprot.writeString(struct.requestorUserName);
         oprot.writeFieldEnd();
       }
+      if (struct.objectPath != null) {
+        if (struct.isSetObjectPath()) {
+          oprot.writeFieldBegin(OBJECT_PATH_FIELD_DESC);
+          oprot.writeString(struct.objectPath);
+          oprot.writeFieldEnd();
+        }
+      }
       oprot.writeFieldStop();
       oprot.writeStructEnd();
     }
@@ -470,6 +567,14 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
       TTupleProtocol oprot = (TTupleProtocol) prot;
       oprot.writeI32(struct.protocol_version);
       oprot.writeString(struct.requestorUserName);
+      BitSet optionals = new BitSet();
+      if (struct.isSetObjectPath()) {
+        optionals.set(0);
+      }
+      oprot.writeBitSet(optionals, 1);
+      if (struct.isSetObjectPath()) {
+        oprot.writeString(struct.objectPath);
+      }
     }
 
     @Override
@@ -479,6 +584,11 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
       struct.setProtocol_versionIsSet(true);
       struct.requestorUserName = iprot.readString();
       struct.setRequestorUserNameIsSet(true);
+      BitSet incoming = iprot.readBitSet(1);
+      if (incoming.get(0)) {
+        struct.objectPath = iprot.readString();
+        struct.setObjectPathIsSet(true);
+      }
     }
   }
 
