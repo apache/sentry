@@ -61,6 +61,7 @@ public class TestDbDDLAuditLog extends AbstractTestWithStaticConfiguration {
   public void testBasic() throws Exception {
     String roleName = "testRole";
     String groupName = "testGroup";
+    String userName = "testUser";
     String dbName = "dbTest";
     String tableName = "tableTest";
     Connection connection = context.createConnection(ADMIN1);
@@ -84,9 +85,18 @@ public class TestDbDDLAuditLog extends AbstractTestWithStaticConfiguration {
     fieldValueMap.put(Constants.LOG_FIELD_IP_ADDRESS, null);
     assertAuditLog(fieldValueMap);
 
+    statement.execute("GRANT ROLE " + roleName + " TO USER " + userName);
+    fieldValueMap.clear();
+    fieldValueMap.put(Constants.LOG_FIELD_OPERATION, Constants.OPERATION_ADD_ROLE_USER);
+    fieldValueMap.put(Constants.LOG_FIELD_OPERATION_TEXT, "GRANT ROLE " + roleName + " TO USER "
+        + userName);
+    fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.TRUE);
+    assertAuditLog(fieldValueMap);
+
     statement.execute("create database " + dbName);
     statement.execute("use " + dbName);
     statement.execute("CREATE TABLE " + tableName + " (c1 string)");
+
     statement.execute("GRANT ALL ON DATABASE " + dbName + " TO ROLE " + roleName);
     fieldValueMap.clear();
     fieldValueMap.put(Constants.LOG_FIELD_OPERATION, Constants.OPERATION_GRANT_PRIVILEGE);
@@ -208,6 +218,14 @@ public class TestDbDDLAuditLog extends AbstractTestWithStaticConfiguration {
         + " FROM GROUP " + groupName);
     fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.TRUE);
     fieldValueMap.put(Constants.LOG_FIELD_IP_ADDRESS, null);
+    assertAuditLog(fieldValueMap);
+
+    statement.execute("REVOKE ROLE " + roleName + " FROM USER " + userName);
+    fieldValueMap.clear();
+    fieldValueMap.put(Constants.LOG_FIELD_OPERATION, Constants.OPERATION_DELETE_ROLE_USER);
+    fieldValueMap.put(Constants.LOG_FIELD_OPERATION_TEXT, "REVOKE ROLE " + roleName + " FROM USER "
+        + userName);
+    fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.TRUE);
     assertAuditLog(fieldValueMap);
 
     statement.execute("DROP ROLE " + roleName);

@@ -104,18 +104,18 @@ public class TestSentryServerForHaWithoutKerberos extends SentryServiceIntegrati
     listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, roleName2, Lists.newArrayList(new Server("server"), new Database("db3")));
     assertEquals("Privilege not assigned to role2 !!", 1, listPrivilegesByRoleName.size());
 
-    Set<String> listPrivilegesForProvider = client.listPrivilegesForProvider(Sets.newHashSet(group1, group2), ActiveRoleSet.ALL, new Server("server"), new Database("db2"));
+    Set<String> listPrivilegesForProvider = client.listPrivilegesForProvider(Sets.newHashSet(group1, group2), null, ActiveRoleSet.ALL, new Server("server"), new Database("db2"));
     assertEquals("Privilege not correctly assigned to roles !!",
         Sets.newHashSet("server=server->db=db2->table=table4->action=all", "server=server->db=db2->table=table3->action=all"),
         listPrivilegesForProvider);
 
-    listPrivilegesForProvider = client.listPrivilegesForProvider(Sets.newHashSet(group1, group2), ActiveRoleSet.ALL, new Server("server"), new Database("db3"));
+    listPrivilegesForProvider = client.listPrivilegesForProvider(Sets.newHashSet(group1, group2), null, ActiveRoleSet.ALL, new Server("server"), new Database("db3"));
     assertEquals("Privilege not correctly assigned to roles !!", Sets.newHashSet("server=server->db=db3->table=table5->action=all"), listPrivilegesForProvider);
 
-    listPrivilegesForProvider = client.listPrivilegesForProvider(Sets.newHashSet(group1, group2), new ActiveRoleSet(Sets.newHashSet(roleName1)), new Server("server"), new Database("db3"));
+    listPrivilegesForProvider = client.listPrivilegesForProvider(Sets.newHashSet(group1, group2), null, new ActiveRoleSet(Sets.newHashSet(roleName1)), new Server("server"), new Database("db3"));
     assertEquals("Privilege not correctly assigned to roles !!", Sets.newHashSet("server=+"), listPrivilegesForProvider);
 
-    listPrivilegesForProvider = client.listPrivilegesForProvider(Sets.newHashSet(group1, group2), new ActiveRoleSet(Sets.newHashSet(roleName1)), new Server("server1"));
+    listPrivilegesForProvider = client.listPrivilegesForProvider(Sets.newHashSet(group1, group2), null, new ActiveRoleSet(Sets.newHashSet(roleName1)), new Server("server1"));
     assertEquals("Privilege not correctly assigned to roles !!", new HashSet<String>(), listPrivilegesForProvider);
   }
 
@@ -141,28 +141,68 @@ public class TestSentryServerForHaWithoutKerberos extends SentryServiceIntegrati
     client.grantRoleToGroup(requestorUserName, ADMIN_GROUP, roleName);
     client.grantDatabasePrivilege(requestorUserName, roleName, "server1", "db2", AccessConstants.ALL);
     client.grantTablePrivilege(requestorUserName, roleName, "server1", "db3", "tab3", "ALL");
-    assertEquals(2, client.listPrivilegesForProvider(requestorUserGroupNames,
+    assertEquals(2, client.listPrivilegesForProvider(requestorUserGroupNames, null,
             ActiveRoleSet.ALL).size());
 
     // drop role and verify privileges
     client.dropRole(requestorUserName, roleName);
-    assertEquals(0, client.listPrivilegesForProvider(requestorUserGroupNames,
+    assertEquals(0, client.listPrivilegesForProvider(requestorUserGroupNames, null,
             ActiveRoleSet.ALL).size());
 
     // recreate the role
     client.createRole(requestorUserName, roleName);
     client.grantRoleToGroup(requestorUserName, ADMIN_GROUP, roleName);
-    assertEquals(0, client.listPrivilegesForProvider(requestorUserGroupNames,
+    assertEquals(0, client.listPrivilegesForProvider(requestorUserGroupNames, null,
             ActiveRoleSet.ALL).size());
 
     // grant different privileges and verify
     client.grantDatabasePrivilege(requestorUserName, roleName, "server1", "db2", AccessConstants.ALL);
-    assertEquals(1, client.listPrivilegesForProvider(requestorUserGroupNames,
+    assertEquals(1, client.listPrivilegesForProvider(requestorUserGroupNames, null,
             ActiveRoleSet.ALL).size());
     client.dropRole(requestorUserName, roleName);
-    assertEquals(0, client.listPrivilegesForProvider(requestorUserGroupNames,
+    assertEquals(0, client.listPrivilegesForProvider(requestorUserGroupNames, null,
             ActiveRoleSet.ALL).size());
-    assertEquals(0, client.listPrivilegesForProvider(requestorUserGroupNames,
+    assertEquals(0, client.listPrivilegesForProvider(requestorUserGroupNames, null,
+            ActiveRoleSet.ALL).size());
+  }
+
+  @Test
+  public void testDropRoleOnUser() throws Exception {
+    String requestorUserName = ADMIN_USER;
+    Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
+    Set<String> requestorUserNames = Sets.newHashSet(ADMIN_USER);
+    setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+    writePolicyFile();
+    String roleName = "admin_r";
+
+    // create role and add privileges
+    client.dropRoleIfExists(requestorUserName, roleName);
+    client.createRole(requestorUserName, roleName);
+    client.grantRoleToUser(requestorUserName, ADMIN_USER, roleName);
+    client.grantDatabasePrivilege(requestorUserName, roleName, "server1", "db2", AccessConstants.ALL);
+    client.grantTablePrivilege(requestorUserName, roleName, "server1", "db3", "tab3", "ALL");
+    assertEquals(2, client.listPrivilegesForProvider(requestorUserGroupNames, requestorUserNames,
+            ActiveRoleSet.ALL).size());
+
+    // drop role and verify privileges
+    client.dropRole(requestorUserName, roleName);
+    assertEquals(0, client.listPrivilegesForProvider(requestorUserGroupNames, requestorUserNames,
+            ActiveRoleSet.ALL).size());
+
+    // recreate the role
+    client.createRole(requestorUserName, roleName);
+    client.grantRoleToGroup(requestorUserName, ADMIN_GROUP, roleName);
+    assertEquals(0, client.listPrivilegesForProvider(requestorUserGroupNames, requestorUserNames,
+            ActiveRoleSet.ALL).size());
+
+    // grant different privileges and verify
+    client.grantDatabasePrivilege(requestorUserName, roleName, "server1", "db2", AccessConstants.ALL);
+    assertEquals(1, client.listPrivilegesForProvider(requestorUserGroupNames, requestorUserNames,
+            ActiveRoleSet.ALL).size());
+    client.dropRole(requestorUserName, roleName);
+    assertEquals(0, client.listPrivilegesForProvider(requestorUserGroupNames, requestorUserNames,
+            ActiveRoleSet.ALL).size());
+    assertEquals(0, client.listPrivilegesForProvider(requestorUserGroupNames, requestorUserNames,
             ActiveRoleSet.ALL).size());
   }
 

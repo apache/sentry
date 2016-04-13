@@ -63,14 +63,25 @@ public class SimpleDBProviderBackend implements ProviderBackend {
    * {@inheritDoc}
    */
   @Override
-  public ImmutableSet<String> getPrivileges(Set<String> groups, ActiveRoleSet roleSet, Authorizable... authorizableHierarchy) {
+  public ImmutableSet<String> getPrivileges(Set<String> groups, ActiveRoleSet roleSet,
+      Authorizable... authorizableHierarchy) {
+    return getPrivileges(groups, null, roleSet, authorizableHierarchy);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public ImmutableSet<String> getPrivileges(Set<String> groups, Set<String> users,
+      ActiveRoleSet roleSet, Authorizable... authorizableHierarchy) {
     int retries = Math.max(retryCount + 1, 1); // if customer configs retryCount as Integer.MAX_VALUE, try only once
     while (retries > 0) {
       retries--;
       SentryPolicyServiceClient policyServiceClient = null;
       try {
         policyServiceClient = SentryServiceClientFactory.create(conf);
-        return ImmutableSet.copyOf(policyServiceClient.listPrivilegesForProvider(groups, roleSet, authorizableHierarchy));
+        return ImmutableSet.copyOf(policyServiceClient.listPrivilegesForProvider(groups, users,
+            roleSet, authorizableHierarchy));
       } catch (Exception e) {
         //TODO: differentiate transient errors and permanent errors
         String msg = "Unable to obtain privileges from server: " + e.getMessage() + ".";

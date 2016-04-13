@@ -35,6 +35,9 @@ public interface SentryPolicyServiceClient {
   void dropRoleIfExists(String requestorUserName, String roleName)
       throws SentryUserException;
 
+  Set<TSentryRole> listRolesByUserName(String requestorUserName, String userName)
+      throws SentryUserException;
+
   Set<TSentryRole> listRolesByGroupName(String requestorUserName, String groupName)
       throws SentryUserException;
 
@@ -142,8 +145,8 @@ public interface SentryPolicyServiceClient {
       String db, String table, List<String> columns, String action, Boolean grantOption)
       throws SentryUserException;
 
-  Set<String> listPrivilegesForProvider(Set<String> groups, ActiveRoleSet roleSet,
-      Authorizable... authorizable) throws SentryUserException;
+  Set<String> listPrivilegesForProvider(Set<String> groups, Set<String> users,
+      ActiveRoleSet roleSet, Authorizable... authorizable) throws SentryUserException;
 
   void grantRoleToGroup(String requestorUserName, String groupName, String roleName)
       throws SentryUserException;
@@ -155,6 +158,18 @@ public interface SentryPolicyServiceClient {
       throws SentryUserException;
 
   void revokeRoleFromGroups(String requestorUserName, String roleName, Set<String> groups)
+      throws SentryUserException;
+
+  void grantRoleToUser(String requestorUserName, String userName, String roleName)
+      throws SentryUserException;
+
+  void revokeRoleFromUser(String requestorUserName, String userName, String roleName)
+      throws SentryUserException;
+
+  void grantRoleToUsers(String requestorUserName, String roleName, Set<String> users)
+      throws SentryUserException;
+
+  void revokeRoleFromUsers(String requestorUserName, String roleName, Set<String> users)
       throws SentryUserException;
 
   void dropPrivileges(String requestorUserName,

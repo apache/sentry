@@ -20,11 +20,11 @@ import static org.junit.Assert.assertSame;
 
 import java.util.Set;
 
+import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.SentryConfigurationException;
-import org.apache.sentry.core.common.ActiveRoleSet;
-import org.apache.sentry.policy.common.PrivilegeFactory;
 import org.apache.sentry.policy.common.PolicyEngine;
+import org.apache.sentry.policy.common.PrivilegeFactory;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableSet;
@@ -53,7 +53,7 @@ public class TestGetGroupMapping {
       @Override
       public ImmutableSet<String> getAllPrivileges(Set<String> groups,
           ActiveRoleSet roleSet) throws SentryConfigurationException {
-        return getPrivileges(groups, roleSet, null);
+        return getPrivileges(groups, roleSet);
       }
 
       @Override
@@ -64,6 +64,19 @@ public class TestGetGroupMapping {
       @Override
       public void validatePolicy(boolean strictValidation)
           throws SentryConfigurationException {
+      }
+
+      @Override
+      public ImmutableSet<String> getAllPrivileges(Set<String> groups, Set<String> users,
+          ActiveRoleSet roleSet) throws SentryConfigurationException {
+        return getPrivileges(groups, users, roleSet);
+      }
+
+      @Override
+      public ImmutableSet<String> getPrivileges(Set<String> groups, Set<String> users,
+          ActiveRoleSet roleSet, Authorizable... authorizableHierarchy)
+          throws SentryConfigurationException {
+        return ImmutableSet.of();
       }
 
       @Override

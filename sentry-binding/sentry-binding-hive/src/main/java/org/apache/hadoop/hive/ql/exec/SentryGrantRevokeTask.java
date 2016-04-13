@@ -237,11 +237,14 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
       } else if (operation.equals(RoleDDLDesc.RoleOperation.SHOW_ROLE_GRANT)) {
         Set<TSentryRole> roles;
         PrincipalType principalType = desc.getPrincipalType();
-        if (principalType != PrincipalType.GROUP) {
+        if (principalType == PrincipalType.GROUP) {
+          roles = sentryClient.listRolesByGroupName(subject, name);
+        } else if (principalType == PrincipalType.USER) {
+          roles = sentryClient.listRolesByUserName(subject, name);
+        } else {
           String msg = SentryHiveConstants.GRANT_REVOKE_NOT_SUPPORTED_FOR_PRINCIPAL + principalType;
           throw new HiveException(msg);
         }
-        roles = sentryClient.listRolesByGroupName(subject, desc.getName() );
         writeToFile(writeRoleGrantsInfo(roles), desc.getResFile());
         return RETURN_CODE_SUCCESS;
       } else if(operation.equals(RoleDDLDesc.RoleOperation.SHOW_ROLES)) {
@@ -407,21 +410,35 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
       List<String> roles = desc.getRoles();
       // get principals
       Set<String> groups = Sets.newHashSet();
+      Set<String> users = Sets.newHashSet();
       for (PrincipalDesc principal : principals) {
-        if (principal.getType() != PrincipalType.GROUP) {
+        if (principal.getType() == PrincipalType.GROUP) {
+          groups.add(principal.getName());
+        } else if (principal.getType() == PrincipalType.USER) {
+          users.add(principal.getName());
+        } else {
           String msg = SentryHiveConstants.GRANT_REVOKE_NOT_SUPPORTED_FOR_PRINCIPAL +
               principal.getType();
           throw new HiveException(msg);
         }
-        groups.add(principal.getName());
       }
 
       // grant/revoke role to/from principals
       for (String roleName : roles) {
         if (grantRole) {
-          sentryClient.grantRoleToGroups(subject, roleName, groups);
+          if (groups.size() > 0) {
+            sentryClient.grantRoleToGroups(subject, roleName, groups);
+          }
+          if (users.size() > 0) {
+            sentryClient.grantRoleToUsers(subject, roleName, users);
+          }
         } else {
-          sentryClient.revokeRoleFromGroups(subject, roleName, groups);
+          if (groups.size() > 0) {
+            sentryClient.revokeRoleFromGroups(subject, roleName, groups);
+          }
+          if (users.size() > 0) {
+            sentryClient.revokeRoleFromUsers(subject, roleName, users);
+          }
         }
       }
 

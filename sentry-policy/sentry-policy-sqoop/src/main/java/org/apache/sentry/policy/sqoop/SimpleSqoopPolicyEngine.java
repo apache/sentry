@@ -69,6 +69,25 @@ public class SimpleSqoopPolicyEngine implements PolicyEngine {
   }
 
   @Override
+  public ImmutableSet<String> getAllPrivileges(Set<String> groups, Set<String> users,
+      ActiveRoleSet roleSet) throws SentryConfigurationException {
+    return getPrivileges(groups, users, roleSet);
+  }
+
+  @Override
+  public ImmutableSet<String> getPrivileges(Set<String> groups, Set<String> users,
+      ActiveRoleSet roleSet, Authorizable... authorizationHierarchy) {
+    if(LOGGER.isDebugEnabled()) {
+      LOGGER.debug("Getting permissions for groups: {}, users: {}", groups, users);
+    }
+    ImmutableSet<String> result = providerBackend.getPrivileges(groups, users, roleSet);
+    if(LOGGER.isDebugEnabled()) {
+      LOGGER.debug("result = " + result);
+    }
+    return result;
+  }
+
+  @Override
   public void close() {
     if (providerBackend != null) {
       providerBackend.close();

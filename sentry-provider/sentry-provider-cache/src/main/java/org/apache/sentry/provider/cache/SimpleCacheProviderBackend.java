@@ -66,6 +66,17 @@ public class SimpleCacheProviderBackend implements ProviderBackend {
   }
 
   @Override
+  public ImmutableSet<String> getPrivileges(Set<String> groups, Set<String> users,
+      ActiveRoleSet roleSet, Authorizable... authorizableHierarchy) {
+    if (!initialized()) {
+      throw new IllegalStateException(
+          "Backend has not been properly initialized");
+    }
+    return ImmutableSet.copyOf(cacheHandle.listPrivileges(groups, users,
+        roleSet));
+  }
+
+  @Override
   public ImmutableSet<String> getRoles(Set<String> groups, ActiveRoleSet roleSet) {
     if (!initialized()) {
       throw new IllegalStateException(

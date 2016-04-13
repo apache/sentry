@@ -22,6 +22,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
@@ -40,17 +41,18 @@ import org.apache.sentry.provider.db.service.thrift.TSentryAuthorizable;
 import org.apache.sentry.provider.db.service.thrift.TSentryGrantOption;
 import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
+import org.apache.sentry.provider.db.service.thrift.TSentryRole;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.junit.After;
 import org.junit.AfterClass;
-import static org.junit.Assert.assertArrayEquals;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 
@@ -135,12 +137,19 @@ public class TestSentryStore extends org.junit.Assert {
     privilege.setAction(AccessConstants.ALL);
     privilege.setCreateTime(System.currentTimeMillis());
 
+    Set<String> users = Sets.newHashSet("user1");
+
     long seqId = sentryStore.createSentryRole(roleName).getSequenceId();
     assertEquals(seqId + 1, sentryStore.alterSentryRoleAddGroups(grantor, roleName, groups).getSequenceId());
     assertEquals(seqId + 2, sentryStore.alterSentryRoleDeleteGroups(roleName, groups).getSequenceId());
-    assertEquals(seqId + 3, sentryStore.alterSentryRoleGrantPrivilege(grantor, roleName, privilege).getSequenceId());
-    assertEquals(seqId + 4, sentryStore.alterSentryRoleRevokePrivilege(grantor, roleName, privilege).getSequenceId());
+    assertEquals(seqId + 3, sentryStore.alterSentryRoleAddUsers(roleName, users).getSequenceId());
+    assertEquals(seqId + 4, sentryStore.alterSentryRoleDeleteUsers(roleName, users).getSequenceId());
+    assertEquals(seqId + 5, sentryStore.alterSentryRoleGrantPrivilege(grantor, roleName, privilege)
+        .getSequenceId());
+    assertEquals(seqId + 6, sentryStore
+        .alterSentryRoleRevokePrivilege(grantor, roleName, privilege).getSequenceId());
   }
+
   @Test
   public void testURI() throws Exception {
     String roleName = "test-dup-role";
@@ -163,13 +172,29 @@ public class TestSentryStore extends org.junit.Assert {
     Set<TSentryGroup> tSentryGroups = new HashSet<TSentryGroup>();
     tSentryGroups.add(new TSentryGroup("group1"));
     sentryStore.alterSentryRoleAddGroups(grantor, roleName, tSentryGroups);
+    sentryStore.alterSentryRoleAddUsers(roleName, Sets.newHashSet("user1"));
 
     TSentryActiveRoleSet thriftRoleSet = new TSentryActiveRoleSet(true, new HashSet<String>(Arrays.asList(roleName)));
 
-    Set<String> privs =
-        sentryStore.listSentryPrivilegesForProvider(new HashSet<String>(Arrays.asList("group1")), thriftRoleSet, tSentryAuthorizable);
+    // list privilege for group only
+    Set<String> privs = sentryStore.listSentryPrivilegesForProvider(
+        new HashSet<String>(Arrays.asList("group1")), Sets.newHashSet(""), thriftRoleSet,
+        tSentryAuthorizable);
 
     assertTrue(privs.size()==1);
+    assertTrue(privs.contains("server=server1->uri=" + uri + "->action=all"));
+
+    // list privilege for user only
+    privs = sentryStore.listSentryPrivilegesForProvider(new HashSet<String>(Arrays.asList("")),
+        Sets.newHashSet("user1"), thriftRoleSet, tSentryAuthorizable);
+    assertTrue(privs.size() == 1);
+    assertTrue(privs.contains("server=server1->uri=" + uri + "->action=all"));
+
+    // list privilege for both user and group
+    privs = sentryStore.listSentryPrivilegesForProvider(
+        new HashSet<String>(Arrays.asList("group1")), Sets.newHashSet("user1"), thriftRoleSet,
+        tSentryAuthorizable);
+    assertTrue(privs.size() == 1);
     assertTrue(privs.contains("server=server1->uri=" + uri + "->action=all"));
   }
 
@@ -194,6 +219,7 @@ public class TestSentryStore extends org.junit.Assert {
     sentryPrivilege.setDbName("db1");
     assertEquals(seqId + 1, sentryStore.alterSentryRoleGrantPrivilege(grantor, roleName, sentryPrivilege).getSequenceId());
   }
+
   @Test
   public void testCreateDropRole() throws Exception {
     String roleName = "test-drop-role";
@@ -201,13 +227,25 @@ public class TestSentryStore extends org.junit.Assert {
     assertEquals(seqId + 1, sentryStore.dropSentryRole(roleName).getSequenceId());
   }
 
-  @Test(expected = SentryNoSuchObjectException.class)
+  @Test
   public void testAddDeleteGroupsNonExistantRole()
       throws Exception {
     String roleName = "non-existant-role";
     String grantor = "g1";
     Set<TSentryGroup> groups = Sets.newHashSet();
-    sentryStore.alterSentryRoleAddGroups(grantor, roleName, groups);
+    Set<String> users = Sets.newHashSet(grantor);
+    try {
+      sentryStore.alterSentryRoleAddGroups(grantor, roleName, groups);
+      fail("Expected SentryNoSuchObjectException exception");
+    } catch (SentryNoSuchObjectException e) {
+      // excepted exception
+    }
+    try {
+      sentryStore.alterSentryRoleAddUsers(roleName, users);
+      fail("Expected SentryNoSuchObjectException exception");
+    } catch (SentryNoSuchObjectException e) {
+      // excepted exception
+    }
   }
 
   @Test
@@ -228,6 +266,80 @@ public class TestSentryStore extends org.junit.Assert {
         .getSequenceId());
     MSentryRole role = sentryStore.getMSentryRoleByName(roleName);
     assertEquals(Collections.emptySet(), role.getGroups());
+  }
+
+  @Test
+  public void testAddDeleteUsers() throws Exception {
+    String roleName = "test-users";
+    long seqId = sentryStore.createSentryRole(roleName).getSequenceId();
+    Set<String> users = Sets.newHashSet("test-user-u1", "test-user-u2");
+    assertEquals(seqId + 1, sentryStore.alterSentryRoleAddUsers(roleName, users).getSequenceId());
+    MSentryRole role = sentryStore.getMSentryRoleByName(roleName);
+    assertEquals(2, role.getUsers().size());
+    assertEquals(seqId + 2, sentryStore.alterSentryRoleDeleteUsers(roleName, users).getSequenceId());
+    role = sentryStore.getMSentryRoleByName(roleName);
+    assertEquals(0, role.getUsers().size());
+  }
+
+  @Test
+  public void testGetTSentryRolesForUser() throws Exception {
+    // Test the method GetTSentryRolesForUser according to the following test data:
+    // user1->group1
+    // user2->group1
+    // user3->group1, group2
+    // user4->group2, group3
+    // group1->r1
+    // group2->r2
+    // group3->r2
+    // user2->r3
+    // user4->r3
+    String roleName1 = "r1";
+    String roleName2 = "r2";
+    String roleName3 = "r3";
+    String user1 = "u1";
+    String user2 = "u2";
+    String user3 = "u3";
+    String user4 = "u4";
+    String group1 = "group1";
+    String group2 = "group2";
+    String group3 = "group3";
+    Map<String, Set<String>> userToGroups = Maps.newHashMap();
+    userToGroups.put(user1, Sets.newHashSet(group1));
+    userToGroups.put(user2, Sets.newHashSet(group1));
+    userToGroups.put(user3, Sets.newHashSet(group1, group2));
+    userToGroups.put(user4, Sets.newHashSet(group2, group3));
+
+    sentryStore.createSentryRole(roleName1);
+    sentryStore.createSentryRole(roleName2);
+    sentryStore.createSentryRole(roleName3);
+    sentryStore.alterSentryRoleAddUsers(roleName1, Sets.newHashSet(user1));
+    sentryStore.alterSentryRoleAddUsers(roleName2, Sets.newHashSet(user2));
+    sentryStore.alterSentryRoleAddUsers(roleName2, Sets.newHashSet(user3));
+    sentryStore.alterSentryRoleAddUsers(roleName3, Sets.newHashSet(user2, user4));
+
+    Set<TSentryRole> roles = sentryStore.getTSentryRolesByUserNames(Sets.newHashSet(user1));
+    assertEquals(1, roles.size());
+    for (TSentryRole role : roles) {
+      assertTrue(roleName1.equals(role.getRoleName()));
+    }
+
+    roles = sentryStore.getTSentryRolesByUserNames(Sets.newHashSet(user2));
+    assertEquals(2, roles.size());
+    for (TSentryRole role : roles) {
+      assertTrue(roleName2.equals(role.getRoleName()) || roleName3.equals(role.getRoleName()));
+    }
+
+    roles = sentryStore.getTSentryRolesByUserNames(Sets.newHashSet(user3));
+    assertEquals(1, roles.size());
+    for (TSentryRole role : roles) {
+      assertTrue(roleName2.equals(role.getRoleName()));
+    }
+
+    roles = sentryStore.getTSentryRolesByUserNames(Sets.newHashSet(user4));
+    assertEquals(1, roles.size());
+    for (TSentryRole role : roles) {
+      assertTrue(roleName3.equals(role.getRoleName()));
+    }
   }
 
   @Test
@@ -678,6 +790,7 @@ public class TestSentryStore extends org.junit.Assert {
     String table = "tbl1";
     TSentryGrantOption grantOption = TSentryGrantOption.TRUE;
     long seqId = sentryStore.createSentryRole(roleName).getSequenceId();
+
     TSentryPrivilege privilege = new TSentryPrivilege();
     privilege.setPrivilegeScope("TABLE");
     privilege.setServerName(server);
@@ -727,6 +840,157 @@ public class TestSentryStore extends org.junit.Assert {
   }
 
   @Test
+  public void testGrantCheckWithGroupAndUser() throws Exception {
+    // 1. set local group mapping and group-role, user-role mapping
+    // user0_0->group0
+    // user0_1->group0
+    // user1_0->group1
+    // user1_1->group1
+    // group0->roleG0
+    // group1->roleG1
+    // user0_0->roleU00
+    // user0_1->roleU01
+    // user1_0->roleU10
+    // user1_1->roleU11
+    String grantor = "g1";
+    String[][] users = { { "user0_0", "user0_1" }, { "user1_0", "user1_1" } };
+    String[] groups = { "group0", "group1" };
+    String[] rolesForGroup = { "roleG0", "roleG1" };
+    String[] rolesForUser = { "roleU0", "roleU1", "roleU2", "roleU3" };
+    for (int i = 0; i < groups.length; i++) {
+      for (int j = 0; j < users[i].length; j++) {
+        addGroupsToUser(users[i][j], groups[i]);
+        sentryStore.createSentryRole(rolesForUser[i * 2 + j]);
+        sentryStore.alterSentryRoleAddUsers(rolesForUser[i * 2 + j], Sets.newHashSet(users[i][j]));
+      }
+      sentryStore.createSentryRole(rolesForGroup[i]);
+      Set<TSentryGroup> tGroups = Sets.newHashSet();
+      TSentryGroup tGroup = new TSentryGroup(groups[i]);
+      tGroups.add(tGroup);
+      sentryStore.alterSentryRoleAddGroups(grantor, rolesForGroup[i], tGroups);
+    }
+    writePolicyFile();
+
+    // 2. g1 grant all on database db1 to roleG0, roleU0 without grant option
+    String server = "server1";
+    String db = "db1";
+    grantor = "g1";
+    TSentryPrivilege privilege1 = new TSentryPrivilege();
+    privilege1.setPrivilegeScope("DATABASE");
+    privilege1.setServerName(server);
+    privilege1.setDbName(db);
+    privilege1.setAction(AccessConstants.ALL);
+    privilege1.setCreateTime(System.currentTimeMillis());
+    privilege1.setGrantOption(TSentryGrantOption.FALSE);
+    // user0_0 has the privilege without grant option
+    sentryStore.alterSentryRoleGrantPrivilege(grantor, "roleG0", privilege1);
+    sentryStore.alterSentryRoleGrantPrivilege(grantor, "roleU0", privilege1);
+    try {
+      sentryStore.alterSentryRoleGrantPrivilege("user0_0", "roleG1", privilege1);
+      fail("Expected SentryGrantDeniedException exception");
+    } catch (SentryGrantDeniedException e) {
+      // excepted exception
+    }
+    try {
+      sentryStore.alterSentryRoleRevokePrivilege("user0_0", "roleG1", privilege1);
+      fail("Expected SentryGrantDeniedException exception");
+    } catch (SentryGrantDeniedException e) {
+      // excepted exception
+    }
+
+    // 3. g1 grant all on database db1 to roleG0 with grant option
+    TSentryPrivilege privilege2 = new TSentryPrivilege();
+    privilege2.setPrivilegeScope("DATABASE");
+    privilege2.setServerName(server);
+    privilege2.setDbName(db);
+    privilege2.setAction(AccessConstants.ALL);
+    privilege2.setCreateTime(System.currentTimeMillis());
+    privilege2.setGrantOption(TSentryGrantOption.TRUE);
+    // user0_0, user0_1 can grant the same privilege to other roles
+    sentryStore.alterSentryRoleGrantPrivilege(grantor, "roleG0", privilege2);
+    sentryStore.alterSentryRoleGrantPrivilege("user0_0", "roleG1", privilege2);
+    validatePrivilegeByRoleName("roleG1", privilege2);
+    sentryStore.alterSentryRoleRevokePrivilege("user0_0", "roleG1", privilege2);
+    validateEmptyPrivilegeByRoleName("roleG1");
+    sentryStore.alterSentryRoleGrantPrivilege("user0_1", "roleG1", privilege2);
+    validatePrivilegeByRoleName("roleG1", privilege2);
+    sentryStore.alterSentryRoleRevokePrivilege("user0_1", "roleG1", privilege2);
+    validateEmptyPrivilegeByRoleName("roleG1");
+    // clear privilege for roleG0
+    sentryStore.alterSentryRoleRevokePrivilege(grantor, "roleG0", privilege2);
+
+    // 4. g1 grant all on database db1 to roleU0 with grant option
+    sentryStore.alterSentryRoleGrantPrivilege(grantor, "roleU0", privilege2);
+    sentryStore.alterSentryRoleGrantPrivilege("user0_0", "roleG1", privilege2);
+    validatePrivilegeByRoleName("roleG1", privilege2);
+    sentryStore.alterSentryRoleRevokePrivilege("user0_0", "roleG1", privilege2);
+    validateEmptyPrivilegeByRoleName("roleG1");
+    try {
+      sentryStore.alterSentryRoleGrantPrivilege("user0_1", "roleG1", privilege2);
+      fail("Expected SentryGrantDeniedException exception");
+    } catch (SentryGrantDeniedException e) {
+      // excepted exception
+    }
+    try {
+      sentryStore.alterSentryRoleRevokePrivilege("user0_1", "roleG1", privilege2);
+      fail("Expected SentryGrantDeniedException exception");
+    } catch (SentryGrantDeniedException e) {
+      // excepted exception
+    }
+    // clear privilege for roleG0
+    sentryStore.alterSentryRoleRevokePrivilege(grantor, "roleU0", privilege2);
+
+    // 5. g1 grant all on database db1 to roleU2, roleG0 with grant option
+    sentryStore.alterSentryRoleGrantPrivilege(grantor, "roleU2", privilege2);
+    sentryStore.alterSentryRoleGrantPrivilege(grantor, "roleG0", privilege2);
+    sentryStore.alterSentryRoleGrantPrivilege("user0_0", "roleG1", privilege2);
+    validatePrivilegeByRoleName("roleG1", privilege2);
+    sentryStore.alterSentryRoleRevokePrivilege("user0_0", "roleG1", privilege2);
+    validateEmptyPrivilegeByRoleName("roleG1");
+    sentryStore.alterSentryRoleGrantPrivilege("user0_1", "roleG1", privilege2);
+    validatePrivilegeByRoleName("roleG1", privilege2);
+    sentryStore.alterSentryRoleRevokePrivilege("user0_1", "roleG1", privilege2);
+    validateEmptyPrivilegeByRoleName("roleG1");
+
+    sentryStore.alterSentryRoleGrantPrivilege("user1_0", "roleG1", privilege2);
+    validatePrivilegeByRoleName("roleG1", privilege2);
+    sentryStore.alterSentryRoleRevokePrivilege("user1_0", "roleG1", privilege2);
+    validateEmptyPrivilegeByRoleName("roleG1");
+    try {
+      sentryStore.alterSentryRoleGrantPrivilege("user1_1", "roleG1", privilege2);
+      fail("Expected SentryGrantDeniedException exception");
+    } catch (SentryGrantDeniedException e) {
+      // excepted exception
+    }
+    try {
+      sentryStore.alterSentryRoleRevokePrivilege("user1_1", "roleG1", privilege2);
+      fail("Expected SentryGrantDeniedException exception");
+    } catch (SentryGrantDeniedException e) {
+      // excepted exception
+    }
+    // clear privilege for roleG0
+    sentryStore.alterSentryRoleRevokePrivilege(grantor, "roleG0", privilege2);
+    sentryStore.alterSentryRoleRevokePrivilege(grantor, "roleU2", privilege2);
+  }
+
+  private void validatePrivilegeByRoleName(String roleName, TSentryPrivilege exceptedTPrivelege)
+      throws Exception {
+    MSentryRole role = sentryStore.getMSentryRoleByName(roleName);
+    Set<MSentryPrivilege> privileges = role.getPrivileges();
+    assertEquals(privileges.toString(), 1, privileges.size());
+    MSentryPrivilege mPrivilege = Iterables.get(privileges, 0);
+    assertEquals(exceptedTPrivelege.getServerName(), mPrivilege.getServerName());
+    assertEquals(exceptedTPrivelege.getDbName(), mPrivilege.getDbName());
+    assertEquals(AccessConstants.ALL, mPrivilege.getAction());
+  }
+
+  private void validateEmptyPrivilegeByRoleName(String roleName) throws Exception {
+    MSentryRole role = sentryStore.getMSentryRoleByName(roleName);
+    Set<MSentryPrivilege> privileges = role.getPrivileges();
+    assertEquals(privileges.toString(), 0, privileges.size());
+  }
+
+  @Test
   public void testGrantCheckWithGrantOption() throws Exception {
     // 1. set local group mapping
     // user0->group0->role0
@@ -736,8 +1000,8 @@ public class TestSentryStore extends org.junit.Assert {
     // user4->group4->role4
     String grantor = "g1";
     String[] users = {"user0","user1","user2","user3","user4"};
+    String[] groups = { "group0", "group1", "group2", "group3", "group4" };
     String[] roles = {"role0","role1","role2","role3","role4"};
-    String[] groups = {"group0","group1","group2","group3","group4"};
     for (int i = 0; i < users.length; i++) {
       addGroupsToUser(users[i], groups[i]);
       sentryStore.createSentryRole(roles[i]);
@@ -802,14 +1066,12 @@ public class TestSentryStore extends org.junit.Assert {
     privilege4.setAction(AccessConstants.INSERT);
     privilege4.setCreateTime(System.currentTimeMillis());
     privilege4.setGrantOption(TSentryGrantOption.FALSE);
-    boolean isGrantOptionException = false;
     try {
       sentryStore.alterSentryRoleGrantPrivilege(grantor, roleName, privilege4);
+      fail("Expected SentryGrantDeniedException exception");
     } catch (SentryGrantDeniedException e) {
-      isGrantOptionException = true;
-      System.err.println(e.getMessage());
+      // excepted exception
     }
-    assertTrue(isGrantOptionException);
 
     // 6. user2 has role2, no grant option,
     // grant insert to role4, will throw no grant exception
@@ -823,14 +1085,12 @@ public class TestSentryStore extends org.junit.Assert {
     privilege5.setAction(AccessConstants.INSERT);
     privilege5.setCreateTime(System.currentTimeMillis());
     privilege5.setGrantOption(TSentryGrantOption.FALSE);
-    isGrantOptionException = false;
     try {
       sentryStore.alterSentryRoleGrantPrivilege(grantor, roleName, privilege5);
+      fail("Expected SentryGrantDeniedException exception");
     } catch (SentryGrantDeniedException e) {
-      isGrantOptionException = true;
-      System.err.println(e.getMessage());
+      // excepted exception
     }
-    assertTrue(isGrantOptionException);
   }
 
   @Test
@@ -850,6 +1110,7 @@ public class TestSentryStore extends org.junit.Assert {
       TSentryGroup tGroup = new TSentryGroup(groups[i]);
       tGroups.add(tGroup);
       sentryStore.alterSentryRoleAddGroups(grantor, roles[i], tGroups);
+      sentryStore.alterSentryRoleAddUsers(roles[i], Sets.newHashSet(users[i]));
     }
     writePolicyFile();
 
@@ -901,14 +1162,12 @@ public class TestSentryStore extends org.junit.Assert {
     // revoke from role2 will throw no grant exception
     roleName = roles[2];
     grantor = users[1];
-    boolean isGrantOptionException = false;
     try {
       sentryStore.alterSentryRoleRevokePrivilege(grantor, roleName, privilege3);
+      fail("Expected SentryGrantDeniedException exception");
     } catch (SentryGrantDeniedException e) {
-      isGrantOptionException = true;
-      System.err.println(e.getMessage());
+      // excepted exception
     }
-    assertTrue(isGrantOptionException);
 
     // 6. user0 has role0, only have select,
     // revoke all from role1 will throw no grant exception
@@ -916,11 +1175,10 @@ public class TestSentryStore extends org.junit.Assert {
     grantor = users[0];
     try {
       sentryStore.alterSentryRoleRevokePrivilege(grantor, roleName, privilege2);
+      fail("Expected SentryGrantDeniedException exception");
     } catch (SentryGrantDeniedException e) {
-      isGrantOptionException = true;
-      System.err.println(e.getMessage());
+      // excepted exception
     }
-    assertTrue(isGrantOptionException);
 
     // 7. user0 has role0, has select and grant option,
     // revoke select from role2
@@ -1038,14 +1296,12 @@ public class TestSentryStore extends org.junit.Assert {
     // 4. user1 revoke table level privilege from user0, will throw grant denied exception
     roleName = roles[0];
     grantor = users[1];
-    boolean isGrantOptionException = false;
     try {
       sentryStore.alterSentryRoleRevokePrivilege(grantor, roleName, privilege1);
+      fail("Expected SentryGrantDeniedException exception");
     } catch (SentryGrantDeniedException e) {
-      isGrantOptionException = true;
-      System.err.println(e.getMessage());
+      // excepted exception
     }
-    assertTrue(isGrantOptionException);
 
     // 5. user0 revoke column level privilege from user1
     roleName = roles[1];
@@ -1089,6 +1345,9 @@ public class TestSentryStore extends org.junit.Assert {
   public void testListSentryPrivilegesForProvider() throws Exception {
     String roleName1 = "list-privs-r1", roleName2 = "list-privs-r2";
     String groupName1 = "list-privs-g1", groupName2 = "list-privs-g2";
+    String userName1 = "list-privs-u1", userName2 = "list-privs-u2";
+    String userWithoutRole = "user-no-privs";
+    Set<String> noRoleUsers = Sets.newHashSet(userWithoutRole);
     String grantor = "g1";
     long seqId = sentryStore.createSentryRole(roleName1).getSequenceId();
     assertEquals(seqId + 1, sentryStore.createSentryRole(roleName2).getSequenceId());
@@ -1110,82 +1369,124 @@ public class TestSentryStore extends org.junit.Assert {
     assertEquals(seqId + 4, sentryStore.alterSentryRoleGrantPrivilege(grantor, roleName2, privilege2)
         .getSequenceId());
     Set<TSentryGroup> groups = Sets.newHashSet();
+    Set<String> users = Sets.newHashSet();
     TSentryGroup group = new TSentryGroup();
     group.setGroupName(groupName1);
     groups.add(group);
+    users.add(userName1);
     assertEquals(seqId + 5, sentryStore.alterSentryRoleAddGroups(grantor,
         roleName1, groups).getSequenceId());
+    assertEquals(seqId + 6, sentryStore.alterSentryRoleAddUsers(roleName1, users).getSequenceId());
     groups.clear();
+    users.clear();
     group = new TSentryGroup();
     group.setGroupName(groupName2);
     groups.add(group);
-    // group 2 has both roles 1 and 2
-    assertEquals(seqId + 6, sentryStore.alterSentryRoleAddGroups(grantor,
-        roleName1, groups).getSequenceId());
-    assertEquals(seqId + 7, sentryStore.alterSentryRoleAddGroups(grantor,
-        roleName2, groups).getSequenceId());
+    users.add(userName2);
+    // group 2 and user2 has both roles 1 and 2
+    assertEquals(seqId + 7, sentryStore.alterSentryRoleAddGroups(grantor, roleName1, groups)
+        .getSequenceId());
+    assertEquals(seqId + 8, sentryStore.alterSentryRoleAddGroups(grantor, roleName2, groups)
+        .getSequenceId());
+    assertEquals(seqId + 9, sentryStore.alterSentryRoleAddUsers(roleName1, users).getSequenceId());
+    assertEquals(seqId + 10, sentryStore.alterSentryRoleAddUsers(roleName2, users).getSequenceId());
     // group1 all roles
     assertEquals(Sets.newHashSet("server=server1->db=db1->table=tbl1->action=select"),
-        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(Sets.newHashSet(groupName1),
-            new TSentryActiveRoleSet(true, new HashSet<String>()))));
-    // one active role
+        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(Sets
+            .newHashSet(groupName1), noRoleUsers, new TSentryActiveRoleSet(true,
+            new HashSet<String>()))));
+    // user1 all roles
     assertEquals(Sets.newHashSet("server=server1->db=db1->table=tbl1->action=select"),
-        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(Sets.newHashSet(groupName1),
+        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(Sets
+            .newHashSet(""), Sets.newHashSet(userName1), new TSentryActiveRoleSet(true,
+            new HashSet<String>()))));
+    // group1 and user1 all roles
+    assertEquals(Sets.newHashSet("server=server1->db=db1->table=tbl1->action=select"),
+        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(Sets
+            .newHashSet(groupName1), Sets.newHashSet(userName1), new TSentryActiveRoleSet(true,
+            new HashSet<String>()))));
+    // one active role
+    assertEquals(
+        Sets.newHashSet("server=server1->db=db1->table=tbl1->action=select"),
+        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(
+            Sets.newHashSet(groupName1), noRoleUsers,
             new TSentryActiveRoleSet(false, Sets.newHashSet(roleName1)))));
     // unknown active role
-    assertEquals(Sets.newHashSet(),
-        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(Sets.newHashSet(groupName1),
+    assertEquals(
+        Sets.newHashSet(),
+        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(
+            Sets.newHashSet(groupName1), noRoleUsers,
             new TSentryActiveRoleSet(false, Sets.newHashSet("not a role")))));
     // no active roles
-    assertEquals(Sets.newHashSet(),
-        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(Sets.newHashSet(groupName1),
+    assertEquals(Sets.newHashSet(), SentryStore.toTrimedLower(sentryStore
+        .listAllSentryPrivilegesForProvider(Sets.newHashSet(groupName1), noRoleUsers,
             new TSentryActiveRoleSet(false, new HashSet<String>()))));
 
     // group2 all roles
-    assertEquals(Sets.newHashSet("server=server1->db=db1->table=tbl1->action=select", "server=server1"),
-        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(Sets.newHashSet(groupName2),
+    assertEquals(Sets.newHashSet("server=server1->db=db1->table=tbl1->action=select",
+        "server=server1"), SentryStore.toTrimedLower(sentryStore
+        .listAllSentryPrivilegesForProvider(Sets.newHashSet(groupName2), Sets.newHashSet(""),
             new TSentryActiveRoleSet(true, new HashSet<String>()))));
+    // user2 all roles
+    assertEquals(Sets.newHashSet("server=server1->db=db1->table=tbl1->action=select",
+        "server=server1"), SentryStore.toTrimedLower(sentryStore
+        .listAllSentryPrivilegesForProvider(Sets.newHashSet(""), Sets.newHashSet(userName2),
+            new TSentryActiveRoleSet(true, new HashSet<String>()))));
+    // user2 and group2 all roles
+    assertEquals(Sets.newHashSet("server=server1->db=db1->table=tbl1->action=select",
+        "server=server1"), SentryStore.toTrimedLower(sentryStore
+        .listAllSentryPrivilegesForProvider(Sets.newHashSet(groupName2),
+            Sets.newHashSet(userName2), new TSentryActiveRoleSet(true, new HashSet<String>()))));
+
     // one active role
-    assertEquals(Sets.newHashSet("server=server1->db=db1->table=tbl1->action=select"),
-        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(Sets.newHashSet(groupName2),
+    assertEquals(
+        Sets.newHashSet("server=server1->db=db1->table=tbl1->action=select"),
+        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(
+            Sets.newHashSet(groupName2), noRoleUsers,
             new TSentryActiveRoleSet(false, Sets.newHashSet(roleName1)))));
-    assertEquals(Sets.newHashSet(
-        "server=server1->db=db1->table=tbl1->action=select", "server=server1"),
-        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(Sets.newHashSet(groupName2),
+    assertEquals(
+        Sets.newHashSet("server=server1->db=db1->table=tbl1->action=select", "server=server1"),
+        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(
+            Sets.newHashSet(groupName2), noRoleUsers,
             new TSentryActiveRoleSet(false, Sets.newHashSet(roleName2)))));
     // unknown active role
-    assertEquals(Sets.newHashSet(),
-        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(Sets.newHashSet(groupName2),
+    assertEquals(
+        Sets.newHashSet(),
+        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(
+            Sets.newHashSet(groupName2), noRoleUsers,
             new TSentryActiveRoleSet(false, Sets.newHashSet("not a role")))));
     // no active roles
-    assertEquals(Sets.newHashSet(),
-        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(Sets.newHashSet(groupName2),
+    assertEquals(Sets.newHashSet(), SentryStore.toTrimedLower(sentryStore
+        .listAllSentryPrivilegesForProvider(Sets.newHashSet(groupName2), noRoleUsers,
             new TSentryActiveRoleSet(false, new HashSet<String>()))));
 
     // both groups, all active roles
-    assertEquals(Sets.newHashSet("server=server1->db=db1->table=tbl1->action=select", "server=server1"),
-        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(Sets.
-            newHashSet(groupName1, groupName2),
+    assertEquals(Sets.newHashSet("server=server1->db=db1->table=tbl1->action=select",
+        "server=server1"), SentryStore.toTrimedLower(sentryStore
+        .listAllSentryPrivilegesForProvider(Sets.newHashSet(groupName1, groupName2), noRoleUsers,
+            new TSentryActiveRoleSet(true, new HashSet<String>()))));
+    // both users and groups, all active roles
+    assertEquals(Sets.newHashSet("server=server1->db=db1->table=tbl1->action=select",
+        "server=server1"), SentryStore.toTrimedLower(sentryStore
+        .listAllSentryPrivilegesForProvider(Sets.newHashSet(groupName1, groupName2), Sets
+            .newHashSet(userName1, userName2),
             new TSentryActiveRoleSet(true, new HashSet<String>()))));
     // one active role
     assertEquals(Sets.newHashSet("server=server1->db=db1->table=tbl1->action=select"),
-        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(Sets.
-            newHashSet(groupName1, groupName2),
+        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(Sets.newHashSet(
+            groupName1, groupName2), noRoleUsers,
             new TSentryActiveRoleSet(false, Sets.newHashSet(roleName1)))));
-    assertEquals(Sets.newHashSet(
-        "server=server1->db=db1->table=tbl1->action=select", "server=server1"),
-        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(Sets.
-            newHashSet(groupName1, groupName2),
+    assertEquals(Sets.newHashSet("server=server1->db=db1->table=tbl1->action=select",
+        "server=server1"), SentryStore.toTrimedLower(sentryStore
+        .listAllSentryPrivilegesForProvider(Sets.newHashSet(groupName1, groupName2), noRoleUsers,
             new TSentryActiveRoleSet(false, Sets.newHashSet(roleName2)))));
     // unknown active role
-    assertEquals(Sets.newHashSet(),
-        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(Sets.
-            newHashSet(groupName1, groupName2),
+    assertEquals(Sets.newHashSet(), SentryStore.toTrimedLower(sentryStore
+        .listAllSentryPrivilegesForProvider(Sets.newHashSet(groupName1, groupName2), noRoleUsers,
             new TSentryActiveRoleSet(false, Sets.newHashSet("not a role")))));
     // no active roles
-    assertEquals(Sets.newHashSet(),
-        SentryStore.toTrimedLower(sentryStore.listAllSentryPrivilegesForProvider(Sets.
-            newHashSet(groupName1, groupName2),
+    assertEquals(Sets.newHashSet(), SentryStore.toTrimedLower(sentryStore
+        .listAllSentryPrivilegesForProvider(Sets.newHashSet(groupName1, groupName2), noRoleUsers,
             new TSentryActiveRoleSet(false, new HashSet<String>()))));
   }
 
@@ -1601,6 +1902,28 @@ public class TestSentryStore extends org.junit.Assert {
   }
 
   @Test
+  public void testSentryUsersSize() throws Exception {
+    String role1 = "role1";
+    String role2 = "role2";
+
+    sentryStore.createSentryRole(role1);
+    sentryStore.createSentryRole(role2);
+
+    Set<String> users = Sets.newHashSet("user1");
+
+    sentryStore.alterSentryRoleAddUsers(role1, users);
+    assertEquals(Long.valueOf(1), sentryStore.getUserCountGauge().getValue());
+
+    sentryStore.alterSentryRoleAddUsers(role2, users);
+    assertEquals(Long.valueOf(1), sentryStore.getUserCountGauge().getValue());
+
+    users.add("user2");
+    sentryStore.alterSentryRoleAddUsers(role2, users);
+    assertEquals(Long.valueOf(2), sentryStore.getUserCountGauge().getValue());
+
+  }
+
+  @Test
   public void testRenameTableWithColumn() throws Exception {
     String roleName1 = "role1", roleName2 = "role2";
     String grantor = "g1";
@@ -1684,7 +2007,8 @@ public class TestSentryStore extends org.junit.Assert {
     TSentryActiveRoleSet thriftRoleSet = new TSentryActiveRoleSet(true, new HashSet<String>(Arrays.asList(roleName)));
 
     Set<String> privs =
-        sentryStore.listSentryPrivilegesForProvider(new HashSet<String>(Arrays.asList("group1")), thriftRoleSet, tSentryAuthorizable);
+        sentryStore.listSentryPrivilegesForProvider(new HashSet<String>(Arrays.asList("group1")),
+            Sets.newHashSet(grantor), thriftRoleSet, tSentryAuthorizable);
 
     assertTrue(privs.size()==1);
     assertTrue(privs.contains("server=server1->db=" + dbName + "->table=" + table + "->action=all"));
@@ -1724,7 +2048,8 @@ public class TestSentryStore extends org.junit.Assert {
     TSentryActiveRoleSet thriftRoleSet = new TSentryActiveRoleSet(true, new HashSet<String>(Arrays.asList(roleName)));
 
     Set<String> privs =
-        sentryStore.listSentryPrivilegesForProvider(new HashSet<String>(Arrays.asList("group1")), thriftRoleSet, tSentryAuthorizable);
+        sentryStore.listSentryPrivilegesForProvider(new HashSet<String>(Arrays.asList("group1")), Sets.newHashSet(grantor),
+                thriftRoleSet, tSentryAuthorizable);
 
     assertTrue(privs.size() == 1);
     assertTrue(privs.contains("server=server1->db=" + dbName + "->table=" + table + "->column="

@@ -41,6 +41,8 @@ public class MSentryRole {
 
   // set of groups this role belongs to
   private Set<MSentryGroup> groups;
+  // set of users this role belongs to
+  private Set<MSentryUser> users;
   private long createTime;
 
   public MSentryRole(String roleName, long createTime) {
@@ -49,6 +51,7 @@ public class MSentryRole {
     privileges = new HashSet<MSentryPrivilege>();
     gmPrivileges = new HashSet<MSentryGMPrivilege>();
     groups = new HashSet<MSentryGroup>();
+    users = new HashSet<MSentryUser>();
   }
 
   public long getCreateTime() {
@@ -89,6 +92,14 @@ public class MSentryRole {
 
   public Set<MSentryGroup> getGroups() {
     return groups;
+  }
+
+  public Set<MSentryUser> getUsers() {
+    return users;
+  }
+
+  public void setUsers(Set<MSentryUser> users) {
+    this.users = users;
   }
 
   public void removePrivilege(MSentryPrivilege privilege) {
@@ -142,6 +153,22 @@ public class MSentryRole {
     }
   }
 
+  public void appendUsers(Set<MSentryUser> users) {
+    this.users.addAll(users);
+  }
+
+  public void appendUser(MSentryUser user) {
+    if (users.add(user)) {
+      user.appendRole(this);
+    }
+  }
+
+  public void removeUser(MSentryUser user) {
+    if (users.remove(user)) {
+      user.removeRole(this);
+    }
+  }
+
   public void removePrivileges() {
     // copy is required since privilege.removeRole will call remotePrivilege
     for (MSentryPrivilege privilege : ImmutableSet.copyOf(privileges)) {
@@ -153,7 +180,7 @@ public class MSentryRole {
   @Override
   public String toString() {
     return "MSentryRole [roleName=" + roleName + ", privileges=[..]" + ", gmPrivileges=[..]"
-        + ", groups=[...]" + ", createTime=" + createTime + "]";
+        + ", groups=[...]" + ", users=[...]" + ", createTime=" + createTime + "]";
   }
 
   @Override

@@ -75,6 +75,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Sets;
 
 public abstract class HiveAuthzBindingHookBase extends AbstractSemanticAnalyzerHook {
   private static final Logger LOG = LoggerFactory
@@ -747,9 +748,10 @@ public abstract class HiveAuthzBindingHookBase extends AbstractSemanticAnalyzerH
       String userName) throws SemanticException {
     // get the original HiveAuthzBinding, and get the user's privileges by AuthorizationProvider
     AuthorizationProvider authProvider = hiveAuthzBinding.getCurrentAuthProvider();
-    Set<String> userPrivileges = authProvider.getPolicyEngine().getPrivileges(
-            authProvider.getGroupMapping().getGroups(userName), hiveAuthzBinding.getActiveRoleSet(),
-            hiveAuthzBinding.getAuthServer());
+    Set<String> userPrivileges =
+        authProvider.getPolicyEngine().getPrivileges(
+            authProvider.getGroupMapping().getGroups(userName), Sets.newHashSet(userName),
+            hiveAuthzBinding.getActiveRoleSet(), hiveAuthzBinding.getAuthServer());
 
     // create PrivilegeCache using user's privileges
     PrivilegeCache privilegeCache = new SimplePrivilegeCache(userPrivileges);

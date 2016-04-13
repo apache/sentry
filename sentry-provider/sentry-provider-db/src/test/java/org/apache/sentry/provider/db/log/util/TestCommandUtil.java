@@ -22,8 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import org.junit.Assert;
-
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleGrantPrivilegeRequest;
@@ -31,6 +29,7 @@ import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleRevokePrivil
 import org.apache.sentry.provider.db.service.thrift.TSentryGrantOption;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
+import org.junit.Assert;
 import org.junit.Test;
 
 import com.google.common.collect.Sets;
@@ -79,6 +78,34 @@ public class TestCommandUtil extends Assert {
     assertEquals(createRoleAddGroupCmdExcepted, createRoleAddGroupCmdResult);
     assertEquals(createRoleDeleteGroupCmdExcepted,
         createRoleDeleteGroupCmdResult);
+  }
+
+  @Test
+  public void testCreateCmdForRoleAddOrDeleteUser1() {
+    String createRoleAddGroupCmdResult =
+        CommandUtil.createCmdForRoleAddUser("testRole", getUserStr(1));
+    String createRoleAddGroupCmdExcepted = "GRANT ROLE testRole TO USER testUser1";
+    String createRoleDeleteGroupCmdResult =
+        CommandUtil.createCmdForRoleDeleteUser("testRole", getUserStr(1));
+    String createRoleDeleteGroupCmdExcepted = "REVOKE ROLE testRole FROM USER testUser1";
+
+    assertEquals(createRoleAddGroupCmdExcepted, createRoleAddGroupCmdResult);
+    assertEquals(createRoleDeleteGroupCmdExcepted, createRoleDeleteGroupCmdResult);
+  }
+
+  @Test
+  public void testCreateCmdForRoleAddOrDeleteUser2() {
+    String createRoleAddGroupCmdResult =
+        CommandUtil.createCmdForRoleAddUser("testRole", getUserStr(3));
+    String createRoleAddGroupCmdExcepted =
+        "GRANT ROLE testRole TO USER testUser1, testUser2, testUser3";
+    String createRoleDeleteGroupCmdResult =
+        CommandUtil.createCmdForRoleDeleteUser("testRole", getUserStr(3));
+    String createRoleDeleteGroupCmdExcepted =
+        "REVOKE ROLE testRole FROM USER testUser1, testUser2, testUser3";
+
+    assertEquals(createRoleAddGroupCmdExcepted, createRoleAddGroupCmdResult);
+    assertEquals(createRoleDeleteGroupCmdExcepted, createRoleDeleteGroupCmdResult);
   }
 
   @Test
@@ -325,6 +352,17 @@ public class TestCommandUtil extends Assert {
         sb.append(", ");
       }
       sb.append("testGroup" + (i + 1));
+    }
+    return sb.toString();
+  }
+
+  private String getUserStr(int num) {
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < num; i++) {
+      if (i > 0) {
+        sb.append(", ");
+      }
+      sb.append("testUser" + (i + 1));
     }
     return sb.toString();
   }

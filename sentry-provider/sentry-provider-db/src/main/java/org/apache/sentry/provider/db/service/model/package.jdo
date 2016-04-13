@@ -7,15 +7,15 @@
   to you under the Apache License, Version 2.0 (the
   "License"); you may not use this file except in compliance
   with the License.  You may obtain a copy of the License at
- 
+
       http://www.apache.org/licenses/LICENSE-2.0
- 
+
   Unless required by applicable law or agreed to in writing, software
   distributed under the License is distributed on an "AS IS" BASIS,
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
---> 
+-->
 <!DOCTYPE jdo PUBLIC "-//Sun Microsystems, Inc.//DTD Java Data Objects Metadata 2.0//EN"
   "http://java.sun.com/dtd/jdo_2_0.dtd">
 <!--
@@ -25,36 +25,54 @@
   Non-indexed VARCHAR: 4000 bytes (max length on Oracle 9i/10g/11g)
 
 -->
-<jdo>  
-  <package name="org.apache.sentry.provider.db.service.model">  
-    <class name="MSentryGroup" identity-type="datastore" table="SENTRY_GROUP" detachable="true">  
+<jdo>
+  <package name="org.apache.sentry.provider.db.service.model">
+    <class name="MSentryGroup" identity-type="datastore" table="SENTRY_GROUP" detachable="true">
       <datastore-identity>
         <column name="GROUP_ID"/>
       </datastore-identity>
-      <field name="groupName">  
+      <field name="groupName">
         <column name="GROUP_NAME" length="128" jdbc-type="VARCHAR"/>
         <index name="SentryGroupName" unique="true"/>
       </field>
       <field name = "createTime">
-      	<column name = "CREATE_TIME" jdbc-type="BIGINT"/>
+        <column name = "CREATE_TIME" jdbc-type="BIGINT"/>
       </field>
 
       <field name="roles" mapped-by="groups">
          <collection element-type="org.apache.sentry.provider.db.service.model.MSentryRole"/>
       </field>
-        
+
     </class>
-    
-    <class name="MSentryRole" identity-type="datastore" table="SENTRY_ROLE" detachable="true">  
+
+    <class name="MSentryUser" identity-type="datastore" table="SENTRY_USER" detachable="true">
+      <datastore-identity>
+        <column name="USER_ID"/>
+      </datastore-identity>
+      <field name="userName">
+        <column name="USER_NAME" length="128" jdbc-type="VARCHAR"/>
+        <index name="SentryUserName" unique="true"/>
+      </field>
+      <field name = "createTime">
+        <column name = "CREATE_TIME" jdbc-type="BIGINT"/>
+      </field>
+
+      <field name="roles" mapped-by="users">
+         <collection element-type="org.apache.sentry.provider.db.service.model.MSentryRole"/>
+      </field>
+
+    </class>
+
+    <class name="MSentryRole" identity-type="datastore" table="SENTRY_ROLE" detachable="true">
       <datastore-identity>
         <column name="ROLE_ID"/>
       </datastore-identity>
-      <field name="roleName">  
+      <field name="roleName">
         <column name="ROLE_NAME" length="128" jdbc-type="VARCHAR"/>
         <index name="SentryRoleName" unique="true"/>
       </field>
       <field name = "createTime">
-      	<column name = "CREATE_TIME" jdbc-type="BIGINT"/>
+        <column name = "CREATE_TIME" jdbc-type="BIGINT"/>
       </field>
       <field name = "privileges" table="SENTRY_ROLE_DB_PRIVILEGE_MAP" default-fetch-group="true">
         <collection element-type="org.apache.sentry.provider.db.service.model.MSentryPrivilege"/>
@@ -76,7 +94,7 @@
             </element>
       </field>
 
-      <field name = "groups" table="SENTRY_ROLE_GROUP_MAP" >
+      <field name = "groups" table="SENTRY_ROLE_GROUP_MAP" default-fetch-group="true">
         <collection element-type="org.apache.sentry.provider.db.service.model.MSentryGroup"/>
             <join>
                 <column name="ROLE_ID"/>
@@ -85,13 +103,23 @@
                 <column name="GROUP_ID"/>
             </element>
       </field>
+
+      <field name = "users" table="SENTRY_ROLE_USER_MAP" default-fetch-group="true">
+        <collection element-type="org.apache.sentry.provider.db.service.model.MSentryUser"/>
+            <join>
+                <column name="ROLE_ID"/>
+            </join>
+            <element>
+                <column name="USER_ID"/>
+            </element>
+      </field>
     </class>
 
     <class name="MSentryPrivilege" identity-type="datastore" table="SENTRY_DB_PRIVILEGE" detachable="true">
       <datastore-identity>
         <column name="DB_PRIVILEGE_ID"/>
       </datastore-identity>
-    <index name="PRIVILEGE_INDEX" unique="true">
+      <index name="PRIVILEGE_INDEX" unique="true">
         <field name="serverName"/>
         <field name="dbName"/>
         <field name="tableName"/>
@@ -99,30 +127,30 @@
         <field name="URI"/>
         <field name="action"/>
         <field name="grantOption"/>
-	  </index>
-      <field name="privilegeScope">  
+      </index>
+      <field name="privilegeScope">
         <column name="PRIVILEGE_SCOPE" length="40" jdbc-type="VARCHAR"/>
       </field>
-      <field name="serverName">  
+      <field name="serverName">
         <column name="SERVER_NAME" length="4000" jdbc-type="VARCHAR"/>
       </field>
-      <field name="dbName">  
+      <field name="dbName">
         <column name="DB_NAME" length="4000" jdbc-type="VARCHAR"/>
       </field>
-      <field name="tableName">  
+      <field name="tableName">
         <column name="TABLE_NAME" length="4000" jdbc-type="VARCHAR"/>
       </field>
       <field name="columnName">
         <column name="COLUMN_NAME" length="4000" jdbc-type="VARCHAR"/>
       </field>
-      <field name="URI">  
+      <field name="URI">
         <column name="URI" length="4000" jdbc-type="VARCHAR"/>
       </field>
-      <field name="action">  
+      <field name="action">
         <column name="ACTION" length="40" jdbc-type="VARCHAR"/>
       </field>
       <field name = "createTime">
-      	<column name = "CREATE_TIME" jdbc-type="BIGINT"/>
+        <column name = "CREATE_TIME" jdbc-type="BIGINT"/>
       </field>
       <field name="grantOption">
         <column name="WITH_GRANT_OPTION" length="1" jdbc-type="CHAR"/>
@@ -136,7 +164,7 @@
       <datastore-identity>
         <column name="GM_PRIVILEGE_ID"/>
       </datastore-identity>
-    <index name="GM_PRIVILEGE_INDEX" unique="true">
+      <index name="GM_PRIVILEGE_INDEX" unique="true">
         <field name="componentName"/>
         <field name="serviceName"/>
         <field name="resourceName0"/>
@@ -149,7 +177,7 @@
         <field name="resourceType3"/>
         <field name="action"/>
         <field name="grantOption"/>
-	  </index>
+      </index>
       <field name="componentName">
         <column name="COMPONENT_NAME" length="100" jdbc-type="VARCHAR"/>
       </field>

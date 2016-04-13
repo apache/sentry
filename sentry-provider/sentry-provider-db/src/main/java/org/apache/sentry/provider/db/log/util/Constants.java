@@ -21,12 +21,7 @@ package org.apache.sentry.provider.db.log.util;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleAddGroupsRequest;
-import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleDeleteGroupsRequest;
-import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleGrantPrivilegeRequest;
-import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleRevokePrivilegeRequest;
-import org.apache.sentry.provider.db.service.thrift.TCreateSentryRoleRequest;
-import org.apache.sentry.provider.db.service.thrift.TDropSentryRoleRequest;
+import org.apache.sentry.provider.db.service.thrift.*;
 
 public class Constants {
   public final static String AUDIT_LOGGER_NAME = "sentry.hive.authorization.ddl.logger";
@@ -51,6 +46,8 @@ public class Constants {
   public final static String OPERATION_DROP_ROLE = "DROP_ROLE";
   public final static String OPERATION_ADD_ROLE = "ADD_ROLE_TO_GROUP";
   public final static String OPERATION_DELETE_ROLE = "DELETE_ROLE_FROM_GROUP";
+  public final static String OPERATION_ADD_ROLE_USER = "ADD_ROLE_TO_USER";
+  public final static String OPERATION_DELETE_ROLE_USER = "DELETE_ROLE_FROM_USER";
   public final static String OPERATION_GRANT_PRIVILEGE = "GRANT_PRIVILEGE";
   public final static String OPERATION_REVOKE_PRIVILEGE = "REVOKE_PRIVILEGE";
 
@@ -81,6 +78,13 @@ public class Constants {
     requestTypeToOperationMap.put(
         TAlterSentryRoleDeleteGroupsRequest.class.getName(),
         Constants.OPERATION_DELETE_ROLE);
+    requestTypeToOperationMap.put(
+        TAlterSentryRoleAddUsersRequest.class.getName(),
+        Constants.OPERATION_ADD_ROLE_USER);
+    requestTypeToOperationMap.put(
+        TAlterSentryRoleDeleteUsersRequest.class.getName(),
+        Constants.OPERATION_DELETE_ROLE_USER);
+
     // for generic model audit log
     requestTypeToOperationMap.put(
         org.apache.sentry.provider.db.generic.service.thrift.TCreateSentryRoleRequest.class
@@ -114,6 +118,12 @@ public class Constants {
         Constants.OBJECT_TYPE_ROLE);
     requestTypeToObjectTypeMap.put(
         TAlterSentryRoleDeleteGroupsRequest.class.getName(),
+        Constants.OBJECT_TYPE_ROLE);
+    requestTypeToObjectTypeMap.put(
+        TAlterSentryRoleAddUsersRequest.class.getName(),
+        Constants.OBJECT_TYPE_ROLE);
+    requestTypeToObjectTypeMap.put(
+        TAlterSentryRoleDeleteUsersRequest.class.getName(),
         Constants.OBJECT_TYPE_ROLE);
     requestTypeToObjectTypeMap.put(
         TAlterSentryRoleGrantPrivilegeRequest.class.getName(),

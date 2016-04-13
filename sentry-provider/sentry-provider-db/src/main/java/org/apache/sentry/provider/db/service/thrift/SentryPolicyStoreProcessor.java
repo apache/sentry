@@ -27,11 +27,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.SentryUserException;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.common.GroupMappingService;
 import org.apache.sentry.provider.common.PolicyFileConstants;
+import org.apache.sentry.provider.common.SentryGroupNotFoundException;
 import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.provider.db.SentryAlreadyExistsException;
 import org.apache.sentry.provider.db.SentryInvalidInputException;
@@ -459,8 +461,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       validateClientVersion(request.getProtocol_version());
       authorize(request.getRequestorUserName(),
           getRequestorGroups(request.getRequestorUserName()));
-      CommitContext commitContext = sentryStore.alterSentryRoleAddGroups(request.getRequestorUserName(),
-                                    request.getRoleName(), request.getGroups());
+      CommitContext commitContext = sentryStore.alterSentryRoleAddGroups(
+          request.getRequestorUserName(), request.getRoleName(),
+          request.getGroups());
       response.setStatus(Status.OK());
       notificationHandlerInvoker.alter_sentry_role_add_groups(commitContext,
           request, response);
@@ -491,6 +494,88 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     } catch (Exception e) {
       // if any exception, log the exception.
       String msg = "Error creating audit log for add role to group: " + e.getMessage();
+      LOGGER.error(msg, e);
+    }
+    return response;
+  }
+
+  @Override
+  public TAlterSentryRoleAddUsersResponse alter_sentry_role_add_users(
+      TAlterSentryRoleAddUsersRequest request) throws TException {
+    final Timer.Context timerContext = sentryMetrics.grantRoleTimer.time();
+    TAlterSentryRoleAddUsersResponse response = new TAlterSentryRoleAddUsersResponse();
+    try {
+      validateClientVersion(request.getProtocol_version());
+      authorize(request.getRequestorUserName(), getRequestorGroups(request.getRequestorUserName()));
+      CommitContext commitContext = sentryStore.alterSentryRoleAddUsers(request.getRoleName(),
+          request.getUsers());
+      response.setStatus(Status.OK());
+      notificationHandlerInvoker.alter_sentry_role_add_users(commitContext, request, response);
+    } catch (SentryNoSuchObjectException e) {
+      String msg = "Role: " + request + " does not exist.";
+      LOGGER.error(msg, e);
+      response.setStatus(Status.NoSuchObject(msg, e));
+    } catch (SentryAccessDeniedException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
+    } catch (SentryThriftAPIMismatchException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.THRIFT_VERSION_MISMATCH(e.getMessage(), e));
+    } catch (Exception e) {
+      String msg = "Unknown error for request: " + request + ", message: " + e.getMessage();
+      LOGGER.error(msg, e);
+      response.setStatus(Status.RuntimeError(msg, e));
+    } finally {
+      timerContext.stop();
+    }
+
+    try {
+      AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance()
+          .createJsonLogEntity(request, response, conf).toJsonFormatLog());
+    } catch (Exception e) {
+      // if any exception, log the exception.
+      String msg = "Error creating audit log for add role to user: " + e.getMessage();
+      LOGGER.error(msg, e);
+    }
+    return response;
+  }
+
+  @Override
+  public TAlterSentryRoleDeleteUsersResponse alter_sentry_role_delete_users(
+      TAlterSentryRoleDeleteUsersRequest request) throws TException {
+    final Timer.Context timerContext = sentryMetrics.grantRoleTimer.time();
+    TAlterSentryRoleDeleteUsersResponse response = new TAlterSentryRoleDeleteUsersResponse();
+    try {
+      validateClientVersion(request.getProtocol_version());
+      authorize(request.getRequestorUserName(), getRequestorGroups(request.getRequestorUserName()));
+      CommitContext commitContext = sentryStore.alterSentryRoleDeleteUsers(request.getRoleName(),
+          request.getUsers());
+      response.setStatus(Status.OK());
+      notificationHandlerInvoker.alter_sentry_role_delete_users(commitContext, request, response);
+    } catch (SentryNoSuchObjectException e) {
+      String msg = "Role: " + request + " does not exist.";
+      LOGGER.error(msg, e);
+      response.setStatus(Status.NoSuchObject(msg, e));
+    } catch (SentryAccessDeniedException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
+    } catch (SentryThriftAPIMismatchException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.THRIFT_VERSION_MISMATCH(e.getMessage(), e));
+    } catch (Exception e) {
+      String msg = "Unknown error for request: " + request + ", message: " + e.getMessage();
+      LOGGER.error(msg, e);
+      response.setStatus(Status.RuntimeError(msg, e));
+    } finally {
+      timerContext.stop();
+    }
+
+    try {
+      AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance()
+          .createJsonLogEntity(request, response, conf).toJsonFormatLog());
+   } catch (Exception e) {
+      // if any exception, log the exception.
+      String msg = "Error creating audit log for delete role from user: " + e.getMessage();
       LOGGER.error(msg, e);
     }
     return response;
@@ -592,6 +677,59 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     return response;
   }
 
+  public TListSentryRolesResponse list_sentry_roles_by_user(TListSentryRolesForUserRequest request)
+      throws TException {
+    final Timer.Context timerContext = sentryMetrics.listRolesByGroupTimer.time();
+    TListSentryRolesResponse response = new TListSentryRolesResponse();
+    TSentryResponseStatus status;
+    Set<TSentryRole> roleSet = new HashSet<TSentryRole>();
+    String requestor = request.getRequestorUserName();
+    String userName = request.getUserName();
+    boolean checkAllGroups = false;
+    try {
+      validateClientVersion(request.getProtocol_version());
+      // userName can't be empty
+      if (StringUtils.isEmpty(userName)) {
+        throw new SentryAccessDeniedException("The user name can't be empty.");
+      }
+
+      Set<String> requestorGroups = getRequestorGroups(requestor);
+      Set<String> userGroups = getRequestorGroups(userName);
+      boolean isAdmin = inAdminGroups(requestorGroups);
+
+      // Only admin users can list other user's roles in the system
+      // Non admin users are only allowed to list only their own roles related user and group
+      if (!isAdmin && !userName.equals(requestor)) {
+        throw new SentryAccessDeniedException("Access denied to list the roles for " + userName);
+      }
+      roleSet = sentryStore.getTSentryRolesByUserNames(Sets.newHashSet(userName));
+      response.setRoles(roleSet);
+      response.setStatus(Status.OK());
+    } catch (SentryGroupNotFoundException e) {
+      LOGGER.error(e.getMessage(), e);
+      String msg = "Group couldn't be retrieved for " + requestor + " or " + userName + ".";
+      response.setStatus(Status.AccessDenied(msg, e));
+    } catch (SentryNoSuchObjectException e) {
+      response.setRoles(roleSet);
+      String msg = "Role: " + request + " couldn't be retrieved.";
+      LOGGER.error(msg, e);
+      response.setStatus(Status.NoSuchObject(msg, e));
+    } catch (SentryAccessDeniedException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
+    } catch (SentryThriftAPIMismatchException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.THRIFT_VERSION_MISMATCH(e.getMessage(), e));
+    } catch (Exception e) {
+      String msg = "Unknown error for request: " + request + ", message: " + e.getMessage();
+      LOGGER.error(msg, e);
+      response.setStatus(Status.RuntimeError(msg, e));
+    } finally {
+      timerContext.stop();
+    }
+    return response;
+  }
+
   @Override
   public TListSentryPrivilegesResponse list_sentry_privileges_by_role(
       TListSentryPrivilegesRequest request) throws TException {
@@ -651,12 +789,15 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     response.setPrivileges(new HashSet<String>());
     try {
       validateClientVersion(request.getProtocol_version());
-      Set<String> privilegesForProvider = sentryStore.listSentryPrivilegesForProvider(
-          request.getGroups(), request.getRoleSet(), request.getAuthorizableHierarchy());
+      Set<String> privilegesForProvider =
+          sentryStore.listSentryPrivilegesForProvider(request.getGroups(), request.getUsers(),
+              request.getRoleSet(), request.getAuthorizableHierarchy());
       response.setPrivileges(privilegesForProvider);
-      if (privilegesForProvider == null || privilegesForProvider.size() == 0 && request.getAuthorizableHierarchy() != null
-        && sentryStore.hasAnyServerPrivileges(
-          request.getGroups(), request.getRoleSet(), request.getAuthorizableHierarchy().getServer())) {
+      if (privilegesForProvider == null
+          || privilegesForProvider.size() == 0
+          && request.getAuthorizableHierarchy() != null
+          && sentryStore.hasAnyServerPrivileges(request.getGroups(), request.getUsers(),
+              request.getRoleSet(), request.getAuthorizableHierarchy().getServer())) {
 
         // REQUIRED for ensuring 'default' Db is accessible by any user
         // with privileges to atleast 1 object with the specific server as root

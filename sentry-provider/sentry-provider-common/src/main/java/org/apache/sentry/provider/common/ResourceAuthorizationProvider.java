@@ -95,12 +95,14 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
       List<? extends Authorizable> authorizables, Set<? extends Action> actions,
       ActiveRoleSet roleSet) {
     Set<String> groups =  getGroups(subject);
+    Set<String> users = Sets.newHashSet(subject.getName());
     Set<String> hierarchy = new HashSet<String>();
     for (Authorizable authorizable : authorizables) {
       hierarchy.add(KV_JOINER.join(authorizable.getTypeName(), authorizable.getName()));
     }
     List<String> requestPrivileges = buildPermissions(authorizables, actions);
-    Iterable<Privilege> privileges = getPrivileges(groups, roleSet, authorizables.toArray(new Authorizable[0]));
+    Iterable<Privilege> privileges = getPrivileges(groups, users, roleSet,
+        authorizables.toArray(new Authorizable[0]));
     lastFailedPrivileges.get().clear();
 
     for (String requestPrivilege : requestPrivileges) {
@@ -123,8 +125,10 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
     return false;
   }
 
-  private Iterable<Privilege> getPrivileges(Set<String> groups, ActiveRoleSet roleSet, Authorizable[] authorizables) {
-    return Iterables.transform(appendDefaultDBPriv(policy.getPrivileges(groups, roleSet, authorizables), authorizables),
+  private Iterable<Privilege> getPrivileges(Set<String> groups, Set<String> users,
+      ActiveRoleSet roleSet, Authorizable[] authorizables) {
+    ImmutableSet<String> privileges = policy.getPrivileges(groups, users, roleSet, authorizables);
+    return Iterables.transform(appendDefaultDBPriv(privileges, authorizables),
         new Function<String, Privilege>() {
       @Override
       public Privilege apply(String privilege) {
@@ -172,7 +176,8 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
 
   @Override
   public Set<String> listPrivilegesForSubject(Subject subject) throws SentryConfigurationException {
-    return policy.getPrivileges(getGroups(subject), ActiveRoleSet.ALL);
+    return policy.getPrivileges(getGroups(subject), Sets.newHashSet(subject.getName()),
+        ActiveRoleSet.ALL, (Authorizable[]) null);
   }
 
   @Override

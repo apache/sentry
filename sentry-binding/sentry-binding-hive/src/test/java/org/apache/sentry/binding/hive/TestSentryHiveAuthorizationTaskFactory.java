@@ -17,6 +17,11 @@
  */
 package org.apache.sentry.binding.hive;
 
+import java.io.File;
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.List;
+
 import org.junit.Assert;
 
 import org.apache.commons.io.FileUtils;
@@ -53,11 +58,6 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import com.google.common.io.Files;
-
-import java.io.File;
-import java.io.Serializable;
-import java.util.HashMap;
-import java.util.List;
 
 public class TestSentryHiveAuthorizationTaskFactory {
 
@@ -237,8 +237,20 @@ public class TestSentryHiveAuthorizationTaskFactory {
    */
   @Test
   public void testGrantRoleUser() throws Exception {
-    expectSemanticException("GRANT ROLE " + ROLE + " TO USER " + USER,
-        SentryHiveConstants.GRANT_REVOKE_NOT_SUPPORTED_ON_OBJECT + "USER");
+    DDLWork work = analyze(parse("GRANT ROLE " + ROLE + " TO USER " + USER));
+    GrantRevokeRoleDDL grantDesc = work.getGrantRevokeRoleDDL();
+    Assert.assertNotNull("Grant should not be null", grantDesc);
+    Assert.assertTrue("Expected grant ", grantDesc.getGrant());
+    Assert.assertFalse("Grant option should be false", grantDesc.isGrantOption());
+    Assert.assertEquals(currentUser, grantDesc.getGrantor());
+    Assert.assertEquals(PrincipalType.USER, grantDesc.getGrantorType());
+    for (String role : assertSize(1, grantDesc.getRoles())) {
+      Assert.assertEquals(ROLE, role);
+    }
+    for (PrincipalDesc principal : assertSize(1, grantDesc.getPrincipalDesc())) {
+      Assert.assertEquals(PrincipalType.USER, principal.getType());
+      Assert.assertEquals(USER, principal.getName());
+    }
   }
 
   /**
@@ -277,8 +289,20 @@ public class TestSentryHiveAuthorizationTaskFactory {
    */
   @Test
   public void testRevokeRoleUser() throws Exception {
-    expectSemanticException("REVOKE ROLE " + ROLE + " FROM USER " + USER,
-        SentryHiveConstants.GRANT_REVOKE_NOT_SUPPORTED_ON_OBJECT + "USER");
+    DDLWork work = analyze(parse("REVOKE ROLE " + ROLE + " FROM USER " + USER));
+    GrantRevokeRoleDDL grantDesc = work.getGrantRevokeRoleDDL();
+    Assert.assertNotNull("Grant should not be null", grantDesc);
+    Assert.assertFalse("Did not expect grant ", grantDesc.getGrant());
+    Assert.assertFalse("Grant option is always true ", grantDesc.isGrantOption());
+    Assert.assertEquals(currentUser, grantDesc.getGrantor());
+    Assert.assertEquals(PrincipalType.USER, grantDesc.getGrantorType());
+    for (String role : assertSize(1, grantDesc.getRoles())) {
+      Assert.assertEquals(ROLE, role);
+    }
+    for (PrincipalDesc principal : assertSize(1, grantDesc.getPrincipalDesc())) {
+      Assert.assertEquals(PrincipalType.USER, principal.getType());
+      Assert.assertEquals(USER, principal.getName());
+    }
   }
 
   /**
@@ -316,8 +340,12 @@ public class TestSentryHiveAuthorizationTaskFactory {
    */
   @Test
   public void testShowRoleGrantUser() throws Exception {
-    expectSemanticException("SHOW ROLE GRANT USER " + USER,
-        SentryHiveConstants.GRANT_REVOKE_NOT_SUPPORTED_FOR_PRINCIPAL + "USER");
+    DDLWork work = analyze(parse("SHOW ROLE GRANT USER " + USER));
+    RoleDDLDesc roleDesc = work.getRoleDDLDesc();
+    Assert.assertNotNull("Role should not be null", roleDesc);
+    Assert.assertEquals(RoleOperation.SHOW_ROLE_GRANT, roleDesc.getOperation());
+    Assert.assertEquals(PrincipalType.USER, roleDesc.getPrincipalType());
+    Assert.assertEquals(USER, roleDesc.getName());
   }
 
   /**

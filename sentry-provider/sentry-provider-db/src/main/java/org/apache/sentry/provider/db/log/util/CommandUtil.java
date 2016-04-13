@@ -46,36 +46,44 @@ public class CommandUtil {
   }
 
   public static String createCmdForRoleAddGroup(String roleName, String groups) {
-    return createCmdForRoleAddOrDeleteGroup(roleName, groups, true);
+    return createCmdForRoleGrant(roleName, groups, true, true);
   }
 
   public static String createCmdForRoleDeleteGroup(String roleName, String groups) {
-    return createCmdForRoleAddOrDeleteGroup(roleName, groups, false);
+    return createCmdForRoleGrant(roleName, groups, false, true);
   }
 
-  private static String createCmdForRoleAddOrDeleteGroup(String roleName,
- String groups,
-      boolean isAddGroup) {
+  private static String createCmdForRoleGrant(String roleName, String principals,
+      boolean isGrant, boolean isGroup) {
     StringBuilder sb = new StringBuilder();
-    if (isAddGroup) {
+    if (isGrant) {
       sb.append("GRANT ROLE ");
     } else {
       sb.append("REVOKE ROLE ");
     }
     sb.append(roleName);
-    if (isAddGroup) {
+    if (isGrant) {
       sb.append(" TO ");
     } else {
       sb.append(" FROM ");
     }
 
-    if (!StringUtils.isEmpty(groups)) {
-      sb.append("GROUP ").append(groups);
+    String principalType = isGroup ? "GROUP" : "USER";
+    if (!StringUtils.isEmpty(principals)) {
+      sb.append(principalType).append(" ").append(principals);
     } else {
-      sb = new StringBuilder("Missing group information.");
+      sb = new StringBuilder("Missing " + principalType + " information.");
     }
 
     return sb.toString();
+  }
+
+  public static String createCmdForRoleAddUser(String roleName, String users) {
+    return createCmdForRoleGrant(roleName, users, true, false);
+  }
+
+  public static String createCmdForRoleDeleteUser(String roleName, String users) {
+    return createCmdForRoleGrant(roleName, users, false, false);
   }
 
   public static String createCmdForGrantPrivilege(

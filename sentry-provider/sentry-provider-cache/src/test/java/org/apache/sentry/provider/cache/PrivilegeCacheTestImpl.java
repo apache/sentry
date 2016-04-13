@@ -60,4 +60,9 @@ public class PrivilegeCacheTestImpl implements PrivilegeCache {
       FileUtils.deleteQuietly(baseDir);
     }
   }
+
+  @Override
+  public Set<String> listPrivileges(Set<String> groups, Set<String> users, ActiveRoleSet roleSet) {
+    return backend.getPrivileges(groups, users, roleSet);
+  }
 }

@@ -47,7 +47,13 @@ public class SentryPolicyService {
 
     public TAlterSentryRoleDeleteGroupsResponse alter_sentry_role_delete_groups(TAlterSentryRoleDeleteGroupsRequest request) throws org.apache.thrift.TException;
 
+    public TAlterSentryRoleAddUsersResponse alter_sentry_role_add_users(TAlterSentryRoleAddUsersRequest request) throws org.apache.thrift.TException;
+
+    public TAlterSentryRoleDeleteUsersResponse alter_sentry_role_delete_users(TAlterSentryRoleDeleteUsersRequest request) throws org.apache.thrift.TException;
+
     public TListSentryRolesResponse list_sentry_roles_by_group(TListSentryRolesRequest request) throws org.apache.thrift.TException;
+
+    public TListSentryRolesResponse list_sentry_roles_by_user(TListSentryRolesForUserRequest request) throws org.apache.thrift.TException;
 
     public TListSentryPrivilegesResponse list_sentry_privileges_by_role(TListSentryPrivilegesRequest request) throws org.apache.thrift.TException;
 
@@ -81,7 +87,13 @@ public class SentryPolicyService {
 
     public void alter_sentry_role_delete_groups(TAlterSentryRoleDeleteGroupsRequest request, org.apache.thrift.async.AsyncMethodCallback<AsyncClient.alter_sentry_role_delete_groups_call> resultHandler) throws org.apache.thrift.TException;
 
+    public void alter_sentry_role_add_users(TAlterSentryRoleAddUsersRequest request, org.apache.thrift.async.AsyncMethodCallback<AsyncClient.alter_sentry_role_add_users_call> resultHandler) throws org.apache.thrift.TException;
+
+    public void alter_sentry_role_delete_users(TAlterSentryRoleDeleteUsersRequest request, org.apache.thrift.async.AsyncMethodCallback<AsyncClient.alter_sentry_role_delete_users_call> resultHandler) throws org.apache.thrift.TException;
+
     public void list_sentry_roles_by_group(TListSentryRolesRequest request, org.apache.thrift.async.AsyncMethodCallback<AsyncClient.list_sentry_roles_by_group_call> resultHandler) throws org.apache.thrift.TException;
+
+    public void list_sentry_roles_by_user(TListSentryRolesForUserRequest request, org.apache.thrift.async.AsyncMethodCallback<AsyncClient.list_sentry_roles_by_user_call> resultHandler) throws org.apache.thrift.TException;
 
     public void list_sentry_privileges_by_role(TListSentryPrivilegesRequest request, org.apache.thrift.async.AsyncMethodCallback<AsyncClient.list_sentry_privileges_by_role_call> resultHandler) throws org.apache.thrift.TException;
 
@@ -259,6 +271,52 @@ public class SentryPolicyService {
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "alter_sentry_role_delete_groups failed: unknown result");
     }
 
+    public TAlterSentryRoleAddUsersResponse alter_sentry_role_add_users(TAlterSentryRoleAddUsersRequest request) throws org.apache.thrift.TException
+    {
+      send_alter_sentry_role_add_users(request);
+      return recv_alter_sentry_role_add_users();
+    }
+
+    public void send_alter_sentry_role_add_users(TAlterSentryRoleAddUsersRequest request) throws org.apache.thrift.TException
+    {
+      alter_sentry_role_add_users_args args = new alter_sentry_role_add_users_args();
+      args.setRequest(request);
+      sendBase("alter_sentry_role_add_users", args);
+    }
+
+    public TAlterSentryRoleAddUsersResponse recv_alter_sentry_role_add_users() throws org.apache.thrift.TException
+    {
+      alter_sentry_role_add_users_result result = new alter_sentry_role_add_users_result();
+      receiveBase(result, "alter_sentry_role_add_users");
+      if (result.isSetSuccess()) {
+        return result.success;
+      }
+      throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "alter_sentry_role_add_users failed: unknown result");
+    }
+
+    public TAlterSentryRoleDeleteUsersResponse alter_sentry_role_delete_users(TAlterSentryRoleDeleteUsersRequest request) throws org.apache.thrift.TException
+    {
+      send_alter_sentry_role_delete_users(request);
+      return recv_alter_sentry_role_delete_users();
+    }
+
+    public void send_alter_sentry_role_delete_users(TAlterSentryRoleDeleteUsersRequest request) throws org.apache.thrift.TException
+    {
+      alter_sentry_role_delete_users_args args = new alter_sentry_role_delete_users_args();
+      args.setRequest(request);
+      sendBase("alter_sentry_role_delete_users", args);
+    }
+
+    public TAlterSentryRoleDeleteUsersResponse recv_alter_sentry_role_delete_users() throws org.apache.thrift.TException
+    {
+      alter_sentry_role_delete_users_result result = new alter_sentry_role_delete_users_result();
+      receiveBase(result, "alter_sentry_role_delete_users");
+      if (result.isSetSuccess()) {
+        return result.success;
+      }
+      throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "alter_sentry_role_delete_users failed: unknown result");
+    }
+
     public TListSentryRolesResponse list_sentry_roles_by_group(TListSentryRolesRequest request) throws org.apache.thrift.TException
     {
       send_list_sentry_roles_by_group(request);
@@ -280,6 +338,29 @@ public class SentryPolicyService {
         return result.success;
       }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "list_sentry_roles_by_group failed: unknown result");
+    }
+
+    public TListSentryRolesResponse list_sentry_roles_by_user(TListSentryRolesForUserRequest request) throws org.apache.thrift.TException
+    {
+      send_list_sentry_roles_by_user(request);
+      return recv_list_sentry_roles_by_user();
+    }
+
+    public void send_list_sentry_roles_by_user(TListSentryRolesForUserRequest request) throws org.apache.thrift.TException
+    {
+      list_sentry_roles_by_user_args args = new list_sentry_roles_by_user_args();
+      args.setRequest(request);
+      sendBase("list_sentry_roles_by_user", args);
+    }
+
+    public TListSentryRolesResponse recv_list_sentry_roles_by_user() throws org.apache.thrift.TException
+    {
+      list_sentry_roles_by_user_result result = new list_sentry_roles_by_user_result();
+      receiveBase(result, "list_sentry_roles_by_user");
+      if (result.isSetSuccess()) {
+        return result.success;
+      }
+      throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "list_sentry_roles_by_user failed: unknown result");
     }
 
     public TListSentryPrivilegesResponse list_sentry_privileges_by_role(TListSentryPrivilegesRequest request) throws org.apache.thrift.TException
@@ -676,6 +757,70 @@ public class SentryPolicyService {
       }
     }
 
+    public void alter_sentry_role_add_users(TAlterSentryRoleAddUsersRequest request, org.apache.thrift.async.AsyncMethodCallback<alter_sentry_role_add_users_call> resultHandler) throws org.apache.thrift.TException {
+      checkReady();
+      alter_sentry_role_add_users_call method_call = new alter_sentry_role_add_users_call(request, resultHandler, this, ___protocolFactory, ___transport);
+      this.___currentMethod = method_call;
+      ___manager.call(method_call);
+    }
+
+    public static class alter_sentry_role_add_users_call extends org.apache.thrift.async.TAsyncMethodCall {
+      private TAlterSentryRoleAddUsersRequest request;
+      public alter_sentry_role_add_users_call(TAlterSentryRoleAddUsersRequest request, org.apache.thrift.async.AsyncMethodCallback<alter_sentry_role_add_users_call> resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+        super(client, protocolFactory, transport, resultHandler, false);
+        this.request = request;
+      }
+
+      public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
+        prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("alter_sentry_role_add_users", org.apache.thrift.protocol.TMessageType.CALL, 0));
+        alter_sentry_role_add_users_args args = new alter_sentry_role_add_users_args();
+        args.setRequest(request);
+        args.write(prot);
+        prot.writeMessageEnd();
+      }
+
+      public TAlterSentryRoleAddUsersResponse getResult() throws org.apache.thrift.TException {
+        if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
+          throw new IllegalStateException("Method call not finished!");
+        }
+        org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
+        org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
+        return (new Client(prot)).recv_alter_sentry_role_add_users();
+      }
+    }
+
+    public void alter_sentry_role_delete_users(TAlterSentryRoleDeleteUsersRequest request, org.apache.thrift.async.AsyncMethodCallback<alter_sentry_role_delete_users_call> resultHandler) throws org.apache.thrift.TException {
+      checkReady();
+      alter_sentry_role_delete_users_call method_call = new alter_sentry_role_delete_users_call(request, resultHandler, this, ___protocolFactory, ___transport);
+      this.___currentMethod = method_call;
+      ___manager.call(method_call);
+    }
+
+    public static class alter_sentry_role_delete_users_call extends org.apache.thrift.async.TAsyncMethodCall {
+      private TAlterSentryRoleDeleteUsersRequest request;
+      public alter_sentry_role_delete_users_call(TAlterSentryRoleDeleteUsersRequest request, org.apache.thrift.async.AsyncMethodCallback<alter_sentry_role_delete_users_call> resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+        super(client, protocolFactory, transport, resultHandler, false);
+        this.request = request;
+      }
+
+      public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
+        prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("alter_sentry_role_delete_users", org.apache.thrift.protocol.TMessageType.CALL, 0));
+        alter_sentry_role_delete_users_args args = new alter_sentry_role_delete_users_args();
+        args.setRequest(request);
+        args.write(prot);
+        prot.writeMessageEnd();
+      }
+
+      public TAlterSentryRoleDeleteUsersResponse getResult() throws org.apache.thrift.TException {
+        if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
+          throw new IllegalStateException("Method call not finished!");
+        }
+        org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
+        org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
+        return (new Client(prot)).recv_alter_sentry_role_delete_users();
+      }
+    }
+
     public void list_sentry_roles_by_group(TListSentryRolesRequest request, org.apache.thrift.async.AsyncMethodCallback<list_sentry_roles_by_group_call> resultHandler) throws org.apache.thrift.TException {
       checkReady();
       list_sentry_roles_by_group_call method_call = new list_sentry_roles_by_group_call(request, resultHandler, this, ___protocolFactory, ___transport);
@@ -705,6 +850,38 @@ public class SentryPolicyService {
         org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
         org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
         return (new Client(prot)).recv_list_sentry_roles_by_group();
+      }
+    }
+
+    public void list_sentry_roles_by_user(TListSentryRolesForUserRequest request, org.apache.thrift.async.AsyncMethodCallback<list_sentry_roles_by_user_call> resultHandler) throws org.apache.thrift.TException {
+      checkReady();
+      list_sentry_roles_by_user_call method_call = new list_sentry_roles_by_user_call(request, resultHandler, this, ___protocolFactory, ___transport);
+      this.___currentMethod = method_call;
+      ___manager.call(method_call);
+    }
+
+    public static class list_sentry_roles_by_user_call extends org.apache.thrift.async.TAsyncMethodCall {
+      private TListSentryRolesForUserRequest request;
+      public list_sentry_roles_by_user_call(TListSentryRolesForUserRequest request, org.apache.thrift.async.AsyncMethodCallback<list_sentry_roles_by_user_call> resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+        super(client, protocolFactory, transport, resultHandler, false);
+        this.request = request;
+      }
+
+      public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
+        prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("list_sentry_roles_by_user", org.apache.thrift.protocol.TMessageType.CALL, 0));
+        list_sentry_roles_by_user_args args = new list_sentry_roles_by_user_args();
+        args.setRequest(request);
+        args.write(prot);
+        prot.writeMessageEnd();
+      }
+
+      public TListSentryRolesResponse getResult() throws org.apache.thrift.TException {
+        if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
+          throw new IllegalStateException("Method call not finished!");
+        }
+        org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
+        org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
+        return (new Client(prot)).recv_list_sentry_roles_by_user();
       }
     }
 
@@ -983,7 +1160,10 @@ public class SentryPolicyService {
       processMap.put("alter_sentry_role_revoke_privilege", new alter_sentry_role_revoke_privilege());
       processMap.put("alter_sentry_role_add_groups", new alter_sentry_role_add_groups());
       processMap.put("alter_sentry_role_delete_groups", new alter_sentry_role_delete_groups());
+      processMap.put("alter_sentry_role_add_users", new alter_sentry_role_add_users());
+      processMap.put("alter_sentry_role_delete_users", new alter_sentry_role_delete_users());
       processMap.put("list_sentry_roles_by_group", new list_sentry_roles_by_group());
+      processMap.put("list_sentry_roles_by_user", new list_sentry_roles_by_user());
       processMap.put("list_sentry_privileges_by_role", new list_sentry_privileges_by_role());
       processMap.put("list_sentry_privileges_for_provider", new list_sentry_privileges_for_provider());
       processMap.put("drop_sentry_privilege", new drop_sentry_privilege());
@@ -1115,6 +1295,46 @@ public class SentryPolicyService {
       }
     }
 
+    public static class alter_sentry_role_add_users<I extends Iface> extends org.apache.thrift.ProcessFunction<I, alter_sentry_role_add_users_args> {
+      public alter_sentry_role_add_users() {
+        super("alter_sentry_role_add_users");
+      }
+
+      public alter_sentry_role_add_users_args getEmptyArgsInstance() {
+        return new alter_sentry_role_add_users_args();
+      }
+
+      protected boolean isOneway() {
+        return false;
+      }
+
+      public alter_sentry_role_add_users_result getResult(I iface, alter_sentry_role_add_users_args args) throws org.apache.thrift.TException {
+        alter_sentry_role_add_users_result result = new alter_sentry_role_add_users_result();
+        result.success = iface.alter_sentry_role_add_users(args.request);
+        return result;
+      }
+    }
+
+    public static class alter_sentry_role_delete_users<I extends Iface> extends org.apache.thrift.ProcessFunction<I, alter_sentry_role_delete_users_args> {
+      public alter_sentry_role_delete_users() {
+        super("alter_sentry_role_delete_users");
+      }
+
+      public alter_sentry_role_delete_users_args getEmptyArgsInstance() {
+        return new alter_sentry_role_delete_users_args();
+      }
+
+      protected boolean isOneway() {
+        return false;
+      }
+
+      public alter_sentry_role_delete_users_result getResult(I iface, alter_sentry_role_delete_users_args args) throws org.apache.thrift.TException {
+        alter_sentry_role_delete_users_result result = new alter_sentry_role_delete_users_result();
+        result.success = iface.alter_sentry_role_delete_users(args.request);
+        return result;
+      }
+    }
+
     public static class list_sentry_roles_by_group<I extends Iface> extends org.apache.thrift.ProcessFunction<I, list_sentry_roles_by_group_args> {
       public list_sentry_roles_by_group() {
         super("list_sentry_roles_by_group");
@@ -1131,6 +1351,26 @@ public class SentryPolicyService {
       public list_sentry_roles_by_group_result getResult(I iface, list_sentry_roles_by_group_args args) throws org.apache.thrift.TException {
         list_sentry_roles_by_group_result result = new list_sentry_roles_by_group_result();
         result.success = iface.list_sentry_roles_by_group(args.request);
+        return result;
+      }
+    }
+
+    public static class list_sentry_roles_by_user<I extends Iface> extends org.apache.thrift.ProcessFunction<I, list_sentry_roles_by_user_args> {
+      public list_sentry_roles_by_user() {
+        super("list_sentry_roles_by_user");
+      }
+
+      public list_sentry_roles_by_user_args getEmptyArgsInstance() {
+        return new list_sentry_roles_by_user_args();
+      }
+
+      protected boolean isOneway() {
+        return false;
+      }
+
+      public list_sentry_roles_by_user_result getResult(I iface, list_sentry_roles_by_user_args args) throws org.apache.thrift.TException {
+        list_sentry_roles_by_user_result result = new list_sentry_roles_by_user_result();
+        result.success = iface.list_sentry_roles_by_user(args.request);
         return result;
       }
     }
@@ -5653,6 +5893,1458 @@ public class SentryPolicyService {
 
   }
 
+  public static class alter_sentry_role_add_users_args implements org.apache.thrift.TBase<alter_sentry_role_add_users_args, alter_sentry_role_add_users_args._Fields>, java.io.Serializable, Cloneable   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("alter_sentry_role_add_users_args");
+
+    private static final org.apache.thrift.protocol.TField REQUEST_FIELD_DESC = new org.apache.thrift.protocol.TField("request", org.apache.thrift.protocol.TType.STRUCT, (short)1);
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new alter_sentry_role_add_users_argsStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new alter_sentry_role_add_users_argsTupleSchemeFactory());
+    }
+
+    private TAlterSentryRoleAddUsersRequest request; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      REQUEST((short)1, "request");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 1: // REQUEST
+            return REQUEST;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.REQUEST, new org.apache.thrift.meta_data.FieldMetaData("request", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TAlterSentryRoleAddUsersRequest.class)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(alter_sentry_role_add_users_args.class, metaDataMap);
+    }
+
+    public alter_sentry_role_add_users_args() {
+    }
+
+    public alter_sentry_role_add_users_args(
+      TAlterSentryRoleAddUsersRequest request)
+    {
+      this();
+      this.request = request;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public alter_sentry_role_add_users_args(alter_sentry_role_add_users_args other) {
+      if (other.isSetRequest()) {
+        this.request = new TAlterSentryRoleAddUsersRequest(other.request);
+      }
+    }
+
+    public alter_sentry_role_add_users_args deepCopy() {
+      return new alter_sentry_role_add_users_args(this);
+    }
+
+    @Override
+    public void clear() {
+      this.request = null;
+    }
+
+    public TAlterSentryRoleAddUsersRequest getRequest() {
+      return this.request;
+    }
+
+    public void setRequest(TAlterSentryRoleAddUsersRequest request) {
+      this.request = request;
+    }
+
+    public void unsetRequest() {
+      this.request = null;
+    }
+
+    /** Returns true if field request is set (has been assigned a value) and false otherwise */
+    public boolean isSetRequest() {
+      return this.request != null;
+    }
+
+    public void setRequestIsSet(boolean value) {
+      if (!value) {
+        this.request = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case REQUEST:
+        if (value == null) {
+          unsetRequest();
+        } else {
+          setRequest((TAlterSentryRoleAddUsersRequest)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case REQUEST:
+        return getRequest();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case REQUEST:
+        return isSetRequest();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof alter_sentry_role_add_users_args)
+        return this.equals((alter_sentry_role_add_users_args)that);
+      return false;
+    }
+
+    public boolean equals(alter_sentry_role_add_users_args that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_request = true && this.isSetRequest();
+      boolean that_present_request = true && that.isSetRequest();
+      if (this_present_request || that_present_request) {
+        if (!(this_present_request && that_present_request))
+          return false;
+        if (!this.request.equals(that.request))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      HashCodeBuilder builder = new HashCodeBuilder();
+
+      boolean present_request = true && (isSetRequest());
+      builder.append(present_request);
+      if (present_request)
+        builder.append(request);
+
+      return builder.toHashCode();
+    }
+
+    public int compareTo(alter_sentry_role_add_users_args other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+      alter_sentry_role_add_users_args typedOther = (alter_sentry_role_add_users_args)other;
+
+      lastComparison = Boolean.valueOf(isSetRequest()).compareTo(typedOther.isSetRequest());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetRequest()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.request, typedOther.request);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("alter_sentry_role_add_users_args(");
+      boolean first = true;
+
+      sb.append("request:");
+      if (this.request == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.request);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+      if (request != null) {
+        request.validate();
+      }
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class alter_sentry_role_add_users_argsStandardSchemeFactory implements SchemeFactory {
+      public alter_sentry_role_add_users_argsStandardScheme getScheme() {
+        return new alter_sentry_role_add_users_argsStandardScheme();
+      }
+    }
+
+    private static class alter_sentry_role_add_users_argsStandardScheme extends StandardScheme<alter_sentry_role_add_users_args> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, alter_sentry_role_add_users_args struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            case 1: // REQUEST
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.request = new TAlterSentryRoleAddUsersRequest();
+                struct.request.read(iprot);
+                struct.setRequestIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, alter_sentry_role_add_users_args struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.request != null) {
+          oprot.writeFieldBegin(REQUEST_FIELD_DESC);
+          struct.request.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class alter_sentry_role_add_users_argsTupleSchemeFactory implements SchemeFactory {
+      public alter_sentry_role_add_users_argsTupleScheme getScheme() {
+        return new alter_sentry_role_add_users_argsTupleScheme();
+      }
+    }
+
+    private static class alter_sentry_role_add_users_argsTupleScheme extends TupleScheme<alter_sentry_role_add_users_args> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, alter_sentry_role_add_users_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if (struct.isSetRequest()) {
+          optionals.set(0);
+        }
+        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetRequest()) {
+          struct.request.write(oprot);
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, alter_sentry_role_add_users_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(1);
+        if (incoming.get(0)) {
+          struct.request = new TAlterSentryRoleAddUsersRequest();
+          struct.request.read(iprot);
+          struct.setRequestIsSet(true);
+        }
+      }
+    }
+
+  }
+
+  public static class alter_sentry_role_add_users_result implements org.apache.thrift.TBase<alter_sentry_role_add_users_result, alter_sentry_role_add_users_result._Fields>, java.io.Serializable, Cloneable   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("alter_sentry_role_add_users_result");
+
+    private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRUCT, (short)0);
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new alter_sentry_role_add_users_resultStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new alter_sentry_role_add_users_resultTupleSchemeFactory());
+    }
+
+    private TAlterSentryRoleAddUsersResponse success; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      SUCCESS((short)0, "success");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 0: // SUCCESS
+            return SUCCESS;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TAlterSentryRoleAddUsersResponse.class)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(alter_sentry_role_add_users_result.class, metaDataMap);
+    }
+
+    public alter_sentry_role_add_users_result() {
+    }
+
+    public alter_sentry_role_add_users_result(
+      TAlterSentryRoleAddUsersResponse success)
+    {
+      this();
+      this.success = success;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public alter_sentry_role_add_users_result(alter_sentry_role_add_users_result other) {
+      if (other.isSetSuccess()) {
+        this.success = new TAlterSentryRoleAddUsersResponse(other.success);
+      }
+    }
+
+    public alter_sentry_role_add_users_result deepCopy() {
+      return new alter_sentry_role_add_users_result(this);
+    }
+
+    @Override
+    public void clear() {
+      this.success = null;
+    }
+
+    public TAlterSentryRoleAddUsersResponse getSuccess() {
+      return this.success;
+    }
+
+    public void setSuccess(TAlterSentryRoleAddUsersResponse success) {
+      this.success = success;
+    }
+
+    public void unsetSuccess() {
+      this.success = null;
+    }
+
+    /** Returns true if field success is set (has been assigned a value) and false otherwise */
+    public boolean isSetSuccess() {
+      return this.success != null;
+    }
+
+    public void setSuccessIsSet(boolean value) {
+      if (!value) {
+        this.success = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case SUCCESS:
+        if (value == null) {
+          unsetSuccess();
+        } else {
+          setSuccess((TAlterSentryRoleAddUsersResponse)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case SUCCESS:
+        return getSuccess();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case SUCCESS:
+        return isSetSuccess();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof alter_sentry_role_add_users_result)
+        return this.equals((alter_sentry_role_add_users_result)that);
+      return false;
+    }
+
+    public boolean equals(alter_sentry_role_add_users_result that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_success = true && this.isSetSuccess();
+      boolean that_present_success = true && that.isSetSuccess();
+      if (this_present_success || that_present_success) {
+        if (!(this_present_success && that_present_success))
+          return false;
+        if (!this.success.equals(that.success))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      HashCodeBuilder builder = new HashCodeBuilder();
+
+      boolean present_success = true && (isSetSuccess());
+      builder.append(present_success);
+      if (present_success)
+        builder.append(success);
+
+      return builder.toHashCode();
+    }
+
+    public int compareTo(alter_sentry_role_add_users_result other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+      alter_sentry_role_add_users_result typedOther = (alter_sentry_role_add_users_result)other;
+
+      lastComparison = Boolean.valueOf(isSetSuccess()).compareTo(typedOther.isSetSuccess());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetSuccess()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.success, typedOther.success);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+      }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("alter_sentry_role_add_users_result(");
+      boolean first = true;
+
+      sb.append("success:");
+      if (this.success == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.success);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+      if (success != null) {
+        success.validate();
+      }
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class alter_sentry_role_add_users_resultStandardSchemeFactory implements SchemeFactory {
+      public alter_sentry_role_add_users_resultStandardScheme getScheme() {
+        return new alter_sentry_role_add_users_resultStandardScheme();
+      }
+    }
+
+    private static class alter_sentry_role_add_users_resultStandardScheme extends StandardScheme<alter_sentry_role_add_users_result> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, alter_sentry_role_add_users_result struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            case 0: // SUCCESS
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.success = new TAlterSentryRoleAddUsersResponse();
+                struct.success.read(iprot);
+                struct.setSuccessIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, alter_sentry_role_add_users_result struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.success != null) {
+          oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
+          struct.success.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class alter_sentry_role_add_users_resultTupleSchemeFactory implements SchemeFactory {
+      public alter_sentry_role_add_users_resultTupleScheme getScheme() {
+        return new alter_sentry_role_add_users_resultTupleScheme();
+      }
+    }
+
+    private static class alter_sentry_role_add_users_resultTupleScheme extends TupleScheme<alter_sentry_role_add_users_result> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, alter_sentry_role_add_users_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if (struct.isSetSuccess()) {
+          optionals.set(0);
+        }
+        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetSuccess()) {
+          struct.success.write(oprot);
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, alter_sentry_role_add_users_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(1);
+        if (incoming.get(0)) {
+          struct.success = new TAlterSentryRoleAddUsersResponse();
+          struct.success.read(iprot);
+          struct.setSuccessIsSet(true);
+        }
+      }
+    }
+
+  }
+
+  public static class alter_sentry_role_delete_users_args implements org.apache.thrift.TBase<alter_sentry_role_delete_users_args, alter_sentry_role_delete_users_args._Fields>, java.io.Serializable, Cloneable   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("alter_sentry_role_delete_users_args");
+
+    private static final org.apache.thrift.protocol.TField REQUEST_FIELD_DESC = new org.apache.thrift.protocol.TField("request", org.apache.thrift.protocol.TType.STRUCT, (short)1);
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new alter_sentry_role_delete_users_argsStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new alter_sentry_role_delete_users_argsTupleSchemeFactory());
+    }
+
+    private TAlterSentryRoleDeleteUsersRequest request; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      REQUEST((short)1, "request");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 1: // REQUEST
+            return REQUEST;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.REQUEST, new org.apache.thrift.meta_data.FieldMetaData("request", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TAlterSentryRoleDeleteUsersRequest.class)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(alter_sentry_role_delete_users_args.class, metaDataMap);
+    }
+
+    public alter_sentry_role_delete_users_args() {
+    }
+
+    public alter_sentry_role_delete_users_args(
+      TAlterSentryRoleDeleteUsersRequest request)
+    {
+      this();
+      this.request = request;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public alter_sentry_role_delete_users_args(alter_sentry_role_delete_users_args other) {
+      if (other.isSetRequest()) {
+        this.request = new TAlterSentryRoleDeleteUsersRequest(other.request);
+      }
+    }
+
+    public alter_sentry_role_delete_users_args deepCopy() {
+      return new alter_sentry_role_delete_users_args(this);
+    }
+
+    @Override
+    public void clear() {
+      this.request = null;
+    }
+
+    public TAlterSentryRoleDeleteUsersRequest getRequest() {
+      return this.request;
+    }
+
+    public void setRequest(TAlterSentryRoleDeleteUsersRequest request) {
+      this.request = request;
+    }
+
+    public void unsetRequest() {
+      this.request = null;
+    }
+
+    /** Returns true if field request is set (has been assigned a value) and false otherwise */
+    public boolean isSetRequest() {
+      return this.request != null;
+    }
+
+    public void setRequestIsSet(boolean value) {
+      if (!value) {
+        this.request = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case REQUEST:
+        if (value == null) {
+          unsetRequest();
+        } else {
+          setRequest((TAlterSentryRoleDeleteUsersRequest)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case REQUEST:
+        return getRequest();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case REQUEST:
+        return isSetRequest();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof alter_sentry_role_delete_users_args)
+        return this.equals((alter_sentry_role_delete_users_args)that);
+      return false;
+    }
+
+    public boolean equals(alter_sentry_role_delete_users_args that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_request = true && this.isSetRequest();
+      boolean that_present_request = true && that.isSetRequest();
+      if (this_present_request || that_present_request) {
+        if (!(this_present_request && that_present_request))
+          return false;
+        if (!this.request.equals(that.request))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      HashCodeBuilder builder = new HashCodeBuilder();
+
+      boolean present_request = true && (isSetRequest());
+      builder.append(present_request);
+      if (present_request)
+        builder.append(request);
+
+      return builder.toHashCode();
+    }
+
+    public int compareTo(alter_sentry_role_delete_users_args other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+      alter_sentry_role_delete_users_args typedOther = (alter_sentry_role_delete_users_args)other;
+
+      lastComparison = Boolean.valueOf(isSetRequest()).compareTo(typedOther.isSetRequest());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetRequest()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.request, typedOther.request);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("alter_sentry_role_delete_users_args(");
+      boolean first = true;
+
+      sb.append("request:");
+      if (this.request == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.request);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+      if (request != null) {
+        request.validate();
+      }
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class alter_sentry_role_delete_users_argsStandardSchemeFactory implements SchemeFactory {
+      public alter_sentry_role_delete_users_argsStandardScheme getScheme() {
+        return new alter_sentry_role_delete_users_argsStandardScheme();
+      }
+    }
+
+    private static class alter_sentry_role_delete_users_argsStandardScheme extends StandardScheme<alter_sentry_role_delete_users_args> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, alter_sentry_role_delete_users_args struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            case 1: // REQUEST
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.request = new TAlterSentryRoleDeleteUsersRequest();
+                struct.request.read(iprot);
+                struct.setRequestIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, alter_sentry_role_delete_users_args struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.request != null) {
+          oprot.writeFieldBegin(REQUEST_FIELD_DESC);
+          struct.request.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class alter_sentry_role_delete_users_argsTupleSchemeFactory implements SchemeFactory {
+      public alter_sentry_role_delete_users_argsTupleScheme getScheme() {
+        return new alter_sentry_role_delete_users_argsTupleScheme();
+      }
+    }
+
+    private static class alter_sentry_role_delete_users_argsTupleScheme extends TupleScheme<alter_sentry_role_delete_users_args> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, alter_sentry_role_delete_users_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if (struct.isSetRequest()) {
+          optionals.set(0);
+        }
+        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetRequest()) {
+          struct.request.write(oprot);
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, alter_sentry_role_delete_users_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(1);
+        if (incoming.get(0)) {
+          struct.request = new TAlterSentryRoleDeleteUsersRequest();
+          struct.request.read(iprot);
+          struct.setRequestIsSet(true);
+        }
+      }
+    }
+
+  }
+
+  public static class alter_sentry_role_delete_users_result implements org.apache.thrift.TBase<alter_sentry_role_delete_users_result, alter_sentry_role_delete_users_result._Fields>, java.io.Serializable, Cloneable   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("alter_sentry_role_delete_users_result");
+
+    private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRUCT, (short)0);
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new alter_sentry_role_delete_users_resultStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new alter_sentry_role_delete_users_resultTupleSchemeFactory());
+    }
+
+    private TAlterSentryRoleDeleteUsersResponse success; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      SUCCESS((short)0, "success");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 0: // SUCCESS
+            return SUCCESS;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TAlterSentryRoleDeleteUsersResponse.class)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(alter_sentry_role_delete_users_result.class, metaDataMap);
+    }
+
+    public alter_sentry_role_delete_users_result() {
+    }
+
+    public alter_sentry_role_delete_users_result(
+      TAlterSentryRoleDeleteUsersResponse success)
+    {
+      this();
+      this.success = success;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public alter_sentry_role_delete_users_result(alter_sentry_role_delete_users_result other) {
+      if (other.isSetSuccess()) {
+        this.success = new TAlterSentryRoleDeleteUsersResponse(other.success);
+      }
+    }
+
+    public alter_sentry_role_delete_users_result deepCopy() {
+      return new alter_sentry_role_delete_users_result(this);
+    }
+
+    @Override
+    public void clear() {
+      this.success = null;
+    }
+
+    public TAlterSentryRoleDeleteUsersResponse getSuccess() {
+      return this.success;
+    }
+
+    public void setSuccess(TAlterSentryRoleDeleteUsersResponse success) {
+      this.success = success;
+    }
+
+    public void unsetSuccess() {
+      this.success = null;
+    }
+
+    /** Returns true if field success is set (has been assigned a value) and false otherwise */
+    public boolean isSetSuccess() {
+      return this.success != null;
+    }
+
+    public void setSuccessIsSet(boolean value) {
+      if (!value) {
+        this.success = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case SUCCESS:
+        if (value == null) {
+          unsetSuccess();
+        } else {
+          setSuccess((TAlterSentryRoleDeleteUsersResponse)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case SUCCESS:
+        return getSuccess();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case SUCCESS:
+        return isSetSuccess();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof alter_sentry_role_delete_users_result)
+        return this.equals((alter_sentry_role_delete_users_result)that);
+      return false;
+    }
+
+    public boolean equals(alter_sentry_role_delete_users_result that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_success = true && this.isSetSuccess();
+      boolean that_present_success = true && that.isSetSuccess();
+      if (this_present_success || that_present_success) {
+        if (!(this_present_success && that_present_success))
+          return false;
+        if (!this.success.equals(that.success))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      HashCodeBuilder builder = new HashCodeBuilder();
+
+      boolean present_success = true && (isSetSuccess());
+      builder.append(present_success);
+      if (present_success)
+        builder.append(success);
+
+      return builder.toHashCode();
+    }
+
+    public int compareTo(alter_sentry_role_delete_users_result other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+      alter_sentry_role_delete_users_result typedOther = (alter_sentry_role_delete_users_result)other;
+
+      lastComparison = Boolean.valueOf(isSetSuccess()).compareTo(typedOther.isSetSuccess());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetSuccess()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.success, typedOther.success);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+      }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("alter_sentry_role_delete_users_result(");
+      boolean first = true;
+
+      sb.append("success:");
+      if (this.success == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.success);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+      if (success != null) {
+        success.validate();
+      }
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class alter_sentry_role_delete_users_resultStandardSchemeFactory implements SchemeFactory {
+      public alter_sentry_role_delete_users_resultStandardScheme getScheme() {
+        return new alter_sentry_role_delete_users_resultStandardScheme();
+      }
+    }
+
+    private static class alter_sentry_role_delete_users_resultStandardScheme extends StandardScheme<alter_sentry_role_delete_users_result> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, alter_sentry_role_delete_users_result struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            case 0: // SUCCESS
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.success = new TAlterSentryRoleDeleteUsersResponse();
+                struct.success.read(iprot);
+                struct.setSuccessIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, alter_sentry_role_delete_users_result struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.success != null) {
+          oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
+          struct.success.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class alter_sentry_role_delete_users_resultTupleSchemeFactory implements SchemeFactory {
+      public alter_sentry_role_delete_users_resultTupleScheme getScheme() {
+        return new alter_sentry_role_delete_users_resultTupleScheme();
+      }
+    }
+
+    private static class alter_sentry_role_delete_users_resultTupleScheme extends TupleScheme<alter_sentry_role_delete_users_result> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, alter_sentry_role_delete_users_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if (struct.isSetSuccess()) {
+          optionals.set(0);
+        }
+        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetSuccess()) {
+          struct.success.write(oprot);
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, alter_sentry_role_delete_users_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(1);
+        if (incoming.get(0)) {
+          struct.success = new TAlterSentryRoleDeleteUsersResponse();
+          struct.success.read(iprot);
+          struct.setSuccessIsSet(true);
+        }
+      }
+    }
+
+  }
+
   public static class list_sentry_roles_by_group_args implements org.apache.thrift.TBase<list_sentry_roles_by_group_args, list_sentry_roles_by_group_args._Fields>, java.io.Serializable, Cloneable   {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("list_sentry_roles_by_group_args");
 
@@ -6367,6 +8059,732 @@ public class SentryPolicyService {
 
       @Override
       public void read(org.apache.thrift.protocol.TProtocol prot, list_sentry_roles_by_group_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(1);
+        if (incoming.get(0)) {
+          struct.success = new TListSentryRolesResponse();
+          struct.success.read(iprot);
+          struct.setSuccessIsSet(true);
+        }
+      }
+    }
+
+  }
+
+  public static class list_sentry_roles_by_user_args implements org.apache.thrift.TBase<list_sentry_roles_by_user_args, list_sentry_roles_by_user_args._Fields>, java.io.Serializable, Cloneable   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("list_sentry_roles_by_user_args");
+
+    private static final org.apache.thrift.protocol.TField REQUEST_FIELD_DESC = new org.apache.thrift.protocol.TField("request", org.apache.thrift.protocol.TType.STRUCT, (short)1);
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new list_sentry_roles_by_user_argsStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new list_sentry_roles_by_user_argsTupleSchemeFactory());
+    }
+
+    private TListSentryRolesForUserRequest request; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      REQUEST((short)1, "request");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 1: // REQUEST
+            return REQUEST;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.REQUEST, new org.apache.thrift.meta_data.FieldMetaData("request", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TListSentryRolesForUserRequest.class)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(list_sentry_roles_by_user_args.class, metaDataMap);
+    }
+
+    public list_sentry_roles_by_user_args() {
+    }
+
+    public list_sentry_roles_by_user_args(
+      TListSentryRolesForUserRequest request)
+    {
+      this();
+      this.request = request;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public list_sentry_roles_by_user_args(list_sentry_roles_by_user_args other) {
+      if (other.isSetRequest()) {
+        this.request = new TListSentryRolesForUserRequest(other.request);
+      }
+    }
+
+    public list_sentry_roles_by_user_args deepCopy() {
+      return new list_sentry_roles_by_user_args(this);
+    }
+
+    @Override
+    public void clear() {
+      this.request = null;
+    }
+
+    public TListSentryRolesForUserRequest getRequest() {
+      return this.request;
+    }
+
+    public void setRequest(TListSentryRolesForUserRequest request) {
+      this.request = request;
+    }
+
+    public void unsetRequest() {
+      this.request = null;
+    }
+
+    /** Returns true if field request is set (has been assigned a value) and false otherwise */
+    public boolean isSetRequest() {
+      return this.request != null;
+    }
+
+    public void setRequestIsSet(boolean value) {
+      if (!value) {
+        this.request = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case REQUEST:
+        if (value == null) {
+          unsetRequest();
+        } else {
+          setRequest((TListSentryRolesForUserRequest)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case REQUEST:
+        return getRequest();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case REQUEST:
+        return isSetRequest();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof list_sentry_roles_by_user_args)
+        return this.equals((list_sentry_roles_by_user_args)that);
+      return false;
+    }
+
+    public boolean equals(list_sentry_roles_by_user_args that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_request = true && this.isSetRequest();
+      boolean that_present_request = true && that.isSetRequest();
+      if (this_present_request || that_present_request) {
+        if (!(this_present_request && that_present_request))
+          return false;
+        if (!this.request.equals(that.request))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      HashCodeBuilder builder = new HashCodeBuilder();
+
+      boolean present_request = true && (isSetRequest());
+      builder.append(present_request);
+      if (present_request)
+        builder.append(request);
+
+      return builder.toHashCode();
+    }
+
+    public int compareTo(list_sentry_roles_by_user_args other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+      list_sentry_roles_by_user_args typedOther = (list_sentry_roles_by_user_args)other;
+
+      lastComparison = Boolean.valueOf(isSetRequest()).compareTo(typedOther.isSetRequest());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetRequest()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.request, typedOther.request);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("list_sentry_roles_by_user_args(");
+      boolean first = true;
+
+      sb.append("request:");
+      if (this.request == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.request);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+      if (request != null) {
+        request.validate();
+      }
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class list_sentry_roles_by_user_argsStandardSchemeFactory implements SchemeFactory {
+      public list_sentry_roles_by_user_argsStandardScheme getScheme() {
+        return new list_sentry_roles_by_user_argsStandardScheme();
+      }
+    }
+
+    private static class list_sentry_roles_by_user_argsStandardScheme extends StandardScheme<list_sentry_roles_by_user_args> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, list_sentry_roles_by_user_args struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            case 1: // REQUEST
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.request = new TListSentryRolesForUserRequest();
+                struct.request.read(iprot);
+                struct.setRequestIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, list_sentry_roles_by_user_args struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.request != null) {
+          oprot.writeFieldBegin(REQUEST_FIELD_DESC);
+          struct.request.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class list_sentry_roles_by_user_argsTupleSchemeFactory implements SchemeFactory {
+      public list_sentry_roles_by_user_argsTupleScheme getScheme() {
+        return new list_sentry_roles_by_user_argsTupleScheme();
+      }
+    }
+
+    private static class list_sentry_roles_by_user_argsTupleScheme extends TupleScheme<list_sentry_roles_by_user_args> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, list_sentry_roles_by_user_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if (struct.isSetRequest()) {
+          optionals.set(0);
+        }
+        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetRequest()) {
+          struct.request.write(oprot);
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, list_sentry_roles_by_user_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(1);
+        if (incoming.get(0)) {
+          struct.request = new TListSentryRolesForUserRequest();
+          struct.request.read(iprot);
+          struct.setRequestIsSet(true);
+        }
+      }
+    }
+
+  }
+
+  public static class list_sentry_roles_by_user_result implements org.apache.thrift.TBase<list_sentry_roles_by_user_result, list_sentry_roles_by_user_result._Fields>, java.io.Serializable, Cloneable   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("list_sentry_roles_by_user_result");
+
+    private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRUCT, (short)0);
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new list_sentry_roles_by_user_resultStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new list_sentry_roles_by_user_resultTupleSchemeFactory());
+    }
+
+    private TListSentryRolesResponse success; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      SUCCESS((short)0, "success");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 0: // SUCCESS
+            return SUCCESS;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TListSentryRolesResponse.class)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(list_sentry_roles_by_user_result.class, metaDataMap);
+    }
+
+    public list_sentry_roles_by_user_result() {
+    }
+
+    public list_sentry_roles_by_user_result(
+      TListSentryRolesResponse success)
+    {
+      this();
+      this.success = success;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public list_sentry_roles_by_user_result(list_sentry_roles_by_user_result other) {
+      if (other.isSetSuccess()) {
+        this.success = new TListSentryRolesResponse(other.success);
+      }
+    }
+
+    public list_sentry_roles_by_user_result deepCopy() {
+      return new list_sentry_roles_by_user_result(this);
+    }
+
+    @Override
+    public void clear() {
+      this.success = null;
+    }
+
+    public TListSentryRolesResponse getSuccess() {
+      return this.success;
+    }
+
+    public void setSuccess(TListSentryRolesResponse success) {
+      this.success = success;
+    }
+
+    public void unsetSuccess() {
+      this.success = null;
+    }
+
+    /** Returns true if field success is set (has been assigned a value) and false otherwise */
+    public boolean isSetSuccess() {
+      return this.success != null;
+    }
+
+    public void setSuccessIsSet(boolean value) {
+      if (!value) {
+        this.success = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      case SUCCESS:
+        if (value == null) {
+          unsetSuccess();
+        } else {
+          setSuccess((TListSentryRolesResponse)value);
+        }
+        break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      case SUCCESS:
+        return getSuccess();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      case SUCCESS:
+        return isSetSuccess();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof list_sentry_roles_by_user_result)
+        return this.equals((list_sentry_roles_by_user_result)that);
+      return false;
+    }
+
+    public boolean equals(list_sentry_roles_by_user_result that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_success = true && this.isSetSuccess();
+      boolean that_present_success = true && that.isSetSuccess();
+      if (this_present_success || that_present_success) {
+        if (!(this_present_success && that_present_success))
+          return false;
+        if (!this.success.equals(that.success))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      HashCodeBuilder builder = new HashCodeBuilder();
+
+      boolean present_success = true && (isSetSuccess());
+      builder.append(present_success);
+      if (present_success)
+        builder.append(success);
+
+      return builder.toHashCode();
+    }
+
+    public int compareTo(list_sentry_roles_by_user_result other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+      list_sentry_roles_by_user_result typedOther = (list_sentry_roles_by_user_result)other;
+
+      lastComparison = Boolean.valueOf(isSetSuccess()).compareTo(typedOther.isSetSuccess());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetSuccess()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.success, typedOther.success);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+      }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("list_sentry_roles_by_user_result(");
+      boolean first = true;
+
+      sb.append("success:");
+      if (this.success == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.success);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+      if (success != null) {
+        success.validate();
+      }
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class list_sentry_roles_by_user_resultStandardSchemeFactory implements SchemeFactory {
+      public list_sentry_roles_by_user_resultStandardScheme getScheme() {
+        return new list_sentry_roles_by_user_resultStandardScheme();
+      }
+    }
+
+    private static class list_sentry_roles_by_user_resultStandardScheme extends StandardScheme<list_sentry_roles_by_user_result> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, list_sentry_roles_by_user_result struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            case 0: // SUCCESS
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.success = new TListSentryRolesResponse();
+                struct.success.read(iprot);
+                struct.setSuccessIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, list_sentry_roles_by_user_result struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.success != null) {
+          oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
+          struct.success.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class list_sentry_roles_by_user_resultTupleSchemeFactory implements SchemeFactory {
+      public list_sentry_roles_by_user_resultTupleScheme getScheme() {
+        return new list_sentry_roles_by_user_resultTupleScheme();
+      }
+    }
+
+    private static class list_sentry_roles_by_user_resultTupleScheme extends TupleScheme<list_sentry_roles_by_user_result> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, list_sentry_roles_by_user_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if (struct.isSetSuccess()) {
+          optionals.set(0);
+        }
+        oprot.writeBitSet(optionals, 1);
+        if (struct.isSetSuccess()) {
+          struct.success.write(oprot);
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, list_sentry_roles_by_user_result struct) throws org.apache.thrift.TException {
         TTupleProtocol iprot = (TTupleProtocol) prot;
         BitSet incoming = iprot.readBitSet(1);
         if (incoming.get(0)) {

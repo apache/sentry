@@ -53,6 +53,20 @@ public interface PolicyEngine {
       throws SentryConfigurationException;
 
   /**
+   * Get privileges associated with groups and users. Returns Strings which can be resolved by the
+   * caller. Strings are returned to separate the PolicyFile class from the type of privileges used
+   * in a policy file. Additionally it is possible further processing of the privileges is needed
+   * before resolving to a privilege object.
+   *
+   * @param group name
+   * @param user name
+   * @param active role-set
+   * @return non-null immutable set of privileges
+   */
+  ImmutableSet<String> getAllPrivileges(Set<String> groups, Set<String> users, ActiveRoleSet roleSet)
+      throws SentryConfigurationException;
+
+  /**
    * Get privileges associated with a group. Returns Strings which can be resolved
    * by the caller. Strings are returned to separate the PolicyFile class from the
    * type of privileges used in a policy file. Additionally it is possible further
@@ -64,6 +78,21 @@ public interface PolicyEngine {
    */
   ImmutableSet<String> getPrivileges(Set<String> groups, ActiveRoleSet roleSet, Authorizable... authorizableHierarchy)
       throws SentryConfigurationException;
+
+  /**
+   * Get privileges associated with groups and users. Returns Strings which can be resolved by the
+   * caller. Strings are returned to separate the PolicyFile class from the type of privileges used
+   * in a policy file. Additionally it is possible further processing of the privileges is needed
+   * before resolving to a privilege object.
+   *
+   * @param group name
+   * @param user name
+   * @param active role-set
+   * @param authorizable Hierarchy (Can be null)
+   * @return non-null immutable set of privileges
+   */
+  ImmutableSet<String> getPrivileges(Set<String> groups, Set<String> users, ActiveRoleSet roleSet,
+      Authorizable... authorizableHierarchy) throws SentryConfigurationException;
 
   void close();
 

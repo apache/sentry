@@ -68,4 +68,12 @@ public abstract class NotificationHandler {
     CommitContext context, TAlterSentryRoleDeleteGroupsRequest request,
     TAlterSentryRoleDeleteGroupsResponse response) {
   }
+
+  public void alter_sentry_role_add_users(CommitContext context,
+      TAlterSentryRoleAddUsersRequest request, TAlterSentryRoleAddUsersResponse response) {
+  }
+
+  public void alter_sentry_role_delete_users(CommitContext context,
+      TAlterSentryRoleDeleteUsersRequest request, TAlterSentryRoleDeleteUsersResponse response) {
+  }
 }

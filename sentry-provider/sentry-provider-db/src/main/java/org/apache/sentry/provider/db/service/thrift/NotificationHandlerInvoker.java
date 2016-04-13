@@ -143,4 +143,34 @@ public class NotificationHandlerInvoker extends NotificationHandler {
       }
     }
   }
+
+  @Override
+  public void alter_sentry_role_add_users(CommitContext context,
+      TAlterSentryRoleAddUsersRequest request, TAlterSentryRoleAddUsersResponse response) {
+    for (NotificationHandler handler : handlers) {
+      try {
+        LOGGER.debug("Calling " + handler);
+        handler.alter_sentry_role_add_users(context, new TAlterSentryRoleAddUsersRequest(request),
+            new TAlterSentryRoleAddUsersResponse(response));
+      } catch (Exception ex) {
+        LOGGER.error("Unexpected error in " + handler + ". Request: " + request + ", Response: "
+            + response, ex);
+      }
+    }
+  }
+
+  @Override
+  public void alter_sentry_role_delete_users(CommitContext context,
+      TAlterSentryRoleDeleteUsersRequest request, TAlterSentryRoleDeleteUsersResponse response) {
+    for (NotificationHandler handler : handlers) {
+      try {
+        LOGGER.debug("Calling " + handler);
+        handler.alter_sentry_role_delete_users(context, new TAlterSentryRoleDeleteUsersRequest(
+            request), new TAlterSentryRoleDeleteUsersResponse(response));
+      } catch (Exception ex) {
+        LOGGER.error("Unexpected error in " + handler + ". Request: " + request + ", Response: "
+            + response, ex);
+      }
+    }
+  }
 }

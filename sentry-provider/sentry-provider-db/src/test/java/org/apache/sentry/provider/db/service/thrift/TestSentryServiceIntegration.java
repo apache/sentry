@@ -135,6 +135,232 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
   }
 
   @Test
+  public void testAddDeleteRolesForUser() throws Exception {
+    runTestAsSubject(new TestOperation() {
+      @Override
+      public void runTestAsSubject() throws Exception {
+        String requestorUserName = ADMIN_USER;
+        Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
+        setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+
+        // user1->group1
+        // user2->group1
+        // user3->group1, group2
+        // user4->group2, group3
+        // group1->r1
+        // group2->r2
+        // group3->r2
+        // user2->r3
+        // user4->r3
+        String roleName1 = "r1";
+        String roleName2 = "r2";
+        String roleName3 = "r3";
+        String user1 = "u1";
+        String user2 = "u2";
+        String user3 = "u3";
+        String user4 = "u4";
+        String group1 = "g1";
+        String group2 = "g2";
+        String group3 = "g3";
+        Map<String, Set<String>> userToGroups = Maps.newHashMap();
+        userToGroups.put(user1, Sets.newHashSet(group1));
+        userToGroups.put(user2, Sets.newHashSet(group1));
+        userToGroups.put(user3, Sets.newHashSet(group1, group2));
+        userToGroups.put(user4, Sets.newHashSet(group2, group3));
+
+        setLocalGroupMapping(user1, Sets.newHashSet(group1));
+        setLocalGroupMapping(user2, Sets.newHashSet(group1));
+        setLocalGroupMapping(user3, Sets.newHashSet(group1, group2));
+        setLocalGroupMapping(user4, Sets.newHashSet(group2, group3));
+        writePolicyFile();
+
+        client.dropRoleIfExists(requestorUserName, roleName1);
+        client.dropRoleIfExists(requestorUserName, roleName2);
+        client.dropRoleIfExists(requestorUserName, roleName3);
+        client.createRole(requestorUserName, roleName1);
+        client.createRole(requestorUserName, roleName2);
+        client.createRole(requestorUserName, roleName3);
+
+        client.grantRoleToGroup(requestorUserName, group1, roleName1);
+        client.grantRoleToUser(requestorUserName, user2, roleName2);
+        client.grantRoleToUser(requestorUserName, user3, roleName2);
+        client.grantRoleToUser(requestorUserName, user2, roleName3);
+        client.grantRoleToUsers(requestorUserName, roleName3, Sets.newHashSet(user4));
+        // following test cases also test the grantRoleToUser() and grantRoleToUsers() implicity
+        // admin always can get the role list
+        Set<TSentryRole> roles = client.listRolesByUserName(requestorUserName, user1);
+        assertEquals(0, roles.size());
+        // the role list includes the role for user and the role for user's group
+        roles = client.listRolesByUserName(requestorUserName, user2);
+        assertEquals(2, roles.size());
+        for (TSentryRole role : roles) {
+          assertTrue(roleName2.equals(role.getRoleName()) || roleName3.equals(role.getRoleName()));
+        }
+        // user has 2 groups whose role list are different
+        roles = client.listRolesByUserName(requestorUserName, user3);
+        assertEquals(1, roles.size());
+        for (TSentryRole role : roles) {
+          assertTrue(roleName2.equals(role.getRoleName()));
+        }
+        // user has 2 groups whose role list are the same
+        roles = client.listRolesByUserName(requestorUserName, user4);
+        assertEquals(1, roles.size());
+        for (TSentryRole role : roles) {
+          assertTrue(roleName3.equals(role.getRoleName()));
+        }
+        // user can get his own role list if he isn't an admin
+        roles = client.listRolesByUserName(user3, user3);
+        assertEquals(1, roles.size());
+        // user can't get other's role list if he isn't an admin
+        try {
+          client.listRolesByUserName(user3, user2);
+          fail("SentryAccessDeniedException should be caught.");
+        } catch (SentryAccessDeniedException e) {
+          // excepted exception
+        }
+        // the user's name can't be empty
+        try {
+          client.listRolesByUserName(user3, "");
+          fail("SentryAccessDeniedException should be caught.");
+        } catch (SentryAccessDeniedException e) {
+          // excepted exception
+        }
+        client.revokeRoleFromUser(requestorUserName, user2, roleName3);
+        client.revokeRoleFromUsers(requestorUserName, roleName3, Sets.newHashSet(user4));
+        // test the result of revokeRoleFromUser() and revokeRoleFromUsers()
+        roles = client.listRolesByUserName(requestorUserName, user2);
+        assertEquals(1, roles.size());
+        for (TSentryRole role : roles) {
+          assertTrue(roleName2.equals(role.getRoleName()));
+        }
+        roles = client.listRolesByUserName(requestorUserName, user4);
+        assertEquals(0, roles.size());
+      }
+    });
+  }
+
+  @Test
+  public void testGranRevokePrivilegeForRoleWithUG() throws Exception {
+    runTestAsSubject(new TestOperation() {
+      @Override
+      public void runTestAsSubject() throws Exception {
+        String requestorUserName = ADMIN_USER;
+        Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
+        setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+
+        // user1_1->group1
+        // user1_2->group1
+        // user2_1->group2
+        // user2_2->group2
+        // group1->r1
+        // group2->r2
+        // user1_1->r3
+        // user2_1->r4
+        String roleName1 = "r1";
+        String roleName2 = "r2";
+        String roleName3 = "r3";
+        String roleName4 = "r4";
+        String user1_1 = "u1_1";
+        String user1_2 = "u1_2";
+        String user2_1 = "u2_1";
+        String user2_2 = "u2_2";
+        String group1 = "g1";
+        String group2 = "g2";
+        Map<String, String> userToGroup = Maps.newHashMap();
+        userToGroup.put(user1_1, group1);
+        userToGroup.put(user1_2, group1);
+        userToGroup.put(user2_1, group2);
+        userToGroup.put(user2_2, user2_1);
+
+        Set<String> groupSet = Sets.newHashSet(group1);
+        setLocalGroupMapping(user1_1, groupSet);
+        setLocalGroupMapping(user1_2, groupSet);
+        groupSet = Sets.newHashSet(group2);
+        setLocalGroupMapping(user2_1, groupSet);
+        setLocalGroupMapping(user2_2, groupSet);
+        writePolicyFile();
+
+        client.dropRoleIfExists(requestorUserName, roleName1);
+        client.dropRoleIfExists(requestorUserName, roleName2);
+        client.dropRoleIfExists(requestorUserName, roleName3);
+        client.dropRoleIfExists(requestorUserName, roleName4);
+        client.createRole(requestorUserName, roleName1);
+        client.createRole(requestorUserName, roleName2);
+        client.createRole(requestorUserName, roleName3);
+        client.createRole(requestorUserName, roleName4);
+
+        client.grantRoleToGroup(requestorUserName, group1, roleName1);
+        client.grantRoleToGroup(requestorUserName, group2, roleName2);
+        client.grantRoleToUser(requestorUserName, user1_1, roleName3);
+        client.grantRoleToUsers(requestorUserName, roleName4, Sets.newHashSet(user2_1));
+
+        client
+            .grantTablePrivilege(requestorUserName, roleName1, "server", "db1", "table1_1", "ALL");
+        client
+            .grantTablePrivilege(requestorUserName, roleName1, "server", "db1", "table1_2", "ALL");
+        client
+            .grantTablePrivilege(requestorUserName, roleName2, "server", "db1", "table2_1", "ALL");
+        client
+            .grantTablePrivilege(requestorUserName, roleName2, "server", "db1", "table2_2", "ALL");
+        client
+            .grantTablePrivilege(requestorUserName, roleName3, "server", "db1", "table3_1", "ALL");
+        client
+            .grantTablePrivilege(requestorUserName, roleName3, "server", "db1", "table3_2", "ALL");
+        client
+            .grantTablePrivilege(requestorUserName, roleName4, "server", "db1", "table4_1", "ALL");
+        client
+            .grantTablePrivilege(requestorUserName, roleName4, "server", "db1", "table4_2", "ALL");
+
+        Set<String> listPrivilegesForProvider = client.listPrivilegesForProvider(
+            Sets.newHashSet(group1), Sets.newHashSet(""), ActiveRoleSet.ALL, (Authorizable[]) null);
+        assertEquals("Privilege not correctly assigned to roles !!", Sets.newHashSet(
+            "server=server->db=db1->table=table1_1->action=all",
+            "server=server->db=db1->table=table1_2->action=all"), listPrivilegesForProvider);
+
+        listPrivilegesForProvider = client.listPrivilegesForProvider(
+            Sets.newHashSet(userToGroup.get(user1_2)),
+            Sets.newHashSet(user1_2), ActiveRoleSet.ALL, (Authorizable[]) null);
+        assertEquals("Privilege not correctly assigned to roles !!", Sets.newHashSet(
+            "server=server->db=db1->table=table1_1->action=all",
+            "server=server->db=db1->table=table1_2->action=all"), listPrivilegesForProvider);
+
+        listPrivilegesForProvider = client.listPrivilegesForProvider(
+            Sets.newHashSet(userToGroup.get(user1_1)),
+            Sets.newHashSet(user1_1), ActiveRoleSet.ALL, (Authorizable[]) null);
+        assertEquals("Privilege not correctly assigned to roles !!", Sets.newHashSet(
+            "server=server->db=db1->table=table1_1->action=all",
+            "server=server->db=db1->table=table1_2->action=all",
+            "server=server->db=db1->table=table3_1->action=all",
+            "server=server->db=db1->table=table3_2->action=all"), listPrivilegesForProvider);
+
+        listPrivilegesForProvider = client.listPrivilegesForProvider(Sets.newHashSet(group1),
+            Sets.newHashSet(user1_1, user1_2), ActiveRoleSet.ALL, (Authorizable[]) null);
+        assertEquals("Privilege not correctly assigned to roles !!", Sets.newHashSet(
+            "server=server->db=db1->table=table1_1->action=all",
+            "server=server->db=db1->table=table1_2->action=all",
+            "server=server->db=db1->table=table3_1->action=all",
+            "server=server->db=db1->table=table3_2->action=all"), listPrivilegesForProvider);
+
+        listPrivilegesForProvider = client.listPrivilegesForProvider(
+            Sets.newHashSet(group1, group2), Sets.newHashSet(user1_1, user1_2, user2_1, user2_2),
+            ActiveRoleSet.ALL, (Authorizable[]) null);
+        assertEquals("Privilege not correctly assigned to roles !!", Sets.newHashSet(
+            "server=server->db=db1->table=table1_1->action=all",
+            "server=server->db=db1->table=table1_2->action=all",
+            "server=server->db=db1->table=table2_1->action=all",
+            "server=server->db=db1->table=table2_2->action=all",
+            "server=server->db=db1->table=table3_1->action=all",
+            "server=server->db=db1->table=table3_2->action=all",
+            "server=server->db=db1->table=table4_1->action=all",
+            "server=server->db=db1->table=table4_2->action=all"), listPrivilegesForProvider);
+
+        client.revokeRoleFromUser(requestorUserName, user1_1, roleName3);
+        client.revokeRoleFromUsers(requestorUserName, roleName4, Sets.newHashSet(user2_1));
+      }
+    });
+  }
+
+  @Test
   public void testMultipleRolesSamePrivilege() throws Exception {
     runTestAsSubject(new TestOperation(){
       @Override

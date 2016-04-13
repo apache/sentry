@@ -102,7 +102,7 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
       principalType = PrincipalType.ROLE;
       break;
     }
-    if (principalType != PrincipalType.GROUP) {
+    if (principalType != PrincipalType.GROUP  && principalType != PrincipalType.USER) {
       String msg = SentryHiveConstants.GRANT_REVOKE_NOT_SUPPORTED_FOR_PRINCIPAL + principalType;
       throw new SemanticException(msg);
     }
@@ -241,7 +241,7 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
       roleOwnerName = SessionState.get().getAuthenticator().getUserName();
     }
     for (PrincipalDesc princ : principalDesc) {
-      if (princ.getType() != PrincipalType.GROUP) {
+      if (princ.getType() != PrincipalType.GROUP && princ.getType() != PrincipalType.USER) {
         String msg = SentryHiveConstants.GRANT_REVOKE_NOT_SUPPORTED_ON_OBJECT + princ.getType();
         throw new SemanticException(msg);
       }

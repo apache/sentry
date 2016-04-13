@@ -461,25 +461,25 @@ public class TSentryMappingData implements org.apache.thrift.TBase<TSentryMappin
           case 1: // GROUP_ROLES_MAP
             if (schemeField.type == org.apache.thrift.protocol.TType.MAP) {
               {
-                org.apache.thrift.protocol.TMap _map132 = iprot.readMapBegin();
-                struct.groupRolesMap = new HashMap<String,Set<String>>(2*_map132.size);
-                for (int _i133 = 0; _i133 < _map132.size; ++_i133)
+                org.apache.thrift.protocol.TMap _map156 = iprot.readMapBegin();
+                struct.groupRolesMap = new HashMap<String,Set<String>>(2*_map156.size);
+                for (int _i157 = 0; _i157 < _map156.size; ++_i157)
                 {
-                  String _key134; // required
-                  Set<String> _val135; // required
-                  _key134 = iprot.readString();
+                  String _key158; // required
+                  Set<String> _val159; // required
+                  _key158 = iprot.readString();
                   {
-                    org.apache.thrift.protocol.TSet _set136 = iprot.readSetBegin();
-                    _val135 = new HashSet<String>(2*_set136.size);
-                    for (int _i137 = 0; _i137 < _set136.size; ++_i137)
+                    org.apache.thrift.protocol.TSet _set160 = iprot.readSetBegin();
+                    _val159 = new HashSet<String>(2*_set160.size);
+                    for (int _i161 = 0; _i161 < _set160.size; ++_i161)
                     {
-                      String _elem138; // required
-                      _elem138 = iprot.readString();
-                      _val135.add(_elem138);
+                      String _elem162; // required
+                      _elem162 = iprot.readString();
+                      _val159.add(_elem162);
                     }
                     iprot.readSetEnd();
                   }
-                  struct.groupRolesMap.put(_key134, _val135);
+                  struct.groupRolesMap.put(_key158, _val159);
                 }
                 iprot.readMapEnd();
               }
@@ -491,26 +491,26 @@ public class TSentryMappingData implements org.apache.thrift.TBase<TSentryMappin
           case 2: // ROLE_PRIVILEGES_MAP
             if (schemeField.type == org.apache.thrift.protocol.TType.MAP) {
               {
-                org.apache.thrift.protocol.TMap _map139 = iprot.readMapBegin();
-                struct.rolePrivilegesMap = new HashMap<String,Set<TSentryPrivilege>>(2*_map139.size);
-                for (int _i140 = 0; _i140 < _map139.size; ++_i140)
+                org.apache.thrift.protocol.TMap _map163 = iprot.readMapBegin();
+                struct.rolePrivilegesMap = new HashMap<String,Set<TSentryPrivilege>>(2*_map163.size);
+                for (int _i164 = 0; _i164 < _map163.size; ++_i164)
                 {
-                  String _key141; // required
-                  Set<TSentryPrivilege> _val142; // required
-                  _key141 = iprot.readString();
+                  String _key165; // required
+                  Set<TSentryPrivilege> _val166; // required
+                  _key165 = iprot.readString();
                   {
-                    org.apache.thrift.protocol.TSet _set143 = iprot.readSetBegin();
-                    _val142 = new HashSet<TSentryPrivilege>(2*_set143.size);
-                    for (int _i144 = 0; _i144 < _set143.size; ++_i144)
+                    org.apache.thrift.protocol.TSet _set167 = iprot.readSetBegin();
+                    _val166 = new HashSet<TSentryPrivilege>(2*_set167.size);
+                    for (int _i168 = 0; _i168 < _set167.size; ++_i168)
                     {
-                      TSentryPrivilege _elem145; // required
-                      _elem145 = new TSentryPrivilege();
-                      _elem145.read(iprot);
-                      _val142.add(_elem145);
+                      TSentryPrivilege _elem169; // required
+                      _elem169 = new TSentryPrivilege();
+                      _elem169.read(iprot);
+                      _val166.add(_elem169);
                     }
                     iprot.readSetEnd();
                   }
-                  struct.rolePrivilegesMap.put(_key141, _val142);
+                  struct.rolePrivilegesMap.put(_key165, _val166);
                 }
                 iprot.readMapEnd();
               }
@@ -537,14 +537,14 @@ public class TSentryMappingData implements org.apache.thrift.TBase<TSentryMappin
           oprot.writeFieldBegin(GROUP_ROLES_MAP_FIELD_DESC);
           {
             oprot.writeMapBegin(new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRING, org.apache.thrift.protocol.TType.SET, struct.groupRolesMap.size()));
-            for (Map.Entry<String, Set<String>> _iter146 : struct.groupRolesMap.entrySet())
+            for (Map.Entry<String, Set<String>> _iter170 : struct.groupRolesMap.entrySet())
             {
-              oprot.writeString(_iter146.getKey());
+              oprot.writeString(_iter170.getKey());
               {
-                oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRING, _iter146.getValue().size()));
-                for (String _iter147 : _iter146.getValue())
+                oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRING, _iter170.getValue().size()));
+                for (String _iter171 : _iter170.getValue())
                 {
-                  oprot.writeString(_iter147);
+                  oprot.writeString(_iter171);
                 }
                 oprot.writeSetEnd();
               }
@@ -559,14 +559,14 @@ public class TSentryMappingData implements org.apache.thrift.TBase<TSentryMappin
           oprot.writeFieldBegin(ROLE_PRIVILEGES_MAP_FIELD_DESC);
           {
             oprot.writeMapBegin(new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRING, org.apache.thrift.protocol.TType.SET, struct.rolePrivilegesMap.size()));
-            for (Map.Entry<String, Set<TSentryPrivilege>> _iter148 : struct.rolePrivilegesMap.entrySet())
+            for (Map.Entry<String, Set<TSentryPrivilege>> _iter172 : struct.rolePrivilegesMap.entrySet())
             {
-              oprot.writeString(_iter148.getKey());
+              oprot.writeString(_iter172.getKey());
               {
-                oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, _iter148.getValue().size()));
-                for (TSentryPrivilege _iter149 : _iter148.getValue())
+                oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, _iter172.getValue().size()));
+                for (TSentryPrivilege _iter173 : _iter172.getValue())
                 {
-                  _iter149.write(oprot);
+                  _iter173.write(oprot);
                 }
                 oprot.writeSetEnd();
               }
@@ -604,14 +604,14 @@ public class TSentryMappingData implements org.apache.thrift.TBase<TSentryMappin
       if (struct.isSetGroupRolesMap()) {
         {
           oprot.writeI32(struct.groupRolesMap.size());
-          for (Map.Entry<String, Set<String>> _iter150 : struct.groupRolesMap.entrySet())
+          for (Map.Entry<String, Set<String>> _iter174 : struct.groupRolesMap.entrySet())
           {
-            oprot.writeString(_iter150.getKey());
+            oprot.writeString(_iter174.getKey());
             {
-              oprot.writeI32(_iter150.getValue().size());
-              for (String _iter151 : _iter150.getValue())
+              oprot.writeI32(_iter174.getValue().size());
+              for (String _iter175 : _iter174.getValue())
               {
-                oprot.writeString(_iter151);
+                oprot.writeString(_iter175);
               }
             }
           }
@@ -620,14 +620,14 @@ public class TSentryMappingData implements org.apache.thrift.TBase<TSentryMappin
       if (struct.isSetRolePrivilegesMap()) {
         {
           oprot.writeI32(struct.rolePrivilegesMap.size());
-          for (Map.Entry<String, Set<TSentryPrivilege>> _iter152 : struct.rolePrivilegesMap.entrySet())
+          for (Map.Entry<String, Set<TSentryPrivilege>> _iter176 : struct.rolePrivilegesMap.entrySet())
           {
-            oprot.writeString(_iter152.getKey());
+            oprot.writeString(_iter176.getKey());
             {
-              oprot.writeI32(_iter152.getValue().size());
-              for (TSentryPrivilege _iter153 : _iter152.getValue())
+              oprot.writeI32(_iter176.getValue().size());
+              for (TSentryPrivilege _iter177 : _iter176.getValue())
               {
-                _iter153.write(oprot);
+                _iter177.write(oprot);
               }
             }
           }
@@ -641,49 +641,49 @@ public class TSentryMappingData implements org.apache.thrift.TBase<TSentryMappin
       BitSet incoming = iprot.readBitSet(2);
       if (incoming.get(0)) {
         {
-          org.apache.thrift.protocol.TMap _map154 = new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRING, org.apache.thrift.protocol.TType.SET, iprot.readI32());
-          struct.groupRolesMap = new HashMap<String,Set<String>>(2*_map154.size);
-          for (int _i155 = 0; _i155 < _map154.size; ++_i155)
+          org.apache.thrift.protocol.TMap _map178 = new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRING, org.apache.thrift.protocol.TType.SET, iprot.readI32());
+          struct.groupRolesMap = new HashMap<String,Set<String>>(2*_map178.size);
+          for (int _i179 = 0; _i179 < _map178.size; ++_i179)
           {
-            String _key156; // required
-            Set<String> _val157; // required
-            _key156 = iprot.readString();
+            String _key180; // required
+            Set<String> _val181; // required
+            _key180 = iprot.readString();
             {
-              org.apache.thrift.protocol.TSet _set158 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRING, iprot.readI32());
-              _val157 = new HashSet<String>(2*_set158.size);
-              for (int _i159 = 0; _i159 < _set158.size; ++_i159)
+              org.apache.thrift.protocol.TSet _set182 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRING, iprot.readI32());
+              _val181 = new HashSet<String>(2*_set182.size);
+              for (int _i183 = 0; _i183 < _set182.size; ++_i183)
               {
-                String _elem160; // required
-                _elem160 = iprot.readString();
-                _val157.add(_elem160);
+                String _elem184; // required
+                _elem184 = iprot.readString();
+                _val181.add(_elem184);
               }
             }
-            struct.groupRolesMap.put(_key156, _val157);
+            struct.groupRolesMap.put(_key180, _val181);
           }
         }
         struct.setGroupRolesMapIsSet(true);
       }
       if (incoming.get(1)) {
         {
-          org.apache.thrift.protocol.TMap _map161 = new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRING, org.apache.thrift.protocol.TType.SET, iprot.readI32());
-          struct.rolePrivilegesMap = new HashMap<String,Set<TSentryPrivilege>>(2*_map161.size);
-          for (int _i162 = 0; _i162 < _map161.size; ++_i162)
+          org.apache.thrift.protocol.TMap _map185 = new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRING, org.apache.thrift.protocol.TType.SET, iprot.readI32());
+          struct.rolePrivilegesMap = new HashMap<String,Set<TSentryPrivilege>>(2*_map185.size);
+          for (int _i186 = 0; _i186 < _map185.size; ++_i186)
           {
-            String _key163; // required
-            Set<TSentryPrivilege> _val164; // required
-            _key163 = iprot.readString();
+            String _key187; // required
+            Set<TSentryPrivilege> _val188; // required
+            _key187 = iprot.readString();
             {
-              org.apache.thrift.protocol.TSet _set165 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
-              _val164 = new HashSet<TSentryPrivilege>(2*_set165.size);
-              for (int _i166 = 0; _i166 < _set165.size; ++_i166)
+              org.apache.thrift.protocol.TSet _set189 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
+              _val188 = new HashSet<TSentryPrivilege>(2*_set189.size);
+              for (int _i190 = 0; _i190 < _set189.size; ++_i190)
               {
-                TSentryPrivilege _elem167; // required
-                _elem167 = new TSentryPrivilege();
-                _elem167.read(iprot);
-                _val164.add(_elem167);
+                TSentryPrivilege _elem191; // required
+                _elem191 = new TSentryPrivilege();
+                _elem191.read(iprot);
+                _val188.add(_elem191);
               }
             }
-            struct.rolePrivilegesMap.put(_key163, _val164);
+            struct.rolePrivilegesMap.put(_key187, _val188);
           }
         }
         struct.setRolePrivilegesMapIsSet(true);
