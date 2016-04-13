@@ -2014,31 +2014,34 @@ public class SentryStore {
     }
   }
 
-  // get all mapping data for [group,role]
+  // get mapping data for [group,role]
   public Map<String, Set<String>> getGroupNameRoleNamesMap() {
+    return getGroupNameRoleNamesMap(null);
+  }
+
+  // get mapping data for [group,role] with the specific roles
+  public Map<String, Set<String>> getGroupNameRoleNamesMap(Set<String> roleNames) {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
     try {
       pm = openTransaction();
-      Query query = pm.newQuery(MSentryGroup.class);
-      List<MSentryGroup> mSentryGroups = (List<MSentryGroup>) query.execute();
-      Map<String, Set<String>> sentryGroupNameRoleNamesMap = Maps.newHashMap();
-      if (mSentryGroups != null) {
-        // change the List<MSentryGroup> -> Map<groupName, Set<roleName>>
-        for (MSentryGroup mSentryGroup : mSentryGroups) {
-          String groupName = mSentryGroup.getGroupName();
-          Set<String> roleNames = Sets.newHashSet();
-          for (MSentryRole mSentryRole : mSentryGroup.getRoles()) {
-            roleNames.add(mSentryRole.getRoleName());
-          }
-          if (roleNames.size() > 0) {
-            sentryGroupNameRoleNamesMap.put(groupName, roleNames);
-          }
+      Query query = pm.newQuery(MSentryRole.class);
+
+      List<String> rolesFiler = new LinkedList<String>();
+      if (roleNames != null) {
+        for (String rName : roleNames) {
+          rolesFiler.add("(roleName == \"" + rName.trim().toLowerCase() + "\")");
         }
       }
+      if (rolesFiler.size() > 0) {
+        query.setFilter(Joiner.on(" || ").join(rolesFiler));
+      }
+
+      List<MSentryRole> mSentryRoles = (List<MSentryRole>) query.execute();
+      Map<String, Set<String>> groupRolesMap = getGroupRolesMap(mSentryRoles);
       commitTransaction(pm);
       rollbackTransaction = false;
-      return sentryGroupNameRoleNamesMap;
+      return groupRolesMap;
     } finally {
       if (rollbackTransaction) {
         rollbackTransaction(pm);
@@ -2046,33 +2049,85 @@ public class SentryStore {
     }
   }
 
+  private Map<String, Set<String>> getGroupRolesMap(List<MSentryRole> mSentryRoles) {
+    Map<String, Set<String>> groupRolesMap = Maps.newHashMap();
+    if (mSentryRoles == null) {
+      return groupRolesMap;
+    }
+    // change the List<MSentryRole> -> Map<groupName, Set<roleName>>
+    for (MSentryRole mSentryRole : mSentryRoles) {
+      Set<MSentryGroup> groups = mSentryRole.getGroups();
+      for (MSentryGroup group : groups) {
+        String groupName = group.getGroupName();
+        Set<String> rNames = groupRolesMap.get(groupName);
+        if (rNames == null) {
+          rNames = new HashSet<String>();
+        }
+        rNames.add(mSentryRole.getRoleName());
+        groupRolesMap.put(groupName, rNames);
+      }
+    }
+    return groupRolesMap;
+  }
+
   // get all mapping data for [role,privilege]
   public Map<String, Set<TSentryPrivilege>> getRoleNameTPrivilegesMap() throws Exception {
+    return getRoleNameTPrivilegesMap(null, null);
+  }
+
+  // get mapping data for [role,privilege] with the specific auth object
+  public Map<String, Set<TSentryPrivilege>> getRoleNameTPrivilegesMap(String dbName,
+        String tableName) throws Exception {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
     try {
       pm = openTransaction();
-      Query query = pm.newQuery(MSentryRole.class);
-      List<MSentryRole> mSentryRoles = (List<MSentryRole>) query.execute();
-      Map<String, Set<TSentryPrivilege>> sentryRolePrivilegesMap = Maps.newHashMap();
-      if (mSentryRoles != null) {
-        // change the List<MSentryRole> -> Map<roleName, Set<TSentryPrivilege>>
-        for (MSentryRole mSentryRole : mSentryRoles) {
-          Set<TSentryPrivilege> privilegeSet = convertToTSentryPrivileges(mSentryRole
-              .getPrivileges());
-          if (privilegeSet != null && !privilegeSet.isEmpty()) {
-            sentryRolePrivilegesMap.put(mSentryRole.getRoleName(), privilegeSet);
-          }
-        }
+      Query query = pm.newQuery(MSentryPrivilege.class);
+
+      List<String> privilegeFiler = new LinkedList<String>();
+      if (!StringUtils.isEmpty(dbName)) {
+        privilegeFiler.add("(dbName == \"" + dbName.trim().toLowerCase() + "\") ");
       }
+      if (!StringUtils.isEmpty(tableName)) {
+        privilegeFiler.add("(tableName == \"" + tableName.trim().toLowerCase() + "\") ");
+      }
+      if (privilegeFiler.size() > 0) {
+        query.setFilter(Joiner.on(" && ").join(privilegeFiler));
+      }
+
+      List<MSentryPrivilege> mSentryPrivileges = (List<MSentryPrivilege>) query.execute();
+      Map<String, Set<TSentryPrivilege>> rolePrivilegesMap =
+              getRolePrivilegesMap(mSentryPrivileges);
       commitTransaction(pm);
       rollbackTransaction = false;
-    return sentryRolePrivilegesMap;
+      return rolePrivilegesMap;
     } finally {
       if (rollbackTransaction) {
         rollbackTransaction(pm);
       }
     }
+  }
+
+  private Map<String, Set<TSentryPrivilege>> getRolePrivilegesMap(
+          List<MSentryPrivilege> mSentryPrivileges) {
+    Map<String, Set<TSentryPrivilege>> rolePrivilegesMap = Maps.newHashMap();
+    if (mSentryPrivileges == null) {
+      return rolePrivilegesMap;
+    }
+    // change the List<MSentryPrivilege> -> Map<roleName, Set<TSentryPrivilege>>
+    for (MSentryPrivilege mSentryPrivilege : mSentryPrivileges) {
+      TSentryPrivilege privilege = convertToTSentryPrivilege(mSentryPrivilege);
+      for (MSentryRole mSentryRole : mSentryPrivilege.getRoles()) {
+        String roleName = mSentryRole.getRoleName();
+        Set<TSentryPrivilege> privileges = rolePrivilegesMap.get(roleName);
+        if (privileges == null) {
+          privileges = new HashSet<TSentryPrivilege>();
+        }
+        privileges.add(privilege);
+        rolePrivilegesMap.put(roleName, privileges);
+      }
+    }
+    return rolePrivilegesMap;
   }
 
   // Get the all exist role names, will return an empty set
