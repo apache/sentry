@@ -293,7 +293,7 @@ public class SentryConfigTool {
     SentryPolicyServiceClient client = SentryServiceClientFactory.create(getAuthzConf());
     // export the sentry mapping data from database to map structure
     Map<String, Map<String, Set<String>>> policyFileMappingData = client
-        .exportPolicy(requestorUserName);
+        .exportPolicy(requestorUserName, null);
     // get the FileFormatter according to the configuration
     SentryPolicyFileFormatter sentryPolicyFileFormatter = SentryPolicyFileFormatFactory
         .createFileFormatter(authzConf);

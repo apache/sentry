@@ -46,6 +46,7 @@ public class TestSentryServiceImportExport extends SentryServiceIntegrationBase 
   public static String PRIVILIEGE6 = "server=server1->db=db1->table=tbl3->column=col1->action=*->grantoption=true";
   public static String PRIVILIEGE7 = "server=server1->db=db1->table=tbl4->column=col1->action=all->grantoption=true";
   public static String PRIVILIEGE8 = "server=server1->uri=hdfs://testserver:9999/path2->action=insert";
+  public static String PRIVILIEGE9 = "server=server1->db=db2->table=tbl1->action=insert";
 
   @BeforeClass
   public static void setup() throws Exception {
@@ -92,7 +93,7 @@ public class TestSentryServiceImportExport extends SentryServiceIntegrationBase 
         policyFileMappingData.put(PolicyFileConstants.ROLES, rolePrivilegesMap);
         client.importPolicy(policyFileMappingData, ADMIN_USER, false);
 
-        Map<String, Map<String, Set<String>>> sentryMappingData = client.exportPolicy(ADMIN_USER);
+        Map<String, Map<String, Set<String>>> sentryMappingData = client.exportPolicy(ADMIN_USER, null);
         validateSentryMappingData(sentryMappingData,
             policyFileMappingData);
       }
@@ -148,7 +149,7 @@ public class TestSentryServiceImportExport extends SentryServiceIntegrationBase 
         exceptedMappingData.get(PolicyFileConstants.ROLES).putAll(
             policyFileMappingData2.get(PolicyFileConstants.ROLES));
 
-        Map<String, Map<String, Set<String>>> sentryMappingData = client.exportPolicy(ADMIN_USER);
+        Map<String, Map<String, Set<String>>> sentryMappingData = client.exportPolicy(ADMIN_USER, null);
         validateSentryMappingData(sentryMappingData, exceptedMappingData);
       }
     });
@@ -216,7 +217,7 @@ public class TestSentryServiceImportExport extends SentryServiceIntegrationBase 
         exceptedMappingData.put(PolicyFileConstants.GROUPS, exceptedRolesMap);
         exceptedMappingData.put(PolicyFileConstants.ROLES, exceptedPrivilegesMap);
 
-        Map<String, Map<String, Set<String>>> sentryMappingData = client.exportPolicy(ADMIN_USER);
+        Map<String, Map<String, Set<String>>> sentryMappingData = client.exportPolicy(ADMIN_USER, null);
         validateSentryMappingData(sentryMappingData, exceptedMappingData);
       }
     });
@@ -238,7 +239,7 @@ public class TestSentryServiceImportExport extends SentryServiceIntegrationBase 
         policyFileMappingData.put(PolicyFileConstants.ROLES, rolePrivilegesMap);
         client.importPolicy(policyFileMappingData, ADMIN_USER, false);
 
-        Map<String, Map<String, Set<String>>> sentryMappingData = client.exportPolicy(ADMIN_USER);
+        Map<String, Map<String, Set<String>>> sentryMappingData = client.exportPolicy(ADMIN_USER, null);
         validateSentryMappingData(sentryMappingData,
             policyFileMappingData);
       }
@@ -293,7 +294,7 @@ public class TestSentryServiceImportExport extends SentryServiceIntegrationBase 
         exceptedMappingData.put(PolicyFileConstants.GROUPS, exceptedRolesMap);
         exceptedMappingData.put(PolicyFileConstants.ROLES, exceptedPrivilegesMap);
 
-        Map<String, Map<String, Set<String>>> sentryMappingData = client.exportPolicy(ADMIN_USER);
+        Map<String, Map<String, Set<String>>> sentryMappingData = client.exportPolicy(ADMIN_USER, null);
         validateSentryMappingData(sentryMappingData, exceptedMappingData);
       }
     });
@@ -362,7 +363,7 @@ public class TestSentryServiceImportExport extends SentryServiceIntegrationBase 
         exceptedMappingData.put(PolicyFileConstants.GROUPS, exceptedRolesMap);
         exceptedMappingData.put(PolicyFileConstants.ROLES, exceptedPrivilegesMap);
 
-        Map<String, Map<String, Set<String>>> sentryMappingData = client.exportPolicy(ADMIN_USER);
+        Map<String, Map<String, Set<String>>> sentryMappingData = client.exportPolicy(ADMIN_USER, null);
         validateSentryMappingData(sentryMappingData, exceptedMappingData);
       }
     });
@@ -409,7 +410,7 @@ public class TestSentryServiceImportExport extends SentryServiceIntegrationBase 
         exceptedMappingData.put(PolicyFileConstants.GROUPS, exceptedRolesMap);
         exceptedMappingData.put(PolicyFileConstants.ROLES, exceptedPrivilegesMap);
 
-        Map<String, Map<String, Set<String>>> sentryMappingData = client.exportPolicy(ADMIN_USER);
+        Map<String, Map<String, Set<String>>> sentryMappingData = client.exportPolicy(ADMIN_USER, null);
         validateSentryMappingData(sentryMappingData, exceptedMappingData);
       }
     });
@@ -458,7 +459,7 @@ public class TestSentryServiceImportExport extends SentryServiceIntegrationBase 
         client.importPolicy(policyFileMappingData2, ADMIN_USER, false);
 
         Map<String, Map<String, Set<String>>> exceptedMappingData = policyFileMappingData2;
-        Map<String, Map<String, Set<String>>> sentryMappingData = client.exportPolicy(ADMIN_USER);
+        Map<String, Map<String, Set<String>>> sentryMappingData = client.exportPolicy(ADMIN_USER, null);
         // all and * should replace the select and insert
         validateSentryMappingData(sentryMappingData, exceptedMappingData);
       }
@@ -484,9 +485,178 @@ public class TestSentryServiceImportExport extends SentryServiceIntegrationBase 
         }
 
         try {
-          client.exportPolicy("no-admin-user");
+          client.exportPolicy("no-admin-user", null);
           fail("non-admin can't do the export.");
         } catch (Exception e) {
+          // excepted exception
+        }
+      }
+    });
+  }
+
+  // The following data is imported:
+  // group1=role1
+  // group2=role1,role2
+  // group3=role2,role3
+  // group4=role1,role2,role3
+  // role1=privilege3,privilege4,privilege9
+  // role2=privilege3,privilege4,privilege5,privilege6,privilege7
+  // role3=privilege4,privilege5,privilege6,privilege7,privilege8
+  // Export APIs getRoleNameTPrivilegesMap, getGroupNameRoleNamesMap are tested.
+  @Test
+  public void testExportPolicyWithSpecificObject() throws Exception {
+    runTestAsSubject(new TestOperation() {
+      @Override
+      public void runTestAsSubject() throws Exception {
+        // import the test data
+        Map<String, Map<String, Set<String>>> policyFileMappingData = Maps.newHashMap();
+        Map<String, Set<String>> groupRolesMap = Maps.newHashMap();
+        groupRolesMap.put("group1", Sets.newHashSet("role1"));
+        groupRolesMap.put("group2", Sets.newHashSet("role1", "role2"));
+        groupRolesMap.put("group3", Sets.newHashSet("role2", "role3"));
+        groupRolesMap.put("group4", Sets.newHashSet("role1", "role2", "role3"));
+        Map<String, Set<String>> rolePrivilegesMap1 = Maps.newHashMap();
+        rolePrivilegesMap1.put("role1",
+            Sets.newHashSet(PRIVILIEGE3, PRIVILIEGE4, PRIVILIEGE9));
+        rolePrivilegesMap1.put("role2",
+            Sets.newHashSet(PRIVILIEGE3, PRIVILIEGE4, PRIVILIEGE5,
+            PRIVILIEGE6, PRIVILIEGE7));
+        rolePrivilegesMap1.put("role3",
+            Sets.newHashSet(PRIVILIEGE4, PRIVILIEGE5, PRIVILIEGE6,
+            PRIVILIEGE7, PRIVILIEGE8));
+        policyFileMappingData.put(PolicyFileConstants.GROUPS, groupRolesMap);
+        policyFileMappingData.put(PolicyFileConstants.ROLES, rolePrivilegesMap1);
+        client.importPolicy(policyFileMappingData, ADMIN_USER, true);
+
+        // verify the rolePrivilegesMap and groupRolesMap with null objectPath
+        Map<String, Map<String, Set<String>>> expectedMappingData = Maps.newHashMap();
+        Map<String, Set<String>> expectedGroupRoles = Maps.newHashMap();
+        expectedGroupRoles.put("group1", Sets.newHashSet("role1"));
+        expectedGroupRoles.put("group2", Sets.newHashSet("role1", "role2"));
+        expectedGroupRoles.put("group3", Sets.newHashSet("role2", "role3"));
+        expectedGroupRoles.put("group4", Sets.newHashSet("role1", "role2", "role3"));
+        Map<String, Set<String>> expectedRolePrivileges = Maps.newHashMap();
+        expectedRolePrivileges.put("role1", Sets.newHashSet(
+            PRIVILIEGE3, PRIVILIEGE4, PRIVILIEGE9));
+        expectedRolePrivileges.put("role2", Sets.newHashSet(PRIVILIEGE3, PRIVILIEGE4,
+            PRIVILIEGE5, PRIVILIEGE6, PRIVILIEGE7));
+        expectedRolePrivileges.put("role3", Sets.newHashSet(PRIVILIEGE4,
+            PRIVILIEGE5, PRIVILIEGE6, PRIVILIEGE7, PRIVILIEGE8));
+        expectedMappingData.put(PolicyFileConstants.GROUPS, expectedGroupRoles);
+        expectedMappingData.put(PolicyFileConstants.ROLES, expectedRolePrivileges);
+
+        Map<String, Map<String, Set<String>>> sentryMappingData = client.exportPolicy(ADMIN_USER, null);
+        validateSentryMappingData(sentryMappingData, expectedMappingData);
+
+        // verify the rolePrivilegesMap and groupRolesMap with empty objectPath
+        expectedMappingData = Maps.newHashMap();
+        expectedGroupRoles = Maps.newHashMap();
+        expectedGroupRoles.put("group1", Sets.newHashSet("role1"));
+        expectedGroupRoles.put("group2", Sets.newHashSet("role1", "role2"));
+        expectedGroupRoles.put("group3", Sets.newHashSet("role2", "role3"));
+        expectedGroupRoles.put("group4", Sets.newHashSet("role1", "role2", "role3"));
+        expectedRolePrivileges = Maps.newHashMap();
+        expectedRolePrivileges.put("role1", Sets.newHashSet(
+            PRIVILIEGE3, PRIVILIEGE4, PRIVILIEGE9));
+        expectedRolePrivileges.put("role2", Sets.newHashSet(PRIVILIEGE3, PRIVILIEGE4,
+            PRIVILIEGE5, PRIVILIEGE6, PRIVILIEGE7));
+        expectedRolePrivileges.put("role3", Sets.newHashSet(PRIVILIEGE4,
+            PRIVILIEGE5, PRIVILIEGE6, PRIVILIEGE7, PRIVILIEGE8));
+        expectedMappingData.put(PolicyFileConstants.GROUPS, expectedGroupRoles);
+        expectedMappingData.put(PolicyFileConstants.ROLES, expectedRolePrivileges);
+
+        sentryMappingData = client.exportPolicy(ADMIN_USER, "");
+        validateSentryMappingData(sentryMappingData, expectedMappingData);
+
+        // verify the rolePrivilegesMap and groupRolesMap for db=db1
+        expectedMappingData = Maps.newHashMap();
+        expectedGroupRoles = Maps.newHashMap();
+        expectedGroupRoles.put("group1", Sets.newHashSet("role1"));
+        expectedGroupRoles.put("group2", Sets.newHashSet("role1", "role2"));
+        expectedGroupRoles.put("group3", Sets.newHashSet("role2", "role3"));
+        expectedGroupRoles.put("group4", Sets.newHashSet("role1", "role2", "role3"));
+        expectedRolePrivileges = Maps.newHashMap();
+        expectedRolePrivileges.put("role1", Sets.newHashSet(PRIVILIEGE4));
+        expectedRolePrivileges.put("role2", Sets.newHashSet(PRIVILIEGE4,
+            PRIVILIEGE5, PRIVILIEGE6, PRIVILIEGE7));
+        expectedRolePrivileges.put("role3", Sets.newHashSet(PRIVILIEGE4,
+            PRIVILIEGE5, PRIVILIEGE6, PRIVILIEGE7));
+        expectedMappingData.put(PolicyFileConstants.GROUPS, expectedGroupRoles);
+        expectedMappingData.put(PolicyFileConstants.ROLES, expectedRolePrivileges);
+
+        sentryMappingData = client.exportPolicy(ADMIN_USER, "db=db1");
+        validateSentryMappingData(sentryMappingData, expectedMappingData);
+
+        // verify the rolePrivilegesMap and groupRolesMap for db=db2
+        expectedMappingData = Maps.newHashMap();
+        expectedGroupRoles = Maps.newHashMap();
+        expectedGroupRoles.put("group1", Sets.newHashSet("role1"));
+        expectedGroupRoles.put("group2", Sets.newHashSet("role1", "role2"));
+        expectedGroupRoles.put("group3", Sets.newHashSet("role2"));
+        expectedGroupRoles.put("group4", Sets.newHashSet("role1", "role2"));
+        expectedRolePrivileges = Maps.newHashMap();
+        expectedRolePrivileges.put("role1", Sets.newHashSet(PRIVILIEGE3, PRIVILIEGE9));
+        expectedRolePrivileges.put("role2", Sets.newHashSet(PRIVILIEGE3));
+        expectedMappingData.put(PolicyFileConstants.GROUPS, expectedGroupRoles);
+        expectedMappingData.put(PolicyFileConstants.ROLES, expectedRolePrivileges);
+
+        sentryMappingData = client.exportPolicy(ADMIN_USER, "db=db2");
+        validateSentryMappingData(sentryMappingData, expectedMappingData);
+
+        // verify the rolePrivilegesMap and groupRolesMap for db=db1->table=tbl1
+        expectedMappingData = Maps.newHashMap();
+        expectedGroupRoles = Maps.newHashMap();
+        expectedGroupRoles.put("group1", Sets.newHashSet("role1"));
+        expectedGroupRoles.put("group2", Sets.newHashSet("role1", "role2"));
+        expectedGroupRoles.put("group3", Sets.newHashSet("role2", "role3"));
+        expectedGroupRoles.put("group4", Sets.newHashSet("role1", "role2", "role3"));
+        expectedRolePrivileges = Maps.newHashMap();
+        expectedRolePrivileges.put("role1", Sets.newHashSet(PRIVILIEGE4));
+        expectedRolePrivileges.put("role2", Sets.newHashSet(PRIVILIEGE4));
+        expectedRolePrivileges.put("role3", Sets.newHashSet(PRIVILIEGE4));
+        expectedMappingData.put(PolicyFileConstants.GROUPS, expectedGroupRoles);
+        expectedMappingData.put(PolicyFileConstants.ROLES, expectedRolePrivileges);
+
+        sentryMappingData = client.exportPolicy(ADMIN_USER, "db=db1->table=tbl1");
+        validateSentryMappingData(sentryMappingData, expectedMappingData);
+
+        // verify the rolePrivilegesMap and groupRolesMap for db=db1->table=tbl2
+        expectedMappingData = Maps.newHashMap();
+        expectedGroupRoles = Maps.newHashMap();
+        expectedGroupRoles.put("group2", Sets.newHashSet("role2"));
+        expectedGroupRoles.put("group3", Sets.newHashSet("role2", "role3"));
+        expectedGroupRoles.put("group4", Sets.newHashSet("role2", "role3"));
+        expectedRolePrivileges = Maps.newHashMap();
+        expectedRolePrivileges.put("role2", Sets.newHashSet(PRIVILIEGE5));
+        expectedRolePrivileges.put("role3", Sets.newHashSet(PRIVILIEGE5));
+        expectedMappingData.put(PolicyFileConstants.GROUPS, expectedGroupRoles);
+        expectedMappingData.put(PolicyFileConstants.ROLES, expectedRolePrivileges);
+
+        sentryMappingData = client.exportPolicy(ADMIN_USER, "db=db1->table=tbl2");
+        validateSentryMappingData(sentryMappingData, expectedMappingData);
+
+        // verify the rolePrivilegesMap and groupRolesMap for db=db1->table=tbl1
+        expectedMappingData = Maps.newHashMap();
+        expectedGroupRoles = Maps.newHashMap();
+        expectedGroupRoles.put("group1", Sets.newHashSet("role1"));
+        expectedGroupRoles.put("group2", Sets.newHashSet("role1", "role2"));
+        expectedGroupRoles.put("group3", Sets.newHashSet("role2", "role3"));
+        expectedGroupRoles.put("group4", Sets.newHashSet("role1", "role2", "role3"));
+        expectedRolePrivileges = Maps.newHashMap();
+        expectedRolePrivileges.put("role1", Sets.newHashSet(PRIVILIEGE4, PRIVILIEGE9));
+        expectedRolePrivileges.put("role2", Sets.newHashSet(PRIVILIEGE4));
+        expectedRolePrivileges.put("role3", Sets.newHashSet(PRIVILIEGE4));
+        expectedMappingData.put(PolicyFileConstants.GROUPS, expectedGroupRoles);
+        expectedMappingData.put(PolicyFileConstants.ROLES, expectedRolePrivileges);
+
+        sentryMappingData = client.exportPolicy(ADMIN_USER, "table=tbl1");
+        validateSentryMappingData(sentryMappingData, expectedMappingData);
+
+        // verify the invalid exportObject string
+        try {
+          client.exportPolicy(ADMIN_USER, "invalidString");
+          fail("RuntimeException should be thrown.");
+        } catch (RuntimeException sue) {
           // excepted exception
         }
       }

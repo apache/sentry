@@ -18,7 +18,9 @@
 
 package org.apache.sentry.service.thrift;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.sentry.policy.common.KeyValue;
@@ -60,6 +62,30 @@ public class SentryServiceUtil {
     }
     tSentryPrivilege.setPrivilegeScope(getPrivilegeScope(tSentryPrivilege));
     return tSentryPrivilege;
+  }
+
+  /**
+   * Parse the object path from string to map.
+   * @param objectPath the string format as db=db1->table=tbl1
+   * @return Map
+   */
+  public static Map<String, String> parseObjectPath(String objectPath) {
+    Map<String, String> objectMap = new HashMap<String, String>();
+    if (StringUtils.isEmpty(objectPath)) {
+      return objectMap;
+    }
+    for (String kvStr : PolicyConstants.AUTHORIZABLE_SPLITTER.split(objectPath)) {
+      KeyValue kv = new KeyValue(kvStr);
+      String key = kv.getKey();
+      String value = kv.getValue();
+
+      if (PolicyFileConstants.PRIVILEGE_DATABASE_NAME.equalsIgnoreCase(key)) {
+        objectMap.put(PolicyFileConstants.PRIVILEGE_DATABASE_NAME, value);
+      } else if (PolicyFileConstants.PRIVILEGE_TABLE_NAME.equalsIgnoreCase(key)) {
+        objectMap.put(PolicyFileConstants.PRIVILEGE_TABLE_NAME, value);
+      }
+    }
+    return objectMap;
   }
 
   // for the different hierarchy for hive:

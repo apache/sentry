@@ -31,6 +31,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.SentryUserException;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.common.GroupMappingService;
+import org.apache.sentry.provider.common.PolicyFileConstants;
 import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.provider.db.SentryAlreadyExistsException;
 import org.apache.sentry.provider.db.SentryInvalidInputException;
@@ -46,6 +47,7 @@ import org.apache.sentry.provider.db.service.persistent.HAContext;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.provider.db.service.persistent.ServiceRegister;
 import org.apache.sentry.provider.db.service.thrift.PolicyStoreConstants.PolicyStoreServerConfig;
+import org.apache.sentry.service.thrift.SentryServiceUtil;
 import org.apache.sentry.service.thrift.ServiceConstants;
 import org.apache.sentry.service.thrift.ServiceConstants.ConfUtilties;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
@@ -902,14 +904,32 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     try {
       String requestor = request.getRequestorUserName();
       Set<String> memberGroups = getRequestorGroups(requestor);
+      String objectPath = request.getObjectPath();
+      String databaseName = null;
+      String tableName = null;
+
+      Map<String, String> objectMap =
+          SentryServiceUtil.parseObjectPath(objectPath);
+      databaseName = objectMap.get(PolicyFileConstants.PRIVILEGE_DATABASE_NAME);
+      tableName = objectMap.get(PolicyFileConstants.PRIVILEGE_TABLE_NAME);
+
       if (!inAdminGroups(memberGroups)) {
         // disallow non-admin to import the metadata of sentry
         throw new SentryAccessDeniedException("Access denied to " + requestor
             + " for export the metadata of sentry.");
       }
       TSentryMappingData tSentryMappingData = new TSentryMappingData();
-      tSentryMappingData.setGroupRolesMap(sentryStore.getGroupNameRoleNamesMap());
-      tSentryMappingData.setRolePrivilegesMap(sentryStore.getRoleNameTPrivilegesMap());
+      Map<String, Set<TSentryPrivilege>> rolePrivileges =
+          sentryStore.getRoleNameTPrivilegesMap(databaseName, tableName);
+      tSentryMappingData.setRolePrivilegesMap(rolePrivileges);
+      Set<String> roleNames = rolePrivileges.keySet();
+      // roleNames should be null if databaseName == null and tableName == null
+      if (databaseName == null && tableName == null) {
+        roleNames = null;
+      }
+      tSentryMappingData.setGroupRolesMap(
+          sentryStore.getGroupNameRoleNamesMap(roleNames));
+
       response.setMappingData(tSentryMappingData);
       response.setStatus(Status.OK());
     } catch (Exception e) {

@@ -903,10 +903,11 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
   }
 
   // export the sentry mapping data with map structure
-  public synchronized Map<String, Map<String, Set<String>>> exportPolicy(String requestorUserName)
-      throws SentryUserException {
+  public synchronized Map<String, Map<String, Set<String>>> exportPolicy(String requestorUserName,
+      String objectPath) throws SentryUserException {
     TSentryExportMappingDataRequest request = new TSentryExportMappingDataRequest(
         ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT, requestorUserName);
+    request.setObjectPath(objectPath);
     try {
       TSentryExportMappingDataResponse response = client.export_sentry_mapping_data(request);
       Status.throwIfNotOk(response.getStatus());

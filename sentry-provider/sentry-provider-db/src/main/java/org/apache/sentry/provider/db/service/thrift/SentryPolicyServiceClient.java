@@ -187,6 +187,6 @@ public interface SentryPolicyServiceClient {
       String requestorUserName, boolean isOverwriteRole) throws SentryUserException;
 
   // export the sentry mapping data with map structure
-  Map<String, Map<String, Set<String>>> exportPolicy(String requestorUserName)
+  Map<String, Map<String, Set<String>>> exportPolicy(String requestorUserName, String objectPath)
       throws SentryUserException;
 }
