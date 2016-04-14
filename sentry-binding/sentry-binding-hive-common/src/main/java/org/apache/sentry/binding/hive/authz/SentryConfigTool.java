@@ -76,6 +76,7 @@ public class SentryConfigTool {
   private String passWord = null;
   private String importPolicyFilePath = null;
   private String exportPolicyFilePath = null;
+  private String objectPath = null;
   private boolean listPrivs = false;
   private boolean validate = false;
   private boolean importOverwriteRole = false;
@@ -125,6 +126,14 @@ public class SentryConfigTool {
 
   public void setImportPolicyFilePath(String importPolicyFilePath) {
     this.importPolicyFilePath = importPolicyFilePath;
+  }
+
+  public String getObjectPath() {
+    return objectPath;
+  }
+
+  public void setObjectPath(String objectPath) {
+    this.objectPath = objectPath;
   }
 
   public String getExportPolicyFilePath() {
@@ -293,7 +302,7 @@ public class SentryConfigTool {
     SentryPolicyServiceClient client = SentryServiceClientFactory.create(getAuthzConf());
     // export the sentry mapping data from database to map structure
     Map<String, Map<String, Set<String>>> policyFileMappingData = client
-        .exportPolicy(requestorUserName, null);
+        .exportPolicy(requestorUserName, objectPath);
     // get the FileFormatter according to the configuration
     SentryPolicyFileFormatter sentryPolicyFileFormatter = SentryPolicyFileFormatFactory
         .createFileFormatter(authzConf);
@@ -448,6 +457,7 @@ public class SentryConfigTool {
    *   -I,--import                 Import policy file
    *   -E,--export                 Export policy file
    *   -o,--overwrite              Overwrite the exist role data when do the import
+   *   -b,--objectPath             The path of the object whose privileges will be exported
    * </pre>
    *
    * @param args
@@ -524,6 +534,11 @@ public class SentryConfigTool {
     overwriteOpt.setRequired(false);
     sentryOptions.addOption(overwriteOpt);
 
+    Option objectPathOpt = new Option("b", "objectPath",
+        false, "The path of the object whose privileges will be exported");
+    objectPathOpt.setRequired(false);
+    sentryOptions.addOption(objectPathOpt);
+
     try {
       Parser parser = new GnuParser();
       CommandLine cmd = parser.parse(sentryOptions, args);
@@ -555,6 +570,8 @@ public class SentryConfigTool {
           enableDebug = true;
         } else if (opt.getOpt().equals("o")) {
           setImportOverwriteRole(true);
+        } else if (opt.getOpt().equals("b")) {
+          setObjectPath(opt.getValue());
         }
       }
 

@@ -53,7 +53,6 @@ public class TestPolicyImportExport extends AbstractTestWithStaticConfiguration 
   public static String PRIVILIEGE8 = "server=server1->uri=hdfs://testserver:9999/path2->action=insert";
 
   private SentryConfigTool configTool;
-  private Map<String, Map<String, Set<String>>> policyFileMappingData;
 
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception{
@@ -77,7 +76,7 @@ public class TestPolicyImportExport extends AbstractTestWithStaticConfiguration 
     configTool.importPolicy();
   }
 
-  private void prepareExceptedData() {
+  private Map<String, Map<String, Set<String>>> getExceptedAllExportData() {
     // test data for:
     // [groups]
     // group1=roleImport1,roleImport2
@@ -87,7 +86,7 @@ public class TestPolicyImportExport extends AbstractTestWithStaticConfiguration 
     // roleImport1=privilege1,privilege2,privilege3,privilege4
     // roleImport2=privilege3,privilege4,privilege5,privilege6
     // roleImport3=privilege5,privilege6,privilege7,privilege8
-    policyFileMappingData = Maps.newHashMap();
+    Map<String, Map<String, Set<String>>> policyFileMappingData = Maps.newHashMap();
     Map<String, Set<String>> groupRolesMap = Maps.newHashMap();
     Map<String, Set<String>> rolePrivilegesMap = Maps.newHashMap();
     groupRolesMap.put("group1", Sets.newHashSet("roleimport1", "roleimport2"));
@@ -105,7 +104,33 @@ public class TestPolicyImportExport extends AbstractTestWithStaticConfiguration 
     rolePrivilegesMap.put("adminrole", Sets.newHashSet(PRIVILIEGE1));
     policyFileMappingData.put(PolicyFileConstants.GROUPS, groupRolesMap);
     policyFileMappingData.put(PolicyFileConstants.ROLES, rolePrivilegesMap);
+    return policyFileMappingData;
+  }
 
+  private Map<String, Map<String, Set<String>>> getExceptedDb1ExportData() {
+    // test data for:
+    // [groups]
+    // group1=roleImport1,roleImport2
+    // group2=roleImport1,roleImport2,roleImport3
+    // group3=roleImport2,roleImport3
+    // [roles]
+    // roleImport1=privilege1,privilege2,privilege3,privilege4
+    // roleImport2=privilege3,privilege4,privilege5,privilege6
+    // roleImport3=privilege5,privilege6,privilege7,privilege8
+    Map<String, Map<String, Set<String>>> policyFileMappingData = Maps.newHashMap();
+    Map<String, Set<String>> groupRolesMap = Maps.newHashMap();
+    Map<String, Set<String>> rolePrivilegesMap = Maps.newHashMap();
+    groupRolesMap.put("group1", Sets.newHashSet("roleimport1", "roleimport2"));
+    groupRolesMap.put("group2", Sets.newHashSet("roleimport1", "roleimport2", "roleimport3"));
+    groupRolesMap.put("group3", Sets.newHashSet("roleimport2", "roleimport3"));
+    rolePrivilegesMap.put("roleimport1", Sets.newHashSet(PRIVILIEGE4));
+    rolePrivilegesMap.put("roleimport2",
+        Sets.newHashSet(PRIVILIEGE4, PRIVILIEGE5, PRIVILIEGE6));
+    rolePrivilegesMap.put("roleimport3",
+        Sets.newHashSet(PRIVILIEGE5, PRIVILIEGE6, PRIVILIEGE7));
+    policyFileMappingData.put(PolicyFileConstants.GROUPS, groupRolesMap);
+    policyFileMappingData.put(PolicyFileConstants.ROLES, rolePrivilegesMap);
+    return policyFileMappingData;
   }
 
   @Test
@@ -128,7 +153,16 @@ public class TestPolicyImportExport extends AbstractTestWithStaticConfiguration 
     Map<String, Map<String, Set<String>>> exportMappingData = sentryPolicyFileFormatter.parse(
         exportFile.getAbsolutePath(), configTool.getAuthzConf());
 
-    prepareExceptedData();
+    Map<String, Map<String, Set<String>>> policyFileMappingData =
+        getExceptedAllExportData();
+    validateSentryMappingData(exportMappingData, policyFileMappingData);
+
+    // test export with objectPath db=db1
+    configTool.setObjectPath("db=db1");
+    configTool.exportPolicy();
+    policyFileMappingData = getExceptedDb1ExportData();
+    exportMappingData = sentryPolicyFileFormatter.parse(
+        exportFile.getAbsolutePath(), configTool.getAuthzConf());
     validateSentryMappingData(exportMappingData, policyFileMappingData);
   }
 
