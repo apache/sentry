@@ -117,7 +117,7 @@ public class SentryKafkaAuthorizer implements Authorizer {
     }
     LOG.info("Configuring Sentry KafkaAuthorizer: " + sentry_site);
     final KafkaAuthBindingSingleton instance = KafkaAuthBindingSingleton.getInstance();
-    instance.configure(this.kafkaServiceInstanceName, this.requestorName, sentry_site);
+    instance.configure(this.kafkaServiceInstanceName, this.requestorName, sentry_site, configs);
     this.binding = instance.getAuthBinding();
   }
 

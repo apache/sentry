@@ -121,7 +121,7 @@ public class KafkaWildcardPrivilege implements Privilege {
 
     if (KafkaActionConstant.actionName.equalsIgnoreCase(policyPart.getKey())) { // is action
       return policyPart.getValue().equalsIgnoreCase(KafkaActionConstant.ALL) ||
-          policyPart.equals(requestPart);
+          policyPart.getValue().equalsIgnoreCase(requestPart.getValue());
     } else {
       return policyPart.getValue().equals(requestPart.getValue());
     }

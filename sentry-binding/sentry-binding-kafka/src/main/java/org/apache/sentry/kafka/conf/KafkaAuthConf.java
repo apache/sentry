@@ -30,6 +30,9 @@ public class KafkaAuthConf extends Configuration {
   public static final String KAFKA_SUPER_USERS = "kafka.superusers";
   public static final String KAFKA_SERVICE_INSTANCE_NAME = "sentry.kafka.service.instance";
   public static final String KAFKA_SERVICE_USER_NAME = "sentry.kafka.service.user.name";
+  public static final String KAFKA_PRINCIPAL_HOSTNAME = "sentry.kafka.principal.hostname";
+  public static final String KAFKA_PRINCIPAL_NAME = "sentry.kafka.kerberos.principal";
+  public static final String KAFKA_KEYTAB_FILE_NAME = "sentry.kafka.keytab.file";
 
   /**
    * Config setting definitions
@@ -40,7 +43,10 @@ public class KafkaAuthConf extends Configuration {
     AUTHZ_PROVIDER_BACKEND("sentry.kafka.provider.backend", SentryGenericProviderBackend.class.getName()),
     AUTHZ_POLICY_ENGINE("sentry.kafka.policy.engine", SimpleKafkaPolicyEngine.class.getName()),
     AUTHZ_INSTANCE_NAME(KAFKA_SERVICE_INSTANCE_NAME, "kafka"),
-    AUTHZ_SERVICE_USER_NAME(KAFKA_SERVICE_USER_NAME, "kafka");
+    AUTHZ_SERVICE_USER_NAME(KAFKA_SERVICE_USER_NAME, "kafka"),
+    AUTHZ_PRINCIPAL_HOSTNAME(KAFKA_PRINCIPAL_HOSTNAME, null),
+    AUTHZ_PRINCIPAL_NAME(KAFKA_PRINCIPAL_NAME, null),
+    AUTHZ_KEYTAB_FILE_NAME(KAFKA_KEYTAB_FILE_NAME, null);
 
     private final String varName;
     private final String defaultVal;
