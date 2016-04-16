@@ -18,6 +18,7 @@ package org.apache.sentry.kafka.binding;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Map;
 
 import org.apache.sentry.kafka.conf.KafkaAuthConf;
 import org.slf4j.Logger;
@@ -56,10 +57,10 @@ public class KafkaAuthBindingSingleton {
     return kafkaAuthConf;
   }
 
-  public void configure(String instanceName, String requestorName, String sentry_site) {
+  public void configure(String instanceName, String requestorName, String sentry_site, Map<String, ?> kafkaConfigs) {
     try {
       kafkaAuthConf = loadAuthzConf(sentry_site);
-      binding = new KafkaAuthBinding(instanceName, requestorName, kafkaAuthConf);
+      binding = new KafkaAuthBinding(instanceName, requestorName, kafkaAuthConf, kafkaConfigs);
       log.info("KafkaAuthBinding created successfully");
     } catch (Exception ex) {
       log.error("Unable to create KafkaAuthBinding", ex);

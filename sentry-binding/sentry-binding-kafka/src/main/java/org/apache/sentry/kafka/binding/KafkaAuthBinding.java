@@ -16,6 +16,7 @@
  */
 package org.apache.sentry.kafka.binding;
 
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,6 +35,8 @@ import com.google.common.collect.Sets;
 import kafka.network.RequestChannel;
 import kafka.security.auth.Operation;
 import kafka.security.auth.Resource;
+import org.apache.hadoop.security.SecurityUtil;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.security.auth.KafkaPrincipal;
 import org.apache.sentry.SentryUserException;
@@ -55,6 +58,7 @@ import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericService
 import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryRole;
+import org.apache.sentry.service.thrift.ServiceConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Option;
@@ -64,11 +68,15 @@ import scala.collection.Iterator;
 import scala.collection.JavaConversions;
 import scala.collection.immutable.Map;
 
+import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION;
+
 public class KafkaAuthBinding {
 
     private static final Logger LOG = LoggerFactory.getLogger(KafkaAuthBinding.class);
     private static final String COMPONENT_TYPE = AuthorizationComponent.KAFKA;
     private static final String COMPONENT_NAME = COMPONENT_TYPE;
+
+    private static Boolean kerberosInit;
 
     private final Configuration authConf;
     private final AuthorizationProvider authProvider;
@@ -77,12 +85,14 @@ public class KafkaAuthBinding {
     private ProviderBackend providerBackend;
     private String instanceName;
     private String requestorName;
+    private java.util.Map<String, ?> kafkaConfigs;
 
 
-    public KafkaAuthBinding(String instanceName, String requestorName, Configuration authConf) throws Exception {
+    public KafkaAuthBinding(String instanceName, String requestorName, Configuration authConf, java.util.Map<String, ?> kafkaConfigs) throws Exception {
         this.instanceName = instanceName;
         this.requestorName = requestorName;
         this.authConf = authConf;
+        this.kafkaConfigs = kafkaConfigs;
         this.authProvider = createAuthProvider();
     }
 
@@ -116,6 +126,28 @@ public class KafkaAuthBinding {
             LOG.debug("Using authorization provider " + authProviderName + " with resource "
                 + resourceName + ", policy engine " + policyEngineName + ", provider backend "
                 + providerBackendName);
+        }
+
+        // Initiate kerberos via UserGroupInformation if required
+        if (ServiceConstants.ServerConfig.SECURITY_MODE_KERBEROS.equals(authConf.get(ServiceConstants.ServerConfig.SECURITY_MODE))
+                && kafkaConfigs != null) {
+            String keytabProp = kafkaConfigs.get(AuthzConfVars.AUTHZ_KEYTAB_FILE_NAME.getVar()).toString();
+            String principalProp = kafkaConfigs.get(AuthzConfVars.AUTHZ_PRINCIPAL_NAME.getVar()).toString();
+            if (keytabProp != null && principalProp != null) {
+                String actualHost = kafkaConfigs.get(AuthzConfVars.AUTHZ_PRINCIPAL_HOSTNAME.getVar()).toString();
+                if (actualHost != null) {
+                    principalProp = SecurityUtil.getServerPrincipal(principalProp, actualHost);
+                }
+                initKerberos(keytabProp, principalProp);
+            } else {
+                LOG.debug("Could not initialize Kerberos.\n" +
+                        AuthzConfVars.AUTHZ_KEYTAB_FILE_NAME.getVar() + " set to " + kafkaConfigs.get(AuthzConfVars.AUTHZ_KEYTAB_FILE_NAME.getVar()).toString() + "\n" +
+                        AuthzConfVars.AUTHZ_PRINCIPAL_NAME.getVar() + " set to " + kafkaConfigs.get(AuthzConfVars.AUTHZ_PRINCIPAL_NAME.getVar()).toString());
+            }
+        } else {
+            LOG.debug("Could not initialize Kerberos as no kafka config provided. " +
+                    AuthzConfVars.AUTHZ_KEYTAB_FILE_NAME.getVar() + " and " + AuthzConfVars.AUTHZ_PRINCIPAL_NAME.getVar() +
+                    " are required configs to be able to initialize Kerberos");
         }
 
         // Instantiate the configured providerBackend
@@ -493,6 +525,38 @@ public class KafkaAuthBinding {
             return name;
         } else {
             return principalName;
+        }
+    }
+
+    /**
+     * Initialize kerberos via UserGroupInformation.  Will only attempt to login
+     * during the first request, subsequent calls will have no effect.
+     */
+    private void initKerberos(String keytabFile, String principal) {
+        if (keytabFile == null || keytabFile.length() == 0) {
+            throw new IllegalArgumentException("keytabFile required because kerberos is enabled");
+        }
+        if (principal == null || principal.length() == 0) {
+            throw new IllegalArgumentException("principal required because kerberos is enabled");
+        }
+        synchronized (KafkaAuthBinding.class) {
+            if (kerberosInit == null) {
+                kerberosInit = new Boolean(true);
+                // let's avoid modifying the supplied configuration, just to be conservative
+                final Configuration ugiConf = new Configuration();
+                ugiConf.set(HADOOP_SECURITY_AUTHENTICATION, ServiceConstants.ServerConfig.SECURITY_MODE_KERBEROS);
+                UserGroupInformation.setConfiguration(ugiConf);
+                LOG.info(
+                        "Attempting to acquire kerberos ticket with keytab: {}, principal: {} ",
+                        keytabFile, principal);
+                try {
+                    UserGroupInformation.loginUserFromKeytab(principal, keytabFile);
+                } catch (IOException ioe) {
+                    throw new RuntimeException("Failed to login user with Principal: " + principal +
+                            " and Keytab file: " + keytabFile, ioe);
+                }
+                LOG.info("Got Kerberos ticket");
+            }
         }
     }
 }
