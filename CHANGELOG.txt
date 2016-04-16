@@ -8,6 +8,7 @@ Release Notes - Sentry - Version 1.7.0
     * [SENTRY-542] - Extend SentryPolicyServiceClient to implement grant wrapped privilege info for V2
     * [SENTRY-568] - Implement taskFactory V2 to handle special privilege for Sentry
     * [SENTRY-569] - Workaround some operations for Authorization V2
+    * [SENTRY-589] - Enable dist for authorization V2
     * [SENTRY-592] - Support column level security for V2
     * [SENTRY-603] - Execute on failure hooks for V2
     * [SENTRY-813] - Refactor the AuditMetadataLogEntity to support the audit log for generic mdoel
@@ -182,6 +183,7 @@ Release Notes - Sentry - Version 1.7.0
     * [SENTRY-812] - Generate audit trail for Sentry generic model when authorization metadata change 
     * [SENTRY-906] - Add concurrency sentry client tests
     * [SENTRY-995] - Simple Solr Shell
+    * [SENTRY-1130] - Upgrade Hive plugin v2 for hive 2.0.0
 
 
 ** Task
