@@ -203,7 +203,7 @@
 
 ================================================================================
 
-The Apache Sentry (incubating) distribution includes the following sources/binaries.
+The Apache Sentry distribution includes the following sources/binaries.
 The use of these sources/binaries is subject to the terms and conditions of
 their respective licenses.
 
