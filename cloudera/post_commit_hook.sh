@@ -1,12 +1,29 @@
 #!/bin/bash
+set -x
 echo "Running tests using JDK7"
 
-set -x
 export JAVA7_BUILD=true
 source /mnt/toolchain/toolchain.sh
 
 find . -name test-classes | grep target/test-classes | xargs rm -rf
 
 mvn clean compile package -DskipTests=true
-# Disable tests now, need to enable a subset of tests in future.
-# mvn test
+
+# enable full tests for now
+mvn test --fail-fast -DtestFailureIgnore=false
+
+# validate test status and email failures to author
+res=$?
+if [[ "${res}" -eq 0 ]]; then
+  exit 0
+fi
+if [[ -z "${BUILD_URL}" ]] || [[ "${BUILD_URL}xxx" = "xxx" ]] ; then
+  BUILD_URL="http://unittest.jenkins.cloudera.com/job/CDH5-Sentry-Post-Commit/lastBuild"
+fi
+echo "Please check out details here: ${BUILD_URL}" > /tmp/sentry-unit-tests.log
+EML="sentry-jenkins@cloudera.com"
+if [[ ! -z "${GIT_BRANCH}" ]] && [[ "${GIT_BRANCH}xxx" != "xxx" ]] ; then
+  EML=$(git shortlog ${GIT_BRANCH} -1 -se | awk -F"<" '{print $2}' | awk -F">" '{print $1}')
+fi
+mail -s "Most Recent Sentry Post Commit Job Failed" ${EML} < /tmp/sentry-unit-tests.log
+exit ${res}
