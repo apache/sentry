@@ -187,6 +187,9 @@ public abstract class AbstractTestWithStaticConfiguration {
   protected static SentryPolicyServiceClient client;
   private static boolean startSentry = new Boolean(System.getProperty(EXTERNAL_SENTRY_SERVICE, "false"));
 
+  protected static boolean enableHDFSAcls = false;
+  protected static String dfsType;
+
   /**
    * Get sentry client with authenticated Subject
    * (its security-related attributes(for example, kerberos principal and key)
@@ -281,8 +284,8 @@ public abstract class AbstractTestWithStaticConfiguration {
     dataDir = assertCreateDir(new File(baseDir, "data"));
     policyFileLocation = new File(confDir, HiveServerFactory.AUTHZ_PROVIDER_FILENAME);
 
-    String dfsType = System.getProperty(DFSFactory.FS_TYPE);
-    dfs = DFSFactory.create(dfsType, baseDir, testServerType);
+    dfsType = System.getProperty(DFSFactory.FS_TYPE, DFSFactory.DFSType.MiniDFS.toString());
+    dfs = DFSFactory.create(dfsType, baseDir, testServerType, enableHDFSAcls);
     fileSystem = dfs.getFileSystem();
 
     PolicyFile policyFile = PolicyFile.setAdminOnServer1(ADMIN1)
@@ -292,7 +295,7 @@ public abstract class AbstractTestWithStaticConfiguration {
     String policyURI;
     if (policyOnHdfs) {
       String dfsUri = FileSystem.getDefaultUri(fileSystem.getConf()).toString();
-      LOGGER.error("dfsUri " + dfsUri);
+      LOGGER.info("dfsUri " + dfsUri);
       policyURI = dfsUri + System.getProperty("sentry.e2etest.hive.policy.location",
           "/user/hive/sentry");
       policyURI += "/" + HiveServerFactory.AUTHZ_PROVIDER_FILENAME;
@@ -315,6 +318,7 @@ public abstract class AbstractTestWithStaticConfiguration {
           "org.apache.hadoop.hive.ql.lockmgr.EmbeddedLockManager");
     }
 
+    HiveConf hiveConf = new HiveConf();
     hiveServer = create(properties, baseDir, confDir, logDir, policyURI, fileSystem);
     hiveServer.start();
     createContext();

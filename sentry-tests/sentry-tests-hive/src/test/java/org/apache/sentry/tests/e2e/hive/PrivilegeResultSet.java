@@ -17,6 +17,7 @@
 
 package org.apache.sentry.tests.e2e.hive;
 
+import org.fest.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,7 +90,11 @@ public class PrivilegeResultSet {
         for (int i = 0; i < this.colNum; i ++) {
             if (this.header.get(i).equalsIgnoreCase(colName)) {
                 for (int j = 0; j < this.privilegeResultSet.size(); j ++) {
-                    if (this.privilegeResultSet.get(j).get(i).equalsIgnoreCase(colVal)) {
+                    String val = this.privilegeResultSet.get(j).get(i);
+                    if (Strings.isNullOrEmpty(colVal)) {
+                        return Strings.isNullOrEmpty(val);
+                    }
+                    if (val.equalsIgnoreCase(colVal)) {
                         LOGGER.info("Found " + colName + " contains a value = " + colVal);
                         return true;
                     }

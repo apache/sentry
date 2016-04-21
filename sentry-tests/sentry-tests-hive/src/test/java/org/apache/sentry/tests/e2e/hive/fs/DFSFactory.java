@@ -24,7 +24,7 @@ public class DFSFactory {
   public static final String FS_TYPE = "sentry.e2etest.DFSType";
 
   public static DFS create(String dfsType, File baseDir,
-      String serverType) throws Exception {
+      String serverType, boolean enableHDFSAcls) throws Exception {
     DFSType type;
     if(dfsType!=null) {
       type = DFSType.valueOf(dfsType.trim());
@@ -33,12 +33,17 @@ public class DFSFactory {
     }
     switch (type) {
       case MiniDFS:
-        return new MiniDFS(baseDir, serverType);
+        return new MiniDFS(baseDir, serverType, enableHDFSAcls);
       case ClusterDFS:
         return new ClusterDFS();
       default:
         throw new UnsupportedOperationException(type.name());
     }
+  }
+
+  public static DFS create(String dfsType, File baseDir,
+                          String serverType) throws Exception {
+    return create(dfsType, baseDir, serverType, false);
   }
 
   @VisibleForTesting
