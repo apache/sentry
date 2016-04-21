@@ -54,7 +54,8 @@ public class MiniDFS extends AbstractDFS {
 
   private static MiniDFSCluster dfsCluster;
 
-  MiniDFS(File baseDir, String serverType) throws Exception {
+  private void createMiniDFSCluster(File baseDir, String serverType,
+                                    boolean enableHDFSAcls) throws Exception {
     Configuration conf = new Configuration();
     if (HiveServer2Type.InternalMetastore.name().equalsIgnoreCase(serverType)) {
       // set the test group mapping that maps user to a group of same name
@@ -68,12 +69,23 @@ public class MiniDFS extends AbstractDFS {
     conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, dfsDir.getPath());
     conf.set("hadoop.security.group.mapping",
         MiniDFS.PseudoGroupMappingService.class.getName());
+    if (enableHDFSAcls) {
+      conf.set("dfs.namenode.acls.enabled", "true");
+    }
     Configuration.addDefaultResource("test.xml");
     dfsCluster = new MiniDFSCluster.Builder(conf).numDataNodes(2).build();
     fileSystem = dfsCluster.getFileSystem();
     String policyDir = System.getProperty("sentry.e2etest.hive.policy.location", "/user/hive/sentry");
     sentryDir = super.assertCreateDfsDir(new Path(fileSystem.getUri() + policyDir));
     dfsBaseDir = assertCreateDfsDir(new Path(new Path(fileSystem.getUri()), "/base"));
+  }
+
+  MiniDFS(File baseDir, String serverType) throws Exception {
+    createMiniDFSCluster(baseDir, serverType, false);
+  }
+
+  MiniDFS(File baseDir, String serverType, boolean enableHDFSAcls) throws Exception {
+    createMiniDFSCluster(baseDir, serverType, enableHDFSAcls);
   }
 
   @Override
