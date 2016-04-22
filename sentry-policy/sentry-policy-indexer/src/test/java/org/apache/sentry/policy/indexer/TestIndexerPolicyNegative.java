@@ -72,7 +72,7 @@ public class TestIndexerPolicyNegative {
     append("other_group = some_role", otherPolicyFile);
     append("[roles]", otherPolicyFile);
     append("some_role = indexer=i1", otherPolicyFile);
-    IndexerPolicyFileBackend policy = new IndexerPolicyFileBackend(globalPolicyFile.getPath());
+    PolicyEngine policy = IndexPolicyTestUtil.createPolicyEngineForTest(globalPolicyFile.getPath());
     Assert.assertEquals(Collections.emptySet(),
         policy.getPrivileges(Sets.newHashSet("other_group"), ActiveRoleSet.ALL));
   }
@@ -83,7 +83,7 @@ public class TestIndexerPolicyNegative {
     append("group = some_role", globalPolicyFile);
     append("[roles]", globalPolicyFile);
     append("some_role = action=read", globalPolicyFile);
-    PolicyEngine policy = new IndexerPolicyFileBackend(globalPolicyFile.getPath());
+    PolicyEngine policy = IndexPolicyTestUtil.createPolicyEngineForTest(globalPolicyFile.getPath());
     ImmutableSet<String> permissions = policy.getPrivileges(Sets.newHashSet("group"), ActiveRoleSet.ALL);
     Assert.assertTrue(permissions.toString(), permissions.isEmpty());
   }
@@ -94,7 +94,7 @@ public class TestIndexerPolicyNegative {
     append("group = malicious_role", globalPolicyFile);
     append("[roles]", globalPolicyFile);
     append("malicious_role = indexer=*", globalPolicyFile);
-    PolicyEngine policy = new IndexerPolicyFileBackend(globalPolicyFile.getPath());
+    PolicyEngine policy = IndexPolicyTestUtil.createPolicyEngineForTest(globalPolicyFile.getPath());
     ImmutableSet<String> permissions = policy.getPrivileges(Sets.newHashSet("incorrectGroup"), ActiveRoleSet.ALL);
     Assert.assertTrue(permissions.toString(), permissions.isEmpty());
   }

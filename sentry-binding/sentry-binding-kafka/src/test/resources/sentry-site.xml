@@ -32,7 +32,7 @@
   </property>
   <property>
     <name>sentry.kafka.policy.engine</name>
-    <value>org.apache.sentry.policy.kafka.SimpleKafkaPolicyEngine</value>
+    <value>org.apache.sentry.policy.engine.common.CommonPolicyEngine</value>
   </property>
   <property>
     <name>sentry.kafka.provider.backend</name>

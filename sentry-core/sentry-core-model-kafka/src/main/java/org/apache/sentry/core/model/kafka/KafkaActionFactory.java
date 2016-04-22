@@ -52,9 +52,9 @@ public class KafkaActionFactory extends BitFieldActionFactory {
     DELETE(KafkaActionConstant.DELETE, 8),
     ALTER(KafkaActionConstant.ALTER, 16),
     DESCRIBE(KafkaActionConstant.DESCRIBE, 32),
-    CLUSTER_ACTION(KafkaActionConstant.CLUSTER_ACTION, 64),
+    CLUSTERACTION(KafkaActionConstant.CLUSTER_ACTION, 64),
     ALL(KafkaActionConstant.ALL, READ.getCode() | WRITE.getCode() | CREATE.getCode()
-        | DELETE.getCode() | ALTER.getCode()| DESCRIBE.getCode() | CLUSTER_ACTION.getCode());
+        | DELETE.getCode() | ALTER.getCode()| DESCRIBE.getCode() | CLUSTERACTION.getCode());
 
     private String name;
     private int code;

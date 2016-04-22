@@ -17,7 +17,7 @@ package org.apache.sentry.kafka.conf;
 import java.net.URL;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.policy.kafka.SimpleKafkaPolicyEngine;
+import org.apache.sentry.policy.engine.common.CommonPolicyEngine;
 import org.apache.sentry.provider.common.HadoopGroupResourceAuthorizationProvider;
 import org.apache.sentry.provider.db.generic.SentryGenericProviderBackend;
 
@@ -41,7 +41,7 @@ public class KafkaAuthConf extends Configuration {
     AUTHZ_PROVIDER("sentry.kafka.provider", HadoopGroupResourceAuthorizationProvider.class.getName()),
     AUTHZ_PROVIDER_RESOURCE("sentry.kafka.provider.resource", ""),
     AUTHZ_PROVIDER_BACKEND("sentry.kafka.provider.backend", SentryGenericProviderBackend.class.getName()),
-    AUTHZ_POLICY_ENGINE("sentry.kafka.policy.engine", SimpleKafkaPolicyEngine.class.getName()),
+    AUTHZ_POLICY_ENGINE("sentry.kafka.policy.engine", CommonPolicyEngine.class.getName()),
     AUTHZ_INSTANCE_NAME(KAFKA_SERVICE_INSTANCE_NAME, "kafka"),
     AUTHZ_SERVICE_USER_NAME(KAFKA_SERVICE_USER_NAME, "kafka"),
     AUTHZ_PRINCIPAL_HOSTNAME(KAFKA_PRINCIPAL_HOSTNAME, null),

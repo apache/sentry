@@ -19,12 +19,12 @@
 package org.apache.sentry.provider.db.generic.tools;
 
 import com.google.common.collect.Lists;
+import org.apache.sentry.core.common.utils.KeyValue;
+import org.apache.sentry.core.common.utils.SentryConstants;
+import org.apache.sentry.core.common.validator.PrivilegeValidatorContext;
 import org.apache.sentry.core.model.kafka.KafkaAuthorizable;
-import org.apache.sentry.policy.common.KeyValue;
-import org.apache.sentry.policy.common.PolicyConstants;
-import org.apache.sentry.policy.common.PrivilegeValidatorContext;
-import org.apache.sentry.policy.kafka.KafkaModelAuthorizables;
-import org.apache.sentry.policy.kafka.KafkaPrivilegeValidator;
+import org.apache.sentry.core.model.kafka.KafkaModelAuthorizables;
+import org.apache.sentry.core.model.kafka.validator.KafkaPrivilegeValidator;
 import org.apache.sentry.provider.common.PolicyFileConstants;
 import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryGrantOption;
@@ -48,7 +48,7 @@ public  class KafkaTSentryPrivilegeConvertor implements TSentryPrivilegeConverto
     validatePrivilegeHierarchy(privilegeStr);
     TSentryPrivilege tSentryPrivilege = new TSentryPrivilege();
     List<TAuthorizable> authorizables = new LinkedList<TAuthorizable>();
-    for (String authorizable : PolicyConstants.AUTHORIZABLE_SPLITTER.split(privilegeStr)) {
+    for (String authorizable : SentryConstants.AUTHORIZABLE_SPLITTER.split(privilegeStr)) {
       KeyValue keyValue = new KeyValue(authorizable);
       String key = keyValue.getKey();
       String value = keyValue.getValue();
@@ -84,23 +84,23 @@ public  class KafkaTSentryPrivilegeConvertor implements TSentryPrivilegeConverto
       if (it != null) {
         while (it.hasNext()) {
           TAuthorizable tAuthorizable = it.next();
-          privileges.add(PolicyConstants.KV_JOINER.join(
+          privileges.add(SentryConstants.KV_JOINER.join(
               tAuthorizable.getType(), tAuthorizable.getName()));
         }
       }
 
       if (!authorizables.isEmpty()) {
-        privileges.add(PolicyConstants.KV_JOINER.join(
+        privileges.add(SentryConstants.KV_JOINER.join(
             PolicyFileConstants.PRIVILEGE_ACTION_NAME, action));
       }
 
       // only append the grant option to privilege string if it's true
       if ("true".equals(grantOption)) {
-        privileges.add(PolicyConstants.KV_JOINER.join(
+        privileges.add(SentryConstants.KV_JOINER.join(
             PolicyFileConstants.PRIVILEGE_GRANT_OPTION_NAME, grantOption));
       }
     }
-    return PolicyConstants.AUTHORIZABLE_JOINER.join(privileges);
+    return SentryConstants.AUTHORIZABLE_JOINER.join(privileges);
   }
 
   private static void validatePrivilegeHierarchy(String privilegeStr) throws Exception {

@@ -33,7 +33,7 @@ public class SolrAuthzConf extends Configuration {
       "org.apache.sentry.provider.common.HadoopGroupResourceAuthorizationProvider"),
     AUTHZ_PROVIDER_RESOURCE("sentry.solr.provider.resource", ""),
     AUTHZ_PROVIDER_BACKEND("sentry.solr.provider.backend", "org.apache.sentry.provider.file.SimpleFileProviderBackend"),
-    AUTHZ_POLICY_ENGINE("sentry.solr.policy.engine", "org.apache.sentry.policy.search.SimpleSearchPolicyEngine");
+    AUTHZ_POLICY_ENGINE("sentry.solr.policy.engine", "org.apache.sentry.policy.engine.common.CommonPolicyEngine");
 
     private final String varName;
     private final String defaultVal;

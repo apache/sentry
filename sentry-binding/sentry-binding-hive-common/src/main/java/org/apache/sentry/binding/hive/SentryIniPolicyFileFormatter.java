@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.policy.common.PolicyConstants;
+import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.provider.common.PolicyFileConstants;
 import org.apache.sentry.provider.common.ProviderBackendContext;
 import org.apache.sentry.provider.file.SimpleFileProviderBackend;
@@ -152,8 +152,8 @@ public class SentryIniPolicyFileFormatter implements SentryPolicyFileFormatter {
     List<String> lines = Lists.newArrayList();
     lines.add("[" + name + "]");
     for (Map.Entry<String, Set<String>> entry : mappingData.entrySet()) {
-      lines.add(PolicyConstants.KV_JOINER.join(entry.getKey(),
-          PolicyConstants.ROLE_JOINER.join(entry.getValue())));
+      lines.add(SentryConstants.KV_JOINER.join(entry.getKey(),
+          SentryConstants.ROLE_JOINER.join(entry.getValue())));
     }
     return Joiner.on(NL).join(lines);
   }

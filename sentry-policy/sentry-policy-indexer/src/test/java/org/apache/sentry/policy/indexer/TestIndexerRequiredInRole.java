@@ -20,7 +20,8 @@ package org.apache.sentry.policy.indexer;
 
 import org.junit.Assert;
 
-import org.apache.sentry.policy.common.PrivilegeValidatorContext;
+import org.apache.sentry.core.common.validator.PrivilegeValidatorContext;
+import org.apache.sentry.core.model.indexer.validator.IndexerRequiredInPrivilege;
 import org.apache.shiro.config.ConfigurationException;
 import org.junit.Test;
 

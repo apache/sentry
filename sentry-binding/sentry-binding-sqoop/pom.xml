@@ -59,21 +59,22 @@ limitations under the License.
       <artifactId>sentry-policy-common</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.sentry</groupId>
-      <artifactId>sentry-policy-sqoop</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-common</artifactId>
       <scope>provided</scope>
     </dependency>
 	<dependency>
-        <groupId>org.apache.sqoop</groupId>
-        <artifactId>sqoop-common</artifactId>
+      <groupId>org.apache.sqoop</groupId>
+      <artifactId>sqoop-common</artifactId>
     </dependency>
 	<dependency>
-        <groupId>org.apache.sqoop</groupId>
-        <artifactId>sqoop-security</artifactId>
+      <groupId>org.apache.sqoop</groupId>
+      <artifactId>sqoop-security</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-minicluster</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 

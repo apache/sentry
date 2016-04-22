@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.Groups;
+import org.apache.sentry.core.common.Model;
 import org.apache.sentry.policy.common.PolicyEngine;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -35,18 +36,20 @@ public class HadoopGroupResourceAuthorizationProvider extends
 
   // resource parameter present so that other AuthorizationProviders (e.g.
   // LocalGroupResourceAuthorizationProvider) has the same constructor params.
-  public HadoopGroupResourceAuthorizationProvider(String resource, PolicyEngine policy) throws IOException {
-    this(new Configuration(), resource, policy);
+  public HadoopGroupResourceAuthorizationProvider(String resource, PolicyEngine policy,
+      Model model) throws IOException {
+    this(new Configuration(), resource, policy, model);
   }
 
-  public HadoopGroupResourceAuthorizationProvider(Configuration conf, String resource, PolicyEngine policy) throws IOException { //NOPMD
-    this(policy, new HadoopGroupMappingService(getGroups(conf)));
+  public HadoopGroupResourceAuthorizationProvider(Configuration conf, String resource, //NOPMD
+      PolicyEngine policy, Model model) throws IOException {
+    this(policy, new HadoopGroupMappingService(getGroups(conf)), model);
   }
 
   @VisibleForTesting
   public HadoopGroupResourceAuthorizationProvider(PolicyEngine policy,
-      GroupMappingService groupService) {
-    super(policy, groupService);
+      GroupMappingService groupService, Model model) {
+    super(policy, groupService, model);
   }
 
   private static Groups getGroups(Configuration conf) {

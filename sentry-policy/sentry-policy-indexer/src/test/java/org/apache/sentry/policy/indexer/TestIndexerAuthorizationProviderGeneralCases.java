@@ -32,6 +32,7 @@ import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.indexer.Indexer;
 import org.apache.sentry.core.model.indexer.IndexerModelAction;
+import org.apache.sentry.core.model.indexer.IndexerPrivilegeModel;
 import org.apache.sentry.provider.common.MockGroupMappingServiceProvider;
 import org.apache.sentry.provider.common.ResourceAuthorizationProvider;
 import org.apache.sentry.provider.file.HadoopGroupResourceAuthorizationProvider;
@@ -84,8 +85,8 @@ public class TestIndexerAuthorizationProviderGeneralCases {
     baseDir = Files.createTempDir();
     PolicyFiles.copyToDir(baseDir, "test-authz-provider.ini");
     authzProvider = new HadoopGroupResourceAuthorizationProvider(
-        new IndexerPolicyFileBackend(new File(baseDir, "test-authz-provider.ini").getPath()),
-        new MockGroupMappingServiceProvider(USER_TO_GROUP_MAP));
+        IndexPolicyTestUtil.createPolicyEngineForTest(new File(baseDir, "test-authz-provider.ini").getPath()),
+        new MockGroupMappingServiceProvider(USER_TO_GROUP_MAP), IndexerPrivilegeModel.getInstance());
 
   }
 

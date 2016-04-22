@@ -21,13 +21,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 import org.apache.sentry.core.model.indexer.Indexer;
+import org.apache.sentry.core.model.indexer.IndexerModelAuthorizables;
 import org.junit.Test;
 
 public class TestIndexerModelAuthorizables {
 
   @Test
   public void testIndexer() throws Exception {
-    Indexer indexer = (Indexer)IndexerModelAuthorizables.from("InDexEr=indexer1");
+    Indexer indexer = (Indexer) IndexerModelAuthorizables.from("InDexEr=indexer1");
     assertEquals("indexer1", indexer.getName());
   }
 

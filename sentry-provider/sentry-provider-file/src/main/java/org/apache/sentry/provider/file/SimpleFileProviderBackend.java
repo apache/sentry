@@ -16,7 +16,7 @@
  */
 package org.apache.sentry.provider.file;
 
-import static org.apache.sentry.policy.common.PolicyConstants.ROLE_SPLITTER;
+import static org.apache.sentry.core.common.utils.SentryConstants.ROLE_SPLITTER;
 
 import java.io.IOException;
 import java.net.URI;
@@ -34,8 +34,8 @@ import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.policy.common.PrivilegeUtils;
-import org.apache.sentry.policy.common.PrivilegeValidator;
-import org.apache.sentry.policy.common.PrivilegeValidatorContext;
+import org.apache.sentry.core.common.validator.PrivilegeValidator;
+import org.apache.sentry.core.common.validator.PrivilegeValidatorContext;
 import org.apache.sentry.provider.common.PolicyFileConstants;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;

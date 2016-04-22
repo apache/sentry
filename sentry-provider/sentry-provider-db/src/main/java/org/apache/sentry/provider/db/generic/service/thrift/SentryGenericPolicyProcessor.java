@@ -17,8 +17,8 @@
  */
 package org.apache.sentry.provider.db.generic.service.thrift;
 
-import static org.apache.sentry.policy.common.PolicyConstants.AUTHORIZABLE_JOINER;
-import static org.apache.sentry.policy.common.PolicyConstants.KV_JOINER;
+import static org.apache.sentry.core.common.utils.SentryConstants.AUTHORIZABLE_JOINER;
+import static org.apache.sentry.core.common.utils.SentryConstants.KV_JOINER;
 
 import java.lang.reflect.Constructor;
 import java.util.HashSet;
@@ -29,9 +29,9 @@ import java.util.Set;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.SentryUserException;
 import org.apache.sentry.core.common.Authorizable;
+import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.core.model.db.AccessConstants;
-import org.apache.sentry.policy.common.KeyValue;
-import org.apache.sentry.policy.common.PolicyConstants;
+import org.apache.sentry.core.common.utils.KeyValue;
 import org.apache.sentry.provider.common.AuthorizationComponent;
 import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.provider.db.SentryAlreadyExistsException;
@@ -271,11 +271,11 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
 
       for (Authorizable authorizable : authorizables) {
 
-        privileges.add(PolicyConstants.KV_JOINER.join(authorizable.getTypeName(),
+        privileges.add(SentryConstants.KV_JOINER.join(authorizable.getTypeName(),
             authorizable.getName()));
       }
 
-      return PolicyConstants.AUTHORIZABLE_JOINER.join(privileges);
+      return SentryConstants.AUTHORIZABLE_JOINER.join(privileges);
     } else {
       return "";
     }
@@ -307,7 +307,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
       return authorizables;
     }
 
-    for (String authorizable : PolicyConstants.AUTHORIZABLE_SPLITTER.split(privilegeStr)) {
+    for (String authorizable : SentryConstants.AUTHORIZABLE_SPLITTER.split(privilegeStr)) {
       KeyValue tempKV = new KeyValue(authorizable);
       final String key = tempKV.getKey();
       final String value = tempKV.getValue();

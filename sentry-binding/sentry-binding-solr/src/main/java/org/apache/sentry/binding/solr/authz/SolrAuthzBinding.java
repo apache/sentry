@@ -36,15 +36,18 @@ import org.apache.sentry.binding.solr.conf.SolrAuthzConf;
 import org.apache.sentry.binding.solr.conf.SolrAuthzConf.AuthzConfVars;
 import org.apache.sentry.core.common.Action;
 import org.apache.sentry.core.common.ActiveRoleSet;
+import org.apache.sentry.core.common.Model;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.search.Collection;
 import org.apache.sentry.core.model.search.SearchModelAction;
+import org.apache.sentry.core.model.search.SearchPrivilegeModel;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.common.AuthorizationComponent;
 import org.apache.sentry.provider.common.AuthorizationProvider;
 import org.apache.sentry.provider.common.GroupMappingService;
 import org.apache.sentry.provider.common.HadoopGroupResourceAuthorizationProvider;
 import org.apache.sentry.provider.common.ProviderBackend;
+import org.apache.sentry.provider.common.ProviderBackendContext;
 import org.apache.sentry.provider.db.generic.SentryGenericProviderBackend;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClientFactory;
@@ -65,6 +68,7 @@ public class SolrAuthzBinding {
   public static final String KERBEROS_ENABLED = "solr.hdfs.security.kerberos.enabled";
   public static final String KERBEROS_KEYTAB = "solr.hdfs.security.kerberos.keytabfile";
   public static final String KERBEROS_PRINCIPAL = "solr.hdfs.security.kerberos.principal";
+  private static final String SOLR_POLICY_ENGINE_OLD = "org.apache.sentry.policy.search.SimpleSearchPolicyEngine";
   private static final String kerberosEnabledProp = Strings.nullToEmpty(System.getProperty(KERBEROS_ENABLED)).trim();
   private static final String keytabProp = Strings.nullToEmpty(System.getProperty(KERBEROS_KEYTAB)).trim();
   private static final String principalProp = Strings.nullToEmpty(System.getProperty(KERBEROS_PRINCIPAL)).trim();
@@ -94,14 +98,19 @@ public class SolrAuthzBinding {
     String resourceName =
         authzConf.get(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar());
     String providerBackendName =
-      authzConf.get(AuthzConfVars.AUTHZ_PROVIDER_BACKEND.getVar());
+        authzConf.get(AuthzConfVars.AUTHZ_PROVIDER_BACKEND.getVar());
     String policyEngineName =
-      authzConf.get(AuthzConfVars.AUTHZ_POLICY_ENGINE.getVar());
+        authzConf.get(AuthzConfVars.AUTHZ_POLICY_ENGINE.getVar(), AuthzConfVars.AUTHZ_POLICY_ENGINE.getDefault());
     String serviceName = authzConf.get(SENTRY_SEARCH_SERVICE_KEY, SENTRY_SEARCH_SERVICE_DEFAULT);
 
+    // for the backward compatibility
+    if (SOLR_POLICY_ENGINE_OLD.equals(policyEngineName)) {
+      policyEngineName = AuthzConfVars.AUTHZ_POLICY_ENGINE.getDefault();
+    }
+
     LOG.debug("Using authorization provider " + authProviderName +
-      " with resource " + resourceName + ", policy engine "
-      + policyEngineName + ", provider backend " + providerBackendName);
+        " with resource " + resourceName + ", policy engine "
+        + policyEngineName + ", provider backend " + providerBackendName);
     // load the provider backend class
     if (kerberosEnabledProp.equalsIgnoreCase("true")) {
       initKerberos(keytabProp, principalProp);
@@ -118,11 +127,11 @@ public class SolrAuthzBinding {
       providerBackendName = SentryGenericProviderBackend.class.getName();
     }
     Constructor<?> providerBackendConstructor =
-      Class.forName(providerBackendName).getDeclaredConstructor(Configuration.class, String.class);
+        Class.forName(providerBackendName).getDeclaredConstructor(Configuration.class, String.class);
     providerBackendConstructor.setAccessible(true);
 
     providerBackend =
-      (ProviderBackend) providerBackendConstructor.newInstance(new Object[] {authzConf, resourceName});
+        (ProviderBackend) providerBackendConstructor.newInstance(new Object[] {authzConf, resourceName});
 
     if (providerBackend instanceof SentryGenericProviderBackend) {
       ((SentryGenericProviderBackend) providerBackend)
@@ -130,12 +139,18 @@ public class SolrAuthzBinding {
       ((SentryGenericProviderBackend) providerBackend).setServiceName(serviceName);
     }
 
+    // Create backend context
+    ProviderBackendContext context = new ProviderBackendContext();
+    context.setAllowPerDatabase(false);
+    context.setValidators(SearchPrivilegeModel.getInstance().getPrivilegeValidators());
+    providerBackend.initialize(context);
+
     // load the policy engine class
     Constructor<?> policyConstructor =
-      Class.forName(policyEngineName).getDeclaredConstructor(ProviderBackend.class);
+        Class.forName(policyEngineName).getDeclaredConstructor(ProviderBackend.class);
     policyConstructor.setAccessible(true);
     PolicyEngine policyEngine =
-      (PolicyEngine) policyConstructor.newInstance(new Object[] {providerBackend});
+        (PolicyEngine) policyConstructor.newInstance(new Object[] {providerBackend});
 
     // if unset, set the hadoop auth provider to use new groups, so we don't
     // conflict with the group mappings that may already be set up
@@ -145,9 +160,11 @@ public class SolrAuthzBinding {
 
     // load the authz provider class
     Constructor<?> constrctor =
-      Class.forName(authProviderName).getDeclaredConstructor(Configuration.class, String.class, PolicyEngine.class);
+      Class.forName(authProviderName).getDeclaredConstructor(Configuration.class,
+              String.class, PolicyEngine.class, Model.class);
     constrctor.setAccessible(true);
-    return (AuthorizationProvider) constrctor.newInstance(new Object[] {authzConf, resourceName, policyEngine});
+    return (AuthorizationProvider) constrctor.newInstance(new Object[] {authzConf, resourceName,
+            policyEngine, SearchPrivilegeModel.getInstance()});
   }
 
 

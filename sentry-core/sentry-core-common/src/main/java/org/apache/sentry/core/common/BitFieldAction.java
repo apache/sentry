@@ -20,7 +20,7 @@ package org.apache.sentry.core.common;
  * example, There exists three actions, UPDATE, QUERY and ALL.
  * The a bit set for UPDATE is 0x0001, QUERY is 0x0002, ALL is 0x0001|0x0002=0x0003
  */
-public abstract class BitFieldAction implements Action {
+public class BitFieldAction implements Action {
   private String name;
   private int code;
 

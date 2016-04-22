@@ -16,7 +16,7 @@
  */
 package org.apache.sentry.provider.common;
 
-import org.apache.sentry.policy.common.PrivilegeValidator;
+import org.apache.sentry.core.common.validator.PrivilegeValidator;
 
 import com.google.common.collect.ImmutableList;
 

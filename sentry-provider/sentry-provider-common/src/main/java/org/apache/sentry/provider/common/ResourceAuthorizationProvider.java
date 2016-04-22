@@ -16,10 +16,10 @@
  */
 package org.apache.sentry.provider.common;
 
-import static org.apache.sentry.policy.common.PolicyConstants.AUTHORIZABLE_JOINER;
-import static org.apache.sentry.policy.common.PolicyConstants.AUTHORIZABLE_SPLITTER;
-import static org.apache.sentry.policy.common.PolicyConstants.KV_JOINER;
-import static org.apache.sentry.policy.common.PolicyConstants.PRIVILEGE_NAME;
+import static org.apache.sentry.core.common.utils.SentryConstants.AUTHORIZABLE_JOINER;
+import static org.apache.sentry.core.common.utils.SentryConstants.AUTHORIZABLE_SPLITTER;
+import static org.apache.sentry.core.common.utils.SentryConstants.KV_JOINER;
+import static org.apache.sentry.core.common.utils.SentryConstants.PRIVILEGE_NAME;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -29,6 +29,7 @@ import java.util.Set;
 import org.apache.sentry.core.common.Action;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
+import org.apache.sentry.core.common.Model;
 import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.policy.common.PolicyEngine;
@@ -58,12 +59,14 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
   private final GroupMappingService groupService;
   private final PolicyEngine policy;
   private final PrivilegeFactory privilegeFactory;
+  private final Model model;
 
   public ResourceAuthorizationProvider(PolicyEngine policy,
-      GroupMappingService groupService) {
+      GroupMappingService groupService, Model model) {
     this.policy = policy;
     this.groupService = groupService;
     this.privilegeFactory = policy.getPrivilegeFactory();
+    this.model = model;
   }
 
   /***
@@ -110,7 +113,7 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
         /*
          * Does the permission granted in the policy file imply the requested action?
          */
-        boolean result = permission.implies(privilegeFactory.createPrivilege(requestPrivilege));
+        boolean result = permission.implies(privilegeFactory.createPrivilege(requestPrivilege), model);
         if (LOGGER.isDebugEnabled()) {
           LOGGER.debug("ProviderPrivilege {}, RequestPrivilege {}, RoleSet, {}, Result {}",
               new Object[]{ permission, requestPrivilege, roleSet, result});
