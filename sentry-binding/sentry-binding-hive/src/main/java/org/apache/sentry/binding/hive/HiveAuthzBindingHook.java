@@ -36,8 +36,8 @@ import org.apache.hadoop.hive.ql.parse.BaseSemanticAnalyzer;
 import org.apache.hadoop.hive.ql.parse.HiveParser;
 import org.apache.hadoop.hive.ql.parse.HiveSemanticAnalyzerHookContext;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
-import org.apache.hadoop.hive.ql.plan.DDLWork;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
+import org.apache.hadoop.hive.ql.plan.ShowColumnsDesc;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.sentry.binding.hive.authz.HiveAuthzPrivileges;
 import org.apache.sentry.binding.hive.authz.HiveAuthzPrivilegesMap;
@@ -305,10 +305,13 @@ public class HiveAuthzBindingHook extends HiveAuthzBindingHookBase {
       for (int i = 0; i < rootTasks.size(); i++) {
         Task<? extends Serializable> task = rootTasks.get(i);
         if (task instanceof DDLTask) {
-          SentryFilterDDLTask filterTask =
-              new SentryFilterDDLTask(hiveAuthzBinding, subject, stmtOperation);
-          filterTask.setWork((DDLWork)task.getWork());
-          rootTasks.set(i, filterTask);
+          ShowColumnsDesc showCols = ((DDLTask) task).getWork().getShowColumnsDesc();
+          if (showCols != null) {
+            SentryFilterDDLTask filterTask =
+                    new SentryFilterDDLTask(hiveAuthzBinding, subject, stmtOperation);
+            filterTask.copyDDLTask((DDLTask) task);
+            rootTasks.set(i, filterTask);
+          }
         }
       }
 
