@@ -135,4 +135,27 @@ public class SentryFilterDDLTask extends DDLTask {
     return HiveAuthzBindingHook.filterShowColumns(getHiveAuthzBinding(),
         cols, getStmtOperation(), getSubject().getName(), table.getTableName(), table.getDbName());
   }
+
+  public void copyDDLTask(DDLTask ddlTask) {
+    work = ddlTask.getWork();
+    rootTask = ddlTask.isRootTask();
+    childTasks = ddlTask.getChildTasks();
+    parentTasks = ddlTask.getParentTasks();
+    backupTask = ddlTask.getBackupTask();
+    backupChildrenTasks = ddlTask.getBackupChildrenTasks();
+    started = ddlTask.started();
+    isdone = ddlTask.done();
+    queued = ddlTask.getQueued();
+    id = ddlTask.getId();
+    taskCounters = ddlTask.getCounters();
+    feedSubscribers = ddlTask.getFeedSubscribers();
+    taskTag = ddlTask.getTaskTag();
+    setLocalMode(ddlTask.isLocalMode());
+    setRetryCmdWhenFail(ddlTask.ifRetryCmdWhenFail());
+    queryPlan = ddlTask.getQueryPlan();
+    jobID = ddlTask.getJobID();
+    setException(ddlTask.getException());
+    console = ddlTask.console;
+    setFetchSource(ddlTask.isFetchSource());
+  }
 }
