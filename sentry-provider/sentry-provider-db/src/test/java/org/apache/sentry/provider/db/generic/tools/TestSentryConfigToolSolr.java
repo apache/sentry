@@ -1,4 +1,4 @@
-/**
+ /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -235,6 +235,19 @@ public class TestSentryConfigToolSolr extends SentryGenericServiceIntegrationBas
         // test without compat checking
         args = new String[] { "-p", CASE_POLICY_INI, "-conf", confPath.getAbsolutePath(), "-i", "-v"};
         sentryTool = new SentryConfigToolSolr();
+        sentryTool.executeConfigTool(args);
+      }
+    });
+  }
+
+  // Test that a valid compat check doesn't throw an exception
+  @Test
+  public void testCompatCheckValid() throws Exception {
+    runTestAsSubject(new TestOperation() {
+      @Override
+      public void runTestAsSubject() throws Exception {
+        String[] args = { "-p", VALID_POLICY_INI, "-conf", confPath.getAbsolutePath(), "-v", "-i", "-c"};
+        SentryConfigToolSolr sentryTool = new SentryConfigToolSolr();
         sentryTool.executeConfigTool(args);
       }
     });

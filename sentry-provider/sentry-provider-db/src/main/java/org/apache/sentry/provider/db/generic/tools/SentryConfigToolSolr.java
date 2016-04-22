@@ -60,11 +60,14 @@ public class SentryConfigToolSolr extends SentryConfigToolCommon {
     Configuration conf = getSentryConf();
 
     String service = conf.get(SOLR_SERVICE_NAME, "service1");
+    // instantiate a solr client for sentry service.  This sets the ugi, so must
+    // be done before getting the ugi below.
+    SentryGenericServiceClient client = SentryGenericServiceClientFactory.create(conf);
     UserGroupInformation ugi = UserGroupInformation.getLoginUser();
     String requestorName = ugi.getShortUserName();
 
-    convertINIToSentryServiceCmds(component, service, requestorName,
-        conf, getPolicyFile(), getValidate(), getImportPolicy(), getCheckCompat());
+    convertINIToSentryServiceCmds(component, service, requestorName, conf, client,
+        getPolicyFile(), getValidate(), getImportPolicy(), getCheckCompat());
   }
 
   private Configuration getSentryConf() {
@@ -77,12 +80,11 @@ public class SentryConfigToolSolr extends SentryConfigToolCommon {
     * Convert policy file to solrctl commands -- based on SENTRY-480
     */
   private void convertINIToSentryServiceCmds(String component,
-      String service, String requestorName, Configuration conf,
+      String service, String requestorName,
+      Configuration conf, SentryGenericServiceClient client,
       String policyFile, boolean validate, boolean importPolicy,
       boolean checkCompat) throws Exception {
 
-    //instantiate a solr client for sentry service
-    SentryGenericServiceClient client = SentryGenericServiceClientFactory.create(conf);
     //instantiate a file providerBackend for parsing
     LOGGER.info("Reading policy file at: " + policyFile);
     SimpleFileProviderBackend policyFileBackend =
@@ -217,11 +219,13 @@ public class SentryConfigToolSolr extends SentryConfigToolCommon {
     System.out.println("\n");
 
     System.out.println("Warning: " + warningString.toString());
-    SentryConfigurationException ex =
-        new SentryConfigurationException("Compatibility check failure");
-    ex.setConfigErrors(errors);
-    ex.setConfigWarnings(Lists.<String>asList(warningString.toString(), new String[0]));
-    throw ex;
+    if (errors.size() > 0) {
+      SentryConfigurationException ex =
+          new SentryConfigurationException("Compatibility check failure");
+      ex.setConfigErrors(errors);
+      ex.setConfigWarnings(Lists.<String>asList(warningString.toString(), new String[0]));
+      throw ex;
+    }
   }
 
   public static void main(String[] args) throws Exception {
