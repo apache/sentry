@@ -33,17 +33,22 @@ public class AccessURI implements DBModelAuthorizable {
    */
   public AccessURI(String uriName) {
     uriName = uriName == null ? "" : uriName;
+
+    // Validating the URI format
     if (!uriName.equals(AccessConstants.ALL)) {
       Path uriPath = new Path(uriName);
       String schema = uriPath.toUri().getScheme();
       if (StringUtils.isBlank(schema) || !uriPath.isAbsolute()) {
         throw new IllegalArgumentException("URI '" + uriName
-            + "' is invalid. Unsupport URI without schema or relative URI.");
+            + "' is invalid. Unsupported URI without schema or relative URI.");
       }
+
       if (!uriName.startsWith(schema + AUTHORITY_PREFIX)) {
         throw new IllegalArgumentException("URI '" + uriName + "' is invalid.");
       }
     }
+
+    // ALL(*) represents all URIs.
     this.uriName = uriName;
   }
 

@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.base.Preconditions;
 
+import org.apache.sentry.core.common.utils.PathUtils;
 import org.junit.Assert;
 
 import org.apache.hadoop.conf.Configuration;
@@ -1328,6 +1329,51 @@ public class TestHDFSIntegration {
     } catch(Exception s) {
       throw s;
     }
+
+    stmt.close();
+    conn.close();
+  }
+
+  @Test
+  public void testURIsWithoutSchemeandAuthority() throws Throwable {
+    // In the local test environment, EXTERNAL_SENTRY_SERVICE is false,
+    // set the default URI scheme to be hdfs.
+    boolean testConfOff = new Boolean(System.getProperty(EXTERNAL_SENTRY_SERVICE, "false"));
+    if (!testConfOff) {
+      PathUtils.getConfiguration().set("fs.defaultFS", fsURI);
+    }
+
+    String dbName= "db1";
+
+    tmpHDFSDir = new Path("/tmp/external");
+    dbNames = new String[]{dbName};
+    roles = new String[]{"admin_role", "db_role"};
+    admin = StaticUserGroup.ADMIN1;
+
+    Connection conn;
+    Statement stmt;
+
+    conn = hiveServer2.createConnection("hive", "hive");
+    stmt = conn.createStatement();
+
+    stmt.execute("create role admin_role");
+    stmt.execute("grant all on server server1 to role admin_role");
+    stmt.execute("grant role admin_role to group " + StaticUserGroup.ADMINGROUP);
+
+    conn = hiveServer2.createConnection(StaticUserGroup.ADMIN1, StaticUserGroup.ADMIN1);
+    stmt = conn.createStatement();
+
+    stmt.execute("create database " + dbName);
+    stmt.execute("create role db_role");
+    stmt.execute("grant create on database " + dbName +" to role db_role");
+    stmt.execute("grant all on URI '/tmp/external' to role db_role");
+    stmt.execute("grant role db_role to group " + StaticUserGroup.USERGROUP1);
+
+    conn = hiveServer2.createConnection(StaticUserGroup.USER1_1, StaticUserGroup.USER1_1);
+    stmt = conn.createStatement();
+
+    stmt.execute("use " + dbName);
+    stmt.execute("create external table tab1 (s string) location '/tmp/external'");
 
     stmt.close();
     conn.close();
