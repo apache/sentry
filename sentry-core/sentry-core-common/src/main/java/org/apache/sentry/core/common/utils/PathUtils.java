@@ -17,11 +17,15 @@
 package org.apache.sentry.core.common.utils;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.text.StrSubstitutor;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +36,12 @@ public class PathUtils {
   private static final Logger LOGGER = LoggerFactory.getLogger(PathUtils.class);
   private static String LOCAL_FILE_SCHEMA = "file";
   private static String AUTHORITY_PREFIX = "://";
+  private static final Configuration CONF = new Configuration();
+
+  @VisibleForTesting
+  public static Configuration getConfiguration() {
+    return CONF;
+  }
 
   /**
    * URI is a a special case. For URI's, /a implies /a/b.
@@ -63,10 +73,31 @@ public class PathUtils {
     return false;
   }
 
+  /**
+   * Make fully qualified URI based on the default file system Scheme and Authority
+   *
+   * @param uriName The Uri name.
+   * @return Returns the fully qualified URI.
+   * @throws IOException
+   * @throws URISyntaxException
+   */
+  private static URI makeFullQualifiedURI(String uriName) throws IOException, URISyntaxException {
+    Path uriPath = new Path(uriName);
+
+    if (uriPath.isAbsoluteAndSchemeAuthorityNull()) {
+
+      URI defaultUri = FileSystem.getDefaultUri(CONF);
+      uriPath = uriPath.makeQualified(defaultUri, uriPath);
+      return uriPath.toUri();
+    }
+
+    return new URI(uriName);
+  }
+
   public static boolean impliesURI(String privilege, String request) {
     try {
-      URI privilegeURI = new URI(new StrSubstitutor(System.getProperties()).replace(privilege));
-      URI requestURI = new URI(request);
+      URI privilegeURI = makeFullQualifiedURI(new StrSubstitutor(System.getProperties()).replace(privilege));
+      URI requestURI = makeFullQualifiedURI(request);
       if (privilegeURI.getScheme() == null || privilegeURI.getPath() == null) {
         LOGGER.warn("Privilege URI " + request + " is not valid. Either no scheme or no path.");
         return false;
@@ -78,6 +109,9 @@ public class PathUtils {
       return PathUtils.impliesURI(privilegeURI, requestURI);
     } catch (URISyntaxException e) {
       LOGGER.warn("Request URI " + request + " is not a URI", e);
+      return false;
+    } catch (IOException e) {
+      LOGGER.warn("Unable to get the configured filesystem implementation", e);
       return false;
     }
   }
