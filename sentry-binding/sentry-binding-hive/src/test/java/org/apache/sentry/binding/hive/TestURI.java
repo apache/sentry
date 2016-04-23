@@ -81,6 +81,14 @@ public class TestURI {
         HiveAuthzBindingHookBase.parseURI("/some/path").getName());
   }
 
+  @Test
+  public void testS3URIWithoutPrefix() throws SemanticException {
+    conf.set(CommonConfigurationKeys.FS_DEFAULT_NAME_KEY, "s3n://123:456@my-bucket");
+    conf.set(ConfVars.METASTOREWAREHOUSE.varname, "/path/to/warehouse");
+    Assert.assertEquals("s3n://123:456@my-bucket/some/path",
+    HiveAuthzBindingHookBase.parseURI("/some/path").getName());
+  }
+
   @AfterClass
   public static void clear() {
     if(baseDir != null) {

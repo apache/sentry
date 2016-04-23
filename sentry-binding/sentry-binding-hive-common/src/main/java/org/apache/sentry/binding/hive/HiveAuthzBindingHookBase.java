@@ -212,9 +212,13 @@ public abstract class HiveAuthzBindingHookBase extends AbstractSemanticAnalyzerH
       HiveConf conf = SessionState.get().getConf();
       String warehouseDir = conf.getVar(ConfVars.METASTOREWAREHOUSE);
       Path warehousePath = new Path(warehouseDir);
+
+      // If warehousePath is an absolute path and a scheme is null and authority is null as well,
+      // qualified it with default file system scheme and authority.
       if (warehousePath.isAbsoluteAndSchemeAuthorityNull()) {
-        FileSystem fs = FileSystem.get(conf);
-        warehouseDir = fs.makeQualified(warehousePath).toUri().toString();
+        URI defaultUri = FileSystem.getDefaultUri(conf);
+        warehousePath = warehousePath.makeQualified(defaultUri, warehousePath);
+        warehouseDir = warehousePath.toUri().toString();
       }
       return new AccessURI(PathUtils.parseURI(warehouseDir, uri, isLocal));
     } catch (Exception e) {
