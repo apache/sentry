@@ -153,6 +153,7 @@ public class TestHDFSIntegration {
   private static int sentryPort = -1;
   protected static SentrySrv sentryServer;
   protected static boolean testSentryHA = false;
+  protected boolean ignoreCleanUp = false;
   private static final long STALE_THRESHOLD = 5000;
   private static final long CACHE_REFRESH = 100; //Default is 500, but we want it to be low
                                                 // in our tests so that changes reflect soon
@@ -490,6 +491,12 @@ public class TestHDFSIntegration {
     //Clean up database
     Connection conn;
     Statement stmt;
+
+    if (ignoreCleanUp) {
+      LOGGER.info("\n\n Do not clean up test cases since ignoreCleanUp is set to true \n\n");
+      return;
+    }
+
     Preconditions.checkArgument(admin != null && dbNames !=null && roles != null && tmpHDFSDir != null,
         "Test case did not set some of these values required for clean up: admin, dbNames, roles, tmpHDFSDir");
 
