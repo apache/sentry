@@ -30,14 +30,17 @@ public class TestURI {
   public void testBadUriNull() {
     new AccessURI(null);
   }
+
   @Test(expected=IllegalArgumentException.class)
   public void testBadUriNoFilePrefix() {
     new AccessURI("/");
   }
+
   @Test(expected=IllegalArgumentException.class)
   public void testBadUriIncorrectFilePrefix() {
     new AccessURI("file:/some/path");
   }
+
   @Test(expected=IllegalArgumentException.class)
   public void testBadUriIncorrectHdfsPrefix() {
     new AccessURI("hdfs:/some/path");
@@ -46,6 +49,16 @@ public class TestURI {
   @Test
   public void testUriSwiftPrefix() {
     new AccessURI("swift:///some/path");
+  }
+
+  @Test
+  public void testS3Uri() {
+    new AccessURI("s3://my-bucket/my/funny/picture.jpg");
+  }
+
+  @Test
+  public void testS3UriWithAuthority() {
+    new AccessURI("s3n://123:456@my-bucket/my/funny/picture.jpg");
   }
 
   @Test
