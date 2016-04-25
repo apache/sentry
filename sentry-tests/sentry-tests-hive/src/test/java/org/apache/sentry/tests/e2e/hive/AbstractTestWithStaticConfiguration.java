@@ -36,7 +36,19 @@ import java.util.Map;
 import java.util.HashSet;
 
 import com.google.common.collect.Sets;
-import junit.framework.Assert;
+
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -66,10 +78,7 @@ import org.apache.sentry.tests.e2e.minisentry.SentrySrvFactory;
 import org.apache.sentry.tests.e2e.minisentry.SentrySrvFactory.SentrySrvType;
 import org.apache.sentry.tests.e2e.minisentry.SentrySrv;
 import org.apache.tools.ant.util.StringUtils;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,6 +92,32 @@ import javax.security.auth.login.LoginContext;
 public abstract class AbstractTestWithStaticConfiguration {
   private static final Logger LOGGER = LoggerFactory
       .getLogger(AbstractTestWithStaticConfiguration.class);
+
+  @ClassRule
+  public final static TestRule timeoutClass = RuleChain
+      .outerRule(new TestWatcher() {
+        @Override
+        protected void failed(Throwable e, Description description) {
+          LOGGER.error("Time out = " + e);
+          if (e.getMessage().contains("test timed out after")) {
+            LOGGER.error("Test class time out, but caught by rule, description = " + description + "ex = " + e);
+          }
+        }
+      })
+      .around(new Timeout(600000)); //millis, each test runs less than 600s (or 10m)
+
+  @Rule
+  public final TestRule timeout = RuleChain
+      .outerRule(new TestWatcher() {
+        @Override
+        protected void failed(Throwable e, Description description) {
+          if (e.getMessage().contains("test timed out after")) {
+            LOGGER.error("Test method time out, but caught by rule, description = " + description + "ex = " + e);
+          }
+        }
+      })
+      .around(new Timeout(180000)); //millis, each test runs less than 180s (or 3m)
+
   protected static final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
   protected static final String ALL_DB1 = "server=server1->db=db_1",
       ALL_DB2 = "server=server1->db=db_2",

@@ -26,6 +26,9 @@ import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.provider.db.SentryAlreadyExistsException;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
+
+import static org.junit.Assume.assumeThat;
+import static org.hamcrest.Matchers.is;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -45,6 +48,7 @@ public class TestDbConnections extends AbstractTestWithStaticConfiguration {
     super.setupAdmin();
     super.setup();
     policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
+    assumeThat(getSentrySrv().getNumActiveClients(), is(0L));
   }
 
   /**
