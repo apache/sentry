@@ -14,17 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.sentry.tests.e2e.dbprovider;
 
-package org.apache.sentry.tests.e2e.hdfs;
-
+import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
+import org.apache.sentry.tests.e2e.hive.TestOperationsPart2;
+import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
-@Ignore ("Disable sentry HA tests for now")
-public class TestHDFSIntegrationWithHA extends TestHDFSIntegration {
+/**
+ * Test db operations part 2
+ */
+public class TestDbOperationsPart2 extends TestOperationsPart2 {
+  @Override
+  @Before
+  public void setup() throws Exception {
+    super.setupAdmin();
+    super.setup();
+  }
   @BeforeClass
-  public static void setup() throws Exception {
-    TestHDFSIntegration.testSentryHA = true;
-    TestHDFSIntegration.setup();
+  public static void setupTestStaticConfiguration() throws Exception {
+    useSentryService = true;
+    AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
   }
 }

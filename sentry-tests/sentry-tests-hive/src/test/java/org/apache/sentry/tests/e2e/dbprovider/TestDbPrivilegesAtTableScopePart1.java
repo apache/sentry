@@ -18,11 +18,11 @@
 package org.apache.sentry.tests.e2e.dbprovider;
 
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
-import org.apache.sentry.tests.e2e.hive.TestPrivilegesAtTableScope;
+import org.apache.sentry.tests.e2e.hive.TestPrivilegesAtTableScopePart1;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
-public class TestDbPrivilegesAtTableScope extends TestPrivilegesAtTableScope {
+public class TestDbPrivilegesAtTableScopePart1 extends TestPrivilegesAtTableScopePart1 {
   @Override
   @Before
   public void setup() throws Exception {

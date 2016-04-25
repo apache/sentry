@@ -40,8 +40,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import com.google.common.base.Preconditions;
 
 import org.apache.sentry.core.common.utils.PathUtils;
-import org.junit.Assert;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
@@ -83,11 +81,17 @@ import org.apache.sentry.tests.e2e.hive.hiveserver.InternalMetastoreServer;
 import org.apache.sentry.tests.e2e.minisentry.SentrySrv;
 import org.apache.sentry.tests.e2e.minisentry.SentrySrvFactory;
 import org.fest.reflect.core.Reflection;
+
+import org.junit.Assert;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,6 +105,10 @@ public class TestHDFSIntegration {
   private static final Logger LOGGER = LoggerFactory
       .getLogger(TestHDFSIntegration.class);
 
+  @ClassRule
+  public static Timeout classTimeout = new Timeout(600000); //millis, each class runs less than 600s (10m)
+  @Rule
+  public Timeout timeout = new Timeout(180000); //millis, each test runs less than 180s (3m)
 
   public static class WordCountMapper extends MapReduceBase implements
       Mapper<LongWritable, Text, String, Long> {

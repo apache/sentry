@@ -466,13 +466,15 @@ limitations under the License.
           <include>**/TestDbPerDatabasePolicyFile.java</include>
           <include>**/TestDbPrivilegeAtTransform.java</include>
           <include>**/TestDbPrivilegesAtDatabaseScope.java</include>
-          <include>**/TestDbPrivilegesAtTableScope.java</include>
+          <include>**/TestDbPrivilegesAtTableScopePart1.java</include>
+          <include>**/TestDbPrivilegesAtTableScopePart2.java</include>
           <include>**/TestDbSandboxOps.java</include>
           <include>**/TestDbExportImportPrivileges.java</include>
           <include>**/TestDbUriPermissions.java</include>
           <include>**/TestDbRuntimeMetadataRetrieval.java</include>
           <include>**/TestDatabaseProvider.java</include>
-          <include>**/TestDbOperations.java</include>
+          <include>**/TestDbOperationsPart1.java</include>
+          <include>**/TestDbOperationsPart2.java</include>
           <include>**/TestPrivilegeWithGrantOption.java</include>
           <include>**/TestDbPrivilegesAtColumnScope.java</include>
           <include>**/TestColumnEndToEnd.java</include>

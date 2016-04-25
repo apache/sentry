@@ -16,12 +16,15 @@
  */
 package org.apache.sentry.tests.e2e.dbprovider;
 
+/**
+ * Test db operations part 1
+ */
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
-import org.apache.sentry.tests.e2e.hive.TestOperations;
+import org.apache.sentry.tests.e2e.hive.TestOperationsPart1;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
-public class TestDbOperations extends TestOperations{
+public class TestDbOperationsPart1 extends TestOperationsPart1 {
   @Override
   @Before
   public void setup() throws Exception {

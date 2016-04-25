@@ -42,12 +42,20 @@ import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.rules.Timeout;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 
 public abstract class AbstractTestWithDbProvider extends AbstractTestWithHiveServer {
+
+  @ClassRule
+  public static Timeout classTimeout = new Timeout(600000); //millis, each class runs less than 600s (10m)
+  @Rule
+  public Timeout timeout = new Timeout(180000); //millis, each test runs less than 180s (3m)
 
   protected static final String SERVER_HOST = "localhost";
 
