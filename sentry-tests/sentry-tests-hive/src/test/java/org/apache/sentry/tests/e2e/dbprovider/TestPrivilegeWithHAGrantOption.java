@@ -34,8 +34,10 @@ import org.apache.sentry.tests.e2e.hive.DummySentryOnFailureHook;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
 import org.junit.Assume;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore("CDH-39637: Disable sentry HA tests for now")
 public class TestPrivilegeWithHAGrantOption extends AbstractTestWithDbProvider {
 
   @BeforeClass

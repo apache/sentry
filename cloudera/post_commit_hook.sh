@@ -25,5 +25,7 @@ EML="sentry-jenkins@cloudera.com"
 if [[ ! -z "${GIT_BRANCH}" ]] && [[ "${GIT_BRANCH}xxx" != "xxx" ]] ; then
   EML=$(git shortlog ${GIT_BRANCH} -1 -se | awk -F"<" '{print $2}' | awk -F">" '{print $1}')
 fi
+echo "root=postmaster" > /etc/ssmtp/ssmtp.conf
+echo "mailhub=cloudera.com:25" >> /etc/ssmtp/ssmtp.conf
 mail -s "Most Recent Sentry Post Commit Job Failed" ${EML} < /tmp/sentry-unit-tests.log
 exit ${res}

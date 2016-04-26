@@ -276,7 +276,8 @@ public class TestPrivilegesAtTableScopePart2 extends AbstractTestWithStaticConfi
             "server=server1->db=" + DB1 + "->table=" + TBL2)
         .addRolesToGroup(USERGROUP2, "drop_tab1")
         .addPermissionsToRole("drop_tab1",
-            "server=server1->db=" + DB1 + "->table=" + TBL3 + "->action=drop",
+            // Because of CDH-28502, here use 'action=all' instead of 'action-drop'
+            "server=server1->db=" + DB1 + "->table=" + TBL3 + "->action=all",
             "server=server1->db=" + DB1 + "->table=" + TBL3 + "->action=select")
         .addRolesToGroup(USERGROUP3, "select_tab1")
         .addPermissionsToRole("select_tab1",

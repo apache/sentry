@@ -46,6 +46,8 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.Timeout;
 
+import static org.junit.Assume.assumeNotNull;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
@@ -115,6 +117,8 @@ public abstract class AbstractTestWithDbProvider extends AbstractTestWithHiveSer
     }
 
     context = AbstractTestWithHiveServer.createContext(properties);
+    assumeNotNull(context);
+
     policyFile
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
         .write(context.getPolicyFile(), policyFilePath);
