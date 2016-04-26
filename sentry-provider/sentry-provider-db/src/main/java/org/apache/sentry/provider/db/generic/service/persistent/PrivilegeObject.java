@@ -197,7 +197,7 @@ public class PrivilegeObject {
           }
           @Override
           public String getName() {
-            return authorizable.getName().toLowerCase();
+            return authorizable.getName();
           }
         });
       }
