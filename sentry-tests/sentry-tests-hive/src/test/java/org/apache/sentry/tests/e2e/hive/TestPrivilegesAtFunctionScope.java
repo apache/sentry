@@ -46,6 +46,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
   private File dataDir;
   private File dataFile;
   private PolicyFile policyFile;
+  private final String tableName1 = "tb_1";
 
   @Before
   public void setup() throws Exception {
@@ -75,9 +76,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     res.close();
   }
 
-  @Test
-  public void testAndVerifyFuncPrivileges() throws Exception {
-    String tableName1 = "tb_1";
+  private void setUpContext() throws Exception {
     String udfClassName = "org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf";
     CodeSource udfSrc = Class.forName(udfClassName).getProtectionDomain().getCodeSource();
     String udfLocation = System.getProperty(EXTERNAL_HIVE_LIB);
@@ -105,10 +104,14 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
         .addPermissionsToRole("UDF_JAR", "server=server1->uri=file://" + udfLocation)
         .addPermissionsToRole("data_read", "server=server1->URI=" + "file:///tmp");
     writePolicyFile(policyFile);
+  }
 
+  @Test
+  public void testAndVerifyFuncPrivilegesPart1() throws Exception {
+    setUpContext();
     // user1 should be able create/drop temp functions
-    connection = context.createConnection(USER1_1);
-    statement = context.createStatement(connection);
+    Connection connection = context.createConnection(USER1_1);
+    Statement statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
 
     LOGGER.info("Testing select from temp func printf_test");
@@ -147,12 +150,15 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     } finally {
       statement.execute("DROP FUNCTION IF EXISTS printf_test_perm_use_file");
     }
-
     context.close();
+  }
 
+  @Test
+  public void testAndVerifyFuncPrivilegesPart2() throws Exception {
+    setUpContext();
     // user2 has select privilege on one of the tables in db1, should be able create/drop temp functions
-    connection = context.createConnection(USER2_1);
-    statement = context.createStatement(connection);
+    Connection connection = context.createConnection(USER2_1);
+    Statement statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
 
     try {
@@ -190,16 +196,19 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     } catch (SQLException e) {
       context.verifyAuthzException(e);
     }
-
     context.close();
+  }
 
+  @Test
+  public void testAndVerifyFuncPrivilegesPart3() throws Exception {
+    setUpContext();
     // user3 shouldn't be able to create/drop temp functions since it doesn't have permission for jar
-    connection = context.createConnection(USER3_1);
-    statement = context.createStatement(connection);
+    Connection connection = context.createConnection(USER3_1);
+    Statement statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
     try {
       statement.execute(
-      "CREATE TEMPORARY FUNCTION printf_test_bad AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
+          "CREATE TEMPORARY FUNCTION printf_test_bad AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
       assertFalse("CREATE TEMPORARY FUNCTION should fail for user3", true);
     } catch (SQLException e) {
       context.verifyAuthzException(e);
@@ -207,27 +216,24 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
 
     try {
       statement.execute(
-      "CREATE FUNCTION printf_test_perm_bad AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
+          "CREATE FUNCTION printf_test_perm_bad AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
       assertFalse("CREATE FUNCTION should fail for user3", true);
     } catch (SQLException e) {
       context.verifyAuthzException(e);
     }
-
     context.close();
-
     // user4 (not part of any group ) shouldn't be able to create/drop temp functions
     connection = context.createConnection(USER4_1);
     statement = context.createStatement(connection);
     try {
       statement.execute("USE default");
       statement.execute(
-      "CREATE TEMPORARY FUNCTION printf_test_bad AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
+          "CREATE TEMPORARY FUNCTION printf_test_bad AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
       assertFalse("CREATE TEMPORARY FUNCTION should fail for user4", true);
     } catch (SQLException e) {
       context.verifyAuthzException(e);
     }
     context.close();
-
   }
 
   @Test
