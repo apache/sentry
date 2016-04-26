@@ -297,17 +297,27 @@ public class TestSentryGenericPolicyProcessor {
     assertEquals(Status.OK, fromTSentryStatus(response3.getStatus()));
     assertEquals(2, response3.getPrivileges().size());
 
+    // Optional parameters activeRoleSet and requested group name are both provided.
     TListSentryPrivilegesByAuthRequest request4 = new TListSentryPrivilegesByAuthRequest();
     request4.setGroups(Sets.newHashSet(groupName));
     request4.setRoleSet(new TSentryActiveRoleSet(true, null));
     request4.setRequestorUserName(ADMIN_USER);
-
     Set<String> authorizablesSet = Sets.newHashSet("Collection=c1->Field=f1");
     request4.setAuthorizablesSet(authorizablesSet);
 
     TListSentryPrivilegesByAuthResponse response4 = processor.list_sentry_privileges_by_authorizable(request4);
     assertEquals(Status.OK, fromTSentryStatus(response4.getStatus()));
     assertEquals(1, response4.getPrivilegesMapByAuth().size());
+
+    // Optional parameters activeRoleSet and requested group name are both not provided.
+    TListSentryPrivilegesByAuthRequest request5 = new TListSentryPrivilegesByAuthRequest();
+    request5.setRequestorUserName("not_" + ADMIN_USER);
+    authorizablesSet = Sets.newHashSet("Collection=c1->Field=f2");
+    request5.setAuthorizablesSet(authorizablesSet);
+
+    TListSentryPrivilegesByAuthResponse response5 = processor.list_sentry_privileges_by_authorizable(request5);
+    assertEquals(Status.OK, fromTSentryStatus(response5.getStatus()));
+    assertEquals(1, response5.getPrivilegesMapByAuth().size());
   }
 
   @Test(expected=SentryConfigurationException.class)

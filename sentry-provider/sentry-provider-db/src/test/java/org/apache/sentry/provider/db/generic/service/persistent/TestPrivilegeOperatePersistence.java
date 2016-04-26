@@ -1001,6 +1001,8 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
 
     assertEquals(0, sentryStore.getPrivilegesByAuthorizable(SEARCH, service1, null,
         Arrays.asList(new Collection(COLLECTION_NAME), new Field(FIELD_NAME))).size());
+    assertEquals(1, sentryStore.getPrivilegesByAuthorizable(SEARCH, service1, Sets.newHashSet(roleName1),
+    Arrays.asList(new Collection(COLLECTION_NAME), new Field(FIELD_NAME))).size());
     assertEquals(2, sentryStore.getPrivilegesByAuthorizable(SEARCH, service1,
         Sets.newHashSet(roleName1), null).size());
     assertEquals(2, sentryStore.getPrivilegesByAuthorizable(SEARCH, service1,
