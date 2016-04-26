@@ -10,7 +10,7 @@ find . -name test-classes | grep target/test-classes | xargs rm -rf
 mvn clean compile package -DskipTests=true
 
 # enable full tests for now
-mvn test --fail-fast -DtestFailureIgnore=false
+mvn test -PskipOnlySlowTests --fail-fast -DtestFailureIgnore=false
 
 # validate test status and email failures to author
 res=$?
@@ -25,7 +25,8 @@ EML="sentry-jenkins@cloudera.com"
 if [[ ! -z "${GIT_BRANCH}" ]] && [[ "${GIT_BRANCH}xxx" != "xxx" ]] ; then
   EML=$(git shortlog ${GIT_BRANCH} -1 -se | awk -F"<" '{print $2}' | awk -F">" '{print $1}')
 fi
-echo "root=postmaster" > /etc/ssmtp/ssmtp.conf
-echo "mailhub=cloudera.com:25" >> /etc/ssmtp/ssmtp.conf
+sudo mkdir -p /etc/ssmtp
+sudo echo "root=postmaster" > /etc/ssmtp/ssmtp.conf
+sudo echo "mailhub=cloudera.com:25" >> /etc/ssmtp/ssmtp.conf
 mail -s "Most Recent Sentry Post Commit Job Failed" ${EML} < /tmp/sentry-unit-tests.log
 exit ${res}

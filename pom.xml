@@ -782,7 +782,7 @@ limitations under the License.
           <configuration>
             <forkCount>1</forkCount>
             <rerunFailingTestsCount>3</rerunFailingTestsCount>
-	    <reuseForks>false</reuseForks>
+	        <reuseForks>false</reuseForks>
             <environmentVariables>
               <HADOOP_CLIENT_OPTS>-Xmx1500m -Dhive.log.dir=./target/</HADOOP_CLIENT_OPTS>
             </environmentVariables>
@@ -914,17 +914,40 @@ limitations under the License.
                 <exclude>%regex[org.apache.sentry.provider.db.generic.tools.TestSentryShellSolr.*.class]</exclude>
               </excludes>
             </configuration>
-            <dependencies>
-              <dependency>
-                <groupId>org.apache.maven.surefire</groupId>
-                <artifactId>surefire-junit47</artifactId>
-                <version>2.19.1</version>
-              </dependency>
-            </dependencies>
           </plugin>
         </plugins>
       </build>
     </profile>
+    <!--This profile is for CDH post-commit job only-->
+    <profile>
+      <id>skipOnlySlowTests</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>${cdh.surefire.version}</version>
+            <configuration>
+              <forkCount>1</forkCount>
+              <rerunFailingTestsCount>3</rerunFailingTestsCount>
+              <reuseForks>false</reuseForks>
+              <environmentVariables>
+                <HADOOP_CLIENT_OPTS>-Xmx1500m -Dhive.log.dir=./target/</HADOOP_CLIENT_OPTS>
+              </environmentVariables>
+              <redirectTestOutputToFile>true</redirectTestOutputToFile>
+              <argLine>-Xms512m -Xmx2g -XX:MaxPermSize=2g</argLine>
+              <systemPropertyVariables>
+                <java.net.preferIPv4Stack>true</java.net.preferIPv4Stack>
+              </systemPropertyVariables>
+              <excludes combine.children="append">
+                <exclude>%regex[org.apache.sentry.tests.e2e.dbprovider.*.class]</exclude>
+              </excludes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
   </profiles>
 
   <repositories>
