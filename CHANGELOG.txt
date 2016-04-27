@@ -25,7 +25,6 @@ Release Notes - Sentry - Version 1.7.0
     * [SENTRY-930] - Improve TestDbDDLAuditLog for keep consistent with Hive metadata.
     * [SENTRY-931] - Improve TestDatabaseProvider for keep consistent with Hive metadata.
     * [SENTRY-987] - Move general (non specific handler) solr-sentry code to solr-sentry-core package
-    * [SENTRY-1004] - Create CommonPrivilege for external component
     * [SENTRY-1011] - Add Kafka binding
     * [SENTRY-1012] - Add core model for Kafka
     * [SENTRY-1013] - Add policy engine for Kafka
@@ -33,18 +32,10 @@ Release Notes - Sentry - Version 1.7.0
     * [SENTRY-1023] - Create an initial branch for CI
     * [SENTRY-1029] - Address review comments for Kafka model that came after patch got committed.
     * [SENTRY-1030] - Restrict Kafka Cluster authorizable to only have "kafka-cluster" as authorizable's name.
-    * [SENTRY-1042] - Create CommonPolicy for external component
     * [SENTRY-1056] - Get service name from Kafka's server properties.
     * [SENTRY-1057] - Add implementations for acls' CRUD
-    * [SENTRY-1089] - Move validator from sentry-policy-xxx to sentry-core-model-xxx
-    * [SENTRY-1090] - Improvement for CommonPrivilege
-    * [SENTRY-1091] - Create Model for specific components
-    * [SENTRY-1092] - Move Class KeyValue and PolicyConstants to sentry-core-common
-    * [SENTRY-1093] - Refactor the constructor of PolicyEngine
     * [SENTRY-1098] - Make Kafka dependency as provided
     * [SENTRY-1102] - Merge kafka branch into trunk
-    * [SENTRY-1103] - Authorizable names' case sensitivity must be decided by plugins
-    * [SENTRY-1104] - Add method in Privilege model to create privilege validators
     * [SENTRY-1113] - Fix test failures due to missing files.
     * [SENTRY-1126] - Create a email list for jira updates (issues@)
     * [SENTRY-1137] - Update hive dependence to 2.0.0
@@ -57,12 +48,17 @@ Release Notes - Sentry - Version 1.7.0
     * [SENTRY-1149] - Update committer list of Sentry
     * [SENTRY-1150] - Update the website svn directory
     * [SENTRY-1151] - Update source code host at sentry website
+    * [SENTRY-1152] - Update Sentry wiki after graduation
     * [SENTRY-1159] - Decouple datanucleus dependences for hive-binding V1 and V2
+    * [SENTRY-1162] - Add shell for Sentry Kafka integration
     * [SENTRY-1163] - Enable Jenkins for Hive Authz2
     * [SENTRY-1172] - Update mailing lists page with new issues@ list
+    * [SENTRY-1173] - Sentry TLP: Update pom.xml to new git location
     * [SENTRY-1186] - Sentry TLP: Update release download links on website
+    * [SENTRY-1188] - Fixes to get kerberos auth work.
     * [SENTRY-1191] - update history page of Sentry release
     * [SENTRY-1192] - Add SQL upgrade script for 1.7.0
+    * [SENTRY-1202] - Sentry TLP: Other Common post graduation tasks
 
 
 ** Bug
@@ -145,6 +141,7 @@ Release Notes - Sentry - Version 1.7.0
     * [SENTRY-1157] - Fix Unit Tests TestAclsCrud&TestAuthorize failed
     * [SENTRY-1164] - Fix testCaseSensitivity test failure on a real cluster
     * [SENTRY-1169] - MetastorePlugin#renameAuthzObject log message prints oldpathname as newpathname
+    * [SENTRY-1217] - NPE for list_sentry_privileges_by_authorizable when activeRoleSet is not set
 
 
 ** Improvement
@@ -179,6 +176,7 @@ Release Notes - Sentry - Version 1.7.0
 
 
 ** New Feature
+    * [SENTRY-498] - Sentry integration with Hive authorization framework V2
     * [SENTRY-749] - Create simple shell for sentry
     * [SENTRY-812] - Generate audit trail for Sentry generic model when authorization metadata change 
     * [SENTRY-906] - Add concurrency sentry client tests
