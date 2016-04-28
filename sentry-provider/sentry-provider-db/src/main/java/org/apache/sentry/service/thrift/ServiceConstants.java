@@ -160,6 +160,14 @@ public class ServiceConstants {
     public static final String SENTRY_REPORTER_JMX = SentryMetrics.Reporting.JMX.name(); //case insensitive
     public static final String SENTRY_REPORTER_CONSOLE = SentryMetrics.Reporting.CONSOLE.name();//case insensitive
 
+    // Web SSL
+    public static final String SENTRY_WEB_USE_SSL = "sentry.web.use.ssl";
+    public static final String SENTRY_WEB_SSL_KEYSTORE_PATH = "sentry.web.ssl.keystore.path";
+    public static final String SENTRY_WEB_SSL_KEYSTORE_PASSWORD = "sentry.web.ssl.keystore.password";
+    public static final String SENTRY_SSL_PROTOCOL_BLACKLIST = "sentry.ssl.protocol.blacklist";
+    // Blacklist SSL protocols that are not secure (e.g., POODLE vulnerability)
+    public static final String[] SENTRY_SSL_PROTOCOL_BLACKLIST_DEFAULT = {"SSLv2", "SSLv2Hello", "SSLv3"};
+
     // Web Security
     public static final String SENTRY_WEB_SECURITY_PREFIX = "sentry.service.web.authentication";
     public static final String SENTRY_WEB_SECURITY_TYPE = SENTRY_WEB_SECURITY_PREFIX + ".type";

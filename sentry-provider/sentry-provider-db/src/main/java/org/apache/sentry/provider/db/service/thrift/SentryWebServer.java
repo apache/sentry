@@ -26,8 +26,13 @@ import java.util.EnumSet;
 import java.net.URL;
 import java.util.EventListener;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
+import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -38,15 +43,16 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 public class SentryWebServer {
 
@@ -59,7 +65,29 @@ public class SentryWebServer {
 
   public SentryWebServer(List<EventListener> listeners, int port, Configuration conf) {
     this.port = port;
-    server = new Server(port);
+    server = new Server();
+
+    // Create a channel connector for "http/https" requests
+    SelectChannelConnector connector = new SelectChannelConnector();
+    if (conf.getBoolean(ServerConfig.SENTRY_WEB_USE_SSL, false)) {
+      SslContextFactory sslContextFactory = new SslContextFactory();
+      sslContextFactory.setKeyStorePath(conf.get(ServerConfig.SENTRY_WEB_SSL_KEYSTORE_PATH, ""));
+      sslContextFactory.setKeyStorePassword(
+          conf.get(ServerConfig.SENTRY_WEB_SSL_KEYSTORE_PASSWORD, ""));
+      // Exclude SSL blacklist protocols
+      sslContextFactory.setExcludeProtocols(ServerConfig.SENTRY_SSL_PROTOCOL_BLACKLIST_DEFAULT);
+      Set<String> moreExcludedSSLProtocols =
+          Sets.newHashSet(Splitter.on(",").trimResults().omitEmptyStrings()
+          .split(Strings.nullToEmpty(conf.get(ServerConfig.SENTRY_SSL_PROTOCOL_BLACKLIST))));
+      sslContextFactory.addExcludeProtocols(moreExcludedSSLProtocols.toArray(
+          new String[moreExcludedSSLProtocols.size()]));
+      connector = new SslSelectChannelConnector(sslContextFactory);
+      LOGGER.info("Now using SSL mode.");
+    }
+
+    connector.setPort(port);
+    server.addConnector(connector);
+
     ServletContextHandler servletContextHandler = new ServletContextHandler();
     ServletHolder servletHolder = new ServletHolder(AdminServlet.class);
     servletContextHandler.addServlet(servletHolder, "/*");

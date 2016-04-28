@@ -204,6 +204,29 @@ limitations under the License.
     </resources>
     <plugins>
       <plugin>
+        <groupId>com.google.code.maven-replacer-plugin</groupId>
+        <artifactId>replacer</artifactId>
+        <version>1.5.2</version>
+        <executions>
+          <execution>
+            <id>replaceTokens</id>
+            <phase>clean</phase>
+            <goals>
+              <goal>replace</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <file>${basedir}/src/main/webapp/SentryService.html</file>
+          <replacements>
+            <replacement>
+             <token>%PROJECT_VERSION%</token>
+             <value>${version}</value>
+            </replacement>
+          </replacements>
+        </configuration>
+      </plugin>
+      <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
         <executions>
