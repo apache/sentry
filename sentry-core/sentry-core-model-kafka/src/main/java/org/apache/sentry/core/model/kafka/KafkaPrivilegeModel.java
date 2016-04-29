@@ -43,9 +43,9 @@ public class KafkaPrivilegeModel implements Model {
     implyMethodMap.put(KafkaAuthorizable.AuthorizableType.HOST.name().toLowerCase(),
         ImplyMethodType.STRING);
     implyMethodMap.put(KafkaAuthorizable.AuthorizableType.TOPIC.name().toLowerCase(),
-        ImplyMethodType.STRING);
+        ImplyMethodType.STRING_CASE_SENSITIVE);
     implyMethodMap.put(KafkaAuthorizable.AuthorizableType.CONSUMERGROUP.name().toLowerCase(),
-        ImplyMethodType.STRING);
+        ImplyMethodType.STRING_CASE_SENSITIVE);
   }
 
   @Override
