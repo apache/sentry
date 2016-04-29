@@ -51,6 +51,7 @@ import java.util.concurrent.ExecutionException;
 
 public class TestAuthorize extends AbstractKafkaSentryTestBase {
   private static final Logger LOGGER = LoggerFactory.getLogger(TestAuthorize.class);
+  private static final String TOPIC_NAME = "tOpIc1";
 
   @Test
   public void testProduceConsumeForSuperuser() {
@@ -70,26 +71,26 @@ public class TestAuthorize extends AbstractKafkaSentryTestBase {
     // START TESTING PRODUCER
     try {
       testProduce("user1");
-      Assert.fail("user1 must not have been authorized to create topic t1.");
+      Assert.fail("user1 must not have been authorized to create topic " + TOPIC_NAME + ".");
     } catch (ExecutionException ex) {
-      assertCausedMessage(ex, "Not authorized to access topics: [t1]");
+      assertCausedMessage(ex, "Not authorized to access topics: [" + TOPIC_NAME + "]");
     }
 
     final String role = StaticUserGroupRole.ROLE_1;
     final String group = StaticUserGroupRole.GROUP_1;
 
-    // Allow HOST=localhost->Topic=t1->action=describe
+    // Allow HOST=localhost->Topic=tOpIc1->action=describe
     ArrayList<TAuthorizable> authorizables = new ArrayList<TAuthorizable>();
     Host host = new Host(localhost);
     authorizables.add(new TAuthorizable(host.getTypeName(), host.getName()));
-    Topic topic = new Topic("t1");
+    Topic topic = new Topic(TOPIC_NAME); // Topic name is case sensitive.
     authorizables.add(new TAuthorizable(topic.getTypeName(), topic.getName()));
     addPermissions(role, group, KafkaActionConstant.DESCRIBE, authorizables);
     try {
       testProduce("user1");
-      Assert.fail("user1 must not have been authorized to create topic t1.");
+      Assert.fail("user1 must not have been authorized to create topic " + TOPIC_NAME + ".");
     } catch (ExecutionException ex) {
-      assertCausedMessage(ex, "Not authorized to access topics: [t1]");
+      assertCausedMessage(ex, "Not authorized to access topics: [" + TOPIC_NAME + "]");
     }
 
     // Allow HOST=localhost->Cluster=kafka-cluster->action=create
@@ -100,12 +101,12 @@ public class TestAuthorize extends AbstractKafkaSentryTestBase {
     addPermissions(role, group, KafkaActionConstant.CREATE, authorizables);
     try {
       testProduce("user1");
-      Assert.fail("user1 must not have been authorized to create topic t1.");
+      Assert.fail("user1 must not have been authorized to create topic " + TOPIC_NAME + ".");
     } catch (ExecutionException ex) {
-      assertCausedMessage(ex, "Not authorized to access topics: [t1]");
+      assertCausedMessage(ex, "Not authorized to access topics: [" + TOPIC_NAME + "]");
     }
 
-    // Allow HOST=localhost->Topic=t1->action=write
+    // Allow HOST=localhost->Topic=tOpIc1->action=write
     authorizables = new ArrayList<TAuthorizable>();
     authorizables.add(new TAuthorizable(host.getTypeName(), host.getName()));
     authorizables.add(new TAuthorizable(topic.getTypeName(), topic.getName()));
@@ -113,7 +114,7 @@ public class TestAuthorize extends AbstractKafkaSentryTestBase {
     try {
       testProduce("user1");
     } catch (Exception ex) {
-      Assert.fail("user1 should have been able to successfully produce to topic t1. \n Exception: " + ex);
+      Assert.fail("user1 should have been able to successfully produce to topic " + TOPIC_NAME + ". \n Exception: " + ex);
     }
 
     // START TESTING CONSUMER
@@ -144,12 +145,12 @@ public class TestAuthorize extends AbstractKafkaSentryTestBase {
     addPermissions(role, group, KafkaActionConstant.READ, authorizables);
     try {
       testConsume("user1");
-      Assert.fail("user1 must not have been authorized to read from topic t1.");
+      Assert.fail("user1 must not have been authorized to read from topic " + TOPIC_NAME + ".");
     } catch (Exception ex) {
-      assertCausedMessage(ex, "Not authorized to access topics: [t1]");
+      assertCausedMessage(ex, "Not authorized to access topics: [" + TOPIC_NAME + "]");
     }
 
-    // HOST=localhost->Topic=t1->action=read
+    // HOST=localhost->Topic=tOpIc1->action=read
     authorizables = new ArrayList<TAuthorizable>();
     authorizables.add(new TAuthorizable(host.getTypeName(), host.getName()));
     authorizables.add(new TAuthorizable(topic.getTypeName(), topic.getName()));
@@ -177,9 +178,8 @@ public class TestAuthorize extends AbstractKafkaSentryTestBase {
   private void testProduce(String producerUser) throws Exception {
     final KafkaProducer<String, String> kafkaProducer = createKafkaProducer(producerUser);
     try {
-      final String topic = "t1";
       final String msg = "message1";
-      ProducerRecord<String, String> producerRecord = new ProducerRecord<String, String>(topic, msg);
+      ProducerRecord<String, String> producerRecord = new ProducerRecord<String, String>(TOPIC_NAME, msg);
       kafkaProducer.send(producerRecord).get();
       LOGGER.debug("Sent message: " + producerRecord);
     } finally {
@@ -190,9 +190,8 @@ public class TestAuthorize extends AbstractKafkaSentryTestBase {
   private void testConsume(String consumerUser) throws Exception {
     final KafkaConsumer<String, String> kafkaConsumer = createKafkaConsumer(consumerUser);
     try {
-      final String topic = "t1";
       final String msg = "message1";
-      kafkaConsumer.subscribe(Collections.singletonList(topic), new CustomRebalanceListener(kafkaConsumer));
+      kafkaConsumer.subscribe(Collections.singletonList(TOPIC_NAME), new CustomRebalanceListener(kafkaConsumer));
       waitTillTrue("Did not receive expected message.", 60, 2, new Callable<Boolean>() {
         @Override
         public Boolean call() throws Exception {

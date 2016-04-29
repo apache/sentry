@@ -125,7 +125,7 @@ public class TestAclsCrud extends AbstractKafkaSentryTestBase {
         Operation$.MODULE$.fromString("READ"));
     acls.add(acl);
     scala.collection.immutable.Set<Acl> aclsScala = scala.collection.JavaConversions.asScalaSet(acls).toSet();
-    Resource resource = new Resource(ResourceType$.MODULE$.fromString("TOPIC"), "test-topic");
+    Resource resource = new Resource(ResourceType$.MODULE$.fromString("TOPIC"), "test-Topic");
 
     // Add role
     try {
