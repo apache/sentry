@@ -501,4 +501,31 @@ public class TestOperationsPart1 extends AbstractTestWithStaticConfiguration {
 
 
   }
+
+  @Test
+  public void testDbPrefix() throws Exception {
+    Connection connection;
+    Statement statement;
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    //Create db1.table1
+    statement.execute("create database " + DB1);
+    statement.execute("create table " + DB1 + "." + tableName + "(a int)");
+    //Create db2.table1
+    statement.execute("create database " + DB2);
+    statement.execute("create table " + DB2 + "." + tableName + "(a int)");
+    //grant on db1.table1
+    policyFile
+      .addPermissionsToRole("all_db1_tb1", privileges.get("all_db1_tb1"))
+      .addRolesToGroup(USERGROUP1, "all_db1_tb1");
+    writePolicyFile(policyFile);
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    //Use db2
+    statement.execute("use " + DB1);
+    //MSCK db1.table1
+    assertSemanticException(statement, "MSCK REPAIR TABLE " + DB2 + "." + tableName);
+    statement.execute("MSCK REPAIR TABLE " + DB1 + "." + tableName);
+  }
 }

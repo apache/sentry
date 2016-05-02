@@ -221,11 +221,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
         currDB = extractDatabase((ASTNode)ast.getChild(0));
         break;
       case HiveParser.TOK_MSCK:
-        // token name TOK_TABNAME is not properly set in this case and child(0) does
-        // not contain the table name.
-        // TODO: Fix Hive to capture the table and DB name
-        currOutTab = extractTable((ASTNode)ast.getChild(1));
-        currOutDB  = extractDatabase((ASTNode)ast.getChild(0));
+        extractDbTableNameFromTOKTABLE((ASTNode) ast.getChild(1));
         break;
       case HiveParser.TOK_ALTERTABLE_ADDPARTS:
         /*
@@ -314,7 +310,15 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
     LOG.info("Token HiveParser.TOK_TABLELOCATION not found in ast. This means command does not have a location clause");
     return null;
   }
+  protected void extractDbTableNameFromTOKTABLE(ASTNode astNode) throws SemanticException{
+    String[] fqTableName = BaseSemanticAnalyzer.getQualifiedTableName(astNode);
+    Preconditions.checkArgument(fqTableName.length == 2, "BaseSemanticAnalyzer.getQualifiedTableName should return " +
+            "an array with dbName and tableName");
+    currOutDB = new Database(fqTableName[0]);
+    currOutTab = new Table(fqTableName[1]);
+  }
 
+  /*TODO: Deprecate */
   private Database extractDatabase(ASTNode ast) throws SemanticException {
     String tableName = BaseSemanticAnalyzer.getUnescapedName(ast);
     if (tableName.contains(".")) {
@@ -323,6 +327,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
       return getCanonicalDb();
     }
   }
+  /*TODO: Deprecate */
   private Table extractTable(ASTNode ast) throws SemanticException {
     String tableName = BaseSemanticAnalyzer.getUnescapedName(ast);
     if (tableName.contains(".")) {
