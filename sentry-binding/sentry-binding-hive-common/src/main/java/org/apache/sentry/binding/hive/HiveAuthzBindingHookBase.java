@@ -29,6 +29,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
+import com.google.common.base.Preconditions;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.common.JavaUtils;
@@ -232,6 +233,15 @@ public abstract class HiveAuthzBindingHookBase extends AbstractSemanticAnalyzerH
     return new Database(SessionState.get().getCurrentDatabase());
   }
 
+  protected void extractDbTableNameFromTOKTABLE(ASTNode astNode) throws SemanticException{
+    String[] fqTableName = BaseSemanticAnalyzer.getQualifiedTableName(astNode);
+    Preconditions.checkArgument(fqTableName.length == 2, "BaseSemanticAnalyzer.getQualifiedTableName should return " +
+            "an array with dbName and tableName");
+    currOutDB = new Database(fqTableName[0]);
+    currOutTab = new Table(fqTableName[1]);
+  }
+
+  /*TODO: Deprecate */
   protected Database extractDatabase(ASTNode ast) throws SemanticException {
     String tableName = BaseSemanticAnalyzer.getUnescapedName(ast);
     if (tableName.contains(".")) {
@@ -240,7 +250,7 @@ public abstract class HiveAuthzBindingHookBase extends AbstractSemanticAnalyzerH
       return getCanonicalDb();
     }
   }
-
+  /*TODO: Deprecate */
   protected Table extractTable(ASTNode ast) throws SemanticException {
     String tableName = BaseSemanticAnalyzer.getUnescapedName(ast);
     if (tableName.contains(".")) {

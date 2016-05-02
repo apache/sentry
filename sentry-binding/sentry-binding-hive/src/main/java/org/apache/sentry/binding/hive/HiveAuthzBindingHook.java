@@ -182,11 +182,7 @@ public class HiveAuthzBindingHook extends HiveAuthzBindingHookBase {
         currDB = extractDatabase((ASTNode)ast.getChild(0));
         break;
       case HiveParser.TOK_MSCK:
-        // token name TOK_TABNAME is not properly set in this case and child(0) does
-        // not contain the table name.
-        // TODO: Fix Hive to capture the table and DB name
-        currOutTab = extractTable((ASTNode)ast.getChild(1));
-        currOutDB  = extractDatabase((ASTNode)ast.getChild(0));
+        extractDbTableNameFromTOKTABLE((ASTNode) ast.getChild(1));
         break;
       case HiveParser.TOK_ALTERTABLE_ADDPARTS:
         /*
