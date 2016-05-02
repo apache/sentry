@@ -271,7 +271,7 @@ public class SimpleFileProviderBackend implements ProviderBackend {
       mergeResult(groupRolePrivilegeTableTemp);
       groupRolePrivilegeTableTemp.clear();
     } catch (Exception e) {
-      configErrors.add("Error processing file " + resourcePath + e.getMessage());
+      configErrors.add("Error processing file " + resourcePath + ".  Message: " + e.getMessage());
       LOGGER.error("Error processing file, ignoring " + resourcePath, e);
     }
   }
