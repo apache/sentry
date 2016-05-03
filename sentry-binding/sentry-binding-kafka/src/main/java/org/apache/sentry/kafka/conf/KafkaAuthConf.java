@@ -27,7 +27,7 @@ public class KafkaAuthConf extends Configuration {
    */
   public static final String SENTRY_KAFKA_SITE_URL = "sentry.kafka.site.url";
   public static final String AUTHZ_SITE_FILE = "sentry-site.xml";
-  public static final String KAFKA_SUPER_USERS = "kafka.superusers";
+  public static final String KAFKA_SUPER_USERS = "super.users";
   public static final String KAFKA_SERVICE_INSTANCE_NAME = "sentry.kafka.service.instance";
   public static final String KAFKA_SERVICE_USER_NAME = "sentry.kafka.service.user.name";
   public static final String KAFKA_PRINCIPAL_HOSTNAME = "sentry.kafka.principal.hostname";

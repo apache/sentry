@@ -99,7 +99,7 @@ public class KafkaTestServer {
         props.put("ssl.truststore.password", "test-ts-passwd");
         props.put("security.inter.broker.protocol", "SSL");
         props.put("ssl.client.auth", "required");
-        props.put("kafka.superusers", "User:CN=superuser;User:CN=superuser1; User:CN=Superuser2 ");
+        props.put("super.users", "User:CN=superuser;User:CN=superuser1; User:CN=Superuser2 ");
     }
 
     private void createKafkaServer() throws UnknownHostException {
