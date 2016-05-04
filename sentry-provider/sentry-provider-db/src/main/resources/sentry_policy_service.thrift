@@ -265,8 +265,9 @@ struct TSentryConfigValueResponse {
 
 # struct for the mapping data like group to role, role to privilege
 struct TSentryMappingData {
-1: optional map<string, set<string>> groupRolesMap,          	   # for the groupName -> role mapping
-2: optional map<string, set<TSentryPrivilege>>  rolePrivilegesMap  # for the roleName -> privilege mapping
+1: optional map<string, set<string>> groupRolesMap,                # for the groupName -> role mapping
+2: optional map<string, set<TSentryPrivilege>>  rolePrivilegesMap, # for the roleName -> privilege mapping
+3: optional map<string, set<string>> userRolesMap                  # for the userName -> role mapping
 }
 
 struct TSentryExportMappingDataRequest {

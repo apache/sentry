@@ -99,6 +99,8 @@ public class SentryStore {
           .getLogger(SentryStore.class);
 
   public static String NULL_COL = "__NULL__";
+  public static int INDEX_GROUP_ROLES_MAP = 0;
+  public static int INDEX_USER_ROLES_MAP = 1;
   static final String DEFAULT_DATA_DIR = "sentry_policy_db";
 
   private static final Set<String> ALL_ACTIONS = Sets.newHashSet(AccessConstants.ALL,
@@ -309,7 +311,6 @@ public class SentryStore {
    */
   public CommitContext createSentryRole(String roleName)
       throws SentryAlreadyExistsException {
-    roleName = trimAndLower(roleName);
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
     try {
@@ -327,6 +328,7 @@ public class SentryStore {
 
   private void createSentryRoleCore(PersistenceManager pm, String roleName)
       throws SentryAlreadyExistsException {
+    roleName = trimAndLower(roleName);
     MSentryRole mSentryRole = getMSentryRole(pm, roleName);
     if (mSentryRole == null) {
       MSentryRole mRole = new MSentryRole(roleName, System.currentTimeMillis());
@@ -877,36 +879,41 @@ public class SentryStore {
       Set<String> userNames) throws SentryNoSuchObjectException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
-    roleName = roleName.trim().toLowerCase();
     try {
       pm = openTransaction();
-      MSentryRole role = getMSentryRole(pm, roleName);
-      if (role == null) {
-        throw new SentryNoSuchObjectException("Role: " + roleName);
-      } else {
-        Query query = pm.newQuery(MSentryUser.class);
-        query.setFilter("this.userName == t");
-        query.declareParameters("java.lang.String t");
-        query.setUnique(true);
-        List<MSentryUser> users = Lists.newArrayList();
-        for (String userName : userNames) {
-          userName = userName.trim();
-          MSentryUser user = (MSentryUser) query.execute(userName);
-          if (user == null) {
-            user = new MSentryUser(userName, System.currentTimeMillis(), Sets.newHashSet(role));
-          }
-          user.appendRole(role);
-          users.add(user);
-        }
-        pm.makePersistentAll(users);
-        CommitContext commit = commitUpdateTransaction(pm);
-        rollbackTransaction = false;
-        return commit;
-      }
+      alterSentryRoleAddUsersCore(pm, roleName, userNames);
+      CommitContext commit = commitUpdateTransaction(pm);
+      rollbackTransaction = false;
+      return commit;
     } finally {
       if (rollbackTransaction) {
         rollbackTransaction(pm);
       }
+    }
+  }
+
+  private void alterSentryRoleAddUsersCore(PersistenceManager pm, String roleName,
+      Set<String> userNames) throws SentryNoSuchObjectException {
+    roleName = roleName.trim().toLowerCase();
+    MSentryRole role = getMSentryRole(pm, roleName);
+    if (role == null) {
+      throw new SentryNoSuchObjectException("Role: " + roleName);
+    } else {
+      Query query = pm.newQuery(MSentryUser.class);
+      query.setFilter("this.userName == t");
+      query.declareParameters("java.lang.String t");
+      query.setUnique(true);
+      List<MSentryUser> users = Lists.newArrayList();
+      for (String userName : userNames) {
+        userName = userName.trim();
+        MSentryUser user = (MSentryUser) query.execute(userName);
+        if (user == null) {
+          user = new MSentryUser(userName, System.currentTimeMillis(), Sets.newHashSet(role));
+        }
+        user.appendRole(role);
+        users.add(user);
+      }
+      pm.makePersistentAll(users);
     }
   }
 
@@ -2172,13 +2179,8 @@ public class SentryStore {
     }
   }
 
-  // get mapping data for [group,role]
-  public Map<String, Set<String>> getGroupNameRoleNamesMap() {
-    return getGroupNameRoleNamesMap(null);
-  }
-
-  // get mapping data for [group,role] with the specific roles
-  public Map<String, Set<String>> getGroupNameRoleNamesMap(Set<String> roleNames) {
+  // get mapping datas for [group,role], [user,role] with the specific roles
+  public List<Map<String, Set<String>>> getGroupUserRoleMapList(Set<String> roleNames) {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
     try {
@@ -2197,9 +2199,13 @@ public class SentryStore {
 
       List<MSentryRole> mSentryRoles = (List<MSentryRole>) query.execute();
       Map<String, Set<String>> groupRolesMap = getGroupRolesMap(mSentryRoles);
+      Map<String, Set<String>> userRolesMap = getUserRolesMap(mSentryRoles);
+      List<Map<String, Set<String>>> mapsList = new ArrayList<>();
+      mapsList.add(INDEX_GROUP_ROLES_MAP, groupRolesMap);
+      mapsList.add(INDEX_USER_ROLES_MAP, userRolesMap);
       commitTransaction(pm);
       rollbackTransaction = false;
-      return groupRolesMap;
+      return mapsList;
     } finally {
       if (rollbackTransaction) {
         rollbackTransaction(pm);
@@ -2226,6 +2232,27 @@ public class SentryStore {
       }
     }
     return groupRolesMap;
+  }
+
+  private Map<String, Set<String>> getUserRolesMap(List<MSentryRole> mSentryRoles) {
+    Map<String, Set<String>> userRolesMap = Maps.newHashMap();
+    if (mSentryRoles == null) {
+      return userRolesMap;
+    }
+    // change the List<MSentryRole> -> Map<userName, Set<roleName>>
+    for (MSentryRole mSentryRole : mSentryRoles) {
+      Set<MSentryUser> users = mSentryRole.getUsers();
+      for (MSentryUser user : users) {
+        String userName = user.getUserName();
+        Set<String> rNames = userRolesMap.get(userName);
+        if (rNames == null) {
+          rNames = new HashSet<String>();
+        }
+        rNames.add(mSentryRole.getRoleName());
+        userRolesMap.put(userName, rNames);
+      }
+    }
+    return userRolesMap;
   }
 
   // get all mapping data for [role,privilege]
@@ -2330,12 +2357,26 @@ public class SentryStore {
     List<MSentryGroup> mSentryGroups = (List<MSentryGroup>) query.execute();
     Map<String, MSentryGroup> existGroupsMap = Maps.newHashMap();
     if (mSentryGroups != null) {
-      // change the List<MSentryGroup> -> Map<roleName, Set<MSentryGroup>>
+      // change the List<MSentryGroup> -> Map<groupName, MSentryGroup>
       for (MSentryGroup mSentryGroup : mSentryGroups) {
         existGroupsMap.put(mSentryGroup.getGroupName(), mSentryGroup);
       }
     }
     return existGroupsMap;
+  }
+
+  // get the all exist users
+  private Map<String, MSentryUser> getUserNameToUserMap(PersistenceManager pm) {
+    Query query = pm.newQuery(MSentryUser.class);
+    List<MSentryUser> users = (List<MSentryUser>) query.execute();
+    Map<String, MSentryUser> existUsersMap = Maps.newHashMap();
+    if (users != null) {
+      // change the List<MSentryUser> -> Map<userName, MSentryUser>
+      for (MSentryUser user : users) {
+        existUsersMap.put(user.getUserName(), user);
+      }
+    }
+    return existUsersMap;
   }
 
   // get the all exist privileges
@@ -2376,12 +2417,29 @@ public class SentryStore {
   }
 
   @VisibleForTesting
-  protected Map<String, MSentryGroup> getGroupNameTGroupMap() {
+  protected Map<String, MSentryGroup> getGroupNameToGroupMap() {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
     try {
       pm = openTransaction();
       Map<String, MSentryGroup> resultMap = getGroupNameTGroupMap(pm);
+      commitTransaction(pm);
+      rollbackTransaction = false;
+      return resultMap;
+    } finally {
+      if (rollbackTransaction) {
+        rollbackTransaction(pm);
+      }
+    }
+  }
+
+  @VisibleForTesting
+  protected Map<String, MSentryUser> getUserNameToUserMap() {
+    boolean rollbackTransaction = true;
+    PersistenceManager pm = null;
+    try {
+      pm = openTransaction();
+      Map<String, MSentryUser> resultMap = getUserNameToUserMap(pm);
       commitTransaction(pm);
       rollbackTransaction = false;
       return resultMap;
@@ -2411,21 +2469,28 @@ public class SentryStore {
 
   /**
    * Import the sentry mapping data.
-   * 
+   *
    * @param tSentryMappingData
    *        Include 2 maps to save the mapping data, the following is the example of the data
    *        structure:
    *        for the following mapping data:
+   *        user1=role1,role2
+   *        user2=role2,role3
    *        group1=role1,role2
    *        group2=role2,role3
    *        role1=server=server1->db=db1
    *        role2=server=server1->db=db1->table=tbl1,server=server1->db=db1->table=tbl2
    *        role3=server=server1->url=hdfs://localhost/path
-   * 
+   *
    *        The GroupRolesMap in TSentryMappingData will be saved as:
    *        {
    *        TSentryGroup(group1)={role1, role2},
    *        TSentryGroup(group2)={role2, role3}
+   *        }
+   *        The UserRolesMap in TSentryMappingData will be saved as:
+   *        {
+   *        TSentryUser(user1)={role1, role2},
+   *        TSentryGroup(user2)={role2, role3}
    *        }
    *        The RolePrivilegesMap in TSentryMappingData will be saved as:
    *        {
@@ -2450,6 +2515,8 @@ public class SentryStore {
       //
       Map<String, Set<TSentryGroup>> importedRoleGroupsMap = covertToRoleNameTGroupsMap(mappingData
           .getGroupRolesMap());
+      Map<String, Set<String>> importedRoleUsersMap = covertToRoleUsersMap(mappingData
+          .getUserRolesMap());
       Set<String> importedRoleNames = importedRoleGroupsMap.keySet();
       // if import with overwrite role, drop the duplicated roles in current DB first.
       if (isOverwriteForRole) {
@@ -2459,9 +2526,11 @@ public class SentryStore {
       }
 
       // import the mapping data for [role,privilege], the existRoleNames will be updated
-      importSentryRolePrivilegeMapping(pm, existRoleNames, mappingData.getRolePrivilegesMap());
-
-      importSentryGroupRoleMapping(pm, existRoleNames, importedRoleGroupsMap);
+      importRolePrivilegeMapping(pm, existRoleNames, mappingData.getRolePrivilegesMap());
+      // import the mapping data for [role,group], the existRoleNames will be updated
+      importRoleGroupMapping(pm, existRoleNames, importedRoleGroupsMap);
+      // import the mapping data for [role,user], the existRoleNames will be updated
+      importRoleUserMapping(pm, existRoleNames, importedRoleUsersMap);
 
       commitTransaction(pm);
       rollbackTransaction = false;
@@ -2494,16 +2563,47 @@ public class SentryStore {
     return roleGroupsMap;
   }
 
-  private void importSentryGroupRoleMapping(PersistenceManager pm, Set<String> existRoleNames,
+  // covert the Map[user->roles] to Map[role->users]
+  private Map<String, Set<String>> covertToRoleUsersMap(
+      Map<String, Set<String>> userRolesMap) {
+    Map<String, Set<String>> roleUsersMap = Maps.newHashMap();
+    if (userRolesMap != null) {
+      for (Map.Entry<String, Set<String>> entry : userRolesMap.entrySet()) {
+        Set<String> roleNames = entry.getValue();
+        if (roleNames != null) {
+          for (String roleName : roleNames) {
+            Set<String> users = roleUsersMap.get(roleName);
+            if (users == null) {
+              users = Sets.newHashSet();
+            }
+            users.add(entry.getKey());
+            roleUsersMap.put(roleName, users);
+          }
+        }
+      }
+    }
+    return roleUsersMap;
+  }
+
+  private void importRoleGroupMapping(PersistenceManager pm, Set<String> existRoleNames,
       Map<String, Set<TSentryGroup>> importedRoleGroupsMap) throws Exception {
     if (importedRoleGroupsMap == null || importedRoleGroupsMap.keySet() == null) {
       return;
     }
     for (Map.Entry<String, Set<TSentryGroup>> entry : importedRoleGroupsMap.entrySet()) {
-      if (!existRoleNames.contains(entry.getKey())) {
-        createSentryRoleCore(pm, entry.getKey());
-      }
+      createRoleIfNotExist(pm, existRoleNames, entry.getKey());
       alterSentryRoleAddGroupsCore(pm, entry.getKey(), entry.getValue());
+    }
+  }
+
+  private void importRoleUserMapping(PersistenceManager pm, Set<String> existRoleNames,
+      Map<String, Set<String>> importedRoleUsersMap) throws Exception {
+    if (importedRoleUsersMap == null || importedRoleUsersMap.keySet() == null) {
+      return;
+    }
+    for (Map.Entry<String, Set<String>> entry : importedRoleUsersMap.entrySet()) {
+      createRoleIfNotExist(pm, existRoleNames, entry.getKey());
+      alterSentryRoleAddUsersCore(pm, entry.getKey(), entry.getValue());
     }
   }
 
@@ -2547,21 +2647,29 @@ public class SentryStore {
   }
 
   // import the mapping data for [role,privilege]
-  private void importSentryRolePrivilegeMapping(PersistenceManager pm, Set<String> existRoleNames,
+  private void importRolePrivilegeMapping(PersistenceManager pm, Set<String> existRoleNames,
       Map<String, Set<TSentryPrivilege>> sentryRolePrivilegesMap) throws Exception {
     if (sentryRolePrivilegesMap != null) {
       for (Map.Entry<String, Set<TSentryPrivilege>> entry : sentryRolePrivilegesMap.entrySet()) {
-        // if the rolenName doesn't exist, create it.
-        if (!existRoleNames.contains(entry.getKey())) {
-          createSentryRoleCore(pm, entry.getKey());
-          existRoleNames.add(entry.getKey());
-        }
+        // if the rolenName doesn't exist, create it and add it to existRoleNames
+        createRoleIfNotExist(pm, existRoleNames, entry.getKey());
         // get the privileges for the role
         Set<TSentryPrivilege> tSentryPrivileges = entry.getValue();
         for (TSentryPrivilege tSentryPrivilege : tSentryPrivileges) {
           alterSentryRoleGrantPrivilegeCore(pm, entry.getKey(), tSentryPrivilege);
         }
       }
+    }
+  }
+
+  private void createRoleIfNotExist(PersistenceManager pm,
+      Set<String> existRoleNames, String roleName) throws Exception {
+    String lowerRoleName = trimAndLower(roleName);
+    // if the rolenName doesn't exist, create it.
+    if (!existRoleNames.contains(lowerRoleName)) {
+      createSentryRoleCore(pm, lowerRoleName);
+      // update the exist role name set
+      existRoleNames.add(lowerRoleName);
     }
   }
 }

@@ -32,6 +32,7 @@ import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.db.service.model.MSentryGroup;
 import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
+import org.apache.sentry.provider.db.service.model.MSentryUser;
 import org.apache.sentry.provider.db.service.thrift.TSentryGrantOption;
 import org.apache.sentry.provider.db.service.thrift.TSentryMappingData;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
@@ -176,7 +177,7 @@ public class TestSentryStoreImportExport {
     sentryStore.importSentryMetaData(tSentryMappingData, false);
 
     Map<String, MSentryRole> rolesMap = sentryStore.getRolesMap();
-    Map<String, MSentryGroup> groupsMap = sentryStore.getGroupNameTGroupMap();
+    Map<String, MSentryGroup> groupsMap = sentryStore.getGroupNameToGroupMap();
     List<MSentryPrivilege> privilegesList = sentryStore.getPrivilegesList();
 
     // test the result data for the role
@@ -191,12 +192,14 @@ public class TestSentryStoreImportExport {
         tSentryPrivilege7, tSentryPrivilege8));
 
     // test the mapping data for group and role
-    Map<String, Set<String>> actualGroupRolesMap = sentryStore.getGroupNameRoleNamesMap();
+    List<Map<String, Set<String>>> mapList = sentryStore.getGroupUserRoleMapList(null);
+    Map<String, Set<String>> actualGroupRolesMap = mapList.get(
+        SentryStore.INDEX_GROUP_ROLES_MAP);
     Map<String, Set<String>> exceptedGroupRolesMap = Maps.newHashMap();
     exceptedGroupRolesMap.put("group1", Sets.newHashSet("role1", "role2", "role3"));
     exceptedGroupRolesMap.put("group2", Sets.newHashSet("role1", "role2", "role3"));
     exceptedGroupRolesMap.put("group3", Sets.newHashSet("role1", "role2", "role3"));
-    verifyGroupRolesMap(actualGroupRolesMap, exceptedGroupRolesMap);
+    verifyUserGroupRolesMap(actualGroupRolesMap, exceptedGroupRolesMap);
 
     // test the mapping data for role and privilege
     Map<String, Set<TSentryPrivilege>> actualRolePrivilegesMap = sentryStore
@@ -234,7 +237,7 @@ public class TestSentryStoreImportExport {
     sentryGroupRolesMap1.put("group1", Sets.newHashSet("role1"));
     sentryRolePrivilegesMap1
         .put("role1", Sets.newHashSet(tSentryPrivilege1, tSentryPrivilege2, tSentryPrivilege3,
-            tSentryPrivilege4));
+        tSentryPrivilege4));
     tSentryMappingData1.setGroupRolesMap(sentryGroupRolesMap1);
     tSentryMappingData1.setRolePrivilegesMap(sentryRolePrivilegesMap1);
     sentryStore.importSentryMetaData(tSentryMappingData1, false);
@@ -246,16 +249,16 @@ public class TestSentryStoreImportExport {
     sentryGroupRolesMap2.put("group3", Sets.newHashSet("role2", "role3"));
     sentryRolePrivilegesMap2
         .put("role2", Sets.newHashSet(tSentryPrivilege5, tSentryPrivilege6, tSentryPrivilege7,
-            tSentryPrivilege8));
+        tSentryPrivilege8));
     sentryRolePrivilegesMap2
         .put("role3", Sets.newHashSet(tSentryPrivilege5, tSentryPrivilege6, tSentryPrivilege7,
-            tSentryPrivilege8));
+        tSentryPrivilege8));
     tSentryMappingData2.setGroupRolesMap(sentryGroupRolesMap2);
     tSentryMappingData2.setRolePrivilegesMap(sentryRolePrivilegesMap2);
     sentryStore.importSentryMetaData(tSentryMappingData2, false);
 
     Map<String, MSentryRole> rolesMap = sentryStore.getRolesMap();
-    Map<String, MSentryGroup> groupsMap = sentryStore.getGroupNameTGroupMap();
+    Map<String, MSentryGroup> groupsMap = sentryStore.getGroupNameToGroupMap();
     List<MSentryPrivilege> privilegesList = sentryStore.getPrivilegesList();
 
     // test the result data for the role
@@ -270,12 +273,14 @@ public class TestSentryStoreImportExport {
         tSentryPrivilege7, tSentryPrivilege8));
 
     // test the mapping data for group and role
-    Map<String, Set<String>> actualGroupRolesMap = sentryStore.getGroupNameRoleNamesMap();
+    List<Map<String, Set<String>>> mapList = sentryStore.getGroupUserRoleMapList(null);
+    Map<String, Set<String>> actualGroupRolesMap = mapList.get(
+        SentryStore.INDEX_GROUP_ROLES_MAP);
     Map<String, Set<String>> exceptedGroupRolesMap = Maps.newHashMap();
     exceptedGroupRolesMap.put("group1", Sets.newHashSet("role1"));
     exceptedGroupRolesMap.put("group2", Sets.newHashSet("role2", "role3"));
     exceptedGroupRolesMap.put("group3", Sets.newHashSet("role2", "role3"));
-    verifyGroupRolesMap(actualGroupRolesMap, exceptedGroupRolesMap);
+    verifyUserGroupRolesMap(actualGroupRolesMap, exceptedGroupRolesMap);
 
     // test the mapping data for role and privilege
     Map<String, Set<TSentryPrivilege>> actualRolePrivilegesMap = sentryStore
@@ -339,7 +344,7 @@ public class TestSentryStoreImportExport {
     sentryStore.importSentryMetaData(tSentryMappingData2, false);
 
     Map<String, MSentryRole> rolesMap = sentryStore.getRolesMap();
-    Map<String, MSentryGroup> groupsMap = sentryStore.getGroupNameTGroupMap();
+    Map<String, MSentryGroup> groupsMap = sentryStore.getGroupNameToGroupMap();
     List<MSentryPrivilege> privilegesList = sentryStore.getPrivilegesList();
 
     // test the result data for the role
@@ -354,12 +359,14 @@ public class TestSentryStoreImportExport {
         tSentryPrivilege7, tSentryPrivilege8));
 
     // test the mapping data for group and role
-    Map<String, Set<String>> actualGroupRolesMap = sentryStore.getGroupNameRoleNamesMap();
+    List<Map<String, Set<String>>> mapList = sentryStore.getGroupUserRoleMapList(null);
+    Map<String, Set<String>> actualGroupRolesMap = mapList.get(
+        SentryStore.INDEX_GROUP_ROLES_MAP);
     Map<String, Set<String>> exceptedGroupRolesMap = Maps.newHashMap();
     exceptedGroupRolesMap.put("group1", Sets.newHashSet("role1", "role2", "role3"));
     exceptedGroupRolesMap.put("group2", Sets.newHashSet("role1", "role2", "role3"));
     exceptedGroupRolesMap.put("group3", Sets.newHashSet("role1", "role2", "role3"));
-    verifyGroupRolesMap(actualGroupRolesMap, exceptedGroupRolesMap);
+    verifyUserGroupRolesMap(actualGroupRolesMap, exceptedGroupRolesMap);
 
     // test the mapping data for role and privilege
     Map<String, Set<TSentryPrivilege>> actualRolePrivilegesMap = sentryStore
@@ -408,7 +415,7 @@ public class TestSentryStoreImportExport {
     sentryStore.importSentryMetaData(tSentryMappingData2, false);
 
     Map<String, MSentryRole> rolesMap = sentryStore.getRolesMap();
-    Map<String, MSentryGroup> groupsMap = sentryStore.getGroupNameTGroupMap();
+    Map<String, MSentryGroup> groupsMap = sentryStore.getGroupNameToGroupMap();
     List<MSentryPrivilege> privilegesList = sentryStore.getPrivilegesList();
 
     // test the result data for the role
@@ -423,11 +430,13 @@ public class TestSentryStoreImportExport {
         tSentryPrivilege7, tSentryPrivilege8));
 
     // test the mapping data for group and role
-    Map<String, Set<String>> actualGroupRolesMap = sentryStore.getGroupNameRoleNamesMap();
+    List<Map<String, Set<String>>> mapList = sentryStore.getGroupUserRoleMapList(null);
+    Map<String, Set<String>> actualGroupRolesMap = mapList.get(
+        SentryStore.INDEX_GROUP_ROLES_MAP);
     Map<String, Set<String>> exceptedGroupRolesMap = Maps.newHashMap();
     exceptedGroupRolesMap.put("group1", Sets.newHashSet("role1", "role2"));
     exceptedGroupRolesMap.put("group2", Sets.newHashSet("role2"));
-    verifyGroupRolesMap(actualGroupRolesMap, exceptedGroupRolesMap);
+    verifyUserGroupRolesMap(actualGroupRolesMap, exceptedGroupRolesMap);
 
     // test the mapping data for role and privilege
     Map<String, Set<TSentryPrivilege>> actualRolePrivilegesMap = sentryStore
@@ -436,7 +445,7 @@ public class TestSentryStoreImportExport {
     exceptedRolePrivilegesMap.put("role1", Sets.newHashSet(tSentryPrivilege1, tSentryPrivilege2));
     exceptedRolePrivilegesMap
         .put("role2", Sets.newHashSet(tSentryPrivilege3, tSentryPrivilege4, tSentryPrivilege5,
-            tSentryPrivilege6));
+        tSentryPrivilege6));
     exceptedRolePrivilegesMap.put("role3", Sets.newHashSet(tSentryPrivilege7, tSentryPrivilege8));
     verifyRolePrivilegesMap(actualRolePrivilegesMap, exceptedRolePrivilegesMap);
   }
@@ -454,7 +463,7 @@ public class TestSentryStoreImportExport {
     sentryStore.importSentryMetaData(tSentryMappingData1, false);
 
     Map<String, MSentryRole> rolesMap = sentryStore.getRolesMap();
-    Map<String, MSentryGroup> groupsMap = sentryStore.getGroupNameTGroupMap();
+    Map<String, MSentryGroup> groupsMap = sentryStore.getGroupNameToGroupMap();
     List<MSentryPrivilege> privilegesList = sentryStore.getPrivilegesList();
 
     // test the result data for the role
@@ -467,10 +476,12 @@ public class TestSentryStoreImportExport {
     assertTrue(privilegesList.isEmpty());
 
     // test the mapping data for group and role
-    Map<String, Set<String>> actualGroupRolesMap = sentryStore.getGroupNameRoleNamesMap();
+    List<Map<String, Set<String>>> mapList = sentryStore.getGroupUserRoleMapList(null);
+    Map<String, Set<String>> actualGroupRolesMap = mapList.get(
+        SentryStore.INDEX_GROUP_ROLES_MAP);
     Map<String, Set<String>> exceptedGroupRolesMap = Maps.newHashMap();
     exceptedGroupRolesMap.put("group1", Sets.newHashSet("role1", "role2"));
-    verifyGroupRolesMap(actualGroupRolesMap, exceptedGroupRolesMap);
+    verifyUserGroupRolesMap(actualGroupRolesMap, exceptedGroupRolesMap);
 
     // test the mapping data for role and privilege
     Map<String, Set<TSentryPrivilege>> actualRolePrivilegesMap = sentryStore
@@ -496,7 +507,7 @@ public class TestSentryStoreImportExport {
     sentryStore.dropSentryRole("role2");
 
     Map<String, MSentryRole> rolesMap = sentryStore.getRolesMap();
-    Map<String, MSentryGroup> groupsMap = sentryStore.getGroupNameTGroupMap();
+    Map<String, MSentryGroup> groupsMap = sentryStore.getGroupNameToGroupMap();
     List<MSentryPrivilege> privilegesList = sentryStore.getPrivilegesList();
 
     // test the result data for the role
@@ -509,10 +520,12 @@ public class TestSentryStoreImportExport {
     assertTrue(privilegesList.isEmpty());
 
     // test the mapping data for group and role
-    Map<String, Set<String>> actualGroupRolesMap = sentryStore.getGroupNameRoleNamesMap();
+    List<Map<String, Set<String>>> mapList = sentryStore.getGroupUserRoleMapList(null);
+    Map<String, Set<String>> actualGroupRolesMap = mapList.get(
+        SentryStore.INDEX_GROUP_ROLES_MAP);
     Map<String, Set<String>> exceptedGroupRolesMap = Maps.newHashMap();
     exceptedGroupRolesMap.put("group1", Sets.newHashSet("role1"));
-    verifyGroupRolesMap(actualGroupRolesMap, exceptedGroupRolesMap);
+    verifyUserGroupRolesMap(actualGroupRolesMap, exceptedGroupRolesMap);
 
     // test the mapping data for role and privilege
     Map<String, Set<TSentryPrivilege>> actualRolePrivilegesMap = sentryStore
@@ -556,7 +569,7 @@ public class TestSentryStoreImportExport {
     sentryStore.importSentryMetaData(tSentryMappingData2, true);
 
     Map<String, MSentryRole> rolesMap = sentryStore.getRolesMap();
-    Map<String, MSentryGroup> groupsMap = sentryStore.getGroupNameTGroupMap();
+    Map<String, MSentryGroup> groupsMap = sentryStore.getGroupNameToGroupMap();
     List<MSentryPrivilege> privilegesList = sentryStore.getPrivilegesList();
 
     // test the result data for the role
@@ -569,12 +582,14 @@ public class TestSentryStoreImportExport {
     verifyPrivileges(privilegesList, Sets.newHashSet(tSentryPrivilege1, tSentryPrivilege2));
 
     // test the mapping data for group and role
-    Map<String, Set<String>> actualGroupRolesMap = sentryStore.getGroupNameRoleNamesMap();
+    List<Map<String, Set<String>>> mapList = sentryStore.getGroupUserRoleMapList(null);
+    Map<String, Set<String>> actualGroupRolesMap = mapList.get(
+        SentryStore.INDEX_GROUP_ROLES_MAP);
     Map<String, Set<String>> exceptedGroupRolesMap = Maps.newHashMap();
     exceptedGroupRolesMap.put("group1", Sets.newHashSet("role1"));
     exceptedGroupRolesMap.put("group2", Sets.newHashSet("role2", "role3"));
     exceptedGroupRolesMap.put("group3", Sets.newHashSet("role2", "role3"));
-    verifyGroupRolesMap(actualGroupRolesMap, exceptedGroupRolesMap);
+    verifyUserGroupRolesMap(actualGroupRolesMap, exceptedGroupRolesMap);
 
     // test the mapping data for role and privilege
     Map<String, Set<TSentryPrivilege>> actualRolePrivilegesMap = sentryStore
@@ -634,7 +649,7 @@ public class TestSentryStoreImportExport {
     sentryStore.importSentryMetaData(tSentryMappingData2, true);
 
     Map<String, MSentryRole> rolesMap = sentryStore.getRolesMap();
-    Map<String, MSentryGroup> groupsMap = sentryStore.getGroupNameTGroupMap();
+    Map<String, MSentryGroup> groupsMap = sentryStore.getGroupNameToGroupMap();
     List<MSentryPrivilege> privilegesList = sentryStore.getPrivilegesList();
 
     // test the result data for the role
@@ -649,12 +664,14 @@ public class TestSentryStoreImportExport {
         tSentryPrivilege7, tSentryPrivilege8));
 
     // test the mapping data for group and role
-    Map<String, Set<String>> actualGroupRolesMap = sentryStore.getGroupNameRoleNamesMap();
+    List<Map<String, Set<String>>> mapList = sentryStore.getGroupUserRoleMapList(null);
+    Map<String, Set<String>> actualGroupRolesMap = mapList.get(
+        SentryStore.INDEX_GROUP_ROLES_MAP);
     Map<String, Set<String>> exceptedGroupRolesMap = Maps.newHashMap();
     exceptedGroupRolesMap.put("group1", Sets.newHashSet("role1", "role2", "role3"));
     exceptedGroupRolesMap.put("group2", Sets.newHashSet("role1", "role2", "role3"));
     exceptedGroupRolesMap.put("group3", Sets.newHashSet("role1", "role2", "role3"));
-    verifyGroupRolesMap(actualGroupRolesMap, exceptedGroupRolesMap);
+    verifyUserGroupRolesMap(actualGroupRolesMap, exceptedGroupRolesMap);
 
     // test the mapping data for role and privilege
     Map<String, Set<TSentryPrivilege>> actualRolePrivilegesMap = sentryStore
@@ -711,7 +728,7 @@ public class TestSentryStoreImportExport {
     sentryStore.importSentryMetaData(tSentryMappingData1, true);
 
     Map<String, MSentryRole> rolesMap = sentryStore.getRolesMap();
-    Map<String, MSentryGroup> groupsMap = sentryStore.getGroupNameTGroupMap();
+    Map<String, MSentryGroup> groupsMap = sentryStore.getGroupNameToGroupMap();
 
     // test the result data for the role
     verifyRoles(rolesMap, Sets.newHashSet("role1", "role2"));
@@ -720,10 +737,12 @@ public class TestSentryStoreImportExport {
     verifyGroups(groupsMap, Sets.newHashSet("group1"));
 
     // test the mapping data for group and role
-    Map<String, Set<String>> actualGroupRolesMap = sentryStore.getGroupNameRoleNamesMap();
+    List<Map<String, Set<String>>> mapList = sentryStore.getGroupUserRoleMapList(null);
+    Map<String, Set<String>> actualGroupRolesMap = mapList.get(
+        SentryStore.INDEX_GROUP_ROLES_MAP);
     Map<String, Set<String>> exceptedGroupRolesMap = Maps.newHashMap();
     exceptedGroupRolesMap.put("group1", Sets.newHashSet("role1", "role2"));
-    verifyGroupRolesMap(actualGroupRolesMap, exceptedGroupRolesMap);
+    verifyUserGroupRolesMap(actualGroupRolesMap, exceptedGroupRolesMap);
 
     // test the mapping data for role and privilege
     Map<String, Set<TSentryPrivilege>> actualRolePrivilegesMap = sentryStore
@@ -754,13 +773,13 @@ public class TestSentryStoreImportExport {
     sentryGroupRolesMap.put("group3", Sets.newHashSet("role2", "role3"));
     sentryGroupRolesMap.put("group4", Sets.newHashSet("role1", "role2", "role3"));
     sentryRolePrivilegesMap.put("role1", Sets.newHashSet(
-            tSentryPrivilege3, tSentryPrivilege4, tSentryPrivilege9));
+        tSentryPrivilege3, tSentryPrivilege4, tSentryPrivilege9));
     sentryRolePrivilegesMap.put("role2", Sets.newHashSet(
-            tSentryPrivilege3, tSentryPrivilege4, tSentryPrivilege5, tSentryPrivilege6,
-            tSentryPrivilege7));
+        tSentryPrivilege3, tSentryPrivilege4, tSentryPrivilege5, tSentryPrivilege6,
+        tSentryPrivilege7));
     sentryRolePrivilegesMap.put("role3", Sets.newHashSet(
-            tSentryPrivilege4, tSentryPrivilege5, tSentryPrivilege6,
-            tSentryPrivilege7, tSentryPrivilege8));
+        tSentryPrivilege4, tSentryPrivilege5, tSentryPrivilege6,
+        tSentryPrivilege7, tSentryPrivilege8));
     tSentryMappingData.setGroupRolesMap(sentryGroupRolesMap);
     tSentryMappingData.setRolePrivilegesMap(sentryRolePrivilegesMap);
     sentryStore.importSentryMetaData(tSentryMappingData, false);
@@ -771,19 +790,21 @@ public class TestSentryStoreImportExport {
     Map<String, Set<TSentryPrivilege>> exceptedRolePrivilegesMap = Maps.newHashMap();
     exceptedRolePrivilegesMap.put("role1", Sets.newHashSet(tSentryPrivilege4));
     exceptedRolePrivilegesMap.put("role2", Sets.newHashSet(tSentryPrivilege4,
-            tSentryPrivilege5, tSentryPrivilege6, tSentryPrivilege7));
+        tSentryPrivilege5, tSentryPrivilege6, tSentryPrivilege7));
     exceptedRolePrivilegesMap.put("role3", Sets.newHashSet(tSentryPrivilege4,
-            tSentryPrivilege5, tSentryPrivilege6, tSentryPrivilege7));
+        tSentryPrivilege5, tSentryPrivilege6, tSentryPrivilege7));
     verifyRolePrivilegesMap(actualRolePrivilegesMap, exceptedRolePrivilegesMap);
 
-    Map<String, Set<String>> actualGroupRolesMap = sentryStore.getGroupNameRoleNamesMap(
-            actualRolePrivilegesMap.keySet());
+    List<Map<String, Set<String>>> mapList = sentryStore.getGroupUserRoleMapList(
+        actualRolePrivilegesMap.keySet());
+    Map<String, Set<String>> actualGroupRolesMap = mapList.get(
+        SentryStore.INDEX_GROUP_ROLES_MAP);
     Map<String, Set<String>> exceptedGroupRolesMap = Maps.newHashMap();
     exceptedGroupRolesMap.put("group1", Sets.newHashSet("role1"));
     exceptedGroupRolesMap.put("group2", Sets.newHashSet("role1", "role2"));
     exceptedGroupRolesMap.put("group3", Sets.newHashSet("role2", "role3"));
     exceptedGroupRolesMap.put("group4", Sets.newHashSet("role1", "role2", "role3"));
-    verifyGroupRolesMap(actualGroupRolesMap, exceptedGroupRolesMap);
+    verifyUserGroupRolesMap(actualGroupRolesMap, exceptedGroupRolesMap);
 
     // verify the rolePrivilegesMap and groupRolesMap for db=db2
     actualRolePrivilegesMap = sentryStore.getRoleNameTPrivilegesMap("db2", "");
@@ -792,14 +813,14 @@ public class TestSentryStoreImportExport {
     exceptedRolePrivilegesMap.put("role2", Sets.newHashSet(tSentryPrivilege3));
     verifyRolePrivilegesMap(actualRolePrivilegesMap, exceptedRolePrivilegesMap);
 
-    actualGroupRolesMap = sentryStore.getGroupNameRoleNamesMap(
-            actualRolePrivilegesMap.keySet());
+    mapList = sentryStore.getGroupUserRoleMapList(actualRolePrivilegesMap.keySet());
+    actualGroupRolesMap = mapList.get(SentryStore.INDEX_GROUP_ROLES_MAP);
     exceptedGroupRolesMap = Maps.newHashMap();
     exceptedGroupRolesMap.put("group1", Sets.newHashSet("role1"));
     exceptedGroupRolesMap.put("group2", Sets.newHashSet("role1", "role2"));
     exceptedGroupRolesMap.put("group3", Sets.newHashSet("role2"));
     exceptedGroupRolesMap.put("group4", Sets.newHashSet("role1", "role2"));
-    verifyGroupRolesMap(actualGroupRolesMap, exceptedGroupRolesMap);
+    verifyUserGroupRolesMap(actualGroupRolesMap, exceptedGroupRolesMap);
 
     // verify the rolePrivilegesMap and groupRolesMap for db=db1 and table=tbl1
     actualRolePrivilegesMap = sentryStore.getRoleNameTPrivilegesMap("db1", "tbl1");
@@ -809,14 +830,14 @@ public class TestSentryStoreImportExport {
     exceptedRolePrivilegesMap.put("role3", Sets.newHashSet(tSentryPrivilege4));
     verifyRolePrivilegesMap(actualRolePrivilegesMap, exceptedRolePrivilegesMap);
 
-    actualGroupRolesMap = sentryStore.getGroupNameRoleNamesMap(
-                actualRolePrivilegesMap.keySet());
+    mapList = sentryStore.getGroupUserRoleMapList(actualRolePrivilegesMap.keySet());
+    actualGroupRolesMap = mapList.get(SentryStore.INDEX_GROUP_ROLES_MAP);
     exceptedGroupRolesMap = Maps.newHashMap();
     exceptedGroupRolesMap.put("group1", Sets.newHashSet("role1"));
     exceptedGroupRolesMap.put("group2", Sets.newHashSet("role1", "role2"));
     exceptedGroupRolesMap.put("group3", Sets.newHashSet("role2", "role3"));
     exceptedGroupRolesMap.put("group4", Sets.newHashSet("role1", "role2", "role3"));
-    verifyGroupRolesMap(actualGroupRolesMap, exceptedGroupRolesMap);
+    verifyUserGroupRolesMap(actualGroupRolesMap, exceptedGroupRolesMap);
 
     // verify the rolePrivilegesMap and groupRolesMap for db=db1 and table=tbl2
     actualRolePrivilegesMap = sentryStore.getRoleNameTPrivilegesMap("db1", "tbl2");
@@ -825,13 +846,13 @@ public class TestSentryStoreImportExport {
     exceptedRolePrivilegesMap.put("role3", Sets.newHashSet(tSentryPrivilege5));
     verifyRolePrivilegesMap(actualRolePrivilegesMap, exceptedRolePrivilegesMap);
 
-    actualGroupRolesMap = sentryStore.getGroupNameRoleNamesMap(
-            actualRolePrivilegesMap.keySet());
+    mapList = sentryStore.getGroupUserRoleMapList(actualRolePrivilegesMap.keySet());
+    actualGroupRolesMap = mapList.get(SentryStore.INDEX_GROUP_ROLES_MAP);
     exceptedGroupRolesMap = Maps.newHashMap();
     exceptedGroupRolesMap.put("group2", Sets.newHashSet("role2"));
     exceptedGroupRolesMap.put("group3", Sets.newHashSet("role2", "role3"));
     exceptedGroupRolesMap.put("group4", Sets.newHashSet("role2", "role3"));
-    verifyGroupRolesMap(actualGroupRolesMap, exceptedGroupRolesMap);
+    verifyUserGroupRolesMap(actualGroupRolesMap, exceptedGroupRolesMap);
 
     // verify the rolePrivilegesMap and groupRolesMap for table=tbl1
     actualRolePrivilegesMap = sentryStore.getRoleNameTPrivilegesMap("", "tbl1");
@@ -841,36 +862,113 @@ public class TestSentryStoreImportExport {
     exceptedRolePrivilegesMap.put("role3", Sets.newHashSet(tSentryPrivilege4));
     verifyRolePrivilegesMap(actualRolePrivilegesMap, exceptedRolePrivilegesMap);
 
-    actualGroupRolesMap = sentryStore.getGroupNameRoleNamesMap(
-            actualRolePrivilegesMap.keySet());
+    mapList = sentryStore.getGroupUserRoleMapList(actualRolePrivilegesMap.keySet());
+    actualGroupRolesMap = mapList.get(SentryStore.INDEX_GROUP_ROLES_MAP);
     exceptedGroupRolesMap = Maps.newHashMap();
     exceptedGroupRolesMap.put("group1", Sets.newHashSet("role1"));
     exceptedGroupRolesMap.put("group2", Sets.newHashSet("role1", "role2"));
     exceptedGroupRolesMap.put("group3", Sets.newHashSet("role2", "role3"));
     exceptedGroupRolesMap.put("group4", Sets.newHashSet("role1", "role2", "role3"));
-    verifyGroupRolesMap(actualGroupRolesMap, exceptedGroupRolesMap);
+    verifyUserGroupRolesMap(actualGroupRolesMap, exceptedGroupRolesMap);
 
     // verify the rolePrivilegesMap and groupRolesMap for empty parameter
     actualRolePrivilegesMap = sentryStore.getRoleNameTPrivilegesMap("", "");
     exceptedRolePrivilegesMap = Maps.newHashMap();
     exceptedRolePrivilegesMap.put("role1", Sets.newHashSet(tSentryPrivilege3,
-            tSentryPrivilege4, tSentryPrivilege9));
+        tSentryPrivilege4, tSentryPrivilege9));
     exceptedRolePrivilegesMap.put("role2", Sets.newHashSet(tSentryPrivilege3,
-            tSentryPrivilege4, tSentryPrivilege5, tSentryPrivilege6,
-            tSentryPrivilege7));
+        tSentryPrivilege4, tSentryPrivilege5, tSentryPrivilege6, tSentryPrivilege7));
     exceptedRolePrivilegesMap.put("role3", Sets.newHashSet(tSentryPrivilege4,
-            tSentryPrivilege5, tSentryPrivilege6,
-            tSentryPrivilege7, tSentryPrivilege8));
+        tSentryPrivilege5, tSentryPrivilege6,
+        tSentryPrivilege7, tSentryPrivilege8));
     verifyRolePrivilegesMap(actualRolePrivilegesMap, exceptedRolePrivilegesMap);
 
-    actualGroupRolesMap = sentryStore.getGroupNameRoleNamesMap(
-            actualRolePrivilegesMap.keySet());
+    mapList = sentryStore.getGroupUserRoleMapList(actualRolePrivilegesMap.keySet());
+    actualGroupRolesMap = mapList.get(SentryStore.INDEX_GROUP_ROLES_MAP);
     exceptedGroupRolesMap = Maps.newHashMap();
     exceptedGroupRolesMap.put("group1", Sets.newHashSet("role1"));
     exceptedGroupRolesMap.put("group2", Sets.newHashSet("role1", "role2"));
     exceptedGroupRolesMap.put("group3", Sets.newHashSet("role2", "role3"));
     exceptedGroupRolesMap.put("group4", Sets.newHashSet("role1", "role2", "role3"));
-    verifyGroupRolesMap(actualGroupRolesMap, exceptedGroupRolesMap);
+    verifyUserGroupRolesMap(actualGroupRolesMap, exceptedGroupRolesMap);
+  }
+
+  // Befor import, database is empty.
+  // The following information is imported:
+  // group1=role1,role2,role3
+  // user1=role1,role2
+  // user2=role2,role3
+  // role1=privilege1,privilege2,privilege3,privilege4
+  // role2=privilege5,privilege6,privilege7,privilege8
+  // role3=privilege3,privilege4,privilege5,privilege6
+  // Both import API importSentryMetaData and export APIs getRolesMap, getGroupsMap,
+  // getUsersMap getPrivilegesList are tested.
+  @Test
+  public void testImportExportWithUser() throws Exception {
+    TSentryMappingData tSentryMappingData = new TSentryMappingData();
+    Map<String, Set<String>> groupRolesMap = Maps.newHashMap();
+    Map<String, Set<String>> userRolesMap = Maps.newHashMap();
+    Map<String, Set<TSentryPrivilege>> sentryRolePrivilegesMap = Maps.newHashMap();
+    groupRolesMap.put("group1", Sets.newHashSet("Role1", "role2", "role3"));
+    userRolesMap.put("user1", Sets.newHashSet("Role1", "role2"));
+    userRolesMap.put("user2", Sets.newHashSet("role2", "role3"));
+    sentryRolePrivilegesMap.put("Role1", Sets.newHashSet(tSentryPrivilege1, tSentryPrivilege2,
+        tSentryPrivilege3, tSentryPrivilege4));
+    sentryRolePrivilegesMap.put("role2", Sets.newHashSet(tSentryPrivilege5, tSentryPrivilege6,
+        tSentryPrivilege7, tSentryPrivilege8));
+    sentryRolePrivilegesMap.put("role3", Sets.newHashSet(tSentryPrivilege3,
+        tSentryPrivilege4, tSentryPrivilege5, tSentryPrivilege6));
+    tSentryMappingData.setGroupRolesMap(groupRolesMap);
+    tSentryMappingData.setRolePrivilegesMap(sentryRolePrivilegesMap);
+    tSentryMappingData.setUserRolesMap(userRolesMap);
+    sentryStore.importSentryMetaData(tSentryMappingData, false);
+
+    Map<String, MSentryRole> rolesMap = sentryStore.getRolesMap();
+    Map<String, MSentryGroup> groupsMap = sentryStore.getGroupNameToGroupMap();
+    Map<String, MSentryUser> usersMap = sentryStore.getUserNameToUserMap();
+    List<MSentryPrivilege> privilegesList = sentryStore.getPrivilegesList();
+
+    // test the result data for the role
+    verifyRoles(rolesMap, Sets.newHashSet("role1", "role2", "role3"));
+
+    // test the result data for the group
+    verifyGroups(groupsMap, Sets.newHashSet("group1"));
+
+    // test the result data for the user
+    verifyUsers(usersMap, Sets.newHashSet("user1", "user2"));
+
+    // test the result data for the privilege
+    verifyPrivileges(privilegesList, Sets.newHashSet(tSentryPrivilege1, tSentryPrivilege2,
+        tSentryPrivilege3, tSentryPrivilege4, tSentryPrivilege5, tSentryPrivilege6,
+        tSentryPrivilege7, tSentryPrivilege8));
+
+    // test the mapping data for group and role
+    List<Map<String, Set<String>>> mapList = sentryStore.getGroupUserRoleMapList(null);
+    Map<String, Set<String>> actualGroupRolesMap = mapList.get(
+        SentryStore.INDEX_GROUP_ROLES_MAP);
+    Map<String, Set<String>> exceptedGroupRolesMap = Maps.newHashMap();
+    exceptedGroupRolesMap.put("group1", Sets.newHashSet("role1", "role2", "role3"));
+    verifyUserGroupRolesMap(actualGroupRolesMap, exceptedGroupRolesMap);
+
+    Map<String, Set<String>> actualUserRolesMap = mapList.get(
+        SentryStore.INDEX_USER_ROLES_MAP);
+    Map<String, Set<String>> exceptedUserRolesMap = Maps.newHashMap();
+    exceptedUserRolesMap.put("user1", Sets.newHashSet("role1", "role2"));
+    exceptedUserRolesMap.put("user2", Sets.newHashSet("role2", "role3"));
+    verifyUserGroupRolesMap(actualUserRolesMap, exceptedUserRolesMap);
+
+    // test the mapping data for role and privilege
+    Map<String, Set<TSentryPrivilege>> actualRolePrivilegesMap = sentryStore
+        .getRoleNameTPrivilegesMap();
+    Map<String, Set<TSentryPrivilege>> exceptedRolePrivilegesMap = Maps.newHashMap();
+    exceptedRolePrivilegesMap.put("role1", Sets.newHashSet(tSentryPrivilege1, tSentryPrivilege2,
+        tSentryPrivilege3, tSentryPrivilege4));
+    exceptedRolePrivilegesMap.put("role2", Sets.newHashSet(tSentryPrivilege5, tSentryPrivilege6,
+        tSentryPrivilege7, tSentryPrivilege8));
+    exceptedRolePrivilegesMap.put("role3", Sets.newHashSet(tSentryPrivilege3,
+        tSentryPrivilege4, tSentryPrivilege5, tSentryPrivilege6));
+
+    verifyRolePrivilegesMap(actualRolePrivilegesMap, exceptedRolePrivilegesMap);
   }
 
   private void verifyRoles(Map<String, MSentryRole> actualRoleMap, Set<String> expectedRoleNameSet) {
@@ -885,6 +983,14 @@ public class TestSentryStoreImportExport {
     assertEquals(expectedGroupNameSet.size(), actualGroupsMap.keySet().size());
     for (String groupName : actualGroupsMap.keySet()) {
       assertTrue(expectedGroupNameSet.contains(groupName));
+    }
+  }
+
+  private void verifyUsers(Map<String, MSentryUser> actualUsersMap,
+                            Set<String> expectedUserNameSet) {
+    assertEquals(expectedUserNameSet.size(), actualUsersMap.keySet().size());
+    for (String userName : actualUsersMap.keySet()) {
+      assertTrue(expectedUserNameSet.contains(userName));
     }
   }
 
@@ -904,12 +1010,12 @@ public class TestSentryStoreImportExport {
     }
   }
 
-  private void verifyGroupRolesMap(Map<String, Set<String>> actualGroupRolesMap,
-      Map<String, Set<String>> exceptedGroupRolesMap) {
-    assertEquals(exceptedGroupRolesMap.keySet().size(), actualGroupRolesMap.keySet().size());
-    for (String groupName : actualGroupRolesMap.keySet()) {
-      Set<String> exceptedRoles = exceptedGroupRolesMap.get(groupName);
-      Set<String> actualRoles = actualGroupRolesMap.get(groupName);
+  private void verifyUserGroupRolesMap(Map<String, Set<String>> actualMap,
+      Map<String, Set<String>> exceptedMap) {
+    assertEquals(exceptedMap.keySet().size(), actualMap.keySet().size());
+    for (String name : actualMap.keySet()) {
+      Set<String> exceptedRoles = exceptedMap.get(name);
+      Set<String> actualRoles = actualMap.get(name);
       assertEquals(actualRoles.size(), exceptedRoles.size());
       assertTrue(actualRoles.equals(exceptedRoles));
     }
