@@ -663,23 +663,66 @@ public class TestSentryServiceImportExport extends SentryServiceIntegrationBase 
     });
   }
 
+  // Befor import, database is empty.
+  // The following information is imported:
+  // group1=role1,role2,role3
+  // group2=role1,role2,role3
+  // user1=role1,role2,role3
+  // user2=role1,role2,role3
+  // role1=privilege1,privilege2,privilege3,privilege4
+  // role2=privilege1,privilege2,privilege3,privilege4
+  // role3=privilege1,privilege2,privilege3,privilege4
+  @Test
+  public void testImportExportPolicyWithUser() throws Exception {
+    runTestAsSubject(new TestOperation() {
+      @Override
+      public void runTestAsSubject() throws Exception {
+        Map<String, Map<String, Set<String>>> policyFileMappingData = Maps.newHashMap();
+        Map<String, Set<String>> groupRolesMap = Maps.newHashMap();
+        Map<String, Set<String>> userRolesMap = Maps.newHashMap();
+        Set<String> roles = Sets.newHashSet("role1", "role2", "role3");
+        groupRolesMap.put("group1", roles);
+        groupRolesMap.put("group2", roles);
+        userRolesMap.put("user1", roles);
+        userRolesMap.put("user2", roles);
+        Map<String, Set<String>> rolePrivilegesMap = Maps.newHashMap();
+        for (String roleName : roles) {
+          rolePrivilegesMap.put(roleName, Sets.newHashSet(PRIVILIEGE1,
+              PRIVILIEGE2, PRIVILIEGE3, PRIVILIEGE4));
+        }
+        policyFileMappingData.put(PolicyFileConstants.USERS, userRolesMap);
+        policyFileMappingData.put(PolicyFileConstants.GROUPS, groupRolesMap);
+        policyFileMappingData.put(PolicyFileConstants.ROLES, rolePrivilegesMap);
+        client.importPolicy(policyFileMappingData, ADMIN_USER, false);
+
+        Map<String, Map<String, Set<String>>> sentryMappingData =
+            client.exportPolicy(ADMIN_USER, null);
+        // validate the [user, role] mapping
+        validateRolesMap(sentryMappingData.get(PolicyFileConstants.USERS),
+            policyFileMappingData.get(PolicyFileConstants.USERS));
+        validateSentryMappingData(sentryMappingData,
+            policyFileMappingData);
+      }
+    });
+  }
+
   // verify the mapping data
   public void validateSentryMappingData(
       Map<String, Map<String, Set<String>>> actualMappingData,
       Map<String, Map<String, Set<String>>> expectedMappingData) {
-    validateGroupRolesMap(actualMappingData.get(PolicyFileConstants.GROUPS),
+    validateRolesMap(actualMappingData.get(PolicyFileConstants.GROUPS),
         expectedMappingData.get(PolicyFileConstants.GROUPS));
     validateRolePrivilegesMap(actualMappingData.get(PolicyFileConstants.ROLES),
         expectedMappingData.get(PolicyFileConstants.ROLES));
   }
 
-  // verify the mapping data for [group,role]
-  private void validateGroupRolesMap(Map<String, Set<String>> actualMap,
+  // verify the mapping data for [group,role] and [user,role]
+  private void validateRolesMap(Map<String, Set<String>> actualMap,
       Map<String, Set<String>> expectedMap) {
     assertEquals(expectedMap.keySet().size(), actualMap.keySet().size());
-    for (String groupName : actualMap.keySet()) {
-      Set<String> actualRoles = actualMap.get(groupName);
-      Set<String> expectedRoles = expectedMap.get(groupName);
+    for (String name : actualMap.keySet()) {
+      Set<String> actualRoles = actualMap.get(name);
+      Set<String> expectedRoles = expectedMap.get(name);
       assertEquals(actualRoles.size(), expectedRoles.size());
       assertTrue(actualRoles.equals(expectedRoles));
     }
