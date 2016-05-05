@@ -24,7 +24,6 @@ import java.util.*;
 
 import javax.security.auth.callback.CallbackHandler;
 
-import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION;
 import org.apache.hadoop.net.NetUtils;
@@ -537,14 +536,6 @@ public class SentryGenericServiceClientDefaultImpl implements SentryGenericServi
     }
   }
 
-  private List<TAuthorizable> fromAuthorizable(List<? extends Authorizable> authorizables) {
-    List<TAuthorizable> tAuthorizables = Lists.newArrayList();
-    for (Authorizable authorizable : authorizables) {
-      tAuthorizables.add(new TAuthorizable(authorizable.getTypeName(), authorizable.getName()));
-    }
-    return tAuthorizables;
-  }
-
   /**
    * Get sentry privileges based on valid active roles and the authorize objects. Note that
    * it is client responsibility to ensure the requestor username, etc. is not impersonated.
@@ -552,8 +543,8 @@ public class SentryGenericServiceClientDefaultImpl implements SentryGenericServi
    * @param component: The request respond to which component.
    * @param serviceName: The name of service.
    * @param requestorUserName: The requestor user name.
-   * @param authorizablesSet: The set of authorize objects. Represented as a string. e.g
-   *     resourceType1=resourceName1->resourceType2=resourceName2->resourceType3=resourceName3.
+   * @param authorizablesSet: The set of authorize objects. One authorize object is represented
+   *     as a string. e.g resourceType1=resourceName1->resourceType2=resourceName2->resourceType3=resourceName3.
    * @param groups: The requested groups.
    * @param roleSet: The active roles set.
    *
@@ -561,13 +552,8 @@ public class SentryGenericServiceClientDefaultImpl implements SentryGenericServi
    * @throws SentryUserException
    */
   public Map<String, TSentryPrivilegeMap> listPrivilegsbyAuthorizable(String component,
-      String serviceName, String requestorUserName, Set<List<? extends Authorizable>> authorizablesSet,
+      String serviceName, String requestorUserName, Set<String> authorizablesSet,
       Set<String> groups, ActiveRoleSet roleSet) throws SentryUserException {
-
-    Set<List<TAuthorizable>> authSet = Sets.newHashSet();
-    for (List<? extends Authorizable> authorizables : authorizablesSet) {
-      authSet.add(fromAuthorizable(authorizables));
-    }
 
     TListSentryPrivilegesByAuthRequest request = new TListSentryPrivilegesByAuthRequest();
 
@@ -575,6 +561,7 @@ public class SentryGenericServiceClientDefaultImpl implements SentryGenericServi
     request.setComponent(component);
     request.setServiceName(serviceName);
     request.setRequestorUserName(requestorUserName);
+    request.setAuthorizablesSet(authorizablesSet);
 
     if (groups == null) {
       request.setGroups(new HashSet<String>());
