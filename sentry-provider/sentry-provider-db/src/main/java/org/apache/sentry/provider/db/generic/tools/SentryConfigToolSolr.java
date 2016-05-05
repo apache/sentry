@@ -100,46 +100,50 @@ public class SentryConfigToolSolr extends SentryConfigToolCommon {
       checkCompat(policyFileBackend);
     }
 
-    if (importPolicy) {
-      //import the relations about group,role and privilege into the DB store
-      Set<String> roles = Sets.newHashSet();
-      Table<String, String, Set<String>> groupRolePrivilegeTable =
-          policyFileBackend.getGroupRolePrivilegeTable();
-      SolrTSentryPrivilegeConvertor convertor = new SolrTSentryPrivilegeConvertor(component, service, false);
+    //import the relations about group,role and privilege into the DB store
+    Set<String> roles = Sets.newHashSet();
+    Table<String, String, Set<String>> groupRolePrivilegeTable =
+        policyFileBackend.getGroupRolePrivilegeTable();
+    SolrTSentryPrivilegeConvertor convertor = new SolrTSentryPrivilegeConvertor(component, service, false);
 
-      for (String groupName : groupRolePrivilegeTable.rowKeySet()) {
-        for (String roleName : groupRolePrivilegeTable.columnKeySet()) {
-          if (!roles.contains(roleName)) {
-            LOGGER.info("Creating role: " + roleName);
+    for (String groupName : groupRolePrivilegeTable.rowKeySet()) {
+      for (String roleName : groupRolePrivilegeTable.columnKeySet()) {
+        if (!roles.contains(roleName)) {
+          LOGGER.info(dryRunMessage(importPolicy) + "Creating role: " + roleName.toLowerCase(Locale.US));
+          if (importPolicy) {
             client.createRoleIfNotExist(requestorName, roleName, component);
-            roles.add(roleName);
           }
+          roles.add(roleName);
+        }
 
-          Set<String> privileges = groupRolePrivilegeTable.get(groupName, roleName);
-          if (privileges == null) {
-            continue;
-          }
-          LOGGER.info("Adding role: " + roleName + " to group: " + groupName);
+        Set<String> privileges = groupRolePrivilegeTable.get(groupName, roleName);
+        if (privileges == null) {
+          continue;
+        }
+        LOGGER.info(dryRunMessage(importPolicy) + "Adding role: " + roleName.toLowerCase(Locale.US) + " to group: " + groupName);
+        if (importPolicy) {
           client.addRoleToGroups(requestorName, roleName, component, Sets.newHashSet(groupName));
+        }
 
-          for (String permission : privileges) {
-            String action = null;
+        for (String permission : privileges) {
+          String action = null;
 
-            for (String authorizable : ProviderConstants.AUTHORIZABLE_SPLITTER.
-                trimResults().split(permission)) {
-              KeyValue kv = new KeyValue(authorizable);
-              String key = kv.getKey();
-              String value = kv.getValue();
-              if ("action".equalsIgnoreCase(key)) {
-                action = value;
-              }
+          for (String authorizable : ProviderConstants.AUTHORIZABLE_SPLITTER.
+              trimResults().split(permission)) {
+            KeyValue kv = new KeyValue(authorizable);
+            String key = kv.getKey();
+            String value = kv.getValue();
+            if ("action".equalsIgnoreCase(key)) {
+              action = value;
             }
+          }
 
-            // Service doesn't support not specifying action
-            if (action == null) {
-              permission += "->action=" + Action.ALL;
-            }
-            LOGGER.info("Adding permission: " + permission + " to role: " + roleName);
+          // Service doesn't support not specifying action
+          if (action == null) {
+            permission += "->action=" + Action.ALL;
+          }
+          LOGGER.info(dryRunMessage(importPolicy) + "Adding permission: " + permission + " to role: " + roleName.toLowerCase(Locale.US));
+          if (importPolicy) {
             client.grantPrivilege(requestorName, roleName, component, convertor.fromString(permission));
           }
         }
@@ -225,6 +229,14 @@ public class SentryConfigToolSolr extends SentryConfigToolCommon {
       ex.setConfigErrors(errors);
       ex.setConfigWarnings(Lists.<String>asList(warningString.toString(), new String[0]));
       throw ex;
+    }
+  }
+
+  private String dryRunMessage(boolean importPolicy) {
+    if (importPolicy) {
+      return "";
+    } else {
+      return "[Dry Run] ";
     }
   }
 
