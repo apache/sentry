@@ -430,13 +430,14 @@ public class DelegateSentryStore implements SentryStoreLayer {
     service = toTrimmedLower(service);
 
     Set<MSentryGMPrivilege> privileges = Sets.newHashSet();
+
+    if (validActiveRoles == null || validActiveRoles.isEmpty()) {
+      return privileges;
+    }
+
     PersistenceManager pm = null;
     try {
       pm = openTransaction();
-
-      if (validActiveRoles == null || validActiveRoles.size() == 0) {
-        return privileges;
-      }
 
       Set<MSentryRole> mRoles = Sets.newHashSet();
       for (String role : validActiveRoles) {
@@ -445,8 +446,19 @@ public class DelegateSentryStore implements SentryStoreLayer {
           mRoles.add(mRole);
         }
       }
+
       //get the privileges
-      privileges.addAll(privilegeOperator.getPrivilegesByAuthorizable(component, service, mRoles, authorizables, pm));
+      Set<MSentryGMPrivilege> mSentryGMPrivileges =  privilegeOperator.getPrivilegesByAuthorizable(component, service, mRoles, authorizables, pm);
+
+      for (MSentryGMPrivilege mSentryGMPrivilege : mSentryGMPrivileges) {
+        /**
+         * force to load all roles related this privilege
+         * avoid the lazy-loading
+         */
+        pm.retrieve(mSentryGMPrivilege);
+        privileges.add(mSentryGMPrivilege);
+      }
+
     } finally {
       commitTransaction(pm);
     }
