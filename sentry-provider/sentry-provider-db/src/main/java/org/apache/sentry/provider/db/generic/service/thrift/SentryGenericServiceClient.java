@@ -18,6 +18,7 @@
 package org.apache.sentry.provider.db.generic.service.thrift;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.sentry.SentryUserException;
@@ -172,6 +173,25 @@ public interface SentryGenericServiceClient {
   Set<String> listPrivilegesForProvider(String component,
       String serviceName, ActiveRoleSet roleSet, Set<String> groups,
       List<? extends Authorizable> authorizables) throws SentryUserException;
+
+  /**
+   * Get sentry privileges based on valid active roles and the authorize objects. Note that
+   * it is client responsibility to ensure the requestor username, etc. is not impersonated.
+   *
+   * @param component: The request respond to which component.
+   * @param serviceName: The name of service.
+   * @param requestorUserName: The requestor user name.
+   * @param authorizablesSet: The set of authorize objects. One authorize object is represented
+   *     as a string. e.g resourceType1=resourceName1->resourceType2=resourceName2->resourceType3=resourceName3.
+   * @param groups: The requested groups.
+   * @param roleSet: The active roles set.
+   *
+   * @returns The mapping of authorize objects and TSentryPrivilegeMap(<role, set<privileges>).
+   * @throws SentryUserException
+   */
+  Map<String, TSentryPrivilegeMap> listPrivilegsbyAuthorizable(String component,
+      String serviceName, String requestorUserName, Set<String> authorizablesSet,
+      Set<String> groups, ActiveRoleSet roleSet) throws SentryUserException;
 
   void close();
 }

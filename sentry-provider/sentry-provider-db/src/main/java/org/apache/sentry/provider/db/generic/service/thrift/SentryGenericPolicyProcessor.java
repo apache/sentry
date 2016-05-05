@@ -709,25 +709,18 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
           validActiveRoles.addAll(grantedRoles);
         }
       } else {
-        Set<String> allRoles = toTrimmedLower(store.getAllRoleNames());
-        Set<String> activeRoleNames = Sets.newHashSet();
-        boolean isAllRoleSet = false;
-
-        // If activeRoleSet (which is optional) is null, valid active role will be all roles.
-        if (activeRoleSet != null) {
-          activeRoleNames = toTrimmedLower(activeRoleSet.getRoles());
-          isAllRoleSet = activeRoleSet.isAll();
-        } else {
-          isAllRoleSet = true;
+        // For admin, if requestedGroups are empty, requested roles will be all roles.
+        Set<String> requestedRoles = toTrimmedLower(store.getAllRoleNames());
+        if (requestedGroups != null && !requestedGroups.isEmpty())  {
+          requestedRoles = toTrimmedLower(store.getRolesByGroups(request.getComponent(), requestedGroups));
         }
 
-        // For admin, if requestedGroups are empty, valid active roles are intersection of active roles and all roles.
-        // Otherwise, valid active roles are intersection of active roles and the roles of requestedGroups.
-        if (requestedGroups == null || requestedGroups.isEmpty()) {
-          validActiveRoles.addAll(isAllRoleSet ? allRoles : Sets.intersection(activeRoleNames, allRoles));
+        // If activeRoleSet (which is optional) is not null, valid active role will be intersection
+        // of active roles and requested roles. Otherwise, valid active roles are the requested roles.
+        if (activeRoleSet != null && !activeRoleSet.isAll()) {
+          validActiveRoles.addAll(Sets.intersection(toTrimmedLower(activeRoleSet.getRoles()), requestedRoles));
         } else {
-          Set<String> requestedRoles = toTrimmedLower(store.getRolesByGroups(request.getComponent(), requestedGroups));
-          validActiveRoles.addAll(isAllRoleSet ? allRoles : Sets.intersection(activeRoleNames, requestedRoles));
+          validActiveRoles.addAll(requestedRoles);
         }
       }
 

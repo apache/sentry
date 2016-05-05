@@ -23,6 +23,7 @@ import static org.junit.Assert.fail;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.sentry.SentryUserException;
@@ -382,6 +383,69 @@ public class TestSentryGenericServiceIntegration extends SentryGenericServiceInt
 
         assertEquals(1, client.listPrivilegesForProvider(SOLR, "service1", roleSet,
             testGroup, Arrays.asList(new Collection("c2"), new Field("f2"))).size());
+      }});
+  }
+
+  @Test
+  public void testGetPrivilegeByAuthorizable() throws Exception {
+    runTestAsSubject(new TestOperation(){
+      @Override
+      public void runTestAsSubject() throws Exception {
+        String adminUser = ADMIN_USER;
+        Set<String> adminGroup = Sets.newHashSet(ADMIN_GROUP);
+        String testRole = "role1";
+        Set<String> testGroup = Sets.newHashSet("group1");
+        String testUser = "user1";
+        setLocalGroupMapping(adminUser, adminGroup);
+        setLocalGroupMapping(testUser, testGroup);
+        writePolicyFile();
+
+        client.createRole(adminUser, testRole, SOLR);
+        client.addRoleToGroups(adminUser, testRole, SOLR, adminGroup);
+
+        TSentryPrivilege queryPrivilege = new TSentryPrivilege(SOLR, "service1",
+        fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f1"))),
+        SearchConstants.QUERY);
+
+        TSentryPrivilege updatePrivilege = new TSentryPrivilege(SOLR, "service1",
+        fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f2"))),
+        SearchConstants.UPDATE);
+
+        client.grantPrivilege(adminUser, testRole, SOLR, queryPrivilege);
+        client.grantPrivilege(adminUser, testRole, SOLR, updatePrivilege);
+
+        //test listPrivilegsbyAuthorizable without requested group and active role set.
+        assertEquals(1, client.listPrivilegsbyAuthorizable(SOLR, "service1", adminUser,
+            Sets.newHashSet(new String("Collection=c1->Field=f1")), null, null).size());
+
+        //test listPrivilegsbyAuthorizable with requested group (testGroup)
+        Map<String, TSentryPrivilegeMap> privilegeMap = client.listPrivilegsbyAuthorizable(SOLR,
+            "service1", adminUser, Sets.newHashSet(new String("Collection=c1->Field=f1")), testGroup, null);
+        TSentryPrivilegeMap actualMap = privilegeMap.get(new String("Collection=c1->Field=f1"));
+        assertEquals(0, actualMap.getPrivilegeMap().size());
+
+        //test listPrivilegsbyAuthorizable with active role set.
+        ActiveRoleSet roleSet = ActiveRoleSet.ALL;
+        assertEquals(1, client.listPrivilegsbyAuthorizable(SOLR, "service1", adminUser,
+            Sets.newHashSet(new String("Collection=c1->Field=f1")), null, roleSet).size());
+        privilegeMap = client.listPrivilegsbyAuthorizable(SOLR,
+          "service1", adminUser, Sets.newHashSet(new String("Collection=c1->Field=f1")), null, roleSet);
+        actualMap = privilegeMap.get(new String("Collection=c1->Field=f1"));
+        assertEquals(1, actualMap.getPrivilegeMap().size());
+
+        privilegeMap = client.listPrivilegsbyAuthorizable(SOLR,
+            "service1", testUser, Sets.newHashSet(new String("Collection=c1->Field=f1")), null, roleSet);
+        actualMap = privilegeMap.get(new String("Collection=c1->Field=f1"));
+        assertEquals(0, actualMap.getPrivilegeMap().size());
+
+        // grant tesRole to testGroup.
+        client.addRoleToGroups(adminUser, testRole, SOLR, testGroup);
+
+        privilegeMap = client.listPrivilegsbyAuthorizable(SOLR,
+            "service1", testUser, Sets.newHashSet(new String("Collection=c1")), null, roleSet);
+        actualMap = privilegeMap.get(new String("Collection=c1"));
+        assertEquals(1, actualMap.getPrivilegeMap().size());
+        assertEquals(2, actualMap.getPrivilegeMap().get(testRole).size());
       }});
   }
 
