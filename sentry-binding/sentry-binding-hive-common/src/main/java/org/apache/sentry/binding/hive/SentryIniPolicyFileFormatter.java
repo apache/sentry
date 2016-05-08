@@ -23,11 +23,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.Sets;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.provider.common.PolicyFileConstants;
-import org.apache.sentry.provider.common.ProviderBackendContext;
-import org.apache.sentry.provider.file.SimpleFileProviderBackend;
+import org.apache.sentry.provider.file.PolicyFiles;
+import org.apache.shiro.config.Ini;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,8 +39,6 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import com.google.common.collect.Table;
 import com.google.common.io.Files;
 
 /**
@@ -61,6 +63,8 @@ public class SentryIniPolicyFileFormatter implements SentryPolicyFileFormatter {
    * @param sentryMappingData
    *        The map for sentry mapping data, eg:
    *        for the following mapping data:
+   *        user1=role1,role2
+   *        user2=role2,role3
    *        group1=role1,role2
    *        group2=role2,role3
    *        role1=server=server1->db=db1
@@ -69,6 +73,7 @@ public class SentryIniPolicyFileFormatter implements SentryPolicyFileFormatter {
    *
    *        The sentryMappingData will be inputed as:
    *        {
+   *        users={[user1={role1, role2}], group2=[role2, role3]},
    *        groups={[group1={role1, role2}], group2=[role2, role3]},
    *        roles={role1=[server=server1->db=db1],
    *        role2=[server=server1->db=db1->table=tbl1,server=server1->db=db1->table=tbl2],
@@ -86,6 +91,8 @@ public class SentryIniPolicyFileFormatter implements SentryPolicyFileFormatter {
     String contents = Joiner
         .on(NL)
         .join(
+        generateSection(PolicyFileConstants.USER_ROLES,
+            sentryMappingData.get(PolicyFileConstants.USER_ROLES)),
         generateSection(PolicyFileConstants.GROUPS,
                 sentryMappingData.get(PolicyFileConstants.GROUPS)),
         generateSection(PolicyFileConstants.ROLES,
@@ -105,42 +112,45 @@ public class SentryIniPolicyFileFormatter implements SentryPolicyFileFormatter {
    * @return the result of sentry mapping data in map structure.
    */
   @Override
-  public Map<String, Map<String, Set<String>>> parse(String resourcePath, Configuration conf)
-      throws Exception {
+  public Map<String, Map<String, Set<String>>> parse(String resourcePath, Configuration conf) {
     Map<String, Map<String, Set<String>>> resultMap = Maps.newHashMap();
-    // SimpleFileProviderBackend is used for parse the ini file
-    SimpleFileProviderBackend policyFileBackend = new SimpleFileProviderBackend(conf, resourcePath);
-    ProviderBackendContext context = new ProviderBackendContext();
-    context.setAllowPerDatabase(true);
-    // parse the ini file
-    policyFileBackend.initialize(context);
+    Path path = new Path(resourcePath);
+    Ini ini;
 
-    // SimpleFileProviderBackend parsed the input file and output the data in Table format.
-    Table<String, String, Set<String>> groupRolePrivilegeTable = policyFileBackend
-        .getGroupRolePrivilegeTable();
-    Map<String, Set<String>> groupRolesMap = Maps.newHashMap();
-    Map<String, Set<String>> rolePrivilegesMap = Maps.newHashMap();
-    for (String groupName : groupRolePrivilegeTable.rowKeySet()) {
-      for (String roleName : groupRolePrivilegeTable.columnKeySet()) {
-        // get the roles set for the current groupName
-        Set<String> tempRoles = groupRolesMap.get(groupName);
-        if (tempRoles == null) {
-          tempRoles = Sets.newHashSet();
-        }
-        Set<String> privileges = groupRolePrivilegeTable.get(groupName, roleName);
-        // if there has privilege for [group,role], if no privilege exist, the [group, role] info
-        // will be discard.
-        if (privileges != null) {
-          // update [group, role] mapping data
-          tempRoles.add(roleName);
-          groupRolesMap.put(groupName, tempRoles);
-          // update [role, privilege] mapping data
-          rolePrivilegesMap.put(roleName, privileges);
-        }
-      }
+    try {
+      ini = PolicyFiles.loadFromPath(path.getFileSystem(conf), path);
+    } catch (Exception e) {
+      throw new SentryConfigurationException("Error loading policy file "
+          + resourcePath, e);
     }
+    Map<String, Set<String>> userRolesMap = parseSection(ini,
+        PolicyFileConstants.USER_ROLES);
+    Map<String, Set<String>> groupRolesMap = parseSection(ini,
+        PolicyFileConstants.GROUPS);
+    Map<String, Set<String>> rolePrivilegesMap = parseSection(ini,
+        PolicyFileConstants.ROLES);
+    resultMap.put(PolicyFileConstants.USER_ROLES, userRolesMap);
     resultMap.put(PolicyFileConstants.GROUPS, groupRolesMap);
     resultMap.put(PolicyFileConstants.ROLES, rolePrivilegesMap);
+    return resultMap;
+  }
+
+  private Map<String, Set<String>> parseSection(Ini ini, String sctionName) {
+    Map<String, Set<String>> resultMap = Maps.newHashMap();
+    Ini.Section sction = ini.getSection(sctionName);
+    if (sction == null) {
+      return resultMap;
+    }
+    for (String key : sction.keySet()) {
+      String value = sction.get(key);
+      Set<String> roles = Sets.newHashSet();
+      for (String role : value.split(SentryConstants.ROLE_SEPARATOR)) {
+        if (StringUtils.isNotEmpty(role)) {
+          roles.add(role);
+        }
+      }
+      resultMap.put(key, roles);
+    }
     return resultMap;
   }
 

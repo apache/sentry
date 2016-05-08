@@ -21,6 +21,7 @@ public class PolicyFileConstants {
   public static final String GROUPS = "groups";
   public static final String ROLES = "roles";
   public static final String USERS = "users";
+  public static final String USER_ROLES = "userroles";
   public static final String PRIVILEGE_SERVER_NAME = "server";
   public static final String PRIVILEGE_DATABASE_NAME = "db";
   public static final String PRIVILEGE_TABLE_NAME = "table";

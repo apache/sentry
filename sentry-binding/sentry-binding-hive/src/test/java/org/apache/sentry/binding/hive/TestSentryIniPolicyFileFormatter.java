@@ -55,6 +55,10 @@ public class TestSentryIniPolicyFileFormatter {
 
   private void prepareTestData() {
     // test data for:
+    // [users]
+    // user1=role1,role2,role3
+    // user2=role1,role2,role3
+    // user3=role1,role2,role3
     // [groups]
     // group1=role1,role2,role3
     // group2=role1,role2,role3
@@ -64,9 +68,13 @@ public class TestSentryIniPolicyFileFormatter {
     // role2=privilege1,privilege2,privilege3,privilege4,privilege5,privilege6,privilege7,privilege8
     // role3=privilege1,privilege2,privilege3,privilege4,privilege5,privilege6,privilege7,privilege8
     policyFileMappingData1 = Maps.newHashMap();
+    Map<String, Set<String>> userRolesMap = Maps.newHashMap();
     Map<String, Set<String>> groupRolesMap = Maps.newHashMap();
     Map<String, Set<String>> rolePrivilegesMap = Maps.newHashMap();
     Set<String> roles = Sets.newHashSet("role1", "role2", "role3");
+    userRolesMap.put("user1", roles);
+    userRolesMap.put("user2", roles);
+    userRolesMap.put("user3", roles);
     groupRolesMap.put("group1", roles);
     groupRolesMap.put("group2", roles);
     groupRolesMap.put("group3", roles);
@@ -74,10 +82,15 @@ public class TestSentryIniPolicyFileFormatter {
       rolePrivilegesMap.put(roleName, Sets.newHashSet(PRIVILIEGE1, PRIVILIEGE2, PRIVILIEGE3,
           PRIVILIEGE4, PRIVILIEGE5, PRIVILIEGE6, PRIVILIEGE7, PRIVILIEGE8));
     }
+    policyFileMappingData1.put(PolicyFileConstants.USER_ROLES, userRolesMap);
     policyFileMappingData1.put(PolicyFileConstants.GROUPS, groupRolesMap);
     policyFileMappingData1.put(PolicyFileConstants.ROLES, rolePrivilegesMap);
 
     // test data for:
+    // [users]
+    // user1=role1
+    // user2=role2
+    // user3=role3
     // [groups]
     // group1=role1
     // group2=role2
@@ -87,18 +100,27 @@ public class TestSentryIniPolicyFileFormatter {
     // role2=privilege4,privilege5,privilege6
     // role3=privilege7,privilege8
     policyFileMappingData2 = Maps.newHashMap();
+    userRolesMap = Maps.newHashMap();
     groupRolesMap = Maps.newHashMap();
     rolePrivilegesMap = Maps.newHashMap();
+    userRolesMap.put("user1", Sets.newHashSet("role1"));
+    userRolesMap.put("user2", Sets.newHashSet("role2"));
+    userRolesMap.put("user3", Sets.newHashSet("role3"));
     groupRolesMap.put("group1", Sets.newHashSet("role1"));
     groupRolesMap.put("group2", Sets.newHashSet("role2"));
     groupRolesMap.put("group3", Sets.newHashSet("role3"));
     rolePrivilegesMap.put("role1", Sets.newHashSet(PRIVILIEGE1, PRIVILIEGE2, PRIVILIEGE3));
     rolePrivilegesMap.put("role2", Sets.newHashSet(PRIVILIEGE4, PRIVILIEGE5, PRIVILIEGE6));
     rolePrivilegesMap.put("role3", Sets.newHashSet(PRIVILIEGE7, PRIVILIEGE8));
+    policyFileMappingData2.put(PolicyFileConstants.USER_ROLES, userRolesMap);
     policyFileMappingData2.put(PolicyFileConstants.GROUPS, groupRolesMap);
     policyFileMappingData2.put(PolicyFileConstants.ROLES, rolePrivilegesMap);
 
     // test data for:
+    // [users]
+    // user1=role1,role2
+    // user2=role1,role2,role3
+    // user3=role2,role3
     // [groups]
     // group1=role1,role2
     // group2=role1,role2,role3
@@ -108,8 +130,12 @@ public class TestSentryIniPolicyFileFormatter {
     // role2=privilege3,privilege4,privilege5,privilege6
     // role3=privilege5,privilege6,privilege7,privilege8
     policyFileMappingData3 = Maps.newHashMap();
+    userRolesMap = Maps.newHashMap();
     groupRolesMap = Maps.newHashMap();
     rolePrivilegesMap = Maps.newHashMap();
+    userRolesMap.put("user1", Sets.newHashSet("role1", "role2"));
+    userRolesMap.put("user2", Sets.newHashSet("role1", "role2", "role3"));
+    userRolesMap.put("user3", Sets.newHashSet("role2", "role3"));
     groupRolesMap.put("group1", Sets.newHashSet("role1", "role2"));
     groupRolesMap.put("group2", Sets.newHashSet("role1", "role2", "role3"));
     groupRolesMap.put("group3", Sets.newHashSet("role2", "role3"));
@@ -119,21 +145,27 @@ public class TestSentryIniPolicyFileFormatter {
         Sets.newHashSet(PRIVILIEGE3, PRIVILIEGE4, PRIVILIEGE5, PRIVILIEGE6));
     rolePrivilegesMap.put("role3",
         Sets.newHashSet(PRIVILIEGE5, PRIVILIEGE6, PRIVILIEGE7, PRIVILIEGE8));
+    policyFileMappingData3.put(PolicyFileConstants.USER_ROLES, userRolesMap);
     policyFileMappingData3.put(PolicyFileConstants.GROUPS, groupRolesMap);
     policyFileMappingData3.put(PolicyFileConstants.ROLES, rolePrivilegesMap);
 
-    // test data for groups only
+    // test data for users, groups only
     policyFileMappingData4 = Maps.newHashMap();
+    userRolesMap = Maps.newHashMap();
     groupRolesMap = Maps.newHashMap();
     rolePrivilegesMap = Maps.newHashMap();
+    userRolesMap.put("user1", Sets.newHashSet("role1", "role2"));
     groupRolesMap.put("group1", Sets.newHashSet("role1", "role2"));
+    policyFileMappingData4.put(PolicyFileConstants.USER_ROLES, userRolesMap);
     policyFileMappingData4.put(PolicyFileConstants.GROUPS, groupRolesMap);
     policyFileMappingData4.put(PolicyFileConstants.ROLES, rolePrivilegesMap);
 
     // test empty data
     policyFileMappingData5 = Maps.newHashMap();
+    userRolesMap = Maps.newHashMap();
     groupRolesMap = Maps.newHashMap();
     rolePrivilegesMap = Maps.newHashMap();
+    policyFileMappingData5.put(PolicyFileConstants.USER_ROLES, userRolesMap);
     policyFileMappingData5.put(PolicyFileConstants.GROUPS, groupRolesMap);
     policyFileMappingData5.put(PolicyFileConstants.ROLES, rolePrivilegesMap);
   }
@@ -165,12 +197,12 @@ public class TestSentryIniPolicyFileFormatter {
     // test data4
     iniFormatter.write(resourcePath, policyFileMappingData4);
     parsedMappingData = iniFormatter.parse(resourcePath, authzConf);
-    assertTrue(parsedMappingData.get(PolicyFileConstants.GROUPS).isEmpty());
-    assertTrue(parsedMappingData.get(PolicyFileConstants.ROLES).isEmpty());
+    validateSentryMappingData(parsedMappingData, policyFileMappingData4);
 
     // test data5
     iniFormatter.write(resourcePath, policyFileMappingData5);
     parsedMappingData = iniFormatter.parse(resourcePath, authzConf);
+    assertTrue(parsedMappingData.get(PolicyFileConstants.USER_ROLES).isEmpty());
     assertTrue(parsedMappingData.get(PolicyFileConstants.GROUPS).isEmpty());
     assertTrue(parsedMappingData.get(PolicyFileConstants.ROLES).isEmpty());
     (new File(baseDir, RESOURCE_PATH)).delete();
@@ -179,6 +211,8 @@ public class TestSentryIniPolicyFileFormatter {
   // verify the mapping data
   public void validateSentryMappingData(Map<String, Map<String, Set<String>>> actualMappingData,
       Map<String, Map<String, Set<String>>> expectedMappingData) {
+    validateGroupRolesMap(actualMappingData.get(PolicyFileConstants.USER_ROLES),
+        expectedMappingData.get(PolicyFileConstants.USER_ROLES));
     validateGroupRolesMap(actualMappingData.get(PolicyFileConstants.GROUPS),
         expectedMappingData.get(PolicyFileConstants.GROUPS));
     validateRolePrivilegesMap(actualMappingData.get(PolicyFileConstants.ROLES),

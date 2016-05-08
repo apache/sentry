@@ -690,7 +690,7 @@ public class TestSentryServiceImportExport extends SentryServiceIntegrationBase 
           rolePrivilegesMap.put(roleName, Sets.newHashSet(PRIVILIEGE1,
               PRIVILIEGE2, PRIVILIEGE3, PRIVILIEGE4));
         }
-        policyFileMappingData.put(PolicyFileConstants.USERS, userRolesMap);
+        policyFileMappingData.put(PolicyFileConstants.USER_ROLES, userRolesMap);
         policyFileMappingData.put(PolicyFileConstants.GROUPS, groupRolesMap);
         policyFileMappingData.put(PolicyFileConstants.ROLES, rolePrivilegesMap);
         client.importPolicy(policyFileMappingData, ADMIN_USER, false);
@@ -698,8 +698,8 @@ public class TestSentryServiceImportExport extends SentryServiceIntegrationBase 
         Map<String, Map<String, Set<String>>> sentryMappingData =
             client.exportPolicy(ADMIN_USER, null);
         // validate the [user, role] mapping
-        validateRolesMap(sentryMappingData.get(PolicyFileConstants.USERS),
-            policyFileMappingData.get(PolicyFileConstants.USERS));
+        validateRolesMap(sentryMappingData.get(PolicyFileConstants.USER_ROLES),
+            policyFileMappingData.get(PolicyFileConstants.USER_ROLES));
         validateSentryMappingData(sentryMappingData,
             policyFileMappingData);
       }

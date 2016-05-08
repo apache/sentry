@@ -940,7 +940,7 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
       // convert the mapping data for [group,role] from map structure to
       // TSentryMappingData.GroupRolesMap
       tSentryMappingData.setGroupRolesMap(policyFileMappingData.get(PolicyFileConstants.GROUPS));
-      tSentryMappingData.setUserRolesMap(policyFileMappingData.get(PolicyFileConstants.USERS));
+      tSentryMappingData.setUserRolesMap(policyFileMappingData.get(PolicyFileConstants.USER_ROLES));
       // convert the mapping data for [role,privilege] from map structure to
       // TSentryMappingData.RolePrivilegesMap
       tSentryMappingData
@@ -985,7 +985,7 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
       Status.throwIfNotOk(response.getStatus());
       TSentryMappingData tSentryMappingData = response.getMappingData();
       Map<String, Map<String, Set<String>>> resultMap = Maps.newHashMap();
-      resultMap.put(PolicyFileConstants.USERS, tSentryMappingData.getUserRolesMap());
+      resultMap.put(PolicyFileConstants.USER_ROLES, tSentryMappingData.getUserRolesMap());
       resultMap.put(PolicyFileConstants.GROUPS, tSentryMappingData.getGroupRolesMap());
       resultMap.put(PolicyFileConstants.ROLES,
           convertRolePrivilegesMapForPolicyFile(tSentryMappingData.getRolePrivilegesMap()));
