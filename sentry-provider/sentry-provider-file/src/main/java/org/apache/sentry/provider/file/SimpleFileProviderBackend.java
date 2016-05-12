@@ -36,7 +36,7 @@ import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.policy.common.PrivilegeUtils;
 import org.apache.sentry.core.common.validator.PrivilegeValidator;
 import org.apache.sentry.core.common.validator.PrivilegeValidatorContext;
-import org.apache.sentry.provider.common.PolicyFileConstants;
+import org.apache.sentry.core.common.utils.PolicyFileConstants;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;
 import org.apache.shiro.config.Ini;

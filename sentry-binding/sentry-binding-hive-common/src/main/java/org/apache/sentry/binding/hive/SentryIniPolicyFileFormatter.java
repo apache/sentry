@@ -29,7 +29,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.sentry.core.common.SentryConfigurationException;
 import org.apache.sentry.core.common.utils.SentryConstants;
-import org.apache.sentry.provider.common.PolicyFileConstants;
+import org.apache.sentry.core.common.utils.PolicyFileConstants;
 import org.apache.sentry.provider.file.PolicyFiles;
 import org.apache.shiro.config.Ini;
 import org.slf4j.Logger;

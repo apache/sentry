@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.sentry.core.common.utils.SentryConstants;
-import org.apache.sentry.provider.common.PolicyFileConstants;
+import org.apache.sentry.core.common.utils.PolicyFileConstants;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
 import org.junit.Before;
 import org.junit.BeforeClass;

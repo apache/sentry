@@ -26,7 +26,7 @@ import java.util.Set;
 
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.core.common.utils.SentryConstants;
-import org.apache.sentry.provider.common.PolicyFileConstants;
+import org.apache.sentry.core.common.utils.PolicyFileConstants;
 import org.junit.Test;
 
 import com.google.common.collect.Maps;

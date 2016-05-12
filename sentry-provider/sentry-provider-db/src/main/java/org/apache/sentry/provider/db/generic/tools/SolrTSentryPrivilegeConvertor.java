@@ -28,7 +28,7 @@ import org.apache.sentry.core.common.validator.PrivilegeValidatorContext;
 import org.apache.sentry.core.model.search.SearchModelAuthorizables;
 import org.apache.sentry.core.model.search.SearchPrivilegeModel;
 import org.apache.sentry.core.common.utils.KeyValue;
-import org.apache.sentry.provider.common.PolicyFileConstants;
+import org.apache.sentry.core.common.utils.PolicyFileConstants;
 import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryGrantOption;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;

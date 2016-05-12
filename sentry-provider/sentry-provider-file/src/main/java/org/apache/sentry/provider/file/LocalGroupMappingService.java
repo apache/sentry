@@ -28,7 +28,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.provider.common.GroupMappingService;
-import org.apache.sentry.provider.common.PolicyFileConstants;
+import org.apache.sentry.core.common.utils.PolicyFileConstants;
 import org.apache.sentry.provider.common.SentryGroupNotFoundException;
 import org.apache.shiro.config.Ini;
 import org.apache.shiro.config.Ini.Section;

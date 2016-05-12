@@ -17,10 +17,10 @@
 
 package org.apache.sentry.provider.file;
 
-import static org.apache.sentry.provider.common.PolicyFileConstants.DATABASES;
-import static org.apache.sentry.provider.common.PolicyFileConstants.GROUPS;
-import static org.apache.sentry.provider.common.PolicyFileConstants.ROLES;
-import static org.apache.sentry.provider.common.PolicyFileConstants.USERS;
+import static org.apache.sentry.core.common.utils.PolicyFileConstants.DATABASES;
+import static org.apache.sentry.core.common.utils.PolicyFileConstants.GROUPS;
+import static org.apache.sentry.core.common.utils.PolicyFileConstants.ROLES;
+import static org.apache.sentry.core.common.utils.PolicyFileConstants.USERS;
 
 import java.io.File;
 import java.util.Collection;

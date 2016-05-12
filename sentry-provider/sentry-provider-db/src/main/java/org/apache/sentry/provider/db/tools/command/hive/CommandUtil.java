@@ -20,7 +20,7 @@ package org.apache.sentry.provider.db.tools.command.hive;
 import org.apache.commons.lang.StringUtils;
 import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.core.common.utils.KeyValue;
-import org.apache.sentry.provider.common.PolicyFileConstants;
+import org.apache.sentry.core.common.utils.PolicyFileConstants;
 import org.apache.sentry.provider.db.service.thrift.TSentryGrantOption;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.service.thrift.ServiceConstants;

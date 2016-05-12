@@ -29,7 +29,7 @@ import org.apache.sentry.binding.hive.SentryPolicyFileFormatFactory;
 import org.apache.sentry.binding.hive.SentryPolicyFileFormatter;
 import org.apache.sentry.binding.hive.authz.SentryConfigTool;
 import org.apache.sentry.core.common.utils.SentryConstants;
-import org.apache.sentry.provider.common.PolicyFileConstants;
+import org.apache.sentry.core.common.utils.PolicyFileConstants;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
