@@ -49,14 +49,16 @@ public class TestGMAuditMetadataLogEntity {
     assertEntryEquals(rootNode, Constants.LOG_FIELD_IP_ADDRESS, "ipAddress");
     assertEntryEquals(rootNode, Constants.LOG_FIELD_OPERATION, "operation");
     assertEntryEquals(rootNode, Constants.LOG_FIELD_EVENT_TIME, "eventTime");
-    assertEntryEquals(rootNode, Constants.LOG_FIELD_OPERATION_TEXT, "operationText");
+    assertEntryEquals(rootNode, Constants.LOG_FIELD_OPERATION_TEXT, "operationText ON COMPONENT component");
     assertEntryEquals(rootNode, Constants.LOG_FIELD_ALLOWED, "allowed");
     assertEntryEquals(rootNode, Constants.LOG_FIELD_OBJECT_TYPE, "objectType");
-    assertEntryEquals(rootNode, Constants.LOG_FIELD_COMPONENT, "component");
-    assertEntryEquals(rootNode, "resourceType1", "resourceName1");
-    assertEntryEquals(rootNode, "resourceType2", "resourceName2");
-    assertEntryEquals(rootNode, "resourceType3", "resourceName3");
-    assertEntryEquals(rootNode, "resourceType4", "resourceName4");
+    // "component" and arbitrary resource names are disabled because of
+    // Navigator log format
+    // assertEntryEquals(rootNode, Constants.LOG_FIELD_COMPONENT, "component");
+    // assertEntryEquals(rootNode, "resourceType1", "resourceName1");
+    // assertEntryEquals(rootNode, "resourceType2", "resourceName2");
+    // assertEntryEquals(rootNode, "resourceType3", "resourceName3");
+    // assertEntryEquals(rootNode, "resourceType4", "resourceName4");
   }
 
   void assertEntryEquals(ContainerNode rootNode, String key, String value) {

@@ -121,7 +121,7 @@ public class TestAuditLogForSentryGenericService extends SentryServiceIntegratio
         client.createRole(requestorUserName, roleName, COMPONENT);
         Map<String, String> fieldValueMap = new HashMap<String, String>();
         fieldValueMap.put(Constants.LOG_FIELD_OPERATION, Constants.OPERATION_CREATE_ROLE);
-        fieldValueMap.put(Constants.LOG_FIELD_COMPONENT, COMPONENT);
+        //fieldValueMap.put(Constants.LOG_FIELD_COMPONENT, COMPONENT);
         fieldValueMap.put(Constants.LOG_FIELD_OPERATION_TEXT, "CREATE ROLE " + roleName);
         fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.TRUE);
         fieldValueMap.put(Constants.LOG_FIELD_IP_ADDRESS, null);
@@ -134,7 +134,7 @@ public class TestAuditLogForSentryGenericService extends SentryServiceIntegratio
         } catch (Exception e) {
           fieldValueMap.clear();
           fieldValueMap.put(Constants.LOG_FIELD_OPERATION, Constants.OPERATION_CREATE_ROLE);
-          fieldValueMap.put(Constants.LOG_FIELD_COMPONENT, COMPONENT);
+          //fieldValueMap.put(Constants.LOG_FIELD_COMPONENT, COMPONENT);
           fieldValueMap.put(Constants.LOG_FIELD_OPERATION_TEXT, "CREATE ROLE " + roleName);
           fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.FALSE);
           fieldValueMap.put(Constants.LOG_FIELD_IP_ADDRESS, null);
@@ -146,7 +146,7 @@ public class TestAuditLogForSentryGenericService extends SentryServiceIntegratio
             Sets.newHashSet(testGroupName));
         fieldValueMap.clear();
         fieldValueMap.put(Constants.LOG_FIELD_OPERATION, Constants.OPERATION_ADD_ROLE);
-        fieldValueMap.put(Constants.LOG_FIELD_COMPONENT, COMPONENT);
+        //fieldValueMap.put(Constants.LOG_FIELD_COMPONENT, COMPONENT);
         fieldValueMap.put(Constants.LOG_FIELD_OPERATION_TEXT, "GRANT ROLE " + roleName
             + " TO GROUP " + testGroupName);
         fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.TRUE);
@@ -161,7 +161,7 @@ public class TestAuditLogForSentryGenericService extends SentryServiceIntegratio
         } catch (Exception e) {
           fieldValueMap.clear();
           fieldValueMap.put(Constants.LOG_FIELD_OPERATION, Constants.OPERATION_ADD_ROLE);
-          fieldValueMap.put(Constants.LOG_FIELD_COMPONENT, COMPONENT);
+          //fieldValueMap.put(Constants.LOG_FIELD_COMPONENT, COMPONENT);
           fieldValueMap.put(Constants.LOG_FIELD_OPERATION_TEXT, "GRANT ROLE invalidRole TO GROUP "
               + testGroupName);
           fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.FALSE);
@@ -176,10 +176,10 @@ public class TestAuditLogForSentryGenericService extends SentryServiceIntegratio
         client.grantPrivilege(requestorUserName, roleName, COMPONENT, privilege);
         fieldValueMap.clear();
         fieldValueMap.put(Constants.LOG_FIELD_OPERATION, Constants.OPERATION_GRANT_PRIVILEGE);
-        fieldValueMap.put(Constants.LOG_FIELD_COMPONENT, COMPONENT);
+        //fieldValueMap.put(Constants.LOG_FIELD_COMPONENT, COMPONENT);
         fieldValueMap.put(Constants.LOG_FIELD_OPERATION_TEXT,
             "GRANT ALL ON resourceType1 resourceName1 resourceType2 resourceName2 TO ROLE "
-                + roleName);
+                + roleName + " ON COMPONENT " + COMPONENT);
         fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.TRUE);
         fieldValueMap.put(Constants.LOG_FIELD_IP_ADDRESS, null);
         assertAuditLog(fieldValueMap);
@@ -195,9 +195,10 @@ public class TestAuditLogForSentryGenericService extends SentryServiceIntegratio
         } catch (Exception e) {
           fieldValueMap.clear();
           fieldValueMap.put(Constants.LOG_FIELD_OPERATION, Constants.OPERATION_GRANT_PRIVILEGE);
-          fieldValueMap.put(Constants.LOG_FIELD_COMPONENT, COMPONENT);
+          //fieldValueMap.put(Constants.LOG_FIELD_COMPONENT, COMPONENT);
           fieldValueMap.put(Constants.LOG_FIELD_OPERATION_TEXT,
-              "GRANT INVALIDACTION ON resourceType1 resourceName1 TO ROLE " + roleName);
+              "GRANT INVALIDACTION ON resourceType1 resourceName1 TO ROLE " + roleName
+                  + " ON COMPONENT " + COMPONENT);
           fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.FALSE);
           fieldValueMap.put(Constants.LOG_FIELD_IP_ADDRESS, null);
           assertAuditLog(fieldValueMap);
@@ -207,10 +208,10 @@ public class TestAuditLogForSentryGenericService extends SentryServiceIntegratio
         client.revokePrivilege(requestorUserName, roleName, COMPONENT, privilege);
         fieldValueMap.clear();
         fieldValueMap.put(Constants.LOG_FIELD_OPERATION, Constants.OPERATION_REVOKE_PRIVILEGE);
-        fieldValueMap.put(Constants.LOG_FIELD_COMPONENT, COMPONENT);
+        //fieldValueMap.put(Constants.LOG_FIELD_COMPONENT, COMPONENT);
         fieldValueMap.put(Constants.LOG_FIELD_OPERATION_TEXT,
             "REVOKE ALL ON resourceType1 resourceName1 resourceType2 resourceName2 FROM ROLE "
-                + roleName);
+                + roleName + " ON COMPONENT " + COMPONENT);
         fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.TRUE);
         fieldValueMap.put(Constants.LOG_FIELD_IP_ADDRESS, null);
         assertAuditLog(fieldValueMap);
@@ -222,9 +223,10 @@ public class TestAuditLogForSentryGenericService extends SentryServiceIntegratio
         } catch (Exception e) {
           fieldValueMap.clear();
           fieldValueMap.put(Constants.LOG_FIELD_OPERATION, Constants.OPERATION_REVOKE_PRIVILEGE);
-          fieldValueMap.put(Constants.LOG_FIELD_COMPONENT, COMPONENT);
+          //fieldValueMap.put(Constants.LOG_FIELD_COMPONENT, COMPONENT);
           fieldValueMap.put(Constants.LOG_FIELD_OPERATION_TEXT,
-              "REVOKE INVALIDACTION ON resourceType1 resourceName1 FROM ROLE invalidRole");
+              "REVOKE INVALIDACTION ON resourceType1 resourceName1 FROM ROLE invalidRole"
+                  + " ON COMPONENT " + COMPONENT);
           fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.FALSE);
           fieldValueMap.put(Constants.LOG_FIELD_IP_ADDRESS, null);
           assertAuditLog(fieldValueMap);
@@ -235,7 +237,7 @@ public class TestAuditLogForSentryGenericService extends SentryServiceIntegratio
             Sets.newHashSet(testGroupName));
         fieldValueMap.clear();
         fieldValueMap.put(Constants.LOG_FIELD_OPERATION, Constants.OPERATION_DELETE_ROLE);
-        fieldValueMap.put(Constants.LOG_FIELD_COMPONENT, COMPONENT);
+        //fieldValueMap.put(Constants.LOG_FIELD_COMPONENT, COMPONENT);
         fieldValueMap.put(Constants.LOG_FIELD_OPERATION_TEXT, "REVOKE ROLE " + roleName
             + " FROM GROUP " + testGroupName);
         fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.TRUE);
@@ -249,7 +251,7 @@ public class TestAuditLogForSentryGenericService extends SentryServiceIntegratio
         } catch (Exception e) {
           fieldValueMap.clear();
           fieldValueMap.put(Constants.LOG_FIELD_OPERATION, Constants.OPERATION_DELETE_ROLE);
-          fieldValueMap.put(Constants.LOG_FIELD_COMPONENT, COMPONENT);
+          //fieldValueMap.put(Constants.LOG_FIELD_COMPONENT, COMPONENT);
           fieldValueMap.put(Constants.LOG_FIELD_OPERATION_TEXT,
               "REVOKE ROLE invalidRole FROM GROUP " + testGroupName);
           fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.FALSE);
@@ -260,7 +262,7 @@ public class TestAuditLogForSentryGenericService extends SentryServiceIntegratio
         client.dropRole(requestorUserName, roleName, COMPONENT);
         fieldValueMap.clear();
         fieldValueMap.put(Constants.LOG_FIELD_OPERATION, Constants.OPERATION_DROP_ROLE);
-        fieldValueMap.put(Constants.LOG_FIELD_COMPONENT, COMPONENT);
+        //fieldValueMap.put(Constants.LOG_FIELD_COMPONENT, COMPONENT);
         fieldValueMap.put(Constants.LOG_FIELD_OPERATION_TEXT, "DROP ROLE " + roleName);
         fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.TRUE);
         fieldValueMap.put(Constants.LOG_FIELD_IP_ADDRESS, null);
@@ -272,7 +274,7 @@ public class TestAuditLogForSentryGenericService extends SentryServiceIntegratio
         } catch (Exception e) {
           fieldValueMap.clear();
           fieldValueMap.put(Constants.LOG_FIELD_OPERATION, Constants.OPERATION_DROP_ROLE);
-          fieldValueMap.put(Constants.LOG_FIELD_COMPONENT, COMPONENT);
+          //fieldValueMap.put(Constants.LOG_FIELD_COMPONENT, COMPONENT);
           fieldValueMap.put(Constants.LOG_FIELD_OPERATION_TEXT, "DROP ROLE " + roleName);
           fieldValueMap.put(Constants.LOG_FIELD_ALLOWED, Constants.FALSE);
           fieldValueMap.put(Constants.LOG_FIELD_IP_ADDRESS, null);

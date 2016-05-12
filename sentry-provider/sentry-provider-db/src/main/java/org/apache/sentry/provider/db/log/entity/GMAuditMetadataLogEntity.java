@@ -20,8 +20,11 @@ package org.apache.sentry.provider.db.log.entity;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.sentry.provider.db.log.util.Constants;
 import org.codehaus.jackson.JsonGenerator;
@@ -31,6 +34,12 @@ import org.slf4j.LoggerFactory;
 public class GMAuditMetadataLogEntity extends AuditMetadataLogEntity {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(GMAuditMetadataLogEntity.class);
+  private static final Set<String> opsWithoutComponent =
+      new HashSet<String>(Arrays.asList(Constants.OPERATION_CREATE_ROLE,
+                                        Constants.OPERATION_DROP_ROLE,
+                                        Constants.OPERATION_ADD_ROLE,
+                                        Constants.OPERATION_DELETE_ROLE));
+
   private Map<String, String> privilegesMap;
 
   public GMAuditMetadataLogEntity() {
@@ -58,13 +67,42 @@ public class GMAuditMetadataLogEntity extends AuditMetadataLogEntity {
       json.writeStringField(Constants.LOG_FIELD_IP_ADDRESS, ipAddress);
       json.writeStringField(Constants.LOG_FIELD_OPERATION, operation);
       json.writeStringField(Constants.LOG_FIELD_EVENT_TIME, eventTime);
-      json.writeStringField(Constants.LOG_FIELD_OPERATION_TEXT, operationText);
+
+      // FixMe: since we can't use component (see below), add it to
+      // operationText here, if relevant
+
+      StringBuilder operationTextSB = new StringBuilder(operationText);
+      if (!opsWithoutComponent.contains(operation)) {
+        operationTextSB.append(" ON COMPONENT " + component);
+      }
+      json.writeStringField(Constants.LOG_FIELD_OPERATION_TEXT,
+          operationTextSB.toString());
       json.writeStringField(Constants.LOG_FIELD_ALLOWED, allowed);
+
+      // FixMe: we need to conform to the Navigator format, which has the
+      // following log fields below.  Use them if they exist in the privilege,
+      // otherwise just output null.
+      Map<String, Boolean> privHasObject = new LinkedHashMap<String, Boolean>();
+      privHasObject.put(Constants.LOG_FIELD_DATABASE_NAME, false);
+      privHasObject.put(Constants.LOG_FIELD_TABLE_NAME, false);
+      privHasObject.put(Constants.LOG_FIELD_COLUMN_NAME, false);
+      privHasObject.put(Constants.LOG_FIELD_RESOURCE_PATH, false);
+
       for (Map.Entry<String, String> entry : privilegesMap.entrySet()) {
-        json.writeStringField(entry.getKey(), entry.getValue());
+        if (privHasObject.containsKey(entry.getKey())) {
+          json.writeStringField(entry.getKey(), entry.getValue());
+          privHasObject.put(entry.getKey(), true);
+        }
+      }
+
+      for (Map.Entry<String, Boolean> entry : privHasObject.entrySet()) {
+        if (Boolean.FALSE.equals(entry.getValue())) {
+          json.writeStringField(entry.getKey(), null);
+        }
       }
       json.writeStringField(Constants.LOG_FIELD_OBJECT_TYPE, objectType);
-      json.writeStringField(Constants.LOG_FIELD_COMPONENT, component);
+      // FixMe: component not in navigator schema
+      //json.writeStringField(Constants.LOG_FIELD_COMPONENT, component);
       json.writeEndObject();
       json.flush();
     } catch (IOException e) {
