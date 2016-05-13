@@ -48,7 +48,7 @@ public class TestSentryShellKafka extends SentryGenericServiceIntegrationBase {
   private File confPath;
   private static String TEST_ROLE_NAME_1 = "testRole1";
   private static String TEST_ROLE_NAME_2 = "testRole2";
-  private static String KAFKA = "KAFKA";
+  private static String KAFKA = "kafka";
   private String requestorName = "";
   private String service = "kafka1";
 
