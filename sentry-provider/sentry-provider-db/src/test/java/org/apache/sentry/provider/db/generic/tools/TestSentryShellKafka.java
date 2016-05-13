@@ -240,6 +240,8 @@ public class TestSentryShellKafka extends SentryGenericServiceIntegrationBase {
             "HOST=*->CLUSTER=kafka-cluster->action=read",
             "HOST=h1->TOPIC=t1->action=write",
             "HOST=*->CONSUMERGROUP=cg1->action=read",
+            "CLUSTER=kafka-cluster->action=write",
+            "CONSUMERGROUP=cg2->action=write"
         };
         for (int i = 0; i < privs.length; ++i) {
           // test: grant privilege to role
@@ -256,7 +258,7 @@ public class TestSentryShellKafka extends SentryGenericServiceIntegrationBase {
 
         assertEquals("Incorrect number of privileges", privs.length, privilegeStrs.size());
         for (int i = 0; i < privs.length; ++i) {
-          assertTrue("Expected privilege: " + privs[i] + " in " + Arrays.toString(privilegeStrs.toArray()), privilegeStrs.contains(privs[i]));
+          assertTrue("Expected privilege: " + privs[i] + " in " + Arrays.toString(privilegeStrs.toArray()), privilegeStrs.contains(privs[i].startsWith("HOST=") ? privs[i] : "HOST=*->" + privs[i]));
         }
 
         for (int i = 0; i < privs.length; ++i) {

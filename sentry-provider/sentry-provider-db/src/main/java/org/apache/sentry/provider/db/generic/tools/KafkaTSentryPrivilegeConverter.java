@@ -35,10 +35,14 @@ import java.util.LinkedList;
 import java.util.List;
 
 import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_JOINER;
+import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_SEPARATOR;
 import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_SPLITTER;
 import static org.apache.sentry.provider.common.ProviderConstants.KV_JOINER;
+import static org.apache.sentry.provider.common.ProviderConstants.KV_SEPARATOR;
 
-public  class KafkaTSentryPrivilegeConverter implements TSentryPrivilegeConverter {
+public class KafkaTSentryPrivilegeConverter implements TSentryPrivilegeConverter {
+  private static final String RESOURCE_WILDCARD_VALUE = "*";
+
   private String component;
   private String service;
 
@@ -48,6 +52,11 @@ public  class KafkaTSentryPrivilegeConverter implements TSentryPrivilegeConverte
   }
 
   public TSentryPrivilege fromString(String privilegeStr) throws Exception {
+    final String hostPrefix = KafkaAuthorizable.AuthorizableType.HOST.name() + KV_SEPARATOR;
+    final String hostPrefixLowerCase = hostPrefix.toLowerCase();
+    if (!privilegeStr.toLowerCase().startsWith(hostPrefixLowerCase)) {
+      privilegeStr =  hostPrefix + RESOURCE_WILDCARD_VALUE + AUTHORIZABLE_SEPARATOR + privilegeStr;
+    }
     validatePrivilegeHierarchy(privilegeStr);
     TSentryPrivilege tSentryPrivilege = new TSentryPrivilege();
     List<TAuthorizable> authorizables = new LinkedList<TAuthorizable>();
