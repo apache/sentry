@@ -213,6 +213,15 @@ public class ServiceConstants {
     public static final int RETRY_COUNT_DEFAULT = 3;
     public static final String RETRY_INTERVAL_SEC_CONF = "sentry.provider.backend.db.retry.interval.seconds";
     public static final int RETRY_INTERVAL_SEC_DEFAULT = 30;
+
+    // provider backend cache settings
+    public static final String ENABLE_CACHING = "sentry.provider.backend.generic.cache.enabled";
+    public static final boolean ENABLE_CACHING_DEFAULT = false;
+    public static final String CACHE_TTL_MS = "sentry.provider.backend.generic.cache.ttl.ms";
+    public static final long CACHING_TTL_MS_DEFAULT = 30000;
+    public static final String CACHE_UPDATE_FAILURES_BEFORE_PRIV_REVOKE = "sentry.provider.backend.generic.cache.update.failures.count";
+    public static final int CACHE_UPDATE_FAILURES_BEFORE_PRIV_REVOKE_DEFAULT = 3;
+    public static final String PRIVILEGE_CONVERTER = "sentry.provider.backend.generic.privilege.converter";
   }
 
   /**

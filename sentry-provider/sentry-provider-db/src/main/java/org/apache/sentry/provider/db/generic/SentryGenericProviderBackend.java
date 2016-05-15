@@ -17,6 +17,8 @@
  */
 package org.apache.sentry.provider.db.generic;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Set;
 
@@ -26,11 +28,14 @@ import org.apache.sentry.SentryUserException;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.SentryConfigurationException;
+import org.apache.sentry.provider.common.CacheProvider;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClientFactory;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryRole;
+import org.apache.sentry.provider.db.generic.tools.command.TSentryPrivilegeConvertor;
+import org.apache.sentry.service.thrift.ServiceConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,24 +45,50 @@ import com.google.common.collect.Sets;
 /**
  * This class used when any component such as Hive, Solr or Sqoop want to integration with the Sentry service
  */
-public class SentryGenericProviderBackend implements ProviderBackend {
+public class SentryGenericProviderBackend extends CacheProvider implements ProviderBackend {
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryGenericProviderBackend.class);
   private final Configuration conf;
   private volatile boolean initialized = false;
   private String componentType;
   private String serviceName;
+  private boolean enableCaching;
+  private String privilegeConverter;
 
   // ProviderBackend should have the same construct to support the reflect in authBinding,
   // eg:SqoopAuthBinding
   public SentryGenericProviderBackend(Configuration conf, String resource)
       throws Exception {
     this.conf = conf;
+    this.enableCaching = conf.getBoolean(ServiceConstants.ClientConfig.ENABLE_CACHING, ServiceConstants.ClientConfig.ENABLE_CACHING_DEFAULT);
+    this.privilegeConverter = conf.get(ServiceConstants.ClientConfig.PRIVILEGE_CONVERTER);
   }
 
   @Override
   public void initialize(ProviderBackendContext context) {
     if (initialized) {
       throw new IllegalStateException("SentryGenericProviderBackend has already been initialized, cannot be initialized twice");
+    }
+    if (enableCaching) {
+      if (privilegeConverter == null) {
+        throw new SentryConfigurationException(ServiceConstants.ClientConfig.PRIVILEGE_CONVERTER + " not configured.");
+      }
+
+      Constructor<?> privilegeConverterConstructor;
+      TSentryPrivilegeConvertor sentryPrivilegeConvertor;
+      try {
+        privilegeConverterConstructor = Class.forName(privilegeConverter).getDeclaredConstructor(String.class, String.class);
+        privilegeConverterConstructor.setAccessible(true);
+        sentryPrivilegeConvertor = (TSentryPrivilegeConvertor) privilegeConverterConstructor.newInstance(getComponentType(), getServiceName());
+      } catch (NoSuchMethodException | ClassNotFoundException | InstantiationException | InvocationTargetException | IllegalAccessException e) {
+        throw new RuntimeException("Failed to create privilege converter of type " + privilegeConverter, e);
+      }
+      UpdatableCache cache = new UpdatableCache(conf, getComponentType(), getServiceName(), sentryPrivilegeConvertor);
+      try {
+        cache.startUpdateThread(true);
+      } catch (Exception e) {
+        throw new RuntimeException("Failed to get privileges from Sentry to build cache.", e);
+      }
+      super.initialize(cache);
     }
     this.initialized = true;
   }
@@ -76,20 +107,24 @@ public class SentryGenericProviderBackend implements ProviderBackend {
     if (!initialized) {
       throw new IllegalStateException("SentryGenericProviderBackend has not been properly initialized");
     }
-    SentryGenericServiceClient client = null;
-    try {
-      client = getClient();
-      return ImmutableSet.copyOf(client.listPrivilegesForProvider(componentType, serviceName,
-          roleSet, groups, Arrays.asList(authorizableHierarchy)));
-    } catch (SentryUserException e) {
-      String msg = "Unable to obtain privileges from server: " + e.getMessage();
-      LOGGER.error(msg, e);
-    } catch (Exception e) {
-      String msg = "Unable to obtain client:" + e.getMessage();
-      LOGGER.error(msg, e);
-    } finally {
-      if (client != null) {
-        client.close();
+    if (enableCaching) {
+      return super.getPrivileges(groups, roleSet, authorizableHierarchy);
+    } else {
+      SentryGenericServiceClient client = null;
+      try {
+        client = getClient();
+        return ImmutableSet.copyOf(client.listPrivilegesForProvider(componentType, serviceName,
+            roleSet, groups, Arrays.asList(authorizableHierarchy)));
+      } catch (SentryUserException e) {
+        String msg = "Unable to obtain privileges from server: " + e.getMessage();
+        LOGGER.error(msg, e);
+      } catch (Exception e) {
+        String msg = "Unable to obtain client:" + e.getMessage();
+        LOGGER.error(msg, e);
+      } finally {
+        if (client != null) {
+          client.close();
+        }
       }
     }
     return ImmutableSet.of();
@@ -100,32 +135,36 @@ public class SentryGenericProviderBackend implements ProviderBackend {
     if (!initialized) {
       throw new IllegalStateException("SentryGenericProviderBackend has not been properly initialized");
     }
-    SentryGenericServiceClient client = null;
-    try {
-      Set<TSentryRole> tRoles = Sets.newHashSet();
-      client = getClient();
-      //get the roles according to group
-      String requestor = UserGroupInformation.getCurrentUser().getShortUserName();
-      for (String group : groups) {
-        tRoles.addAll(client.listRolesByGroupName(requestor, group, getComponentType()));
+    if (enableCaching) {
+      return super.getRoles(groups, roleSet);
+    } else {
+      SentryGenericServiceClient client = null;
+      try {
+        Set<TSentryRole> tRoles = Sets.newHashSet();
+        client = getClient();
+        //get the roles according to group
+        String requestor = UserGroupInformation.getCurrentUser().getShortUserName();
+        for (String group : groups) {
+          tRoles.addAll(client.listRolesByGroupName(requestor, group, getComponentType()));
+        }
+        Set<String> roles = Sets.newHashSet();
+        for (TSentryRole tRole : tRoles) {
+          roles.add(tRole.getRoleName());
+        }
+        return ImmutableSet.copyOf(roleSet.isAll() ? roles : Sets.intersection(roles, roleSet.getRoles()));
+      } catch (SentryUserException e) {
+        String msg = "Unable to obtain roles from server: " + e.getMessage();
+        LOGGER.error(msg, e);
+      } catch (Exception e) {
+        String msg = "Unable to obtain client:" + e.getMessage();
+        LOGGER.error(msg, e);
+      } finally {
+        if (client != null) {
+          client.close();
+        }
       }
-      Set<String> roles = Sets.newHashSet();
-      for (TSentryRole tRole : tRoles) {
-        roles.add(tRole.getRoleName());
-      }
-      return ImmutableSet.copyOf(roleSet.isAll() ? roles : Sets.intersection(roles, roleSet.getRoles()));
-    } catch (SentryUserException e) {
-      String msg = "Unable to obtain roles from server: " + e.getMessage();
-      LOGGER.error(msg, e);
-    } catch (Exception e) {
-      String msg = "Unable to obtain client:" + e.getMessage();
-      LOGGER.error(msg, e);
-    } finally {
-      if (client != null) {
-        client.close();
-      }
+      return ImmutableSet.of();
     }
-    return ImmutableSet.of();
   }
 
   /**
@@ -158,5 +197,4 @@ public class SentryGenericProviderBackend implements ProviderBackend {
   public void setServiceName(String serviceName) {
     this.serviceName = serviceName;
   }
-
 }

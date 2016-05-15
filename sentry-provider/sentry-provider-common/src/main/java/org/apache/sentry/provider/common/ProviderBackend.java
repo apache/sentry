@@ -40,7 +40,7 @@ public interface ProviderBackend {
    * policy engine knows the validators. Ideally we could change but since
    * both the policy engine and backend are exposed via configuration properties
    * that would be backwards incompatible.
-   * @param validators
+   * @param context
    */
   public void initialize(ProviderBackendContext context);
 

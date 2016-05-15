@@ -350,7 +350,6 @@ public class SentryGenericServiceClientDefaultImpl implements SentryGenericServi
   /**
    * drop privilege
    * @param requestorUserName: user on whose behalf the request is issued
-   * @param roleName: Name of the role
    * @param component: The request is issued to which component
    * @param privilege
    * @throws SentryUserException

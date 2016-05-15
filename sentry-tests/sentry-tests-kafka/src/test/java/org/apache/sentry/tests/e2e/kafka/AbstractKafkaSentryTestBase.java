@@ -61,6 +61,8 @@ public class AbstractKafkaSentryTestBase {
   protected static final String ADMIN_USER = "kafka";
   protected static final String ADMIN_GROUP = "group_kafka";
   protected static final String ADMIN_ROLE  = "role_kafka";
+  private static final long CACHE_TTL_MS = 1;
+  private static final int SAFETY_FACTOR = 2; // Sleep for specified times of expected time for an operation to complete.
 
   protected static SentryService sentryServer;
   protected static File sentrySitePath;
@@ -205,13 +207,16 @@ public class AbstractKafkaSentryTestBase {
     /** set the Sentry client configuration for Kafka Service integration */
     conf.set(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_NONE);
     conf.set(ClientConfig.SERVER_RPC_ADDRESS, sentryServer.getAddress().getHostName());
-    conf.set(ClientConfig.SERVER_RPC_PORT, String.valueOf(sentryServer.getAddress().getPort()));
+    conf.setInt(ClientConfig.SERVER_RPC_PORT, sentryServer.getAddress().getPort());
 
     conf.set(KafkaAuthConf.AuthzConfVars.AUTHZ_PROVIDER.getVar(),
         LocalGroupResourceAuthorizationProvider.class.getName());
     conf.set(KafkaAuthConf.AuthzConfVars.AUTHZ_PROVIDER_BACKEND.getVar(),
         SentryGenericProviderBackend.class.getName());
     conf.set(KafkaAuthConf.AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar(), policyFilePath.getPath());
+    conf.setBoolean(ClientConfig.ENABLE_CACHING, true);
+    conf.setLong(ClientConfig.CACHE_TTL_MS, CACHE_TTL_MS);
+    conf.set(ClientConfig.PRIVILEGE_CONVERTER, "org.apache.sentry.provider.db.generic.tools.KafkaTSentryPrivilegeConvertor");
     return conf;
   }
 
@@ -223,5 +228,11 @@ public class AbstractKafkaSentryTestBase {
     kafkaServer = new KafkaTestServer(sentrySitePath);
     kafkaServer.start();
     bootstrapServers = kafkaServer.getBootstrapServers();
+  }
+
+  static void sleepIfCachingEnabled() throws InterruptedException {
+    if (getClientConfig().getBoolean(ClientConfig.ENABLE_CACHING, false)) {
+      Thread.sleep(CACHE_TTL_MS * SAFETY_FACTOR);
+    }
   }
 }

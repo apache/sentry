@@ -100,7 +100,6 @@ public interface SentryGenericServiceClient {
   /**
    * drop privilege
    * @param requestorUserName: user on whose behalf the request is issued
-   * @param roleName: Name of the role
    * @param component: The request is issued to which component
    * @param privilege
    * @throws SentryUserException
@@ -142,7 +141,7 @@ public interface SentryGenericServiceClient {
       throws SentryUserException;
 
   /**
-   * Gets sentry privileges for a given roleName and Authorizable Hirerchys using the Sentry service
+   * Gets sentry privileges for a given roleName and Authorizable Hierarchy using the Sentry service
    * @param requestorUserName: user on whose behalf the request is issued
    * @param roleName:
    * @param component: The request is issued to which component
