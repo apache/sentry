@@ -66,7 +66,7 @@ public class SentrySchemaTool {
   private boolean verbose = false;
   private final Configuration sentryConf;
   private final String dbType;
-  private final SentryStoreSchemaInfo SentryStoreSchemaInfo;
+  private final SentryStoreSchemaInfo sentryStoreSchemaInfo;
 
   public SentrySchemaTool(Configuration sentryConf, String dbType)
       throws SentryUserException, IOException {
@@ -80,7 +80,7 @@ public class SentrySchemaTool {
     }
     this.sentryConf = sentryConf;
     this.dbType = dbType;
-    this.SentryStoreSchemaInfo = new SentryStoreSchemaInfo(sentryScripPath,
+    this.sentryStoreSchemaInfo = new SentryStoreSchemaInfo(sentryScripPath,
         dbType);
     userName = sentryConf.get(ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_USER,
         ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_USER_DEFAULT);
@@ -166,9 +166,8 @@ public class SentrySchemaTool {
     } else {
       versionQuery = "select t.SCHEMA_VERSION from SENTRY_VERSION t";
     }
-    try {
-      Statement stmt = sentryStoreConn.createStatement();
-      ResultSet res = stmt.executeQuery(versionQuery);
+    try (Statement stmt = sentryStoreConn.createStatement();
+      ResultSet res = stmt.executeQuery(versionQuery)) {
       if (!res.next()) {
         throw new SentryUserException("Didn't find version data in sentry store");
       }
@@ -182,8 +181,7 @@ public class SentrySchemaTool {
 
   // test the connection sentry store using the config property
   private void testConnectionToMetastore() throws SentryUserException {
-    Connection conn = getConnectionToMetastore(true);
-    try {
+    try (Connection conn = getConnectionToMetastore(true)) {
       conn.close();
     } catch (SQLException e) {
       throw new SentryUserException("Failed to close sentry store connection", e);
@@ -227,7 +225,7 @@ public class SentrySchemaTool {
     String newSchemaVersion =
         getMetaStoreSchemaVersion(getConnectionToMetastore(false));
     // verify that the new version is added to schema
-    if (!SentryStoreSchemaInfo.getSentrySchemaVersion().equalsIgnoreCase(
+    if (!sentryStoreSchemaInfo.getSentrySchemaVersion().equalsIgnoreCase(
         newSchemaVersion)) {
       throw new SentryUserException("Found unexpected schema version "
           + newSchemaVersion);
@@ -257,18 +255,18 @@ public class SentrySchemaTool {
    * @throws SentryUserException
    */
   public void doUpgrade(String fromSchemaVer) throws SentryUserException {
-    if (SentryStoreSchemaInfo.getSentrySchemaVersion().equals(fromSchemaVer)) {
+    if (sentryStoreSchemaInfo.getSentrySchemaVersion().equals(fromSchemaVer)) {
       System.out.println("No schema upgrade required from version " + fromSchemaVer);
       return;
     }
     // Find the list of scripts to execute for this upgrade
     List<String> upgradeScripts =
-        SentryStoreSchemaInfo.getUpgradeScripts(fromSchemaVer);
+        sentryStoreSchemaInfo.getUpgradeScripts(fromSchemaVer);
     testConnectionToMetastore();
     System.out.println("Starting upgrade sentry store schema from version " +
  fromSchemaVer + " to "
-        + SentryStoreSchemaInfo.getSentrySchemaVersion());
-    String scriptDir = SentryStoreSchemaInfo.getSentryStoreScriptDir();
+        + sentryStoreSchemaInfo.getSentrySchemaVersion());
+    String scriptDir = sentryStoreSchemaInfo.getSentryStoreScriptDir();
     try {
       for (String scriptFile : upgradeScripts) {
         System.out.println("Upgrade script " + scriptFile);
@@ -292,7 +290,7 @@ public class SentrySchemaTool {
    * @throws SentryUserException
    */
   public void doInit() throws SentryUserException {
-    doInit(SentryStoreSchemaInfo.getSentrySchemaVersion());
+    doInit(sentryStoreSchemaInfo.getSentrySchemaVersion());
 
     // Revalidated the new version after upgrade
     verifySchemaVersion();
@@ -309,8 +307,8 @@ public class SentrySchemaTool {
     testConnectionToMetastore();
     System.out.println("Starting sentry store schema initialization to " + toVersion);
 
-    String initScriptDir = SentryStoreSchemaInfo.getSentryStoreScriptDir();
-    String initScriptFile = SentryStoreSchemaInfo.generateInitFileName(toVersion);
+    String initScriptDir = sentryStoreSchemaInfo.getSentryStoreScriptDir();
+    String initScriptFile = sentryStoreSchemaInfo.generateInitFileName(toVersion);
 
     try {
       System.out.println("Initialization script " + initScriptFile);
@@ -381,18 +379,19 @@ public class SentrySchemaTool {
     tmpFile.deleteOnExit();
 
     // write out the buffer into a file. Add beeline commands for autocommit and close
-    FileWriter fstream = new FileWriter(tmpFile.getPath());
-    BufferedWriter out = new BufferedWriter(fstream);
+    try (FileWriter fstream = new FileWriter(tmpFile.getPath());
+      BufferedWriter out = new BufferedWriter(fstream)) {
 
-    out.write("!set Silent " + verbose + System.getProperty("line.separator"));
-    out.write("!autocommit on" + System.getProperty("line.separator"));
-    out.write("!set Isolation TRANSACTION_READ_COMMITTED"
-        + System.getProperty("line.separator"));
-    out.write("!set AllowMultiLineCommand false"
-        + System.getProperty("line.separator"));
-    out.write(sqlCommands);
-    out.write("!closeall" + System.getProperty("line.separator"));
-    out.close();
+      out.write("!set Silent " + verbose + System.getProperty("line.separator"));
+      out.write("!autocommit on" + System.getProperty("line.separator"));
+      out.write("!set Isolation TRANSACTION_READ_COMMITTED"
+          + System.getProperty("line.separator"));
+      out.write("!set AllowMultiLineCommand false"
+          + System.getProperty("line.separator"));
+      out.write(sqlCommands);
+      out.write("!closeall" + System.getProperty("line.separator"));
+      out.close();
+    }
     runBeeLine(tmpFile.getPath());
   }
 

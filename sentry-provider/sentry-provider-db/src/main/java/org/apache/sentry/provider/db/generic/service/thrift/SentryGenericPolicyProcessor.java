@@ -147,13 +147,13 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
 
   public static SentryStoreLayer createStore(Configuration conf) throws SentryConfigurationException {
     SentryStoreLayer storeLayer = null;
-    String Store = conf.get(PolicyStoreConstants.SENTRY_GENERIC_POLICY_STORE, PolicyStoreConstants.SENTRY_GENERIC_POLICY_STORE_DEFAULT);
+    String store = conf.get(PolicyStoreConstants.SENTRY_GENERIC_POLICY_STORE, PolicyStoreConstants.SENTRY_GENERIC_POLICY_STORE_DEFAULT);
 
-    if (Strings.isNullOrEmpty(Store)) {
+    if (Strings.isNullOrEmpty(store)) {
       throw new SentryConfigurationException("sentry.generic.policy.store can not be empty");
     }
     try {
-      storeLayer = createInstance(Store, conf, SentryStoreLayer.class);
+      storeLayer = createInstance(store, conf, SentryStoreLayer.class);
     } catch (Exception e) {
       throw new SentryConfigurationException("Create sentryStore error: " + e.getMessage(), e);
     }
@@ -179,7 +179,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
   public static <T> T createInstance(String className, Configuration conf, Class<T> iface) throws Exception {
     T result;
     try {
-      Class clazz = Class.forName(className);
+      Class<?> clazz = Class.forName(className);
       if (!iface.isAssignableFrom(clazz)) {
         throw new IllegalArgumentException("Class " + clazz + " is not a " +
                                                  iface.getName());
@@ -800,9 +800,9 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
   }
 
   private static class Response<T> {
-    TSentryResponseStatus status;
-    CommitContext context;
-    T content;
+    private TSentryResponseStatus status;
+    private CommitContext context;
+    private T content;
 
     Response() {
     }
@@ -825,10 +825,10 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     Response<T> handle() throws Exception ;
   }
 
-  private static void validateClientVersion(int protocol_version) throws SentryThriftAPIMismatchException {
-    if (ServiceConstants.ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT != protocol_version) {
+  private static void validateClientVersion(int protocolVersion) throws SentryThriftAPIMismatchException {
+    if (ServiceConstants.ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT != protocolVersion) {
       String msg = "Sentry thrift API protocol version mismatch: Client thrift version " +
-          "is: " + protocol_version + " , server thrift verion " +
+          "is: " + protocolVersion + " , server thrift version " +
               "is " + ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT;
       throw new SentryThriftAPIMismatchException(msg);
     }

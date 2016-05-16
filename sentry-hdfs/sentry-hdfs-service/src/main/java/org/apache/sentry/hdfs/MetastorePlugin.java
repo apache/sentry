@@ -181,15 +181,15 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
       sentryClient = null;
       LOGGER.error("Could not connect to Sentry HDFS Service !!", e);
     }
-    ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(1);
-    threadPool.scheduleWithFixedDelay(new SyncTask(),
+    ScheduledExecutorService newThreadPool = Executors.newScheduledThreadPool(1);
+    newThreadPool.scheduleWithFixedDelay(new SyncTask(),
             this.conf.getLong(ServerConfig
                             .SENTRY_HDFS_INIT_UPDATE_RETRY_DELAY_MS,
                     ServerConfig.SENTRY_HDFS_INIT_UPDATE_RETRY_DELAY_DEFAULT),
             this.conf.getLong(ServerConfig.SENTRY_HDFS_SYNC_CHECKER_PERIOD_MS,
                     ServerConfig.SENTRY_HDFS_SYNC_CHECKER_PERIOD_DEFAULT),
             TimeUnit.MILLISECONDS);
-    this.threadPool = threadPool;
+    this.threadPool = newThreadPool;
   }
 
   @Override
@@ -247,26 +247,22 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
   @Override
   public void renameAuthzObject(String oldName, String oldPath, String newName,
       String newPath) {
-    if (oldName != null) {
-      oldName = oldName.toLowerCase();
-    }
-    if (newName != null) {
-      newName = newName.toLowerCase();
-    }
+    String oldNameLC = oldName != null ? oldName.toLowerCase() : null;
+    String newNameLC = newName != null ? newName.toLowerCase() : null;
     PathsUpdate update = createHMSUpdate();
     LOGGER.debug("#### HMS Path Update ["
         + "OP : renameAuthzObject, "
-        + "oldName : " + oldName + ","
+        + "oldName : " + oldNameLC + ","
         + "oldPath : " + oldPath + ","
-        + "newName : " + newName + ","
+        + "newName : " + newNameLC + ","
         + "newPath : " + newPath + "]");
     List<String> newPathTree = PathsUpdate.parsePath(newPath);
     if( newPathTree != null ) {
-      update.newPathChange(newName).addToAddPaths(newPathTree);
+      update.newPathChange(newNameLC).addToAddPaths(newPathTree);
     }
     List<String> oldPathTree = PathsUpdate.parsePath(oldPath);
     if( oldPathTree != null ) {
-      update.newPathChange(oldName).addToDelPaths(oldPathTree);
+      update.newPathChange(oldNameLC).addToDelPaths(oldPathTree);
     }
     notifySentryAndApplyLocal(update);
   }

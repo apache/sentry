@@ -32,7 +32,7 @@ import javax.security.auth.login.Configuration;
  * JaasConfiguration.addEntry("Client", principal, keytabFile);
  * javax.security.auth.login.Configuration.setConfiguration(JaasConfiguration.getInstance());
  */
-public class JaasConfiguration extends Configuration {
+public final class JaasConfiguration extends Configuration {
   private static Map<String, AppConfigurationEntry> entries = new HashMap<String, AppConfigurationEntry>();
   private static JaasConfiguration me = null;
   private static final String krb5LoginModuleName;

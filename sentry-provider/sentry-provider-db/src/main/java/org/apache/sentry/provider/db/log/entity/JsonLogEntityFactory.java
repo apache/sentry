@@ -54,12 +54,12 @@ import org.apache.sentry.service.thrift.TSentryResponseStatus;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
 
-public class JsonLogEntityFactory {
+public final class JsonLogEntityFactory {
 
   private static JsonLogEntityFactory factory = new JsonLogEntityFactory();
 
   private JsonLogEntityFactory() {
-  };
+  }
 
   public static JsonLogEntityFactory getInstance() {
     return factory;

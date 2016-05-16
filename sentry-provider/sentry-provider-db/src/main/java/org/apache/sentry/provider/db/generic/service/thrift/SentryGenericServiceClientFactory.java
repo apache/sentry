@@ -22,7 +22,7 @@ import org.apache.hadoop.conf.Configuration;
 /**
  * SentryGenericServiceClientFactory is a public class for the components which using Generic Model to create sentry client.
  */
-public class SentryGenericServiceClientFactory {
+public final class SentryGenericServiceClientFactory {
 
   private SentryGenericServiceClientFactory() {
   }

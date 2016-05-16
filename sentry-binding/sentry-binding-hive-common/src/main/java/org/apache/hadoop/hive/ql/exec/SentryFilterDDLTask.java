@@ -91,11 +91,13 @@ public class SentryFilterDDLTask extends DDLTask {
   }
 
   private void failed(Throwable e) {
-    while (e.getCause() != null && e.getClass() == RuntimeException.class) {
-      e = e.getCause();
+    // Get the cause of the exception if available
+    Throwable error = e;
+    while (error.getCause() != null && error.getClass() == RuntimeException.class) {
+      error = error.getCause();
     }
-    setException(e);
-    LOG.error(stringifyException(e));
+    setException(error);
+    LOG.error(stringifyException(error));
   }
 
   /**

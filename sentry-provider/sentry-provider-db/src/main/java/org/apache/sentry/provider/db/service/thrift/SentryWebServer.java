@@ -60,11 +60,9 @@ public class SentryWebServer {
   private static final String RESOURCE_DIR = "/webapp";
   private static final String WELCOME_PAGE = "SentryService.html";
 
-  Server server;
-  int port;
+  private Server server;
 
   public SentryWebServer(List<EventListener> listeners, int port, Configuration conf) {
-    this.port = port;
     server = new Server();
 
     // Create a channel connector for "http/https" requests

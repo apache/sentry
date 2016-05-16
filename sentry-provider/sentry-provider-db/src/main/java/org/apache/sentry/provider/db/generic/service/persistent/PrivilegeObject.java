@@ -25,7 +25,7 @@ import org.apache.sentry.core.common.Authorizable;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 
-public class PrivilegeObject {
+public final class PrivilegeObject {
   private final String component;
   private final String service;
   private final String action;

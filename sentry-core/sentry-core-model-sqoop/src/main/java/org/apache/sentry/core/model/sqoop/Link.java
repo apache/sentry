@@ -22,7 +22,7 @@ public class Link implements SqoopAuthorizable {
   /**
    * Represents all links
    */
-  public static Link ALL = new Link(SqoopAuthorizable.ALL);
+  public static final Link ALL = new Link(SqoopAuthorizable.ALL);
 
   private String name;
   public Link(String name) {

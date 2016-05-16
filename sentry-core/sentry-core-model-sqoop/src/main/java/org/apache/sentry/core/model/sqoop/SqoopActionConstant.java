@@ -16,10 +16,14 @@
  */
 package org.apache.sentry.core.model.sqoop;
 
-public class SqoopActionConstant {
+public final class SqoopActionConstant {
   public static final String ALL = "*";
   public static final String ALL_NAME = "ALL";
   public static final String READ = "read";
   public static final String WRITE = "write";
   public static final String NAME = "action";
+
+  private SqoopActionConstant() {
+    // Make constructor private to avoid instantiation
+  }
 }

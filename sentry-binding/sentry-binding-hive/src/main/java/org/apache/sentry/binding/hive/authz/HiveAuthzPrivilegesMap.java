@@ -301,4 +301,8 @@ public class HiveAuthzPrivilegesMap {
   public static HiveAuthzPrivileges getHiveAuthzPrivileges(HiveOperation hiveStmtOp) {
     return hiveAuthzStmtPrivMap.get(hiveStmtOp);
   }
+
+  private HiveAuthzPrivilegesMap() {
+    // Make constructor private to avoid instantiation
+  }
 }

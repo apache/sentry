@@ -37,7 +37,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 
 public class SentryAuthorizationInfo implements Runnable {
-  private static Logger LOG =
+  private static final Logger LOG =
       LoggerFactory.getLogger(SentryAuthorizationInfo.class);
 
   private SentryUpdater updater;
@@ -65,10 +65,10 @@ public class SentryAuthorizationInfo implements Runnable {
   }
 
   public SentryAuthorizationInfo(Configuration conf) throws Exception {
-    String[] pathPrefixes = conf.getTrimmedStrings(
+    String[] newPathPrefixes = conf.getTrimmedStrings(
         SentryAuthorizationConstants.HDFS_PATH_PREFIXES_KEY, 
         SentryAuthorizationConstants.HDFS_PATH_PREFIXES_DEFAULT);
-    if (pathPrefixes.length == 0) {
+    if (newPathPrefixes.length == 0) {
       LOG.warn("There are not HDFS path prefixes configured in [{}], "
           + "Sentry authorization won't be enforced on any HDFS location",
           SentryAuthorizationConstants.HDFS_PATH_PREFIXES_KEY);
@@ -84,13 +84,13 @@ public class SentryAuthorizationInfo implements Runnable {
           SentryAuthorizationConstants.CACHE_REFRESH_RETRY_WAIT_DEFAULT);
 
       LOG.debug("Sentry authorization will enforced in the following HDFS " +
-          "locations: [{}]", StringUtils.arrayToString(pathPrefixes));
-      setPrefixPaths(pathPrefixes);
+          "locations: [{}]", StringUtils.arrayToString(newPathPrefixes));
+      setPrefixPaths(newPathPrefixes);
       LOG.debug("Refresh interval [{}]ms, retry wait [{}], stale threshold " +
               "[{}]ms", new Object[] 
           {refreshIntervalMillisec, retryWaitMillisec, staleThresholdMillisec});
 
-      authzPaths = new UpdateableAuthzPaths(pathPrefixes);
+      authzPaths = new UpdateableAuthzPaths(newPathPrefixes);
       authzPermissions = new UpdateableAuthzPermissions();
       waitUntil = System.currentTimeMillis();
       lastStaleReport = 0;
@@ -157,26 +157,27 @@ public class SentryAuthorizationInfo implements Runnable {
       V updateable) {
     // In a list of Updates, if there is a full Update, it will be the first
     // one in the List.. all the remaining will be partial updates
-    if (updates.size() > 0) {
+    V newUpdateable = updateable;
+    if (!updates.isEmpty()) {
       if (updates.get(0).hasFullImage()) {
         LOG.debug("Process Update : FULL IMAGE "
-            + "[" + updateable.getClass() + "]"
+            + "[" + newUpdateable.getClass() + "]"
             + "[" + updates.get(0).getSeqNum() + "]");
-        updateable = (V)updateable.updateFull(updates.remove(0));
+        newUpdateable = (V)newUpdateable.updateFull(updates.remove(0));
       }
       // Any more elements ?
       if (!updates.isEmpty()) {
         LOG.debug("Process Update : More updates.. "
-            + "[" + updateable.getClass() + "]"
-            + "[" + updateable.getLastUpdatedSeqNum() + "]"
+            + "[" + newUpdateable.getClass() + "]"
+            + "[" + newUpdateable.getLastUpdatedSeqNum() + "]"
             + "[" + updates.size() + "]");
-        updateable.updatePartial(updates, lock);
+        newUpdateable.updatePartial(updates, lock);
       }
       LOG.debug("Process Update : Finished updates.. "
-          + "[" + updateable.getClass() + "]"
-          + "[" + updateable.getLastUpdatedSeqNum() + "]");
+          + "[" + newUpdateable.getClass() + "]"
+          + "[" + newUpdateable.getLastUpdatedSeqNum() + "]");
     }
-    return updateable;
+    return newUpdateable;
   }
 
   public void run() {

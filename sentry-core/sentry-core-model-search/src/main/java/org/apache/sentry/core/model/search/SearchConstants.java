@@ -16,7 +16,7 @@
  */
 package org.apache.sentry.core.model.search;
 
-public class SearchConstants {
+public final class SearchConstants {
 
   public static final String ALL = "*";
   public static final String QUERY = "query";
@@ -28,4 +28,8 @@ public class SearchConstants {
    */
   public static final String SENTRY_SEARCH_SERVICE_KEY = "sentry.search.service";
   public static final String SENTRY_SEARCH_SERVICE_DEFAULT = "service1";
+
+  private SearchConstants() {
+    // Make constructor private to avoid instantiation
+  }
 }

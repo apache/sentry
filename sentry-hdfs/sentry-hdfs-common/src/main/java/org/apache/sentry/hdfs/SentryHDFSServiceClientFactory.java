@@ -27,6 +27,11 @@ import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
  * Client factory to create normal client or proxy with HA invocation handler
  */
 public class SentryHDFSServiceClientFactory {
+    
+  private SentryHDFSServiceClientFactory() {
+    // Make constructor private to avoid instantiation
+  }
+  
   public static SentryHDFSServiceClient create(Configuration conf)
       throws Exception {
     boolean haEnabled = conf.getBoolean(ServerConfig.SENTRY_HA_ENABLED, false);

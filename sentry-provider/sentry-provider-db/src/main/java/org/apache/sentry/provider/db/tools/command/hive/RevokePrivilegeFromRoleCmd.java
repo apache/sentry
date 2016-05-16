@@ -28,7 +28,7 @@ import org.apache.sentry.service.thrift.ServiceConstants;
 public class RevokePrivilegeFromRoleCmd implements Command {
 
   private String roleName;
-  String privilegeStr;
+  private String privilegeStr;
 
   public RevokePrivilegeFromRoleCmd(String roleName, String privilegeStr) {
     this.roleName = roleName;

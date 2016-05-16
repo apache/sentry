@@ -64,7 +64,7 @@ class MetastoreCacheInitializer implements Closeable {
     /**
      *  Class represents retry strategy for BaseTask.
      */
-    private class RetryStrategy {
+    private final class RetryStrategy {
       private int retryStrategyMaxRetries = 0;
       private int retryStrategyWaitDurationMillis;
       private int retries;
@@ -327,7 +327,7 @@ class MetastoreCacheInitializer implements Closeable {
 
       // Fail the HMS startup if tasks are not all successful and
       // fail on partial updates flag is set in the config.
-      if (callResult.getSuccessStatus() == false && failOnRetry) {
+      if (!callResult.getSuccessStatus() && failOnRetry) {
         throw new RuntimeException(callResult.getFailure());
       }
     }

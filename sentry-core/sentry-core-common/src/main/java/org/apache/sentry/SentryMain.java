@@ -45,6 +45,11 @@ public class SentryMain {
       .put("schema-tool",
           "org.apache.sentry.provider.db.tools.SentrySchemaTool$CommandImpl")
           .build();
+
+  private SentryMain() {
+    // Make constructor private to avoid instantiation
+  }
+
   public static void main(String[] args)
       throws Exception {
     CommandLineParser parser = new GnuParser();

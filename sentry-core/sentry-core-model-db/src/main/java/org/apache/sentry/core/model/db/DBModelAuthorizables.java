@@ -21,6 +21,10 @@ import org.apache.sentry.core.common.utils.KeyValue;
 
 public class DBModelAuthorizables {
 
+  private DBModelAuthorizables() {
+    // Make constructor private to avoid instantiation
+  }
+
   public static DBModelAuthorizable from(KeyValue keyValue) {
     String prefix = keyValue.getKey().toLowerCase();
     String name = keyValue.getValue();

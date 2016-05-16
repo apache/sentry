@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
 
 public class SentryIndexAuthorizationSingleton {
 
-  private static Logger log =
+  private static final Logger LOG =
     LoggerFactory.getLogger(SentryIndexAuthorizationSingleton.class);
 
   /**
@@ -66,13 +66,13 @@ public class SentryIndexAuthorizationSingleton {
       if (sentrySiteLocation != null && sentrySiteLocation.length() > 0) {
         tmpBinding =
           new SolrAuthzBinding(new SolrAuthzConf(new URL("file://" + sentrySiteLocation)));
-        log.info("SolrAuthzBinding created successfully");
+        LOG.info("SolrAuthzBinding created successfully");
       } else {
-        log.info("SolrAuthzBinding not created because " + propertyName
+        LOG.info("SolrAuthzBinding not created because " + propertyName
           + " not set, sentry not enabled");
       }
     } catch (Exception ex) {
-      log.error("Unable to create SolrAuthzBinding", ex);
+      LOG.error("Unable to create SolrAuthzBinding", ex);
     }
     binding = tmpBinding;
   }
@@ -153,7 +153,8 @@ public class SentryIndexAuthorizationSingleton {
       }
     }
 
-    if (collectionName == null) {
+    String newCollectionName = collectionName;
+    if (newCollectionName == null) {
       SolrCore solrCore = req.getCore();
       if (solrCore == null) {
         String msg = "Unable to locate collection for sentry to authorize because "
@@ -163,28 +164,28 @@ public class SentryIndexAuthorizationSingleton {
               operation, paramString, eventTime, AuditLogger.UNAUTHORIZED, "");
           throw new SolrException(SolrException.ErrorCode.UNAUTHORIZED, msg);
         } else { // just warn
-          log.warn(msg);
+          LOG.warn(msg);
           auditLogger.log(userName.getName(), impersonator, ipAddress,
               operation, paramString, eventTime, AuditLogger.ALLOWED, "");
           return;
         }
       }
-      collectionName = solrCore.getCoreDescriptor().getCloudDescriptor().getCollectionName();
+      newCollectionName = solrCore.getCoreDescriptor().getCloudDescriptor().getCollectionName();
     }
 
-    Collection collection = new Collection(collectionName);
+    Collection collection = new Collection(newCollectionName);
     try {
       if (!superUser.getName().equals(userName.getName())) {
         binding.authorizeCollection(userName, collection, actions);
       }
     } catch (SentrySolrAuthorizationException ex) {
       auditLogger.log(userName.getName(), impersonator, ipAddress,
-          operation, paramString, eventTime, AuditLogger.UNAUTHORIZED, collectionName);
+          operation, paramString, eventTime, AuditLogger.UNAUTHORIZED, newCollectionName);
       throw new SolrException(SolrException.ErrorCode.UNAUTHORIZED, ex);
     }
 
     auditLogger.log(userName.getName(), impersonator, ipAddress,
-        operation, paramString, eventTime, AuditLogger.ALLOWED, collectionName);
+        operation, paramString, eventTime, AuditLogger.ALLOWED, newCollectionName);
   }
 
   /**
@@ -217,8 +218,8 @@ public class SentryIndexAuthorizationSingleton {
     // http request associated with it.
     if (httpServletRequest == null && !(req instanceof LocalSolrQueryRequest)) {
       StringBuilder builder = new StringBuilder("Unable to locate HttpServletRequest");
-      if (solrCore != null && solrCore.getSolrConfig().getBool(
-        "requestDispatcher/requestParsers/@addHttpRequestToContext", true) == false) {
+      if (solrCore != null && !solrCore.getSolrConfig().getBool(
+        "requestDispatcher/requestParsers/@addHttpRequestToContext", true)) {
         builder.append(", ensure requestDispatcher/requestParsers/@addHttpRequestToContext is set to true");
       }
       throw new SolrException(SolrException.ErrorCode.UNAUTHORIZED, builder.toString());
@@ -228,7 +229,7 @@ public class SentryIndexAuthorizationSingleton {
     // If a local request, treat it like a super user request; i.e. it is equivalent to an
     // http request from the same process.
     return req instanceof LocalSolrQueryRequest?
-      superUser:(String)httpServletRequest.getAttribute(USER_NAME);
+      superUser : (String)httpServletRequest.getAttribute(USER_NAME);
   }
 
   private String getImpersonatorName(SolrQueryRequest req) {

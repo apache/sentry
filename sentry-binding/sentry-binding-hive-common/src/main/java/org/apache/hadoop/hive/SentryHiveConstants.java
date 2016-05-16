@@ -21,11 +21,15 @@ import java.util.EnumSet;
 
 import org.apache.hadoop.hive.ql.security.authorization.PrivilegeType;
 
-public class SentryHiveConstants {
+public final class SentryHiveConstants {
   public static final EnumSet<PrivilegeType> ALLOWED_PRIVS = EnumSet.allOf(PrivilegeType.class);
 
   public static final String PRIVILEGE_NOT_SUPPORTED = "Sentry does not support privilege: ";
   public static final String PARTITION_PRIVS_NOT_SUPPORTED = "Sentry does not support partition level authorization";
   public static final String GRANT_REVOKE_NOT_SUPPORTED_ON_OBJECT = "Sentry does not allow grant/revoke on: ";
   public static final String GRANT_REVOKE_NOT_SUPPORTED_FOR_PRINCIPAL = "Sentry does not allow privileges to be granted/revoked to/from: ";
+
+  private SentryHiveConstants() {
+    // Make constructor private to avoid instantiation
+  }
 }

@@ -32,7 +32,7 @@ import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
 
 import com.google.common.collect.Lists;
 
-public class SentryServiceUtil {
+public final class SentryServiceUtil {
 
   // parse the privilege in String and get the TSentryPrivilege as result
   public static TSentryPrivilege convertToTSentryPrivilege(String privilegeStr) {
@@ -150,4 +150,9 @@ public class SentryServiceUtil {
     }
     return SentryConstants.AUTHORIZABLE_JOINER.join(privileges);
   }
+
+  private SentryServiceUtil() {
+    // Make constructor private to avoid instantiation
+  }
+
 }

@@ -41,4 +41,8 @@ public class SentryPolicyFileFormatFactory {
         .newInstance();
     return sentryPolicyFileFormatter;
   }
+
+  private SentryPolicyFileFormatFactory() {
+    // Make constructor private to avoid instantiation
+  }
 }

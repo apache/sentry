@@ -30,10 +30,9 @@ import org.slf4j.LoggerFactory;
 public class UpdateableAuthzPaths implements AuthzPaths, Updateable<PathsUpdate> {
   private static final int MAX_UPDATES_PER_LOCK_USE = 99;
   private static final String UPDATABLE_TYPE_NAME = "path_update";
+  private static final Logger LOG = LoggerFactory.getLogger(UpdateableAuthzPaths.class);
   private volatile HMSPaths paths;
   private final AtomicLong seqNum = new AtomicLong(0);
-
-  private static Logger LOG = LoggerFactory.getLogger(UpdateableAuthzPaths.class);
 
   public UpdateableAuthzPaths(String[] pathPrefixes) {
     this.paths = new HMSPaths(pathPrefixes);

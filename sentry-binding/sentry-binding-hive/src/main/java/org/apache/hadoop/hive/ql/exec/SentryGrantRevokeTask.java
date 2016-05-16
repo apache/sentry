@@ -360,7 +360,7 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
       try {
       authorizableHeirarchy.add(new AccessURI(PathUtils.parseDFSURI(warehouseDir, uriPath)));
       } catch(URISyntaxException e) {
-        throw new HiveException(e.getMessage());
+        throw new HiveException(e.getMessage(), e);
       }
     } else {
       dbName = privSubjectDesc.getObject();

@@ -35,14 +35,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<PermissionsUpdate> {
+  public static final Map<String, FsAction> ACTION_MAPPING = new HashMap<String, FsAction>();
+  
   private static final int MAX_UPDATES_PER_LOCK_USE = 99;
   private static final String UPDATABLE_TYPE_NAME = "perm_authz_update";
+  private static final Logger LOG = LoggerFactory.getLogger(UpdateableAuthzPermissions.class);
   private volatile SentryPermissions perms = new SentryPermissions();
   private final AtomicLong seqNum = new AtomicLong(0);
 
-  private static Logger LOG = LoggerFactory.getLogger(UpdateableAuthzPermissions.class);
-
-  public static Map<String, FsAction> ACTION_MAPPING = new HashMap<String, FsAction>();
   static {
     ACTION_MAPPING.put("ALL", FsAction.ALL);
     ACTION_MAPPING.put("*", FsAction.ALL);

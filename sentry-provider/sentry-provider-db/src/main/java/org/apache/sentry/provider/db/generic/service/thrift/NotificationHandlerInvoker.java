@@ -32,7 +32,7 @@ import com.google.common.collect.Lists;
  */
 public class NotificationHandlerInvoker implements NotificationHandler {
   private static final Logger LOGGER = LoggerFactory.getLogger(NotificationHandlerInvoker.class);
-  List<? extends NotificationHandler> handlers = Lists.newArrayList();
+  private List<? extends NotificationHandler> handlers = Lists.newArrayList();
 
   public NotificationHandlerInvoker(List<? extends NotificationHandler> handlers) {
     this.handlers = handlers;

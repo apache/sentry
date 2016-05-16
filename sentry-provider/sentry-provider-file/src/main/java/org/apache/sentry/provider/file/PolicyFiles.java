@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Resources;
 
-public class PolicyFiles {
+public final class PolicyFiles {
 
   private static final Logger LOGGER = LoggerFactory
       .getLogger(PolicyFiles.class);
@@ -90,4 +90,7 @@ public class PolicyFiles {
     }
   }
 
+  private PolicyFiles() {
+    // Make constructor private to avoid instantiation
+  }
 }

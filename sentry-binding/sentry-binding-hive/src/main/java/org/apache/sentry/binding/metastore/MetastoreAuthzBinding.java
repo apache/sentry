@@ -27,7 +27,6 @@ import org.apache.hadoop.hive.metastore.api.InvalidOperationException;
 import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.sentry.SentryUserException;
-import org.apache.sentry.binding.hive.authz.HiveAuthzBinding;
 import org.apache.sentry.binding.hive.authz.HiveAuthzPrivilegesMap;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
@@ -56,8 +55,7 @@ public class MetastoreAuthzBinding extends MetastoreAuthzBindingBase {
           "Metastore/Sentry cache is out of sync"));
     }
     try {
-      HiveAuthzBinding hiveAuthzBinding = getHiveAuthzBinding();
-      hiveAuthzBinding.authorize(hiveOp, HiveAuthzPrivilegesMap
+      getHiveAuthzBinding().authorize(hiveOp, HiveAuthzPrivilegesMap
           .getHiveAuthzPrivileges(hiveOp), new Subject(getUserName()),
           inputHierarchy, outputHierarchy);
     } catch (AuthorizationException e1) {

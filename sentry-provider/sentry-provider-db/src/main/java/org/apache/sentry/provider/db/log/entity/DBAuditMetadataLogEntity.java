@@ -88,19 +88,19 @@ public class DBAuditMetadataLogEntity extends AuditMetadataLogEntity {
     try {
       json = factory.createJsonGenerator(stringWriter);
       json.writeStartObject();
-      json.writeStringField(Constants.LOG_FIELD_SERVICE_NAME, serviceName);
-      json.writeStringField(Constants.LOG_FIELD_USER_NAME, userName);
-      json.writeStringField(Constants.LOG_FIELD_IMPERSONATOR, impersonator);
-      json.writeStringField(Constants.LOG_FIELD_IP_ADDRESS, ipAddress);
-      json.writeStringField(Constants.LOG_FIELD_OPERATION, operation);
-      json.writeStringField(Constants.LOG_FIELD_EVENT_TIME, eventTime);
-      json.writeStringField(Constants.LOG_FIELD_OPERATION_TEXT, operationText);
-      json.writeStringField(Constants.LOG_FIELD_ALLOWED, allowed);
+      json.writeStringField(Constants.LOG_FIELD_SERVICE_NAME, getServiceName());
+      json.writeStringField(Constants.LOG_FIELD_USER_NAME, getUserName());
+      json.writeStringField(Constants.LOG_FIELD_IMPERSONATOR, getImpersonator());
+      json.writeStringField(Constants.LOG_FIELD_IP_ADDRESS, getIpAddress());
+      json.writeStringField(Constants.LOG_FIELD_OPERATION, getOperation());
+      json.writeStringField(Constants.LOG_FIELD_EVENT_TIME, getEventTime());
+      json.writeStringField(Constants.LOG_FIELD_OPERATION_TEXT, getOperationText());
+      json.writeStringField(Constants.LOG_FIELD_ALLOWED, getAllowed());
       json.writeStringField(Constants.LOG_FIELD_DATABASE_NAME, databaseName);
       json.writeStringField(Constants.LOG_FIELD_TABLE_NAME, tableName);
       json.writeStringField(Constants.LOG_FIELD_COLUMN_NAME, columnName);
       json.writeStringField(Constants.LOG_FIELD_RESOURCE_PATH, resourcePath);
-      json.writeStringField(Constants.LOG_FIELD_OBJECT_TYPE, objectType);
+      json.writeStringField(Constants.LOG_FIELD_OBJECT_TYPE, getObjectType());
       json.writeEndObject();
       json.flush();
     } catch (IOException e) {

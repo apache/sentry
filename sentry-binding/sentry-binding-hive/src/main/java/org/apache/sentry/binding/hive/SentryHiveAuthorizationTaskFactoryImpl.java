@@ -90,7 +90,7 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
   public Task<? extends Serializable> createShowRoleGrantTask(ASTNode ast, Path resultFile,
       HashSet<ReadEntity> inputs, HashSet<WriteEntity> outputs) throws SemanticException {
     ASTNode child = (ASTNode) ast.getChild(0);
-    PrincipalType principalType = PrincipalType.USER;
+    PrincipalType principalType = null;
     switch (child.getType()) {
     case HiveParser.TOK_USER:
       principalType = PrincipalType.USER;
@@ -101,6 +101,8 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
     case HiveParser.TOK_ROLE:
       principalType = PrincipalType.ROLE;
       break;
+    default:
+      principalType = PrincipalType.USER;
     }
     if (principalType != PrincipalType.GROUP  && principalType != PrincipalType.USER) {
       String msg = SentryHiveConstants.GRANT_REVOKE_NOT_SUPPORTED_FOR_PRINCIPAL + principalType;
@@ -186,7 +188,7 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
     SentryHivePrivilegeObjectDesc privHiveObj = null;
 
     ASTNode principal = (ASTNode) ast.getChild(0);
-    PrincipalType type = PrincipalType.USER;
+    PrincipalType type = null;
     switch (principal.getType()) {
     case HiveParser.TOK_USER:
       type = PrincipalType.USER;
@@ -197,6 +199,8 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
     case HiveParser.TOK_ROLE:
       type = PrincipalType.ROLE;
       break;
+    default:
+      type = PrincipalType.USER;
     }
     if (type != PrincipalType.ROLE) {
       String msg = SentryHiveConstants.GRANT_REVOKE_NOT_SUPPORTED_FOR_PRINCIPAL + type;

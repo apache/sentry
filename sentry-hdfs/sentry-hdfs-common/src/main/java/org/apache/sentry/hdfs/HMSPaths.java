@@ -36,27 +36,27 @@ import org.slf4j.LoggerFactory;
  */
 public class HMSPaths implements AuthzPaths {
 
-  private static Logger LOG = LoggerFactory.getLogger(HMSPaths.class);
+  private static final Logger LOG = LoggerFactory.getLogger(HMSPaths.class);
 
   @VisibleForTesting
   static List<String> getPathElements(String path) {
-    path = path.trim();
-    if (path.charAt(0) != Path.SEPARATOR_CHAR) {
-      throw new IllegalArgumentException("It must be an absolute path: " + 
-          path);
+    String trimmedPath = path.trim();
+    if (trimmedPath.charAt(0) != Path.SEPARATOR_CHAR) {
+      throw new IllegalArgumentException("It must be an absolute path: " +
+          trimmedPath);
     }
     List<String> list = new ArrayList<String>(32);
     int idx = 0;
-    int found = path.indexOf(Path.SEPARATOR_CHAR, idx);
+    int found = trimmedPath.indexOf(Path.SEPARATOR_CHAR, idx);
     while (found > -1) {
       if (found > idx) {
-        list.add(path.substring(idx, found));
+        list.add(trimmedPath.substring(idx, found));
       }
       idx = found + 1;
-      found = path.indexOf(Path.SEPARATOR_CHAR, idx);
+      found = trimmedPath.indexOf(Path.SEPARATOR_CHAR, idx);
     }
-    if (idx < path.length()) {
-      list.add(path.substring(idx));
+    if (idx < trimmedPath.length()) {
+      list.add(trimmedPath.substring(idx));
     }
     return list;
   }
@@ -197,7 +197,6 @@ public class HMSPaths implements AuthzPaths {
       // Creates the entry based on the path elements (if not found) until reaches its
       // direct parent.
       for (int i = 0; i < pathElements.size() - 1; i++) {
-
         String pathElement = pathElements.get(i);
         Entry child = entryParent.getChildren().get(pathElement);
 

@@ -36,12 +36,12 @@ import java.util.Set;
 
 public class QueryDocAuthorizationComponent extends SearchComponent
 {
-  private static Logger log =
+  private static final Logger LOG =
     LoggerFactory.getLogger(QueryDocAuthorizationComponent.class);
-  public static String AUTH_FIELD_PROP = "sentryAuthField";
-  public static String DEFAULT_AUTH_FIELD = "sentry_auth";
-  public static String ALL_ROLES_TOKEN_PROP = "allRolesToken";
-  public static String ENABLED_PROP = "enabled";
+  public static final String AUTH_FIELD_PROP = "sentryAuthField";
+  public static final String DEFAULT_AUTH_FIELD = "sentry_auth";
+  public static final String ALL_ROLES_TOKEN_PROP = "allRolesToken";
+  public static final String ENABLED_PROP = "enabled";
   private SentryIndexAuthorizationSingleton sentryInstance;
   private String authField;
   private String allRolesToken;
@@ -61,11 +61,11 @@ public class QueryDocAuthorizationComponent extends SearchComponent
   public void init(NamedList args) {
     SolrParams params = SolrParams.toSolrParams(args);
     this.authField = params.get(AUTH_FIELD_PROP, DEFAULT_AUTH_FIELD);
-    log.info("QueryDocAuthorizationComponent authField: " + this.authField);
+    LOG.info("QueryDocAuthorizationComponent authField: " + this.authField);
     this.allRolesToken = params.get(ALL_ROLES_TOKEN_PROP, "");
-    log.info("QueryDocAuthorizationComponent allRolesToken: " + this.allRolesToken);
+    LOG.info("QueryDocAuthorizationComponent allRolesToken: " + this.allRolesToken);
     this.enabled = params.getBool(ENABLED_PROP, false);
-    log.info("QueryDocAuthorizationComponent enabled: " + this.enabled);
+    LOG.info("QueryDocAuthorizationComponent enabled: " + this.enabled);
   }
 
   private void addRawClause(StringBuilder builder, String authField, String value) {

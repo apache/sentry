@@ -22,7 +22,7 @@ public class Job implements SqoopAuthorizable {
   /**
    * Represents all jobs
    */
-  public static Job ALL = new Job(SqoopAuthorizable.ALL);
+  public static final Job ALL = new Job(SqoopAuthorizable.ALL);
 
   private String name;
   public Job(String name) {

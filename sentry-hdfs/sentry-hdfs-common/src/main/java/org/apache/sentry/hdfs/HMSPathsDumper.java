@@ -33,8 +33,8 @@ public class HMSPathsDumper implements AuthzPathsDumper<HMSPaths> {
   private final HMSPaths hmsPaths;
 
   static class Tuple {
-    final TPathEntry entry;
-    final int id;
+    private final TPathEntry entry;
+    private final int id;
     Tuple(TPathEntry entry, int id) {
       this.entry = entry;
       this.id = id;
@@ -79,16 +79,16 @@ public class HMSPathsDumper implements AuthzPathsDumper<HMSPaths> {
 
   @Override
   public HMSPaths initializeFromDump(TPathsDump pathDump) {
-    HMSPaths hmsPaths = new HMSPaths(this.hmsPaths.getPrefixes());
+    HMSPaths newHmsPaths = new HMSPaths(this.hmsPaths.getPrefixes());
     TPathEntry tRootEntry = pathDump.getNodeMap().get(pathDump.getRootId());
-    Entry rootEntry = hmsPaths.getRootEntry();
+    Entry rootEntry = newHmsPaths.getRootEntry();
     Map<String, Set<Entry>> authzObjToPath = new HashMap<String, Set<Entry>>();
     cloneToEntry(tRootEntry, rootEntry, pathDump.getNodeMap(), authzObjToPath,
         rootEntry.getType() == EntryType.PREFIX);
-    hmsPaths.setRootEntry(rootEntry);
-    hmsPaths.setAuthzObjToPathMapping(authzObjToPath);
+    newHmsPaths.setRootEntry(rootEntry);
+    newHmsPaths.setAuthzObjToPathMapping(authzObjToPath);
 
-    return hmsPaths;
+    return newHmsPaths;
   }
 
   private void cloneToEntry(TPathEntry tParent, Entry parent,

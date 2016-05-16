@@ -28,11 +28,11 @@ import org.apache.sentry.hdfs.service.thrift.TRoleChanges;
 
 public class PermissionsUpdate implements Updateable.Update {
 
-  public static String RENAME_PRIVS = "__RENAME_PRIV__";
-  public static String ALL_AUTHZ_OBJ = "__ALL_AUTHZ_OBJ__";
-  public static String ALL_PRIVS = "__ALL_PRIVS__";
-  public static String ALL_ROLES = "__ALL_ROLES__";
-  public static String ALL_GROUPS = "__ALL_GROUPS__";
+  public static final String RENAME_PRIVS = "__RENAME_PRIV__";
+  public static final String ALL_AUTHZ_OBJ = "__ALL_AUTHZ_OBJ__";
+  public static final String ALL_PRIVS = "__ALL_PRIVS__";
+  public static final String ALL_ROLES = "__ALL_ROLES__";
+  public static final String ALL_GROUPS = "__ALL_GROUPS__";
 
   private final TPermissionsUpdate tPermUpdate;
 

@@ -208,12 +208,10 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   }
 
   private boolean inAdminGroups(Set<String> requestorGroups) {
-    requestorGroups = toTrimedLower(requestorGroups);
-    if (Sets.intersection(adminGroups, requestorGroups).isEmpty()) {
-      return false;
-    }
-    return true;
+    Set<String> trimmedRequestorGroups = toTrimedLower(requestorGroups);
+    return !Sets.intersection(adminGroups, trimmedRequestorGroups).isEmpty();
   }
+  
   private void authorize(String requestorUser, Set<String> requestorGroups)
   throws SentryAccessDeniedException {
     if (!inAdminGroups(requestorGroups)) {
@@ -1028,10 +1026,10 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   }
 
   @VisibleForTesting
-  static void validateClientVersion(int protocol_version) throws SentryThriftAPIMismatchException {
-    if (ServiceConstants.ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT != protocol_version) {
+  static void validateClientVersion(int protocolVersion) throws SentryThriftAPIMismatchException {
+    if (ServiceConstants.ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT != protocolVersion) {
       String msg = "Sentry thrift API protocol version mismatch: Client thrift version " +
-          "is: " + protocol_version + " , server thrift verion " +
+          "is: " + protocolVersion + " , server thrift verion " +
               "is " + ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT;
       throw new SentryThriftAPIMismatchException(msg);
     }

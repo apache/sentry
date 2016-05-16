@@ -26,7 +26,7 @@ import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClientDefaultImpl;
 import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
 
-public class SentryServiceClientFactory {
+public final class SentryServiceClientFactory {
 
   private SentryServiceClientFactory() {
   }

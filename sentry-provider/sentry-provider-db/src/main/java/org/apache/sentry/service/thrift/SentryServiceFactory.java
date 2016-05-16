@@ -22,8 +22,7 @@ import org.apache.hadoop.conf.Configuration;
 public class SentryServiceFactory {
 
   public SentryService create(Configuration conf) throws Exception {
-    SentryService server = new SentryService(conf);
-    return server;
+    return new SentryService(conf);
   }
 
 }

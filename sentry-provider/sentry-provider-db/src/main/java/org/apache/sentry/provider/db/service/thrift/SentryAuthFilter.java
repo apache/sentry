@@ -42,7 +42,7 @@ import com.google.common.collect.Sets;
  */
 public class SentryAuthFilter extends AuthenticationFilter {
 
-  private static Logger LOG = LoggerFactory.getLogger(SentryAuthFilter.class);
+  private static final Logger LOG = LoggerFactory.getLogger(SentryAuthFilter.class);
 
   public static final String ALLOW_WEB_CONNECT_USERS = ServerConfig.SENTRY_WEB_SECURITY_ALLOW_CONNECT_USERS;
 
@@ -83,9 +83,10 @@ public class SentryAuthFilter extends AuthenticationFilter {
   }
 
   private static Set<String> parseConnectUsersFromConf(String value) {
-    if (value != null) {
-      value = value.toLowerCase();
+    String lcValue = value;
+    if (lcValue != null) {
+      lcValue = lcValue.toLowerCase();
     }
-    return Sets.newHashSet(StringUtils.getStrings(value));
+    return Sets.newHashSet(StringUtils.getStrings(lcValue));
   }
 }

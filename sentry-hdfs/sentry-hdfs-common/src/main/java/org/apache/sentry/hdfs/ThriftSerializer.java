@@ -57,4 +57,7 @@ public class ThriftSerializer {
     return baseObject;
   }
 
+  private ThriftSerializer() {
+    // Make constructor private to avoid instantiation
+  }
 }

@@ -16,10 +16,13 @@
  */
 package org.apache.sentry.core.model.indexer;
 
-public class IndexerConstants {
+public final class IndexerConstants {
 
   public static final String ALL = "*";
   public static final String READ = "read";
   public static final String WRITE = "write";
 
+  private IndexerConstants() {
+    // Make constructor private to avoid instantiation
+  }
 }

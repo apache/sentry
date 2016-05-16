@@ -29,10 +29,10 @@ import java.util.List;
 import org.apache.sentry.SentryUserException;
 
 public class SentryStoreSchemaInfo {
-  private static String SQL_FILE_EXTENSION = ".sql";
-  private static String UPGRADE_FILE_PREFIX = "upgrade-";
-  private static String INIT_FILE_PREFIX = "sentry-";
-  private static String VERSION_UPGRADE_LIST = "upgrade.order";
+  private static final String SQL_FILE_EXTENSION = ".sql";
+  private static final String UPGRADE_FILE_PREFIX = "upgrade-";
+  private static final String INIT_FILE_PREFIX = "sentry-";
+  private static final String VERSION_UPGRADE_LIST = "upgrade.order";
   private final String dbType;
   private final String sentrySchemaVersions[];
   private final String sentryScriptDir;
@@ -105,16 +105,17 @@ public class SentryStoreSchemaInfo {
    */
   public String generateInitFileName(String toVersion)
       throws SentryUserException {
-    if (toVersion == null) {
-      toVersion = getSentryVersion();
+    String version = toVersion;
+    if (version == null) {
+      version = getSentryVersion();
     }
-    String initScriptName = INIT_FILE_PREFIX + dbType + "-" + toVersion
+    String initScriptName = INIT_FILE_PREFIX + dbType + "-" + version
         + SQL_FILE_EXTENSION;
     // check if the file exists
     if (!(new File(getSentryStoreScriptDir() + File.separatorChar
         + initScriptName).exists())) {
       throw new SentryUserException(
-          "Unknown version specified for initialization: " + toVersion);
+          "Unknown version specified for initialization: " + version);
     }
     return initScriptName;
   }

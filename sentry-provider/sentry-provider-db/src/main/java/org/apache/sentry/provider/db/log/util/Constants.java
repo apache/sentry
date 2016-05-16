@@ -23,7 +23,7 @@ import java.util.Map;
 
 import org.apache.sentry.provider.db.service.thrift.*;
 
-public class Constants {
+public final class Constants {
   public final static String AUDIT_LOGGER_NAME = "sentry.hive.authorization.ddl.logger";
   public final static String AUDIT_LOGGER_NAME_GENERIC = "sentry.generic.authorization.ddl.logger";
 
@@ -154,4 +154,9 @@ public class Constants {
             org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleRevokePrivilegeRequest.class
                 .getName(), Constants.OBJECT_TYPE_PRINCIPAL);
   }
+
+  private Constants() {
+    // Make constructor private to avoid instantiation
+  }
+
 }

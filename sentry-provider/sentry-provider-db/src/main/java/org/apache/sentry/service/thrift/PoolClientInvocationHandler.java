@@ -106,11 +106,11 @@ public class PoolClientInvocationHandler extends SentryClientInvocationHandler {
       // Get the target exception, check if SentryUserException or TTransportException is wrapped.
       // TTransportException means there has connection problem with the pool.
       Throwable targetException = e.getCause();
-      if (targetException != null && targetException instanceof SentryUserException) {
+      if (targetException instanceof SentryUserException) {
         Throwable sentryTargetException = targetException.getCause();
         // If there has connection problem, eg, invalid connection if the service restarted,
         // sentryTargetException instanceof TTransportException = true.
-        if (sentryTargetException != null && sentryTargetException instanceof TTransportException) {
+        if (sentryTargetException instanceof TTransportException) {
           // If the exception is caused by connection problem, destroy the instance and
           // remove it from the commons-pool. Throw the TTransportException for reconnect.
           pool.invalidateObject(client);

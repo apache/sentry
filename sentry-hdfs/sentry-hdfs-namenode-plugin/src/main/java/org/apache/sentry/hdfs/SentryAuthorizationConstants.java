@@ -17,7 +17,7 @@
  */
 package org.apache.sentry.hdfs;
 
-public class SentryAuthorizationConstants {
+public final class SentryAuthorizationConstants {
 
   public static final String CONFIG_FILE = "hdfs-sentry.xml";
 
@@ -52,4 +52,8 @@ public class SentryAuthorizationConstants {
   public static final String INCLUDE_HDFS_AUTHZ_AS_ACL_KEY = CONFIG_PREFIX + 
       "include-hdfs-authz-as-acl";
   public static final boolean INCLUDE_HDFS_AUTHZ_AS_ACL_DEFAULT = false;
+  
+  private SentryAuthorizationConstants() {
+    // Make constructor private to avoid instantiation
+  }
 }

@@ -16,7 +16,7 @@
  */
 package org.apache.sentry.sqoop;
 
-public class SentrySqoopError {
+public final class SentrySqoopError {
   public static final String SHOW_GRANT_NOT_SUPPORTED_FOR_PRINCIPAL =
       "Sentry does only support show roles on group, not supported on ";
   public static final String AUTHORIZE_CHECK_NOT_SUPPORT_FOR_PRINCIPAL =
@@ -29,4 +29,8 @@ public class SentrySqoopError {
       "Sentry does only support grant/revoke role to/from group, not supported on ";
   public static final String NOT_IMPLEMENT_YET =
       "Sentry does not implement yet ";
+
+  private SentrySqoopError() {
+    // Make constructor private to avoid instantiation
+  }
 }

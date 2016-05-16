@@ -357,11 +357,12 @@ public class HiveAuthzBinding {
       found = false;
     }
 
-    for(AuthorizableType key: requiredOutputPrivileges.keySet()) {
+    for (Map.Entry<AuthorizableType, EnumSet<DBModelAction>> entry : requiredOutputPrivileges.entrySet()) {
+      AuthorizableType key = entry.getKey();
       for (List<DBModelAuthorizable> outputHierarchy : outputHierarchyList) {
         if (getAuthzType(outputHierarchy).equals(key)) {
           found = true;
-          if (!authProvider.hasAccess(subject, outputHierarchy, requiredOutputPrivileges.get(key), activeRoleSet)) {
+          if (!authProvider.hasAccess(subject, outputHierarchy, entry.getValue(), activeRoleSet)) {
             throw new AuthorizationException("User " + subject.getName() +
                 " does not have privileges for " + hiveOp.name());
           }

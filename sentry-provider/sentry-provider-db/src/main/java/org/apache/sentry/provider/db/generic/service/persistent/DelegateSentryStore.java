@@ -113,16 +113,16 @@ public class DelegateSentryStore implements SentryStoreLayer {
       throws SentryNoSuchObjectException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
-    role = toTrimmedLower(role);
+    String trimmedRole = toTrimmedLower(role);
     try {
       pm = openTransaction();
       Query query = pm.newQuery(MSentryRole.class);
       query.setFilter("this.roleName == t");
       query.declareParameters("java.lang.String t");
       query.setUnique(true);
-      MSentryRole sentryRole = (MSentryRole) query.execute(role);
+      MSentryRole sentryRole = (MSentryRole) query.execute(trimmedRole);
       if (sentryRole == null) {
-        throw new SentryNoSuchObjectException("Role: " + role + " doesn't exist");
+        throw new SentryNoSuchObjectException("Role: " + trimmedRole + " doesn't exist");
       } else {
         pm.retrieve(sentryRole);
         sentryRole.removeGMPrivileges();
@@ -161,14 +161,14 @@ public class DelegateSentryStore implements SentryStoreLayer {
   public CommitContext alterRoleGrantPrivilege(String component, String role,
       PrivilegeObject privilege, String grantorPrincipal)
       throws SentryUserException {
-    role = toTrimmedLower(role);
+    String trimmedRole = toTrimmedLower(role);
     PersistenceManager pm = null;
     boolean rollbackTransaction = true;
     try{
       pm = openTransaction();
-      MSentryRole mRole = getRole(role, pm);
+      MSentryRole mRole = getRole(trimmedRole, pm);
       if (mRole == null) {
-        throw new SentryNoSuchObjectException("Role: " + role + " doesn't exist");
+        throw new SentryNoSuchObjectException("Role: " + trimmedRole + " doesn't exist");
       }
       /**
        * check with grant option
@@ -192,14 +192,14 @@ public class DelegateSentryStore implements SentryStoreLayer {
   public CommitContext alterRoleRevokePrivilege(String component,
       String role, PrivilegeObject privilege, String grantorPrincipal)
       throws SentryUserException {
-    role = toTrimmedLower(role);
+    String trimmedRole = toTrimmedLower(role);
     PersistenceManager pm = null;
     boolean rollbackTransaction = true;
     try{
       pm = openTransaction();
-      MSentryRole mRole = getRole(role, pm);
+      MSentryRole mRole = getRole(trimmedRole, pm);
       if (mRole == null) {
-        throw new SentryNoSuchObjectException("Role: " + role + " doesn't exist");
+        throw new SentryNoSuchObjectException("Role: " + trimmedRole + " doesn't exist");
       }
       /**
        * check with grant option
@@ -323,9 +323,9 @@ public class DelegateSentryStore implements SentryStoreLayer {
   @Override
   public Set<String> getGroupsByRoles(String component, Set<String> roles)
       throws SentryUserException {
-    roles = toTrimmedLower(roles);
+    Set<String> trimmedRoles = toTrimmedLower(roles);
     Set<String> groupNames = Sets.newHashSet();
-    if (roles.size() == 0) {
+    if (trimmedRoles.size() == 0) {
       return groupNames;
     }
 
@@ -337,7 +337,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
       StringBuilder filters = new StringBuilder();
       query.declareVariables("org.apache.sentry.provider.db.service.model.MSentryRole role");
       List<String> rolesFiler = new LinkedList<String>();
-      for (String role : roles) {
+      for (String role : trimmedRoles) {
         rolesFiler.add("role.roleName == \"" + role + "\" ");
       }
       filters.append("roles.contains(role) " + "&& (" + Joiner.on(" || ").join(rolesFiler) + ")");
@@ -393,33 +393,33 @@ public class DelegateSentryStore implements SentryStoreLayer {
     Preconditions.checkNotNull(component);
     Preconditions.checkNotNull(service);
 
-    component = toTrimmedLower(component);
-    service = toTrimmedLower(service);
+    String trimmedComponent = toTrimmedLower(component);
+    String trimmedService = toTrimmedLower(service);
 
     Set<PrivilegeObject> privileges = Sets.newHashSet();
     PersistenceManager pm = null;
     try {
       pm = openTransaction();
       //CaseInsensitive roleNames
-      roles = toTrimmedLower(roles);
+      Set<String> trimmedRoles = toTrimmedLower(roles);
 
       if (groups != null) {
-        roles.addAll(delegate.getRoleNamesForGroups(groups));
+        trimmedRoles.addAll(delegate.getRoleNamesForGroups(groups));
       }
 
-      if (roles.size() == 0) {
+      if (trimmedRoles.size() == 0) {
         return privileges;
       }
 
       Set<MSentryRole> mRoles = Sets.newHashSet();
-      for (String role : roles) {
+      for (String role : trimmedRoles) {
         MSentryRole mRole = getRole(role, pm);
         if (mRole != null) {
           mRoles.add(mRole);
         }
       }
       //get the privileges
-      privileges.addAll(privilegeOperator.getPrivilegesByProvider(component, service, mRoles, authorizables, pm));
+      privileges.addAll(privilegeOperator.getPrivilegesByProvider(trimmedComponent, trimmedService, mRoles, authorizables, pm));
     } finally {
       if (pm != null) {
         commitTransaction(pm);

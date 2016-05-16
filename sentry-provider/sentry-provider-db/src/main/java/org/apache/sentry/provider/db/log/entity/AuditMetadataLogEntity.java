@@ -29,16 +29,16 @@ import org.codehaus.jackson.node.ContainerNode;
 abstract public class AuditMetadataLogEntity implements JsonLogEntity {
 
   static final JsonFactory factory = new MappingJsonFactory();
-  String serviceName;
-  String userName;
-  String impersonator;
-  String ipAddress;
-  String operation;
-  String eventTime;
-  String operationText;
-  String allowed;
-  String objectType;
-  String component;
+  private String serviceName;
+  private String userName;
+  private String impersonator;
+  private String ipAddress;
+  private String operation;
+  private String eventTime;
+  private String operationText;
+  private String allowed;
+  private String objectType;
+  private String component;
 
   void setCommonAttr(String serviceName, String userName, String impersonator, String ipAddress,
       String operation, String eventTime, String operationText, String allowed, String objectType,

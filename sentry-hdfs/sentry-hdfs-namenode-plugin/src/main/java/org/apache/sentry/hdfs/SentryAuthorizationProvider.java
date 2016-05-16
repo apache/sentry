@@ -54,8 +54,10 @@ public class SentryAuthorizationProvider
     }
   }
 
-  private static Logger LOG =
+  private static final Logger LOG =
       LoggerFactory.getLogger(SentryAuthorizationProvider.class);
+  private static final String WARN_VISIBILITY = 
+      " The result won't be visible when the path is managed by Sentry";
 
   private boolean started;
   private Configuration conf;
@@ -65,9 +67,6 @@ public class SentryAuthorizationProvider
   private FsPermission permission;
   private boolean originalAuthzAsAcl;
   private SentryAuthorizationInfo authzInfo;
-
-  private static String WARN_VISIBILITY = 
-      " The result won't be visible when the path is managed by Sentry";
 
   public SentryAuthorizationProvider() {
     this(null);
@@ -103,17 +102,17 @@ public class SentryAuthorizationProvider
       defaultAuthzProvider.start();
       // Configuration is read from hdfs-sentry.xml and NN configuration, in
       // that order of precedence.
-      Configuration conf = new Configuration(this.conf);
-      conf.addResource(SentryAuthorizationConstants.CONFIG_FILE);
-      user = conf.get(SentryAuthorizationConstants.HDFS_USER_KEY,
+      Configuration newConf = new Configuration(this.conf);
+      newConf.addResource(SentryAuthorizationConstants.CONFIG_FILE);
+      user = newConf.get(SentryAuthorizationConstants.HDFS_USER_KEY,
           SentryAuthorizationConstants.HDFS_USER_DEFAULT);
-      group = conf.get(SentryAuthorizationConstants.HDFS_GROUP_KEY,
+      group = newConf.get(SentryAuthorizationConstants.HDFS_GROUP_KEY,
           SentryAuthorizationConstants.HDFS_GROUP_DEFAULT);
       permission = FsPermission.createImmutable(
-          (short) conf.getLong(SentryAuthorizationConstants.HDFS_PERMISSION_KEY,
+          (short) newConf.getLong(SentryAuthorizationConstants.HDFS_PERMISSION_KEY,
               SentryAuthorizationConstants.HDFS_PERMISSION_DEFAULT)
       );
-      originalAuthzAsAcl = conf.getBoolean(
+      originalAuthzAsAcl = newConf.getBoolean(
           SentryAuthorizationConstants.INCLUDE_HDFS_AUTHZ_AS_ACL_KEY,
           SentryAuthorizationConstants.INCLUDE_HDFS_AUTHZ_AS_ACL_DEFAULT);
 
@@ -123,7 +122,7 @@ public class SentryAuthorizationProvider
           {user, group, permission, originalAuthzAsAcl});
 
       if (authzInfo == null) {
-        authzInfo = new SentryAuthorizationInfo(conf);
+        authzInfo = new SentryAuthorizationInfo(newConf);
       }
       authzInfo.start();
     } catch (Exception ex) {
@@ -256,12 +255,12 @@ public class SentryAuthorizationProvider
   @Override
   public FsPermission getFsPermission(
       INodeAuthorizationInfo node, int snapshotId) {
-    FsPermission permission;
+    FsPermission returnPerm;
     String[] pathElements = getPathElements(node);
     if (!isSentryManaged(pathElements)) {
-      permission = defaultAuthzProvider.getFsPermission(node, snapshotId);
+      returnPerm = defaultAuthzProvider.getFsPermission(node, snapshotId);
     } else {
-      FsPermission returnPerm = this.permission;
+      returnPerm = this.permission;
       // Handle case when prefix directory is itself associated with an
       // authorizable object (default db directory in hive)
       // An executable permission needs to be set on the the prefix directory
@@ -273,9 +272,8 @@ public class SentryAuthorizationProvider
           break;
         }
       }
-      permission = returnPerm;
     }
-    return permission;
+    return returnPerm;
   }
 
   private List<AclEntry> createAclEntries(String user, String group,
@@ -325,10 +323,10 @@ public class SentryAuthorizationProvider
       hasAuthzObj = true;
       aclMap = new HashMap<String, AclEntry>();
       if (originalAuthzAsAcl) {
-        String user = defaultAuthzProvider.getUser(node, snapshotId);
-        String group = getDefaultProviderGroup(node, snapshotId);
+        String newUser = defaultAuthzProvider.getUser(node, snapshotId);
+        String newGroup = getDefaultProviderGroup(node, snapshotId);
         FsPermission perm = defaultAuthzProvider.getFsPermission(node, snapshotId);
-        addToACLMap(aclMap, createAclEntries(user, group, perm));
+        addToACLMap(aclMap, createAclEntries(newUser, newGroup, perm));
       } else {
         addToACLMap(aclMap,
             createAclEntries(this.user, this.group, this.permission));
@@ -376,13 +374,13 @@ public class SentryAuthorizationProvider
 
   private String getDefaultProviderGroup(INodeAuthorizationInfo node,
       int snapshotId) {
-    String group = defaultAuthzProvider.getGroup(node, snapshotId);
+    String newGroup = defaultAuthzProvider.getGroup(node, snapshotId);
     INodeAuthorizationInfo pNode = node.getParent();
-    while  (group == null && pNode != null) {
-      group = defaultAuthzProvider.getGroup(pNode, snapshotId);
+    while (newGroup == null && pNode != null) {
+      newGroup = defaultAuthzProvider.getGroup(pNode, snapshotId);
       pNode = pNode.getParent();
     }
-    return group;
+    return newGroup;
   }
 
   /*

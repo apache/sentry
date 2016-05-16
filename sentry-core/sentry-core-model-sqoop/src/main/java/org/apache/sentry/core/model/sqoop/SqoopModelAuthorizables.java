@@ -20,6 +20,11 @@ import org.apache.sentry.core.model.sqoop.SqoopAuthorizable.AuthorizableType;
 import org.apache.sentry.core.common.utils.KeyValue;
 
 public class SqoopModelAuthorizables {
+
+  private SqoopModelAuthorizables() {
+    // Make constructor private to avoid instantiation
+  }
+
   public static SqoopAuthorizable from(KeyValue keyValue) {
     String prefix = keyValue.getKey().toLowerCase();
     String name = keyValue.getValue().toLowerCase();

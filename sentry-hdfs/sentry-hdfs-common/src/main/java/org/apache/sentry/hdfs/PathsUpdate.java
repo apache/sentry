@@ -46,7 +46,7 @@ public class PathsUpdate implements Updateable.Update {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(PathsUpdate.class);
 
-  public static String ALL_PATHS = "__ALL_PATHS__";
+  public static final String ALL_PATHS = "__ALL_PATHS__";
   private static final Configuration CONF = new Configuration();
   private final TPathsUpdate tPathsUpdate;
 

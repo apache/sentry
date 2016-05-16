@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Strings;
 
-public class SqoopAuthBindingSingleton {
+public final class SqoopAuthBindingSingleton {
   private static Logger log = LoggerFactory.getLogger(SqoopAuthBindingSingleton.class);
 
   // Lazy init holder class idiom to avoid DTL
@@ -57,19 +57,19 @@ public class SqoopAuthBindingSingleton {
   }
 
   private SqoopAuthConf loadAuthzConf() {
-    String sentry_site = SqoopConfiguration.getInstance().getContext()
+    String sentrySite = SqoopConfiguration.getInstance().getContext()
         .getString(SqoopAuthConf.SENTRY_SQOOP_SITE_URL);
-    if (Strings.isNullOrEmpty(sentry_site)) {
+    if (Strings.isNullOrEmpty(sentrySite)) {
       throw new IllegalArgumentException("Configuration key " + SqoopAuthConf.SENTRY_SQOOP_SITE_URL
-          + " value '" + sentry_site + "' is invalid.");
+          + " value '" + sentrySite + "' is invalid.");
     }
 
     SqoopAuthConf sqoopAuthConf = null;
     try {
-      sqoopAuthConf = new SqoopAuthConf(new URL(sentry_site));
+      sqoopAuthConf = new SqoopAuthConf(new URL(sentrySite));
     } catch (MalformedURLException e) {
       throw new IllegalArgumentException("Configuration key " + SqoopAuthConf.SENTRY_SQOOP_SITE_URL
-          + " specifies a malformed URL '" + sentry_site + "'", e);
+          + " specifies a malformed URL '" + sentrySite + "'", e);
     }
     return sqoopAuthConf;
   }

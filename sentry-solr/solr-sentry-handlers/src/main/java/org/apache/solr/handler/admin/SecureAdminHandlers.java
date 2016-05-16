@@ -35,8 +35,8 @@ import org.apache.zookeeper.KeeperException;
 public class SecureAdminHandlers extends AdminHandlers {
 
   protected static class StandardHandler {
-    final String name;
-    final SolrRequestHandler handler;
+    private final String name;
+    private final SolrRequestHandler handler;
     
     public StandardHandler( String n, SolrRequestHandler h )
     {

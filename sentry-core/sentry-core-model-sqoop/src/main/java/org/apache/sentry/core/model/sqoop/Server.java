@@ -22,7 +22,7 @@ public class Server implements SqoopAuthorizable {
   /**
    * Represents all servers
    */
-  public static Server ALL = new Server(SqoopAuthorizable.ALL);
+  public static final Server ALL = new Server(SqoopAuthorizable.ALL);
 
   private String name;
   public Server(String name) {

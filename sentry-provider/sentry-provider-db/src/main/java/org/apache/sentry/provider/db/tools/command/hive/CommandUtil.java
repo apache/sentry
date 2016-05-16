@@ -25,9 +25,13 @@ import org.apache.sentry.provider.db.service.thrift.TSentryGrantOption;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.service.thrift.ServiceConstants;
 
-public class CommandUtil {
+public final class CommandUtil {
 
   public static final String SPLIT_CHAR = ",";
+  
+  private CommandUtil() {
+    // Make constructor private to avoid instantiation
+  }
 
   // parse the privilege in String and get the TSentryPrivilege as result
   public static TSentryPrivilege convertToTSentryPrivilege(String privilegeStr) throws Exception {

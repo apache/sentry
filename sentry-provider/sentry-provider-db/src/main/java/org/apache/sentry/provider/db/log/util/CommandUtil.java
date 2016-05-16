@@ -35,7 +35,11 @@ import org.datanucleus.util.StringUtils;
 
 import com.google.common.annotations.VisibleForTesting;
 
-public class CommandUtil {
+public final class CommandUtil {
+    
+  public CommandUtil() {
+    // Make constructor private to avoid instantiation
+  }
 
   public static String createCmdForCreateOrDropRole(String roleName,
       boolean isCreate) {

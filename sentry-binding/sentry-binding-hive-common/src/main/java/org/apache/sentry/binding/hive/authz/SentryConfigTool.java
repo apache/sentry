@@ -259,16 +259,15 @@ public class SentryConfigTool {
     String serverName = new Server(getAuthzConf().get(
         AuthzConfVars.AUTHZ_SERVER_NAME.getVar())).getName();
     // get the configured sentry provider
-    AuthorizationProvider sentryProvider = null;
     try {
-      sentryProvider = HiveAuthzBinding.getAuthProvider(getHiveConf(),
+      return HiveAuthzBinding.getAuthProvider(getHiveConf(),
           authzConf, serverName);
     } catch (SentryConfigurationException eC) {
       printConfigErrors(eC);
+      throw eC;
     } catch (Exception e) {
       throw new IllegalStateException("Couldn't load sentry provider ", e);
     }
-    return sentryProvider;
   }
 
   // validate policy files
@@ -277,6 +276,7 @@ public class SentryConfigTool {
       getSentryProvider().validateResource(true);
     } catch (SentryConfigurationException e) {
       printConfigErrors(e);
+      throw e;
     }
     System.out.println("No errors found in the policy file");
   }
@@ -395,14 +395,15 @@ public class SentryConfigTool {
   // read a config value using 'set' statement
   private String readConfig(Statement stmt, String configKey)
       throws SQLException {
-    ResultSet res = stmt.executeQuery("set " + configKey);
-    if (!res.next()) {
-      return null;
+    try (ResultSet res = stmt.executeQuery("set " + configKey)) {
+      if (!res.next()) {
+        return null;
+      }
+      // parse key=value result format
+      String result = res.getString(1);
+      res.close();
+      return result.substring(result.indexOf("=") + 1);
     }
-    // parse key=value result format
-    String result = res.getString(1);
-    res.close();
-    return result.substring(result.indexOf("=") + 1);
   }
 
   // print configuration/policy file errors and warnings
@@ -415,7 +416,6 @@ public class SentryConfigTool {
     for (String warnMsg : configException.getConfigWarnings()) {
       System.out.println("Warning: " + warnMsg);
     }
-    throw configException;
   }
 
   // extract the authorization errors from config property and print

@@ -98,4 +98,8 @@ public class SentryHdfsMetricsUtil {
   // The number of failed handleCacheUpdate
   public static final Counter getFailedCacheSyncToZK = sentryMetrics.getCounter(
       MetricRegistry.name(PluginCacheSyncUtil.class, "cache-sync-to-zk", "failed-num"));
+  
+  private SentryHdfsMetricsUtil() {
+    // Make constructor private to avoid instantiation
+  }
 }

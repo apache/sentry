@@ -178,8 +178,8 @@ public class ServiceConstants {
     public static final String SENTRY_WEB_SECURITY_ALLOW_CONNECT_USERS = SENTRY_WEB_SECURITY_PREFIX + ".allow.connect.users";
 
     // max message size for thrift messages
-    public static String SENTRY_POLICY_SERVER_THRIFT_MAX_MESSAGE_SIZE = "sentry.policy.server.thrift.max.message.size";
-    public static long SENTRY_POLICY_SERVER_THRIFT_MAX_MESSAGE_SIZE_DEFAULT = 100 * 1024 * 1024;
+    public static final String SENTRY_POLICY_SERVER_THRIFT_MAX_MESSAGE_SIZE = "sentry.policy.server.thrift.max.message.size";
+    public static final long SENTRY_POLICY_SERVER_THRIFT_MAX_MESSAGE_SIZE_DEFAULT = 100 * 1024 * 1024;
 
     // action factories for external components
     public static final String SENTRY_COMPONENT_ACTION_FACTORY_FORMAT = "sentry.%s.action.factory";
@@ -218,8 +218,8 @@ public class ServiceConstants {
     public static final int SENTRY_POOL_RETRY_TOTAL_DEFAULT = 3;
 
     // max message size for thrift messages
-    public static String SENTRY_POLICY_CLIENT_THRIFT_MAX_MESSAGE_SIZE = "sentry.policy.client.thrift.max.message.size";
-    public static long SENTRY_POLICY_CLIENT_THRIFT_MAX_MESSAGE_SIZE_DEFAULT = 100 * 1024 * 1024;
+    public static final String SENTRY_POLICY_CLIENT_THRIFT_MAX_MESSAGE_SIZE = "sentry.policy.client.thrift.max.message.size";
+    public static final long SENTRY_POLICY_CLIENT_THRIFT_MAX_MESSAGE_SIZE_DEFAULT = 100 * 1024 * 1024;
 
     // client retry settings
     public static final String RETRY_COUNT_CONF = "sentry.provider.backend.db.retry.count";

@@ -98,7 +98,7 @@ public class SentryStore {
   private static final Logger LOGGER = LoggerFactory
           .getLogger(SentryStore.class);
 
-  public static String NULL_COL = "__NULL__";
+  public static final String NULL_COL = "__NULL__";
   public static int INDEX_GROUP_ROLES_MAP = 0;
   public static int INDEX_USER_ROLES_MAP = 1;
   static final String DEFAULT_DATA_DIR = "sentry_policy_db";
@@ -293,8 +293,7 @@ public class SentryStore {
     query.setFilter("this.roleName == t");
     query.declareParameters("java.lang.String t");
     query.setUnique(true);
-    MSentryRole sentryRole = (MSentryRole) query.execute(roleName);
-    return sentryRole;
+    return (MSentryRole) query.execute(roleName);
   }
 
   /**
@@ -328,13 +327,13 @@ public class SentryStore {
 
   private void createSentryRoleCore(PersistenceManager pm, String roleName)
       throws SentryAlreadyExistsException {
-    roleName = trimAndLower(roleName);
-    MSentryRole mSentryRole = getMSentryRole(pm, roleName);
+    String trimmedRoleName = trimAndLower(roleName);
+    MSentryRole mSentryRole = getMSentryRole(pm, trimmedRoleName);
     if (mSentryRole == null) {
-      MSentryRole mRole = new MSentryRole(roleName, System.currentTimeMillis());
+      MSentryRole mRole = new MSentryRole(trimmedRoleName, System.currentTimeMillis());
       pm.makePersistent(mRole);
     } else {
-      throw new SentryAlreadyExistsException("Role: " + roleName);
+      throw new SentryAlreadyExistsException("Role: " + trimmedRoleName);
     }
   }
 
@@ -432,14 +431,14 @@ public class SentryStore {
       throws SentryUserException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
-    roleName = trimAndLower(roleName);
+    String trimmedRoleName = trimAndLower(roleName);
     try {
       pm = openTransaction();
       for (TSentryPrivilege privilege : privileges) {
         // first do grant check
         grantOptionCheck(pm, grantorPrincipal, privilege);
 
-        MSentryPrivilege mPrivilege = alterSentryRoleGrantPrivilegeCore(pm, roleName, privilege);
+        MSentryPrivilege mPrivilege = alterSentryRoleGrantPrivilegeCore(pm, trimmedRoleName, privilege);
 
         if (mPrivilege != null) {
           convertToTSentryPrivilege(mPrivilege, privilege);
@@ -523,14 +522,14 @@ public class SentryStore {
       String roleName, Set<TSentryPrivilege> tPrivileges) throws SentryUserException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
-    roleName = safeTrimLower(roleName);
+    String trimmedRoleName = safeTrimLower(roleName);
     try {
       pm = openTransaction();
       for (TSentryPrivilege tPrivilege : tPrivileges) {
         // first do revoke check
         grantOptionCheck(pm, grantorPrincipal, tPrivilege);
 
-        alterSentryRoleRevokePrivilegeCore(pm, roleName, tPrivilege);
+        alterSentryRoleRevokePrivilegeCore(pm, trimmedRoleName, tPrivilege);
       }
 
       CommitContext commit = commitUpdateTransaction(pm);
@@ -706,7 +705,7 @@ public class SentryStore {
     query.declareVariables("org.apache.sentry.provider.db.service.model.MSentryRole role");
     List<String> rolesFiler = new LinkedList<String>();
     for (String rName : roleNames) {
-      rolesFiler.add("role.roleName == \"" + rName.trim().toLowerCase() + "\"");
+      rolesFiler.add("role.roleName == \"" + trimAndLower(rName) + "\"");
     }
     StringBuilder filters = new StringBuilder("roles.contains(role) "
         + "&& (" + Joiner.on(" || ").join(rolesFiler) + ")");
@@ -762,8 +761,7 @@ public class SentryStore {
     filters.append("&& this.action == \"" + toNULLCol(safeTrimLower(tPriv.getAction())) + "\"");
 
     query.setFilter(filters.toString());
-    List<MSentryPrivilege> privileges = (List<MSentryPrivilege>) query.execute();
-    return privileges;
+    return (List<MSentryPrivilege>) query.execute();
   }
 
   private MSentryPrivilege getMSentryPrivilege(TSentryPrivilege tPriv, PersistenceManager pm) {
@@ -809,7 +807,7 @@ public class SentryStore {
 
   private void dropSentryRoleCore(PersistenceManager pm, String roleName)
       throws SentryNoSuchObjectException {
-    String lRoleName = roleName.trim().toLowerCase();
+    String lRoleName = trimAndLower(roleName);
     Query query = pm.newQuery(MSentryRole.class);
     query.setFilter("this.roleName == t");
     query.declareParameters("java.lang.String t");
@@ -848,7 +846,7 @@ public class SentryStore {
 
   private void alterSentryRoleAddGroupsCore(PersistenceManager pm, String roleName,
       Set<TSentryGroup> groupNames) throws SentryNoSuchObjectException {
-    String lRoleName = roleName.trim().toLowerCase();
+    String lRoleName = trimAndLower(roleName);
     Query query = pm.newQuery(MSentryRole.class);
     query.setFilter("this.roleName == t");
     query.declareParameters("java.lang.String t");
@@ -894,10 +892,10 @@ public class SentryStore {
 
   private void alterSentryRoleAddUsersCore(PersistenceManager pm, String roleName,
       Set<String> userNames) throws SentryNoSuchObjectException {
-    roleName = roleName.trim().toLowerCase();
-    MSentryRole role = getMSentryRole(pm, roleName);
+    String trimmedRoleName = trimAndLower(roleName);
+    MSentryRole role = getMSentryRole(pm, trimmedRoleName);
     if (role == null) {
-      throw new SentryNoSuchObjectException("Role: " + roleName);
+      throw new SentryNoSuchObjectException("Role: " + trimmedRoleName);
     } else {
       Query query = pm.newQuery(MSentryUser.class);
       query.setFilter("this.userName == t");
@@ -921,12 +919,12 @@ public class SentryStore {
       throws SentryNoSuchObjectException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
-    roleName = roleName.trim().toLowerCase();
+    String trimmedRoleName = trimAndLower(roleName);
     try {
       pm = openTransaction();
-      MSentryRole role = getMSentryRole(pm, roleName);
+      MSentryRole role = getMSentryRole(pm, trimmedRoleName);
       if (role == null) {
-        throw new SentryNoSuchObjectException("Role: " + roleName);
+        throw new SentryNoSuchObjectException("Role: " + trimmedRoleName);
       } else {
         Query query = pm.newQuery(MSentryUser.class);
         query.setFilter("this.userName == t");
@@ -958,16 +956,16 @@ public class SentryStore {
           throws SentryNoSuchObjectException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
-    roleName = roleName.trim().toLowerCase();
+    String trimmedRoleName = trimAndLower(roleName);
     try {
       pm = openTransaction();
       Query query = pm.newQuery(MSentryRole.class);
       query.setFilter("this.roleName == t");
       query.declareParameters("java.lang.String t");
       query.setUnique(true);
-      MSentryRole role = (MSentryRole) query.execute(roleName);
+      MSentryRole role = (MSentryRole) query.execute(trimmedRoleName);
       if (role == null) {
-        throw new SentryNoSuchObjectException("Role: " + roleName + " doesn't exist");
+        throw new SentryNoSuchObjectException("Role: " + trimmedRoleName + " doesn't exist");
       } else {
         query = pm.newQuery(MSentryGroup.class);
         query.setFilter("this.groupName == t");
@@ -999,16 +997,16 @@ public class SentryStore {
       throws SentryNoSuchObjectException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
-    roleName = roleName.trim().toLowerCase();
+    String trimmedRoleName = trimAndLower(roleName);
     try {
       pm = openTransaction();
       Query query = pm.newQuery(MSentryRole.class);
       query.setFilter("this.roleName == t");
       query.declareParameters("java.lang.String t");
       query.setUnique(true);
-      MSentryRole sentryRole = (MSentryRole) query.execute(roleName);
+      MSentryRole sentryRole = (MSentryRole) query.execute(trimmedRoleName);
       if (sentryRole == null) {
-        throw new SentryNoSuchObjectException("Role: " + roleName + " doesn't exist");
+        throw new SentryNoSuchObjectException("Role: " + trimmedRoleName + " doesn't exist");
       } else {
         pm.retrieve(sentryRole);
       }
@@ -1034,11 +1032,11 @@ public class SentryStore {
       query.declareVariables("org.apache.sentry.provider.db.service.model.MSentryRole role");
       List<String> rolesFiler = new LinkedList<String>();
       for (String rName : roleNames) {
-        rolesFiler.add("role.roleName == \"" + rName.trim().toLowerCase() + "\"");
+        rolesFiler.add("role.roleName == \"" + trimAndLower(rName) + "\"");
       }
       StringBuilder filters = new StringBuilder("roles.contains(role) "
           + "&& (" + Joiner.on(" || ").join(rolesFiler) + ") ");
-      filters.append("&& serverName == \"" + serverName.trim().toLowerCase() + "\"");
+      filters.append("&& serverName == \"" + trimAndLower(serverName) + "\"");
       query.setFilter(filters.toString());
       query.setResult("count(this)");
 
@@ -1065,7 +1063,7 @@ public class SentryStore {
       query.declareVariables("org.apache.sentry.provider.db.service.model.MSentryRole role");
       List<String> rolesFiler = new LinkedList<String>();
       for (String rName : roleNames) {
-        rolesFiler.add("role.roleName == \"" + rName.trim().toLowerCase() + "\"");
+        rolesFiler.add("role.roleName == \"" + trimAndLower(rName) + "\"");
       }
       StringBuilder filters = new StringBuilder("roles.contains(role) "
           + "&& (" + Joiner.on(" || ").join(rolesFiler) + ") ");
@@ -1114,7 +1112,7 @@ public class SentryStore {
         query.declareVariables("org.apache.sentry.provider.db.service.model.MSentryRole role");
         List<String> rolesFiler = new LinkedList<String>();
         for (String rName : roleNames) {
-          rolesFiler.add("role.roleName == \"" + rName.trim().toLowerCase() + "\"");
+          rolesFiler.add("role.roleName == \"" + trimAndLower(rName) + "\"");
         }
         filters.append("roles.contains(role) "
           + "&& (" + Joiner.on(" || ").join(rolesFiler) + ") ");
@@ -1250,13 +1248,13 @@ public class SentryStore {
       } else {
         Query query = pm.newQuery(MSentryGroup.class);
         MSentryGroup sentryGroup;
-        groupName = groupName.trim();
+        String trimmedGroupName = groupName.trim();
         query.setFilter("this.groupName == t");
         query.declareParameters("java.lang.String t");
         query.setUnique(true);
-        sentryGroup = (MSentryGroup) query.execute(groupName);
+        sentryGroup = (MSentryGroup) query.execute(trimmedGroupName);
         if (sentryGroup == null) {
-          throw new SentryNoSuchObjectException("Group: " + groupName + " doesn't exist");
+          throw new SentryNoSuchObjectException("Group: " + trimmedGroupName + " doesn't exist");
         } else {
           pm.retrieve(sentryGroup);
         }
@@ -1433,9 +1431,8 @@ public class SentryStore {
       roleNames.addAll(toTrimedLower(getRoleNamesForUsersCore(pm, users)));
       rollbackTransaction = false;
       commitTransaction(pm);
-      Set<String> rolesToQuery = roleSet.isAll() ? roleNames : Sets.intersection(activeRoleNames,
+      return roleSet.isAll() ? roleNames : Sets.intersection(activeRoleNames,
           roleNames);
-      return rolesToQuery;
     } finally {
       if (rollbackTransaction) {
         rollbackTransaction(pm);
@@ -2630,15 +2627,15 @@ public class SentryStore {
           new Function<String, String>() {
             @Override
             public String apply(String input) {
-              return input.toString().toLowerCase();
+              return input.toLowerCase();
             }
           });
       newSentryGroupRolesMap.put(entry.getKey(), Sets.newHashSet(lowcaseRoles));
     }
 
     // for mapping data [role,privilege]
-    for (String roleName : sentryRolePrivilegesMap.keySet()) {
-      newSentryRolePrivilegesMap.put(roleName.toLowerCase(), sentryRolePrivilegesMap.get(roleName));
+    for (Map.Entry<String,Set<TSentryPrivilege>> entry : sentryRolePrivilegesMap.entrySet()) {
+      newSentryRolePrivilegesMap.put(entry.getKey().toLowerCase(), entry.getValue());
     }
 
     tSentryMappingData.setGroupRolesMap(newSentryGroupRolesMap);

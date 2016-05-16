@@ -64,9 +64,9 @@ import java.util.Set;
 
 public class SecureRealTimeGetComponent extends SearchComponent
 {
-  private static Logger log =
+  private static final Logger LOG =
     LoggerFactory.getLogger(SecureRealTimeGetComponent.class);
-  public static String ID_FIELD_NAME = "_reserved_sentry_id";
+  public static final String ID_FIELD_NAME = "_reserved_sentry_id";
   public static final String COMPONENT_NAME = "secureGet";
 
   private SentryIndexAuthorizationSingleton sentryInstance;
@@ -96,7 +96,7 @@ public class SecureRealTimeGetComponent extends SearchComponent
           SolrReturnFields savedReturnFields = (SolrReturnFields)rb.rsp.getReturnFields();
           if (savedReturnFields == null) {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                "Not able to authorize request because ReturnFields is invalid: " + savedReturnFields);
+                "Not able to authorize request because ReturnFields is null");
           }
           DocTransformer savedTransformer = savedReturnFields.getTransformer();
           Query filterQuery = docComponent.getFilterQuery(roles);
@@ -124,7 +124,7 @@ public class SecureRealTimeGetComponent extends SearchComponent
   @Override
   public void process(ResponseBuilder rb) throws IOException {
     if (!(rb.rsp.getReturnFields() instanceof AddDocIdReturnFields)) {
-      log.info("Skipping application of SecureRealTimeGetComponent because "
+      LOG.info("Skipping application of SecureRealTimeGetComponent because "
           + " return field wasn't applied in prepare phase");
       return;
     }
@@ -334,7 +334,7 @@ public class SecureRealTimeGetComponent extends SearchComponent
   // we do here.
   private static class DocIdAugmenter extends DocTransformer
   {
-    final String name;
+    private final String name;
 
     public DocIdAugmenter( String display )
     {

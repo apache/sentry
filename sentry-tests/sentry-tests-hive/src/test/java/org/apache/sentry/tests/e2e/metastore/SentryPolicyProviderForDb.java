@@ -76,7 +76,7 @@ public class SentryPolicyProviderForDb extends PolicyFile {
     }
 
     // create roles and add privileges
-    for (Entry<String, Collection<String>> roleEntry : rolesToPermissions
+    for (Entry<String, Collection<String>> roleEntry : getRolesToPermissions()
         .asMap().entrySet()) {
       sentryClient.createRole(StaticUserGroup.ADMIN1, roleEntry.getKey());
       for (String privilege : roleEntry.getValue()) {
@@ -85,7 +85,7 @@ public class SentryPolicyProviderForDb extends PolicyFile {
     }
 
     // grant roles to groups
-    for (Entry<String, Collection<String>> groupEntry : groupsToRoles.asMap()
+    for (Entry<String, Collection<String>> groupEntry : getGroupsToRoles().asMap()
         .entrySet()) {
       for (String roleNames : groupEntry.getValue()) {
         for (String roleName : roleNames.split(",")) {

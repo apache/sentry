@@ -34,9 +34,13 @@ import com.google.common.base.Strings;
 
 public class PathUtils {
   private static final Logger LOGGER = LoggerFactory.getLogger(PathUtils.class);
-  private static String LOCAL_FILE_SCHEMA = "file";
-  private static String AUTHORITY_PREFIX = "://";
+  private static final String LOCAL_FILE_SCHEMA = "file";
+  private static final String AUTHORITY_PREFIX = "://";
   private static final Configuration CONF = new Configuration();
+
+  private PathUtils() {
+    // Make constructor private to avoid instantiation
+  }
 
   @VisibleForTesting
   public static Configuration getConfiguration() {

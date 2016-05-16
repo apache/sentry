@@ -106,4 +106,8 @@ public class SentryVersionInfo {
     System.out.println("Compiled by " + getUser() + " on " + getDate());
     System.out.println("From source with checksum " + getSrcChecksum());
   }
+
+  private SentryVersionInfo() {
+    // Make constructor private to avoid instantiation
+  }
 }

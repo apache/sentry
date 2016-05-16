@@ -300,16 +300,16 @@ public class MSentryGMPrivilege {
       }
 
       List<? extends Authorizable> authorizables = getAuthorizables();
-      List<? extends Authorizable> other_authorizables = other.getAuthorizables();
+      List<? extends Authorizable> otherAuthorizables = other.getAuthorizables();
 
-      if (authorizables.size() != other_authorizables.size()) {
+      if (authorizables.size() != otherAuthorizables.size()) {
         return false;
       }
       for (int i = 0; i < authorizables.size(); i++) {
         String o1 = KV_JOINER.join(authorizables.get(i).getTypeName(),
                                          authorizables.get(i).getName());
-        String o2 = KV_JOINER.join(other_authorizables.get(i).getTypeName(),
-            other_authorizables.get(i).getName());
+        String o2 = KV_JOINER.join(otherAuthorizables.get(i).getTypeName(),
+                                   otherAuthorizables.get(i).getName());
         if (!o1.equals(o2)) {
           return false;
         }

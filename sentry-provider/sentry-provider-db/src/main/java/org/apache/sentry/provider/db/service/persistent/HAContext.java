@@ -200,16 +200,16 @@ public class HAContext {
       // and set the ACLs for them. This is done just once at the startup
       // We can't get the namespace znode through curator; have to go through zk client
       startCuratorFramework();
-      String namespace = "/" + curatorFramework.getNamespace();
-      if (curatorFramework.getZookeeperClient().getZooKeeper().exists(namespace, null) != null) {
-        List<ACL> acls = curatorFramework.getZookeeperClient().getZooKeeper().getACL(namespace, new Stat());
+      String newNamespace = "/" + curatorFramework.getNamespace();
+      if (curatorFramework.getZookeeperClient().getZooKeeper().exists(newNamespace, null) != null) {
+        List<ACL> acls = curatorFramework.getZookeeperClient().getZooKeeper().getACL(newNamespace, new Stat());
         if (acls.isEmpty() || !acls.get(0).getId().getScheme().equals("sasl")) {
           LOGGER.info("'sasl' ACLs not set; setting...");
-          List<String> children = curatorFramework.getZookeeperClient().getZooKeeper().getChildren(namespace, null);
+          List<String> children = curatorFramework.getZookeeperClient().getZooKeeper().getChildren(newNamespace, null);
           for (String child : children) {
             checkAndSetACLs("/" + child);
           }
-          curatorFramework.getZookeeperClient().getZooKeeper().setACL(namespace, saslACL, -1);
+          curatorFramework.getZookeeperClient().getZooKeeper().setACL(newNamespace, saslACL, -1);
         }
       }
       aclChecked = true;

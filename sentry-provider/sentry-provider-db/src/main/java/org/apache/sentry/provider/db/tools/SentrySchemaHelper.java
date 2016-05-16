@@ -19,7 +19,7 @@ package org.apache.sentry.provider.db.tools;
 
 import java.util.IllegalFormatException;
 
-public class SentrySchemaHelper {
+public final class SentrySchemaHelper {
   public static final String DB_DERBY = "derby";
   public static final String DB_MYSQL = "mysql";
   public static final String DB_POSTGRACE = "postgres";
@@ -102,12 +102,8 @@ public class SentrySchemaHelper {
       if (dbCommand == null || dbCommand.isEmpty()) {
         throw new IllegalArgumentException("invalid command line " + dbCommand);
       }
-      dbCommand = dbCommand.trim();
-      if (dbCommand.endsWith(getDelimiter()) || isNonExecCommand(dbCommand)) {
-        return false;
-      } else {
-        return true;
-      }
+      String trimmedDbCommand = dbCommand.trim();
+      return !(trimmedDbCommand.endsWith(getDelimiter()) || isNonExecCommand(trimmedDbCommand));
     }
 
     @Override
@@ -148,7 +144,7 @@ public class SentrySchemaHelper {
 
   // Derby commandline parser
   public static class DerbyCommandParser extends AbstractCommandParser {
-    private static String DERBY_NESTING_TOKEN = "RUN";
+    private static final String DERBY_NESTING_TOKEN = "RUN";
 
     @Override
     public String getScriptName(String dbCommand) throws IllegalArgumentException {
@@ -227,10 +223,10 @@ public class SentrySchemaHelper {
 
   // Postgres specific parser
   public static class PostgresCommandParser extends AbstractCommandParser {
-    public static String POSTGRES_STRING_COMMAND_FILTER = "SET standard_conforming_strings";
-    public static String POSTGRES_STRING_CLIENT_ENCODING = "SET client_encoding";
-    public static String POSTGRES_SKIP_STANDARD_STRING = "postgres.filter.81";
-    private static String POSTGRES_NESTING_TOKEN = "\\i";
+    public static final String POSTGRES_STRING_COMMAND_FILTER = "SET standard_conforming_strings";
+    public static final String POSTGRES_STRING_CLIENT_ENCODING = "SET client_encoding";
+    public static final String POSTGRES_SKIP_STANDARD_STRING = "postgres.filter.81";
+    private static final String POSTGRES_NESTING_TOKEN = "\\i";
 
     @Override
     public String getScriptName(String dbCommand) throws IllegalArgumentException {
@@ -265,7 +261,7 @@ public class SentrySchemaHelper {
 
   //Oracle specific parser
   public static class OracleCommandParser extends AbstractCommandParser {
-    private static String ORACLE_NESTING_TOKEN = "@";
+    private static final String ORACLE_NESTING_TOKEN = "@";
     @Override
     public String getScriptName(String dbCommand) throws IllegalArgumentException {
       if (!isNestedScript(dbCommand)) {
@@ -311,5 +307,9 @@ public class SentrySchemaHelper {
     } else {
       throw new IllegalArgumentException("Unknown dbType " + dbName);
     }
+  }
+  
+  private SentrySchemaHelper() {
+    // Make constructor private to avoid instantiation
   }
 }

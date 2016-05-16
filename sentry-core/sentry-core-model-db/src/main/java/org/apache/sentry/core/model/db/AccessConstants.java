@@ -18,7 +18,7 @@ package org.apache.sentry.core.model.db;
 
 import com.google.common.collect.ImmutableSet;
 
-public class AccessConstants {
+public final class AccessConstants {
 
   /**
    * Used as the &quot;name&quot; for a Server, Database, Table object which
@@ -41,4 +41,8 @@ public class AccessConstants {
       SUPERUSER_ROLE = "SUPERUSER", PUBLIC_ROLE = "PUBLIC";
   public static final ImmutableSet<String> RESERVED_ROLE_NAMES = ImmutableSet.of(ALL_ROLE,
       DEFAULT_ROLE, NONE_ROLE, SUPERUSER_ROLE, PUBLIC_ROLE);
+
+  private AccessConstants() {
+    // Make constructor private to avoid instantiation
+  }
 }

@@ -27,7 +27,7 @@ public class SentryUpdater {
   private final Configuration conf;
   private final SentryAuthorizationInfo authzInfo;
 
-  private static Logger LOG = LoggerFactory.getLogger(SentryUpdater.class);
+  private static final Logger LOG = LoggerFactory.getLogger(SentryUpdater.class);
 
   public SentryUpdater(Configuration conf, SentryAuthorizationInfo authzInfo) throws Exception {
     this.conf = conf;

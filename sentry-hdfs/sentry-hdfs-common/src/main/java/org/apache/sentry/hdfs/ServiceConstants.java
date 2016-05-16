@@ -62,10 +62,10 @@ public class ServiceConstants {
     public static final String SENTRY_HDFS_SYNC_METASTORE_CACHE_ASYNC_INIT_ENABLE = "sentry.hdfs.sync.metastore.cache.async-init.enable";
     public static final boolean SENTRY_HDFS_SYNC_METASTORE_CACHE_ASYNC_INIT_ENABLE_DEFAULT = false;
 
-    public static String SENTRY_HDFS_SYNC_METASTORE_CACHE_MAX_PART_PER_RPC = "sentry.hdfs.sync.metastore.cache.max-partitions-per-rpc";
-    public static int SENTRY_HDFS_SYNC_METASTORE_CACHE_MAX_PART_PER_RPC_DEFAULT = 100;
-    public static String SENTRY_HDFS_SYNC_METASTORE_CACHE_MAX_TABLES_PER_RPC = "sentry.hdfs.sync.metastore.cache.max-tables-per-rpc";
-    public static int SENTRY_HDFS_SYNC_METASTORE_CACHE_MAX_TABLES_PER_RPC_DEFAULT = 100;
+    public static final String SENTRY_HDFS_SYNC_METASTORE_CACHE_MAX_PART_PER_RPC = "sentry.hdfs.sync.metastore.cache.max-partitions-per-rpc";
+    public static final int SENTRY_HDFS_SYNC_METASTORE_CACHE_MAX_PART_PER_RPC_DEFAULT = 100;
+    public static final String SENTRY_HDFS_SYNC_METASTORE_CACHE_MAX_TABLES_PER_RPC = "sentry.hdfs.sync.metastore.cache.max-tables-per-rpc";
+    public static final int SENTRY_HDFS_SYNC_METASTORE_CACHE_MAX_TABLES_PER_RPC_DEFAULT = 100;
   }
 
   public static class ClientConfig {
@@ -88,8 +88,8 @@ public class ServiceConstants {
     public static final boolean USE_COMPACT_TRANSPORT_DEFAULT = false;
 
     // max message size for thrift messages
-    public static String SENTRY_HDFS_THRIFT_MAX_MESSAGE_SIZE = "sentry.hdfs.thrift.max.message.size";
-    public static long SENTRY_HDFS_THRIFT_MAX_MESSAGE_SIZE_DEFAULT = 100 * 1024 * 1024;
+    public static final String SENTRY_HDFS_THRIFT_MAX_MESSAGE_SIZE = "sentry.hdfs.thrift.max.message.size";
+    public static final long SENTRY_HDFS_THRIFT_MAX_MESSAGE_SIZE_DEFAULT = 100 * 1024 * 1024;
   }
 
 }

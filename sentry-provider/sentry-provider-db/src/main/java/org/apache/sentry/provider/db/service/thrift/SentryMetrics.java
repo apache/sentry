@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * A singleton class which holds metrics related utility functions as well as the list of metrics
  */
-public class SentryMetrics {
+public final class SentryMetrics {
   private static SentryMetrics sentryMetrics = null;
   private boolean reportingInitialized = false;
   private boolean gaugesAdded = false;
@@ -74,21 +74,21 @@ public class SentryMetrics {
   /**
    * Return a Timer with name.
    */
-  public final Timer getTimer(String name) {
+  public Timer getTimer(String name) {
     return SentryMetricsServletContextListener.METRIC_REGISTRY.timer(name);
   }
 
   /**
    * Return a Histogram with name.
    */
-  public final Histogram getHistogram(String name) {
+  public Histogram getHistogram(String name) {
     return SentryMetricsServletContextListener.METRIC_REGISTRY.histogram(name);
   }
 
   /**
    * Return a Counter with name.
    */
-  public final Counter getCounter(String name) {
+  public Counter getCounter(String name) {
     return SentryMetricsServletContextListener.METRIC_REGISTRY.counter(name);
   }
 

@@ -52,19 +52,19 @@ public class GMAuditMetadataLogEntity extends AuditMetadataLogEntity {
     try {
       json = factory.createJsonGenerator(stringWriter);
       json.writeStartObject();
-      json.writeStringField(Constants.LOG_FIELD_SERVICE_NAME, serviceName);
-      json.writeStringField(Constants.LOG_FIELD_USER_NAME, userName);
-      json.writeStringField(Constants.LOG_FIELD_IMPERSONATOR, impersonator);
-      json.writeStringField(Constants.LOG_FIELD_IP_ADDRESS, ipAddress);
-      json.writeStringField(Constants.LOG_FIELD_OPERATION, operation);
-      json.writeStringField(Constants.LOG_FIELD_EVENT_TIME, eventTime);
-      json.writeStringField(Constants.LOG_FIELD_OPERATION_TEXT, operationText);
-      json.writeStringField(Constants.LOG_FIELD_ALLOWED, allowed);
+      json.writeStringField(Constants.LOG_FIELD_SERVICE_NAME, getServiceName());
+      json.writeStringField(Constants.LOG_FIELD_USER_NAME, getUserName());
+      json.writeStringField(Constants.LOG_FIELD_IMPERSONATOR, getImpersonator());
+      json.writeStringField(Constants.LOG_FIELD_IP_ADDRESS, getIpAddress());
+      json.writeStringField(Constants.LOG_FIELD_OPERATION, getOperation());
+      json.writeStringField(Constants.LOG_FIELD_EVENT_TIME, getEventTime());
+      json.writeStringField(Constants.LOG_FIELD_OPERATION_TEXT, getOperationText());
+      json.writeStringField(Constants.LOG_FIELD_ALLOWED, getAllowed());
       for (Map.Entry<String, String> entry : privilegesMap.entrySet()) {
         json.writeStringField(entry.getKey(), entry.getValue());
       }
-      json.writeStringField(Constants.LOG_FIELD_OBJECT_TYPE, objectType);
-      json.writeStringField(Constants.LOG_FIELD_COMPONENT, component);
+      json.writeStringField(Constants.LOG_FIELD_OBJECT_TYPE, getObjectType());
+      json.writeStringField(Constants.LOG_FIELD_COMPONENT, getComponent());
       json.writeEndObject();
       json.flush();
     } catch (IOException e) {

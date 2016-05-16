@@ -28,7 +28,7 @@ import com.google.common.annotations.VisibleForTesting;
 
 @VisibleForTesting
 public class AuditLoggerTestAppender extends AppenderSkeleton {
-  public static List<LoggingEvent> events = new ArrayList<LoggingEvent>();
+  public static final List<LoggingEvent> events = new ArrayList<LoggingEvent>();
 
   public void close() {
   }

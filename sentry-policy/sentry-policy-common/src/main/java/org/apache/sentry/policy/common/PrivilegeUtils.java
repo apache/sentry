@@ -24,4 +24,8 @@ public class PrivilegeUtils {
   public static Set<String> toPrivilegeStrings(String s) {
     return PermissionUtils.toPermissionStrings(s);
   }
+  
+  private PrivilegeUtils() {
+    // Make constructor private to avoid instantiation
+  }
 }

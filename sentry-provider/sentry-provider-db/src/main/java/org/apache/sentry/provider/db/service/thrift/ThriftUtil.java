@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 
-public class ThriftUtil {
+public final class ThriftUtil {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ThriftUtil.class);
 
@@ -104,5 +104,9 @@ public class ThriftUtil {
 
   public static String getImpersonator() {
     return threadLocalImpersonator.get();
+  }
+  
+  private ThriftUtil() {
+    // Make constructor private to avoid instantiation
   }
 }

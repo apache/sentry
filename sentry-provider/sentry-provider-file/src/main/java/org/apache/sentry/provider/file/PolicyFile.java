@@ -57,9 +57,9 @@ public class PolicyFile {
 
   private final Map<String, String> databasesToPolicyFiles = Maps.newHashMap();
   private final Multimap<String, String> usersToGroups = ArrayListMultimap.create();
-  protected final Multimap<String, String> groupsToRoles = ArrayListMultimap
+  private final Multimap<String, String> groupsToRoles = ArrayListMultimap
       .create();
-  protected final Multimap<String, String> rolesToPermissions = ArrayListMultimap
+  private final Multimap<String, String> rolesToPermissions = ArrayListMultimap
       .create();
 
   public Multimap<String, String> getGroupsToRoles() {
@@ -96,8 +96,8 @@ public class PolicyFile {
     return this;
   }
   public PolicyFile addDatabase(String databaseName, String path) {
-    String oldPath;
-    if((oldPath = databasesToPolicyFiles.put(databaseName, path)) != null) {
+    String oldPath = databasesToPolicyFiles.put(databaseName, path);
+    if (oldPath != null) {
       throw new IllegalStateException("Database " + databaseName + " already existed in " +
           databasesToPolicyFiles + " with value of " + oldPath);
     }

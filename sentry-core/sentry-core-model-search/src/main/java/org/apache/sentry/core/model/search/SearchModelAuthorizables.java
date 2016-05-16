@@ -21,6 +21,10 @@ import org.apache.sentry.core.common.utils.KeyValue;
 
 public class SearchModelAuthorizables {
 
+  private SearchModelAuthorizables() {
+    // Make constructor private to avoid instantiation
+  }
+
   public static SearchModelAuthorizable from(KeyValue keyValue) {
     String prefix = keyValue.getKey().toLowerCase();
     String name = keyValue.getValue().toLowerCase();

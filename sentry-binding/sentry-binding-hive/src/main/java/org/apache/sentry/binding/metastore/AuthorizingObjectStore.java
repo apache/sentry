@@ -65,8 +65,8 @@ public class AuthorizingObjectStore extends ObjectStore {
   private static HiveConf hiveConf;
   private static HiveAuthzConf authzConf;
   private static HiveAuthzBinding hiveAuthzBinding;
-  private static String NO_ACCESS_MESSAGE_TABLE = "Table does not exist or insufficient privileges to access: ";
-  private static String NO_ACCESS_MESSAGE_DATABASE = "Database does not exist or insufficient privileges to access: ";
+  private static final String NO_ACCESS_MESSAGE_TABLE = "Table does not exist or insufficient privileges to access: ";
+  private static final String NO_ACCESS_MESSAGE_DATABASE = "Database does not exist or insufficient privileges to access: ";
 
   @Override
   public List<String> getDatabases(String pattern) throws MetaException {

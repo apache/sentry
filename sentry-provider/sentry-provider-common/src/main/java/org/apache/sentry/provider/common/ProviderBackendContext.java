@@ -44,9 +44,10 @@ public class ProviderBackendContext {
 
   public void setValidators(ImmutableList<PrivilegeValidator> validators) {
     if (validators == null) {
-      validators = ImmutableList.of();
+      this.validators = ImmutableList.of();
+    } else {
+      this.validators = validators;
     }
-    this.validators = validators;
   }
 
   public Object getBindingHandle() {

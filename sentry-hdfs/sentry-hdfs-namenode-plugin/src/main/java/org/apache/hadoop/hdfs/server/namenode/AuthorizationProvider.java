@@ -186,7 +186,7 @@ public abstract class AuthorizationProvider {
    * done as part of a client operation, <code>FALSE</code> otherwise.
    */
   protected final boolean isClientOp() {
-    return CLIENT_OP_TL.get() == Boolean.TRUE;
+    return Boolean.TRUE.equals(CLIENT_OP_TL.get());
   }
 
   /**

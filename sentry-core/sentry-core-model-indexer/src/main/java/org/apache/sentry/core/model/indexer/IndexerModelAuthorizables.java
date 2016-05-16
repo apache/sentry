@@ -21,6 +21,10 @@ import org.apache.sentry.core.common.utils.KeyValue;
 
 public class IndexerModelAuthorizables {
 
+  private IndexerModelAuthorizables() {
+    // Make constructor private to avoid instantiation
+  }
+
   public static IndexerModelAuthorizable from(KeyValue keyValue) {
     String prefix = keyValue.getKey().toLowerCase();
     String name = keyValue.getValue().toLowerCase();

@@ -197,11 +197,11 @@ public class SentryService implements Callable {
         LOGGER.info("ProcessorFactory being used: " + clazz.getCanonicalName());
         ProcessorFactory factory = (ProcessorFactory) constructor
             .newInstance(conf);
-        boolean status = factory.register(processor);
-        if(!status) {
+        boolean registerStatus = factory.register(processor);
+        if (!registerStatus) {
           LOGGER.error("Failed to register " + clazz.getCanonicalName());
         }
-        registeredProcessor = status || registeredProcessor;
+        registeredProcessor = registerStatus || registeredProcessor;
       } catch (Exception e) {
         throw new IllegalStateException("Could not create "
             + processorFactory, e);
@@ -312,11 +312,12 @@ public class SentryService implements Callable {
   }
 
   private MultiException addMultiException(MultiException exception, Exception e) {
-    if(exception == null){
-      exception = new MultiException();
+    MultiException newException = exception;
+    if (newException == null) {
+      newException = new MultiException();
     }
-    exception.add(e);
-    return exception;
+    newException.add(e);
+    return newException;
   }
 
   private boolean isWebServerRunning() {
@@ -339,7 +340,6 @@ public class SentryService implements Callable {
     throw new IllegalStateException("Unable to find a port after 1000 attempts");
   }
 
-  @SuppressWarnings("deprecation")
   public static Configuration loadConfig(String configFileName)
       throws MalformedURLException {
     File configFile = null;
@@ -353,7 +353,7 @@ public class SentryService implements Callable {
           + configFile);
     }
     Configuration conf = new Configuration(false);
-    conf.addResource(configFile.toURL());
+    conf.addResource(configFile.toURI().toURL());
     return conf;
   }
 
