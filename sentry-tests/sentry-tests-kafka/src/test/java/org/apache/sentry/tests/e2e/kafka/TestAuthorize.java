@@ -173,6 +173,7 @@ public class TestAuthorize extends AbstractKafkaSentryTestBase {
         sentryClient = null;
       }
     }
+    sleepIfCachingEnabled();
   }
 
   private void testProduce(String producerUser) throws Exception {

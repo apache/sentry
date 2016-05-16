@@ -37,8 +37,10 @@ import org.apache.sentry.policy.common.PrivilegeUtils;
 import org.apache.sentry.core.common.validator.PrivilegeValidator;
 import org.apache.sentry.core.common.validator.PrivilegeValidatorContext;
 import org.apache.sentry.core.common.utils.PolicyFileConstants;
+import org.apache.sentry.provider.common.CacheProvider;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;
+import org.apache.sentry.provider.common.TableCache;
 import org.apache.shiro.config.Ini;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +59,7 @@ import com.google.common.collect.Sets;
 import com.google.common.collect.Table;
 import com.google.common.collect.Table.Cell;
 
-public class SimpleFileProviderBackend implements ProviderBackend {
+public class SimpleFileProviderBackend extends CacheProvider implements ProviderBackend {
 
   private static final Logger LOGGER = LoggerFactory
       .getLogger(SimpleFileProviderBackend.class);
@@ -67,33 +69,7 @@ public class SimpleFileProviderBackend implements ProviderBackend {
   private final Configuration conf;
   private final List<String> configErrors;
   private final List<String> configWarnings;
-
-  /**
-   * Sparse table where group is the row key and role is the cell.
-   * The value is the set of privileges located in the cell. For example,
-   * the following table would be generated for a policy where Group 1
-   * has Role 1 and Role 2 while Group 2 has only Role 2.
-   * <table border="1">
-   *  <tbody>
-   *    <tr>
-   *      <td><!-- empty --></td>
-   *      <td>Role 1</td>
-   *      <td>Role 2</td>
-   *    </tr>
-   *    <tr>
-   *      <td>Group 1</td>
-   *      <td>Priv 1</td>
-   *      <td>Priv 2, Priv 3</td>
-   *    </tr>
-   *    <tr>
-   *      <td>Group 2</td>
-   *      <td><!-- empty --></td>
-   *      <td>Priv 2, Priv 3</td>
-   *    </tr>
-   *  </tbody>
-   * </table>
-   */
-  private final Table<String, String, Set<String>> groupRolePrivilegeTable;
+  private TableCache cache;
   /**
    * Each group, role, and privilege in groupRolePrivilegeTable is
    * interned using a weak interner so that we only store each string
@@ -112,7 +88,6 @@ public class SimpleFileProviderBackend implements ProviderBackend {
   public SimpleFileProviderBackend(Configuration conf, Path resourcePath) throws IOException {
     this.resourcePath = resourcePath;
     this.fileSystem = resourcePath.getFileSystem(conf);
-    this.groupRolePrivilegeTable = HashBasedTable.create();
     this.conf = conf;
     this.configErrors = Lists.newArrayList();
     this.configWarnings = Lists.newArrayList();
@@ -132,28 +107,15 @@ public class SimpleFileProviderBackend implements ProviderBackend {
     }
     this.validators = context.getValidators();
     this.allowPerDatabaseSection = context.isAllowPerDatabase();
-    parse();
-    this.initialized = true;
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public ImmutableSet<String> getPrivileges(Set<String> groups, ActiveRoleSet roleSet, Authorizable... authorizableHierarchy) {
-    if (!initialized) {
-      throw new IllegalStateException("Backend has not been properly initialized");
-    }
-    ImmutableSet.Builder<String> resultBuilder = ImmutableSet.builder();
-    for (String groupName : groups) {
-      for (Map.Entry<String, Set<String>> row : groupRolePrivilegeTable.row(groupName)
-          .entrySet()) {
-        if (roleSet.containsRole(row.getKey())) {
-          resultBuilder.addAll(row.getValue());
-        }
+    final Table<String, String, Set<String>> table = parse();
+    this.cache = new TableCache() {
+      @Override
+      public Table<String, String, Set<String>> getCache() {
+        return table;
       }
-    }
-    return resultBuilder.build();
+    };
+    super.initialize(cache);
+    this.initialized = true;
   }
 
   @Override
@@ -161,28 +123,6 @@ public class SimpleFileProviderBackend implements ProviderBackend {
       ActiveRoleSet roleSet, Authorizable... authorizableHierarchy) {
     // SimpleFileProviderBackend doesn't support getPrivileges for user now.
     return getPrivileges(groups, roleSet, authorizableHierarchy);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public ImmutableSet<String> getRoles(Set<String> groups, ActiveRoleSet roleSet) {
-    if (!initialized) {
-      throw new IllegalStateException("Backend has not been properly initialized");
-    }
-    ImmutableSet.Builder<String> resultBuilder = ImmutableSet.builder();
-    if (groups != null) {
-      for (String groupName : groups) {
-        for (Map.Entry<String, Set<String>> row : groupRolePrivilegeTable.row(groupName)
-            .entrySet()) {
-          if (roleSet.containsRole(row.getKey())) {
-            resultBuilder.add(row.getKey());
-          }
-        }
-      }
-    }
-    return resultBuilder.build();
   }
 
   @Override
@@ -206,9 +146,10 @@ public class SimpleFileProviderBackend implements ProviderBackend {
     }
   }
 
-  private void parse() {
+  private Table<String, String, Set<String>> parse() {
     configErrors.clear();
     configWarnings.clear();
+    Table<String, String, Set<String>> groupRolePrivilegeTable = HashBasedTable.create();
     Table<String, String, Set<String>> groupRolePrivilegeTableTemp = HashBasedTable.create();
     Ini ini;
     LOGGER.info("Parsing " + resourcePath);
@@ -237,7 +178,7 @@ public class SimpleFileProviderBackend implements ProviderBackend {
         }
       }
       parseIni(null, ini, validators, resourcePath, groupRolePrivilegeTableTemp);
-      mergeResult(groupRolePrivilegeTableTemp);
+      mergeResult(groupRolePrivilegeTable, groupRolePrivilegeTableTemp);
       groupRolePrivilegeTableTemp.clear();
       Ini.Section filesSection = ini.getSection(PolicyFileConstants.DATABASES);
       if(filesSection == null) {
@@ -265,6 +206,8 @@ public class SimpleFileProviderBackend implements ProviderBackend {
               throw new SentryConfigurationException("Per-db policy files cannot contain " + PolicyFileConstants.DATABASES + " section");
             }
             parseIni(database, perDbIni, validators, perDbPolicy, groupRolePrivilegeTableTemp);
+            mergeResult(groupRolePrivilegeTable, groupRolePrivilegeTableTemp);
+            groupRolePrivilegeTableTemp.clear();
           } catch (Exception e) {
             configErrors.add("Failed to read per-DB policy file " + perDbPolicy +
                " Error: " + e.getMessage());
@@ -272,12 +215,12 @@ public class SimpleFileProviderBackend implements ProviderBackend {
           }
         }
       }
-      mergeResult(groupRolePrivilegeTableTemp);
-      groupRolePrivilegeTableTemp.clear();
     } catch (Exception e) {
       configErrors.add("Error processing file " + resourcePath + ".  Message: " + e.getMessage());
       LOGGER.error("Error processing file, ignoring " + resourcePath, e);
     }
+
+    return groupRolePrivilegeTable;
   }
 
   /**
@@ -289,7 +232,8 @@ public class SimpleFileProviderBackend implements ProviderBackend {
     return uri.getAuthority() == null && uri.getScheme() == null && !path.isUriPathAbsolute();
   }
 
-  private void mergeResult(Table<String, String, Set<String>> groupRolePrivilegeTableTemp) {
+  private void mergeResult(Table<String, String, Set<String>> groupRolePrivilegeTable,
+                           Table<String, String, Set<String>> groupRolePrivilegeTableTemp) {
     for (Cell<String, String, Set<String>> cell : groupRolePrivilegeTableTemp.cellSet()) {
       String groupName = cell.getRowKey();
       String roleName = cell.getColumnKey();
@@ -387,7 +331,12 @@ public class SimpleFileProviderBackend implements ProviderBackend {
     }
   }
 
+  /**
+   * Returns backing table of group-role-privileges cache.
+   * Caller must not modify the returned table.
+   * @return backing table of cache.
+   */
   public Table<String, String, Set<String>> getGroupRolePrivilegeTable() {
-    return groupRolePrivilegeTable;
+    return this.cache.getCache();
   }
 }
