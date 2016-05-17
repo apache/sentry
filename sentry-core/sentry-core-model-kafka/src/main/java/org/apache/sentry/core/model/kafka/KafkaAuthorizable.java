@@ -55,5 +55,5 @@ public interface KafkaAuthorizable extends Authorizable {
    * Get type of this Kafka authorizable.
    * @return Type of this Kafka authorizable.
    */
-  public AuthorizableType getAuthzType(); // NOPMD - TODO(sdp) Remove before merge
+  AuthorizableType getAuthzType();
 }
