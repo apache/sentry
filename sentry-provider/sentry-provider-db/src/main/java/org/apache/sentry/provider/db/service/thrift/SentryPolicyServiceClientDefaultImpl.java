@@ -304,6 +304,13 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
   public synchronized void grantServerPrivilege(String requestorUserName,
       String roleName, String server, String action)
   throws SentryUserException {
+
+    // "ALL" and "*" should be synonyms for action and need to be unified with grantServerPrivilege without
+    // action explicitly specified.
+    if (AccessConstants.ACTION_ALL.equalsIgnoreCase(action) || AccessConstants.ALL.equals(action)) {
+      action = AccessConstants.ALL;
+    }
+
     grantPrivilege(requestorUserName, roleName,
         PrivilegeScope.SERVER, server, null, null, null, null, action);
   }
@@ -322,6 +329,13 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
   public synchronized TSentryPrivilege grantServerPrivilege(String requestorUserName,
       String roleName, String server, String action, Boolean grantOption)
   throws SentryUserException {
+
+    // "ALL" and "*" should be synonyms for action and need to be unified with grantServerPrivilege without
+    // action explicitly specified.
+    if (AccessConstants.ACTION_ALL.equalsIgnoreCase(action) || AccessConstants.ALL.equals(action)) {
+      action = AccessConstants.ALL;
+    }
+
     return grantPrivilege(requestorUserName, roleName,
         PrivilegeScope.SERVER, server, null, null, null, null, action, grantOption);
   }
@@ -490,6 +504,13 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
   public synchronized void revokeServerPrivilege(String requestorUserName,
       String roleName, String server, String action)
   throws SentryUserException {
+
+    // "ALL" and "*" should be synonyms for action and need to be unified with revokeServerPrivilege without
+    // action explicitly specified.
+    if (AccessConstants.ACTION_ALL.equalsIgnoreCase(action) || AccessConstants.ALL.equals(action)) {
+      action = AccessConstants.ALL;
+    }
+
     revokePrivilege(requestorUserName, roleName,
         PrivilegeScope.SERVER, server, null, null, null, null, action);
   }
@@ -497,10 +518,22 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
   public synchronized void revokeServerPrivilege(String requestorUserName,
       String roleName, String server, String action, Boolean grantOption)
   throws SentryUserException {
+
+    // "ALL" and "*" should be synonyms for action and need to be unified with revokeServerPrivilege without
+    // action explicitly specified.
+    if (AccessConstants.ACTION_ALL.equalsIgnoreCase(action) || AccessConstants.ALL.equals(action)) {
+      action = AccessConstants.ALL;
+    }
+
     revokePrivilege(requestorUserName, roleName,
         PrivilegeScope.SERVER, server, null, null, null, null, action, grantOption);
   }
 
+  @Deprecated
+  /***
+   * Should use revokeServerPrivilege(String requestorUserName,
+   *  String roleName, String server, String action, Boolean grantOption)
+   */
   public synchronized void revokeServerPrivilege(String requestorUserName,
       String roleName, String server, boolean grantOption)
   throws SentryUserException {

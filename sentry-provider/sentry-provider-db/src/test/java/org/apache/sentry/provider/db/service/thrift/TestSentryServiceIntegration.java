@@ -848,4 +848,29 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
 
       }});
   }
+
+  @Test
+  public void testGranRevokePrivilegeWithoutAction() throws Exception {
+    runTestAsSubject(new TestOperation(){
+      @Override
+      public void runTestAsSubject() throws Exception {
+        String requestorUserName = ADMIN_USER;
+        String roleName1 = "admin_r1";
+        Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
+        setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+        writePolicyFile();
+
+        client.dropRoleIfExists(requestorUserName, roleName1);
+        client.createRole(requestorUserName, roleName1);
+        client.grantServerPrivilege(requestorUserName, roleName1, "server1", false);
+
+        Set<TSentryPrivilege> listPrivs = client.listAllPrivilegesByRoleName(requestorUserName, roleName1);
+        assertTrue("Privilege should be all:", listPrivs.iterator().next().getAction().equals("*"));
+
+        client.revokeServerPrivilege(requestorUserName, roleName1, "server1", "ALL", false);
+        listPrivs = client.listAllPrivilegesByRoleName(requestorUserName, roleName1);
+        assertTrue("Privilege not correctly revoked !!", listPrivs.size() == 0);
+
+      }});
+  }
 }
