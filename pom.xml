@@ -911,7 +911,7 @@ limitations under the License.
                 <exclude>%regex[org.apache.sentry.provider.db.service.thrift.*.class]</exclude>
                 <exclude>%regex[org.apache.solr.handler.admin.*.class]</exclude>
                 <exclude>%regex[org.apache.sentry.provider.db.generic.service.thrift.*.class]</exclude>
-                <exclude>%regex[org.apache.sentry.provider.db.generic.tools.TestSentryShellSolr.*.class]</exclude>
+                <exclude>%regex[org.apache.sentry.provider.db.generic.tools.*.class]</exclude>
               </excludes>
             </configuration>
           </plugin>
