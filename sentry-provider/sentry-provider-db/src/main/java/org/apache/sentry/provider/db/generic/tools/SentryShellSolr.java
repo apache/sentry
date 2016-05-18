@@ -61,15 +61,15 @@ public class SentryShellSolr extends SentryShellCommon {
       command = new DeleteRoleFromGroupCmd(roleName, groupName, component);
     } else if (isGrantPrivilegeRole) {
       command = new GrantPrivilegeToRoleCmd(roleName, component,
-          privilegeStr, new SolrTSentryPrivilegeConvertor(component, service));
+          privilegeStr, new SolrTSentryPrivilegeConverter(component, service));
     } else if (isRevokePrivilegeRole) {
       command = new RevokePrivilegeFromRoleCmd(roleName, component,
-          privilegeStr, new SolrTSentryPrivilegeConvertor(component, service));
+          privilegeStr, new SolrTSentryPrivilegeConverter(component, service));
     } else if (isListRole) {
       command = new ListRolesCmd(groupName, component);
     } else if (isListPrivilege) {
       command = new ListPrivilegesByRoleCmd(roleName, component,
-          service, new SolrTSentryPrivilegeConvertor(component, service));
+          service, new SolrTSentryPrivilegeConverter(component, service));
     }
 
     // check the requestor name

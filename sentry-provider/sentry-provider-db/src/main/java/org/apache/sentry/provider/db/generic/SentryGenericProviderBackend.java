@@ -34,7 +34,7 @@ import org.apache.sentry.provider.common.ProviderBackendContext;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClientFactory;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryRole;
-import org.apache.sentry.provider.db.generic.tools.command.TSentryPrivilegeConvertor;
+import org.apache.sentry.provider.db.generic.tools.command.TSentryPrivilegeConverter;
 import org.apache.sentry.service.thrift.ServiceConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,15 +74,15 @@ public class SentryGenericProviderBackend extends CacheProvider implements Provi
       }
 
       Constructor<?> privilegeConverterConstructor;
-      TSentryPrivilegeConvertor sentryPrivilegeConvertor;
+      TSentryPrivilegeConverter sentryPrivilegeConverter;
       try {
         privilegeConverterConstructor = Class.forName(privilegeConverter).getDeclaredConstructor(String.class, String.class);
         privilegeConverterConstructor.setAccessible(true);
-        sentryPrivilegeConvertor = (TSentryPrivilegeConvertor) privilegeConverterConstructor.newInstance(getComponentType(), getServiceName());
+        sentryPrivilegeConverter = (TSentryPrivilegeConverter) privilegeConverterConstructor.newInstance(getComponentType(), getServiceName());
       } catch (NoSuchMethodException | ClassNotFoundException | InstantiationException | InvocationTargetException | IllegalAccessException e) {
         throw new RuntimeException("Failed to create privilege converter of type " + privilegeConverter, e);
       }
-      UpdatableCache cache = new UpdatableCache(conf, getComponentType(), getServiceName(), sentryPrivilegeConvertor);
+      UpdatableCache cache = new UpdatableCache(conf, getComponentType(), getServiceName(), sentryPrivilegeConverter);
       try {
         cache.startUpdateThread(true);
       } catch (Exception e) {

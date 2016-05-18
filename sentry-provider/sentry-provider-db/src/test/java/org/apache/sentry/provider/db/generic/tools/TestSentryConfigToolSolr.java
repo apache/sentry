@@ -133,7 +133,7 @@ public class TestSentryConfigToolSolr extends SentryGenericServiceIntegrationBas
         }
 
         // check privileges
-        SolrTSentryPrivilegeConvertor convert = new SolrTSentryPrivilegeConvertor(SOLR, service);
+        SolrTSentryPrivilegeConverter convert = new SolrTSentryPrivilegeConverter(SOLR, service);
         for (String role : roles) {
           Set<TSentryPrivilege> privileges = client.listPrivilegesByRoleName(
               requestorName, role, SOLR, service);

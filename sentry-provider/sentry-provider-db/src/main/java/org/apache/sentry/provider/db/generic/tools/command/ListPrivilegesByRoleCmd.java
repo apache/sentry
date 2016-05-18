@@ -30,14 +30,14 @@ public class ListPrivilegesByRoleCmd implements Command {
   private String roleName;
   private String component;
   private String serviceName;
-  private TSentryPrivilegeConvertor convertor;
+  private TSentryPrivilegeConverter converter;
 
   public ListPrivilegesByRoleCmd(String roleName, String component, String serviceName,
-      TSentryPrivilegeConvertor convertor) {
+      TSentryPrivilegeConverter converter) {
     this.roleName = roleName;
     this.component = component;
     this.serviceName = serviceName;
-    this.convertor = convertor;
+    this.converter = converter;
   }
 
   @Override
@@ -46,7 +46,7 @@ public class ListPrivilegesByRoleCmd implements Command {
             .listPrivilegesByRoleName(requestorName, roleName, component, serviceName);
     if (privileges != null) {
       for (TSentryPrivilege privilege : privileges) {
-        String privilegeStr = convertor.toString(privilege);
+        String privilegeStr = converter.toString(privilege);
         System.out.println(privilegeStr);
       }
     }

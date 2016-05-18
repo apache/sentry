@@ -18,7 +18,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.provider.common.TableCache;
 import org.apache.sentry.provider.db.generic.service.thrift.*;
-import org.apache.sentry.provider.db.generic.tools.command.TSentryPrivilegeConvertor;
+import org.apache.sentry.provider.db.generic.tools.command.TSentryPrivilegeConverter;
 import org.apache.sentry.service.thrift.ServiceConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +37,7 @@ class UpdatableCache implements TableCache {
   private final long cacheTtlNs;
   private final int allowedUpdateFailuresCount;
   private final Configuration conf;
-  private final TSentryPrivilegeConvertor tSentryPrivilegeConvertor;
+  private final TSentryPrivilegeConverter tSentryPrivilegeConverter;
 
   private volatile long lastRefreshedNs = 0;
   private int consecutiveUpdateFailuresCount = 0;
@@ -68,11 +68,11 @@ class UpdatableCache implements TableCache {
    */
   private volatile Table<String, String, Set<String>> table;
 
-  UpdatableCache(Configuration conf, String componentType, String serviceName, TSentryPrivilegeConvertor tSentryPrivilegeConvertor) {
+  UpdatableCache(Configuration conf, String componentType, String serviceName, TSentryPrivilegeConverter tSentryPrivilegeConverter) {
     this.conf = conf;
     this.componentType = componentType;
     this.serviceName = serviceName;
-    this.tSentryPrivilegeConvertor = tSentryPrivilegeConvertor;
+    this.tSentryPrivilegeConverter = tSentryPrivilegeConverter;
 
     // check caching configuration
     this.cacheTtlNs = TimeUnit.MILLISECONDS.toNanos(conf.getLong(ServiceConstants.ClientConfig.CACHE_TTL_MS, ServiceConstants.ClientConfig.CACHING_TTL_MS_DEFAULT));
@@ -107,7 +107,7 @@ class UpdatableCache implements TableCache {
           tempCache.put(group, roleName, currentPrivileges);
         }
         for (TSentryPrivilege tSentryPrivilege : tSentryPrivileges) {
-          currentPrivileges.add(tSentryPrivilegeConvertor.toString(tSentryPrivilege));
+          currentPrivileges.add(tSentryPrivilegeConverter.toString(tSentryPrivilege));
         }
       }
     }
