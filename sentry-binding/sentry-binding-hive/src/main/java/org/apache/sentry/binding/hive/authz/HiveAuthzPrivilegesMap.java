@@ -198,6 +198,7 @@ public class HiveAuthzPrivilegesMap {
     hiveAuthzStmtPrivMap.put(HiveOperation.DROPDATABASE, dropDbPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.CREATETABLE, tableCreatePrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERDATABASE, alterDbPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERDATABASE_OWNER, alterDbPrivilege);
 
     hiveAuthzStmtPrivMap.put(HiveOperation.DROPTABLE, dropTablePrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.CREATEVIEW, createViewPrivilege);

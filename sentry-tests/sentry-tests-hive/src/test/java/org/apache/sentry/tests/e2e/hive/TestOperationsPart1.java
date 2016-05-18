@@ -254,6 +254,7 @@ public class TestOperationsPart1 extends AbstractTestWithStaticConfiguration {
 
   /* Test all operations that require alter on Database alone
   1. Alter database : HiveOperation.ALTERDATABASE
+  2. Alter database : HiveOperation.ALTERDATABASE_OWNER
    */
   @Test
   public void testAlterOnDatabase() throws Exception{
@@ -272,6 +273,10 @@ public class TestOperationsPart1 extends AbstractTestWithStaticConfiguration {
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
     statement.execute("ALTER DATABASE " + DB1 + " SET DBPROPERTIES ('comment'='comment')");
+
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    statement.execute("ALTER DATABASE " + DB1 + " SET OWNER USER " + USER1_1);
     statement.close();
     connection.close();
 
@@ -285,6 +290,7 @@ public class TestOperationsPart1 extends AbstractTestWithStaticConfiguration {
     connection = context.createConnection(USER3_1);
     statement = context.createStatement(connection);
     context.assertSentrySemanticException(statement, "ALTER DATABASE " + DB1 + " SET DBPROPERTIES ('comment'='comment')", semanticException);
+    context.assertSentrySemanticException(statement, "ALTER DATABASE " + DB1 + " SET OWNER USER " + USER1_1, semanticException);
     statement.close();
     connection.close();
   }
