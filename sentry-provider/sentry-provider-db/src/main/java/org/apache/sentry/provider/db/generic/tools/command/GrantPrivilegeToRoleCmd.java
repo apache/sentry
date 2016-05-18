@@ -28,19 +28,19 @@ public class GrantPrivilegeToRoleCmd implements Command {
   private String roleName;
   private String component;
   private String privilegeStr;
-  private TSentryPrivilegeConvertor convertor;
+  private TSentryPrivilegeConverter converter;
 
   public GrantPrivilegeToRoleCmd(String roleName, String component, String privilegeStr,
-      TSentryPrivilegeConvertor convertor) {
+      TSentryPrivilegeConverter converter) {
     this.roleName = roleName;
     this.component = component;
     this.privilegeStr = privilegeStr;
-    this.convertor = convertor;
+    this.converter = converter;
   }
 
   @Override
   public void execute(SentryGenericServiceClient client, String requestorName) throws Exception {
-    TSentryPrivilege privilege = convertor.fromString(privilegeStr);
+    TSentryPrivilege privilege = converter.fromString(privilegeStr);
     client.grantPrivilege(requestorName, roleName, component, privilege);
 
   }

@@ -62,15 +62,15 @@ public class SentryShellKafka extends SentryShellCommon {
       command = new DeleteRoleFromGroupCmd(roleName, groupName, component);
     } else if (isGrantPrivilegeRole) {
       command = new GrantPrivilegeToRoleCmd(roleName, component,
-          privilegeStr, new KafkaTSentryPrivilegeConvertor(component, service));
+          privilegeStr, new KafkaTSentryPrivilegeConverter(component, service));
     } else if (isRevokePrivilegeRole) {
       command = new RevokePrivilegeFromRoleCmd(roleName, component,
-          privilegeStr, new KafkaTSentryPrivilegeConvertor(component, service));
+          privilegeStr, new KafkaTSentryPrivilegeConverter(component, service));
     } else if (isListRole) {
       command = new ListRolesCmd(groupName, component);
     } else if (isListPrivilege) {
       command = new ListPrivilegesByRoleCmd(roleName, component,
-          service, new KafkaTSentryPrivilegeConvertor(component, service));
+          service, new KafkaTSentryPrivilegeConverter(component, service));
     }
 
     // check the requestor name

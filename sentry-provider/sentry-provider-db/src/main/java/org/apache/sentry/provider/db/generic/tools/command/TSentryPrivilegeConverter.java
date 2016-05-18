@@ -19,7 +19,7 @@ package org.apache.sentry.provider.db.generic.tools.command;
 
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
 
-public interface TSentryPrivilegeConvertor {
+public interface TSentryPrivilegeConverter {
 
   /**
    * Convert string to privilege

@@ -32,6 +32,7 @@ import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericService
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClientFactory;
 import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
+import org.apache.sentry.provider.db.generic.tools.KafkaTSentryPrivilegeConverter;
 import org.apache.sentry.provider.file.LocalGroupResourceAuthorizationProvider;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.service.thrift.SentryService;
@@ -216,7 +217,7 @@ public class AbstractKafkaSentryTestBase {
     conf.set(KafkaAuthConf.AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar(), policyFilePath.getPath());
     conf.setBoolean(ClientConfig.ENABLE_CACHING, true);
     conf.setLong(ClientConfig.CACHE_TTL_MS, CACHE_TTL_MS);
-    conf.set(ClientConfig.PRIVILEGE_CONVERTER, "org.apache.sentry.provider.db.generic.tools.KafkaTSentryPrivilegeConvertor");
+    conf.set(ClientConfig.PRIVILEGE_CONVERTER, KafkaTSentryPrivilegeConverter.class.getName());
     return conf;
   }
 

@@ -104,7 +104,7 @@ public class SentryConfigToolSolr extends SentryConfigToolCommon {
     Set<String> roles = Sets.newHashSet();
     Table<String, String, Set<String>> groupRolePrivilegeTable =
         policyFileBackend.getGroupRolePrivilegeTable();
-    SolrTSentryPrivilegeConvertor convertor = new SolrTSentryPrivilegeConvertor(component, service, false);
+    SolrTSentryPrivilegeConverter converter = new SolrTSentryPrivilegeConverter(component, service, false);
 
     for (String groupName : groupRolePrivilegeTable.rowKeySet()) {
       for (String roleName : groupRolePrivilegeTable.columnKeySet()) {
@@ -144,7 +144,7 @@ public class SentryConfigToolSolr extends SentryConfigToolCommon {
           }
           LOGGER.info(dryRunMessage(importPolicy) + "Adding permission: " + permission + " to role: " + roleName.toLowerCase(Locale.US));
           if (importPolicy) {
-            client.grantPrivilege(requestorName, roleName, component, convertor.fromString(permission));
+            client.grantPrivilege(requestorName, roleName, component, converter.fromString(permission));
           }
         }
       }

@@ -53,6 +53,8 @@ import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericService
 import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryGrantOption;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
+import org.apache.sentry.provider.db.generic.tools.SolrTSentryPrivilegeConverter;
+import org.apache.sentry.service.thrift.ServiceConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -113,6 +115,11 @@ public class SolrAuthzBinding {
       // set configuration so that group mappings are properly setup even if
       // we don't use kerberos, for testing
       UserGroupInformation.setConfiguration(authzConf);
+    }
+
+    // for convenience, set the PrivilegeConverter.
+    if (authzConf.get(ServiceConstants.ClientConfig.PRIVILEGE_CONVERTER) == null) {
+      authzConf.set(ServiceConstants.ClientConfig.PRIVILEGE_CONVERTER, SolrTSentryPrivilegeConverter.class.getName());
     }
 
     // the SearchProviderBackend is deleted in SENTRY-828, this is for the compatible with the
