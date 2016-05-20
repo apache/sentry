@@ -57,4 +57,9 @@ public class EmbeddedHiveServer implements HiveServer {
   public String getProperty(String key) {
     throw new UnsupportedOperationException();
   }
+
+  @Override
+  public String getOrgWarehouseDir() {
+    return (String)null;
+  }
 }

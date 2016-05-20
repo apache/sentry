@@ -92,4 +92,9 @@ public abstract class AbstractHiveServer implements HiveServer {
       }
     } while (true);
   }
+
+  @Override
+  public String getOrgWarehouseDir() {
+    return configuration.get(HiveConf.ConfVars.METASTOREWAREHOUSE.varname, null);
+  }
 }

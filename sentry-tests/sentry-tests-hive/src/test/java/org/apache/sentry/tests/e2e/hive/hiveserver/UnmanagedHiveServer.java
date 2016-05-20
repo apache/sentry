@@ -110,4 +110,10 @@ public class UnmanagedHiveServer implements HiveServer {
     UserGroupInformation.loginUserFromKeytab(user, KEYTAB_LOCATION + "/" + user + ".keytab");
     LOGGER.info("Kinited user: "+ user+" keytab: "+KEYTAB_LOCATION+"/"+user+".keytab");
   }
+
+  // return original warehouse dir, may not include scheme and authority
+  // it is the exact string defined in the hive.metastore.warehouse.dir
+  public String getOrgWarehouseDir() {
+    return getSystemAndConfigProperties(HiveConf.ConfVars.METASTOREWAREHOUSE.varname.toString(), null);
+  }
 }

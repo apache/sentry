@@ -23,8 +23,6 @@ import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory.HiveServer2
 import com.google.common.annotations.VisibleForTesting;
 
 public class DFSFactory {
-  public static final String FS_TYPE = "sentry.e2etest.DFSType";
-
   public static DFS create(String dfsType, File baseDir,
       String serverType, boolean enableHDFSAcls) throws Exception {
     DFSType type;
@@ -38,6 +36,8 @@ public class DFSFactory {
         return new MiniDFS(baseDir, serverType, enableHDFSAcls);
       case ClusterDFS:
         return new ClusterDFS();
+      case S3DFS:
+        return new S3DFS();
       default:
         throw new UnsupportedOperationException(type.name());
     }
@@ -51,6 +51,7 @@ public class DFSFactory {
   @VisibleForTesting
   public static enum DFSType {
     MiniDFS,
-    ClusterDFS;
-  };
+    ClusterDFS,
+    S3DFS
+  }
 }

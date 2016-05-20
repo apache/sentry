@@ -31,4 +31,5 @@ public interface HiveServer {
 
   public Connection createConnection(String user, String password) throws Exception;
 
+  String getOrgWarehouseDir();
 }

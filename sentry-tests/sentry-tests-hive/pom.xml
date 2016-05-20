@@ -268,6 +268,13 @@ limitations under the License.
         <version>${joda-time.version}</version>
         <scope>test</scope>
       </dependency>
+    <!-- http://mvnrepository.com/artifact/org.apache.hadoop/hadoop-aws -->
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-aws</artifactId>
+      <version>${hadoop-aws.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   <build>
     <plugins>
@@ -459,7 +466,11 @@ limitations under the License.
           <include>**/TestDbPrivilegesAtColumnScope.java</include>
           <include>**/TestColumnEndToEnd.java</include>
           <include>**/TestDbComplexView.java</include>
-          <include>**/TestConcurrentClients</include>
+          <include>**/TestConcurrentClients.java</include>
+          <include>**/TestDbHdfsMaxGroups.java</include>
+          <include>**/TestDbHdfsExtMaxGroups.java</include>
+          <include>**/TestHiveWarehouseOnExtFs.java</include>
+          <include>**/TestTableOnExtFS.java</include>
         </includes>
         <argLine>-Dsentry.e2etest.hiveServer2Type=UnmanagedHiveServer2 -Dsentry.e2etest.DFSType=ClusterDFS -Dsentry.e2etest.external.sentry=true</argLine>
        </configuration>
