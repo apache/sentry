@@ -30,8 +30,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 
-import javax.security.auth.Subject;
-
 import org.apache.sentry.SentryUserException;
 import org.apache.sentry.service.thrift.SentryServiceFactory;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
@@ -83,7 +81,7 @@ public class TestSentryServiceClientPool extends SentryServiceIntegrationBase {
 
         Callable<Boolean> func = new Callable<Boolean>() {
           public Boolean call() throws Exception {
-            return Subject.doAs(clientSubject, new PrivilegedExceptionAction<Boolean>() {
+            return clientUgi.doAs(new PrivilegedExceptionAction<Boolean>() {
               @Override
               public Boolean run() throws Exception {
                 try {

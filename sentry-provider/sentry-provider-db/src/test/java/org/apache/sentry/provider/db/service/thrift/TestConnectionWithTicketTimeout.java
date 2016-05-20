@@ -19,11 +19,12 @@
 package org.apache.sentry.provider.db.service.thrift;
 
 import org.apache.hadoop.minikdc.MiniKdc;
+import org.apache.sentry.service.thrift.ServiceConstants;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore("SENTRY-515: Not part of automated unit testing, as it takes too long")
+@Ignore("SENTRY-515: Not part of automated unit testing, as it takes too long. Fails until we move to a hadoop 2.6.1. See HADOOP-10786")
 public class TestConnectionWithTicketTimeout extends
     org.apache.sentry.service.thrift.SentryServiceIntegrationBase {
 
@@ -37,7 +38,10 @@ public class TestConnectionWithTicketTimeout extends
   }
 
   public static void beforeSetup() throws Exception {
-    kdcConfOverlay.setProperty(MiniKdc.MAX_TICKET_LIFETIME, "300001");
+    kdcConfOverlay.setProperty(MiniKdc.MAX_TICKET_LIFETIME, "360001");
+    //Only UGI based client connections renew their TGT, this is not a problem in the real world
+    // as this is not configurable and always true
+    conf.set(ServiceConstants.ServerConfig.SECURITY_USE_UGI_TRANSPORT, "true");
   }
 
   /***

@@ -20,8 +20,6 @@ package org.apache.sentry.provider.db.generic.service.thrift;
 import java.security.PrivilegedExceptionAction;
 import java.util.Set;
 
-import javax.security.auth.Subject;
-
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
 import org.junit.After;
 import org.slf4j.Logger;
@@ -40,7 +38,7 @@ public class SentryGenericServiceIntegrationBase extends SentryServiceIntegratio
     // The client should already be logged in when running in solr
     // therefore we must manually login in the integration tests
     if (kerberos) {
-      this.client = Subject.doAs(clientSubject, new PrivilegedExceptionAction<SentryGenericServiceClient>() {
+      this.client = clientUgi.doAs( new PrivilegedExceptionAction<SentryGenericServiceClient>() {
         @Override
         public SentryGenericServiceClient run() throws Exception {
           return SentryGenericServiceClientFactory.create(conf);

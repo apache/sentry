@@ -40,7 +40,9 @@ public class SentryKerberosContext implements Runnable {
   private LoginContext loginContext;
   private Subject subject;
   private final javax.security.auth.login.Configuration kerberosConfig;
+  @Deprecated
   private Thread renewerThread;
+  @Deprecated
   private boolean shutDownRenewer = false;
 
   public SentryKerberosContext(String principal, String keyTab, boolean autoRenewTicket)
@@ -54,7 +56,8 @@ public class SentryKerberosContext implements Runnable {
     }
   }
 
-  public void loginWithNewContext() throws LoginException {
+  private void loginWithNewContext() throws LoginException {
+    LOGGER.info("Logging in with new Context");
     logoutSubject();
     loginContext = new LoginContext("", subject, null, kerberosConfig);
     loginContext.login();
@@ -80,6 +83,7 @@ public class SentryKerberosContext implements Runnable {
    * Get the Kerberos TGT
    * @return the user's TGT or null if none was found
    */
+  @Deprecated
   private KerberosTicket getTGT() {
     Set<KerberosTicket> tickets = subject.getPrivateCredentials(KerberosTicket.class);
     for(KerberosTicket ticket: tickets) {
@@ -91,17 +95,21 @@ public class SentryKerberosContext implements Runnable {
     }
     return null;
   }
-  
+
+  @Deprecated
   private long getRefreshTime(KerberosTicket tgt) {
     long start = tgt.getStartTime().getTime();
     long end = tgt.getEndTime().getTime();
+    LOGGER.debug("Ticket start time: " + start);
+    LOGGER.debug("Ticket End time: " + end);
     return start + (long) ((end - start) * TICKET_RENEW_WINDOW);
   }
-  
+
   /***
    * Ticket renewer thread
    * wait till 80% time interval left on the ticket and then renew it
    */
+  @Deprecated
   @Override
   public void run() {
     try {
@@ -133,6 +141,7 @@ public class SentryKerberosContext implements Runnable {
     }
   }
 
+  @Deprecated
   public void startRenewerThread() {
     renewerThread = new Thread(this);
     renewerThread.start();
