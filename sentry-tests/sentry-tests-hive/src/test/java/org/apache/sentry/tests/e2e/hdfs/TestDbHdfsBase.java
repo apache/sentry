@@ -38,6 +38,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 import static org.apache.sentry.tests.e2e.hive.fs.DFSFactory.DFSType;
 import static org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory.HiveServer2Type;
 
+import org.apache.sentry.tests.e2e.hive.fs.TestFSContants;
 import org.junit.After;
 import org.junit.BeforeClass;
 
@@ -85,15 +86,16 @@ public abstract class TestDbHdfsBase extends AbstractTestWithStaticConfiguration
   protected static UserGroupInformation adminUgi;
   protected static UserGroupInformation hiveUgi;
   protected static int NUM_RETRIES_FOR_ACLS = 12;
-  protected static int WAIT_SECS_FOR_ACLS = 1000; //seconds
+  protected static int WAIT_SECS_FOR_ACLS = Integer.parseInt(
+      System.getProperty(TestFSContants.SENTRY_E2E_TEST_HDFS_ACLS_SYNCUP_SECS, "1000")); // seconds
   protected static String testExtPathDir =
-      System.getProperty("test.hdfs.e2e.ext.path");
+      System.getProperty(TestFSContants.SENTRY_E2E_TEST_HDFS_EXT_PATH);
   protected static final String KEYTAB_LOCATION =
-      System.getProperty("sentry.e2e.hive.keytabs.location", "/cdep/keytabs");
+      System.getProperty(TestFSContants.SENTRY_E2E_TEST_HIVE_KEYTAB_LOC, "/cdep/keytabs");
   protected static String DFS_TYPE =
-      System.getProperty("sentry.e2etest.DFSType", DFSType.MiniDFS.name());
+      System.getProperty(TestFSContants.SENTRY_E2E_TEST_DFS_TYPE, DFSType.MiniDFS.name());
 
-  protected final static String dfsAdmin = System.getProperty("dfs.cluster.administrators", "hdfs");
+  protected final static String dfsAdmin = System.getProperty(TestFSContants.SENTRY_E2E_TEST_DFS_ADMIN, "hdfs");
 
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception {

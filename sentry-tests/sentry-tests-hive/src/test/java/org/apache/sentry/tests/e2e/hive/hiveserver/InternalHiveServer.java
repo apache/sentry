@@ -44,4 +44,9 @@ public class InternalHiveServer extends AbstractHiveServer {
       hiveServer2.stop();
     }
   }
+
+  @Override
+  public String getOrgWarehouseDir() {
+    return conf.get(HiveConf.ConfVars.METASTOREWAREHOUSE.varname, null);
+  }
 }

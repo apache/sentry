@@ -29,4 +29,6 @@ public interface DFS {
   Path getBaseDir();
   void createBaseDir() throws Exception;
   void writePolicyFile(File srcFile) throws IOException;
+  String getTestUser();
+  String getKeytabLocation();
 }

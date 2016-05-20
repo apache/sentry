@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.HashSet;
 
 import com.google.common.collect.Sets;
+import org.apache.sentry.tests.e2e.hive.fs.TestFSContants;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.AfterClass;
@@ -284,7 +285,8 @@ public abstract class AbstractTestWithStaticConfiguration {
     dataDir = assertCreateDir(new File(baseDir, "data"));
     policyFileLocation = new File(confDir, HiveServerFactory.AUTHZ_PROVIDER_FILENAME);
 
-    dfsType = System.getProperty(DFSFactory.FS_TYPE, DFSFactory.DFSType.MiniDFS.toString());
+    dfsType = System.getProperty(TestFSContants.SENTRY_E2E_TEST_DFS_TYPE,
+        DFSFactory.DFSType.MiniDFS.toString());
     dfs = DFSFactory.create(dfsType, baseDir, testServerType, enableHDFSAcls);
     fileSystem = dfs.getFileSystem();
 
@@ -318,7 +320,6 @@ public abstract class AbstractTestWithStaticConfiguration {
           "org.apache.hadoop.hive.ql.lockmgr.EmbeddedLockManager");
     }
 
-    HiveConf hiveConf = new HiveConf();
     hiveServer = create(properties, baseDir, confDir, logDir, policyURI, fileSystem);
     hiveServer.start();
     createContext();

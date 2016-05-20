@@ -1,3 +1,5 @@
+package org.apache.sentry.tests.e2e.hive.fs;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,47 +16,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.tests.e2e.hive.fs;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.security.PrivilegedExceptionAction;
-import java.util.Random;
 
-public class ClusterDFS extends AbstractDFS{
+public class S3DFS extends AbstractDFS {
   private static final Logger LOGGER = LoggerFactory
-      .getLogger(ClusterDFS.class);
+      .getLogger(S3DFS.class);
+
   private UserGroupInformation ugi;
 
-  ClusterDFS() throws Exception{
+  S3DFS() throws Exception{
     ugi = UserGroupInformation.loginUserFromKeytabAndReturnUGI(TEST_USER, KEYTAB_LOCATION + "/" + TEST_USER + ".keytab");
     fileSystem = getFS(ugi);
-    LOGGER.info("File system uri for policy files: " + fileSystem.getUri());
-    LOGGER.info("Creating basedir as user : " + TEST_USER);
-    String policyDir = System.getProperty("sentry.e2etest.hive.policy.location", "/user/hive/sentry");
-    sentryDir = super.assertCreateDfsDir(new Path(fileSystem.getUri() + policyDir));
-    dfsBaseDir = super.assertCreateDfsDir(new Path(fileSystem.getUri() + "/tmp/" + (new Random()).nextInt()));
+    LOGGER.info("fileSystem URI = " + fileSystem.getUri());
+    LOGGER.info("Kinited as testUser = " + TEST_USER);
   }
 
-  @Override
-  public Path assertCreateDir(String path) throws Exception{
-    if(path.startsWith("/")){
-      return super.assertCreateDfsDir(new Path(path));
-    }else {
-      return super.assertCreateDfsDir( new Path(dfsBaseDir + path));
-    }
-  }
-
-  @Override
-  protected void cleanBaseDir() throws Exception {
-    super.cleanBaseDir();
-    super.cleanDir(sentryDir);
-  }
   private FileSystem getFS(UserGroupInformation ugi) throws Exception {
     return ugi.doAs(new PrivilegedExceptionAction<FileSystem>() {
       public FileSystem run() throws Exception {

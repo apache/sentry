@@ -25,13 +25,14 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 
-public abstract class AbstractDFS implements DFS{
+public abstract class AbstractDFS implements DFS {
   private static final Logger LOGGER = LoggerFactory
       .getLogger(AbstractDFS.class);
+  protected static final String TEST_USER = System.getProperty("sentry.e2etest.hive.test.user", "hive");
+  protected static final String KEYTAB_LOCATION = System.getProperty("sentry.e2e.hive.keytabs.location");
   protected static FileSystem fileSystem;
   protected static Path dfsBaseDir;
   public Path sentryDir;
-
 
   @Override
   public FileSystem getFileSystem(){
@@ -84,4 +85,9 @@ public abstract class AbstractDFS implements DFS{
     return dir;
   }
 
+  @Override
+  public String getTestUser() {return TEST_USER;}
+
+  @Override
+  public String getKeytabLocation() {return KEYTAB_LOCATION;}
 }
