@@ -19,20 +19,17 @@
 package org.apache.sentry.service.thrift;
 import java.io.File;
 import java.security.PrivilegedExceptionAction;
-import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 
-import javax.security.auth.Subject;
-import javax.security.auth.kerberos.KerberosPrincipal;
-import javax.security.auth.login.LoginContext;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.curator.test.TestingServer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.minikdc.MiniKdc;
 import org.apache.hadoop.net.NetUtils;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.provider.db.service.persistent.HAContext;
 import org.apache.sentry.provider.db.service.thrift.SentryMiniKdcTestcase;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
@@ -50,7 +47,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Strings;
-import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 
 public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase {
@@ -76,8 +72,7 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
   protected static File serverKeytab;
   protected static File httpKeytab;
   protected static File clientKeytab;
-  protected static Subject clientSubject;
-  protected static LoginContext clientLoginContext;
+  protected static UserGroupInformation clientUgi;
   protected static boolean kerberos;
   protected final static Configuration conf = new Configuration(false);
   protected PolicyFile policyFile;
@@ -143,14 +138,11 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
       conf.set(ServerConfig.SERVER_HA_ZOOKEEPER_CLIENT_KEYTAB,
           serverKeytab.getPath());
 
-      conf.set(ServerConfig.SECURITY_USE_UGI_TRANSPORT, "false");
-      clientSubject = new Subject(false, Sets.newHashSet(
-          new KerberosPrincipal(CLIENT_KERBEROS_NAME)), new HashSet<Object>(),
-        new HashSet<Object>());
-      clientLoginContext = new LoginContext("", clientSubject, null,
-          KerberosConfiguration.createClientConfig(CLIENT_KERBEROS_NAME, clientKeytab));
-      clientLoginContext.login();
-      clientSubject = clientLoginContext.getSubject();
+      conf.set(ServerConfig.SECURITY_USE_UGI_TRANSPORT, "true");
+      conf.set("hadoop.security.authentication", "kerberos");
+      UserGroupInformation.setConfiguration(conf);
+      UserGroupInformation.loginUserFromKeytab(CLIENT_PRINCIPAL, clientKeytab.getPath());
+      clientUgi = UserGroupInformation.getLoginUser();
     } else {
       LOGGER.info("Stopped KDC");
       conf.set(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_NONE);
@@ -234,7 +226,7 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
 
   public void connectToSentryService() throws Exception {
     if (kerberos) {
-      client = Subject.doAs(clientSubject, new PrivilegedExceptionAction<SentryPolicyServiceClient>() {
+      client = clientUgi.doAs(new PrivilegedExceptionAction<SentryPolicyServiceClient>() {
         @Override
         public SentryPolicyServiceClient run() throws Exception {
           return SentryServiceClientFactory.create(conf);
@@ -249,13 +241,6 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
   public static void tearDown() throws Exception {
     beforeTeardown();
 
-    if(clientLoginContext != null) {
-      try {
-        clientLoginContext.logout();
-      } catch (Exception e) {
-        LOGGER.warn("Error logging client out", e);
-      }
-    }
     if(server != null) {
       server.stop();
     }
@@ -342,16 +327,16 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
   }
 
   protected void runTestAsSubject(final TestOperation test) throws Exception {
-    if (kerberos) {
-      Subject.doAs(clientSubject, new PrivilegedExceptionAction<Void>() {
+    /*if (false) {
+      clientUgi.doAs(new PrivilegedExceptionAction<Void>() {
         @Override
         public Void run() throws Exception {
           test.runTestAsSubject();
           return null;
         }});
     } else {
-      test.runTestAsSubject();
-    }
+    */  test.runTestAsSubject();
+    //}
   }
 
   protected interface TestOperation {

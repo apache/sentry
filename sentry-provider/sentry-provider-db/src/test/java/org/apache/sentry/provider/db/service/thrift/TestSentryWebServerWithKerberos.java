@@ -68,15 +68,16 @@ public class TestSentryWebServerWithKerberos extends SentryServiceIntegrationBas
 
   @Test
   public void testPing() throws Exception {
-    runTestAsSubject(new TestOperation(){
+    clientUgi.doAs(new PrivilegedExceptionAction<Void>() {
       @Override
-      public void runTestAsSubject() throws Exception {
+      public Void run() throws Exception {
         final URL url = new URL("http://"+ SERVER_HOST + ":" + webServerPort + "/ping");
         HttpURLConnection conn = new AuthenticatedURL(new KerberosAuthenticator()).
             openConnection(url, new AuthenticatedURL.Token());
         Assert.assertEquals(HttpURLConnection.HTTP_OK, conn.getResponseCode());
         String response = IOUtils.toString(conn.getInputStream());
         Assert.assertEquals("pong\n", response);
+      return null;
       }} );
   }
 

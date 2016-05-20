@@ -156,7 +156,8 @@ public class SentryService implements Callable {
     try {
       status = Status.STARTED;
       if (kerberos) {
-        kerberosContext = new SentryKerberosContext(principal, keytab, true);
+        Boolean autoRenewTicket = conf.getBoolean(ServerConfig.SENTRY_KERBEROS_TGT_AUTORENEW, ServerConfig.SENTRY_KERBEROS_TGT_AUTORENEW_DEFAULT);
+        kerberosContext = new SentryKerberosContext(principal, keytab, autoRenewTicket);
         Subject.doAs(kerberosContext.getSubject(), new PrivilegedExceptionAction<Void>() {
           @Override
           public Void run() throws Exception {

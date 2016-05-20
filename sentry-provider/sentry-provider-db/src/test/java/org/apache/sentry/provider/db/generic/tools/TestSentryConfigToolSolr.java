@@ -61,7 +61,7 @@ public class TestSentryConfigToolSolr extends SentryGenericServiceIntegrationBas
       conf.writeXml(to);
       to.close();
     }
-    requestorName = System.getProperty("user.name", "");
+    requestorName = clientUgi.getShortUserName();//System.getProperty("user.name", "");
     Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
     setLocalGroupMapping(requestorName, requestorUserGroupNames);
     // add ADMIN_USER for the after() in SentryServiceIntegrationBase

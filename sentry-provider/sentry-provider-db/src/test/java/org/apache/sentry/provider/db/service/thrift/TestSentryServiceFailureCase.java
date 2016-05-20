@@ -18,8 +18,6 @@
 
 package org.apache.sentry.provider.db.service.thrift;
 
-import java.security.PrivilegedActionException;
-
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.junit.After;
@@ -61,9 +59,9 @@ public class TestSentryServiceFailureCase extends SentryServiceIntegrationBase {
     try {
       connectToSentryService();
       Assert.fail("Failed to receive Exception");
-    } catch(PrivilegedActionException e) {
+    } catch(Exception e) {
       LOGGER.info("Excepted exception", e);
-      Exception cause = e.getException();
+      Throwable cause = e.getCause();
       if (cause == null) {
         throw e;
       }

@@ -28,8 +28,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import javax.security.auth.Subject;
-
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.sentry.provider.db.log.appender.AuditLoggerTestAppender;
@@ -91,8 +89,7 @@ public class TestAuditLogForSentryGenericService extends SentryServiceIntegratio
   @Override
   public void connectToSentryService() throws Exception {
     if (kerberos) {
-      this.client = Subject.doAs(clientSubject,
-          new PrivilegedExceptionAction<SentryGenericServiceClient>() {
+      this.client = clientUgi.doAs(new PrivilegedExceptionAction<SentryGenericServiceClient>() {
             @Override
             public SentryGenericServiceClient run() throws Exception {
               return SentryGenericServiceClientFactory.create(conf);

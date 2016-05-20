@@ -174,6 +174,12 @@ public class ServiceConstants {
 
     // action factories for external components
     public static final String SENTRY_COMPONENT_ACTION_FACTORY_FORMAT = "sentry.%s.action.factory";
+
+    // Sentry is never a client to other Kerberos Services, it should not be required to renew the TGT
+    @Deprecated
+    public static final String SENTRY_KERBEROS_TGT_AUTORENEW = "sentry.service.kerberos.tgt.autorenew";
+    @Deprecated
+    public static final Boolean SENTRY_KERBEROS_TGT_AUTORENEW_DEFAULT = false;
   }
 
   public static class ClientConfig {
