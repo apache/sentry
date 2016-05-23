@@ -15,9 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.provider.db;
-
-import org.apache.sentry.SentryUserException;
+package org.apache.sentry.core.common.exception;
 
 public class SentryAlreadyExistsException extends SentryUserException {
   private static final long serialVersionUID = 1298632655835L;

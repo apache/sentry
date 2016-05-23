@@ -23,7 +23,7 @@ import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.fs.Path;
-import org.apache.sentry.provider.common.SentryGroupNotFoundException;
+import org.apache.sentry.core.common.exception.SentryGroupNotFoundException;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;

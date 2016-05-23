@@ -26,7 +26,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.sentry.SentryUserException;
+import org.apache.sentry.core.common.exception.SentryUserException;
 
 public class SentryStoreSchemaInfo {
   private static final String SQL_FILE_EXTENSION = ".sql";

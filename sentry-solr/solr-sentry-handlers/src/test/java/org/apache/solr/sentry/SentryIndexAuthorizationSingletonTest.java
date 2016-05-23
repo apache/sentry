@@ -23,7 +23,7 @@ import java.util.Set;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.sentry.core.model.search.SearchModelAction;
-import org.apache.sentry.provider.common.SentryGroupNotFoundException;
+import org.apache.sentry.core.common.exception.SentryGroupNotFoundException;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;

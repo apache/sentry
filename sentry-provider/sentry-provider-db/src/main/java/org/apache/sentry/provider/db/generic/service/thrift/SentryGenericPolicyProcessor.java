@@ -27,17 +27,18 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.SentryUserException;
+import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.utils.SentryConstants;
+import org.apache.sentry.core.common.exception.SentrySiteConfigurationException;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.common.utils.KeyValue;
 import org.apache.sentry.provider.common.AuthorizationComponent;
-import org.apache.sentry.provider.db.SentryAccessDeniedException;
-import org.apache.sentry.provider.db.SentryAlreadyExistsException;
-import org.apache.sentry.provider.db.SentryInvalidInputException;
-import org.apache.sentry.provider.db.SentryNoSuchObjectException;
-import org.apache.sentry.provider.db.SentryThriftAPIMismatchException;
+import org.apache.sentry.core.common.exception.SentryAccessDeniedException;
+import org.apache.sentry.core.common.exception.SentryAlreadyExistsException;
+import org.apache.sentry.core.common.exception.SentryInvalidInputException;
+import org.apache.sentry.core.common.exception.SentryNoSuchObjectException;
+import org.apache.sentry.core.common.exception.SentryThriftAPIMismatchException;
 import org.apache.sentry.provider.db.generic.service.persistent.PrivilegeObject;
 import org.apache.sentry.provider.db.generic.service.persistent.PrivilegeObject.Builder;
 import org.apache.sentry.provider.db.generic.service.persistent.SentryStoreLayer;
@@ -47,7 +48,6 @@ import org.apache.sentry.provider.db.service.model.MSentryGMPrivilege;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
 import org.apache.sentry.provider.db.service.persistent.CommitContext;
 import org.apache.sentry.provider.db.service.thrift.PolicyStoreConstants;
-import org.apache.sentry.provider.db.service.thrift.SentryConfigurationException;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessor;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.apache.sentry.service.thrift.ServiceConstants.ThriftConstants;
@@ -145,22 +145,22 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     return true;
   }
 
-  public static SentryStoreLayer createStore(Configuration conf) throws SentryConfigurationException {
+  public static SentryStoreLayer createStore(Configuration conf) throws SentrySiteConfigurationException {
     SentryStoreLayer storeLayer = null;
     String store = conf.get(PolicyStoreConstants.SENTRY_GENERIC_POLICY_STORE, PolicyStoreConstants.SENTRY_GENERIC_POLICY_STORE_DEFAULT);
 
     if (Strings.isNullOrEmpty(store)) {
-      throw new SentryConfigurationException("sentry.generic.policy.store can not be empty");
+      throw new SentrySiteConfigurationException("sentry.generic.policy.store can not be empty");
     }
     try {
       storeLayer = createInstance(store, conf, SentryStoreLayer.class);
     } catch (Exception e) {
-      throw new SentryConfigurationException("Create sentryStore error: " + e.getMessage(), e);
+      throw new SentrySiteConfigurationException("Create sentryStore error: " + e.getMessage(), e);
     }
     return storeLayer;
   }
 
-  public static List<NotificationHandler> createHandlers(Configuration conf) throws SentryConfigurationException {
+  public static List<NotificationHandler> createHandlers(Configuration conf) throws SentrySiteConfigurationException {
 
     List<NotificationHandler> handlers = Lists.newArrayList();
     Iterable<String> notificationHandlers = Splitter.onPattern("[\\s,]").trimResults()
@@ -170,7 +170,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
         handlers.add(createInstance(notificationHandler, conf, NotificationHandler.class));
       }
     } catch (Exception e) {
-      throw new SentryConfigurationException("Create notificationHandlers error: " + e.getMessage(), e);
+      throw new SentrySiteConfigurationException("Create notificationHandlers error: " + e.getMessage(), e);
     }
     return handlers;
   }

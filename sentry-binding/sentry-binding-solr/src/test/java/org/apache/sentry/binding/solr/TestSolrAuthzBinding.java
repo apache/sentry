@@ -43,7 +43,7 @@ import org.apache.sentry.binding.solr.conf.SolrAuthzConf.AuthzConfVars;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.search.Collection;
 import org.apache.sentry.core.model.search.SearchModelAction;
-import org.apache.sentry.provider.common.SentryGroupNotFoundException;
+import org.apache.sentry.core.common.exception.SentryGroupNotFoundException;
 import org.apache.sentry.provider.file.PolicyFiles;
 import org.junit.After;
 import org.junit.Before;

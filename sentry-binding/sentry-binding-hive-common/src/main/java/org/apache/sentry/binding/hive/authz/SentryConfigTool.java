@@ -49,7 +49,7 @@ import org.apache.sentry.binding.hive.SentryPolicyFileFormatFactory;
 import org.apache.sentry.binding.hive.SentryPolicyFileFormatter;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
-import org.apache.sentry.core.common.SentryConfigurationException;
+import org.apache.sentry.core.common.exception.SentryConfigurationException;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.provider.common.AuthorizationProvider;

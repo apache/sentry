@@ -16,7 +16,7 @@
  */
 package org.apache.sentry.core.model.search.validator;
 
-import org.apache.sentry.core.common.SentryConfigurationException;
+import org.apache.sentry.core.common.exception.SentryConfigurationException;
 import org.apache.sentry.core.model.search.Collection;
 import org.apache.sentry.core.model.search.SearchModelAuthorizable;
 import org.apache.sentry.core.common.validator.PrivilegeValidatorContext;

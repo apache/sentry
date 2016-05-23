@@ -20,10 +20,10 @@ package org.apache.sentry.provider.db.generic.service.persistent;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.sentry.SentryUserException;
+import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.common.Authorizable;
-import org.apache.sentry.provider.db.SentryAlreadyExistsException;
-import org.apache.sentry.provider.db.SentryNoSuchObjectException;
+import org.apache.sentry.core.common.exception.SentryAlreadyExistsException;
+import org.apache.sentry.core.common.exception.SentryNoSuchObjectException;
 import org.apache.sentry.provider.db.service.model.MSentryGMPrivilege;
 import org.apache.sentry.provider.db.service.persistent.CommitContext;
 

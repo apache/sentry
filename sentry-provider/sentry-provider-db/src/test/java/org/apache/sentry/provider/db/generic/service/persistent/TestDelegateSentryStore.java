@@ -22,8 +22,8 @@ import static org.junit.Assert.fail;
 
 import java.util.Set;
 
-import org.apache.sentry.provider.db.SentryAlreadyExistsException;
-import org.apache.sentry.provider.db.SentryNoSuchObjectException;
+import org.apache.sentry.core.common.exception.SentryAlreadyExistsException;
+import org.apache.sentry.core.common.exception.SentryNoSuchObjectException;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.Before;
 import org.junit.Test;

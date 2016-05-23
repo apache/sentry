@@ -15,16 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.provider.db;
+package org.apache.sentry.core.common.exception;
 
-import org.apache.sentry.SentryUserException;
-
-public class SentryInvalidInputException extends SentryUserException {
-  private static final long serialVersionUID = 2962080655835L;
-  public SentryInvalidInputException(String msg) {
+public class SentrySiteConfigurationException extends SentryUserException {
+  private static final long serialVersionUID = 1298632655835L;
+  public SentrySiteConfigurationException(String msg) {
     super(msg);
   }
-  public SentryInvalidInputException(String msg, String reason) {
-    super(msg, reason);
+  public SentrySiteConfigurationException(String msg, Throwable t) {
+    super(msg, t);
   }
 }

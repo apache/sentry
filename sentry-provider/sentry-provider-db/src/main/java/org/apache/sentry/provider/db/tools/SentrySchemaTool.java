@@ -47,9 +47,9 @@ import org.apache.commons.io.output.NullOutputStream;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hive.beeline.BeeLine;
 import org.apache.sentry.Command;
-import org.apache.sentry.SentryUserException;
+import org.apache.sentry.core.common.exception.SentryUserException;
+import org.apache.sentry.core.common.exception.SentrySiteConfigurationException;
 import org.apache.sentry.provider.db.service.persistent.SentryStoreSchemaInfo;
-import org.apache.sentry.provider.db.service.thrift.SentryConfigurationException;
 import org.apache.sentry.provider.db.tools.SentrySchemaHelper.NestedScriptParser;
 import org.apache.sentry.service.thrift.SentryService;
 import org.apache.sentry.service.thrift.ServiceConstants;
@@ -91,7 +91,7 @@ public class SentrySchemaTool {
     if(passTmp != null) {
       passWord = new String(passTmp);
     } else {
-      throw new SentryConfigurationException("Error reading " + ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_PASS);
+      throw new SentrySiteConfigurationException("Error reading " + ServiceConstants.ServerConfig.SENTRY_STORE_JDBC_PASS);
     }
 
     try {

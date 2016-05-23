@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.sentry.provider.common;
+package org.apache.sentry.core.common.exception;
 
 public class SentryGroupNotFoundException extends RuntimeException {
   private static final long serialVersionUID = -116202866086371881L;

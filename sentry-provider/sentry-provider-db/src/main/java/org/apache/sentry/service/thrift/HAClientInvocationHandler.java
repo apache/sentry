@@ -25,7 +25,7 @@ import java.net.InetSocketAddress;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.curator.x.discovery.ServiceInstance;
-import org.apache.sentry.SentryUserException;
+import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.provider.db.service.persistent.HAContext;
 import org.apache.sentry.provider.db.service.persistent.ServiceManager;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;

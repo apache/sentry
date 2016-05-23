@@ -28,19 +28,19 @@ import javax.jdo.PersistenceManager;
 import javax.jdo.Query;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.SentryUserException;
+import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.common.Authorizable;
-import org.apache.sentry.provider.db.SentryAccessDeniedException;
-import org.apache.sentry.provider.db.SentryAlreadyExistsException;
-import org.apache.sentry.provider.db.SentryGrantDeniedException;
-import org.apache.sentry.provider.db.SentryInvalidInputException;
-import org.apache.sentry.provider.db.SentryNoSuchObjectException;
+import org.apache.sentry.core.common.exception.SentryAccessDeniedException;
+import org.apache.sentry.core.common.exception.SentryAlreadyExistsException;
+import org.apache.sentry.core.common.exception.SentryGrantDeniedException;
+import org.apache.sentry.core.common.exception.SentryInvalidInputException;
+import org.apache.sentry.core.common.exception.SentryNoSuchObjectException;
+import org.apache.sentry.core.common.exception.SentrySiteConfigurationException;
 import org.apache.sentry.provider.db.service.model.MSentryGMPrivilege;
 import org.apache.sentry.provider.db.service.model.MSentryGroup;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
 import org.apache.sentry.provider.db.service.persistent.CommitContext;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
-import org.apache.sentry.provider.db.service.thrift.SentryConfigurationException;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessor;
 import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
@@ -67,7 +67,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
   private PrivilegeOperatePersistence privilegeOperator;
 
   public DelegateSentryStore(Configuration conf) throws SentryNoSuchObjectException,
-      SentryAccessDeniedException, SentryConfigurationException, IOException {
+      SentryAccessDeniedException, SentrySiteConfigurationException, IOException {
     this.privilegeOperator = new PrivilegeOperatePersistence(conf);
     // The generic model doesn't turn on the thread that cleans hive privileges
     conf.set(ServerConfig.SENTRY_STORE_ORPHANED_PRIVILEGE_REMOVAL,"false");

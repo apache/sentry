@@ -26,6 +26,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.Groups;
 
 import com.google.common.collect.Lists;
+import org.apache.sentry.core.common.exception.SentryGroupNotFoundException;
 
 public class HadoopGroupMappingService implements GroupMappingService {
 

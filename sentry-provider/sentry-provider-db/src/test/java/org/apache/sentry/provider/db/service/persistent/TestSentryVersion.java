@@ -23,7 +23,7 @@ import static org.junit.Assert.assertEquals;
 import java.io.File;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.provider.db.SentryNoSuchObjectException;
+import org.apache.sentry.core.common.exception.SentryNoSuchObjectException;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.junit.Before;
 import org.junit.Test;

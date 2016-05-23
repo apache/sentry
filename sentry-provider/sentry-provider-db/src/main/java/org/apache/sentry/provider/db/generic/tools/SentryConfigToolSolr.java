@@ -26,7 +26,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.core.common.Action;
-import org.apache.sentry.core.common.SentryConfigurationException;
+import org.apache.sentry.core.common.exception.SentryConfigurationException;
 import org.apache.sentry.core.common.utils.KeyValue;
 import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.core.model.search.SearchPrivilegeModel;

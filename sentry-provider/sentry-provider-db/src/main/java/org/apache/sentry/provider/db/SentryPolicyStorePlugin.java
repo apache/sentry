@@ -19,7 +19,7 @@
 package org.apache.sentry.provider.db;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.SentryUserException;
+import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleAddGroupsRequest;
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleDeleteGroupsRequest;

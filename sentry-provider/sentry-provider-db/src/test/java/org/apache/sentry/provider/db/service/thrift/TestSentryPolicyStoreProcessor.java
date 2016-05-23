@@ -17,10 +17,11 @@
  */
 package org.apache.sentry.provider.db.service.thrift;
 
+import org.apache.sentry.core.common.exception.SentrySiteConfigurationException;
 import org.junit.Assert;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.provider.db.SentryThriftAPIMismatchException;
+import org.apache.sentry.core.common.exception.SentryThriftAPIMismatchException;
 import org.apache.sentry.provider.db.service.thrift.PolicyStoreConstants.PolicyStoreServerConfig;
 import org.apache.sentry.service.thrift.ServiceConstants;
 import org.junit.Before;
@@ -34,18 +35,18 @@ public class TestSentryPolicyStoreProcessor {
   public void setup() {
     conf = new Configuration(false);
   }
-  @Test(expected=SentryConfigurationException.class)
+  @Test(expected=SentrySiteConfigurationException.class)
   public void testConfigNotNotificationHandler() throws Exception {
     conf.set(PolicyStoreServerConfig.NOTIFICATION_HANDLERS, Object.class.getName());
     SentryPolicyStoreProcessor.createHandlers(conf);
   }
-  @Test(expected=SentryConfigurationException.class)
+  @Test(expected=SentrySiteConfigurationException.class)
   public void testConfigCannotCreateNotificationHandler() throws Exception {
     conf.set(PolicyStoreServerConfig.NOTIFICATION_HANDLERS,
         ExceptionInConstructorNotificationHandler.class.getName());
     SentryPolicyStoreProcessor.createHandlers(conf);
   }
-  @Test(expected=SentryConfigurationException.class)
+  @Test(expected=SentrySiteConfigurationException.class)
   public void testConfigNotAClassNotificationHandler() throws Exception {
     conf.set(PolicyStoreServerConfig.NOTIFICATION_HANDLERS, "junk");
     SentryPolicyStoreProcessor.createHandlers(conf);

@@ -15,16 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.provider.db.service.thrift;
+package org.apache.sentry.core.common.exception;
 
-import org.apache.sentry.SentryUserException;
-
-public class SentryConfigurationException extends SentryUserException {
-  private static final long serialVersionUID = 1298632655835L;
-  public SentryConfigurationException(String msg) {
+public class SentryThriftAPIMismatchException extends SentryUserException {
+  private static final long serialVersionUID = 7535410604425511738L;
+  public SentryThriftAPIMismatchException(String msg) {
     super(msg);
   }
-  public SentryConfigurationException(String msg, Throwable t) {
-    super(msg, t);
+  public SentryThriftAPIMismatchException(String msg, String reason) {
+    super(msg, reason);
   }
 }

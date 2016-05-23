@@ -15,22 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.service.thrift;
+package org.apache.sentry.core.common.exception;
 
-import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.UnsupportedCallbackException;
-
-public class ConnectionDeniedException extends UnsupportedCallbackException {
-
-  private static final long serialVersionUID = 653174214903923178L;
-  private String connectionPrincipal;
-
-  public ConnectionDeniedException(Callback callback, String message, String connectionPrincipal) {
-    super(callback, message);
-    this.connectionPrincipal = connectionPrincipal;
-  }
-
-  public String getConnectionPrincipal() {
-    return connectionPrincipal;
+public class SentryGrantDeniedException extends SentryAccessDeniedException {
+  private static final long serialVersionUID = 1962330785835L;
+  public SentryGrantDeniedException(String msg) {
+    super(msg);
   }
 }

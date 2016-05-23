@@ -46,21 +46,21 @@ import javax.jdo.Transaction;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.SentryUserException;
+import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.common.utils.SentryConstants;
+import org.apache.sentry.core.common.exception.SentrySiteConfigurationException;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
-import org.apache.sentry.provider.db.SentryAccessDeniedException;
-import org.apache.sentry.provider.db.SentryAlreadyExistsException;
-import org.apache.sentry.provider.db.SentryGrantDeniedException;
-import org.apache.sentry.provider.db.SentryInvalidInputException;
-import org.apache.sentry.provider.db.SentryNoSuchObjectException;
+import org.apache.sentry.core.common.exception.SentryAccessDeniedException;
+import org.apache.sentry.core.common.exception.SentryAlreadyExistsException;
+import org.apache.sentry.core.common.exception.SentryGrantDeniedException;
+import org.apache.sentry.core.common.exception.SentryInvalidInputException;
+import org.apache.sentry.core.common.exception.SentryNoSuchObjectException;
 import org.apache.sentry.provider.db.service.model.MSentryGroup;
 import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
 import org.apache.sentry.provider.db.service.model.MSentryUser;
 import org.apache.sentry.provider.db.service.model.MSentryVersion;
-import org.apache.sentry.provider.db.service.thrift.SentryConfigurationException;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessor;
 import org.apache.sentry.provider.db.service.thrift.TSentryActiveRoleSet;
 import org.apache.sentry.provider.db.service.thrift.TSentryAuthorizable;
@@ -128,7 +128,7 @@ public class SentryStore {
   private Thread privCleanerThread = null;
 
   public SentryStore(Configuration conf) throws SentryNoSuchObjectException,
-  SentryAccessDeniedException, SentryConfigurationException, IOException {
+  SentryAccessDeniedException, SentrySiteConfigurationException, IOException {
     commitSequenceId = 0;
     this.conf = conf;
     Properties prop = new Properties();
@@ -146,7 +146,7 @@ public class SentryStore {
     if(passTmp != null) {
       pass = new String(passTmp);
     } else {
-      throw new SentryConfigurationException("Error reading " + ServerConfig.SENTRY_STORE_JDBC_PASS);
+      throw new SentrySiteConfigurationException("Error reading " + ServerConfig.SENTRY_STORE_JDBC_PASS);
     }
 
     String driverName = conf.get(ServerConfig.SENTRY_STORE_JDBC_DRIVER,

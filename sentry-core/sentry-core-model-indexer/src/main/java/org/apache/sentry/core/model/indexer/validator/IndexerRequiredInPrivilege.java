@@ -16,7 +16,7 @@
  */
 package org.apache.sentry.core.model.indexer.validator;
 
-import org.apache.sentry.core.common.SentryConfigurationException;
+import org.apache.sentry.core.common.exception.SentryConfigurationException;
 import org.apache.sentry.core.model.indexer.Indexer;
 import org.apache.sentry.core.model.indexer.IndexerModelAuthorizable;
 import org.apache.sentry.core.common.validator.PrivilegeValidatorContext;

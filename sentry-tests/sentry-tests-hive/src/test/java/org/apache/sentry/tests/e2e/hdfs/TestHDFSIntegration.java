@@ -68,7 +68,7 @@ import org.apache.sentry.binding.hive.SentryHiveAuthorizationTaskFactoryImpl;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.hdfs.PathsUpdate;
 import org.apache.sentry.hdfs.SentryAuthorizationProvider;
-import org.apache.sentry.provider.db.SentryAlreadyExistsException;
+import org.apache.sentry.core.common.exception.SentryAlreadyExistsException;
 import org.apache.sentry.provider.db.SimpleDBProviderBackend;
 import org.apache.sentry.provider.file.LocalGroupResourceAuthorizationProvider;
 import org.apache.sentry.provider.file.PolicyFile;

@@ -26,7 +26,7 @@ import java.util.List;
 
 import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.SentryUserException;
+import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.BitFieldAction;
 import org.apache.sentry.core.common.BitFieldActionFactory;
@@ -34,7 +34,7 @@ import org.apache.sentry.core.model.search.Collection;
 import org.apache.sentry.core.model.search.Field;
 import org.apache.sentry.core.model.search.SearchConstants;
 import org.apache.sentry.core.model.sqoop.SqoopActionConstant;
-import org.apache.sentry.provider.db.SentryGrantDeniedException;
+import org.apache.sentry.core.common.exception.SentryGrantDeniedException;
 import org.apache.sentry.provider.db.generic.service.persistent.PrivilegeObject.Builder;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.service.thrift.ServiceConstants;

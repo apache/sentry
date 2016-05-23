@@ -32,7 +32,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
-import org.apache.sentry.core.common.SentryConfigurationException;
+import org.apache.sentry.core.common.exception.SentryConfigurationException;
 import org.apache.sentry.policy.common.PrivilegeUtils;
 import org.apache.sentry.core.common.validator.PrivilegeValidator;
 import org.apache.sentry.core.common.validator.PrivilegeValidatorContext;

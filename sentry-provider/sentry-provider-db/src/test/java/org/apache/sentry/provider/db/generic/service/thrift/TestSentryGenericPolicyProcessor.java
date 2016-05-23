@@ -26,14 +26,15 @@ import java.util.*;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.common.Authorizable;
+import org.apache.sentry.core.common.exception.SentrySiteConfigurationException;
 import org.apache.sentry.core.model.search.Collection;
 import org.apache.sentry.core.model.search.Field;
 import org.apache.sentry.core.model.search.SearchConstants;
 import org.apache.sentry.provider.common.GroupMappingService;
-import org.apache.sentry.provider.db.SentryAlreadyExistsException;
-import org.apache.sentry.provider.db.SentryGrantDeniedException;
-import org.apache.sentry.provider.db.SentryInvalidInputException;
-import org.apache.sentry.provider.db.SentryNoSuchObjectException;
+import org.apache.sentry.core.common.exception.SentryAlreadyExistsException;
+import org.apache.sentry.core.common.exception.SentryGrantDeniedException;
+import org.apache.sentry.core.common.exception.SentryInvalidInputException;
+import org.apache.sentry.core.common.exception.SentryNoSuchObjectException;
 import org.apache.sentry.provider.db.generic.service.persistent.PrivilegeObject;
 import org.apache.sentry.provider.db.generic.service.persistent.SentryStoreLayer;
 import org.apache.sentry.provider.db.generic.service.persistent.PrivilegeObject.Builder;
@@ -41,7 +42,6 @@ import org.apache.sentry.provider.db.service.model.MSentryGMPrivilege;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
 import org.apache.sentry.provider.db.service.persistent.CommitContext;
 import org.apache.sentry.provider.db.service.thrift.PolicyStoreConstants;
-import org.apache.sentry.provider.db.service.thrift.SentryConfigurationException;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.apache.sentry.service.thrift.Status;
 import org.apache.sentry.service.thrift.TSentryResponseStatus;
@@ -323,14 +323,14 @@ public class TestSentryGenericPolicyProcessor extends org.junit.Assert {
     assertEquals(1, response5.getPrivilegesMapByAuth().size());
   }
 
-  @Test(expected=SentryConfigurationException.class)
+  @Test(expected=SentrySiteConfigurationException.class)
   public void testConfigCannotCreateNotificationHandler() throws Exception {
     Configuration conf = new Configuration();
     conf.set(PolicyStoreConstants.SENTRY_GENERIC_POLICY_NOTIFICATION,"junk");
     SentryGenericPolicyProcessor.createHandlers(conf);
   }
 
-  @Test(expected=SentryConfigurationException.class)
+  @Test(expected=SentrySiteConfigurationException.class)
   public void testConfigCannotCreateSentryStore() throws Exception {
     Configuration conf = new Configuration();
     conf.set(PolicyStoreConstants.SENTRY_GENERIC_POLICY_STORE,"junk");

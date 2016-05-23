@@ -36,7 +36,7 @@ import org.apache.sentry.core.model.db.AccessURI;
 import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.core.model.db.Table;
-import org.apache.sentry.provider.db.SentryAccessDeniedException;
+import org.apache.sentry.core.common.exception.SentryAccessDeniedException;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
 import org.junit.Test;
 

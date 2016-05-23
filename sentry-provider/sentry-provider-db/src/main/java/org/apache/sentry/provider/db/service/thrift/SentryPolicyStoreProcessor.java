@@ -29,18 +29,19 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.SentryUserException;
+import org.apache.sentry.core.common.exception.SentryUserException;
+import org.apache.sentry.core.common.exception.SentrySiteConfigurationException;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.common.GroupMappingService;
 import org.apache.sentry.core.common.utils.PolicyFileConstants;
-import org.apache.sentry.provider.common.SentryGroupNotFoundException;
-import org.apache.sentry.provider.db.SentryAccessDeniedException;
-import org.apache.sentry.provider.db.SentryAlreadyExistsException;
-import org.apache.sentry.provider.db.SentryInvalidInputException;
-import org.apache.sentry.provider.db.SentryNoSuchObjectException;
+import org.apache.sentry.core.common.exception.SentryGroupNotFoundException;
+import org.apache.sentry.core.common.exception.SentryAccessDeniedException;
+import org.apache.sentry.core.common.exception.SentryAlreadyExistsException;
+import org.apache.sentry.core.common.exception.SentryInvalidInputException;
+import org.apache.sentry.core.common.exception.SentryNoSuchObjectException;
 import org.apache.sentry.provider.db.SentryPolicyStorePlugin;
 import org.apache.sentry.provider.db.SentryPolicyStorePlugin.SentryPluginException;
-import org.apache.sentry.provider.db.SentryThriftAPIMismatchException;
+import org.apache.sentry.core.common.exception.SentryThriftAPIMismatchException;
 import org.apache.sentry.provider.db.log.entity.JsonLogEntity;
 import org.apache.sentry.provider.db.log.entity.JsonLogEntityFactory;
 import org.apache.sentry.provider.db.log.util.Constants;
@@ -167,7 +168,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
 
   @VisibleForTesting
   static List<NotificationHandler> createHandlers(Configuration conf)
-  throws SentryConfigurationException {
+  throws SentrySiteConfigurationException {
     List<NotificationHandler> handlers = Lists.newArrayList();
     Iterable<String> notificationHandlers = Splitter.onPattern("[\\s,]").trimResults()
                                             .omitEmptyStrings().split(conf.get(PolicyStoreServerConfig.NOTIFICATION_HANDLERS, ""));
@@ -176,11 +177,11 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       try {
         clazz = Class.forName(notificationHandler);
         if (!NotificationHandler.class.isAssignableFrom(clazz)) {
-          throw new SentryConfigurationException("Class " + notificationHandler + " is not a " +
+          throw new SentrySiteConfigurationException("Class " + notificationHandler + " is not a " +
                                                  NotificationHandler.class.getName());
         }
       } catch (ClassNotFoundException e) {
-        throw new SentryConfigurationException("Value " + notificationHandler +
+        throw new SentrySiteConfigurationException("Value " + notificationHandler +
                                                " is not a class", e);
       }
       Preconditions.checkNotNull(clazz, "Error class cannot be null");
@@ -188,7 +189,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
         Constructor<?> constructor = clazz.getConstructor(Configuration.class);
         handlers.add((NotificationHandler)constructor.newInstance(conf));
       } catch (Exception e) {
-        throw new SentryConfigurationException("Error attempting to create " + notificationHandler, e);
+        throw new SentrySiteConfigurationException("Error attempting to create " + notificationHandler, e);
       }
     }
     return handlers;
