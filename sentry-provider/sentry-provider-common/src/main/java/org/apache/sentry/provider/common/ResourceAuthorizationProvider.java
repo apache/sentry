@@ -109,11 +109,12 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
     lastFailedPrivileges.get().clear();
 
     for (String requestPrivilege : requestPrivileges) {
+      Privilege priv = privilegeFactory.createPrivilege(requestPrivilege);
       for (Privilege permission : privileges) {
         /*
          * Does the permission granted in the policy file imply the requested action?
          */
-        boolean result = permission.implies(privilegeFactory.createPrivilege(requestPrivilege), model);
+        boolean result = permission.implies(priv, model);
         if (LOGGER.isDebugEnabled()) {
           LOGGER.debug("ProviderPrivilege {}, RequestPrivilege {}, RoleSet, {}, Result {}",
               new Object[]{ permission, requestPrivilege, roleSet, result});
