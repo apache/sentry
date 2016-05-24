@@ -23,8 +23,11 @@ import org.apache.sentry.core.common.Action;
  */
 public enum DBModelAction implements Action {
 
-  INSERT(AccessConstants.INSERT),
+  // SENTRY-1292
+  // Need to ensure the order of enum to have SELECT in front to avoid performance
+  // regression. Since most real use case of permissions may be read only(SELECT).
   SELECT(AccessConstants.SELECT),
+  INSERT(AccessConstants.INSERT),
   ALTER(AccessConstants.ALTER),
   CREATE(AccessConstants.CREATE),
   DROP(AccessConstants.DROP),
