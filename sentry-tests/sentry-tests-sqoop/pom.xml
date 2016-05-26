@@ -187,12 +187,21 @@ limitations under the License.
                   /bin/pwd
                   BASE_DIR=./target
                   DOWNLOAD_DIR=./thirdparty
+                  if which wget >/dev/null; then
+                    DOWNLOAD_CMD="wget --no-check-certificate -nv -O"
+                  elif which curl >/dev/null; then
+                    DOWNLOAD_CMD="curl -sS -o"
+                  fi
+                  if [ -z $DOWNLOAD_CMD ]; then
+                    echo "Can't find command 'wget' or 'curl'"
+                    exit 1
+                  fi
                   download() {
                     url=$1;
                     packageName=$2
                     if [[ ! -f $DOWNLOAD_DIR/$packageName ]]
                     then
-                      wget --no-check-certificate -nv -O $DOWNLOAD_DIR/$packageName $url
+                      $DOWNLOAD_CMD $DOWNLOAD_DIR/$packageName $url
                     fi
                   }
                   mkdir -p $DOWNLOAD_DIR
