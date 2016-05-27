@@ -72,6 +72,7 @@ public class HiveAuthzPrivilegesMap {
         build();
     HiveAuthzPrivileges indexTablePrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
         addInputObjectPriviledge(AuthorizableType.Table, EnumSet.of(DBModelAction.ALL)).
+        addOutputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.ALL)). //Only used for create index location
         setOperationScope(HiveOperationScope.TABLE).
         setOperationType(HiveOperationType.DDL).
         build();

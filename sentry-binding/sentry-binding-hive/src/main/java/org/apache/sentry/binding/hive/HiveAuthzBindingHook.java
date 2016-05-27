@@ -85,6 +85,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
   private Table currTab;
   private AccessURI udfURI;
   private AccessURI partitionURI;
+  private AccessURI indexURI;
   private Table currOutTab = null;
   private Database currOutDB = null;
 
@@ -177,6 +178,8 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
       case HiveParser.TOK_ALTERVIEW_PROPERTIES:
       case HiveParser.TOK_ALTERVIEW_RENAME:
       case HiveParser.TOK_CREATEINDEX:
+        indexURI = extractTableLocation(ast);//As index location is captured using token HiveParser.TOK_TABLELOCATION
+        break;
       case HiveParser.TOK_DROPINDEX:
       case HiveParser.TOK_LOCKTABLE:
       case HiveParser.TOK_UNLOCKTABLE:
@@ -290,6 +293,24 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
   // Find the current database for session
   private Database getCanonicalDb() {
     return new Database(SessionState.get().getCurrentDatabase());
+  }
+
+  private static AccessURI extractTableLocation(ASTNode ast) throws SemanticException {
+    for (int i = 0; i < ast.getChildCount(); i++) {
+      ASTNode child = (ASTNode)ast.getChild(i);
+      if (child.getToken().getType() == HiveParser.TOK_TABLELOCATION ) {
+        //We expect the child HiveParser.TOK_TABLELOCATION to contain the URI path
+        if (child.getChildCount() == 1) {
+          return parseURI(BaseSemanticAnalyzer.
+                  unescapeSQLString(child.getChild(0).getText()));
+        } else {
+          LOG.error("Found Token HiveParser.TOK_TABLELOCATION, but was expecting the URI as its only child. " +
+                  "This means it is possible that permissions on the URI are not checked for this command ");
+        }
+      }
+    }
+    LOG.info("Token HiveParser.TOK_TABLELOCATION not found in ast. This means command does not have a location clause");
+    return null;
   }
 
   private Database extractDatabase(ASTNode ast) throws SemanticException {
@@ -510,6 +531,9 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
       // workaround for add partitions
       if(partitionURI != null) {
         inputHierarchy.add(ImmutableList.of(hiveAuthzBinding.getAuthServer(), partitionURI));
+      }
+      if(indexURI != null) {
+        outputHierarchy.add(ImmutableList.of(hiveAuthzBinding.getAuthServer(), indexURI));
       }
 
       getInputHierarchyFromInputs(inputHierarchy, inputs);
