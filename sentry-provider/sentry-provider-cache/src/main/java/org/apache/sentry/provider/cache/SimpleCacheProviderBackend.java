@@ -73,7 +73,7 @@ public class SimpleCacheProviderBackend implements ProviderBackend {
           "Backend has not been properly initialized");
     }
     return ImmutableSet.copyOf(cacheHandle.listPrivileges(groups, users,
-        roleSet));
+        roleSet, authorizableHierarchy));
   }
 
   @Override

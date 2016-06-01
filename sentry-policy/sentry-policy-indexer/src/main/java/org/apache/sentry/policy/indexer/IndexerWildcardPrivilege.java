@@ -21,6 +21,8 @@
 
 package org.apache.sentry.policy.indexer;
 
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.sentry.core.common.Model;
@@ -102,6 +104,19 @@ public class IndexerWildcardPrivilege implements Privilege {
     }
 
     return true;
+  }
+
+  @Override
+  public List<KeyValue> getAuthorizable() {
+    List<KeyValue> authorizable = new LinkedList<>();
+
+    for (KeyValue part : parts) {
+      if (!SentryConstants.PRIVILEGE_NAME.equalsIgnoreCase(part.getKey())) {
+        authorizable.add(part);
+      }
+    }
+
+    return authorizable;
   }
 
   private boolean impliesKeyValue(KeyValue policyPart, KeyValue requestPart) {

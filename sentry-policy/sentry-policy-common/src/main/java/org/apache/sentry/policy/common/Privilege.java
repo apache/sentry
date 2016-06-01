@@ -17,7 +17,21 @@
 package org.apache.sentry.policy.common;
 
 import org.apache.sentry.core.common.Model;
+import org.apache.sentry.core.common.utils.KeyValue;
+
+import java.util.List;
 
 public interface Privilege {
+
+  /**
+   * To check if implies another privilege based on the model.
+   **/
   boolean implies(Privilege p, Model model);
+
+
+  /**
+   * Return the list of authorizeable of the privilege.
+   * @return List of Authorizeable
+   */
+  List<KeyValue> getAuthorizable();
 }

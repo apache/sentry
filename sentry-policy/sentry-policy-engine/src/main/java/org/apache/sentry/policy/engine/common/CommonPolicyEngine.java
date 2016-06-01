@@ -72,7 +72,7 @@ public class CommonPolicyEngine implements PolicyEngine {
       LOGGER.debug("Getting permissions for {}", groups);
     }
 
-    ImmutableSet<String> result = providerBackend.getPrivileges(groups, roleSet);
+    ImmutableSet<String> result = providerBackend.getPrivileges(groups, roleSet, authorizableHierarchy);
     if(LOGGER.isDebugEnabled()) {
       LOGGER.debug("result = " + result);
     }
@@ -85,7 +85,7 @@ public class CommonPolicyEngine implements PolicyEngine {
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("Getting permissions for groups: {}, users: {}", groups, users);
     }
-    ImmutableSet<String> result = providerBackend.getPrivileges(groups, users, roleSet);
+    ImmutableSet<String> result = providerBackend.getPrivileges(groups, users, roleSet, authorizableHierarchy);
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("result = " + result);
     }
