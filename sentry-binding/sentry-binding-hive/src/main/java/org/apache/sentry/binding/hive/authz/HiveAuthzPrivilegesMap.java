@@ -99,6 +99,12 @@ public class HiveAuthzPrivilegesMap {
         setOperationType(HiveOperationType.DDL).
         build();
 
+    HiveAuthzPrivileges alterPartPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
+        addInputObjectPriviledge(AuthorizableType.Table, EnumSet.of(DBModelAction.ALTER)).
+        setOperationScope(HiveOperationScope.TABLE).
+        setOperationType(HiveOperationType.INFO).
+        build();
+
     /* Currently Hive treats select/insert/analyze as Query
      * select = select on table
      * insert = insert on table /all on uri
@@ -219,6 +225,9 @@ public class HiveAuthzPrivilegesMap {
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_RENAMECOL, alterTablePrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_ADDCOLS, alterTablePrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_REPLACECOLS, alterTablePrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_PARTCOLTYPE, alterPartPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_BUCKETNUM, alterPartPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_BUCKETNUM, alterPartPrivilege);
 
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_RENAMEPART, alterTablePrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_ARCHIVE, alterTablePrivilege);
