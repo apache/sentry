@@ -77,8 +77,8 @@ limitations under the License.
     <jettyVersion>8.1.19.v20160209</jettyVersion>
     <joda-time.version>2.5</joda-time.version>
     <junit.version>4.10</junit.version>
-    <libfb303.version>0.9.2</libfb303.version>
-    <libthrift.version>0.9.2</libthrift.version>
+    <libfb303.version>0.9.3</libfb303.version>
+    <libthrift.version>0.9.3</libthrift.version>
     <log4j.version>1.2.16</log4j.version>
     <maven.antrun.plugin.version>1.7</maven.antrun.plugin.version>
     <maven.eclipse.plugin.version>2.9</maven.eclipse.plugin.version>
