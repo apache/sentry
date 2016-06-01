@@ -234,6 +234,9 @@ public class HiveAuthzPrivilegesMap {
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_MERGEFILES, alterTablePrivilege);
 
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERVIEW_PROPERTIES, alterTablePrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERVIEW_AS, createViewPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERVIEW_RENAME, alterTableRenamePrivilege);
+
 
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_DROPPARTS, dropPartitionPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_ADDPARTS, addPartitionPrivilege);

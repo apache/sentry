@@ -142,6 +142,7 @@ public class HiveAuthzBindingHook extends HiveAuthzBindingHookBase {
       case HiveParser.TOK_ALTERVIEW_DROPPARTS:
       case HiveParser.TOK_ALTERVIEW_PROPERTIES:
       case HiveParser.TOK_ALTERVIEW_RENAME:
+      case HiveParser.TOK_ALTERVIEW:
       case HiveParser.TOK_CREATEINDEX:
       case HiveParser.TOK_DROPINDEX:
       case HiveParser.TOK_LOCKTABLE:
