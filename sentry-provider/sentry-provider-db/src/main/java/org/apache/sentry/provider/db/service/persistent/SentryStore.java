@@ -193,7 +193,7 @@ public class SentryStore {
   }
 
   // ensure that the backend DB schema is set
-  private void verifySentryStoreSchema(boolean checkVersion)
+  public void verifySentryStoreSchema(boolean checkVersion)
           throws SentryNoSuchObjectException, SentryAccessDeniedException {
     if (!checkVersion) {
       setSentryVersion(SentryStoreSchemaInfo.getSentryVersion(),
