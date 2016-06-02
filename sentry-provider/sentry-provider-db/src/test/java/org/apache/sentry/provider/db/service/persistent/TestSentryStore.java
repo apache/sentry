@@ -35,6 +35,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.alias.CredentialProvider;
 import org.apache.hadoop.security.alias.CredentialProviderFactory;
 import org.apache.hadoop.security.alias.UserProvider;
+import org.apache.sentry.provider.db.SentryAccessDeniedException;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.db.SentryAlreadyExistsException;
 import org.apache.sentry.provider.db.SentryGrantDeniedException;
@@ -1659,6 +1660,27 @@ public class TestSentryStore {
     }
     privilegeSet = sentryStore.getAllTSentryPrivilegesByRoleName(roleName2);
     assertEquals(1, privilegeSet.size());
+  }
+
+  @Test
+  public void testSentryVersionCheck() throws Exception {
+    // don't verify version, the current version willll be set in MSentryVersion
+    sentryStore.verifySentryStoreSchema(false);
+    assertEquals(sentryStore.getSentryVersion(),
+        SentryStoreSchemaInfo.getSentryVersion());
+
+    // verify the version with the same value
+    sentryStore.verifySentryStoreSchema(true);
+
+    // verify the version with the different value
+    sentryStore.setSentryVersion("test-version", "test-version");
+    try {
+      sentryStore.verifySentryStoreSchema(true);
+      fail("SentryAccessDeniedException should be thrown.");
+    } catch (SentryAccessDeniedException e) {
+      // the excepted exception, recover the version
+      sentryStore.verifySentryStoreSchema(false);
+    }
   }
 
   protected static void addGroupsToUser(String user, String... groupNames) {

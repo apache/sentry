@@ -173,7 +173,7 @@ public class SentryStore {
     prop.setProperty("datanucleus.NontransactionalWrite", "false");
 
     pmf = JDOHelper.getPersistenceManagerFactory(prop);
-    verifySentryStoreSchema(conf, checkSchemaVersion);
+    verifySentryStoreSchema(checkSchemaVersion);
 
     // Kick off the thread that cleans orphaned privileges (unless told not to)
     privCleaner = this.new PrivCleaner();
@@ -186,8 +186,7 @@ public class SentryStore {
   }
 
   // ensure that the backend DB schema is set
-  private void verifySentryStoreSchema(Configuration serverConf,
-      boolean checkVersion)
+  public void verifySentryStoreSchema(boolean checkVersion)
           throws SentryNoSuchObjectException, SentryAccessDeniedException {
     if (!checkVersion) {
       setSentryVersion(SentryStoreSchemaInfo.getSentryVersion(),
