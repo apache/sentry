@@ -59,6 +59,7 @@ Release Notes - Sentry - Version 1.7.0
     * [SENTRY-1191] - update history page of Sentry release
     * [SENTRY-1192] - Add SQL upgrade script for 1.7.0
     * [SENTRY-1202] - Sentry TLP: Other Common post graduation tasks
+    * [SENTRY-1211] - Home page still has Incubator logo in footer
 
 
 ** Bug
@@ -142,6 +143,7 @@ Release Notes - Sentry - Version 1.7.0
     * [SENTRY-1164] - Fix testCaseSensitivity test failure on a real cluster
     * [SENTRY-1169] - MetastorePlugin#renameAuthzObject log message prints oldpathname as newpathname
     * [SENTRY-1217] - NPE for list_sentry_privileges_by_authorizable when activeRoleSet is not set
+    * [SENTRY-1234] - JDO exception for list_sentry_privileges_by_authorizable
 
 
 ** Improvement
@@ -171,6 +173,7 @@ Release Notes - Sentry - Version 1.7.0
     * [SENTRY-1078] - Add servlet for dumping configurations
     * [SENTRY-1088] - PathsUpdate should log invalid paths to make troubleshooting easier 
     * [SENTRY-1119] - Allow data engines to specify the ActionFactory from configuration
+    * [SENTRY-1121] - Update Jetty version
     * [SENTRY-1135] - Remove deprecated junit.framework dependencies
     * [SENTRY-1136] - Remove /Ping and /HealthCheck from Sentry Service Webpage
 
@@ -193,6 +196,7 @@ Release Notes - Sentry - Version 1.7.0
     * [SENTRY-1032] - Implement group/role commands in solr shell
     * [SENTRY-1038] - More strict checking of SOLR actions in shell
     * [SENTRY-1047] - Use existing validators in SentryShellSolr
+    * [SENTRY-1110] - Apache Sentry 1.7.0 Release
 
 
 ** Test
