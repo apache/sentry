@@ -75,8 +75,8 @@ limitations under the License.
     <fest.reflect.version>1.4.1</fest.reflect.version>
     <guava.version>11.0.2</guava.version>
     <junit.version>4.9</junit.version>
-    <libthrift.version>0.9.2</libthrift.version>
-    <libfb303.version>0.9.2</libfb303.version>
+    <libthrift.version>${cdh.thrift.version}</libthrift.version>
+    <libfb303.version>${cdh.thrift.version}</libfb303.version>
     <curator.version>2.7.1</curator.version>
     <junit.version>4.10</junit.version>
     <log4j.version>1.2.16</log4j.version>
