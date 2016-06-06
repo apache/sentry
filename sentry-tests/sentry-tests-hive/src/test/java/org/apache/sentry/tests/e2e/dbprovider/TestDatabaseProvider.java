@@ -2173,4 +2173,41 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     statement.close();
     connection.close();
   }
+
+  /* Sentry-858 */
+  @Test
+  public void testShowPrivilegesWithDbPrefix() throws Exception {
+    //negative testcase
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("CREATE ROLE role1");
+    ResultSet resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    assertResultSize(resultSet, 0);
+    statement.execute("CREATE DATABASE db1");
+    statement.execute("USE db1");
+    statement.execute("CREATE TABLE tab1 (col1 string)");
+    statement.execute("USE default");
+    statement.execute("GRANT SELECT ON TABLE db1.tab1 TO ROLE role1");
+    statement.execute("GRANT ROLE role1 to GROUP " + USERGROUP1);
+
+    String[] users = {USER1_1};
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+
+    while ( resultSet.next()) {
+      assertThat(resultSet.getString(1), equalToIgnoringCase("default"));//the value should be db1
+      assertThat(resultSet.getString(2), equalToIgnoringCase("tab1"));
+      assertThat(resultSet.getString(3), equalToIgnoringCase(""));//partition
+      assertThat(resultSet.getString(4), equalToIgnoringCase(""));//column
+      assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
+      assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
+      assertThat(resultSet.getString(7), equalToIgnoringCase("select"));
+      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      assertThat(resultSet.getString(10), equalToIgnoringCase("--"));//grantor
+    }
+    statement.close();
+    connection.close();
+  }
+
 }
