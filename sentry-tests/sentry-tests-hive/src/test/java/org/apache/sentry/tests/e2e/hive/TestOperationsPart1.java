@@ -50,9 +50,12 @@ public class TestOperationsPart1 extends AbstractTestWithStaticConfiguration {
     privileges.put("create_server", "server=server1->action=create");
     privileges.put("all_db1", "server=server1->db=" + DB1 + "->action=all");
     privileges.put("select_db1", "server=server1->db=" + DB1 + "->action=select");
+    privileges.put("select_default", "server=server1->db=" + DEFAULT + "->action=select");
     privileges.put("insert_db1", "server=server1->db=" + DB1 + "->action=insert");
     privileges.put("create_db1", "server=server1->db=" + DB1 + "->action=create");
+    privileges.put("create_default", "server=server1->db=" + DEFAULT + "->action=create");
     privileges.put("drop_db1", "server=server1->db=" + DB1 + "->action=drop");
+    privileges.put("drop_default", "server=server1->db=" + DEFAULT + "->action=drop");
     privileges.put("alter_db1", "server=server1->db=" + DB1 + "->action=alter");
     privileges.put("create_db2", "server=server1->db=" + DB2 + "->action=create");
 
@@ -137,6 +140,71 @@ public class TestOperationsPart1 extends AbstractTestWithStaticConfiguration {
     statement.close();
     connection.close();
 
+  }
+
+  @Test
+  public void testCreateMacro() throws Exception {
+    policyFile
+        .addPermissionsToRole("create_default", privileges.get("create_default"))
+        .addRolesToGroup(USERGROUP1, "create_default");
+
+    writePolicyFile(policyFile);
+    Connection connection = context.createConnection(USER1_1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("CREATE TEMPORARY MACRO SIGMOID (x DOUBLE) 1.0 / (1.0 + EXP(-x))");
+    statement.close();connection.close();
+
+    //Negative case
+    policyFile
+        .addPermissionsToRole("select_default", privileges.get("select_default"))
+        .addRolesToGroup(USERGROUP2, "select_default");
+    writePolicyFile(policyFile);
+
+    connection = context.createConnection(USER2_1);
+    statement = context.createStatement(connection);
+    context.assertSentrySemanticException(statement,
+                "CREATE TEMPORARY MACRO SIGMOID (x DOUBLE) 1.0 / (1.0 + EXP(-x))", semanticException);
+    statement.close();
+    connection.close();
+  }
+
+  @Test
+  public void testDropMacro() throws Exception {
+    adminCreate(DB1, null);
+    policyFile
+        .addPermissionsToRole("drop_default", privileges.get("drop_default"))
+        .addRolesToGroup(USERGROUP1, "drop_default");
+
+    writePolicyFile(policyFile);
+
+    Connection connection;
+    Statement statement;
+
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    statement.execute("CREATE TEMPORARY MACRO SIGMOID (x DOUBLE) 1.0 / (1.0 + EXP(-x))");
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    statement.execute("DROP TEMPORARY MACRO SIGMOID");
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    statement.execute("CREATE TEMPORARY MACRO SIGMOID (x DOUBLE) 1.0 / (1.0 + EXP(-x))");
+    //Negative case
+    adminCreate(DB1, null);
+    policyFile
+        .addPermissionsToRole("select_default", privileges.get("select_default"))
+        .addRolesToGroup(USERGROUP2, "select_default");
+    writePolicyFile(policyFile);
+
+    connection = context.createConnection(USER2_1);
+    statement = context.createStatement(connection);
+    context.assertSentrySemanticException(statement, " DROP TEMPORARY MACRO SIGMOID", semanticException);
+    statement.close();
+    connection.close();
   }
 
   @Test

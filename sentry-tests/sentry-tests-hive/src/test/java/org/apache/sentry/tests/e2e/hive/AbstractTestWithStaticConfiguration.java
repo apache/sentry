@@ -148,7 +148,8 @@ public abstract class AbstractTestWithStaticConfiguration {
       VIEW1 = "view_1",
       VIEW2 = "view_2",
       VIEW3 = "view_3",
-      INDEX1 = "index_1";
+      INDEX1 = "index_1",
+      DEFAULT = "default";
 
   protected static final String SERVER_HOST = "localhost";
   private static final String EXTERNAL_SENTRY_SERVICE = "sentry.e2etest.external.sentry";
