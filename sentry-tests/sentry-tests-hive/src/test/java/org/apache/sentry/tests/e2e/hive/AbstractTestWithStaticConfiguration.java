@@ -20,7 +20,6 @@ import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_S
 import static org.apache.sentry.provider.common.ProviderConstants.PRIVILEGE_PREFIX;
 import static org.apache.sentry.provider.common.ProviderConstants.ROLE_SPLITTER;
 import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.IOException;
 import java.security.PrivilegedExceptionAction;
@@ -71,6 +70,7 @@ import org.apache.sentry.service.thrift.KerberosConfiguration;
 import org.apache.sentry.service.thrift.SentryServiceClientFactory;
 import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
+
 import org.apache.sentry.tests.e2e.hive.fs.DFS;
 import org.apache.sentry.tests.e2e.hive.fs.DFSFactory;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServer;
@@ -160,6 +160,7 @@ public abstract class AbstractTestWithStaticConfiguration {
   protected static boolean policyOnHdfs = false;
   protected static boolean useSentryService = false;
   protected static boolean setMetastoreListener = true;
+  protected static boolean useDbNotificationListener = false;
   protected static String testServerType = null;
   protected static boolean enableHiveConcurrency = false;
   // indicate if the database need to be clear for every test case in one test class
@@ -511,10 +512,15 @@ public abstract class AbstractTestWithStaticConfiguration {
     startSentryService();
     if (setMetastoreListener) {
       LOGGER.info("setMetastoreListener is enabled");
-      properties.put(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS.varname,
-          SentryMetastorePostEventListener.class.getName());
-    }
+      if (useDbNotificationListener) {
+        properties.put(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS.varname,
+                "org.apache.hive.hcatalog.listener.DbNotificationListener");
+      } else {
+        properties.put(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS.varname,
+                SentryMetastorePostEventListener.class.getName());
 
+      }
+    }
   }
 
   private static void startSentryService() throws Exception {

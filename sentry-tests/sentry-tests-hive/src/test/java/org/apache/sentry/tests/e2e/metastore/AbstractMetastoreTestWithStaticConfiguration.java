@@ -95,6 +95,26 @@ public abstract class AbstractMetastoreTestWithStaticConfiguration extends
 
   }
 
+  public void alterTableWithLocation(HiveMetaStoreClient client,
+                                                Table table, String location)
+          throws Exception {
+    table.getSd().setLocation(location);
+    client.alter_table(table.getDbName(), table.getTableName(), table);
+  }
+
+  public void alterTableRename(HiveMetaStoreClient client,
+                                     Table table, String newDBName, String newTableName, String newLocation)
+          throws Exception {
+    String dbName = table.getDbName();
+    String tableName = table.getTableName();
+    table.setDbName(newDBName);
+    table.setTableName(newTableName);
+    if( newLocation != null ) {
+      table.getSd().setLocation(newLocation);
+    }
+    client.alter_table(dbName, tableName, table);
+  }
+
   public Table createMetastoreTableWithPartition(HiveMetaStoreClient client,
       String dbName, String tabName, List<FieldSchema> cols,
       List<FieldSchema> partionVals) throws Exception {
@@ -104,10 +124,20 @@ public abstract class AbstractMetastoreTestWithStaticConfiguration extends
     return client.getTable(dbName, tabName);
   }
 
-  public void addPartition(HiveMetaStoreClient client, String dbName,
+  public Partition addPartition(HiveMetaStoreClient client, String dbName,
       String tblName, List<String> ptnVals, Table tbl) throws Exception {
     Partition part = makeMetastorePartitionObject(dbName, tblName, ptnVals, tbl);
-    Partition retp = client.add_partition(part);
+    return client.add_partition(part);
+  }
+
+  public void alterPartitionWithLocation(HiveMetaStoreClient client, Partition partition, String location) throws Exception {
+    partition.getSd().setLocation(location);
+    client.alter_partition(partition.getDbName(), partition.getTableName(), partition);
+  }
+
+  public void dropPartition(HiveMetaStoreClient client, String dbName,
+                           String tblName, List<String> ptnVals) throws Exception {
+    client.dropPartition(dbName, tblName, ptnVals);
   }
 
   public void addPartitionWithLocation(HiveMetaStoreClient client,
