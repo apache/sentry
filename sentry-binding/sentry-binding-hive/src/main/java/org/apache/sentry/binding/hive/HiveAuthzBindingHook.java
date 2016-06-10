@@ -277,7 +277,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
         Preconditions.checkArgument(ast.getChildCount() == 1);
         // childcount is 1 for table without partition, 2 for table with partitions
         Preconditions.checkArgument(ast.getChild(0).getChildCount() >= 1);
-        Preconditions.checkArgument(ast.getChild(0).getChild(0).getChildCount() == 1);
+        Preconditions.checkArgument(ast.getChild(0).getChild(0).getChildCount() >= 1);
         currOutDB = extractDatabase((ASTNode) ast.getChild(0));
         currOutTab = extractTable((ASTNode) ast.getChild(0).getChild(0).getChild(0));
         break;
