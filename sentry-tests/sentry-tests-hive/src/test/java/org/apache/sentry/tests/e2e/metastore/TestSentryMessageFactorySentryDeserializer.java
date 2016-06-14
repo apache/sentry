@@ -37,10 +37,10 @@ import java.util.ArrayList;
 import java.util.Random;
 
 /**
- * Make sure we are able to capture all HMS object and path changes using Sentry's SentryMetastorePostEventListener
- * and Sentry Notification log deserializer. Can be removed if we move to using DBNotificationListener
+ * Make sure we are able to capture all HMS object and path changes using Sentry's SentryJSONMessageFactory
+ * and Sentry Notification log deserializer.
  */
-public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestWithStaticConfiguration {
+public class TestSentryMessageFactorySentryDeserializer extends AbstractMetastoreTestWithStaticConfiguration {
 
   protected static HiveMetaStoreClient client;
   protected static SentryJSONMessageDeserializer deserializer;
@@ -52,7 +52,7 @@ public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestW
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception {
     setMetastoreListener = true;
-    useDbNotificationListener = false;
+    useDefaultMessageFactory = false;
     AbstractMetastoreTestWithStaticConfiguration.setupTestStaticConfiguration();
     setupClass();
   }
@@ -97,7 +97,7 @@ public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestW
     assertEquals(HCatEventMessage.EventType.CREATE_DATABASE, createDatabaseMessage.getEventType()); //Validate EventType
     assertEquals(testDB, createDatabaseMessage.getDB()); //dbName
     String expectedLocation = warehouseDir + "/" + testDB + ".db";
-    if(!useDbNotificationListener) {
+    if(!useDefaultMessageFactory) {
       Assert.assertEquals(expectedLocation.toLowerCase(), createDatabaseMessage.getLocation());
     }
 
@@ -115,7 +115,7 @@ public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestW
     SentryJSONDropDatabaseMessage dropDatabaseMessage = deserializer.getDropDatabaseMessage(response.getEvents().get(0).getMessage());
     assertEquals(HCatEventMessage.EventType.DROP_DATABASE, dropDatabaseMessage.getEventType()); //Event type
     assertThat(dropDatabaseMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB)); // dbName
-    if(!useDbNotificationListener) {
+    if(!useDefaultMessageFactory) {
       Assert.assertEquals(expectedLocation.toLowerCase(), dropDatabaseMessage.getLocation()); //location
     }
   }
@@ -145,7 +145,7 @@ public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestW
     assertEquals(testDB, createTableMessage.getDB()); //dbName
     assertEquals(testTable, createTableMessage.getTable()); //tableName
     String expectedLocation = warehouseDir + "/" + testDB + ".db/" + testTable;
-    if(!useDbNotificationListener) {
+    if(!useDefaultMessageFactory) {
       Assert.assertEquals(expectedLocation.toLowerCase(), createTableMessage.getLocation());
     }
 
@@ -164,7 +164,7 @@ public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestW
     assertEquals(HCatEventMessage.EventType.DROP_TABLE, dropTableMessage.getEventType());
     assertThat(dropTableMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB));//dbName
     assertThat(dropTableMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable));//tableName
-    if(!useDbNotificationListener) {
+    if(!useDefaultMessageFactory) {
       Assert.assertEquals(expectedLocation.toLowerCase(), dropTableMessage.getLocation()); //location
     }
   }
@@ -192,7 +192,7 @@ public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestW
     assertEquals(testDB, createTableMessage.getDB()); //dbName
     assertEquals(testTable, createTableMessage.getTable()); //tableName
     String expectedLocation = warehouseDir + "/" + testDB + ".db/" + testTable;
-    if(!useDbNotificationListener) {
+    if(!useDefaultMessageFactory) {
       Assert.assertEquals(expectedLocation.toLowerCase(), createTableMessage.getLocation());
     }
 
@@ -210,7 +210,7 @@ public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestW
     assertEquals(HCatEventMessage.EventType.DROP_TABLE, dropTableMessage.getEventType());
     assertThat(dropTableMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB));//dbName
     assertThat(dropTableMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable));//tableName
-    if(!useDbNotificationListener) {
+    if(!useDefaultMessageFactory) {
       Assert.assertEquals(expectedLocation.toLowerCase(), dropTableMessage.getLocation()); //location
     }
   }
@@ -242,7 +242,7 @@ public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestW
     assertThat(addPartitionMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB));// dbName (returns lowered version)
     assertThat(addPartitionMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable));// tableName (returns lowered version)
     String expectedLocation = warehouseDir + "/" + testDB + ".db/" + testTable ; //TODO: SENTRY-1387: Tablelocation is stored instead of partition location
-    if(!useDbNotificationListener) {
+    if(!useDefaultMessageFactory) {
       Assert.assertEquals(expectedLocation.toLowerCase(), addPartitionMessage.getLocations().get(0));
     }
 
@@ -260,7 +260,7 @@ public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestW
     assertEquals(HCatEventMessage.EventType.DROP_PARTITION, dropPartitionMessage.getEventType());
     assertThat(dropPartitionMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB)); //dbName
     assertThat(dropPartitionMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable)); //tableName
-    if(!useDbNotificationListener) {
+    if(!useDefaultMessageFactory) {
       Assert.assertEquals(expectedLocation.toLowerCase(), dropPartitionMessage.getLocation());
     }
 
@@ -297,7 +297,7 @@ public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestW
     assertEquals(HCatEventMessage.EventType.ALTER_TABLE, alterTableMessage.getEventType());
     assertThat(alterTableMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB));//dbName
     assertThat(alterTableMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable));//tableName
-    if(!useDbNotificationListener) {
+    if(!useDefaultMessageFactory) {
       Assert.assertEquals(oldLocation, alterTableMessage.getOldLocation()); //oldLocation
       Assert.assertEquals(tbl1.getSd().getLocation(), alterTableMessage.getLocation()); //newLocation
     }
@@ -329,7 +329,7 @@ public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestW
     assertThat(alterTableMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable));//oldTableName
     assertThat(response.getEvents().get(0).getDbName(), IsEqualIgnoringCase.equalToIgnoringCase(newDBName));//newDbName
     assertThat(response.getEvents().get(0).getTableName(), IsEqualIgnoringCase.equalToIgnoringCase(newTableName));//newTableName
-    if(!useDbNotificationListener) {
+    if(!useDefaultMessageFactory) {
       Assert.assertEquals(oldLocation, alterTableMessage.getOldLocation()); //oldLocation
       Assert.assertEquals(tbl1.getSd().getLocation(), alterTableMessage.getLocation()); //newLocation
     }
@@ -366,7 +366,7 @@ public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestW
     assertEquals(HCatEventMessage.EventType.ALTER_PARTITION, alterPartitionMessage.getEventType());
     assertThat(alterPartitionMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB));// dbName
     assertThat(alterPartitionMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable));// tableName
-    if(!useDbNotificationListener) {
+    if(!useDefaultMessageFactory) {
       Assert.assertEquals(oldLocation.toLowerCase(), alterPartitionMessage.getOldLocation());
       Assert.assertEquals(newLocation.toLowerCase(), alterPartitionMessage.getLocation());
     }

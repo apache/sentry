@@ -59,7 +59,6 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.sentry.binding.hive.SentryHiveAuthorizationTaskFactoryImpl;
-import org.apache.sentry.binding.metastore.SentryMetastorePostEventListener;
 import org.apache.sentry.core.model.db.DBModelAction;
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.sentry.policy.db.DBModelAuthorizables;
@@ -160,7 +159,7 @@ public abstract class AbstractTestWithStaticConfiguration {
   protected static boolean policyOnHdfs = false;
   protected static boolean useSentryService = false;
   protected static boolean setMetastoreListener = true;
-  protected static boolean useDbNotificationListener = false;
+  protected static boolean useDefaultMessageFactory = false;
   protected static String testServerType = null;
   protected static boolean enableHiveConcurrency = false;
   // indicate if the database need to be clear for every test case in one test class
@@ -511,13 +510,10 @@ public abstract class AbstractTestWithStaticConfiguration {
     }
     startSentryService();
     if (setMetastoreListener) {
+      properties.put(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS.varname,
+          "org.apache.hive.hcatalog.listener.DbNotificationListener");
       LOGGER.info("setMetastoreListener is enabled");
-      if (useDbNotificationListener) {
-        properties.put(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS.varname,
-                "org.apache.hive.hcatalog.listener.DbNotificationListener");
-      } else {
-        properties.put(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS.varname,
-                SentryMetastorePostEventListener.class.getName());
+      if (!useDefaultMessageFactory) {
         properties.put("hcatalog.message.factory.impl.json",
             "org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageFactory");
       }

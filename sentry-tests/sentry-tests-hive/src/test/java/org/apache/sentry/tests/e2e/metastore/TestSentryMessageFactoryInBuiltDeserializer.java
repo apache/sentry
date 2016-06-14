@@ -20,20 +20,18 @@ package org.apache.sentry.tests.e2e.metastore;
 
 import org.junit.BeforeClass;
 
-
 /**
- * Make sure we are able to capture all HMS object and path changes using Hive's DbNotificationListener and
- * Sentry's JSON deserializer. This would make sure Sentry is able to read the Notification logs written by
- * Hive's DBNotificationListener
+ * Make sure we are able to capture all HMS object and path changes using Sentry's SentryJSONMessageFactory
+ * and Hive's inbuilt Notification log deserializer. This would make sure Sentry is not breaking other users of
+ * NotificationLog who might be using Hive's in built serializer
  */
-public class TestDbNotificationListenerSentryDeserializer extends TestSentryListenerSentryDeserializer {
+public class TestSentryMessageFactoryInBuiltDeserializer extends TestDefaultMessageFactoryInBuiltDeserializer {
 
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception {
     setMetastoreListener = true;
-    useDbNotificationListener = true;
-    AbstractMetastoreTestWithStaticConfiguration.setupTestStaticConfiguration();
-    setupClass();
+    useDefaultMessageFactory = false;
+    beforeClass();
   }
 }
 

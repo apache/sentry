@@ -47,10 +47,10 @@ import java.util.Random;
 
 /**
  * Make sure NotificationLog is capturing the information correctly for the commands which change <Obj,Location> mapping
- * This test class is using Hive's DbNotificationListener and Hive's Notification log JSON deserializer.
+ * This test class is using Hive's default JSONMessageFactory and Hive's Notification log JSON deserializer.
  */
 
-public class TestDBNotificationListenerInBuiltDeserializer extends AbstractMetastoreTestWithStaticConfiguration {
+public class TestDefaultMessageFactoryInBuiltDeserializer extends AbstractMetastoreTestWithStaticConfiguration {
 
   protected static HiveMetaStoreClient client;
   protected static MessageDeserializer deserializer;
@@ -60,7 +60,7 @@ public class TestDBNotificationListenerInBuiltDeserializer extends AbstractMetas
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception {
     setMetastoreListener = true;
-    useDbNotificationListener = true;
+    useDefaultMessageFactory = true;
     beforeClass();
   }
 
