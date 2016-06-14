@@ -518,7 +518,8 @@ public abstract class AbstractTestWithStaticConfiguration {
       } else {
         properties.put(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS.varname,
                 SentryMetastorePostEventListener.class.getName());
-
+        properties.put("hcatalog.message.factory.impl.json",
+            "org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageFactory");
       }
     }
   }

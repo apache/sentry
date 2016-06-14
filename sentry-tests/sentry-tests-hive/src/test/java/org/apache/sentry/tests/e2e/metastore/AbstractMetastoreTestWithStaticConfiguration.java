@@ -203,6 +203,11 @@ public abstract class AbstractMetastoreTestWithStaticConfiguration extends
     client.createDatabase(db);
   }
 
+  public void dropMetastoreDBIfExists(HiveMetaStoreClient client, String dbName)
+      throws Exception {
+    client.dropDatabase(dbName, true, true, true);
+  }
+
   public void execHiveSQLwithOverlay(final String sqlStmt,
       final String userName, Map<String, String> overLay) throws Exception {
     final HiveConf hiveConf = new HiveConf();
