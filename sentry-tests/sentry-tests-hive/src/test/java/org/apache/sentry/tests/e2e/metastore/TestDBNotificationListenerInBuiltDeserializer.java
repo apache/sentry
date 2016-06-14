@@ -32,7 +32,6 @@ import org.apache.hive.hcatalog.messaging.AlterPartitionMessage;
 import org.apache.hive.hcatalog.messaging.DropDatabaseMessage;
 import org.apache.hive.hcatalog.messaging.AddPartitionMessage;
 import org.apache.hive.hcatalog.messaging.DropPartitionMessage;
-import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
 import org.hamcrest.text.IsEqualIgnoringCase;
@@ -48,23 +47,28 @@ import java.util.Random;
 
 /**
  * Make sure NotificationLog is capturing the information correctly for the commands which change <Obj,Location> mapping
+ * This test class is using Hive's DbNotificationListener and Hive's Notification log JSON deserializer.
  */
-public class TestHMSNotificationLogUsingDBNotificationListener extends AbstractMetastoreTestWithStaticConfiguration {
 
-  private PolicyFile policyFile;
+public class TestDBNotificationListenerInBuiltDeserializer extends AbstractMetastoreTestWithStaticConfiguration {
 
-  private static HiveMetaStoreClient client;
-  private static MessageDeserializer deserializer;
-  private static Random random = new Random();
-
+  protected static HiveMetaStoreClient client;
+  protected static MessageDeserializer deserializer;
+  protected static Random random = new Random();
+  private static String testDB;
 
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception {
     setMetastoreListener = true;
     useDbNotificationListener = true;
+    beforeClass();
+  }
+
+  protected static void beforeClass() throws Exception {
     AbstractMetastoreTestWithStaticConfiguration.setupTestStaticConfiguration();
     client = context.getMetaStoreClient(ADMIN1);
     deserializer = MessageFactory.getDeserializer("json", "");
+    writePolicyFile(setAdminOnServer1(ADMINGROUP).setUserGroupMapping(StaticUserGroup.getStaticMapping()));
   }
 
   @AfterClass
@@ -74,13 +78,11 @@ public class TestHMSNotificationLogUsingDBNotificationListener extends AbstractM
     }
   }
 
-  @Override
-  @Before
-  public void setup() throws Exception {
-    policyFile = setAdminOnServer1(ADMINGROUP);
-    policyFile.setUserGroupMapping(StaticUserGroup.getStaticMapping());
-    writePolicyFile(policyFile);
-    super.setup();
+  @After
+  public void dropDBAfterTest() throws Exception {
+    if(client != null && testDB != null) {
+      dropMetastoreDBIfExists(client, testDB);
+    }
   }
 
   @Test
@@ -88,7 +90,7 @@ public class TestHMSNotificationLogUsingDBNotificationListener extends AbstractM
     CurrentNotificationEventId latestID, previousID;
     NotificationEventResponse response;
 
-    String testDB = "N_db" + random.nextInt(Integer.SIZE - 1);
+    testDB = "N_db" + random.nextInt(Integer.SIZE - 1);
 
     // Create database
     // We need:
@@ -122,7 +124,7 @@ public class TestHMSNotificationLogUsingDBNotificationListener extends AbstractM
 
   @Test
   public void testCreateDropTableWithPartition() throws Exception {
-    String testDB = "N_db" + random.nextInt(Integer.SIZE - 1);
+    testDB = "N_db" + random.nextInt(Integer.SIZE - 1);
     String testTable = "N_table" + random.nextInt(Integer.SIZE - 1);
 
     NotificationEventResponse response;
@@ -166,7 +168,7 @@ public class TestHMSNotificationLogUsingDBNotificationListener extends AbstractM
 
   @Test
   public void testCreateDropTableWithoutPartition() throws Exception {
-    String testDB = "N_db" + random.nextInt(Integer.SIZE - 1);
+    testDB = "N_db" + random.nextInt(Integer.SIZE - 1);
     String testTable = "N_table" + random.nextInt(Integer.SIZE - 1);
 
     NotificationEventResponse response;
@@ -208,7 +210,7 @@ public class TestHMSNotificationLogUsingDBNotificationListener extends AbstractM
 
   @Test
   public void testAddDropPartition() throws Exception {
-    String testDB = "N_db" + random.nextInt(Integer.SIZE - 1);
+    testDB = "N_db" + random.nextInt(Integer.SIZE - 1);
     String testTable = "N_table" + random.nextInt(Integer.SIZE - 1);
 
     NotificationEventResponse response;
@@ -255,7 +257,7 @@ public class TestHMSNotificationLogUsingDBNotificationListener extends AbstractM
   @Ignore("Needs Hive >= 1.1.2")
   @Test
   public void testAlterTableWithPartition() throws Exception {
-    String testDB = "N_db" + random.nextInt(Integer.SIZE - 1);
+    testDB = "N_db" + random.nextInt(Integer.SIZE - 1);
     String testTable = "N_table" + random.nextInt(Integer.SIZE - 1);
 
     NotificationEventResponse response;
@@ -316,7 +318,7 @@ public class TestHMSNotificationLogUsingDBNotificationListener extends AbstractM
   @Ignore("Needs Hive >= 1.1.2")
   @Test
   public void testAlterPartition() throws Exception {
-    String testDB = "N_db" + random.nextInt(Integer.SIZE - 1);
+    testDB = "N_db" + random.nextInt(Integer.SIZE - 1);
     String testTable = "N_table" + random.nextInt(Integer.SIZE - 1);
 
     NotificationEventResponse response;

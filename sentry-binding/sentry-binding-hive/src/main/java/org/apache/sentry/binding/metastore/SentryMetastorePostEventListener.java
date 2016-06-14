@@ -17,15 +17,16 @@
  */
 package org.apache.sentry.binding.metastore;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.MetaStoreEventListener;
+import org.apache.hadoop.hive.metastore.RawStore;
+import org.apache.hadoop.hive.metastore.RawStoreProxy;
+import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.metastore.api.MetaException;
-import org.apache.hadoop.hive.metastore.api.Partition;
+import org.apache.hadoop.hive.metastore.api.NotificationEvent;
 import org.apache.hadoop.hive.metastore.events.AddPartitionEvent;
 import org.apache.hadoop.hive.metastore.events.AlterPartitionEvent;
 import org.apache.hadoop.hive.metastore.events.AlterTableEvent;
@@ -34,371 +35,360 @@ import org.apache.hadoop.hive.metastore.events.CreateTableEvent;
 import org.apache.hadoop.hive.metastore.events.DropDatabaseEvent;
 import org.apache.hadoop.hive.metastore.events.DropPartitionEvent;
 import org.apache.hadoop.hive.metastore.events.DropTableEvent;
-import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.sentry.core.common.exception.SentryUserException;
-import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
-import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
-import org.apache.sentry.core.common.Authorizable;
-import org.apache.sentry.core.model.db.Database;
-import org.apache.sentry.core.model.db.Server;
-import org.apache.sentry.core.model.db.Table;
+import org.apache.hive.hcatalog.common.HCatConstants;
+import org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageFactory;
 import org.apache.sentry.provider.db.SentryMetastoreListenerPlugin;
-import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
-import org.apache.sentry.service.thrift.SentryServiceClientFactory;
-import org.apache.sentry.service.thrift.ServiceConstants.ConfUtilties;
-import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.apache.commons.lang3.builder.ToStringBuilder;
+/*
+A HMS listener class which should ideally go into the transaction which persists the Hive metadata.
+This class writes all DDL events to the NotificationLog through rawstore.addNotificationEvent(event)
+This class is very similar to DbNotificationListener, except:
+1. It uses a custom SentryJSONMessageFactory which adds additional information to the message part of the event
+ to avoid another round trip from the clients
+2. It handles the cases where actual operation has failed, and hence skips writing to the notification log.
+3. Has additional validations to make sure event has the required information.
+
+This can be replaced with DbNotificationListener in future and sentry's message factory can be plugged in if:
+- HIVE-14011 is fixed: Make MessageFactory truly pluggable
+- 2 and 3 above are handled in DbNotificationListener
+*/
 
 public class SentryMetastorePostEventListener extends MetaStoreEventListener {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryMetastoreListenerPlugin.class);
-  private final HiveAuthzConf authzConf;
-  private final Server server;
+  private RawStore rs;
+  private HiveConf hiveConf;
+  SentryJSONMessageFactory messageFactory;
 
-  protected List<SentryMetastoreListenerPlugin> sentryPlugins = new ArrayList<SentryMetastoreListenerPlugin>();
+  private static SentryMetastorePostEventListener.CleanerThread cleaner = null;
+
+  //Same as DbNotificationListener to make the transition back easy
+  private synchronized void init(HiveConf conf) {
+    try {
+      this.rs = RawStoreProxy.getProxy(conf, conf, conf.getVar(HiveConf.ConfVars.METASTORE_RAW_STORE_IMPL), 999999);
+    } catch (MetaException var3) {
+      LOGGER.error("Unable to connect to raw store, notifications will not be tracked", var3);
+      this.rs = null;
+    }
+
+    if(cleaner == null && this.rs != null) {
+      cleaner = new SentryMetastorePostEventListener.CleanerThread(conf, this.rs);
+      cleaner.start();
+    }
+  }
 
   public SentryMetastorePostEventListener(Configuration config) {
     super(config);
-
+    // The code in MetastoreUtils.getMetaStoreListeners() that calls this looks for a constructor
+    // with a Configuration parameter, so we have to declare config as Configuration.  But it
+    // actually passes a HiveConf, which we need.  So we'll do this ugly down cast.
     if (!(config instanceof HiveConf)) {
-        String error = "Could not initialize Plugin - Configuration is not an instanceof HiveConf";
-        LOGGER.error(error);
-        throw new RuntimeException(error);
+      String error = "Could not initialize Plugin - Configuration is not an instanceof HiveConf";
+      LOGGER.error(error);
+      throw new RuntimeException(error);
+    }
+    hiveConf = (HiveConf)config;
+    messageFactory = new SentryJSONMessageFactory();
+    init(hiveConf);
+  }
+
+  @Override
+  public void onCreateDatabase(CreateDatabaseEvent dbEvent)
+          throws MetaException {
+
+    // do not write to Notification log if the operation has failed
+    if (!dbEvent.getStatus()) {
+      LOGGER.info("Skipping writing to NotificationLog as the Create database event failed");
+      return;
     }
 
-    authzConf = HiveAuthzConf.getAuthzConf((HiveConf)config);
-    server = new Server(authzConf.get(AuthzConfVars.AUTHZ_SERVER_NAME.getVar()));
-    Iterable<String> pluginClasses = ConfUtilties.CLASS_SPLITTER
-        .split(config.get(ServerConfig.SENTRY_METASTORE_PLUGINS,
-            ServerConfig.SENTRY_METASTORE_PLUGINS_DEFAULT).trim());
-
-    try {
-      for (String pluginClassStr : pluginClasses) {
-        Class<?> clazz = config.getClassByName(pluginClassStr);
-        if (!SentryMetastoreListenerPlugin.class.isAssignableFrom(clazz)) {
-          throw new IllegalArgumentException("Class ["
-              + pluginClassStr + "] is not a "
-              + SentryMetastoreListenerPlugin.class.getName());
-        }
-        SentryMetastoreListenerPlugin plugin = (SentryMetastoreListenerPlugin) clazz
-            .getConstructor(Configuration.class, Configuration.class)
-            .newInstance(config, authzConf);
-        sentryPlugins.add(plugin);
-      }
-    } catch (Exception e) {
-      LOGGER.error("Could not initialize Plugin !!", e);
-      throw new RuntimeException(e);
+    String location = dbEvent.getDatabase().getLocationUri();
+    if (location == null || location.isEmpty()) {
+      throw new SentryMalformedEventException("CreateDatabaseEvent has invalid location", dbEvent);
     }
+    String dbName = dbEvent.getDatabase().getName();
+    if (dbName == null || dbName.isEmpty()) {
+      throw new SentryMalformedEventException("CreateDatabaseEvent has invalid dbName", dbEvent);
+    }
+
+    NotificationEvent event = new NotificationEvent(0L, now(), HCatConstants.HCAT_CREATE_DATABASE_EVENT,
+            messageFactory.buildCreateDatabaseMessage(dbEvent.getDatabase()).toString());
+    event.setDbName(dbName);
+    this.enqueue(event);
+  }
+
+  @Override
+  public void onDropDatabase(DropDatabaseEvent dbEvent) throws MetaException {
+
+    // do not write to Notification log if the operation has failed
+    if (!dbEvent.getStatus()) {
+      LOGGER.info("Skipping writing to NotificationLog as the Drop database event failed");
+      return;
+    }
+
+    String dbName = dbEvent.getDatabase().getName();
+    if (dbName == null || dbName.isEmpty()) {
+      throw new SentryMalformedEventException("DropDatabaseEvent has invalid dbName", dbEvent);
+    }
+
+    NotificationEvent event = new NotificationEvent(0L, now(), HCatConstants.HCAT_DROP_DATABASE_EVENT,
+            messageFactory.buildDropDatabaseMessage(dbEvent.getDatabase()).toString());
+    event.setDbName(dbName);
+    this.enqueue(event);
   }
 
   @Override
   public void onCreateTable (CreateTableEvent tableEvent) throws MetaException {
 
-    // don't sync paths/privileges if the operation has failed
+    // do not write to Notification log if the operation has failed
     if (!tableEvent.getStatus()) {
-      LOGGER.debug("Skip sync paths/privileges with Sentry server for onCreateTable event," +
-        " since the operation failed. \n");
+      LOGGER.info("Skipping writing to NotificationLog as the Create table event failed");
       return;
     }
 
-    if (tableEvent.getTable().getSd().getLocation() != null) {
-      String authzObj = tableEvent.getTable().getDbName() + "."
-          + tableEvent.getTable().getTableName();
-      String path = tableEvent.getTable().getSd().getLocation();
-      for (SentryMetastoreListenerPlugin plugin : sentryPlugins) {
-        plugin.addPath(authzObj, path);
+    String dbName = tableEvent.getTable().getDbName();
+    if (dbName == null || dbName.isEmpty()) {
+      throw new SentryMalformedEventException("CreateTableEvent has invalid dbName", tableEvent);
+    }
+    String tableName = tableEvent.getTable().getTableName();
+    if (tableName == null || tableName.isEmpty()) {
+      throw new SentryMalformedEventException("CreateTableEvent has invalid tableName", tableEvent);
+    }
+    // Create table event should also contain a location.
+    // But, Create view also generates a Create table event, but it does not have a location.
+    // Create view is identified by the tableType. But turns out tableType is not set in some cases.
+    // We assume that tableType is set for all create views.
+    //TODO: Location can be null/empty, handle that in HMSFollower
+    String tableType = tableEvent.getTable().getTableType();
+    if(!(tableType != null && tableType.equals(TableType.VIRTUAL_VIEW.name()))) {
+        if (tableType == null) {
+        LOGGER.warn("TableType is null, assuming it is not TableType.VIRTUAL_VIEW: tableEvent", tableEvent);
+      }
+      String location = tableEvent.getTable().getSd().getLocation();
+      if (location == null || location.isEmpty()) {
+        throw new SentryMalformedEventException("CreateTableEvent has invalid location", tableEvent);
       }
     }
-
-    // drop the privileges on the given table, in case if anything was left
-    // behind during the drop
-    if (!syncWithPolicyStore(AuthzConfVars.AUTHZ_SYNC_CREATE_WITH_POLICY_STORE)) {
-      return;
-    }
-
-    dropSentryTablePrivilege(tableEvent.getTable().getDbName(),
-        tableEvent.getTable().getTableName());
+    NotificationEvent event = new NotificationEvent(0L, now(), HCatConstants.HCAT_CREATE_TABLE_EVENT,
+            messageFactory.buildCreateTableMessage(tableEvent.getTable()).toString());
+    event.setDbName(dbName);
+    event.setTableName(tableName);
+    this.enqueue(event);
   }
 
   @Override
   public void onDropTable(DropTableEvent tableEvent) throws MetaException {
 
-    // don't sync paths/privileges if the operation has failed
+    // do not write to Notification log if the operation has failed
     if (!tableEvent.getStatus()) {
-      LOGGER.debug("Skip syncing paths/privileges with Sentry server for onDropTable event," +
-        " since the operation failed. \n");
+      LOGGER.info("Skipping writing to NotificationLog as the Drop table event failed");
       return;
     }
 
-    if (tableEvent.getTable().getSd().getLocation() != null) {
-      String authzObj = tableEvent.getTable().getDbName() + "."
-          + tableEvent.getTable().getTableName();
-      for (SentryMetastoreListenerPlugin plugin : sentryPlugins) {
-        plugin.removeAllPaths(authzObj, null);
-      }
+    String dbName = tableEvent.getTable().getDbName();
+    if (dbName == null || dbName.isEmpty()) {
+      throw new SentryMalformedEventException("DropTableEvent has invalid dbName", tableEvent);
     }
-    // drop the privileges on the given table
-    if (!syncWithPolicyStore(AuthzConfVars.AUTHZ_SYNC_DROP_WITH_POLICY_STORE)) {
-      return;
+    String tableName = tableEvent.getTable().getTableName();
+    if (tableName == null || tableName.isEmpty()) {
+      throw new SentryMalformedEventException("DropTableEvent has invalid tableName", tableEvent);
     }
 
-    if (!tableEvent.getStatus()) {
-      return;
-    }
-
-    dropSentryTablePrivilege(tableEvent.getTable().getDbName(),
-        tableEvent.getTable().getTableName());
+    NotificationEvent event = new NotificationEvent(0L, now(), HCatConstants.HCAT_DROP_TABLE_EVENT,
+            messageFactory.buildDropTableMessage(tableEvent.getTable()).toString());
+    event.setDbName(dbName);
+    event.setTableName(tableName);
+    this.enqueue(event);
   }
 
-  @Override
-  public void onCreateDatabase(CreateDatabaseEvent dbEvent)
-      throws MetaException {
-
-    // don't sync paths/privileges if the operation has failed
-    if (!dbEvent.getStatus()) {
-      LOGGER.debug("Skip syncing paths/privileges with Sentry server for onCreateDatabase event," +
-        " since the operation failed. \n");
-      return;
-    }
-
-    if (dbEvent.getDatabase().getLocationUri() != null) {
-      String authzObj = dbEvent.getDatabase().getName();
-      String path = dbEvent.getDatabase().getLocationUri();
-      for (SentryMetastoreListenerPlugin plugin : sentryPlugins) {
-        plugin.addPath(authzObj, path);
-      }
-    }
-    // drop the privileges on the database, in case anything left behind during
-    // last drop db
-    if (!syncWithPolicyStore(AuthzConfVars.AUTHZ_SYNC_CREATE_WITH_POLICY_STORE)) {
-      return;
-    }
-
-    dropSentryDbPrivileges(dbEvent.getDatabase().getName());
-  }
-
-  /**
-   * Drop the privileges on the database. Note that child tables will be
-   * dropped individually by client, so we just need to handle the removing
-   * the db privileges. The table drop should cleanup the table privileges.
-   */
-  @Override
-  public void onDropDatabase(DropDatabaseEvent dbEvent) throws MetaException {
-
-    // don't sync paths/privileges if the operation has failed
-    if (!dbEvent.getStatus()) {
-      LOGGER.debug("Skip syncing paths/privileges with Sentry server for onDropDatabase event," +
-        " since the operation failed. \n");
-      return;
-    }
-
-    String authzObj = dbEvent.getDatabase().getName();
-    for (SentryMetastoreListenerPlugin plugin : sentryPlugins) {
-      List<String> tNames = dbEvent.getHandler().get_all_tables(authzObj);
-      plugin.removeAllPaths(authzObj, tNames);
-    }
-    if (!syncWithPolicyStore(AuthzConfVars.AUTHZ_SYNC_DROP_WITH_POLICY_STORE)) {
-      return;
-    }
-
-    dropSentryDbPrivileges(dbEvent.getDatabase().getName());
-  }
-
-  /**
-   * Adjust the privileges when table is renamed
-   */
   @Override
   public void onAlterTable (AlterTableEvent tableEvent) throws MetaException {
 
-    // don't sync privileges if the operation has failed
+    // do not write to Notification log if the operation has failed
     if (!tableEvent.getStatus()) {
-      LOGGER.debug("Skip syncing privileges with Sentry server for onAlterTable event," +
-        " since the operation failed. \n");
+      LOGGER.info("Skipping writing to NotificationLog as the Alter table event failed");
       return;
     }
 
-    renameSentryTablePrivilege(tableEvent.getOldTable().getDbName(),
-        tableEvent.getOldTable().getTableName(), 
-        tableEvent.getOldTable().getSd().getLocation(),
-        tableEvent.getNewTable().getDbName(), 
-        tableEvent.getNewTable().getTableName(),
-        tableEvent.getNewTable().getSd().getLocation());
+    String dbName = tableEvent.getNewTable().getDbName();
+    if (dbName == null || dbName.isEmpty()) {
+      throw new SentryMalformedEventException("AlterTableEvent's newTable has invalid dbName", tableEvent);
+    }
+    String tableName = tableEvent.getNewTable().getTableName();
+    if (tableName == null || tableName.isEmpty()) {
+      throw new SentryMalformedEventException("AlterTableEvent's newTable has invalid tableName", tableEvent);
+    }
+    dbName = tableEvent.getOldTable().getDbName();
+    if (dbName == null || dbName.isEmpty()) {
+      throw new SentryMalformedEventException("AlterTableEvent's oldTable has invalid dbName", tableEvent);
+    }
+    tableName = tableEvent.getOldTable().getTableName();
+    if (tableName == null || tableName.isEmpty()) {
+      throw new SentryMalformedEventException("AlterTableEvent's oldTable has invalid tableName", tableEvent);
+    }
+    //Alter view also generates an alter table event, but it does not have a location
+    //TODO: Handle this case in Sentry
+    if(!tableEvent.getOldTable().getTableType().equals(TableType.VIRTUAL_VIEW.name())) {
+      String location = tableEvent.getNewTable().getSd().getLocation();
+      if (location == null || location.isEmpty()) {
+        throw new SentryMalformedEventException("AlterTableEvent's newTable has invalid location", tableEvent);
+      }
+      location = tableEvent.getOldTable().getSd().getLocation();
+      if (location == null || location.isEmpty()) {
+        throw new SentryMalformedEventException("AlterTableEvent's oldTable has invalid location", tableEvent);
+      }
+    }
+
+    NotificationEvent event = new NotificationEvent(0L, now(), HCatConstants.HCAT_ALTER_TABLE_EVENT,
+            messageFactory.buildAlterTableMessage(tableEvent.getOldTable(), tableEvent.getNewTable()).toString());
+    event.setDbName(tableEvent.getNewTable().getDbName());
+    event.setTableName(tableEvent.getNewTable().getTableName());
+    this.enqueue(event);
   }
 
   @Override
   public void onAlterPartition(AlterPartitionEvent partitionEvent)
-      throws MetaException {
+          throws MetaException {
 
-    // don't sync privileges if the operation has failed
+    // do not write to Notification log if the operation has failed
     if (!partitionEvent.getStatus()) {
-      LOGGER.debug("Skip syncing privileges with Sentry server for onAlterPartition event," +
-        " since the operation failed. \n");
+      LOGGER.info("Skipping writing to NotificationLog as the Alter partition event failed");
       return;
     }
 
-    String oldLoc = null, newLoc = null;
-    if (partitionEvent.getOldPartition() != null) {
-      oldLoc = partitionEvent.getOldPartition().getSd().getLocation();
+    String dbName = partitionEvent.getNewPartition().getDbName();
+    if (dbName == null || dbName.isEmpty()) {
+      throw new SentryMalformedEventException("AlterPartitionEvent's newPartition has invalid dbName", partitionEvent);
     }
-    if (partitionEvent.getNewPartition() != null) {
-      newLoc = partitionEvent.getNewPartition().getSd().getLocation();
+    String tableName = partitionEvent.getNewPartition().getTableName();
+    if (tableName == null || tableName.isEmpty()) {
+      throw new SentryMalformedEventException("AlterPartitionEvent's newPartition has invalid tableName", partitionEvent);
     }
 
-    if (oldLoc != null && newLoc != null && !oldLoc.equals(newLoc)) {
-      String authzObj =
-          partitionEvent.getOldPartition().getDbName() + "."
-              + partitionEvent.getOldPartition().getTableName();
-      for (SentryMetastoreListenerPlugin plugin : sentryPlugins) {
-        plugin.renameAuthzObject(authzObj, oldLoc,
-            authzObj, newLoc);
-      }
-    }
+    //TODO: Need more validations, but it is tricky as there are many variations and validations change for each one
+    // Alter partition Location
+    // Alter partition property
+    // Any more?
+
+    NotificationEvent event = new NotificationEvent(0L, now(), HCatConstants.HCAT_ALTER_PARTITION_EVENT,
+            messageFactory.buildAlterPartitionMessage(partitionEvent.getOldPartition(), partitionEvent.getNewPartition()).toString());
+
+    event.setDbName(partitionEvent.getNewPartition().getDbName());
+    event.setTableName(partitionEvent.getNewPartition().getTableName());
+    this.enqueue(event);
   }
 
   @Override
   public void onAddPartition(AddPartitionEvent partitionEvent)
-      throws MetaException {
+          throws MetaException {
 
-    // don't sync path if the operation has failed
+    // do not write to Notification log if the operation has failed
     if (!partitionEvent.getStatus()) {
-      LOGGER.debug("Skip syncing path with Sentry server for onAddPartition event," +
-        " since the operation failed. \n");
+      LOGGER.info("Skipping writing to NotificationLog as the Add partition event failed");
       return;
     }
 
-    for (Partition part : partitionEvent.getPartitions()) {
-      if (part.getSd() != null && part.getSd().getLocation() != null) {
-        String authzObj = part.getDbName() + "." + part.getTableName();
-        String path = part.getSd().getLocation();
-        for (SentryMetastoreListenerPlugin plugin : sentryPlugins) {
-          plugin.addPath(authzObj, path);
-        }
-      }
+    String dbName = partitionEvent.getTable().getDbName();
+    if (dbName == null || dbName.isEmpty()) {
+      throw new SentryMalformedEventException("AddPartitionEvent has invalid dbName", partitionEvent);
     }
-    super.onAddPartition(partitionEvent);
+    String tableName = partitionEvent.getTable().getTableName();
+    if (tableName == null || tableName.isEmpty()) {
+      throw new SentryMalformedEventException("AddPartitionEvent's newPartition has invalid tableName", partitionEvent);
+    }
+
+    //TODO: Need more validations?
+
+    NotificationEvent event = new NotificationEvent(0L, now(), HCatConstants.HCAT_ADD_PARTITION_EVENT,
+            messageFactory.buildAddPartitionMessage(partitionEvent.getTable(), partitionEvent.getPartitions()).toString());
+
+    event.setDbName(partitionEvent.getTable().getDbName());
+    event.setTableName(partitionEvent.getTable().getTableName());
+    this.enqueue(event);
   }
 
   @Override
   public void onDropPartition(DropPartitionEvent partitionEvent)
-      throws MetaException {
+          throws MetaException {
 
-    // don't sync path if the operation has failed
+    // do not write to Notification log if the operation has failed
     if (!partitionEvent.getStatus()) {
-      LOGGER.debug("Skip syncing path with Sentry server for onDropPartition event," +
-        " since the operation failed. \n");
+      LOGGER.info("Skipping writing to NotificationLog as the Drop partition event failed");
       return;
     }
 
-    String authzObj = partitionEvent.getTable().getDbName() + "."
-        + partitionEvent.getTable().getTableName();
-    String path = partitionEvent.getPartition().getSd().getLocation();
-    for (SentryMetastoreListenerPlugin plugin : sentryPlugins) {
-      plugin.removePath(authzObj, path);
-    }
-    super.onDropPartition(partitionEvent);
+    NotificationEvent event = new NotificationEvent(0L, now(), HCatConstants.HCAT_DROP_PARTITION_EVENT,
+            messageFactory.buildDropPartitionMessage(partitionEvent.getTable(), partitionEvent.getPartition()).toString());
+    //TODO: Why is this asymmetric with add partitions(s)?
+    // Seems like adding multiple partitions generate a single event
+    // where as single partition drop generated an event?
+
+    event.setDbName(partitionEvent.getTable().getDbName());
+    event.setTableName(partitionEvent.getTable().getTableName());
+    this.enqueue(event);
   }
 
-  private SentryPolicyServiceClient getSentryServiceClient()
-      throws MetaException {
-    try {
-      return SentryServiceClientFactory.create(authzConf);
-    } catch (Exception e) {
-      throw new MetaException("Failed to connect to Sentry service "
-          + e.getMessage());
+  private int now() {
+    long millis = System.currentTimeMillis();
+    millis /= 1000;
+    if (millis > Integer.MAX_VALUE) {
+      LOGGER.warn("We've passed max int value in seconds since the epoch, " +
+          "all notification times will be the same!");
+      return Integer.MAX_VALUE;
+    }
+    return (int)millis;
+  }
+
+  //Same as DbNotificationListener to make the transition back easy
+  private void enqueue(NotificationEvent event) {
+    if(this.rs != null) {
+      this.rs.addNotificationEvent(event);
+    } else {
+      LOGGER.warn("Dropping event " + event + " since notification is not running.");
     }
   }
 
-  private void dropSentryDbPrivileges(String dbName) throws MetaException {
-    List<Authorizable> authorizableTable = new ArrayList<Authorizable>();
-    authorizableTable.add(server);
-    authorizableTable.add(new Database(dbName));
-    try {
-      dropSentryPrivileges(authorizableTable);
-    } catch (SentryUserException e) {
-      throw new MetaException("Failed to remove Sentry policies for drop DB "
-          + dbName + " Error: " + e.getMessage());
-    } catch (IOException e) {
-      throw new MetaException("Failed to find local user " + e.getMessage());
-    }
+  //Same as DbNotificationListener to make the transition back easy
+  private static class CleanerThread extends Thread {
+    private RawStore rs;
+    private int ttl;
 
-  }
-
-  private void dropSentryTablePrivilege(String dbName, String tabName)
-      throws MetaException {
-    List<Authorizable> authorizableTable = new ArrayList<Authorizable>();
-    authorizableTable.add(server);
-    authorizableTable.add(new Database(dbName));
-    authorizableTable.add(new Table(tabName));
-
-    try {
-      dropSentryPrivileges(authorizableTable);
-    } catch (SentryUserException e) {
-      throw new MetaException(
-          "Failed to remove Sentry policies for drop table " + dbName + "."
-              + tabName + " Error: " + e.getMessage());
-    } catch (IOException e) {
-      throw new MetaException("Failed to find local user " + e.getMessage());
+    CleanerThread(HiveConf conf, RawStore rs) {
+      super("CleanerThread");
+      this.rs = rs;
+      this.setTimeToLive(conf.getTimeVar(HiveConf.ConfVars.METASTORE_EVENT_DB_LISTENER_TTL, TimeUnit.SECONDS));
+      this.setDaemon(true);
     }
 
-  }
-  private void dropSentryPrivileges(
-      List<? extends Authorizable> authorizableTable)
-      throws SentryUserException, IOException, MetaException {
-    String requestorUserName = UserGroupInformation.getCurrentUser()
-        .getShortUserName();
-    SentryPolicyServiceClient sentryClient = getSentryServiceClient();
-    sentryClient.dropPrivileges(requestorUserName, authorizableTable);
+    public void run() {
+      while(true) {
+        this.rs.cleanNotificationEvents(this.ttl);
 
-    // Close the connection after dropping privileges is done.
-    sentryClient.close();
-  }
-
-  private void renameSentryTablePrivilege(String oldDbName, String oldTabName,
-      String oldPath, String newDbName, String newTabName, String newPath)
-      throws MetaException {
-    List<Authorizable> oldAuthorizableTable = new ArrayList<Authorizable>();
-    oldAuthorizableTable.add(server);
-    oldAuthorizableTable.add(new Database(oldDbName));
-    oldAuthorizableTable.add(new Table(oldTabName));
-
-    List<Authorizable> newAuthorizableTable = new ArrayList<Authorizable>();
-    newAuthorizableTable.add(server);
-    newAuthorizableTable.add(new Database(newDbName));
-    newAuthorizableTable.add(new Table(newTabName));
-
-    if (!oldTabName.equalsIgnoreCase(newTabName)
-        && syncWithPolicyStore(AuthzConfVars.AUTHZ_SYNC_ALTER_WITH_POLICY_STORE)) {
-
-      SentryPolicyServiceClient sentryClient = getSentryServiceClient();
-
-      try {
-        String requestorUserName = UserGroupInformation.getCurrentUser()
-            .getShortUserName();
-        sentryClient.renamePrivileges(requestorUserName, oldAuthorizableTable, newAuthorizableTable);
-      } catch (SentryUserException e) {
-        throw new MetaException(
-            "Failed to remove Sentry policies for rename table " + oldDbName
-            + "." + oldTabName + "to " + newDbName + "." + newTabName
-            + " Error: " + e.getMessage());
-      } catch (IOException e) {
-        throw new MetaException("Failed to find local user " + e.getMessage());
-      } finally {
-
-        // Close the connection after renaming privileges is done.
-        sentryClient.close();
+        try {
+          Thread.sleep(60000L);
+        } catch (InterruptedException var2) {
+          LOGGER.info("Cleaner thread sleep interupted", var2);
+        }
       }
     }
-    // The HDFS plugin needs to know if it's a path change (set location)
-    for (SentryMetastoreListenerPlugin plugin : sentryPlugins) {
-      plugin.renameAuthzObject(oldDbName + "." + oldTabName, oldPath,
-          newDbName + "." + newTabName, newPath);
+
+    public void setTimeToLive(long configTtl) {
+      if(configTtl > 2147483647L) {
+        this.ttl = 2147483647;
+      } else {
+        this.ttl = (int)configTtl;
+      }
+
     }
   }
-
-  private boolean syncWithPolicyStore(AuthzConfVars syncConfVar) {
-    return "true"
-        .equalsIgnoreCase(authzConf.get(syncConfVar.getVar(), "true"));
+  private class SentryMalformedEventException extends MetaException {
+    SentryMalformedEventException(String msg, Object event) {
+      //toString is not implemented in Event classes,
+      // hence using reflection to print the details of the Event object.
+      super(msg + "Event: " + ToStringBuilder.reflectionToString(event));
+    }
   }
-
 }
