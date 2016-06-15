@@ -31,6 +31,7 @@ import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
+import org.apache.sentry.service.thrift.SentryService;
 
 import java.lang.management.ManagementFactory;
 import java.util.Map;
@@ -43,6 +44,7 @@ public final class SentryMetrics {
   private static SentryMetrics sentryMetrics = null;
   private boolean reportingInitialized = false;
   private boolean gaugesAdded = false;
+  private boolean sentryServiceGaugesAdded = false;
 
   public final Timer createRoleTimer = SentryMetricsServletContextListener.METRIC_REGISTRY.timer(
       MetricRegistry.name(SentryPolicyStoreProcessor.class, "create-role"));
@@ -116,6 +118,13 @@ public final class SentryMetrics {
     }
   }
 
+  public void addSentryServiceGauges(SentryService sentryservice) {
+    if(!sentryServiceGaugesAdded) {
+      addGauge(SentryService.class, "is_active", sentryservice.getIsActiveGauge());
+      addGauge(SentryService.class, "is_ha", sentryservice.getIsHAGauge());
+      sentryServiceGaugesAdded = true;
+    }
+  }
 
   /* Should be only called once to initialize the reporters
    */

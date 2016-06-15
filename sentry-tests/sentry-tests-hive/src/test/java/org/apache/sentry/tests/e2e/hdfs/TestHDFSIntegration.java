@@ -1723,6 +1723,7 @@ public class TestHDFSIntegration {
      conn.close();
    }
 
+
   private void loadData(Statement stmt) throws IOException, SQLException {
     FSDataOutputStream f1 = miniDFS.getFileSystem().create(new Path("/tmp/f1.txt"));
     f1.writeChars("m1d1_t1\n");
