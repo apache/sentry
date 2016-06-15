@@ -37,6 +37,7 @@ import java.util.concurrent.ThreadFactory;
 
 import javax.security.auth.Subject;
 
+import com.codahale.metrics.Gauge;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.GnuParser;
@@ -93,6 +94,9 @@ public class SentryService implements Callable {
   private int webServerPort;
   private SentryWebServer sentryWebServer;
   private long maxMessageSize;
+  private final boolean isHA;
+  private boolean isActive;
+  SentryMetrics sentryMetrics;
 
   public SentryService(Configuration conf) {
     this.conf = conf;
@@ -137,6 +141,10 @@ public class SentryService implements Callable {
       principalParts = null;
       keytab = null;
     }
+    isHA = conf.getBoolean(ServerConfig.SENTRY_HA_ENABLED,
+            ServerConfig.SENTRY_HA_ENABLED_DEFAULT);
+    //setting isActive to true for now, until we have Sentry HA implemented
+    isActive = true;
     serviceExecutor = Executors.newSingleThreadExecutor(new ThreadFactory() {
       private int count = 0;
 
@@ -213,6 +221,7 @@ public class SentryService implements Callable {
       throw new IllegalStateException(
           "Failed to register any processors from " + processorFactories);
     }
+    addSentryServiceGauge();
     TServerTransport serverTransport = new TServerSocket(address);
     TTransportFactory transportFactory = null;
     if (kerberos) {
@@ -233,6 +242,11 @@ public class SentryService implements Callable {
     LOGGER.info("Serving on " + address);
     startSentryWebServer();
     thriftServer.serve();
+  }
+
+  private void addSentryServiceGauge() {
+    sentryMetrics = SentryMetrics.getInstance();
+    sentryMetrics.addSentryServiceGauges(this);
   }
 
   private void startSentryWebServer() throws Exception{
@@ -423,5 +437,23 @@ public class SentryService implements Callable {
       throw new IllegalStateException("Server is not initialized or stopped");
     }
     return thriftServer.getEventHandler();
+  }
+
+  public Gauge<Boolean> getIsActiveGauge() {
+    return new Gauge<Boolean>() {
+      @Override
+      public Boolean getValue() {
+        return isActive;
+      }
+    };
+  }
+
+  public Gauge<Boolean> getIsHAGauge() {
+    return new Gauge<Boolean>() {
+      @Override
+      public Boolean getValue() {
+        return isHA;
+      }
+    };
   }
 }
