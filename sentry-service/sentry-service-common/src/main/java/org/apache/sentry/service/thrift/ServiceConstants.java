@@ -22,8 +22,6 @@ import java.util.Map;
 
 import javax.security.sasl.Sasl;
 
-import org.apache.sentry.provider.db.service.thrift.SentryMetrics;
-
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 
@@ -157,8 +155,6 @@ public class ServiceConstants {
     public static final String SENTRY_WEB_PORT = "sentry.service.web.port";
     public static final int SENTRY_WEB_PORT_DEFAULT = 29000;
     public static final String SENTRY_REPORTER = "sentry.service.reporter";
-    public static final String SENTRY_REPORTER_JMX = SentryMetrics.Reporting.JMX.name(); //case insensitive
-    public static final String SENTRY_REPORTER_CONSOLE = SentryMetrics.Reporting.CONSOLE.name();//case insensitive
 
     // Web SSL
     public static final String SENTRY_WEB_USE_SSL = "sentry.web.use.ssl";

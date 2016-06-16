@@ -143,7 +143,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
 
       } catch (IllegalArgumentException e) {
         LOGGER.warn("Metrics reporting not configured correctly, please set " + ServerConfig.SENTRY_REPORTER +
-            " to: " + ServerConfig.SENTRY_REPORTER_CONSOLE + "/" + ServerConfig.SENTRY_REPORTER_JMX);
+            " to: " + SentryMetrics.Reporting.CONSOLE.name() + "/" + SentryMetrics.Reporting.JMX.name());
       }
     }
   }

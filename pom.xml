@@ -425,6 +425,11 @@ limitations under the License.
       </dependency>
       <dependency>
         <groupId>org.apache.sentry</groupId>
+        <artifactId>sentry-service-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.sentry</groupId>
         <artifactId>sentry-provider-common</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -620,6 +625,7 @@ limitations under the License.
 
   <modules>
     <module>sentry-core</module>
+    <module>sentry-service</module>
     <module>sentry-binding</module>
     <module>sentry-provider</module>
     <module>sentry-policy</module>
