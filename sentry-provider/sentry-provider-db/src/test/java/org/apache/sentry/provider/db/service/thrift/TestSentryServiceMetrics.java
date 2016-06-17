@@ -44,8 +44,8 @@ public class TestSentryServiceMetrics extends SentryServiceIntegrationBase {
     //More Cases to be added once Sentry HA is implemented
 
     //Check for gauges with the server handle.
-    Assert.assertEquals(new Boolean(false),server.getIsHAGauge().getValue());
-    Assert.assertEquals(new Boolean(true),server.getIsActiveGauge().getValue());
+    Assert.assertEquals(Boolean.FALSE,server.getIsHAGauge().getValue());
+    Assert.assertEquals(Boolean.TRUE,server.getIsActiveGauge().getValue());
   }
 
   //Overriding this method as the client handle does not exist.
