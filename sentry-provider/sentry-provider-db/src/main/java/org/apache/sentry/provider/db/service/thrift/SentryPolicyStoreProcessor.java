@@ -32,7 +32,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.common.exception.SentrySiteConfigurationException;
 import org.apache.sentry.core.model.db.AccessConstants;
-import org.apache.sentry.provider.common.GroupMappingService;
+import org.apache.sentry.core.common.service.GroupMappingService;
 import org.apache.sentry.core.common.utils.PolicyFileConstants;
 import org.apache.sentry.core.common.exception.SentryGroupNotFoundException;
 import org.apache.sentry.core.common.exception.SentryAccessDeniedException;

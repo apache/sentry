@@ -23,6 +23,7 @@ import java.util.Set;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.exception.SentryConfigurationException;
+import org.apache.sentry.core.common.service.GroupMappingService;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.policy.common.PrivilegeFactory;
 import org.junit.Test;

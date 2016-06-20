@@ -44,7 +44,7 @@ import org.apache.sentry.core.model.search.SearchPrivilegeModel;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.common.AuthorizationComponent;
 import org.apache.sentry.provider.common.AuthorizationProvider;
-import org.apache.sentry.provider.common.GroupMappingService;
+import org.apache.sentry.core.common.service.GroupMappingService;
 import org.apache.sentry.provider.common.HadoopGroupResourceAuthorizationProvider;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;

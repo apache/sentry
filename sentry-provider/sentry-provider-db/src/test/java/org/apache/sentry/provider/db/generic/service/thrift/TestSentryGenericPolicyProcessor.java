@@ -30,7 +30,7 @@ import org.apache.sentry.core.common.exception.SentrySiteConfigurationException;
 import org.apache.sentry.core.model.search.Collection;
 import org.apache.sentry.core.model.search.Field;
 import org.apache.sentry.core.model.search.SearchConstants;
-import org.apache.sentry.provider.common.GroupMappingService;
+import org.apache.sentry.core.common.service.GroupMappingService;
 import org.apache.sentry.core.common.exception.SentryAlreadyExistsException;
 import org.apache.sentry.core.common.exception.SentryGrantDeniedException;
 import org.apache.sentry.core.common.exception.SentryInvalidInputException;

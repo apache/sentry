@@ -22,6 +22,8 @@ import java.io.IOException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.Groups;
 import org.apache.sentry.core.common.Model;
+import org.apache.sentry.core.common.service.GroupMappingService;
+import org.apache.sentry.core.common.service.HadoopGroupMappingService;
 import org.apache.sentry.policy.common.PolicyEngine;
 
 import com.google.common.annotations.VisibleForTesting;
