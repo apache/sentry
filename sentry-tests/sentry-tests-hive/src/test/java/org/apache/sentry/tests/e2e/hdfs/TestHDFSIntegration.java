@@ -559,6 +559,35 @@ public class TestHDFSIntegration {
   }
 
   @Test
+  public void testNoPartitionInsert() throws Throwable {
+    tmpHDFSDir = new Path("/tmp/external");
+    dbNames = new String[]{"db1"};
+    roles = new String[]{"admin_role", "tab_role"};
+    admin = "hive";
+
+    Connection conn;
+    Statement stmt;
+    conn = hiveServer2.createConnection("hive", "hive");
+    stmt = conn.createStatement();
+    stmt.execute("create role admin_role");
+    stmt.execute("grant role admin_role to group hive");
+    stmt.execute("grant all on server server1 to role admin_role");
+
+    //Create table and grant select to user flume
+    stmt.execute("create database db1");
+    stmt.execute("use db1");
+    stmt.execute("create table t1 (s string)");
+    stmt.execute("create role tab_role");
+    stmt.execute("grant select on table t1 to role tab_role");
+    stmt.execute("grant role tab_role to group flume");
+
+    verifyOnAllSubDirs("/user/hive/warehouse/db1.db/t1", FsAction.READ_EXECUTE, "flume", true);
+    stmt.execute("INSERT INTO TABLE t1 VALUES (1)");
+    verifyOnAllSubDirs("/user/hive/warehouse/db1.db/t1", FsAction.READ_EXECUTE, "flume", true);
+
+  }
+
+  @Test
   public void testEnd2End() throws Throwable {
     tmpHDFSDir = new Path("/tmp/external");
     dbNames = new String[]{"db1"};
