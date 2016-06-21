@@ -44,7 +44,7 @@ import org.junit.BeforeClass;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThan;
 
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -231,7 +231,7 @@ public abstract class TestDbHdfsBase extends AbstractTestWithStaticConfiguration
       }
       break;
     }
-    assertThat(retry, lessThanOrEqualTo(NUM_RETRIES_FOR_ACLS));
+    assertThat(retry, lessThan(NUM_RETRIES_FOR_ACLS));
     if (recursive && fileSystem.getFileStatus(path).isDirectory()) {
       FileStatus[] children = fileSystem.listStatus(path);
       for (FileStatus fs : children) {
@@ -320,6 +320,30 @@ public abstract class TestDbHdfsBase extends AbstractTestWithStaticConfiguration
     exec(statement, "USE " + db);
     exec(statement, "CREATE TABLE " + tbl + "(number INT, value STRING) PARTITIONED BY (par INT)");
     exec(statement, "INSERT INTO TABLE " + tbl + " PARTITION(par=1) VALUES (1, 'test1')");
+    exec(statement, "SELECT * FROM " + tbl);
+    if (statement != null) {
+      statement.close();
+    }
+    if (connection != null ) {
+      connection.close();
+    }
+  }
+
+  /**
+   * Create test database and table with location pointing
+   * to testPathLoc without partitions
+   * @param db
+   * @param tbl
+   * @throws Exception
+   */
+  protected void dropRecreateDbTblNoPar(String db, String tbl) throws Exception {
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = connection.createStatement();
+    exec(statement, "DROP DATABASE IF EXISTS " + db  + " CASCADE");
+    exec(statement, "CREATE DATABASE " + db);
+    exec(statement, "USE " + db);
+    exec(statement, "CREATE TABLE " + tbl + "(number INT, value STRING)");
+    exec(statement, "INSERT INTO TABLE " + tbl + " VALUES (1, 'test1')");
     exec(statement, "SELECT * FROM " + tbl);
     if (statement != null) {
       statement.close();
