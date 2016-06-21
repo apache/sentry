@@ -194,4 +194,39 @@ public class TestDbHdfsMaxGroups extends TestDbHdfsBase {
     // column level perm should not syncup acls to any db, tbl and par paths
     verifyNoAclRecursive(colacls, extDbDir, true);
   }
+
+  /**
+   * Test Db and tbl level acls are synced up to db, tbl (no partitions)
+   * @throws Exception
+   */
+  @Test
+  public void testIntDbTblMaxAclsWithGroupsNoPar() throws Exception {
+    final String TEST_DB = "test_hdfs_max_group_int_nopar_db";
+    String extDbDir = Path.getPathWithoutSchemeAndAuthority(new Path(metastoreDir))
+        + "/" + TEST_DB + ".db";
+    LOGGER.info("extDbDir = " + extDbDir);
+    dropRecreateDbTblNoPar(TEST_DB, TEST_TBL);
+
+    String tblPathLoc = extDbDir + "/" + TEST_TBL;
+    LOGGER.info("tblPathLoc = " + tblPathLoc);
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = connection.createStatement();
+    exec(statement, "USE " + TEST_DB);
+    dropRecreateRole(statement, TEST_ROLE1);
+    exec(statement, "GRANT SELECT ON TABLE " + TEST_TBL + " TO ROLE " + TEST_ROLE1);
+
+    List<AclEntry> dbacls = new ArrayList<>();
+    List<AclEntry> tblacls = new ArrayList<>();
+    for (int i = 0; i < MAX_NUM_OF_GROUPS; i ++) {
+      String tblgrp = "tblgrp" + String.valueOf(i);
+      tblacls.add(AclEntry.parseAclEntry("group:" + tblgrp + ":r-x", true));
+      exec(statement, "GRANT ROLE " + TEST_ROLE1 + " TO GROUP " + tblgrp);
+    }
+    context.close();
+
+    // tbl level privileges should sync up acls to tbl and par paths
+    verifyAclsRecursive(tblacls, tblPathLoc, true);
+    // tbl level privileges should not sync up acls to db path
+    verifyNoAclRecursive(tblacls, extDbDir, false);
+  }
 }
