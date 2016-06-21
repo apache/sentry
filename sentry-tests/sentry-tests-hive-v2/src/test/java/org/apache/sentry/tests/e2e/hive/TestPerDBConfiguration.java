@@ -26,7 +26,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import org.apache.sentry.policy.db.SimpleDBPolicyEngine;
+import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.After;
 import org.junit.Before;
@@ -116,7 +116,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
   @After
   public void teardown() throws Exception {
     // one test turns this on so let's disable it in the teardown method
-    System.setProperty(SimpleDBPolicyEngine.ACCESS_ALLOW_URI_PER_DB_POLICYFILE, "false");
+    System.setProperty(SentryConstants.ACCESS_ALLOW_URI_PER_DB_POLICYFILE, "false");
   }
 
   @Test
@@ -261,7 +261,7 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     // ugly hack: needs to go away once this becomes a config property. Note that this property
     // will not be set with external HS and this test will fail. Hope is this fix will go away
     // by then.
-    System.setProperty(SimpleDBPolicyEngine.ACCESS_ALLOW_URI_PER_DB_POLICYFILE, "true");
+    System.setProperty(SentryConstants.ACCESS_ALLOW_URI_PER_DB_POLICYFILE, "true");
     // test execution
     Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
@@ -290,11 +290,11 @@ public class TestPerDBConfiguration extends AbstractTestWithStaticConfiguration 
     context.assertAuthzException(statement, "USE "  + DB1);
 
     // once we disable this property all queries should fail
-    System.setProperty(SimpleDBPolicyEngine.ACCESS_ALLOW_URI_PER_DB_POLICYFILE, "false");
+    System.setProperty(SentryConstants.ACCESS_ALLOW_URI_PER_DB_POLICYFILE, "false");
     context.assertAuthzException(statement, "USE "  + DB2);
 
     // re-enable for clean
-    System.setProperty(SimpleDBPolicyEngine.ACCESS_ALLOW_URI_PER_DB_POLICYFILE, "true");
+    System.setProperty(SentryConstants.ACCESS_ALLOW_URI_PER_DB_POLICYFILE, "true");
 
     statement.close();
     connection.close();
