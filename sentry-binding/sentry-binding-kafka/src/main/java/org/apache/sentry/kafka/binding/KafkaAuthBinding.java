@@ -51,7 +51,7 @@ import org.apache.sentry.core.model.kafka.KafkaPrivilegeModel;
 import org.apache.sentry.kafka.ConvertUtil;
 import org.apache.sentry.kafka.conf.KafkaAuthConf.AuthzConfVars;
 import org.apache.sentry.policy.common.PolicyEngine;
-import org.apache.sentry.provider.common.AuthorizationComponent;
+import org.apache.sentry.core.common.utils.AuthorizationComponent;
 import org.apache.sentry.provider.common.AuthorizationProvider;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;

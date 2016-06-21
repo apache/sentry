@@ -33,7 +33,7 @@ import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.core.common.exception.SentrySiteConfigurationException;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.common.utils.KeyValue;
-import org.apache.sentry.provider.common.AuthorizationComponent;
+import org.apache.sentry.core.common.utils.AuthorizationComponent;
 import org.apache.sentry.core.common.exception.SentryAccessDeniedException;
 import org.apache.sentry.core.common.exception.SentryAlreadyExistsException;
 import org.apache.sentry.core.common.exception.SentryInvalidInputException;
