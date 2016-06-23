@@ -32,18 +32,12 @@ public class SentryServiceClientFactory {
   }
 
   public static SentryPolicyServiceClient create(Configuration conf) throws Exception {
-    boolean haEnabled = conf.getBoolean(ClientConfig.SERVER_HA_ENABLED, false);
     boolean pooled = conf.getBoolean(ClientConfig.SENTRY_POOL_ENABLED, false);
     if (pooled) {
       return (SentryPolicyServiceClient) Proxy
           .newProxyInstance(SentryPolicyServiceClientDefaultImpl.class.getClassLoader(),
               SentryPolicyServiceClientDefaultImpl.class.getInterfaces(),
               new PoolClientInvocationHandler(conf));
-    } else if (haEnabled) {
-      return (SentryPolicyServiceClient) Proxy
-          .newProxyInstance(SentryPolicyServiceClientDefaultImpl.class.getClassLoader(),
-              SentryPolicyServiceClientDefaultImpl.class.getInterfaces(),
-              new HAClientInvocationHandler(conf));
     } else {
       return new SentryPolicyServiceClientDefaultImpl(conf);
     }
