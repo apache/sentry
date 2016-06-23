@@ -95,8 +95,9 @@ public class SentryService implements Callable {
   private SentryWebServer sentryWebServer;
   private long maxMessageSize;
   private final boolean isHA;
-  private boolean isActive;
+  private volatile boolean isActive = false;
   SentryMetrics sentryMetrics;
+  private final LeaderStatus leaderStatus;
 
   public SentryService(Configuration conf) {
     this.conf = conf;
@@ -143,8 +144,6 @@ public class SentryService implements Callable {
     }
     isHA = conf.getBoolean(ServerConfig.SENTRY_HA_ENABLED,
             ServerConfig.SENTRY_HA_ENABLED_DEFAULT);
-    //setting isActive to true for now, until we have Sentry HA implemented
-    isActive = true;
     serviceExecutor = Executors.newSingleThreadExecutor(new ThreadFactory() {
       private int count = 0;
 
@@ -154,6 +153,25 @@ public class SentryService implements Callable {
             + (count++));
       }
     });
+    try {
+      leaderStatus = new LeaderStatus(
+          new LeaderStatus.Listener() {
+            @Override
+            public void becomeActive() throws Exception {
+              LOGGER.info("Activating " + leaderStatus.getIncarnationId());
+              isActive = true;
+            }
+
+            @Override
+            public void becomeStandby() {
+              LOGGER.info("Deactivating " + leaderStatus.getIncarnationId());
+              isActive = false;
+            }
+          }, conf);
+      leaderStatus.start(); // TODO: move this into call?
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
     webServerPort = conf.getInt(ServerConfig.SENTRY_WEB_PORT, ServerConfig.SENTRY_WEB_PORT_DEFAULT);
     status = Status.NOT_STARTED;
   }
@@ -289,6 +307,7 @@ public class SentryService implements Callable {
   public synchronized void stop() throws Exception{
     MultiException exception = null;
     LOGGER.info("Attempting to stop...");
+    leaderStatus.close();
     if (isRunning()) {
       LOGGER.info("Attempting to stop sentry thrift service...");
       try {

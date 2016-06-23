@@ -17,11 +17,7 @@
  */
 package org.apache.sentry.hdfs;
 
-import java.lang.reflect.Proxy;
-
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.hdfs.ha.HdfsHAClientInvocationHandler;
-import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 
 /**
  * Client factory to create normal client or proxy with HA invocation handler
@@ -34,15 +30,7 @@ public class SentryHDFSServiceClientFactory {
   
   public static SentryHDFSServiceClient create(Configuration conf)
       throws Exception {
-    boolean haEnabled = conf.getBoolean(ServerConfig.SENTRY_HA_ENABLED, false);
-    if (haEnabled) {
-      return (SentryHDFSServiceClient) Proxy.newProxyInstance(
-          SentryHDFSServiceClientDefaultImpl.class.getClassLoader(),
-          SentryHDFSServiceClientDefaultImpl.class.getInterfaces(),
-          new HdfsHAClientInvocationHandler(conf));
-    } else {
-      return new SentryHDFSServiceClientDefaultImpl(conf);
-    }
+    return new SentryHDFSServiceClientDefaultImpl(conf);
   }
 
 }

@@ -18,15 +18,12 @@
 
 package org.apache.sentry.service.thrift;
 
-import java.lang.reflect.Proxy;
-
 import org.apache.commons.pool2.BasePooledObjectFactory;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClientDefaultImpl;
-import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,15 +45,7 @@ public class SentryServiceClientPoolFactory extends BasePooledObjectFactory<Sent
   @Override
   public SentryPolicyServiceClient create() throws Exception {
     LOGGER.debug("Creating Sentry Service Client...");
-    boolean haEnabled = conf.getBoolean(ClientConfig.SERVER_HA_ENABLED, false);
-    if (haEnabled) {
-      return (SentryPolicyServiceClient) Proxy
-          .newProxyInstance(SentryPolicyServiceClientDefaultImpl.class.getClassLoader(),
-              SentryPolicyServiceClientDefaultImpl.class.getInterfaces(),
-              new HAClientInvocationHandler(conf));
-    } else {
-      return new SentryPolicyServiceClientDefaultImpl(conf);
-    }
+    return new SentryPolicyServiceClientDefaultImpl(conf);
   }
 
   @Override

@@ -31,7 +31,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.provider.db.SentryPolicyStorePlugin.SentryPluginException;
-import org.apache.sentry.provider.db.service.persistent.HAContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,13 +97,8 @@ public class UpdateForwarder<K extends Updateable.Update> implements
   public static <K extends Updateable.Update> UpdateForwarder<K> create(Configuration conf,
       Updateable<K> updateable, K update, ExternalImageRetriever<K> imageRetreiver,
       int maxUpdateLogSize, int initUpdateRetryDelay) throws SentryPluginException {
-    if (HAContext.isHaEnabled(conf)) {
-      return new UpdateForwarderWithHA<K>(conf, updateable, update, imageRetreiver,
-          maxUpdateLogSize, initUpdateRetryDelay);
-    } else {
-      return new UpdateForwarder<K>(conf, updateable, imageRetreiver,
-          maxUpdateLogSize, initUpdateRetryDelay);
-    }
+    return new UpdateForwarder<K>(conf, updateable, imageRetreiver,
+        maxUpdateLogSize, initUpdateRetryDelay);
   }
 
   private void spawnInitialUpdater(final Updateable<K> updateable,

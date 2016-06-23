@@ -500,7 +500,7 @@ public abstract class AbstractTestWithStaticConfiguration {
     sentryConf.set(ClientConfig.SERVER_RPC_PORT,
         String.valueOf(sentryServer.get(0).getAddress().getPort()));
     if (enableSentryHA) {
-      properties.put(ClientConfig.SERVER_HA_ENABLED, "true");
+      properties.put(ClientConfig.SENTRY_HA_ENABLED, "true");
       properties.put(ClientConfig.SENTRY_HA_ZOOKEEPER_QUORUM,
           sentryServer.getZKQuorum());
     }
