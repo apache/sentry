@@ -29,11 +29,45 @@ public class TestPathUtils {
 
   @Test
   public void testNullScheme() throws Exception {
-    assertTrue(PathUtils.impliesURI(new URI("/tmp"), new URI("/tmp/a")));
-    assertFalse(PathUtils.impliesURI(new URI("file:/tmp"), new URI("/tmp/a")));
-    assertFalse(PathUtils.impliesURI(new URI("/tmp"), new URI("file:/tmp/a")));
+    testImplies(true, "/tmp", "/tmp/a");
+
+    // default scheme "file"
+    testImplies(true, "file:/tmp", "/tmp/a");
+    // default scheme "file"
+    testImplies(true, "/tmp", "file:/tmp/a");
+
+    // default scheme "file" but default authority not "testauth"
+    testImplies(false, "file://testauth/tmp", "/tmp/a");
+    // default scheme "file" but default authority not "test
+    testImplies(false, "/tmp", "file://testauth/tmp/a");
+
+    // default scheme not "https"
+    testImplies(false, "https:/tmp", "/tmp/a");
+    // default scheme not "https"
+    testImplies(false, "/tmp", "https:/tmp/a");
+
     // Privileges on /tmp/ are distinct from /tmp.+/ e.g. /tmp/ and /tmpdata/
-    assertFalse(PathUtils.impliesURI(new URI("/tmp"), new URI("/tmpdata")));
+    testImplies(false, "/tmp", "/tmpdata");
+  }
+
+  @Test
+  public void testPath() throws Exception {
+    // ".." is unacceptable in both privilege and request URIs
+    testImplies(false, "file://testauth/tmp", "file://testauth/tmp/x/../x");
+    testImplies(false, "file://testauth/tmp/x", "file://testauth/tmp/x/y/../y");
+    testImplies(false, "file://testauth/tmp/x", "file://testauth/tmp/x/y/..");
+    testImplies(false, "file://testauth/tmp/x/..", "file://testauth/tmp/x");
+    testImplies(false, "file://testauth/tmp/x/y/../..", "file://testauth/tmp/x/y");
+  }
+
+  private void testImplies(boolean implies, String privilege, String request) throws Exception {
+    if (implies) {
+      assertTrue(PathUtils.impliesURI(new URI(privilege), new URI(request)));
+      assertTrue(PathUtils.impliesURI(privilege, request));
+    } else {
+      assertFalse(PathUtils.impliesURI(new URI(privilege), new URI(request)));
+      assertFalse(PathUtils.impliesURI(privilege, request));
+    }
   }
 
   @Test

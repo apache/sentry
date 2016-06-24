@@ -43,22 +43,55 @@ public class PathUtils {
     return CONF;
   }
 
+  // TODO: "throws URISyntaxException" is kept for backward compatibility with the existing client code
+  public static boolean impliesURI(URI privilegeURI, URI requestURI) throws URISyntaxException {
+    return _impliesURI(privilegeURI.toString(), requestURI.toString());
+  }
+
   /**
    * URI is a a special case. For URI's, /a implies /a/b.
    * Therefore the test is "/a/b".startsWith("/a");
    */
-  public static boolean impliesURI(URI privilegeURI, URI requestURI) throws URISyntaxException {
-    if (privilegeURI.getPath() == null || requestURI.getPath() == null) {
-      return false;
-    }
-    // ensure that either both schemes are null or equal
-    if (privilegeURI.getScheme() == null) {
-      if (requestURI.getScheme() != null) {
+  private static boolean _impliesURI(String privilege, String request) {
+
+    URI privilegeURI;
+    URI requestURI;
+    try {
+      // build privilege URI, add default scheme and/or authority if missing
+      privilegeURI = makeFullQualifiedURI(privilege);
+      if (privilegeURI == null) {
+        LOGGER.warn("Privilege URI " + privilege + " is not valid. Path is not absolute.");
         return false;
       }
-    } else if (!privilegeURI.getScheme().equals(requestURI.getScheme())) {
+
+      // build request URI, add default scheme and/or authority if missing
+      requestURI = makeFullQualifiedURI(request);
+      if (requestURI == null) {
+        LOGGER.warn("Request URI " + request + " is not valid. Path is not absolute.");
+        return false;
+      }
+    } catch (IOException e) {
+      LOGGER.warn("Unable to get the configured filesystem implementation", e);
       return false;
     }
+
+    // scheme and path must be present in privilege URI
+    if (privilegeURI.getScheme() == null || privilegeURI.getPath() == null) {
+      LOGGER.warn("Privilege URI " + request + " is not valid. Missing scheme or path.");
+      return false;
+    }
+
+    // scheme and path must be present in request URI
+    if (requestURI.getScheme() == null || requestURI.getPath() == null) {
+      LOGGER.warn("Request URI " + request + " is not valid. Missing scheme or path.");
+      return false;
+    }
+
+    // schemes in privilege and request URIs must be equal
+    if (privilegeURI.getScheme() != null && !privilegeURI.getScheme().equals(requestURI.getScheme())) {
+      return false;
+    }
+
     // request path does not contain relative parts /a/../b &&
     // request path starts with privilege path &&
     // authorities (nullable) are equal
@@ -74,46 +107,38 @@ public class PathUtils {
   }
 
   /**
-   * Make fully qualified URI based on the default file system Scheme and Authority
+   * Make fully qualified URI if Scheme and/or Authority is missing,
+   * based on the default file system Scheme and Authority.
+   * Notes:
+   * a) input URI path must be absolute; otherwise return null.
+   * b) Path.makeQualified() provides no assurance that the
+   *    default file system Scheme and Authority values are not null.
    *
    * @param uriName The Uri name.
-   * @return Returns the fully qualified URI.
+   * @return Returns the fully qualified URI or null if URI path is not absolute.
    * @throws IOException
-   * @throws URISyntaxException
    */
-  private static URI makeFullQualifiedURI(String uriName) throws IOException, URISyntaxException {
+  private static URI makeFullQualifiedURI(String uriName) throws IOException {
     Path uriPath = new Path(uriName);
-
-    if (uriPath.isAbsoluteAndSchemeAuthorityNull()) {
-
-      URI defaultUri = FileSystem.getDefaultUri(CONF);
-      uriPath = uriPath.makeQualified(defaultUri, uriPath);
+    if (isNormalized(uriName) && uriPath.isUriPathAbsolute()) {
+      // add scheme and/or authority if either is missing
+      if ((uriPath.toUri().getScheme() == null || uriPath.toUri().getAuthority() == null)) {
+        URI defaultUri = FileSystem.getDefaultUri(CONF);
+        uriPath = uriPath.makeQualified(defaultUri, uriPath);
+      }
       return uriPath.toUri();
+    } else { // relative URI path is unacceptable
+      return null;
     }
+  }
 
-    return new URI(uriName);
+  private static boolean isNormalized(String uriName) {
+      URI uri = URI.create(uriName);
+      return uri.getPath().equals(uri.normalize().getPath());
   }
 
   public static boolean impliesURI(String privilege, String request) {
-    try {
-      URI privilegeURI = makeFullQualifiedURI(new StrSubstitutor(System.getProperties()).replace(privilege));
-      URI requestURI = makeFullQualifiedURI(request);
-      if (privilegeURI.getScheme() == null || privilegeURI.getPath() == null) {
-        LOGGER.warn("Privilege URI " + request + " is not valid. Either no scheme or no path.");
-        return false;
-      }
-      if (requestURI.getScheme() == null || requestURI.getPath() == null) {
-        LOGGER.warn("Request URI " + request + " is not valid. Either no scheme or no path.");
-        return false;
-      }
-      return PathUtils.impliesURI(privilegeURI, requestURI);
-    } catch (URISyntaxException e) {
-      LOGGER.warn("Request URI " + request + " is not a URI", e);
-      return false;
-    } catch (IOException e) {
-      LOGGER.warn("Unable to get the configured filesystem implementation", e);
-      return false;
-    }
+    return _impliesURI(new StrSubstitutor(System.getProperties()).replace(privilege), request);
   }
 
   /**
