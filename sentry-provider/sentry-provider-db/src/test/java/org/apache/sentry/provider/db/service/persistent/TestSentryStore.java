@@ -24,11 +24,7 @@ import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -1682,6 +1678,18 @@ public class TestSentryStore {
       sentryStore.verifySentryStoreSchema(false);
     }
   }
+
+  @Test
+  public void testAuthzPathsMapping() throws Exception {
+    long seqId = sentryStore.createAuthzPathsMapping("db1.table1", Sets.newHashSet("/user/hive/warehouse/db1.db/table1")).getSequenceId();
+    long actualSeqId = sentryStore.createAuthzPathsMapping("db1.table2", Sets.newHashSet("/user/hive/warehouse/db1.db/table2")).getSequenceId();
+    assertEquals(seqId + 1, actualSeqId);
+
+    Map<String, Set<String>> pathsImage = sentryStore.retrieveFullPathsImage();
+    assertEquals(2, pathsImage.size());
+    assertEquals(Sets.newHashSet("/user/hive/warehouse/db1.db/table1"), pathsImage.get("db1.table1"));
+  }
+
 
   protected static void addGroupsToUser(String user, String... groupNames) {
     policyFile.addGroupsToUser(user, groupNames);
