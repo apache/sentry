@@ -56,6 +56,7 @@ import org.apache.sentry.core.common.exception.SentryAlreadyExistsException;
 import org.apache.sentry.core.common.exception.SentryGrantDeniedException;
 import org.apache.sentry.core.common.exception.SentryInvalidInputException;
 import org.apache.sentry.core.common.exception.SentryNoSuchObjectException;
+import org.apache.sentry.provider.db.service.model.MAuthzPathsMapping;
 import org.apache.sentry.provider.db.service.model.MSentryGroup;
 import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
@@ -1983,6 +1984,76 @@ public class SentryStore {
         rollbackTransaction(pm);
       }
     }
+  }
+
+  /**
+   * This returns a Mapping of Authz -> [Paths]
+   */
+  public Map<String, Set<String>> retrieveFullPathsImage() {
+    Map<String, Set<String>> retVal = new HashMap<>();
+    boolean rollbackTransaction = true;
+    PersistenceManager pm = null;
+
+    try {
+      pm = openTransaction();
+      Query query = pm.newQuery(MAuthzPathsMapping.class);
+      List<MAuthzPathsMapping> authzToPathsMappings = (List<MAuthzPathsMapping>) query.execute();
+      for (MAuthzPathsMapping authzToPaths : authzToPathsMappings) {
+        retVal.put(authzToPaths.getAuthzObjName(), authzToPaths.getPaths());
+      }
+
+      rollbackTransaction = false;
+      commitTransaction(pm);
+      return retVal;
+    } finally {
+      if (rollbackTransaction) {
+        rollbackTransaction(pm);
+      }
+    }
+  }
+
+  public CommitContext createAuthzPathsMapping(String hiveObj,
+      Set<String> paths) throws SentryNoSuchObjectException, SentryAlreadyExistsException {
+
+    boolean rollbackTransaction = true;
+    PersistenceManager pm = null;
+
+    try {
+      pm = openTransaction();
+      createAuthzPathsMappingCore(pm, hiveObj, paths);
+      CommitContext commit = commitUpdateTransaction(pm);
+      rollbackTransaction = false;
+      return commit;
+    } finally {
+      if (rollbackTransaction) {
+        rollbackTransaction(pm);
+      }
+    }
+  }
+
+  private void createAuthzPathsMappingCore(PersistenceManager pm, String authzObj,
+      Set<String> paths) throws SentryAlreadyExistsException {
+
+    MAuthzPathsMapping mAuthzPathsMapping = getMAuthzPathsMapping(pm, authzObj);
+
+    if (mAuthzPathsMapping == null) {
+      mAuthzPathsMapping =
+          new MAuthzPathsMapping(authzObj, paths, System.currentTimeMillis());
+      pm.makePersistent(mAuthzPathsMapping);
+    } else {
+      throw new SentryAlreadyExistsException("AuthzObj: " + authzObj);
+    }
+  }
+
+  /**
+   * Get the MAuthzPathsMapping object from authzObj
+   */
+  public MAuthzPathsMapping getMAuthzPathsMapping(PersistenceManager pm, String authzObj) {
+    Query query = pm.newQuery(MAuthzPathsMapping.class);
+    query.setFilter("this.authzObjName == t");
+    query.declareParameters("java.lang.String t");
+    query.setUnique(true);
+    return (MAuthzPathsMapping) query.execute(authzObj);
   }
 
   /**
