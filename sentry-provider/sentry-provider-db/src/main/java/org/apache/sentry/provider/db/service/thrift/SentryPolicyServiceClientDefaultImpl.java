@@ -172,7 +172,7 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
         ServiceConstants.ClientConfig.SENTRY_POLICY_CLIENT_THRIFT_MAX_MESSAGE_SIZE_DEFAULT);
     TMultiplexedProtocol protocol = new TMultiplexedProtocol(
         new TBinaryProtocol(transport, maxMessageSize, maxMessageSize, true, true),
-        SentryPolicyStoreProcessor.SENTRY_POLICY_SERVICE_NAME);
+        ServiceConstants.SENTRY_POLICY_SERVICE_NAME);
     client = new SentryPolicyService.Client(protocol);
     LOGGER.debug("Successfully created client");
   }

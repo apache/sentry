@@ -112,10 +112,6 @@ limitations under the License.
     </dependency>
     <!-- required for SentryGrantRevokeTask -->
     <dependency>
-      <groupId>org.apache.sentry</groupId>
-      <artifactId>sentry-provider-db</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-minicluster</artifactId>
       <scope>test</scope>

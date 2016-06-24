@@ -18,7 +18,7 @@
 package org.apache.sentry.tests.e2e.hive;
 
 import com.google.common.io.Resources;
-import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.core.common.utils.PolicyFile;
 import org.junit.Before;
 import org.junit.Test;
 

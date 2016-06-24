@@ -28,6 +28,8 @@ import com.google.common.collect.ImmutableMap;
 public class ServiceConstants {
 
   private static final ImmutableMap<String, String> SASL_PROPERTIES;
+  public static final String SENTRY_POLICY_SERVICE_NAME = "SentryPolicyService";
+  public static final String SENTRY_GENERIC_SERVICE_NAME = "SentryGenericPolicyService";
 
   static {
     Map<String, String> saslProps = new HashMap<String, String>();

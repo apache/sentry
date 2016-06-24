@@ -75,6 +75,7 @@ limitations under the License.
     <jackson.version>1.8.8</jackson.version>
     <jdo-api.version>3.0.1</jdo-api.version>
     <jettyVersion>8.1.19.v20160209</jettyVersion>
+    <jetty.aggregate>7.6.0.v20120127</jetty.aggregate>
     <joda-time.version>2.5</joda-time.version>
     <junit.version>4.10</junit.version>
     <libfb303.version>0.9.3</libfb303.version>
@@ -430,6 +431,11 @@ limitations under the License.
       </dependency>
       <dependency>
         <groupId>org.apache.sentry</groupId>
+        <artifactId>sentry-service-server</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.sentry</groupId>
         <artifactId>sentry-provider-common</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -470,7 +476,7 @@ limitations under the License.
       </dependency>
       <dependency>
         <groupId>org.apache.sentry</groupId>
-        <artifactId>sentry-provider-db</artifactId>
+        <artifactId>sentry-service-server</artifactId>
         <version>${project.version}</version>
         <type>test-jar</type>
       </dependency>
@@ -619,6 +625,11 @@ limitations under the License.
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-servlet</artifactId>
         <version>${jettyVersion}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.aggregate</groupId>
+        <artifactId>jetty-all</artifactId>
+        <version>${jetty.aggregate}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
