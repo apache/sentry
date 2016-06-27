@@ -23,6 +23,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.sentry.core.common.service.MockGroupMappingServiceProvider;
 import org.junit.Assert;
 
 import org.apache.commons.io.FileUtils;
@@ -33,7 +34,6 @@ import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.indexer.Indexer;
 import org.apache.sentry.core.model.indexer.IndexerModelAction;
 import org.apache.sentry.core.model.indexer.IndexerPrivilegeModel;
-import org.apache.sentry.provider.common.MockGroupMappingServiceProvider;
 import org.apache.sentry.provider.common.ResourceAuthorizationProvider;
 import org.apache.sentry.provider.file.HadoopGroupResourceAuthorizationProvider;
 import org.apache.sentry.provider.file.PolicyFiles;

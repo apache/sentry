@@ -20,7 +20,7 @@ package org.apache.sentry.policy.kafka;
 
 import java.util.Set;
 
-import org.apache.sentry.provider.common.GroupMappingService;
+import org.apache.sentry.core.common.service.GroupMappingService;
 
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;

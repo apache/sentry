@@ -28,7 +28,7 @@ import java.util.List;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
 
-import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.core.common.utils.PolicyFile;
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 
 import org.junit.Before;

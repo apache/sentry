@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.common.Model;
 import org.apache.sentry.policy.common.PolicyEngine;
-import org.apache.sentry.provider.common.GroupMappingService;
+import org.apache.sentry.core.common.service.GroupMappingService;
 
 import com.google.common.annotations.VisibleForTesting;
 

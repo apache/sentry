@@ -26,6 +26,8 @@ import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.exception.SentryConfigurationException;
 import org.apache.sentry.core.common.Subject;
+import org.apache.sentry.core.common.service.GroupMappingService;
+import org.apache.sentry.core.common.service.NoGroupMappingService;
 import org.apache.sentry.policy.common.PolicyEngine;
 
 public class NoAuthorizationProvider implements AuthorizationProvider {

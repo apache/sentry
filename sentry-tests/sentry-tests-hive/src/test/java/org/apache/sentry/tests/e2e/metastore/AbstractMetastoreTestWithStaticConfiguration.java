@@ -40,7 +40,7 @@ import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.hive.serde.serdeConstants;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.pig.PigServer;
-import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.core.common.utils.PolicyFile;
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory.HiveServer2Type;
 import org.junit.BeforeClass;

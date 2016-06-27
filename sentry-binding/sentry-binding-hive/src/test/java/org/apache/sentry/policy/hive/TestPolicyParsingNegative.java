@@ -24,7 +24,7 @@ import org.junit.Assert;
 import org.apache.commons.io.FileUtils;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.policy.common.PolicyEngine;
-import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.core.common.utils.PolicyFile;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

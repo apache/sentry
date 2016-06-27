@@ -102,6 +102,7 @@
         <exclude>sentry-policy/**</exclude>
         <exclude>sentry-tests/**</exclude>
         <exclude>sentry-hdfs/**</exclude>
+        <exclude>sentry-service/**</exclude>
         <exclude>sentry-solr/**</exclude>
       </excludes>
 

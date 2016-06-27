@@ -19,6 +19,7 @@ package org.apache.sentry.provider.common;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
+import org.apache.sentry.core.common.service.GroupMappingService;
 import org.junit.Test;
 
 /**

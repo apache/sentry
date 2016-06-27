@@ -26,7 +26,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
-import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.core.common.utils.PolicyFile;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;

@@ -35,7 +35,7 @@ import org.apache.sentry.core.model.search.SearchPrivilegeModel;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.common.AuthorizationProvider;
 import org.apache.sentry.provider.file.LocalGroupResourceAuthorizationProvider;
-import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.core.common.utils.PolicyFile;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
