@@ -37,6 +37,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
+import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.sentry.core.common.utils.PolicyFileConstants;
@@ -316,7 +317,7 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
   public synchronized Set<TSentryRole> listUserRoles(String requestorUserName)
       throws SentryUserException {
     Set<TSentryRole> tSentryRoles = Sets.newHashSet();
-    tSentryRoles.addAll(listRolesByGroupName(requestorUserName, AccessConstants.ALL));
+    tSentryRoles.addAll(listRolesByGroupName(requestorUserName, SentryConstants.RESOURCE_WILDCARD_VALUE));
     tSentryRoles.addAll(listRolesByUserName(requestorUserName, requestorUserName));
     return tSentryRoles;
   }
@@ -325,14 +326,14 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
       String roleName, String server, String uri)
   throws SentryUserException {
     return grantPrivilege(requestorUserName, roleName,
-        PrivilegeScope.URI, server, uri, null, null, null, AccessConstants.ALL);
+        PrivilegeScope.URI, server, uri, null, null, null, SentryConstants.RESOURCE_WILDCARD_VALUE);
   }
 
   public synchronized TSentryPrivilege grantURIPrivilege(String requestorUserName,
       String roleName, String server, String uri, Boolean grantOption)
   throws SentryUserException {
     return grantPrivilege(requestorUserName, roleName,
-        PrivilegeScope.URI, server, uri, null, null, null, AccessConstants.ALL, grantOption);
+        PrivilegeScope.URI, server, uri, null, null, null, SentryConstants.RESOURCE_WILDCARD_VALUE, grantOption);
   }
 
   public synchronized void grantServerPrivilege(String requestorUserName,
@@ -341,8 +342,9 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
 
     // "ALL" and "*" should be synonyms for action and need to be unified with grantServerPrivilege without
     // action explicitly specified.
-    if (AccessConstants.ACTION_ALL.equalsIgnoreCase(action) || AccessConstants.ALL.equals(action)) {
-      action = AccessConstants.ALL;
+    if (SentryConstants.RESOURCE_WILDCARD_VALUE_ALL.equalsIgnoreCase(action)
+        || SentryConstants.RESOURCE_WILDCARD_VALUE.equals(action)) {
+      action = SentryConstants.RESOURCE_WILDCARD_VALUE;
     }
 
     grantPrivilege(requestorUserName, roleName,
@@ -357,7 +359,7 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
   public synchronized TSentryPrivilege grantServerPrivilege(String requestorUserName,
       String roleName, String server, Boolean grantOption) throws SentryUserException {
     return grantServerPrivilege(requestorUserName, roleName, server,
-        AccessConstants.ALL, grantOption);
+        SentryConstants.RESOURCE_WILDCARD_VALUE, grantOption);
   }
 
   public synchronized TSentryPrivilege grantServerPrivilege(String requestorUserName,
@@ -366,8 +368,9 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
 
     // "ALL" and "*" should be synonyms for action and need to be unified with grantServerPrivilege without
     // action explicitly specified.
-    if (AccessConstants.ACTION_ALL.equalsIgnoreCase(action) || AccessConstants.ALL.equals(action)) {
-      action = AccessConstants.ALL;
+    if (SentryConstants.RESOURCE_WILDCARD_VALUE_ALL.equalsIgnoreCase(action)
+        || SentryConstants.RESOURCE_WILDCARD_VALUE.equals(action)) {
+      action = SentryConstants.RESOURCE_WILDCARD_VALUE;
     }
 
     return grantPrivilege(requestorUserName, roleName,

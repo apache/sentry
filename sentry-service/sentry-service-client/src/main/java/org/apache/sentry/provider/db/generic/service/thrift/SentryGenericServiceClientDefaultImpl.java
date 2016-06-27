@@ -25,7 +25,7 @@ import java.util.*;
 import javax.security.auth.callback.CallbackHandler;
 
 import org.apache.hadoop.conf.Configuration;
-import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION;
+import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.SaslRpcServer;
 import org.apache.hadoop.security.SaslRpcServer.AuthMethod;
@@ -34,7 +34,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
-import org.apache.sentry.core.model.db.AccessConstants;
+import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.service.thrift.ServiceConstants;
 import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
@@ -134,7 +134,7 @@ public class SentryGenericServiceClientDefaultImpl implements SentryGenericServi
       String serverPrincipal = Preconditions.checkNotNull(conf.get(ServerConfig.PRINCIPAL), ServerConfig.PRINCIPAL + " is required");
       // since the client uses hadoop-auth, we need to set kerberos in
       // hadoop-auth if we plan to use kerberos
-      conf.set(HADOOP_SECURITY_AUTHENTICATION, ServerConfig.SECURITY_MODE_KERBEROS);
+      conf.set(CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION, ServerConfig.SECURITY_MODE_KERBEROS);
 
       // Resolve server host in the same way as we are doing on server side
       serverPrincipal = SecurityUtil.getServerPrincipal(serverPrincipal, serverAddress.getAddress());
@@ -442,7 +442,7 @@ public class SentryGenericServiceClientDefaultImpl implements SentryGenericServi
 
   public Set<TSentryRole> listUserRoles(String requestorUserName, String component)
       throws SentryUserException {
-    return listRolesByGroupName(requestorUserName, AccessConstants.ALL, component);
+    return listRolesByGroupName(requestorUserName, SentryConstants.RESOURCE_WILDCARD_VALUE, component);
   }
 
   public Set<TSentryRole> listAllRoles(String requestorUserName, String component)
