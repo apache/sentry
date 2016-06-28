@@ -55,7 +55,6 @@ limitations under the License.
     <maven.compile.target>1.7</maven.compile.target>
     <!-- versions are in alphabetical order -->
     <ant.contrib.version>1.0b3</ant.contrib.version>
-    <bonecp.version>0.7.1.RELEASE</bonecp.version>
     <build.helper.maven.plugin.version>1.8</build.helper.maven.plugin.version>
     <cglib.version>2.2</cglib.version>
     <commons-cli.version>1.2</commons-cli.version>
@@ -120,11 +119,6 @@ limitations under the License.
         <groupId>commons-logging</groupId>
         <artifactId>commons-logging</artifactId>
         <version>${commons.logging.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.jolbox</groupId>
-        <artifactId>bonecp</artifactId>
-        <version>${bonecp.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.derby</groupId>

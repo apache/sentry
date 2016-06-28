@@ -33,10 +33,6 @@ limitations under the License.
       <artifactId>sentry-service-common</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.hadoop</groupId>
-      <artifactId>hadoop-common</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.apache.sentry</groupId>
       <artifactId>sentry-core-model-kafka</artifactId>
     </dependency>

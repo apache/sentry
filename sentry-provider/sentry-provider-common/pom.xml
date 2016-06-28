@@ -36,11 +36,6 @@ limitations under the License.
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-common</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.sentry</groupId>
-      <artifactId>sentry-core-common</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.sentry</groupId>
