@@ -104,6 +104,13 @@ public interface SentryPolicyServiceClient {
       String server, String db, String table, List<String> columnNames, String action,
       Boolean grantOption) throws SentryUserException;
 
+  Set<TSentryPrivilege> grantPrivileges(String requestorUserName, String
+      roleName, Set<TSentryPrivilege> privileges) throws SentryUserException;
+
+  TSentryPrivilege grantPrivilege(String requestorUserName, String roleName,
+                                  TSentryPrivilege privilege) throws
+      SentryUserException;
+
   void revokeURIPrivilege(String requestorUserName, String roleName, String server,
       String uri) throws SentryUserException;
 
