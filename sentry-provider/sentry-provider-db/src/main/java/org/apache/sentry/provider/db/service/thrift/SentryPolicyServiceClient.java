@@ -152,6 +152,12 @@ public interface SentryPolicyServiceClient {
       String db, String table, List<String> columns, String action, Boolean grantOption)
       throws SentryUserException;
 
+  void revokePrivileges(String requestorUserName, String roleName, Set<TSentryPrivilege> privileges)
+      throws SentryUserException;
+
+  void revokePrivilege(String requestorUserName, String roleName, TSentryPrivilege privilege)
+      throws SentryUserException;
+
   Set<String> listPrivilegesForProvider(Set<String> groups, Set<String> users,
       ActiveRoleSet roleSet, Authorizable... authorizable) throws SentryUserException;
 
