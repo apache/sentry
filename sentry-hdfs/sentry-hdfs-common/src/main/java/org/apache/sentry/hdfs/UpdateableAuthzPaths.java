@@ -17,6 +17,7 @@
  */
 package org.apache.sentry.hdfs;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -109,18 +110,32 @@ public class UpdateableAuthzPaths implements AuthzPaths, Updateable<PathsUpdate>
         return;
       }
     }
+
+    List<TPathChanges> deletePathChanges = new ArrayList<TPathChanges>();
+    List<TPathChanges> addPathChanges = new ArrayList<TPathChanges>();
+
     for (TPathChanges pathChanges : update.getPathChanges()) {
-      paths.addPathsToAuthzObject(pathChanges.getAuthzObj(), pathChanges
-          .getAddPaths(), true);
+      if (pathChanges.getDelPaths() != null && pathChanges.getDelPaths().size() != 0) {
+        deletePathChanges.add(pathChanges);
+      }
+      if (pathChanges.getAddPaths() != null && pathChanges.getAddPaths().size() != 0) {
+        addPathChanges.add(pathChanges);
+      }
+    }
+    for (TPathChanges pathChanges : deletePathChanges) {
       List<List<String>> delPaths = pathChanges.getDelPaths();
       if (delPaths.size() == 1 && delPaths.get(0).size() == 1
-          && delPaths.get(0).get(0).equals(PathsUpdate.ALL_PATHS)) {
+              && delPaths.get(0).get(0).equals(PathsUpdate.ALL_PATHS)) {
         // Remove all paths.. eg. drop table
         paths.deleteAuthzObject(pathChanges.getAuthzObj());
       } else {
         paths.deletePathsFromAuthzObject(pathChanges.getAuthzObj(), pathChanges
-            .getDelPaths());
+                .getDelPaths());
       }
+    }
+    for (TPathChanges pathChanges : addPathChanges) {
+      paths.addPathsToAuthzObject(pathChanges.getAuthzObj(), pathChanges
+          .getAddPaths(), true);
     }
   }
 
