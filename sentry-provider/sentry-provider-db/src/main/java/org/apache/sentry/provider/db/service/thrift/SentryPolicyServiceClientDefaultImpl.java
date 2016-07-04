@@ -21,6 +21,7 @@ package org.apache.sentry.provider.db.service.thrift;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.PrivilegedExceptionAction;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -237,8 +238,13 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
     request.setRequestorUserName(requestorUserName);
     request.setGroupName(groupName);
     TListSentryRolesResponse response;
+    Set<TSentryRole> roles = new HashSet<TSentryRole>();
     try {
       response = client.list_sentry_roles_by_group(request);
+      Status status = Status.fromCode(response.getStatus().getValue());
+      if (status == Status.NO_SUCH_OBJECT) {
+        return roles;
+      }
       Status.throwIfNotOk(response.getStatus());
       return response.getRoles();
     } catch (TException e) {
