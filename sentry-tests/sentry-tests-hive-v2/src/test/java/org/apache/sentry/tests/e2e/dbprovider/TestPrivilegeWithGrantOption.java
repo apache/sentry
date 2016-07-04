@@ -65,6 +65,72 @@ public class TestPrivilegeWithGrantOption extends AbstractTestWithStaticConfigur
     super.setup();
   }
 
+  @Test
+  public void testOnGrantSelectColumnPrivilege() throws Exception {
+    // setup db objects needed by the test
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("DROP DATABASE IF EXISTS db_1 CASCADE");
+    statement.execute("CREATE DATABASE db_1");
+    statement.execute("CREATE ROLE group1_role");
+    statement.execute("GRANT ALL ON DATABASE db_1 TO ROLE group1_role WITH GRANT OPTION");
+    statement.execute("GRANT ROLE group1_role TO GROUP " + USERGROUP1);
+    statement.execute("CREATE ROLE group2_role");
+    statement.execute("GRANT ROLE group2_role TO GROUP " + USERGROUP2);
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+
+    statement.execute("USE db_1");
+    statement.execute("CREATE TABLE test_tb(s STRING, i INT)");
+    statement.execute("INSERT INTO TABLE test_tb VALUES('Test', 1)");
+    statement.execute("GRANT SELECT(s) ON TABLE test_tb TO ROLE group2_role");
+
+    connection = context.createConnection(USER2_1);
+    statement = context.createStatement(connection);
+    statement.execute("USE db_1");
+    //positive test for order by
+    statement.execute("SELECT s FROM test_tb ORDER BY s");
+    //negative test for order by
+    try {
+      statement.execute("SELECT s FROM test_tb ORDER BY i");
+      Assert.fail("Expected SQL exception");
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("SELECT s FROM test_tb SORT BY i");
+      Assert.fail("Expected SQL exception");
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    //positive test for group by
+    statement.execute("SELECT COUNT(s) FROM test_tb GROUP BY s ");
+    //negative test for group by
+    try {
+      statement.execute("SELECT COUNT(s) FROM test_tb GROUP BY i");
+      Assert.fail("Expected SQL exception");
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    try {
+      statement.execute("SELECT s FROM test_tb GROUP BY s HAVING SUM(i) > 1");
+      Assert.fail("Expected SQL exception");
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    //positive test for where clause
+    statement.execute("SELECT s FROM test_tb WHERE s = 'Test' ");
+    //negative test fot where clause
+    try {
+      statement.execute("SELECT s FROM test_tb WHERE i = 1 ");
+      Assert.fail("Expected SQL exception");
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+
+  }
+
   /*
    * Admin grant DB_1 user1 without grant option, grant user3 with grant option,
    * user1 tries to grant it to user2, but failed.
