@@ -289,6 +289,33 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     connection.close();
   }
 
+  /* Test all operations that require alter on Database alone
+  1. Alter database : HiveOperation.ALTERDATABASE_OWNER
+   */
+  @Test
+  public void testAlterDatabaseOwner() throws Exception{
+    adminCreate(DB1, null);
+
+
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("ALTER DATABASE " + DB1 + " SET OWNER USER " + USER1_1);
+
+
+    //Negative case
+    adminCreate(DB1, null);
+    policyFile
+        .addPermissionsToRole("select_db1", privileges.get("select_db1"))
+        .addRolesToGroup(USERGROUP1, "select_db1");
+    writePolicyFile(policyFile);
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    context.assertSentrySemanticException(statement, "ALTER DATABASE " + DB1 + " SET OWNER USER " + USER2_1, semanticException);
+    statement.close();
+    connection.close();
+  }
+
   /* SELECT/INSERT on DATABASE
    1. HiveOperation.DESCDATABASE
    */
