@@ -90,6 +90,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
     statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("CREATE DATABASE " + DB2);
     statement.execute("USE " + DB1);
     statement.execute("create table " + DB1 + "." + tableName1
         + " (number INT comment 'column as a number', value STRING comment 'column as a string')");
@@ -110,8 +111,36 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     writePolicyFile(policyFile);
   }
 
+  /**
+   * Test the required permission to create/drop permanent function.
+   * @throws Exception
+   */
   @Test
-  public void testCreateUdf() throws Exception {
+  public void testCreateDropPermUdf() throws Exception {
+    setUpContext();
+    // user1 has URI privilege for the Jar and should be able create the perm function.
+    Connection connection = context.createConnection(USER1_1);
+    Statement statement = context.createStatement(connection);
+
+    statement.execute("CREATE FUNCTION db_2.test_1 AS 'org.apache.sentry.tests.e2e.hive.TestUDF'");
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER3_1);
+    statement = context.createStatement(connection);
+
+    // user3 does not have URI privilege but still should be able drop the perm function.
+    statement.execute("DROP FUNCTION IF EXISTS db_2.test_1");
+    statement.close();
+    connection.close();
+  }
+
+  /**
+   * Test the required permission to create/drop temporary function.
+   * @throws Exception
+   */
+  @Test
+  public void testCreateDropTempUdf() throws Exception {
     setUpContext();
     // user1 should be able create/drop temp functions
     Connection connection = context.createConnection(USER1_1);
@@ -134,6 +163,12 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     }
     statement.close();
     connection.close();
+
+    connection = context.createConnection(USER3_1);
+    statement = context.createStatement(connection);
+
+    // user3 does not have URI privilege but still should be able drop the temp function.
+    statement.execute("DROP FUNCTION IF EXISTS test_2");
   }
 
   @Test
@@ -151,9 +186,30 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     } catch (Exception ex) {
       LOGGER.error("test temp func printf_test failed with reason: " + ex.getStackTrace() + " " + ex.getMessage());
       fail("fail to test temp func printf_test");
-    } finally {
-      statement.execute("DROP TEMPORARY FUNCTION IF EXISTS printf_test");
     }
+
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER3_1);
+    statement = context.createStatement(connection);
+    statement.execute("USE " + DB1);
+
+    // user3 only has db1_tab1 privilege but still should be able execute the temp function.
+    try {
+      verifyPrintFuncValues(statement, "SELECT printf_test('%s', value) FROM " + tableName1);
+    } catch (Exception ex) {
+      LOGGER.error("test temp func printf_test failed with reason: " + ex.getStackTrace() + " " + ex.getMessage());
+      fail("fail to test temp func printf_test");
+    }
+
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    statement.execute("USE " + DB1);
+    statement.execute("DROP TEMPORARY FUNCTION IF EXISTS printf_test");
 
     LOGGER.info("Testing select from perm func printf_test_perm");
     try {
@@ -163,9 +219,30 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     } catch (Exception ex) {
       LOGGER.error("test perm func printf_test_perm failed with reason: " + ex.getStackTrace() + " " + ex.getMessage());
       fail("Fail to test perm func printf_test_perm");
-    } finally {
-      statement.execute("DROP FUNCTION IF EXISTS printf_test_perm");
     }
+
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER3_1);
+    statement = context.createStatement(connection);
+    statement.execute("USE " + DB1);
+
+    // user3 only has db1_tab1 privilege but still should be able execute the perm function.
+    try {
+      verifyPrintFuncValues(statement, "SELECT printf_test_perm('%s', value) FROM " + tableName1);
+    } catch (Exception ex) {
+      LOGGER.error("test perm func printf_test_perm failed with reason: " + ex.getStackTrace() + " " + ex.getMessage());
+      fail("Fail to test perm func printf_test_perm");
+    }
+
+    statement.close();
+    connection.close();
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    statement.execute("USE " + DB1);
+    statement.execute("DROP FUNCTION IF EXISTS printf_test_perm");
 
     // test perm UDF with 'using file' syntax
     LOGGER.info("Testing select from perm func printf_test_perm_use_file");
