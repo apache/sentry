@@ -17,7 +17,7 @@
 package org.apache.sentry.tests.e2e.dbprovider;
 
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
-import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.core.common.utils.PolicyFile;
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 
 import org.apache.sentry.tests.e2e.hive.StaticUserGroup;

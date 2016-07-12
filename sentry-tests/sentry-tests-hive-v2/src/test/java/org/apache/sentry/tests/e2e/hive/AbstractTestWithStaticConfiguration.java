@@ -16,9 +16,9 @@
  */
 package org.apache.sentry.tests.e2e.hive;
 
-import static org.apache.sentry.policy.common.PolicyConstants.AUTHORIZABLE_SPLITTER;
-import static org.apache.sentry.policy.common.PolicyConstants.PRIVILEGE_PREFIX;
-import static org.apache.sentry.policy.common.PolicyConstants.ROLE_SPLITTER;
+import static org.apache.sentry.core.common.utils.SentryConstants.AUTHORIZABLE_SPLITTER;
+import static org.apache.sentry.core.common.utils.SentryConstants.PRIVILEGE_PREFIX;
+import static org.apache.sentry.core.common.utils.SentryConstants.ROLE_SPLITTER;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,10 +49,10 @@ import org.apache.sentry.binding.hive.v2.SentryHiveAuthorizationTaskFactoryImplV
 import org.apache.sentry.binding.hive.v2.metastore.SentryMetastorePostEventListenerV2;
 import org.apache.sentry.core.model.db.DBModelAction;
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
-import org.apache.sentry.policy.db.DBModelAuthorizables;
+import org.apache.sentry.core.model.db.DBModelAuthorizables;
 import org.apache.sentry.provider.db.SimpleDBProviderBackend;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
-import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.core.common.utils.PolicyFile;
 import org.apache.sentry.service.thrift.KerberosConfiguration;
 import org.apache.sentry.service.thrift.SentryServiceClientFactory;
 import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;

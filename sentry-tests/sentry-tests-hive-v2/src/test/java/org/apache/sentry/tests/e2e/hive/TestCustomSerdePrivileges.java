@@ -21,7 +21,7 @@ import com.google.common.collect.Maps;
 
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
-import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.core.common.utils.PolicyFile;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;

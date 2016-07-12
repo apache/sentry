@@ -26,7 +26,7 @@ import org.junit.Assert;
 
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
-import org.apache.sentry.provider.db.SentryAccessDeniedException;
+import org.apache.sentry.core.common.exception.SentryAccessDeniedException;
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 import org.apache.sentry.tests.e2e.hive.DummySentryOnFailureHook;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
