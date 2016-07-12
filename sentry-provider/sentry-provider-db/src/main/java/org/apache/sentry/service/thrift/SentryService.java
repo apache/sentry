@@ -49,6 +49,7 @@ import org.apache.hadoop.security.SaslRpcServer;
 import org.apache.hadoop.security.SaslRpcServer.AuthMethod;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.sentry.Command;
+import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.provider.db.service.thrift.SentryHealthCheckServletContextListener;
 import org.apache.sentry.provider.db.service.thrift.SentryMetrics;
 import org.apache.sentry.provider.db.service.thrift.SentryMetricsServletContextListener;
@@ -95,11 +96,10 @@ public class SentryService implements Callable {
   private SentryWebServer sentryWebServer;
   private long maxMessageSize;
   private final boolean isHA;
-  private volatile boolean isActive = false;
+  private final Activator act;
   SentryMetrics sentryMetrics;
-  private final LeaderStatus leaderStatus;
 
-  public SentryService(Configuration conf) {
+  public SentryService(Configuration conf) throws Exception {
     this.conf = conf;
     int port = conf
         .getInt(ServerConfig.RPC_PORT, ServerConfig.RPC_PORT_DEFAULT);
@@ -153,25 +153,10 @@ public class SentryService implements Callable {
             + (count++));
       }
     });
-    try {
-      leaderStatus = new LeaderStatus(
-          new LeaderStatus.Listener() {
-            @Override
-            public void becomeActive() throws Exception {
-              LOGGER.info("Activating " + leaderStatus.getIncarnationId());
-              isActive = true;
-            }
-
-            @Override
-            public void becomeStandby() {
-              LOGGER.info("Deactivating " + leaderStatus.getIncarnationId());
-              isActive = false;
-            }
-          }, conf);
-      leaderStatus.start(); // TODO: move this into call?
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+    this.act = new Activator(conf);
+    conf.set(SentryConstants.CURRENT_INCARNATION_ID_KEY,
+        this.act.getIncarnationId());
+    Activators.INSTANCE.put(act);
     webServerPort = conf.getInt(ServerConfig.SENTRY_WEB_PORT, ServerConfig.SENTRY_WEB_PORT_DEFAULT);
     status = Status.NOT_STARTED;
   }
@@ -307,7 +292,7 @@ public class SentryService implements Callable {
   public synchronized void stop() throws Exception{
     MultiException exception = null;
     LOGGER.info("Attempting to stop...");
-    leaderStatus.close();
+    act.close();
     if (isRunning()) {
       LOGGER.info("Attempting to stop sentry thrift service...");
       try {
@@ -462,7 +447,7 @@ public class SentryService implements Callable {
     return new Gauge<Boolean>() {
       @Override
       public Boolean getValue() {
-        return isActive;
+        return act.isActive();
       }
     };
   }

@@ -71,6 +71,8 @@ import org.apache.sentry.provider.db.service.thrift.TSentryMappingData;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilegeMap;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
+import org.apache.sentry.service.thrift.Activator;
+import org.apache.sentry.service.thrift.Activators;
 import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.datanucleus.store.rdbms.exceptions.MissingTableException;
@@ -102,7 +104,6 @@ public class SentryStore {
   public static final String NULL_COL = "__NULL__";
   public static int INDEX_GROUP_ROLES_MAP = 0;
   public static int INDEX_USER_ROLES_MAP = 1;
-  static final String DEFAULT_DATA_DIR = "sentry_policy_db";
 
   private static final Set<String> ALL_ACTIONS = Sets.newHashSet(AccessConstants.ALL,
       AccessConstants.SELECT, AccessConstants.INSERT, AccessConstants.ALTER,
@@ -114,6 +115,11 @@ public class SentryStore {
   // Otherwise, if we revoke other privilege(e.g. ALTER,DROP...), we will remove it from a role directly.
   private static final Set<String> PARTIAL_REVOKE_ACTIONS = Sets.newHashSet(AccessConstants.ALL,
       AccessConstants.ACTION_ALL.toLowerCase(), AccessConstants.SELECT, AccessConstants.INSERT);
+
+  /**
+   * The activator object which tells us whether the current daemon is active.
+   */
+  private final Activator act;
 
   /**
    * Commit order sequence id. This is used by notification handlers
@@ -128,10 +134,8 @@ public class SentryStore {
   private PrivCleaner privCleaner = null;
   private Thread privCleanerThread = null;
 
-  public SentryStore(Configuration conf) throws SentryNoSuchObjectException,
-  SentryAccessDeniedException, SentrySiteConfigurationException, IOException {
-    commitSequenceId = 0;
-    this.conf = conf;
+  public static Properties getDataNucleusProperties(Configuration conf)
+      throws SentrySiteConfigurationException, IOException {
     Properties prop = new Properties();
     prop.putAll(ServerConfig.SENTRY_STORE_DEFAULTS);
     String jdbcUrl = conf.get(ServerConfig.SENTRY_STORE_JDBC_URL, "").trim();
@@ -164,8 +168,19 @@ public class SentryStore {
         prop.setProperty(key, entry.getValue());
       }
     }
+    // Disallow operations outside of transactions
+    prop.setProperty("datanucleus.NontransactionalRead", "false");
+    prop.setProperty("datanucleus.NontransactionalWrite", "false");
+    return prop;
+  }
 
-
+  public SentryStore(Configuration conf)
+      throws SentryNoSuchObjectException, SentryAccessDeniedException,
+          SentrySiteConfigurationException, IOException {
+    this.act = Activators.INSTANCE.get(conf);
+    commitSequenceId = 0;
+    this.conf = conf;
+    Properties prop = getDataNucleusProperties(conf);
     boolean checkSchemaVersion = conf.get(
         ServerConfig.SENTRY_VERIFY_SCHEM_VERSION,
         ServerConfig.SENTRY_VERIFY_SCHEM_VERSION_DEFAULT).equalsIgnoreCase(
@@ -175,11 +190,6 @@ public class SentryStore {
       prop.setProperty("datanucleus.autoCreateSchema", "true");
       prop.setProperty("datanucleus.fixedDatastore", "false");
     }
-
-    // Disallow operations outside of transactions
-    prop.setProperty("datanucleus.NontransactionalRead", "false");
-    prop.setProperty("datanucleus.NontransactionalWrite", "false");
-
     pmf = JDOHelper.getPersistenceManagerFactory(prop);
     verifySentryStoreSchema(checkSchemaVersion);
 

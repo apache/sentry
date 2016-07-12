@@ -28,6 +28,7 @@ import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.io.IOUtils;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.db.service.model.MSentryGroup;
 import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
@@ -37,6 +38,9 @@ import org.apache.sentry.provider.db.service.thrift.TSentryGrantOption;
 import org.apache.sentry.provider.db.service.thrift.TSentryMappingData;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.service.thrift.Activator;
+import org.apache.sentry.service.thrift.Activators;
+import org.apache.sentry.service.thrift.ServiceConstants;
 import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.junit.After;
@@ -52,10 +56,11 @@ import com.google.common.io.Files;
 public class TestSentryStoreImportExport {
 
   private static File dataDir;
-  private static SentryStore sentryStore;
   private static String[] adminGroups = { "adminGroup1" };
   private static PolicyFile policyFile;
   private static File policyFilePath;
+  private static Activator act;
+  private static SentryStore sentryStore;
   private TSentryPrivilege tSentryPrivilege1;
   private TSentryPrivilege tSentryPrivilege2;
   private TSentryPrivilege tSentryPrivilege3;
@@ -79,6 +84,10 @@ public class TestSentryStoreImportExport {
     policyFilePath = new File(dataDir, "local_policy_file.ini");
     conf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE, policyFilePath.getPath());
     policyFile = new PolicyFile();
+    act = new Activator(conf);
+    conf.set(ServiceConstants.CURRENT_INCARNATION_ID_KEY,
+             act.getIncarnationId());
+    Activators.INSTANCE.put(act);
     sentryStore = new SentryStore(conf);
 
     String adminUser = "g1";
@@ -129,11 +138,16 @@ public class TestSentryStoreImportExport {
 
   @AfterClass
   public static void teardown() {
+    IOUtils.cleanup(null, act);
     if (sentryStore != null) {
       sentryStore.stop();
     }
     if (dataDir != null) {
       FileUtils.deleteQuietly(dataDir);
+    }
+    if (act != null) {
+      Activators.INSTANCE.remove(act);
+      act = null;
     }
   }
 

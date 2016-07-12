@@ -81,6 +81,11 @@ final class LeaderStatusAdaptor
   private long becomeLeaderCount = 0;
 
   /**
+   * True only if this LeaderStatusAdaptor is closed.
+   */
+  private boolean isClosed = false;
+
+  /**
    * True only if this incarnation is currently active.
    */
   private boolean isActive = false;
@@ -112,9 +117,36 @@ final class LeaderStatusAdaptor
     this.leaderSelector.start();
   }
 
+  /**
+   * Shut down the LeaderStatusAdaptor and wait for it to transition to
+   * standby.
+   */
   @Override
   public void close() throws IOException {
+    // If the adaptor is already closed, calling close again is a no-op.
+    // Setting isClosed also prevents activation after this point.
+    lock.lock();
+    try {
+      if (isClosed) {
+        return;
+      }
+      isClosed = true;
+    } finally {
+      lock.unlock();
+    }
+
+    // Shut down our Curator hooks.
     leaderSelector.close();
+
+    // Wait for the adaptor to transition to standby state.
+    lock.lock();
+    try {
+      while (isActive) {
+        cond.awaitUninterruptibly();
+      }
+    } finally {
+      lock.unlock();
+    }
   }
 
   /**
@@ -148,9 +180,14 @@ final class LeaderStatusAdaptor
   public void takeLeadership(CuratorFramework client) throws Exception {
     lock.lock();
     try {
+      if (isClosed) {
+        LOG.info("LeaderStatusAdaptor: can't become active because the " +
+            "adaptor is closed.");
+        return;
+      }
       isActive = true;
       becomeLeaderCount++;
-      LOG.info("SentryLeaderSelectorClient: becoming active.  " +
+      LOG.info("LeaderStatusAdaptor: becoming active.  " +
           "becomeLeaderCount=" + becomeLeaderCount);
       listener.becomeActive();
       while (isActive) {
@@ -158,7 +195,7 @@ final class LeaderStatusAdaptor
       }
     } finally {
       isActive = false;
-      LOG.info("SentryLeaderSelectorClient: becoming standby");
+      LOG.info("LeaderStatusAdaptor: becoming standby");
       try {
         listener.becomeStandby();
       } catch (Throwable t) {

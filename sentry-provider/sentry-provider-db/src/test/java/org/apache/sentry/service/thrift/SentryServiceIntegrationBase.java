@@ -31,7 +31,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.minikdc.MiniKdc;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.sentry.provider.db.service.persistent.HAContext;
 import org.apache.sentry.provider.db.service.thrift.SentryMiniKdcTestcase;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
@@ -324,7 +323,7 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
 
       JaasConfiguration.addEntryForKeytab("Server", ZK_SERVER_PRINCIPAL, ZKKeytabFile.getAbsolutePath());
       // Here's where we add the "Client" to the jaas configuration, even though we'd like not to
-      JaasConfiguration.addEntryForKeytab(HAContext.SENTRY_ZK_JAAS_NAME,
+      JaasConfiguration.addEntryForKeytab(ServiceConstants.SENTRY_ZK_JAAS_NAME,
           SERVER_KERBEROS_NAME, serverKeytab.getAbsolutePath());
       javax.security.auth.login.Configuration.setConfiguration(JaasConfiguration.getInstance());
 
