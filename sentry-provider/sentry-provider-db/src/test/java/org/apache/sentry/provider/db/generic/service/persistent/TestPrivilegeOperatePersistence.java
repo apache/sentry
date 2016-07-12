@@ -37,6 +37,8 @@ import org.apache.sentry.core.model.search.SearchConstants;
 import org.apache.sentry.provider.db.SentryGrantDeniedException;
 import org.apache.sentry.provider.db.generic.service.persistent.PrivilegeObject.Builder;
 import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.service.thrift.Activator;
+import org.apache.sentry.service.thrift.Activators;
 import org.apache.sentry.service.thrift.ServiceConstants;
 import org.junit.Before;
 import org.junit.Test;
@@ -987,8 +989,14 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
     Configuration confCopy = new Configuration(conf);
     confCopy.set(String.format(ServiceConstants.ServerConfig.SENTRY_COMPONENT_ACTION_FACTORY_FORMAT, externalComponent),
                  InvalidActionFactory.class.getName());
-    SentryStoreLayer store = new DelegateSentryStore(confCopy);
+    Activator act = new Activator(confCopy);
+    confCopy.set(ServiceConstants.CURRENT_INCARNATION_ID_KEY,
+                 act.getIncarnationId());
+    Activators.INSTANCE.put(act);
+   SentryStoreLayer store = new DelegateSentryStore(confCopy);
     testGrantPrivilege(store, externalComponent);
+    act.close();
+    Activators.INSTANCE.remove(act);
   }
 
   @Test
@@ -997,8 +1005,14 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
     Configuration confCopy = new Configuration(conf);
     confCopy.set(String.format(ServiceConstants.ServerConfig.SENTRY_COMPONENT_ACTION_FACTORY_FORMAT, externalComponent),
                  MyComponentActionFactory.class.getName());
+    Activator act = new Activator(confCopy);
+    confCopy.set(ServiceConstants.CURRENT_INCARNATION_ID_KEY,
+                 act.getIncarnationId());
+    Activators.INSTANCE.put(act);
     SentryStoreLayer store = new DelegateSentryStore(confCopy);
     testGrantPrivilege(store, externalComponent);
+    act.close();
+    Activators.INSTANCE.remove(act);
   }
 
   @Test
@@ -1007,8 +1021,14 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
     Configuration confCopy = new Configuration(conf);
     confCopy.set(String.format(ServiceConstants.ServerConfig.SENTRY_COMPONENT_ACTION_FACTORY_FORMAT, "mycomponent"),
                  MyComponentActionFactory.class.getName());
+    Activator act = new Activator(confCopy);
+    confCopy.set(ServiceConstants.CURRENT_INCARNATION_ID_KEY,
+                 act.getIncarnationId());
+    Activators.INSTANCE.put(act);
     SentryStoreLayer store = new DelegateSentryStore(confCopy);
     testGrantPrivilege(store, externalComponent);
+    act.close();
+    Activators.INSTANCE.remove(act);
   }
 
   private void testGrantPrivilege(SentryStoreLayer sentryStore, String component) throws SentryUserException {

@@ -140,6 +140,7 @@ public class ServiceConstants {
         .put("datanucleus.transactionIsolation", "read-committed")
         .put("datanucleus.cache.level2", "false")
         .put("datanucleus.cache.level2.type", "none")
+        .put("datanucleus.query.sql.allowAll", "true")
         .put("datanucleus.identifierFactory", "datanucleus1")
         .put("datanucleus.rdbms.useLegacyNativeValueStrategy", "true")
         .put("datanucleus.plugin.pluginRegistryBundleCheck", "LOG")
@@ -257,4 +258,7 @@ public class ServiceConstants {
     TABLE,
     COLUMN
   }
+
+  public static final String SENTRY_ZK_JAAS_NAME = "Sentry";
+  public static final String CURRENT_INCARNATION_ID_KEY = "current.incarnation.key";
 }

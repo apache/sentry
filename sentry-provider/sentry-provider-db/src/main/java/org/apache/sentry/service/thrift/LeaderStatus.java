@@ -16,10 +16,10 @@
  */
 package org.apache.sentry.service.thrift;
 
-import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.datanucleus.util.Base64;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -79,13 +79,36 @@ final class LeaderStatus implements Closeable {
   private final AtomicBoolean closed = new AtomicBoolean(false);
 
   /**
-   * Generate a 128-bit random ID.
+   * Generate a very long random ID.
+   *
+   * We want a name that doesn't start with a number, and which
+   * contains only letters and numbers.  This is important because
+   * the incarnation ID gets used in SQL databases to name a table.
    */
   static String generateIncarnationId() {
     SecureRandom srand = new SecureRandom();
-    byte[] buf = new byte[32];
+    byte[] buf = new byte[33];
     srand.nextBytes(buf);
-    return "sentry_" + Hex.encodeHexString(buf);
+    char[] cbuf = Base64.encode(buf);
+    StringBuilder bld = new StringBuilder();
+    for (int i = 0; i < cbuf.length; i++) {
+      boolean safe;
+      if (i == 0) {
+        // Some databases can't handle identiifers that start with numbers,
+        // so always start with a letter.  Also replace '+' or '/' with
+        // something safe.
+        safe = Character.isLetter(cbuf[i]);
+      } else {
+        // Replace '+' or '/' with something safe.
+        safe = Character.isLetterOrDigit(cbuf[i]);
+      }
+      if (!safe) {
+        bld.append((char)('a' + srand.nextInt(26)));
+      } else {
+        bld.append(cbuf[i]);
+      }
+    }
+    return bld.toString();
   }
 
   LeaderStatus(Listener listener, Configuration conf) throws Exception {

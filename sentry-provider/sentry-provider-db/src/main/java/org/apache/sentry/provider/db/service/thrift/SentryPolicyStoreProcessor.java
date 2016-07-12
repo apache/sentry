@@ -42,9 +42,7 @@ import org.apache.sentry.provider.db.log.entity.JsonLogEntity;
 import org.apache.sentry.provider.db.log.entity.JsonLogEntityFactory;
 import org.apache.sentry.provider.db.log.util.Constants;
 import org.apache.sentry.provider.db.service.persistent.CommitContext;
-import org.apache.sentry.provider.db.service.persistent.HAContext;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
-import org.apache.sentry.provider.db.service.persistent.ServiceRegister;
 import org.apache.sentry.provider.db.service.thrift.PolicyStoreConstants.PolicyStoreServerConfig;
 import org.apache.sentry.service.thrift.ServiceConstants;
 import org.apache.sentry.service.thrift.ServiceConstants.ConfUtilties;
@@ -79,30 +77,18 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   private final SentryStore sentryStore;
   private final NotificationHandlerInvoker notificationHandlerInvoker;
   private final ImmutableSet<String> adminGroups;
-  private boolean isReady;
   SentryMetrics sentryMetrics;
-  private HAContext haContext;
 
   private List<SentryPolicyStorePlugin> sentryPlugins = new LinkedList<SentryPolicyStorePlugin>();
 
-  public SentryPolicyStoreProcessor(String name, Configuration conf) throws Exception {
+  public SentryPolicyStoreProcessor(String name,
+        Configuration conf) throws Exception {
     super();
     this.name = name;
     this.conf = conf;
     this.notificationHandlerInvoker = new NotificationHandlerInvoker(conf,
         createHandlers(conf));
-    isReady = false;
-    if (conf.getBoolean(ServerConfig.SENTRY_HA_ENABLED,
-        ServerConfig.SENTRY_HA_ENABLED_DEFAULT)) {
-      haContext = HAContext.getHAServerContext(conf);
-      sentryStore = new SentryStore(conf);
-      ServiceRegister reg = new ServiceRegister(haContext);
-      reg.regService(conf.get(ServerConfig.RPC_ADDRESS),
-          conf.getInt(ServerConfig.RPC_PORT,ServerConfig.RPC_PORT_DEFAULT));
-    } else {
-      sentryStore = new SentryStore(conf);
-    }
-    isReady = true;
+    sentryStore = new SentryStore(conf);
     adminGroups = ImmutableSet.copyOf(toTrimedLower(Sets.newHashSet(conf.getStrings(
         ServerConfig.ADMIN_GROUPS, new String[]{}))));
     Iterable<String> pluginClasses = ConfUtilties.CLASS_SPLITTER
@@ -144,15 +130,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   }
 
   public void stop() {
-    if (isReady) {
-      sentryStore.stop();
-    }
-    if (haContext != null) {
-      try {
-        haContext.getCuratorFramework().close();
-      } catch (Exception e) {
-      }
-    }
+    sentryStore.stop();
   }
 
   public void registerPlugin(SentryPolicyStorePlugin plugin) throws SentryPluginException {

@@ -26,6 +26,7 @@ import org.junit.Test;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -215,5 +216,30 @@ final public class TestLeaderStatus {
         "objects.");
     Assert.assertTrue(null == active.getError());
     server.close();
+  }
+
+  @Test(timeout = 60000)
+  public void testGenerateIncarnationIDs() throws Exception {
+    final int NUM_UNIQUE_IDS = 10000;
+    HashSet<String> ids = new HashSet<String>();
+    for (int i = 0; i < NUM_UNIQUE_IDS; i++) {
+      ids.add(LeaderStatus.generateIncarnationId());
+    }
+
+    // Assert that there were no ID collisions
+    Assert.assertEquals(NUM_UNIQUE_IDS, ids.size());
+
+    // Assert that all IDs are 44 characters long and begin with a letter.
+    for (String id : ids) {
+      Assert.assertEquals(44, id.length());
+      Assert.assertTrue(Character.isAlphabetic(id.charAt(0)));
+    }
+
+    // Assert that IDs contain only alphanumeric characters
+    for (String id : ids) {
+      for (int i = 0; i < id.length(); i++) {
+        Assert.assertTrue(Character.isLetterOrDigit(id.charAt(i)));
+      }
+    }
   }
 }

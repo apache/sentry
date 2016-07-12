@@ -28,6 +28,7 @@ import java.util.*;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.security.alias.CredentialProvider;
 import org.apache.hadoop.security.alias.CredentialProviderFactory;
 import org.apache.hadoop.security.alias.UserProvider;
@@ -44,6 +45,9 @@ import org.apache.sentry.provider.db.service.thrift.TSentryGrantOption;
 import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.service.thrift.Activator;
+import org.apache.sentry.service.thrift.Activators;
+import org.apache.sentry.service.thrift.ServiceConstants;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -67,6 +71,7 @@ public class TestSentryStore {
   final long NUM_PRIVS = 60;  // > SentryStore.PrivCleaner.NOTIFY_THRESHOLD
   private static Configuration conf = null;
   private static char[] passwd = new char[] { '1', '2', '3'};
+  private static Activator act;
 
   @BeforeClass
   public static void setup() throws Exception {
@@ -89,6 +94,10 @@ public class TestSentryStore {
     policyFilePath = new File(dataDir, "local_policy_file.ini");
     conf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE,
         policyFilePath.getPath());
+    act = new Activator(conf);
+    conf.set(ServiceConstants.CURRENT_INCARNATION_ID_KEY,
+             act.getIncarnationId());
+    Activators.INSTANCE.put(act);
     sentryStore = new SentryStore(conf);
   }
 
@@ -107,11 +116,16 @@ public class TestSentryStore {
 
   @AfterClass
   public static void teardown() {
+    IOUtils.cleanup(null, act);
     if (sentryStore != null) {
       sentryStore.stop();
     }
     if (dataDir != null) {
       FileUtils.deleteQuietly(dataDir);
+    }
+    if (act != null) {
+      Activators.INSTANCE.remove(act);
+      act = null;
     }
   }
 

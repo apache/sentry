@@ -91,11 +91,7 @@ public class SentryHdfsMetricsUtil {
       MetricRegistry.name(MetastorePlugin.class, "apply-local-update",
           "path-change-size"));
 
-  // Metrics for handleCacheUpdate to ZK in PluginCacheSyncUtil
-  // The time used for each handleCacheUpdate
-  public static final Timer getCacheSyncToZKTimer = sentryMetrics.getTimer(
-      MetricRegistry.name(PluginCacheSyncUtil.class, "cache-sync-to-zk"));
-  // The number of failed handleCacheUpdate
-  public static final Counter getFailedCacheSyncToZK = sentryMetrics.getCounter(
-      MetricRegistry.name(PluginCacheSyncUtil.class, "cache-sync-to-zk", "failed-num"));
+  private SentryHdfsMetricsUtil() {
+    // Make constructor private to avoid instantiation
+  }
 }
