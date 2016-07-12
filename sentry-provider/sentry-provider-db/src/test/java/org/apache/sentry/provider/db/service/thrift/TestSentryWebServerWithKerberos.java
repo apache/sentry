@@ -133,4 +133,36 @@ public class TestSentryWebServerWithKerberos extends SentryServiceIntegrationBas
       }
     });
   }
+
+
+  @Test
+  public void testPingWithCaseSensitiveUser() throws Exception {
+    // USER1 is present in the list of users who are allowed to connect to sentry web ui.
+    String userPrinciple = "user1/" + SERVER_HOST;
+    String userKerberosName = userPrinciple + "@" + REALM;
+    Subject userSubject = new Subject(false, Sets.newHashSet(
+            new KerberosPrincipal(userKerberosName)), new HashSet<Object>(),new HashSet<Object>());
+    File userKeytab = new File(kdcWorkDir, "user1.keytab");
+    kdc.createPrincipal(userKeytab, userPrinciple);
+    LoginContext userLoginContext = new LoginContext("", userSubject, null,
+            KerberosConfiguration.createClientConfig(userKerberosName, userKeytab));
+    userLoginContext.login();
+    Subject.doAs(userLoginContext.getSubject(), new PrivilegedExceptionAction<Void>() {
+      @Override
+      public Void run() throws Exception {
+        final URL url = new URL("http://"+ SERVER_HOST + ":" + webServerPort + "/ping");
+        try {
+          new AuthenticatedURL(new KerberosAuthenticator()).openConnection(url, new AuthenticatedURL.Token());
+          fail("Login with user1 should fail");
+        } catch (AuthenticationException e) {
+          String expectedError = "status code: 403";
+          if (!e.getMessage().contains(expectedError)) {
+            LOG.error("UnexpectedError: " + e.getMessage(), e);
+            fail("UnexpectedError: " + e.getMessage());
+          }
+        }
+        return null;
+      }
+    });
+  }
 }
