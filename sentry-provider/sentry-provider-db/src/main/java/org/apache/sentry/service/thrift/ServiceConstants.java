@@ -168,6 +168,14 @@ public class ServiceConstants {
     public static final String SENTRY_WEB_SECURITY_KEYTAB = SENTRY_WEB_SECURITY_PREFIX + ".kerberos.keytab";
     public static final String SENTRY_WEB_SECURITY_ALLOW_CONNECT_USERS = SENTRY_WEB_SECURITY_PREFIX + ".allow.connect.users";
 
+    // Web SSL
+    public static final String SENTRY_WEB_USE_SSL = "sentry.web.use.ssl";
+    public static final String SENTRY_WEB_SSL_KEYSTORE_PATH = "sentry.web.ssl.keystore.path";
+    public static final String SENTRY_WEB_SSL_KEYSTORE_PASSWORD = "sentry.web.ssl.keystore.password";
+    public static final String SENTRY_SSL_PROTOCOL_BLACKLIST = "sentry.ssl.protocol.blacklist";
+
+    // Blacklist SSL protocols that are not secure (e.g., POODLE vulnerability)
+    public static final String[] SENTRY_SSL_PROTOCOL_BLACKLIST_DEFAULT = {"SSLv2", "SSLv2Hello", "SSLv3"};
     // max message size for thrift messages
     public static String SENTRY_POLICY_SERVER_THRIFT_MAX_MESSAGE_SIZE = "sentry.policy.server.thrift.max.message.size";
     public static long SENTRY_POLICY_SERVER_THRIFT_MAX_MESSAGE_SIZE_DEFAULT = 100 * 1024 * 1024;

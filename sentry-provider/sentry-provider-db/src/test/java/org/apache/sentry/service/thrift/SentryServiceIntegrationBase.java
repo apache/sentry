@@ -23,7 +23,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 
-
+import com.google.common.io.Resources;
 import org.apache.commons.io.FileUtils;
 import org.apache.curator.test.TestingServer;
 import org.apache.hadoop.conf.Configuration;
@@ -91,6 +91,7 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
 
   protected static boolean pooled = false;
 
+  protected static boolean useSSL = false;
   protected static String allowedUsers = "hive,USER1";
 
   @BeforeClass
@@ -178,6 +179,12 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
     }
     if (pooled) {
       conf.set(ClientConfig.SENTRY_POOL_ENABLED, "true");
+    }
+    if (useSSL) {
+      conf.set(ServerConfig.SENTRY_WEB_USE_SSL, "true");
+      conf.set(ServerConfig.SENTRY_WEB_SSL_KEYSTORE_PATH,
+              Resources.getResource("keystore.jks").getPath());
+      conf.set(ServerConfig.SENTRY_WEB_SSL_KEYSTORE_PASSWORD, "password");
     }
     conf.set(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "false");
     conf.set(ServerConfig.ADMIN_GROUPS, ADMIN_GROUP);
