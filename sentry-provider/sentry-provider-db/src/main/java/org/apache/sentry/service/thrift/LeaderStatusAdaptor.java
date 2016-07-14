@@ -194,7 +194,7 @@ final class LeaderStatusAdaptor
         cond.await();
       }
     } finally {
-      isActive = false;
+      deactivate();
       LOG.info("LeaderStatusAdaptor: becoming standby");
       try {
         listener.becomeStandby();
