@@ -107,6 +107,12 @@ limitations under the License.
       <artifactId>hive-metastore</artifactId>
       <version>${hive.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.apache.sentry</groupId>
+      <artifactId>sentry-provider-db</artifactId>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
 
