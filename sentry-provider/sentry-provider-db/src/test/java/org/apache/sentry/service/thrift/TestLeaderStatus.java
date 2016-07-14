@@ -175,7 +175,7 @@ final public class TestLeaderStatus {
     }
   }
 
-  @Test(timeout = 60000)
+  @Test(timeout = 120000)
   public void testRacingClients() throws Exception {
     final int NUM_CLIENTS = 3;
     final Configuration conf = new Configuration();
@@ -189,7 +189,7 @@ final public class TestLeaderStatus {
       try {
         contexts.add(new LeaderStatusContext(active, conf));
       } catch (Throwable t) {
-        LOG.error("WATERMELON", t);
+        LOG.error("error creating LeaderStatusContext", t);
         throw new RuntimeException(t);
       }
     }
