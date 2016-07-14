@@ -131,6 +131,21 @@ public class TestPrivilegeWithGrantOption extends AbstractTestWithStaticConfigur
 
   }
 
+  @Test
+  public void testOnGrantOrRevokeRoleToUser() throws Exception {
+    // setup db objects needed by the test
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("DROP DATABASE IF EXISTS db_1 CASCADE");
+    statement.execute("DROP DATABASE IF EXISTS db_2 CASCADE");
+    statement.execute("CREATE DATABASE db_1");
+    statement.execute("CREATE ROLE group1_role");
+    statement.execute("GRANT ROLE group1_role TO USER " + USER1_1);
+    statement.execute("REVOKE ROLE group1_role FROM USER " + USER1_1);
+
+    connection.close();
+  }
+
   /*
    * Admin grant DB_1 user1 without grant option, grant user3 with grant option,
    * user1 tries to grant it to user2, but failed.
