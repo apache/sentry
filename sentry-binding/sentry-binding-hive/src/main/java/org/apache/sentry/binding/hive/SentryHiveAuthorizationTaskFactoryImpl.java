@@ -214,6 +214,9 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
       ASTNode child = (ASTNode) ast.getChild(1);
       if (child.getToken().getType() == HiveParser.TOK_PRIV_OBJECT_COL) {
         privHiveObj = analyzePrivilegeObject(child);
+      } else if(child.getToken().getType() == HiveParser.TOK_RESOURCE_ALL) {
+        //if privHiveObj is null, it will return all priveleges.
+        privHiveObj = null;
       } else {
         throw new SemanticException("Unrecognized Token: " + child.getToken().getType());
       }

@@ -2223,4 +2223,26 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     connection.close();
   }
 
+  @Test
+  public void testShowGrantOnALL() throws Exception {
+
+    // setup db objects needed by the test
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("DROP DATABASE IF EXISTS db_1 CASCADE");
+    statement.execute("DROP DATABASE IF EXISTS db_2 CASCADE");
+    statement.execute("CREATE DATABASE db_1");
+    statement.execute("CREATE ROLE group1_role");
+    statement.execute("GRANT ALL ON DATABASE db_1 TO ROLE group1_role");
+    statement.execute("grant select on database db_1 to role group1_role");
+    ResultSet res = statement.executeQuery("show grant role group1_role on all");
+    List<String> returnedResult = new ArrayList<String>();
+    List<String> expectedResult = new ArrayList<String>();
+    expectedResult.add("db_1");
+    while (res.next()) {
+      returnedResult.add(res.getString(1).trim());
+    }
+    validateReturnedResult(expectedResult, returnedResult);
+    connection.close();
+  }
 }
