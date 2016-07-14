@@ -217,13 +217,22 @@ public class SentryMetastorePostEventListenerBase extends MetaStoreEventListener
         " since the operation failed. \n");
       return;
     }
-
-    renameSentryTablePrivilege(tableEvent.getOldTable().getDbName(),
-        tableEvent.getOldTable().getTableName(),
-        tableEvent.getOldTable().getSd().getLocation(),
-        tableEvent.getNewTable().getDbName(),
-        tableEvent.getNewTable().getTableName(),
-        tableEvent.getNewTable().getSd().getLocation());
+    String oldLoc = null, newLoc = null;
+    org.apache.hadoop.hive.metastore.api.Table oldTal = tableEvent.getOldTable();
+    org.apache.hadoop.hive.metastore.api.Table newTal = tableEvent.getNewTable();
+    if (oldTal != null && oldTal.getSd() != null) {
+      oldLoc = oldTal.getSd().getLocation();
+    }
+    if (newTal != null && newTal.getSd() != null) {
+      newLoc = newTal.getSd().getLocation();
+    }
+    if (oldLoc != null && newLoc != null && !oldLoc.equals(newLoc)) {
+      String oldDbName = tableEvent.getOldTable().getDbName();
+      String oldTbName = tableEvent.getOldTable().getTableName();
+      String newTbName = tableEvent.getNewTable().getTableName();
+      String newDbName = tableEvent.getNewTable().getDbName();
+      renameSentryTablePrivilege(oldDbName, oldTbName, oldLoc, newDbName, newTbName, newLoc);
+    }
   }
 
   @Override
