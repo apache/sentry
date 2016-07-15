@@ -199,21 +199,21 @@ public class TestDbPrivilegeCleanupOnDrop extends
     statement.execute("GRANT INSERT ON TABLE t1 TO ROLE user_role");
     statement.execute("GRANT ALTER ON TABLE t1 TO ROLE user_role");
     statement.execute("GRANT DROP ON TABLE t1 TO ROLE user_role");
-    // For rename, grant CREATE to DB1
+    // For rename, grant DROP/CREATE to DB1
+    statement.execute("GRANT DROP ON DATABASE " + DB1 + " TO ROLE user_role");
     statement.execute("GRANT CREATE ON DATABASE " + DB1 + " TO ROLE user_role");
 
-    // After rename table t1 to t2, user_role will have no permission to drop t1
+    // After rename table t1 to t2
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
     statement.execute("ALTER TABLE t1 RENAME TO t2");
-    context.assertSentrySemanticException(statement, "drop table t1", semanticException);
 
     // After rename table t1 to t2, user_role should have permission to drop t2
     statement.execute("drop table t2");
     ResultSet resultSet = statement.executeQuery("SHOW GRANT ROLE user_role");
-    // user_role will revoke all privilege from table t2, only remain CREATE on db_1
-    assertRemainingRows(resultSet, 1);
+    // user_role will revoke all privilege from table t2, only remain DROP/CREATE on db_1
+    assertRemainingRows(resultSet, 2);
 
     statement.close();
     connection.close();
