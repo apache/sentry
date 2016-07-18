@@ -83,10 +83,7 @@ public class SentryAuthFilter extends AuthenticationFilter {
   }
 
   private static Set<String> parseConnectUsersFromConf(String value) {
-    String lcValue = value;
-    if (lcValue != null) {
-      lcValue = lcValue.toLowerCase();
-    }
-    return Sets.newHashSet(StringUtils.getStrings(lcValue));
+    //Removed the logic to convert the allowed users to lower case, as user names need to be case sensitive
+    return Sets.newHashSet(StringUtils.getStrings(value));
   }
 }

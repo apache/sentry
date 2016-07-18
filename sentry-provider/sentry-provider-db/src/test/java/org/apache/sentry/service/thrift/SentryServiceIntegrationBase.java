@@ -92,6 +92,7 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
   protected static boolean pooled = false;
 
   protected static boolean useSSL = false;
+  protected static String allowedUsers = "hive,USER1";
 
   @BeforeClass
   public static void setup() throws Exception {
@@ -168,6 +169,7 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
             ServerConfig.SENTRY_WEB_SECURITY_TYPE_KERBEROS);
         conf.set(ServerConfig.SENTRY_WEB_SECURITY_PRINCIPAL, HTTP_PRINCIPAL);
         conf.set(ServerConfig.SENTRY_WEB_SECURITY_KEYTAB, httpKeytab.getPath());
+        conf.set(ServerConfig.SENTRY_WEB_SECURITY_ALLOW_CONNECT_USERS, allowedUsers);
       } else {
         conf.set(ServerConfig.SENTRY_WEB_SECURITY_TYPE,
             ServerConfig.SENTRY_WEB_SECURITY_TYPE_NONE);
