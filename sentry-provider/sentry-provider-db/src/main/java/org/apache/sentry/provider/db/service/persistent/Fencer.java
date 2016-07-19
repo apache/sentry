@@ -20,6 +20,7 @@ package org.apache.sentry.provider.db.service.persistent;
 
 import java.util.List;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 
 import javax.jdo.JDOException;
@@ -29,6 +30,7 @@ import javax.jdo.PersistenceManagerFactory;
 import javax.jdo.Query;
 import javax.jdo.Transaction;
 
+import org.apache.sentry.core.common.exception.SentryStandbyException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,7 +78,7 @@ public class Fencer {
   private final static String SENTRY_FENCE_TABLE_BASE = "SENTRY_FENCE";
 
   /**
-   * The update log table name, including the incarnation ID.
+   * The fencer table name, including the incarnation ID.
    */
   private final String tableIncarnationName;
 
@@ -86,7 +88,7 @@ public class Fencer {
   private final SqlAccessor sql;
 
   /**
-   * Create an accessor for the update log.
+   * Create the Fencer.
    *
    * @param incarnationId     The ID of the current sentry daemon incarnation.
    * @param pmf               The PersistenceManagerFactory to use.
@@ -95,12 +97,13 @@ public class Fencer {
     this.tableIncarnationName = String.
         format("%s_%s", SENTRY_FENCE_TABLE_BASE, incarnationId);
     this.sql = SqlAccessor.get(pmf);
+    LOGGER.info("Loaded Fencer for " + sql.getDatabaseName());
   }
 
   /**
    * Finds the name of the fencing table.<p/>
    *
-   * The name of the update log table will always begin with SENTRY_UPDATE_LOG,
+   * The name of the fencer table will always begin with SENTRY_FENCE,
    * but it may have the ID of a previous sentry incarnation tacked on to it.
    *
    * @return the current name of the update log table, or null if there is none.
@@ -228,15 +231,32 @@ public class Fencer {
   }
 
   /**
-   * Attempt to append an UpdateLogEntry to the update log.
+   * Verify that the fencing table still exists by running a query on it.
    */
-  void verify(PersistenceManager pm) {
-    Query query = pm.newQuery(SqlAccessor.JDO_SQL_ESCAPE,
-        sql.getFetchAllRowsSql(tableIncarnationName));
-    query.execute();
+  public void checkSqlFencing(PersistenceManager pm)
+      throws SentryStandbyException {
+    try {
+      Query query = pm.newQuery(SqlAccessor.JDO_SQL_ESCAPE,
+          sql.getFetchAllRowsSql(tableIncarnationName));
+      query.execute();
+    } catch (JDOException e) {
+      throw new SentryStandbyException("Failed to verify that " +
+          "the daemon was still active", e);
+    }
   }
 
   String getTableIncarnationName() {
     return tableIncarnationName;
+  }
+
+  /**
+   * Rename the update log table so that fencing is no longer active.
+   * This is only used in unit tests currently.
+   */
+  @VisibleForTesting
+  public void unfence(PersistenceManagerFactory pmf) {
+    renameTable(pmf, tableIncarnationName, SENTRY_FENCE_TABLE_BASE);
+    LOGGER.info("Renamed " + tableIncarnationName + " to "  +
+        SENTRY_FENCE_TABLE_BASE);
   }
 }

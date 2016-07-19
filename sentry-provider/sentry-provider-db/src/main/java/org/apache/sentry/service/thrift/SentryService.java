@@ -152,7 +152,7 @@ public class SentryService implements Callable {
             + (count++));
       }
     });
-    this.act = new Activator(conf);
+    this.act = Activators.INSTANCE.create(conf);
     conf.set(ServiceConstants.CURRENT_INCARNATION_ID_KEY,
         this.act.getIncarnationId());
     Activators.INSTANCE.put(act);

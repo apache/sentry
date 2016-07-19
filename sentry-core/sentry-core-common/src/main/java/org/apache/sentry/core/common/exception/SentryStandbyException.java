@@ -25,6 +25,10 @@ import org.apache.sentry.SentryUserException;
 public class SentryStandbyException extends SentryUserException {
   private static final long serialVersionUID = 2162010615815L;
 
+  public SentryStandbyException(String msg, Exception e) {
+    super(msg, e);
+  }
+
   public SentryStandbyException(String msg) {
     super(msg);
   }

@@ -47,6 +47,7 @@ import javax.jdo.Transaction;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.SentryUserException;
+import org.apache.sentry.core.common.exception.SentryStandbyException;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
 import org.apache.sentry.provider.common.ProviderConstants;
@@ -95,7 +96,7 @@ import com.google.common.collect.Sets;
 public class SentryStore {
   private static final UUID SERVER_UUID = UUID.randomUUID();
   private static final Logger LOGGER = LoggerFactory
-          .getLogger(SentryStore.class);
+      .getLogger(SentryStore.class);
 
   public static final String NULL_COL = "__NULL__";
   public static int INDEX_GROUP_ROLES_MAP = 0;
@@ -144,7 +145,7 @@ public class SentryStore {
     // it falls back to reading directly from sentry-site.xml
     char[] passTmp = conf.getPassword(ServerConfig.SENTRY_STORE_JDBC_PASS);
     String pass = null;
-    if(passTmp != null) {
+    if (passTmp != null) {
       pass = new String(passTmp);
     } else {
       throw new SentryConfigurationException("Error reading " + ServerConfig.SENTRY_STORE_JDBC_PASS);
@@ -172,7 +173,8 @@ public class SentryStore {
 
   public SentryStore(Configuration conf)
       throws SentryNoSuchObjectException, SentryAccessDeniedException,
-          SentryConfigurationException, IOException {
+          SentryConfigurationException, IOException,
+              SentryStandbyException {
     this.act = Activators.INSTANCE.get(conf);
     commitSequenceId = 0;
     this.conf = conf;
@@ -180,7 +182,7 @@ public class SentryStore {
     boolean checkSchemaVersion = conf.get(
         ServerConfig.SENTRY_VERIFY_SCHEM_VERSION,
         ServerConfig.SENTRY_VERIFY_SCHEM_VERSION_DEFAULT).equalsIgnoreCase(
-            "true");
+        "true");
     if (!checkSchemaVersion) {
       prop.setProperty("datanucleus.autoCreateSchema", "true");
       prop.setProperty("datanucleus.fixedDatastore", "false");
@@ -191,8 +193,8 @@ public class SentryStore {
     // Kick off the thread that cleans orphaned privileges (unless told not to)
     privCleaner = this.new PrivCleaner();
     if (conf.get(ServerConfig.SENTRY_STORE_ORPHANED_PRIVILEGE_REMOVAL,
-            ServerConfig.SENTRY_STORE_ORPHANED_PRIVILEGE_REMOVAL_DEFAULT)
-            .equalsIgnoreCase("true")) {
+        ServerConfig.SENTRY_STORE_ORPHANED_PRIVILEGE_REMOVAL_DEFAULT)
+        .equalsIgnoreCase("true")) {
       privCleanerThread = new Thread(privCleaner);
       privCleanerThread.start();
     }
@@ -200,7 +202,8 @@ public class SentryStore {
 
   // ensure that the backend DB schema is set
   public void verifySentryStoreSchema(boolean checkVersion)
-          throws SentryNoSuchObjectException, SentryAccessDeniedException {
+      throws SentryNoSuchObjectException, SentryAccessDeniedException,
+          SentryStandbyException {
     if (!checkVersion) {
       setSentryVersion(SentryStoreSchemaInfo.getSentryVersion(),
           "Schema version set implicitly");
@@ -209,8 +212,8 @@ public class SentryStore {
       if (!SentryStoreSchemaInfo.getSentryVersion().equals(currentVersion)) {
         throw new SentryAccessDeniedException(
             "The Sentry store schema version " + currentVersion
-            + " is different from distribution version "
-            + SentryStoreSchemaInfo.getSentryVersion());
+                + " is different from distribution version "
+                + SentryStoreSchemaInfo.getSentryVersion());
       }
     }
   }
@@ -236,10 +239,10 @@ public class SentryStore {
    * instance when we create a new transaction. We create a new transaction
    * for every store API since we want that unit of work to behave as a
    * transaction.
-   *
+   * <p/>
    * Note that there's only one instance of PersistenceManagerFactory object
    * for the service.
-   *
+   * <p/>
    * Synchronized because we obtain persistence manager
    */
   public synchronized PersistenceManager openTransaction() {
@@ -316,12 +319,14 @@ public class SentryStore {
    * @throws SentryAlreadyExistsException
    */
   public CommitContext createSentryRole(String roleName)
-      throws SentryAlreadyExistsException {
+      throws SentryAlreadyExistsException, SentryStandbyException {
     roleName = trimAndLower(roleName);
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
     try {
       pm = openTransaction();
+      act.checkSqlFencing(pm);
+
       MSentryRole mSentryRole = getMSentryRole(pm, roleName);
       if (mSentryRole == null) {
         MSentryRole mRole = new MSentryRole(roleName, System.currentTimeMillis());
@@ -391,11 +396,12 @@ public class SentryStore {
   }
 
   @VisibleForTesting
-  void clearAllTables() {
+  void clearAllTables() throws SentryStandbyException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
     try {
       pm = openTransaction();
+      act.checkSqlFencing(pm);
       pm.newQuery(MSentryRole.class).deletePersistentAll();
       pm.newQuery(MSentryGroup.class).deletePersistentAll();
       pm.newQuery(MSentryPrivilege.class).deletePersistentAll();
@@ -423,6 +429,7 @@ public class SentryStore {
     roleName = trimAndLower(roleName);
     try {
       pm = openTransaction();
+      act.checkSqlFencing(pm);
       for (TSentryPrivilege privilege : privileges) {
         // first do grant check
         grantOptionCheck(pm, grantorPrincipal, privilege);
@@ -508,6 +515,7 @@ public class SentryStore {
     roleName = safeTrimLower(roleName);
     try {
       pm = openTransaction();
+      act.checkSqlFencing(pm);
       for (TSentryPrivilege tPrivilege : tPrivileges) {
         // first do revoke check
         grantOptionCheck(pm, grantorPrincipal, tPrivilege);
@@ -772,12 +780,13 @@ public class SentryStore {
   }
 
   public CommitContext dropSentryRole(String roleName)
-      throws SentryNoSuchObjectException {
+      throws SentryNoSuchObjectException, SentryStandbyException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
     roleName = roleName.trim().toLowerCase();
     try {
       pm = openTransaction();
+      act.checkSqlFencing(pm);
       Query query = pm.newQuery(MSentryRole.class);
       query.setFilter("this.roleName == t");
       query.declareParameters("java.lang.String t");
@@ -806,12 +815,13 @@ public class SentryStore {
 
   public CommitContext alterSentryRoleAddGroups( String grantorPrincipal, String roleName,
       Set<TSentryGroup> groupNames)
-          throws SentryNoSuchObjectException {
+      throws SentryNoSuchObjectException, SentryStandbyException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
     roleName = roleName.trim().toLowerCase();
     try {
       pm = openTransaction();
+      act.checkSqlFencing(pm);
       Query query = pm.newQuery(MSentryRole.class);
       query.setFilter("this.roleName == t");
       query.declareParameters("java.lang.String t");
@@ -849,12 +859,13 @@ public class SentryStore {
 
   public CommitContext alterSentryRoleDeleteGroups(String roleName,
       Set<TSentryGroup> groupNames)
-          throws SentryNoSuchObjectException {
+      throws SentryNoSuchObjectException, SentryStandbyException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
     roleName = roleName.trim().toLowerCase();
     try {
       pm = openTransaction();
+      act.checkSqlFencing(pm);
       Query query = pm.newQuery(MSentryRole.class);
       query.setFilter("this.roleName == t");
       query.declareParameters("java.lang.String t");
@@ -1419,7 +1430,8 @@ public class SentryStore {
   }
 
   public void setSentryVersion(String newVersion, String verComment)
-      throws SentryNoSuchObjectException, SentryAccessDeniedException {
+      throws SentryNoSuchObjectException, SentryAccessDeniedException,
+          SentryStandbyException {
     MSentryVersion mVersion;
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
@@ -1438,6 +1450,7 @@ public class SentryStore {
     mVersion.setVersionComment(verComment);
     try {
       pm = openTransaction();
+      act.checkSqlFencing(pm);
       pm.makePersistent(mVersion);
       rollbackTransaction = false;
       commitTransaction(pm);
@@ -1487,13 +1500,15 @@ public class SentryStore {
    * Drop given privilege from all roles
    */
   public void dropPrivilege(TSentryAuthorizable tAuthorizable)
-      throws SentryNoSuchObjectException, SentryInvalidInputException {
+      throws SentryNoSuchObjectException, SentryInvalidInputException,
+          SentryStandbyException {
     PersistenceManager pm = null;
     boolean rollbackTransaction = true;
 
     TSentryPrivilege tPrivilege = toSentryPrivilege(tAuthorizable);
     try {
       pm = openTransaction();
+      act.checkSqlFencing(pm);
 
       if (isMultiActionsSupported(tPrivilege)) {
         for (String privilegeAction : ALL_ACTIONS) {
@@ -1524,7 +1539,8 @@ public class SentryStore {
    */
   public void renamePrivilege(TSentryAuthorizable tAuthorizable,
       TSentryAuthorizable newTAuthorizable)
-      throws SentryNoSuchObjectException, SentryInvalidInputException {
+          throws SentryNoSuchObjectException, SentryInvalidInputException,
+              SentryStandbyException {
     PersistenceManager pm = null;
     boolean rollbackTransaction = true;
 
@@ -1533,6 +1549,7 @@ public class SentryStore {
 
     try {
       pm = openTransaction();
+      act.checkSqlFencing(pm);
       // In case of tables or DBs, check all actions
       if (isMultiActionsSupported(tPrivilege)) {
         for (String privilegeAction : ALL_ACTIONS) {
@@ -1831,13 +1848,15 @@ public class SentryStore {
   }
 
   public CommitContext createAuthzPathsMapping(String hiveObj,
-      Set<String> paths) throws SentryNoSuchObjectException, SentryAlreadyExistsException {
+      Set<String> paths) throws SentryNoSuchObjectException,
+          SentryAlreadyExistsException, SentryStandbyException {
 
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
 
     try {
       pm = openTransaction();
+      act.checkSqlFencing(pm);
       createAuthzPathsMappingCore(pm, hiveObj, paths);
       CommitContext commit = commitUpdateTransaction(pm);
       rollbackTransaction = false;
@@ -1887,7 +1906,9 @@ public class SentryStore {
     private static final int NOTIFY_THRESHOLD = 50;
 
     // How many times we've been notified; reset to zero after orphan removal
-    private int currentNotifies = 0;
+    // This begins at the NOTIFY_THRESHOLD, so that we clear any potential
+    // orphans on startup.
+    private int currentNotifies = NOTIFY_THRESHOLD;
 
     // Internal state for threads
     private boolean exitRequired = false;
@@ -1931,7 +1952,9 @@ public class SentryStore {
           lock.unlock();
         }
         try {
-          removeOrphanedPrivileges();
+          if (act.isActive()) {
+            removeOrphanedPrivileges();
+          }
         } catch (Exception e) {
           LOGGER.warn("Privilege cleaning thread encountered an error: " +
                   e.getMessage());
@@ -1991,7 +2014,7 @@ public class SentryStore {
      * second transaction will go and get each of those privilege objects,
      * verify that there are no roles attached, and then delete them.
      */
-    private void removeOrphanedPrivileges() {
+    private void removeOrphanedPrivileges() throws SentryStandbyException {
       final String privDB = "SENTRY_DB_PRIVILEGE";
       final String privId = "DB_PRIVILEGE_ID";
       final String mapDB = "SENTRY_ROLE_DB_PRIVILEGE_MAP";
@@ -2012,6 +2035,7 @@ public class SentryStore {
         Transaction transaction = pm.currentTransaction();
         transaction.begin();
         transaction.setRollbackOnly();  // Makes the tx read-only
+        act.checkSqlFencing(pm);
         Query query = pm.newQuery("javax.jdo.query.SQL", privFilter);
         query.setClass(MSentryPrivilege.class);
         List<MSentryPrivilege> results = (List<MSentryPrivilege>) query.execute();

@@ -40,6 +40,12 @@ public enum Activators {
     acts.put(act.getIncarnationId(), act);
   }
 
+  public Activator create(Configuration conf) throws Exception {
+    Activator act = new Activator(conf);
+    put(act);
+    return act;
+  }
+
   public Activator get(Configuration conf) {
     String key = conf.get(ServiceConstants.CURRENT_INCARNATION_ID_KEY);
     if (key == null) {
@@ -49,7 +55,7 @@ public enum Activators {
     return get(key);
   }
 
-  public synchronized Activator get(String incarnationId) {
+  private synchronized Activator get(String incarnationId) {
     Activator act = acts.get(incarnationId);
     if (act == null) {
       throw new RuntimeException("No activator found with " +
