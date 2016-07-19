@@ -47,10 +47,9 @@ public class TestSentryVersion {
     conf.set(ServerConfig.SENTRY_STORE_JDBC_URL, "jdbc:derby:;databaseName="
         + dataDir.getPath() + ";create=true");
     conf.set(ServerConfig.SENTRY_STORE_JDBC_PASS, "dummy");
-    act = new Activator(conf);
+    act = Activators.INSTANCE.create(conf);
     conf.set(ServiceConstants.CURRENT_INCARNATION_ID_KEY,
              act.getIncarnationId());
-    Activators.INSTANCE.put(act);
   }
 
   @After

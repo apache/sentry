@@ -62,9 +62,8 @@ public abstract class SentryStoreIntegrationBase {
     policyFilePath = new File(Files.createTempDir(), "local_policy_file.ini");
     conf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE,
         policyFilePath.getPath());
-    act = new Activator(conf);
+    act = Activators.INSTANCE.create(conf);
 		conf.set(ServiceConstants.CURRENT_INCARNATION_ID_KEY, act.getIncarnationId());
-    Activators.INSTANCE.put(act);
   }
 
   @After

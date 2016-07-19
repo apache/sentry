@@ -153,10 +153,9 @@ public class SentryService implements Callable {
             + (count++));
       }
     });
-    this.act = new Activator(conf);
+    this.act = Activators.INSTANCE.create(conf);
     conf.set(SentryConstants.CURRENT_INCARNATION_ID_KEY,
         this.act.getIncarnationId());
-    Activators.INSTANCE.put(act);
     webServerPort = conf.getInt(ServerConfig.SENTRY_WEB_PORT, ServerConfig.SENTRY_WEB_PORT_DEFAULT);
     status = Status.NOT_STARTED;
   }

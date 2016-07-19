@@ -29,6 +29,7 @@ import java.util.Set;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.IOUtils;
+import org.apache.sentry.core.common.exception.SentryStandbyException;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.db.service.model.MSentryGroup;
 import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
@@ -84,10 +85,9 @@ public class TestSentryStoreImportExport {
     policyFilePath = new File(dataDir, "local_policy_file.ini");
     conf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE, policyFilePath.getPath());
     policyFile = new PolicyFile();
-    act = new Activator(conf);
+    act = Activators.INSTANCE.create(conf);
     conf.set(ServiceConstants.CURRENT_INCARNATION_ID_KEY,
              act.getIncarnationId());
-    Activators.INSTANCE.put(act);
     sentryStore = new SentryStore(conf);
 
     String adminUser = "g1";
@@ -101,7 +101,7 @@ public class TestSentryStoreImportExport {
   }
 
   @After
-  public void clearStore() {
+  public void clearStore() throws SentryStandbyException {
     sentryStore.clearAllTables();
   }
 

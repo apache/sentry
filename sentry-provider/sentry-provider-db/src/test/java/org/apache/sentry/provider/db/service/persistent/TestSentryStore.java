@@ -32,6 +32,7 @@ import org.apache.hadoop.security.alias.CredentialProvider;
 import org.apache.hadoop.security.alias.CredentialProviderFactory;
 import org.apache.hadoop.security.alias.UserProvider;
 import org.apache.sentry.core.common.exception.SentryAccessDeniedException;
+import org.apache.sentry.core.common.exception.SentryStandbyException;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.common.exception.SentryAlreadyExistsException;
 import org.apache.sentry.core.common.exception.SentryGrantDeniedException;
@@ -94,10 +95,9 @@ public class TestSentryStore extends org.junit.Assert {
     policyFilePath = new File(dataDir, "local_policy_file.ini");
     conf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE,
         policyFilePath.getPath());
-    act = new Activator(conf);
+    act = Activators.INSTANCE.create(conf);
     conf.set(ServiceConstants.CURRENT_INCARNATION_ID_KEY,
              act.getIncarnationId());
-    Activators.INSTANCE.put(act);
     sentryStore = new SentryStore(conf);
   }
 
@@ -110,7 +110,7 @@ public class TestSentryStore extends org.junit.Assert {
   }
 
   @After
-  public void after() {
+  public void after() throws SentryStandbyException {
     sentryStore.clearAllTables();
   }
 

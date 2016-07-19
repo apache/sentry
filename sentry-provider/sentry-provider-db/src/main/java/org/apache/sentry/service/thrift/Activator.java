@@ -23,12 +23,14 @@ import java.io.IOException;
 import java.util.Properties;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.sentry.core.common.exception.SentryStandbyException;
 import org.apache.sentry.provider.db.service.persistent.Fencer;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.jdo.JDOHelper;
+import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
 
 /**
@@ -60,8 +62,11 @@ public class Activator implements Closeable {
 
   /**
    * True if the Activator is active.
+   *
+   * This variable can be read without taking the lock, but must not be
+   * written unless we hold the Activator lock.
    */
-  private boolean active;
+  private volatile boolean active = false;
 
   public Activator(Configuration conf) throws Exception {
     Properties props = SentryStore.getDataNucleusProperties(conf);
@@ -69,7 +74,6 @@ public class Activator implements Closeable {
     this.handler = new TransitionHandler();
     this.leaderStatus = new LeaderStatus(handler, conf);
     this.fencer = new Fencer(this.leaderStatus.getIncarnationId(), pmf);
-    this.active = false;
     this.leaderStatus.start();
   }
 
@@ -102,11 +106,35 @@ public class Activator implements Closeable {
     }
   }
 
-  synchronized boolean isActive() {
+  /**
+   * Returns true if this Activator considers itself active.
+   * Note that you must still use checkSqlFencing or another
+   * means of fencing when performing modification operations.
+   */
+  public boolean isActive() {
     return active;
   }
 
   public synchronized String getIncarnationId() {
     return leaderStatus.getIncarnationId();
+  }
+
+  public Fencer getFencer() {
+    return fencer;
+  }
+
+  /**
+   * Verify that the current SQL transaction is safe. 
+   */
+  public void checkSqlFencing(PersistenceManager pm)
+        throws SentryStandbyException {
+    // Before invoking the fencer, first check if we believe that we are
+    // active.  This avoids wasted effort.
+    if (!active) {
+      throw new SentryStandbyException("The daemon is not active");
+    }
+    // If we believe that we are active, add a query to the current transaction
+    // which will confirm that fact.
+    fencer.checkSqlFencing(pm);
   }
 }
