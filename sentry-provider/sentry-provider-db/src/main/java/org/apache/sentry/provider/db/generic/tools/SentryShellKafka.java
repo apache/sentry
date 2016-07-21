@@ -47,7 +47,7 @@ public class SentryShellKafka extends SentryShellCommon {
     String component = AuthorizationComponent.KAFKA;
     Configuration conf = getSentryConf();
 
-    String service = conf.get(KAFKA_SERVICE_NAME, "kafka1");
+    String service = conf.get(KAFKA_SERVICE_NAME, AuthorizationComponent.KAFKA);
     SentryGenericServiceClient client = SentryGenericServiceClientFactory.create(conf);
     UserGroupInformation ugi = UserGroupInformation.getLoginUser();
     String requestorName = ugi.getShortUserName();
