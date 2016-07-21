@@ -38,7 +38,7 @@ import org.apache.sentry.core.model.sqoop.Server;
 import org.apache.sentry.core.model.sqoop.SqoopActionConstant;
 import org.apache.sentry.core.model.sqoop.SqoopActionFactory.SqoopAction;
 import org.apache.sentry.core.model.sqoop.SqoopPrivilegeModel;
-import org.apache.sentry.provider.common.GroupMappingService;
+import org.apache.sentry.core.common.service.GroupMappingService;
 import org.apache.sentry.provider.common.ResourceAuthorizationProvider;
 import org.apache.sentry.provider.common.HadoopGroupResourceAuthorizationProvider;
 import org.apache.sentry.provider.file.PolicyFiles;

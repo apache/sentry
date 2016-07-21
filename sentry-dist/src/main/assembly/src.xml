@@ -55,6 +55,7 @@
         <include>dev-support/**</include>
         <include>sentry-binding/**</include>
         <include>sentry-core/**</include>
+        <include>sentry-service/**</include>
         <include>sentry-dist/**</include>
         <include>sentry-provider/**</include>
         <include>sentry-policy/**</include>

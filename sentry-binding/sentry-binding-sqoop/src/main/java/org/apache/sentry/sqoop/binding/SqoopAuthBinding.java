@@ -32,7 +32,7 @@ import org.apache.sentry.core.model.sqoop.SqoopActionConstant;
 import org.apache.sentry.core.model.sqoop.SqoopActionFactory;
 import org.apache.sentry.core.model.sqoop.SqoopPrivilegeModel;
 import org.apache.sentry.policy.common.PolicyEngine;
-import org.apache.sentry.provider.common.AuthorizationComponent;
+import org.apache.sentry.core.common.utils.AuthorizationComponent;
 import org.apache.sentry.provider.common.AuthorizationProvider;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;

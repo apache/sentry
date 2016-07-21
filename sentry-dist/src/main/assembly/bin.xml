@@ -41,7 +41,6 @@
       <excludes>
         <exclude>org.slf4j:*</exclude>
         <exclude>org.datanucleus:*</exclude>
-        <exclude>com.jolbox:bonecp</exclude>
         <exclude>org.apache.hive:hive-beeline</exclude>
         <exclude>org.apache.derby:derby</exclude>
       </excludes>
@@ -66,7 +65,6 @@
       <useTransitiveFiltering>true</useTransitiveFiltering>
       <includes>
         <include>org.datanucleus:*</include>
-        <include>com.jolbox:bonecp</include>
         <include>org.apache.hive:hive-beeline</include>
         <include>org.apache.derby:derby</include>
       </includes>
@@ -102,6 +100,7 @@
         <exclude>sentry-policy/**</exclude>
         <exclude>sentry-tests/**</exclude>
         <exclude>sentry-hdfs/**</exclude>
+        <exclude>sentry-service/**</exclude>
         <exclude>sentry-solr/**</exclude>
       </excludes>
 
@@ -128,7 +127,7 @@
       <outputDirectory>lib/plugins</outputDirectory>
     </fileSet>
     <fileSet>
-      <directory>${project.parent.basedir}/sentry-provider/sentry-provider-db/src/main/resources</directory>
+      <directory>${project.parent.basedir}/sentry-service/sentry-service-server/src/main/resources</directory>
       <includes>
         <include>**/*</include>
       </includes>

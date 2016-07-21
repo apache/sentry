@@ -27,7 +27,7 @@ import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hive.hcatalog.pig.HCatStorer;
 import org.apache.pig.ExecType;
 import org.apache.pig.PigServer;
-import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.core.common.utils.PolicyFile;
 import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 import org.junit.Before;
 import org.junit.BeforeClass;

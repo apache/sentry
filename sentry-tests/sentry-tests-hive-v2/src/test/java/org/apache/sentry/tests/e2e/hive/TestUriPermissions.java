@@ -25,7 +25,7 @@ import java.sql.Statement;
 import com.google.common.io.Resources;
 import org.junit.Assert;
 
-import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.core.common.utils.PolicyFile;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
 import org.junit.Before;
 import org.junit.BeforeClass;

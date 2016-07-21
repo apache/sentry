@@ -39,9 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.base.Preconditions;
 
-import org.apache.sentry.core.common.exception.SentryAlreadyExistsException;
 import org.junit.Assert;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
@@ -73,9 +71,10 @@ import org.apache.sentry.binding.hive.v2.metastore.MetastoreAuthzBindingV2;
 import org.apache.sentry.binding.hive.v2.metastore.SentryMetastorePostEventListenerV2;
 import org.apache.sentry.hdfs.PathsUpdate;
 import org.apache.sentry.hdfs.SentryAuthorizationProvider;
+import org.apache.sentry.core.common.exception.SentryAlreadyExistsException;
 import org.apache.sentry.provider.db.SimpleDBProviderBackend;
 import org.apache.sentry.provider.file.LocalGroupResourceAuthorizationProvider;
-import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.core.common.utils.PolicyFile;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 import org.apache.sentry.tests.e2e.hive.fs.MiniDFS;

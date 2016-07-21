@@ -55,7 +55,6 @@ limitations under the License.
     <maven.compile.target>1.7</maven.compile.target>
     <!-- versions are in alphabetical order -->
     <ant.contrib.version>1.0b3</ant.contrib.version>
-    <bonecp.version>0.7.1.RELEASE</bonecp.version>
     <build.helper.maven.plugin.version>1.8</build.helper.maven.plugin.version>
     <cglib.version>2.2</cglib.version>
     <commons-cli.version>1.2</commons-cli.version>
@@ -75,6 +74,7 @@ limitations under the License.
     <jackson.version>1.8.8</jackson.version>
     <jdo-api.version>3.0.1</jdo-api.version>
     <jettyVersion>8.1.19.v20160209</jettyVersion>
+    <jetty.aggregate>7.6.0.v20120127</jetty.aggregate>
     <joda-time.version>2.5</joda-time.version>
     <junit.version>4.10</junit.version>
     <libfb303.version>0.9.3</libfb303.version>
@@ -119,11 +119,6 @@ limitations under the License.
         <groupId>commons-logging</groupId>
         <artifactId>commons-logging</artifactId>
         <version>${commons.logging.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.jolbox</groupId>
-        <artifactId>bonecp</artifactId>
-        <version>${bonecp.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.derby</groupId>
@@ -425,6 +420,21 @@ limitations under the License.
       </dependency>
       <dependency>
         <groupId>org.apache.sentry</groupId>
+        <artifactId>sentry-service-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.sentry</groupId>
+        <artifactId>sentry-service-server</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.sentry</groupId>
+        <artifactId>sentry-service-client</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.sentry</groupId>
         <artifactId>sentry-provider-common</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -465,7 +475,7 @@ limitations under the License.
       </dependency>
       <dependency>
         <groupId>org.apache.sentry</groupId>
-        <artifactId>sentry-provider-db</artifactId>
+        <artifactId>sentry-service-server</artifactId>
         <version>${project.version}</version>
         <type>test-jar</type>
       </dependency>
@@ -615,11 +625,17 @@ limitations under the License.
         <artifactId>jetty-servlet</artifactId>
         <version>${jettyVersion}</version>
       </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.aggregate</groupId>
+        <artifactId>jetty-all</artifactId>
+        <version>${jetty.aggregate}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
   <modules>
     <module>sentry-core</module>
+    <module>sentry-service</module>
     <module>sentry-binding</module>
     <module>sentry-provider</module>
     <module>sentry-policy</module>

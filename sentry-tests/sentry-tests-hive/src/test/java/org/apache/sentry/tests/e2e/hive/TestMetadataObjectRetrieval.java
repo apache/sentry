@@ -17,7 +17,7 @@
 
 package org.apache.sentry.tests.e2e.hive;
 
-import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.core.common.utils.PolicyFile;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

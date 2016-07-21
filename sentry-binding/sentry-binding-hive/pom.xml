@@ -70,31 +70,6 @@ limitations under the License.
       <artifactId>sentry-binding-hive-common</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.sentry</groupId>
-      <artifactId>sentry-core-common</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.sentry</groupId>
-      <artifactId>sentry-core-model-db</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.sentry</groupId>
-      <artifactId>sentry-provider-common</artifactId>
-    </dependency>
-    <!-- required for SentryGrantRevokeTask -->
-    <dependency>
-      <groupId>org.apache.sentry</groupId>
-      <artifactId>sentry-provider-db</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.sentry</groupId>
-      <artifactId>sentry-provider-file</artifactId>
-    </dependency>
-      <dependency>
-        <groupId>org.apache.sentry</groupId>
-        <artifactId>sentry-provider-cache</artifactId>
-      </dependency>
-    <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-common</artifactId>
       <scope>provided</scope>
@@ -111,10 +86,6 @@ limitations under the License.
       <scope>test</scope>
     </dependency>
     <!-- required for SentryGrantRevokeTask -->
-    <dependency>
-      <groupId>org.apache.sentry</groupId>
-      <artifactId>sentry-provider-db</artifactId>
-    </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-minicluster</artifactId>

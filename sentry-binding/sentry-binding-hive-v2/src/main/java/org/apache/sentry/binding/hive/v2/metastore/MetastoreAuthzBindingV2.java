@@ -28,11 +28,11 @@ import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.events.PreDropPartitionEvent;
 import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
+import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.binding.hive.authz.HiveAuthzBinding;
 import org.apache.sentry.binding.hive.v2.HiveAuthzPrivilegesMapV2;
 import org.apache.sentry.binding.metastore.MetastoreAuthzBindingBase;
 import org.apache.sentry.core.common.Subject;
-import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
 
 /**

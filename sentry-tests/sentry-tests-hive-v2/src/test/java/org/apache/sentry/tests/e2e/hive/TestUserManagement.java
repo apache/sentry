@@ -29,7 +29,7 @@ import java.sql.Statement;
 
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hive.service.cli.HiveSQLException;
-import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.core.common.utils.PolicyFile;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
