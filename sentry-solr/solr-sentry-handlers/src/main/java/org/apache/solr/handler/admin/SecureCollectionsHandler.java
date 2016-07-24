@@ -63,7 +63,9 @@ public class SecureCollectionsHandler extends CollectionsHandler {
         }
         case SYNCSHARD:
         case SPLITSHARD:
-        case DELETESHARD: {
+        case DELETESHARD:
+        case BACKUP:
+        case RESTORE: {
           collection = req.getParams().required().get("collection");
           break;
         }

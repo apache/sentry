@@ -86,7 +86,9 @@ public class SecureCoreAdminHandler extends CoreAdminHandler {
         case SPLIT:
         case PREPRECOVERY:
         case REQUESTRECOVERY:
-        case REQUESTSYNCSHARD: {
+        case REQUESTSYNCSHARD:
+        case BACKUPCORE:
+        case RESTORECORE: {
           String cname = params.get(CoreAdminParams.CORE,"");
           collection = getCollectionFromCoreName(cname);
           break;
@@ -148,6 +150,8 @@ public class SecureCoreAdminHandler extends CoreAdminHandler {
         case REQUESTRECOVERY:
         case REQUESTSYNCSHARD:
         case REQUESTAPPLYUPDATES:
+        case BACKUPCORE:
+        case RESTORECORE:
         // these next few aren't handled by the CoreAdminHandler currently,
         // but let's check them just in case something changes
         case CREATEALIAS:

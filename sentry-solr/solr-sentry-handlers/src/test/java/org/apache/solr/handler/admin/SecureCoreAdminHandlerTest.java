@@ -67,6 +67,8 @@ public class SecureCoreAdminHandlerTest extends SentryTestBase {
       CoreAdminAction.LOAD_ON_STARTUP,
       CoreAdminAction.TRANSIENT,
       CoreAdminAction.OVERSEEROP,
+      CoreAdminAction.BACKUPCORE,
+      CoreAdminAction.RESTORECORE,
       // RELOAD needs to go last, because our bogus calls leaves things in a bad state for later calls.
       // We could handle this more cleanly at the cost of a lot more creating and deleting cores.
       CoreAdminAction.RELOAD
