@@ -18,18 +18,30 @@
 
 package org.apache.sentry.provider.db.service.thrift;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.hadoop.security.authentication.client.AuthenticatedURL;
+import org.apache.hadoop.security.authentication.client.KerberosAuthenticator;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
-import org.junit.*;
+import org.apache.sentry.service.thrift.SentryWebMetricParser;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.security.PrivilegedExceptionAction;
 
 public class TestSentryServiceMetrics extends SentryServiceIntegrationBase {
 
   @BeforeClass
   public static void setup() throws Exception {
-    kerberos = false;
-    beforeSetup();
+    kerberos = true;
+    webServerEnabled = true;
+    webSecurity = true;
     setupConf();
     startSentryService();
-    afterSetup();
   }
 
   //Overriding this method as the tests do not require a client handle
@@ -48,11 +60,28 @@ public class TestSentryServiceMetrics extends SentryServiceIntegrationBase {
     Assert.assertEquals(Boolean.TRUE,server.getIsActiveGauge().getValue());
   }
 
+  @Test
+  public void testMetricsWeb() throws Exception {
+    clientUgi.doAs(new PrivilegedExceptionAction<Void>() {
+      @Override
+      public Void run() throws Exception {
+        final URL url = new URL("http://"+ SERVER_HOST + ":" + webServerPort + "/metrics");
+        HttpURLConnection conn = new AuthenticatedURL(new KerberosAuthenticator()).
+                openConnection(url, new AuthenticatedURL.Token());
+        //make sure we are able to access the metrics page
+        Assert.assertEquals(HttpURLConnection.HTTP_OK, conn.getResponseCode());
+        String response = IOUtils.toString(conn.getInputStream());
+        SentryWebMetricParser mp = new SentryWebMetricParser(response);
+        Assert.assertEquals(Boolean.FALSE,mp.isHA());
+        Assert.assertEquals(Boolean.TRUE,mp.isActive());
+        return null;
+      }} );
+  }
+
   //Overriding this method as the client handle does not exist.
   @Override
   @After
   public void after() {
 
   }
-
 }
