@@ -16,6 +16,7 @@
  */
 package org.apache.sentry.service.thrift;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -134,6 +135,25 @@ final class LeaderStatus implements Closeable {
       this.leaderStatusAdaptor.start();
     } else {
       this.listener.becomeActive();
+    }
+  }
+
+  /**
+   * Called by tests to force deactivate(standby) a daemon,
+   * so that another daemon becomes active.
+   * @throws IOException
+   */
+  @VisibleForTesting
+  public void becomeStandby() throws IOException {
+    if (leaderStatusAdaptor != null) {
+      leaderStatusAdaptor.deactivate();
+    } else {
+      try {
+        listener.becomeStandby();
+      } catch (Throwable t) {
+        LOG.error("becomeStandby: " + incarnationId +
+                " threw an unexpected exception", t);
+      }
     }
   }
 
