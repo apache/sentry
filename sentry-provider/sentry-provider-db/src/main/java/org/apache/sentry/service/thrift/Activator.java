@@ -22,6 +22,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Properties;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.common.exception.SentryStandbyException;
 import org.apache.sentry.provider.db.service.persistent.Fencer;
@@ -81,6 +82,14 @@ public class Activator implements Closeable {
   public void close() throws IOException {
     this.leaderStatus.close();
     this.pmf.close();
+  }
+
+  /**
+   * Deactivates this activator.
+   */
+  @VisibleForTesting
+  public void deactivate() throws IOException {
+    leaderStatus.becomeStandby();
   }
 
   private class TransitionHandler implements LeaderStatus.Listener {

@@ -38,6 +38,7 @@ import java.util.concurrent.ThreadFactory;
 import javax.security.auth.Subject;
 
 import com.codahale.metrics.Gauge;
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.GnuParser;
@@ -324,6 +325,37 @@ public class SentryService implements Callable {
     LOGGER.info("Stopped...");
   }
 
+  /**
+   * If the current daemon is active, make it standby.
+   */
+  @VisibleForTesting
+  public synchronized void becomeStandby() throws Exception{
+    try {
+      if(act.isActive()) {
+        LOGGER.info("Server with incarnation id: " + act.getIncarnationId() +
+                " becoming standby");
+        act.deactivate();
+      }
+    } catch (Exception e) {
+      LOGGER.error("Error while deactivating the active sentry daemon", e);
+    }
+  }
+
+  /**
+   * If the current daemon is active, shutdown the server.
+   */
+  @VisibleForTesting
+  public synchronized void shutdownActive() throws Exception{
+    try {
+      if(act.isActive()) {
+        LOGGER.info("Stopping active server with incarnation id: " + act.getIncarnationId());
+        stop();
+      }
+    } catch (Exception e) {
+      LOGGER.error("Error while stopping the active sentry daemon", e);
+    }
+  }
+
   // wait for the service thread to finish execution
   public synchronized void waitOnFuture() throws ExecutionException, InterruptedException {
     LOGGER.info("Waiting on future.get()");
@@ -441,6 +473,9 @@ public class SentryService implements Callable {
     }
     return thriftServer.getEventHandler();
   }
+
+  @VisibleForTesting
+  public Activator getActivator() {return  act;}
 
   public Gauge<Boolean> getIsActiveGauge() {
     return new Gauge<Boolean>() {
