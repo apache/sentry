@@ -68,7 +68,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.binding.hive.SentryHiveAuthorizationTaskFactoryImpl;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.hdfs.PathsUpdate;
-import org.apache.sentry.hdfs.SentryAuthorizationProvider;
+import org.apache.sentry.hdfs.SentryINodeAttributesProvider;
 import org.apache.sentry.core.common.exception.SentryAlreadyExistsException;
 import org.apache.sentry.provider.db.SimpleDBProviderBackend;
 import org.apache.sentry.provider.file.LocalGroupResourceAuthorizationProvider;
@@ -144,8 +144,6 @@ public class TestHDFSIntegration {
   private static final int NUM_RETRIES = 10;
   private static final int RETRY_WAIT = 1000;
   private static final String EXTERNAL_SENTRY_SERVICE = "sentry.e2etest.external.sentry";
-  private static final String DFS_NAMENODE_AUTHORIZATION_PROVIDER_KEY =
-      "dfs.namenode.authorization.provider.class";
 
   private static MiniDFSCluster miniDFS;
   private static InternalHiveServer hiveServer2;
@@ -363,8 +361,8 @@ public class TestHDFSIntegration {
       public Void run() throws Exception {
         System.setProperty(MiniDFSCluster.PROP_TEST_BUILD_DATA, "target/test/data");
         hadoopConf = new HdfsConfiguration();
-        hadoopConf.set(DFS_NAMENODE_AUTHORIZATION_PROVIDER_KEY,
-            SentryAuthorizationProvider.class.getName());
+        hadoopConf.set(DFSConfigKeys.DFS_NAMENODE_INODE_ATTRIBUTES_PROVIDER_KEY,
+            SentryINodeAttributesProvider.class.getName());
         hadoopConf.setBoolean(DFSConfigKeys.DFS_NAMENODE_ACLS_ENABLED_KEY, true);
         hadoopConf.setInt(DFSConfigKeys.DFS_REPLICATION_KEY, 1);
         File dfsDir = assertCreateDir(new File(baseDir, "dfs"));
@@ -582,7 +580,8 @@ public class TestHDFSIntegration {
     stmt.execute("create role admin_role");
     stmt.execute("grant role admin_role to group hive");
     stmt.execute("grant all on server server1 to role admin_role");
-    stmt.execute("create table p1 (s string) partitioned by (month int, day int)");
+    stmt.execute("create table p1 (s string) partitioned by (month int, day " +
+            "int)");
     stmt.execute("alter table p1 add partition (month=1, day=1)");
     stmt.execute("alter table p1 add partition (month=1, day=2)");
     stmt.execute("alter table p1 add partition (month=2, day=1)");
@@ -619,22 +618,23 @@ public class TestHDFSIntegration {
 
     // Verify default db is STILL inaccessible after grants but tables are fine
     verifyOnPath("/user/hive/warehouse", null, "hbase", false);
-    verifyOnAllSubDirs("/user/hive/warehouse/p1", FsAction.READ_EXECUTE, "hbase", true);
+    verifyOnAllSubDirs("/user/hive/warehouse/p1", FsAction.READ_EXECUTE,
+            "hbase", true);
 
     adminUgi.doAs(new PrivilegedExceptionAction<Void>() {
       @Override
       public Void run() throws Exception {
         // Simulate hdfs dfs -setfacl -m <aclantry> <path>
         AclStatus existing =
-            miniDFS.getFileSystem()
-            .getAclStatus(new Path("/user/hive/warehouse/p1"));
+                miniDFS.getFileSystem()
+                        .getAclStatus(new Path("/user/hive/warehouse/p1"));
         ArrayList<AclEntry> newEntries =
-            new ArrayList<AclEntry>(existing.getEntries());
+                new ArrayList<AclEntry>(existing.getEntries());
         newEntries.add(AclEntry.parseAclEntry("user::---", true));
         newEntries.add(AclEntry.parseAclEntry("group:bla:rwx", true));
         newEntries.add(AclEntry.parseAclEntry("other::---", true));
         miniDFS.getFileSystem().setAcl(new Path("/user/hive/warehouse/p1"),
-            newEntries);
+                newEntries);
         return null;
       }
     });
@@ -647,7 +647,8 @@ public class TestHDFSIntegration {
     verifyOnPath("/user/hive/warehouse", FsAction.READ_EXECUTE, "hbase", true);
 
     // Verify default db grants are propagated to the tables
-    verifyOnAllSubDirs("/user/hive/warehouse/p1", FsAction.READ_EXECUTE, "hbase", true);
+    verifyOnAllSubDirs("/user/hive/warehouse/p1", FsAction.READ_EXECUTE,
+            "hbase", true);
 
     // Verify default db revokes work
     stmt.execute("revoke select on database default from role p1_admin");
@@ -1748,8 +1749,16 @@ public class TestHDFSIntegration {
   public void testAuthzObjOnMultipleTables() throws Throwable {
     String dbName = "db1";
 
-    tmpHDFSDir = new Path("/tmp/external/p1");
-    miniDFS.getFileSystem().mkdirs(tmpHDFSDir);
+    tmpHDFSDir = new Path("/tmp/external");
+    if (!miniDFS.getFileSystem().exists(tmpHDFSDir)) {
+      miniDFS.getFileSystem().mkdirs(tmpHDFSDir);
+    }
+
+    miniDFS.getFileSystem().setPermission(tmpHDFSDir, FsPermission.valueOf("drwxrwxrwx"));
+    Path partitionDir = new Path("/tmp/external/p1");
+    if (!miniDFS.getFileSystem().exists(partitionDir)) {
+      miniDFS.getFileSystem().mkdirs(partitionDir);
+    }
 
     dbNames = new String[]{dbName};
     roles = new String[]{"admin_role", "tab1_role", "tab2_role"};
@@ -1965,7 +1974,8 @@ public class TestHDFSIntegration {
       @Override
       public Void run() throws Exception {
         try {
-          miniDFS.getFileSystem().open(new Path("/user/hive/warehouse/p1/month=1/day=1/f1.txt"));
+          Path p = new Path("/user/hive/warehouse/p1/month=1/day=1/f1.txt");
+          miniDFS.getFileSystem().open(p);
           Assert.fail("Should not be allowed !!");
         } catch (Exception e) {
           Assert.assertEquals("Wrong Error : " + e.getMessage(), true, e.getMessage().contains("Permission denied: user=hbase"));

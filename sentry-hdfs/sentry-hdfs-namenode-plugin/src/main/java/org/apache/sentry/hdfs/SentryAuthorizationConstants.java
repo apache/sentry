@@ -29,19 +29,19 @@ public final class SentryAuthorizationConstants {
   public static final String HDFS_GROUP_KEY = CONFIG_PREFIX + "hdfs-group";
   public static final String HDFS_GROUP_DEFAULT = "hive";
 
-  public static final String HDFS_PERMISSION_KEY = CONFIG_PREFIX + 
+  public static final String HDFS_PERMISSION_KEY = CONFIG_PREFIX +
       "hdfs-permission";
-  public static final long HDFS_PERMISSION_DEFAULT = 771;
+  public static final long HDFS_PERMISSION_DEFAULT = 0771;
 
-  public static final String HDFS_PATH_PREFIXES_KEY = CONFIG_PREFIX + 
+  public static final String HDFS_PATH_PREFIXES_KEY = CONFIG_PREFIX +
       "hdfs-path-prefixes";
   public static final String[] HDFS_PATH_PREFIXES_DEFAULT = new String[0];
 
-  public static final String CACHE_REFRESH_INTERVAL_KEY = CONFIG_PREFIX + 
+  public static final String CACHE_REFRESH_INTERVAL_KEY = CONFIG_PREFIX +
       "cache-refresh-interval.ms";
   public static final int CACHE_REFRESH_INTERVAL_DEFAULT = 500;
 
-  public static final String CACHE_STALE_THRESHOLD_KEY = CONFIG_PREFIX + 
+  public static final String CACHE_STALE_THRESHOLD_KEY = CONFIG_PREFIX +
       "cache-stale-threshold.ms";
   public static final int CACHE_STALE_THRESHOLD_DEFAULT = 60 * 1000;
 
@@ -49,10 +49,10 @@ public final class SentryAuthorizationConstants {
       "cache-refresh-retry-wait.ms";
   public static final int CACHE_REFRESH_RETRY_WAIT_DEFAULT = 30 * 1000;
 
-  public static final String INCLUDE_HDFS_AUTHZ_AS_ACL_KEY = CONFIG_PREFIX + 
+  public static final String INCLUDE_HDFS_AUTHZ_AS_ACL_KEY = CONFIG_PREFIX +
       "include-hdfs-authz-as-acl";
   public static final boolean INCLUDE_HDFS_AUTHZ_AS_ACL_DEFAULT = false;
-  
+
   private SentryAuthorizationConstants() {
     // Make constructor private to avoid instantiation
   }

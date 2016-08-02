@@ -70,7 +70,7 @@ import org.apache.sentry.binding.hive.v2.SentryHiveAuthorizationTaskFactoryImplV
 import org.apache.sentry.binding.hive.v2.metastore.MetastoreAuthzBindingV2;
 import org.apache.sentry.binding.hive.v2.metastore.SentryMetastorePostEventListenerV2;
 import org.apache.sentry.hdfs.PathsUpdate;
-import org.apache.sentry.hdfs.SentryAuthorizationProvider;
+import org.apache.sentry.hdfs.SentryINodeAttributesProvider;
 import org.apache.sentry.core.common.exception.SentryAlreadyExistsException;
 import org.apache.sentry.provider.db.SimpleDBProviderBackend;
 import org.apache.sentry.provider.file.LocalGroupResourceAuthorizationProvider;
@@ -136,8 +136,6 @@ public class TestHDFSIntegration {
   private static final int NUM_RETRIES = 10;
   private static final int RETRY_WAIT = 1000;
   private static final String EXTERNAL_SENTRY_SERVICE = "sentry.e2etest.external.sentry";
-  private static final String DFS_NAMENODE_AUTHORIZATION_PROVIDER_KEY =
-      "dfs.namenode.authorization.provider.class";
 
   private static MiniDFSCluster miniDFS;
   private static InternalHiveServer hiveServer2;
@@ -353,8 +351,8 @@ public class TestHDFSIntegration {
       public Void run() throws Exception {
         System.setProperty(MiniDFSCluster.PROP_TEST_BUILD_DATA, "target/test/data");
         hadoopConf = new HdfsConfiguration();
-        hadoopConf.set(DFS_NAMENODE_AUTHORIZATION_PROVIDER_KEY,
-            SentryAuthorizationProvider.class.getName());
+        hadoopConfconf.set(DFSConfigKeys.DFS_NAMENODE_INODE_ATTRIBUTES_PROVIDER_KEY,
+            SentryINodeAttributesProvider.class.getName());
         hadoopConf.setBoolean(DFSConfigKeys.DFS_NAMENODE_ACLS_ENABLED_KEY, true);
         hadoopConf.setInt(DFSConfigKeys.DFS_REPLICATION_KEY, 1);
         File dfsDir = assertCreateDir(new File(baseDir, "dfs"));
