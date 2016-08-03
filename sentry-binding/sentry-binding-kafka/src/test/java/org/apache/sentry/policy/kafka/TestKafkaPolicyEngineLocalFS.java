@@ -24,7 +24,7 @@ import java.io.IOException;
 import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.sentry.provider.file.PolicyFiles;
+import org.apache.sentry.core.common.utils.PolicyFiles;
 
 public class TestKafkaPolicyEngineLocalFS extends AbstractTestKafkaPolicyEngine {
 

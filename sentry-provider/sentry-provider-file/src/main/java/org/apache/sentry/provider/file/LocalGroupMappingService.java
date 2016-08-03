@@ -27,6 +27,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.sentry.core.common.service.GroupMappingService;
+import org.apache.sentry.core.common.utils.PolicyFiles;
 import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.core.common.utils.PolicyFileConstants;
 import org.apache.sentry.core.common.exception.SentryGroupNotFoundException;

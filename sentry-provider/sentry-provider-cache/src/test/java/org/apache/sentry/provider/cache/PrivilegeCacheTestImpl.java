@@ -27,7 +27,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.provider.common.ProviderBackendContext;
-import org.apache.sentry.provider.file.PolicyFiles;
+import org.apache.sentry.core.common.utils.PolicyFiles;
 import org.apache.sentry.provider.file.SimpleFileProviderBackend;
 
 import com.google.common.io.Files;

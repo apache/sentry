@@ -43,7 +43,7 @@ import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.core.model.db.Table;
 import org.apache.sentry.core.common.exception.SentryGroupNotFoundException;
-import org.apache.sentry.provider.file.PolicyFiles;
+import org.apache.sentry.core.common.utils.PolicyFiles;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

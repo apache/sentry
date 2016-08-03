@@ -21,7 +21,7 @@ import static org.junit.Assert.fail;
 import java.io.File;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.sentry.provider.file.PolicyFiles;
+import org.apache.sentry.core.common.utils.PolicyFiles;
 import org.apache.sentry.sqoop.conf.SqoopAuthConf;
 import org.apache.sentry.sqoop.conf.SqoopAuthConf.AuthzConfVars;
 import org.apache.sqoop.security.SecurityFactory;
