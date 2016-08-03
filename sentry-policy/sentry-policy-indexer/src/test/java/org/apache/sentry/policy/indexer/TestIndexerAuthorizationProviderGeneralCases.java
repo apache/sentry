@@ -36,7 +36,7 @@ import org.apache.sentry.core.model.indexer.IndexerPrivilegeModel;
 import org.apache.sentry.provider.common.MockGroupMappingServiceProvider;
 import org.apache.sentry.provider.common.ResourceAuthorizationProvider;
 import org.apache.sentry.provider.file.HadoopGroupResourceAuthorizationProvider;
-import org.apache.sentry.provider.file.PolicyFiles;
+import org.apache.sentry.core.common.utils.PolicyFiles;
 import org.junit.After;
 import org.junit.Test;
 import org.slf4j.Logger;

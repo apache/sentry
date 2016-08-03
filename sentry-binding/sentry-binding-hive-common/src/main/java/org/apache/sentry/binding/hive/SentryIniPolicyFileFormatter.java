@@ -30,7 +30,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.sentry.core.common.exception.SentryConfigurationException;
 import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.core.common.utils.PolicyFileConstants;
-import org.apache.sentry.provider.file.PolicyFiles;
+import org.apache.sentry.core.common.utils.PolicyFiles;
 import org.apache.shiro.config.Ini;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

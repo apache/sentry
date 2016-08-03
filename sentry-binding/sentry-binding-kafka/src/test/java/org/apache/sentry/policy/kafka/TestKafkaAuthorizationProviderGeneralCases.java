@@ -40,7 +40,7 @@ import org.apache.sentry.core.model.kafka.KafkaPrivilegeModel;
 import org.apache.sentry.core.model.kafka.Topic;
 import org.apache.sentry.provider.common.HadoopGroupResourceAuthorizationProvider;
 import org.apache.sentry.provider.common.ResourceAuthorizationProvider;
-import org.apache.sentry.provider.file.PolicyFiles;
+import org.apache.sentry.core.common.utils.PolicyFiles;
 import org.junit.After;
 import org.junit.Test;
 

@@ -29,7 +29,7 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.file.PolicyFile;
-import org.apache.sentry.provider.file.PolicyFiles;
+import org.apache.sentry.core.common.utils.PolicyFiles;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
