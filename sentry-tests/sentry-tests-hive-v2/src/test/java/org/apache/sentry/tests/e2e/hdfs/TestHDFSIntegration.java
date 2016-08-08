@@ -351,7 +351,7 @@ public class TestHDFSIntegration {
       public Void run() throws Exception {
         System.setProperty(MiniDFSCluster.PROP_TEST_BUILD_DATA, "target/test/data");
         hadoopConf = new HdfsConfiguration();
-        hadoopConfconf.set(DFSConfigKeys.DFS_NAMENODE_INODE_ATTRIBUTES_PROVIDER_KEY,
+        hadoopConf.set(DFSConfigKeys.DFS_NAMENODE_INODE_ATTRIBUTES_PROVIDER_KEY,
             SentryINodeAttributesProvider.class.getName());
         hadoopConf.setBoolean(DFSConfigKeys.DFS_NAMENODE_ACLS_ENABLED_KEY, true);
         hadoopConf.setInt(DFSConfigKeys.DFS_REPLICATION_KEY, 1);
