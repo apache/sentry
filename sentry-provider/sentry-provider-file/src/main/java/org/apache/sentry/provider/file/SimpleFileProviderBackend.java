@@ -34,7 +34,6 @@ import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.exception.SentryConfigurationException;
 import org.apache.sentry.core.common.utils.PolicyFiles;
-import org.apache.sentry.policy.common.PrivilegeUtils;
 import org.apache.sentry.core.common.validator.PrivilegeValidator;
 import org.apache.sentry.core.common.validator.PrivilegeValidatorContext;
 import org.apache.sentry.core.common.utils.PolicyFileConstants;
@@ -43,6 +42,7 @@ import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;
 import org.apache.sentry.provider.common.TableCache;
 import org.apache.shiro.config.Ini;
+import org.apache.shiro.util.PermissionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -297,7 +297,7 @@ public class SimpleFileProviderBackend extends CacheProvider implements Provider
         LOGGER.warn(warnMsg);
         configWarnings.add(warnMsg);
       }
-      Set<String> privileges = PrivilegeUtils.toPrivilegeStrings(roleValue);
+      Set<String> privileges = PermissionUtils.toPermissionStrings(roleValue);
       if (!invalidConfiguration && privileges != null) {
         Set<String> internedPrivileges = Sets.newHashSet();
         for(String privilege : privileges) {

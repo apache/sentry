@@ -116,6 +116,11 @@ limitations under the License.
       <artifactId>hive-beeline</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.apache.sentry</groupId>
+      <artifactId>sentry-authorization-provider</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-all</artifactId>
       <scope>test</scope>

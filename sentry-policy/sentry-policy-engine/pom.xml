@@ -48,6 +48,10 @@ limitations under the License.
             <groupId>org.apache.sentry</groupId>
             <artifactId>sentry-provider-common</artifactId>
         </dependency>
+      <dependency>
+        <groupId>org.apache.sentry</groupId>
+        <artifactId>sentry-policy-common</artifactId>
+      </dependency>
     </dependencies>
 
 </project>

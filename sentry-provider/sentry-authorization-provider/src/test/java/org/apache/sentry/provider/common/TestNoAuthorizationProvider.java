@@ -16,10 +16,8 @@
  */
 package org.apache.sentry.provider.common;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-
 import org.apache.sentry.core.common.service.GroupMappingService;
+import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -30,11 +28,11 @@ public class TestNoAuthorizationProvider {
   @Test
   public void testNoAuthorizationProvider() {
     NoAuthorizationProvider nap = new NoAuthorizationProvider();
-    assertFalse(nap.hasAccess(null, null, null, null));
+    Assert.assertFalse(nap.hasAccess(null, null, null, null));
 
     GroupMappingService gms = nap.getGroupMapping();
-    assertEquals(gms.getGroups(null).size(), 0);
-    assertEquals(gms.getGroups("").size(), 0);
-    assertEquals(gms.getGroups("a").size(), 0);
+    Assert.assertEquals(gms.getGroups(null).size(), 0);
+    Assert.assertEquals(gms.getGroups("").size(), 0);
+    Assert.assertEquals(gms.getGroups("a").size(), 0);
   }
 }
