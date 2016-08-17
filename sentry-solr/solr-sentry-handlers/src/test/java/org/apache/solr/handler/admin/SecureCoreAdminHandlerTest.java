@@ -47,7 +47,8 @@ public class SecureCoreAdminHandlerTest extends SentryTestBase {
 
   public final static List<CoreAdminAction> QUERY_ACTIONS = Arrays.asList(
       CoreAdminAction.STATUS,
-      CoreAdminAction.REQUESTSTATUS);
+      CoreAdminAction.REQUESTSTATUS,
+      CoreAdminAction.LISTSNAPSHOTS);
   public final static List<CoreAdminAction> UPDATE_ACTIONS = Arrays.asList(
       CoreAdminAction.LOAD,
       CoreAdminAction.UNLOAD,
@@ -69,6 +70,8 @@ public class SecureCoreAdminHandlerTest extends SentryTestBase {
       CoreAdminAction.OVERSEEROP,
       CoreAdminAction.BACKUPCORE,
       CoreAdminAction.RESTORECORE,
+      CoreAdminAction.CREATESNAPSHOT,
+      CoreAdminAction.DELETESNAPSHOT,
       // RELOAD needs to go last, because our bogus calls leaves things in a bad state for later calls.
       // We could handle this more cleanly at the cost of a lot more creating and deleting cores.
       CoreAdminAction.RELOAD

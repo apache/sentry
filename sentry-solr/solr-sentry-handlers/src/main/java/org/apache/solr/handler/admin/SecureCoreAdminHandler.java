@@ -88,7 +88,10 @@ public class SecureCoreAdminHandler extends CoreAdminHandler {
         case REQUESTRECOVERY:
         case REQUESTSYNCSHARD:
         case BACKUPCORE:
-        case RESTORECORE: {
+        case RESTORECORE:
+        case CREATESNAPSHOT:
+        case DELETESNAPSHOT:
+        case LISTSNAPSHOTS: {
           String cname = params.get(CoreAdminParams.CORE,"");
           collection = getCollectionFromCoreName(cname);
           break;
@@ -128,7 +131,8 @@ public class SecureCoreAdminHandler extends CoreAdminHandler {
 
       switch (action) {
         case STATUS:
-        case REQUESTSTATUS: {
+        case REQUESTSTATUS:
+        case LISTSNAPSHOTS: {
           SecureRequestHandlerUtil.checkSentryAdminCollection(
               req,
               SecureRequestHandlerUtil.QUERY_ONLY,
@@ -152,6 +156,8 @@ public class SecureCoreAdminHandler extends CoreAdminHandler {
         case REQUESTAPPLYUPDATES:
         case BACKUPCORE:
         case RESTORECORE:
+        case CREATESNAPSHOT:
+        case DELETESNAPSHOT:
         // these next few aren't handled by the CoreAdminHandler currently,
         // but let's check them just in case something changes
         case CREATEALIAS:

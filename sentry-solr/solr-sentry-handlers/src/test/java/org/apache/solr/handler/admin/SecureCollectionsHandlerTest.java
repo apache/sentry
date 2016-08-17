@@ -75,10 +75,22 @@ public class SecureCollectionsHandlerTest extends SentryTestBase {
     verifyUnauthorized(handler, getCollectionsRequest("bogusCollection", "junit", action), "bogusCollection", "junit");
   }
 
+  private void verifyQueryAccess(CollectionAction action) throws Exception {
+    CollectionsHandler handler = new SecureCollectionsHandler(h.getCoreContainer());
+    verifyAuthorized(handler, getCollectionsRequest("collection1", "junit", action));
+    verifyAuthorized(handler, getCollectionsRequest("queryCollection", "junit", action));
+    verifyUnauthorized(handler, getCollectionsRequest("updateCollection", "junit", action), "updateCollection", "junit");
+    verifyUnauthorized(handler, getCollectionsRequest("bogusCollection", "junit", action), "bogusCollection", "junit");
+  }
+
   @Test
   public void testSecureCollectionsHandler() throws Exception {
     for (CollectionAction action : CollectionAction.values()) {
-      verifyUpdateAccess(action);
+      if (SecureCollectionsHandler.QUERY_ACTIONS.contains(action)) {
+        verifyQueryAccess(action);
+      } else {
+        verifyUpdateAccess(action);
+      }
     }
   }
 }

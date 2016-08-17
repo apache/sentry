@@ -1,5 +1,7 @@
 package org.apache.solr.handler.admin;
 
+import java.util.Arrays;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,6 +20,8 @@ package org.apache.solr.handler.admin;
  */
 
 import java.util.EnumSet;
+import java.util.List;
+
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -31,6 +35,8 @@ import org.apache.solr.core.CoreContainer;
  * Secure (sentry-aware) version of CollectionsHandler
  */
 public class SecureCollectionsHandler extends CollectionsHandler {
+  public final static List<CollectionAction> QUERY_ACTIONS = Arrays.asList(
+      CollectionAction.LISTSNAPSHOTS);
 
   public SecureCollectionsHandler() {
     super();
@@ -65,7 +71,10 @@ public class SecureCollectionsHandler extends CollectionsHandler {
         case SPLITSHARD:
         case DELETESHARD:
         case BACKUP:
-        case RESTORE: {
+        case RESTORE:
+        case CREATESNAPSHOT:
+        case DELETESNAPSHOT:
+        case LISTSNAPSHOTS: {
           collection = req.getParams().required().get("collection");
           break;
         }
@@ -75,9 +84,16 @@ public class SecureCollectionsHandler extends CollectionsHandler {
         }
       }
     }
-    // all actions require UPDATE privileges
-    SecureRequestHandlerUtil.checkSentryAdminCollection(req, SecureRequestHandlerUtil.UPDATE_ONLY,
-      (action != null ? "CollectionAction." + action.toString() : getClass().getName() + "/" + a), true, collection);
+
+    if ((action != null) && QUERY_ACTIONS.contains(action)) {
+      SecureRequestHandlerUtil.checkSentryAdminCollection(req, SecureRequestHandlerUtil.QUERY_ONLY,
+                (action != null ? "CollectionAction." + action.toString() : getClass().getName() + "/" + a), true, collection);
+    } else {
+      // all actions require UPDATE privileges
+      SecureRequestHandlerUtil.checkSentryAdminCollection(req, SecureRequestHandlerUtil.UPDATE_ONLY,
+          (action != null ? "CollectionAction." + action.toString() : getClass().getName() + "/" + a), true, collection);
+    }
+
     super.handleRequestBody(req, rsp);
 
     /**
