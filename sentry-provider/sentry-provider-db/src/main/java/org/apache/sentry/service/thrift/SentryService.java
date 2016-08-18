@@ -28,12 +28,7 @@ import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.EventListener;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.*;
 
 import javax.security.auth.Subject;
 
@@ -90,6 +85,7 @@ public class SentryService implements Callable {
   private final String[] principalParts;
   private final String keytab;
   private final ExecutorService serviceExecutor;
+  private ScheduledExecutorService hmsFollowerExecutor = null;
   private Future serviceStatus;
   private TServer thriftServer;
   private Status status;
@@ -158,6 +154,14 @@ public class SentryService implements Callable {
     conf.set(SentryConstants.CURRENT_INCARNATION_ID_KEY,
         this.act.getIncarnationId());
     webServerPort = conf.getInt(ServerConfig.SENTRY_WEB_PORT, ServerConfig.SENTRY_WEB_PORT_DEFAULT);
+    //TODO: Enable only if Hive is using Sentry?
+    try {
+      hmsFollowerExecutor = Executors.newScheduledThreadPool(1);
+      hmsFollowerExecutor.scheduleAtFixedRate(new HMSFollower(conf), 60000, 500, TimeUnit.MILLISECONDS);
+    }catch(Exception e) {
+      //TODO: Handle
+      LOGGER.error("Could not start HMSFollower");
+    }
     status = Status.NOT_STARTED;
   }
 
@@ -167,8 +171,7 @@ public class SentryService implements Callable {
     try {
       status = Status.STARTED;
       if (kerberos) {
-        Boolean autoRenewTicket = conf.getBoolean(ServerConfig.SENTRY_KERBEROS_TGT_AUTORENEW, ServerConfig.SENTRY_KERBEROS_TGT_AUTORENEW_DEFAULT);
-        kerberosContext = new SentryKerberosContext(principal, keytab, autoRenewTicket);
+        kerberosContext = new SentryKerberosContext(principal, keytab, true);
         Subject.doAs(kerberosContext.getSubject(), new PrivilegedExceptionAction<Void>() {
           @Override
           public Void run() throws Exception {
@@ -318,6 +321,9 @@ public class SentryService implements Callable {
       }
     } else {
       LOGGER.info("Sentry web service is already stopped...");
+    }
+    if(hmsFollowerExecutor != null) {
+      hmsFollowerExecutor.shutdown();
     }
     if (exception != null) {
       exception.ifExceptionThrow();

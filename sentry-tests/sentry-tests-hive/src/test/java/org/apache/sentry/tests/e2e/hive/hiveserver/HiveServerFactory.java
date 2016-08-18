@@ -189,6 +189,10 @@ public class HiveServerFactory {
       properties.put(METASTORE_BYPASS, tempByPass);
     }
 
+    if (!properties.containsKey(HiveAuthzConf.AuthzConfVars.AUTHZ_SERVER_NAME.getVar())) {
+      properties.put(HiveAuthzConf.AuthzConfVars.AUTHZ_SERVER_NAME.getVar(), "server1");
+    }
+
     properties.put(METASTORE_SETUGI, "true");
     properties.put(METASTORE_CLIENT_TIMEOUT, "100");
     properties.put(ConfVars.HIVE_WAREHOUSE_SUBDIR_INHERIT_PERMS.varname, "true");

@@ -17,15 +17,15 @@
  */
 package org.apache.sentry.core.common.exception;
 
-public class SentryInvalidInputException extends SentryUserException {
-  private static final long serialVersionUID = 2962080655835L;
-  public SentryInvalidInputException(String msg) {
+public class SentryInvalidHMSEventException extends SentryUserException {
+  private static final long serialVersionUID = 29620806553835L;
+  public SentryInvalidHMSEventException(String msg) {
     super(msg);
   }
-  public SentryInvalidInputException(String msg, String reason) {
+  public SentryInvalidHMSEventException(String msg, String reason) {
     super(msg, reason);
   }
-  public SentryInvalidInputException(String msg, Throwable cause) {
+  public SentryInvalidHMSEventException(String msg, Throwable cause) {
     super(msg, cause);
   }
 }
