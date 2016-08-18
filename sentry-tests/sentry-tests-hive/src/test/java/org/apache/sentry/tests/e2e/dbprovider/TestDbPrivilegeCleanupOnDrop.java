@@ -31,6 +31,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.sentry.service.thrift.HMSFollower;
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 import org.junit.*;
 
@@ -38,7 +39,6 @@ import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 @Ignore("Ignoring until SENTRY-1321 is complete")
 public class TestDbPrivilegeCleanupOnDrop extends
@@ -56,6 +56,8 @@ public class TestDbPrivilegeCleanupOnDrop extends
   private final static String tableName3 = "tb_3";
   private final static String tableName4 = "tb_4";
   private final static String renameTag = "_new";
+
+  static final long WAIT_FOR_NOTIFICATION_PROCESSING = 10000;
 
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception {
@@ -76,6 +78,9 @@ public class TestDbPrivilegeCleanupOnDrop extends
     FileOutputStream to = new FileOutputStream(dataFile);
     Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
     to.close();
+    while(!HMSFollower.isConnectedToHMS()) {
+      Thread.sleep(1000);
+    }
   }
 
   @After
@@ -96,11 +101,12 @@ public class TestDbPrivilegeCleanupOnDrop extends
   public void testDropObjects() throws Exception {
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-
     setupRoles(statement); // create required roles
     setupDbObjects(statement); // create test DBs and Tables
+    Thread.sleep(5000);//TODO: Workaround for SENTRY-1422
     setupPrivileges(statement); // setup privileges for USER1
     dropDbObjects(statement); // drop objects
+    Thread.sleep(WAIT_FOR_NOTIFICATION_PROCESSING);
     verifyPrivilegesDropped(statement); // verify privileges are removed
 
     statement.close();
@@ -133,10 +139,12 @@ public class TestDbPrivilegeCleanupOnDrop extends
     Statement statement = context.createStatement(connection);
     setupRoles(statement); // create required roles
     setupDbObjects(statement); // create test DBs and Tables
+    Thread.sleep(5000);//TODO: Workaround for SENTRY-1422
     setupPrivileges(statement); // setup privileges for USER1
     dropDbObjects(statement); // drop DB and tables
 
     setupDbObjects(statement); // recreate same DBs and tables
+    Thread.sleep(WAIT_FOR_NOTIFICATION_PROCESSING);
     verifyPrivilegesDropped(statement); // verify the stale privileges removed
   }
 
@@ -153,7 +161,9 @@ public class TestDbPrivilegeCleanupOnDrop extends
 
     setupRoles(statement); // create required roles
     setupDbObjects(statement); // create test DBs and Tables
+    Thread.sleep(5000);//TODO: Workaround for SENTRY-1422
     setupPrivileges(statement); // setup privileges for USER1
+    Thread.sleep(WAIT_FOR_NOTIFICATION_PROCESSING);
 
     // verify privileges on the created tables
     statement.execute("USE " + DB2);
@@ -164,8 +174,8 @@ public class TestDbPrivilegeCleanupOnDrop extends
         tableName2);
 
     renameTables(statement); // alter tables to rename
-
     // verify privileges removed for old tables
+    Thread.sleep(WAIT_FOR_NOTIFICATION_PROCESSING);
     verifyTablePrivilegesDropped(statement);
 
     // verify privileges created for new tables
@@ -198,11 +208,15 @@ public class TestDbPrivilegeCleanupOnDrop extends
     statement.execute("CREATE TABLE t1 (c1 string)");
 
     // Grant SELECT/INSERT to TABLE t1
+    Thread.sleep(5000);//TODO: Workaround for SENTRY-1422
     statement.execute("GRANT SELECT ON TABLE t1 TO ROLE user_role");
     statement.execute("GRANT INSERT ON TABLE t1 TO ROLE user_role");
     statement.execute("ALTER TABLE t1 RENAME TO t2");
+    Thread.sleep(WAIT_FOR_NOTIFICATION_PROCESSING);
+    context.assertSentrySemanticException(statement, "drop table t1", semanticException);
 
     statement.execute("drop table t2");
+    Thread.sleep(WAIT_FOR_NOTIFICATION_PROCESSING);
     ResultSet resultSet = statement.executeQuery("SHOW GRANT ROLE user_role");
     // user_role will revoke all privilege from table t2
     assertRemainingRows(resultSet, 0);

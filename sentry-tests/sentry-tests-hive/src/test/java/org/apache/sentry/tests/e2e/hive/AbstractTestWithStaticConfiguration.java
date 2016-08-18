@@ -310,9 +310,6 @@ public abstract class AbstractTestWithStaticConfiguration {
     if ("true".equalsIgnoreCase(System.getProperty(ENABLE_SENTRY_HA, "false"))) {
       enableSentryHA = true;
     }
-    if (useSentryService && (!startSentry)) {
-      setupSentryService();
-    }
 
     if (enableHiveConcurrency) {
       properties.put(HiveConf.ConfVars.HIVE_SUPPORT_CONCURRENCY.varname, "true");
@@ -321,12 +318,16 @@ public abstract class AbstractTestWithStaticConfiguration {
       properties.put(HiveConf.ConfVars.HIVE_LOCK_MANAGER.varname,
           "org.apache.hadoop.hive.ql.lockmgr.EmbeddedLockManager");
     }
+    if (useSentryService && (!startSentry)) {
+      setupSentryService();
+    }
 
     properties.put(ConfVars.HIVE_SERVER2_WEBUI_PORT.varname, "0");
 
     HiveConf hiveConf = new HiveConf();
     hiveServer = create(properties, baseDir, confDir, logDir, policyURI, fileSystem);
     hiveServer.start();
+
     createContext();
 
     // Create tmp as scratch dir if it doesn't exist

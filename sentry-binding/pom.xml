@@ -34,6 +34,8 @@ limitations under the License.
     <module>sentry-binding-hbase-indexer</module>
     <module>sentry-binding-kafka</module>
     <module>sentry-binding-solr</module>
+    <module>sentry-binding-hive-follower</module>
+    <module>sentry-binding-hive-conf</module>
   </modules>
 
 </project>

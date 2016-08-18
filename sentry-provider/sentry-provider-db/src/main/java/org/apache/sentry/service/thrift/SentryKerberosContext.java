@@ -45,13 +45,17 @@ public class SentryKerberosContext implements Runnable {
   @Deprecated
   private boolean shutDownRenewer = false;
 
-  public SentryKerberosContext(String principal, String keyTab, boolean autoRenewTicket)
+  public SentryKerberosContext(String principal, String keyTab, boolean server)
       throws LoginException {
     subject = new Subject(false, Sets.newHashSet(new KerberosPrincipal(principal)),
           new HashSet<Object>(), new HashSet<Object>());
-    kerberosConfig = KerberosConfiguration.createClientConfig(principal, new File(keyTab));
+    if(server) {
+      kerberosConfig = KerberosConfiguration.createServerConfig(principal, new File(keyTab));
+    } else {
+      kerberosConfig = KerberosConfiguration.createClientConfig(principal, new File(keyTab));
+    }
     loginWithNewContext();
-    if (autoRenewTicket) {
+    if (!server) {
       startRenewerThread();
     }
   }

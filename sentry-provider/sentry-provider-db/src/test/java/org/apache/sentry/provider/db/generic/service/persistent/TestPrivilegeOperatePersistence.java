@@ -41,6 +41,7 @@ import org.apache.sentry.service.thrift.Activator;
 import org.apache.sentry.service.thrift.Activators;
 import org.apache.sentry.service.thrift.ServiceConstants;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.collect.Sets;
@@ -49,6 +50,7 @@ import com.google.common.collect.Sets;
  * The test cases are used for search component The authorizables are COLLECTION and Field
  * The actions of search privilege are ALL,QUERY and UPDATE
  */
+@Ignore("Enable after fencing has been disabled - SENTRY-1478")
 public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase {
   private static final String SEARCH = "solr";
   private static final String ADMIN_USER = "solr";
