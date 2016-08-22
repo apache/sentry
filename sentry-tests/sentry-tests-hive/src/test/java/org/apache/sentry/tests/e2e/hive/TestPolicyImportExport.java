@@ -22,6 +22,7 @@ import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.lang.reflect.UndeclaredThrowableException;
 import java.util.Map;
 import java.util.Set;
 
@@ -172,7 +173,8 @@ public class TestPolicyImportExport extends AbstractTestWithStaticConfiguration 
     try {
       configTool.importPolicy();
       fail("IllegalArgumentException should be thrown for: Invalid key value: server [server]");
-    } catch (IllegalArgumentException ex) {
+    } catch (UndeclaredThrowableException ex) {
+      assertTrue(ex.getUndeclaredThrowable().getCause() instanceof IllegalArgumentException);
       // ignore
     }
   }

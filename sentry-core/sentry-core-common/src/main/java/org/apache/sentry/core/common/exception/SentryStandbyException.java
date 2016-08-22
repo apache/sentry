@@ -34,4 +34,8 @@ public class SentryStandbyException extends SentryUserException {
   public SentryStandbyException(String msg, String reason) {
     super(msg, reason);
   }
+
+  public SentryStandbyException(String msg, Throwable t) {
+    super(msg, t);
+  }
 }
