@@ -104,7 +104,7 @@ public class TestSentryServiceWithInvalidMsgSize extends SentryServiceIntegratio
           client.grantServerPrivilege(ADMIN_USER, ROLE_NAME, "server", false);
         } catch (SentryUserException e) {
           exceptionThrown = true;
-          Assert.assertTrue(e.getMessage().contains("org.apache.thrift.transport.TTransportException"));
+          Assert.assertTrue(e.getCause().getMessage().contains("org.apache.thrift.transport.TTransportException"));
         } finally {
           Assert.assertEquals(true, exceptionThrown);
         }

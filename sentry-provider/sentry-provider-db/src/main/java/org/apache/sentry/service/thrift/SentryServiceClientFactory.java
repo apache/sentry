@@ -24,7 +24,6 @@ import org.apache.hadoop.conf.Configuration;
 
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClientDefaultImpl;
-import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
 
 public class SentryServiceClientFactory {
 
@@ -32,15 +31,9 @@ public class SentryServiceClientFactory {
   }
 
   public static SentryPolicyServiceClient create(Configuration conf) throws Exception {
-    boolean pooled = conf.getBoolean(ClientConfig.SENTRY_POOL_ENABLED, false);
-    if (pooled) {
       return (SentryPolicyServiceClient) Proxy
           .newProxyInstance(SentryPolicyServiceClientDefaultImpl.class.getClassLoader(),
-              SentryPolicyServiceClientDefaultImpl.class.getInterfaces(),
-              new PoolClientInvocationHandler(conf));
-    } else {
-      return new SentryPolicyServiceClientDefaultImpl(conf);
-    }
+          SentryPolicyServiceClientDefaultImpl.class.getInterfaces(),
+          new PoolClientInvocationHandler(conf));
   }
-
 }

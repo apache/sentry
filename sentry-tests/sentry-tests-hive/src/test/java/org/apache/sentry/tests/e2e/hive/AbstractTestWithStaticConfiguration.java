@@ -111,7 +111,7 @@ public abstract class AbstractTestWithStaticConfiguration {
       .outerRule(new TestWatcher() {
         @Override
         protected void failed(Throwable e, Description description) {
-          if (e.getMessage().contains("test timed out after")) {
+          if (e.getMessage()!= null && e.getMessage().contains("test timed out after")) {
             LOGGER.error("Test method time out, but caught by rule, description = " + description + "ex = " + e);
           }
         }

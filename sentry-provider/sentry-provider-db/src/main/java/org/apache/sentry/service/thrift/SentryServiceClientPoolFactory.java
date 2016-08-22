@@ -36,16 +36,21 @@ public class SentryServiceClientPoolFactory extends BasePooledObjectFactory<Sent
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryServiceClientPoolFactory.class);
 
-  private Configuration conf;
+  private final String addr;
+  private final int port;
+  private final Configuration conf;
 
-  public SentryServiceClientPoolFactory(Configuration conf) {
+  public SentryServiceClientPoolFactory(String addr, int port,
+                                        Configuration conf) {
+    this.addr = addr;
+    this.port = port;
     this.conf = conf;
   }
 
   @Override
   public SentryPolicyServiceClient create() throws Exception {
     LOGGER.debug("Creating Sentry Service Client...");
-    return new SentryPolicyServiceClientDefaultImpl(conf);
+    return new SentryPolicyServiceClientDefaultImpl(addr, port, conf);
   }
 
   @Override

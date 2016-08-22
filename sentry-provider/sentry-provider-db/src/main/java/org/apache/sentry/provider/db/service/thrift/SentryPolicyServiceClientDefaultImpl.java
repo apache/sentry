@@ -128,12 +128,18 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
   }
 
   public SentryPolicyServiceClientDefaultImpl(Configuration conf) throws IOException {
+    this(Preconditions.checkNotNull(conf.get(ClientConfig.SERVER_RPC_ADDRESS), "Config key "
+        + ClientConfig.SERVER_RPC_ADDRESS + " is required"), conf.getInt(
+        ClientConfig.SERVER_RPC_PORT, ClientConfig.SERVER_RPC_PORT_DEFAULT), conf);
+  }
+
+  public SentryPolicyServiceClientDefaultImpl(String addr, int port,
+        Configuration conf) throws IOException {
     this.conf = conf;
     Preconditions.checkNotNull(this.conf, "Configuration object cannot be null");
     this.serverAddress = NetUtils.createSocketAddr(Preconditions.checkNotNull(
-                           conf.get(ClientConfig.SERVER_RPC_ADDRESS), "Config key "
-                           + ClientConfig.SERVER_RPC_ADDRESS + " is required"), conf.getInt(
-                           ClientConfig.SERVER_RPC_PORT, ClientConfig.SERVER_RPC_PORT_DEFAULT));
+                            addr, "Config key " + ClientConfig.SERVER_RPC_ADDRESS
+                            + " is required"), port);
     this.connectionTimeout = conf.getInt(ClientConfig.SERVER_RPC_CONN_TIMEOUT,
                                          ClientConfig.SERVER_RPC_CONN_TIMEOUT_DEFAULT);
     kerberos = ServerConfig.SECURITY_MODE_KERBEROS.equalsIgnoreCase(
