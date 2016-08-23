@@ -29,6 +29,9 @@ import org.apache.hadoop.security.SaslRpcServer;
 import org.apache.hive.hcatalog.messaging.HCatEventMessage;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.core.common.exception.*;
+import org.apache.sentry.hdfs.UpdateableAuthzPaths;
+import org.apache.sentry.hdfs.FullUpdateInitializer;
+import org.apache.sentry.hdfs.ServiceConstants.ServerConfig;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.provider.db.service.thrift.TSentryAuthorizable;
 import org.apache.thrift.TException;
@@ -43,6 +46,7 @@ import java.io.IOException;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SYNC_CREATE_WITH_POLICY_STORE;
 import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SYNC_DROP_WITH_POLICY_STORE;
@@ -67,8 +71,10 @@ public class HMSFollower implements Runnable {
   private String hiveInstance;
   final static int maxRetriesForLogin = 3;
   final static int maxRetriesForConnection = 3;
+  private volatile UpdateableAuthzPaths authzPaths;
+  private AtomicBoolean fullUpdateComplete;
 
-  HMSFollower(Configuration conf) throws SentryNoSuchObjectException,
+  HMSFollower(Configuration conf, AtomicBoolean fullUpdateComplete) throws SentryNoSuchObjectException,
       SentryAccessDeniedException, SentrySiteConfigurationException, IOException { //TODO: Handle any possible exceptions or throw specific exceptions
     LOGGER.info("HMSFollower is being initialized");
     authzConf = conf;
@@ -79,6 +85,7 @@ public class HMSFollower implements Runnable {
     }
     //TODO: Initialize currentEventID from Sentry db
     currentEventID = 0;
+    this.fullUpdateComplete = fullUpdateComplete;
   }
 
   @VisibleForTesting
@@ -195,27 +202,63 @@ public class HMSFollower implements Runnable {
       }
     }
     if (needFullUpdate()) {
-      //TODO: Handle
-    } else {
-      try {
-        NotificationEventResponse response = client.getNextNotification(currentEventID, Integer.MAX_VALUE, null);
-        if (response.isSetEvents()) {
-          LOGGER.info(String.format("CurrentEventID = %s. Processing %s events",
-              currentEventID, response.getEvents().size()));
-          processNotificationEvents(response.getEvents());
-        }
-      } catch (TException e) {
-        LOGGER.error("ThriftException occured fetching Notification entries, will try");
-        e.printStackTrace();
-      } catch (SentryInvalidInputException|SentryInvalidHMSEventException e) {
-        throw new RuntimeException(e);
+      // TODO: read currentEventID from Sentry DB
+      // This guarantee events before failover but did not applied can be fetch later.
+      fetchFullUpdate();
+    }
+
+    try {
+      NotificationEventResponse response = client.getNextNotification(currentEventID, Integer.MAX_VALUE, null);
+      if (response.isSetEvents()) {
+        LOGGER.info(String.format("CurrentEventID = %s. Processing %s events",
+            currentEventID, response.getEvents().size()));
+        processNotificationEvents(response.getEvents());
       }
+    } catch (TException e) {
+      LOGGER.error("ThriftException occured fetching Notification entries, will try");
+      e.printStackTrace();
+    } catch (SentryInvalidInputException|SentryInvalidHMSEventException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  /**
+   * Block the sentry service until it starts up, signal main thread
+   * the full update fetch process is done.
+   */
+  private void fetchFullUpdate() {
+    fullUpdateComplete.getAndSet(false);
+
+    FullUpdateInitializer updateInitializer = null;
+    try {
+      updateInitializer = new FullUpdateInitializer(client, authzConf);
+      HMSFollower.this.authzPaths = updateInitializer.createInitialUpdate();
+      // TODO: notify HDFS plugin
+      LOGGER.info("#### Hive full update initialization complete !!");
+    } catch (Exception e) {
+      LOGGER.error("#### Could not create hive full update !!", e);
+    } finally {
+      if (updateInitializer != null) {
+        try {
+          updateInitializer.close();
+        } catch (Exception e) {
+          LOGGER.info("#### Exception while closing updateInitializer !!", e);
+        }
+      }
+
+      fullUpdateComplete.getAndSet(true);
     }
   }
 
   private boolean needFullUpdate() {
-    //TODO Implement
-    return false;
+    // Currently fullUpdateComplete is indicator that server is starting up
+    // and in request of a full update.
+    // TODO: set fullUpdateComplete based on notification id stored in SentryDB.
+    if (!fullUpdateComplete.get()) {
+      return true;
+    } else {
+      return false;
+    }
   }
 
   private boolean syncWithPolicyStore(HiveAuthzConf.AuthzConfVars syncConfVar) {
