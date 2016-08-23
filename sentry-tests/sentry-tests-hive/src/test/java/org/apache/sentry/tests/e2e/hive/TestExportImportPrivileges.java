@@ -131,6 +131,8 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticConfigurat
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("use " + DB1);
+    // Import/Export works with s3 storage system only when this is turned on.
+    exec(statement, "set hive.exim.uri.scheme.whitelist=hdfs,pfile,s3a;");
     statement.execute("EXPORT TABLE " + TBL1 + " TO '" + exportDir + "'");
     statement.close();
     connection.close();
@@ -139,6 +141,7 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticConfigurat
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
     statement.execute("use " + DB1);
+    exec(statement, "set hive.exim.uri.scheme.whitelist=hdfs,pfile,s3a;");
     context.assertAuthzException(statement, "IMPORT TABLE " + TBL2 + " FROM '" + exportDir + "'");
     statement.close();
     connection.close();
@@ -147,6 +150,7 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticConfigurat
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("use " + DB1);
+    exec(statement, "set hive.exim.uri.scheme.whitelist=hdfs,pfile,s3a;");
     statement.execute("IMPORT TABLE " + TBL2 + " FROM '" + exportDir + "'");
     statement.close();
     connection.close();

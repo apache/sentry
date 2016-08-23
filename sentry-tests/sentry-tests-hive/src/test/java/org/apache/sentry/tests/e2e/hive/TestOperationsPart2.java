@@ -442,6 +442,8 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
     connection = context.createConnection(USER3_1);
     statement = context.createStatement(connection);
     statement.execute("Use " + DB1);
+    // Import/Export works with s3 storage system only when this is turned on.
+    exec(statement, "set hive.exim.uri.scheme.whitelist=hdfs,pfile,s3a;");
     context.assertSentrySemanticException(statement, "export table tb1 to '" + location + "'",
         semanticException);
     statement.close();
@@ -451,6 +453,7 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("Use " + DB1);
+    exec(statement, "set hive.exim.uri.scheme.whitelist=hdfs,pfile,s3a;");
     statement.execute("export table tb1 to '" + location + "'" );
     statement.close();
     connection.close();
@@ -459,6 +462,7 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
     connection = context.createConnection(USER3_1);
     statement = context.createStatement(connection);
     statement.execute("Use " + DB1);
+    exec(statement, "set hive.exim.uri.scheme.whitelist=hdfs,pfile,s3a;");
     context.assertSentrySemanticException(statement, "import table tb2 from '" + location + "'",
         semanticException);
     statement.close();
@@ -468,6 +472,7 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
     statement.execute("Use " + DB1);
+    exec(statement, "set hive.exim.uri.scheme.whitelist=hdfs,pfile,s3a;");
     statement.execute("import table tb2 from '" + location + "'");
     statement.close();
     connection.close();

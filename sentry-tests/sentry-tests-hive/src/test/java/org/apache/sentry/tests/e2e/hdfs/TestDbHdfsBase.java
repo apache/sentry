@@ -40,6 +40,7 @@ import static org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory.Hive
 
 import org.apache.sentry.tests.e2e.hive.fs.TestFSContants;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -96,9 +97,14 @@ public abstract class TestDbHdfsBase extends AbstractTestWithStaticConfiguration
       System.getProperty(TestFSContants.SENTRY_E2E_TEST_DFS_TYPE, DFSType.MiniDFS.name());
 
   protected final static String dfsAdmin = System.getProperty(TestFSContants.SENTRY_E2E_TEST_DFS_ADMIN, "hdfs");
+  protected final static String storageUriStr = System.getProperty(TestFSContants.SENTRY_E2E_TEST_STORAGE_URI);
 
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception {
+    if (!Strings.isNullOrEmpty(storageUriStr)) {
+      LOGGER.warn("Skip HDFS tests if HDFS fileSystem is not configured on hdfs");
+      Assume.assumeTrue(storageUriStr.toLowerCase().startsWith("hdfs"));
+    }
     useSentryService = true;
     enableHDFSAcls = true;
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
