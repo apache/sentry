@@ -1007,7 +1007,7 @@ public class TestHDFSIntegration {
       miniDFS.getFileSystem().mkdirs(tmpHDFSDir);
     }
 
-    miniDFS.getFileSystem().setPermission(tmpHDFSDir, FsPermission.valueOf("drwxrwx---"));
+    miniDFS.getFileSystem().setPermission(tmpHDFSDir, FsPermission.valueOf("drwxrwx--x"));
     Path partitionDir = new Path("/tmp/external/p1");
     if (!miniDFS.getFileSystem().exists(partitionDir)) {
       miniDFS.getFileSystem().mkdirs(partitionDir);

@@ -21,10 +21,10 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 
 @Ignore ("Disable sentry HA tests for now")
-public class TestHDFSIntegrationWithHA extends TestHDFSIntegration {
+public class TestHDFSIntegrationWithHA extends TestHDFSIntegrationBase {
   @BeforeClass
   public static void setup() throws Exception {
-    TestHDFSIntegration.testSentryHA = true;
-    TestHDFSIntegration.setup();
+    TestHDFSIntegrationBase.testSentryHA = true;
+    TestHDFSIntegrationBase.setup();
   }
 }
