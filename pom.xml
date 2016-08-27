@@ -943,6 +943,7 @@ limitations under the License.
               <excludes combine.children="append">
                 <exclude>%regex[org.apache.sentry.tests.e2e.dbprovider.*.class]</exclude>
                 <exclude>%regex[org.apache.sentry.tests.e2e.hive.TestPrivilegesAtFunctionScope.*.class]</exclude>
+                <exclude>%regex[org.apache.sentry.tests.e2e.hdfs.TestHDFS.*.class]</exclude>
               </excludes>
             </configuration>
           </plugin>

@@ -22,22 +22,20 @@ import org.junit.Test;
 import org.junit.Ignore;
 
 @Ignore ("Disable sentry HA tests for now")
-public class TestHDFSIntegrationWithHA extends TestHDFSIntegration {
+public class TestHDFSIntegrationWithHA extends TestHDFSIntegrationBase {
   @BeforeClass
   public static void setup() throws Exception {
-    TestHDFSIntegration.testSentryHA = true;
-    TestHDFSIntegration.setup();
+    TestHDFSIntegrationBase.testSentryHA = true;
+    TestHDFSIntegrationBase.setup();
   }
 
   // Disable the following tests for HA mode. Need to reenable them
   // once HA is ready.
-  @Override
   @Test
   public void testMissingScheme() throws Throwable {
     ignoreCleanUp = true;
   }
 
-  @Override
   @Test
   public void testAuthzObjOnMultipleTables() throws Throwable {
     ignoreCleanUp = true;
