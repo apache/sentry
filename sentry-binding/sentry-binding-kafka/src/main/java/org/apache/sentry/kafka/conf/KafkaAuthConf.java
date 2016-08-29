@@ -33,6 +33,9 @@ public class KafkaAuthConf extends Configuration {
   public static final String KAFKA_PRINCIPAL_HOSTNAME = "sentry.kafka.principal.hostname";
   public static final String KAFKA_PRINCIPAL_NAME = "sentry.kafka.kerberos.principal";
   public static final String KAFKA_KEYTAB_FILE_NAME = "sentry.kafka.keytab.file";
+  public static final String SENTRY_KAFKA_CACHING_ENABLE_NAME = "sentry.kafka.caching.enable";
+  public static final String SENTRY_KAFKA_CACHING_TTL_MS_NAME = "sentry.kafka.caching.ttl.ms";
+  public static final String SENTRY_KAFKA_CACHING_UPDATE_FAILURES_COUNT_NAME = "sentry.kafka.caching.update.failures.count";
 
   /**
    * Config setting definitions
@@ -46,7 +49,10 @@ public class KafkaAuthConf extends Configuration {
     AUTHZ_SERVICE_USER_NAME(KAFKA_SERVICE_USER_NAME, "kafka"),
     AUTHZ_PRINCIPAL_HOSTNAME(KAFKA_PRINCIPAL_HOSTNAME, null),
     AUTHZ_PRINCIPAL_NAME(KAFKA_PRINCIPAL_NAME, null),
-    AUTHZ_KEYTAB_FILE_NAME(KAFKA_KEYTAB_FILE_NAME, null);
+    AUTHZ_KEYTAB_FILE_NAME(KAFKA_KEYTAB_FILE_NAME, null),
+    AUTHZ_CACHING_ENABLE_NAME(SENTRY_KAFKA_CACHING_ENABLE_NAME, "false"),
+    AUTHZ_CACHING_TTL_MS_NAME(SENTRY_KAFKA_CACHING_TTL_MS_NAME, "30000"),
+    AUTHZ_CACHING_UPDATE_FAILURES_COUNT_NAME(SENTRY_KAFKA_CACHING_UPDATE_FAILURES_COUNT_NAME, "3");
 
     private final String varName;
     private final String defaultVal;

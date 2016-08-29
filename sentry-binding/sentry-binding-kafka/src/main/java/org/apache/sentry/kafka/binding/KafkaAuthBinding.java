@@ -151,9 +151,27 @@ public class KafkaAuthBinding {
                     " are required configs to be able to initialize Kerberos");
         }
 
-        // for convenience, set the PrivilegeConverter.
-        if (authConf.get(ServiceConstants.ClientConfig.PRIVILEGE_CONVERTER) == null) {
-            authConf.set(ServiceConstants.ClientConfig.PRIVILEGE_CONVERTER, KafkaTSentryPrivilegeConverter.class.getName());
+        // Pass sentry privileges caching settings from kafka conf to sentry's auth conf
+        final Object enableCachingConfig = kafkaConfigs.get(AuthzConfVars.AUTHZ_CACHING_ENABLE_NAME.getVar());
+        if (enableCachingConfig != null) {
+            String enableCaching = enableCachingConfig.toString();
+            if (Boolean.parseBoolean(enableCaching)) {
+                authConf.set(ServiceConstants.ClientConfig.ENABLE_CACHING, enableCaching);
+
+                final Object cacheTtlMsConfig = kafkaConfigs.get(AuthzConfVars.AUTHZ_CACHING_TTL_MS_NAME.getVar());
+                if (cacheTtlMsConfig != null) {
+                    authConf.set(ServiceConstants.ClientConfig.CACHE_TTL_MS, cacheTtlMsConfig.toString());
+                }
+
+                final Object cacheUpdateFailuresCountConfig = kafkaConfigs.get(AuthzConfVars.AUTHZ_CACHING_UPDATE_FAILURES_COUNT_NAME.getVar());
+                if (cacheUpdateFailuresCountConfig != null) {
+                    authConf.set(ServiceConstants.ClientConfig.CACHE_UPDATE_FAILURES_BEFORE_PRIV_REVOKE, cacheUpdateFailuresCountConfig.toString());
+                }
+
+                if (authConf.get(ServiceConstants.ClientConfig.PRIVILEGE_CONVERTER) == null) {
+                    authConf.set(ServiceConstants.ClientConfig.PRIVILEGE_CONVERTER, KafkaTSentryPrivilegeConverter.class.getName());
+                }
+            }
         }
 
         // Instantiate the configured providerBackend
