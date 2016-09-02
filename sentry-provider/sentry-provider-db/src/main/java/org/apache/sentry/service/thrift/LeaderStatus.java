@@ -88,7 +88,11 @@ final class LeaderStatus implements Closeable {
    */
   static String generateIncarnationId() {
     SecureRandom srand = new SecureRandom();
-    byte[] buf = new byte[33];
+    // Why 12? Base64 encodes 12 bytes to a 16 length char array(12 * 8 /6).
+    // We need a encoded string of length <= 17, as the length of a
+    // fencing table which is prefixed with SENTRY_FENCE_(13 chars)
+    // cannot be greater than 30 chars(Oracle limitation)
+    byte[] buf = new byte[12];
     srand.nextBytes(buf);
     char[] cbuf = Base64.encode(buf);
     StringBuilder bld = new StringBuilder();
