@@ -229,9 +229,9 @@ final public class TestLeaderStatus {
     // Assert that there were no ID collisions
     Assert.assertEquals(NUM_UNIQUE_IDS, ids.size());
 
-    // Assert that all IDs are 44 characters long and begin with a letter.
+    // Assert that all IDs are 16 characters long and begin with a letter.
     for (String id : ids) {
-      Assert.assertEquals(44, id.length());
+      Assert.assertEquals(16, id.length());
       Assert.assertTrue(Character.isAlphabetic(id.charAt(0)));
     }
 

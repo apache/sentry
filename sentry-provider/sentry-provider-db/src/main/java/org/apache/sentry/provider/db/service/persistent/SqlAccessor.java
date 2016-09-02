@@ -189,7 +189,7 @@ abstract class SqlAccessor {
     @Override
     String getFindTableByPrefixSql(String prefix) {
       return "SELECT table_name FROM information_schema.tables " +
-          "WHERE table_name LIKE " + prefix + "%";
+          "WHERE table_name LIKE '" + prefix + "%'";
     }
 
     @Override
@@ -222,7 +222,7 @@ abstract class SqlAccessor {
     @Override
     String getFindTableByPrefixSql(String prefix) {
       return "SELECT table_name FROM all_tables " +
-          "WHERE table_name LIKE " + prefix + "%";
+          "WHERE table_name LIKE '" + prefix + "%'";
     }
 
     @Override
@@ -232,7 +232,7 @@ abstract class SqlAccessor {
 
     @Override
     String getRenameTableSql(String src, String dst) {
-      return "RENAME TABLE " + src + " TO " + dst;
+      return "RENAME " + src + " TO " + dst;
     }
 
     @Override
