@@ -40,7 +40,7 @@ import static org.junit.Assume.assumeTrue;
  * <value>s3a://sentry-s3/user/hive/warehouse</value>
  * </property>
  * Test basic db and tbl permissions
- * Ensure export HIVE_CONF_DIR=/etc/hive/conf/hite-site.xml
+ * Ensure export HIVE_CONF_DIR=/etc/hive/conf, in the dir, can find hive-site.xml
  */
 public class TestHiveWarehouseOnExtFs extends TestFSBase {
   private static final Logger LOGGER = LoggerFactory

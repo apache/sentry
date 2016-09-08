@@ -98,8 +98,12 @@ public abstract class AbstractTestWithStaticConfiguration {
         @Override
         protected void failed(Throwable e, Description description) {
           LOGGER.error("Time out = " + e);
-          if (e.getMessage().contains("test timed out after")) {
-            LOGGER.error("Test class time out, but caught by rule, description = " + description + "ex = " + e);
+          if (e != null) {
+            if (e.getMessage().contains("test timed out after")) {
+              LOGGER.error("Test class time out, but caught by rule, description = " + description + "ex = " + e);
+            } else {{
+              LOGGER.error("Unexpected error: " + e + ", " +  e.getStackTrace() + ", " + e.getMessage());
+            }}
           }
         }
       })
@@ -225,7 +229,7 @@ public abstract class AbstractTestWithStaticConfiguration {
     Connection connection = context.createConnection(user);
     Statement statement = connection.createStatement();
     for(String db : dbs) {
-      statement.execute("DROP DATABASE IF EXISTS " + db + " CASCADE");
+      exec(statement, "DROP DATABASE IF EXISTS " + db + " CASCADE");
     }
     statement.close();
     connection.close();
@@ -236,7 +240,7 @@ public abstract class AbstractTestWithStaticConfiguration {
     ArrayList<String> allowedDBs = new ArrayList<String>(Arrays.asList(DB1, DB2, DB3));
     for(String db : dbs) {
       Assert.assertTrue(db + " is not part of known test dbs which will be cleaned up after the test", allowedDBs.contains(db));
-      statement.execute("CREATE DATABASE " + db);
+      exec(statement, "CREATE DATABASE " + db);
     }
     statement.close();
     connection.close();
@@ -246,13 +250,13 @@ public abstract class AbstractTestWithStaticConfiguration {
       throws Exception {
     Connection connection = context.createConnection(user);
     Statement statement = connection.createStatement();
-    statement.execute("USE " + db);
+    exec(statement, "USE " + db);
     for(String table : tables) {
-      statement.execute("DROP TABLE IF EXISTS " + table);
-      statement.execute("create table " + table
+      exec(statement, "DROP TABLE IF EXISTS " + table);
+      exec(statement, "create table " + table
           + " (under_col int comment 'the under column', value string)");
       if(dataFile != null) {
-        statement.execute("load data local inpath '" + dataFile.getPath()
+        exec(statement, "load data local inpath '" + dataFile.getPath()
             + "' into table " + table);
         ResultSet res = statement.executeQuery("select * from " + table);
         Assert.assertTrue("Table should have data after load", res.next());
@@ -384,7 +388,7 @@ public abstract class AbstractTestWithStaticConfiguration {
       String roleName = roleEntry.getKey();
       if(!roleEntry.getKey().equalsIgnoreCase("admin_role")){
         LOGGER.info("Creating role : " + roleName);
-        statement.execute("CREATE ROLE " + roleName);
+        exec(statement, "CREATE ROLE " + roleName);
         for (String privilege : roleEntry.getValue()) {
           addPrivilege(roleEntry.getKey(), privilege, statement);
         }
@@ -397,14 +401,14 @@ public abstract class AbstractTestWithStaticConfiguration {
         for (String roleName : roleNames.split(",")) {
           String sql = "GRANT ROLE " + roleName + " TO GROUP " + groupEntry.getKey();
           LOGGER.info("Granting role to group: " + sql);
-          statement.execute(sql);
+          exec(statement, sql);
         }
       }
     }
   }
 
   private static void addPrivilege(String roleName, String privileges, Statement statement)
-      throws IOException, SQLException{
+      throws Exception {
     String serverName = null, dbName = null, tableName = null, uriPath = null, columnName = null;
     String action = "ALL";//AccessConstants.ALL;
     for (String privilege : ROLE_SPLITTER.split(privileges)) {
@@ -439,29 +443,29 @@ public abstract class AbstractTestWithStaticConfiguration {
 
       LOGGER.info("addPrivilege");
       if (columnName != null) {
-        statement.execute("CREATE DATABASE IF NOT EXISTS " + dbName);
-        statement.execute("USE " + dbName);
+        exec(statement, "CREATE DATABASE IF NOT EXISTS " + dbName);
+        exec(statement, "USE " + dbName);
         String sql = "GRANT " + action + " ( " + columnName + " ) ON TABLE " + tableName + " TO ROLE " + roleName;
         LOGGER.info("Granting column level privilege: database = " + dbName + ", sql = " + sql);
-        statement.execute(sql);
+        exec(statement, sql);
       } else if (tableName != null) {
-        statement.execute("CREATE DATABASE IF NOT EXISTS " + dbName);
-        statement.execute("USE " + dbName);
+        exec(statement, "CREATE DATABASE IF NOT EXISTS " + dbName);
+        exec(statement, "USE " + dbName);
         String sql = "GRANT " + action + " ON TABLE " + tableName + " TO ROLE " + roleName;
         LOGGER.info("Granting table level privilege:  database = " + dbName + ", sql = " + sql);
-        statement.execute(sql);
+        exec(statement, sql);
       } else if (dbName != null) {
         String sql = "GRANT " + action + " ON DATABASE " + dbName + " TO ROLE " + roleName;
         LOGGER.info("Granting db level privilege: " + sql);
-        statement.execute(sql);
+        exec(statement, sql);
       } else if (uriPath != null) {
         String sql = "GRANT " + action + " ON URI '" + uriPath + "' TO ROLE " + roleName;
         LOGGER.info("Granting uri level privilege: " + sql);
-        statement.execute(sql);//ALL?
+        exec(statement, sql);//ALL?
       } else if (serverName != null) {
         String sql = "GRANT ALL ON SERVER " + serverName + " TO ROLE " + roleName;
         LOGGER.info("Granting server level privilege: " + sql);
-        statement.execute(sql);
+        exec(statement, sql);
       }
     }
   }
@@ -653,13 +657,13 @@ public abstract class AbstractTestWithStaticConfiguration {
       Connection connection = context.createConnection(ADMIN1);
       Statement statement = connection.createStatement();
       try {
-        statement.execute("CREATE ROLE admin_role");
+        exec(statement, "CREATE ROLE admin_role");
       } catch ( Exception e) {
         //It is ok if admin_role already exists
       }
-      statement.execute("GRANT ALL ON SERVER "
+      exec(statement, "GRANT ALL ON SERVER "
           + HiveServerFactory.DEFAULT_AUTHZ_SERVER_NAME + " TO ROLE admin_role");
-      statement.execute("GRANT ROLE admin_role TO GROUP " + ADMINGROUP);
+      exec(statement, "GRANT ROLE admin_role TO GROUP " + ADMINGROUP);
       statement.close();
       connection.close();
     }

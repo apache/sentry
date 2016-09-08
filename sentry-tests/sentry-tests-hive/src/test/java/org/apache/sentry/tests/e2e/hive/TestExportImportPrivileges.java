@@ -76,7 +76,7 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticConfigurat
     // Negative test, user2 doesn't have access to write to dir
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
-    statement.execute("use " + DB1);
+    exec(statement, "use " + DB1);
     context.assertAuthzException(statement, "INSERT OVERWRITE DIRECTORY '" + dumpDir + "' SELECT * FROM " + TBL1);
     statement.close();
     connection.close();
@@ -86,7 +86,7 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticConfigurat
     dfs.assertCreateDir(scratchLikeDir);
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
-    statement.execute("use " + DB1);
+    exec(statement, "use " + DB1);
     context.assertAuthzException(statement, "INSERT OVERWRITE DIRECTORY '" + scratchLikeDir + "/bar' SELECT * FROM " + TBL1);
     statement.close();
     connection.close();
@@ -94,9 +94,9 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticConfigurat
     // positive test, user1 has access to write to dir
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("use " + DB1);
+    exec(statement, "use " + DB1);
     assertTrue(statement.executeQuery("SELECT * FROM " + TBL1).next());
-    statement.execute("INSERT OVERWRITE DIRECTORY '" + dumpDir + "' SELECT * FROM " + TBL1);
+    exec(statement, "INSERT OVERWRITE DIRECTORY '" + dumpDir + "' SELECT * FROM " + TBL1);
   }
 
   @Test
@@ -104,6 +104,7 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticConfigurat
     Connection connection = null;
     Statement statement = null;
     String exportDir = dfs.getBaseDir() + "/hive_export1";
+    LOGGER.info("exportDir = " + exportDir);
     createDb(ADMIN1, DB1);
     createTable(ADMIN1, DB1, dataFile, TBL1);
 
@@ -122,7 +123,7 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticConfigurat
     // Negative test, user2 doesn't have access to the file being loaded
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
-    statement.execute("use " + DB1);
+    exec(statement, "use " + DB1);
     context.assertAuthzException(statement, "EXPORT TABLE " + TBL1 + " TO '" + exportDir + "'");
     statement.close();
     connection.close();
@@ -130,17 +131,17 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticConfigurat
     // Positive test, user1 have access to the target directory
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("use " + DB1);
+    exec(statement, "use " + DB1);
     // Import/Export works with s3 storage system only when this is turned on.
     exec(statement, "set hive.exim.uri.scheme.whitelist=hdfs,pfile,s3a;");
-    statement.execute("EXPORT TABLE " + TBL1 + " TO '" + exportDir + "'");
+    exec(statement, "EXPORT TABLE " + TBL1 + " TO '" + exportDir + "'");
     statement.close();
     connection.close();
 
     // Negative test, user2 doesn't have access to the directory loading from
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
-    statement.execute("use " + DB1);
+    exec(statement, "use " + DB1);
     exec(statement, "set hive.exim.uri.scheme.whitelist=hdfs,pfile,s3a;");
     context.assertAuthzException(statement, "IMPORT TABLE " + TBL2 + " FROM '" + exportDir + "'");
     statement.close();
@@ -149,17 +150,17 @@ public class TestExportImportPrivileges extends AbstractTestWithStaticConfigurat
     // Positive test, user1 have access to the target directory
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("use " + DB1);
+    exec(statement, "use " + DB1);
     exec(statement, "set hive.exim.uri.scheme.whitelist=hdfs,pfile,s3a;");
-    statement.execute("IMPORT TABLE " + TBL2 + " FROM '" + exportDir + "'");
+    exec(statement, "IMPORT TABLE " + TBL2 + " FROM '" + exportDir + "'");
     statement.close();
     connection.close();
 
     // Positive test, user3 have access to the target directory
     connection = context.createConnection(USER3_1);
     statement = context.createStatement(connection);
-    statement.execute("use " + DB1);
-    statement.execute("SELECT under_col FROM " + TBL1);
+    exec(statement, "use " + DB1);
+    exec(statement, "SELECT under_col FROM " + TBL1);
     statement.close();
     connection.close();
   }
