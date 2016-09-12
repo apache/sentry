@@ -17,7 +17,6 @@
 package org.apache.sentry.tests.e2e.kafka;
 
 import com.google.common.collect.Sets;
-import junit.framework.Assert;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
@@ -37,6 +36,7 @@ import org.apache.sentry.core.model.kafka.Topic;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
 import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
+import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -275,11 +275,11 @@ public class TestAuthorize extends AbstractKafkaSentryTestBase {
     Assert.fail(failureMessage);
   }
 
-  class CustomRebalanceListener implements ConsumerRebalanceListener {
+  private static class CustomRebalanceListener implements ConsumerRebalanceListener {
 
-    KafkaConsumer consumer = null;
+    private KafkaConsumer<String, String>  consumer = null;
 
-    CustomRebalanceListener(KafkaConsumer kafkaConsumer) {
+    CustomRebalanceListener(KafkaConsumer<String, String>  kafkaConsumer) {
       consumer = kafkaConsumer;
     }
 

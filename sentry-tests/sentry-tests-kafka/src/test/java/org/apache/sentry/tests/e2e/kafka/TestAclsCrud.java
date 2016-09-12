@@ -16,7 +16,6 @@
  */
 package org.apache.sentry.tests.e2e.kafka;
 
-import junit.framework.Assert;
 import kafka.security.auth.Acl;
 import kafka.security.auth.Allow$;
 import kafka.security.auth.Operation$;
@@ -26,9 +25,8 @@ import org.apache.kafka.common.security.auth.KafkaPrincipal;
 import org.apache.sentry.kafka.authorizer.SentryKafkaAuthorizer;
 import org.apache.sentry.kafka.conf.KafkaAuthConf;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import scala.collection.immutable.Map;
 
 import java.util.HashMap;
@@ -36,7 +34,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class TestAclsCrud extends AbstractKafkaSentryTestBase {
-  private static final Logger LOGGER = LoggerFactory.getLogger(TestAclsCrud.class);
   private SentryKafkaAuthorizer sentryKafkaAuthorizer;
 
   @After

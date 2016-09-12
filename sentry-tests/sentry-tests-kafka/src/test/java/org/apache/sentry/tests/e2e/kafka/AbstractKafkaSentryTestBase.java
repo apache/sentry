@@ -61,8 +61,6 @@ public class AbstractKafkaSentryTestBase {
   protected static final String ADMIN_USER = "kafka";
   protected static final String ADMIN_GROUP = "group_kafka";
   protected static final String ADMIN_ROLE  = "role_kafka";
-  private static final long CACHE_TTL_MS = 1;
-  private static final int SAFETY_FACTOR = 2; // Sleep for specified times of expected time for an operation to complete.
 
   protected static SentryService sentryServer;
   protected static File sentrySitePath;
@@ -75,6 +73,9 @@ public class AbstractKafkaSentryTestBase {
 
   protected static String bootstrapServers = null;
   protected static KafkaTestServer kafkaServer = null;
+  
+  private static final long CACHE_TTL_MS = 1;
+  private static final int SAFETY_FACTOR = 2; // Sleep for specified times of expected time for an operation to complete.
 
   @BeforeClass
   public static void beforeTestEndToEnd() throws Exception {
@@ -114,7 +115,7 @@ public class AbstractKafkaSentryTestBase {
     policyFilePath = new File(baseDir, "local_policy_file.ini");
     policyFile = new PolicyFile();
 
-    /** set the configuratoion for Sentry Service */
+    /** set the configuration for Sentry Service */
     Configuration conf = new Configuration();
 
     conf.set(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_NONE);
