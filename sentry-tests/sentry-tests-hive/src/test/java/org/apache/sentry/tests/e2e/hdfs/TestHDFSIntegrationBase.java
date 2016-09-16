@@ -205,14 +205,17 @@ public abstract class TestHDFSIntegrationBase {
   }
 
   protected void verifyOnAllSubDirs(Path p, FsAction fsAction, String group, boolean groupShouldExist, boolean recurse, int retry) throws Throwable {
-    Assert.assertTrue("Failed to verify ACLs on path and its children: " + p.getName(),
-        verifyOnAllSubDirsHelper(p, fsAction, group, groupShouldExist, recurse, retry));
+    verifyOnAllSubDirsHelper(p, fsAction, group, groupShouldExist, recurse, retry);
   }
 
-  private boolean verifyOnAllSubDirsHelper(Path p, FsAction fsAction, String group,
+  /* SENTRY-1471 - fixing the validation logic.
+   * a) When the number of retries exceeds the limit, propagate the Assert exception to the caller.
+   * b) Throw an exception instead of returning false, to pass valuable debugging info up the stack
+   *    - expected vs. found permissions.
+   */
+  private void verifyOnAllSubDirsHelper(Path p, FsAction fsAction, String group,
                                            boolean groupShouldExist, boolean recurse, int retry) throws Throwable {
     FileStatus fStatus = null;
-    boolean hasSucceeded = false;
     // validate parent dir's acls
     try {
       fStatus = miniDFS.getFileSystem().getFileStatus(p);
@@ -223,32 +226,22 @@ public abstract class TestHDFSIntegrationBase {
             " group : " + group + " ;", getAcls(p).containsKey(group));
       }
       LOGGER.info("Successfully found acls for path = " + p.getName());
-      hasSucceeded = true;
     } catch (Throwable th) {
       if (retry > 0) {
         LOGGER.info("Retry: " + retry);
         Thread.sleep(RETRY_WAIT);
-        hasSucceeded = verifyOnAllSubDirsHelper(p, fsAction, group, groupShouldExist, recurse, retry - 1);
+        verifyOnAllSubDirsHelper(p, fsAction, group, groupShouldExist, recurse, retry - 1);
       } else {
-        LOGGER.info("Successfully found ACLs for path = " + p.getName());
-        hasSucceeded = true;
+        throw th;
       }
-    }
-    if (!hasSucceeded) {
-      LOGGER.error("Failed to validate ACLs for path = " + p.getName());
-      return false;
     }
     // validate children dirs
     if (recurse && fStatus.isDirectory()) {
       FileStatus[] children = miniDFS.getFileSystem().listStatus(p);
       for (FileStatus fs : children) {
-        if (!verifyOnAllSubDirsHelper(fs.getPath(), fsAction, group, groupShouldExist, recurse, NUM_RETRIES)) {
-          LOGGER.error("Failed to validate ACLs for child path = " + fs.getPath().getName());
-          return false;
-        }
+        verifyOnAllSubDirsHelper(fs.getPath(), fsAction, group, groupShouldExist, recurse, NUM_RETRIES);
       }
     }
-    return true;
   }
 
   protected Map<String, FsAction> getAcls(Path path) throws Exception {
@@ -296,25 +289,27 @@ public abstract class TestHDFSIntegrationBase {
     verifyQuery(stmt, table, n, NUM_RETRIES);
   }
 
+  /* SENTRY-1471 - fixing the validation logic.
+   * a) When the number of retries exceeds the limit, propagate the Assert exception to the caller.
+   * b) Throw an exception immediately, instead of using boolean variable, to pass valuable debugging
+   *    info up the stack - expected vs. found number of rows.
+   */
   protected void verifyQuery(Statement stmt, String table, int n, int retry) throws Throwable {
     ResultSet rs = null;
-    boolean isSucceeded = false;
     try {
       rs = stmt.executeQuery("select * from " + table);
       int numRows = 0;
       while (rs.next()) { numRows++; }
       Assert.assertEquals(n, numRows);
-      isSucceeded = true;
     } catch (Throwable th) {
       if (retry > 0) {
         LOGGER.info("Retry: " + retry);
         Thread.sleep(RETRY_WAIT);
         verifyQuery(stmt, table, n, retry - 1);
       } else {
-        isSucceeded = true;
+        throw th;
       }
     }
-    Assert.assertTrue(isSucceeded);
   }
 
   protected void verifyAccessToPath(String user, String group, String path, boolean hasPermission) throws Exception{
