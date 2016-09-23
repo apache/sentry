@@ -26,12 +26,7 @@ import java.util.Properties;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.IOUtils;
-import org.apache.sentry.core.common.exception.SentryStandbyException;
-import org.apache.sentry.service.thrift.Activator;
-import org.apache.sentry.service.thrift.Activators;
-import org.apache.sentry.service.thrift.ServiceConstants;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
-import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,33 +39,6 @@ import javax.jdo.PersistenceManagerFactory;
 public class TestFencer {
   private static final Logger LOGGER = LoggerFactory
       .getLogger(TestFencer.class);
-
-  private static class ActivatorContext implements Closeable {
-    private final Configuration conf;
-    private final Activator act;
-
-    ActivatorContext(Configuration conf) throws Exception {
-      this.conf = new Configuration(conf);
-      this.act = Activators.INSTANCE.create(this.conf);
-      this.conf.set(ServiceConstants.CURRENT_INCARNATION_ID_KEY,
-          act.getIncarnationId());
-      this.conf.set(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "false");
-    }
-
-    @Override
-    public void close() throws IOException {
-      this.act.close();
-      Activators.INSTANCE.remove(this.act);
-    }
-
-    public Configuration getConf() {
-      return conf;
-    }
-
-    public Activator getAct() {
-      return act;
-    }
-  }
 
   private static class DatabaseContext implements Closeable {
     private final Configuration conf;
@@ -114,38 +82,6 @@ public class TestFencer {
           LOGGER.error("error closing pmf" , e);
         }
       }
-    }
-  }
-
-  @Test(timeout = 60000)
-  public void testDbModificationsInvokeFencer() throws Exception {
-    DatabaseContext dbCtx = new DatabaseContext();
-    Properties prop = SentryStore.getDataNucleusProperties(dbCtx.getConf());
-    PersistenceManagerFactory pmf = JDOHelper.
-        getPersistenceManagerFactory(prop);
-    ActivatorContext actCtx = new ActivatorContext(dbCtx.getConf());
-    Assert.assertTrue(actCtx.getAct().isActive());
-
-    // We should be able to modify the database version table.
-    SentryStore sentryStore = new SentryStore(actCtx.getConf());
-    sentryStore.setSentryVersion(SentryStoreSchemaInfo.getSentryVersion(),
-        "Schema version set by unit test");
-
-    // Unfencing the database should lead to SentryStandbyExceptions when we
-    // try to modify the version again.
-    actCtx.getAct().getFencer().unfence(pmf);
-    try {
-      sentryStore.setSentryVersion(
-          SentryStoreSchemaInfo.getSentryVersion() + "v2",
-          "Schema version set by unit test");
-      Assert.fail("Expected setSentryVersion to fail because we are " +
-          "unfenced.");
-    } catch (SentryStandbyException e) {
-    } finally {
-      sentryStore.stop();
-      IOUtils.cleanup(null, actCtx);
-      IOUtils.cleanup(null, dbCtx);
-      pmf.close();
     }
   }
 }

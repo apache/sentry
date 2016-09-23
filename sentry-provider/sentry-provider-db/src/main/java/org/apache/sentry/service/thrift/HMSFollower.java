@@ -78,11 +78,7 @@ public class HMSFollower implements Runnable {
       SentryAccessDeniedException, SentrySiteConfigurationException, IOException { //TODO: Handle any possible exceptions or throw specific exceptions
     LOGGER.info("HMSFollower is being initialized");
     authzConf = conf;
-    try {
-      sentryStore = new SentryStore(authzConf);
-    } catch (SentryStandbyException e) {
-      //TODO: Do not start HMSFollower if standby
-    }
+    sentryStore = new SentryStore(authzConf);
     //TODO: Initialize currentEventID from Sentry db
     currentEventID = 0;
     this.fullUpdateComplete = fullUpdateComplete;
@@ -390,9 +386,6 @@ public class HMSFollower implements Runnable {
               LOGGER.info("Rename Sentry privilege ignored as there are no privileges on the table: %s.%s", oldDbName, oldTableName);
             } catch (SentryInvalidInputException e) {
               throw new SentryInvalidInputException("Could not process Alter table event. Event: " + event.toString(), e);
-            } catch (SentryStandbyException e) {
-              LOGGER.error("Seems like this process became a standby. " +
-                  "Ignoring the failure. The new leader will reprocess this notification event");
             }
           } else if(!oldLocation.equals(newLocation)) { // Only Location has changed{
             //- Alter table set location
@@ -417,38 +410,23 @@ public class HMSFollower implements Runnable {
   private void dropSentryDbPrivileges(String dbName) throws SentryNoSuchObjectException, SentryInvalidInputException {
     TSentryAuthorizable authorizable = new TSentryAuthorizable(hiveInstance);
     authorizable.setDb(dbName);
-    try {
-      sentryStore.dropPrivilege(authorizable);
-    } catch (SentryStandbyException e) {
-      LOGGER.error("Seems like this process became a standby. " +
-          "Ignoring the failure. The new leader will reprocess this notification event");
-    }
+    sentryStore.dropPrivilege(authorizable);
   }
   private void dropSentryTablePrivileges(String dbName, String tableName) throws SentryNoSuchObjectException,
       SentryInvalidInputException {
     TSentryAuthorizable authorizable = new TSentryAuthorizable(hiveInstance);
     authorizable.setDb(dbName);
     authorizable.setTable(tableName);
-    try {
-      sentryStore.dropPrivilege(authorizable);
-    } catch (SentryStandbyException e) {
-      LOGGER.error("Seems like this process became a standby. " +
-          "Ignoring the failure. The new leader will reprocess this notification event");
-    }
+    sentryStore.dropPrivilege(authorizable);
   }
   private void renamePrivileges(String oldDbName, String oldTableName, String newDbName, String newTableName) throws
-      SentryNoSuchObjectException, SentryInvalidInputException, SentryStandbyException{
+      SentryNoSuchObjectException, SentryInvalidInputException {
     TSentryAuthorizable oldAuthorizable = new TSentryAuthorizable(hiveInstance);
     oldAuthorizable.setDb(oldDbName);
     oldAuthorizable.setTable(oldTableName);
     TSentryAuthorizable newAuthorizable = new TSentryAuthorizable(hiveInstance);
     newAuthorizable.setDb(newDbName);
     newAuthorizable.setTable(newTableName);
-    try {
-      sentryStore.renamePrivilege(oldAuthorizable, newAuthorizable);
-    } catch (SentryStandbyException e) {
-      LOGGER.error("Seems like this process became a standby. " +
-          "Ignoring the failure. The new leader will reprocess this notification event");
-    }
+    sentryStore.renamePrivilege(oldAuthorizable, newAuthorizable);
   }
 }

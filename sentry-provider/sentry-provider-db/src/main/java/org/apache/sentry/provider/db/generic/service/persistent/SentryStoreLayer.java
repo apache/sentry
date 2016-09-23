@@ -20,7 +20,6 @@ package org.apache.sentry.provider.db.generic.service.persistent;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.sentry.core.common.exception.SentryStandbyException;
 import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.exception.SentryAlreadyExistsException;
@@ -41,7 +40,7 @@ public interface SentryStoreLayer {
    * @throws SentryAlreadyExistsException
    */
   CommitContext createRole(String component, String role,
-      String requestor) throws SentryAlreadyExistsException, SentryStandbyException;
+      String requestor) throws SentryAlreadyExistsException;
 
   /**
    * Drop a role
@@ -52,7 +51,7 @@ public interface SentryStoreLayer {
    * @throws SentryNoSuchObjectException
    */
   CommitContext dropRole(String component, String role,
-      String requestor) throws SentryNoSuchObjectException, SentryStandbyException;
+      String requestor) throws SentryNoSuchObjectException;
 
   /**
    * Add a role to groups.
@@ -64,7 +63,7 @@ public interface SentryStoreLayer {
    * @throws SentryNoSuchObjectException
    */
   CommitContext alterRoleAddGroups(String component, String role,
-      Set<String> groups, String requestor) throws SentryNoSuchObjectException, SentryStandbyException;
+      Set<String> groups, String requestor) throws SentryNoSuchObjectException;
 
   /**
    * Delete a role from groups.
@@ -76,7 +75,7 @@ public interface SentryStoreLayer {
    * @throws SentryNoSuchObjectException
    */
   CommitContext alterRoleDeleteGroups(String component, String role,
-      Set<String> groups, String requestor) throws SentryNoSuchObjectException, SentryStandbyException;
+      Set<String> groups, String requestor) throws SentryNoSuchObjectException;
 
   /**
    * Grant a privilege to role.

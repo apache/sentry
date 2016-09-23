@@ -27,12 +27,10 @@ import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.security.alias.CredentialProvider;
 import org.apache.hadoop.security.alias.CredentialProviderFactory;
 import org.apache.hadoop.security.alias.UserProvider;
 import org.apache.sentry.core.common.exception.SentryAccessDeniedException;
-import org.apache.sentry.core.common.exception.SentryStandbyException;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.common.exception.SentryAlreadyExistsException;
 import org.apache.sentry.core.common.exception.SentryGrantDeniedException;
@@ -46,9 +44,6 @@ import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
 import org.apache.sentry.provider.file.PolicyFile;
-import org.apache.sentry.service.thrift.Activator;
-import org.apache.sentry.service.thrift.Activators;
-import org.apache.sentry.service.thrift.ServiceConstants;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -72,7 +67,6 @@ public class TestSentryStore extends org.junit.Assert {
   final long NUM_PRIVS = 60;  // > SentryStore.PrivCleaner.NOTIFY_THRESHOLD
   private static Configuration conf = null;
   private static char[] passwd = new char[] { '1', '2', '3'};
-  private static Activator act;
 
   @BeforeClass
   public static void setup() throws Exception {
@@ -95,9 +89,6 @@ public class TestSentryStore extends org.junit.Assert {
     policyFilePath = new File(dataDir, "local_policy_file.ini");
     conf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE,
         policyFilePath.getPath());
-    act = Activators.INSTANCE.create(conf);
-    conf.set(ServiceConstants.CURRENT_INCARNATION_ID_KEY,
-             act.getIncarnationId());
     sentryStore = new SentryStore(conf);
   }
 
@@ -110,22 +101,17 @@ public class TestSentryStore extends org.junit.Assert {
   }
 
   @After
-  public void after() throws SentryStandbyException {
+  public void after() {
     sentryStore.clearAllTables();
   }
 
   @AfterClass
   public static void teardown() {
-    IOUtils.cleanup(null, act);
     if (sentryStore != null) {
       sentryStore.stop();
     }
     if (dataDir != null) {
       FileUtils.deleteQuietly(dataDir);
-    }
-    if (act != null) {
-      Activators.INSTANCE.remove(act);
-      act = null;
     }
   }
 

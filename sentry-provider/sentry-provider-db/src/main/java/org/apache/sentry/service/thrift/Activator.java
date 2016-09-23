@@ -35,7 +35,9 @@ import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
 
 /**
- * The activator is used to access and modify the activation state of the sentry daemon.<p/>
+ * The activator is used to access and modify the activation state of the sentry daemon.
+ * In active / active mode, only one daemon can fetch snapshots from HMS and write to the
+ * the backend DB, thus we can use the Activator to mark it.
  */
 public class Activator implements Closeable {
   private static final Logger LOGGER = LoggerFactory.getLogger(Activator.class);

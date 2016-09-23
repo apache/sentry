@@ -28,7 +28,6 @@ import javax.jdo.PersistenceManager;
 import javax.jdo.Query;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.core.common.exception.SentryStandbyException;
 import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.exception.SentryAccessDeniedException;
@@ -45,8 +44,6 @@ import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessor;
 import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
-import org.apache.sentry.service.thrift.Activator;
-import org.apache.sentry.service.thrift.Activators;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -68,12 +65,9 @@ public class DelegateSentryStore implements SentryStoreLayer {
   private final Configuration conf;
   private final Set<String> adminGroups;
   private final PrivilegeOperatePersistence privilegeOperator;
-  private final Activator act;
 
   public DelegateSentryStore(Configuration conf) throws SentryNoSuchObjectException,
-      SentryAccessDeniedException, SentrySiteConfigurationException, IOException,
-          SentryStandbyException {
-    this.act = Activators.INSTANCE.get(conf);
+      SentryAccessDeniedException, SentrySiteConfigurationException, IOException {
     this.privilegeOperator = new PrivilegeOperatePersistence(conf);
     // The generic model doesn't turn on the thread that cleans hive privileges
     conf.set(ServerConfig.SENTRY_STORE_ORPHANED_PRIVILEGE_REMOVAL,"false");
@@ -106,8 +100,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
 
   @Override
   public CommitContext createRole(String component, String role,
-      String requestor) throws SentryAlreadyExistsException,
-          SentryStandbyException {
+      String requestor) throws SentryAlreadyExistsException {
     return delegate.createSentryRole(role);
   }
 
@@ -117,13 +110,12 @@ public class DelegateSentryStore implements SentryStoreLayer {
    */
   @Override
   public CommitContext dropRole(String component, String role, String requestor)
-      throws SentryNoSuchObjectException, SentryStandbyException {
+      throws SentryNoSuchObjectException {
     boolean rollbackTransaction = true;
     PersistenceManager pm = null;
     String trimmedRole = toTrimmedLower(role);
     try {
       pm = openTransaction();
-      act.checkSqlFencing(pm);
       Query query = pm.newQuery(MSentryRole.class);
       query.setFilter("this.roleName == t");
       query.declareParameters("java.lang.String t");
@@ -154,15 +146,13 @@ public class DelegateSentryStore implements SentryStoreLayer {
 
   @Override
   public CommitContext alterRoleAddGroups(String component, String role,
-      Set<String> groups, String requestor) throws SentryNoSuchObjectException,
-          SentryStandbyException {
+      Set<String> groups, String requestor) throws SentryNoSuchObjectException {
     return delegate.alterSentryRoleAddGroups(requestor, role, toTSentryGroups(groups));
   }
 
   @Override
   public CommitContext alterRoleDeleteGroups(String component, String role,
-      Set<String> groups, String requestor) throws SentryNoSuchObjectException,
-          SentryStandbyException {
+      Set<String> groups, String requestor) throws SentryNoSuchObjectException {
   //called to old sentryStore
     return delegate.alterSentryRoleDeleteGroups(role, toTSentryGroups(groups));
   }
@@ -176,7 +166,6 @@ public class DelegateSentryStore implements SentryStoreLayer {
     boolean rollbackTransaction = true;
     try{
       pm = openTransaction();
-      act.checkSqlFencing(pm);
       MSentryRole mRole = getRole(trimmedRole, pm);
       if (mRole == null) {
         throw new SentryNoSuchObjectException("Role: " + trimmedRole + " doesn't exist");
@@ -208,7 +197,6 @@ public class DelegateSentryStore implements SentryStoreLayer {
     boolean rollbackTransaction = true;
     try{
       pm = openTransaction();
-      act.checkSqlFencing(pm);
       MSentryRole mRole = getRole(trimmedRole, pm);
       if (mRole == null) {
         throw new SentryNoSuchObjectException("Role: " + trimmedRole + " doesn't exist");
@@ -252,7 +240,6 @@ public class DelegateSentryStore implements SentryStoreLayer {
     boolean rollbackTransaction = true;
     try {
       pm = openTransaction();
-      act.checkSqlFencing(pm);
 
       privilegeOperator.renamePrivilege(toTrimmedLower(component), toTrimmedLower(service),
           oldAuthorizables, newAuthorizables, requestor, pm);
@@ -276,7 +263,6 @@ public class DelegateSentryStore implements SentryStoreLayer {
     boolean rollbackTransaction = true;
     try {
       pm = openTransaction();
-      act.checkSqlFencing(pm);
 
       privilegeOperator.dropPrivilege(privilege, pm);
 
