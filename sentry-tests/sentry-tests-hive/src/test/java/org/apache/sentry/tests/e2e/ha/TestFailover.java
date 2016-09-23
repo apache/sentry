@@ -18,7 +18,6 @@
 package org.apache.sentry.tests.e2e.ha;
 
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -40,42 +39,11 @@ public class TestFailover extends AbstractTestWithStaticConfiguration {
   /**
    * Test service failover. Run Sentry operations with shutting down one or more
    * of the services.
+   * TODO: We need rewrite the failover test for Active/Active.
    * @throws Exception
    */
   @Test
   public void testFailover() throws Exception {
-    int active = 0;
-    int passive = 1;
-    int maxTries = 10;
-    //get the active service
-    if (getSentrySrv().get(1).getActivator().isActive()) {
-      active = 1;
-      passive = 0;
-    }
-
-    Assert.assertEquals(Boolean.TRUE,getSentrySrv().get(active).getActivator().isActive());
-    Assert.assertEquals(Boolean.FALSE,getSentrySrv().get(passive).getActivator().isActive());
-
-    //stop the active service
-    getSentrySrv().get(active).becomeStandby();
-
-    for(int i = 0; i < maxTries ; i++) {
-      if(!getSentrySrv().get(active).getActivator().isActive()) {
-        break;
-      }
-      Thread.sleep(100);
-    }
-    //assert the active is now standby
-    Assert.assertEquals(Boolean.FALSE,getSentrySrv().get(active).getActivator().isActive());
-    //wait for the passive to become active
-    for(int i = 0; i < maxTries ; i++) {
-      if(getSentrySrv().get(passive).getActivator().isActive()) {
-        break;
-      }
-      Thread.sleep(100);
-    }
-    //assert that the previously passive service is now  active
-    Assert.assertEquals(Boolean.TRUE,getSentrySrv().get(passive).getActivator().isActive());
   }
 
 }

@@ -21,11 +21,7 @@ import java.io.File;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.io.IOUtils;
 import org.apache.sentry.provider.file.PolicyFile;
-import org.apache.sentry.service.thrift.Activator;
-import org.apache.sentry.service.thrift.Activators;
-import org.apache.sentry.service.thrift.ServiceConstants;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -38,7 +34,6 @@ public abstract class SentryStoreIntegrationBase {
   private static File dataDir;
   private static File policyFilePath;
   protected static Configuration conf;
-  protected static Activator act;
   protected static DelegateSentryStore sentryStore;
   protected static PolicyFile policyFile;
 
@@ -62,8 +57,6 @@ public abstract class SentryStoreIntegrationBase {
     policyFilePath = new File(Files.createTempDir(), "local_policy_file.ini");
     conf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE,
         policyFilePath.getPath());
-    act = Activators.INSTANCE.create(conf);
-		conf.set(ServiceConstants.CURRENT_INCARNATION_ID_KEY, act.getIncarnationId());
   }
 
   @After
@@ -73,9 +66,6 @@ public abstract class SentryStoreIntegrationBase {
 
   @AfterClass
   public static void teardown() {
-    if (act != null) {
-      IOUtils.cleanup(null, act);
-    }
     if (sentryStore != null) {
       sentryStore.close();
     }
@@ -84,10 +74,6 @@ public abstract class SentryStoreIntegrationBase {
     }
     if (policyFilePath != null) {
       FileUtils.deleteQuietly(policyFilePath);
-    }
-    if (act != null) {
-      Activators.INSTANCE.remove(act);
-      act = null;
     }
   }
 

@@ -27,7 +27,6 @@ import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.SentryUserException;
-import org.apache.sentry.core.common.exception.SentryStandbyException;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
 import org.apache.thrift.transport.TTransportException;
@@ -251,7 +250,7 @@ public class PoolClientInvocationHandler extends SentryClientInvocationHandler {
         // Try to make the RPC.
         ret = invokeFromPool(method, args, pool);
         break;
-      } catch (SentryStandbyException | TTransportException e) {
+      } catch (TTransportException e) {
         if (exc == null) {
           exc = new Exception[endpoints.length];
         }
@@ -271,30 +270,17 @@ public class PoolClientInvocationHandler extends SentryClientInvocationHandler {
       // Increase the retry num, and throw the exception if can't retry again.
       retryCount++;
       if (retryCount == connectionRetryTotal) {
-        boolean allStandby = true, allUnreachable = true;
         for (int i = 0; i < exc.length; i++) {
-          if (exc[i] instanceof SentryStandbyException) {
-            allUnreachable = false;
-            LOGGER.error("Sentry server " + endpoints[endpointIdx].getEndPointStr()
-                + " is in standby mode");
-          } else {
-            allStandby = false;
-            LOGGER.error("Sentry server " + endpoints[endpointIdx].getEndPointStr()
+          // Since freshestEndpointIdx is shared by multiple threads, it is possible that
+          // the ith endpoint has been tried in another thread and skipped in the current
+          // thread.
+          if (exc[i] != null) {
+            LOGGER.error("Sentry server " + endpoints[i].getEndPointStr()
                 + " is in unreachable.");
           }
         }
-        if (allStandby) {
-          throw new SentryStandbyException("All sentry servers are in " +
-              "standby mode.", lastExc);
-        } else if (allUnreachable) {
-          throw new SentryUserException("All sentry servers are unreachable. " +
-              "Diagnostics is needed for unreachable servers.",
-              lastExc);
-        } else {
-          throw new SentryUserException("All reachable servers are standby. " +
-              "Diagnostics is needed for unreachable servers.",
-              lastExc);
-        }
+        throw new SentryUserException("Sentry servers are unreachable. " +
+            "Diagnostics is needed for unreachable servers.", lastExc);
       }
     }
     return ret;
@@ -318,9 +304,7 @@ public class PoolClientInvocationHandler extends SentryClientInvocationHandler {
       // Get the target exception, check if SentryUserException or TTransportException is wrapped.
       // TTransportException means there has connection problem with the pool.
       Throwable targetException = e.getCause();
-      if (targetException != null && targetException instanceof SentryStandbyException) {
-        throw (SentryStandbyException)targetException;
-      } else if (targetException != null && targetException instanceof SentryUserException) {
+      if (targetException != null && targetException instanceof SentryUserException) {
         Throwable sentryTargetException = targetException.getCause();
         // If there has connection problem, eg, invalid connection if the service restarted,
         // sentryTargetException instanceof TTransportException = true.

@@ -24,11 +24,7 @@ import java.io.File;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.provider.db.SentryNoSuchObjectException;
-import org.apache.sentry.service.thrift.Activator;
-import org.apache.sentry.service.thrift.Activators;
-import org.apache.sentry.service.thrift.ServiceConstants;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -38,7 +34,6 @@ public class TestSentryVersion {
 
   private File dataDir;
   private Configuration conf;
-  private Activator act;
 
   @Before
   public void setup() throws Exception {
@@ -47,18 +42,6 @@ public class TestSentryVersion {
     conf.set(ServerConfig.SENTRY_STORE_JDBC_URL, "jdbc:derby:;databaseName="
         + dataDir.getPath() + ";create=true");
     conf.set(ServerConfig.SENTRY_STORE_JDBC_PASS, "dummy");
-    act = Activators.INSTANCE.create(conf);
-    conf.set(ServiceConstants.CURRENT_INCARNATION_ID_KEY,
-             act.getIncarnationId());
-  }
-
-  @After
-  public void shutdown() throws Exception {
-    if (act != null) {
-      act.close();
-      Activators.INSTANCE.remove(act);
-      act = null;
-    }
   }
 
   /**

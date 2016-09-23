@@ -335,32 +335,19 @@ public class SentryService implements Callable {
 
   /**
    * If the current daemon is active, make it standby.
+   * Here 'active' means it is the only daemon that can fetch snapshots from HMA and write
+   * to the backend DB.
    */
   @VisibleForTesting
   public synchronized void becomeStandby() throws Exception{
     try {
       if(act.isActive()) {
         LOGGER.info("Server with incarnation id: " + act.getIncarnationId() +
-                " becoming standby");
+            " becoming standby");
         act.deactivate();
       }
     } catch (Exception e) {
       LOGGER.error("Error while deactivating the active sentry daemon", e);
-    }
-  }
-
-  /**
-   * If the current daemon is active, shutdown the server.
-   */
-  @VisibleForTesting
-  public synchronized void shutdownActive() throws Exception{
-    try {
-      if(act.isActive()) {
-        LOGGER.info("Stopping active server with incarnation id: " + act.getIncarnationId());
-        stop();
-      }
-    } catch (Exception e) {
-      LOGGER.error("Error while stopping the active sentry daemon", e);
     }
   }
 
