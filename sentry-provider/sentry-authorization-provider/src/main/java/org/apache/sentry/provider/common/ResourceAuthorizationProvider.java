@@ -117,7 +117,7 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
          */
         boolean result = permission.implies(priv, model);
         if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug("ProviderPrivilege {}, RequestPrivilege {}, RoleSet, {}, Result {}",
+          LOGGER.debug("ProviderPrivilege {}, RequestPrivilege {}, RoleSet {}, Result {}",
               new Object[]{ permission, requestPrivilege, roleSet, result});
         }
         if (result) {
