@@ -33,7 +33,7 @@ public class TestSentrySchemaTool {
   private Configuration sentryConf;
   private SentrySchemaTool schemaTool;
 
-  private static final String OLDEST_INIT_VERSION = "1.4.0";
+  private static final String OLDEST_INIT_VERSION = "1.5.0";
 
   @Before
   public void defaultSetup() throws Exception {
