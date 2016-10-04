@@ -175,6 +175,10 @@ public class ServiceConstants {
     public static final String SENTRY_WEB_SECURITY_KEYTAB = SENTRY_WEB_SECURITY_PREFIX + ".kerberos.keytab";
     public static final String SENTRY_WEB_SECURITY_ALLOW_CONNECT_USERS = SENTRY_WEB_SECURITY_PREFIX + ".allow.connect.users";
 
+    // Flag to enable admin servlet
+    public static final String SENTRY_WEB_ADMIN_SERVLET_ENABLED = "sentry.web.admin.servlet.enabled";
+    public static final boolean SENTRY_WEB_ADMIN_SERVLET_ENABLED_DEFAULT = false;
+
     // max message size for thrift messages
     public static final String SENTRY_POLICY_SERVER_THRIFT_MAX_MESSAGE_SIZE = "sentry.policy.server.thrift.max.message.size";
     public static final long SENTRY_POLICY_SERVER_THRIFT_MAX_MESSAGE_SIZE_DEFAULT = 100 * 1024 * 1024;
