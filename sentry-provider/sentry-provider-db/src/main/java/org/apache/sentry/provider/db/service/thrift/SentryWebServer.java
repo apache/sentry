@@ -22,8 +22,8 @@ import com.codahale.metrics.servlets.AdminServlet;
 import com.google.common.base.Preconditions;
 
 import java.io.IOException;
-import java.util.EnumSet;
 import java.net.URL;
+import java.util.EnumSet;
 import java.util.EventListener;
 import java.util.HashMap;
 import java.util.List;
@@ -94,8 +94,13 @@ public class SentryWebServer {
       servletContextHandler.addEventListener(listener);
     }
 
-    ServletHolder confServletHolder = new ServletHolder(ConfServlet.class);
-    servletContextHandler.addServlet(confServletHolder, "/conf");
+    servletContextHandler.addServlet(new ServletHolder(ConfServlet.class), "/conf");
+
+    if (conf.getBoolean(ServerConfig.SENTRY_WEB_ADMIN_SERVLET_ENABLED,
+        ServerConfig.SENTRY_WEB_ADMIN_SERVLET_ENABLED_DEFAULT)) {
+      servletContextHandler.addServlet(
+          new ServletHolder(SentryAdminServlet.class), "/admin/*");
+    }
     servletContextHandler.getServletContext()
         .setAttribute(ConfServlet.CONF_CONTEXT_ATTRIBUTE, conf);
 
