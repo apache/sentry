@@ -70,6 +70,7 @@ public class HiveServerFactory {
   public static final String METASTORE_RAW_STORE_IMPL = HiveConf.ConfVars.METASTORE_RAW_STORE_IMPL.varname;
 
   static {
+    // load correct HS2 JDBC drivers
     try {
       Assert.assertNotNull(DERBY_DRIVER_NAME + " is null", Class.forName(DERBY_DRIVER_NAME));
       Assert.assertNotNull(HIVE_DRIVER_NAME + " is null", Class.forName(HIVE_DRIVER_NAME));

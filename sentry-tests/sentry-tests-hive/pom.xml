@@ -453,7 +453,7 @@ limitations under the License.
             </execution>
           </executions>
         </plugin>
-      <plugin>
+        <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
@@ -499,5 +499,34 @@ limitations under the License.
       </plugins>
      </build>
    </profile>
+    <!--This profile attempts to create a jar file which contains tools to help tests. For example, scale, longevity etc.-->
+    <profile>
+      <id>test-tools</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-jar-plugin</artifactId>
+            <version>${maven.jar.plugin.version}</version>
+            <configuration>
+              <archive>
+                <manifest>
+                  <addClasspath>true</addClasspath>
+                  <classpathPrefix>lib/</classpathPrefix>
+                  <mainClass>org.apache.sentry.tests.e2e.tools.TestTools</mainClass>
+                </manifest>
+              </archive>
+            </configuration>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>test-jar</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 </project>
