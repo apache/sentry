@@ -276,6 +276,28 @@ public class TestMetastoreEndToEnd extends
   }
 
   /**
+   * Verify alter view privileges
+   * @throws Exception
+   */
+  @Test
+  public void testAlterViewPrivileges() throws Exception {
+    HiveMetaStoreClient client = context.getMetaStoreClient(ADMIN1);
+    createMetastoreView(client, dbName, tabName1,
+        Lists.newArrayList(new FieldSchema("col1", "int", "")));
+    client.close();
+
+    // verify group1 users with DDL privileges can alter tables in db_1
+    client = context.getMetaStoreClient(USER1_1);
+    Table metaView2 = client.getTable(dbName, tabName1);
+    metaView2.getSd().setCols(
+        Lists.newArrayList(new FieldSchema("col2", "double", "")));
+    client.alter_table(dbName, tabName1, metaView2);
+    Table metaView3 = client.getTable(dbName, tabName1);
+    assertEquals(metaView2.getSd().getCols(), metaView3.getSd().getCols());
+    client.close();
+  }
+
+  /**
    * Verify add partition privileges
    * @throws Exception
    */
