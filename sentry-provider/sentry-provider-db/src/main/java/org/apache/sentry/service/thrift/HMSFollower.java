@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
+import org.apache.hadoop.hive.metastore.api.CurrentNotificationEventId;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.NotificationEvent;
 import org.apache.hadoop.hive.metastore.api.NotificationEventResponse;
@@ -71,17 +72,17 @@ public class HMSFollower implements Runnable {
   private String hiveInstance;
   final static int maxRetriesForLogin = 3;
   final static int maxRetriesForConnection = 3;
-  private volatile UpdateableAuthzPaths authzPaths;
-  private AtomicBoolean fullUpdateComplete;
 
-  HMSFollower(Configuration conf, AtomicBoolean fullUpdateComplete) throws SentryNoSuchObjectException,
+  private volatile UpdateableAuthzPaths authzPaths;
+  private boolean needHiveSnapshot = true;
+
+  HMSFollower(Configuration conf) throws SentryNoSuchObjectException,
       SentryAccessDeniedException, SentrySiteConfigurationException, IOException { //TODO: Handle any possible exceptions or throw specific exceptions
     LOGGER.info("HMSFollower is being initialized");
     authzConf = conf;
     sentryStore = new SentryStore(authzConf);
     //TODO: Initialize currentEventID from Sentry db
     currentEventID = 0;
-    this.fullUpdateComplete = fullUpdateComplete;
   }
 
   @VisibleForTesting
@@ -183,7 +184,7 @@ public class HMSFollower implements Runnable {
   }
 
   public void run() {
-    if( client == null ) {
+    if (client == null) {
       try {
         client = getMetaStoreClient(authzConf);
         if (client == null) {
@@ -194,16 +195,55 @@ public class HMSFollower implements Runnable {
           LOGGER.info("HMSFollower of Sentry successfully connected to HMS");
         }
       } catch (Exception e) {
-
+        LOGGER.error("HMSFollower cannot connect to HMS!!");
+        return;
       }
-    }
-    if (needFullUpdate()) {
-      // TODO: read currentEventID from Sentry DB
-      // This guarantee events before failover but did not applied can be fetch later.
-      fetchFullUpdate();
     }
 
     try {
+      if (isNeedHiveSnapshot()) {
+        // TODO: expose time used for full update in the metrics
+
+        // To ensure point-in-time snapshot consistency, need to make sure
+        // there were no HMS updates while retrieving the snapshot.
+        // In detail the logic is:
+        //
+        // 1. Read current HMS notification ID_initial
+        // 2. Read HMS metadata state
+        // 3. Read current notification ID_new
+        // 4. If ID_initial != ID_new then the attempts for retrieving full HMS snapshot
+        // will be dropped. A new attempts will be made after 500 milliseconds when
+        // HMSFollower run again.
+
+        CurrentNotificationEventId eventIDBefore = null;
+        CurrentNotificationEventId eventIDAfter = null;
+
+        try {
+          eventIDBefore = client.getCurrentNotificationEventId();
+          LOGGER.info(String.format("Before fetching hive full snapshot, Current NotificationID = %s.",
+              eventIDBefore));
+          fetchFullUpdate();
+          eventIDAfter = client.getCurrentNotificationEventId();
+          LOGGER.info(String.format("After fetching hive full snapshot, Current NotificationID = %s.",
+              eventIDAfter));
+        } catch (Exception ex) {
+          LOGGER.error("#### Encountered failure during fetching one hive full snapshot !! Current NotificationID = " +
+              eventIDAfter.toString(), ex);
+          return;
+        }
+
+        if (!eventIDBefore.equals(eventIDAfter)) {
+          LOGGER.error("#### Fail to get a point-in-time hive full snapshot !! Current NotificationID = " +
+              eventIDAfter.toString());
+          return;
+        }
+
+        LOGGER.info(String.format("Successfully fetched hive full snapshot, Current NotificationID = %s.",
+            eventIDAfter));
+        needHiveSnapshot = false;
+        currentEventID = eventIDAfter.getEventId();
+      }
+
       NotificationEventResponse response = client.getNextNotification(currentEventID, Integer.MAX_VALUE, null);
       if (response.isSetEvents()) {
         LOGGER.info(String.format("CurrentEventID = %s. Processing %s events",
@@ -219,20 +259,16 @@ public class HMSFollower implements Runnable {
   }
 
   /**
-   * Block the sentry service until it starts up, signal main thread
-   * the full update fetch process is done.
+   * Retrieve HMS full snapshot.
    */
-  private void fetchFullUpdate() {
-    fullUpdateComplete.getAndSet(false);
-
+  private void fetchFullUpdate() throws Exception {
     FullUpdateInitializer updateInitializer = null;
+
     try {
       updateInitializer = new FullUpdateInitializer(client, authzConf);
       HMSFollower.this.authzPaths = updateInitializer.createInitialUpdate();
       // TODO: notify HDFS plugin
       LOGGER.info("#### Hive full update initialization complete !!");
-    } catch (Exception e) {
-      LOGGER.error("#### Could not create hive full update !!", e);
     } finally {
       if (updateInitializer != null) {
         try {
@@ -241,20 +277,16 @@ public class HMSFollower implements Runnable {
           LOGGER.info("#### Exception while closing updateInitializer !!", e);
         }
       }
-
-      fullUpdateComplete.getAndSet(true);
     }
   }
 
-  private boolean needFullUpdate() {
-    // Currently fullUpdateComplete is indicator that server is starting up
-    // and in request of a full update.
-    // TODO: set fullUpdateComplete based on notification id stored in SentryDB.
-    if (!fullUpdateComplete.get()) {
-      return true;
-    } else {
-      return false;
-    }
+  private boolean isNeedHiveSnapshot() {
+    // An indicator that in request of a full hive update.
+
+    // TODO: Will need to get Hive snapshot if the Notification ID
+    // we are requesting has been rolled over in the NotificationLog
+    // table of Hive
+    return needHiveSnapshot;
   }
 
   private boolean syncWithPolicyStore(HiveAuthzConf.AuthzConfVars syncConfVar) {

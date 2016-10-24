@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.EventListener;
 import java.util.List;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.security.auth.Subject;
 
@@ -95,7 +94,6 @@ public class SentryService implements Callable {
   private long maxMessageSize;
   private final boolean isHA;
   private final Activator act;
-  private AtomicBoolean fullUpdateComplete = new AtomicBoolean(false);
   SentryMetrics sentryMetrics;
 
   public SentryService(Configuration conf) throws Exception {
@@ -159,7 +157,7 @@ public class SentryService implements Callable {
     //TODO: Enable only if Hive is using Sentry?
     try {
       hmsFollowerExecutor = Executors.newScheduledThreadPool(1);
-      hmsFollowerExecutor.scheduleAtFixedRate(new HMSFollower(conf, fullUpdateComplete), 60000, 500, TimeUnit.MILLISECONDS);
+      hmsFollowerExecutor.scheduleAtFixedRate(new HMSFollower(conf), 60000, 500, TimeUnit.MILLISECONDS);
     }catch(Exception e) {
       //TODO: Handle
       LOGGER.error("Could not start HMSFollower");
