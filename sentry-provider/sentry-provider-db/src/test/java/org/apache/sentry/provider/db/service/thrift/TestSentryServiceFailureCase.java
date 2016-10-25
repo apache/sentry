@@ -63,8 +63,7 @@ public class TestSentryServiceFailureCase extends SentryServiceIntegrationBase {
       Assert.fail("Failed to receive Exception");
     } catch(Exception e) {
       LOGGER.info("Excepted exception", e);
-      // peer callback exception is nested inside SentryUserException.
-      Throwable cause = e.getCause().getCause();
+      Throwable cause = e.getCause();
       if (cause == null) {
         throw e;
       }

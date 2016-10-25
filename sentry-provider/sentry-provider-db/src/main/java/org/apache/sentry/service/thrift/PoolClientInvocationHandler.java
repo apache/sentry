@@ -42,6 +42,9 @@ import org.slf4j.LoggerFactory;
  * get the instance and do the call again. For the thread safe, the commons-pool
  * will manage the connection pool, and every thread can get the connection by
  * borrowObject() and return the connection to the pool by returnObject().
+ *
+ * TODO: Current pool model does not manage the opening connections very well,
+ * e.g. opening connections with failed servers should be closed promptly.
  */
 
 public class PoolClientInvocationHandler extends SentryClientInvocationHandler {
