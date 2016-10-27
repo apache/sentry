@@ -2196,7 +2196,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
 
     while ( resultSet.next()) {
-      assertThat(resultSet.getString(1), equalToIgnoringCase("default"));//the value should be db1
+      assertThat(resultSet.getString(1), equalToIgnoringCase("db1"));//the value should be db1
       assertThat(resultSet.getString(2), equalToIgnoringCase("tab1"));
       assertThat(resultSet.getString(3), equalToIgnoringCase(""));//partition
       assertThat(resultSet.getString(4), equalToIgnoringCase(""));//column

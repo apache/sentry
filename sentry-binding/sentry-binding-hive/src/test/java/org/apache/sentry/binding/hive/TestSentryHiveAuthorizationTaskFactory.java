@@ -437,6 +437,17 @@ public class TestSentryHiveAuthorizationTaskFactory {
     Assert.assertEquals(SERVER, privilegeDesc.getObject());
   }
 
+  /*
+  Db prefix in grant
+   */
+  @Test
+  public void testDBPrefixInGrant() throws Exception {
+    DDLWork work = analyze(parse("GRANT " + ALL + " ON TABLE " + "db1." + TABLE
+            + " TO ROLE " + ROLE));
+    GrantDesc grantDesc = work.getGrantDesc();
+    Assert.assertEquals("Fully qualified table name in Grant statement is resolved incorrectly", "db1." + TABLE,
+            grantDesc.getPrivilegeSubjectDesc().getObject());
+  }
   private void expectSemanticException(String command, String msg) throws Exception {
     try {
       analyze(parse(command));

@@ -296,8 +296,8 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
           subject.setServer(true);
         } else if (astChild.getToken().getType() == HiveParser.TOK_TABLE_TYPE) {
           subject.setTable(true);
-          String[] qualified = BaseSemanticAnalyzer.getQualifiedTableName(gchild);
-          subject.setObject(qualified[1]);
+          String qualified = BaseSemanticAnalyzer.getUnescapedName(gchild);
+          subject.setObject(qualified);
         }
       for (int i = 1; i < astChild.getChildCount(); i++) {
         gchild = (ASTNode) astChild.getChild(i);
