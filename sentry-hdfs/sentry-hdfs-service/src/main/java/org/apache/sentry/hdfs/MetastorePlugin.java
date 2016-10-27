@@ -54,6 +54,10 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(MetastorePlugin.class);
 
+  private static final String initializationFailureMsg = "Cache failed to initialize, cannot send path updates to Sentry." +
+          " Please review HMS error logs during startup for additional information. If the initialization failure is due" +
+          " to SentryMalformedPathException, you will need to rectify the malformed path in HMS db and restart HMS";
+
   class SyncTask implements Runnable {
     @Override
     public void run() {
@@ -62,8 +66,7 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
         return;
       }
       if (MetastorePlugin.this.authzPaths == null) {
-        LOGGER.info("#### Metastore Plugin cache has not finished" +
-                "initialization.");
+        LOGGER.warn(initializationFailureMsg);
         return;
       }
       try {
@@ -341,6 +344,10 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
   protected void applyLocal(PathsUpdate update) {
     final Timer.Context timerContext =
         SentryHdfsMetricsUtil.getApplyLocalUpdateTimer.time();
+    if(authzPaths == null) {
+      LOGGER.error(initializationFailureMsg);
+      return;
+    }
     authzPaths.updatePartial(Lists.newArrayList(update), new ReentrantReadWriteLock());
     timerContext.stop();
     SentryHdfsMetricsUtil.getApplyLocalUpdateHistogram.update(
@@ -348,6 +355,10 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
   }
 
   private void notifySentryAndApplyLocal(PathsUpdate update) {
+    if(authzPaths == null) {
+      LOGGER.error(initializationFailureMsg);
+      return;
+    }
     if (initComplete) {
       processUpdate(update);
     } else {
