@@ -219,7 +219,14 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
 
   @Override
   public void addPath(String authzObj, String path) {
-    List<String> pathTree = PathsUpdate.parsePath(path);
+    List<String> pathTree = null;
+    try {
+      pathTree = PathsUpdate.parsePath(path);
+    } catch (SentryMalformedPathException e) {
+      LOGGER.error("Unexpected path in addPath: authzObj = " + authzObj + " , path = " + path);
+      e.printStackTrace();
+      return;
+    }
     if(pathTree == null) {
       return;
     }
@@ -255,7 +262,14 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
     if ("*".equals(path)) {
       removeAllPaths(authzObj.toLowerCase(), null);
     } else {
-      List<String> pathTree = PathsUpdate.parsePath(path);
+      List<String> pathTree = null;
+      try {
+        pathTree = PathsUpdate.parsePath(path);
+      } catch (SentryMalformedPathException e) {
+        LOGGER.error("Unexpected path in removePath: authzObj = " + authzObj + " , path = " + path);
+        e.printStackTrace();
+        return;
+      }
       if(pathTree == null) {
         return;
       }
@@ -285,11 +299,29 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
         + "oldPath : " + oldPath + ","
         + "newName : " + newName + ","
         + "newPath : " + newPath + "]");
-    List<String> newPathTree = PathsUpdate.parsePath(newPath);
+    List<String> newPathTree = null;
+    try {
+      newPathTree = PathsUpdate.parsePath(newPath);
+    } catch (SentryMalformedPathException e) {
+      LOGGER.error("Unexpected path in renameAuthzObject while parsing newPath: oldName=" + oldName + ", oldPath=" + oldPath +
+      ", newName=" + newName + ", newPath=" + newPath);
+      e.printStackTrace();
+      return;
+    }
+
     if( newPathTree != null ) {
       update.newPathChange(newName).addToAddPaths(newPathTree);
     }
-    List<String> oldPathTree = PathsUpdate.parsePath(oldPath);
+    List<String> oldPathTree = null;
+    try {
+      oldPathTree = PathsUpdate.parsePath(oldPath);
+    } catch (SentryMalformedPathException e) {
+      LOGGER.error("Unexpected path in renameAuthzObject while parsing oldPath: oldName=" + oldName + ", oldPath=" + oldPath +
+              ", newName=" + newName + ", newPath=" + newPath);
+      e.printStackTrace();
+      return;
+    }
+
     if( oldPathTree != null ) {
       update.newPathChange(oldName).addToDelPaths(oldPathTree);
     }

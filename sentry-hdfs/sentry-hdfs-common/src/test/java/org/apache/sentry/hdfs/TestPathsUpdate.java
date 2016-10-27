@@ -18,16 +18,45 @@
 package org.apache.sentry.hdfs;
 
 import java.util.List;
+
 import org.junit.Test;
 import junit.framework.Assert;
 
 public class TestPathsUpdate {
   @Test
-  public void testParsePath(){
+  public void testParsePathComplexCharacters() throws SentryMalformedPathException{
     List<String> results = PathsUpdate.parsePath(
       "hdfs://hostname.test.com:8020/user/hive/warehouse/break/b=all | ' & the spaces/c=in PartKeys/With fun chars *%!|"
     );
     System.out.println(results);
     Assert.assertNotNull("Parse path without throwing exception",results);
+  }
+
+  @Test
+  public void testPositiveParsePath() throws SentryMalformedPathException {
+    List<String> results = PathsUpdate.parsePath("hdfs://hostname.test.com:8020/path");
+    Assert.assertTrue("Parsed path is unexpected", results.get(0).equals("path"));
+    Assert.assertTrue("Parsed path size is unexpected", results.size() == 1);
+
+    results = PathsUpdate.parsePath("hdfs://hostname.test.com/path");
+    Assert.assertTrue("Parsed path is unexpected", results.get(0).equals("path"));
+    Assert.assertTrue("Parsed path size is unexpected", results.size() == 1);
+
+    results = PathsUpdate.parsePath("hdfs:///path");
+    Assert.assertTrue("Parsed path is unexpected", results.get(0).equals("path"));
+    Assert.assertTrue("Parsed path size is unexpected", results.size() == 1);
+  }
+
+  @Test(expected = SentryMalformedPathException.class)
+  public void testMalformedPathFunny() throws SentryMalformedPathException{
+    PathsUpdate.parsePath("hdfs://hostname");
+  }
+
+  //if file:// - should return null
+  @Test
+  public void testMalformedPathFile() throws SentryMalformedPathException{
+    List<String> results = PathsUpdate.parsePath("file://hostname/path");
+    System.out.println(results);
+    Assert.assertNull("Parse path without throwing exception",results);
   }
 }

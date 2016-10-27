@@ -24,7 +24,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import org.apache.sentry.hdfs.service.thrift.TPathChanges;
 import org.apache.sentry.hdfs.service.thrift.TPathsUpdate;
 import org.apache.commons.httpclient.util.URIUtil;
@@ -98,41 +97,54 @@ public class PathsUpdate implements Updateable.Update {
 
   /**
    *
-   * @param path : Needs to be a HDFS location with scheme
+   * @param path : Needs to be a HDFS location in the forms:
+   *             - hdfs://hostname:port/path
+   *             - hdfs:///path
+   *             - /path, in which case, scheme will be constructed from FileSystem.getDefaultURI
+   *             - URIs with non hdfs schemee will just be ignored
    * @return Path in the form a list containing the path tree with scheme/ authority stripped off.
    * Returns null if a non HDFS path or if path is null/empty
    */
-  public static List<String> parsePath(String path) {
+  public static List<String> parsePath(String path) throws SentryMalformedPathException {
     try {
 
       URI uri = null;
       if (StringUtils.isNotEmpty(path)) {
         uri = new URI(URIUtil.encodePath(path));
       } else {
-        return null;
+        String msg = "Input is empty";
+        throw new SentryMalformedPathException(msg);
       }
 
       String scheme = uri.getScheme();
       if (scheme == null) {
-        // Use the default URI scheme only if the paths has no scheme.
+        // Use the default URI scheme only if the path has no scheme.
         URI defaultUri = FileSystem.getDefaultUri(CONF);
         scheme = defaultUri.getScheme();
+        if(scheme == null) {
+          String msg = "Scheme is missing and could not be constructed from defaultURI=" + defaultUri;
+          throw new SentryMalformedPathException(msg);
+        }
       }
-
-      // The paths without a scheme will be default to default scheme.
-      Preconditions.checkNotNull(scheme);
 
       // Non-HDFS paths will be skipped.
       if(scheme.equalsIgnoreCase("hdfs")) {
-        return Lists.newArrayList(uri.getPath().split("^/")[1]
-            .split("/"));
+        String uriPath = uri.getPath();
+        if(uriPath == null) {
+          throw new SentryMalformedPathException("Path is empty. uri=" + uri);
+        }
+        if(uriPath.split("^/").length < 2) {
+          throw new SentryMalformedPathException("Path part of uri does not seem right, was expecting a non empty path" +
+                  ": path = " + uriPath + ", uri=" + uri);
+        }
+        return Lists.newArrayList(uriPath.split("^/")[1].split("/"));
       } else {
         return null;
       }
     } catch (URISyntaxException e) {
-      throw new RuntimeException("Incomprehensible path [" + path + "]");
+      throw new SentryMalformedPathException("Incomprehensible path [" + path + "]", e);
     } catch (URIException e){
-      throw new RuntimeException("Unable to create URI: ",e);
+      throw new SentryMalformedPathException("Unable to create URI: ", e);
     }
   }
 

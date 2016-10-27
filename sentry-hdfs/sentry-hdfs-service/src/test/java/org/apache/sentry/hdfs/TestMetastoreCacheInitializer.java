@@ -31,8 +31,21 @@ import org.mockito.Mockito;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 
 public class TestMetastoreCacheInitializer {
+
+  private Configuration setConf() {
+    Configuration conf = new Configuration();
+    conf.setInt(ServiceConstants.ServerConfig
+            .SENTRY_HDFS_SYNC_METASTORE_CACHE_MAX_PART_PER_RPC, 1);
+    conf.setInt(ServiceConstants.ServerConfig
+            .SENTRY_HDFS_SYNC_METASTORE_CACHE_MAX_TABLES_PER_RPC, 1);
+    conf.setInt(ServiceConstants.ServerConfig
+            .SENTRY_HDFS_SYNC_METASTORE_CACHE_INIT_THREADS, 1);
+    return conf;
+
+  }
 
   @Test
   public void testInitializer() throws Exception {
@@ -103,16 +116,8 @@ public class TestMetastoreCacheInitializer {
             Lists.newArrayList("part312")))
             .thenReturn(Lists.newArrayList(part312));
 
-    Configuration conf = new Configuration();
-    conf.setInt(ServiceConstants.ServerConfig
-            .SENTRY_HDFS_SYNC_METASTORE_CACHE_MAX_PART_PER_RPC, 1);
-    conf.setInt(ServiceConstants.ServerConfig
-            .SENTRY_HDFS_SYNC_METASTORE_CACHE_MAX_TABLES_PER_RPC, 1);
-    conf.setInt(ServiceConstants.ServerConfig
-            .SENTRY_HDFS_SYNC_METASTORE_CACHE_INIT_THREADS, 1);
-
     MetastoreCacheInitializer cacheInitializer = new
-            MetastoreCacheInitializer(hmsHandler, conf);
+            MetastoreCacheInitializer(hmsHandler, setConf());
     UpdateableAuthzPaths update = cacheInitializer.createInitialUpdate();
 
     Assert.assertEquals(new HashSet<String>(Arrays.asList("db1")), update.findAuthzObjectExactMatches(new
@@ -156,24 +161,101 @@ public class TestMetastoreCacheInitializer {
     Mockito.when(hmsHandler.get_all_tables("db1")).thenReturn(Lists
         .newArrayList("tab1"));
 
-    Configuration conf = new Configuration();
-    conf.setInt(ServiceConstants.ServerConfig
-        .SENTRY_HDFS_SYNC_METASTORE_CACHE_MAX_PART_PER_RPC, 1);
-    conf.setInt(ServiceConstants.ServerConfig
-        .SENTRY_HDFS_SYNC_METASTORE_CACHE_MAX_TABLES_PER_RPC, 1);
-    conf.setInt(ServiceConstants.ServerConfig
-        .SENTRY_HDFS_SYNC_METASTORE_CACHE_INIT_THREADS, 1);
-    conf.setInt(ServiceConstants.ServerConfig
-            .SENTRY_HDFS_SYNC_METASTORE_CACHE_RETRY_MAX_NUM, 2);
-
     try {
       MetastoreCacheInitializer cacheInitializer = new
-          MetastoreCacheInitializer(hmsHandler, conf);
+          MetastoreCacheInitializer(hmsHandler, setConf());
       UpdateableAuthzPaths update = cacheInitializer.createInitialUpdate();
       Assert.fail("Expected cacheInitializer to fail");
     } catch (Exception e) {
       Assert.assertTrue(e instanceof RuntimeException);
     }
+
+  }
+
+  @Test(expected = SentryMalformedPathException.class)
+  public void testSentryMalFormedExceptionInDbTask() throws Exception {
+    //Set up mocks: db1 with malformed paths
+    Database db1 = Mockito.mock(Database.class);
+    Mockito.when(db1.getName()).thenReturn("db1");
+    Mockito.when(db1.getLocationUri()).thenReturn("hdfs://db1");
+
+    IHMSHandler hmsHandler = Mockito.mock(IHMSHandler.class);
+    Mockito.when(hmsHandler.get_all_databases()).thenReturn(Lists
+            .newArrayList("db1"));
+    Mockito.when(hmsHandler.get_database("db1")).thenReturn(db1);
+
+
+    MetastoreCacheInitializer cacheInitializer = new MetastoreCacheInitializer(hmsHandler, setConf());
+    cacheInitializer.createInitialUpdate();
+    Assert.fail("Expected cacheInitializer to fail");
+  }
+
+  @Test(expected = SentryMalformedPathException.class)
+  public void testSentryMalFormedExceptionInTableTask() throws Exception {
+    //Set up mocks: db1 and tb1 with wrong location
+    Database db1 = Mockito.mock(Database.class);
+    Mockito.when(db1.getName()).thenReturn("db1");
+    IHMSHandler hmsHandler = Mockito.mock(IHMSHandler.class);
+    Mockito.when(hmsHandler.get_all_databases()).thenReturn(Lists
+            .newArrayList("db1"));
+    Mockito.when(hmsHandler.get_database("db1")).thenReturn(db1);
+
+    Table tab1 = Mockito.mock(Table.class);
+    Mockito.when(tab1.getDbName()).thenReturn("db1");
+    Mockito.when(tab1.getTableName()).thenReturn("tab1");
+    StorageDescriptor sd = Mockito.mock(StorageDescriptor.class);
+    Mockito.when(tab1.getSd()).thenReturn(sd);
+    Mockito.when(tab1.getSd().getLocation()).thenReturn("hdfs://db1");
+
+    Mockito.when(hmsHandler.get_table_objects_by_name("db1",
+            Lists.newArrayList("tab1")))
+            .thenReturn(Lists.newArrayList(tab1));
+    Mockito.when(hmsHandler.get_all_tables("db1")).thenReturn(Lists
+            .newArrayList("tab1"));
+
+    MetastoreCacheInitializer cacheInitializer = new MetastoreCacheInitializer(hmsHandler, setConf());
+    cacheInitializer.createInitialUpdate();
+    Assert.fail("Expected cacheInitializer to fail");
+
+  }
+
+  @Test(expected = SentryMalformedPathException.class)
+  public void testSentryMalFormedExceptionInPartitionTask() throws Exception {
+    //Set up mocks: db1,tb1 and partition with wrong location
+    Database db1 = Mockito.mock(Database.class);
+    Mockito.when(db1.getName()).thenReturn("db1");
+    IHMSHandler hmsHandler = Mockito.mock(IHMSHandler.class);
+    Mockito.when(hmsHandler.get_all_databases()).thenReturn(Lists
+            .newArrayList("db1"));
+    Mockito.when(hmsHandler.get_database("db1")).thenReturn(db1);
+
+    Table tab1 = Mockito.mock(Table.class);
+    StorageDescriptor tableSd = Mockito.mock(StorageDescriptor.class);
+    Mockito.when(tab1.getDbName()).thenReturn("db1");
+    Mockito.when(tab1.getTableName()).thenReturn("tab1");
+    Mockito.when(tab1.getSd()).thenReturn(tableSd);
+    Mockito.when(tab1.getSd().getLocation()).thenReturn("hdfs://hostname/db1/tab1");
+
+    StorageDescriptor sd = Mockito.mock(StorageDescriptor.class);
+    Partition partition = Mockito.mock(Partition.class);
+    Mockito.when(partition.getSd()).thenReturn(sd);
+    Mockito.when(partition.getSd().getLocation()).thenReturn("hdfs://db1");
+
+    Mockito.when(hmsHandler.get_table_objects_by_name("db1",
+            Lists.newArrayList("tab1")))
+            .thenReturn(Lists.newArrayList(tab1));
+    Mockito.when(hmsHandler.get_all_tables("db1")).thenReturn(Lists
+            .newArrayList("tab1"));
+    List<String> partnames = new ArrayList<>();
+    partnames.add("part1");
+    List<Partition> partitions = new ArrayList<>();
+    partitions.add(partition);
+    Mockito.when(hmsHandler.get_partition_names("db1", "tab1", (short) -1)).thenReturn(partnames);
+    Mockito.when(hmsHandler.get_partitions_by_names("db1", "tab1", partnames)).thenReturn(partitions);
+
+    MetastoreCacheInitializer cacheInitializer = new MetastoreCacheInitializer(hmsHandler, setConf());
+    cacheInitializer.createInitialUpdate();
+    Assert.fail("Expected cacheInitializer to fail");
 
   }
 }
