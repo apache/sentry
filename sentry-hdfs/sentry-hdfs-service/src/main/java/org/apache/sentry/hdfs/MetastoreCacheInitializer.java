@@ -25,6 +25,7 @@ import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.Partition;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.sentry.hdfs.service.thrift.TPathChanges;
+import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -154,7 +155,7 @@ class MetastoreCacheInitializer implements Closeable {
     }
 
     @Override
-    public void doTask() throws Exception {
+    public void doTask() throws TException, SentryMalformedPathException {
       List<Partition> tblParts =
               hmsHandler.get_partitions_by_names(dbName, tblName, partNames);
       if (LOGGER.isDebugEnabled()) {
@@ -162,8 +163,15 @@ class MetastoreCacheInitializer implements Closeable {
                 "[" + dbName + "." + tblName + "]" + "[" + partNames + "]");
       }
       for (Partition part : tblParts) {
-        List<String> partPath = PathsUpdate.parsePath(part.getSd()
-                .getLocation());
+        List<String> partPath = null;
+        try {
+          partPath = PathsUpdate.parsePath(part.getSd().getLocation());
+        } catch (SentryMalformedPathException e) {
+          String msg = "Unexpected path in partitionTask: dbName=" + dbName +
+                  ", tblName=" + tblName + ", path=" + part.getSd().getLocation();
+          throw new SentryMalformedPathException(msg, e);
+        }
+
         if (partPath != null) {
           synchronized (tblPathChange) {
             tblPathChange.addToAddPaths(partPath);
@@ -202,8 +210,14 @@ class MetastoreCacheInitializer implements Closeable {
           tblPathChange = update.newPathChange(db.getName() + "." + tableName);
         }
         if (tbl.getSd().getLocation() != null) {
-          List<String> tblPath =
-                  PathsUpdate.parsePath(tbl.getSd().getLocation());
+          List<String> tblPath = null;
+          try {
+            tblPath = PathsUpdate.parsePath(tbl.getSd().getLocation());
+          } catch (SentryMalformedPathException e) {
+            String msg = "Unexpected path in TableTask: dbName=" + tbl.getDbName() +
+                    ", tblName=" + tbl.getTableName() + ", path=" + tbl.getSd().getLocation();
+            throw new SentryMalformedPathException(msg, e);
+          }
           if (tblPath != null) {
             tblPathChange.addToAddPaths(tblPath);
           }
@@ -238,9 +252,15 @@ class MetastoreCacheInitializer implements Closeable {
     }
 
     @Override
-    public void doTask() throws Exception {
+    public void doTask() throws TException, SentryMalformedPathException {
       Database db = hmsHandler.get_database(dbName);
-      List<String> dbPath = PathsUpdate.parsePath(db.getLocationUri());
+      List<String> dbPath = null;
+      try {
+        dbPath = PathsUpdate.parsePath(db.getLocationUri());
+      } catch (SentryMalformedPathException e) {
+        String msg = "Unexpected path in DbTask: DB=" + db.getName() + ", Path=" + db.getLocationUri();
+        throw new SentryMalformedPathException(msg, e);
+      }
       if (dbPath != null) {
         synchronized (update) {
           Preconditions.checkArgument(dbName.equalsIgnoreCase(db.getName()));
@@ -328,7 +348,7 @@ class MetastoreCacheInitializer implements Closeable {
       // Fail the HMS startup if tasks are not all successful and
       // fail on partial updates flag is set in the config.
       if (!callResult.getSuccessStatus() && failOnRetry) {
-        throw new RuntimeException(callResult.getFailure());
+        throw callResult.getFailure();
       }
     }
 
