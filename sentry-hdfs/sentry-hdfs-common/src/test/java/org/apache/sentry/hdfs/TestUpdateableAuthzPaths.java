@@ -68,7 +68,7 @@ public class TestUpdateableAuthzPaths {
   }
 
   @Test
-  public void testPartialUpdateAddPath() {
+  public void testPartialUpdateAddPath() throws SentryMalformedPathException{
     HMSPaths hmsPaths = createBaseHMSPaths(1, 1);
     UpdateableAuthzPaths authzPaths = new UpdateableAuthzPaths(hmsPaths);
     ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -115,7 +115,7 @@ public class TestUpdateableAuthzPaths {
   }
 
   @Test
-  public void testPartialUpdateDelPath() {
+  public void testPartialUpdateDelPath() throws SentryMalformedPathException{
     HMSPaths hmsPaths = createBaseHMSPaths(1, 1);
     UpdateableAuthzPaths authzPaths = new UpdateableAuthzPaths(hmsPaths);
     ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
