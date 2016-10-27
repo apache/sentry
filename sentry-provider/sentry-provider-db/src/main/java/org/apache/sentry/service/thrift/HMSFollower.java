@@ -32,7 +32,6 @@ import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.core.common.exception.*;
 import org.apache.sentry.hdfs.UpdateableAuthzPaths;
 import org.apache.sentry.hdfs.FullUpdateInitializer;
-import org.apache.sentry.hdfs.ServiceConstants.ServerConfig;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.provider.db.service.thrift.TSentryAuthorizable;
 import org.apache.thrift.TException;
@@ -43,11 +42,9 @@ import org.apache.sentry.binding.metastore.messaging.json.*;
 import javax.security.auth.Subject;
 import javax.security.auth.login.LoginException;
 import java.io.File;
-import java.io.IOException;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SYNC_CREATE_WITH_POLICY_STORE;
 import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SYNC_DROP_WITH_POLICY_STORE;
@@ -76,8 +73,7 @@ public class HMSFollower implements Runnable {
   private volatile UpdateableAuthzPaths authzPaths;
   private boolean needHiveSnapshot = true;
 
-  HMSFollower(Configuration conf) throws SentryNoSuchObjectException,
-      SentryAccessDeniedException, SentrySiteConfigurationException, IOException { //TODO: Handle any possible exceptions or throw specific exceptions
+  HMSFollower(Configuration conf) throws Exception { //TODO: Handle any possible exceptions or throw specific exceptions
     LOGGER.info("HMSFollower is being initialized");
     authzConf = conf;
     sentryStore = new SentryStore(authzConf);
@@ -319,7 +315,7 @@ public class HMSFollower implements Runnable {
               dropSentryDbPrivileges(dbName);
             } catch (SentryNoSuchObjectException e) {
                 LOGGER.info("Drop Sentry privilege ignored as there are no privileges on the database: %s", dbName);
-            } catch (SentryInvalidInputException e) {
+            } catch (Exception e) {
               throw new SentryInvalidInputException("Could not process Create database event. Event: " + event.toString(), e);
             }
           }
@@ -337,7 +333,7 @@ public class HMSFollower implements Runnable {
               dropSentryDbPrivileges(dbName);
             } catch (SentryNoSuchObjectException e) {
               LOGGER.info("Drop Sentry privilege ignored as there are no privileges on the database: %s", dbName);
-            } catch (SentryInvalidInputException e) {
+            } catch (Exception e) {
               throw new SentryInvalidInputException("Could not process Drop database event. Event: " + event.toString(), e);
             }
           }
@@ -357,7 +353,7 @@ public class HMSFollower implements Runnable {
               dropSentryTablePrivileges(dbName, tableName);
             } catch (SentryNoSuchObjectException e) {
               LOGGER.info("Drop Sentry privilege ignored as there are no privileges on the table: %s.%s", dbName, tableName);
-            } catch (SentryInvalidInputException e) {
+            } catch (Exception e) {
               throw new SentryInvalidInputException("Could not process Create table event. Event: " + event.toString(), e);
             }
           }
@@ -376,7 +372,7 @@ public class HMSFollower implements Runnable {
               dropSentryTablePrivileges(dbName, tableName);
             } catch (SentryNoSuchObjectException e) {
               LOGGER.info("Drop Sentry privilege ignored as there are no privileges on the table: %s.%s", dbName, tableName);
-            } catch (SentryInvalidInputException e) {
+            } catch (Exception e) {
               throw new SentryInvalidInputException("Could not process Drop table event. Event: " + event.toString(), e);
             }
           }
@@ -416,7 +412,7 @@ public class HMSFollower implements Runnable {
               renamePrivileges(oldDbName, oldTableName, newDbName, newTableName);
             } catch (SentryNoSuchObjectException e) {
               LOGGER.info("Rename Sentry privilege ignored as there are no privileges on the table: %s.%s", oldDbName, oldTableName);
-            } catch (SentryInvalidInputException e) {
+            } catch (Exception e) {
               throw new SentryInvalidInputException("Could not process Alter table event. Event: " + event.toString(), e);
             }
           } else if(!oldLocation.equals(newLocation)) { // Only Location has changed{
@@ -439,20 +435,19 @@ public class HMSFollower implements Runnable {
     }
   }
 
-  private void dropSentryDbPrivileges(String dbName) throws SentryNoSuchObjectException, SentryInvalidInputException {
+  private void dropSentryDbPrivileges(String dbName) throws Exception {
     TSentryAuthorizable authorizable = new TSentryAuthorizable(hiveInstance);
     authorizable.setDb(dbName);
     sentryStore.dropPrivilege(authorizable);
   }
-  private void dropSentryTablePrivileges(String dbName, String tableName) throws SentryNoSuchObjectException,
-      SentryInvalidInputException {
+  private void dropSentryTablePrivileges(String dbName, String tableName) throws Exception {
     TSentryAuthorizable authorizable = new TSentryAuthorizable(hiveInstance);
     authorizable.setDb(dbName);
     authorizable.setTable(tableName);
     sentryStore.dropPrivilege(authorizable);
   }
   private void renamePrivileges(String oldDbName, String oldTableName, String newDbName, String newTableName) throws
-      SentryNoSuchObjectException, SentryInvalidInputException {
+      Exception {
     TSentryAuthorizable oldAuthorizable = new TSentryAuthorizable(hiveInstance);
     oldAuthorizable.setDb(oldDbName);
     oldAuthorizable.setTable(oldTableName);

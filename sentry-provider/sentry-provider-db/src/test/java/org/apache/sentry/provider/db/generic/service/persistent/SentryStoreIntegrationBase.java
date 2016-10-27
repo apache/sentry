@@ -60,7 +60,7 @@ public abstract class SentryStoreIntegrationBase {
   }
 
   @After
-  public void clearData() {
+  public void clearData() throws Exception{
     sentryStore.clearAllTables();
   }
 
