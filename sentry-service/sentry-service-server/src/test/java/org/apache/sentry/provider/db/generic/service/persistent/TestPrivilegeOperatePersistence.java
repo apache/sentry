@@ -26,7 +26,6 @@ import java.util.List;
 
 import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.BitFieldAction;
 import org.apache.sentry.core.common.BitFieldActionFactory;
@@ -976,12 +975,12 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
         Sets.newHashSet(roleName1,roleName2, roleName3), null).size());
   }
 
-  @Test(expected = RuntimeException.class)
-  public void testGrantPrivilegeExternalComponentMissingConf() throws SentryUserException {
+  @Test(expected = Exception.class)
+  public void testGrantPrivilegeExternalComponentMissingConf() throws Exception {
     testGrantPrivilege(sentryStore, "externalComponent");
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test(expected = Exception.class)
   public void testGrantPrivilegeExternalComponentInvalidConf() throws Exception {
     String externalComponent = "mycomponent";
     Configuration confCopy = new Configuration(conf);
@@ -1011,7 +1010,7 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
     testGrantPrivilege(store, externalComponent);
   }
 
-  private void testGrantPrivilege(SentryStoreLayer sentryStore, String component) throws SentryUserException {
+  private void testGrantPrivilege(SentryStoreLayer sentryStore, String component) throws Exception {
     String roleName = "r1";
     /**
      * grantor is admin, there is no need to check grant option
