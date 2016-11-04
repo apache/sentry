@@ -85,6 +85,15 @@ public class ServiceConstants {
     public static final String SENTRY_STORE_JDBC_PASS = "sentry.store.jdbc.password";
     public static final String SENTRY_STORE_JDBC_DRIVER = "sentry.store.jdbc.driver";
     public static final String SENTRY_STORE_JDBC_DRIVER_DEFAULT = "org.apache.derby.jdbc.EmbeddedDriver";
+    // The configuration for the maximum number of retries per db transaction,
+    // the default value is 3 times
+    public static final String SENTRY_STORE_TRANSACTION_RETRY = "sentry.store.transaction.retry";
+    public static final int SENTRY_STORE_TRANSACTION_RETRY_DEFAULT = 3;
+    // The configuration for the delay (in milliseconds) between retries,
+    // the default value is 500 ms
+    public static final String SENTRY_STORE_TRANSACTION_RETRY_WAIT_TIME_MILLIS =
+        "sentry.store.transaction.retry.wait.time.millis";
+    public static final int SENTRY_STORE_TRANSACTION_RETRY_WAIT_TIME_MILLIS_DEFAULT = 500;
 
     public static final String JAVAX_JDO_URL = "javax.jdo.option.ConnectionURL";
     public static final String JAVAX_JDO_USER = "javax.jdo.option.ConnectionUserName";

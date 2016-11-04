@@ -20,10 +20,7 @@ package org.apache.sentry.provider.db.generic.service.persistent;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.sentry.SentryUserException;
 import org.apache.sentry.core.common.Authorizable;
-import org.apache.sentry.provider.db.SentryAlreadyExistsException;
-import org.apache.sentry.provider.db.SentryNoSuchObjectException;
 import org.apache.sentry.provider.db.service.model.MSentryGMPrivilege;
 import org.apache.sentry.provider.db.service.persistent.CommitContext;
 
@@ -37,10 +34,10 @@ public interface SentryStoreLayer {
    * @param role: The name of role
    * @param requestor: User on whose behalf the request is launched
    * @returns commit context used for notification handlers
-   * @throws SentryAlreadyExistsException
+   * @throws Exception
    */
-  public CommitContext createRole(String component, String role,
-      String requestor) throws SentryAlreadyExistsException;
+  CommitContext createRole(String component, String role,
+      String requestor) throws Exception;
 
   /**
    * Drop a role
@@ -48,10 +45,10 @@ public interface SentryStoreLayer {
    * @param role: The name of role
    * @param requestor: user on whose behalf the request is launched
    * @returns commit context used for notification handlers
-   * @throws SentryNoSuchObjectException
+   * @throws Exception
    */
-  public CommitContext dropRole(String component, String role,
-      String requestor) throws SentryNoSuchObjectException;
+  CommitContext dropRole(String component, String role,
+      String requestor) throws Exception;
 
   /**
    * Add a role to groups.
@@ -60,10 +57,10 @@ public interface SentryStoreLayer {
    * @param groups: The name of groups
    * @param requestor: User on whose behalf the request is issued
    * @returns commit context used for notification handlers
-   * @throws SentryNoSuchObjectException
+   * @throws Exception
    */
-  public CommitContext alterRoleAddGroups(String component, String role,
-      Set<String> groups, String requestor) throws SentryNoSuchObjectException;
+  CommitContext alterRoleAddGroups(String component, String role,
+      Set<String> groups, String requestor) throws Exception;
 
   /**
    * Delete a role from groups.
@@ -72,10 +69,10 @@ public interface SentryStoreLayer {
    * @param groups: The name of groups
    * @param requestor: User on whose behalf the request is launched
    * @returns commit context used for notification handlers
-   * @throws SentryNoSuchObjectException
+   * @throws Exception
    */
-  public CommitContext alterRoleDeleteGroups(String component, String role,
-      Set<String> groups, String requestor) throws SentryNoSuchObjectException;
+  CommitContext alterRoleDeleteGroups(String component, String role,
+      Set<String> groups, String requestor) throws Exception;
 
   /**
    * Grant a privilege to role.
@@ -84,10 +81,10 @@ public interface SentryStoreLayer {
    * @param privilege: The privilege object will be granted
    * @param grantorPrincipal: User on whose behalf the request is launched
    * @returns commit context Used for notification handlers
-   * @throws SentryUserException
+   * @throws Exception
    */
-  public CommitContext alterRoleGrantPrivilege(String component, String role,
-      PrivilegeObject privilege, String grantorPrincipal) throws SentryUserException;
+  CommitContext alterRoleGrantPrivilege(String component, String role,
+      PrivilegeObject privilege, String grantorPrincipal) throws Exception;
 
   /**
    * Revoke a privilege from role.
@@ -96,10 +93,10 @@ public interface SentryStoreLayer {
    * @param privilege: The privilege object will revoked
    * @param grantorPrincipal: User on whose behalf the request is launched
    * @returns commit context used for notification handlers
-   * @throws SentryUserException
+   * @throws Exception
    */
-  public CommitContext alterRoleRevokePrivilege(String component, String role,
-      PrivilegeObject privilege, String grantorPrincipal) throws SentryUserException;
+  CommitContext alterRoleRevokePrivilege(String component, String role,
+      PrivilegeObject privilege, String grantorPrincipal) throws Exception;
 
   /**
    * Rename privilege
@@ -110,11 +107,11 @@ public interface SentryStoreLayer {
    * @param newAuthorizables: The new list of authorize objects
    * @param requestor: User on whose behalf the request is launched
    * @returns commit context used for notification handlers
-   * @throws SentryUserException
+   * @throws Exception
    */
   public CommitContext renamePrivilege(
       String component, String service, List<? extends Authorizable> oldAuthorizables,
-      List<? extends Authorizable> newAuthorizables, String requestor) throws SentryUserException;
+      List<? extends Authorizable> newAuthorizables, String requestor) throws Exception;
 
   /**
    * Drop privilege
@@ -122,37 +119,37 @@ public interface SentryStoreLayer {
    * @param privilege: The privilege will be dropped
    * @param requestor: User on whose behalf the request is launched
    * @returns commit context used for notification handlers
-   * @throws SentryUserException
+   * @throws Exception
    */
-  public CommitContext dropPrivilege(String component, PrivilegeObject privilege,
-      String requestor) throws SentryUserException;
+  CommitContext dropPrivilege(String component, PrivilegeObject privilege,
+      String requestor) throws Exception;
 
   /**
    * Get roles
    * @param component: The request respond to which component
    * @param groups: The name of groups
    * @returns the set of roles
-   * @throws SentryUserException
+   * @throws Exception
    */
-  public Set<String> getRolesByGroups(String component, Set<String> groups) throws SentryUserException;
+  Set<String> getRolesByGroups(String component, Set<String> groups) throws Exception;
 
   /**
    * Get groups
    * @param component: The request respond to which component
    * @param roles: The name of roles
    * @returns the set of groups
-   * @throws SentryUserException
+   * @throws Exception
    */
-  public Set<String> getGroupsByRoles(String component, Set<String> roles) throws SentryUserException;
+  Set<String> getGroupsByRoles(String component, Set<String> roles) throws Exception;
 
   /**
    * Get privileges
    * @param component: The request respond to which component
    * @param roles: The name of roles
    * @returns the set of privileges
-   * @throws SentryUserException
+   * @throws Exception
    */
-  public Set<PrivilegeObject> getPrivilegesByRole(String component, Set<String> roles) throws SentryUserException;
+  Set<PrivilegeObject> getPrivilegesByRole(String component, Set<String> roles) throws Exception;
 
   /**
    * get sentry privileges from provider as followings:
@@ -162,12 +159,12 @@ public interface SentryStoreLayer {
    * @param groups: The name of groups
    * @param authorizables: The list of authorize objects
    * @returns the set of privileges
-   * @throws SentryUserException
+   * @throws Exception
    */
 
   public Set<PrivilegeObject> getPrivilegesByProvider(String component, String service,Set<String> roles,
        Set<String> groups, List<? extends Authorizable> authorizables)
-       throws SentryUserException;
+       throws Exception;
 
   /**
    * Get all roles name.
@@ -184,11 +181,11 @@ public interface SentryStoreLayer {
    * @param validActiveRoles: The valid active roles
    * @param authorizables: The list of authorize objects
    * @returns The set of MSentryGMPrivilege
-   * @throws SentryUserException
+   * @throws Exception
    */
   Set<MSentryGMPrivilege> getPrivilegesByAuthorizable(String component, String service,
       Set<String> validActiveRoles, List<? extends Authorizable> authorizables)
-      throws SentryUserException;
+      throws Exception;
 
   /**
    * close sentryStore
