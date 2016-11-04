@@ -17,31 +17,29 @@
  */
 package org.apache.sentry.provider.db.generic.service.thrift;
 
-import org.apache.sentry.provider.db.service.persistent.CommitContext;
-
 public interface NotificationHandler {
 
-  void create_sentry_role(CommitContext context,
-      TCreateSentryRoleRequest request, TCreateSentryRoleResponse response);
+  void create_sentry_role(TCreateSentryRoleRequest request,
+                          TCreateSentryRoleResponse response);
 
-  void drop_sentry_role(CommitContext context, TDropSentryRoleRequest request,
+  void drop_sentry_role(TDropSentryRoleRequest request,
       TDropSentryRoleResponse response);
 
-  void alter_sentry_role_grant_privilege(CommitContext context, TAlterSentryRoleGrantPrivilegeRequest request,
+  void alter_sentry_role_grant_privilege(TAlterSentryRoleGrantPrivilegeRequest request,
       TAlterSentryRoleGrantPrivilegeResponse response);
 
-  void alter_sentry_role_revoke_privilege(CommitContext context, TAlterSentryRoleRevokePrivilegeRequest request,
+  void alter_sentry_role_revoke_privilege(TAlterSentryRoleRevokePrivilegeRequest request,
       TAlterSentryRoleRevokePrivilegeResponse response);
 
-  void alter_sentry_role_add_groups(CommitContext context,TAlterSentryRoleAddGroupsRequest request,
+  void alter_sentry_role_add_groups(TAlterSentryRoleAddGroupsRequest request,
       TAlterSentryRoleAddGroupsResponse response);
 
-  void alter_sentry_role_delete_groups(CommitContext context, TAlterSentryRoleDeleteGroupsRequest request,
+  void alter_sentry_role_delete_groups(TAlterSentryRoleDeleteGroupsRequest request,
       TAlterSentryRoleDeleteGroupsResponse response);
 
-  void drop_sentry_privilege(CommitContext context, TDropPrivilegesRequest request,
+  void drop_sentry_privilege(TDropPrivilegesRequest request,
       TDropPrivilegesResponse response);
 
-  void rename_sentry_privilege(CommitContext context, TRenamePrivilegesRequest request,
+  void rename_sentry_privilege(TRenamePrivilegesRequest request,
       TRenamePrivilegesResponse response);
 }

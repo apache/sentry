@@ -45,7 +45,6 @@ import org.apache.sentry.core.common.exception.SentryThriftAPIMismatchException;
 import org.apache.sentry.provider.db.log.entity.JsonLogEntity;
 import org.apache.sentry.provider.db.log.entity.JsonLogEntityFactory;
 import org.apache.sentry.provider.db.log.util.Constants;
-import org.apache.sentry.provider.db.service.persistent.CommitContext;
 import org.apache.sentry.provider.db.service.persistent.HAContext;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.provider.db.service.persistent.ServiceRegister;
@@ -230,10 +229,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       validateClientVersion(request.getProtocol_version());
       authorize(request.getRequestorUserName(),
           getRequestorGroups(request.getRequestorUserName()));
-      CommitContext commitContext = sentryStore.createSentryRole(request.getRoleName());
+      sentryStore.createSentryRole(request.getRoleName());
       response.setStatus(Status.OK());
-      notificationHandlerInvoker.create_sentry_role(commitContext,
-          request, response);
+      notificationHandlerInvoker.create_sentry_role(request, response);
     } catch (SentryAlreadyExistsException e) {
       String msg = "Role: " + request + " already exists.";
       LOGGER.error(msg, e);
@@ -279,7 +277,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       if (request.isSetPrivilege()) {
         request.setPrivileges(Sets.newHashSet(request.getPrivilege()));
       }
-      CommitContext commitContext = sentryStore.alterSentryRoleGrantPrivileges(request.getRequestorUserName(),
+      sentryStore.alterSentryRoleGrantPrivileges(request.getRequestorUserName(),
           request.getRoleName(), request.getPrivileges());
       response.setStatus(Status.OK());
       response.setPrivileges(request.getPrivileges());
@@ -287,8 +285,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       if (response.isSetPrivileges() && response.getPrivileges().size() == 1) {
         response.setPrivilege(response.getPrivileges().iterator().next());
       }
-      notificationHandlerInvoker.alter_sentry_role_grant_privilege(commitContext,
-          request, response);
+      notificationHandlerInvoker.alter_sentry_role_grant_privilege(request,
+              response);
       for (SentryPolicyStorePlugin plugin : sentryPlugins) {
         plugin.onAlterSentryRoleGrantPrivilege(request);
       }
@@ -343,11 +341,11 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       if (request.isSetPrivilege()) {
         request.setPrivileges(Sets.newHashSet(request.getPrivilege()));
       }
-      CommitContext commitContext = sentryStore.alterSentryRoleRevokePrivileges(request.getRequestorUserName(),
+      sentryStore.alterSentryRoleRevokePrivileges(request.getRequestorUserName(),
           request.getRoleName(), request.getPrivileges());
       response.setStatus(Status.OK());
-      notificationHandlerInvoker.alter_sentry_role_revoke_privilege(commitContext,
-          request, response);
+      notificationHandlerInvoker.alter_sentry_role_revoke_privilege(request,
+              response);
       for (SentryPolicyStorePlugin plugin : sentryPlugins) {
         plugin.onAlterSentryRoleRevokePrivilege(request);
       }
@@ -413,10 +411,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       validateClientVersion(request.getProtocol_version());
       authorize(request.getRequestorUserName(),
           getRequestorGroups(request.getRequestorUserName()));
-      CommitContext commitContext = sentryStore.dropSentryRole(request.getRoleName());
+      sentryStore.dropSentryRole(request.getRoleName());
       response.setStatus(Status.OK());
-      notificationHandlerInvoker.drop_sentry_role(commitContext,
-          request, response);
+      notificationHandlerInvoker.drop_sentry_role(request, response);
       for (SentryPolicyStorePlugin plugin : sentryPlugins) {
         plugin.onDropSentryRole(request);
       }
@@ -458,12 +455,12 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       validateClientVersion(request.getProtocol_version());
       authorize(request.getRequestorUserName(),
           getRequestorGroups(request.getRequestorUserName()));
-      CommitContext commitContext = sentryStore.alterSentryRoleAddGroups(
+      sentryStore.alterSentryRoleAddGroups(
           request.getRequestorUserName(), request.getRoleName(),
           request.getGroups());
       response.setStatus(Status.OK());
-      notificationHandlerInvoker.alter_sentry_role_add_groups(commitContext,
-          request, response);
+      notificationHandlerInvoker.alter_sentry_role_add_groups(request,
+              response);
       for (SentryPolicyStorePlugin plugin : sentryPlugins) {
         plugin.onAlterSentryRoleAddGroups(request);
       }
@@ -504,10 +501,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     try {
       validateClientVersion(request.getProtocol_version());
       authorize(request.getRequestorUserName(), getRequestorGroups(request.getRequestorUserName()));
-      CommitContext commitContext = sentryStore.alterSentryRoleAddUsers(request.getRoleName(),
-          request.getUsers());
+      sentryStore.alterSentryRoleAddUsers(request.getRoleName(), request.getUsers());
       response.setStatus(Status.OK());
-      notificationHandlerInvoker.alter_sentry_role_add_users(commitContext, request, response);
+      notificationHandlerInvoker.alter_sentry_role_add_users(request, response);
     } catch (SentryNoSuchObjectException e) {
       String msg = "Role: " + request + " does not exist.";
       LOGGER.error(msg, e);
@@ -545,10 +541,10 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     try {
       validateClientVersion(request.getProtocol_version());
       authorize(request.getRequestorUserName(), getRequestorGroups(request.getRequestorUserName()));
-      CommitContext commitContext = sentryStore.alterSentryRoleDeleteUsers(request.getRoleName(),
-          request.getUsers());
+      sentryStore.alterSentryRoleDeleteUsers(request.getRoleName(),
+              request.getUsers());
       response.setStatus(Status.OK());
-      notificationHandlerInvoker.alter_sentry_role_delete_users(commitContext, request, response);
+      notificationHandlerInvoker.alter_sentry_role_delete_users(request, response);
     } catch (SentryNoSuchObjectException e) {
       String msg = "Role: " + request + " does not exist.";
       LOGGER.error(msg, e);
@@ -587,11 +583,11 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       validateClientVersion(request.getProtocol_version());
       authorize(request.getRequestorUserName(),
           getRequestorGroups(request.getRequestorUserName()));
-      CommitContext commitContext = sentryStore.alterSentryRoleDeleteGroups(request.getRoleName(),
-          request.getGroups());
+      sentryStore.alterSentryRoleDeleteGroups(request.getRoleName(),
+              request.getGroups());
       response.setStatus(Status.OK());
-      notificationHandlerInvoker.alter_sentry_role_delete_groups(commitContext,
-          request, response);
+      notificationHandlerInvoker.alter_sentry_role_delete_groups(request,
+              response);
       for (SentryPolicyStorePlugin plugin : sentryPlugins) {
         plugin.onAlterSentryRoleDeleteGroups(request);
       }

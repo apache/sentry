@@ -19,7 +19,6 @@ package org.apache.sentry.provider.db.generic.service.thrift;
 
 import java.util.List;
 
-import org.apache.sentry.provider.db.service.persistent.CommitContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,12 +37,12 @@ public class NotificationHandlerInvoker implements NotificationHandler {
     this.handlers = handlers;
   }
   @Override
-  public void create_sentry_role(CommitContext context,
-      TCreateSentryRoleRequest request, TCreateSentryRoleResponse response) {
+  public void create_sentry_role(TCreateSentryRoleRequest request,
+                                 TCreateSentryRoleResponse response) {
     for (NotificationHandler handler : handlers) {
       try {
         LOGGER.debug("Calling " + handler);
-        handler.create_sentry_role(context,  new TCreateSentryRoleRequest(request),
+        handler.create_sentry_role(new TCreateSentryRoleRequest(request),
                                    new TCreateSentryRoleResponse(response));
       } catch (Exception ex) {
         LOGGER.error("Unexpected error in " + handler + ". Request: "
@@ -53,12 +52,12 @@ public class NotificationHandlerInvoker implements NotificationHandler {
   }
 
   @Override
-  public void drop_sentry_role(CommitContext context,
-      TDropSentryRoleRequest request, TDropSentryRoleResponse response) {
+  public void drop_sentry_role(TDropSentryRoleRequest request,
+                               TDropSentryRoleResponse response) {
     for (NotificationHandler handler : handlers) {
       try {
         LOGGER.debug("Calling " + handler);
-        handler.drop_sentry_role(context,  new TDropSentryRoleRequest(request),
+        handler.drop_sentry_role(new TDropSentryRoleRequest(request),
                                  new TDropSentryRoleResponse(response));
       } catch (Exception ex) {
         LOGGER.error("Unexpected error in " + handler + ". Request: "
@@ -68,13 +67,13 @@ public class NotificationHandlerInvoker implements NotificationHandler {
   }
 
   @Override
-  public void alter_sentry_role_grant_privilege(CommitContext context,
-      TAlterSentryRoleGrantPrivilegeRequest request,
-      TAlterSentryRoleGrantPrivilegeResponse response) {
+  public void alter_sentry_role_grant_privilege(
+          TAlterSentryRoleGrantPrivilegeRequest request,
+          TAlterSentryRoleGrantPrivilegeResponse response) {
     for (NotificationHandler handler : handlers) {
       try {
         LOGGER.debug("Calling " + handler);
-        handler.alter_sentry_role_grant_privilege(context,
+        handler.alter_sentry_role_grant_privilege(
             new TAlterSentryRoleGrantPrivilegeRequest(request),
             new TAlterSentryRoleGrantPrivilegeResponse(response));
       } catch (Exception ex) {
@@ -85,13 +84,13 @@ public class NotificationHandlerInvoker implements NotificationHandler {
   }
 
   @Override
-  public void alter_sentry_role_revoke_privilege(CommitContext context,
+  public void alter_sentry_role_revoke_privilege(
       TAlterSentryRoleRevokePrivilegeRequest request,
       TAlterSentryRoleRevokePrivilegeResponse response) {
     for (NotificationHandler handler : handlers) {
       try {
         LOGGER.debug("Calling " + handler);
-        handler.alter_sentry_role_revoke_privilege(context,
+        handler.alter_sentry_role_revoke_privilege(
             new TAlterSentryRoleRevokePrivilegeRequest(request),
             new TAlterSentryRoleRevokePrivilegeResponse(response));
       } catch (Exception ex) {
@@ -102,13 +101,13 @@ public class NotificationHandlerInvoker implements NotificationHandler {
   }
 
   @Override
-  public void alter_sentry_role_add_groups(CommitContext context,
+  public void alter_sentry_role_add_groups(
       TAlterSentryRoleAddGroupsRequest request,
       TAlterSentryRoleAddGroupsResponse response) {
     for (NotificationHandler handler : handlers) {
       try {
         LOGGER.debug("Calling " + handler);
-        handler.alter_sentry_role_add_groups(context, new TAlterSentryRoleAddGroupsRequest(request),
+        handler.alter_sentry_role_add_groups(new TAlterSentryRoleAddGroupsRequest(request),
                                              new TAlterSentryRoleAddGroupsResponse(response));
       } catch (Exception ex) {
         LOGGER.error("Unexpected error in " + handler + ". Request: "
@@ -118,13 +117,13 @@ public class NotificationHandlerInvoker implements NotificationHandler {
   }
 
   @Override
-  public void alter_sentry_role_delete_groups(CommitContext context,
+  public void alter_sentry_role_delete_groups(
       TAlterSentryRoleDeleteGroupsRequest request,
       TAlterSentryRoleDeleteGroupsResponse response) {
     for (NotificationHandler handler : handlers) {
       try {
         LOGGER.debug("Calling " + handler);
-        handler.alter_sentry_role_delete_groups(context, new TAlterSentryRoleDeleteGroupsRequest(request),
+        handler.alter_sentry_role_delete_groups(new TAlterSentryRoleDeleteGroupsRequest(request),
                                                 new TAlterSentryRoleDeleteGroupsResponse(response));
       } catch (Exception ex) {
         LOGGER.error("Unexpected error in " + handler + ". Request: "
@@ -133,12 +132,12 @@ public class NotificationHandlerInvoker implements NotificationHandler {
     }
   }
   @Override
-  public void drop_sentry_privilege(CommitContext context,
+  public void drop_sentry_privilege(
       TDropPrivilegesRequest request, TDropPrivilegesResponse response) {
     for (NotificationHandler handler : handlers) {
       try {
         LOGGER.debug("Calling " + handler);
-        handler.drop_sentry_privilege(context, new TDropPrivilegesRequest(request),
+        handler.drop_sentry_privilege(new TDropPrivilegesRequest(request),
                                                 new TDropPrivilegesResponse(response));
       } catch (Exception ex) {
         LOGGER.error("Unexpected error in " + handler + ". Request: "
@@ -147,13 +146,13 @@ public class NotificationHandlerInvoker implements NotificationHandler {
     }
   }
   @Override
-  public void rename_sentry_privilege(CommitContext context,
-      TRenamePrivilegesRequest request, TRenamePrivilegesResponse response) {
+  public void rename_sentry_privilege(TRenamePrivilegesRequest request,
+                                      TRenamePrivilegesResponse response) {
     for (NotificationHandler handler : handlers) {
       try {
         LOGGER.debug("Calling " + handler);
-        handler.rename_sentry_privilege(context, new TRenamePrivilegesRequest(request),
-                                                new TRenamePrivilegesResponse(response));
+        handler.rename_sentry_privilege(new TRenamePrivilegesRequest(request),
+                                        new TRenamePrivilegesResponse(response));
       } catch (Exception ex) {
         LOGGER.error("Unexpected error in " + handler + ". Request: "
                      + request + ", Response: " + response, ex);

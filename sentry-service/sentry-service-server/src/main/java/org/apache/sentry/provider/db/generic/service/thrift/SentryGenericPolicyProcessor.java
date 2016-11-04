@@ -46,7 +46,6 @@ import org.apache.sentry.provider.db.log.entity.JsonLogEntityFactory;
 import org.apache.sentry.provider.db.log.util.Constants;
 import org.apache.sentry.provider.db.service.model.MSentryGMPrivilege;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
-import org.apache.sentry.provider.db.service.persistent.CommitContext;
 import org.apache.sentry.provider.db.service.thrift.PolicyStoreConstants;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessor;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
@@ -399,14 +398,15 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
         validateClientVersion(request.getProtocol_version());
         authorize(request.getRequestorUserName(),
             getRequestorGroups(conf, request.getRequestorUserName()));
-        CommitContext context = store.createRole(request.getComponent(), request.getRoleName(), request.getRequestorUserName());
-        return new Response<Void>(Status.OK(), context);
+        store.createRole(request.getComponent(), request.getRoleName(),
+                request.getRequestorUserName());
+        return new Response<Void>(Status.OK());
       }
     });
 
     TCreateSentryRoleResponse tResponse = new TCreateSentryRoleResponse(respose.status);
     if (Status.OK.getCode() == respose.status.getValue()) {
-      handerInvoker.create_sentry_role(respose.context, request, tResponse);
+      handerInvoker.create_sentry_role(request, tResponse);
     }
 
     try {
@@ -429,14 +429,15 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
         validateClientVersion(request.getProtocol_version());
         authorize(request.getRequestorUserName(),
             getRequestorGroups(conf, request.getRequestorUserName()));
-        CommitContext context = store.dropRole(request.getComponent(), request.getRoleName(), request.getRequestorUserName());
-        return new Response<Void>(Status.OK(), context);
+        store.dropRole(request.getComponent(), request.getRoleName(),
+                request.getRequestorUserName());
+        return new Response<Void>(Status.OK());
       }
     });
 
     TDropSentryRoleResponse tResponse = new TDropSentryRoleResponse(respose.status);
     if (Status.OK.getCode() == respose.status.getValue()) {
-      handerInvoker.drop_sentry_role(respose.context, request, tResponse);
+      handerInvoker.drop_sentry_role(request, tResponse);
     }
 
     try {
@@ -457,14 +458,17 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
       @Override
       public Response<Void> handle() throws Exception {
         validateClientVersion(request.getProtocol_version());
-        CommitContext context = store.alterRoleGrantPrivilege(request.getComponent(), request.getRoleName(), toPrivilegeObject(request.getPrivilege()), request.getRequestorUserName());
-       return new Response<Void>(Status.OK(), context);
+        store.alterRoleGrantPrivilege(request.getComponent(),
+                request.getRoleName(),
+                toPrivilegeObject(request.getPrivilege()),
+                request.getRequestorUserName());
+       return new Response<Void>(Status.OK());
       }
     });
 
     TAlterSentryRoleGrantPrivilegeResponse tResponse = new TAlterSentryRoleGrantPrivilegeResponse(respose.status);
     if (Status.OK.getCode() == respose.status.getValue()) {
-      handerInvoker.alter_sentry_role_grant_privilege(respose.context, request, tResponse);
+      handerInvoker.alter_sentry_role_grant_privilege(request, tResponse);
     }
 
     try {
@@ -485,14 +489,18 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
       @Override
       public Response<Void> handle() throws Exception {
         validateClientVersion(request.getProtocol_version());
-        CommitContext context = store.alterRoleRevokePrivilege(request.getComponent(), request.getRoleName(), toPrivilegeObject(request.getPrivilege()), request.getRequestorUserName());
-       return new Response<Void>(Status.OK(), context);
+        store.alterRoleRevokePrivilege(request.getComponent(),
+                request.getRoleName(),
+                toPrivilegeObject(request.getPrivilege()),
+                request.getRequestorUserName());
+       return new Response<Void>(Status.OK());
       }
     });
 
-    TAlterSentryRoleRevokePrivilegeResponse tResponse = new TAlterSentryRoleRevokePrivilegeResponse(respose.status);
+    TAlterSentryRoleRevokePrivilegeResponse tResponse =
+            new TAlterSentryRoleRevokePrivilegeResponse(respose.status);
     if (Status.OK.getCode() == respose.status.getValue()) {
-      handerInvoker.alter_sentry_role_revoke_privilege(respose.context, request, tResponse);
+      handerInvoker.alter_sentry_role_revoke_privilege(request, tResponse);
     }
 
     try {
@@ -515,14 +523,18 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
         validateClientVersion(request.getProtocol_version());
         authorize(request.getRequestorUserName(),
             getRequestorGroups(conf, request.getRequestorUserName()));
-        CommitContext context = store.alterRoleAddGroups(request.getComponent(), request.getRoleName(), request.getGroups(), request.getRequestorUserName());
-        return new Response<Void>(Status.OK(), context);
+        store.alterRoleAddGroups(request.getComponent(),
+                request.getRoleName(),
+                request.getGroups(),
+                request.getRequestorUserName());
+        return new Response<Void>(Status.OK());
       }
     });
 
-    TAlterSentryRoleAddGroupsResponse tResponse = new TAlterSentryRoleAddGroupsResponse(respose.status);
+    TAlterSentryRoleAddGroupsResponse tResponse =
+            new TAlterSentryRoleAddGroupsResponse(respose.status);
     if (Status.OK.getCode() == respose.status.getValue()) {
-      handerInvoker.alter_sentry_role_add_groups(respose.context, request, tResponse);
+      handerInvoker.alter_sentry_role_add_groups(request, tResponse);
     }
 
     try {
@@ -545,14 +557,18 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
         validateClientVersion(request.getProtocol_version());
         authorize(request.getRequestorUserName(),
             getRequestorGroups(conf, request.getRequestorUserName()));
-        CommitContext context = store.alterRoleDeleteGroups(request.getComponent(), request.getRoleName(), request.getGroups(), request.getRequestorUserName());
-        return new Response<Void>(Status.OK(), context);
+        store.alterRoleDeleteGroups(request.getComponent(),
+                request.getRoleName(),
+                request.getGroups(),
+                request.getRequestorUserName());
+        return new Response<Void>(Status.OK());
       }
     });
 
-    TAlterSentryRoleDeleteGroupsResponse tResponse = new TAlterSentryRoleDeleteGroupsResponse(respose.status);
+    TAlterSentryRoleDeleteGroupsResponse tResponse =
+            new TAlterSentryRoleDeleteGroupsResponse(respose.status);
     if (Status.OK.getCode() == respose.status.getValue()) {
-      handerInvoker.alter_sentry_role_delete_groups(respose.context, request, tResponse);
+      handerInvoker.alter_sentry_role_delete_groups(request, tResponse);
     }
 
     try {
@@ -560,7 +576,8 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
         .createJsonLogEntity(request, tResponse, conf).toJsonFormatLog());
     } catch (Exception e) {
       // if any exception, log the exception.
-      String msg = "Error in creating audit log for delete role from group: " + e.getMessage();
+      String msg = "Error in creating audit log for delete role from group: " +
+              e.getMessage();
       LOGGER.error(msg, e);
     }
     return tResponse;
@@ -760,16 +777,16 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
         validateClientVersion(request.getProtocol_version());
         authorize(request.getRequestorUserName(),
             getRequestorGroups(conf, request.getRequestorUserName()));
-        CommitContext context = store.dropPrivilege(request.getComponent(),
+        store.dropPrivilege(request.getComponent(),
             toPrivilegeObject(request.getPrivilege()),
             request.getRequestorUserName());
-        return new Response<Void>(Status.OK(), context);
+        return new Response<Void>(Status.OK());
       }
     });
 
     TDropPrivilegesResponse tResponse = new TDropPrivilegesResponse(respose.status);
     if (Status.OK.getCode() == respose.status.getValue()) {
-      handerInvoker.drop_sentry_privilege(respose.context, request, tResponse);
+      handerInvoker.drop_sentry_privilege(request, tResponse);
     }
     return tResponse;
   }
@@ -783,40 +800,34 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
         validateClientVersion(request.getProtocol_version());
         authorize(request.getRequestorUserName(),
             getRequestorGroups(conf, request.getRequestorUserName()));
-        CommitContext context = store.renamePrivilege(request.getComponent(), request.getServiceName(),
-                                    toAuthorizables(request.getOldAuthorizables()),
-                                    toAuthorizables(request.getNewAuthorizables()),
-                                    request.getRequestorUserName());
-        return new Response<Void>(Status.OK(),context);
+        store.renamePrivilege(request.getComponent(), request.getServiceName(),
+                              toAuthorizables(request.getOldAuthorizables()),
+                              toAuthorizables(request.getNewAuthorizables()),
+                              request.getRequestorUserName());
+        return new Response<Void>(Status.OK());
       }
     });
 
     TRenamePrivilegesResponse tResponse = new TRenamePrivilegesResponse(respose.status);
     if (Status.OK.getCode() == respose.status.getValue()) {
-      handerInvoker.rename_sentry_privilege(respose.context, request, tResponse);
+      handerInvoker.rename_sentry_privilege(request, tResponse);
     }
     return tResponse;
   }
 
   private static class Response<T> {
     private TSentryResponseStatus status;
-    private CommitContext context;
     private T content;
 
     Response() {
     }
 
-    Response(TSentryResponseStatus status, CommitContext context) {
-      this(status,context,null);
+    Response(TSentryResponseStatus status) {
+      this(status, null);
     }
 
     Response(TSentryResponseStatus status, T content) {
-      this(status,null,content);
-    }
-
-    Response(TSentryResponseStatus status, CommitContext context, T content) {
       this.status = status;
-      this.context = context;
       this.content = content;
     }
   }
