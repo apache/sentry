@@ -2048,9 +2048,8 @@ public class TestSentryStore extends org.junit.Assert {
 
   @Test
   public void testAuthzPathsMapping() throws Exception {
-    long seqId = sentryStore.createAuthzPathsMapping("db1.table1", Sets.newHashSet("/user/hive/warehouse/db1.db/table1")).getSequenceId();
-    long actualSeqId = sentryStore.createAuthzPathsMapping("db1.table2", Sets.newHashSet("/user/hive/warehouse/db1.db/table2")).getSequenceId();
-    assertEquals(seqId + 1, actualSeqId);
+    sentryStore.createAuthzPathsMapping("db1.table1", Sets.newHashSet("/user/hive/warehouse/db1.db/table1"));
+    sentryStore.createAuthzPathsMapping("db1.table2", Sets.newHashSet("/user/hive/warehouse/db1.db/table2"));
 
     Map<String, Set<String>> pathsImage = sentryStore.retrieveFullPathsImage();
     assertEquals(2, pathsImage.size());

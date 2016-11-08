@@ -95,7 +95,6 @@ import com.google.common.collect.Sets;
  * in addition to starting and ending whitespace.
  */
 public class SentryStore {
-  private static final UUID SERVER_UUID = UUID.randomUUID();
   private static final Logger LOGGER = LoggerFactory
       .getLogger(SentryStore.class);
 
@@ -114,14 +113,6 @@ public class SentryStore {
   private static final Set<String> PARTIAL_REVOKE_ACTIONS = Sets.newHashSet(AccessConstants.ALL,
       AccessConstants.ACTION_ALL.toLowerCase(), AccessConstants.SELECT, AccessConstants.INSERT);
 
-  /**
-   * Commit order sequence id. This is used by notification handlers
-   * to know the order in which events where committed to the database.
-   * This instance variable is incremented in incrementGetSequenceId
-   * and read in commitUpdateTransaction. Synchronization on this
-   * is required to read commitSequenceId.
-   */
-  private long commitSequenceId;
   private final PersistenceManagerFactory pmf;
   private Configuration conf;
   private PrivCleaner privCleaner = null;
@@ -129,7 +120,7 @@ public class SentryStore {
   private final TransactionManager tm;
 
   public static Properties getDataNucleusProperties(Configuration conf)
-      throws SentrySiteConfigurationException, IOException {
+          throws SentrySiteConfigurationException, IOException {
     Properties prop = new Properties();
     prop.putAll(ServerConfig.SENTRY_STORE_DEFAULTS);
     String jdbcUrl = conf.get(ServerConfig.SENTRY_STORE_JDBC_URL, "").trim();
@@ -169,7 +160,6 @@ public class SentryStore {
   }
 
   public SentryStore(Configuration conf) throws Exception {
-    commitSequenceId = 0;
     this.conf = conf;
     Properties prop = getDataNucleusProperties(conf);
     boolean checkSchemaVersion = conf.get(
@@ -229,16 +219,6 @@ public class SentryStore {
     }
   }
 
-  /**
-   * Increments commitSequenceId which should not be modified outside
-   * this method.
-   *
-   * @return sequence id
-   */
-  private synchronized long incrementGetSequenceId() {
-    return ++commitSequenceId;
-  }
-
   public void rollbackTransaction(PersistenceManager pm) {
     if (pm == null || pm.isClosed()) {
       return;
@@ -273,18 +253,16 @@ public class SentryStore {
   /**
    * Create a sentry role and persist it.
    * @param roleName: Name of the role being persisted
-   * @returns commit context used for notification handlers
-   * @throws SentryAlreadyExistsException
+   * @throws Exception
    */
-  public CommitContext createSentryRole(final String roleName)
-      throws Exception {
-    return (CommitContext)tm.executeTransactionWithRetry(
-      new TransactionBlock() {
-        public Object execute(PersistenceManager pm) throws Exception {
-          createSentryRoleCore(pm, roleName);
-          return new CommitContext(SERVER_UUID, incrementGetSequenceId());
-        }
-      });
+  public void createSentryRole(final String roleName) throws Exception {
+    tm.executeTransactionWithRetry(
+        new TransactionBlock() {
+          public Object execute(PersistenceManager pm) throws Exception {
+            createSentryRoleCore(pm, roleName);
+            return null;
+            }
+        });
   }
 
   private void createSentryRoleCore(PersistenceManager pm, String roleName)
@@ -381,17 +359,15 @@ public class SentryStore {
     }
   }
 
-  public CommitContext alterSentryRoleGrantPrivilege(String grantorPrincipal,
-      String roleName, TSentryPrivilege privilege)
-      throws Exception {
-    return alterSentryRoleGrantPrivileges(grantorPrincipal,
-        roleName, Sets.newHashSet(privilege));
+  public void alterSentryRoleGrantPrivilege(String grantorPrincipal,
+      String roleName, TSentryPrivilege privilege) throws Exception {
+    alterSentryRoleGrantPrivileges(grantorPrincipal, roleName,
+            Sets.newHashSet(privilege));
   }
 
-  public CommitContext alterSentryRoleGrantPrivileges(final String grantorPrincipal,
-      final String roleName, final Set<TSentryPrivilege> privileges)
-      throws Exception {
-    return (CommitContext)tm.executeTransactionWithRetry(
+  public void alterSentryRoleGrantPrivileges(final String grantorPrincipal,
+      final String roleName, final Set<TSentryPrivilege> privileges) throws Exception {
+    tm.executeTransactionWithRetry(
         new TransactionBlock() {
           public Object execute(PersistenceManager pm) throws Exception {
             String trimmedRoleName = trimAndLower(roleName);
@@ -404,7 +380,7 @@ public class SentryStore {
                 convertToTSentryPrivilege(mPrivilege, privilege);
               }
             }
-            return new CommitContext(SERVER_UUID, incrementGetSequenceId());
+            return null;
           }
         });
   }
@@ -467,15 +443,15 @@ public class SentryStore {
     return mPrivilege;
   }
 
-  public CommitContext alterSentryRoleRevokePrivilege(String grantorPrincipal,
+  public void alterSentryRoleRevokePrivilege(String grantorPrincipal,
       String roleName, TSentryPrivilege tPrivilege) throws Exception {
-    return alterSentryRoleRevokePrivileges(grantorPrincipal,
-        roleName, Sets.newHashSet(tPrivilege));
+    alterSentryRoleRevokePrivileges(grantorPrincipal, roleName,
+            Sets.newHashSet(tPrivilege));
   }
 
-  public CommitContext alterSentryRoleRevokePrivileges(final String grantorPrincipal,
+  public void alterSentryRoleRevokePrivileges(final String grantorPrincipal,
       final String roleName, final Set<TSentryPrivilege> tPrivileges) throws Exception {
-    return (CommitContext)tm.executeTransactionWithRetry(
+    tm.executeTransactionWithRetry(
         new TransactionBlock() {
           public Object execute(PersistenceManager pm) throws Exception {
             String trimmedRoleName = safeTrimLower(roleName);
@@ -485,7 +461,7 @@ public class SentryStore {
 
               alterSentryRoleRevokePrivilegeCore(pm, trimmedRoleName, tPrivilege);
             }
-            return new CommitContext(SERVER_UUID, incrementGetSequenceId());
+            return null;
           }
         });
   }
@@ -736,12 +712,12 @@ public class SentryStore {
     return null;
   }
 
-  public CommitContext dropSentryRole(final String roleName) throws Exception {
-    return (CommitContext)tm.executeTransactionWithRetry(
+  public void dropSentryRole(final String roleName) throws Exception {
+    tm.executeTransactionWithRetry(
         new TransactionBlock() {
           public Object execute(PersistenceManager pm) throws Exception {
             dropSentryRoleCore(pm, roleName);
-            return new CommitContext(SERVER_UUID, incrementGetSequenceId());
+            return null;
           }
         });
   }
@@ -767,13 +743,13 @@ public class SentryStore {
     }
   }
 
-  public CommitContext alterSentryRoleAddGroups(final String grantorPrincipal,
+  public void alterSentryRoleAddGroups(final String grantorPrincipal,
       final String roleName, final Set<TSentryGroup> groupNames) throws Exception {
-    return (CommitContext)tm.executeTransactionWithRetry(
+    tm.executeTransactionWithRetry(
         new TransactionBlock() {
           public Object execute(PersistenceManager pm) throws Exception {
             alterSentryRoleAddGroupsCore(pm, roleName, groupNames);
-            return new CommitContext(SERVER_UUID, incrementGetSequenceId());
+            return null;
           }
         });
   }
@@ -807,13 +783,13 @@ public class SentryStore {
     }
   }
 
-  public CommitContext alterSentryRoleAddUsers(final String roleName,
+  public void alterSentryRoleAddUsers(final String roleName,
       final Set<String> userNames) throws Exception {
-    return (CommitContext)tm.executeTransactionWithRetry(
+    tm.executeTransactionWithRetry(
         new TransactionBlock() {
           public Object execute(PersistenceManager pm) throws Exception {
             alterSentryRoleAddUsersCore(pm, roleName, userNames);
-            return new CommitContext(SERVER_UUID, incrementGetSequenceId());
+            return null;
           }
         });
   }
@@ -843,9 +819,9 @@ public class SentryStore {
     }
   }
 
-  public CommitContext alterSentryRoleDeleteUsers(final String roleName,
+  public void alterSentryRoleDeleteUsers(final String roleName,
       final Set<String> userNames) throws Exception {
-    return (CommitContext)tm.executeTransactionWithRetry(
+    tm.executeTransactionWithRetry(
         new TransactionBlock() {
           public Object execute(PersistenceManager pm) throws Exception {
             String trimmedRoleName = trimAndLower(roleName);
@@ -867,15 +843,15 @@ public class SentryStore {
                 }
               }
               pm.makePersistentAll(users);
-              return new CommitContext(SERVER_UUID, incrementGetSequenceId());
             }
+            return null;
           }
         });
   }
 
-  public CommitContext alterSentryRoleDeleteGroups(final String roleName,
+  public void alterSentryRoleDeleteGroups(final String roleName,
       final Set<TSentryGroup> groupNames) throws Exception {
-    return (CommitContext)tm.executeTransactionWithRetry(
+    tm.executeTransactionWithRetry(
         new TransactionBlock() {
           public Object execute(PersistenceManager pm) throws Exception {
             String trimmedRoleName = trimAndLower(roleName);
@@ -901,8 +877,8 @@ public class SentryStore {
                 }
               }
               pm.makePersistentAll(groups);
-              return new CommitContext(SERVER_UUID, incrementGetSequenceId());
             }
+            return null;
           }
         });
   }
@@ -1888,13 +1864,13 @@ public class SentryStore {
     return result;
   }
 
-  public CommitContext createAuthzPathsMapping(final String hiveObj,
+  public void createAuthzPathsMapping(final String hiveObj,
       final Set<String> paths) throws Exception {
-    return (CommitContext)tm.executeTransactionWithRetry(
+    tm.executeTransactionWithRetry(
         new TransactionBlock() {
           public Object execute(PersistenceManager pm) throws Exception {
             createAuthzPathsMappingCore(pm, hiveObj, paths);
-            return new CommitContext(SERVER_UUID, incrementGetSequenceId());
+            return null;
           }
         });
   }
