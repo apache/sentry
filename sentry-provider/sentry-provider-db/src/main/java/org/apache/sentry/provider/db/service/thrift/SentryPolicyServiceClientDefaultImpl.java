@@ -21,16 +21,18 @@ package org.apache.sentry.provider.db.service.thrift;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.PrivilegedExceptionAction;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import javax.security.auth.callback.CallbackHandler;
 
+import com.google.common.net.HostAndPort;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.SaslRpcServer;
-import org.apache.hadoop.security.SaslRpcServer.AuthMethod;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.SentryUserException;
@@ -69,15 +71,17 @@ import com.google.common.collect.Sets;
 public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyServiceClient {
 
   private final Configuration conf;
-  private final InetSocketAddress serverAddress;
   private final boolean kerberos;
-  private final String[] serverPrincipalParts;
+  private String[] serverPrincipalParts;
   private SentryPolicyService.Client client;
   private TTransport transport;
   private int connectionTimeout;
   private static final Logger LOGGER = LoggerFactory
                                        .getLogger(SentryPolicyServiceClient.class);
   private static final String THRIFT_EXCEPTION_MESSAGE = "Thrift exception occurred ";
+  // configs for connection retry
+  private int connectionFullRetryTotal;
+  private List<InetSocketAddress> endpoints;
 
   /**
    * This transport wraps the Sasl transports to set up the right UGI context for open().
@@ -127,40 +131,121 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
     }
   }
 
-  public SentryPolicyServiceClientDefaultImpl(Configuration conf) throws IOException {
-    this(Preconditions.checkNotNull(conf.get(ClientConfig.SERVER_RPC_ADDRESS), "Config key "
-        + ClientConfig.SERVER_RPC_ADDRESS + " is required"), conf.getInt(
-        ClientConfig.SERVER_RPC_PORT, ClientConfig.SERVER_RPC_PORT_DEFAULT), conf);
+  /**
+   * Initialize the sentry configurations.
+   */
+  public SentryPolicyServiceClientDefaultImpl(Configuration conf)
+      throws IOException {
+    this.conf = conf;
+    Preconditions.checkNotNull(this.conf, "Configuration object cannot be null");
+    this.connectionTimeout = conf.getInt(ServiceConstants.ClientConfig.SERVER_RPC_CONN_TIMEOUT,
+        ServiceConstants.ClientConfig.SERVER_RPC_CONN_TIMEOUT_DEFAULT);
+    this.connectionFullRetryTotal = conf.getInt(ServiceConstants.ClientConfig.SENTRY_FULL_RETRY_TOTAL,
+        ServiceConstants.ClientConfig.SENTRY_FULL_RETRY_TOTAL_DEFAULT);
+    this.connectionTimeout = conf.getInt(ClientConfig.SERVER_RPC_CONN_TIMEOUT,
+        ClientConfig.SERVER_RPC_CONN_TIMEOUT_DEFAULT);
+    this.kerberos = ServerConfig.SECURITY_MODE_KERBEROS.equalsIgnoreCase(
+        conf.get(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_KERBEROS).trim());
+
+    String hostsAndPortsStr = conf.get(ServiceConstants.ClientConfig.SERVER_RPC_ADDRESS);
+    if (hostsAndPortsStr == null) {
+      throw new RuntimeException("Config key " +
+          ServiceConstants.ClientConfig.SERVER_RPC_ADDRESS + " is required");
+    }
+    int defaultPort = conf.getInt(ServiceConstants.ClientConfig.SERVER_RPC_PORT,
+        ServiceConstants.ClientConfig.SERVER_RPC_PORT_DEFAULT);
+    String[] hostsAndPortsStrArr = hostsAndPortsStr.split(",");
+    HostAndPort[] hostsAndPorts = ThriftUtil.parseHostPortStrings(hostsAndPortsStrArr, defaultPort);
+    this.endpoints = new ArrayList(hostsAndPortsStrArr.length);
+    for (int i = hostsAndPortsStrArr.length - 1; i >= 0 ; i--) {
+      this.endpoints.add(
+          new InetSocketAddress(hostsAndPorts[i].getHostText(),hostsAndPorts[i].getPort()));
+      LOGGER.debug("Added server endpoint: " + hostsAndPorts[i].toString());
+    }
   }
 
   public SentryPolicyServiceClientDefaultImpl(String addr, int port,
         Configuration conf) throws IOException {
     this.conf = conf;
     Preconditions.checkNotNull(this.conf, "Configuration object cannot be null");
-    this.serverAddress = NetUtils.createSocketAddr(Preconditions.checkNotNull(
+    InetSocketAddress serverAddress = NetUtils.createSocketAddr(Preconditions.checkNotNull(
                             addr, "Config key " + ClientConfig.SERVER_RPC_ADDRESS
                             + " is required"), port);
     this.connectionTimeout = conf.getInt(ClientConfig.SERVER_RPC_CONN_TIMEOUT,
                                          ClientConfig.SERVER_RPC_CONN_TIMEOUT_DEFAULT);
-    kerberos = ServerConfig.SECURITY_MODE_KERBEROS.equalsIgnoreCase(
+    this.kerberos = ServerConfig.SECURITY_MODE_KERBEROS.equalsIgnoreCase(
         conf.get(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_KERBEROS).trim());
+    connect(serverAddress);
+  }
+
+  /**
+   * This is a no-op when already connected.
+   * When there is a connection error, it will retry with another sentry server. It will
+   * first cycle through all the available sentry servers, and then retry the whole server
+   * list no more than connectionFullRetryTotal times. In this case, it won't introduce
+   * more latency when some server fails. Also to prevent all clients connecting to the
+   * same server, it will reorder the endpoints randomly after a full retry.
+   * <p>
+   * TODO: Have a small random sleep after a full retry to prevent all clients connecting to the same server.
+   * <p>
+   * TODO: Add metrics for the number of successful connects and errors per client, and total number of retries.
+   */
+  public synchronized void connectWithRetry() throws IOException {
+    if (isConnected()) {
+      return;
+    }
+    IOException currentException = null;
+    // Here for each full connectWithRetry it will cycle through all available sentry
+    // servers. Before each full connectWithRetry, it will shuffle the server list.
+    for (int retryCount = 0; retryCount < connectionFullRetryTotal; retryCount++) {
+      // Reorder endpoints randomly to prevent all clients connecting to the same endpoint
+      // at the same time after a node failure.
+      Collections.shuffle(endpoints);
+      for (InetSocketAddress addr : endpoints) {
+        try {
+          connect(addr);
+          LOGGER.info(String.format("Connected to SentryServer: %s", addr.toString()));
+          return;
+        } catch (IOException e) {
+          LOGGER.debug(String.format("Failed connection to %s: %s",
+              addr.toString(), e.getMessage()), e);
+          currentException = e;
+        }
+      }
+    }
+
+    // Throw exception as reaching the max full connectWithRetry number.
+    LOGGER.error(
+        String.format("Reach the max connection retry num %d ", connectionFullRetryTotal),
+        currentException);
+    throw currentException;
+  }
+
+  /**
+   * Connect to the specified socket address and throw IOException if failed.
+   */
+  private void connect(InetSocketAddress serverAddress) throws IOException {
     transport = new TSocket(serverAddress.getHostName(),
         serverAddress.getPort(), connectionTimeout);
     if (kerberos) {
-      String serverPrincipal = Preconditions.checkNotNull(conf.get(ServerConfig.PRINCIPAL), ServerConfig.PRINCIPAL + " is required");
+      String serverPrincipal = Preconditions.checkNotNull(
+          conf.get(ServiceConstants.ServerConfig.PRINCIPAL),
+          ServiceConstants.ServerConfig.PRINCIPAL + " is required");
 
       // Resolve server host in the same way as we are doing on server side
-      serverPrincipal = SecurityUtil.getServerPrincipal(serverPrincipal, serverAddress.getAddress());
+      serverPrincipal =
+          SecurityUtil.getServerPrincipal(serverPrincipal, serverAddress.getAddress());
       LOGGER.debug("Using server kerberos principal: " + serverPrincipal);
 
       serverPrincipalParts = SaslRpcServer.splitKerberosName(serverPrincipal);
       Preconditions.checkArgument(serverPrincipalParts.length == 3,
-           "Kerberos principal should have 3 parts: " + serverPrincipal);
+          "Kerberos principal should have 3 parts: " + serverPrincipal);
       boolean wrapUgi = "true".equalsIgnoreCase(conf
-          .get(ServerConfig.SECURITY_USE_UGI_TRANSPORT, "true"));
-      transport = new UgiSaslClientTransport(AuthMethod.KERBEROS.getMechanismName(),
+          .get(ServiceConstants.ServerConfig.SECURITY_USE_UGI_TRANSPORT, "true"));
+      transport = new SentryPolicyServiceClientDefaultImpl.UgiSaslClientTransport(
+          SaslRpcServer.AuthMethod.KERBEROS.getMechanismName(),
           null, serverPrincipalParts[0], serverPrincipalParts[1],
-          ClientConfig.SASL_PROPERTIES, null, transport, wrapUgi);
+          ServiceConstants.ClientConfig.SASL_PROPERTIES, null, transport, wrapUgi);
     } else {
       serverPrincipalParts = null;
     }
@@ -170,7 +255,8 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
       throw new IOException("Transport exception while opening transport: " + e.getMessage(), e);
     }
     LOGGER.debug("Successfully opened transport: " + transport + " to " + serverAddress);
-    long maxMessageSize = conf.getLong(ServiceConstants.ClientConfig.SENTRY_POLICY_CLIENT_THRIFT_MAX_MESSAGE_SIZE,
+    long maxMessageSize = conf.getLong(
+        ServiceConstants.ClientConfig.SENTRY_POLICY_CLIENT_THRIFT_MAX_MESSAGE_SIZE,
         ServiceConstants.ClientConfig.SENTRY_POLICY_CLIENT_THRIFT_MAX_MESSAGE_SIZE_DEFAULT);
     TMultiplexedProtocol protocol = new TMultiplexedProtocol(
         new TBinaryProtocol(transport, maxMessageSize, maxMessageSize, true, true),
@@ -866,8 +952,12 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
   }
 
   public synchronized void close() {
-    if (transport != null) {
+    if (isConnected()) {
       transport.close();
     }
+  }
+
+  private boolean isConnected() {
+    return transport != null && transport.isOpen();
   }
 }

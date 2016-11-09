@@ -18,6 +18,8 @@
 
 package org.apache.sentry.service.thrift;
 
+import com.google.common.net.HostAndPort;
+import org.apache.sentry.provider.db.service.thrift.ThriftUtil;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -30,12 +32,10 @@ public class TestPoolClientInvocationHandler {
   private void expectParseHostPortStrings(String hostsAndPortsStr,
         String[] expectedHosts, int[] expectedPorts) throws Exception {
     boolean success = false;
-    String[] hostsAndPorts = hostsAndPortsStr.split(",");
-    String[] hosts = new String[hostsAndPorts.length];
-    int[] ports = new int[hostsAndPorts.length];
+    String[] hostsAndPortsStrArr = hostsAndPortsStr.split(",");
+    HostAndPort[] hostsAndPorts;
     try {
-      PoolClientInvocationHandler.parseHostPortStrings(hostsAndPortsStr,
-          hostsAndPorts, hosts, ports, 8038);
+      hostsAndPorts = ThriftUtil.parseHostPortStrings(hostsAndPortsStrArr, 8038);
       success = true;
     } finally {
       if (!success) {
@@ -43,10 +43,20 @@ public class TestPoolClientInvocationHandler {
             hostsAndPortsStr);
       }
     }
+    String[] hosts = new String[hostsAndPortsStrArr.length];
+    int[] ports = new int[hostsAndPortsStrArr.length];
+    parseHostsAndPorts(hostsAndPorts, hosts, ports);
     Assert.assertArrayEquals("Got unexpected hosts results while " +
         "parsing " + hostsAndPortsStr, expectedHosts, hosts);
     Assert.assertArrayEquals("Got unexpected ports results while " +
         "parsing " + hostsAndPortsStr, expectedPorts, ports);
+  }
+
+  private void parseHostsAndPorts(HostAndPort[] hostsAndPorts, String[] hosts, int[] ports) {
+    for (int i = 0; i < hostsAndPorts.length; i++) {
+      hosts[i] = hostsAndPorts[i].getHostText();
+      ports[i] = hostsAndPorts[i].getPort();
+    }
   }
 
   @SuppressWarnings("PMD.AvoidUsingHardCodedIP")

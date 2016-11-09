@@ -18,6 +18,7 @@
 
 package org.apache.sentry.provider.db.service.thrift;
 
+import com.google.common.net.HostAndPort;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TSaslClientTransport;
 import org.apache.thrift.transport.TSaslServerTransport;
@@ -104,5 +105,19 @@ public class ThriftUtil {
 
   public static String getImpersonator() {
     return threadLocalImpersonator.get();
+  }
+
+  /**
+   * Utility function for parsing host and port strings. Expected form should be
+   * (host:port). The hostname could be in ipv6 style. If port is not specified,
+   * defaultPort will be used.
+   */
+  public static HostAndPort[] parseHostPortStrings(String[] hostsAndPortsArr, int defaultPort) {
+    HostAndPort[] hostsAndPorts = new HostAndPort[hostsAndPortsArr.length];
+    for (int i = 0; i < hostsAndPorts.length; i++) {
+     hostsAndPorts[i] =
+          HostAndPort.fromString(hostsAndPortsArr[i]).withDefaultPort(defaultPort);
+    }
+    return hostsAndPorts;
   }
 }

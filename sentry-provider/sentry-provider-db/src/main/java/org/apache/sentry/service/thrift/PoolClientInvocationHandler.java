@@ -17,10 +17,11 @@
  */
 package org.apache.sentry.service.thrift;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-import com.google.common.annotations.VisibleForTesting;
+import com.google.common.net.HostAndPort;
 import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.AbandonedConfig;
 import org.apache.commons.pool2.impl.GenericObjectPool;
@@ -28,6 +29,7 @@ import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.SentryUserException;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
+import org.apache.sentry.provider.db.service.thrift.ThriftUtil;
 import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
 import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
@@ -138,74 +140,13 @@ public class PoolClientInvocationHandler extends SentryClientInvocationHandler {
     }
     int defaultPort = conf.getInt(ClientConfig.SERVER_RPC_PORT,
         ClientConfig.SERVER_RPC_PORT_DEFAULT);
-    String[] hostsAndPorts = hostsAndPortsStr.split(",");
-    String[] hosts = new String[hostsAndPorts.length];
-    int[] ports = new int[hostsAndPorts.length];
-    parseHostPortStrings(hostsAndPortsStr, hostsAndPorts, hosts,
-        ports, defaultPort);
+    String[] hostsAndPortsStrArr = hostsAndPortsStr.split(",");
+    HostAndPort[] hostsAndPorts = ThriftUtil.parseHostPortStrings(hostsAndPortsStrArr, defaultPort);
     this.endpoints = new Endpoint[hostsAndPorts.length];
     for (int i = 0; i < this.endpoints.length; i++) {
-      this.endpoints[i] = new Endpoint(hosts[i], ports[i]);
-      LOGGER.info("Initiate sentry sever endpoint: hostname " + hosts[i] + ", port " + ports[i]);
-    }
-  }
-
-  @VisibleForTesting
-  /**
-   * Utility function for parsing host and port strings. Expected form should be
-   * (host:port). The hostname could be in ipv6 style. Port number can be empty
-   * and will be default to defaultPort.
-   */
-  static protected void parseHostPortStrings(String hostsAndPortsStr,
-        String[] hostsAndPorts, String[] hosts, int[] ports,
-        int defaultPort) {
-    int i = -1;
-    for (String hostAndPort: hostsAndPorts) {
-      i++;
-      hostAndPort = hostAndPort.trim();
-      if (hostAndPort.isEmpty()) {
-        throw new RuntimeException("Cannot handle empty server RPC address " +
-            "in component " + (i + 1) + " of " + hostsAndPortsStr);
-      }
-      int colonIdx = hostAndPort.lastIndexOf(":");
-      if (colonIdx == -1) {
-        // There is no colon in the host+port string.
-        // That means the port is left unspecified, and should be set to
-        // the default.
-        hosts[i] = hostAndPort;
-        ports[i] = defaultPort;
-        continue;
-      }
-      int rightBracketIdx = hostAndPort.indexOf(']', colonIdx);
-      if (rightBracketIdx != -1) {
-        // If there is a right bracket that occurs after the colon, the
-        // colon we found is part of an ipv6 address like this:
-        // [::1].  That means we only have the host part, not the port part.
-        hosts[i] = hostAndPort.substring(0, rightBracketIdx);
-        ports[i] = defaultPort;
-        continue;
-      }
-      // We have a host:port string, where the part after colon should be
-      // the port.
-      hosts[i] = hostAndPort.substring(0, colonIdx);
-      String portStr = hostAndPort.substring(colonIdx+1);
-      try {
-        ports[i] = Integer.valueOf(portStr);
-      } catch (NumberFormatException e) {
-        throw new RuntimeException("Cannot parse port string " + portStr +
-            "in component " + (i + 1) + " of " + hostsAndPortsStr);
-      }
-      if ((ports[i] < 0) || (ports[i] > 65535)) {
-        throw new RuntimeException("Invalid port number given for " + portStr +
-            "in component " + (i + 1) + " of " + hostsAndPortsStr);
-      }
-    }
-    // Strip the brackets off of hostnames and ip addresses enclosed in square
-    // brackets.  This is to support ipv6-style [address]:port addressing.
-    for (int j = 0; j < hosts.length; j++) {
-      if ((hosts[j].startsWith("[")) && (hosts[j].endsWith("]"))) {
-        hosts[j] = hosts[j].substring(1, hosts[j].length() - 1);
-      }
+      this.endpoints[i] = new Endpoint(hostsAndPorts[i].getHostText(),hostsAndPorts[i].getPort());
+      LOGGER.info("Initiate sentry sever endpoint: hostname " +
+          hostsAndPorts[i].getHostText() + ", port " + hostsAndPorts[i].getPort());
     }
   }
 
@@ -298,6 +239,11 @@ public class PoolClientInvocationHandler extends SentryClientInvocationHandler {
       client = pool.borrowObject();
     } catch (Exception e) {
       LOGGER.debug(POOL_EXCEPTION_MESSAGE, e);
+      // If the exception is caused by connection problem, throw the TTransportException
+      // for reconnect.
+      if (e instanceof IOException) {
+        throw new TTransportException(e);
+      }
       throw new SentryUserException(e.getMessage(), e);
     }
     try {
@@ -305,13 +251,14 @@ public class PoolClientInvocationHandler extends SentryClientInvocationHandler {
       result = method.invoke(client, args);
     } catch (InvocationTargetException e) {
       // Get the target exception, check if SentryUserException or TTransportException is wrapped.
-      // TTransportException means there has connection problem with the pool.
+      // TTransportException or IOException means there has connection problem with the pool.
       Throwable targetException = e.getCause();
       if (targetException != null && targetException instanceof SentryUserException) {
         Throwable sentryTargetException = targetException.getCause();
         // If there has connection problem, eg, invalid connection if the service restarted,
-        // sentryTargetException instanceof TTransportException = true.
-        if (sentryTargetException != null && sentryTargetException instanceof TTransportException) {
+        // sentryTargetException instanceof TTransportException or IOException = true.
+        if (sentryTargetException != null && (sentryTargetException instanceof TTransportException
+            || sentryTargetException instanceof IOException)) {
           // If the exception is caused by connection problem, destroy the instance and
           // remove it from the commons-pool. Throw the TTransportException for reconnect.
           pool.invalidateObject(client);
