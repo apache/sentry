@@ -40,7 +40,10 @@ public final class SentryServiceClientFactory {
               SentryPolicyServiceClientDefaultImpl.class.getInterfaces(),
               new PoolClientInvocationHandler(conf));
     } else {
-      return new SentryPolicyServiceClientDefaultImpl(conf);
+      return (SentryPolicyServiceClient) Proxy
+          .newProxyInstance(SentryPolicyServiceClientDefaultImpl.class.getClassLoader(),
+              SentryPolicyServiceClientDefaultImpl.class.getInterfaces(),
+              new RetryClientInvocationHandler(conf));
     }
   }
 }

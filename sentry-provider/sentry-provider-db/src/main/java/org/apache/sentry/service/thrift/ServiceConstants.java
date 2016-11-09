@@ -26,6 +26,7 @@ import org.apache.sentry.provider.db.service.thrift.SentryMetrics;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
+import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClientDefaultImpl;
 
 public class ServiceConstants {
 
@@ -236,6 +237,20 @@ public class ServiceConstants {
     // retry num for getting the connection from connection pool
     public static final String SENTRY_POOL_RETRY_TOTAL = "sentry.service.client.connection.pool.retry-total";
     public static final int SENTRY_POOL_RETRY_TOTAL_DEFAULT = 3;
+
+    /**
+     * full retry num for getting the connection in non-pool model
+     * In a full retry, it will cycle through all available sentry servers
+     * {@link SentryPolicyServiceClientDefaultImpl#connectWithRetry()}
+     */
+    public static final String SENTRY_FULL_RETRY_TOTAL = "sentry.service.client.connection.full.retry-total";
+    public static final int SENTRY_FULL_RETRY_TOTAL_DEFAULT = 2;
+    /**
+     * max retry num for client rpc
+     * {@link RetryClientInvocationHandler#invokeImpl(Object, Method, Object[])}
+     */
+    public static final String SENTRY_RPC_RETRY_TOTAL = "sentry.service.client.rpc.retry-total";
+    public static final int SENTRY_RPC_RETRY_TOTAL_DEFAULT = 3;
 
     // max message size for thrift messages
     public static final String SENTRY_POLICY_CLIENT_THRIFT_MAX_MESSAGE_SIZE = "sentry.policy.client.thrift.max.message.size";

@@ -44,7 +44,7 @@ public abstract class SentryClientInvocationHandler implements InvocationHandler
   /**
    * Subclass should implement this method for special function
    */
-  public abstract Object invokeImpl(Object proxy, Method method, Object[] args) throws Exception;
+  abstract Object invokeImpl(Object proxy, Method method, Object[] args) throws Exception;
 
   /**
    * An abstract method "close", an invocationHandler should close its contexts at here.
