@@ -165,7 +165,13 @@ public class ServiceConstants {
     public static final Boolean SENTRY_WEB_ENABLE_DEFAULT = false;
     public static final String SENTRY_WEB_PORT = "sentry.service.web.port";
     public static final int SENTRY_WEB_PORT_DEFAULT = 29000;
+    // Reporter is either "console" or "jmx"
     public static final String SENTRY_REPORTER = "sentry.service.reporter";
+    // for console reporter, reporting interval in seconds
+    public static final String SENTRY_REPORTER_INTERVAL_SEC =
+            "sentry.service.reporter.interval.sec";
+    // Report every 5 minutes by default
+    public static final int SENTRY_REPORTER_INTERVAL_DEFAULT = 300;
 
     // Web SSL
     public static final String SENTRY_WEB_USE_SSL = "sentry.web.use.ssl";
