@@ -22,10 +22,9 @@ import java.util.Map;
 
 import javax.security.sasl.Sasl;
 
-import org.apache.sentry.provider.db.service.thrift.SentryMetrics;
-
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
+import org.apache.sentry.provider.db.service.thrift.SentryMetrics;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClientDefaultImpl;
 
 public class ServiceConstants {
@@ -167,9 +166,16 @@ public class ServiceConstants {
     public static final Boolean SENTRY_WEB_ENABLE_DEFAULT = false;
     public static final String SENTRY_WEB_PORT = "sentry.service.web.port";
     public static final int SENTRY_WEB_PORT_DEFAULT = 29000;
+    // Reporter is either "console" or "jmx"
     public static final String SENTRY_REPORTER = "sentry.service.reporter";
     public static final String SENTRY_REPORTER_JMX = SentryMetrics.Reporting.JMX.name(); //case insensitive
     public static final String SENTRY_REPORTER_CONSOLE = SentryMetrics.Reporting.CONSOLE.name();//case insensitive
+
+    // for console reporter, reporting interval in seconds
+    public static final String SENTRY_REPORTER_INTERVAL_SEC =
+            "sentry.service.reporter.interval.sec";
+    // Report every 5 minutes by default
+    public static final int SENTRY_REPORTER_INTERVAL_DEFAULT = 300;
 
     // Web SSL
     public static final String SENTRY_WEB_USE_SSL = "sentry.web.use.ssl";

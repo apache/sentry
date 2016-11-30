@@ -124,7 +124,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       SentryMetrics.Reporting reporting;
       try {
         reporting = SentryMetrics.Reporting.valueOf(sentryReporting.toUpperCase());
-        sentryMetrics.initReporting(reporting);
+        sentryMetrics.initReporting(reporting, conf);
 
       } catch (IllegalArgumentException e) {
         LOGGER.warn("Metrics reporting not configured correctly, please set " + ServerConfig.SENTRY_REPORTER +

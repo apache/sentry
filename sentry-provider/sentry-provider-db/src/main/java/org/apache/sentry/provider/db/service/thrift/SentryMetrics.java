@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -24,82 +24,94 @@ import com.codahale.metrics.Histogram;
 import com.codahale.metrics.JmxReporter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
+import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.MetricSet;
 import com.codahale.metrics.Timer;
 import com.codahale.metrics.jvm.BufferPoolMetricSet;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.service.thrift.SentryService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.apache.sentry.provider.db.service.thrift.SentryMetricsServletContextListener.METRIC_REGISTRY;
+import static org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 
 import java.lang.management.ManagementFactory;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A singleton class which holds metrics related utility functions as well as the list of metrics
  */
 public final class SentryMetrics {
+  private static final Logger LOGGER = LoggerFactory
+          .getLogger(SentryMetrics.class);
+
   private static SentryMetrics sentryMetrics = null;
-  private boolean reportingInitialized = false;
+  private final AtomicBoolean reportingInitialized = new AtomicBoolean();
   private boolean gaugesAdded = false;
   private boolean sentryServiceGaugesAdded = false;
 
-  public final Timer createRoleTimer = SentryMetricsServletContextListener.METRIC_REGISTRY.timer(
-      MetricRegistry.name(SentryPolicyStoreProcessor.class, "create-role"));
-  public final Timer dropRoleTimer = SentryMetricsServletContextListener.METRIC_REGISTRY.timer(
-      MetricRegistry.name(SentryPolicyStoreProcessor.class, "drop-role"));
-  public final Timer grantRoleTimer = SentryMetricsServletContextListener.METRIC_REGISTRY.timer(
-      MetricRegistry.name(SentryPolicyStoreProcessor.class, "grant-role"));
-  public final Timer revokeRoleTimer = SentryMetricsServletContextListener.METRIC_REGISTRY.timer(
-      MetricRegistry.name(SentryPolicyStoreProcessor.class, "revoke-role"));
-  public final Timer grantTimer = SentryMetricsServletContextListener.METRIC_REGISTRY.timer(
-      MetricRegistry.name(SentryPolicyStoreProcessor.class, "grant-privilege"));
-  public final Timer revokeTimer = SentryMetricsServletContextListener.METRIC_REGISTRY.timer(
-      MetricRegistry.name(SentryPolicyStoreProcessor.class, "revoke-privilege"));
+  final Timer createRoleTimer = METRIC_REGISTRY.timer(
+      name(SentryPolicyStoreProcessor.class, "create-role"));
+  final Timer dropRoleTimer = METRIC_REGISTRY.timer(
+      name(SentryPolicyStoreProcessor.class, "drop-role"));
+  final Timer grantRoleTimer = METRIC_REGISTRY.timer(
+      name(SentryPolicyStoreProcessor.class, "grant-role"));
+  final Timer revokeRoleTimer = METRIC_REGISTRY.timer(
+      name(SentryPolicyStoreProcessor.class, "revoke-role"));
+  final Timer grantTimer = METRIC_REGISTRY.timer(
+      name(SentryPolicyStoreProcessor.class, "grant-privilege"));
+  final Timer revokeTimer = METRIC_REGISTRY.timer(
+      name(SentryPolicyStoreProcessor.class, "revoke-privilege"));
 
-  public final Timer dropPrivilegeTimer = SentryMetricsServletContextListener.METRIC_REGISTRY.timer(
-      MetricRegistry.name(SentryPolicyStoreProcessor.class, "drop-privilege"));
-  public final Timer renamePrivilegeTimer = SentryMetricsServletContextListener.METRIC_REGISTRY.timer(
-      MetricRegistry.name(SentryPolicyStoreProcessor.class, "rename-privilege"));
+  final Timer dropPrivilegeTimer = METRIC_REGISTRY.timer(
+      name(SentryPolicyStoreProcessor.class, "drop-privilege"));
+  final Timer renamePrivilegeTimer = METRIC_REGISTRY.timer(
+      name(SentryPolicyStoreProcessor.class, "rename-privilege"));
 
-  public final Timer listRolesByGroupTimer = SentryMetricsServletContextListener.METRIC_REGISTRY.timer(
-      MetricRegistry.name(SentryPolicyStoreProcessor.class, "list-roles-by-group"));
-  public final Timer listPrivilegesByRoleTimer = SentryMetricsServletContextListener.METRIC_REGISTRY.timer(
-      MetricRegistry.name(SentryPolicyStoreProcessor.class, "list-privileges-by-role"));
-  public final Timer listPrivilegesForProviderTimer = SentryMetricsServletContextListener.METRIC_REGISTRY.timer(
-      MetricRegistry.name(SentryPolicyStoreProcessor.class, "list-privileges-for-provider"));
-  public final Timer listPrivilegesByAuthorizableTimer = SentryMetricsServletContextListener.METRIC_REGISTRY.timer(
-      MetricRegistry.name(SentryPolicyStoreProcessor.class, "list-privileges-by-authorizable"));
+  final Timer listRolesByGroupTimer = METRIC_REGISTRY.timer(
+      name(SentryPolicyStoreProcessor.class, "list-roles-by-group"));
+  final Timer listPrivilegesByRoleTimer = METRIC_REGISTRY.timer(
+      name(SentryPolicyStoreProcessor.class, "list-privileges-by-role"));
+  final Timer listPrivilegesForProviderTimer = METRIC_REGISTRY.timer(
+      name(SentryPolicyStoreProcessor.class, "list-privileges-for-provider"));
+  final Timer listPrivilegesByAuthorizableTimer = METRIC_REGISTRY.timer(
+      name(SentryPolicyStoreProcessor.class, "list-privileges-by-authorizable"));
 
   /**
    * Return a Timer with name.
    */
   public Timer getTimer(String name) {
-    return SentryMetricsServletContextListener.METRIC_REGISTRY.timer(name);
+    return METRIC_REGISTRY.timer(name);
   }
 
   /**
    * Return a Histogram with name.
    */
   public Histogram getHistogram(String name) {
-    return SentryMetricsServletContextListener.METRIC_REGISTRY.histogram(name);
+    return METRIC_REGISTRY.histogram(name);
   }
 
   /**
    * Return a Counter with name.
    */
   public Counter getCounter(String name) {
-    return SentryMetricsServletContextListener.METRIC_REGISTRY.counter(name);
+    return METRIC_REGISTRY.counter(name);
   }
 
   private SentryMetrics() {
-    registerMetricSet("gc", new GarbageCollectorMetricSet(), SentryMetricsServletContextListener.METRIC_REGISTRY);
-    registerMetricSet("buffers", new BufferPoolMetricSet(ManagementFactory.getPlatformMBeanServer()),
-        SentryMetricsServletContextListener.METRIC_REGISTRY);
-    registerMetricSet("memory", new MemoryUsageGaugeSet(), SentryMetricsServletContextListener.METRIC_REGISTRY);
-    registerMetricSet("threads", new ThreadStatesGaugeSet(), SentryMetricsServletContextListener.METRIC_REGISTRY);
+    registerMetricSet("gc", new GarbageCollectorMetricSet(), METRIC_REGISTRY);
+    registerMetricSet("buffers",
+            new BufferPoolMetricSet(ManagementFactory.getPlatformMBeanServer()),
+        METRIC_REGISTRY);
+    registerMetricSet("memory", new MemoryUsageGaugeSet(), METRIC_REGISTRY);
+    registerMetricSet("threads", new ThreadStatesGaugeSet(), METRIC_REGISTRY);
   }
 
   public static synchronized SentryMetrics getInstance() {
@@ -109,10 +121,11 @@ public final class SentryMetrics {
     return sentryMetrics;
   }
 
-  public void addSentryStoreGauges(SentryStore sentryStore) {
+  void addSentryStoreGauges(SentryStore sentryStore) {
     if(!gaugesAdded) {
       addGauge(SentryStore.class, "role_count", sentryStore.getRoleCountGauge());
-      addGauge(SentryStore.class, "privilege_count", sentryStore.getPrivilegeCountGauge());
+      addGauge(SentryStore.class, "privilege_count",
+              sentryStore.getPrivilegeCountGauge());
       addGauge(SentryStore.class, "group_count", sentryStore.getGroupCountGauge());
       gaugesAdded = true;
     }
@@ -126,32 +139,58 @@ public final class SentryMetrics {
     }
   }
 
-  /* Should be only called once to initialize the reporters
+  /**
+   * Initialize reporters. Only initializes once.
+   * <p>
+   * Available reporters:
+   * <ul>
+   *     <li>console</li>
+   *     <li>jmx</li>
+   * </ul>
+   *
+   * For console reporter configre it to report every
+   * <em>SENTRY_REPORTER_INTERVAL_SEC</em> seconds.
+   * <p>
+   * Method is thread safe.
    */
-  public synchronized void initReporting(Reporting reporting) {
-    if(!reportingInitialized) {
-      switch(reporting) {
-        case CONSOLE:
-          final ConsoleReporter consoleReporter = ConsoleReporter.forRegistry(SentryMetricsServletContextListener.METRIC_REGISTRY)
-              .convertRatesTo(TimeUnit.SECONDS)
-              .convertDurationsTo(TimeUnit.MILLISECONDS)
-              .build();
-          consoleReporter.start(1, TimeUnit.SECONDS);
-          break;
-        case JMX:
-          final JmxReporter jmxReporter = JmxReporter.forRegistry(SentryMetricsServletContextListener.METRIC_REGISTRY)
-              .convertRatesTo(TimeUnit.SECONDS)
-              .convertDurationsTo(TimeUnit.MILLISECONDS)
-              .build();
-          jmxReporter.start();
-          break;
-      }
+  void initReporting(Reporting reporting, Configuration conf) {
+    if (reportingInitialized.getAndSet(true)) {
+      // Nothing to do, just return
+      return;
+    }
+
+    switch(reporting) {
+      case CONSOLE:
+        final int reportInterval =
+                conf.getInt(ServerConfig.SENTRY_REPORTER_INTERVAL_SEC,
+                        ServerConfig.SENTRY_REPORTER_INTERVAL_DEFAULT);
+
+        LOGGER.info(String.format("Enabled console metrics reporter with %d seconds interval",
+                reportInterval));
+        final ConsoleReporter consoleReporter =
+                ConsoleReporter.forRegistry(METRIC_REGISTRY)
+            .convertRatesTo(TimeUnit.SECONDS)
+            .convertDurationsTo(TimeUnit.MILLISECONDS)
+            .build();
+        consoleReporter.start(reportInterval, TimeUnit.SECONDS);
+        break;
+      case JMX:
+        LOGGER.info("Enabled JMX metrics reporter");
+        final JmxReporter jmxReporter = JmxReporter.forRegistry(METRIC_REGISTRY)
+            .convertRatesTo(TimeUnit.SECONDS)
+            .convertDurationsTo(TimeUnit.MILLISECONDS)
+            .build();
+        jmxReporter.start();
+        break;
+      default:
+        LOGGER.warn("Invalid metrics reporter " + reporting.toString());
+        break;
     }
   }
 
   private <T, V> void addGauge(Class<T> tClass, String gaugeName, Gauge<V> gauge) {
-    SentryMetricsServletContextListener.METRIC_REGISTRY.register(
-        MetricRegistry.name(tClass, gaugeName), gauge);
+    METRIC_REGISTRY.register(
+        name(tClass, gaugeName), gauge);
   }
 
   private void registerMetricSet(String prefix, MetricSet metricSet, MetricRegistry registry) {
@@ -166,6 +205,6 @@ public final class SentryMetrics {
 
   public enum Reporting {
     JMX,
-    CONSOLE;
+    CONSOLE
   }
 }
