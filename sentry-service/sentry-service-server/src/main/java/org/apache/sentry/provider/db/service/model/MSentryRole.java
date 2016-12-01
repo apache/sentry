@@ -54,6 +54,10 @@ public class MSentryRole {
     users = new HashSet<MSentryUser>();
   }
 
+  public MSentryRole(String roleName) {
+    this(roleName, System.currentTimeMillis());
+  }
+
   public long getCreateTime() {
     return createTime;
   }
