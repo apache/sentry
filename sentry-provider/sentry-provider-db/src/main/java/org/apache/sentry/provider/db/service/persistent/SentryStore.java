@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -46,22 +45,11 @@ import javax.jdo.Transaction;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.core.common.exception.SentryUserException;
+import org.apache.sentry.core.common.exception.*;
 import org.apache.sentry.core.common.utils.SentryConstants;
-import org.apache.sentry.core.common.exception.SentrySiteConfigurationException;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
-import org.apache.sentry.core.common.exception.SentryAccessDeniedException;
-import org.apache.sentry.core.common.exception.SentryAlreadyExistsException;
-import org.apache.sentry.core.common.exception.SentryGrantDeniedException;
-import org.apache.sentry.core.common.exception.SentryInvalidInputException;
-import org.apache.sentry.core.common.exception.SentryNoSuchObjectException;
-import org.apache.sentry.provider.db.service.model.MAuthzPathsMapping;
-import org.apache.sentry.provider.db.service.model.MSentryGroup;
-import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
-import org.apache.sentry.provider.db.service.model.MSentryRole;
-import org.apache.sentry.provider.db.service.model.MSentryUser;
-import org.apache.sentry.provider.db.service.model.MSentryVersion;
+import org.apache.sentry.provider.db.service.model.*;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessor;
 import org.apache.sentry.provider.db.service.thrift.TSentryActiveRoleSet;
 import org.apache.sentry.provider.db.service.thrift.TSentryAuthorizable;
@@ -102,6 +90,9 @@ public class SentryStore {
   public static int INDEX_GROUP_ROLES_MAP = 0;
   public static int INDEX_USER_ROLES_MAP = 1;
 
+  // For counters, representation of the "unknown value"
+  private static final long COUNT_VALUE_UNKNOWN = -1;
+
   private static final Set<String> ALL_ACTIONS = Sets.newHashSet(AccessConstants.ALL,
       AccessConstants.SELECT, AccessConstants.INSERT, AccessConstants.ALTER,
       AccessConstants.CREATE, AccessConstants.DROP, AccessConstants.INDEX,
@@ -132,12 +123,11 @@ public class SentryStore {
     // CREDENTIAL_PROVIDER_PATH("hadoop.security.credential.provider.path" in sentry-site.xml
     // it falls back to reading directly from sentry-site.xml
     char[] passTmp = conf.getPassword(ServerConfig.SENTRY_STORE_JDBC_PASS);
-    String pass = null;
-    if (passTmp != null) {
-      pass = new String(passTmp);
-    } else {
-      throw new SentrySiteConfigurationException("Error reading " + ServerConfig.SENTRY_STORE_JDBC_PASS);
+    if (passTmp == null) {
+      throw new SentrySiteConfigurationException("Error reading " +
+              ServerConfig.SENTRY_STORE_JDBC_PASS);
     }
+    String pass = new String(passTmp);
 
     String driverName = conf.get(ServerConfig.SENTRY_STORE_JDBC_DRIVER,
         ServerConfig.SENTRY_STORE_JDBC_DRIVER_DEFAULT);
@@ -190,7 +180,7 @@ public class SentryStore {
   }
 
   // ensure that the backend DB schema is set
-  public void verifySentryStoreSchema(boolean checkVersion) throws Exception {
+  void verifySentryStoreSchema(boolean checkVersion) throws Exception {
     if (!checkVersion) {
       setSentryVersion(SentryStoreSchemaInfo.getSentryVersion(),
           "Schema version set implicitly");
@@ -219,7 +209,7 @@ public class SentryStore {
     }
   }
 
-  public void rollbackTransaction(PersistenceManager pm) {
+  private void rollbackTransaction(PersistenceManager pm) {
     if (pm == null || pm.isClosed()) {
       return;
     }
@@ -232,55 +222,83 @@ public class SentryStore {
       }
     }
   }
+
   /**
-  Get the MSentry object from roleName
-  Note: Should be called inside a transaction
+   * Get a single role with the given name inside a transaction
+   * @param pm Persistence Manager instance
+   * @param roleName Role name (should not be null)
+   * @return single role with the given name
    */
-  public MSentryRole getMSentryRole(PersistenceManager pm, String roleName) {
+  public MSentryRole getRole(PersistenceManager pm, String roleName) {
     Query query = pm.newQuery(MSentryRole.class);
-    query.setFilter("this.roleName == t");
-    query.declareParameters("java.lang.String t");
+    query.setFilter("this.roleName == :roleName");
     query.setUnique(true);
     return (MSentryRole) query.execute(roleName);
   }
 
   /**
-   * Normalize the string values
+   * Get list of all roles. Should be called inside transaction.
+   * @param pm Persistence manager instance
+   * @return List of all roles
+   */
+  @SuppressWarnings("unchecked")
+  private List<MSentryRole> getAllRoles(PersistenceManager pm) {
+    Query query = pm.newQuery(MSentryRole.class);
+    return (List<MSentryRole>) query.execute();
+  }
+
+  /**
+   * Get a group with the given name. Should be called inside transaction.
+   * @param pm Persistence Manager instance
+   * @param groupName - group name
+   * @return Single group with the given name
+     */
+  private MSentryGroup getGroup(PersistenceManager pm, String groupName) {
+    Query query = pm.newQuery(MSentryGroup.class);
+    query.setFilter("this.groupName == :groupName");
+    query.setUnique(true);
+    return (MSentryGroup) query.execute(groupName);
+  }
+
+  /**
+   * Normalize the string values - remove leading and trailing whitespaces and
+   * convert to lower case
+   * @return normalized input
    */
   private String trimAndLower(String input) {
     return input.trim().toLowerCase();
   }
   /**
-   * Create a sentry role and persist it.
-   * @param roleName: Name of the role being persisted
+   * Create a sentry role and persist it. Role name is the primary key for the
+   * role, so an attempt to create a role which exists fails with JDO exception.
+   *
+   * @param roleName: Name of the role being persisted.
+   *    The name is normalized.
    * @throws Exception
    */
   public void createSentryRole(final String roleName) throws Exception {
     tm.executeTransactionWithRetry(
         new TransactionBlock() {
           public Object execute(PersistenceManager pm) throws Exception {
-            createSentryRoleCore(pm, roleName);
+            String trimmedRoleName = trimAndLower(roleName);
+            if (getRole(pm, trimmedRoleName) != null) {
+              throw new SentryAlreadyExistsException("Role: " + trimmedRoleName);
+            }
+            pm.makePersistent(new MSentryRole(trimmedRoleName));
             return null;
             }
         });
   }
 
-  private void createSentryRoleCore(PersistenceManager pm, String roleName)
-      throws SentryAlreadyExistsException {
-    String trimmedRoleName = trimAndLower(roleName);
-    MSentryRole mSentryRole = getMSentryRole(pm, trimmedRoleName);
-    if (mSentryRole == null) {
-      MSentryRole mRole = new MSentryRole(trimmedRoleName, System.currentTimeMillis());
-      pm.makePersistent(mRole);
-    } else {
-      throw new SentryAlreadyExistsException("Role: " + trimmedRoleName);
-    }
-  }
-
+  /**
+   * Get count of object of the given class
+   * @param tClass Class to count
+   * @param <T> Class type
+   * @return count of objects or -1 in case of error
+     */
   private <T> Long getCount(final Class<T> tClass) {
-    Long size;
     try {
-      size = (Long) tm.executeTransaction(
+      return (Long) tm.executeTransaction(
           new TransactionBlock() {
             public Object execute(PersistenceManager pm) throws Exception {
               Query query = pm.newQuery();
@@ -290,10 +308,13 @@ public class SentryStore {
             }
           });
     } catch (Exception e) {
-      size = Long.valueOf(-1);
+       return COUNT_VALUE_UNKNOWN;
     }
-    return size;
   }
+
+  /**
+   * @return number of roles
+   */
   public Gauge<Long> getRoleCountGauge() {
     return new Gauge< Long >() {
       @Override
@@ -303,6 +324,9 @@ public class SentryStore {
     };
   }
 
+  /**
+   * @return Number of privileges
+   */
   public Gauge<Long> getPrivilegeCountGauge() {
     return new Gauge< Long >() {
       @Override
@@ -312,6 +336,9 @@ public class SentryStore {
     };
   }
 
+  /**
+   * @return number of groups
+   */
   public Gauge<Long> getGroupCountGauge() {
     return new Gauge< Long >() {
       @Override
@@ -321,6 +348,9 @@ public class SentryStore {
     };
   }
 
+  /**
+   * @return Number of users
+   */
   public Gauge<Long> getUserCountGauge() {
     return new Gauge<Long>() {
       @Override
@@ -359,12 +389,26 @@ public class SentryStore {
     }
   }
 
+  /**
+   * Grant privilege for a role
+   * @param grantorPrincipal User name
+   * @param roleName Role name
+   * @param privilege Privilege to grant
+   * @throws Exception
+   */
   public void alterSentryRoleGrantPrivilege(String grantorPrincipal,
       String roleName, TSentryPrivilege privilege) throws Exception {
     alterSentryRoleGrantPrivileges(grantorPrincipal, roleName,
             Sets.newHashSet(privilege));
   }
 
+  /**
+   * Grant multiple privileges
+   * @param grantorPrincipal User name
+   * @param roleName Role name
+   * @param privileges Set of privileges
+   * @throws Exception
+   */
   public void alterSentryRoleGrantPrivileges(final String grantorPrincipal,
       final String roleName, final Set<TSentryPrivilege> privileges) throws Exception {
     tm.executeTransactionWithRetry(
@@ -389,7 +433,7 @@ public class SentryStore {
       String roleName, TSentryPrivilege privilege)
       throws SentryNoSuchObjectException, SentryInvalidInputException {
     MSentryPrivilege mPrivilege = null;
-    MSentryRole mRole = getMSentryRole(pm, roleName);
+    MSentryRole mRole = getRole(pm, roleName);
     if (mRole == null) {
       throw new SentryNoSuchObjectException("Role: " + roleName + " doesn't exist");
     } else {
@@ -469,40 +513,34 @@ public class SentryStore {
   private void alterSentryRoleRevokePrivilegeCore(PersistenceManager pm,
       String roleName, TSentryPrivilege tPrivilege)
       throws SentryNoSuchObjectException, SentryInvalidInputException {
-    Query query = pm.newQuery(MSentryRole.class);
-    query.setFilter("this.roleName == t");
-    query.declareParameters("java.lang.String t");
-    query.setUnique(true);
-    MSentryRole mRole = (MSentryRole) query.execute(roleName);
+    MSentryRole mRole = getRole(pm, roleName);
     if (mRole == null) {
       throw new SentryNoSuchObjectException("Role: " + roleName + " doesn't exist");
-    } else {
-      query = pm.newQuery(MSentryPrivilege.class);
-      MSentryPrivilege mPrivilege = getMSentryPrivilege(tPrivilege, pm);
-      if (mPrivilege == null) {
-        mPrivilege = convertToMSentryPrivilege(tPrivilege);
-      } else {
-        mPrivilege = (MSentryPrivilege) pm.detachCopy(mPrivilege);
-      }
-
-      Set<MSentryPrivilege> privilegeGraph = Sets.newHashSet();
-      if (mPrivilege.getGrantOption() != null) {
-        privilegeGraph.add(mPrivilege);
-      } else {
-        MSentryPrivilege mTure = new MSentryPrivilege(mPrivilege);
-        mTure.setGrantOption(true);
-        privilegeGraph.add(mTure);
-        MSentryPrivilege mFalse = new MSentryPrivilege(mPrivilege);
-        mFalse.setGrantOption(false);
-        privilegeGraph.add(mFalse);
-      }
-      // Get the privilege graph
-      populateChildren(pm, Sets.newHashSet(roleName), mPrivilege, privilegeGraph);
-      for (MSentryPrivilege childPriv : privilegeGraph) {
-        revokePrivilegeFromRole(pm, tPrivilege, mRole, childPriv);
-      }
-      pm.makePersistent(mRole);
     }
+    MSentryPrivilege mPrivilege = getMSentryPrivilege(tPrivilege, pm);
+    if (mPrivilege == null) {
+      mPrivilege = convertToMSentryPrivilege(tPrivilege);
+    } else {
+      mPrivilege = pm.detachCopy(mPrivilege);
+    }
+
+    Set<MSentryPrivilege> privilegeGraph = Sets.newHashSet();
+    if (mPrivilege.getGrantOption() != null) {
+      privilegeGraph.add(mPrivilege);
+    } else {
+      MSentryPrivilege mTure = new MSentryPrivilege(mPrivilege);
+      mTure.setGrantOption(true);
+      privilegeGraph.add(mTure);
+      MSentryPrivilege mFalse = new MSentryPrivilege(mPrivilege);
+      mFalse.setGrantOption(false);
+      privilegeGraph.add(mFalse);
+    }
+    // Get the privilege graph
+    populateChildren(pm, Sets.newHashSet(roleName), mPrivilege, privilegeGraph);
+    for (MSentryPrivilege childPriv : privilegeGraph) {
+      revokePrivilegeFromRole(pm, tPrivilege, mRole, childPriv);
+    }
+    pm.makePersistent(mRole);
   }
 
   /**
@@ -618,6 +656,7 @@ public class SentryStore {
     }
   }
 
+  @SuppressWarnings("unchecked")
   private Set<MSentryPrivilege> getChildPrivileges(PersistenceManager pm, Set<String> roleNames,
       MSentryPrivilege parent) throws SentryInvalidInputException {
     // Column and URI do not have children
@@ -665,6 +704,7 @@ public class SentryStore {
     return privileges;
   }
 
+  @SuppressWarnings("unchecked")
   private List<MSentryPrivilege> getMSentryPrivileges(TSentryPrivilege tPriv, PersistenceManager pm) {
     Query query = pm.newQuery(MSentryPrivilege.class);
     StringBuilder filters = new StringBuilder("this.serverName == \""
@@ -705,11 +745,7 @@ public class SentryStore {
     } else if (tPriv.getGrantOption().equals(TSentryGrantOption.FALSE)) {
       grantOption = false;
     }
-    Object obj = query.execute(grantOption);
-    if (obj != null) {
-      return (MSentryPrivilege) obj;
-    }
-    return null;
+    return (MSentryPrivilege)query.execute(grantOption);
   }
 
   public void dropSentryRole(final String roleName) throws Exception {
@@ -725,22 +761,16 @@ public class SentryStore {
   private void dropSentryRoleCore(PersistenceManager pm, String roleName)
       throws SentryNoSuchObjectException {
     String lRoleName = trimAndLower(roleName);
-    Query query = pm.newQuery(MSentryRole.class);
-    query.setFilter("this.roleName == t");
-    query.declareParameters("java.lang.String t");
-    query.setUnique(true);
-    MSentryRole sentryRole = (MSentryRole) query.execute(lRoleName);
+    MSentryRole sentryRole = getRole(pm, lRoleName);
     if (sentryRole == null) {
       throw new SentryNoSuchObjectException("Role: " + lRoleName + " doesn't exist");
-    } else {
-      pm.retrieve(sentryRole);
-      int numPrivs = sentryRole.getPrivileges().size();
-      sentryRole.removePrivileges();
-      // with SENTRY-398 generic model
-      sentryRole.removeGMPrivileges();
-      privCleaner.incPrivRemoval(numPrivs);
-      pm.deletePersistent(sentryRole);
     }
+    int numPrivs = sentryRole.getPrivileges().size();
+    sentryRole.removePrivileges();
+    // with SENTRY-398 generic model
+    sentryRole.removeGMPrivileges();
+    privCleaner.incPrivRemoval(numPrivs);
+    pm.deletePersistent(sentryRole);
   }
 
   public void alterSentryRoleAddGroups(final String grantorPrincipal,
@@ -757,30 +787,25 @@ public class SentryStore {
   private void alterSentryRoleAddGroupsCore(PersistenceManager pm, String roleName,
       Set<TSentryGroup> groupNames) throws SentryNoSuchObjectException {
     String lRoleName = trimAndLower(roleName);
-    Query query = pm.newQuery(MSentryRole.class);
-    query.setFilter("this.roleName == t");
-    query.declareParameters("java.lang.String t");
-    query.setUnique(true);
-    MSentryRole role = (MSentryRole) query.execute(lRoleName);
+    MSentryRole role = getRole(pm, lRoleName);
     if (role == null) {
       throw new SentryNoSuchObjectException("Role: " + lRoleName + " doesn't exist");
-    } else {
-      query = pm.newQuery(MSentryGroup.class);
-      query.setFilter("this.groupName == t");
-      query.declareParameters("java.lang.String t");
-      query.setUnique(true);
-      List<MSentryGroup> groups = Lists.newArrayList();
-      for (TSentryGroup tGroup : groupNames) {
-        String groupName = tGroup.getGroupName().trim();
-        MSentryGroup group = (MSentryGroup) query.execute(groupName);
-        if (group == null) {
-          group = new MSentryGroup(groupName, System.currentTimeMillis(), Sets.newHashSet(role));
-        }
-        group.appendRole(role);
-        groups.add(group);
-      }
-      pm.makePersistentAll(groups);
     }
+    Query query = pm.newQuery(MSentryGroup.class);
+    query.setFilter("this.groupName == t");
+    query.declareParameters("java.lang.String t");
+    query.setUnique(true);
+    List<MSentryGroup> groups = Lists.newArrayList();
+    for (TSentryGroup tGroup : groupNames) {
+      String groupName = tGroup.getGroupName().trim();
+      MSentryGroup group = (MSentryGroup) query.execute(groupName);
+      if (group == null) {
+        group = new MSentryGroup(groupName, System.currentTimeMillis(), Sets.newHashSet(role));
+      }
+      group.appendRole(role);
+      groups.add(group);
+    }
+    pm.makePersistentAll(groups);
   }
 
   public void alterSentryRoleAddUsers(final String roleName,
@@ -797,26 +822,25 @@ public class SentryStore {
   private void alterSentryRoleAddUsersCore(PersistenceManager pm, String roleName,
       Set<String> userNames) throws SentryNoSuchObjectException {
     String trimmedRoleName = trimAndLower(roleName);
-    MSentryRole role = getMSentryRole(pm, trimmedRoleName);
+    MSentryRole role = getRole(pm, trimmedRoleName);
     if (role == null) {
       throw new SentryNoSuchObjectException("Role: " + trimmedRoleName);
-    } else {
-      Query query = pm.newQuery(MSentryUser.class);
-      query.setFilter("this.userName == t");
-      query.declareParameters("java.lang.String t");
-      query.setUnique(true);
-      List<MSentryUser> users = Lists.newArrayList();
-      for (String userName : userNames) {
-        userName = userName.trim();
-        MSentryUser user = (MSentryUser) query.execute(userName);
-        if (user == null) {
-          user = new MSentryUser(userName, System.currentTimeMillis(), Sets.newHashSet(role));
-        }
-        user.appendRole(role);
-        users.add(user);
-      }
-      pm.makePersistentAll(users);
     }
+    Query query = pm.newQuery(MSentryUser.class);
+    query.setFilter("this.userName == t");
+    query.declareParameters("java.lang.String t");
+    query.setUnique(true);
+    List<MSentryUser> users = Lists.newArrayList();
+    for (String userName : userNames) {
+      userName = userName.trim();
+      MSentryUser user = (MSentryUser) query.execute(userName);
+      if (user == null) {
+        user = new MSentryUser(userName, System.currentTimeMillis(), Sets.newHashSet(role));
+      }
+      user.appendRole(role);
+      users.add(user);
+    }
+    pm.makePersistentAll(users);
   }
 
   public void alterSentryRoleDeleteUsers(final String roleName,
@@ -825,7 +849,7 @@ public class SentryStore {
         new TransactionBlock() {
           public Object execute(PersistenceManager pm) throws Exception {
             String trimmedRoleName = trimAndLower(roleName);
-            MSentryRole role = getMSentryRole(pm, trimmedRoleName);
+            MSentryRole role = getRole(pm, trimmedRoleName);
             if (role == null) {
               throw new SentryNoSuchObjectException("Role: " + trimmedRoleName);
             } else {
@@ -855,50 +879,39 @@ public class SentryStore {
         new TransactionBlock() {
           public Object execute(PersistenceManager pm) throws Exception {
             String trimmedRoleName = trimAndLower(roleName);
-            Query query = pm.newQuery(MSentryRole.class);
-            query.setFilter("this.roleName == t");
-            query.declareParameters("java.lang.String t");
-            query.setUnique(true);
-            MSentryRole role = (MSentryRole) query.execute(trimmedRoleName);
+            MSentryRole role = getRole(pm, trimmedRoleName);
             if (role == null) {
               throw new SentryNoSuchObjectException("Role: " + trimmedRoleName + " doesn't exist");
-            } else {
-              query = pm.newQuery(MSentryGroup.class);
-              query.setFilter("this.groupName == t");
-              query.declareParameters("java.lang.String t");
-              query.setUnique(true);
-              List<MSentryGroup> groups = Lists.newArrayList();
-              for (TSentryGroup tGroup : groupNames) {
-                String groupName = tGroup.getGroupName().trim();
-                MSentryGroup group = (MSentryGroup) query.execute(groupName);
-                if (group != null) {
-                  group.removeRole(role);
-                  groups.add(group);
-                }
-              }
-              pm.makePersistentAll(groups);
             }
+            Query query = pm.newQuery(MSentryGroup.class);
+            query.setFilter("this.groupName == t");
+            query.declareParameters("java.lang.String t");
+            query.setUnique(true);
+            List<MSentryGroup> groups = Lists.newArrayList();
+            for (TSentryGroup tGroup : groupNames) {
+              String groupName = tGroup.getGroupName().trim();
+              MSentryGroup group = (MSentryGroup) query.execute(groupName);
+              if (group != null) {
+                group.removeRole(role);
+                groups.add(group);
+              }
+            }
+            pm.makePersistentAll(groups);
             return null;
           }
         });
   }
 
   @VisibleForTesting
-  MSentryRole getMSentryRoleByName(final String roleName)
-      throws Exception {
+  MSentryRole getMSentryRoleByName(final String roleName) throws Exception {
     return (MSentryRole)tm.executeTransaction(
         new TransactionBlock() {
           public Object execute(PersistenceManager pm) throws Exception {
             String trimmedRoleName = trimAndLower(roleName);
-            Query query = pm.newQuery(MSentryRole.class);
-            query.setFilter("this.roleName == t");
-            query.declareParameters("java.lang.String t");
-            query.setUnique(true);
-            MSentryRole sentryRole = (MSentryRole) query.execute(trimmedRoleName);
+            MSentryRole sentryRole = getRole(pm, trimmedRoleName);
             if (sentryRole == null) {
-              throw new SentryNoSuchObjectException("Role: " + trimmedRoleName + " doesn't exist");
-            } else {
-              pm.retrieve(sentryRole);
+              throw new SentryNoSuchObjectException("Role: " + trimmedRoleName +
+                      " doesn't exist");
             }
             return sentryRole;
           }
@@ -909,7 +922,6 @@ public class SentryStore {
     if (roleNames == null || roleNames.isEmpty()) {
       return false;
     }
-
     boolean result = false;
     try {
       result = (Boolean) tm.executeTransaction(
@@ -926,7 +938,6 @@ public class SentryStore {
               filters.append("&& serverName == \"" + trimAndLower(serverName) + "\"");
               query.setFilter(filters.toString());
               query.setResult("count(this)");
-
               Long numPrivs = (Long) query.execute();
               return numPrivs > 0;
             }
@@ -937,8 +948,9 @@ public class SentryStore {
     return result;
   }
 
-  List<MSentryPrivilege> getMSentryPrivileges(final Set<String> roleNames,
-      final TSentryAuthorizable authHierarchy) {
+  @SuppressWarnings("unchecked")
+  private List<MSentryPrivilege> getMSentryPrivileges(final Set<String> roleNames,
+                                                      final TSentryAuthorizable authHierarchy) {
     List<MSentryPrivilege> result = new ArrayList<MSentryPrivilege>();
     if (roleNames == null || roleNames.isEmpty()) {
       return result;
@@ -949,7 +961,7 @@ public class SentryStore {
           new TransactionBlock() {
             public Object execute(PersistenceManager pm) throws Exception {
               Query query = pm.newQuery(MSentryPrivilege.class);
-              query.declareVariables("org.apache.sentry.provider.db.service.model.MSentryRole role");
+              query.declareVariables("MSentryRole role");
               List<String> rolesFiler = new LinkedList<String>();
               for (String rName : roleNames) {
                 rolesFiler.add("role.roleName == \"" + trimAndLower(rName) + "\"");
@@ -977,7 +989,7 @@ public class SentryStore {
                 }
               }
               query.setFilter(filters.toString());
-              return (List<MSentryPrivilege>) query.execute();
+              return  (List<MSentryPrivilege>) query.execute();
             }
           });
     } catch (Exception e) {
@@ -986,6 +998,7 @@ public class SentryStore {
     return result;
   }
 
+  @SuppressWarnings("unchecked")
   List<MSentryPrivilege> getMSentryPrivilegesByAuth(final Set<String> roleNames,
       final TSentryAuthorizable authHierarchy) {
     List<MSentryPrivilege> result = new ArrayList<MSentryPrivilege>();
@@ -998,7 +1011,7 @@ public class SentryStore {
               if (roleNames == null || roleNames.isEmpty()) {
                 filters.append(" !roles.isEmpty() ");
               } else {
-                query.declareVariables("org.apache.sentry.provider.db.service.model.MSentryRole role");
+                query.declareVariables("MSentryRole role");
                 List<String> rolesFiler = new LinkedList<String>();
                 for (String rName : roleNames) {
                   rolesFiler.add("role.roleName == \"" + trimAndLower(rName) + "\"");
@@ -1100,10 +1113,12 @@ public class SentryStore {
    * @param roleNames : roleNames to look up (required)
    * @param authHierarchy : filter push down based on auth hierarchy (optional)
    * @return : Set of thrift sentry privilege objects
-   * @throws SentryNoSuchObjectException
+   * @throws SentryInvalidInputException
    */
 
-  public Set<TSentryPrivilege> getTSentryPrivileges(Set<String> roleNames, TSentryAuthorizable authHierarchy) throws SentryInvalidInputException {
+  public Set<TSentryPrivilege> getTSentryPrivileges(Set<String> roleNames,
+                                                    TSentryAuthorizable authHierarchy)
+          throws SentryInvalidInputException {
     if (authHierarchy.getServer() == null) {
       throw new SentryInvalidInputException("serverName cannot be null !!");
     }
@@ -1119,28 +1134,22 @@ public class SentryStore {
     return convertToTSentryPrivileges(getMSentryPrivileges(roleNames, authHierarchy));
   }
 
-
-  private Set<MSentryRole> getMSentryRolesByGroupName(final String groupName) throws Exception {
+  @SuppressWarnings("unchecked")
+  private Set<MSentryRole> getMSentryRolesByGroupName(final String groupName)
+      throws Exception {
     return (Set<MSentryRole>) tm.executeTransaction(
         new TransactionBlock() {
           public Object execute(PersistenceManager pm) throws Exception {
             Set<MSentryRole> roles;
+
             //If no group name was specified, return all roles
             if (groupName == null) {
-              Query query = pm.newQuery(MSentryRole.class);
-              roles = new HashSet<MSentryRole>((List<MSentryRole>)query.execute());
+              roles = new HashSet<MSentryRole>(getAllRoles(pm));
             } else {
-              Query query = pm.newQuery(MSentryGroup.class);
-              MSentryGroup sentryGroup;
               String trimmedGroupName = groupName.trim();
-              query.setFilter("this.groupName == t");
-              query.declareParameters("java.lang.String t");
-              query.setUnique(true);
-              sentryGroup = (MSentryGroup) query.execute(trimmedGroupName);
+              MSentryGroup sentryGroup = getGroup(pm, trimmedGroupName);
               if (sentryGroup == null) {
                 throw new SentryNoSuchObjectException("Group: " + trimmedGroupName + " doesn't exist");
-              } else {
-                pm.retrieve(sentryGroup);
               }
               roles = sentryGroup.getRoles();
             }
@@ -1154,7 +1163,7 @@ public class SentryStore {
 
   /**
    * Gets sentry role objects for a given groupName from the persistence layer
-   * @param groupName : groupName to look up ( if null returns all roles for all groups)
+   * @param groupNames : set of groupNames to look up ( if null returns all roles for all groups)
    * @return : Set of thrift sentry role objects
    * @throws SentryNoSuchObjectException
    */
@@ -1174,6 +1183,7 @@ public class SentryStore {
     return convertToTSentryRoles(roleSet);
   }
 
+  @SuppressWarnings("unchecked")
   public Set<String> getRoleNamesForGroups(final Set<String> groups) {
     if (groups == null || groups.isEmpty()) {
       return ImmutableSet.of();
@@ -1197,6 +1207,7 @@ public class SentryStore {
     return convertToRoleNameSet(getRolesForGroups(pm, groups));
   }
 
+  @SuppressWarnings("unchecked")
   public Set<String> getRoleNamesForUsers(final Set<String> users) {
     if (users == null || users.isEmpty()) {
       return ImmutableSet.of();
@@ -1220,8 +1231,10 @@ public class SentryStore {
     return convertToRoleNameSet(getRolesForUsers(pm, users));
   }
 
+  @SuppressWarnings("unchecked")
   public Set<TSentryRole> getTSentryRolesByUserNames(final Set<String> users) {
     Set<TSentryRole> result = new HashSet<>();
+
     try {
       result = (Set<TSentryRole>) tm.executeTransaction(
           new TransactionBlock() {
@@ -1255,7 +1268,7 @@ public class SentryStore {
     return result;
   }
 
-  public Set<MSentryRole> getRolesForUsers(PersistenceManager pm, Set<String> users) {
+  private Set<MSentryRole> getRolesForUsers(PersistenceManager pm, Set<String> users) {
     Set<MSentryRole> result = Sets.newHashSet();
     if (users != null) {
       Query query = pm.newQuery(MSentryUser.class);
@@ -1272,7 +1285,7 @@ public class SentryStore {
     return result;
   }
 
-  public Set<String> listAllSentryPrivilegesForProvider(Set<String> groups, Set<String> users,
+  Set<String> listAllSentryPrivilegesForProvider(Set<String> groups, Set<String> users,
       TSentryActiveRoleSet roleSet) throws SentryInvalidInputException {
     return listSentryPrivilegesForProvider(groups, users, roleSet, null);
   }
@@ -1296,6 +1309,7 @@ public class SentryStore {
     return hasAnyServerPrivileges(rolesToQuery, server);
   }
 
+  @SuppressWarnings("unchecked")
   private Set<String> getRolesToQuery(final Set<String> groups, final Set<String> users,
       final TSentryActiveRoleSet roleSet) {
     Set<String> result = new HashSet<>();
@@ -1304,6 +1318,7 @@ public class SentryStore {
           new TransactionBlock() {
             public Object execute(PersistenceManager pm) throws Exception {
               Set<String> activeRoleNames = toTrimedLower(roleSet.getRoles());
+
               Set<String> roleNames = Sets.newHashSet();
               roleNames.addAll(toTrimedLower(getRoleNamesForGroupsCore(pm, groups)));
               roleNames.addAll(toTrimedLower(getRoleNamesForUsersCore(pm, users)));
@@ -1412,7 +1427,7 @@ public class SentryStore {
     return group;
   }
 
-  protected TSentryPrivilege convertToTSentryPrivilege(MSentryPrivilege mSentryPrivilege) {
+  TSentryPrivilege convertToTSentryPrivilege(MSentryPrivilege mSentryPrivilege) {
     TSentryPrivilege privilege = new TSentryPrivilege();
     convertToTSentryPrivilege(mSentryPrivilege, privilege);
     return privilege;
@@ -1471,12 +1486,12 @@ public class SentryStore {
     return s.trim().toLowerCase();
   }
 
-  public String getSentryVersion() throws Exception {
+  String getSentryVersion() throws Exception {
     MSentryVersion mVersion = getMSentryVersion();
     return mVersion.getSchemaVersion();
   }
 
-  public void setSentryVersion(final String newVersion, final String verComment)
+  void setSentryVersion(final String newVersion, final String verComment)
       throws Exception {
     tm.executeTransaction(
         new TransactionBlock() {
@@ -1501,8 +1516,7 @@ public class SentryStore {
   }
 
   @SuppressWarnings("unchecked")
-  private MSentryVersion getMSentryVersion()
-      throws Exception {
+  private MSentryVersion getMSentryVersion() throws Exception {
     return (MSentryVersion) tm.executeTransaction(
         new TransactionBlock() {
           public Object execute(PersistenceManager pm) throws Exception {
@@ -1538,6 +1552,7 @@ public class SentryStore {
     tm.executeTransactionWithRetry(
         new TransactionBlock() {
           public Object execute(PersistenceManager pm) throws Exception {
+
             TSentryPrivilege tPrivilege = toSentryPrivilege(tAuthorizable);
             try {
               if (isMultiActionsSupported(tPrivilege)) {
@@ -1569,6 +1584,7 @@ public class SentryStore {
     tm.executeTransactionWithRetry(
         new TransactionBlock() {
           public Object execute(PersistenceManager pm) throws Exception {
+
             TSentryPrivilege tPrivilege = toSentryPrivilege(tAuthorizable);
             TSentryPrivilege newPrivilege = toSentryPrivilege(newTAuthorizable);
             try {
@@ -1693,7 +1709,7 @@ public class SentryStore {
     return Strings.isNullOrEmpty(s) ? NULL_COL : s;
   }
 
-  public static String fromNULLCol(String s) {
+  private static String fromNULLCol(String s) {
     return isNULL(s) ? "" : s;
   }
 
@@ -1703,11 +1719,13 @@ public class SentryStore {
 
   /**
    * Grant option check
-   * @param pm
-   * @param privilege
+   * @param pm Persistence manager instance
+   * @param grantorPrincipal User name
+   * @param privilege Privilege to check
    * @throws SentryUserException
    */
-  private void grantOptionCheck(PersistenceManager pm, String grantorPrincipal, TSentryPrivilege privilege)
+  private void grantOptionCheck(PersistenceManager pm, String grantorPrincipal,
+                                TSentryPrivilege privilege)
       throws SentryUserException {
     MSentryPrivilege mPrivilege = convertToMSentryPrivilege(privilege);
     if (grantorPrincipal == null) {
@@ -1719,7 +1737,7 @@ public class SentryStore {
     // if grantor is in adminGroup, don't need to do check
     Set<String> admins = getAdminGroups();
     boolean isAdminGroup = false;
-    if (groups != null && admins != null && !admins.isEmpty()) {
+    if (groups != null && !admins.isEmpty()) {
       for (String g : groups) {
         if (admins.contains(g)) {
           isAdminGroup = true;
@@ -1763,8 +1781,9 @@ public class SentryStore {
   }
 
   /**
-   * This returns a Mapping of AuthZObj(db/table) -> (Role -> permission)
+   * @return  Mapping of AuthZObj(db/table) -> (Role -> permission)
    */
+  @SuppressWarnings("unchecked")
   public Map<String, HashMap<String, String>> retrieveFullPrivilegeImage() {
     Map<String, HashMap<String, String>> result = new HashMap<>();
     try {
@@ -1810,8 +1829,9 @@ public class SentryStore {
   }
 
   /**
-   * This returns a Mapping of Role -> [Groups]
+   * @return Mapping of Role -> [Groups]
    */
+  @SuppressWarnings("unchecked")
   public Map<String, LinkedList<String>> retrieveFullRoleImage() {
     Map<String, LinkedList<String>> result = new HashMap<>();
     try {
@@ -1825,7 +1845,7 @@ public class SentryStore {
                 for (MSentryRole role : mGroup.getRoles()) {
                   LinkedList<String> rUpdate = retVal.get(role.getRoleName());
                   if (rUpdate == null) {
-                    rUpdate = new LinkedList<>();
+                    rUpdate = new LinkedList<String>();
                     retVal.put(role.getRoleName(), rUpdate);
                   }
                   rUpdate.add(mGroup.getGroupName());
@@ -1975,7 +1995,7 @@ public class SentryStore {
      * NOTIFY_THRESHOLD times this routine is called.
      * @param numDeletions The number of potentially orphaned privileges
      */
-    public void incPrivRemoval(int numDeletions) {
+    void incPrivRemoval(int numDeletions) {
       if (privCleanerThread != null) {
         try {
           lock.lock();
@@ -1992,7 +2012,7 @@ public class SentryStore {
     /**
      * Simple form of incPrivRemoval when only one privilege is deleted.
      */
-    public void incPrivRemoval() {
+    void incPrivRemoval() {
       incPrivRemoval(1);
     }
 
@@ -2000,7 +2020,7 @@ public class SentryStore {
      * Tell this thread to exit. Safe to call multiple times, as it just
      * notifies the run() loop to finish up.
      */
-    public void exit() {
+    void exit() {
       if (privCleanerThread != null) {
         lock.lock();
         try {
@@ -2022,6 +2042,7 @@ public class SentryStore {
      * second transaction will go and get each of those privilege objects,
      * verify that there are no roles attached, and then delete them.
      */
+    @SuppressWarnings("unchecked")
     private void removeOrphanedPrivileges() {
       final String privDB = "SENTRY_DB_PRIVILEGE";
       final String privId = "DB_PRIVILEGE_ID";
@@ -2094,6 +2115,7 @@ public class SentryStore {
   }
 
   // get mapping datas for [group,role], [user,role] with the specific roles
+  @SuppressWarnings("unchecked")
   public List<Map<String, Set<String>>> getGroupUserRoleMapList(final Set<String> roleNames) {
     List<Map<String, Set<String>>> result = new ArrayList<>();
     try {
@@ -2170,11 +2192,14 @@ public class SentryStore {
   }
 
   // get all mapping data for [role,privilege]
-  public Map<String, Set<TSentryPrivilege>> getRoleNameTPrivilegesMap() throws Exception {
+  Map<String, Set<TSentryPrivilege>> getRoleNameTPrivilegesMap() throws Exception {
     return getRoleNameTPrivilegesMap(null, null);
   }
 
-  // get mapping data for [role,privilege] with the specific auth object
+  /**
+   * @return mapping data for [role,privilege] with the specific auth object
+   */
+  @SuppressWarnings("unchecked")
   public Map<String, Set<TSentryPrivilege>> getRoleNameTPrivilegesMap(final String dbName,
         final String tableName) throws Exception {
     return (Map<String, Set<TSentryPrivilege>>) tm.executeTransaction(
@@ -2221,37 +2246,48 @@ public class SentryStore {
     return rolePrivilegesMap;
   }
 
-  // Get the all exist role names, will return an empty set
-  // if no role names exist.
+  /**
+   * @return Set of all role names, or an empty set if no roles are defined
+   */
+  @SuppressWarnings("unchecked")
   public Set<String> getAllRoleNames() {
     Set<String> result = new HashSet<>();
     try {
-      result = (Set<String>) tm.executeTransaction(
+      return (Set<String>) tm.executeTransaction(
           new TransactionBlock() {
             public Object execute(PersistenceManager pm) throws Exception {
-              return getAllRoleNames(pm);
+              return getAllRoleNamesCore(pm);
             }
           });
     } catch (Exception e) {
       LOGGER.error(e.getMessage(), e);
+      return  new HashSet<>();
     }
-    return result;
   }
 
-  // get the all exist role names
-  private Set<String> getAllRoleNames(PersistenceManager pm) {
-    Query query = pm.newQuery(MSentryRole.class);
-    List<MSentryRole> mSentryRoles = (List<MSentryRole>) query.execute();
-    Set<String> existRoleNames = Sets.newHashSet();
+  /**
+   * Get set of all role names
+   * Should be executed inside transaction
+   * @param pm PersistenceManager instance
+   * @return Set of all role names, or an empty set if no roles are defined
+   */
+  private Set<String> getAllRoleNamesCore(PersistenceManager pm) {
+    List<MSentryRole> mSentryRoles = getAllRoles(pm);
+    Set<String> roleNames = Sets.newHashSet();
     if (mSentryRoles != null) {
       for (MSentryRole mSentryRole : mSentryRoles) {
-        existRoleNames.add(mSentryRole.getRoleName());
+        roleNames.add(mSentryRole.getRoleName());
       }
     }
-    return existRoleNames;
+    return roleNames;
   }
 
-  // get the all exist groups
+  /**
+   * Get all groups as a map from group name to group
+   * @param pm PersistenceManager instance
+   * @return map of group names to group data for each group
+   */
+  @SuppressWarnings("unchecked")
   private Map<String, MSentryGroup> getGroupNameTGroupMap(PersistenceManager pm) {
     Query query = pm.newQuery(MSentryGroup.class);
     List<MSentryGroup> mSentryGroups = (List<MSentryGroup>) query.execute();
@@ -2265,7 +2301,13 @@ public class SentryStore {
     return existGroupsMap;
   }
 
+  /**
+   * Get all users as a map from user name to user
+   * @param pm PersistenceManager instance
+   * @return map of user names to user data for each user
+   */
   // get the all exist users
+  @SuppressWarnings("unchecked")
   private Map<String, MSentryUser> getUserNameToUserMap(PersistenceManager pm) {
     Query query = pm.newQuery(MSentryUser.class);
     List<MSentryUser> users = (List<MSentryUser>) query.execute();
@@ -2279,7 +2321,12 @@ public class SentryStore {
     return existUsersMap;
   }
 
-  // get the all exist privileges
+  /**
+   * Returl list of all privileges
+   * @param pm PersistenceManager instance
+   * @return List of all privileges
+   */
+  @SuppressWarnings("unchecked")
   private List<MSentryPrivilege> getPrivilegesList(PersistenceManager pm) {
     Query query = pm.newQuery(MSentryPrivilege.class);
     List<MSentryPrivilege> resultList = (List<MSentryPrivilege>) query.execute();
@@ -2290,14 +2337,14 @@ public class SentryStore {
   }
 
   @VisibleForTesting
+  @SuppressWarnings("unchecked")
   protected Map<String, MSentryRole> getRolesMap() {
     Map<String, MSentryRole> result = new HashMap<>();
     try {
       result = (Map<String, MSentryRole>) tm.executeTransaction(
           new TransactionBlock() {
             public Object execute(PersistenceManager pm) throws Exception {
-              Query query = pm.newQuery(MSentryRole.class);
-              List<MSentryRole> mSentryRoles = (List<MSentryRole>) query.execute();
+              List<MSentryRole> mSentryRoles = getAllRoles(pm);
               Map<String, MSentryRole> existRolesMap = Maps.newHashMap();
               if (mSentryRoles != null) {
                 // change the List<MSentryRole> -> Map<roleName, Set<MSentryRole>>
@@ -2305,6 +2352,7 @@ public class SentryStore {
                   existRolesMap.put(mSentryRole.getRoleName(), mSentryRole);
                 }
               }
+
               return existRolesMap;
             }
           });
@@ -2315,6 +2363,7 @@ public class SentryStore {
   }
 
   @VisibleForTesting
+  @SuppressWarnings("unchecked")
   protected Map<String, MSentryGroup> getGroupNameToGroupMap() {
     Map<String, MSentryGroup>result = new HashMap<>();
     try {
@@ -2331,6 +2380,7 @@ public class SentryStore {
   }
 
   @VisibleForTesting
+  @SuppressWarnings("unchecked")
   protected Map<String, MSentryUser> getUserNameToUserMap() {
     Map<String, MSentryUser> result = new HashMap<>();
     try {
@@ -2347,6 +2397,7 @@ public class SentryStore {
   }
 
   @VisibleForTesting
+  @SuppressWarnings("unchecked")
   protected List<MSentryPrivilege> getPrivilegesList() {
     List<MSentryPrivilege> result = new ArrayList<>();
     try {
@@ -2404,7 +2455,8 @@ public class SentryStore {
         new TransactionBlock() {
           public Object execute(PersistenceManager pm) throws Exception {
             TSentryMappingData mappingData = lowercaseRoleName(tSentryMappingData);
-            Set<String> existRoleNames = getAllRoleNames(pm);
+            Set<String> roleNames = getAllRoleNamesCore(pm);
+
             Map<String, Set<TSentryGroup>> importedRoleGroupsMap = covertToRoleNameTGroupsMap(mappingData
                 .getGroupRolesMap());
             Map<String, Set<String>> importedRoleUsersMap = covertToRoleUsersMap(mappingData
@@ -2412,17 +2464,17 @@ public class SentryStore {
             Set<String> importedRoleNames = importedRoleGroupsMap.keySet();
             // if import with overwrite role, drop the duplicated roles in current DB first.
             if (isOverwriteForRole) {
-              dropDuplicatedRoleForImport(pm, existRoleNames, importedRoleNames);
-              // refresh the existRoleNames for the drop role
-              existRoleNames = getAllRoleNames(pm);
+              dropDuplicatedRoleForImport(pm, roleNames, importedRoleNames);
+              // refresh the roleNames for the drop role
+              roleNames = getAllRoleNamesCore(pm);
             }
 
-            // import the mapping data for [role,privilege], the existRoleNames will be updated
-            importRolePrivilegeMapping(pm, existRoleNames, mappingData.getRolePrivilegesMap());
-            // import the mapping data for [role,group], the existRoleNames will be updated
-            importRoleGroupMapping(pm, existRoleNames, importedRoleGroupsMap);
-            // import the mapping data for [role,user], the existRoleNames will be updated
-            importRoleUserMapping(pm, existRoleNames, importedRoleUsersMap);
+            // import the mapping data for [role,privilege], the roleNames will be updated
+            importRolePrivilegeMapping(pm, roleNames, mappingData.getRolePrivilegesMap());
+            // import the mapping data for [role,group], the roleNames will be updated
+            importRoleGroupMapping(pm, roleNames, importedRoleGroupsMap);
+            // import the mapping data for [role,user], the roleNames will be updated
+            importRoleUserMapping(pm, roleNames, importedRoleUsersMap);
             return null;
           }
         });
@@ -2554,9 +2606,10 @@ public class SentryStore {
     String lowerRoleName = trimAndLower(roleName);
     // if the rolenName doesn't exist, create it.
     if (!existRoleNames.contains(lowerRoleName)) {
-      createSentryRoleCore(pm, lowerRoleName);
       // update the exist role name set
       existRoleNames.add(lowerRoleName);
+      // Create role in the persistent storage
+      pm.makePersistent(new MSentryRole(trimAndLower(roleName)));
     }
   }
 }

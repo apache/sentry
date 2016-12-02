@@ -75,7 +75,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
   }
 
   private MSentryRole getRole(String roleName, PersistenceManager pm) {
-    return delegate.getMSentryRole(pm, roleName);
+    return delegate.getRole(pm, roleName);
   }
 
   @Override
@@ -92,26 +92,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
   @Override
   public Object dropRole(final String component, final String role, final String requestor)
       throws Exception {
-    delegate.getTransactionManager().executeTransactionWithRetry(
-        new TransactionBlock() {
-          public Object execute(PersistenceManager pm) throws Exception {
-            String trimmedRole = toTrimmedLower(role);
-            Query query = pm.newQuery(MSentryRole.class);
-            query.setFilter("this.roleName == t");
-            query.declareParameters("java.lang.String t");
-            query.setUnique(true);
-            MSentryRole sentryRole = (MSentryRole) query.execute(trimmedRole);
-            if (sentryRole == null) {
-              throw new SentryNoSuchObjectException("Role: " + trimmedRole + " doesn't exist");
-            } else {
-              pm.retrieve(sentryRole);
-              sentryRole.removeGMPrivileges();
-              sentryRole.removePrivileges();
-              pm.deletePersistent(sentryRole);
-            }
-            return null;
-          }
-        });
+    delegate.dropSentryRole(toTrimmedLower(role));
     return null;
   }
 

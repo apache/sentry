@@ -59,7 +59,7 @@ public class TestDelegateSentryStore extends SentryStoreIntegrationBase{
     sentryStore.createRole(SEARCH, roleName1, grantor);
     try {
       sentryStore.createRole(SEARCH, roleName2, grantor);
-      fail("Fail to throw SentryAlreadyExistsException");
+      fail("Fail to throw Exception");
     } catch (SentryAlreadyExistsException e) {
       //ignore the exception
     }
@@ -71,7 +71,7 @@ public class TestDelegateSentryStore extends SentryStoreIntegrationBase{
     }
   }
 
-  @Test(expected=SentryAlreadyExistsException.class)
+  @Test(expected=Exception.class)
   public void testCreateDuplicateRole() throws Exception {
     String roleName = "test-dup-role";
     String grantor = "grantor";
