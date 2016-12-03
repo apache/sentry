@@ -43,7 +43,6 @@ import org.apache.sentry.provider.db.generic.service.persistent.SentryStoreLayer
 import org.apache.sentry.provider.db.generic.service.persistent.PrivilegeObject.Builder;
 import org.apache.sentry.provider.db.service.model.MSentryGMPrivilege;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
-import org.apache.sentry.provider.db.service.persistent.CommitContext;
 import org.apache.sentry.provider.db.service.thrift.PolicyStoreConstants;
 import org.apache.sentry.provider.db.service.thrift.SentryConfigurationException;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
@@ -57,8 +56,6 @@ import com.google.common.collect.Sets;
 public class TestSentryGenericPolicyProcessor {
   private static final String ADMIN_GROUP = "admin_group";
   private static final String ADMIN_USER = "admin_user";
-  private static final UUID SERVER_UUID = UUID.randomUUID();
-  private static final long SEQ_ID = 10000;
 
   private SentryStoreLayer mockStore = mock(SentryStoreLayer.class);
   private SentryGenericPolicyProcessor processor;
@@ -117,34 +114,11 @@ public class TestSentryGenericPolicyProcessor {
 
   @Test
   public void testAdminOperation() throws Exception {
-    when(mockStore.createRole(anyString(), anyString(), anyString()))
-        .thenReturn(new CommitContext(SERVER_UUID, SEQ_ID));
-
-    when(mockStore.dropRole(anyString(), anyString(), anyString()))
-        .thenReturn(new CommitContext(SERVER_UUID, SEQ_ID + 1));
-
-    when(mockStore.alterRoleAddGroups(anyString(), anyString(), anySetOf(String.class),anyString()))
-        .thenReturn(new CommitContext(SERVER_UUID, SEQ_ID + 2));
-
-    when(mockStore.alterRoleDeleteGroups(anyString(), anyString(),anySetOf(String.class), anyString()))
-        .thenReturn(new CommitContext(SERVER_UUID, SEQ_ID + 3));
-
-    when(mockStore.dropPrivilege(anyString(), any(PrivilegeObject.class), anyString()))
-        .thenReturn(new CommitContext(SERVER_UUID, SEQ_ID + 4));
-
-    when(mockStore.renamePrivilege(anyString(), anyString(), anyListOf(Authorizable.class),
-        anyListOf(Authorizable.class), anyString()))
-        .thenReturn(new CommitContext(SERVER_UUID, SEQ_ID + 5));
     testOperation(ADMIN_USER, Status.OK);
   }
 
   @Test
   public void testGrantAndRevokePrivilege() throws Exception {
-    when(mockStore.alterRoleGrantPrivilege(anyString(), anyString(), any(PrivilegeObject.class), anyString()))
-    .thenReturn(new CommitContext(SERVER_UUID, SEQ_ID + 6));
-
-    when(mockStore.alterRoleRevokePrivilege(anyString(), anyString(),any(PrivilegeObject.class), anyString()))
-    .thenReturn(new CommitContext(SERVER_UUID, SEQ_ID + 7));
     setup();
 
     TSentryPrivilege tprivilege = new TSentryPrivilege("test", "test", new ArrayList<TAuthorizable>(), "test");

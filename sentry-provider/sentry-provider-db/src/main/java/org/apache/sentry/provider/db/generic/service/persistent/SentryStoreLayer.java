@@ -22,7 +22,6 @@ import java.util.Set;
 
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.provider.db.service.model.MSentryGMPrivilege;
-import org.apache.sentry.provider.db.service.persistent.CommitContext;
 
 /**
  * Sentry store for persistent the authorize object to database
@@ -33,10 +32,9 @@ public interface SentryStoreLayer {
    * @param component: The request respond to which component
    * @param role: The name of role
    * @param requestor: User on whose behalf the request is launched
-   * @returns commit context used for notification handlers
    * @throws Exception
    */
-  CommitContext createRole(String component, String role,
+  Object createRole(String component, String role,
       String requestor) throws Exception;
 
   /**
@@ -44,10 +42,9 @@ public interface SentryStoreLayer {
    * @param component: The request respond to which component
    * @param role: The name of role
    * @param requestor: user on whose behalf the request is launched
-   * @returns commit context used for notification handlers
    * @throws Exception
    */
-  CommitContext dropRole(String component, String role,
+  Object dropRole(String component, String role,
       String requestor) throws Exception;
 
   /**
@@ -56,10 +53,9 @@ public interface SentryStoreLayer {
    * @param role: The name of role
    * @param groups: The name of groups
    * @param requestor: User on whose behalf the request is issued
-   * @returns commit context used for notification handlers
    * @throws Exception
    */
-  CommitContext alterRoleAddGroups(String component, String role,
+  Object alterRoleAddGroups(String component, String role,
       Set<String> groups, String requestor) throws Exception;
 
   /**
@@ -68,10 +64,9 @@ public interface SentryStoreLayer {
    * @param role: The name of role
    * @param groups: The name of groups
    * @param requestor: User on whose behalf the request is launched
-   * @returns commit context used for notification handlers
    * @throws Exception
    */
-  CommitContext alterRoleDeleteGroups(String component, String role,
+  Object alterRoleDeleteGroups(String component, String role,
       Set<String> groups, String requestor) throws Exception;
 
   /**
@@ -80,10 +75,9 @@ public interface SentryStoreLayer {
    * @param role: The name of role
    * @param privilege: The privilege object will be granted
    * @param grantorPrincipal: User on whose behalf the request is launched
-   * @returns commit context Used for notification handlers
    * @throws Exception
    */
-  CommitContext alterRoleGrantPrivilege(String component, String role,
+  Object alterRoleGrantPrivilege(String component, String role,
       PrivilegeObject privilege, String grantorPrincipal) throws Exception;
 
   /**
@@ -92,10 +86,9 @@ public interface SentryStoreLayer {
    * @param role: The name of role
    * @param privilege: The privilege object will revoked
    * @param grantorPrincipal: User on whose behalf the request is launched
-   * @returns commit context used for notification handlers
    * @throws Exception
    */
-  CommitContext alterRoleRevokePrivilege(String component, String role,
+  Object alterRoleRevokePrivilege(String component, String role,
       PrivilegeObject privilege, String grantorPrincipal) throws Exception;
 
   /**
@@ -106,10 +99,9 @@ public interface SentryStoreLayer {
    * @param oldAuthorizables: The old list of authorize objects
    * @param newAuthorizables: The new list of authorize objects
    * @param requestor: User on whose behalf the request is launched
-   * @returns commit context used for notification handlers
    * @throws Exception
    */
-  public CommitContext renamePrivilege(
+  Object renamePrivilege(
       String component, String service, List<? extends Authorizable> oldAuthorizables,
       List<? extends Authorizable> newAuthorizables, String requestor) throws Exception;
 
@@ -118,10 +110,9 @@ public interface SentryStoreLayer {
    * @param component: The request respond to which component
    * @param privilege: The privilege will be dropped
    * @param requestor: User on whose behalf the request is launched
-   * @returns commit context used for notification handlers
    * @throws Exception
    */
-  CommitContext dropPrivilege(String component, PrivilegeObject privilege,
+  Object dropPrivilege(String component, PrivilegeObject privilege,
       String requestor) throws Exception;
 
   /**

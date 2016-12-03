@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 
 import javax.jdo.PersistenceManager;
 import javax.jdo.Query;
@@ -37,7 +36,6 @@ import org.apache.sentry.provider.db.SentryNoSuchObjectException;
 import org.apache.sentry.provider.db.service.model.MSentryGMPrivilege;
 import org.apache.sentry.provider.db.service.model.MSentryGroup;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
-import org.apache.sentry.provider.db.service.persistent.CommitContext;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.provider.db.service.persistent.TransactionBlock;
 import org.apache.sentry.provider.db.service.thrift.SentryConfigurationException;
@@ -61,11 +59,10 @@ import com.google.common.collect.Sets;
  * resourceName2=cl1,resourceType2=COLUMN ) of generic privilege table
  */
 public class DelegateSentryStore implements SentryStoreLayer {
-  private static final UUID SERVER_UUID = UUID.randomUUID();
-  private final SentryStore delegate;
-  private final Configuration conf;
-  private final Set<String> adminGroups;
-  private final PrivilegeOperatePersistence privilegeOperator;
+  private SentryStore delegate;
+  private Configuration conf;
+  private Set<String> adminGroups;
+  private PrivilegeOperatePersistence privilegeOperator;
 
   public DelegateSentryStore(Configuration conf) throws Exception {
     this.privilegeOperator = new PrivilegeOperatePersistence(conf);
@@ -83,9 +80,10 @@ public class DelegateSentryStore implements SentryStoreLayer {
   }
 
   @Override
-  public CommitContext createRole(String component, String role,
+  public Object createRole(String component, String role,
       String requestor) throws Exception {
-    return delegate.createSentryRole(role);
+    delegate.createSentryRole(role);
+    return null;
   }
 
   /**
@@ -93,9 +91,9 @@ public class DelegateSentryStore implements SentryStoreLayer {
    * privileges, so delete role will remove all privileges related to it.
    */
   @Override
-  public CommitContext dropRole(final String component, final String role, final String requestor)
+  public Object dropRole(final String component, final String role, final String requestor)
       throws Exception {
-    return (CommitContext)delegate.getTransactionManager().executeTransactionWithRetry(
+    delegate.getTransactionManager().executeTransactionWithRetry(
         new TransactionBlock() {
           public Object execute(PersistenceManager pm) throws Exception {
             String trimmedRole = toTrimmedLower(role);
@@ -112,9 +110,10 @@ public class DelegateSentryStore implements SentryStoreLayer {
               sentryRole.removePrivileges();
               pm.deletePersistent(sentryRole);
             }
-            return new CommitContext(SERVER_UUID, 0l);
+            return null;
           }
         });
+    return null;
   }
 
   @Override
@@ -123,22 +122,25 @@ public class DelegateSentryStore implements SentryStoreLayer {
   }
 
   @Override
-  public CommitContext alterRoleAddGroups(String component, String role,
+  public Object alterRoleAddGroups(String component, String role,
       Set<String> groups, String requestor) throws Exception {
-    return delegate.alterSentryRoleAddGroups(requestor, role, toTSentryGroups(groups));
+    delegate.alterSentryRoleAddGroups(requestor, role, toTSentryGroups(groups));
+    return null;
   }
 
   @Override
-  public CommitContext alterRoleDeleteGroups(String component, String role,
+  public Object alterRoleDeleteGroups(String component, String role,
       Set<String> groups, String requestor) throws Exception {
   //called to old sentryStore
-    return delegate.alterSentryRoleDeleteGroups(role, toTSentryGroups(groups));
+    delegate.alterSentryRoleDeleteGroups(role, toTSentryGroups(groups));
+    return null;
   }
 
   @Override
-  public CommitContext alterRoleGrantPrivilege(final String component, final String role,
-      final PrivilegeObject privilege, final String grantorPrincipal) throws Exception {
-    return (CommitContext)delegate.getTransactionManager().executeTransactionWithRetry(
+  public Object alterRoleGrantPrivilege(final String component, final String role,
+      final PrivilegeObject privilege, final String grantorPrincipal)
+      throws Exception {
+    delegate.getTransactionManager().executeTransactionWithRetry(
         new TransactionBlock() {
           public Object execute(PersistenceManager pm) throws Exception {
             String trimmedRole = toTrimmedLower(role);
@@ -152,16 +154,17 @@ public class DelegateSentryStore implements SentryStoreLayer {
             grantOptionCheck(privilege, grantorPrincipal, pm);
 
             privilegeOperator.grantPrivilege(privilege, mRole, pm);
-            return new CommitContext(SERVER_UUID, 0l);
+            return null;
           }
         });
+    return null;
   }
 
   @Override
-  public CommitContext alterRoleRevokePrivilege(final String component,
+  public Object alterRoleRevokePrivilege(final String component,
       final String role, final PrivilegeObject privilege, final String grantorPrincipal)
       throws Exception {
-    return (CommitContext)delegate.getTransactionManager().executeTransactionWithRetry(
+    delegate.getTransactionManager().executeTransactionWithRetry(
         new TransactionBlock() {
           public Object execute(PersistenceManager pm) throws Exception {
             String trimmedRole = toTrimmedLower(role);
@@ -175,13 +178,14 @@ public class DelegateSentryStore implements SentryStoreLayer {
             grantOptionCheck(privilege, grantorPrincipal, pm);
 
             privilegeOperator.revokePrivilege(privilege, mRole, pm);
-            return new CommitContext(SERVER_UUID, 0l);
+            return null;
           }
         });
+    return null;
   }
 
   @Override
-  public CommitContext renamePrivilege(final String component, final String service,
+  public Object renamePrivilege(final String component, final String service,
       final List<? extends Authorizable> oldAuthorizables,
       final List<? extends Authorizable> newAuthorizables, final String requestor)
       throws Exception {
@@ -197,27 +201,30 @@ public class DelegateSentryStore implements SentryStoreLayer {
               + "newAuthorizables:" + Arrays.toString(newAuthorizables.toArray()));
     }
 
-    return (CommitContext)delegate.getTransactionManager().executeTransactionWithRetry(
+    delegate.getTransactionManager().executeTransactionWithRetry(
         new TransactionBlock() {
           public Object execute(PersistenceManager pm) throws Exception {
             privilegeOperator.renamePrivilege(toTrimmedLower(component), toTrimmedLower(service),
                 oldAuthorizables, newAuthorizables, requestor, pm);
-            return new CommitContext(SERVER_UUID, 0l);
+            return null;
           }
         });
+    return null;
   }
 
   @Override
-  public CommitContext dropPrivilege(final String component,
+  public Object dropPrivilege(final String component,
       final PrivilegeObject privilege, final String requestor) throws Exception {
     Preconditions.checkNotNull(requestor);
-    return (CommitContext)delegate.getTransactionManager().executeTransactionWithRetry(
+
+    delegate.getTransactionManager().executeTransactionWithRetry(
         new TransactionBlock() {
           public Object execute(PersistenceManager pm) throws Exception {
             privilegeOperator.dropPrivilege(privilege, pm);
-            return new CommitContext(SERVER_UUID, 0l);
+            return null;
           }
         });
+    return null;
   }
 
   /**

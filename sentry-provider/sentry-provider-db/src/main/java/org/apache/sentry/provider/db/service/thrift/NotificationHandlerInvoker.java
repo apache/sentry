@@ -21,7 +21,6 @@ package org.apache.sentry.provider.db.service.thrift;
 import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.provider.db.service.persistent.CommitContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,11 +36,6 @@ public class NotificationHandlerInvoker extends NotificationHandler {
 
   private final ImmutableList<NotificationHandler> handlers;
 
-  public NotificationHandlerInvoker(Configuration conf, NotificationHandler handler)
-  throws Exception {
-    this(conf, ImmutableList.of(handler));
-  }
-
   public NotificationHandlerInvoker(Configuration conf, List<NotificationHandler> handlers)
   throws Exception {
     super(conf);
@@ -49,12 +43,11 @@ public class NotificationHandlerInvoker extends NotificationHandler {
   }
 
   @Override
-  public void create_sentry_role(CommitContext context,
-                                 TCreateSentryRoleRequest request, TCreateSentryRoleResponse response) {
+  public void create_sentry_role(TCreateSentryRoleRequest request, TCreateSentryRoleResponse response) {
     for (NotificationHandler handler : handlers) {
       try {
         LOGGER.debug("Calling " + handler);
-        handler.create_sentry_role(context,  new TCreateSentryRoleRequest(request),
+        handler.create_sentry_role(new TCreateSentryRoleRequest(request),
                                    new TCreateSentryRoleResponse(response));
       } catch (Exception ex) {
         LOGGER.error("Unexpected error in " + handler + ". Request: "
@@ -64,12 +57,12 @@ public class NotificationHandlerInvoker extends NotificationHandler {
   }
 
   @Override
-  public void drop_sentry_role(CommitContext context, TDropSentryRoleRequest request,
+  public void drop_sentry_role(TDropSentryRoleRequest request,
                                TDropSentryRoleResponse response) {
     for (NotificationHandler handler : handlers) {
       try {
         LOGGER.debug("Calling " + handler);
-        handler.drop_sentry_role(context,  new TDropSentryRoleRequest(request),
+        handler.drop_sentry_role(new TDropSentryRoleRequest(request),
                                  new TDropSentryRoleResponse(response));
       } catch (Exception ex) {
         LOGGER.error("Unexpected error in " + handler + ". Request: "
@@ -79,15 +72,13 @@ public class NotificationHandlerInvoker extends NotificationHandler {
   }
 
   @Override
-  public void alter_sentry_role_grant_privilege(CommitContext context,
-      TAlterSentryRoleGrantPrivilegeRequest request,
-      TAlterSentryRoleGrantPrivilegeResponse response) {
+  public void alter_sentry_role_grant_privilege(TAlterSentryRoleGrantPrivilegeRequest request,
+                                                TAlterSentryRoleGrantPrivilegeResponse response) {
     for (NotificationHandler handler : handlers) {
       try {
         LOGGER.debug("Calling " + handler);
-        handler.alter_sentry_role_grant_privilege(context,
-            new TAlterSentryRoleGrantPrivilegeRequest(request),
-            new TAlterSentryRoleGrantPrivilegeResponse(response));
+        handler.alter_sentry_role_grant_privilege(new TAlterSentryRoleGrantPrivilegeRequest(request),
+                new TAlterSentryRoleGrantPrivilegeResponse(response));
       } catch (Exception ex) {
         LOGGER.error("Unexpected error in " + handler + ". Request: "
                      + request + ", Response: " + response, ex);
@@ -96,15 +87,13 @@ public class NotificationHandlerInvoker extends NotificationHandler {
   }
 
   @Override
-  public void alter_sentry_role_revoke_privilege(CommitContext context,
-      TAlterSentryRoleRevokePrivilegeRequest request,
-      TAlterSentryRoleRevokePrivilegeResponse response) {
+  public void alter_sentry_role_revoke_privilege(TAlterSentryRoleRevokePrivilegeRequest request,
+                                                 TAlterSentryRoleRevokePrivilegeResponse response) {
     for (NotificationHandler handler : handlers) {
       try {
         LOGGER.debug("Calling " + handler);
-        handler.alter_sentry_role_revoke_privilege(context,
-            new TAlterSentryRoleRevokePrivilegeRequest(request),
-            new TAlterSentryRoleRevokePrivilegeResponse(response));
+        handler.alter_sentry_role_revoke_privilege(new TAlterSentryRoleRevokePrivilegeRequest(request),
+                new TAlterSentryRoleRevokePrivilegeResponse(response));
       } catch (Exception ex) {
         LOGGER.error("Unexpected error in " + handler + ". Request: "
                      + request + ", Response: " + response, ex);
@@ -113,13 +102,13 @@ public class NotificationHandlerInvoker extends NotificationHandler {
   }
 
   @Override
-  public void alter_sentry_role_add_groups(CommitContext context,
+  public void alter_sentry_role_add_groups(
       TAlterSentryRoleAddGroupsRequest request,
       TAlterSentryRoleAddGroupsResponse response) {
     for (NotificationHandler handler : handlers) {
       try {
         LOGGER.debug("Calling " + handler);
-        handler.alter_sentry_role_add_groups(context, new TAlterSentryRoleAddGroupsRequest(request),
+        handler.alter_sentry_role_add_groups(new TAlterSentryRoleAddGroupsRequest(request),
                                              new TAlterSentryRoleAddGroupsResponse(response));
       } catch (Exception ex) {
         LOGGER.error("Unexpected error in " + handler + ". Request: "
@@ -129,13 +118,12 @@ public class NotificationHandlerInvoker extends NotificationHandler {
   }
 
   @Override
-  public void alter_sentry_role_delete_groups(
-    CommitContext context, TAlterSentryRoleDeleteGroupsRequest request,
-    TAlterSentryRoleDeleteGroupsResponse response) {
+  public void alter_sentry_role_delete_groups(TAlterSentryRoleDeleteGroupsRequest request,
+                                              TAlterSentryRoleDeleteGroupsResponse response) {
     for (NotificationHandler handler : handlers) {
       try {
         LOGGER.debug("Calling " + handler);
-        handler.alter_sentry_role_delete_groups(context, new TAlterSentryRoleDeleteGroupsRequest(request),
+        handler.alter_sentry_role_delete_groups(new TAlterSentryRoleDeleteGroupsRequest(request),
                                                 new TAlterSentryRoleDeleteGroupsResponse(response));
       } catch (Exception ex) {
         LOGGER.error("Unexpected error in " + handler + ". Request: "

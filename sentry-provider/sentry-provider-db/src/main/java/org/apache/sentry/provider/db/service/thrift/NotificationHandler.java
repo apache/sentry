@@ -19,7 +19,6 @@
 package org.apache.sentry.provider.db.service.thrift;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.provider.db.service.persistent.CommitContext;
 
 /**
  * Users wishing to be notified when a metadata changing event occurs
@@ -27,7 +26,6 @@ import org.apache.sentry.provider.db.service.persistent.CommitContext;
  * metadata in SentryPolicyStoreProcessor will have a corresponding method
  * on this class. Each method will contain a copy of the request and response
  * object. Therefore any change to the request or response object will be ignored.
- * Additionally each method will be passed a CommitContext.
  *
  * Sub-classes should be thread-safe.
  */
@@ -43,29 +41,25 @@ public abstract class NotificationHandler {
     return config;
   }
 
-  public void create_sentry_role(CommitContext context,
-                                 TCreateSentryRoleRequest request, TCreateSentryRoleResponse response) {
+  public void create_sentry_role(TCreateSentryRoleRequest request, TCreateSentryRoleResponse response) {
   }
 
-  public void drop_sentry_role(CommitContext context, TDropSentryRoleRequest request,
-                               TDropSentryRoleResponse response) {
+  public void drop_sentry_role(TDropSentryRoleRequest request, TDropSentryRoleResponse response) {
   }
 
-  public void alter_sentry_role_grant_privilege(CommitContext context, TAlterSentryRoleGrantPrivilegeRequest request,
-      TAlterSentryRoleGrantPrivilegeResponse response) {
+  public void alter_sentry_role_grant_privilege(TAlterSentryRoleGrantPrivilegeRequest request,
+                                                TAlterSentryRoleGrantPrivilegeResponse response) {
   }
 
-  public void alter_sentry_role_revoke_privilege(CommitContext context, TAlterSentryRoleRevokePrivilegeRequest request,
+  public void alter_sentry_role_revoke_privilege(TAlterSentryRoleRevokePrivilegeRequest request,
       TAlterSentryRoleRevokePrivilegeResponse response) {
   }
 
-  public void alter_sentry_role_add_groups(CommitContext context,
-      TAlterSentryRoleAddGroupsRequest request,
-      TAlterSentryRoleAddGroupsResponse response) {
+  public void alter_sentry_role_add_groups(TAlterSentryRoleAddGroupsRequest request,
+                                           TAlterSentryRoleAddGroupsResponse response) {
   }
 
-  public void alter_sentry_role_delete_groups(
-    CommitContext context, TAlterSentryRoleDeleteGroupsRequest request,
-    TAlterSentryRoleDeleteGroupsResponse response) {
+  public void alter_sentry_role_delete_groups(TAlterSentryRoleDeleteGroupsRequest request,
+                                              TAlterSentryRoleDeleteGroupsResponse response) {
   }
 }
