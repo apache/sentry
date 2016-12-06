@@ -18,8 +18,7 @@
 
 package org.apache.sentry.binding.metastore.messaging.json;
 
-import org.apache.hive.hcatalog.messaging.InsertMessage;
-import org.apache.hive.hcatalog.messaging.MessageDeserializer;
+import org.apache.hive.hcatalog.messaging.*;
 import org.apache.hive.hcatalog.messaging.json.JSONInsertMessage;
 import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -95,6 +94,31 @@ public class SentryJSONMessageDeserializer extends MessageDeserializer {
         } catch (Exception var3) {
             throw new IllegalArgumentException("Could not construct SentryJSONDropPartitionMessage.", var3);
         }
+    }
+
+    @Override
+    public CreateFunctionMessage getCreateFunctionMessage(String messageBody) {
+        return null;
+    }
+
+    @Override
+    public DropFunctionMessage getDropFunctionMessage(String messageBody) {
+        return null;
+    }
+
+    @Override
+    public CreateIndexMessage getCreateIndexMessage(String messageBody) {
+        return null;
+    }
+
+    @Override
+    public DropIndexMessage getDropIndexMessage(String messageBody) {
+        return null;
+    }
+
+    @Override
+    public AlterIndexMessage getAlterIndexMessage(String messageBody) {
+        return null;
     }
 
     @Override

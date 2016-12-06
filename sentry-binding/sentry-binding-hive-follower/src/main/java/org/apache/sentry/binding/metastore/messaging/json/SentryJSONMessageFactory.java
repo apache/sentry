@@ -21,10 +21,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.common.classification.InterfaceAudience;
 import org.apache.hadoop.hive.common.classification.InterfaceStability;
-import org.apache.hadoop.hive.metastore.api.Database;
-import org.apache.hadoop.hive.metastore.api.FieldSchema;
-import org.apache.hadoop.hive.metastore.api.Partition;
-import org.apache.hadoop.hive.metastore.api.Table;
+import org.apache.hadoop.hive.metastore.api.*;
 import org.apache.hadoop.hive.metastore.partition.spec.PartitionSpecProxy;
 import org.apache.hive.hcatalog.messaging.*;
 import org.apache.hive.hcatalog.messaging.json.JSONInsertMessage;
@@ -134,6 +131,31 @@ public class SentryJSONMessageFactory extends MessageFactory {
         return new SentryJSONDropPartitionMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, partition.getDbName(),
                 partition.getTableName(), Arrays.asList(getPartitionKeyValues(table, partition)),
                 Long.valueOf(this.now()), partition.getSd().getLocation());
+    }
+
+    @Override
+    public CreateFunctionMessage buildCreateFunctionMessage(Function fn) {
+        return null;
+    }
+
+    @Override
+    public DropFunctionMessage buildDropFunctionMessage(Function fn) {
+        return null;
+    }
+
+    @Override
+    public CreateIndexMessage buildCreateIndexMessage(Index idx) {
+        return null;
+    }
+
+    @Override
+    public DropIndexMessage buildDropIndexMessage(Index idx) {
+        return null;
+    }
+
+    @Override
+    public AlterIndexMessage buildAlterIndexMessage(Index before, Index after) {
+        return null;
     }
 
     @Override
