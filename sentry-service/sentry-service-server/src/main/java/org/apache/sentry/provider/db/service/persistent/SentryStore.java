@@ -1255,12 +1255,10 @@ public class SentryStore {
     Set<MSentryRole> result = Sets.newHashSet();
     if (groups != null) {
       Query query = pm.newQuery(MSentryGroup.class);
-      query.setFilter("this.groupName == t");
-      query.declareParameters("java.lang.String t");
-      query.setUnique(true);
-      for (String group : groups) {
-        MSentryGroup sentryGroup = (MSentryGroup) query.execute(group.trim());
-        if (sentryGroup != null) {
+      query.setFilter(":p1.contains(this.groupName)");
+      List<MSentryGroup> sentryGroups = (List) query.execute(groups.toArray());
+      if (sentryGroups != null) {
+        for (MSentryGroup sentryGroup : sentryGroups) {
           result.addAll(sentryGroup.getRoles());
         }
       }
@@ -1272,12 +1270,10 @@ public class SentryStore {
     Set<MSentryRole> result = Sets.newHashSet();
     if (users != null) {
       Query query = pm.newQuery(MSentryUser.class);
-      query.setFilter("this.userName == t");
-      query.declareParameters("java.lang.String t");
-      query.setUnique(true);
-      for (String user : users) {
-        MSentryUser sentryUser = (MSentryUser) query.execute(user.trim());
-        if (sentryUser != null) {
+      query.setFilter(":p1.contains(this.userName)");
+      List<MSentryUser> sentryUsers = (List) query.execute(users.toArray());
+      if (sentryUsers != null) {
+        for (MSentryUser sentryUser : sentryUsers) {
           result.addAll(sentryUser.getRoles());
         }
       }
