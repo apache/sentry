@@ -381,6 +381,102 @@ public class TestSentryStore extends org.junit.Assert {
   }
 
   @Test
+  public void testGetTSentryRolesForUsers() throws Exception {
+    // Test the method getTSentryRolesByUserNames according to the following test data:
+    // user1->r1
+    // user2->r3
+    // user3->r2
+    // user4->r3, r2
+    String roleName1 = "r1";
+    String roleName2 = "r2";
+    String roleName3 = "r3";
+    String user1 = "u1";
+    String user2 = "u2";
+    String user3 = "u3";
+    String user4 = "u4";
+
+    createRole(roleName1);
+    createRole(roleName2);
+    createRole(roleName3);
+    sentryStore.alterSentryRoleAddUsers(roleName1, Sets.newHashSet(user1));
+    sentryStore.alterSentryRoleAddUsers(roleName2, Sets.newHashSet(user3));
+    sentryStore.alterSentryRoleAddUsers(roleName2, Sets.newHashSet(user4));
+    sentryStore.alterSentryRoleAddUsers(roleName3, Sets.newHashSet(user2, user4));
+
+    Set<String> userSet1 = Sets.newHashSet(user1, user2, user3);
+    Set<String> roleSet1 = Sets.newHashSet(roleName1, roleName2, roleName3);
+
+    Set<String> userSet2 = Sets.newHashSet(user4);
+    Set<String> roleSet2 = Sets.newHashSet(roleName2, roleName3);
+
+    Set<String> userSet3 = Sets.newHashSet("foo");
+    Set<String> roleSet3 = Sets.newHashSet();
+
+    // Query for multiple users
+    Set<String> roles = convertToRoleNameSet(sentryStore.getTSentryRolesByUserNames(userSet1));
+    assertEquals("Returned roles should match the expected roles", 0, Sets.symmetricDifference(roles, roleSet1).size());
+
+    // Query for single users
+    roles = convertToRoleNameSet(sentryStore.getTSentryRolesByUserNames(userSet2));
+    assertEquals("Returned roles should match the expected roles", 0, Sets.symmetricDifference(roles, roleSet2).size());
+
+    // Query for non-existing user
+    roles = convertToRoleNameSet(sentryStore.getTSentryRolesByUserNames(userSet3));
+    assertEquals("Returned roles should match the expected roles", 0, Sets.symmetricDifference(roles, roleSet3).size());
+  }
+
+  private Set<String> convertToRoleNameSet(Set<TSentryRole> tSentryRoles) {
+    Set<String> roleNameSet = Sets.newHashSet();
+    for (TSentryRole role : tSentryRoles) {
+      roleNameSet.add(role.getRoleName());
+    }
+    return roleNameSet;
+  }
+
+  @Test
+  public void testGetTSentryRolesForGroups() throws Exception {
+    // Test the method getRoleNamesForGroups according to the following test data:
+    // group1->r1
+    // group2->r2
+    // group3->r2
+    String grantor = "g1";
+    String roleName1 = "r1";
+    String roleName2 = "r2";
+    String roleName3 = "r3";
+    String group1 = "group1";
+    String group2 = "group2";
+    String group3 = "group3";
+
+    createRole(roleName1);
+    createRole(roleName2);
+    createRole(roleName3);
+    sentryStore.alterSentryRoleAddGroups(grantor, roleName1, Sets.newHashSet(new TSentryGroup(group1)));
+    sentryStore.alterSentryRoleAddGroups(grantor, roleName2, Sets.newHashSet(new TSentryGroup(group2),
+        new TSentryGroup(group3)));
+
+    Set<String> groupSet1 = Sets.newHashSet(group1, group2, group3);
+    Set<String> roleSet1 = Sets.newHashSet(roleName1, roleName2);
+
+    Set<String> groupSet2 = Sets.newHashSet(group1);
+    Set<String> roleSet2 = Sets.newHashSet(roleName1);
+
+    Set<String> groupSet3 = Sets.newHashSet("foo");
+    Set<String> roleSet3 = Sets.newHashSet();
+
+    // Query for multiple groups
+    Set<String> roles = sentryStore.getRoleNamesForGroups(groupSet1);
+    assertEquals("Returned roles should match the expected roles", 0, Sets.symmetricDifference(roles, roleSet1).size());
+
+    // Query for single group
+    roles = sentryStore.getRoleNamesForGroups(groupSet2);
+    assertEquals("Returned roles should match the expected roles", 0, Sets.symmetricDifference(roles, roleSet2).size());
+
+    // Query for non-existing group
+    roles = sentryStore.getRoleNamesForGroups(groupSet3);
+    assertEquals("Returned roles should match the expected roles", 0, Sets.symmetricDifference(roles, roleSet3).size());
+  }
+
+  @Test
   public void testGrantRevokePrivilege() throws Exception {
     String roleName = "test-privilege";
     String grantor = "g1";
