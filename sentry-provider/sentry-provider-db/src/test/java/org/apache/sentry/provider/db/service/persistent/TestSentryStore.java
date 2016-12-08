@@ -273,6 +273,49 @@ public class TestSentryStore {
   }
 
   @Test
+  public void testGetTSentryRolesForGroups() throws Exception {
+    // Test the method getRoleNamesForGroups according to the following test data:
+    // group1->r1
+    // group2->r2
+    // group3->r2
+    String grantor = "g1";
+    String roleName1 = "r1";
+    String roleName2 = "r2";
+    String roleName3 = "r3";
+    String group1 = "group1";
+    String group2 = "group2";
+    String group3 = "group3";
+
+    sentryStore.createSentryRole(roleName1);
+    sentryStore.createSentryRole(roleName2);
+    sentryStore.createSentryRole(roleName3);
+    sentryStore.alterSentryRoleAddGroups(grantor, roleName1, Sets.newHashSet(new TSentryGroup(group1)));
+    sentryStore.alterSentryRoleAddGroups(grantor, roleName2, Sets.newHashSet(new TSentryGroup(group2),
+        new TSentryGroup(group3)));
+
+    Set<String> groupSet1 = Sets.newHashSet(group1, group2, group3);
+    Set<String> roleSet1 = Sets.newHashSet(roleName1, roleName2);
+
+    Set<String> groupSet2 = Sets.newHashSet(group1);
+    Set<String> roleSet2 = Sets.newHashSet(roleName1);
+
+    Set<String> groupSet3 = Sets.newHashSet("foo");
+    Set<String> roleSet3 = Sets.newHashSet();
+
+    // Query for multiple groups
+    Set<String> roles = sentryStore.getRoleNamesForGroups(groupSet1);
+    assertEquals("Returned roles should match the expected roles", 0, Sets.symmetricDifference(roles, roleSet1).size());
+
+    // Query for single group
+    roles = sentryStore.getRoleNamesForGroups(groupSet2);
+    assertEquals("Returned roles should match the expected roles", 0, Sets.symmetricDifference(roles, roleSet2).size());
+
+    // Query for non-existing group
+    roles = sentryStore.getRoleNamesForGroups(groupSet3);
+    assertEquals("Returned roles should match the expected roles", 0, Sets.symmetricDifference(roles, roleSet3).size());
+  }
+
+  @Test
   public void testGrantRevokePrivilege() throws Exception {
     String roleName = "test-privilege";
     String grantor = "g1";
