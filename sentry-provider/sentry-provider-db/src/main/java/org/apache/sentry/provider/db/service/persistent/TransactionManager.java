@@ -18,6 +18,10 @@
 
 package org.apache.sentry.provider.db.service.persistent;
 
+import com.codahale.metrics.Counter;
+import static com.codahale.metrics.MetricRegistry.name;
+import com.codahale.metrics.Timer;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.SentryUserException;
 import org.apache.sentry.service.thrift.ServiceConstants;
@@ -28,24 +32,55 @@ import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
 import javax.jdo.Transaction;
 
+import org.apache.sentry.provider.db.service.thrift.SentryMetrics;
+
+
 /**
  * TransactionManager is used for executing the database transaction, it supports
- * the transaction with retry mechanism for the unexpected exceptions, except SentryUserExceptions,
- * eg, SentryNoSuchObjectException, SentryAlreadyExistsException etc.
+ * the transaction with retry mechanism for the unexpected exceptions,
+ * except SentryUserExceptions, eg, SentryNoSuchObjectException,
+ * SentryAlreadyExistsException etc.
+ * <p>
+ * The purpose of the class is to separate all transaction houskeeping (opening
+ * transaction, rolling back failed transactions) from the actual transaction
+ * business logic.
+ * <p>
+ * TransactionManager exposes several metrics:
+ * <ul>
+ *     <li>Timer metric for all transactions</li>
+ *     <li>Counter for failed transactions</li>
+ *     <li>Counter for each exception thrown by transaction</li>
+ * </ul>
  */
 public class TransactionManager {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TransactionManager.class);
 
-  final private PersistenceManagerFactory pmf;
+  private final PersistenceManagerFactory pmf;
 
   // Maximum number of retries per call
-  final private int transactionRetryMax;
+  private final int transactionRetryMax;
 
   // Delay (in milliseconds) between retries
-  final private int retryWaitTimeMills;
+  private final int retryWaitTimeMills;
 
-  public TransactionManager(PersistenceManagerFactory pmf, Configuration conf) {
+  // Transaction timer measures time distribution for all transactions
+  private final Timer transactionTimer =
+          SentryMetrics.getInstance().
+                  getTimer(name(TransactionManager.class,
+                           "transactions"));
+
+  // Counter for failed transactions
+  private final Counter failedTransactionsCount =
+          SentryMetrics.getInstance().
+                  getCounter(name(TransactionManager.class,
+                             "transactions", "failed"));
+
+  private final Counter retryCount =
+          SentryMetrics.getInstance().getCounter(name(TransactionManager.class,
+                  "transactions", "retry"));
+
+  TransactionManager(PersistenceManagerFactory pmf, Configuration conf) {
     this.pmf = pmf;
     this.transactionRetryMax = conf.getInt(
         ServiceConstants.ServerConfig.SENTRY_STORE_TRANSACTION_RETRY,
@@ -61,9 +96,9 @@ public class TransactionManager {
    * transaction or manipulate transactions with the PersistenceManager.
    * @param tb transaction block with code to execute
    * @return Object with the result of tb.execute()
-   * @throws Exception
    */
   public Object executeTransaction(TransactionBlock tb) throws Exception {
+    final Timer.Context context = transactionTimer.time();
     try (CloseablePersistenceManager cpm =
         new CloseablePersistenceManager(pmf.getPersistenceManager())) {
       Transaction transaction = cpm.pm.currentTransaction();
@@ -72,7 +107,16 @@ public class TransactionManager {
         Object result = tb.execute(cpm.pm);
         transaction.commit();
         return result;
+      } catch (Exception e) {
+        // Count total failed transactions
+        failedTransactionsCount.inc();
+        // Count specific exceptions
+        SentryMetrics.getInstance().getCounter(name(TransactionManager.class,
+                "exception", e.getClass().getSimpleName())).inc();
+        // Re-throw the exception
+        throw e;
       } finally {
+        context.stop();
         if (transaction.isActive()) {
           transaction.rollback();
         }
@@ -84,7 +128,6 @@ public class TransactionManager {
    * Execute some code as a single transaction with retry mechanism
    * @param tb transaction block with code to execute
    * @return Object with the result of tb.execute()
-   * @throws Exception
    */
   public Object executeTransactionWithRetry(TransactionBlock tb) throws Exception {
     int retryNum = 0;
@@ -102,13 +145,10 @@ public class TransactionManager {
           LOGGER.error(message, e);
           throw new Exception(message, e);
         }
+        retryCount.inc();
         LOGGER.warn("Exception is thrown, retry the transaction, current retry num is:"
             + retryNum + ", the max retry num is: " + transactionRetryMax, e);
-        try {
-          Thread.sleep(retryWaitTimeMills);
-        } catch (InterruptedException ex) {
-          throw ex;
-        }
+        Thread.sleep(retryWaitTimeMills);
       }
     }
     return null;
@@ -122,7 +162,7 @@ public class TransactionManager {
   private class CloseablePersistenceManager implements AutoCloseable {
     private final PersistenceManager pm;
 
-    public CloseablePersistenceManager(PersistenceManager pm) {
+    CloseablePersistenceManager(PersistenceManager pm) {
       this.pm = pm;
     }
 
