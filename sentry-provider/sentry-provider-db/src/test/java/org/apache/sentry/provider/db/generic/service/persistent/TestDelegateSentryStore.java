@@ -59,7 +59,7 @@ public class TestDelegateSentryStore extends SentryStoreIntegrationBase{
     sentryStore.createRole(SEARCH, roleName1, grantor);
     try {
       sentryStore.createRole(SEARCH, roleName2, grantor);
-      fail("SentryAlreadyExistsException should have been thrown");
+      fail("Fail to throw Exception");
     } catch (SentryAlreadyExistsException e) {
       //ignore the exception
     }
@@ -67,7 +67,7 @@ public class TestDelegateSentryStore extends SentryStoreIntegrationBase{
     try {
       sentryStore.dropRole(SEARCH, roleName2, grantor);
     } catch (SentryNoSuchObjectException e) {
-      fail("SentryNoSuchObjectException shouldn't have been thrown");
+      fail("Shouldn't throw SentryNoSuchObjectException");
     }
   }
 

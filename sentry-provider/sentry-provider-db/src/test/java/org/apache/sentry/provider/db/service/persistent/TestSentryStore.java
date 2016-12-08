@@ -115,6 +115,41 @@ public class TestSentryStore {
     }
   }
 
+  /**
+   * Fail test if role already exists
+   * @param roleName Role name to checl
+   * @throws Exception
+   */
+  private void checkRoleDoesNotExist(String roleName) throws Exception {
+    try {
+      sentryStore.getMSentryRoleByName(roleName);
+      fail("Role " + roleName + "already exists");
+    } catch (SentryNoSuchObjectException e) {
+      // Ok
+    }
+  }
+
+  /**
+   * Fail test if role doesn't exist
+   * @param roleName Role name to checl
+   * @throws Exception
+   */
+  private void checkRoleExists(String roleName) throws Exception {
+    assertEquals(roleName.toLowerCase(),
+            sentryStore.getMSentryRoleByName(roleName).getRoleName());
+  }
+
+  /**
+   * Create a role with the given name and verify that it is created
+   * @param roleName
+   * @throws Exception
+   */
+  private void createRole(String roleName) throws Exception {
+    checkRoleDoesNotExist(roleName);
+    sentryStore.createSentryRole(roleName);
+    checkRoleExists(roleName);
+  }
+
   @Test
   public void testCredentialProvider() throws Exception {
     assertArrayEquals(passwd, conf.getPassword(ServerConfig.
@@ -138,7 +173,7 @@ public class TestSentryStore {
     privilege.setAction(AccessConstants.ALL);
     privilege.setCreateTime(System.currentTimeMillis());
 
-    sentryStore.createSentryRole(roleName);
+    createRole(roleName);
     sentryStore.alterSentryRoleAddGroups(grantor, roleName, groups);
     sentryStore.alterSentryRoleDeleteGroups(roleName, groups);
     sentryStore.alterSentryRoleGrantPrivilege(grantor, roleName, privilege);
@@ -149,7 +184,7 @@ public class TestSentryStore {
     String roleName = "test-dup-role";
     String grantor = "g1";
     String uri = "file:///var/folders/dt/9zm44z9s6bjfxbrm4v36lzdc0000gp/T/1401860678102-0/data/kv1.dat";
-    sentryStore.createSentryRole(roleName);
+    createRole(roleName);
     TSentryPrivilege tSentryPrivilege = new TSentryPrivilege("URI", "server1", "ALL");
     tSentryPrivilege.setURI(uri);
     sentryStore.alterSentryRoleGrantPrivilege(grantor, roleName, tSentryPrivilege);
@@ -179,7 +214,7 @@ public class TestSentryStore {
   @Test
   public void testCreateDuplicateRole() throws Exception {
     String roleName = "test-dup-role";
-    sentryStore.createSentryRole(roleName);
+    createRole(roleName);
     try {
       sentryStore.createSentryRole(roleName);
       fail("Expected SentryAlreadyExistsException");
@@ -192,16 +227,22 @@ public class TestSentryStore {
   public void testCaseSensitiveScope() throws Exception {
     String roleName = "role1";
     String grantor = "g1";
-    sentryStore.createSentryRole(roleName);
+    createRole(roleName);
     TSentryPrivilege sentryPrivilege = new TSentryPrivilege("Database", "server1", "all");
     sentryPrivilege.setDbName("db1");
     sentryStore.alterSentryRoleGrantPrivilege(grantor, roleName, sentryPrivilege);
   }
+
+  /**
+   * Create a new role and then destroy it
+   * @throws Exception
+   */
   @Test
   public void testCreateDropRole() throws Exception {
     String roleName = "test-drop-role";
-    sentryStore.createSentryRole(roleName);
+    createRole(roleName);
     sentryStore.dropSentryRole(roleName);
+    checkRoleDoesNotExist(roleName);
   }
 
   @Test(expected = SentryNoSuchObjectException.class)
@@ -217,7 +258,7 @@ public class TestSentryStore {
   public void testAddDeleteGroups() throws Exception {
     String roleName = "test-groups";
     String grantor = "g1";
-    sentryStore.createSentryRole(roleName);
+    createRole(roleName);
     Set<TSentryGroup> groups = Sets.newHashSet();
     TSentryGroup group = new TSentryGroup();
     group.setGroupName("test-groups-g1");
@@ -238,7 +279,7 @@ public class TestSentryStore {
     String server = "server1";
     String db = "db1";
     String table = "tbl1";
-    sentryStore.createSentryRole(roleName);
+    createRole(roleName);
     TSentryPrivilege privilege = new TSentryPrivilege();
     privilege.setPrivilegeScope("TABLE");
     privilege.setServerName(server);
@@ -294,7 +335,7 @@ public class TestSentryStore {
     final String dBase = "db";
     final String table = "table-";
 
-    sentryStore.createSentryRole(roleName);
+    createRole(roleName);
 
     // Create NUM_PRIVS unique privilege objects in the database
     for (int i = 0; i < NUM_PRIVS; i++) {
@@ -336,7 +377,7 @@ public class TestSentryStore {
     final String dBase = "db";
     final String table = "table-";
 
-    sentryStore.createSentryRole(roleName);
+    createRole(roleName);
 
     // Create NUM_PRIVS unique privilege objects in the database once more,
     // this time granting ALL and revoking SELECT to make INSERT.
@@ -375,7 +416,7 @@ public class TestSentryStore {
     String db = "db1";
     String table = "tbl1";
     String[] columns = {"c1","c2","c3","c4"};
-    sentryStore.createSentryRole(roleName);
+    createRole(roleName);
     Set<TSentryPrivilege> tPrivileges = Sets.newHashSet();
     for (String column : columns) {
       TSentryPrivilege privilege = new TSentryPrivilege();
@@ -436,7 +477,7 @@ public class TestSentryStore {
     String table = "tbl1";
     String column1 = "c1";
     String column2 = "c2";
-    sentryStore.createSentryRole(roleName);
+    createRole(roleName);
     TSentryPrivilege privilege = new TSentryPrivilege();
     privilege.setPrivilegeScope("COLUMN");
     privilege.setServerName(server);
@@ -512,7 +553,7 @@ public class TestSentryStore {
     String db = "db1";
     String table1 = "tbl1";
     String table2 = "tbl2";
-    sentryStore.createSentryRole(roleName);
+    createRole(roleName);
     TSentryPrivilege privilegeTable1 = new TSentryPrivilege();
     privilegeTable1.setPrivilegeScope("TABLE");
     privilegeTable1.setServerName(server);
@@ -586,7 +627,7 @@ public class TestSentryStore {
     String table = "tbl1";
     String column1 = "c1";
     String column2 = "c2";
-    sentryStore.createSentryRole(roleName);
+    createRole(roleName);
     TSentryPrivilege privilegeCol1 = new TSentryPrivilege();
     privilegeCol1.setPrivilegeScope("COLUMN");
     privilegeCol1.setServerName(server);
@@ -660,7 +701,8 @@ public class TestSentryStore {
     String db = "db1";
     String table = "tbl1";
     TSentryGrantOption grantOption = TSentryGrantOption.TRUE;
-    sentryStore.createSentryRole(roleName);
+    createRole(roleName);
+
     TSentryPrivilege privilege = new TSentryPrivilege();
     privilege.setPrivilegeScope("TABLE");
     privilege.setServerName(server);
@@ -680,7 +722,8 @@ public class TestSentryStore {
     assertEquals(0, privileges.size());
 
     roleName = "test-grantOption-db";
-    sentryStore.createSentryRole(roleName);
+
+    createRole(roleName);
     privilege = new TSentryPrivilege();
     privilege.setPrivilegeScope("DATABASE");
     privilege.setServerName(server);
@@ -1044,7 +1087,7 @@ public class TestSentryStore {
     String server = "server1";
     String db = "db1";
     String table = "tbl1";
-    sentryStore.createSentryRole(roleName);
+    createRole(roleName);
     TSentryPrivilege privilege = new TSentryPrivilege();
     privilege.setPrivilegeScope("TABLE");
     privilege.setServerName(server);

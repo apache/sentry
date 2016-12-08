@@ -51,6 +51,10 @@ public class MSentryRole {
     groups = new HashSet<MSentryGroup>();
   }
 
+  public MSentryRole(String roleName) {
+    this(roleName, System.currentTimeMillis());
+  }
+
   public long getCreateTime() {
     return createTime;
   }
