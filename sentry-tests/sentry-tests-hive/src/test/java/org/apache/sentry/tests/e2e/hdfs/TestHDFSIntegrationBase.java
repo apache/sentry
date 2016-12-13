@@ -215,26 +215,31 @@ public abstract class TestHDFSIntegrationBase {
    */
   private void verifyOnAllSubDirsHelper(Path p, FsAction fsAction, String group,
                                            boolean groupShouldExist, boolean recurse, int retry) throws Throwable {
-    FileStatus fStatus = null;
+    FileStatus fStatus;
+
     // validate parent dir's acls
-    try {
-      fStatus = miniDFS.getFileSystem().getFileStatus(p);
-      if (groupShouldExist) {
-        Assert.assertEquals("Error at verifying Path action : " + p + " ;", fsAction, getAcls(p).get(group));
-      } else {
-        Assert.assertFalse("Error at verifying Path : " + p + " ," +
-            " group : " + group + " ;", getAcls(p).containsKey(group));
-      }
-      LOGGER.info("Successfully found acls for path = " + p.getName());
-    } catch (Throwable th) {
-      if (retry > 0) {
-        LOGGER.info("Retry: " + retry);
-        Thread.sleep(RETRY_WAIT);
-        verifyOnAllSubDirsHelper(p, fsAction, group, groupShouldExist, recurse, retry - 1);
-      } else {
-        throw th;
+    retry_loop:
+    while (true) {
+      try {
+	fStatus = miniDFS.getFileSystem().getFileStatus(p);
+	if (groupShouldExist) {
+	  Assert.assertEquals("Error at verifying Path action : " + p + " ;", fsAction, getAcls(p).get(group));
+	} else {
+	  Assert.assertFalse("Error at verifying Path : " + p + " ," +
+	      " group : " + group + " ;", getAcls(p).containsKey(group));
+	}
+	LOGGER.info("Successfully found acls for path = " + p.getName());
+        break retry_loop;
+      } catch (Throwable th) {
+	if (--retry > 0) {
+	  LOGGER.info("Retry: " + retry);
+	  Thread.sleep(RETRY_WAIT);
+	} else {
+	  throw th;
+	}
       }
     }
+
     // validate children dirs
     if (recurse && fStatus.isDirectory()) {
       FileStatus[] children = miniDFS.getFileSystem().listStatus(p);
@@ -527,19 +532,7 @@ public abstract class TestHDFSIntegrationBase {
             .set(hiveSite.toURI().toURL());
 
         metastore = new InternalMetastoreServer(hiveConf);
-        new Thread() {
-          @Override
-          public void run() {
-            try {
-              metastore.start();
-              while (true) {
-                Thread.sleep(1000L);
-              }
-            } catch (Exception e) {
-              LOGGER.info("Could not start Hive Server");
-            }
-          }
-        }.start();
+        metastore.start();
 
         hmsClient = new HiveMetaStoreClient(hiveConf);
         startHiveServer2(retries, hiveConf);
@@ -548,43 +541,32 @@ public abstract class TestHDFSIntegrationBase {
     });
   }
 
-  private static void startHiveServer2(final int retries, HiveConf hiveConf)
+  private static void startHiveServer2(int retries, HiveConf hiveConf)
       throws IOException, InterruptedException, SQLException {
-    Connection conn = null;
-    Thread th = null;
-    final AtomicBoolean keepRunning = new AtomicBoolean(true);
-    try {
-      hiveServer2 = new InternalHiveServer(hiveConf);
-      th = new Thread() {
-        @Override
-        public void run() {
-          try {
-            hiveServer2.start();
-            while (keepRunning.get()) {
-              Thread.sleep(1000L);
-            }
-          } catch (Exception e) {
-            LOGGER.info("Could not start Hive Server");
-          }
-        }
-      };
-      th.start();
-      Thread.sleep(RETRY_WAIT * 5);
-      conn = hiveServer2.createConnection("hive", "hive");
-    } catch (Exception ex) {
-      if (retries > 0) {
-        try {
-          keepRunning.set(false);
+    retry_loop:
+    while (true) {
+      try {
+	hiveServer2 = new InternalHiveServer(hiveConf);
+	hiveServer2.start();
+	Thread.sleep(RETRY_WAIT * 5);
+	try (Connection conn = hiveServer2.createConnection("hive", "hive")) {
+	  // just verify that connection can be created
+	}
+        break retry_loop; // success
+      } catch (Exception ex) {
+        LOGGER.error("Failed to start HiveServer2", ex);
+	try {
           hiveServer2.shutdown();
         } catch (Exception e) {
-          // Ignore
+	  // Ignore
         }
-        LOGGER.info("Re-starting Hive Server2 !!");
-        startHiveServer2(retries - 1, hiveConf);
+	if (--retries > 0) {
+	  LOGGER.info("Re-starting Hive Server2 !!");
+	  startHiveServer2(retries - 1, hiveConf);
+	} else {
+          throw new IOException("Failed to start HiveServer2", ex);
+        }
       }
-    }
-    if (conn != null) {
-      conn.close();
     }
   }
 
@@ -714,38 +696,74 @@ public abstract class TestHDFSIntegrationBase {
     }
   }
 
+  /**
+   * cleanupAfterTest method makes the best cleanup effort, even if some cleanup activities failed.
+   * It ultimately throws the first encountered exception, if any, but does not skip the rest of cleanup.
+   */
   @After
   public void cleanAfterTest() throws Exception {
     //Clean up database
-    Connection conn;
-    Statement stmt;
     Preconditions.checkArgument(admin != null && dbNames !=null && roles != null && tmpHDFSDir != null,
         "Test case did not set some of these values required for clean up: admin, dbNames, roles, tmpHDFSDir");
 
-    conn = hiveServer2.createConnection(admin, admin);
-    stmt = conn.createStatement();
-    for( String dbName: dbNames) {
-      stmt.execute("drop database if exists " + dbName + " cascade");
+    List<Exception> exc = new ArrayList<Exception>();
+
+    try (Connection conn = hiveServer2.createConnection(admin, admin);
+         Statement stmt = conn.createStatement())
+    {
+      for( String dbName: dbNames) {
+        try {
+          stmt.execute("drop database if exists " + dbName + " cascade");
+        } catch (Exception e) {
+          LOGGER.error("Failed to delete database " + dbName, e);
+          exc.add(e);
+        }
+      }
+    } catch (Exception e) {
+      LOGGER.error("Failed to create Connection or Statement", e);
+      for (Throwable thr : e.getSuppressed()) {
+        LOGGER.error("Suppressed", thr);
+      }
+      exc.add(e);
     }
-    stmt.close();
-    conn.close();
 
     //Clean up roles
-    conn = hiveServer2.createConnection("hive", "hive");
-    stmt = conn.createStatement();
-    for( String role:roles) {
-      stmt.execute("drop role " + role);
+    try (Connection conn = hiveServer2.createConnection("hive", "hive");
+         Statement stmt = conn.createStatement())
+    {
+      for( String role:roles) {
+        try {
+          stmt.execute("drop role " + role);
+        } catch (Exception e) {
+          LOGGER.error("Failed to drop role " + role, e);
+          exc.add(e);
+        }
+      }
+    } catch (Exception e) {
+      LOGGER.error("Failed to create Connection or Statement", e);
+      for (Throwable thr : e.getSuppressed()) {
+        LOGGER.error("Suppressed", thr);
+      }
+      exc.add(e);
     }
-    stmt.close();
-    conn.close();
 
     //Clean up hdfs directories
-    miniDFS.getFileSystem().delete(tmpHDFSDir, true);
+    try {
+      miniDFS.getFileSystem().delete(tmpHDFSDir, true);
+    } catch (Exception e) {
+      LOGGER.error("Failed to delete tmpHDFSDir", e);
+      exc.add(e);
+    }
 
     tmpHDFSDir = null;
     dbNames = null;
     roles = null;
     admin = null;
+
+    // re-throwing the first encountered exception seems sufficient for now
+    if (!exc.isEmpty()) {
+      throw exc.get(0);
+    }
   }
 
   @AfterClass
@@ -769,5 +787,14 @@ public abstract class TestHDFSIntegrationBase {
         }
       }
     }
+  }
+
+  /*
+   * Make sure HMS changes have been propagated to NameNode.
+   * Sleeping for cache refreshing time is the best way for now.
+   * Double refresh interval should guarantee that refresh happened.
+   */
+  protected void syncHdfs() throws InterruptedException {
+    Thread.sleep(CACHE_REFRESH * 2);
   }
 }
