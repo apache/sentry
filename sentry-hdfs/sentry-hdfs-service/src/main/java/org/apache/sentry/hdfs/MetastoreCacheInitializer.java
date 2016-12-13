@@ -149,6 +149,10 @@ class MetastoreCacheInitializer implements Closeable {
     PartitionTask(String dbName, String tblName, List<String> partNames,
                   TPathChanges tblPathChange) {
       super();
+      Preconditions.checkNotNull(dbName, "Null database name");
+      Preconditions.checkNotNull(tblName, "database \"%s\": Null table name", dbName);
+      Preconditions.checkNotNull(partNames, "database \"%s\", table \"%s\": Null partNames", dbName, tblName);
+      Preconditions.checkNotNull(tblPathChange, "database \"%s\", table \"%s\": Null tblPathChange", dbName, tblName);
       this.dbName = dbName;
       this.tblName = tblName;
       this.partNames = partNames;
@@ -165,11 +169,14 @@ class MetastoreCacheInitializer implements Closeable {
       }
       for (Partition part : tblParts) {
         List<String> partPath = null;
+        Preconditions.checkNotNull(part.getSd(),
+          "database \"%s\", table \"%s\", partition with Null SD",
+          dbName, tblName);
         try {
           partPath = PathsUpdate.parsePath(part.getSd().getLocation());
         } catch (SentryMalformedPathException e) {
-          String msg = "Unexpected path in partitionTask: dbName=" + dbName +
-                  ", tblName=" + tblName + ", path=" + part.getSd().getLocation();
+          String msg = String.format("Unexpected path in partitionTask: dbName=\"%s\", tblName=\"%s\", path=\"%s\"",
+            dbName, tblName, part.getSd().getLocation());
           throw new SentryMalformedPathException(msg, e);
         }
 
@@ -189,6 +196,10 @@ class MetastoreCacheInitializer implements Closeable {
 
     TableTask(Database db, List<String> tableNames, PathsUpdate update) {
       super();
+      Preconditions.checkNotNull(db, "Null database");
+      Preconditions.checkNotNull(db.getName(), "Null database name");
+      Preconditions.checkNotNull(tableNames, "database \"%s\": Null tableNames", db.getName());
+      Preconditions.checkNotNull(update, "database \"%s\": Null update object", db.getName());
       this.db = db;
       this.tableNames = tableNames;
       this.update = update;
@@ -205,9 +216,16 @@ class MetastoreCacheInitializer implements Closeable {
       for (Table tbl : tables) {
         TPathChanges tblPathChange;
         // Table names are case insensitive
+        Preconditions.checkNotNull(tbl.getTableName(),
+          "database \"%s\": Null table name", db.getName());
+        Preconditions.checkNotNull(tbl.getDbName(),
+          "database \"%s\", table \"%s\": Null database name", db.getName(), tbl.getTableName());
+        Preconditions.checkNotNull(tbl.getSd(),
+          "database \"%s\", table \"%s\": Null SD", db.getName(), tbl.getTableName());
+        Preconditions.checkArgument(tbl.getDbName().equalsIgnoreCase(db.getName()),
+          "database \"%s\", table \"%s\": inconsistent database name \"%s\"", tbl.getDbName(), tbl.getTableName(), db.getName());
         String tableName = tbl.getTableName().toLowerCase();
         synchronized (update) {
-          Preconditions.checkArgument(tbl.getDbName().equalsIgnoreCase(db.getName()));
           tblPathChange = update.newPathChange(db.getName() + "." + tableName);
         }
         if (tbl.getSd().getLocation() != null) {
@@ -215,8 +233,8 @@ class MetastoreCacheInitializer implements Closeable {
           try {
             tblPath = PathsUpdate.parsePath(tbl.getSd().getLocation());
           } catch (SentryMalformedPathException e) {
-            String msg = "Unexpected path in TableTask: dbName=" + tbl.getDbName() +
-                    ", tblName=" + tbl.getTableName() + ", path=" + tbl.getSd().getLocation();
+            String msg = String.format("Unexpected path in TableTask: dbName=\"%s\", tblName=\"%s\", path=\"%s\"",
+              tbl.getDbName(), tbl.getTableName(), tbl.getSd().getLocation());
             throw new SentryMalformedPathException(msg, e);
           }
           if (tblPath != null) {
@@ -247,6 +265,8 @@ class MetastoreCacheInitializer implements Closeable {
 
     DbTask(PathsUpdate update, String dbName) {
       super();
+      Preconditions.checkNotNull(dbName, "Null database name");
+      Preconditions.checkNotNull(update, "database \"%s\": Null update object", dbName);
       this.update = update;
       //Database names are case insensitive
       this.dbName = dbName.toLowerCase();
@@ -255,20 +275,24 @@ class MetastoreCacheInitializer implements Closeable {
     @Override
     public void doTask() throws TException, SentryMalformedPathException {
       Database db = hmsHandler.get_database(dbName);
+      Preconditions.checkNotNull(db, "Cannot find database \"%s\"", dbName);
       List<String> dbPath = null;
       try {
         dbPath = PathsUpdate.parsePath(db.getLocationUri());
       } catch (SentryMalformedPathException e) {
-        String msg = "Unexpected path in DbTask: DB=" + db.getName() + ", Path=" + db.getLocationUri();
+        String msg = String.format("Unexpected path in DbTask: DB=\"%s\", Path = \"%s\"",
+          db.getName(), db.getLocationUri());
         throw new SentryMalformedPathException(msg, e);
       }
       if (dbPath != null) {
         synchronized (update) {
-          Preconditions.checkArgument(dbName.equalsIgnoreCase(db.getName()));
+          Preconditions.checkArgument(dbName.equalsIgnoreCase(db.getName()),
+            "Inconsistent database names \"%s\" vs \"%s\"", dbName, db.getName());
           update.newPathChange(dbName).addToAddPaths(dbPath);
         }
       }
       List<String> allTblStr = hmsHandler.get_all_tables(dbName);
+      Preconditions.checkNotNull(allTblStr, "Cannot fetch tables for database \"%s\"", dbName);
       for (int i = 0; i < allTblStr.size(); i += maxTablesPerCall) {
         List<String> tablesToFetch =
                 allTblStr.subList(i, Math.min(
