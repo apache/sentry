@@ -75,7 +75,7 @@ public class MetastorePluginWithHA extends MetastorePlugin {
         new SentryMetastoreHACacheListener(this));
     // start seq# from the last global seq
     seqNum.set(pluginCacheSync.getUpdateCounter());
-    MetastorePlugin.lastSentSeqNum = seqNum.get();
+    this.lastSentSeqNum = seqNum.get();
   }
 
   @Override
