@@ -2194,6 +2194,74 @@ public class TestSentryStore extends org.junit.Assert {
     assertEquals(Sets.newHashSet("/user/hive/warehouse/db1.db/table1"), pathsImage.get("db1.table1"));
   }
 
+  public void testQueryParamBuilder() {
+    SentryStore.QueryParamBuilder paramBuilder;
+    paramBuilder = new SentryStore.QueryParamBuilder();
+    // Try single parameter
+    paramBuilder.add("key", "val");
+    assertEquals("(this.key == :key)", paramBuilder.toString());
+    // Try adding second parameter plus add trimming and conversion
+    // to lower case
+    paramBuilder.add("key1", " Val1 ", true);
+    assertEquals("(this.key == :key && this.key1 == :key1)",
+            paramBuilder.toString());
+    Map<String, Object> params = paramBuilder.getArguments();
+    assertEquals("val", params.get("key"));
+    assertEquals("Val1", params.get("key1"));
+
+    paramBuilder = new SentryStore.QueryParamBuilder(SentryStore.QueryParamBuilder.Op.OR);
+    paramBuilder.add("key", " Val ", true);
+    paramBuilder.addNotNull("notNullField");
+    paramBuilder.addNull("nullField");
+    assertEquals("(this.key == :key || this.notNullField != \"__NULL__\" || this.nullField == \"__NULL__\")",
+            paramBuilder.toString());
+    params = paramBuilder.getArguments();
+    assertEquals("Val", params.get("key"));
+
+    paramBuilder = new SentryStore.QueryParamBuilder()
+            .addNull("var1")
+            .addNotNull("var2");
+    assertEquals("(this.var1 == \"__NULL__\" && this.var2 != \"__NULL__\")",
+            paramBuilder.toString());
+
+    // Test newChild()
+    paramBuilder = new SentryStore.QueryParamBuilder();
+    paramBuilder
+            .addString("e1")
+            .addString("e2")
+            .newChild()
+            .add("v3", "e3")
+            .add("v4", "e4")
+            .newChild()
+            .addString("e5")
+            .addString("e6")
+    ;
+    assertEquals("(e1 && e2 && (this.v3 == :v3 || this.v4 == :v4 || (e5 && e6)))",
+            paramBuilder.toString());
+
+    params = paramBuilder.getArguments();
+    assertEquals("e3", params.get("v3"));
+    assertEquals("e4", params.get("v4"));
+
+    // Test addSet
+    paramBuilder = new SentryStore.QueryParamBuilder();
+    Set<String>names = new HashSet<>();
+    names.add("foo");
+    names.add("bar");
+    names.add("bob");
+
+    paramBuilder.addSet("prefix == ", names);
+    assertEquals("(prefix == :var0 && prefix == :var1 && prefix == :var2)",
+            paramBuilder.toString());
+    params = paramBuilder.getArguments();
+
+    Set<String>result = new HashSet<>();
+    result.add((String)params.get("var0"));
+    result.add((String)params.get("var1"));
+    result.add((String)params.get("var2"));
+    assertTrue(result.containsAll(names));
+    assertTrue(names.containsAll(result));
+  }
 
   protected static void addGroupsToUser(String user, String... groupNames) {
     policyFile.addGroupsToUser(user, groupNames);

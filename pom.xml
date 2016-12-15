@@ -844,6 +844,8 @@ limitations under the License.
                   <!-- Exclude SSL .crtand .jks files -->
                   <exclude>**/*.crt</exclude>
                   <exclude>**/*.jks</exclude>
+                  <!-- Exclude Apache reviewboard config-->
+                  <exclude>**/.reviewboardrc</exclude>
                 </excludes>
               </configuration>
             </execution>
