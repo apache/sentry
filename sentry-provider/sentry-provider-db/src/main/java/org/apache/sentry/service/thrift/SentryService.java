@@ -349,12 +349,6 @@ public class SentryService implements Callable {
     }
   }
 
-  // wait for the service thread to finish execution
-  public synchronized void waitOnFuture() throws ExecutionException, InterruptedException {
-    LOGGER.info("Waiting on future.get()");
-      serviceStatus.get();
-  }
-
   private MultiException addMultiException(MultiException exception, Exception e) {
     MultiException newException = exception;
     if (newException == null) {
