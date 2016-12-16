@@ -73,7 +73,8 @@ public class SentryMain {
         log4jProperties.setProperty("log4j.category.DataNucleus.Query", "INFO");
 
         // Enable debug log for DataNucleus.Query only when log.threshold is TRACE
-        if (log4jProperties.getProperty("log.threshold").equalsIgnoreCase("TRACE")) {
+        String logThreshold = log4jProperties.getProperty("log.threshold");
+        if (logThreshold != null && logThreshold.equalsIgnoreCase("TRACE")) {
           log4jProperties.setProperty("log4j.category.DataNucleus.Query", "DEBUG");
         }
       }
