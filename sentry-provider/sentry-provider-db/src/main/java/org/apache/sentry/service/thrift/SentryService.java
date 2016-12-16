@@ -432,13 +432,15 @@ public class SentryService implements Callable {
             server.stop();
           } catch (Throwable t) {
             LOGGER.error("Error stopping SentryService", t);
+            System.exit(1);
           }
         }
       });
 
       // Let's wait on the service to stop
       try {
-        server.waitOnFuture();
+        // Wait for the service thread to finish
+        server.serviceStatus.get();
       } finally {
         server.serviceExecutor.shutdown();
       }
