@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.EventListener;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -306,12 +305,6 @@ public class SentryService implements Callable {
     LOGGER.info("Stopped...");
   }
 
-  // wait for the service thread to finish execution
-  public synchronized void waitOnFuture() throws ExecutionException, InterruptedException {
-    LOGGER.info("Waiting on future.get()");
-      serviceStatus.get();
-  }
-
   private MultiException addMultiException(MultiException exception, Exception e) {
     MultiException newException = exception;
     if (newException == null) {
@@ -389,13 +382,15 @@ public class SentryService implements Callable {
             server.stop();
           } catch (Throwable t) {
             LOGGER.error("Error stopping SentryService", t);
+            System.exit(1);
           }
         }
       });
 
       // Let's wait on the service to stop
       try {
-        server.waitOnFuture();
+        // Wait for the service thread to finish
+        server.serviceStatus.get();
       } finally {
         server.serviceExecutor.shutdown();
       }
