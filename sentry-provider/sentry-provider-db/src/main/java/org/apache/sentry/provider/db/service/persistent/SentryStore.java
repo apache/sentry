@@ -1553,14 +1553,55 @@ public class SentryStore {
     return tSentryPrivilege;
   }
 
+  /**
+   * <p>
+   * Convert different forms of empty strings to @NULL_COL and return all other input strings unmodified.
+   * <p>
+   * Possible empty strings:
+   * <ul>
+   *   <li>null</li>
+   *   <li>empty string ("")</li>
+   * </ul>
+   * <p>
+   * This function is used to create proper MSentryPrivilege objects that are saved in the Sentry database from the user
+   * supplied privileges (TSentryPrivilege). This function will ensure that the data we are putting into the database is
+   * always consistent for various types of input from the user. Without this one can save a column as an empty string
+   * or null or @NULL_COLL specifier.
+   * <p>
+   * @param s string input, and can be null.
+   * @return original string if it is non-empty and @NULL_COL for empty strings.
+   */
   public static String toNULLCol(String s) {
     return Strings.isNullOrEmpty(s) ? NULL_COL : s;
   }
 
+  /**
+   * <p>
+   * Convert different forms of empty strings to an empty string("") and return all other input strings unmodified.
+   * <p>
+   * Possible empty strings:
+   * <ul>
+   *   <li>null</li>
+   *   <li>empty string ("")</li>
+   *   <li>@NULL_COLL</li>
+   * </ul>
+   * <p>
+   * This function is used to create TSentryPrivilege objects and is essential in maintaining backward compatibility
+   * for reading the data that is saved in the sentry database. And also to ensure the backward compatibility of read the
+   * user passed column data (@see TSentryAuthorizable conversion to TSentryPrivilege)
+   * <p>
+   * @param s string input, and can be null.
+   * @return original string if it is non-empty and "" for empty strings.
+   */
   private static String fromNULLCol(String s) {
     return isNULL(s) ? "" : s;
   }
 
+  /**
+   * Function to check if a string is null, empty or @NULL_COLL specifier
+   * @param s string input, and can be null.
+   * @return True if the input string represents a NULL string - when it is null, empty or equals @NULL_COL
+   */
   public static boolean isNULL(String s) {
     return Strings.isNullOrEmpty(s) || s.equals(NULL_COL);
   }
