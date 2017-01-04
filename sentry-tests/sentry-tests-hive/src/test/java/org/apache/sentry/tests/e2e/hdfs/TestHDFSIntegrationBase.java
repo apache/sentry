@@ -535,19 +535,11 @@ public abstract class TestHDFSIntegrationBase {
             .set(hiveSite.toURI().toURL());
 
         metastore = new InternalMetastoreServer(hiveConf);
-        new Thread() {
-          @Override
-          public void run() {
-            try {
-              metastore.start();
-              while (true) {
-                Thread.sleep(1000L);
-              }
-            } catch (Exception e) {
-              LOGGER.info("Could not start Hive Server");
-            }
-          }
-        }.start();
+        try {
+          metastore.start();
+        } catch (Exception e) {
+          LOGGER.info("Could not start Hive Metastore Server");
+        }
 
         hmsClient = new HiveMetaStoreClient(hiveConf);
         startHiveServer2(retries, hiveConf);

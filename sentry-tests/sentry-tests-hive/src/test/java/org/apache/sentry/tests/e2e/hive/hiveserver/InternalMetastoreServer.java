@@ -21,6 +21,10 @@ import java.net.URI;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -55,18 +59,29 @@ public class InternalMetastoreServer extends AbstractHiveServer {
 
   // async metastore startup since Hive doesn't have that option
   private void startMetastore() throws Exception {
+    final Lock startLock = new ReentrantLock();
+    final Condition startCondition = startLock.newCondition();
+    final AtomicBoolean startedServing = new AtomicBoolean();
     Callable<Void> metastoreService = new Callable<Void>() {
       public Void call() throws Exception {
         try {
           HiveMetaStore.startMetaStore(getMetastorePort(conf),
-              ShimLoader.getHadoopThriftAuthBridge(), conf);
+              ShimLoader.getHadoopThriftAuthBridge(), conf, startLock, startCondition, startedServing);
         } catch (Throwable e) {
           throw new Exception("Error starting metastore", e);
         }
         return null;
       }
     };
+
+    // Wait for metastore server to initialize completely before letting tests connect to it.
+    startLock.lock();
     metaStoreExecutor.submit(metastoreService);
+    try {
+      while (!startedServing.get()) startCondition.await();
+    } finally {
+      startLock.unlock();
+    }
   }
 
   private static String getMetastoreHostname(Configuration conf)
