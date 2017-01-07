@@ -42,5 +42,4 @@ public class SentryConstants {
   public static final String ACCESS_ALLOW_URI_PER_DB_POLICYFILE = "sentry.allow.uri.db.policyfile";
 
   public static final String SENTRY_ZK_JAAS_NAME = "Sentry";
-  public static final String CURRENT_INCARNATION_ID_KEY = "current.incarnation.key";
 }

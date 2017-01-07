@@ -134,7 +134,7 @@ public final class SentryMetrics {
   public void addSentryServiceGauges(SentryService sentryservice) {
     if(!sentryServiceGaugesAdded) {
       addGauge(SentryService.class, "is_active", sentryservice.getIsActiveGauge());
-      addGauge(SentryService.class, "is_ha", sentryservice.getIsHAGauge());
+      addGauge(SentryService.class, "activated", sentryservice.getBecomeActiveCount());
       sentryServiceGaugesAdded = true;
     }
   }

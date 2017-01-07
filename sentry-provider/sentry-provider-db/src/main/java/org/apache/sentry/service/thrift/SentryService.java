@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -45,7 +45,7 @@ import org.apache.hadoop.security.SaslRpcServer;
 import org.apache.hadoop.security.SaslRpcServer.AuthMethod;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.sentry.Command;
-import org.apache.sentry.core.common.utils.SentryConstants;
+import org.apache.sentry.core.common.utils.SigUtils;
 import org.apache.sentry.provider.db.service.thrift.SentryHealthCheckServletContextListener;
 import org.apache.sentry.provider.db.service.thrift.SentryMetrics;
 import org.apache.sentry.provider.db.service.thrift.SentryMetricsServletContextListener;
@@ -67,20 +67,22 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 
-public class SentryService implements Callable {
+import static org.apache.sentry.core.common.utils.SigUtils.registerSigListener;
 
-  private static final Logger LOGGER = LoggerFactory
-      .getLogger(SentryService.class);
+public class SentryService implements Callable, SigUtils.SigListener {
 
-  private static enum Status {
-    NOT_STARTED(), STARTED();
+  private static final Logger LOGGER = LoggerFactory.getLogger(SentryService.class);
+
+  private enum Status {
+    NOT_STARTED,
+    STARTED,
   }
 
   private final Configuration conf;
   private final InetSocketAddress address;
   private final int maxThreads;
   private final int minThreads;
-  private boolean kerberos;
+  private final boolean kerberos;
   private final String principal;
   private final String[] principalParts;
   private final String keytab;
@@ -89,12 +91,10 @@ public class SentryService implements Callable {
   private Future serviceStatus;
   private TServer thriftServer;
   private Status status;
-  private int webServerPort;
+  private final int webServerPort;
   private SentryWebServer sentryWebServer;
-  private long maxMessageSize;
-  private final boolean isHA;
-  private final Activator act;
-  SentryMetrics sentryMetrics;
+  private final long maxMessageSize;
+  private final LeaderStatusMonitor leaderMonitor;
 
   public SentryService(Configuration conf) throws Exception {
     this.conf = conf;
@@ -139,8 +139,6 @@ public class SentryService implements Callable {
       principalParts = null;
       keytab = null;
     }
-    isHA = conf.getBoolean(ServerConfig.SENTRY_HA_ENABLED,
-            ServerConfig.SENTRY_HA_ENABLED_DEFAULT);
     serviceExecutor = Executors.newSingleThreadExecutor(new ThreadFactory() {
       private int count = 0;
 
@@ -150,19 +148,28 @@ public class SentryService implements Callable {
             + (count++));
       }
     });
-    this.act = Activators.INSTANCE.create(conf);
-    conf.set(SentryConstants.CURRENT_INCARNATION_ID_KEY,
-        this.act.getIncarnationId());
+    this.leaderMonitor = LeaderStatusMonitor.getLeaderStatusMonitor(conf);
     webServerPort = conf.getInt(ServerConfig.SENTRY_WEB_PORT, ServerConfig.SENTRY_WEB_PORT_DEFAULT);
-    //TODO: Enable only if Hive is using Sentry?
     try {
       hmsFollowerExecutor = Executors.newScheduledThreadPool(1);
-      hmsFollowerExecutor.scheduleAtFixedRate(new HMSFollower(conf), 60000, 500, TimeUnit.MILLISECONDS);
-    }catch(Exception e) {
+      hmsFollowerExecutor.scheduleAtFixedRate(new HMSFollower(conf),
+              60000, 500, TimeUnit.MILLISECONDS);
+    } catch(Exception e) {
       //TODO: Handle
       LOGGER.error("Could not start HMSFollower");
     }
     status = Status.NOT_STARTED;
+
+    // Enable signal handler for HA leader/follower status if configured
+    String sigName = conf.get(ServerConfig.SERVER_HA_STANDBY_SIG);
+    if ((sigName != null) && !sigName.isEmpty()) {
+      LOGGER.info("Registering signal handler " + sigName + " for HA");
+      try {
+        registerSigListener(sigName, this);
+      } catch (Exception e) {
+        LOGGER.error("Failed to register signal", e);
+      }
+    }
   }
 
   @Override
@@ -251,8 +258,7 @@ public class SentryService implements Callable {
   }
 
   private void addSentryServiceGauge() {
-    sentryMetrics = SentryMetrics.getInstance();
-    sentryMetrics.addSentryServiceGauges(this);
+    SentryMetrics.getInstance().addSentryServiceGauges(this);
   }
 
   private void startSentryWebServer() throws Exception{
@@ -295,7 +301,7 @@ public class SentryService implements Callable {
   public synchronized void stop() throws Exception{
     MultiException exception = null;
     LOGGER.info("Attempting to stop...");
-    act.close();
+    leaderMonitor.close();
     if (isRunning()) {
       LOGGER.info("Attempting to stop sentry thrift service...");
       try {
@@ -337,16 +343,8 @@ public class SentryService implements Callable {
    * to the backend DB.
    */
   @VisibleForTesting
-  public synchronized void becomeStandby() throws Exception{
-    try {
-      if(act.isActive()) {
-        LOGGER.info("Server with incarnation id: " + act.getIncarnationId() +
-            " becoming standby");
-        act.deactivate();
-      }
-    } catch (Exception e) {
-      LOGGER.error("Error while deactivating the active sentry daemon", e);
-    }
+  public synchronized void becomeStandby() {
+    leaderMonitor.deactivate();
   }
 
   private MultiException addMultiException(MultiException exception, Exception e) {
@@ -463,24 +461,27 @@ public class SentryService implements Callable {
     return thriftServer.getEventHandler();
   }
 
-  @VisibleForTesting
-  public Activator getActivator() {return  act;}
-
   public Gauge<Boolean> getIsActiveGauge() {
     return new Gauge<Boolean>() {
       @Override
       public Boolean getValue() {
-        return act.isActive();
+        return leaderMonitor.isLeader();
       }
     };
   }
 
-  public Gauge<Boolean> getIsHAGauge() {
-    return new Gauge<Boolean>() {
+  public Gauge<Long> getBecomeActiveCount() {
+    return new Gauge<Long>() {
       @Override
-      public Boolean getValue() {
-        return isHA;
+      public Long getValue() {
+        return leaderMonitor.getLeaderCount();
       }
     };
+  }
+
+  @Override
+  public void onSignal(String signalName) {
+    // Become follower
+    leaderMonitor.deactivate();
   }
 }
