@@ -145,6 +145,31 @@ public class SentryStore {
     prop.setProperty(ServerConfig.JAVAX_JDO_USER, user);
     prop.setProperty(ServerConfig.JAVAX_JDO_PASS, pass);
     prop.setProperty(ServerConfig.JAVAX_JDO_DRIVER_NAME, driverName);
+
+    /*
+     * Oracle doesn't support "repeatable-read" isolation level, so we use
+	   * "serializable" instead. This should be handled by Datanucleus, but it
+	   * incorrectly states that "repeatable-read" is supported and Oracle barks
+	   * at run-time. This code is a hack, but until it is fixed in Datanucleus
+	   * we can't do much.
+	   *
+	   * JDBC URL always looks like jdbc:oracle:<drivertype>:@<database>
+	   *  we look at the second component.
+	   *
+	   * The isolation property can be overwritten via configuration property.
+	   */
+    final String oracleDb = "oracle";
+    if (prop.getProperty(ServerConfig.DATANUCLEUS_ISOLATION_LEVEL, "").
+            equals(ServerConfig.DATANUCLEUS_REPEATABLE_READ) &&
+                    jdbcUrl.contains(oracleDb)) {
+      String parts[] = jdbcUrl.split(":");
+      if (parts.length > 1 && parts[1].equals(oracleDb)) {
+        // For Oracle JDBC driver, replace "repeatable-read" with "serializable"
+        prop.setProperty(ServerConfig.DATANUCLEUS_ISOLATION_LEVEL,
+                "serializable");
+      }
+    }
+
     for (Map.Entry<String, String> entry : conf) {
       String key = entry.getKey();
       if (key.startsWith(ServerConfig.SENTRY_JAVAX_JDO_PROPERTY_PREFIX) ||
