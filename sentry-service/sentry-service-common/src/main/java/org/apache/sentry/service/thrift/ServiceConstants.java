@@ -100,6 +100,9 @@ public class ServiceConstants {
     public static final String JAVAX_JDO_PASS = "javax.jdo.option.ConnectionPassword";
     public static final String JAVAX_JDO_DRIVER_NAME = "javax.jdo.option.ConnectionDriverName";
 
+    public static final String DATANUCLEUS_ISOLATION_LEVEL = "datanucleus.transactionIsolation";
+    public static final String DATANUCLEUS_REPEATABLE_READ = "repeatable-read";
+
     public static final String SENTRY_DB_PROPERTY_PREFIX = "sentry.";
     public static final String SENTRY_JAVAX_JDO_PROPERTY_PREFIX = SENTRY_DB_PROPERTY_PREFIX + "javax.jdo";
     public static final String SENTRY_DATANUCLEUS_PROPERTY_PREFIX = SENTRY_DB_PROPERTY_PREFIX + "datanucleus";
@@ -147,7 +150,7 @@ public class ServiceConstants {
         .put("datanucleus.autoCreateSchema", "false")
         .put("datanucleus.fixedDatastore", "true")
         .put("datanucleus.autoStartMechanismMode", "checked")
-        .put("datanucleus.transactionIsolation", "repeatable-read")
+        .put(DATANUCLEUS_ISOLATION_LEVEL, DATANUCLEUS_REPEATABLE_READ)
         .put("datanucleus.cache.level2", "false")
         .put("datanucleus.cache.level2.type", "none")
         .put("datanucleus.identifierFactory", "datanucleus1")
