@@ -59,6 +59,8 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.sentry.binding.hive.SentryHiveAuthorizationTaskFactoryImpl;
+import org.apache.sentry.binding.metastore.SentryMetastorePostEventListenerNotificationLog;
+import org.apache.sentry.binding.metastore.SentryMetastorePostEventListener;
 import org.apache.sentry.core.model.db.DBModelAction;
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.sentry.policy.db.DBModelAuthorizables;
@@ -155,10 +157,12 @@ public abstract class AbstractTestWithStaticConfiguration {
   private static final String EXTERNAL_SENTRY_SERVICE = "sentry.e2etest.external.sentry";
   protected static final String EXTERNAL_HIVE_LIB = "sentry.e2etest.hive.lib";
   private static final String ENABLE_SENTRY_HA = "sentry.e2etest.enable.service.ha";
+  private static final String ENABLE_NOTIFICATION_LOG = "sentry.e2etest.enable.notification.log";
 
   protected static boolean policyOnHdfs = false;
   protected static boolean useSentryService = false;
   protected static boolean setMetastoreListener = true;
+  protected static boolean useDbNotificationListener = false;
   protected static boolean useDefaultMessageFactory = false;
   protected static String testServerType = null;
   protected static boolean enableHiveConcurrency = false;
@@ -178,6 +182,7 @@ public abstract class AbstractTestWithStaticConfiguration {
   protected static SentrySrv sentryServer;
   protected static Configuration sentryConf;
   protected static boolean enableSentryHA = false;
+  protected static boolean enableNotificationLog = false;
   protected static Context context;
   protected final String semanticException = "SemanticException No valid privileges";
 
@@ -309,6 +314,10 @@ public abstract class AbstractTestWithStaticConfiguration {
 
     if ("true".equalsIgnoreCase(System.getProperty(ENABLE_SENTRY_HA, "false"))) {
       enableSentryHA = true;
+    }
+
+    if ("true".equalsIgnoreCase(System.getProperty(ENABLE_NOTIFICATION_LOG, "false"))) {
+      enableNotificationLog = true;
     }
 
     if (enableHiveConcurrency) {
@@ -511,8 +520,18 @@ public abstract class AbstractTestWithStaticConfiguration {
     }
     startSentryService();
     if (setMetastoreListener) {
-      properties.put(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS.varname,
-          "org.apache.hive.hcatalog.listener.DbNotificationListener");
+      if (useDbNotificationListener) {
+        properties.put(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS.varname,
+                "org.apache.hive.hcatalog.listener.DbNotificationListener");
+      } else {
+        if (enableNotificationLog) {
+          properties.put(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS.varname,
+              SentryMetastorePostEventListenerNotificationLog.class.getName());
+        } else {
+          properties.put(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS.varname,
+              SentryMetastorePostEventListener.class.getName());
+        }
+      }
       LOGGER.info("setMetastoreListener is enabled");
       if (!useDefaultMessageFactory) {
         properties.put("hcatalog.message.factory.impl.json",

@@ -32,6 +32,7 @@ public class TestDefaultMessageFactorySentryDeserializer extends TestSentryMessa
   public static void setupTestStaticConfiguration() throws Exception {
     setMetastoreListener = true;
     useDefaultMessageFactory = true;
+    enableNotificationLog = true;
     AbstractMetastoreTestWithStaticConfiguration.setupTestStaticConfiguration();
     setupClass();
   }

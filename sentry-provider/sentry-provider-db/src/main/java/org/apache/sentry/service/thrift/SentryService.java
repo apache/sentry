@@ -95,6 +95,7 @@ public class SentryService implements Callable, SigUtils.SigListener {
   private SentryWebServer sentryWebServer;
   private final long maxMessageSize;
   private final LeaderStatusMonitor leaderMonitor;
+  private final boolean notificationLogEnabled;
 
   public SentryService(Configuration conf) throws Exception {
     this.conf = conf;
@@ -150,14 +151,20 @@ public class SentryService implements Callable, SigUtils.SigListener {
     });
     this.leaderMonitor = LeaderStatusMonitor.getLeaderStatusMonitor(conf);
     webServerPort = conf.getInt(ServerConfig.SENTRY_WEB_PORT, ServerConfig.SENTRY_WEB_PORT_DEFAULT);
-    try {
-      hmsFollowerExecutor = Executors.newScheduledThreadPool(1);
-      hmsFollowerExecutor.scheduleAtFixedRate(new HMSFollower(conf, leaderMonitor),
-              60000, 500, TimeUnit.MILLISECONDS);
-    } catch(Exception e) {
-      //TODO: Handle
-      LOGGER.error("Could not start HMSFollower");
+    notificationLogEnabled = conf.getBoolean(ServerConfig.SENTRY_NOTIFICATION_LOG_ENABLED,
+        ServerConfig.SENTRY_NOTIFICATION_LOG_ENABLED_DEFAULT);
+
+    if (notificationLogEnabled) {
+      try {
+        hmsFollowerExecutor = Executors.newScheduledThreadPool(1);
+        hmsFollowerExecutor.scheduleAtFixedRate(new HMSFollower(conf, leaderMonitor),
+                60000, 500, TimeUnit.MILLISECONDS);
+      } catch (Exception e) {
+        //TODO: Handle
+        LOGGER.error("Could not start HMSFollower");
+      }
     }
+
     status = Status.NOT_STARTED;
 
     // Enable signal handler for HA leader/follower status if configured

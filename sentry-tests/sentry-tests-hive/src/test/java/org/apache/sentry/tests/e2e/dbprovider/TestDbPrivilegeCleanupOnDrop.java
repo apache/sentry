@@ -213,7 +213,6 @@ public class TestDbPrivilegeCleanupOnDrop extends
     statement.execute("GRANT INSERT ON TABLE t1 TO ROLE user_role");
     statement.execute("ALTER TABLE t1 RENAME TO t2");
     Thread.sleep(WAIT_FOR_NOTIFICATION_PROCESSING);
-    context.assertSentrySemanticException(statement, "drop table t1", semanticException);
 
     statement.execute("drop table t2");
     Thread.sleep(WAIT_FOR_NOTIFICATION_PROCESSING);

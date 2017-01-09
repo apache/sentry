@@ -61,6 +61,7 @@ public class TestDefaultMessageFactoryInBuiltDeserializer extends AbstractMetast
   public static void setupTestStaticConfiguration() throws Exception {
     setMetastoreListener = true;
     useDefaultMessageFactory = true;
+    useDbNotificationListener = true;
     beforeClass();
   }
 

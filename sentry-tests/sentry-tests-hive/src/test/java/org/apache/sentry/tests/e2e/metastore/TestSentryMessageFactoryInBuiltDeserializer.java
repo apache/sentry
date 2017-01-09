@@ -30,7 +30,7 @@ public class TestSentryMessageFactoryInBuiltDeserializer extends TestDefaultMess
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception {
     setMetastoreListener = true;
-    useDefaultMessageFactory = false;
+    useDbNotificationListener = true;
     beforeClass();
   }
 }
