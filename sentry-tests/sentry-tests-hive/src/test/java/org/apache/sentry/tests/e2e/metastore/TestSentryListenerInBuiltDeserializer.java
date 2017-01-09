@@ -31,6 +31,7 @@ public class TestSentryListenerInBuiltDeserializer extends TestDBNotificationLis
   public static void setupTestStaticConfiguration() throws Exception {
     setMetastoreListener = true;
     useDbNotificationListener = false;
+    enableNotificationLog = true;
     beforeClass();
   }
 }

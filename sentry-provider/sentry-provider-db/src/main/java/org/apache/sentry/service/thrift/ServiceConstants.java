@@ -165,6 +165,8 @@ public class ServiceConstants {
             .put("javax.jdo.option.Multithreaded", "true")
             .build();
 
+    public static final String SENTRY_NOTIFICATION_LOG_ENABLED = "sentry.otification.log.enabled";
+    public static final boolean SENTRY_NOTIFICATION_LOG_ENABLED_DEFAULT = false;
     public static final String SENTRY_WEB_ENABLE = "sentry.service.web.enable";
     public static final Boolean SENTRY_WEB_ENABLE_DEFAULT = false;
     public static final String SENTRY_WEB_PORT = "sentry.service.web.port";
