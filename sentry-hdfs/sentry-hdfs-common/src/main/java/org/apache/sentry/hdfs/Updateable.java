@@ -66,7 +66,7 @@ public interface Updateable<K extends Updateable.Update> {
    * @param currSeqNum
    * @return
    */
-  K createFullImageUpdate(long currSeqNum);
+  K createFullImageUpdate(long currSeqNum) throws Exception;
 
   String getUpdateableTypeName();
 
