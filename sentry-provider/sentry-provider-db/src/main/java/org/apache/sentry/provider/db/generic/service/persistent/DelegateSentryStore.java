@@ -97,7 +97,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
   }
 
   @Override
-  public Set<String> getAllRoleNames() {
+  public Set<String> getAllRoleNames() throws Exception {
     return delegate.getAllRoleNames();
   }
 

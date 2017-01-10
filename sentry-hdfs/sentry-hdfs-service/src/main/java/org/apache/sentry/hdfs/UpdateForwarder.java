@@ -39,7 +39,7 @@ public class UpdateForwarder<K extends Updateable.Update> implements
 
   interface ExternalImageRetriever<K> {
 
-    K retrieveFullImage(long currSeqNum);
+    K retrieveFullImage(long currSeqNum) throws Exception;
 
   }
 
@@ -75,7 +75,8 @@ public class UpdateForwarder<K extends Updateable.Update> implements
       ExternalImageRetriever<K> imageRetreiver, int maxUpdateLogSize) {
     this(conf, updateable, imageRetreiver, maxUpdateLogSize, INIT_UPDATE_RETRY_DELAY);
   }
-  public UpdateForwarder(Configuration conf, Updateable<K> updateable, //NOPMD
+
+  protected UpdateForwarder(Configuration conf, Updateable<K> updateable, //NOPMD
       ExternalImageRetriever<K> imageRetreiver, int maxUpdateLogSize,
       int initUpdateRetryDelay) { 
     this.maxUpdateLogSize = maxUpdateLogSize;
@@ -137,7 +138,11 @@ public class UpdateForwarder<K extends Updateable.Update> implements
       initUpdater.start();
     }
     if (firstFullImage != null) {
-      appendToUpdateLog(firstFullImage);
+      try {
+        appendToUpdateLog(firstFullImage);
+      } catch (Exception e) {
+        LOGGER.warn("failed to update append log: ", e);
+      }
       this.updateable = updateable.updateFull(firstFullImage);
     }
   }
@@ -174,19 +179,27 @@ public class UpdateForwarder<K extends Updateable.Update> implements
           } else {
             // Retrieve full update from External Source and
             if (imageRetreiver != null) {
-              toUpdate = imageRetreiver
-                  .retrieveFullImage(update.getSeqNum());
+              try {
+                toUpdate = imageRetreiver
+                    .retrieveFullImage(update.getSeqNum());
+              } catch (Exception e) {
+                LOGGER.warn("failed to retrieve full image: ", e);
+              }
               updateable = updateable.updateFull(toUpdate);
             }
           }
         }
-        appendToUpdateLog(toUpdate);
+        try {
+          appendToUpdateLog(toUpdate);
+        } catch (Exception e) {
+          LOGGER.warn("failed to append to update log", e);
+        }
       }
     };
     updateHandler.execute(task);
   }
 
-  protected void appendToUpdateLog(K update) {
+  protected void appendToUpdateLog(K update) throws Exception {
     synchronized (getUpdateLog()) {
       boolean logCompacted = false;
       if (getMaxUpdateLogSize() > 0) {
@@ -216,7 +229,7 @@ public class UpdateForwarder<K extends Updateable.Update> implements
    * @param seqNum
    * @return
    */
-  public List<K> getAllUpdatesFrom(long seqNum) {
+  public List<K> getAllUpdatesFrom(long seqNum) throws Exception {
     List<K> retVal = new LinkedList<K>();
     synchronized (getUpdateLog()) {
       long currSeqNum = lastCommittedSeqNum.get();
@@ -304,7 +317,7 @@ public class UpdateForwarder<K extends Updateable.Update> implements
   }
 
   @Override
-  public K createFullImageUpdate(long currSeqNum) {
+  public K createFullImageUpdate(long currSeqNum) throws Exception {
     return (updateable != null) ? updateable.createFullImageUpdate(currSeqNum) : null;
   }
 

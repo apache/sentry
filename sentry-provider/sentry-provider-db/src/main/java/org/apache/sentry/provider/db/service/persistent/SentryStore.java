@@ -960,145 +960,128 @@ public class SentryStore {
         });
   }
 
-  private boolean hasAnyServerPrivileges(final Set<String> roleNames, final String serverName) {
+  private boolean hasAnyServerPrivileges(final Set<String> roleNames, final String serverName) throws Exception {
     if (roleNames == null || roleNames.isEmpty()) {
       return false;
     }
-    boolean result = false;
-    try {
-      result = (Boolean) tm.executeTransaction(
-          new TransactionBlock() {
-            public Object execute(PersistenceManager pm) throws Exception {
-              Query query = pm.newQuery(MSentryPrivilege.class);
-              QueryParamBuilder paramBuilder = addRolesFilter(query,null, roleNames);
-              paramBuilder.add(SERVER_NAME, serverName);
-              query.setFilter(paramBuilder.toString());
-              query.setResult("count(this)");
-              Long numPrivs = (Long) query.executeWithMap(paramBuilder.getArguments());
-              return numPrivs > 0;
-            }
-          });
-    } catch (Exception e) {
-      LOGGER.error(e.getMessage(), e);
-    }
-    return result;
+    return (Boolean) tm.executeTransaction(
+      new TransactionBlock() {
+        public Object execute(PersistenceManager pm) throws Exception {
+          Query query = pm.newQuery(MSentryPrivilege.class);
+          QueryParamBuilder paramBuilder = addRolesFilter(query,null, roleNames);
+          paramBuilder.add(SERVER_NAME, serverName);
+          query.setFilter(paramBuilder.toString());
+          query.setResult("count(this)");
+          Long numPrivs = (Long) query.executeWithMap(paramBuilder.getArguments());
+          return numPrivs > 0;
+        }
+      });
   }
 
   @SuppressWarnings("unchecked")
   private List<MSentryPrivilege> getMSentryPrivileges(final Set<String> roleNames,
-                                                      final TSentryAuthorizable authHierarchy) {
-    List<MSentryPrivilege> result = new ArrayList<>();
+                                                      final TSentryAuthorizable authHierarchy) throws Exception {
+    List<MSentryPrivilege> result = new ArrayList<MSentryPrivilege>();
     if (roleNames == null || roleNames.isEmpty()) {
       return result;
     }
 
-    try {
-      result = (List<MSentryPrivilege>) tm.executeTransaction(
-          new TransactionBlock() {
-            public Object execute(PersistenceManager pm) throws Exception {
-              Query query = pm.newQuery(MSentryPrivilege.class);
-              QueryParamBuilder paramBuilder = addRolesFilter(query, null, roleNames);
+      return (List<MSentryPrivilege>) tm.executeTransaction(
+        new TransactionBlock() {
+          public Object execute(PersistenceManager pm) throws Exception {
+            Query query = pm.newQuery(MSentryPrivilege.class);
+            QueryParamBuilder paramBuilder = addRolesFilter(query, null, roleNames);
 
-              if (authHierarchy != null && authHierarchy.getServer() != null) {
-                paramBuilder.add(SERVER_NAME, authHierarchy.getServer());
-                if (authHierarchy.getDb() != null) {
-                  paramBuilder.addNull(URI)
-                          .newChild()
-                            .add(DB_NAME, authHierarchy.getDb())
-                            .addNull(DB_NAME);
-                  if (authHierarchy.getTable() != null
-                      && !AccessConstants.ALL.equalsIgnoreCase(authHierarchy.getTable())) {
-                    if (!AccessConstants.SOME.equalsIgnoreCase(authHierarchy.getTable())) {
-                      paramBuilder.addNull(URI)
-                              .newChild()
-                                .add(TABLE_NAME, authHierarchy.getTable())
-                                .addNull(TABLE_NAME);
-                    }
-                    if (authHierarchy.getColumn() != null
-                        && !AccessConstants.ALL.equalsIgnoreCase(authHierarchy.getColumn())
-                        && !AccessConstants.SOME.equalsIgnoreCase(authHierarchy.getColumn())) {
-                      paramBuilder.addNull(URI)
-                              .newChild()
-                                .add(COLUMN_NAME, authHierarchy.getColumn())
-                                .addNull(COLUMN_NAME);
-                    }
+            if (authHierarchy != null && authHierarchy.getServer() != null) {
+              paramBuilder.add(SERVER_NAME, authHierarchy.getServer());
+              if (authHierarchy.getDb() != null) {
+                paramBuilder.addNull(URI)
+                        .newChild()
+                          .add(DB_NAME, authHierarchy.getDb())
+                          .addNull(DB_NAME);
+                if (authHierarchy.getTable() != null
+                    && !AccessConstants.ALL.equalsIgnoreCase(authHierarchy.getTable())) {
+                  if (!AccessConstants.SOME.equalsIgnoreCase(authHierarchy.getTable())) {
+                    paramBuilder.addNull(URI)
+                            .newChild()
+                              .add(TABLE_NAME, authHierarchy.getTable())
+                              .addNull(TABLE_NAME);
+                  }
+                  if (authHierarchy.getColumn() != null
+                      && !AccessConstants.ALL.equalsIgnoreCase(authHierarchy.getColumn())
+                      && !AccessConstants.SOME.equalsIgnoreCase(authHierarchy.getColumn())) {
+                    paramBuilder.addNull(URI)
+                            .newChild()
+                              .add(COLUMN_NAME, authHierarchy.getColumn())
+                              .addNull(COLUMN_NAME);
                   }
                 }
-                if (authHierarchy.getUri() != null) {
-                  paramBuilder.addNull(DB_NAME)
-                          .newChild()
-                            .addNull(URI)
-                            .newChild()
-                              .addNotNull(URI)
-                              .addCustomParam("\"" + authHierarchy.getUri() +
-                                      "\".startsWith(:URI)", URI, authHierarchy.getUri());
-                }
               }
-              LOGGER.debug("getMSentryPrivileges1() Query: " + paramBuilder.toString());
-              query.setFilter(paramBuilder.toString());
-              return query.executeWithMap(paramBuilder.getArguments());
+              if (authHierarchy.getUri() != null) {
+                paramBuilder.addNull(DB_NAME)
+                        .newChild()
+                          .addNull(URI)
+                          .newChild()
+                            .addNotNull(URI)
+                            .addCustomParam("\"" + authHierarchy.getUri() +
+                                    "\".startsWith(:URI)", URI, authHierarchy.getUri());
+              }
             }
-          });
-    } catch (Exception e) {
-      LOGGER.error(e.getMessage(), e);
-    }
-    return result;
+            LOGGER.debug("getMSentryPrivileges1() Query: " + paramBuilder.toString());
+            query.setFilter(paramBuilder.toString());
+            return query.executeWithMap(paramBuilder.getArguments());
+          }
+        });
   }
 
   @SuppressWarnings("unchecked")
   List<MSentryPrivilege> getMSentryPrivilegesByAuth(final Set<String> roleNames,
-      final TSentryAuthorizable authHierarchy) {
-    List<MSentryPrivilege> result = new ArrayList<MSentryPrivilege>();
-    try {
-      result = (List<MSentryPrivilege>) tm.executeTransaction(
-          new TransactionBlock() {
-            public Object execute(PersistenceManager pm) throws Exception {
-              Query query = pm.newQuery(MSentryPrivilege.class);
-              QueryParamBuilder paramBuilder = new QueryParamBuilder();
-              if (roleNames == null || roleNames.isEmpty()) {
-                paramBuilder.addString("!roles.isEmpty()");
-              } else {
-                addRolesFilter(query, paramBuilder, roleNames);
-              }
-              if (authHierarchy.getServer() != null) {
-                paramBuilder.add(SERVER_NAME, authHierarchy.getServer());
-                if (authHierarchy.getDb() != null) {
-                  paramBuilder.add(DB_NAME, authHierarchy.getDb()).addNull(URI);
-                  if (authHierarchy.getTable() != null) {
-                    paramBuilder.add(TABLE_NAME, authHierarchy.getTable());
-                  } else {
-                    paramBuilder.addNull(TABLE_NAME);
-                  }
-                } else if (authHierarchy.getUri() != null) {
-                  paramBuilder.addNotNull(URI)
-                          .addNull(DB_NAME)
-                          .addCustomParam("(:authURI.startsWith(URI))", "authURI", authHierarchy.getUri());
-                } else {
-                  paramBuilder.addNull(DB_NAME)
-                        .addNull(URI);
-                }
-              } else {
-                // if no server, then return empty resultset
-                return new ArrayList<MSentryPrivilege>();
-              }
-              FetchGroup grp = pm.getFetchGroup(MSentryPrivilege.class, "fetchRole");
-              grp.addMember("roles");
-              pm.getFetchPlan().addGroup("fetchRole");
-              // LOGGER.debug("XXX: " + paramBuilder.toString());
-              query.setFilter(paramBuilder.toString());
-              return query.executeWithMap(paramBuilder.getArguments());
+      final TSentryAuthorizable authHierarchy) throws Exception {
+      return (List<MSentryPrivilege>) tm.executeTransaction(
+        new TransactionBlock() {
+          public Object execute(PersistenceManager pm) throws Exception {
+            Query query = pm.newQuery(MSentryPrivilege.class);
+            QueryParamBuilder paramBuilder = new QueryParamBuilder();
+            if (roleNames == null || roleNames.isEmpty()) {
+              paramBuilder.addString("!roles.isEmpty()");
+            } else {
+              addRolesFilter(query, paramBuilder, roleNames);
             }
-          });
-    } catch (Exception e) {
-      LOGGER.error(e.getMessage(), e);
-    }
-    return result;
+            if (authHierarchy.getServer() != null) {
+              paramBuilder.add(SERVER_NAME, authHierarchy.getServer());
+              if (authHierarchy.getDb() != null) {
+                paramBuilder.add(DB_NAME, authHierarchy.getDb()).addNull(URI);
+                if (authHierarchy.getTable() != null) {
+                  paramBuilder.add(TABLE_NAME, authHierarchy.getTable());
+                } else {
+                  paramBuilder.addNull(TABLE_NAME);
+                }
+              } else if (authHierarchy.getUri() != null) {
+                paramBuilder.addNotNull(URI)
+                        .addNull(DB_NAME)
+                        .addCustomParam("(:authURI.startsWith(URI))", "authURI", authHierarchy.getUri());
+              } else {
+                paramBuilder.addNull(DB_NAME)
+                      .addNull(URI);
+              }
+            } else {
+              // if no server, then return empty resultset
+              return new ArrayList<MSentryPrivilege>();
+            }
+            FetchGroup grp = pm.getFetchGroup(MSentryPrivilege.class, "fetchRole");
+            grp.addMember("roles");
+            pm.getFetchPlan().addGroup("fetchRole");
+            // LOGGER.debug("XXX: " + paramBuilder.toString());
+            query.setFilter(paramBuilder.toString());
+            return query.executeWithMap(paramBuilder.getArguments());
+          }
+        });
   }
 
   public TSentryPrivilegeMap listSentryPrivilegesByAuthorizable(Set<String> groups,
       TSentryActiveRoleSet activeRoles,
       TSentryAuthorizable authHierarchy, boolean isAdmin)
-      throws SentryInvalidInputException {
+          throws Exception {
     Map<String, Set<TSentryPrivilege>> resultPrivilegeMap = Maps.newTreeMap();
     Set<String> roles = getRolesToQuery(groups, null, new TSentryActiveRoleSet(true, null));
 
@@ -1159,7 +1142,7 @@ public class SentryStore {
 
   public Set<TSentryPrivilege> getTSentryPrivileges(Set<String> roleNames,
                                                     TSentryAuthorizable authHierarchy)
-          throws SentryInvalidInputException {
+          throws Exception {
     if (authHierarchy.getServer() == null) {
       throw new SentryInvalidInputException("serverName cannot be null !!");
     }
@@ -1225,23 +1208,17 @@ public class SentryStore {
   }
 
   @SuppressWarnings("unchecked")
-  public Set<String> getRoleNamesForGroups(final Set<String> groups) {
+  public Set<String> getRoleNamesForGroups(final Set<String> groups) throws Exception {
     if (groups == null || groups.isEmpty()) {
       return ImmutableSet.of();
     }
 
-    Set<String> result = new HashSet<>();
-    try {
-      result = (Set<String>) tm.executeTransaction(
-          new TransactionBlock() {
-            public Object execute(PersistenceManager pm) throws Exception {
-              return getRoleNamesForGroupsCore(pm, groups);
-            }
-          });
-    } catch (Exception e) {
-      LOGGER.error(e.getMessage(), e);
-    }
-    return result;
+    return (Set<String>) tm.executeTransaction(
+        new TransactionBlock() {
+          public Object execute(PersistenceManager pm) throws Exception {
+            return getRoleNamesForGroupsCore(pm, groups);
+          }
+        });
   }
 
   private Set<String> getRoleNamesForGroupsCore(PersistenceManager pm, Set<String> groups) {
@@ -1249,23 +1226,17 @@ public class SentryStore {
   }
 
   @SuppressWarnings("unchecked")
-  public Set<String> getRoleNamesForUsers(final Set<String> users) {
+  public Set<String> getRoleNamesForUsers(final Set<String> users) throws Exception {
     if (users == null || users.isEmpty()) {
       return ImmutableSet.of();
     }
 
-    Set<String> result = new HashSet<>();
-    try {
-      result = (Set<String>) tm.executeTransaction(
+    return (Set<String>) tm.executeTransaction(
           new TransactionBlock() {
             public Object execute(PersistenceManager pm) throws Exception {
               return getRoleNamesForUsersCore(pm,users);
             }
           });
-    } catch (Exception e) {
-      LOGGER.error(e.getMessage(), e);
-    }
-    return result;
   }
 
   private Set<String> getRoleNamesForUsersCore(PersistenceManager pm, Set<String> users) {
@@ -1273,23 +1244,16 @@ public class SentryStore {
   }
 
   @SuppressWarnings("unchecked")
-  public Set<TSentryRole> getTSentryRolesByUserNames(final Set<String> users) {
-    Set<TSentryRole> result = new HashSet<>();
-
-    try {
-      result = (Set<TSentryRole>) tm.executeTransaction(
-          new TransactionBlock() {
-            public Object execute(PersistenceManager pm) throws Exception {
-              Set<MSentryRole> mSentryRoles = getRolesForUsers(pm, users);
-              // Since {@link MSentryRole#getGroups()} is lazy-loading, the converting should be call
-              // before transaction committed.
-              return convertToTSentryRoles(mSentryRoles);
+  public Set<TSentryRole> getTSentryRolesByUserNames(final Set<String> users) throws Exception {
+    return (Set<TSentryRole>) tm.executeTransaction(
+        new TransactionBlock() {
+        public Object execute(PersistenceManager pm) throws Exception {
+            Set<MSentryRole> mSentryRoles = getRolesForUsers(pm, users);
+            // Since {@link MSentryRole#getGroups()} is lazy-loading, the converting should be call
+            // before transaction committed.
+            return convertToTSentryRoles(mSentryRoles);
             }
           });
-    } catch (Exception e) {
-      LOGGER.error(e.getMessage(), e);
-    }
-    return result;
   }
 
   public Set<MSentryRole> getRolesForGroups(PersistenceManager pm, Set<String> groups) {
@@ -1323,13 +1287,13 @@ public class SentryStore {
   }
 
   Set<String> listAllSentryPrivilegesForProvider(Set<String> groups, Set<String> users,
-      TSentryActiveRoleSet roleSet) throws SentryInvalidInputException {
+      TSentryActiveRoleSet roleSet) throws Exception {
     return listSentryPrivilegesForProvider(groups, users, roleSet, null);
   }
 
 
   public Set<String> listSentryPrivilegesForProvider(Set<String> groups, Set<String> users,
-      TSentryActiveRoleSet roleSet, TSentryAuthorizable authHierarchy) throws SentryInvalidInputException {
+      TSentryActiveRoleSet roleSet, TSentryAuthorizable authHierarchy) throws Exception {
     Set<String> result = Sets.newHashSet();
     Set<String> rolesToQuery = getRolesToQuery(groups, users, roleSet);
     List<MSentryPrivilege> mSentryPrivileges = getMSentryPrivileges(rolesToQuery, authHierarchy);
@@ -1341,17 +1305,15 @@ public class SentryStore {
   }
 
   public boolean hasAnyServerPrivileges(Set<String> groups, Set<String> users,
-      TSentryActiveRoleSet roleSet, String server) {
+      TSentryActiveRoleSet roleSet, String server) throws Exception {
     Set<String> rolesToQuery = getRolesToQuery(groups, users, roleSet);
     return hasAnyServerPrivileges(rolesToQuery, server);
   }
 
   @SuppressWarnings("unchecked")
   private Set<String> getRolesToQuery(final Set<String> groups, final Set<String> users,
-      final TSentryActiveRoleSet roleSet) {
-    Set<String> result = new HashSet<>();
-    try {
-      result = (Set<String>) tm.executeTransaction(
+      final TSentryActiveRoleSet roleSet) throws Exception {
+      return (Set<String>) tm.executeTransaction(
           new TransactionBlock() {
             public Object execute(PersistenceManager pm) throws Exception {
               Set<String> activeRoleNames = toTrimedLower(roleSet.getRoles());
@@ -1363,10 +1325,6 @@ public class SentryStore {
                   roleNames);
             }
           });
-    } catch (Exception e) {
-      LOGGER.error(e.getMessage(), e);
-    }
-    return result;
   }
 
   @VisibleForTesting
@@ -1859,83 +1817,73 @@ public class SentryStore {
   }
 
   @SuppressWarnings("unchecked")
-  public Map<String, HashMap<String, String>> retrieveFullPrivilegeImage() {
+  public Map<String, HashMap<String, String>> retrieveFullPrivilegeImage() throws Exception {
     Map<String, HashMap<String, String>> result = new HashMap<>();
-    try {
-      result = (Map<String, HashMap<String, String>>) tm.executeTransaction(
-              new TransactionBlock() {
-                public Object execute(PersistenceManager pm) throws Exception {
-                  Map<String, HashMap<String, String>> retVal = new HashMap<>();
-                  Query query = pm.newQuery(MSentryPrivilege.class);
-                  QueryParamBuilder paramBuilder = new QueryParamBuilder();
-                  paramBuilder
-                          .addNotNull(SERVER_NAME)
-                          .addNotNull(DB_NAME)
-                          .addNull(URI);
+    return (Map<String, HashMap<String, String>>) tm.executeTransaction(
+      new TransactionBlock() {
+        public Object execute(PersistenceManager pm) throws Exception {
+          Map<String, HashMap<String, String>> retVal = new HashMap<>();
+          Query query = pm.newQuery(MSentryPrivilege.class);
+          QueryParamBuilder paramBuilder = new QueryParamBuilder();
+          paramBuilder
+                  .addNotNull(SERVER_NAME)
+                  .addNotNull(DB_NAME)
+                  .addNull(URI);
 
-                  query.setFilter(paramBuilder.toString());
-                  query.setOrdering("serverName ascending, dbName ascending, tableName ascending");
-                  List<MSentryPrivilege> privileges =
-                          (List<MSentryPrivilege>) query.executeWithMap(paramBuilder.getArguments());
-                  for (MSentryPrivilege mPriv : privileges) {
-                    String authzObj = mPriv.getDbName();
-                    if (!isNULL(mPriv.getTableName())) {
-                      authzObj = authzObj + "." + mPriv.getTableName();
-                    }
-                    HashMap<String, String> pUpdate = retVal.get(authzObj);
-                    if (pUpdate == null) {
-                      pUpdate = new HashMap<String, String>();
-                      retVal.put(authzObj, pUpdate);
-                    }
-                    for (MSentryRole mRole : mPriv.getRoles()) {
-                      String existingPriv = pUpdate.get(mRole.getRoleName());
-                      if (existingPriv == null) {
-                        pUpdate.put(mRole.getRoleName(), mPriv.getAction().toUpperCase());
-                      } else {
-                        pUpdate.put(mRole.getRoleName(), existingPriv + ","
-                                + mPriv.getAction().toUpperCase());
-                      }
-                    }
-                  }
-                  return retVal;
-                }
-              });
-    } catch (Exception e) {
-      LOGGER.error(e.getMessage(), e);
-    }
-    return result;
+          query.setFilter(paramBuilder.toString());
+          query.setOrdering("serverName ascending, dbName ascending, tableName ascending");
+          List<MSentryPrivilege> privileges =
+                  (List<MSentryPrivilege>) query.executeWithMap(paramBuilder.getArguments());
+          for (MSentryPrivilege mPriv : privileges) {
+            String authzObj = mPriv.getDbName();
+            if (!isNULL(mPriv.getTableName())) {
+              authzObj = authzObj + "." + mPriv.getTableName();
+            }
+            HashMap<String, String> pUpdate = retVal.get(authzObj);
+            if (pUpdate == null) {
+              pUpdate = new HashMap<String, String>();
+              retVal.put(authzObj, pUpdate);
+            }
+            for (MSentryRole mRole : mPriv.getRoles()) {
+              String existingPriv = pUpdate.get(mRole.getRoleName());
+              if (existingPriv == null) {
+                pUpdate.put(mRole.getRoleName(), mPriv.getAction().toUpperCase());
+              } else {
+                pUpdate.put(mRole.getRoleName(), existingPriv + ","
+                        + mPriv.getAction().toUpperCase());
+              }
+            }
+          }
+          return retVal;
+        }
+      });
   }
 
   /**
    * @return Mapping of Role -> [Groups]
    */
   @SuppressWarnings("unchecked")
-  public Map<String, LinkedList<String>> retrieveFullRoleImage() {
+  public Map<String, LinkedList<String>> retrieveFullRoleImage() throws Exception {
     Map<String, LinkedList<String>> result = new HashMap<>();
-    try {
-      result = (Map<String, LinkedList<String>>) tm.executeTransaction(
-          new TransactionBlock() {
-            public Object execute(PersistenceManager pm) throws Exception {
-              Map<String, LinkedList<String>> retVal = new HashMap<>();
-              Query query = pm.newQuery(MSentryGroup.class);
-              List<MSentryGroup> groups = (List<MSentryGroup>) query.execute();
-              for (MSentryGroup mGroup : groups) {
-                for (MSentryRole role : mGroup.getRoles()) {
-                  LinkedList<String> rUpdate = retVal.get(role.getRoleName());
-                  if (rUpdate == null) {
-                    rUpdate = new LinkedList<String>();
-                    retVal.put(role.getRoleName(), rUpdate);
-                  }
-                  rUpdate.add(mGroup.getGroupName());
+    return (Map<String, LinkedList<String>>) tm.executeTransaction(
+        new TransactionBlock() {
+          public Object execute(PersistenceManager pm) throws Exception {
+            Map<String, LinkedList<String>> retVal = new HashMap<>();
+            Query query = pm.newQuery(MSentryGroup.class);
+            List<MSentryGroup> groups = (List<MSentryGroup>) query.execute();
+            for (MSentryGroup mGroup : groups) {
+              for (MSentryRole role : mGroup.getRoles()) {
+                LinkedList<String> rUpdate = retVal.get(role.getRoleName());
+                if (rUpdate == null) {
+                  rUpdate = new LinkedList<String>();
+                  retVal.put(role.getRoleName(), rUpdate);
                 }
+                rUpdate.add(mGroup.getGroupName());
               }
-              return retVal;
             }
-          });
-    } catch (Exception e) {
-      LOGGER.error(e.getMessage(), e);
-    }
-    return result;
+            return retVal;
+          }
+        });
   }
 
   /**
@@ -2194,10 +2142,9 @@ public class SentryStore {
 
   // get mapping datas for [group,role], [user,role] with the specific roles
   @SuppressWarnings("unchecked")
-  public List<Map<String, Set<String>>> getGroupUserRoleMapList(final Set<String> roleNames) {
+  public List<Map<String, Set<String>>> getGroupUserRoleMapList(final Set<String> roleNames) throws Exception {
     List<Map<String, Set<String>>> result = new ArrayList<>();
-    try {
-      result = (List<Map<String, Set<String>>>) tm.executeTransaction(
+      return (List<Map<String, Set<String>>>) tm.executeTransaction(
           new TransactionBlock() {
             public Object execute(PersistenceManager pm) throws Exception {
               Query query = pm.newQuery(MSentryRole.class);
@@ -2219,10 +2166,6 @@ public class SentryStore {
               return mapsList;
             }
           });
-    } catch (Exception e) {
-      LOGGER.error(e.getMessage(), e);
-    }
-    return result;
   }
 
   private Map<String, Set<String>> getGroupRolesMap(List<MSentryRole> mSentryRoles) {
@@ -2324,19 +2267,13 @@ public class SentryStore {
    * @return Set of all role names, or an empty set if no roles are defined
    */
   @SuppressWarnings("unchecked")
-  public Set<String> getAllRoleNames() {
-    Set<String> result = new HashSet<>();
-    try {
-      return (Set<String>) tm.executeTransaction(
-          new TransactionBlock() {
-            public Object execute(PersistenceManager pm) throws Exception {
-              return getAllRoleNamesCore(pm);
-            }
-          });
-    } catch (Exception e) {
-      LOGGER.error(e.getMessage(), e);
-      return  new HashSet<>();
-    }
+  public Set<String> getAllRoleNames() throws Exception {
+    return (Set<String>) tm.executeTransaction(
+        new TransactionBlock() {
+          public Object execute(PersistenceManager pm) throws Exception {
+            return getAllRoleNamesCore(pm);
+          }
+        });
   }
 
   /**
@@ -2412,79 +2349,55 @@ public class SentryStore {
 
   @VisibleForTesting
   @SuppressWarnings("unchecked")
-  protected Map<String, MSentryRole> getRolesMap() {
-    Map<String, MSentryRole> result = new HashMap<>();
-    try {
-      result = (Map<String, MSentryRole>) tm.executeTransaction(
-          new TransactionBlock() {
-            public Object execute(PersistenceManager pm) throws Exception {
-              List<MSentryRole> mSentryRoles = getAllRoles(pm);
-              Map<String, MSentryRole> existRolesMap = Maps.newHashMap();
-              if (mSentryRoles != null) {
-                // change the List<MSentryRole> -> Map<roleName, Set<MSentryRole>>
-                for (MSentryRole mSentryRole : mSentryRoles) {
-                  existRolesMap.put(mSentryRole.getRoleName(), mSentryRole);
-                }
+  protected Map<String, MSentryRole> getRolesMap() throws Exception {
+    return (Map<String, MSentryRole>) tm.executeTransaction(
+        new TransactionBlock() {
+          public Object execute(PersistenceManager pm) throws Exception {
+            List<MSentryRole> mSentryRoles = getAllRoles(pm);
+            Map<String, MSentryRole> existRolesMap = Maps.newHashMap();
+            if (mSentryRoles != null) {
+              // change the List<MSentryRole> -> Map<roleName, Set<MSentryRole>>
+              for (MSentryRole mSentryRole : mSentryRoles) {
+                existRolesMap.put(mSentryRole.getRoleName(), mSentryRole);
               }
-
-              return existRolesMap;
             }
-          });
-    } catch (Exception e) {
-      LOGGER.error(e.getMessage(), e);
-    }
-    return result;
+
+            return existRolesMap;
+          }
+        });
   }
 
   @VisibleForTesting
   @SuppressWarnings("unchecked")
-  protected Map<String, MSentryGroup> getGroupNameToGroupMap() {
-    Map<String, MSentryGroup>result = new HashMap<>();
-    try {
-      result = (Map<String, MSentryGroup>) tm.executeTransaction(
-          new TransactionBlock() {
-            public Object execute(PersistenceManager pm) throws Exception {
-              return getGroupNameTGroupMap(pm);
-            }
-          });
-    } catch (Exception e) {
-      LOGGER.error(e.getMessage(), e);
-    }
-    return result;
+  protected Map<String, MSentryGroup> getGroupNameToGroupMap() throws Exception {
+    return (Map<String, MSentryGroup>) tm.executeTransaction(
+        new TransactionBlock() {
+          public Object execute(PersistenceManager pm) throws Exception {
+            return getGroupNameTGroupMap(pm);
+          }
+        });
   }
 
   @VisibleForTesting
   @SuppressWarnings("unchecked")
-  protected Map<String, MSentryUser> getUserNameToUserMap() {
-    Map<String, MSentryUser> result = new HashMap<>();
-    try {
-      result = (Map<String, MSentryUser>) tm.executeTransaction(
-          new TransactionBlock() {
-            public Object execute(PersistenceManager pm) throws Exception {
-              return getUserNameToUserMap(pm);
-            }
-          });
-    } catch (Exception e) {
-      LOGGER.error(e.getMessage(), e);
-    }
-    return result;
+  protected Map<String, MSentryUser> getUserNameToUserMap() throws Exception {
+    return (Map<String, MSentryUser>) tm.executeTransaction(
+        new TransactionBlock() {
+          public Object execute(PersistenceManager pm) throws Exception {
+            return getUserNameToUserMap(pm);
+          }
+        });
   }
 
   @VisibleForTesting
   @SuppressWarnings("unchecked")
-  protected List<MSentryPrivilege> getPrivilegesList() {
-    List<MSentryPrivilege> result = new ArrayList<>();
-    try {
-      result = (List<MSentryPrivilege>) tm.executeTransaction(
-          new TransactionBlock() {
-            public Object execute(PersistenceManager pm) throws Exception {
-              return getPrivilegesList(pm);
-            }
-          });
-    } catch (Exception e) {
-      LOGGER.error(e.getMessage(), e);
-    }
-    return result;
+  protected List<MSentryPrivilege> getPrivilegesList() throws Exception {
+    return (List<MSentryPrivilege>) tm.executeTransaction(
+        new TransactionBlock() {
+          public Object execute(PersistenceManager pm) throws Exception {
+            return getPrivilegesList(pm);
+          }
+        });
   }
 
   /**
