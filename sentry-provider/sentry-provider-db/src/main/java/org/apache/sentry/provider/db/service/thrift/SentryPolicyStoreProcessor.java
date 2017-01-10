@@ -118,19 +118,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   private void initMetrics() {
     sentryMetrics = SentryMetrics.getInstance();
     sentryMetrics.addSentryStoreGauges(sentryStore);
-
-    String sentryReporting = conf.get(ServerConfig.SENTRY_REPORTER);
-    if (sentryReporting != null) {
-      SentryMetrics.Reporting reporting;
-      try {
-        reporting = SentryMetrics.Reporting.valueOf(sentryReporting.toUpperCase());
-        sentryMetrics.initReporting(reporting, conf);
-
-      } catch (IllegalArgumentException e) {
-        LOGGER.warn("Metrics reporting not configured correctly, please set " + ServerConfig.SENTRY_REPORTER +
-            " to: " + ServerConfig.SENTRY_REPORTER_CONSOLE + "/" + ServerConfig.SENTRY_REPORTER_JMX);
-      }
-    }
+    sentryMetrics.initReporting(conf);
   }
 
   public void stop() {
