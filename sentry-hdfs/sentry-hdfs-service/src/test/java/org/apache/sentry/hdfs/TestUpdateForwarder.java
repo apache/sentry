@@ -23,6 +23,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.locks.ReadWriteLock;
 
+import org.apache.thrift.TException;
 import org.junit.Assert;
 
 import org.apache.hadoop.conf.Configuration;
@@ -76,6 +77,16 @@ public class TestUpdateForwarder {
     @Override
     public void deserialize(byte[] data) throws IOException {
       state = new String(data);
+    }
+
+    @Override
+    public String JSONSerialize() throws TException {
+      return state;
+    }
+
+    @Override
+    public void JSONDeserialize(String update) throws TException {
+      state = new String(update);
     }
   }
 

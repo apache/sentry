@@ -19,6 +19,9 @@ package org.apache.sentry.hdfs;
 
 import java.util.List;
 
+import org.apache.sentry.hdfs.service.thrift.TPathChanges;
+import org.apache.sentry.hdfs.service.thrift.TPathsUpdate;
+import org.apache.thrift.TException;
 import org.junit.Test;
 import org.junit.Assert;
 
@@ -58,5 +61,17 @@ public class TestPathsUpdate {
     List<String> results = PathsUpdate.parsePath("file://hostname/path");
     System.out.println(results);
     Assert.assertNull("Parse path without throwing exception",results);
+  }
+
+  @Test
+  public void testSerializeDeserializeInJSON() throws SentryMalformedPathException, TException{
+    PathsUpdate update = new PathsUpdate(1, true);
+    TPathChanges pathChange = update.newPathChange("db1.tbl12");
+    pathChange.addToAddPaths(PathsUpdate.parsePath("hdfs:///db1/tbl12/part121"));
+
+    // Serialize and deserialize the PermssionUpdate object should equals to the original one.
+    TPathsUpdate before = update.toThrift();
+    update.JSONDeserialize(update.JSONSerialize());
+    junit.framework.Assert.assertEquals(before, update.toThrift());
   }
 }

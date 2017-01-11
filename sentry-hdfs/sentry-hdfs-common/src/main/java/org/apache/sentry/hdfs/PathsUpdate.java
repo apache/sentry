@@ -33,6 +33,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.conf.Configuration;
 
 import com.google.common.collect.Lists;
+import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -160,6 +161,16 @@ public class PathsUpdate implements Updateable.Update {
   @Override
   public void deserialize(byte[] data) throws IOException {
     ThriftSerializer.deserialize(tPathsUpdate, data);
+  }
+
+  @Override
+  public void JSONDeserialize(String update) throws TException {
+    ThriftSerializer.deserializeFromJSON(tPathsUpdate, update);
+  }
+
+  @Override
+  public String JSONSerialize() throws TException {
+    return ThriftSerializer.serializeToJSON(tPathsUpdate);
   }
 
 }

@@ -17,6 +17,8 @@
  */
 package org.apache.sentry.hdfs;
 
+import org.apache.thrift.TException;
+
 import java.io.IOException;
 import java.util.concurrent.locks.ReadWriteLock;
 
@@ -39,6 +41,22 @@ public interface Updateable<K extends Updateable.Update> {
     byte[] serialize() throws IOException;
 
     void deserialize(byte data[]) throws IOException;
+
+    /**
+     *  Deserialize the update from a JSON format representation to an object.
+     *
+     * @param update the given JSON string representation
+     * @throws TException
+     */
+    void JSONDeserialize(String update) throws TException;
+
+    /**
+     * Serialize the update from the object to a JSON format representation.
+     *
+     * @return the JSON string representation
+     * @throws TException
+     */
+    String JSONSerialize() throws TException;
   }
 
   /**

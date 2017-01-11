@@ -78,7 +78,7 @@ public class UpdateForwarder<K extends Updateable.Update> implements
 
   protected UpdateForwarder(Configuration conf, Updateable<K> updateable, //NOPMD
       ExternalImageRetriever<K> imageRetreiver, int maxUpdateLogSize,
-      int initUpdateRetryDelay) { 
+      int initUpdateRetryDelay) {
     this.maxUpdateLogSize = maxUpdateLogSize;
     this.imageRetreiver = imageRetreiver;
     if (imageRetreiver != null) {
