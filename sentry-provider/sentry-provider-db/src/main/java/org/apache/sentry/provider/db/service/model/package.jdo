@@ -234,6 +234,30 @@
        </field>
      </class>
 
+     <class name="MSentryPermChange" table="SENTRY_PERM_CHANGE" identity-type="application" detachable="true">
+       <field name="changeID" primary-key="true">
+         <column name="CHANGE_ID" jdbc-type="BIGINT" allows-null="false"/>
+       </field>
+       <field name ="permChange">
+         <column name="PERM_CHANGE" length="4000" jdbc-type="VARCHAR" allows-null="false"/>
+       </field>
+       <field name="createTimeMs">
+         <column name="CREATE_TIME_MS" jdbc-type="BIGINT"/>
+       </field>
+     </class>
+
+     <class name="MSentryPathChange" table="SENTRY_PATH_CHANGE" identity-type="application" detachable="true">
+       <field name="changeID" primary-key="true">
+         <column name="CHANGE_ID" jdbc-type="BIGINT" allows-null="false"/>
+       </field>
+       <field name ="pathChange">
+         <column name="PATH_CHANGE" length="4000" jdbc-type="VARCHAR" allows-null="false"/>
+       </field>
+       <field name="createTimeMs">
+         <column name="CREATE_TIME_MS" jdbc-type="BIGINT"/>
+       </field>
+     </class>
+
   </package>
 </jdo>
 

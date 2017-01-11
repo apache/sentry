@@ -26,11 +26,10 @@ import java.util.concurrent.locks.ReadWriteLock;
 import junit.framework.Assert;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.hdfs.UpdateForwarder;
-import org.apache.sentry.hdfs.Updateable;
 import org.apache.sentry.hdfs.UpdateForwarder.ExternalImageRetriever;
 import org.apache.sentry.hdfs.Updateable.Update;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
+import org.apache.thrift.TException;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Test;
@@ -78,6 +77,16 @@ public class TestUpdateForwarder {
     @Override
     public void deserialize(byte[] data) throws IOException {
       state = new String(data);
+    }
+
+    @Override
+    public String JSONSerialize() throws TException {
+      return state;
+    }
+
+    @Override
+    public void JSONDeserialize(String update) throws TException {
+      state = new String(update);
     }
   }
 
