@@ -17,9 +17,7 @@ printf_test_3 * Licensed to the Apache Software Foundation (ASF) under one or mo
 
 package org.apache.sentry.tests.e2e.hive;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -86,6 +84,8 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     String udf1ClassName = "org.apache.sentry.tests.e2e.hive.TestUDF";
     CodeSource udf1Src = Class.forName(udf1ClassName).getProtectionDomain().getCodeSource();
     String udf1Location = udf1Src.getLocation().getPath();
+    String udf2Location = new File("../data/xudf.jar").getCanonicalPath();
+
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
@@ -100,13 +100,14 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     context.close();
 
     policyFile
-        .addRolesToGroup(USERGROUP1, "db1_all", "UDF1_JAR", "UDF_JAR", "data_read")
+        .addRolesToGroup(USERGROUP1, "db1_all", "UDF2_JAR", "UDF1_JAR", "UDF_JAR", "data_read")
         .addRolesToGroup(USERGROUP2, "db1_tab1", "UDF_JAR")
         .addRolesToGroup(USERGROUP3, "db1_tab1")
         .addPermissionsToRole("db1_all", "server=server1->db=" + DB1)
         .addPermissionsToRole("db1_tab1", "server=server1->db=" + DB1 + "->table=" + tableName1)
         .addPermissionsToRole("UDF_JAR", "server=server1->uri=file://" + udfLocation)
         .addPermissionsToRole("UDF1_JAR", "server=server1->uri=file://" + udf1Location)
+        .addPermissionsToRole("UDF2_JAR", "server=server1->uri=file://" + udf2Location)
         .addPermissionsToRole("data_read", "server=server1->URI=" + "file:///tmp");
     writePolicyFile(policyFile);
   }
@@ -339,6 +340,57 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
       assertFalse("CREATE TEMPORARY FUNCTION should fail for user4", true);
     } catch (SQLException e) {
       context.verifyAuthzException(e);
+    }
+    context.close();
+  }
+
+  /**
+   * Test create function using jar functionality
+   * @throws Exception
+   */
+  @Test
+  public void testAndVerifyFuncPrivilegesPart4() throws Exception {
+    setUpContext();
+    Connection connection = context.createConnection(USER1_1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("USE " + DB1);
+
+    // USER1 has URI perm on jarFiles
+    try {
+      String udfLocation = new File("../data/xudf.jar").getCanonicalPath();
+
+      statement
+          .execute("CREATE FUNCTION "
+              + DB1
+              + ".xadd AS 'xudf.XAdd'"
+              + " using jar 'file://" + udfLocation + "'");
+      ResultSet rs = statement.executeQuery("select xadd(1)");
+      assertTrue(rs.next());
+      assertTrue(rs.getInt(1) == 1);
+    } catch (SQLException e) {
+      assertFalse("CREATE FUNCTION should succeed for user1:" + e, true);
+    } finally {
+      connection.close();
+    }
+
+    connection = context.createConnection(USER2_1);
+    statement = context.createStatement(connection);
+    statement.execute("USE " + DB1);
+
+    // USER2 doesn't have URI perm on jarFiles
+    try {
+      String udfLocation = new File("../data/xudf.jar").getCanonicalPath();
+
+      statement
+          .execute("CREATE FUNCTION "
+              + DB1
+              + ".xadd AS 'xudf.XAdd'"
+              + " using jar 'file://" + udfLocation + "'");
+      assertFalse("CREATE FUNCTION should fail for user2", true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    } finally {
+      connection.close();
     }
     context.close();
   }

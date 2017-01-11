@@ -18,6 +18,7 @@
 
 package org.apache.sentry.binding.hive;
 
+import java.util.List;
 import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
@@ -76,9 +77,9 @@ public interface SentryOnFailureHookContext  {
   Table getTable();
 
   /**
-   * @return the udf URI
+   * @return the udf URIs
    */
-  AccessURI getUdfURI();
+  List<AccessURI> getUdfURIs();
 
   /**
    * @return the partition URI

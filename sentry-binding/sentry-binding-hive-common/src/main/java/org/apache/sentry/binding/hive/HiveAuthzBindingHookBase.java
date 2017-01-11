@@ -52,6 +52,7 @@ import org.apache.hadoop.hive.ql.parse.HiveParser;
 import org.apache.hadoop.hive.ql.parse.HiveSemanticAnalyzerHookContext;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
+import org.apache.hadoop.hive.ql.plan.PlanUtils;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.sentry.binding.hive.authz.HiveAuthzBinding;
 import org.apache.sentry.binding.hive.authz.HiveAuthzPrivileges;
@@ -76,6 +77,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 public abstract class HiveAuthzBindingHookBase extends AbstractSemanticAnalyzerHook {
@@ -85,7 +87,7 @@ public abstract class HiveAuthzBindingHookBase extends AbstractSemanticAnalyzerH
   protected final HiveAuthzConf authzConf;
   protected Database currDB = Database.ALL;
   protected Table currTab;
-  protected AccessURI udfURI;
+  protected List<AccessURI> udfURIs;
   protected AccessURI serdeURI;
   protected AccessURI partitionURI;
   protected Table currOutTab = null;
@@ -120,6 +122,7 @@ public abstract class HiveAuthzBindingHookBase extends AbstractSemanticAnalyzerH
       throw new IllegalStateException("Session HiveConf is null");
     }
     authzConf = loadAuthzConf(hiveConf);
+    udfURIs = Lists.newArrayList();
     hiveAuthzBinding = new HiveAuthzBinding(hiveConf, authzConf);
     String serdeWhiteLists =
         authzConf.get(HiveAuthzConf.HIVE_SENTRY_SERDE_WHITELIST,
@@ -174,7 +177,7 @@ public abstract class HiveAuthzBindingHookBase extends AbstractSemanticAnalyzerH
       HiveOperation hiveOp, AuthorizationException e) {
     SentryOnFailureHookContext hookCtx = new SentryOnFailureHookContextImpl(
         context.getCommand(), context.getInputs(), context.getOutputs(),
-        hiveOp, currDB, currTab, udfURI, null, context.getUserName(),
+        hiveOp, currDB, currTab, udfURIs, null, context.getUserName(),
         context.getIpAddress(), e, context.getConf());
     String csHooks = authzConf.get(
         HiveAuthzConf.AuthzConfVars.AUTHZ_ONFAILURE_HOOKS.getVar(), "").trim();
@@ -186,6 +189,33 @@ public abstract class HiveAuthzBindingHookBase extends AbstractSemanticAnalyzerH
     } catch (Exception ex) {
       LOG.error("Error executing hook:", ex);
     }
+  }
+
+  /**
+   * The command 'create function ... using jar <jar resources>' can create a function
+   * with the supplied jar resources in the command, which is translated into ASTNode being
+   * [functionName functionClass resourceList] and resourceList being [resourceType resourcePath].
+   * This function collects all the jar paths for the supplied jar resources.
+   *
+   * @param ast the AST node for the command
+   * @return    the jar path list if any or an empty list
+   */
+  protected List<String> getFunctionJars(ASTNode ast) {
+    ASTNode resourcesNode = (ASTNode) ast.getFirstChildWithType(HiveParser.TOK_RESOURCE_LIST);
+
+    List<String> resources = new ArrayList<String>();
+    if (resourcesNode != null) {
+      for (int idx = 0; idx < resourcesNode.getChildCount(); ++idx) {
+        ASTNode resNode = (ASTNode) resourcesNode.getChild(idx);
+        ASTNode resTypeNode = (ASTNode) resNode.getChild(0);
+        ASTNode resUriNode = (ASTNode) resNode.getChild(1);
+        if (resTypeNode.getType() == HiveParser.TOK_JAR) {
+          resources.add(PlanUtils.stripQuotes(resUriNode.getText()));
+        }
+      }
+    }
+
+    return resources;
   }
 
   @VisibleForTesting
@@ -386,10 +416,10 @@ public abstract class HiveAuthzBindingHookBase extends AbstractSemanticAnalyzerH
        *  - CREATE TEMP FUNCTION
        *  - DROP TEMP FUNCTION.
        */
-      if (udfURI != null) {
+      if (!udfURIs.isEmpty()) {
         List<DBModelAuthorizable> udfUriHierarchy = new ArrayList<DBModelAuthorizable>();
         udfUriHierarchy.add(hiveAuthzBinding.getAuthServer());
-        udfUriHierarchy.add(udfURI);
+        udfUriHierarchy.addAll(udfURIs);
         inputHierarchy.add(udfUriHierarchy);
         for (WriteEntity writeEntity : outputs) {
           List<DBModelAuthorizable> entityHierarchy = new ArrayList<DBModelAuthorizable>();
