@@ -52,6 +52,16 @@ limitations under the License.
       <groupId>org.apache.solr</groupId>
       <artifactId>solr-solrj</artifactId>
     </dependency>
+    <!--
+    Solr is using old Jetty 6.1.26 and Sentry is using more recent Jetty.
+    Since the test combines Solr and Sentry in the same JVM, here we need to specify
+    dependency on Jetty 6.1.26, otherwise Solr e2e tests tests are not working properly.
+    -->
+    <dependency>
+      <groupId>org.mortbay.jetty</groupId>
+      <artifactId>jetty-util</artifactId>
+      <version>6.1.26</version>
+    </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-common</artifactId>
