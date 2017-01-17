@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -22,16 +22,17 @@ import javax.jdo.PersistenceManager;
 
 /**
  * TransactionBlock wraps the code that is executed inside a single
- * transaction
+ * transaction. The {@link #execute(PersistenceManager)} method returns the
+ * result of the transaction.
  */
-public interface TransactionBlock {
+public interface TransactionBlock<T> {
   /**
-   * Execute some code as a single transaction, the code should not start new transaction
-   * or manipulate transactions with the PersistenceManager. TransactionManager is responsible to
-   * handle the transaction management.
+   * Execute some code as a single transaction, the code should not start new
+   * transaction or manipulate transactions with the PersistenceManager.
+   *
    * @param pm PersistenceManager for the current transaction
    * @return Object with the result of execute()
    * @throws Exception
    */
-  Object execute(PersistenceManager pm) throws Exception;
+  T execute(PersistenceManager pm) throws Exception;
 }

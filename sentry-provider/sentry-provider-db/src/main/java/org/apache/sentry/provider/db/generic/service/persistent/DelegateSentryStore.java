@@ -63,7 +63,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
   private Set<String> adminGroups;
   private PrivilegeOperatePersistence privilegeOperator;
 
-  public DelegateSentryStore(Configuration conf) throws Exception {
+  DelegateSentryStore(Configuration conf) throws Exception {
     this.privilegeOperator = new PrivilegeOperatePersistence(conf);
     // The generic model doesn't turn on the thread that cleans hive privileges
     conf.set(ServerConfig.SENTRY_STORE_ORPHANED_PRIVILEGE_REMOVAL,"false");
@@ -128,7 +128,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
             if (mRole == null) {
               throw new SentryNoSuchObjectException("Role: " + trimmedRole + " doesn't exist");
             }
-            /**
+            /*
              * check with grant option
              */
             grantOptionCheck(privilege, grantorPrincipal, pm);
@@ -152,7 +152,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
             if (mRole == null) {
               throw new SentryNoSuchObjectException("Role: " + trimmedRole + " doesn't exist");
             }
-            /**
+            /*
              * check with grant option
              */
             grantOptionCheck(privilege, grantorPrincipal, pm);
@@ -209,12 +209,10 @@ public class DelegateSentryStore implements SentryStoreLayer {
 
   /**
    * Grant option check
-   * @param component
-   * @param pm
-   * @param privilegeReader
    * @throws SentryUserException
    */
-  private void grantOptionCheck(PrivilegeObject requestPrivilege, String grantorPrincipal,PersistenceManager pm)
+  private void grantOptionCheck(PrivilegeObject requestPrivilege,
+                                String grantorPrincipal,PersistenceManager pm)
       throws SentryUserException {
 
     if (Strings.isNullOrEmpty(grantorPrincipal)) {
@@ -259,30 +257,30 @@ public class DelegateSentryStore implements SentryStoreLayer {
       return groupNames;
     }
 
-    return (Set<String>) delegate.getTransactionManager().executeTransaction(
-        new TransactionBlock() {
-          public Object execute(PersistenceManager pm) throws Exception {
-            //get groups by roles
-            Query query = pm.newQuery(MSentryGroup.class);
-            StringBuilder filters = new StringBuilder();
-            query.declareVariables("org.apache.sentry.provider.db.service.model.MSentryRole role");
-            List<String> rolesFiler = new LinkedList<String>();
-            for (String role : trimmedRoles) {
-              rolesFiler.add("role.roleName == \"" + role + "\" ");
-            }
-            filters.append("roles.contains(role) " + "&& (" + Joiner.on(" || ").join(rolesFiler) + ")");
-            query.setFilter(filters.toString());
-
-            List<MSentryGroup> groups = (List<MSentryGroup>)query.execute();
-            if (groups == null) {
-              return groupNames;
-            }
-            for (MSentryGroup group : groups) {
-              groupNames.add(group.getGroupName());
-            }
+    return delegate.getTransactionManager().executeTransaction(
+      new TransactionBlock<Set<String>>() {
+        public Set<String> execute(PersistenceManager pm) throws Exception {
+          //get groups by roles
+          Query query = pm.newQuery(MSentryGroup.class);
+          StringBuilder filters = new StringBuilder();
+          query.declareVariables("MSentryRole role");
+          List<String> rolesFiler = new LinkedList<String>();
+          for (String role : trimmedRoles) {
+            rolesFiler.add("role.roleName == \"" + role + "\" ");
+          }
+          filters.append("roles.contains(role) " + "&& (" + Joiner.on(" || ").join(rolesFiler) + ")");
+          query.setFilter(filters.toString());
+          @SuppressWarnings("unchecked")
+          List<MSentryGroup> groups = (List<MSentryGroup>)query.execute();
+          if (groups == null) {
             return groupNames;
           }
-        });
+          for (MSentryGroup group : groups) {
+            groupNames.add(group.getGroupName());
+          }
+          return groupNames;
+        }
+      });
   }
 
   @Override
@@ -294,20 +292,20 @@ public class DelegateSentryStore implements SentryStoreLayer {
       return privileges;
     }
 
-    return (Set<PrivilegeObject>) delegate.getTransactionManager().executeTransaction(
-        new TransactionBlock() {
-          public Object execute(PersistenceManager pm) throws Exception {
-            Set<MSentryRole> mRoles = Sets.newHashSet();
-            for (String role : roles) {
-              MSentryRole mRole = getRole(toTrimmedLower(role), pm);
-              if (mRole != null) {
-                mRoles.add(mRole);
-              }
+    return delegate.getTransactionManager().executeTransaction(
+      new TransactionBlock<Set<PrivilegeObject>>() {
+        public Set<PrivilegeObject> execute(PersistenceManager pm) throws Exception {
+          Set<MSentryRole> mRoles = Sets.newHashSet();
+          for (String role : roles) {
+            MSentryRole mRole = getRole(toTrimmedLower(role), pm);
+            if (mRole != null) {
+              mRoles.add(mRole);
             }
-            privileges.addAll(privilegeOperator.getPrivilegesByRole(mRoles, pm));
-            return privileges;
           }
-        });
+          privileges.addAll(privilegeOperator.getPrivilegesByRole(mRoles, pm));
+          return privileges;
+        }
+      });
   }
 
   @Override
@@ -317,37 +315,38 @@ public class DelegateSentryStore implements SentryStoreLayer {
     Preconditions.checkNotNull(component);
     Preconditions.checkNotNull(service);
 
-    return (Set<PrivilegeObject>) delegate.getTransactionManager().executeTransaction(
-        new TransactionBlock() {
-          public Object execute(PersistenceManager pm) throws Exception {
-            String trimmedComponent = toTrimmedLower(component);
-            String trimmedService = toTrimmedLower(service);
-            Set<PrivilegeObject> privileges = Sets.newHashSet();
-            //CaseInsensitive roleNames
-            Set<String> trimmedRoles = toTrimmedLower(roles);
+    return delegate.getTransactionManager().executeTransaction(
+      new TransactionBlock<Set<PrivilegeObject>>() {
+        public Set<PrivilegeObject> execute(PersistenceManager pm) throws Exception {
+          String trimmedComponent = toTrimmedLower(component);
+          String trimmedService = toTrimmedLower(service);
 
-            if (groups != null) {
-              trimmedRoles.addAll(delegate.getRoleNamesForGroups(groups));
-            }
+          Set<PrivilegeObject> privileges = Sets.newHashSet();
+          //CaseInsensitive roleNames
+          Set<String> trimmedRoles = toTrimmedLower(roles);
 
-            if (trimmedRoles.size() == 0) {
-              return privileges;
-            }
+          if (groups != null) {
+            trimmedRoles.addAll(delegate.getRoleNamesForGroups(groups));
+          }
 
-            Set<MSentryRole> mRoles = Sets.newHashSet();
-            for (String role : trimmedRoles) {
-              MSentryRole mRole = getRole(role, pm);
-              if (mRole != null) {
-                mRoles.add(mRole);
-              }
-            }
-            //get the privileges
-            privileges.addAll(privilegeOperator.getPrivilegesByProvider(trimmedComponent,
-                trimmedService, mRoles, authorizables, pm));
-
+          if (trimmedRoles.size() == 0) {
             return privileges;
           }
-        });
+
+          Set<MSentryRole> mRoles = Sets.newHashSet();
+          for (String role : trimmedRoles) {
+            MSentryRole mRole = getRole(role, pm);
+            if (mRole != null) {
+              mRoles.add(mRole);
+            }
+          }
+          //get the privileges
+          privileges.addAll(privilegeOperator.
+                  getPrivilegesByProvider(trimmedComponent,
+                          trimmedService, mRoles, authorizables, pm));
+          return privileges;
+        }
+      });
   }
 
   @Override
@@ -363,36 +362,35 @@ public class DelegateSentryStore implements SentryStoreLayer {
       return privileges;
     }
 
-    return (Set<MSentryGMPrivilege>) delegate.getTransactionManager().executeTransaction(
-        new TransactionBlock() {
-          public Object execute(PersistenceManager pm) throws Exception {
-            String lComponent = toTrimmedLower(component);
-            String lService = toTrimmedLower(service);
-
-            Set<MSentryRole> mRoles = Sets.newHashSet();
-            for (String role : validActiveRoles) {
-              MSentryRole mRole = getRole(role, pm);
-              if (mRole != null) {
-                mRoles.add(mRole);
-              }
+    return delegate.getTransactionManager().executeTransaction(
+      new TransactionBlock<Set<MSentryGMPrivilege>>() {
+        public Set<MSentryGMPrivilege> execute(PersistenceManager pm) throws Exception {
+          String lComponent = toTrimmedLower(component);
+          String lService = toTrimmedLower(service);
+          Set<MSentryRole> mRoles = Sets.newHashSet();
+          for (String role : validActiveRoles) {
+            MSentryRole mRole = getRole(role, pm);
+            if (mRole != null) {
+              mRoles.add(mRole);
             }
-
-            //get the privileges
-            Set<MSentryGMPrivilege> mSentryGMPrivileges =
-                privilegeOperator.getPrivilegesByAuthorizable(lComponent, lService, mRoles, authorizables, pm);
-
-            for (MSentryGMPrivilege mSentryGMPrivilege : mSentryGMPrivileges) {
-              /**
-               * force to load all roles related this privilege
-               * avoid the lazy-loading
-               */
-              pm.retrieve(mSentryGMPrivilege);
-              privileges.add(mSentryGMPrivilege);
-            }
-
-            return privileges;
           }
-        });
+
+          //get the privileges
+          Set<MSentryGMPrivilege> mSentryGMPrivileges =
+              privilegeOperator.getPrivilegesByAuthorizable(lComponent, lService,
+                      mRoles, authorizables, pm);
+
+          for (MSentryGMPrivilege mSentryGMPrivilege : mSentryGMPrivileges) {
+            /*
+             * force to load all roles related this privilege
+             * avoid the lazy-loading
+             */
+            pm.retrieve(mSentryGMPrivilege);
+            privileges.add(mSentryGMPrivilege);
+          }
+          return privileges;
+        }
+      });
   }
 
    @Override

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -38,13 +38,16 @@ import org.apache.sentry.provider.db.service.thrift.SentryMetrics;
 /**
  * TransactionManager is used for executing the database transaction, it supports
  * the transaction with retry mechanism for the unexpected exceptions,
- * except SentryUserExceptions, eg, SentryNoSuchObjectException,
- * SentryAlreadyExistsException etc.
- * <p>
- * The purpose of the class is to separate all transaction houskeeping (opening
+ * except <em>SentryUserExceptions</em>, eg, <em>SentryNoSuchObjectException</em>,
+ * <em>SentryAlreadyExistsException</em> etc. <p>
+ *
+ * The purpose of the class is to separate all transaction housekeeping (opening
  * transaction, rolling back failed transactions) from the actual transaction
- * business logic.
- * <p>
+ * business logic.<p>
+ *
+ * TransactionManager creates an instance of PersistenceManager for each
+ * transaction.<p>
+ *
  * TransactionManager exposes several metrics:
  * <ul>
  *     <li>Timer metric for all transactions</li>
@@ -54,7 +57,8 @@ import org.apache.sentry.provider.db.service.thrift.SentryMetrics;
  */
 public class TransactionManager {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(TransactionManager.class);
+  private static final Logger LOGGER =
+          LoggerFactory.getLogger(TransactionManager.class);
 
   private final PersistenceManagerFactory pmf;
 
@@ -92,19 +96,20 @@ public class TransactionManager {
 
 
   /**
-   * Execute some code as a single transaction, the code in tb.execute() should not start new
-   * transaction or manipulate transactions with the PersistenceManager.
+   * Execute some code as a single transaction, the code in tb.execute()
+   * should not start new transaction or manipulate transactions with the
+   * PersistenceManager.
    * @param tb transaction block with code to execute
    * @return Object with the result of tb.execute()
    */
-  public Object executeTransaction(TransactionBlock tb) throws Exception {
+  public <T> T executeTransaction(TransactionBlock<T> tb) throws Exception {
     final Timer.Context context = transactionTimer.time();
     try (CloseablePersistenceManager cpm =
         new CloseablePersistenceManager(pmf.getPersistenceManager())) {
       Transaction transaction = cpm.pm.currentTransaction();
       transaction.begin();
       try {
-        Object result = tb.execute(cpm.pm);
+        T result = tb.execute(cpm.pm);
         transaction.commit();
         return result;
       } catch (Exception e) {
@@ -129,7 +134,8 @@ public class TransactionManager {
    * @param tb transaction block with code to execute
    * @return Object with the result of tb.execute()
    */
-  public Object executeTransactionWithRetry(TransactionBlock tb) throws Exception {
+  public <T> T executeTransactionWithRetry(TransactionBlock<T> tb)
+          throws Exception {
     int retryNum = 0;
     while (retryNum < transactionRetryMax) {
       try {
