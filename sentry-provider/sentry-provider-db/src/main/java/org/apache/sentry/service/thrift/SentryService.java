@@ -158,7 +158,7 @@ public class SentryService implements Callable, SigUtils.SigListener {
     if (notificationLogEnabled) {
       try {
         hmsFollowerExecutor = Executors.newScheduledThreadPool(1);
-        hmsFollowerExecutor.scheduleAtFixedRate(new HMSFollower(conf),
+        hmsFollowerExecutor.scheduleAtFixedRate(new HMSFollower(conf, leaderMonitor),
                 60000, 500, TimeUnit.MILLISECONDS);
       } catch (Exception e) {
         //TODO: Handle

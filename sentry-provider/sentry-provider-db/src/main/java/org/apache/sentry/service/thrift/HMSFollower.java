@@ -49,11 +49,11 @@ import java.util.List;
 import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SYNC_CREATE_WITH_POLICY_STORE;
 import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SYNC_DROP_WITH_POLICY_STORE;
 
-/*
-HMSFollower is the thread which follows the Hive MetaStore state changes from Sentry.
-It gets the full update and notification logs from HMS and applies it to
-update permissions stored in Sentry using SentryStore and also update the <obj,path> state
-stored for HDFS- Sentry sync.
+/**
+ * HMSFollower is the thread which follows the Hive MetaStore state changes from Sentry.
+ * It gets the full update and notification logs from HMS and applies it to
+ * update permissions stored in Sentry using SentryStore and also update the &lt obj,path &gt state
+ * stored for HDFS-Sentry sync.
  */
 @SuppressWarnings("PMD")
 public class HMSFollower implements Runnable {
@@ -63,19 +63,22 @@ public class HMSFollower implements Runnable {
   private static boolean connectedToHMS = false;
   private HiveMetaStoreClient client;
   private SentryKerberosContext kerberosContext;
-  private Configuration authzConf;
+  private final Configuration authzConf;
   private boolean kerberos;
-  private SentryStore sentryStore;
+  private final SentryStore sentryStore;
   private String hiveInstance;
-  final static int maxRetriesForLogin = 3;
-  final static int maxRetriesForConnection = 3;
+  private static final int maxRetriesForLogin = 3;
+  private static final int maxRetriesForConnection = 3;
 
   private volatile UpdateableAuthzPaths authzPaths;
   private boolean needHiveSnapshot = true;
+  private final LeaderStatusMonitor leaderMonitor;
 
-  HMSFollower(Configuration conf) throws Exception { //TODO: Handle any possible exceptions or throw specific exceptions
+  HMSFollower(Configuration conf, LeaderStatusMonitor leaderMonitor)
+          throws Exception {
     LOGGER.info("HMSFollower is being initialized");
     authzConf = conf;
+    this.leaderMonitor = leaderMonitor;
     sentryStore = new SentryStore(authzConf);
     //TODO: Initialize currentEventID from Sentry db
     currentEventID = 0;
@@ -86,6 +89,7 @@ public class HMSFollower implements Runnable {
     this.authzConf = conf;
     this.sentryStore = sentryStore;
     this.hiveInstance = hiveInstance;
+    this.leaderMonitor = null;
   }
 
   @VisibleForTesting
@@ -93,10 +97,10 @@ public class HMSFollower implements Runnable {
     return connectedToHMS;
   }
 
-  /*
-  Returns HMS Client if successful, returns null if HMS is not ready yet to take connections
-  Throws @LoginException if Kerberos context creation failed using Sentry's kerberos credentials
-  Throws @MetaException if there was a problem on creating an HMSClient
+  /**
+   * Returns HMS Client if successful, returns null if HMS is not ready yet to take connections
+   * Throws @LoginException if Kerberos context creation failed using Sentry's kerberos credentials
+   * Throws @MetaException if there was a problem on creating an HMSClient
    */
   private HiveMetaStoreClient getMetaStoreClient(Configuration conf)
       throws LoginException, MetaException {
@@ -179,6 +183,7 @@ public class HMSFollower implements Runnable {
     return client;
   }
 
+  @Override
   public void run() {
     if (client == null) {
       try {
@@ -196,8 +201,13 @@ public class HMSFollower implements Runnable {
       }
     }
 
+    // Only the leader should listen to HMS updates
+    if ((leaderMonitor != null) && !leaderMonitor.isLeader()) {
+      return;
+    }
+
     try {
-      if (isNeedHiveSnapshot()) {
+      if (needHiveSnapshot) {
         // TODO: expose time used for full update in the metrics
 
         // To ensure point-in-time snapshot consistency, need to make sure
@@ -262,7 +272,8 @@ public class HMSFollower implements Runnable {
 
     try {
       updateInitializer = new FullUpdateInitializer(client, authzConf);
-      HMSFollower.this.authzPaths = updateInitializer.createInitialUpdate();
+      // TODO - do we need to save returned authz path?
+      updateInitializer.createInitialUpdate();
       // TODO: notify HDFS plugin
       LOGGER.info("#### Hive full update initialization complete !!");
     } finally {
@@ -276,24 +287,14 @@ public class HMSFollower implements Runnable {
     }
   }
 
-  private boolean isNeedHiveSnapshot() {
-    // An indicator that in request of a full hive update.
-
-    // TODO: Will need to get Hive snapshot if the Notification ID
-    // we are requesting has been rolled over in the NotificationLog
-    // table of Hive
-    return needHiveSnapshot;
-  }
-
   private boolean syncWithPolicyStore(HiveAuthzConf.AuthzConfVars syncConfVar) {
     return "true"
         .equalsIgnoreCase((authzConf.get(syncConfVar.getVar(), "true")));
   }
 
-  /*
-  Throws SentryInvalidHMSEventException if Notification event contains insufficient information
+  /**
+   * Throws SentryInvalidHMSEventException if Notification event contains insufficient information
    */
-
   void processNotificationEvents(List<NotificationEvent> events) throws
       SentryInvalidHMSEventException, SentryInvalidInputException {
     SentryJSONMessageDeserializer deserializer = new SentryJSONMessageDeserializer();
