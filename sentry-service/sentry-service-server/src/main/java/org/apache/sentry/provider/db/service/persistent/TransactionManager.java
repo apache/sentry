@@ -104,12 +104,11 @@ public class TransactionManager {
    */
   public <T> T executeTransaction(TransactionBlock<T> tb) throws Exception {
     final Timer.Context context = transactionTimer.time();
-    try (CloseablePersistenceManager cpm =
-             new CloseablePersistenceManager(pmf.getPersistenceManager())) {
-      Transaction transaction = cpm.pm.currentTransaction();
+    try (PersistenceManager pm = pmf.getPersistenceManager()) {
+      Transaction transaction = pm.currentTransaction();
       transaction.begin();
       try {
-        T result = tb.execute(cpm.pm);
+        T result = tb.execute(pm);
         transaction.commit();
         return result;
       } catch (Exception e) {
@@ -158,23 +157,5 @@ public class TransactionManager {
       }
     }
     return null;
-  }
-
-  /**
-   * CloseablePersistenceManager is a wrapper around PersistenceManager that
-   * implements AutoCloseable interface. It is needed because Apache jdo doesn't
-   * implement AutoCloseable (Datanucleus version does).
-   */
-  private class CloseablePersistenceManager implements AutoCloseable {
-    private final PersistenceManager pm;
-
-    CloseablePersistenceManager(PersistenceManager pm) {
-      this.pm = pm;
-    }
-
-    @Override
-    public void close() throws Exception {
-      pm.close();
-    }
   }
 }
