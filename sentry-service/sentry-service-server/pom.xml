@@ -81,8 +81,9 @@ limitations under the License.
       <artifactId>jackson-mapper-asl</artifactId>
     </dependency>
     <dependency>
-      <groupId>javax.jdo</groupId>
-      <artifactId>jdo-api</artifactId>
+      <groupId>org.datanucleus</groupId>
+      <artifactId>javax.jdo</artifactId>
+      <version>3.2.0-m3</version>
     </dependency>
     <dependency>
       <groupId>com.codahale.metrics</groupId>
@@ -253,6 +254,11 @@ limitations under the License.
           <groupId>org.datanucleus</groupId>
           <artifactId>datanucleus-rdbms</artifactId>
           <version>${datanucleus-rdbms.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.datanucleus</groupId>
+          <artifactId>javax.jdo</artifactId>
+          <version>3.2.0-m3</version>
         </dependency>
       </dependencies>
     </profile>
