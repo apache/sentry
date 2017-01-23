@@ -83,6 +83,9 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     if(udfLocation == null) {
       udfLocation = udfSrc.getLocation().getPath();
     }
+    String udf1ClassName = "org.apache.sentry.tests.e2e.hive.TestUDF";
+    CodeSource udf1Src = Class.forName(udf1ClassName).getProtectionDomain().getCodeSource();
+    String udf1Location = udf1Src.getLocation().getPath();
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
     statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
@@ -96,14 +99,41 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     context.close();
 
     policyFile
-        .addRolesToGroup(USERGROUP1, "db1_all", "UDF_JAR", "data_read")
+        .addRolesToGroup(USERGROUP1, "db1_all", "UDF1_JAR", "UDF_JAR", "data_read")
         .addRolesToGroup(USERGROUP2, "db1_tab1", "UDF_JAR")
         .addRolesToGroup(USERGROUP3, "db1_tab1")
         .addPermissionsToRole("db1_all", "server=server1->db=" + DB1)
         .addPermissionsToRole("db1_tab1", "server=server1->db=" + DB1 + "->table=" + tableName1)
         .addPermissionsToRole("UDF_JAR", "server=server1->uri=file://" + udfLocation)
+        .addPermissionsToRole("UDF1_JAR", "server=server1->uri=file://" + udf1Location)
         .addPermissionsToRole("data_read", "server=server1->URI=" + "file:///tmp");
     writePolicyFile(policyFile);
+  }
+
+  @Test
+  public void testCreateUdf() throws Exception {
+    setUpContext();
+    // user1 should be able create/drop temp functions
+    Connection connection = context.createConnection(USER1_1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("USE " + DB1);
+
+    statement.execute("CREATE TEMPORARY FUNCTION test_1 AS 'org.apache.sentry.tests.e2e.hive.TestUDF'");
+    statement.close();
+    connection.close();
+
+    // user3 shouldn't be able to create/drop temp functions since it doesn't have permission for jar
+    connection = context.createConnection(USER3_1);
+    statement = context.createStatement(connection);
+    statement.execute("USE " + DB1);
+    try {
+      statement.execute("CREATE TEMPORARY FUNCTION test_2 AS 'org.apache.sentry.tests.e2e.hive.TestUDF'");
+      assertFalse("CREATE TEMPORARY FUNCTION should fail for user3", true);
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+    statement.close();
+    connection.close();
   }
 
   @Test
