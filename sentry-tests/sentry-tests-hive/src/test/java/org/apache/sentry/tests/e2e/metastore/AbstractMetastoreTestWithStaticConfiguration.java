@@ -20,6 +20,7 @@ package org.apache.sentry.tests.e2e.metastore;
 import java.io.IOException;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,8 +30,14 @@ import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
+import org.apache.hadoop.hive.metastore.api.Function;
+import org.apache.hadoop.hive.metastore.api.FunctionType;
+import org.apache.hadoop.hive.metastore.api.Index;
 import org.apache.hadoop.hive.metastore.api.Order;
 import org.apache.hadoop.hive.metastore.api.Partition;
+import org.apache.hadoop.hive.metastore.api.PrincipalType;
+import org.apache.hadoop.hive.metastore.api.ResourceType;
+import org.apache.hadoop.hive.metastore.api.ResourceUri;
 import org.apache.hadoop.hive.metastore.api.SerDeInfo;
 import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
 import org.apache.hadoop.hive.metastore.api.Table;
@@ -153,19 +160,25 @@ public abstract class AbstractMetastoreTestWithStaticConfiguration extends
     Table tbl = new Table();
     tbl.setDbName(dbName);
     tbl.setTableName(tabName);
-    StorageDescriptor sd = new StorageDescriptor();
+    StorageDescriptor sd = getSd(tabName, cols, null);
     tbl.setSd(sd);
     tbl.setParameters(new HashMap<String, String>());
+    return tbl;
+  }
+
+  StorageDescriptor getSd(String tabName, List<FieldSchema> cols, String location) {
+    StorageDescriptor sd = new StorageDescriptor();
     sd.setCols(cols);
     sd.setCompressed(false);
     sd.setParameters(new HashMap<String, String>());
     sd.setSerdeInfo(new SerDeInfo());
-    sd.getSerdeInfo().setName(tbl.getTableName());
+    sd.getSerdeInfo().setName(tabName);
     sd.getSerdeInfo().setParameters(new HashMap<String, String>());
     sd.getSerdeInfo().getParameters()
         .put(serdeConstants.SERIALIZATION_FORMAT, "1");
     sd.setSortCols(new ArrayList<Order>());
-    return tbl;
+    sd.setLocation(location);
+    return sd;
   }
 
   public Partition makeMetastorePartitionObject(String dbName, String tblName,
@@ -234,6 +247,58 @@ public abstract class AbstractMetastoreTestWithStaticConfiguration extends
     });
   }
 
+  public void createFunction(HiveMetaStoreClient client,
+                             String dbName,
+                             String funcName,
+                             String funcResource) throws Exception {
+    String ownerName = "me";
+    String funcClass = "o.a.h.h.myfunc";
+    int startTime = (int) System.currentTimeMillis() / 1000;
+    Function func = new Function(funcName, dbName, funcClass, ownerName, PrincipalType.USER,
+        startTime, FunctionType.JAVA, Arrays.asList(new ResourceUri(ResourceType.JAR,
+        funcResource)));
+    client.createFunction(func);
+  }
+
+  public void dropFunction(HiveMetaStoreClient client, String dbName,
+                           String funcName) throws Exception {
+    client.dropFunction(dbName, funcName);
+  }
+
+  public void createIndex(HiveMetaStoreClient client, String dbName, String tableName,
+                          String idxName, String location) throws Exception {
+    String indexTableName = tableName + "__" + idxName + "__";
+    int startTime = (int) (System.currentTimeMillis() / 1000);
+    List<FieldSchema> cols = new ArrayList<FieldSchema>();
+    cols.add(new FieldSchema("col1", "int", ""));
+    Map<String, String> params = new HashMap<String, String>();
+    params.put("key", "value");
+    StorageDescriptor sd = getSd(idxName, cols, location);
+    Index index = new Index(idxName, null, dbName, tableName, startTime, startTime,
+        indexTableName, sd, params, true);
+    Table indexTable = new Table(indexTableName, dbName, "me", startTime, startTime, 0, sd, null,
+        params, null, null, null);
+    client.createIndex(index, indexTable);
+  }
+
+  public void alterIndex(HiveMetaStoreClient client, String dbName, String tableName,
+                         String idxName, String location) throws Exception {
+    String indexTableName = tableName + "__" + idxName + "__";
+    int startTime = (int) (System.currentTimeMillis() / 1000);
+    List<FieldSchema> cols = new ArrayList<FieldSchema>();
+    cols.add(new FieldSchema("col1", "int", ""));
+    Map<String, String> params = new HashMap<String, String>();
+    params.put("key", "value");
+    StorageDescriptor sd = getSd(idxName, cols, location);
+    Index index = new Index(idxName, null, dbName, tableName, startTime, startTime,
+        indexTableName, sd, params, true);
+    client.alter_index(dbName, tableName, idxName, index);
+  }
+
+  public void dropIndex(HiveMetaStoreClient client, String dbName, String tableName,
+                        String idxName) throws Exception {
+    client.dropIndex(dbName, tableName, idxName, true);
+  }
 
   public void execHiveSQL(String sqlStmt, String userName) throws Exception {
     execHiveSQLwithOverlay(sqlStmt, userName, new HashMap<String, String>());
