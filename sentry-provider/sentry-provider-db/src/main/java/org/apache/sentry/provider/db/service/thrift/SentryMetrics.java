@@ -17,16 +17,10 @@
  */
 package org.apache.sentry.provider.db.service.thrift;
 
-import com.codahale.metrics.ConsoleReporter;
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Histogram;
-import com.codahale.metrics.JmxReporter;
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.*;
+
 import static com.codahale.metrics.MetricRegistry.name;
-import com.codahale.metrics.MetricSet;
-import com.codahale.metrics.Timer;
+
 import com.codahale.metrics.jvm.BufferPoolMetricSet;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
@@ -145,6 +139,7 @@ public final class SentryMetrics {
    * Available reporters:
    * <ul>
    *     <li>console</li>
+   *     <li>log</li>
    *     <li>jmx</li>
    * </ul>
    *
@@ -153,18 +148,19 @@ public final class SentryMetrics {
    * <p>
    * Method is thread safe.
    */
-  void initReporting(Reporting reporting, Configuration conf) {
-    if (reportingInitialized.getAndSet(true)) {
+  void initReporting(Configuration conf) {
+    final String reporter = conf.get(ServerConfig.SENTRY_REPORTER);
+    if (reporter == null || reporter.isEmpty() || reportingInitialized.getAndSet(true)) {
       // Nothing to do, just return
       return;
     }
 
-    switch(reporting) {
-      case CONSOLE:
-        final int reportInterval =
-                conf.getInt(ServerConfig.SENTRY_REPORTER_INTERVAL_SEC,
-                        ServerConfig.SENTRY_REPORTER_INTERVAL_DEFAULT);
+    final int reportInterval =
+            conf.getInt(ServerConfig.SENTRY_REPORTER_INTERVAL_SEC,
+                    ServerConfig.SENTRY_REPORTER_INTERVAL_DEFAULT);
 
+    switch(SentryMetrics.Reporting.valueOf(reporter.toUpperCase())) {
+      case CONSOLE:
         LOGGER.info(String.format("Enabled console metrics reporter with %d seconds interval",
                 reportInterval));
         final ConsoleReporter consoleReporter =
@@ -182,8 +178,17 @@ public final class SentryMetrics {
             .build();
         jmxReporter.start();
         break;
+      case LOG:
+        LOGGER.info(String.format("Enabled Log4J metrics reporter with %d seconds interval",
+                reportInterval));
+        final Slf4jReporter logReporter = Slf4jReporter.forRegistry(METRIC_REGISTRY)
+                .outputTo(LOGGER)
+                .convertRatesTo(TimeUnit.SECONDS)
+                .convertDurationsTo(TimeUnit.MILLISECONDS)
+                .build();
+        logReporter.start(reportInterval, TimeUnit.SECONDS);
       default:
-        LOGGER.warn("Invalid metrics reporter " + reporting.toString());
+        LOGGER.warn("Invalid metrics reporter " + reporter);
         break;
     }
   }
@@ -205,6 +210,7 @@ public final class SentryMetrics {
 
   public enum Reporting {
     JMX,
-    CONSOLE
+    CONSOLE,
+    LOG,
   }
 }
