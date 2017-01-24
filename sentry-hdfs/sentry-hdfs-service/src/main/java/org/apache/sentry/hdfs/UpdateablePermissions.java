@@ -36,7 +36,7 @@ public class UpdateablePermissions implements Updateable<PermissionsUpdate>{
   }
 
   @Override
-  public PermissionsUpdate createFullImageUpdate(long currSeqNum) {
+  public PermissionsUpdate createFullImageUpdate(long currSeqNum) throws Exception {
     return imageRetreiver.retrieveFullImage(currSeqNum);
   }
 

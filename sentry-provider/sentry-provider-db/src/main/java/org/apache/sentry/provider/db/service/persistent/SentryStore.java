@@ -842,145 +842,128 @@ public class SentryStore {
         });
   }
 
-  private boolean hasAnyServerPrivileges(final Set<String> roleNames, final String serverName) {
+  private boolean hasAnyServerPrivileges(final Set<String> roleNames, final String serverName) throws Exception {
     if (roleNames == null || roleNames.isEmpty()) {
       return false;
     }
-    boolean result = false;
-    try {
-      result = (Boolean) tm.executeTransaction(
-          new TransactionBlock() {
-            public Object execute(PersistenceManager pm) throws Exception {
-              Query query = pm.newQuery(MSentryPrivilege.class);
-              query.declareVariables("org.apache.sentry.provider.db.service.model.MSentryRole role");
-              List<String> rolesFiler = new LinkedList<String>();
-              for (String rName : roleNames) {
-                rolesFiler.add("role.roleName == \"" + trimAndLower(rName) + "\"");
-              }
-              StringBuilder filters = new StringBuilder("roles.contains(role) "
+    return (Boolean) tm.executeTransaction(
+      new TransactionBlock() {
+        public Object execute(PersistenceManager pm) throws Exception {
+          Query query = pm.newQuery(MSentryPrivilege.class);
+          query.declareVariables("org.apache.sentry.provider.db.service.model.MSentryRole role");
+          List<String> rolesFiler = new LinkedList<String>();
+          for (String rName : roleNames) {
+            rolesFiler.add("role.roleName == \"" + trimAndLower(rName) + "\"");
+          }
+          StringBuilder filters = new StringBuilder("roles.contains(role) "
                   + "&& (" + Joiner.on(" || ").join(rolesFiler) + ") ");
-              filters.append("&& serverName == \"" + trimAndLower(serverName) + "\"");
-              query.setFilter(filters.toString());
-              query.setResult("count(this)");
-              Long numPrivs = (Long) query.execute();
-              return numPrivs > 0;
-            }
-          });
-    } catch (Exception e) {
-      LOGGER.error(e.getMessage(), e);
-    }
-    return result;
+          filters.append("&& serverName == \"" + trimAndLower(serverName) + "\"");
+          query.setFilter(filters.toString());
+          query.setResult("count(this)");
+          Long numPrivs = (Long) query.execute();
+          return numPrivs > 0;
+        }
+      });
   }
 
   @SuppressWarnings("unchecked")
   private List<MSentryPrivilege> getMSentryPrivileges(final Set<String> roleNames,
-                                                      final TSentryAuthorizable authHierarchy) {
+                                                      final TSentryAuthorizable authHierarchy) throws Exception {
     List<MSentryPrivilege> result = new ArrayList<MSentryPrivilege>();
     if (roleNames == null || roleNames.isEmpty()) {
       return result;
     }
 
-    try {
-      result = (List<MSentryPrivilege>) tm.executeTransaction(
-          new TransactionBlock() {
-            public Object execute(PersistenceManager pm) throws Exception {
-              Query query = pm.newQuery(MSentryPrivilege.class);
+    return (List<MSentryPrivilege>) tm.executeTransaction(
+      new TransactionBlock() {
+        public Object execute(PersistenceManager pm) throws Exception {
+          Query query = pm.newQuery(MSentryPrivilege.class);
+          query.declareVariables("org.apache.sentry.provider.db.service.model.MSentryRole role");
+          List<String> rolesFiler = new LinkedList<String>();
+          for (String rName : roleNames) {
+            rolesFiler.add("role.roleName == \"" + trimAndLower(rName) + "\"");
+          }
+          StringBuilder filters = new StringBuilder("roles.contains(role) " +
+                  "&& (" + Joiner.on(" || ").join(rolesFiler) + ") ");
+          if ((authHierarchy != null) && (authHierarchy.getServer() != null)) {
+            filters.append("&& serverName == \"" + authHierarchy.getServer().toLowerCase() + "\"");
+            if (authHierarchy.getDb() != null) {
+              filters.append(" && ((dbName == \"" + authHierarchy.getDb().toLowerCase() + "\") || (dbName == \"__NULL__\")) && (URI == \"__NULL__\")");
+              if ((authHierarchy.getTable() != null)
+                  && !AccessConstants.ALL
+                      .equalsIgnoreCase(authHierarchy.getTable())) {
+                filters.append(" && ((tableName == \"" + authHierarchy.getTable().toLowerCase() + "\") || (tableName == \"__NULL__\")) && (URI == \"__NULL__\")");
+                if ((authHierarchy.getColumn() != null)
+                    && !AccessConstants.ALL
+                        .equalsIgnoreCase(authHierarchy.getColumn())) {
+                  filters.append(" && ((columnName == \"" + authHierarchy.getColumn().toLowerCase() + "\") || (columnName == \"__NULL__\")) && (URI == \"__NULL__\")");
+                }
+              }
+            }
+            if (authHierarchy.getUri() != null) {
+              filters.append(" && ((URI != \"__NULL__\") && (\"" + authHierarchy.getUri() + "\".startsWith(URI)) || (URI == \"__NULL__\")) && (dbName == \"__NULL__\")");
+            }
+          }
+          query.setFilter(filters.toString());
+          return  (List<MSentryPrivilege>) query.execute();
+        }
+      });
+  }
+
+  @SuppressWarnings("unchecked")
+  List<MSentryPrivilege> getMSentryPrivilegesByAuth(final Set<String> roleNames,
+      final TSentryAuthorizable authHierarchy) throws Exception {
+      return (List<MSentryPrivilege>) tm.executeTransaction(
+        new TransactionBlock() {
+          public Object execute(PersistenceManager pm) throws Exception {
+            Query query = pm.newQuery(MSentryPrivilege.class);
+            StringBuilder filters = new StringBuilder();
+            if (roleNames == null || roleNames.isEmpty()) {
+              filters.append(" !roles.isEmpty() ");
+            } else {
               query.declareVariables("org.apache.sentry.provider.db.service.model.MSentryRole role");
               List<String> rolesFiler = new LinkedList<String>();
               for (String rName : roleNames) {
                 rolesFiler.add("role.roleName == \"" + trimAndLower(rName) + "\"");
               }
-              StringBuilder filters = new StringBuilder("roles.contains(role) " +
-                      "&& (" + Joiner.on(" || ").join(rolesFiler) + ") ");
-              if ((authHierarchy != null) && (authHierarchy.getServer() != null)) {
-                filters.append("&& serverName == \"" + authHierarchy.getServer().toLowerCase() + "\"");
-                if (authHierarchy.getDb() != null) {
-                  filters.append(" && ((dbName == \"" + authHierarchy.getDb().toLowerCase() + "\") || (dbName == \"__NULL__\")) && (URI == \"__NULL__\")");
-                  if ((authHierarchy.getTable() != null)
-                      && !AccessConstants.ALL
-                          .equalsIgnoreCase(authHierarchy.getTable())) {
-                    filters.append(" && ((tableName == \"" + authHierarchy.getTable().toLowerCase() + "\") || (tableName == \"__NULL__\")) && (URI == \"__NULL__\")");
-                    if ((authHierarchy.getColumn() != null)
-                        && !AccessConstants.ALL
-                            .equalsIgnoreCase(authHierarchy.getColumn())) {
-                      filters.append(" && ((columnName == \"" + authHierarchy.getColumn().toLowerCase() + "\") || (columnName == \"__NULL__\")) && (URI == \"__NULL__\")");
-                    }
-                  }
-                }
-                if (authHierarchy.getUri() != null) {
-                  filters.append(" && ((URI != \"__NULL__\") && (\"" + authHierarchy.getUri() + "\".startsWith(URI)) || (URI == \"__NULL__\")) && (dbName == \"__NULL__\")");
-                }
-              }
-              query.setFilter(filters.toString());
-              return  (List<MSentryPrivilege>) query.execute();
+              filters.append("roles.contains(role) "
+                  + "&& (" + Joiner.on(" || ").join(rolesFiler) + ") ");
             }
-          });
-    } catch (Exception e) {
-      LOGGER.error(e.getMessage(), e);
-    }
-    return result;
-  }
-
-  @SuppressWarnings("unchecked")
-  List<MSentryPrivilege> getMSentryPrivilegesByAuth(final Set<String> roleNames,
-      final TSentryAuthorizable authHierarchy) {
-    List<MSentryPrivilege> result = new ArrayList<MSentryPrivilege>();
-    try {
-      result = (List<MSentryPrivilege>) tm.executeTransaction(
-          new TransactionBlock() {
-            public Object execute(PersistenceManager pm) throws Exception {
-              Query query = pm.newQuery(MSentryPrivilege.class);
-              StringBuilder filters = new StringBuilder();
-              if (roleNames == null || roleNames.isEmpty()) {
-                filters.append(" !roles.isEmpty() ");
-              } else {
-                query.declareVariables("org.apache.sentry.provider.db.service.model.MSentryRole role");
-                List<String> rolesFiler = new LinkedList<String>();
-                for (String rName : roleNames) {
-                  rolesFiler.add("role.roleName == \"" + trimAndLower(rName) + "\"");
-                }
-                filters.append("roles.contains(role) "
-                    + "&& (" + Joiner.on(" || ").join(rolesFiler) + ") ");
-              }
-              if (authHierarchy.getServer() != null) {
-                filters.append("&& serverName == \"" +
-                    authHierarchy.getServer().toLowerCase() + "\"");
-                if (authHierarchy.getDb() != null) {
-                  filters.append(" && (dbName == \"" +
-                      authHierarchy.getDb().toLowerCase() + "\") && (URI == \"__NULL__\")");
-                  if (authHierarchy.getTable() != null) {
-                    filters.append(" && (tableName == \"" +
-                        authHierarchy.getTable().toLowerCase() + "\")");
-                  } else {
-                    filters.append(" && (tableName == \"__NULL__\")");
-                  }
-                } else if (authHierarchy.getUri() != null) {
-                  filters.append(" && (URI != \"__NULL__\") && (\"" + authHierarchy.getUri() +
-                      "\".startsWith(URI)) && (dbName == \"__NULL__\")");
+            if (authHierarchy.getServer() != null) {
+              filters.append("&& serverName == \"" +
+                  authHierarchy.getServer().toLowerCase() + "\"");
+              if (authHierarchy.getDb() != null) {
+                filters.append(" && (dbName == \"" +
+                    authHierarchy.getDb().toLowerCase() + "\") && (URI == \"__NULL__\")");
+                if (authHierarchy.getTable() != null) {
+                  filters.append(" && (tableName == \"" +
+                      authHierarchy.getTable().toLowerCase() + "\")");
                 } else {
-                  filters.append(" && (dbName == \"__NULL__\") && (URI == \"__NULL__\")");
+                  filters.append(" && (tableName == \"__NULL__\")");
                 }
+              } else if (authHierarchy.getUri() != null) {
+                filters.append(" && (URI != \"__NULL__\") && (\"" + authHierarchy.getUri() +
+                    "\".startsWith(URI)) && (dbName == \"__NULL__\")");
               } else {
-                // if no server, then return empty resultset
-                return new ArrayList<MSentryPrivilege>();
+                filters.append(" && (dbName == \"__NULL__\") && (URI == \"__NULL__\")");
               }
-              FetchGroup grp = pm.getFetchGroup(MSentryPrivilege.class, "fetchRole");
-              grp.addMember("roles");
-              pm.getFetchPlan().addGroup("fetchRole");
-              query.setFilter(filters.toString());
-              return (List<MSentryPrivilege>) query.execute();
+            } else {
+              // if no server, then return empty resultset
+              return new ArrayList<MSentryPrivilege>();
             }
-          });
-    } catch (Exception e) {
-      LOGGER.error(e.getMessage(), e);
-    }
-    return result;
+            FetchGroup grp = pm.getFetchGroup(MSentryPrivilege.class, "fetchRole");
+            grp.addMember("roles");
+            pm.getFetchPlan().addGroup("fetchRole");
+            query.setFilter(filters.toString());
+            return (List<MSentryPrivilege>) query.execute();
+          }
+        });
   }
 
   public TSentryPrivilegeMap listSentryPrivilegesByAuthorizable(
       Set<String> groups, TSentryActiveRoleSet activeRoles,
       TSentryAuthorizable authHierarchy, boolean isAdmin)
-      throws SentryInvalidInputException {
+          throws Exception {
     Map<String, Set<TSentryPrivilege>> resultPrivilegeMap = Maps.newTreeMap();
     Set<String> roles = Sets.newHashSet();
     if (groups != null && !groups.isEmpty()) {
@@ -1043,7 +1026,7 @@ public class SentryStore {
 
   public Set<TSentryPrivilege> getTSentryPrivileges(Set<String> roleNames,
                                                     TSentryAuthorizable authHierarchy)
-          throws SentryInvalidInputException {
+          throws Exception {
     if (authHierarchy.getServer() == null) {
       throw new SentryInvalidInputException("serverName cannot be null !!");
     }
@@ -1109,23 +1092,17 @@ public class SentryStore {
   }
 
   @SuppressWarnings("unchecked")
-  public Set<String> getRoleNamesForGroups(final Set<String> groups) {
+  public Set<String> getRoleNamesForGroups(final Set<String> groups) throws Exception {
     if (groups == null || groups.isEmpty()) {
       return ImmutableSet.of();
     }
 
-    Set<String> result = new HashSet<>();
-    try {
-      result = (Set<String>) tm.executeTransaction(
-          new TransactionBlock() {
-            public Object execute(PersistenceManager pm) throws Exception {
-              return getRoleNamesForGroupsCore(pm, groups);
-            }
-          });
-    } catch (Exception e) {
-      LOGGER.error(e.getMessage(), e);
-    }
-    return result;
+    return (Set<String>) tm.executeTransaction(
+        new TransactionBlock() {
+          public Object execute(PersistenceManager pm) throws Exception {
+            return getRoleNamesForGroupsCore(pm, groups);
+          }
+        });
   }
 
   private Set<String> getRoleNamesForGroupsCore(PersistenceManager pm, Set<String> groups) {
@@ -1156,13 +1133,13 @@ public class SentryStore {
     return result;
   }
 
-  public Set<String> listAllSentryPrivilegesForProvider(Set<String> groups, TSentryActiveRoleSet roleSet) throws SentryInvalidInputException {
+  public Set<String> listAllSentryPrivilegesForProvider(Set<String> groups, TSentryActiveRoleSet roleSet) throws Exception {
     return listSentryPrivilegesForProvider(groups, roleSet, null);
   }
 
 
   public Set<String> listSentryPrivilegesForProvider(Set<String> groups,
-      TSentryActiveRoleSet roleSet, TSentryAuthorizable authHierarchy) throws SentryInvalidInputException {
+      TSentryActiveRoleSet roleSet, TSentryAuthorizable authHierarchy) throws Exception {
     Set<String> result = Sets.newHashSet();
     Set<String> rolesToQuery = getRolesToQuery(groups, roleSet);
     List<MSentryPrivilege> mSentryPrivileges = getMSentryPrivileges(rolesToQuery, authHierarchy);
@@ -1175,7 +1152,7 @@ public class SentryStore {
   }
 
 
-  public boolean hasAnyServerPrivileges(Set<String> groups, TSentryActiveRoleSet roleSet, String server) {
+  public boolean hasAnyServerPrivileges(Set<String> groups, TSentryActiveRoleSet roleSet, String server) throws Exception {
     Set<String> rolesToQuery = getRolesToQuery(groups, roleSet);
     return hasAnyServerPrivileges(rolesToQuery, server);
   }
@@ -1183,7 +1160,7 @@ public class SentryStore {
 
 
   private Set<String> getRolesToQuery(Set<String> groups,
-      TSentryActiveRoleSet roleSet) {
+      TSentryActiveRoleSet roleSet) throws Exception {
     Set<String> activeRoleNames = toTrimedLower(roleSet.getRoles());
 
     Set<String> roleNamesForGroups = toTrimedLower(getRoleNamesForGroups(groups));
@@ -1674,104 +1651,87 @@ public class SentryStore {
    * @return  Mapping of AuthZObj(db/table) -> (Role -> permission)
    */
   @SuppressWarnings("unchecked")
-  public Map<String, HashMap<String, String>> retrieveFullPrivilegeImage() {
-    Map<String, HashMap<String, String>> result = new HashMap<>();
-    try {
-      result = (Map<String, HashMap<String, String>>) tm.executeTransaction(
-          new TransactionBlock() {
-            public Object execute(PersistenceManager pm) throws Exception {
-              Map<String, HashMap<String, String>> retVal = new HashMap<>();
-              Query query = pm.newQuery(MSentryPrivilege.class);
-              String filters = "(serverName != \"__NULL__\") "
-                  + "&& (dbName != \"__NULL__\") " + "&& (URI == \"__NULL__\")";
-              query.setFilter(filters.toString());
-              query
-                  .setOrdering("serverName ascending, dbName ascending, tableName ascending");
-              List<MSentryPrivilege> privileges = (List<MSentryPrivilege>) query
-                  .execute();
-              for (MSentryPrivilege mPriv : privileges) {
-                String authzObj = mPriv.getDbName();
-                if (!isNULL(mPriv.getTableName())) {
-                  authzObj = authzObj + "." + mPriv.getTableName();
-                }
-                HashMap<String, String> pUpdate = retVal.get(authzObj);
-                if (pUpdate == null) {
-                  pUpdate = new HashMap<String, String>();
-                  retVal.put(authzObj, pUpdate);
-                }
-                for (MSentryRole mRole : mPriv.getRoles()) {
-                  String existingPriv = pUpdate.get(mRole.getRoleName());
-                  if (existingPriv == null) {
-                    pUpdate.put(mRole.getRoleName(), mPriv.getAction().toUpperCase());
-                  } else {
-                    pUpdate.put(mRole.getRoleName(), existingPriv + ","
-                        + mPriv.getAction().toUpperCase());
-                  }
-                }
-              }
-              return retVal;
+  public Map<String, HashMap<String, String>> retrieveFullPrivilegeImage() throws Exception {
+     return (Map<String, HashMap<String, String>>) tm.executeTransaction(
+             new TransactionBlock() {
+        public Object execute(PersistenceManager pm) throws Exception {
+        Map<String, HashMap<String, String>> retVal = new HashMap<>();
+        Query query = pm.newQuery(MSentryPrivilege.class);
+        String filters = "(serverName != \"__NULL__\") "
+            + "&& (dbName != \"__NULL__\") " + "&& (URI == \"__NULL__\")";
+        query.setFilter(filters.toString());
+        query
+            .setOrdering("serverName ascending, dbName ascending, tableName ascending");
+        List<MSentryPrivilege> privileges = (List<MSentryPrivilege>) query
+            .execute();
+        for (MSentryPrivilege mPriv : privileges) {
+          String authzObj = mPriv.getDbName();
+          if (!isNULL(mPriv.getTableName())) {
+            authzObj = authzObj + "." + mPriv.getTableName();
+          }
+          HashMap<String, String> pUpdate = retVal.get(authzObj);
+          if (pUpdate == null) {
+            pUpdate = new HashMap<String, String>();
+            retVal.put(authzObj, pUpdate);
+          }
+          for (MSentryRole mRole : mPriv.getRoles()) {
+            String existingPriv = pUpdate.get(mRole.getRoleName());
+            if (existingPriv == null) {
+              pUpdate.put(mRole.getRoleName(), mPriv.getAction().toUpperCase());
+            } else {
+              pUpdate.put(mRole.getRoleName(), existingPriv + ","
+                  + mPriv.getAction().toUpperCase());
             }
-          });
-    } catch (Exception e) {
-      LOGGER.error(e.getMessage(), e);
-    }
-    return result;
+          }
+        }
+        return retVal;
+        }
+      });
   }
 
   /**
    * @return Mapping of Role -> [Groups]
    */
   @SuppressWarnings("unchecked")
-  public Map<String, LinkedList<String>> retrieveFullRoleImage() {
-    Map<String, LinkedList<String>> result = new HashMap<>();
-    try {
-      result = (Map<String, LinkedList<String>>) tm.executeTransaction(
-          new TransactionBlock() {
-            public Object execute(PersistenceManager pm) throws Exception {
-              Map<String, LinkedList<String>> retVal = new HashMap<>();
-              Query query = pm.newQuery(MSentryGroup.class);
-              List<MSentryGroup> groups = (List<MSentryGroup>) query.execute();
-              for (MSentryGroup mGroup : groups) {
-                for (MSentryRole role : mGroup.getRoles()) {
-                  LinkedList<String> rUpdate = retVal.get(role.getRoleName());
-                  if (rUpdate == null) {
-                    rUpdate = new LinkedList<>();
-                    retVal.put(role.getRoleName(), rUpdate);
-                  }
-                  rUpdate.add(mGroup.getGroupName());
-                }
+  public Map<String, LinkedList<String>> retrieveFullRoleImage() throws Exception {
+    return (Map<String, LinkedList<String>>) tm.executeTransaction(
+      new TransactionBlock() {
+        public Object execute(PersistenceManager pm) throws Exception {
+          Map<String, LinkedList<String>> retVal = new HashMap<>();
+          Query query = pm.newQuery(MSentryGroup.class);
+          List<MSentryGroup> groups = (List<MSentryGroup>) query.execute();
+          for (MSentryGroup mGroup : groups) {
+            for (MSentryRole role : mGroup.getRoles()) {
+              LinkedList<String> rUpdate = retVal.get(role.getRoleName());
+              if (rUpdate == null) {
+                rUpdate = new LinkedList<>();
+                retVal.put(role.getRoleName(), rUpdate);
               }
-              return retVal;
+              rUpdate.add(mGroup.getGroupName());
             }
-          });
-    } catch (Exception e) {
-      LOGGER.error(e.getMessage(), e);
-    }
-    return result;
+          }
+          return retVal;
+        }
+      });
   }
 
   /**
    * This returns a Mapping of Authz -> [Paths]
    */
-  public Map<String, Set<String>> retrieveFullPathsImage() {
-    Map<String, Set<String>> result = new HashMap<>();
-    try {
-      result = (Map<String, Set<String>>) tm.executeTransaction(
-          new TransactionBlock() {
-            public Object execute(PersistenceManager pm) throws Exception {
-              Map<String, Set<String>> retVal = new HashMap<>();
-              Query query = pm.newQuery(MAuthzPathsMapping.class);
-              List<MAuthzPathsMapping> authzToPathsMappings = (List<MAuthzPathsMapping>) query.execute();
-              for (MAuthzPathsMapping authzToPaths : authzToPathsMappings) {
-                retVal.put(authzToPaths.getAuthzObjName(), authzToPaths.getPaths());
-              }
-              return retVal;
-            }
-          });
-    } catch (Exception e) {
-      LOGGER.error(e.getMessage(), e);
-    }
-    return result;
+  @SuppressWarnings("unchecked")
+  Map<String, Set<String>> retrieveFullPathsImage() throws Exception {
+    return (Map<String, Set<String>>) tm.executeTransaction(
+      new TransactionBlock() {
+        public Object execute(PersistenceManager pm) throws Exception {
+          Map<String, Set<String>> retVal = new HashMap<>();
+          Query query = pm.newQuery(MAuthzPathsMapping.class);
+          List<MAuthzPathsMapping> authzToPathsMappings = (List<MAuthzPathsMapping>) query.execute();
+          for (MAuthzPathsMapping authzToPaths : authzToPathsMappings) {
+            retVal.put(authzToPaths.getAuthzObjName(), authzToPaths.getPaths());
+          }
+          return retVal;
+        }
+      });
   }
 
   public void createAuthzPathsMapping(final String hiveObj,
@@ -2003,19 +1963,14 @@ public class SentryStore {
 
   // Get the all exist role names, will return an empty set
   // if no role names exist.
-  public Set<String> getAllRoleNames() {
-    Set<String> result = new HashSet<>();
-    try {
-      return (Set<String>) tm.executeTransaction(
-          new TransactionBlock() {
-            public Object execute(PersistenceManager pm) throws Exception {
-              return getAllRoleNames(pm);
-            }
-          });
-    } catch (Exception e) {
-      LOGGER.error(e.getMessage(), e);
-    }
-    return result;
+  @SuppressWarnings("unchecked")
+  public Set<String> getAllRoleNames() throws Exception {
+    return (Set<String>) tm.executeTransaction(
+      new TransactionBlock() {
+        public Object execute(PersistenceManager pm) throws Exception {
+          return getAllRoleNames(pm);
+        }
+      });
   }
 
   /**

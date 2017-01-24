@@ -129,36 +129,37 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
     }
 
     @Override
-    public PermissionsUpdate retrieveFullImage(long currSeqNum) {
-      final Timer.Context timerContext =
-          SentryHdfsMetricsUtil.getRetrieveFullImageTimer.time();
-      Map<String, HashMap<String, String>> privilegeImage = sentryStore.retrieveFullPrivilegeImage();
-      Map<String, LinkedList<String>> roleImage = sentryStore.retrieveFullRoleImage();
+    public PermissionsUpdate retrieveFullImage(long currSeqNum) throws Exception {
+      try(Timer.Context timerContext =
+                  SentryHdfsMetricsUtil.getRetrieveFullImageTimer.time()) {
 
-      TPermissionsUpdate tPermUpdate = new TPermissionsUpdate(true, currSeqNum,
-          new HashMap<String, TPrivilegeChanges>(),
-          new HashMap<String, TRoleChanges>());
-      for (Map.Entry<String, HashMap<String, String>> privEnt : privilegeImage.entrySet()) {
-        String authzObj = privEnt.getKey();
-        HashMap<String,String> privs = privEnt.getValue();
-        tPermUpdate.putToPrivilegeChanges(authzObj, new TPrivilegeChanges(
-            authzObj, privs, new HashMap<String, String>()));
+        SentryHdfsMetricsUtil.getRetrieveFullImageTimer.time();
+        Map<String, HashMap<String, String>> privilegeImage = sentryStore.retrieveFullPrivilegeImage();
+        Map<String, LinkedList<String>> roleImage = sentryStore.retrieveFullRoleImage();
+
+        TPermissionsUpdate tPermUpdate = new TPermissionsUpdate(true, currSeqNum,
+                new HashMap<String, TPrivilegeChanges>(),
+                new HashMap<String, TRoleChanges>());
+        for (Map.Entry<String, HashMap<String, String>> privEnt : privilegeImage.entrySet()) {
+          String authzObj = privEnt.getKey();
+          HashMap<String,String> privs = privEnt.getValue();
+          tPermUpdate.putToPrivilegeChanges(authzObj, new TPrivilegeChanges(
+                  authzObj, privs, new HashMap<String, String>()));
+        }
+        for (Map.Entry<String, LinkedList<String>> privEnt : roleImage.entrySet()) {
+          String role = privEnt.getKey();
+          LinkedList<String> groups = privEnt.getValue();
+          tPermUpdate.putToRoleChanges(role, new TRoleChanges(role, groups, new LinkedList<String>()));
+        }
+        PermissionsUpdate permissionsUpdate = new PermissionsUpdate(tPermUpdate);
+        permissionsUpdate.setSeqNum(currSeqNum);
+        SentryHdfsMetricsUtil.getPrivilegeChangesHistogram.update(
+                tPermUpdate.getPrivilegeChangesSize());
+        SentryHdfsMetricsUtil.getRoleChangesHistogram.update(
+                tPermUpdate.getRoleChangesSize());
+        return permissionsUpdate;
       }
-      for (Map.Entry<String, LinkedList<String>> privEnt : roleImage.entrySet()) {
-        String role = privEnt.getKey();
-        LinkedList<String> groups = privEnt.getValue();
-        tPermUpdate.putToRoleChanges(role, new TRoleChanges(role, groups, new LinkedList<String>()));
-      }
-      PermissionsUpdate permissionsUpdate = new PermissionsUpdate(tPermUpdate);
-      permissionsUpdate.setSeqNum(currSeqNum);
-      timerContext.stop();
-      SentryHdfsMetricsUtil.getPrivilegeChangesHistogram.update(
-          tPermUpdate.getPrivilegeChangesSize());
-      SentryHdfsMetricsUtil.getRoleChangesHistogram.update(
-          tPermUpdate.getRoleChangesSize());
-      return permissionsUpdate;
     }
-
   }
 
   private UpdateForwarder<PathsUpdate> pathsUpdater;
@@ -223,7 +224,7 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
    * Request for update from NameNode.
    * Full update to NameNode should happen only after full update from HMS.
    */
-  public List<PathsUpdate> getAllPathsUpdatesFrom(long pathSeqNum) {
+  public List<PathsUpdate> getAllPathsUpdatesFrom(long pathSeqNum) throws Exception {
     if (!fullUpdateNN.get()) {
       // Most common case - Sentry is NOT handling a full update.
       return pathsUpdater.getAllUpdatesFrom(pathSeqNum);
@@ -268,7 +269,7 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
     }
   }
 
-  public List<PermissionsUpdate> getAllPermsUpdatesFrom(long permSeqNum) {
+  public List<PermissionsUpdate> getAllPermsUpdatesFrom(long permSeqNum) throws Exception {
     return permsUpdater.getAllUpdatesFrom(permSeqNum);
   }
 

@@ -162,7 +162,7 @@ public interface SentryStoreLayer {
    *
    * @returns The set of roles name,
    */
-  Set<String> getAllRoleNames();
+  Set<String> getAllRoleNames() throws Exception;
 
   /**
    * Get sentry privileges based on valid active roles and the authorize objects.
