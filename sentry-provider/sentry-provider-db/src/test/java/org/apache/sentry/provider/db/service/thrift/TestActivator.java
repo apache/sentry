@@ -37,14 +37,6 @@ public class TestActivator extends SentryServiceIntegrationBase {
 
   }
 
-  @Test
-  public void testStopActive() throws Exception {
-    Assert.assertEquals(Boolean.TRUE,server.getActivator().isActive());
-    //stop the current service.
-    server.becomeStandby();
-    Assert.assertEquals(Boolean.FALSE,server.getActivator().isActive());
-  }
-
   @Override
   @After
   public void after() {
