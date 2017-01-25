@@ -49,6 +49,7 @@ import org.apache.hadoop.hive.ql.parse.HiveParser;
 import org.apache.hadoop.hive.ql.parse.HiveSemanticAnalyzerHookContext;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
+import org.apache.hadoop.hive.ql.plan.PlanUtils;
 import org.apache.hadoop.hive.ql.plan.ShowColumnsDesc;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.sentry.binding.hive.authz.HiveAuthzBinding;
@@ -75,6 +76,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
   private static final Logger LOG = LoggerFactory
@@ -83,7 +85,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
   private final HiveAuthzConf authzConf;
   private Database currDB = Database.ALL;
   private Table currTab;
-  private AccessURI udfURI;
+  private List<AccessURI> udfURIs;
   private AccessURI partitionURI;
   private AccessURI indexURI;
   private Table currOutTab = null;
@@ -109,6 +111,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
       throw new IllegalStateException("Session HiveConf is null");
     }
     authzConf = loadAuthzConf(hiveConf);
+    udfURIs = Lists.newArrayList();
     hiveAuthzBinding = new HiveAuthzBinding(hiveConf, authzConf);
 
     FunctionRegistry.setupPermissionsForBuiltinUDFs("", HiveAuthzConf.HIVE_UDF_BLACK_LIST);
@@ -246,10 +249,20 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
             throw new SemanticException("Could not find the jar for UDF class " + udfClassName +
                 "to validate privileges");
           }
-          udfURI = parseURI(udfSrc.getLocation().toString(), true);
+          udfURIs.add(parseURI(udfSrc.getLocation().toString(), true));
         } catch (ClassNotFoundException e) {
-          throw new SemanticException("Error retrieving udf class:" + e.getMessage(), e);
+          List<String> functionJars = getFunctionJars(ast);
+          if (functionJars.isEmpty()) {
+            throw new SemanticException("Error retrieving udf class:" + e.getMessage(), e);
+          } else {
+            // Add the jars from the command "Create function using jar" to the access list
+            // Defer to hive to check if the class is in the jars
+            for(String jar : functionJars) {
+              udfURIs.add(parseURI(jar, false));
+            }
+          }
         }
+
         // create/drop function is allowed with any database
         currDB = Database.ALL;
         break;
@@ -286,6 +299,33 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
         break;
     }
     return ast;
+  }
+
+  /**
+   * The command 'create function ... using jar <jar resources>' can create a function
+   * with the supplied jar resources in the command, which is translated into ASTNode being
+   * [functionName functionClass resourceList] and resourceList being [resourceType resourcePath].
+   * This function collects all the jar paths for the supplied jar resources.
+   *
+   * @param ast the AST node for the command
+   * @return    the jar path list if any or an empty list
+   */
+  private List<String> getFunctionJars(ASTNode ast) {
+    ASTNode resourcesNode = (ASTNode) ast.getFirstChildWithType(HiveParser.TOK_RESOURCE_LIST);
+
+    List<String> resources = new ArrayList<String>();
+    if (resourcesNode != null) {
+      for (int idx = 0; idx < resourcesNode.getChildCount(); ++idx) {
+        ASTNode resNode = (ASTNode) resourcesNode.getChild(idx);
+        ASTNode resTypeNode = (ASTNode) resNode.getChild(0);
+        ASTNode resUriNode = (ASTNode) resNode.getChild(1);
+        if (resTypeNode.getType() == HiveParser.TOK_JAR) {
+          resources.add(PlanUtils.stripQuotes(resUriNode.getText()));
+        }
+      }
+    }
+
+    return resources;
   }
 
   // Find the current database for session
@@ -460,7 +500,7 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
       HiveOperation hiveOp, AuthorizationException e) {
     SentryOnFailureHookContext hookCtx = new SentryOnFailureHookContextImpl(
         context.getCommand(), context.getInputs(), context.getOutputs(),
-        hiveOp, currDB, currTab, udfURI, null, context.getUserName(),
+        hiveOp, currDB, currTab, udfURIs, null, context.getUserName(),
         context.getIpAddress(), e, context.getConf());
     String csHooks = authzConf.get(
         HiveAuthzConf.AuthzConfVars.AUTHZ_ONFAILURE_HOOKS.getVar(), "").trim();
@@ -580,10 +620,10 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
        *  - CREATE TEMP FUNCTION
        *  - DROP TEMP FUNCTION.
        */
-      if (udfURI != null) {
+      if (!udfURIs.isEmpty()) {
         List<DBModelAuthorizable> udfUriHierarchy = new ArrayList<DBModelAuthorizable>();
         udfUriHierarchy.add(hiveAuthzBinding.getAuthServer());
-        udfUriHierarchy.add(udfURI);
+        udfUriHierarchy.addAll(udfURIs);
         inputHierarchy.add(udfUriHierarchy);
         for (WriteEntity writeEntity : outputs) {
           List<DBModelAuthorizable> entityHierarchy = new ArrayList<DBModelAuthorizable>();
