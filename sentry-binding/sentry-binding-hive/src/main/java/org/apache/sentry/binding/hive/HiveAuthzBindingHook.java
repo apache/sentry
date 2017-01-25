@@ -208,10 +208,20 @@ public class HiveAuthzBindingHook extends HiveAuthzBindingHookBase {
             throw new SemanticException("Could not find the jar for UDF class " + udfClassName +
                 "to validate privileges");
           }
-          udfURI = parseURI(udfSrc.getLocation().toString(), true);
+          udfURIs.add(parseURI(udfSrc.getLocation().toString(), true));
         } catch (ClassNotFoundException e) {
-          throw new SemanticException("Error retrieving udf class:" + e.getMessage(), e);
+          List<String> functionJars = getFunctionJars(ast);
+          if (functionJars.isEmpty()) {
+            throw new SemanticException("Error retrieving udf class:" + e.getMessage(), e);
+          } else {
+            // Add the jars from the command "Create function using jar" to the access list
+            // Defer to hive to check if the class is in the jars
+            for(String jar : functionJars) {
+              udfURIs.add(parseURI(jar, false));
+            }
+          }
         }
+
         // create/drop function is allowed with any database
         currDB = Database.ALL;
         break;
