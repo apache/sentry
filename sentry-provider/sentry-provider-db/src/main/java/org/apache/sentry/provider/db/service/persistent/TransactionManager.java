@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -38,13 +38,16 @@ import org.apache.sentry.provider.db.service.thrift.SentryMetrics;
 /**
  * TransactionManager is used for executing the database transaction, it supports
  * the transaction with retry mechanism for the unexpected exceptions,
- * except SentryUserExceptions, eg, SentryNoSuchObjectException,
- * SentryAlreadyExistsException etc.
- * <p>
- * The purpose of the class is to separate all transaction houskeeping (opening
+ * except <em>SentryUserExceptions</em>, eg, <em>SentryNoSuchObjectException</em>,
+ * <em>SentryAlreadyExistsException</em> etc. <p>
+ *
+ * The purpose of the class is to separate all transaction housekeeping (opening
  * transaction, rolling back failed transactions) from the actual transaction
- * business logic.
- * <p>
+ * business logic.<p>
+ *
+ * TransactionManager creates an instance of PersistenceManager for each
+ * transaction.<p>
+ *
  * TransactionManager exposes several metrics:
  * <ul>
  *     <li>Timer metric for all transactions</li>
@@ -92,19 +95,19 @@ public class TransactionManager {
 
 
   /**
-   * Execute some code as a single transaction, the code in tb.execute() should not start new
-   * transaction or manipulate transactions with the PersistenceManager.
+   * Execute some code as a single transaction, the code in tb.execute()
+   * should not start new transaction or manipulate transactions with the
+   * PersistenceManager.
    * @param tb transaction block with code to execute
    * @return Object with the result of tb.execute()
    */
   public Object executeTransaction(TransactionBlock tb) throws Exception {
     final Timer.Context context = transactionTimer.time();
-    try (CloseablePersistenceManager cpm =
-        new CloseablePersistenceManager(pmf.getPersistenceManager())) {
-      Transaction transaction = cpm.pm.currentTransaction();
+    try (PersistenceManager pm = pmf.getPersistenceManager()) {
+      Transaction transaction = pm.currentTransaction();
       transaction.begin();
       try {
-        Object result = tb.execute(cpm.pm);
+        Object result = tb.execute(pm);
         transaction.commit();
         return result;
       } catch (Exception e) {
@@ -152,23 +155,5 @@ public class TransactionManager {
       }
     }
     return null;
-  }
-
-  /**
-   * CloseablePersistenceManager is a wrapper around PersistenceManager that
-   * implements AutoCloseable interface. It is needed because Apache jdo doesn't
-   * implement AutoCloseable (Datanucleus version does).
-   */
-  private class CloseablePersistenceManager implements AutoCloseable {
-    private final PersistenceManager pm;
-
-    CloseablePersistenceManager(PersistenceManager pm) {
-      this.pm = pm;
-    }
-
-    @Override
-    public void close() throws Exception {
-      pm.close();
-    }
   }
 }
