@@ -22,15 +22,7 @@ import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_J
 import static org.apache.sentry.provider.common.ProviderConstants.KV_JOINER;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -96,6 +88,16 @@ public class SentryStore {
   public static final String NULL_COL = "__NULL__";
   public static int INDEX_GROUP_ROLES_MAP = 0;
   public static int INDEX_USER_ROLES_MAP = 1;
+
+  // String constants for field names
+  public static final String SERVER_NAME = "serverName";
+  public static final String DB_NAME = "dbName";
+  public static final String TABLE_NAME = "tableName";
+  public static final String COLUMN_NAME = "columnName";
+  public static final String ACTION = "action";
+  public static final String URI = "URI";
+  public static final String GRANT_OPTION = "grantOption";
+  public static final String ROLE_NAME = "roleName";
 
   // For counters, representation of the "unknown value"
   private static final long COUNT_VALUE_UNKNOWN = -1;
@@ -453,11 +455,10 @@ public class SentryStore {
     MSentryPrivilege mPrivilege = null;
     MSentryRole mRole = getRole(pm, roleName);
     if (mRole == null) {
-      throw new SentryNoSuchObjectException("Role: " + roleName + " doesn't exist");
+      throw noSuchRole(roleName);
     } else {
-
-      if ((!isNULL(privilege.getColumnName())) || (!isNULL(privilege.getTableName()))
-          || (!isNULL(privilege.getDbName()))) {
+      if (!isNULL(privilege.getColumnName()) || !isNULL(privilege.getTableName())
+          || !isNULL(privilege.getDbName())) {
         // If Grant is for ALL and Either INSERT/SELECT already exists..
         // need to remove it and GRANT ALL..
         if (privilege.getAction().equalsIgnoreCase("*")) {
@@ -527,7 +528,7 @@ public class SentryStore {
       throws SentryNoSuchObjectException, SentryInvalidInputException {
     MSentryRole mRole = getRole(pm, roleName);
     if (mRole == null) {
-      throw new SentryNoSuchObjectException("Role: " + roleName + " doesn't exist");
+      throw noSuchRole(roleName);
     }
     MSentryPrivilege mPrivilege = getMSentryPrivilege(tPrivilege, pm);
     if (mPrivilege == null) {
@@ -639,6 +640,9 @@ public class SentryStore {
         || (!isNULL(priv.getTableName()))) {
       // Get all TableLevel Privs
       Set<MSentryPrivilege> childPrivs = getChildPrivileges(pm, roleNames, priv);
+      if (childPrivs == null) {
+        return;
+      }
       for (MSentryPrivilege childPriv : childPrivs) {
         // Only recurse for table level privs..
         if ((!isNULL(childPriv.getDbName())) && (!isNULL(childPriv.getTableName()))
@@ -672,45 +676,48 @@ public class SentryStore {
   private Set<MSentryPrivilege> getChildPrivileges(PersistenceManager pm, Set<String> roleNames,
       MSentryPrivilege parent) throws SentryInvalidInputException {
     // Column and URI do not have children
-    if ((!isNULL(parent.getColumnName())) || (!isNULL(parent.getURI()))) {
-      return new HashSet<MSentryPrivilege>();
+    if (!isNULL(parent.getColumnName()) || !isNULL(parent.getURI())) {
+      return null;
     }
 
     Query query = pm.newQuery(MSentryPrivilege.class);
-    query.declareVariables("org.apache.sentry.provider.db.service.model.MSentryRole role");
-    List<String> rolesFiler = new LinkedList<String>();
-    for (String rName : roleNames) {
-      rolesFiler.add("role.roleName == \"" + rName.trim().toLowerCase() + "\"");
-    }
-    StringBuilder filters = new StringBuilder("roles.contains(role) "
-        + "&& (" + Joiner.on(" || ").join(rolesFiler) + ")");
-    filters.append(" && serverName == \"" + parent.getServerName() + "\"");
+    QueryParamBuilder paramBuilder = addRolesFilter(query, null, roleNames)
+            .add(SERVER_NAME, parent.getServerName());
+
     if (!isNULL(parent.getDbName())) {
-      filters.append(" && dbName == \"" + parent.getDbName() + "\"");
+      paramBuilder.add(DB_NAME, parent.getDbName());
       if (!isNULL(parent.getTableName())) {
-        filters.append(" && tableName == \"" + parent.getTableName() + "\"");
-        filters.append(" && columnName != \"__NULL__\"");
+        paramBuilder.add(TABLE_NAME, parent.getTableName())
+                .addNotNull(COLUMN_NAME);
       } else {
-        filters.append(" && tableName != \"__NULL__\"");
+        paramBuilder.addNotNull(TABLE_NAME);
       }
     } else {
-      filters.append(" && (dbName != \"__NULL__\" || URI != \"__NULL__\")");
+      // Andd condition dbName != NULL || URI != NULL
+      paramBuilder.newChild()
+              .addNotNull(DB_NAME)
+              .addNotNull(URI);
     }
 
-    query.setFilter(filters.toString());
+    LOGGER.debug("getChildPrivileges() Query: " + paramBuilder.toString());
+
+    query.setFilter(paramBuilder.toString());
     query.setResult("privilegeScope, serverName, dbName, tableName, columnName," +
         " URI, action, grantOption");
-    Set<MSentryPrivilege> privileges = new HashSet<MSentryPrivilege>();
-    for (Object[] privObj : (List<Object[]>) query.execute()) {
-      MSentryPrivilege priv = new MSentryPrivilege();
-      priv.setPrivilegeScope((String) privObj[0]);
-      priv.setServerName((String) privObj[1]);
-      priv.setDbName((String) privObj[2]);
-      priv.setTableName((String) privObj[3]);
-      priv.setColumnName((String) privObj[4]);
-      priv.setURI((String) privObj[5]);
-      priv.setAction((String) privObj[6]);
-      priv.setGrantOption((Boolean) privObj[7]);
+    Set<MSentryPrivilege> privileges = new HashSet<>();
+    for (Object[] privObj :
+            (List<Object[]>)query.executeWithMap(paramBuilder.getArguments())) {
+      String scope        = (String)privObj[0];
+      String serverName   = (String)privObj[1];
+      String dbName       = (String)privObj[2];
+      String tableName    = (String) privObj[3];
+      String columnName   = (String) privObj[4];
+      String URI          = (String) privObj[5];
+      String action       = (String) privObj[6];
+      Boolean grantOption = (Boolean) privObj[7];
+      MSentryPrivilege priv =
+              new MSentryPrivilege("", scope, serverName, dbName, tableName,
+                      columnName, URI, action, grantOption);
       privileges.add(priv);
     }
     return privileges;
@@ -719,45 +726,52 @@ public class SentryStore {
   @SuppressWarnings("unchecked")
   private List<MSentryPrivilege> getMSentryPrivileges(TSentryPrivilege tPriv, PersistenceManager pm) {
     Query query = pm.newQuery(MSentryPrivilege.class);
-    StringBuilder filters = new StringBuilder("this.serverName == \""
-          + toNULLCol(safeTrimLower(tPriv.getServerName())) + "\" ");
+    QueryParamBuilder paramBuilder = new QueryParamBuilder();
+    paramBuilder
+            .add(SERVER_NAME, tPriv.getServerName())
+            .add("action", tPriv.getAction());
+
     if (!isNULL(tPriv.getDbName())) {
-      filters.append("&& this.dbName == \"" + toNULLCol(safeTrimLower(tPriv.getDbName())) + "\" ");
+      paramBuilder.add(DB_NAME, tPriv.getDbName());
       if (!isNULL(tPriv.getTableName())) {
-        filters.append("&& this.tableName == \"" + toNULLCol(safeTrimLower(tPriv.getTableName())) + "\" ");
+        paramBuilder.add(TABLE_NAME, tPriv.getTableName());
         if (!isNULL(tPriv.getColumnName())) {
-          filters.append("&& this.columnName == \"" + toNULLCol(safeTrimLower(tPriv.getColumnName())) + "\" ");
+          paramBuilder.add(COLUMN_NAME, tPriv.getColumnName());
         }
       }
+    } else if (!isNULL(tPriv.getURI())) {
+      // if db is null, uri is not null
+      paramBuilder.add(URI, tPriv.getURI(), true);
     }
-    // if db is null, uri is not null
-    else if (!isNULL(tPriv.getURI())){
-      filters.append("&& this.URI == \"" + toNULLCol(safeTrim(tPriv.getURI())) + "\" ");
-    }
-    filters.append("&& this.action == \"" + toNULLCol(safeTrimLower(tPriv.getAction())) + "\"");
+    // LOGGER.debug("getMSentryPrivileges() Query: " + paramBuilder.toString());
 
-    query.setFilter(filters.toString());
-    return (List<MSentryPrivilege>) query.execute();
+    query.setFilter(paramBuilder.toString());
+    return (List<MSentryPrivilege>) query.executeWithMap(paramBuilder.getArguments());
   }
 
   private MSentryPrivilege getMSentryPrivilege(TSentryPrivilege tPriv, PersistenceManager pm) {
-    Query query = pm.newQuery(MSentryPrivilege.class);
-    query.setFilter("this.serverName == \"" + toNULLCol(safeTrimLower(tPriv.getServerName())) + "\" "
-        + "&& this.dbName == \"" + toNULLCol(safeTrimLower(tPriv.getDbName())) + "\" "
-        + "&& this.tableName == \"" + toNULLCol(safeTrimLower(tPriv.getTableName())) + "\" "
-        + "&& this.columnName == \"" + toNULLCol(safeTrimLower(tPriv.getColumnName())) + "\" "
-        + "&& this.URI == \"" + toNULLCol(safeTrim(tPriv.getURI())) + "\" "
-        + "&& this.grantOption == grantOption "
-        + "&& this.action == \"" + toNULLCol(safeTrimLower(tPriv.getAction())) + "\"");
-    query.declareParameters("Boolean grantOption");
-    query.setUnique(true);
     Boolean grantOption = null;
     if (tPriv.getGrantOption().equals(TSentryGrantOption.TRUE)) {
       grantOption = true;
     } else if (tPriv.getGrantOption().equals(TSentryGrantOption.FALSE)) {
       grantOption = false;
     }
-    return (MSentryPrivilege)query.execute(grantOption);
+
+    QueryParamBuilder paramBuilder = new QueryParamBuilder();
+    paramBuilder.add(SERVER_NAME, tPriv.getServerName())
+            .add(DB_NAME, tPriv.getDbName())
+            .add(TABLE_NAME, tPriv.getTableName())
+            .add(COLUMN_NAME, tPriv.getColumnName())
+            .add(URI, tPriv.getURI(), true)
+            .addObject(GRANT_OPTION, grantOption)
+            .add(ACTION, tPriv.getAction());
+
+    LOGGER.debug("getMSentryPrivilege() Query: " +  paramBuilder.toString());
+
+    Query query = pm.newQuery(MSentryPrivilege.class);
+    query.setUnique(true);
+    query.setFilter(paramBuilder.toString());
+    return (MSentryPrivilege)query.executeWithMap(paramBuilder.getArguments());
   }
 
   public void dropSentryRole(final String roleName) throws Exception {
@@ -775,7 +789,7 @@ public class SentryStore {
     String lRoleName = trimAndLower(roleName);
     MSentryRole sentryRole = getRole(pm, lRoleName);
     if (sentryRole == null) {
-      throw new SentryNoSuchObjectException("Role: " + lRoleName + " doesn't exist");
+      throw noSuchRole(lRoleName);
     }
     int numPrivs = sentryRole.getPrivileges().size();
     sentryRole.removePrivileges();
@@ -801,11 +815,10 @@ public class SentryStore {
     String lRoleName = trimAndLower(roleName);
     MSentryRole role = getRole(pm, lRoleName);
     if (role == null) {
-      throw new SentryNoSuchObjectException("Role: " + lRoleName + " doesn't exist");
+      throw noSuchRole(lRoleName);
     }
     Query query = pm.newQuery(MSentryGroup.class);
-    query.setFilter("this.groupName == t");
-    query.declareParameters("java.lang.String t");
+    query.setFilter("this.groupName == :groupName");
     query.setUnique(true);
     List<MSentryGroup> groups = Lists.newArrayList();
     for (TSentryGroup tGroup : groupNames) {
@@ -828,11 +841,10 @@ public class SentryStore {
             String trimmedRoleName = trimAndLower(roleName);
             MSentryRole role = getRole(pm, trimmedRoleName);
             if (role == null) {
-              throw new SentryNoSuchObjectException("Role: " + trimmedRoleName + " doesn't exist");
+              throw noSuchRole(trimmedRoleName);
             }
             Query query = pm.newQuery(MSentryGroup.class);
-            query.setFilter("this.groupName == t");
-            query.declareParameters("java.lang.String t");
+            query.setFilter("this.groupName == :groupName");
             query.setUnique(true);
             List<MSentryGroup> groups = Lists.newArrayList();
             for (TSentryGroup tGroup : groupNames) {
@@ -857,11 +869,9 @@ public class SentryStore {
             String trimmedRoleName = trimAndLower(roleName);
             MSentryRole sentryRole = getRole(pm, trimmedRoleName);
             if (sentryRole == null) {
-              throw new SentryNoSuchObjectException("Role: " + trimmedRoleName +
-                      " doesn't exist");
-            } else {
-              pm.retrieve(sentryRole);
+              throw noSuchRole(trimmedRoleName);
             }
+            pm.retrieve(sentryRole);
             return sentryRole;
           }
         });
@@ -872,117 +882,116 @@ public class SentryStore {
       return false;
     }
     return (Boolean) tm.executeTransaction(
-      new TransactionBlock() {
-        public Object execute(PersistenceManager pm) throws Exception {
-          Query query = pm.newQuery(MSentryPrivilege.class);
-          query.declareVariables("org.apache.sentry.provider.db.service.model.MSentryRole role");
-          List<String> rolesFiler = new LinkedList<String>();
-          for (String rName : roleNames) {
-            rolesFiler.add("role.roleName == \"" + trimAndLower(rName) + "\"");
+        new TransactionBlock() {
+          public Object execute(PersistenceManager pm) throws Exception {
+            Query query = pm.newQuery(MSentryPrivilege.class);
+            QueryParamBuilder paramBuilder = addRolesFilter(query,null, roleNames);
+            paramBuilder.add(SERVER_NAME, serverName);
+            query.setFilter(paramBuilder.toString());
+            query.setResult("count(this)");
+            Long numPrivs = (Long) query.executeWithMap(paramBuilder.getArguments());
+            return numPrivs > 0;
           }
-          StringBuilder filters = new StringBuilder("roles.contains(role) "
-                  + "&& (" + Joiner.on(" || ").join(rolesFiler) + ") ");
-          filters.append("&& serverName == \"" + trimAndLower(serverName) + "\"");
-          query.setFilter(filters.toString());
-          query.setResult("count(this)");
-          Long numPrivs = (Long) query.execute();
-          return numPrivs > 0;
-        }
-      });
+        });
   }
 
   @SuppressWarnings("unchecked")
   private List<MSentryPrivilege> getMSentryPrivileges(final Set<String> roleNames,
                                                       final TSentryAuthorizable authHierarchy) throws Exception {
-    List<MSentryPrivilege> result = new ArrayList<MSentryPrivilege>();
     if (roleNames == null || roleNames.isEmpty()) {
-      return result;
+      return Collections.EMPTY_LIST;
     }
 
     return (List<MSentryPrivilege>) tm.executeTransaction(
-      new TransactionBlock() {
-        public Object execute(PersistenceManager pm) throws Exception {
-          Query query = pm.newQuery(MSentryPrivilege.class);
-          query.declareVariables("org.apache.sentry.provider.db.service.model.MSentryRole role");
-          List<String> rolesFiler = new LinkedList<String>();
-          for (String rName : roleNames) {
-            rolesFiler.add("role.roleName == \"" + trimAndLower(rName) + "\"");
-          }
-          StringBuilder filters = new StringBuilder("roles.contains(role) " +
-                  "&& (" + Joiner.on(" || ").join(rolesFiler) + ") ");
-          if ((authHierarchy != null) && (authHierarchy.getServer() != null)) {
-            filters.append("&& serverName == \"" + authHierarchy.getServer().toLowerCase() + "\"");
-            if (authHierarchy.getDb() != null) {
-              filters.append(" && ((dbName == \"" + authHierarchy.getDb().toLowerCase() + "\") || (dbName == \"__NULL__\")) && (URI == \"__NULL__\")");
-              if ((authHierarchy.getTable() != null)
-                  && !AccessConstants.ALL
-                      .equalsIgnoreCase(authHierarchy.getTable())) {
-                filters.append(" && ((tableName == \"" + authHierarchy.getTable().toLowerCase() + "\") || (tableName == \"__NULL__\")) && (URI == \"__NULL__\")");
-                if ((authHierarchy.getColumn() != null)
-                    && !AccessConstants.ALL
-                        .equalsIgnoreCase(authHierarchy.getColumn())) {
-                  filters.append(" && ((columnName == \"" + authHierarchy.getColumn().toLowerCase() + "\") || (columnName == \"__NULL__\")) && (URI == \"__NULL__\")");
+        new TransactionBlock() {
+          public Object execute(PersistenceManager pm) throws Exception {
+            Query query = pm.newQuery(MSentryPrivilege.class);
+            QueryParamBuilder paramBuilder = addRolesFilter(query, null, roleNames);
+
+            if (authHierarchy != null && authHierarchy.getServer() != null) {
+              paramBuilder.add(SERVER_NAME, authHierarchy.getServer());
+              if (authHierarchy.getDb() != null) {
+                paramBuilder.addNull(URI)
+                        .newChild()
+                          .add(DB_NAME, authHierarchy.getDb())
+                          .addNull(DB_NAME);
+                if (authHierarchy.getTable() != null
+                    && !AccessConstants.ALL.equalsIgnoreCase(authHierarchy.getTable())) {
+                  if (!AccessConstants.SOME.equalsIgnoreCase(authHierarchy.getTable())) {
+                    paramBuilder.addNull(URI)
+                            .newChild()
+                              .add(TABLE_NAME, authHierarchy.getTable())
+                              .addNull(TABLE_NAME);
+                  }
+                  if (authHierarchy.getColumn() != null
+                      && !AccessConstants.ALL.equalsIgnoreCase(authHierarchy.getColumn())
+                      && !AccessConstants.SOME.equalsIgnoreCase(authHierarchy.getColumn())) {
+                    paramBuilder.addNull(URI)
+                            .newChild()
+                              .add(COLUMN_NAME, authHierarchy.getColumn())
+                              .addNull(COLUMN_NAME);
+                  }
                 }
               }
+              if (authHierarchy.getUri() != null) {
+                paramBuilder.addNull(DB_NAME)
+                        .newChild()
+                          .addNull(URI)
+                          .newChild()
+                            .addNotNull(URI)
+                            .addCustomParam("\"" + authHierarchy.getUri() +
+                                    "\".startsWith(:URI)", URI, authHierarchy.getUri());
+              }
             }
-            if (authHierarchy.getUri() != null) {
-              filters.append(" && ((URI != \"__NULL__\") && (\"" + authHierarchy.getUri() + "\".startsWith(URI)) || (URI == \"__NULL__\")) && (dbName == \"__NULL__\")");
-            }
+            LOGGER.debug("getMSentryPrivileges1() Query: " + paramBuilder.toString());
+            query.setFilter(paramBuilder.toString());
+            return query.executeWithMap(paramBuilder.getArguments());
           }
-          query.setFilter(filters.toString());
-          return  (List<MSentryPrivilege>) query.execute();
-        }
-      });
+        });
   }
 
   @SuppressWarnings("unchecked")
   List<MSentryPrivilege> getMSentryPrivilegesByAuth(final Set<String> roleNames,
       final TSentryAuthorizable authHierarchy) throws Exception {
       return (List<MSentryPrivilege>) tm.executeTransaction(
-        new TransactionBlock() {
-          public Object execute(PersistenceManager pm) throws Exception {
-            Query query = pm.newQuery(MSentryPrivilege.class);
-            StringBuilder filters = new StringBuilder();
-            if (roleNames == null || roleNames.isEmpty()) {
-              filters.append(" !roles.isEmpty() ");
-            } else {
-              query.declareVariables("org.apache.sentry.provider.db.service.model.MSentryRole role");
-              List<String> rolesFiler = new LinkedList<String>();
-              for (String rName : roleNames) {
-                rolesFiler.add("role.roleName == \"" + trimAndLower(rName) + "\"");
-              }
-              filters.append("roles.contains(role) "
-                  + "&& (" + Joiner.on(" || ").join(rolesFiler) + ") ");
-            }
-            if (authHierarchy.getServer() != null) {
-              filters.append("&& serverName == \"" +
-                  authHierarchy.getServer().toLowerCase() + "\"");
-              if (authHierarchy.getDb() != null) {
-                filters.append(" && (dbName == \"" +
-                    authHierarchy.getDb().toLowerCase() + "\") && (URI == \"__NULL__\")");
-                if (authHierarchy.getTable() != null) {
-                  filters.append(" && (tableName == \"" +
-                      authHierarchy.getTable().toLowerCase() + "\")");
-                } else {
-                  filters.append(" && (tableName == \"__NULL__\")");
-                }
-              } else if (authHierarchy.getUri() != null) {
-                filters.append(" && (URI != \"__NULL__\") && (\"" + authHierarchy.getUri() +
-                    "\".startsWith(URI)) && (dbName == \"__NULL__\")");
+          new TransactionBlock() {
+            public Object execute(PersistenceManager pm) throws Exception {
+              Query query = pm.newQuery(MSentryPrivilege.class);
+              QueryParamBuilder paramBuilder = new QueryParamBuilder();
+              if (roleNames == null || roleNames.isEmpty()) {
+                paramBuilder.addString("!roles.isEmpty()");
               } else {
-                filters.append(" && (dbName == \"__NULL__\") && (URI == \"__NULL__\")");
+                addRolesFilter(query, paramBuilder, roleNames);
               }
-            } else {
-              // if no server, then return empty resultset
-              return new ArrayList<MSentryPrivilege>();
+              if (authHierarchy.getServer() != null) {
+                paramBuilder.add(SERVER_NAME, authHierarchy.getServer());
+                if (authHierarchy.getDb() != null) {
+                  paramBuilder.add(DB_NAME, authHierarchy.getDb()).addNull(URI);
+                  if (authHierarchy.getTable() != null) {
+                    paramBuilder.add(TABLE_NAME, authHierarchy.getTable());
+                  } else {
+                    paramBuilder.addNull(TABLE_NAME);
+                  }
+                } else if (authHierarchy.getUri() != null) {
+                  paramBuilder.addNotNull(URI)
+                          .addNull(DB_NAME)
+                          .addCustomParam("(:authURI.startsWith(URI))", "authURI", authHierarchy.getUri());
+                } else {
+                  paramBuilder.addNull(DB_NAME)
+                        .addNull(URI);
+                }
+              } else {
+                // if no server, then return empty resultset
+                return new ArrayList<MSentryPrivilege>();
+              }
+              FetchGroup grp = pm.getFetchGroup(MSentryPrivilege.class, "fetchRole");
+              grp.addMember("roles");
+              pm.getFetchPlan().addGroup("fetchRole");
+              // LOGGER.debug("XXX: " + paramBuilder.toString());
+              query.setFilter(paramBuilder.toString());
+              return query.executeWithMap(paramBuilder.getArguments());
             }
-            FetchGroup grp = pm.getFetchGroup(MSentryPrivilege.class, "fetchRole");
-            grp.addMember("roles");
-            pm.getFetchPlan().addGroup("fetchRole");
-            query.setFilter(filters.toString());
-            return (List<MSentryPrivilege>) query.execute();
-          }
-        });
+          });
   }
 
   public TSentryPrivilegeMap listSentryPrivilegesByAuthorizable(
@@ -1082,7 +1091,7 @@ public class SentryStore {
               String trimmedGroupName = groupName.trim();
               MSentryGroup sentryGroup = getGroup(pm, trimmedGroupName);
               if (sentryGroup == null) {
-                throw new SentryNoSuchObjectException("Group: " + trimmedGroupName + " doesn't exist");
+                throw noSuchGroup(trimmedGroupName);
               }
               roles = sentryGroup.getRoles();
             }
@@ -1677,41 +1686,44 @@ public class SentryStore {
    */
   @SuppressWarnings("unchecked")
   public Map<String, HashMap<String, String>> retrieveFullPrivilegeImage() throws Exception {
-     return (Map<String, HashMap<String, String>>) tm.executeTransaction(
-             new TransactionBlock() {
-        public Object execute(PersistenceManager pm) throws Exception {
-        Map<String, HashMap<String, String>> retVal = new HashMap<>();
-        Query query = pm.newQuery(MSentryPrivilege.class);
-        String filters = "(serverName != \"__NULL__\") "
-            + "&& (dbName != \"__NULL__\") " + "&& (URI == \"__NULL__\")";
-        query.setFilter(filters.toString());
-        query
-            .setOrdering("serverName ascending, dbName ascending, tableName ascending");
-        List<MSentryPrivilege> privileges = (List<MSentryPrivilege>) query
-            .execute();
-        for (MSentryPrivilege mPriv : privileges) {
-          String authzObj = mPriv.getDbName();
-          if (!isNULL(mPriv.getTableName())) {
-            authzObj = authzObj + "." + mPriv.getTableName();
-          }
-          HashMap<String, String> pUpdate = retVal.get(authzObj);
-          if (pUpdate == null) {
-            pUpdate = new HashMap<String, String>();
-            retVal.put(authzObj, pUpdate);
-          }
-          for (MSentryRole mRole : mPriv.getRoles()) {
-            String existingPriv = pUpdate.get(mRole.getRoleName());
-            if (existingPriv == null) {
-              pUpdate.put(mRole.getRoleName(), mPriv.getAction().toUpperCase());
-            } else {
-              pUpdate.put(mRole.getRoleName(), existingPriv + ","
-                  + mPriv.getAction().toUpperCase());
+      return (Map<String, HashMap<String, String>>) tm.executeTransaction(
+        new TransactionBlock() {
+          public Object execute(PersistenceManager pm) throws Exception {
+            Map<String, HashMap<String, String>> retVal = new HashMap<>();
+            Query query = pm.newQuery(MSentryPrivilege.class);
+            QueryParamBuilder paramBuilder = new QueryParamBuilder();
+            paramBuilder
+                    .addNotNull(SERVER_NAME)
+                    .addNotNull(DB_NAME)
+                    .addNull(URI);
+
+            query.setFilter(paramBuilder.toString());
+            query.setOrdering("serverName ascending, dbName ascending, tableName ascending");
+            List<MSentryPrivilege> privileges =
+                    (List<MSentryPrivilege>) query.executeWithMap(paramBuilder.getArguments());
+            for (MSentryPrivilege mPriv : privileges) {
+              String authzObj = mPriv.getDbName();
+              if (!isNULL(mPriv.getTableName())) {
+                authzObj = authzObj + "." + mPriv.getTableName();
+              }
+              HashMap<String, String> pUpdate = retVal.get(authzObj);
+              if (pUpdate == null) {
+                pUpdate = new HashMap<String, String>();
+                retVal.put(authzObj, pUpdate);
+              }
+              for (MSentryRole mRole : mPriv.getRoles()) {
+                String existingPriv = pUpdate.get(mRole.getRoleName());
+                if (existingPriv == null) {
+                  pUpdate.put(mRole.getRoleName(), mPriv.getAction().toUpperCase());
+                } else {
+                  pUpdate.put(mRole.getRoleName(), existingPriv + ","
+                          + mPriv.getAction().toUpperCase());
+                }
+              }
             }
+            return retVal;
           }
-        }
-        return retVal;
-        }
-      });
+        });
   }
 
   /**
@@ -2013,5 +2025,331 @@ public class SentryStore {
       }
     }
     return roleNames;
+  }
+
+  /**
+   * Return exception for nonexistent role
+   * @param roleName Role name
+   * @return SentryNoSuchObjectException with appropriate message
+   */
+  private SentryNoSuchObjectException noSuchRole(String roleName) {
+    return new SentryNoSuchObjectException("nonexistent role " + roleName);
+  }
+
+  /**
+   * Return exception for nonexistent group
+   * @param groupName Group name
+   * @return SentryNoSuchObjectException with appropriate message
+   */
+  private SentryNoSuchObjectException noSuchGroup(String groupName) {
+    return new SentryNoSuchObjectException("nonexistent group + " + groupName);
+  }
+
+  /**
+   * Add common filter for set of roles
+   * @param query Query used for search
+   * @param paramBuilder paramBuilder for parameters
+   * @param roleNames set of role names
+   * @return paramBuilder supplied or a new one
+   */
+  private QueryParamBuilder addRolesFilter(Query query, QueryParamBuilder paramBuilder,
+                                           Set<String> roleNames) {
+    query.declareVariables(MSentryRole.class.getName() + " role");
+    if (paramBuilder == null) {
+      paramBuilder = new QueryParamBuilder();
+    }
+    if (roleNames == null || roleNames.isEmpty()) {
+        return paramBuilder;
+    }
+    paramBuilder.newChild().addSet("role.roleName == ", roleNames);
+    paramBuilder.addString("roles.contains(role)");
+    return paramBuilder;
+  }
+
+  /**
+   * QueryParamBuilder is a helper class assisting in creating parameters for
+   * JDOQL queries.
+   * <p>
+   * There are many places where we want to construct a non-trivial parametrized query,
+   * often with sub-queries. A simple query expression is just a list of conditions joined
+   * by operation (either AND or OR). For the whole expression we keep a dictionary of
+   * parameter names to parameter values that is passed to <em>query.executeWithMap()</em>.
+   * <p>
+   * For sub-expressions we create a child <em>QueryParamBuilder</em> which shares the
+   * dictionary with the parent. Then when we construct the final query string using
+   * <em>toString()</em> operator we recursively convert each child to a string and add each
+   * of the resulting strings to the top-level expression list.
+   * <p>
+   * The class also provides useful common methods for checking that some field is or
+   * isn't <em>NULL</em> and method <em>addSet()</em> to add dynamic set of key/values
+   * <p>
+   * Most class methods return <em>this</em> so it is possible to chain calls together.
+   * <p>
+   * Examples:
+   * <ol>
+   *     <li>
+   * <pre>
+   *   QueryParamBuilder p
+   *      .add("key1", "val1")
+   *      .add("key2", "val2")
+   *
+   *   // Returns "(this.key1 == :key1 && this.key2 == :key2)"
+   *   String queryStr = p.toString();
+   *
+   *   // Returns map {"key1": "val1", "key2": "val2"}
+   *   Map<String, Object> args = p.getArguments();
+   *
+   *   Query query = pm.newQuery(Foo.class);
+   *   query.setFilter(queryStr);
+   *   query.executeWIthMap(args);
+   * </pre></li>
+   * <li>
+   * <pre>
+   *   QueryParamBuilder p = new QueryParamBuilder();
+   *   p.add("key1", "val1")
+   *    .add("key2", "val2")
+   *    .newChild()
+   *      .add("key3", "val3")
+   *      .add("key4", "val4").
+   *
+   *  // Returns "(this.key1 == :val1 && this.key2 == :val2 && \
+   *  //  (this.key3 == :val4 || this.key4 == val4))"
+   *  String queryStr1 = p.toString()
+   * </pre></li>
+   * </ol>
+   */
+  static class QueryParamBuilder {
+
+    // Query is built by joining all parts with the specified Op
+    enum Op {
+      AND(" && "),
+      OR(" || ");
+
+      public String toString() {
+        return value;
+      }
+
+      private final String value;
+      Op(String val) {
+        this.value = val;
+      }
+    };
+
+    // Query parts that will be joined with Op
+    private final List<String> queryParts = new LinkedList<>();
+    // List of children - allocated lazily when children are added
+    private List<QueryParamBuilder> children;
+    // Query Parameters
+    private final Map<String, Object> arguments;
+    // Join operation
+    private final String operation;
+    private final String THIS = "this.";
+
+    /**
+     * Construct a default QueryParamBuilder joining arguments with AND
+     */
+    QueryParamBuilder() {
+      this(Op.AND);
+    }
+
+    /**
+     * Construct generic QueryParamBuilder
+     * @param operation join operation (AND or OR)
+     */
+    QueryParamBuilder(Op operation) {
+      this.arguments = new HashMap<>();
+      this.operation = operation.toString();
+    }
+
+    /**
+     * Internal constructor used for children - reuses arguments from parent
+     * @param parent parent element
+     * @param operation join operation
+     */
+    private QueryParamBuilder(QueryParamBuilder parent, Op operation) {
+      this.arguments = parent.getArguments();
+      this.operation = operation.toString();
+    }
+
+    /**
+     * Create a new child builder attached to this one
+     * @param operation - join operation
+     * @return new child of the QueryBuilder
+     */
+    QueryParamBuilder newChild(Op operation) {
+      QueryParamBuilder child = new QueryParamBuilder(this, operation);
+      if (children == null) {
+        children = new LinkedList<>();
+      }
+      children.add(child);
+      return child;
+    }
+
+    /**
+     * Create a new child builder and attach to this one. Child's join operation is the
+     * inverse of the parent
+     * @return new child of the QueryBuilder
+     */
+    QueryParamBuilder newChild() {
+      // Reverse operation of this builder
+      Op operation = this.operation.equals(Op.AND.toString()) ? Op.OR : Op.AND;
+      return this.newChild(operation);
+    }
+
+    /**
+     * Get query arguments
+     * @return query arguments as a map of arg name and arg value suitable for
+     * query.executeWithMap
+     */
+    public Map<String, Object> getArguments() {
+      return arguments;
+    }
+
+    /**
+     * Get query string - reconstructs the query string from all the parts and children.
+     * @return Query string which can be matched with arguments to execute a query.
+     */
+    @Override
+    public String toString() {
+      if (children == null && queryParts.isEmpty()) {
+        return "";
+      }
+      if (children == null) {
+        return "(" + Joiner.on(operation).join(queryParts) + ")";
+      }
+      // Concatenate our query parts with all children
+      List<String> result = new LinkedList<>(queryParts);
+      for (Object child: children) {
+        result.add(child.toString());
+      }
+      return "(" + Joiner.on(operation).join(result) + ")";
+    }
+
+    /**
+     * Add parameter for field fieldName with given value where value is any Object
+     * @param fieldName Field name to query for
+     * @param value Field value (can be any Object)
+     */
+    public QueryParamBuilder addObject(String fieldName, Object value) {
+      return addCustomParam(THIS + fieldName + " == :" + fieldName,
+              fieldName, value);
+    }
+
+    /**
+     * Add string parameter for field fieldName
+     * @param fieldName name of the field
+     * @param value String value. Value is normalized - converted to lower case and trimmed
+     * @return this
+     */
+    public QueryParamBuilder add(String fieldName, String value) {
+      return addCommon(fieldName, value, false);
+    }
+
+    /**
+     * Add string parameter to field value with or without normalization
+     * @param fieldName field name of the field
+     * @param value String value, inserted as is if preserveCase is true, normalized otherwise
+     * @param preserveCase if true, trm and lowercase the value.
+     * @return this
+     */
+    public QueryParamBuilder add(String fieldName, String value, boolean preserveCase) {
+      return addCommon(fieldName, value, preserveCase);
+    }
+
+    /**
+     * Add condition that fieldName is not equal to NULL
+     * @param fieldName field name to compare to NULL
+     * @return this
+     */
+    public QueryParamBuilder addNotNull(String fieldName) {
+      queryParts.add(String.format("this.%s != \"%s\"", fieldName, NULL_COL));
+      return this;
+    }
+
+    /**
+     * Add condition that fieldName is equal to NULL
+     * @param fieldName field name to compare to NULL
+     * @return this
+     */
+    public QueryParamBuilder addNull(String fieldName) {
+      queryParts.add(String.format("this.%s == \"%s\"", fieldName, NULL_COL));
+      return this;
+    }
+
+    /**
+     * Add custom string for evaluation together with a single parameter.
+     * This is used in cases where we need expression different from this.name == value
+     * @param expr String expression containing ':&lt paramName&gt' somewhere
+     * @param paramName parameter name
+     * @param value parameter value
+     * @return this
+     */
+    public QueryParamBuilder addCustomParam(String expr, String paramName, Object value) {
+      arguments.put(paramName, value);
+      queryParts.add(expr);
+      return this;
+    }
+
+    /**
+     * Add arbitrary query string without parameters
+     * @param expr String expression
+     * @return this
+     */
+    public QueryParamBuilder addString(String expr) {
+      queryParts.add(expr);
+      return this;
+    }
+
+    /**
+     * Add multiple conditions for set of values.
+     * <p>
+     * Example:
+     * <pre>
+     *  Set<String>names = new HashSet<>();
+     *  names.add("foo");
+     *  names.add("bar");
+     *  names.add("bob");
+     *  paramBuilder.addSet("prefix == ", names);
+     *  // Expect:"(prefix == :var0 && prefix == :var1 && prefix == :var2)"
+     *  paramBuilder.toString());
+     *  // paramBuilder(getArguments()) contains mapping for var0, var1 and var2
+     * </pre>
+     * @param prefix common prefix to use for expression
+     * @param values
+     * @return this
+     */
+    public QueryParamBuilder addSet(String prefix, Set<String> values) {
+      if (values == null) {
+        return this;
+      }
+      int index = 0;
+
+      // Add expressions of the form 'prefix :var$i'
+      for(String name: values) {
+        // Append index to the varName
+        String vName = String.format("var%d", index);
+        addCustomParam(prefix + ":" + vName, vName, name.trim().toLowerCase());
+        index++;
+      }
+      return this;
+    }
+
+    /**
+     * common code for adding string values
+     * @param fieldName field name to add
+     * @param value field value
+     * @param preserveCase if true, do not trim and lower
+     * @return this
+     */
+    private QueryParamBuilder addCommon(String fieldName, String value,
+                           boolean preserveCase) {
+      if (preserveCase) {
+        arguments.put(fieldName, toNULLCol(safeTrim(value)));
+      } else {
+        arguments.put(fieldName, toNULLCol(safeTrimLower(value)));
+      }
+      queryParts.add("this." + fieldName + " == :" + fieldName);
+      return this;
+    }
   }
 }
