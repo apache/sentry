@@ -156,8 +156,9 @@ limitations under the License.
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>javax.jdo</groupId>
-      <artifactId>jdo-api</artifactId>
+      <groupId>org.datanucleus</groupId>
+      <artifactId>javax.jdo</artifactId>
+      <version>3.2.0-m3</version>
     </dependency>
     <dependency>
       <groupId>org.datanucleus</groupId>
