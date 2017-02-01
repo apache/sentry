@@ -57,7 +57,8 @@ import org.apache.sentry.provider.db.service.thrift.SentryMetrics;
  */
 public class TransactionManager {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(TransactionManager.class);
+  private static final Logger LOGGER =
+          LoggerFactory.getLogger(TransactionManager.class);
 
   private final PersistenceManagerFactory pmf;
 
@@ -101,13 +102,13 @@ public class TransactionManager {
    * @param tb transaction block with code to execute
    * @return Object with the result of tb.execute()
    */
-  public Object executeTransaction(TransactionBlock tb) throws Exception {
+  public <T> T executeTransaction(TransactionBlock<T> tb) throws Exception {
     final Timer.Context context = transactionTimer.time();
     try (PersistenceManager pm = pmf.getPersistenceManager()) {
       Transaction transaction = pm.currentTransaction();
       transaction.begin();
       try {
-        Object result = tb.execute(pm);
+        T result = tb.execute(pm);
         transaction.commit();
         return result;
       } catch (Exception e) {
@@ -132,7 +133,8 @@ public class TransactionManager {
    * @param tb transaction block with code to execute
    * @return Object with the result of tb.execute()
    */
-  public Object executeTransactionWithRetry(TransactionBlock tb) throws Exception {
+  public <T> T executeTransactionWithRetry(TransactionBlock<T> tb)
+          throws Exception {
     int retryNum = 0;
     while (retryNum < transactionRetryMax) {
       try {
