@@ -291,11 +291,6 @@ limitations under the License.
           <systemPropertyVariables>
             <buildDirectory>${project.build.directory}</buildDirectory>
           </systemPropertyVariables>
-          <excludes combine.children="append">
-            <!-- These tests currently fail -->
-            <exclude>**/TestColumnEndToEnd.java</exclude>
-            <exclude>**/TestDatabaseProvider.java</exclude>
-          </excludes>
         </configuration>
       </plugin>
     </plugins>
