@@ -26,7 +26,9 @@ import org.apache.hadoop.hive.metastore.api.CurrentNotificationEventId;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.NotificationEvent;
 import org.apache.hadoop.hive.metastore.api.NotificationEventResponse;
+import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.SaslRpcServer;
+import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hive.hcatalog.messaging.HCatEventMessage;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.core.common.exception.*;
@@ -42,6 +44,7 @@ import org.apache.sentry.binding.metastore.messaging.json.*;
 import javax.security.auth.Subject;
 import javax.security.auth.login.LoginException;
 import java.io.File;
+import java.io.IOException;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.List;
@@ -67,8 +70,6 @@ public class HMSFollower implements Runnable {
   private boolean kerberos;
   private final SentryStore sentryStore;
   private String hiveInstance;
-  private static final int maxRetriesForLogin = 3;
-  private static final int maxRetriesForConnection = 3;
 
   private volatile UpdateableAuthzPaths authzPaths;
   private boolean needHiveSnapshot = true;
@@ -103,7 +104,7 @@ public class HMSFollower implements Runnable {
    * Throws @MetaException if there was a problem on creating an HMSClient
    */
   private HiveMetaStoreClient getMetaStoreClient(Configuration conf)
-      throws LoginException, MetaException {
+      throws LoginException, MetaException, PrivilegedActionException {
     if(client != null) {
       return client;
     }
@@ -121,15 +122,20 @@ public class HMSFollower implements Runnable {
 
     //TODO: Is this the right(standard) way to create a HMS client? HiveMetastoreClientFactoryImpl?
     //TODO: Check if HMS is using kerberos instead of relying on Sentry conf
-    //TODO: Handle TGT renewals
     kerberos = ServiceConstants.ServerConfig.SECURITY_MODE_KERBEROS.equalsIgnoreCase(
         conf.get(ServiceConstants.ServerConfig.SECURITY_MODE, ServiceConstants.ServerConfig.SECURITY_MODE_KERBEROS).trim());
     if (kerberos) {
       LOGGER.info("Making a kerberos connection to HMS");
-      //TODO: Is this needed? Use Hadoop libraries to translate the _HOST placeholder with actual hostname
-      //Validate principal
-      principal = Preconditions.checkNotNull(ServiceConstants.ServerConfig.PRINCIPAL,
-          ServiceConstants.ServerConfig.PRINCIPAL + " is required");
+      try {
+        int port = conf.getInt(ServiceConstants.ServerConfig.RPC_PORT, ServiceConstants.ServerConfig.RPC_PORT_DEFAULT);
+        String rawPrincipal = Preconditions.checkNotNull(conf.get(ServiceConstants.ServerConfig.PRINCIPAL),
+            ServiceConstants.ServerConfig.PRINCIPAL + " is required");
+        principal = SecurityUtil.getServerPrincipal(rawPrincipal, NetUtils.createSocketAddr(
+            conf.get(ServiceConstants.ServerConfig.RPC_ADDRESS, ServiceConstants.ServerConfig.RPC_ADDRESS_DEFAULT), port).getAddress());
+      } catch(IOException io) {
+        throw new RuntimeException("Can't translate kerberos principal'", io);
+      }
+
       LOGGER.info("Using kerberos principal: " + principal);
       final String[] principalParts = SaslRpcServer.splitKerberosName(principal);
       Preconditions.checkArgument(principalParts.length == 3,
@@ -140,39 +146,31 @@ public class HMSFollower implements Runnable {
       File keytabFile = new File(keytab);
       Preconditions.checkState(keytabFile.isFile() && keytabFile.canRead(),
           "Keytab " + keytab + " does not exist or is not readable.");
-      boolean establishedKerberosContext = false;
-      int attempt = 1;
-      while(establishedKerberosContext) {
-        try {
-          kerberosContext = new SentryKerberosContext(principal, keytab, true);
-          establishedKerberosContext = true;
-          LOGGER.info("Established kerberos context, will now connect to HMS");
-        } catch (LoginException e) {
-          //Kerberos login failed
-          if( attempt > maxRetriesForLogin ) {
-            throw e;
+
+      try {
+        // Instantiating SentryKerberosContext in non-server mode handles the ticket renewal.
+        kerberosContext = new SentryKerberosContext(principal, keytab, false);
+
+        // HiveMetaStoreClient handles the connection retry logic to HMS and can be configured using properties:
+        // hive.metastore.connect.retries, hive.metastore.client.connect.retry.delay
+        client = Subject.doAs(kerberosContext.getSubject(), new PrivilegedExceptionAction<HiveMetaStoreClient>() {
+          @Override
+          public HiveMetaStoreClient run() throws Exception {
+            return new HiveMetaStoreClient(hiveConf);
           }
-          attempt++;
-        }
-      }
-      boolean establishedConnection = false;
-      attempt = 1;
-      while(establishedConnection) {
-        try {
-          client = Subject.doAs(kerberosContext.getSubject(), new PrivilegedExceptionAction<HiveMetaStoreClient>() {
-            @Override
-            public HiveMetaStoreClient run() throws Exception {
-              return new HiveMetaStoreClient(hiveConf);
-            }
-          });
-          LOGGER.info("Secure connection established with HMS");
-        } catch (PrivilegedActionException e) {
-          if( attempt > maxRetriesForConnection ) {
-            //We should just retry as it is possible that HMS is not ready yet to receive requests
-            //TODO: How do we differentiate between kerberos problem versus HMS not being up?
-            LOGGER.error("Cannot connect to HMS", e);
-          }
-          attempt++;
+        });
+        LOGGER.info("Secure connection established with HMS");
+      } catch (LoginException e) {
+        // Kerberos login failed
+        LOGGER.error("Failed to setup kerberos context.");
+        throw e;
+      } catch (PrivilegedActionException e) {
+        LOGGER.error("Failed to setup secure connection to HMS.");
+        throw e;
+      } finally {
+        // Shutdown kerberos context if HMS connection failed to setup to avoid thread leaks.
+        if (kerberosContext != null && client == null) {
+          kerberosContext.shutDown();
         }
       }
     } else {
@@ -196,7 +194,7 @@ public class HMSFollower implements Runnable {
           LOGGER.info("HMSFollower of Sentry successfully connected to HMS");
         }
       } catch (Exception e) {
-        LOGGER.error("HMSFollower cannot connect to HMS!!");
+        LOGGER.error("HMSFollower cannot connect to HMS!!", e);
         return;
       }
     }
