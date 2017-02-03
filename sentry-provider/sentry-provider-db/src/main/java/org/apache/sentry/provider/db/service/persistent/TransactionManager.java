@@ -34,12 +34,14 @@ import javax.jdo.Transaction;
 
 import org.apache.sentry.provider.db.service.thrift.SentryMetrics;
 
+import java.util.List;
 
 /**
  * TransactionManager is used for executing the database transaction, it supports
  * the transaction with retry mechanism for the unexpected exceptions,
  * except <em>SentryUserExceptions</em>, eg, <em>SentryNoSuchObjectException</em>,
- * <em>SentryAlreadyExistsException</em> etc. <p>
+ * <em>SentryAlreadyExistsException</em> etc. For <em>SentryUserExceptions</em>,
+ * will simply throw the exception without retry<p>
  *
  * The purpose of the class is to separate all transaction housekeeping (opening
  * transaction, rolling back failed transactions) from the actual transaction
@@ -99,7 +101,8 @@ public class TransactionManager {
    * Execute some code as a single transaction, the code in tb.execute()
    * should not start new transaction or manipulate transactions with the
    * PersistenceManager.
-   * @param tb transaction block with code to execute
+   *
+   * @param tb transaction block with code to be executed
    * @return Object with the result of tb.execute()
    */
   public <T> T executeTransaction(TransactionBlock<T> tb) throws Exception {
@@ -129,7 +132,46 @@ public class TransactionManager {
   }
 
   /**
-   * Execute some code as a single transaction with retry mechanism
+   * Execute a list of TransactionBlock code as a single transaction.
+   * The code in tb.execute() should not start new transaction or
+   * manipulate transactions with the PersistenceManager. It returns
+   * the result of the last transaction block execution.
+   *
+   * @param tbs transaction blocks with code to be executed
+   * @return the result of the last result of tb.execute()
+   */
+  public <T> T executeTransaction(Iterable<TransactionBlock<T>> tbs) throws Exception {
+    final Timer.Context context = transactionTimer.time();
+    try (PersistenceManager pm = pmf.getPersistenceManager()) {
+      Transaction transaction = pm.currentTransaction();
+      transaction.begin();
+      try {
+        T result = null;
+        for (TransactionBlock<T> tb : tbs) {
+          result = tb.execute(pm);
+        }
+        transaction.commit();
+        return result;
+      } catch (Exception e) {
+        // Count total failed transactions
+        failedTransactionsCount.inc();
+        // Count specific exceptions
+        SentryMetrics.getInstance().getCounter(name(TransactionManager.class,
+            "exception", e.getClass().getSimpleName())).inc();
+        // Re-throw the exception
+        throw e;
+      } finally {
+        context.stop();
+        if (transaction.isActive()) {
+          transaction.rollback();
+        }
+      }
+    }
+  }
+
+  /**
+   * Execute some code as a single transaction with retry mechanism.
+   *
    * @param tb transaction block with code to execute
    * @return Object with the result of tb.execute()
    */
@@ -139,20 +181,55 @@ public class TransactionManager {
     while (retryNum < transactionRetryMax) {
       try {
         return executeTransaction(tb);
-      } catch (Exception e) {
+      } catch (SentryUserException e) {
         // throw the sentry exception without retry
-        if (e instanceof SentryUserException) {
-          throw e;
-        }
+        throw e;
+      } catch (Exception e) {
         retryNum++;
         if (retryNum >= transactionRetryMax) {
-          String message = "The transaction has reached max retry number, will not retry again.";
+          String message = "The transaction has reached max retry numbe, r"
+              + e.getMessage();
           LOGGER.error(message, e);
           throw new Exception(message, e);
         }
         retryCount.inc();
-        LOGGER.warn("Exception is thrown, retry the transaction, current retry num is:"
-            + retryNum + ", the max retry num is: " + transactionRetryMax, e);
+        LOGGER.warn("Exception during transaction execution, retrying "
+            + retryNum + "times. The max retry num is: " + transactionRetryMax, e);
+        Thread.sleep(retryWaitTimeMills);
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Execute a list of TransactionBlock code as a single transaction.
+   * If any of the TransactionBlock fail, all the TransactionBlocks would
+   * retry. It returns the result of the last transaction block
+   * execution.
+   *
+   * @param tbs a list of transaction blocks with code to be executed.
+   * @return the result of the last transaction block execution.
+   */
+  public <T> T executeTransactionBlocksWithRetry(Iterable<TransactionBlock<T>> tbs)
+          throws Exception {
+    int retryNum = 0;
+    while (retryNum < transactionRetryMax) {
+      try {
+        return executeTransaction(tbs);
+      } catch (SentryUserException e) {
+        // throw the sentry exception without retry
+        throw e;
+      } catch (Exception e) {
+        retryNum++;
+        if (retryNum >= transactionRetryMax) {
+          String message = "The transaction has reached max retry number, "
+              + e.getMessage();
+          LOGGER.error(message, e);
+          throw new Exception(message, e);
+        }
+        retryCount.inc();
+        LOGGER.warn("Exception during transaction execution, retrying "
+            + retryNum + "times. The max retry num is: " + transactionRetryMax, e);
         Thread.sleep(retryWaitTimeMills);
       }
     }

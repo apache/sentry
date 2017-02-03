@@ -17,7 +17,6 @@
  */
 package org.apache.sentry.hdfs;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -218,6 +217,7 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
 
   @Override
   public PermissionsUpdate createFullImageUpdate(long currSeqNum) {
+    // Using in-memory cache perms to create a full permission snapshot.
     PermissionsUpdate retVal = new PermissionsUpdate(currSeqNum, true);
     for (PrivilegeInfo pInfo : perms.getAllPrivileges()) {
       TPrivilegeChanges pUpdate = retVal.addPrivilegeUpdate(pInfo.getAuthzObj());

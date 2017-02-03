@@ -117,4 +117,31 @@ public class PermissionsUpdate implements Updateable.Update {
   public String JSONSerialize() throws TException {
     return ThriftSerializer.serializeToJSON(tPermUpdate);
   }
+
+  @Override
+  public int hashCode() {
+    return (tPermUpdate == null) ? 0 : tPermUpdate.hashCode();
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj == null) {
+      return false;
+    }
+
+    if (this == obj) {
+      return true;
+    }
+
+    if (getClass() != obj.getClass()) {
+      return false;
+    }
+
+    PermissionsUpdate other = (PermissionsUpdate) obj;
+    if (tPermUpdate == null) {
+      return other.tPermUpdate == null;
+    }
+    return tPermUpdate.equals(other.tPermUpdate);
+  }
+
 }

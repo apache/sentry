@@ -30,12 +30,10 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.common.utils.SigUtils;
 import org.apache.sentry.hdfs.ServiceConstants.ServerConfig;
 import org.apache.sentry.hdfs.UpdateForwarder.ExternalImageRetriever;
-import org.apache.sentry.hdfs.service.thrift.TPathChanges;
 import org.apache.sentry.hdfs.service.thrift.TPermissionsUpdate;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
 import org.apache.sentry.hdfs.service.thrift.TRoleChanges;
 import org.apache.sentry.provider.db.SentryPolicyStorePlugin;
-import org.apache.sentry.provider.db.SentryPolicyStorePlugin.SentryPluginException;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleAddGroupsRequest;
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleDeleteGroupsRequest;
@@ -44,11 +42,13 @@ import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleRevokePrivil
 import org.apache.sentry.provider.db.service.thrift.TDropPrivilegesRequest;
 import org.apache.sentry.provider.db.service.thrift.TDropSentryRoleRequest;
 import org.apache.sentry.provider.db.service.thrift.TRenamePrivilegesRequest;
-import org.apache.sentry.provider.db.service.thrift.TSentryAuthorizable;
 import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
+import org.apache.sentry.service.thrift.HMSFollower;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.sentry.hdfs.Updateable.Update;
 
   /**
    * SentryPlugin facilitates HDFS synchronization between HMS and NameNode.
@@ -164,12 +164,13 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
 
   private UpdateForwarder<PathsUpdate> pathsUpdater;
   private UpdateForwarder<PermissionsUpdate> permsUpdater;
+  // TODO: Each perm change sequence number should be generated during persistence at sentry store.
   private final AtomicLong permSeqNum = new AtomicLong(5);
   private PermImageRetriever permImageRetriever;
   private boolean outOfSync = false;
   /*
    * This number is smaller than starting sequence numbers used by NN and HMS
-   * so in both cases its effect is to creat appearence of out-of-sync
+   * so in both cases its effect is to create appearance of out-of-sync
    * updates on the Sentry server (as if there were no previous updates at all).
    * It, in turn, triggers a) pushing full update from HMS to Sentry and
    * b) pulling full update from Sentry to NameNode.
@@ -289,19 +290,21 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
   }
 
   @Override
-  public void onAlterSentryRoleAddGroups(
+  public Update onAlterSentryRoleAddGroups(
       TAlterSentryRoleAddGroupsRequest request) throws SentryPluginException {
     PermissionsUpdate update = new PermissionsUpdate(permSeqNum.incrementAndGet(), false);
     TRoleChanges rUpdate = update.addRoleUpdate(request.getRoleName());
     for (TSentryGroup group : request.getGroups()) {
       rUpdate.addToAddGroups(group.getGroupName());
     }
+
     permsUpdater.handleUpdateNotification(update);
     LOGGER.debug("Authz Perm preUpdate [" + update.getSeqNum() + ", " + request.getRoleName() + "]..");
+    return update;
   }
 
   @Override
-  public void onAlterSentryRoleDeleteGroups(
+  public Update onAlterSentryRoleDeleteGroups(
       TAlterSentryRoleDeleteGroupsRequest request)
           throws SentryPluginException {
     PermissionsUpdate update = new PermissionsUpdate(permSeqNum.incrementAndGet(), false);
@@ -309,58 +312,75 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
     for (TSentryGroup group : request.getGroups()) {
       rUpdate.addToDelGroups(group.getGroupName());
     }
+
     permsUpdater.handleUpdateNotification(update);
     LOGGER.debug("Authz Perm preUpdate [" + update.getSeqNum() + ", " + request.getRoleName() + "]..");
+    return update;
   }
 
   @Override
-  public void onAlterSentryRoleGrantPrivilege(
-      TAlterSentryRoleGrantPrivilegeRequest request)
-          throws SentryPluginException {
+  public void onAlterSentryRoleGrantPrivilege(TAlterSentryRoleGrantPrivilegeRequest request,
+          Map<TSentryPrivilege, Update> privilegesUpdateMap) throws SentryPluginException {
+
     if (request.isSetPrivileges()) {
       String roleName = request.getRoleName();
+
       for (TSentryPrivilege privilege : request.getPrivileges()) {
         if(!("COLUMN".equalsIgnoreCase(privilege.getPrivilegeScope()))) {
-          onAlterSentryRoleGrantPrivilegeCore(roleName, privilege);
+          PermissionsUpdate update = onAlterSentryRoleGrantPrivilegeCore(roleName, privilege);
+          if (update != null && privilegesUpdateMap != null) {
+            privilegesUpdateMap.put(privilege, update);
+          }
         }
       }
     }
   }
 
-  private void onAlterSentryRoleGrantPrivilegeCore(String roleName, TSentryPrivilege privilege)
+  private PermissionsUpdate onAlterSentryRoleGrantPrivilegeCore(String roleName, TSentryPrivilege privilege)
       throws SentryPluginException {
     String authzObj = getAuthzObj(privilege);
-    if (authzObj != null) {
-      PermissionsUpdate update = new PermissionsUpdate(permSeqNum.incrementAndGet(), false);
-      update.addPrivilegeUpdate(authzObj).putToAddPrivileges(
-          roleName, privilege.getAction().toUpperCase());
-      permsUpdater.handleUpdateNotification(update);
-      LOGGER.debug("Authz Perm preUpdate [" + update.getSeqNum() + "]..");
+    if (authzObj == null) {
+      return null;
     }
+
+    PermissionsUpdate update = new PermissionsUpdate(permSeqNum.incrementAndGet(), false);
+    update.addPrivilegeUpdate(authzObj).putToAddPrivileges(
+        roleName, privilege.getAction().toUpperCase());
+
+    permsUpdater.handleUpdateNotification(update);
+    LOGGER.debug("Authz Perm preUpdate [" + update.getSeqNum() + "]..");
+    return update;
   }
 
   @Override
-  public void onRenameSentryPrivilege(TRenamePrivilegesRequest request)
+  public Update onRenameSentryPrivilege(TRenamePrivilegesRequest request)
       throws SentryPluginException {
-    String oldAuthz = getAuthzObj(request.getOldAuthorizable());
-    String newAuthz = getAuthzObj(request.getNewAuthorizable());
+    String oldAuthz = HMSFollower.getAuthzObj(request.getOldAuthorizable());
+    String newAuthz = HMSFollower.getAuthzObj(request.getNewAuthorizable());
     PermissionsUpdate update = new PermissionsUpdate(permSeqNum.incrementAndGet(), false);
     TPrivilegeChanges privUpdate = update.addPrivilegeUpdate(PermissionsUpdate.RENAME_PRIVS);
     privUpdate.putToAddPrivileges(newAuthz, newAuthz);
     privUpdate.putToDelPrivileges(oldAuthz, oldAuthz);
+
     permsUpdater.handleUpdateNotification(update);
     LOGGER.debug("Authz Perm preUpdate [" + update.getSeqNum() + ", " + newAuthz + ", " + oldAuthz + "]..");
+    return update;
   }
 
   @Override
-  public void onAlterSentryRoleRevokePrivilege(
-      TAlterSentryRoleRevokePrivilegeRequest request)
+  public void onAlterSentryRoleRevokePrivilege(TAlterSentryRoleRevokePrivilegeRequest request,
+      Map<TSentryPrivilege, Update> privilegesUpdateMap)
           throws SentryPluginException {
+
     if (request.isSetPrivileges()) {
       String roleName = request.getRoleName();
+
       for (TSentryPrivilege privilege : request.getPrivileges()) {
         if(!("COLUMN".equalsIgnoreCase(privilege.getPrivilegeScope()))) {
-          onAlterSentryRoleRevokePrivilegeCore(roleName, privilege);
+          PermissionsUpdate update = onAlterSentryRoleRevokePrivilegeCore(roleName, privilege);
+          if (update != null && privilegesUpdateMap != null) {
+            privilegesUpdateMap.put(privilege, update);
+          }
         }
       }
     }
@@ -374,38 +394,46 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
     this.outOfSync = outOfSync;
   }
 
-  private void onAlterSentryRoleRevokePrivilegeCore(String roleName, TSentryPrivilege privilege)
+  private PermissionsUpdate onAlterSentryRoleRevokePrivilegeCore(String roleName, TSentryPrivilege privilege)
       throws SentryPluginException {
     String authzObj = getAuthzObj(privilege);
-    if (authzObj != null) {
-      PermissionsUpdate update = new PermissionsUpdate(permSeqNum.incrementAndGet(), false);
-      update.addPrivilegeUpdate(authzObj).putToDelPrivileges(
-          roleName, privilege.getAction().toUpperCase());
-      permsUpdater.handleUpdateNotification(update);
-      LOGGER.debug("Authz Perm preUpdate [" + update.getSeqNum() + ", " + authzObj + "]..");
+    if (authzObj == null) {
+      return null;
     }
+
+    PermissionsUpdate update = new PermissionsUpdate(permSeqNum.incrementAndGet(), false);
+    update.addPrivilegeUpdate(authzObj).putToDelPrivileges(
+        roleName, privilege.getAction().toUpperCase());
+
+    permsUpdater.handleUpdateNotification(update);
+    LOGGER.debug("Authz Perm preUpdate [" + update.getSeqNum() + ", " + authzObj + "]..");
+    return update;
   }
 
   @Override
-  public void onDropSentryRole(TDropSentryRoleRequest request)
+  public Update onDropSentryRole(TDropSentryRoleRequest request)
       throws SentryPluginException {
     PermissionsUpdate update = new PermissionsUpdate(permSeqNum.incrementAndGet(), false);
     update.addPrivilegeUpdate(PermissionsUpdate.ALL_AUTHZ_OBJ).putToDelPrivileges(
         request.getRoleName(), PermissionsUpdate.ALL_AUTHZ_OBJ);
     update.addRoleUpdate(request.getRoleName()).addToDelGroups(PermissionsUpdate.ALL_GROUPS);
+
     permsUpdater.handleUpdateNotification(update);
     LOGGER.debug("Authz Perm preUpdate [" + update.getSeqNum() + ", " + request.getRoleName() + "]..");
+    return update;
   }
 
   @Override
-  public void onDropSentryPrivilege(TDropPrivilegesRequest request)
+  public Update onDropSentryPrivilege(TDropPrivilegesRequest request)
       throws SentryPluginException {
     PermissionsUpdate update = new PermissionsUpdate(permSeqNum.incrementAndGet(), false);
-    String authzObj = getAuthzObj(request.getAuthorizable());
+    String authzObj = HMSFollower.getAuthzObj(request.getAuthorizable());
     update.addPrivilegeUpdate(authzObj).putToDelPrivileges(
         PermissionsUpdate.ALL_ROLES, PermissionsUpdate.ALL_ROLES);
+
     permsUpdater.handleUpdateNotification(update);
     LOGGER.debug("Authz Perm preUpdate [" + update.getSeqNum() + ", " + authzObj + "]..");
+    return update;
   }
 
   @Override
@@ -421,20 +449,6 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
     if (!SentryStore.isNULL(privilege.getDbName())) {
       String dbName = privilege.getDbName();
       String tblName = privilege.getTableName();
-      if (SentryStore.isNULL(tblName)) {
-        authzObj = dbName;
-      } else {
-        authzObj = dbName + "." + tblName;
-      }
-    }
-    return authzObj == null ? null : authzObj.toLowerCase();
-  }
-
-  private String getAuthzObj(TSentryAuthorizable authzble) {
-    String authzObj = null;
-    if (!SentryStore.isNULL(authzble.getDb())) {
-      String dbName = authzble.getDb();
-      String tblName = authzble.getTable();
       if (SentryStore.isNULL(tblName)) {
         authzObj = dbName;
       } else {
