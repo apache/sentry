@@ -173,4 +173,30 @@ public class PathsUpdate implements Updateable.Update {
     return ThriftSerializer.serializeToJSON(tPathsUpdate);
   }
 
+  @Override
+  public int hashCode() {
+    return (tPathsUpdate == null) ? 0 : tPathsUpdate.hashCode();
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj == null) {
+      return false;
+    }
+
+    if (this == obj) {
+      return true;
+    }
+
+    if (getClass() != obj.getClass()) {
+      return false;
+    }
+
+    PathsUpdate other = (PathsUpdate) obj;
+    if (tPathsUpdate == null) {
+      return other.tPathsUpdate == null;
+    }
+    return tPathsUpdate.equals(other.tPathsUpdate);
+  }
+
 }

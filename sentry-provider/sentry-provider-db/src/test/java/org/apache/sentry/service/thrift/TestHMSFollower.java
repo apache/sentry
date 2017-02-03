@@ -17,13 +17,11 @@
 package org.apache.sentry.service.thrift;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.*;
 import org.apache.hive.hcatalog.messaging.HCatEventMessage;
 import org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageFactory;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.provider.db.service.thrift.TSentryAuthorizable;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -56,8 +54,9 @@ public class TestHMSFollower {
     authorizable.setServer(hiveInstance);
     authorizable.setDb("db1");
 
-    verify(sentryStore, times(1)).dropPrivilege(authorizable);
+    verify(sentryStore, times(1)).dropPrivilege(authorizable, HMSFollower.onDropSentryPrivilege(authorizable));
   }
+
   @Test
   public void testDropDatabase() throws Exception {
     String dbName = "db1";
@@ -76,7 +75,7 @@ public class TestHMSFollower {
     authorizable.setServer(hiveInstance);
     authorizable.setDb("db1");
 
-    verify(sentryStore, times(1)).dropPrivilege(authorizable);
+    verify(sentryStore, times(1)).dropPrivilege(authorizable, HMSFollower.onDropSentryPrivilege(authorizable)) ;
   }
   @Test
   public void testCreateTable() throws Exception {
@@ -100,7 +99,7 @@ public class TestHMSFollower {
     authorizable.setDb("db1");
     authorizable.setTable(tableName);
 
-    verify(sentryStore, times(1)).dropPrivilege(authorizable);
+    verify(sentryStore, times(1)).dropPrivilege(authorizable, HMSFollower.onDropSentryPrivilege(authorizable));
   }
   @Test
   public void testDropTable() throws Exception {
@@ -124,7 +123,7 @@ public class TestHMSFollower {
     authorizable.setDb("db1");
     authorizable.setTable(tableName);
 
-    verify(sentryStore, times(1)).dropPrivilege(authorizable);
+    verify(sentryStore, times(1)).dropPrivilege(authorizable, HMSFollower.onDropSentryPrivilege(authorizable));
   }
   @Test
   public void testRenameTable() throws Exception {
@@ -160,6 +159,6 @@ public class TestHMSFollower {
     newAuthorizable.setDb(newDbName);
     newAuthorizable.setTable(newTableName);
 
-    verify(sentryStore, times(1)).renamePrivilege(authorizable, newAuthorizable);
+    verify(sentryStore, times(1)).renamePrivilege(authorizable, newAuthorizable, HMSFollower.onRenameSentryPrivilege(authorizable, newAuthorizable));
   }
 }

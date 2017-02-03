@@ -217,6 +217,7 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
 
   @Override
   public PermissionsUpdate createFullImageUpdate(long currSeqNum) {
+    // Using in-memory cache perms to create a full permission snapshot.
     PermissionsUpdate retVal = new PermissionsUpdate(currSeqNum, true);
     for (PrivilegeInfo pInfo : perms.getAllPrivileges()) {
       TPrivilegeChanges pUpdate = retVal.addPrivilegeUpdate(pInfo.getAuthzObj());

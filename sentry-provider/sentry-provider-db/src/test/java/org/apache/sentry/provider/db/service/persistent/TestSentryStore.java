@@ -35,6 +35,10 @@ import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.common.exception.SentryAlreadyExistsException;
 import org.apache.sentry.core.common.exception.SentryGrantDeniedException;
 import org.apache.sentry.core.common.exception.SentryNoSuchObjectException;
+import org.apache.sentry.hdfs.PermissionsUpdate;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
+import org.apache.sentry.hdfs.service.thrift.TRoleChanges;
+import org.apache.sentry.provider.db.service.model.MSentryPermChange;
 import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
 import org.apache.sentry.provider.db.service.thrift.TSentryActiveRoleSet;
@@ -56,6 +60,8 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
+
+import static org.apache.sentry.hdfs.Updateable.Update;
 
 public class TestSentryStore extends org.junit.Assert {
 
@@ -2261,6 +2267,208 @@ public class TestSentryStore extends org.junit.Assert {
     result.add((String)params.get("var2"));
     assertTrue(result.containsAll(names));
     assertTrue(names.containsAll(result));
+  }
+
+  @Test
+  public void testPrivilegesWithPermUpdate() throws Exception {
+    String roleName = "test-privilege";
+    String grantor = "g1";
+    String server = "server1";
+    String db = "db1";
+    String table = "tbl1";
+    String authzObj = "db1.tbl1";
+    createRole(roleName);
+
+    TSentryPrivilege privilege = new TSentryPrivilege();
+    privilege.setPrivilegeScope("Column");
+    privilege.setServerName(server);
+    privilege.setDbName(db);
+    privilege.setTableName(table);
+    privilege.setAction(AccessConstants.SELECT);
+    privilege.setCreateTime(System.currentTimeMillis());
+
+    // Generate the permission add update authzObj "db1.tbl1"
+    PermissionsUpdate addUpdate = new PermissionsUpdate(0, false);
+    addUpdate.addPrivilegeUpdate(authzObj).putToAddPrivileges(
+        roleName, privilege.getAction().toUpperCase());
+
+    // Grant the privilege to role test-privilege and verify it has been persisted.
+    Map<TSentryPrivilege, Update> addPrivilegesUpdateMap = Maps.newHashMap();
+    addPrivilegesUpdateMap.put(privilege, addUpdate);
+    sentryStore.alterSentryRoleGrantPrivileges(grantor, roleName, Sets.newHashSet(privilege), addPrivilegesUpdateMap);
+    MSentryRole role = sentryStore.getMSentryRoleByName(roleName);
+    Set<MSentryPrivilege> privileges = role.getPrivileges();
+    assertEquals(privileges.toString(), 1, privileges.size());
+
+    // Query the persisted perm change and ensure it equals to the original one
+    long lastChangeID = sentryStore.getLastProcessedPermChangeID();
+    MSentryPermChange addPermChange = sentryStore.getMSentryPermChangeByID(lastChangeID);
+    assertEquals(addUpdate.JSONSerialize(), addPermChange.getPermChange());
+
+    // Generate the permission delete update authzObj "db1.tbl1"
+    PermissionsUpdate delUpdate = new PermissionsUpdate(0, false);
+    delUpdate.addPrivilegeUpdate(authzObj).putToDelPrivileges(
+        roleName, privilege.getAction().toUpperCase());
+
+    // Revoke the same privilege and verify it has been removed.
+    Map<TSentryPrivilege, Update> delPrivilegesUpdateMap = Maps.newHashMap();
+    delPrivilegesUpdateMap.put(privilege, delUpdate);
+    sentryStore.alterSentryRoleRevokePrivileges(grantor, roleName,
+        Sets.newHashSet(privilege), delPrivilegesUpdateMap);
+    role = sentryStore.getMSentryRoleByName(roleName);
+    privileges = role.getPrivileges();
+    assertEquals(0, privileges.size());
+
+    // Query the persisted perm change and ensure it equals to the original one
+    MSentryPermChange delPermChange = sentryStore.getMSentryPermChangeByID(lastChangeID + 1);
+    assertEquals(delUpdate.JSONSerialize(), delPermChange.getPermChange());
+  }
+
+  @Test
+  public void testAddDeleteGroupsWithPermUpdate() throws Exception {
+    String roleName = "test-groups";
+    String grantor = "g1";
+    createRole(roleName);
+
+    Set<TSentryGroup> groups = Sets.newHashSet();
+    TSentryGroup group = new TSentryGroup();
+    group.setGroupName("test-groups-g1");
+    groups.add(group);
+    group = new TSentryGroup();
+    group.setGroupName("test-groups-g2");
+    groups.add(group);
+
+    // Generate the permission add update for role "test-groups"
+    PermissionsUpdate addUpdate = new PermissionsUpdate(0, false);
+    TRoleChanges addrUpdate = addUpdate.addRoleUpdate(roleName);
+    for (TSentryGroup g : groups) {
+      addrUpdate.addToAddGroups(g.getGroupName());
+    }
+
+    // Assign the role "test-groups" to the groups and verify.
+    sentryStore.alterSentryRoleAddGroups(grantor, roleName, groups, addUpdate);
+    MSentryRole role = sentryStore.getMSentryRoleByName(roleName);
+    assertEquals(2, role.getGroups().size());
+
+    // Query the persisted perm change and ensure it equals to the original one
+    long lastChangeID = sentryStore.getLastProcessedPermChangeID();
+    MSentryPermChange addPermChange = sentryStore.getMSentryPermChangeByID(lastChangeID);
+    assertEquals(addUpdate.JSONSerialize(), addPermChange.getPermChange());
+
+    // Generate the permission add update for role "test-groups"
+    PermissionsUpdate delUpdate = new PermissionsUpdate(0, false);
+    TRoleChanges delrUpdate = delUpdate.addRoleUpdate(roleName);
+    for (TSentryGroup g : groups) {
+      delrUpdate.addToDelGroups(g.getGroupName());
+    }
+
+    // Revoke the role "test-groups" to the groups and verify.
+    sentryStore.alterSentryRoleDeleteGroups(roleName, groups, delUpdate);
+    role = sentryStore.getMSentryRoleByName(roleName);
+    assertEquals(Collections.emptySet(), role.getGroups());
+
+    // Query the persisted perm change and ensure it equals to the original one
+    MSentryPermChange delPermChange = sentryStore.getMSentryPermChangeByID(lastChangeID + 1);
+    assertEquals(delUpdate.JSONSerialize(), delPermChange.getPermChange());
+  }
+
+  @Test
+  public void testCreateDropRoleWithPermUpdate() throws Exception {
+    String roleName = "test-drop-role";
+    createRole(roleName);
+
+    // Generate the permission del update for dropping role "test-drop-role"
+    PermissionsUpdate delUpdate = new PermissionsUpdate(0, false);
+    delUpdate.addPrivilegeUpdate(PermissionsUpdate.ALL_AUTHZ_OBJ).putToDelPrivileges(
+            roleName, PermissionsUpdate.ALL_AUTHZ_OBJ);
+    delUpdate.addRoleUpdate(roleName).addToDelGroups(PermissionsUpdate.ALL_GROUPS);
+
+    // Drop the role and verify.
+    sentryStore.dropSentryRole(roleName, delUpdate);
+    checkRoleDoesNotExist(roleName);
+
+    // Query the persisted perm change and ensure it equals to the original one
+    long lastChangeID = sentryStore.getLastProcessedPermChangeID();
+    MSentryPermChange delPermChange = sentryStore.getMSentryPermChangeByID(lastChangeID);
+    assertEquals(delUpdate.JSONSerialize(), delPermChange.getPermChange());
+  }
+
+  @Test
+  public void testDropObjWithPermUpdate() throws Exception {
+    String roleName1 = "list-privs-r1", roleName2 = "list-privs-r2";
+    String grantor = "g1";
+    sentryStore.createSentryRole(roleName1);
+    sentryStore.createSentryRole(roleName2);
+
+    String authzObj = "db1.tbl1";
+    TSentryPrivilege privilege_tbl1 = new TSentryPrivilege();
+    privilege_tbl1.setPrivilegeScope("TABLE");
+    privilege_tbl1.setServerName("server1");
+    privilege_tbl1.setDbName("db1");
+    privilege_tbl1.setTableName("tbl1");
+    privilege_tbl1.setCreateTime(System.currentTimeMillis());
+    privilege_tbl1.setAction("SELECT");
+
+    sentryStore.alterSentryRoleGrantPrivilege(grantor, roleName1, privilege_tbl1);
+
+    // Generate the permission drop update for dropping privilege for "db1.tbl1"
+    PermissionsUpdate dropUpdate = new PermissionsUpdate(0, false);
+    dropUpdate.addPrivilegeUpdate(authzObj).putToDelPrivileges(PermissionsUpdate.ALL_ROLES,
+            PermissionsUpdate.ALL_ROLES);
+
+    // Drop the privilege and verify.
+    sentryStore.dropPrivilege(toTSentryAuthorizable(privilege_tbl1), dropUpdate);
+    assertEquals(0, sentryStore.getAllTSentryPrivilegesByRoleName(roleName1).size());
+    assertEquals(0, sentryStore.getAllTSentryPrivilegesByRoleName(roleName2).size());
+
+    // Query the persisted perm change and ensure it equals to the original one
+    long lastChangeID = sentryStore.getLastProcessedPermChangeID();
+    MSentryPermChange dropPermChange = sentryStore.getMSentryPermChangeByID(lastChangeID);
+    assertEquals(dropUpdate.JSONSerialize(), dropPermChange.getPermChange());
+  }
+
+  @Test
+  public void testRenameObjWithPermUpdate() throws Exception {
+    String roleName1 = "role1", roleName2 = "role2", roleName3 = "role3";
+    String grantor = "g1";
+    String table1 = "tbl1", table2 = "tbl2";
+
+    sentryStore.createSentryRole(roleName1);
+
+    TSentryPrivilege privilege_tbl1 = new TSentryPrivilege();
+    privilege_tbl1.setPrivilegeScope("TABLE");
+    privilege_tbl1.setServerName("server1");
+    privilege_tbl1.setDbName("db1");
+    privilege_tbl1.setTableName(table1);
+    privilege_tbl1.setCreateTime(System.currentTimeMillis());
+    privilege_tbl1.setAction(AccessConstants.ALL);
+
+    sentryStore.alterSentryRoleGrantPrivilege(grantor, roleName1, privilege_tbl1);
+
+    // Generate the permission rename update for renaming privilege for "db1.tbl1"
+    String oldAuthz = "db1.tbl1";
+    String newAuthz = "db1.tbl2";
+    PermissionsUpdate renameUpdate = new PermissionsUpdate(0, false);
+    TPrivilegeChanges privUpdate = renameUpdate.addPrivilegeUpdate(PermissionsUpdate.RENAME_PRIVS);
+    privUpdate.putToAddPrivileges(newAuthz, newAuthz);
+    privUpdate.putToDelPrivileges(oldAuthz, oldAuthz);
+
+    // Rename the privilege and verify.
+    TSentryAuthorizable oldTable = toTSentryAuthorizable(privilege_tbl1);
+    TSentryAuthorizable newTable = toTSentryAuthorizable(privilege_tbl1);
+    newTable.setTable(table2);
+    sentryStore.renamePrivilege(oldTable, newTable, renameUpdate);
+
+    Set<TSentryPrivilege> privilegeSet = sentryStore.getAllTSentryPrivilegesByRoleName(roleName1);
+    assertEquals(1, privilegeSet.size());
+    for (TSentryPrivilege privilege : privilegeSet) {
+      assertTrue(table2.equalsIgnoreCase(privilege.getTableName()));
+    }
+
+    // Query the persisted perm change and ensure it equals to the original one
+    long lastChangeID = sentryStore.getLastProcessedPermChangeID();
+    MSentryPermChange renamePermChange = sentryStore.getMSentryPermChangeByID(lastChangeID);
+    assertEquals(renameUpdate.JSONSerialize(), renamePermChange.getPermChange());
   }
 
   protected static void addGroupsToUser(String user, String... groupNames) {

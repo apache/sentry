@@ -111,7 +111,6 @@ public class DelegateSentryStore implements SentryStoreLayer {
   @Override
   public Object alterRoleDeleteGroups(String component, String role,
       Set<String> groups, String requestor) throws Exception {
-  //called to old sentryStore
     delegate.alterSentryRoleDeleteGroups(role, toTSentryGroups(groups));
     return null;
   }
@@ -121,22 +120,21 @@ public class DelegateSentryStore implements SentryStoreLayer {
       final PrivilegeObject privilege, final String grantorPrincipal)
       throws Exception {
     delegate.getTransactionManager().executeTransactionWithRetry(
-        new TransactionBlock() {
-          public Object execute(PersistenceManager pm) throws Exception {
-            String trimmedRole = toTrimmedLower(role);
-            MSentryRole mRole = getRole(trimmedRole, pm);
-            if (mRole == null) {
-              throw new SentryNoSuchObjectException("Role: " + trimmedRole + " doesn't exist");
-            }
-            /*
-             * check with grant option
-             */
-            grantOptionCheck(privilege, grantorPrincipal, pm);
-
-            privilegeOperator.grantPrivilege(privilege, mRole, pm);
-            return null;
+      new TransactionBlock() {
+        public Object execute(PersistenceManager pm) throws Exception {
+          String trimmedRole = toTrimmedLower(role);
+          MSentryRole mRole = getRole(trimmedRole, pm);
+          if (mRole == null) {
+            throw new SentryNoSuchObjectException("Role: " + trimmedRole + " doesn't exist");
           }
-        });
+
+          // check with grant option
+          grantOptionCheck(privilege, grantorPrincipal, pm);
+
+          privilegeOperator.grantPrivilege(privilege, mRole, pm);
+          return null;
+        }
+      });
     return null;
   }
 
@@ -145,22 +143,21 @@ public class DelegateSentryStore implements SentryStoreLayer {
       final String role, final PrivilegeObject privilege, final String grantorPrincipal)
       throws Exception {
     delegate.getTransactionManager().executeTransactionWithRetry(
-        new TransactionBlock() {
-          public Object execute(PersistenceManager pm) throws Exception {
-            String trimmedRole = toTrimmedLower(role);
-            MSentryRole mRole = getRole(trimmedRole, pm);
-            if (mRole == null) {
-              throw new SentryNoSuchObjectException("Role: " + trimmedRole + " doesn't exist");
-            }
-            /*
-             * check with grant option
-             */
-            grantOptionCheck(privilege, grantorPrincipal, pm);
-
-            privilegeOperator.revokePrivilege(privilege, mRole, pm);
-            return null;
+      new TransactionBlock() {
+        public Object execute(PersistenceManager pm) throws Exception {
+          String trimmedRole = toTrimmedLower(role);
+          MSentryRole mRole = getRole(trimmedRole, pm);
+          if (mRole == null) {
+            throw new SentryNoSuchObjectException("Role: " + trimmedRole + " doesn't exist");
           }
-        });
+
+          // check with grant option
+          grantOptionCheck(privilege, grantorPrincipal, pm);
+
+          privilegeOperator.revokePrivilege(privilege, mRole, pm);
+          return null;
+        }
+      });
     return null;
   }
 

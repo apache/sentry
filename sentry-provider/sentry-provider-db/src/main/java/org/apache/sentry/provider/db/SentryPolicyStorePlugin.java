@@ -28,7 +28,20 @@ import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleRevokePrivil
 import org.apache.sentry.provider.db.service.thrift.TDropPrivilegesRequest;
 import org.apache.sentry.provider.db.service.thrift.TDropSentryRoleRequest;
 import org.apache.sentry.provider.db.service.thrift.TRenamePrivilegesRequest;
+import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 
+import java.util.Map;
+
+import static org.apache.sentry.hdfs.Updateable.Update;
+
+/**
+ * Interface for processing delta changes of Sentry permission and generate corresponding
+ * update. The updates will be persisted into Sentry store afterwards along with the actual
+ * operation.
+ *
+ * TODO: SENTRY-1588: add user level privilege change support. e.g. onAlterSentryRoleDeleteUsers,
+ * TODO: onAlterSentryRoleDeleteUsers.
+ */
 public interface SentryPolicyStorePlugin {
 
   @SuppressWarnings("serial")
@@ -43,18 +56,19 @@ public interface SentryPolicyStorePlugin {
 
   void initialize(Configuration conf, SentryStore sentryStore) throws SentryPluginException;
 
-  void onAlterSentryRoleAddGroups(TAlterSentryRoleAddGroupsRequest tRequest) throws SentryPluginException;
+  Update onAlterSentryRoleAddGroups(TAlterSentryRoleAddGroupsRequest tRequest) throws SentryPluginException;
 
-  void onAlterSentryRoleDeleteGroups(TAlterSentryRoleDeleteGroupsRequest tRequest) throws SentryPluginException;
+  Update onAlterSentryRoleDeleteGroups(TAlterSentryRoleDeleteGroupsRequest tRequest) throws SentryPluginException;
 
-  void onAlterSentryRoleGrantPrivilege(TAlterSentryRoleGrantPrivilegeRequest tRequest) throws SentryPluginException;
+  void onAlterSentryRoleGrantPrivilege(TAlterSentryRoleGrantPrivilegeRequest tRequest,
+        Map<TSentryPrivilege, Update> privilegesUpdateMap) throws SentryPluginException;
 
-  void onAlterSentryRoleRevokePrivilege(TAlterSentryRoleRevokePrivilegeRequest tRequest) throws SentryPluginException;
+  void onAlterSentryRoleRevokePrivilege(TAlterSentryRoleRevokePrivilegeRequest tRequest,
+        Map<TSentryPrivilege, Update> privilegesUpdateMap) throws SentryPluginException;
 
-  void onDropSentryRole(TDropSentryRoleRequest tRequest) throws SentryPluginException;
+  Update onDropSentryRole(TDropSentryRoleRequest tRequest) throws SentryPluginException;
 
-  void onRenameSentryPrivilege(TRenamePrivilegesRequest request) throws SentryPluginException;
+  Update onRenameSentryPrivilege(TRenamePrivilegesRequest request) throws SentryPluginException;
 
-  void onDropSentryPrivilege(TDropPrivilegesRequest request) throws SentryPluginException;
-
+  Update onDropSentryPrivilege(TDropPrivilegesRequest request) throws SentryPluginException;
 }

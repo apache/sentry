@@ -263,7 +263,7 @@
      </class>
 
      <class name="MSentryPermChange" table="SENTRY_PERM_CHANGE" identity-type="application" detachable="true">
-       <field name="changeID" primary-key="true">
+       <field name="changeID" primary-key="true" value-strategy="increment">
          <column name="CHANGE_ID" jdbc-type="BIGINT" allows-null="false"/>
        </field>
        <field name ="permChange">
@@ -275,7 +275,7 @@
      </class>
 
      <class name="MSentryPathChange" table="SENTRY_PATH_CHANGE" identity-type="application" detachable="true">
-       <field name="changeID" primary-key="true">
+       <field name="changeID" primary-key="true" value-strategy="increment">
          <column name="CHANGE_ID" jdbc-type="BIGINT" allows-null="false"/>
        </field>
        <field name ="pathChange">

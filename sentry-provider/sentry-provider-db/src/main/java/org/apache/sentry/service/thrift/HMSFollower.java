@@ -32,8 +32,11 @@ import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hive.hcatalog.messaging.HCatEventMessage;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.core.common.exception.*;
+import org.apache.sentry.hdfs.PermissionsUpdate;
 import org.apache.sentry.hdfs.UpdateableAuthzPaths;
 import org.apache.sentry.hdfs.FullUpdateInitializer;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
+import org.apache.sentry.provider.db.SentryPolicyStorePlugin;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.provider.db.service.thrift.TSentryAuthorizable;
 import org.apache.thrift.TException;
@@ -51,6 +54,7 @@ import java.util.List;
 
 import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SYNC_CREATE_WITH_POLICY_STORE;
 import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SYNC_DROP_WITH_POLICY_STORE;
+import static org.apache.sentry.hdfs.Updateable.Update;
 
 /**
  * HMSFollower is the thread which follows the Hive MetaStore state changes from Sentry.
@@ -437,14 +441,16 @@ public class HMSFollower implements Runnable {
   private void dropSentryDbPrivileges(String dbName) throws Exception {
     TSentryAuthorizable authorizable = new TSentryAuthorizable(hiveInstance);
     authorizable.setDb(dbName);
-    sentryStore.dropPrivilege(authorizable);
+    sentryStore.dropPrivilege(authorizable, onDropSentryPrivilege(authorizable));
   }
+
   private void dropSentryTablePrivileges(String dbName, String tableName) throws Exception {
     TSentryAuthorizable authorizable = new TSentryAuthorizable(hiveInstance);
     authorizable.setDb(dbName);
     authorizable.setTable(tableName);
-    sentryStore.dropPrivilege(authorizable);
+    sentryStore.dropPrivilege(authorizable, onDropSentryPrivilege(authorizable));
   }
+
   private void renamePrivileges(String oldDbName, String oldTableName, String newDbName, String newTableName) throws
       Exception {
     TSentryAuthorizable oldAuthorizable = new TSentryAuthorizable(hiveInstance);
@@ -453,6 +459,43 @@ public class HMSFollower implements Runnable {
     TSentryAuthorizable newAuthorizable = new TSentryAuthorizable(hiveInstance);
     newAuthorizable.setDb(newDbName);
     newAuthorizable.setTable(newTableName);
-    sentryStore.renamePrivilege(oldAuthorizable, newAuthorizable);
+    Update update =
+        onRenameSentryPrivilege(oldAuthorizable, newAuthorizable);
+    sentryStore.renamePrivilege(oldAuthorizable, newAuthorizable, update);
+  }
+
+  @VisibleForTesting
+  static Update onDropSentryPrivilege(TSentryAuthorizable authorizable) {
+    PermissionsUpdate update = new PermissionsUpdate(SentryStore.INIT_CHANGE_ID, false);
+    String authzObj = getAuthzObj(authorizable);
+    update.addPrivilegeUpdate(authzObj).putToDelPrivileges(PermissionsUpdate.ALL_ROLES, PermissionsUpdate.ALL_ROLES);
+    return update;
+  }
+
+  @VisibleForTesting
+  static Update onRenameSentryPrivilege(TSentryAuthorizable oldAuthorizable,
+            TSentryAuthorizable newAuthorizable)
+          throws SentryPolicyStorePlugin.SentryPluginException {
+    String oldAuthz = getAuthzObj(oldAuthorizable);
+    String newAuthz = getAuthzObj(newAuthorizable);
+    PermissionsUpdate update = new PermissionsUpdate(SentryStore.INIT_CHANGE_ID, false);
+    TPrivilegeChanges privUpdate = update.addPrivilegeUpdate(PermissionsUpdate.RENAME_PRIVS);
+    privUpdate.putToAddPrivileges(newAuthz, newAuthz);
+    privUpdate.putToDelPrivileges(oldAuthz, oldAuthz);
+    return update;
+  }
+
+  public static String getAuthzObj(TSentryAuthorizable authzble) {
+    String authzObj = null;
+    if (!SentryStore.isNULL(authzble.getDb())) {
+      String dbName = authzble.getDb();
+      String tblName = authzble.getTable();
+      if (SentryStore.isNULL(tblName)) {
+        authzObj = dbName;
+      } else {
+        authzObj = dbName + "." + tblName;
+      }
+    }
+    return authzObj == null ? null : authzObj.toLowerCase();
   }
 }
