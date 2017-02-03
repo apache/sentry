@@ -25,6 +25,7 @@ import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.Partition;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.sentry.hdfs.service.thrift.TPathChanges;
+import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -296,7 +297,7 @@ public class FullUpdateInitializer implements Closeable {
         ServiceConstants.ServerConfig.SENTRY_HDFS_SYNC_METASTORE_CACHE_FAIL_ON_PARTIAL_UPDATE_DEFAULT);
   }
 
-  public UpdateableAuthzPaths createInitialUpdate() throws Exception {
+  public UpdateableAuthzPaths createInitialUpdate() throws ExecutionException, InterruptedException, TException {
     UpdateableAuthzPaths authzPaths = new UpdateableAuthzPaths(new
     String[]{"/"});
     PathsUpdate tempUpdate = new PathsUpdate(-1, false);

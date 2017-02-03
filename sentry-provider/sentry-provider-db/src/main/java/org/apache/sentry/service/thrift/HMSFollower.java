@@ -48,9 +48,11 @@ import javax.security.auth.Subject;
 import javax.security.auth.login.LoginException;
 import java.io.File;
 import java.io.IOException;
+import java.net.SocketException;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SYNC_CREATE_WITH_POLICY_STORE;
 import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SYNC_DROP_WITH_POLICY_STORE;
@@ -175,6 +177,7 @@ public class HMSFollower implements Runnable {
         // Shutdown kerberos context if HMS connection failed to setup to avoid thread leaks.
         if (kerberosContext != null && client == null) {
           kerberosContext.shutDown();
+          kerberosContext = null;
         }
       }
     } else {
@@ -223,22 +226,18 @@ public class HMSFollower implements Runnable {
         // will be dropped. A new attempts will be made after 500 milliseconds when
         // HMSFollower run again.
 
-        CurrentNotificationEventId eventIDBefore = null;
-        CurrentNotificationEventId eventIDAfter = null;
+        CurrentNotificationEventId eventIDBefore = client.getCurrentNotificationEventId();
+        LOGGER.info(String.format("Before fetching hive full snapshot, Current NotificationID = %s.", eventIDBefore));
 
         try {
-          eventIDBefore = client.getCurrentNotificationEventId();
-          LOGGER.info(String.format("Before fetching hive full snapshot, Current NotificationID = %s.",
-              eventIDBefore));
           fetchFullUpdate();
-          eventIDAfter = client.getCurrentNotificationEventId();
-          LOGGER.info(String.format("After fetching hive full snapshot, Current NotificationID = %s.",
-              eventIDAfter));
-        } catch (Exception ex) {
-          LOGGER.error("#### Encountered failure during fetching one hive full snapshot !! Current NotificationID = " +
-              eventIDAfter.toString(), ex);
+        } catch (ExecutionException | InterruptedException ex) {
+          LOGGER.error("#### Encountered failure during fetching one hive full snapshot !!", ex);
           return;
         }
+
+        CurrentNotificationEventId eventIDAfter = client.getCurrentNotificationEventId();
+        LOGGER.info(String.format("After fetching hive full snapshot, Current NotificationID = %s.", eventIDAfter));
 
         if (!eventIDBefore.equals(eventIDAfter)) {
           LOGGER.error("#### Fail to get a point-in-time hive full snapshot !! Current NotificationID = " +
@@ -259,8 +258,25 @@ public class HMSFollower implements Runnable {
         processNotificationEvents(response.getEvents());
       }
     } catch (TException e) {
-      LOGGER.error("ThriftException occured fetching Notification entries, will try");
-      e.printStackTrace();
+      // If the underlying exception is around socket exception, it is better to retry connection to HMS
+      if (e.getCause() instanceof SocketException) {
+        LOGGER.error("Encountered Socket Exception during fetching Notification entries, will reconnect to HMS", e);
+        try {
+          if (client != null) {
+            client.close();
+            client = null;
+          }
+          if (kerberosContext != null) {
+            kerberosContext.shutDown();
+            kerberosContext = null;
+          }
+        } catch (LoginException le) {
+          LOGGER.warn("Failed to stop kerberos context (potential to cause thread leak)", le);
+          throw new RuntimeException(le);
+        }
+      } else {
+        LOGGER.error("ThriftException occured fetching Notification entries, will try", e);
+      }
     } catch (SentryInvalidInputException|SentryInvalidHMSEventException e) {
       throw new RuntimeException(e);
     }
@@ -269,7 +285,7 @@ public class HMSFollower implements Runnable {
   /**
    * Retrieve HMS full snapshot.
    */
-  private void fetchFullUpdate() throws Exception {
+  private void fetchFullUpdate() throws ExecutionException, InterruptedException, TException {
     FullUpdateInitializer updateInitializer = null;
 
     try {
