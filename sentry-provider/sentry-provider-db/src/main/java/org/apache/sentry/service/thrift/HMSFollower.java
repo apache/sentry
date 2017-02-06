@@ -408,7 +408,7 @@ public class HMSFollower implements Runnable {
           String newDbName = event.getDbName();
           String newTableName = event.getTableName();
           oldLocation = alterTableMessage.getOldLocation();
-          newLocation = alterTableMessage.getLocation();
+          newLocation = alterTableMessage.getNewLocation();
 
           if (oldDbName == null || oldTableName == null || newDbName == null || newTableName == null ||
               oldLocation == null || newLocation == null) {

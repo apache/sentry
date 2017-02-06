@@ -24,7 +24,7 @@ import org.codehaus.jackson.annotate.JsonProperty;
 
 public class SentryJSONDropTableMessage extends JSONDropTableMessage {
     @JsonProperty
-    String location;
+    private String location;
 
     public SentryJSONDropTableMessage() {
     }

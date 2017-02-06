@@ -18,30 +18,34 @@
 
 package org.apache.sentry.binding.metastore.messaging.json;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.hive.hcatalog.messaging.json.JSONAlterPartitionMessage;
 import org.codehaus.jackson.annotate.JsonProperty;
 
-import java.util.List;
 import java.util.Map;
 
 public class SentryJSONAlterPartitionMessage extends JSONAlterPartitionMessage {
     @JsonProperty
-    String location;
+    private String newLocation;
     @JsonProperty
-    String oldLocation;
+    private String oldLocation;
 
     public SentryJSONAlterPartitionMessage() {
+        super("", "", "", "", ImmutableMap.<String, String>of(), null);
     }
 
-    public SentryJSONAlterPartitionMessage(String server, String servicePrincipal, String db, String table,
-                                           Map<String,String> keyValues, Long timestamp, String oldlocation, String newLocation) {
-        super(server, servicePrincipal, db, table, keyValues, timestamp);
-        this.location = newLocation;
+    public SentryJSONAlterPartitionMessage(String server, String servicePrincipal,
+                                           String db, String table,
+                                           Map<String, String> values,
+                                           Long timestamp, String oldlocation,
+                                           String newLocation) {
+        super(server, servicePrincipal, db, table, values, timestamp);
+        this.newLocation = newLocation;
         this.oldLocation = oldlocation;
     }
 
-    public String getLocation() {
-        return location;
+    public String getNewLocation() {
+        return newLocation;
     }
 
     public String getOldLocation() {

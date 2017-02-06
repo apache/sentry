@@ -24,7 +24,11 @@ import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.ObjectMapper;
 
 public class SentryJSONMessageDeserializer extends MessageDeserializer {
-    static ObjectMapper mapper = new ObjectMapper();
+    private static ObjectMapper mapper = new ObjectMapper();
+
+    static {
+        mapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    }
 
     public SentryJSONMessageDeserializer() {
     }
@@ -32,67 +36,96 @@ public class SentryJSONMessageDeserializer extends MessageDeserializer {
     /**
      * Method to de-serialize CreateDatabaseMessage instance.
      */
+    @Override
     public SentryJSONCreateDatabaseMessage getCreateDatabaseMessage(String messageBody) {
         try {
-            return (SentryJSONCreateDatabaseMessage)mapper.readValue(messageBody, SentryJSONCreateDatabaseMessage.class);
-        } catch (Exception var3) {
-            throw new IllegalArgumentException("Could not construct SentryJSONCreateDatabaseMessage.", var3);
+            return mapper.readValue(messageBody, SentryJSONCreateDatabaseMessage.class);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Could not construct SentryJSONCreateDatabaseMessage: ", e);
         }
     }
 
+    /**
+     * Method to de-serialize DropDatabaseMessage instance.
+     */
+    @Override
     public SentryJSONDropDatabaseMessage getDropDatabaseMessage(String messageBody) {
         try {
-            return (SentryJSONDropDatabaseMessage)mapper.readValue(messageBody, SentryJSONDropDatabaseMessage.class);
-        } catch (Exception var3) {
-            throw new IllegalArgumentException("Could not construct SentryJSONDropDatabaseMessage.", var3);
+            return mapper.readValue(messageBody, SentryJSONDropDatabaseMessage.class);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Could not construct SentryJSONDropDatabaseMessage: ", e);
         }
     }
 
+    /**
+     * Method to de-serialize CreateTableMessage instance.
+     */
+    @Override
     public SentryJSONCreateTableMessage getCreateTableMessage(String messageBody) {
         try {
-            return (SentryJSONCreateTableMessage)mapper.readValue(messageBody, SentryJSONCreateTableMessage.class);
-        } catch (Exception var3) {
-            throw new IllegalArgumentException("Could not construct SentryJSONCreateTableMessage.", var3);
+            return mapper.readValue(messageBody, SentryJSONCreateTableMessage.class);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Could not construct SentryJSONCreateTableMessage: ", e);
         }
     }
 
+    /**
+     * Method to de-serialize AlterTableMessage instance.
+     */
+    @Override
     public SentryJSONAlterTableMessage getAlterTableMessage(String messageBody) {
         try {
-            return (SentryJSONAlterTableMessage)mapper.readValue(messageBody, SentryJSONAlterTableMessage.class);
-        } catch (Exception var3) {
-            throw new IllegalArgumentException("Could not construct SentryJSONAlterTableMessage.", var3);
+            return mapper.readValue(messageBody, SentryJSONAlterTableMessage.class);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Could not construct SentryJSONAlterTableMessage: ", e);
         }
     }
 
+    /**
+     * Method to de-serialize DropTableMessage instance.
+     */
+    @Override
     public SentryJSONDropTableMessage getDropTableMessage(String messageBody) {
         try {
-            return (SentryJSONDropTableMessage)mapper.readValue(messageBody, SentryJSONDropTableMessage.class);
-        } catch (Exception var3) {
-            throw new IllegalArgumentException("Could not construct SentryJSONDropTableMessage.", var3);
+            return mapper.readValue(messageBody, SentryJSONDropTableMessage.class);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Could not construct SentryJSONDropTableMessage: ", e);
         }
     }
 
+    /**
+     * Method to de-serialize AddPartitionMessage instance.
+     */
+    @Override
     public SentryJSONAddPartitionMessage getAddPartitionMessage(String messageBody) {
         try {
-            return (SentryJSONAddPartitionMessage)mapper.readValue(messageBody, SentryJSONAddPartitionMessage.class);
-        } catch (Exception var3) {
-            throw new IllegalArgumentException("Could not construct SentryJSONAddPartitionMessage.", var3);
+            return mapper.readValue(messageBody, SentryJSONAddPartitionMessage.class);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Could not construct SentryJSONAddPartitionMessage: ", e);
         }
     }
 
+    /**
+     * Method to de-serialize AlterPartitionMessage instance.
+     */
+    @Override
     public SentryJSONAlterPartitionMessage getAlterPartitionMessage(String messageBody) {
         try {
-            return (SentryJSONAlterPartitionMessage)mapper.readValue(messageBody, SentryJSONAlterPartitionMessage.class);
-        } catch (Exception var3) {
-            throw new IllegalArgumentException("Could not construct SentryJSONAlterPartitionMessage.", var3);
+            return mapper.readValue(messageBody, SentryJSONAlterPartitionMessage.class);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Could not construct SentryJSONAlterPartitionMessage: ", e);
         }
     }
 
+    /**
+     * Method to de-serialize DropPartitionMessage instance.
+     */
+    @Override
     public SentryJSONDropPartitionMessage getDropPartitionMessage(String messageBody) {
         try {
-            return (SentryJSONDropPartitionMessage)mapper.readValue(messageBody, SentryJSONDropPartitionMessage.class);
-        } catch (Exception var3) {
-            throw new IllegalArgumentException("Could not construct SentryJSONDropPartitionMessage.", var3);
+            return mapper.readValue(messageBody, SentryJSONDropPartitionMessage.class);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Could not construct SentryJSONDropPartitionMessage: ", e);
         }
     }
 

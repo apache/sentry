@@ -26,19 +26,21 @@ import java.util.Map;
 
 public class SentryJSONDropPartitionMessage extends JSONDropPartitionMessage {
     @JsonProperty
-    String location;
+    private List<String> locations;
 
     public SentryJSONDropPartitionMessage() {
     }
 
-    public SentryJSONDropPartitionMessage(String server, String servicePrincipal, String db, String table,
-                                          List<Map<String, String>> partitions, Long timestamp, String location) {
+    public SentryJSONDropPartitionMessage(String server, String servicePrincipal,
+                                          String db, String table,
+                                          List<Map<String, String>> partitions,
+                                          Long timestamp, List<String> locations) {
         super(server, servicePrincipal, db, table, partitions, timestamp);
-        this.location = location;
+        this.locations = locations;
     }
 
-    public String getLocation() {
-        return location;
+    public List<String> getLocations() {
+        return locations;
     }
 
     @Override

@@ -17,6 +17,7 @@
  */
 package org.apache.sentry.binding.metastore.messaging.json;
 
+import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.common.classification.InterfaceAudience;
@@ -54,46 +55,46 @@ public class SentryJSONMessageFactory extends MessageFactory {
 
     public SentryJSONCreateDatabaseMessage buildCreateDatabaseMessage(Database db) {
         return new SentryJSONCreateDatabaseMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, db.getName(),
-                this.now(), db.getLocationUri());
+            now(), db.getLocationUri());
     }
+
     public SentryJSONDropDatabaseMessage buildDropDatabaseMessage(Database db) {
         return new SentryJSONDropDatabaseMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, db.getName(),
-                this.now(), db.getLocationUri());
+            now(), db.getLocationUri());
     }
 
     public SentryJSONCreateTableMessage buildCreateTableMessage(Table table) {
         return new SentryJSONCreateTableMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, table.getDbName(),
-                table.getTableName(), this.now(), table.getSd().getLocation());
+            table.getTableName(), now(), table.getSd().getLocation());
     }
 
     public SentryJSONAlterTableMessage buildAlterTableMessage(Table before, Table after) {
         return new SentryJSONAlterTableMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, before.getDbName(),
-                before.getTableName(), this.now(), before.getSd().getLocation(), after.getSd().getLocation());
+            before.getTableName(), now(), before.getSd().getLocation(), after.getSd().getLocation());
     }
 
     public SentryJSONDropTableMessage buildDropTableMessage(Table table) {
         return new SentryJSONDropTableMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, table.getDbName(),
-                table.getTableName(), this.now(), table.getSd().getLocation());
+            table.getTableName(), now(), table.getSd().getLocation());
     }
 
     public SentryJSONAddPartitionMessage buildAddPartitionMessage(Table table, List<Partition> partitions) {
         return new SentryJSONAddPartitionMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, table.getDbName(),
-                table.getTableName(), getPartitionKeyValues(table, partitions), this.now(),
-                getPartitionLocations(partitions));
+            table.getTableName(), getPartitionKeyValues(table, partitions), now(),
+            getPartitionLocations(partitions));
     }
 
     private List<String> getPartitionLocations(List<Partition> partitions) {
-        List<String> paths = new ArrayList<>();
-        for(Partition partition:partitions) {
+        List<String> paths = Lists.newLinkedList();
+        for(Partition partition : partitions) {
             paths.add(partition.getSd().getLocation());
         }
         return paths;
     }
 
-    //TODO: Not sure what is this used for. Need to investigate
     private List<String> getPartitionLocations(PartitionSpecProxy partitionSpec) {
         Iterator<Partition> iterator = partitionSpec.getPartitionIterator();
-        List<String> locations = new ArrayList<>();
+        List<String> locations = Lists.newLinkedList();
         while(iterator.hasNext()) {
             locations.add(iterator.next().getSd().getLocation());
         }
@@ -104,21 +105,20 @@ public class SentryJSONMessageFactory extends MessageFactory {
     @InterfaceStability.Evolving
     public SentryJSONAddPartitionMessage buildAddPartitionMessage(Table table, PartitionSpecProxy partitionSpec) {
         return new SentryJSONAddPartitionMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, table.getDbName(),
-                table.getTableName(), getPartitionKeyValues(table, partitionSpec), this.now(),
-                getPartitionLocations(partitionSpec));
+            table.getTableName(), getPartitionKeyValues(table, partitionSpec), now(),
+            getPartitionLocations(partitionSpec));
     }
 
     public SentryJSONAlterPartitionMessage buildAlterPartitionMessage(Table table, Partition oldPartition, Partition newPartition) {
         return new SentryJSONAlterPartitionMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, table.getDbName(),
-                table.getTableName(), getPartitionKeyValues(table, oldPartition), this.now(),
-                oldPartition.getSd().getLocation(), newPartition.getSd().getLocation());
+            table.getTableName(), getPartitionKeyValues(table, oldPartition), this.now(),
+            oldPartition.getSd().getLocation(), newPartition.getSd().getLocation());
     }
 
     public SentryJSONDropPartitionMessage buildDropPartitionMessage(Table table, Partition partition) {
-        // TODO Verify that asList is correct in buildDropPartitionMessage()
         return new SentryJSONDropPartitionMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, partition.getDbName(),
-                partition.getTableName(), Arrays.asList(getPartitionKeyValues(table, partition)),
-                this.now(), partition.getSd().getLocation());
+            partition.getTableName(), Arrays.asList(getPartitionKeyValues(table, partition)),
+            now(), Arrays.asList(partition.getSd().getLocation()));
     }
 
     @Override
@@ -171,8 +171,9 @@ public class SentryJSONMessageFactory extends MessageFactory {
     }
 
     private static List<Map<String, String>> getPartitionKeyValues(Table table, List<Partition> partitions) {
-        ArrayList<Map<String, String>> partitionList = new ArrayList<>(partitions.size());
-        for (Partition partition: partitions) {
+        List<Map<String, String>> partitionList = Lists.newLinkedList();
+
+        for (Partition partition : partitions) {
             partitionList.add(getPartitionKeyValues(table, partition));
         }
         return partitionList;
@@ -192,6 +193,7 @@ public class SentryJSONMessageFactory extends MessageFactory {
 
         return partitionList;
     }
+
     // This is private in parent class
     private long now() {
         return System.currentTimeMillis() / 1000L;

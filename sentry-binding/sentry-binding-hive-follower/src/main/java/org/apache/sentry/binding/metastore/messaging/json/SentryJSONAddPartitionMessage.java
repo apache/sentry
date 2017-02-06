@@ -26,7 +26,7 @@ import java.util.Map;
 
 public class SentryJSONAddPartitionMessage extends JSONAddPartitionMessage {
     @JsonProperty
-    List<String> locations;
+    private List<String> locations;
 
     public SentryJSONAddPartitionMessage() {
     }

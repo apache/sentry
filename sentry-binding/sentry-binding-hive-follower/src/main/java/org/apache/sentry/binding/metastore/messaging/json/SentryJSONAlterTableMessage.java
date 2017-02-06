@@ -23,22 +23,24 @@ import org.codehaus.jackson.annotate.JsonProperty;
 
 public class SentryJSONAlterTableMessage extends JSONAlterTableMessage {
     @JsonProperty
-    String location; //newLocation
+    private String newLocation;
     @JsonProperty
-    String oldLocation;
+    private String oldLocation;
 
     public SentryJSONAlterTableMessage() {
+        super("", "", "", "", null);
     }
 
-    public SentryJSONAlterTableMessage(String server, String servicePrincipal, String db, String table,
-                                       Long timestamp, String oldLocation, String location) {
+    public SentryJSONAlterTableMessage(String server, String servicePrincipal,
+                                       String db, String table, Long timestamp,
+                                       String oldLocation, String newLocation) {
         super(server, servicePrincipal, db, table, timestamp);
-        this.location = location;
+        this.newLocation = newLocation;
         this.oldLocation = oldLocation;
     }
 
-    public String getLocation() {
-        return location;
+    public String getNewLocation() {
+        return newLocation;
     }
     public String getOldLocation() {
         return oldLocation;

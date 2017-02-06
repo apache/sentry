@@ -34,6 +34,7 @@ import org.junit.*;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 
 /**
@@ -179,7 +180,7 @@ public class TestSentryMessageFactorySentryDeserializer extends AbstractMetastor
     // Create database
     createMetastoreDB(client, testDB);
 
-    // Create table with partition
+    // Create table without partition
     // We need:
     // - dbname
     // - tablename
@@ -263,9 +264,8 @@ public class TestSentryMessageFactorySentryDeserializer extends AbstractMetastor
     assertThat(dropPartitionMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB)); //dbName
     assertThat(dropPartitionMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable)); //tableName
     if(!useDefaultMessageFactory) {
-      Assert.assertEquals(expectedLocation.toLowerCase(), dropPartitionMessage.getLocation());
+      Assert.assertEquals(Arrays.asList(expectedLocation.toLowerCase()), dropPartitionMessage.getLocations());
     }
-
   }
 
   @Test
@@ -301,7 +301,7 @@ public class TestSentryMessageFactorySentryDeserializer extends AbstractMetastor
     assertThat(alterTableMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable));//tableName
     if(!useDefaultMessageFactory) {
       Assert.assertEquals(oldLocation, alterTableMessage.getOldLocation()); //oldLocation
-      Assert.assertEquals(tbl1.getSd().getLocation(), alterTableMessage.getLocation()); //newLocation
+      Assert.assertEquals(tbl1.getSd().getLocation(), alterTableMessage.getNewLocation()); //newLocation
     }
 
     //Alter table rename managed table - location also changes
@@ -333,7 +333,7 @@ public class TestSentryMessageFactorySentryDeserializer extends AbstractMetastor
     assertThat(response.getEvents().get(0).getTableName(), IsEqualIgnoringCase.equalToIgnoringCase(newTableName));//newTableName
     if(!useDefaultMessageFactory) {
       Assert.assertEquals(oldLocation, alterTableMessage.getOldLocation()); //oldLocation
-      Assert.assertEquals(tbl1.getSd().getLocation(), alterTableMessage.getLocation()); //newLocation
+      Assert.assertEquals(tbl1.getSd().getLocation(), alterTableMessage.getNewLocation()); //newLocation
     }
   }
 
@@ -372,7 +372,7 @@ public class TestSentryMessageFactorySentryDeserializer extends AbstractMetastor
     assertThat(alterPartitionMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable));// tableName
     if(!useDefaultMessageFactory) {
       Assert.assertEquals(oldLocation.toLowerCase(), alterPartitionMessage.getOldLocation());
-      Assert.assertEquals(newLocation.toLowerCase(), alterPartitionMessage.getLocation());
+      Assert.assertEquals(newLocation.toLowerCase(), alterPartitionMessage.getNewLocation());
     }
   }
 }
