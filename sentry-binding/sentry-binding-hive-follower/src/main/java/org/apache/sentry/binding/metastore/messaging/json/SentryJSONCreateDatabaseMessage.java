@@ -23,7 +23,7 @@ import org.codehaus.jackson.annotate.JsonProperty;
 
 public class SentryJSONCreateDatabaseMessage extends JSONCreateDatabaseMessage {
     @JsonProperty
-    String location;
+    private String location;
 
     public SentryJSONCreateDatabaseMessage() {
     }

@@ -17,12 +17,12 @@
  */
 package org.apache.sentry.binding.metastore.messaging.json;
 
+import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.common.classification.InterfaceAudience;
 import org.apache.hadoop.hive.common.classification.InterfaceStability;
 import org.apache.hadoop.hive.metastore.api.Database;
-import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.metastore.api.Partition;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.hadoop.hive.metastore.partition.spec.PartitionSpecProxy;
@@ -35,8 +35,8 @@ public class SentryJSONMessageFactory extends MessageFactory {
     private static SentryJSONMessageDeserializer deserializer = new SentryJSONMessageDeserializer();
     public SentryJSONMessageFactory() {
         LOG.info("Using SentryJSONMessageFactory for building Notification log messages ");
-
     }
+
     public MessageDeserializer getDeserializer() {
         return deserializer;
     }
@@ -51,46 +51,45 @@ public class SentryJSONMessageFactory extends MessageFactory {
 
     public SentryJSONCreateDatabaseMessage buildCreateDatabaseMessage(Database db) {
         return new SentryJSONCreateDatabaseMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, db.getName(),
-                Long.valueOf(this.now()), db.getLocationUri());
+            now(), db.getLocationUri());
     }
     public SentryJSONDropDatabaseMessage buildDropDatabaseMessage(Database db) {
         return new SentryJSONDropDatabaseMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, db.getName(),
-                Long.valueOf(this.now()), db.getLocationUri());
+            now(), db.getLocationUri());
     }
 
     public SentryJSONCreateTableMessage buildCreateTableMessage(Table table) {
         return new SentryJSONCreateTableMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, table.getDbName(),
-                table.getTableName(), Long.valueOf(this.now()), table.getSd().getLocation());
+            table.getTableName(), now(), table.getSd().getLocation());
     }
 
     public SentryJSONAlterTableMessage buildAlterTableMessage(Table before, Table after) {
         return new SentryJSONAlterTableMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, before.getDbName(),
-                before.getTableName(), Long.valueOf(this.now()), before.getSd().getLocation(), after.getSd().getLocation());
+            before.getTableName(), now(), before.getSd().getLocation(), after.getSd().getLocation());
     }
 
     public SentryJSONDropTableMessage buildDropTableMessage(Table table) {
         return new SentryJSONDropTableMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, table.getDbName(),
-                table.getTableName(), Long.valueOf(this.now()), table.getSd().getLocation());
+            table.getTableName(), now(), table.getSd().getLocation());
     }
 
     public SentryJSONAddPartitionMessage buildAddPartitionMessage(Table table, List<Partition> partitions) {
         return new SentryJSONAddPartitionMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, table.getDbName(),
-                table.getTableName(), getPartitionKeyValues(table, partitions), Long.valueOf(this.now()),
-                getPartitionLocations(partitions));
+            table.getTableName(), getPartitionKeyValues(table, partitions), now(),
+            getPartitionLocations(partitions));
     }
 
     private List<String> getPartitionLocations(List<Partition> partitions) {
-        List<String> paths = new ArrayList<String>();
-        for(Partition partition:partitions) {
+        List<String> paths = Lists.newLinkedList();
+        for(Partition partition : partitions) {
             paths.add(partition.getSd().getLocation());
         }
         return paths;
     }
 
-    //TODO: Not sure what is this used for. Need to investigate
     private List<String> getPartitionLocations(PartitionSpecProxy partitionSpec) {
         Iterator<Partition> iterator = partitionSpec.getPartitionIterator();
-        List<String> locations = new ArrayList<String>();
+        List<String> locations = Lists.newLinkedList();
         while(iterator.hasNext()) {
             locations.add(iterator.next().getSd().getLocation());
         }
@@ -101,56 +100,37 @@ public class SentryJSONMessageFactory extends MessageFactory {
     @InterfaceStability.Evolving
     public SentryJSONAddPartitionMessage buildAddPartitionMessage(Table table, PartitionSpecProxy partitionSpec) {
         return new SentryJSONAddPartitionMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, table.getDbName(),
-                table.getTableName(), getPartitionKeyValues(table, partitionSpec), Long.valueOf(this.now()),
-                getPartitionLocations(partitionSpec));
+            table.getTableName(), getPartitionKeyValues(table, partitionSpec), now(),
+            getPartitionLocations(partitionSpec));
     }
 
+    @Override
     public SentryJSONAlterPartitionMessage buildAlterPartitionMessage(Partition before, Partition after) {
-        /*
-     f (partitionEvent.getOldPartition() != null) {
-      oldLoc = partitionEvent.getOldPartition().getSd().getLocation();
-    }
-    if (partitionEvent.getNewPartition() != null) {
-      newLoc = partitionEvent.getNewPartition().getSd().getLocation();
-    }
-
-    if ((oldLoc != null) && (newLoc != null) && (!oldLoc.equals(newLoc))) {
-      String authzObj =
-              partitionEvent.getOldPartition().getDbName() + "."
-                      + partitionEvent.getOldPartition().getTableName();
-      for (SentryMetastoreListenerPlugin plugin : sentryPlugins) {
-        plugin.renameAuthzObject(authzObj, oldLoc,
-                authzObj, newLoc);
-      }
-    }
-        * */
         return new SentryJSONAlterPartitionMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, before.getDbName(),
-                before.getTableName(), before.getValues(), Long.valueOf(this.now()), before.getSd().getLocation(),
-                after.getSd().getLocation());
+            before.getTableName(), before.getValues(), now(), before.getSd().getLocation(),
+            after.getSd().getLocation());
     }
 
     public SentryJSONDropPartitionMessage buildDropPartitionMessage(Table table, Partition partition) {
         return new SentryJSONDropPartitionMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, partition.getDbName(),
-                partition.getTableName(), Arrays.asList(getPartitionKeyValues(table, partition)),
-                Long.valueOf(this.now()), partition.getSd().getLocation());
+            partition.getTableName(), Arrays.asList(getPartitionKeyValues(table, partition)),
+            now(), Arrays.asList(partition.getSd().getLocation()));
     }
 
     private static Map<String, String> getPartitionKeyValues(Table table, Partition partition) {
         LinkedHashMap partitionKeys = new LinkedHashMap();
 
         for(int i = 0; i < table.getPartitionKeysSize(); ++i) {
-            partitionKeys.put(((FieldSchema)table.getPartitionKeys().get(i)).getName(), partition.getValues().get(i));
+            partitionKeys.put((table.getPartitionKeys().get(i)).getName(), partition.getValues().get(i));
         }
 
         return partitionKeys;
     }
 
     private static List<Map<String, String>> getPartitionKeyValues(Table table, List<Partition> partitions) {
-        ArrayList partitionList = new ArrayList(partitions.size());
-        Iterator i$ = partitions.iterator();
+        List<Map<String, String>> partitionList = Lists.newLinkedList();
 
-        while(i$.hasNext()) {
-            Partition partition = (Partition)i$.next();
+        for (Partition partition : partitions) {
             partitionList.add(getPartitionKeyValues(table, partition));
         }
 
@@ -164,12 +144,13 @@ public class SentryJSONMessageFactory extends MessageFactory {
         PartitionSpecProxy.PartitionIterator iterator = partitionSpec.getPartitionIterator();
 
         while(iterator.hasNext()) {
-            Partition partition = (Partition)iterator.next();
+            Partition partition = iterator.next();
             partitionList.add(getPartitionKeyValues(table, partition));
         }
 
         return partitionList;
     }
+
     //This is private in parent class
     private long now() {
         return System.currentTimeMillis() / 1000L;
