@@ -57,7 +57,7 @@ import com.google.common.collect.Lists;
  *  <li> At the construction time:
  *   <ul>
  *    <li> Initializes local HMS cache with HMS paths information.
- *    <li> Sends initial HMS paths information to the Sentry daemon.
+ *    <li> Starts housekeeping thread to run periodically SyncTask - see below what it does.
  *   </ul>
  *  </li>
  *  <li> Upon receiving path update notification from the hosting client code, via addPath(),
@@ -65,6 +65,8 @@ import com.google.common.collect.Lists;
  *   <ul>
  *    <li> Updates local HMS cache accordingly.
  *    <li> Sends partial update with the assigned sequence number to the Sentry daemon.
+ *    <li> Special case - skip sending partial update to Sentry if the initial full update from
+ *         housekeeping thread is still in progress (firstSync == false). Still update the local cache.
  *    <li> Maintains the latest Sentry partial update sequence number, incrementing it by 1 on each update.
  *   </ul>
  *  </li>
@@ -73,6 +75,9 @@ import com.google.common.collect.Lists;
  *    <li> Contacts the Sentry daemon to ask for the sequence number of the latest received update.
  *    <li> If the sequence number returned by the Sentry daemon does not match the sequence number of the
  *         latest update sent from MetastorePlugin, send the full HMS paths image to the Sentry daemon.
+ *    <li> After the very first successful full HMS paths update to Sentry, set firstSync to true.
+ *         to signal the rest of the code that from this moment all partial updates should be sent to Sentry,
+ *         in addition to updating the local cache.
  *   </ul>
  *  </li>
  * </ul>
@@ -87,16 +92,15 @@ import com.google.common.collect.Lists;
  *
  * <p>
  * <li>MetastorePlugin is always created, even though ininitialization may fail.<br>
- * MetastorePlugin initialization (object construction) may fail for two reasons:
+ * MetastorePlugin initialization (object construction) failure reasons:
  * <ul>
  *  <li> HMS cache cannot be initialized, usually due to some invalid HMS path entries.
- *  <li> Initial cache cannot be sent to Sentry, e.g. due to the communication problems.
  * </ul>
  *
  * <p>
- * In either case, MetastorePlugin is still constructed, in consideration with the design of
- * the existing client code. However, such an instance is marked as invalid; all update APIs
- * throw IllegalStateException with the appropriate error message and root cause exception.
+ * MetastorePlugin is still constructed, in consideration with the design of the existing client code.
+ * However, such an instance is marked as invalid; all update APIs throw IllegalStateException with
+ * the appropriate error message and root cause exception.
  * <br>TODO: failing to construct MetastorePlugin on initialization failure would be much cleaner,
  *       but it has to be done in coordination with the HMS client code.
  *
@@ -113,7 +117,8 @@ import com.google.common.collect.Lists;
  * Update sequence number is created at first step, and then it travels as part of the update information,
  * to the Sentry daemon on the second step. Therefore, the sequence of both steps must be
  * atomic, to guarantee that updates arrive to the Sentry daemon in the right order,
- * with sequential update number. This is achieved by using notificationLock. The same lock is used
+ * with sequential update number. This is achieved by using notificationLock over two operations:
+ * assigning sequence number to the update, and sending this update to Sentry. The same lock is used
  * inside the SyncTask during full Sentry update, when the local and Sentry-side update sequence
  * numbers are out of sync.
  *
@@ -155,6 +160,13 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
   // Has to match the value of seqNum
   // This code ensures that access to lastSentSeqNum is protected by notificationLock
   protected long lastSentSeqNum;
+  /*
+   * The firstSync value, set initially to false, is set to true by SyncTask from
+   * housekeeping thread, immediately after pushing the first successsful full update to Sentry.
+   * Prior to firstSync == true, all partial updates happen only in the local cache.
+   * This code ensures that access to firstSync is protected by notificationLock
+   */
+  protected boolean firstSync;
 
   // pathUpdateLock guards access to UpdateableAuthzPaths which is not thread-safe
   private final ReentrantReadWriteLock pathUpdateLock = new ReentrantReadWriteLock();
@@ -170,9 +182,25 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
   private static volatile ScheduledExecutorService lastThreadPool = null;
 
   /*
-   * This task is scheduled to run periodically, to make sure Sentry has all updates
-   * -- only if MetastorePlugin has been successfully initialized.
+   * This task is scheduled to run periodically, to make sure Sentry (SentryPlugin
+   * class to be exact) has all the latest HMS path updates.
+   *
+   * It compares the last sequence number of a partial update sent to Sentry
+   * against the sequence number of last update as reported by Sentry.
+   * If the two are different, full update is triggered.
+   *
+   * The initial full update must reach Sentry before any partial updates.
+   * Since any full update would also include the all the subsequent partial
+   * updates as well anyway, sending partial updates before the first full
+   * update would be redundant. It would also require more care on SentryPlugin
+   * side to handle updates with potentially duplicate sequence numbers.
+   *
+   * The firstSync variable initialized to false in the constructor,
+   * will be set to true in the run() method on the first successfull full
+   * update. Prior to that event, all partial updates will only be commited
+   * to the local memory cache.
    */
+
   class SyncTask implements Runnable {
     @Override
     public void run() {
@@ -183,10 +211,44 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
       try {
         long lastSeenBySentry = getLastSeenHMSPathSeqNum();
         long lastSent = lastSentSeqNum;
-        if (lastSeenBySentry != lastSent) {
-          LOGGER.warn("#### Sentry not in sync with HMS [" + lastSeenBySentry + ", "
+        /*
+         * Most common branch, after the first full update (firstSync == true).
+         * Do full update only if out-of-sync is detected.
+         */ 
+        if (firstSync) {
+          // Out-of-sync! Normally should not happen, so worth logging as a warning.
+          if (lastSeenBySentry != lastSent) {
+            LOGGER.warn("#### Sentry not in sync with HMS [" + lastSeenBySentry + ", "
               + lastSent + "]");
+            notifySentryFullUpdate(lastSent);
+          } // else we are ok, which is common, so we don't want to log anything
+        /*
+         * Less common branch - only before the first successful full update.
+         * Do full update regardless of the sequence numbers on both sides.
+         * Don't want to depend on how specifically SentryPlugin and MetastorePlugin
+         * logic initialize their sequence numbers to guarantee that they are
+         * initially different. First full update is always mandatory.
+         *
+         * TODO: if at least MetastorePlugin implements persistent incrementing
+         * sequence numbers, this logic can be optimized to avoid the initial fill
+         * update. It can optimize the situation when MetastorePlugin is restarted
+         * while Sentry keeps running and allready has the latest updates.
+         */
+        } else { // firstSync == false
+          // still print both sequence numbers out of curiosity, to see how they get initialized
+          LOGGER.info("#### Trying to send first full update to Sentry [" + lastSeenBySentry + ", "
+            + lastSent + "]");
           notifySentryFullUpdate(lastSent);
+          LOGGER.info("#### First successful full update with Sentry");
+          /*
+           * If initial full update succeeded, set firstSync to true to never do unconditional
+           * full update ever again. Also, firstSync == true signals to the rest of the code
+           * that from this point on partial updates will be sent to Sentry, not only update
+           * the local cache.
+           * If notifySentryFullUpdate() fails, firstSync remains false, so another full
+           * update will be attempted.
+           */
+          firstSync = true;
         }
       } catch (Exception ignore) {
         // all methods inside try {} log errors anyway
@@ -287,33 +349,21 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
       return;
     }
 
-    /* Initialization Step #2: push initial HMS state to Sentry.
-     * Synchronization by notificationLock is for visibility of changes to sentryClient.
+    /* Initialization Step #2: set the state to perform sync with Sentry.
+     * Kerberos may be initialized only AFTER constructing MetastorePlugin,
+     * so the initial full update would be impossible at this point.
+     * We rely on SyncTask to eventually establish connection and
+     * push the first full update to Sentry, signaled by setting firstSync to true.
      */
     notificationLock.lock();
     try {
       this.lastSentSeqNum = seqNum.get();
-      notifySentryFullUpdate(lastSentSeqNum);
-      LOGGER.info("#### Metastore Plugin Sentry full initial update complete");
-    } catch (Throwable e) {
-      tmpInitError = e;
-      tmpInitErrorMsg = SENTRY_INIT_UPDATE_FAILURE_MSG;
-      LOGGER.error("#### " + tmpInitErrorMsg, e);
+      this.firstSync = false;
     } finally {
       notificationLock.unlock();
     }
-
-    this.initError = tmpInitError;
-    this.initErrorMsg = tmpInitErrorMsg;
-
-    /* If sending HMS state to Sentry failed, further initialization shall be skipped.
-     * MetastorePlugin is considered non-operational, and all of its public APIs
-     * shall be throwing an exception.
-     */
-    if (this.initError != null) {
-      this.threadPool = null;
-      return;
-    }
+    this.initError = null;
+    this.initErrorMsg = null;
 
     /* Initialization Step #3: schedulle SyncTask to run periodically, to make
      * sure Sentry has the current HMS state.
@@ -556,7 +606,15 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
    */
   protected void notifySentry(PathsUpdate update) {
     try {
-      notifySentry_NoSeqNumIncr(update);
+      /* Send updates to Sentry only after the first full update from SyncTask
+       * Note, that full updates from SyncTask happen by calling notifySentry_NoSeqNumIncr()
+       * directly, via notifySentryFullUpdate(), so firstSync value is not consulted.
+       */
+      if (firstSync) {
+        notifySentry_NoSeqNumIncr(update);
+      } else {
+        LOGGER.warn("#### Caching partial Sentry update " + update.getSeqNum() + "; initial full update still in progress");
+      }
     } finally {
       lastSentSeqNum = update.getSeqNum();
       LOGGER.debug("#### HMS Path Last update sent : ["+ lastSentSeqNum + "]");
