@@ -18,6 +18,7 @@
 package org.apache.sentry.provider.db.generic.service.persistent;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -234,12 +235,15 @@ public class DelegateSentryStore implements SentryStoreLayer {
   }
 
   @Override
-  public Set<String> getRolesByGroups(String component, Set<String> groups) throws Exception {
-    Set<String> roles = Sets.newHashSet();
-    if (groups == null) {
-      return roles;
+  public Set<String> getRolesByGroups(String component, Set<String> groups)
+      throws Exception {
+    if (groups == null || groups.isEmpty()) {
+      return Collections.emptySet();
     }
-    for (TSentryRole tSentryRole : delegate.getTSentryRolesByGroupName(groups, true)) {
+
+    Set<String> roles = Sets.newHashSet();
+    for (TSentryRole tSentryRole : delegate.getTSentryRolesByGroupName(groups,
+            true)) {
       roles.add(tSentryRole.getRoleName());
     }
     return roles;
@@ -248,20 +252,20 @@ public class DelegateSentryStore implements SentryStoreLayer {
   @Override
   public Set<String> getGroupsByRoles(final String component, final Set<String> roles)
       throws Exception {
-    final Set<String> trimmedRoles = toTrimmedLower(roles);
-    final Set<String> groupNames = Sets.newHashSet();
-    if (trimmedRoles.size() == 0) {
-      return groupNames;
+    if (roles.isEmpty()) {
+      return Collections.emptySet();
     }
 
     return delegate.getTransactionManager().executeTransaction(
       new TransactionBlock<Set<String>>() {
         public Set<String> execute(PersistenceManager pm) throws Exception {
           //get groups by roles
+          final Set<String> trimmedRoles = SentryStore.toTrimedLower(roles);
+
           Query query = pm.newQuery(MSentryGroup.class);
           StringBuilder filters = new StringBuilder();
           query.declareVariables("MSentryRole role");
-          List<String> rolesFiler = new LinkedList<String>();
+          List<String> rolesFiler = new LinkedList<>();
           for (String role : trimmedRoles) {
             rolesFiler.add("role.roleName == \"" + role + "\" ");
           }
@@ -269,9 +273,10 @@ public class DelegateSentryStore implements SentryStoreLayer {
           query.setFilter(filters.toString());
           @SuppressWarnings("unchecked")
           List<MSentryGroup> groups = (List<MSentryGroup>)query.execute();
-          if (groups == null) {
-            return groupNames;
+          if (groups.isEmpty()) {
+            return Collections.emptySet();
           }
+          Set<String> groupNames = new HashSet<>(groups.size());
           for (MSentryGroup group : groups) {
             groupNames.add(group.getGroupName());
           }
@@ -284,15 +289,14 @@ public class DelegateSentryStore implements SentryStoreLayer {
   public Set<PrivilegeObject> getPrivilegesByRole(final String component,
       final Set<String> roles) throws Exception {
     Preconditions.checkNotNull(roles);
-    final Set<PrivilegeObject> privileges = Sets.newHashSet();
     if (roles.isEmpty()) {
-      return privileges;
+      return Collections.emptySet();
     }
-
     return delegate.getTransactionManager().executeTransaction(
       new TransactionBlock<Set<PrivilegeObject>>() {
         public Set<PrivilegeObject> execute(PersistenceManager pm) throws Exception {
-          Set<MSentryRole> mRoles = Sets.newHashSet();
+          Set<PrivilegeObject> privileges = new HashSet<>();
+          Set<MSentryRole> mRoles = new HashSet<>();
           for (String role : roles) {
             MSentryRole mRole = getRole(toTrimmedLower(role), pm);
             if (mRole != null) {
@@ -318,19 +322,18 @@ public class DelegateSentryStore implements SentryStoreLayer {
           String trimmedComponent = toTrimmedLower(component);
           String trimmedService = toTrimmedLower(service);
 
-          Set<PrivilegeObject> privileges = Sets.newHashSet();
           //CaseInsensitive roleNames
-          Set<String> trimmedRoles = toTrimmedLower(roles);
+          Set<String> trimmedRoles = SentryStore.toTrimedLower(roles);
 
           if (groups != null) {
             trimmedRoles.addAll(delegate.getRoleNamesForGroups(groups));
           }
 
-          if (trimmedRoles.size() == 0) {
-            return privileges;
+          if (trimmedRoles.isEmpty()) {
+            return Collections.emptySet();
           }
 
-          Set<MSentryRole> mRoles = Sets.newHashSet();
+          Set<MSentryRole> mRoles = new HashSet<>(trimmedRoles.size());
           for (String role : trimmedRoles) {
             MSentryRole mRole = getRole(role, pm);
             if (mRole != null) {
@@ -338,6 +341,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
             }
           }
           //get the privileges
+          Set<PrivilegeObject> privileges = new HashSet<>();
           privileges.addAll(privilegeOperator.
                   getPrivilegesByProvider(trimmedComponent,
                           trimmedService, mRoles, authorizables, pm));
@@ -350,21 +354,19 @@ public class DelegateSentryStore implements SentryStoreLayer {
   public Set<MSentryGMPrivilege> getPrivilegesByAuthorizable(final String component,
       final String service, final Set<String> validActiveRoles,
       final List<? extends Authorizable> authorizables) throws Exception {
+    if (validActiveRoles == null || validActiveRoles.isEmpty()) {
+      return Collections.emptySet();
+    }
+
     Preconditions.checkNotNull(component);
     Preconditions.checkNotNull(service);
-
-    final Set<MSentryGMPrivilege> privileges = Sets.newHashSet();
-
-    if (validActiveRoles == null || validActiveRoles.isEmpty()) {
-      return privileges;
-    }
 
     return delegate.getTransactionManager().executeTransaction(
       new TransactionBlock<Set<MSentryGMPrivilege>>() {
         public Set<MSentryGMPrivilege> execute(PersistenceManager pm) throws Exception {
           String lComponent = toTrimmedLower(component);
           String lService = toTrimmedLower(service);
-          Set<MSentryRole> mRoles = Sets.newHashSet();
+          Set<MSentryRole> mRoles = new HashSet<>(validActiveRoles.size());
           for (String role : validActiveRoles) {
             MSentryRole mRole = getRole(role, pm);
             if (mRole != null) {
@@ -377,6 +379,8 @@ public class DelegateSentryStore implements SentryStoreLayer {
               privilegeOperator.getPrivilegesByAuthorizable(lComponent, lService,
                       mRoles, authorizables, pm);
 
+          final Set<MSentryGMPrivilege> privileges =
+                  new HashSet<>(mSentryGMPrivileges.size());
           for (MSentryGMPrivilege mSentryGMPrivilege : mSentryGMPrivileges) {
             /*
              * force to load all roles related this privilege
@@ -396,36 +400,28 @@ public class DelegateSentryStore implements SentryStoreLayer {
   }
 
   private Set<TSentryGroup> toTSentryGroups(Set<String> groups) {
-    Set<TSentryGroup> tSentryGroups = Sets.newHashSet();
+    if (groups.isEmpty()) {
+      return Collections.emptySet();
+    }
+    Set<TSentryGroup> tSentryGroups = new HashSet<>(groups.size());
     for (String group : groups) {
       tSentryGroups.add(new TSentryGroup(group));
     }
     return tSentryGroups;
   }
 
-  private Set<String> toTrimmedLower(Set<String> s) {
-    if (s == null) {
-      return new HashSet<String>();
+  private static Set<String> toTrimmed(Set<String> s) {
+    if (s.isEmpty()) {
+      return Collections.emptySet();
     }
-    Set<String> result = Sets.newHashSet();
-    for (String v : s) {
-      result.add(v.trim().toLowerCase());
-    }
-    return result;
-  }
-
-  private Set<String> toTrimmed(Set<String> s) {
-    if (s == null) {
-      return new HashSet<String>();
-    }
-    Set<String> result = Sets.newHashSet();
+    Set<String> result = new HashSet<>(s.size());
     for (String v : s) {
       result.add(v.trim());
     }
     return result;
   }
 
-  private String toTrimmedLower(String s) {
+  private static String toTrimmedLower(String s) {
     if (s == null) {
       return "";
     }

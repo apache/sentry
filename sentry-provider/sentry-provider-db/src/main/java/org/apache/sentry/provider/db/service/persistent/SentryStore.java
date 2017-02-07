@@ -24,6 +24,7 @@ import static org.apache.sentry.core.common.utils.SentryConstants.KV_JOINER;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -711,7 +712,7 @@ public class SentryStore {
       mPrivilege = pm.detachCopy(mPrivilege);
     }
 
-    Set<MSentryPrivilege> privilegeGraph = Sets.newHashSet();
+    Set<MSentryPrivilege> privilegeGraph = new HashSet<>();
     if (mPrivilege.getGrantOption() != null) {
       privilegeGraph.add(mPrivilege);
     } else {
@@ -814,9 +815,6 @@ public class SentryStore {
         || !isNULL(priv.getTableName())) {
       // Get all TableLevel Privs
       Set<MSentryPrivilege> childPrivs = getChildPrivileges(pm, roleNames, priv);
-      if (childPrivs == null) {
-        return;
-      }
       for (MSentryPrivilege childPriv : childPrivs) {
         // Only recurse for table level privs..
         if (!isNULL(childPriv.getDbName()) && !isNULL(childPriv.getTableName())
@@ -850,7 +848,7 @@ public class SentryStore {
       MSentryPrivilege parent) throws SentryInvalidInputException {
     // Column and URI do not have children
     if (!isNULL(parent.getColumnName()) || !isNULL(parent.getURI())) {
-      return null;
+      return Collections.emptySet();
     }
 
     Query query = pm.newQuery(MSentryPrivilege.class);
@@ -872,14 +870,13 @@ public class SentryStore {
               .addNotNull(URI);
     }
 
-    LOGGER.debug("getChildPrivileges() Query: " + paramBuilder.toString());
-
     query.setFilter(paramBuilder.toString());
     query.setResult("privilegeScope, serverName, dbName, tableName, columnName," +
         " URI, action, grantOption");
-    Set<MSentryPrivilege> privileges = new HashSet<>();
-    for (Object[] privObj :
-            (List<Object[]>)query.executeWithMap(paramBuilder.getArguments())) {
+    List<Object[]> privObjects =
+            (List<Object[]>) query.executeWithMap(paramBuilder.getArguments());
+    Set<MSentryPrivilege> privileges = new HashSet<>(privObjects.size());
+    for (Object[] privObj : privObjects) {
       String scope        = (String)privObj[0];
       String serverName   = (String)privObj[1];
       String dbName       = (String)privObj[2];
@@ -916,7 +913,6 @@ public class SentryStore {
       // if db is null, uri is not null
       paramBuilder.add(URI, tPriv.getURI(), true);
     }
-    // LOGGER.debug("getMSentryPrivileges() Query: " + paramBuilder.toString());
 
     query.setFilter(paramBuilder.toString());
     return (List<MSentryPrivilege>) query.executeWithMap(paramBuilder.getArguments());
@@ -938,8 +934,6 @@ public class SentryStore {
             .add(URI, tPriv.getURI(), true)
             .addObject(GRANT_OPTION, grantOption)
             .add(ACTION, tPriv.getAction());
-
-    LOGGER.debug("getMSentryPrivilege() Query: " +  paramBuilder.toString());
 
     Query query = pm.newQuery(MSentryPrivilege.class);
     query.setUnique(true);
@@ -1240,7 +1234,7 @@ public class SentryStore {
                                                               authHierarchy)
           throws Exception {
     if (roleNames == null || roleNames.isEmpty()) {
-      return new ArrayList<>();
+      return Collections.emptyList();
     }
 
     return tm.executeTransaction(
@@ -1285,7 +1279,7 @@ public class SentryStore {
                                   "\".startsWith(:URI)", URI, authHierarchy.getUri());
             }
           }
-          LOGGER.debug("getMSentryPrivileges1() Query: " + paramBuilder.toString());
+
           query.setFilter(paramBuilder.toString());
           @SuppressWarnings("unchecked")
           List<MSentryPrivilege> result =
@@ -1327,8 +1321,8 @@ public class SentryStore {
                       .addNull(URI);
               }
             } else {
-              // if no server, then return empty resultset
-              return new ArrayList<MSentryPrivilege>();
+              // if no server, then return empty result
+              return Collections.emptyList();
             }
             FetchGroup grp = pm.getFetchGroup(MSentryPrivilege.class, "fetchRole");
             grp.addMember("roles");
@@ -1590,7 +1584,7 @@ public class SentryStore {
 
   @VisibleForTesting
   static String toAuthorizable(MSentryPrivilege privilege) {
-    List<String> authorizable = new ArrayList<String>(4);
+    List<String> authorizable = new ArrayList<>(4);
     authorizable.add(KV_JOINER.join(AuthorizableType.Server.name().toLowerCase(),
         privilege.getServerName()));
     if (isNULL(privilege.getURI())) {
@@ -1620,9 +1614,9 @@ public class SentryStore {
   }
 
   @VisibleForTesting
-  static Set<String> toTrimedLower(Set<String> s) {
-    if (null == s) {
-      return new HashSet<String>();
+  public static Set<String> toTrimedLower(Set<String> s) {
+    if (s == null || s.isEmpty()) {
+      return Collections.emptySet();
     }
     Set<String> result = Sets.newHashSet();
     for (String v : s) {
@@ -1640,7 +1634,10 @@ public class SentryStore {
    */
 
   private Set<TSentryPrivilege> convertToTSentryPrivileges(Collection<MSentryPrivilege> mSentryPrivileges) {
-    Set<TSentryPrivilege> privileges = new HashSet<TSentryPrivilege>();
+    if (mSentryPrivileges.isEmpty()) {
+      return Collections.emptySet();
+    }
+    Set<TSentryPrivilege> privileges = new HashSet<>(mSentryPrivileges.size());
     for(MSentryPrivilege mSentryPrivilege:mSentryPrivileges) {
       privileges.add(convertToTSentryPrivilege(mSentryPrivilege));
     }
@@ -1648,7 +1645,10 @@ public class SentryStore {
   }
 
   private Set<TSentryRole> convertToTSentryRoles(Set<MSentryRole> mSentryRoles) {
-    Set<TSentryRole> roles = new HashSet<TSentryRole>();
+    if (mSentryRoles.isEmpty()) {
+      return Collections.emptySet();
+    }
+    Set<TSentryRole> roles = new HashSet<>(mSentryRoles.size());
     for(MSentryRole mSentryRole:mSentryRoles) {
       roles.add(convertToTSentryRole(mSentryRole));
     }
@@ -1656,7 +1656,10 @@ public class SentryStore {
   }
 
   private Set<String> convertToRoleNameSet(Set<MSentryRole> mSentryRoles) {
-    Set<String> roleNameSet = Sets.newHashSet();
+    if (mSentryRoles.isEmpty()) {
+      return Collections.emptySet();
+    }
+    Set<String> roleNameSet = new HashSet<>(mSentryRoles.size());
     for (MSentryRole role : mSentryRoles) {
       roleNameSet.add(role.getRoleName());
     }
@@ -1667,8 +1670,9 @@ public class SentryStore {
     TSentryRole role = new TSentryRole();
     role.setRoleName(mSentryRole.getRoleName());
     role.setGrantorPrincipal("--");
-    Set<TSentryGroup> sentryGroups = new HashSet<TSentryGroup>();
-    for(MSentryGroup mSentryGroup:mSentryRole.getGroups()) {
+    Set<MSentryGroup> groups = mSentryRole.getGroups();
+    Set<TSentryGroup> sentryGroups = new HashSet<>(groups.size());
+    for(MSentryGroup mSentryGroup: groups) {
       TSentryGroup group = convertToTSentryGroup(mSentryGroup);
       sentryGroups.add(group);
     }
@@ -2133,17 +2137,15 @@ public class SentryStore {
       // get all privileges for group and user
       Set<MSentryRole> roles = getRolesForGroups(pm, groups);
       roles.addAll(getRolesForUsers(pm, Sets.newHashSet(grantorPrincipal)));
-      if (roles != null && !roles.isEmpty()) {
-        for (MSentryRole role : roles) {
-          Set<MSentryPrivilege> privilegeSet = role.getPrivileges();
-          if (privilegeSet != null && !privilegeSet.isEmpty()) {
-            // if role has a privilege p with grant option
-            // and mPrivilege is a child privilege of p
-            for (MSentryPrivilege p : privilegeSet) {
-              if (p.getGrantOption() && p.implies(mPrivilege)) {
-                hasGrant = true;
-                break;
-              }
+      for (MSentryRole role : roles) {
+        Set<MSentryPrivilege> privilegeSet = role.getPrivileges();
+        if (privilegeSet != null && !privilegeSet.isEmpty()) {
+          // if role has a privilege p with grant option
+          // and mPrivilege is a child privilege of p
+          for (MSentryPrivilege p : privilegeSet) {
+            if (p.getGrantOption() && p.implies(mPrivilege)) {
+              hasGrant = true;
+              break;
             }
           }
         }
@@ -2163,7 +2165,6 @@ public class SentryStore {
   }
 
   public Map<String, HashMap<String, String>> retrieveFullPrivilegeImage() throws Exception {
-    Map<String, HashMap<String, String>> result = new HashMap<>();
     return tm.executeTransaction(
       new TransactionBlock<Map<String, HashMap<String, String>>>() {
         public Map<String, HashMap<String, String>> execute(PersistenceManager pm)
@@ -2188,7 +2189,7 @@ public class SentryStore {
             }
             HashMap<String, String> pUpdate = retVal.get(authzObj);
             if (pUpdate == null) {
-              pUpdate = new HashMap<String, String>();
+              pUpdate = new HashMap<>();
               retVal.put(authzObj, pUpdate);
             }
             for (MSentryRole mRole : mPriv.getRoles()) {
@@ -2210,14 +2211,17 @@ public class SentryStore {
    * @return Mapping of Role -> [Groups]
    */
   public Map<String, LinkedList<String>> retrieveFullRoleImage() throws Exception {
-    Map<String, LinkedList<String>> result = new HashMap<>();
     return tm.executeTransaction(
         new TransactionBlock<Map<String, LinkedList<String>>>() {
           public Map<String, LinkedList<String>> execute(PersistenceManager pm) throws Exception {
-            Map<String, LinkedList<String>> retVal = new HashMap<>();
             Query query = pm.newQuery(MSentryGroup.class);
             @SuppressWarnings("unchecked")
             List<MSentryGroup> groups = (List<MSentryGroup>) query.execute();
+            if (groups.isEmpty()) {
+              return Collections.emptyMap();
+            }
+
+            Map<String, LinkedList<String>> retVal = new HashMap<>();
             for (MSentryGroup mGroup : groups) {
               for (MSentryRole role : mGroup.getRoles()) {
                 LinkedList<String> rUpdate = retVal.get(role.getRoleName());
@@ -2429,7 +2433,7 @@ public class SentryStore {
               " )";
       boolean rollback = true;
       int orphansRemoved = 0;
-      ArrayList<Object> idList = new ArrayList<Object>();
+      ArrayList<Object> idList = new ArrayList<>();
       PersistenceManager pm = pmf.getPersistenceManager();
 
       // Transaction 1: Perform a SQL query to get things that look like orphans
@@ -2515,10 +2519,11 @@ public class SentryStore {
   }
 
   private Map<String, Set<String>> getGroupRolesMap(List<MSentryRole> mSentryRoles) {
-    Map<String, Set<String>> groupRolesMap = Maps.newHashMap();
-    if (mSentryRoles == null) {
-      return groupRolesMap;
+    if (mSentryRoles.isEmpty()) {
+      return Collections.emptyMap();
     }
+
+    Map<String, Set<String>> groupRolesMap = new HashMap<>();
     // change the List<MSentryRole> -> Map<groupName, Set<roleName>>
     for (MSentryRole mSentryRole : mSentryRoles) {
       Set<MSentryGroup> groups = mSentryRole.getGroups();
@@ -2526,7 +2531,7 @@ public class SentryStore {
         String groupName = group.getGroupName();
         Set<String> rNames = groupRolesMap.get(groupName);
         if (rNames == null) {
-          rNames = new HashSet<String>();
+          rNames = new HashSet<>();
         }
         rNames.add(mSentryRole.getRoleName());
         groupRolesMap.put(groupName, rNames);
@@ -2536,10 +2541,11 @@ public class SentryStore {
   }
 
   private Map<String, Set<String>> getUserRolesMap(List<MSentryRole> mSentryRoles) {
-    Map<String, Set<String>> userRolesMap = Maps.newHashMap();
-    if (mSentryRoles == null) {
-      return userRolesMap;
+    if (mSentryRoles.isEmpty()) {
+      return Collections.emptyMap();
     }
+
+    Map<String, Set<String>> userRolesMap = new HashMap<>();
     // change the List<MSentryRole> -> Map<userName, Set<roleName>>
     for (MSentryRole mSentryRole : mSentryRoles) {
       Set<MSentryUser> users = mSentryRole.getUsers();
@@ -2547,7 +2553,7 @@ public class SentryStore {
         String userName = user.getUserName();
         Set<String> rNames = userRolesMap.get(userName);
         if (rNames == null) {
-          rNames = new HashSet<String>();
+          rNames = new HashSet<>();
         }
         rNames.add(mSentryRole.getRoleName());
         userRolesMap.put(userName, rNames);
@@ -2591,18 +2597,19 @@ public class SentryStore {
 
   private Map<String, Set<TSentryPrivilege>> getRolePrivilegesMap(
           List<MSentryPrivilege> mSentryPrivileges) {
-    Map<String, Set<TSentryPrivilege>> rolePrivilegesMap = Maps.newHashMap();
-    if (mSentryPrivileges == null) {
-      return rolePrivilegesMap;
+    if (mSentryPrivileges.isEmpty()) {
+      return Collections.emptyMap();
     }
+
     // change the List<MSentryPrivilege> -> Map<roleName, Set<TSentryPrivilege>>
+    Map<String, Set<TSentryPrivilege>> rolePrivilegesMap = new HashMap<>();
     for (MSentryPrivilege mSentryPrivilege : mSentryPrivileges) {
       TSentryPrivilege privilege = convertToTSentryPrivilege(mSentryPrivilege);
       for (MSentryRole mSentryRole : mSentryPrivilege.getRoles()) {
         String roleName = mSentryRole.getRoleName();
         Set<TSentryPrivilege> privileges = rolePrivilegesMap.get(roleName);
         if (privileges == null) {
-          privileges = new HashSet<TSentryPrivilege>();
+          privileges = new HashSet<>();
         }
         privileges.add(privilege);
         rolePrivilegesMap.put(roleName, privileges);
@@ -2631,11 +2638,13 @@ public class SentryStore {
    */
   private Set<String> getAllRoleNamesCore(PersistenceManager pm) {
     List<MSentryRole> mSentryRoles = getAllRoles(pm);
-    Set<String> roleNames = Sets.newHashSet();
-    if (mSentryRoles != null) {
-      for (MSentryRole mSentryRole : mSentryRoles) {
-        roleNames.add(mSentryRole.getRoleName());
-      }
+    if (mSentryRoles.isEmpty()) {
+      return Collections.emptySet();
+    }
+
+    Set<String> roleNames = new HashSet<>(mSentryRoles.size());
+    for (MSentryRole mSentryRole : mSentryRoles) {
+      roleNames.add(mSentryRole.getRoleName());
     }
     return roleNames;
   }
@@ -2649,12 +2658,14 @@ public class SentryStore {
     Query query = pm.newQuery(MSentryGroup.class);
     @SuppressWarnings("unchecked")
     List<MSentryGroup> mSentryGroups = (List<MSentryGroup>) query.execute();
-    Map<String, MSentryGroup> existGroupsMap = Maps.newHashMap();
-    if (mSentryGroups != null) {
-      // change the List<MSentryGroup> -> Map<groupName, MSentryGroup>
-      for (MSentryGroup mSentryGroup : mSentryGroups) {
-        existGroupsMap.put(mSentryGroup.getGroupName(), mSentryGroup);
-      }
+    if (mSentryGroups.isEmpty()) {
+      return Collections.emptyMap();
+    }
+
+    Map<String, MSentryGroup> existGroupsMap = new HashMap<>(mSentryGroups.size());
+    // change the List<MSentryGroup> -> Map<groupName, MSentryGroup>
+    for (MSentryGroup mSentryGroup : mSentryGroups) {
+      existGroupsMap.put(mSentryGroup.getGroupName(), mSentryGroup);
     }
     return existGroupsMap;
   }
@@ -2668,29 +2679,15 @@ public class SentryStore {
     Query query = pm.newQuery(MSentryUser.class);
     @SuppressWarnings("unchecked")
     List<MSentryUser> users = (List<MSentryUser>) query.execute();
-    Map<String, MSentryUser> existUsersMap = Maps.newHashMap();
-    if (users != null) {
-      // change the List<MSentryUser> -> Map<userName, MSentryUser>
-      for (MSentryUser user : users) {
-        existUsersMap.put(user.getUserName(), user);
-      }
+    if (users.isEmpty()) {
+      return Collections.emptyMap();
+    }
+    Map<String, MSentryUser> existUsersMap = new HashMap<>(users.size());
+    // change the List<MSentryUser> -> Map<userName, MSentryUser>
+    for (MSentryUser user : users) {
+      existUsersMap.put(user.getUserName(), user);
     }
     return existUsersMap;
-  }
-
-  /**
-   * Returl list of all privileges
-   * @param pm PersistenceManager instance
-   * @return List of all privileges
-   */
-  private List<MSentryPrivilege> getPrivilegesList(PersistenceManager pm) {
-    Query query = pm.newQuery(MSentryPrivilege.class);
-    @SuppressWarnings("unchecked")
-    List<MSentryPrivilege> resultList = (List<MSentryPrivilege>) query.execute();
-    if (resultList == null) {
-      resultList = Lists.newArrayList();
-    }
-    return resultList;
   }
 
   @VisibleForTesting
@@ -2699,12 +2696,14 @@ public class SentryStore {
         new TransactionBlock<Map<String, MSentryRole>>() {
           public Map<String, MSentryRole> execute(PersistenceManager pm) throws Exception {
             List<MSentryRole> mSentryRoles = getAllRoles(pm);
-            Map<String, MSentryRole> existRolesMap = Maps.newHashMap();
-            if (mSentryRoles != null) {
-              // change the List<MSentryRole> -> Map<roleName, Set<MSentryRole>>
-              for (MSentryRole mSentryRole : mSentryRoles) {
-                existRolesMap.put(mSentryRole.getRoleName(), mSentryRole);
-              }
+            if (mSentryRoles.isEmpty()) {
+              return Collections.emptyMap();
+            }
+            Map<String, MSentryRole> existRolesMap =
+                    new HashMap<>(mSentryRoles.size());
+            // change the List<MSentryRole> -> Map<roleName, Set<MSentryRole>>
+            for (MSentryRole mSentryRole : mSentryRoles) {
+              existRolesMap.put(mSentryRole.getRoleName(), mSentryRole);
             }
 
             return existRolesMap;
@@ -2738,7 +2737,8 @@ public class SentryStore {
       new TransactionBlock<List<MSentryPrivilege>>() {
         public List<MSentryPrivilege> execute(PersistenceManager pm)
                 throws Exception {
-          return getPrivilegesList(pm);
+          Query query = pm.newQuery(MSentryPrivilege.class);
+          return (List<MSentryPrivilege>) query.execute();
         }
       });
   }
@@ -2799,6 +2799,12 @@ public class SentryStore {
               roleNames = getAllRoleNamesCore(pm);
             }
 
+            // Empty roleNames is most likely the COllections.emptySet().
+            // We are going to modify roleNames below, so create an actual set.
+            if (roleNames.isEmpty()) {
+              roleNames = new HashSet<>();
+            }
+
             // import the mapping data for [role,privilege], the roleNames will be updated
             importRolePrivilegeMapping(pm, roleNames, mappingData.getRolePrivilegesMap());
             // import the mapping data for [role,group], the roleNames will be updated
@@ -2813,19 +2819,21 @@ public class SentryStore {
   // covert the Map[group->roles] to Map[role->groups]
   private Map<String, Set<TSentryGroup>> covertToRoleNameTGroupsMap(
       Map<String, Set<String>> groupRolesMap) {
+    if (groupRolesMap == null || groupRolesMap.isEmpty()) {
+      return Collections.emptyMap();
+    }
+
     Map<String, Set<TSentryGroup>> roleGroupsMap = Maps.newHashMap();
-    if (groupRolesMap != null) {
-      for (Map.Entry<String, Set<String>> entry : groupRolesMap.entrySet()) {
-        Set<String> roleNames = entry.getValue();
-        if (roleNames != null) {
-          for (String roleName : roleNames) {
-            Set<TSentryGroup> tSentryGroups = roleGroupsMap.get(roleName);
-            if (tSentryGroups == null) {
-              tSentryGroups = Sets.newHashSet();
-            }
-            tSentryGroups.add(new TSentryGroup(entry.getKey()));
-            roleGroupsMap.put(roleName, tSentryGroups);
+    for (Map.Entry<String, Set<String>> entry : groupRolesMap.entrySet()) {
+      Set<String> roleNames = entry.getValue();
+      if (roleNames != null) {
+        for (String roleName : roleNames) {
+          Set<TSentryGroup> tSentryGroups = roleGroupsMap.get(roleName);
+          if (tSentryGroups == null) {
+            tSentryGroups = Sets.newHashSet();
           }
+          tSentryGroups.add(new TSentryGroup(entry.getKey()));
+          roleGroupsMap.put(roleName, tSentryGroups);
         }
       }
     }
@@ -2835,19 +2843,21 @@ public class SentryStore {
   // covert the Map[user->roles] to Map[role->users]
   private Map<String, Set<String>> covertToRoleUsersMap(
       Map<String, Set<String>> userRolesMap) {
-    Map<String, Set<String>> roleUsersMap = Maps.newHashMap();
-    if (userRolesMap != null) {
-      for (Map.Entry<String, Set<String>> entry : userRolesMap.entrySet()) {
-        Set<String> roleNames = entry.getValue();
-        if (roleNames != null) {
-          for (String roleName : roleNames) {
-            Set<String> users = roleUsersMap.get(roleName);
-            if (users == null) {
-              users = Sets.newHashSet();
-            }
-            users.add(entry.getKey());
-            roleUsersMap.put(roleName, users);
+    if (userRolesMap == null || userRolesMap.isEmpty()) {
+      return Collections.emptyMap();
+    }
+
+    Map<String, Set<String>> roleUsersMap = new HashMap<>();
+    for (Map.Entry<String, Set<String>> entry : userRolesMap.entrySet()) {
+      Set<String> roleNames = entry.getValue();
+      if (roleNames != null) {
+        for (String roleName : roleNames) {
+          Set<String> users = roleUsersMap.get(roleName);
+          if (users == null) {
+            users = new HashSet<>();
           }
+          users.add(entry.getKey());
+          roleUsersMap.put(roleName, users);
         }
       }
     }
@@ -2891,8 +2901,8 @@ public class SentryStore {
     Map<String, Set<TSentryPrivilege>> sentryRolePrivilegesMap = tSentryMappingData
         .getRolePrivilegesMap();
 
-    Map<String, Set<String>> newSentryGroupRolesMap = Maps.newHashMap();
-    Map<String, Set<TSentryPrivilege>> newSentryRolePrivilegesMap = Maps.newHashMap();
+    Map<String, Set<String>> newSentryGroupRolesMap = new HashMap<>();
+    Map<String, Set<TSentryPrivilege>> newSentryRolePrivilegesMap = new HashMap<>();
     // for mapping data [group,role]
     for (Map.Entry<String, Set<String>> entry : sentryGroupRolesMap.entrySet()) {
       Collection<String> lowcaseRoles = Collections2.transform(entry.getValue(),
@@ -2902,7 +2912,7 @@ public class SentryStore {
               return input.toLowerCase();
             }
           });
-      newSentryGroupRolesMap.put(entry.getKey(), Sets.newHashSet(lowcaseRoles));
+      newSentryGroupRolesMap.put(entry.getKey(), new HashSet<>(lowcaseRoles));
     }
 
     // for mapping data [role,privilege]
