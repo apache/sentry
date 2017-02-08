@@ -374,6 +374,23 @@ public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestW
     if(!useDbNotificationListener) {
       Assert.assertEquals(oldLocation.toLowerCase(), alterPartitionMessage.getOldLocation());
       Assert.assertEquals(newLocation.toLowerCase(), alterPartitionMessage.getNewLocation());
+      assertEquals(partVals1, alterPartitionMessage.getValues());
+      assertEquals(partVals1, alterPartitionMessage.getNewValues());
+    }
+
+    Partition newPartition = partition.deepCopy();
+    ArrayList<String> partVals2 = Lists.newArrayList("part2");
+    newPartition.setValues(partVals2);
+    renamePartition(client, partition, newPartition);
+    latestID = client.getCurrentNotificationEventId();
+    response = client.getNextNotification(latestID.getEventId() - 1, 1, null);
+    alterPartitionMessage = deserializer.getAlterPartitionMessage(response.getEvents().get(0).getMessage());
+    assertEquals(HCatEventMessage.EventType.ALTER_PARTITION, alterPartitionMessage.getEventType());
+    assertThat(alterPartitionMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB));// dbName
+    assertThat(alterPartitionMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable));// tableName
+    if(!useDbNotificationListener) {
+      assertEquals(partVals1, alterPartitionMessage.getValues());
+      assertEquals(partVals2, alterPartitionMessage.getNewValues());
     }
   }
 }

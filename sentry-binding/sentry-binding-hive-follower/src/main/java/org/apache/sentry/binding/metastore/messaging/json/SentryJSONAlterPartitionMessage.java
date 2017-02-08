@@ -29,6 +29,8 @@ public class SentryJSONAlterPartitionMessage extends JSONAlterPartitionMessage {
     private String newLocation;
     @JsonProperty
     private String oldLocation;
+    @JsonProperty
+    private List<String> newValues;
 
     public SentryJSONAlterPartitionMessage() {
         super("", "", "", "", ImmutableList.<String>of(), null);
@@ -36,12 +38,13 @@ public class SentryJSONAlterPartitionMessage extends JSONAlterPartitionMessage {
 
     public SentryJSONAlterPartitionMessage(String server, String servicePrincipal,
                                            String db, String table,
-                                           List<String> values,
+                                           List<String> values, List<String> newValues,
                                            Long timestamp, String oldlocation,
                                            String newLocation) {
         super(server, servicePrincipal, db, table, values, timestamp);
         this.newLocation = newLocation;
         this.oldLocation = oldlocation;
+        this.newValues = newValues;
     }
 
     public String getNewLocation() {
@@ -50,6 +53,10 @@ public class SentryJSONAlterPartitionMessage extends JSONAlterPartitionMessage {
 
     public String getOldLocation() {
         return oldLocation;
+    }
+
+    public List<String> getNewValues() {
+        return newValues;
     }
 
     @Override

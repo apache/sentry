@@ -132,6 +132,11 @@ public abstract class AbstractMetastoreTestWithStaticConfiguration extends
     client.alter_partition(partition.getDbName(), partition.getTableName(), partition);
   }
 
+  public void renamePartition(HiveMetaStoreClient client, Partition partition, Partition newPartition) throws Exception {
+    client.renamePartition(partition.getDbName(), partition.getTableName(), partition.getValues(),
+        newPartition);
+  }
+
   public void dropPartition(HiveMetaStoreClient client, String dbName,
                            String tblName, List<String> ptnVals) throws Exception {
     client.dropPartition(dbName, tblName, ptnVals);

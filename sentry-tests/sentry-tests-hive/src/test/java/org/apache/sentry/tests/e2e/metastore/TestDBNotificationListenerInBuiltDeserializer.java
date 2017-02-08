@@ -32,6 +32,7 @@ import org.apache.hive.hcatalog.messaging.AlterPartitionMessage;
 import org.apache.hive.hcatalog.messaging.DropDatabaseMessage;
 import org.apache.hive.hcatalog.messaging.AddPartitionMessage;
 import org.apache.hive.hcatalog.messaging.DropPartitionMessage;
+import org.apache.sentry.binding.metastore.messaging.json.SentryJSONAlterPartitionMessage;
 import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
 import org.hamcrest.text.IsEqualIgnoringCase;
@@ -347,7 +348,27 @@ public class TestDBNotificationListenerInBuiltDeserializer extends AbstractMetas
     assertEquals(HCatEventMessage.EventType.ALTER_PARTITION, alterPartitionMessage.getEventType());
     assertThat(alterPartitionMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB));// dbName
     assertThat(alterPartitionMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable));// tableName
-    //Location information, not sure how can we get this? Refresh all paths for every alter table add partition?
+    assertEquals(partVals1, alterPartitionMessage.getValues());
+    if (alterPartitionMessage instanceof SentryJSONAlterPartitionMessage) {
+      SentryJSONAlterPartitionMessage sjAlterPartitionMessage = (SentryJSONAlterPartitionMessage) alterPartitionMessage;
+      assertEquals(partVals1, sjAlterPartitionMessage.getNewValues());
+    }
+
+    Partition newPartition = partition.deepCopy();
+    ArrayList<String> partVals2 = Lists.newArrayList("part2");
+    newPartition.setValues(partVals2);
+    renamePartition(client, partition, newPartition);
+    latestID = client.getCurrentNotificationEventId();
+    response = client.getNextNotification(latestID.getEventId()-1, 1, null);
+    alterPartitionMessage = deserializer.getAlterPartitionMessage(response.getEvents().get(0).getMessage());
+    assertEquals(HCatEventMessage.EventType.ALTER_PARTITION, alterPartitionMessage.getEventType());
+    assertThat(alterPartitionMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB));// dbName
+    assertThat(alterPartitionMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable));// tableName
+    assertEquals(partVals1, alterPartitionMessage.getValues());
+    if (alterPartitionMessage instanceof SentryJSONAlterPartitionMessage) {
+      SentryJSONAlterPartitionMessage sjAlterPartitionMessage = (SentryJSONAlterPartitionMessage) alterPartitionMessage;
+      assertEquals(partVals2, sjAlterPartitionMessage.getNewValues());
+    }
   }
 }
 
