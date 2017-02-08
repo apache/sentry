@@ -20,12 +20,10 @@ package org.apache.sentry.provider.db.generic.service.persistent;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
 import javax.jdo.PersistenceManager;
-import javax.jdo.Query;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.common.exception.SentryUserException;
@@ -45,7 +43,6 @@ import org.apache.sentry.provider.db.service.thrift.TSentryRole;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
@@ -252,37 +249,31 @@ public class DelegateSentryStore implements SentryStoreLayer {
   @Override
   public Set<String> getGroupsByRoles(final String component, final Set<String> roles)
       throws Exception {
+    // In all calls roles contain exactly one group
     if (roles.isEmpty()) {
       return Collections.emptySet();
     }
 
-    return delegate.getTransactionManager().executeTransaction(
-      new TransactionBlock<Set<String>>() {
-        public Set<String> execute(PersistenceManager pm) throws Exception {
-          //get groups by roles
-          final Set<String> trimmedRoles = SentryStore.toTrimedLower(roles);
+    // Collect resulting group names in a set
+    Set<String> groupNames = new HashSet<>();
+    for (String role : roles) {
+      MSentryRole sentryRole = null;
+      try {
+        sentryRole = delegate.getMSentryRoleByName(role);
+      }
+      catch (SentryNoSuchObjectException e) {
+        // Role disappeared - not a big deal, just ognore it
+        continue;
+      }
+      // Collect all group names for this role.
+      // Since we use a set, a group can appear multiple times and will only
+      // show up once in a set
+      for (MSentryGroup group : sentryRole.getGroups()) {
+        groupNames.add(group.getGroupName());
+      }
+    }
 
-          Query query = pm.newQuery(MSentryGroup.class);
-          StringBuilder filters = new StringBuilder();
-          query.declareVariables("MSentryRole role");
-          List<String> rolesFiler = new LinkedList<>();
-          for (String role : trimmedRoles) {
-            rolesFiler.add("role.roleName == \"" + role + "\" ");
-          }
-          filters.append("roles.contains(role) " + "&& (" + Joiner.on(" || ").join(rolesFiler) + ")");
-          query.setFilter(filters.toString());
-          @SuppressWarnings("unchecked")
-          List<MSentryGroup> groups = (List<MSentryGroup>)query.execute();
-          if (groups.isEmpty()) {
-            return Collections.emptySet();
-          }
-          Set<String> groupNames = new HashSet<>(groups.size());
-          for (MSentryGroup group : groups) {
-            groupNames.add(group.getGroupName());
-          }
-          return groupNames;
-        }
-      });
+    return groupNames;
   }
 
   @Override
