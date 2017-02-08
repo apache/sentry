@@ -18,6 +18,7 @@ import static org.apache.hadoop.hive.metastore.MetaStoreUtils.DEFAULT_DATABASE_N
 
 import java.security.CodeSource;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -186,8 +187,6 @@ public class DefaultSentryValidator extends SentryHiveAuthorizationValidator {
     } catch (AuthorizationException e) {
       Database db = null;
       Table tab = null;
-      AccessURI udfURI = null;
-      AccessURI partitionURI = null;
       if (outputHObjs != null) {
         for (HivePrivilegeObject obj : outputHObjs) {
           switch (obj.getType()) {
@@ -209,8 +208,8 @@ public class DefaultSentryValidator extends SentryHiveAuthorizationValidator {
       String permsRequired = "";
       SentryOnFailureHookContext hookCtx =
           new SentryOnFailureHookContextImpl(context.getCommandString(), null, null, hiveOp, db,
-              tab, udfURI, partitionURI, authenticator.getUserName(), context.getIpAddress(), e,
-              authzConf);
+              tab, Collections.<AccessURI>emptyList(), null,
+                  authenticator.getUserName(), context.getIpAddress(), e, authzConf);
       SentryAuthorizerUtil.executeOnFailureHooks(hookCtx, authzConf);
       for (String perm : hiveAuthzBinding.getLastQueryPrivilegeErrors()) {
         permsRequired += perm + ";";
