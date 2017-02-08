@@ -221,15 +221,17 @@ public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestW
   public void testAddDropPartition() throws Exception {
     testDB = "N_db" + random.nextInt(Integer.SIZE - 1);
     String testTable = "N_table" + random.nextInt(Integer.SIZE - 1);
+    String partColName = "part_col1";
+    String partColValue = "part1";
 
     NotificationEventResponse response;
     CurrentNotificationEventId latestID, previousID;
     // Create database and table
     createMetastoreDB(client, testDB);
     Table tbl1 = createMetastoreTableWithPartition(client, testDB, testTable, Lists.newArrayList(new FieldSchema("col1", "int", "")),
-        Lists.newArrayList(new FieldSchema("part_col1", "string", "")));
+        Lists.newArrayList(new FieldSchema(partColName, "string", "")));
 
-    ArrayList<String> partVals1 = Lists.newArrayList("part1");
+    ArrayList<String> partVals1 = Lists.newArrayList(partColValue);
 
     //Add partition
     // We need:
@@ -243,7 +245,7 @@ public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestW
     assertEquals(HCatEventMessage.EventType.ADD_PARTITION, addPartitionMessage.getEventType());
     assertThat(addPartitionMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB));// dbName (returns lowered version)
     assertThat(addPartitionMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable));// tableName (returns lowered version)
-    String expectedLocation = warehouseDir + "/" + testDB + ".db/" + testTable ; //TODO: SENTRY-1387: Tablelocation is stored instead of partition location
+    String expectedLocation = warehouseDir + "/" + testDB + ".db/" + testTable + "/" + partColName + "=" + partColValue;
     if(!useDbNotificationListener) {
       Assert.assertEquals(expectedLocation.toLowerCase(), addPartitionMessage.getLocations().get(0));
     }
@@ -340,6 +342,8 @@ public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestW
   public void testAlterPartition() throws Exception {
     testDB = "N_db" + random.nextInt(Integer.SIZE - 1);
     String testTable = "N_table" + random.nextInt(Integer.SIZE - 1);
+    String partColName = "part_col1";
+    String partColValue = "part1";
 
     NotificationEventResponse response;
     CurrentNotificationEventId latestID;
@@ -349,8 +353,8 @@ public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestW
     // Create table with partition
     Table tbl1 = createMetastoreTableWithPartition(client, testDB,
         testTable, Lists.newArrayList(new FieldSchema("col1", "int", "")),
-        Lists.newArrayList(new FieldSchema("part_col1", "string", "")));
-    ArrayList<String> partVals1 = Lists.newArrayList("part1");
+        Lists.newArrayList(new FieldSchema(partColName, "string", "")));
+    ArrayList<String> partVals1 = Lists.newArrayList(partColValue);
     Partition partition = addPartition(client, testDB, testTable, partVals1, tbl1);
 
     //Alter partition with location
@@ -358,7 +362,7 @@ public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestW
     // - dbName
     // - tableName
     // - partition location
-    String oldLocation = tbl1.getSd().getLocation(); //TODO: SENTRY-1387: Tablelocation is stored instead of partition location
+    String oldLocation = tbl1.getSd().getLocation()  + "/" + partColName + "=" + partColValue;
     String newLocation = warehouseDir + File.separator + "newpart";
     alterPartitionWithLocation(client, partition, newLocation);
     latestID = client.getCurrentNotificationEventId();

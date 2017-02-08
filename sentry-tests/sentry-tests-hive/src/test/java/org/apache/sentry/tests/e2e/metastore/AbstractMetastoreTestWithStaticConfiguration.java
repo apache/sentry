@@ -188,6 +188,7 @@ public abstract class AbstractMetastoreTestWithStaticConfiguration extends
     part4.setValues(ptnVals);
     part4.setParameters(new HashMap<String, String>());
     part4.setSd(tbl.getSd().deepCopy());
+    part4.getSd().setLocation(null);
     part4.getSd().setSerdeInfo(tbl.getSd().getSerdeInfo().deepCopy());
     part4.setParameters(new HashMap<String, String>());
     return part4;
