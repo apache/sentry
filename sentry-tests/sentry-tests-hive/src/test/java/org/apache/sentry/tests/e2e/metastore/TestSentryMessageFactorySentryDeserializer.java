@@ -18,6 +18,7 @@
 
 package org.apache.sentry.tests.e2e.metastore;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.*;
@@ -35,6 +36,7 @@ import org.junit.*;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Random;
 
 /**
@@ -353,7 +355,9 @@ public class TestSentryMessageFactorySentryDeserializer extends AbstractMetastor
     Table tbl1 = createMetastoreTableWithPartition(client, testDB,
         testTable, Lists.newArrayList(new FieldSchema("col1", "int", "")),
         Lists.newArrayList(new FieldSchema(partColName, "string", "")));
+    Map<String, String> partKeyVals1 = ImmutableMap.of(partColName, partColValue);
     ArrayList<String> partVals1 = Lists.newArrayList(partColValue);
+
     Partition partition = addPartition(client, testDB, testTable, partVals1, tbl1);
 
     //Alter partition with location
@@ -373,6 +377,24 @@ public class TestSentryMessageFactorySentryDeserializer extends AbstractMetastor
     if(!useDefaultMessageFactory) {
       Assert.assertEquals(oldLocation.toLowerCase(), alterPartitionMessage.getOldLocation());
       Assert.assertEquals(newLocation.toLowerCase(), alterPartitionMessage.getNewLocation());
+      assertEquals(partKeyVals1, alterPartitionMessage.getKeyValues());
+      assertEquals(partKeyVals1, alterPartitionMessage.getNewKeyValues());
+    }
+
+    Partition newPartition = partition.deepCopy();
+    Map<String, String> partKeyVals2 = ImmutableMap.of(partColName, "part2");
+    ArrayList<String> partVals2 = Lists.newArrayList("part2");
+    newPartition.setValues(partVals2);
+    renamePartition(client, partition, newPartition);
+    latestID = client.getCurrentNotificationEventId();
+    response = client.getNextNotification(latestID.getEventId() - 1, 1, null);
+    alterPartitionMessage = deserializer.getAlterPartitionMessage(response.getEvents().get(0).getMessage());
+    assertEquals(HCatEventMessage.EventType.ALTER_PARTITION, alterPartitionMessage.getEventType());
+    assertThat(alterPartitionMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB));// dbName
+    assertThat(alterPartitionMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable));// tableName
+    if(!useDbNotificationListener) {
+      assertEquals(partKeyVals1, alterPartitionMessage.getKeyValues());
+      assertEquals(partKeyVals2, alterPartitionMessage.getNewKeyValues());
     }
   }
 }

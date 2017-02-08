@@ -111,7 +111,8 @@ public class SentryJSONMessageFactory extends MessageFactory {
 
     public SentryJSONAlterPartitionMessage buildAlterPartitionMessage(Table table, Partition oldPartition, Partition newPartition) {
         return new SentryJSONAlterPartitionMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, table.getDbName(),
-            table.getTableName(), getPartitionKeyValues(table, oldPartition), this.now(),
+            table.getTableName(), getPartitionKeyValues(table, oldPartition),
+            getPartitionKeyValues(table, newPartition), this.now(),
             oldPartition.getSd().getLocation(), newPartition.getSd().getLocation());
     }
 
