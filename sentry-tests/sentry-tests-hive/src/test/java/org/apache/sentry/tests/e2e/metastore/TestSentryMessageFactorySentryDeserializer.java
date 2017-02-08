@@ -22,16 +22,9 @@ import com.google.common.collect.Lists;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.*;
 import org.apache.hive.hcatalog.messaging.HCatEventMessage;
-import org.apache.hive.hcatalog.messaging.json.JSONAlterIndexMessage;
-import org.apache.hive.hcatalog.messaging.json.JSONCreateFunctionMessage;
-import org.apache.hive.hcatalog.messaging.json.JSONCreateIndexMessage;
-import org.apache.hive.hcatalog.messaging.json.JSONDropFunctionMessage;
-import org.apache.hive.hcatalog.messaging.json.JSONDropIndexMessage;
 import org.apache.sentry.binding.metastore.messaging.json.*;
 import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
-import org.apache.thrift.TDeserializer;
-import org.apache.thrift.protocol.TJSONProtocol;
 import org.hamcrest.text.IsEqualIgnoringCase;
 
 import static org.junit.Assert.assertEquals;
@@ -41,7 +34,6 @@ import org.junit.*;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Random;
 
 /**
@@ -379,149 +371,5 @@ public class TestSentryMessageFactorySentryDeserializer extends AbstractMetastor
       Assert.assertEquals(newLocation.toLowerCase(), alterPartitionMessage.getLocation());
     }
   }
-
-  @Test
-  public void testCreateDropFunction() throws Exception {
-    testDB = "N_db" + random.nextInt(Integer.SIZE - 1);
-    String funcName = "func1";
-    String funcResource = "file:/tmp/somewhere";
-    NotificationEventResponse response;
-    CurrentNotificationEventId latestID, previousID;
-    TDeserializer deSerializer = new TDeserializer(new TJSONProtocol.Factory());
-
-    // Create database
-    createMetastoreDB(client, testDB);
-    // Create function
-    // We need:
-    // - dbname
-    // - function name
-    // - location
-    createFunction(client, testDB, funcName, funcResource);
-    latestID = client.getCurrentNotificationEventId();
-    response = client.getNextNotification(latestID.getEventId() - 1, 1, null);
-    JSONCreateFunctionMessage createFunctionMessage = deserializer
-        .getCreateFunctionMessage(response.getEvents().get(0).getMessage());
-    assertEquals(HCatEventMessage.EventType.CREATE_FUNCTION,
-        createFunctionMessage.getEventType());
-    assertEquals(testDB, createFunctionMessage.getDB());
-    if(!useDefaultMessageFactory) {
-      Function funcObj = new Function();
-      deSerializer.deserialize(funcObj, createFunctionMessage.getFunctionObjJson(),
-          "UTF-8");
-      Assert.assertEquals(funcName, funcObj.getFunctionName());
-      Assert.assertEquals(Arrays.asList(new ResourceUri(ResourceType.JAR,
-          funcResource)), funcObj.getResourceUris());
-    }
-
-    //Drop function
-    // We need:
-    // - dbName
-    // - function name
-    // - location
-    dropFunction(client, testDB, funcName);
-    previousID = latestID;
-    latestID = client.getCurrentNotificationEventId();
-    assertEquals(previousID.getEventId() + 1, latestID.getEventId());
-    response = client.getNextNotification(latestID.getEventId() - 1, 1, null);
-    JSONDropFunctionMessage dropFunctionMessage = deserializer
-        .getDropFunctionMessage(response.getEvents().get(0).getMessage());
-    assertEquals(HCatEventMessage.EventType.DROP_FUNCTION, dropFunctionMessage.getEventType());
-    assertThat(dropFunctionMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB));
-    if(!useDefaultMessageFactory) {
-      Function funcObj = new Function();
-      deSerializer.deserialize(funcObj, dropFunctionMessage.getFunctionObjJson(),
-          "UTF-8");
-      Assert.assertEquals(funcName, funcObj.getFunctionName());
-      Assert.assertEquals(Arrays.asList(new ResourceUri(ResourceType.JAR,
-          funcResource)), funcObj.getResourceUris());
-    }
-  }
-
-  @Test
-  public void testCreateDropIndex() throws Exception {
-    testDB = "n_db" + random.nextInt(Integer.SIZE - 1);
-    String testTable = "N_table" + random.nextInt(Integer.SIZE - 1);
-    String idxTable = "N_index" + random.nextInt(Integer.SIZE - 1);
-    String location = "file:/tmp/somewhere";
-
-    NotificationEventResponse response;
-    CurrentNotificationEventId latestID, previousID;
-    TDeserializer deSerializer = new TDeserializer(new TJSONProtocol.Factory());
-
-    // Create database
-    createMetastoreDB(client, testDB);
-
-    // Create table without partition
-    createMetastoreTable(client, testDB, testTable,
-        Lists.newArrayList(new FieldSchema("col1", "int", "")));
-
-    // Create index
-    // We need:
-    // - dbname
-    // - tablename
-    // - indexName
-    // - location
-    createIndex(client, testDB, testTable, idxTable, location);
-    latestID = client.getCurrentNotificationEventId();
-    response = client.getNextNotification(latestID.getEventId() - 1, 1, null);
-    JSONCreateIndexMessage createIndexMessage = deserializer.getCreateIndexMessage(response.getEvents().get(0).getMessage());
-    assertEquals(HCatEventMessage.EventType.CREATE_INDEX, createIndexMessage.getEventType());
-    assertEquals(testDB, createIndexMessage.getDB()); //dbName
-    //    assertEquals(testTable, createIndexMessage.get); //tableName
-    if(!useDefaultMessageFactory) {
-      Index idx = new Index();
-      deSerializer.deserialize(idx, createIndexMessage.getIndexObjJson(),
-          "UTF-8");
-      Assert.assertEquals(idxTable, idx.getIndexName());
-      Assert.assertEquals(testTable, idx.getOrigTableName());
-      Assert.assertEquals(location.toLowerCase(), idx.getSd().getLocation());
-    }
-
-    // Alter index
-    // We need:
-    // - dbname
-    // - tablename
-    // - indexName
-    // - location
-    alterIndex(client, testDB, testTable, idxTable, location);
-    latestID = client.getCurrentNotificationEventId();
-    response = client.getNextNotification(latestID.getEventId() - 1, 1, null);
-    JSONAlterIndexMessage alterIndexMessage = deserializer.getAlterIndexMessage(response.getEvents().get(0).getMessage());
-    assertEquals(HCatEventMessage.EventType.ALTER_INDEX, alterIndexMessage.getEventType());
-    assertEquals(testDB, alterIndexMessage.getDB()); //dbName
-    if(!useDefaultMessageFactory) {
-      Index idx = new Index();
-      deSerializer.deserialize(idx, createIndexMessage.getIndexObjJson(),
-          "UTF-8");
-      Assert.assertEquals(idxTable, idx.getIndexName());
-      Assert.assertEquals(testTable, idx.getOrigTableName());
-      Assert.assertEquals(location.toLowerCase(), idx.getSd().getLocation());
-    }
-
-    // Drop index
-    // We need:
-    // - dbname
-    // - tablename
-    // - indexName
-    // - location
-    dropIndex(client, testDB, testTable, idxTable);
-    previousID = latestID;
-    latestID = client.getCurrentNotificationEventId();
-    assertEquals(previousID.getEventId() + 1, latestID.getEventId());
-    response = client.getNextNotification(latestID.getEventId() - 1, 1, null);
-    JSONDropIndexMessage dropIndexMessage = deserializer.getDropIndexMessage(response.getEvents().get(0).getMessage());
-    assertEquals(HCatEventMessage.EventType.DROP_INDEX, dropIndexMessage.getEventType());
-    assertEquals(testDB, dropIndexMessage.getDB()); //dbName
-    //    assertThat(dropIndexMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable));//tableName
-    if(!useDefaultMessageFactory) {
-      Index idx = new Index();
-      deSerializer.deserialize(idx, createIndexMessage.getIndexObjJson(),
-          "UTF-8");
-      Assert.assertEquals(idxTable, idx.getIndexName());
-      Assert.assertEquals(testTable, idx.getOrigTableName());
-      Assert.assertEquals(location.toLowerCase(), idx.getSd().getLocation());
-    }
-  }
-
 }
 

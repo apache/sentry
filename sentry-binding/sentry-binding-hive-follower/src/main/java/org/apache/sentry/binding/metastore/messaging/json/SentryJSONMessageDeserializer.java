@@ -18,12 +18,7 @@
 
 package org.apache.sentry.binding.metastore.messaging.json;
 
-import org.apache.hive.hcatalog.messaging.MessageDeserializer;
-import org.apache.hive.hcatalog.messaging.json.JSONAlterIndexMessage;
-import org.apache.hive.hcatalog.messaging.json.JSONCreateFunctionMessage;
-import org.apache.hive.hcatalog.messaging.json.JSONCreateIndexMessage;
-import org.apache.hive.hcatalog.messaging.json.JSONDropFunctionMessage;
-import org.apache.hive.hcatalog.messaging.json.JSONDropIndexMessage;
+import org.apache.hive.hcatalog.messaging.*;
 import org.apache.hive.hcatalog.messaging.json.JSONInsertMessage;
 import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -101,75 +96,37 @@ public class SentryJSONMessageDeserializer extends MessageDeserializer {
         }
     }
 
-    /**
-     * Method to de-serialize CreateFunctionMessage instance.
-     */
     @Override
-    public JSONCreateFunctionMessage getCreateFunctionMessage(String messageBody) {
-        try {
-            return mapper.readValue(messageBody, JSONCreateFunctionMessage.class);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Could not construct SentryJSONCreateFunctionMessage: ", e);
-        }
+    public CreateFunctionMessage getCreateFunctionMessage(String messageBody) {
+        return null;
     }
 
-    /**
-     * Method to de-serialize DropFunctionMessage instance.
-     */
     @Override
-    public JSONDropFunctionMessage getDropFunctionMessage(String messageBody) {
-        try {
-            return mapper.readValue(messageBody, JSONDropFunctionMessage.class);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Could not construct SentryJSONDropFunctionMessage: ", e);
-        }
+    public DropFunctionMessage getDropFunctionMessage(String messageBody) {
+        return null;
     }
 
-    /**
-     * Method to de-serialize CreateIndexMessage instance.
-     */
     @Override
-    public JSONCreateIndexMessage getCreateIndexMessage(String messageBody) {
-        try {
-            return mapper.readValue(messageBody, JSONCreateIndexMessage.class);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Could not construct SentryJSONCreateIndexMessage: ", e);
-        }
+    public CreateIndexMessage getCreateIndexMessage(String messageBody) {
+        return null;
     }
 
-    /**
-     * Method to de-serialize DropIndexMessage instance.
-     */
     @Override
-    public JSONDropIndexMessage getDropIndexMessage(String messageBody) {
-        try {
-            return mapper.readValue(messageBody, JSONDropIndexMessage.class);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Could not construct SentryJSONDropIndexMessage: ", e);
-        }
+    public DropIndexMessage getDropIndexMessage(String messageBody) {
+        return null;
     }
 
-    /**
-     * Method to de-serialize AlterIndexMessage instance.
-     */
     @Override
-    public JSONAlterIndexMessage getAlterIndexMessage(String messageBody) {
-        try {
-            return mapper.readValue(messageBody, JSONAlterIndexMessage.class);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Could not construct SentryJSONAlterIndexMessage: ", e);
-        }
+    public AlterIndexMessage getAlterIndexMessage(String messageBody) {
+        return null;
     }
 
-    /**
-     * Method to de-serialize InsertMessage instance.
-     */
     @Override
-    public JSONInsertMessage getInsertMessage(String messageBody) {
+    public InsertMessage getInsertMessage(String messageBody) {
         try {
-            return mapper.readValue(messageBody, JSONInsertMessage.class);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Could not construct SentryJSONInsertMessage: ", e);
+            return (JSONInsertMessage)mapper.readValue(messageBody, JSONInsertMessage.class);
+        } catch (Exception var3) {
+            throw new IllegalArgumentException("Could not construct JSONInsertMessage.", var3);
         }
     }
 

@@ -21,19 +21,14 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.common.classification.InterfaceAudience;
 import org.apache.hadoop.hive.common.classification.InterfaceStability;
-import org.apache.hadoop.hive.metastore.api.Database;
-import org.apache.hadoop.hive.metastore.api.Function;
-import org.apache.hadoop.hive.metastore.api.Index;
-import org.apache.hadoop.hive.metastore.api.Partition;
-import org.apache.hadoop.hive.metastore.api.Table;
+import org.apache.hadoop.hive.metastore.api.*;
 import org.apache.hadoop.hive.metastore.partition.spec.PartitionSpecProxy;
-import org.apache.hive.hcatalog.messaging.MessageDeserializer;
-import org.apache.hive.hcatalog.messaging.MessageFactory;
-import org.apache.hive.hcatalog.messaging.json.JSONAlterIndexMessage;
+import org.apache.hive.hcatalog.messaging.*;
 import org.apache.hive.hcatalog.messaging.json.JSONCreateFunctionMessage;
 import org.apache.hive.hcatalog.messaging.json.JSONCreateIndexMessage;
 import org.apache.hive.hcatalog.messaging.json.JSONDropFunctionMessage;
 import org.apache.hive.hcatalog.messaging.json.JSONDropIndexMessage;
+import org.apache.hive.hcatalog.messaging.json.JSONAlterIndexMessage;
 import org.apache.hive.hcatalog.messaging.json.JSONInsertMessage;
 
 import java.util.*;
@@ -127,40 +122,40 @@ public class SentryJSONMessageFactory extends MessageFactory {
     }
 
     @Override
-    public JSONCreateFunctionMessage buildCreateFunctionMessage(Function fn) {
+    public CreateFunctionMessage buildCreateFunctionMessage(Function fn) {
         return new JSONCreateFunctionMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, fn,
-            now());
+                now());
     }
 
     @Override
-    public JSONDropFunctionMessage buildDropFunctionMessage(Function fn) {
+    public DropFunctionMessage buildDropFunctionMessage(Function fn) {
         return new JSONDropFunctionMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, fn,
-            now());
+                now());
     }
 
     @Override
-    public JSONCreateIndexMessage buildCreateIndexMessage(Index idx) {
+    public CreateIndexMessage buildCreateIndexMessage(Index idx) {
         return new JSONCreateIndexMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, idx,
-            now());
+                now());
     }
 
     @Override
-    public JSONDropIndexMessage buildDropIndexMessage(Index idx) {
+    public DropIndexMessage buildDropIndexMessage(Index idx) {
         return new JSONDropIndexMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, idx,
-            now());
+                now());
     }
 
     @Override
-    public JSONAlterIndexMessage buildAlterIndexMessage(Index before, Index after) {
+    public AlterIndexMessage buildAlterIndexMessage(Index before, Index after) {
         return new JSONAlterIndexMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL,
-            before, after, now());
+                before, after, now());
     }
 
     @Override
-    public JSONInsertMessage buildInsertMessage(String db, String table, Map<String,
-        String> partKeyVals, List<String> files) {
+    public InsertMessage buildInsertMessage(String db, String table, Map<String,
+            String> partKeyVals, List<String> files) {
         return new JSONInsertMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL,
-            db, table, partKeyVals, files, now());
+                db, table, partKeyVals, files, now());
     }
 
     private static Map<String, String> getPartitionKeyValues(Table table,

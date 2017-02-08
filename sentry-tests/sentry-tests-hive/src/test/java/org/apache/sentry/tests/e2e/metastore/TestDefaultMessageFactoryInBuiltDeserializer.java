@@ -21,12 +21,7 @@ package org.apache.sentry.tests.e2e.metastore;
 import com.google.common.collect.Lists;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.*;
-import org.apache.hive.hcatalog.messaging.AlterIndexMessage;
 import org.apache.hive.hcatalog.messaging.CreateDatabaseMessage;
-import org.apache.hive.hcatalog.messaging.CreateFunctionMessage;
-import org.apache.hive.hcatalog.messaging.CreateIndexMessage;
-import org.apache.hive.hcatalog.messaging.DropFunctionMessage;
-import org.apache.hive.hcatalog.messaging.DropIndexMessage;
 import org.apache.hive.hcatalog.messaging.HCatEventMessage;
 import org.apache.hive.hcatalog.messaging.MessageDeserializer;
 import org.apache.hive.hcatalog.messaging.MessageFactory;
@@ -354,103 +349,6 @@ public class TestDefaultMessageFactoryInBuiltDeserializer extends AbstractMetast
     assertThat(alterPartitionMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB));// dbName
     assertThat(alterPartitionMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable));// tableName
     //Location information, not sure how can we get this? Refresh all paths for every alter table add partition?
-  }
-
-  @Test
-  public void testCreateDropFunction() throws Exception {
-    System.err.println("testCreateDropFunction");
-    testDB = "N_db" + random.nextInt(Integer.SIZE - 1);
-    String funcName = "func1";
-    String funcResource = "file:/tmp/somewhere";
-    NotificationEventResponse response;
-    CurrentNotificationEventId latestID, previousID;
-    // Create database
-    createMetastoreDB(client, testDB);
-    // Create function
-    // We need:
-    // - dbname
-    // no info about function name or location available in message object.
-    createFunction(client, testDB, funcName, funcResource);
-    latestID = client.getCurrentNotificationEventId();
-    response = client.getNextNotification(latestID.getEventId() - 1, 1, null);
-    CreateFunctionMessage createFunctionMessage = deserializer
-        .getCreateFunctionMessage(response.getEvents().get(0).getMessage());
-    assertEquals(HCatEventMessage.EventType.CREATE_FUNCTION,
-        createFunctionMessage.getEventType());
-    assertEquals(testDB, createFunctionMessage.getDB());
-    // location is not available
-
-    //Drop function
-    // We need:
-    // - dbName
-    // no info about function name or location available in message object.
-    dropFunction(client, testDB, funcName);
-    previousID = latestID;
-    latestID = client.getCurrentNotificationEventId();
-    assertEquals(previousID.getEventId() + 1, latestID.getEventId());
-    response = client.getNextNotification(latestID.getEventId() - 1, 1, null);
-    DropFunctionMessage dropFunctionMessage = deserializer
-        .getDropFunctionMessage(response.getEvents().get(0).getMessage());
-    assertEquals(HCatEventMessage.EventType.DROP_FUNCTION, dropFunctionMessage.getEventType());
-    assertThat(dropFunctionMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB));
-    // location is not available
-  }
-
-  @Test
-  public void testCreateAlterDropIndex() throws Exception {
-    System.err.println("testCreateAlterDropIndex");
-    testDB = "n_db" + random.nextInt(Integer.SIZE - 1);
-    String testTable = "N_table" + random.nextInt(Integer.SIZE - 1);
-    String idxTable = "N_index" + random.nextInt(Integer.SIZE - 1);
-    String location = "file:/tmp/somewhere";
-
-    NotificationEventResponse response;
-    CurrentNotificationEventId latestID, previousID;
-
-    // Create database
-    createMetastoreDB(client, testDB);
-
-    // Create table without partition
-    createMetastoreTable(client, testDB, testTable,
-        Lists.newArrayList(new FieldSchema("col1", "int", "")));
-
-    // Create index
-    // We need:
-    // - dbname
-    // no info about tableName, index name or location available in message object.
-    createIndex(client, testDB, testTable, idxTable, location);
-    latestID = client.getCurrentNotificationEventId();
-    response = client.getNextNotification(latestID.getEventId() - 1, 1, null);
-    CreateIndexMessage createIndexMessage = deserializer.getCreateIndexMessage(response.getEvents().get(0).getMessage());
-    assertEquals(HCatEventMessage.EventType.CREATE_INDEX, createIndexMessage.getEventType());
-    assertEquals(testDB, createIndexMessage.getDB()); //dbName
-    // location is not available
-
-    // Alter index
-    // We need:
-    // - dbname
-    // no info about tableName, index name or location available in message object.
-    alterIndex(client, testDB, testTable, idxTable, location);
-    latestID = client.getCurrentNotificationEventId();
-    response = client.getNextNotification(latestID.getEventId() - 1, 1, null);
-    AlterIndexMessage alterIndexMessage = deserializer.getAlterIndexMessage(response.getEvents().get(0).getMessage());
-    assertEquals(HCatEventMessage.EventType.ALTER_INDEX, alterIndexMessage.getEventType());
-    assertEquals(testDB, alterIndexMessage.getDB()); //dbName
-    // location is not available
-
-    // Drop index
-    // We need:
-    // - dbname
-    // no info about tableName, index name or location available in message object.
-    dropIndex(client, testDB, testTable, idxTable);
-    previousID = latestID;
-    latestID = client.getCurrentNotificationEventId();
-    assertEquals(previousID.getEventId() + 1, latestID.getEventId());
-    response = client.getNextNotification(latestID.getEventId() - 1, 1, null);
-    DropIndexMessage dropIndexMessage = deserializer.getDropIndexMessage(response.getEvents().get(0).getMessage());
-    assertEquals(HCatEventMessage.EventType.DROP_INDEX, dropIndexMessage.getEventType());
-    assertEquals(testDB, dropIndexMessage.getDB()); //dbName
-    // location is not available
   }
 }
 
