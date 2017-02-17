@@ -156,9 +156,13 @@ public class SentryService implements Callable, SigUtils.SigListener {
 
     if (notificationLogEnabled) {
       try {
+        long initDelay = conf.getLong(ServerConfig.SENTRY_HMSFOLLOWER_INIT_DELAY_MILLS,
+                ServerConfig.SENTRY_HMSFOLLOWER_INIT_DELAY_MILLS_DEFAULT);
+        long period = conf.getLong(ServerConfig.SENTRY_HMSFOLLOWER_INTERVAL_MILLS,
+                ServerConfig.SENTRY_HMSFOLLOWER_INTERVAL_MILLS_DEFAULT);
         hmsFollowerExecutor = Executors.newScheduledThreadPool(1);
         hmsFollowerExecutor.scheduleAtFixedRate(new HMSFollower(conf, leaderMonitor),
-                60000, 500, TimeUnit.MILLISECONDS);
+                initDelay, period, TimeUnit.MILLISECONDS);
       } catch (Exception e) {
         //TODO: Handle
         LOGGER.error("Could not start HMSFollower");

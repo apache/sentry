@@ -164,6 +164,12 @@ public class ServiceConstants {
             .put("javax.jdo.option.Multithreaded", "true")
             .build();
 
+    // InitialDelay and period time for HMSFollower thread.
+    public static final String SENTRY_HMSFOLLOWER_INIT_DELAY_MILLS = "sentry.hmsfollower.init.delay.mills";
+    public static final long SENTRY_HMSFOLLOWER_INIT_DELAY_MILLS_DEFAULT = 60000;
+    public static final String SENTRY_HMSFOLLOWER_INTERVAL_MILLS = "sentry.hmsfollower.interval.mills";
+    public static final long SENTRY_HMSFOLLOWER_INTERVAL_MILLS_DEFAULT = 500;
+
     public static final String SENTRY_NOTIFICATION_LOG_ENABLED = "sentry.notification.log.enabled";
     public static final boolean SENTRY_NOTIFICATION_LOG_ENABLED_DEFAULT = false;
     public static final String SENTRY_WEB_ENABLE = "sentry.service.web.enable";
