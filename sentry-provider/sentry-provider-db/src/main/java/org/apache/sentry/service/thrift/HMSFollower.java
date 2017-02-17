@@ -114,13 +114,7 @@ public class HMSFollower implements Runnable {
     if(client != null) {
       return client;
     }
-    // Seems like HMS client creation although seems successful,
-    // it actually connects to an invalid HMS instance.
-    // So it seems like it is necessary to wait until we make sure metastore config is properly loaded.
-    boolean loadedHiveConf = HiveConf.isLoadMetastoreConfig();
-    if(!loadedHiveConf) {
-      return null;
-    }
+
     final HiveConf hiveConf = new HiveConf();
     hiveInstance = hiveConf.get(HiveAuthzConf.AuthzConfVars.AUTHZ_SERVER_NAME.getVar());
 
