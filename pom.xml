@@ -53,6 +53,7 @@ limitations under the License.
     <buildtools.dir>${basedir}/build-tools</buildtools.dir>
     <maven.compile.source>1.7</maven.compile.source>
     <maven.compile.target>1.7</maven.compile.target>
+    <failIfNoTests>false</failIfNoTests>
     <!-- versions are in alphabetical order -->
     <ant.contrib.version>1.0b3</ant.contrib.version>
     <bonecp.version>0.7.1.RELEASE</bonecp.version>
