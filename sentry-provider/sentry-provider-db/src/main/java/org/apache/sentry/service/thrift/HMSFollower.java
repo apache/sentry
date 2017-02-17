@@ -264,7 +264,11 @@ public class HMSFollower implements Runnable {
         LOGGER.error("ThriftException occured fetching Notification entries, will try", e);
       }
     } catch (SentryInvalidInputException|SentryInvalidHMSEventException e) {
-      throw new RuntimeException(e);
+      LOGGER.error("Encounter SentryInvalidInputException|SentryInvalidHMSEventException " +
+                   "while processing notification log", e);
+    } catch (Throwable t) {
+      // catching errors to prevent the executor to halt.
+      LOGGER.error("Caught unexpected exception in HMSFollower!", t.getCause());
     }
   }
 
