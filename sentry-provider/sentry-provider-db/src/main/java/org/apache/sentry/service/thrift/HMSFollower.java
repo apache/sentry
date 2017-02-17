@@ -184,6 +184,13 @@ public class HMSFollower implements Runnable {
 
   @Override
   public void run() {
+    // Only the leader should listen to HMS updates
+    if ((leaderMonitor != null) && !leaderMonitor.isLeader()) {
+      // Close any outstanding connections to HMS
+      closeHMSConnection();
+      return;
+    }
+
     if (client == null) {
       try {
         client = getMetaStoreClient(authzConf);
@@ -198,11 +205,6 @@ public class HMSFollower implements Runnable {
         LOGGER.error("HMSFollower cannot connect to HMS!!", e);
         return;
       }
-    }
-
-    // Only the leader should listen to HMS updates
-    if ((leaderMonitor != null) && !leaderMonitor.isLeader()) {
-      return;
     }
 
     try {
@@ -255,18 +257,7 @@ public class HMSFollower implements Runnable {
       // If the underlying exception is around socket exception, it is better to retry connection to HMS
       if (e.getCause() instanceof SocketException) {
         LOGGER.error("Encountered Socket Exception during fetching Notification entries, will reconnect to HMS", e);
-        try {
-          if (client != null) {
-            client.close();
-            client = null;
-          }
-          if (kerberosContext != null) {
-            kerberosContext.shutDown();
-            kerberosContext = null;
-          }
-        } catch (LoginException le) {
-          LOGGER.warn("Failed to stop kerberos context (potential to cause thread leak)", le);
-        }
+        closeHMSConnection();
       } else {
         LOGGER.error("ThriftException occured fetching Notification entries, will try", e);
       }
@@ -276,6 +267,24 @@ public class HMSFollower implements Runnable {
     } catch (Throwable t) {
       // catching errors to prevent the executor to halt.
       LOGGER.error("Caught unexpected exception in HMSFollower!", t.getCause());
+    }
+  }
+
+  /**
+   * Function to close HMS connection and any associated kerberos context (if applicable)
+   */
+  private void closeHMSConnection() {
+    try {
+      if (client != null) {
+        client.close();
+        client = null;
+      }
+      if (kerberosContext != null) {
+        kerberosContext.shutDown();
+        kerberosContext = null;
+      }
+    } catch (LoginException le) {
+      LOGGER.warn("Failed to stop kerberos context (potential to cause thread leak)", le);
     }
   }
 
