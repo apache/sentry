@@ -22,8 +22,6 @@
 # Thrift Service that the MetaStore is built on
 #
 
-#include "share/fb303/if/fb303.thrift"
-
 namespace java org.apache.sentry.hdfs.service.thrift
 namespace php sentry.hdfs.thrift
 namespace cpp Apache.Sentry.HDFS.Thrift

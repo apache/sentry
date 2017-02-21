@@ -18,8 +18,6 @@
  * limitations under the License.
  */
 
-include "share/fb303/if/fb303.thrift"
-
 namespace java org.apache.sentry.service.thrift
 namespace php sentry.service.thrift
 namespace cpp Apache.Sentry.Service.Thrift
