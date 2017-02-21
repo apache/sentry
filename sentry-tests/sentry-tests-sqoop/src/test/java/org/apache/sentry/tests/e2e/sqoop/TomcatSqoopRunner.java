@@ -280,7 +280,6 @@ public class TomcatSqoopRunner {
             jar.contains("tdgs") || // Teradata driver
             jar.contains("nzjdbc") || // Netezza driver
             jar.contains("sqljdbc") || // Microsoft SQL Server driver
-            jar.contains("libfb303") || // Facebook thrift lib
             jar.contains("datanucleus-") || // Data nucleus libs
             jar.contains("google") // Google libraries (guava, ...)
         ) {
