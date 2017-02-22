@@ -276,15 +276,18 @@ public class HMSFollower implements Runnable {
   private void closeHMSConnection() {
     try {
       if (client != null) {
+        LOGGER.info("Closing the HMS client connection");
         client.close();
-        client = null;
       }
       if (kerberosContext != null) {
+        LOGGER.info("Shutting down kerberos context associated with the HMS client connection");
         kerberosContext.shutDown();
-        kerberosContext = null;
       }
     } catch (LoginException le) {
       LOGGER.warn("Failed to stop kerberos context (potential to cause thread leak)", le);
+    } finally {
+      client = null;
+      kerberosContext = null;
     }
   }
 
