@@ -26,8 +26,8 @@ import javax.jdo.annotations.PrimaryKey;
 
 /**
  * Database backend store for HMS path delta change. Each record contains
- * change ID, JSON format of a single &lt Hive Obj, HDFS Path &gt change, and
- * timestamp.
+ * change ID, HMS notification ID, JSON format of a single
+ * &lt Hive Obj, HDFS Path &gt change, and timestamp.
  * <p>
  * e.g. for add paths change in JSON format.
  * <pre>
@@ -65,8 +65,14 @@ public class MSentryPathChange {
   // Path change in JSON format.
   private String pathChange;
   private long createTimeMs;
+  private long notificationID;
 
   public MSentryPathChange(PathsUpdate pathChange) throws TException {
+    // Each PathsUpdate maps to a MSentryPathChange object.
+    // The PathsUpdate is generated from a HMS notification log,
+    // the notification ID is stored as seqNum and
+    // the notification update is serialized as JSON string.
+    this.notificationID = pathChange.getSeqNum();
     this.pathChange = pathChange.JSONSerialize();
     this.createTimeMs = System.currentTimeMillis();
   }
@@ -85,7 +91,8 @@ public class MSentryPathChange {
 
   @Override
   public String toString() {
-    return "MSentryChange [changeID=" + changeID + " , pathChange= " + pathChange +
+    return "MSentryChange [changeID=" + changeID + " , notificationID= "
+        + notificationID +" , pathChange= " + pathChange +
         ", createTime=" + createTimeMs +  "]";
   }
 
@@ -94,6 +101,7 @@ public class MSentryPathChange {
     final int prime = 31;
     int result = 1;
     result = prime * result + Long.valueOf(changeID).hashCode();
+    result = prime * result + Long.valueOf(notificationID).hashCode();
     result = prime * result + ((pathChange == null) ? 0 : pathChange.hashCode());
     return result;
   }
@@ -114,6 +122,10 @@ public class MSentryPathChange {
 
     MSentryPathChange other = (MSentryPathChange) obj;
     if (changeID != other.changeID) {
+      return false;
+    }
+
+    if (notificationID != other.notificationID) {
       return false;
     }
 

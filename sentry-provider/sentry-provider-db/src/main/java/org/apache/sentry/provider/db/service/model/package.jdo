@@ -250,6 +250,9 @@
        <field name="changeID" primary-key="true" value-strategy="increment">
          <column name="CHANGE_ID" jdbc-type="BIGINT" allows-null="false"/>
        </field>
+       <field name="notificationID">
+         <column name="NOTIFICATION_ID" jdbc-type="BIGINT" allows-null="false"/>
+       </field>
        <field name ="pathChange">
          <column name="PATH_CHANGE" length="4000" jdbc-type="VARCHAR" allows-null="false"/>
        </field>
