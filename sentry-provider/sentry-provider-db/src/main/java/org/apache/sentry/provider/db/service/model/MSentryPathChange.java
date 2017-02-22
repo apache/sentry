@@ -57,7 +57,7 @@ import javax.jdo.annotations.PrimaryKey;
  */
 
 @PersistenceCapable
-public class MSentryPathChange {
+public class MSentryPathChange implements MSentryChange {
 
   @PrimaryKey
   private long changeID;

@@ -425,12 +425,64 @@ public class SentryStore {
               pm.newQuery(MSentryGroup.class).deletePersistentAll();
               pm.newQuery(MSentryUser.class).deletePersistentAll();
               pm.newQuery(MSentryPrivilege.class).deletePersistentAll();
+              pm.newQuery(MSentryPermChange.class).deletePersistentAll();
+              pm.newQuery(MSentryPathChange.class).deletePersistentAll();
               return null;
             }
           });
     } catch (Exception e) {
       // the method only for test, log the error and ignore the exception
       LOGGER.error(e.getMessage(), e);
+    }
+  }
+
+  /**
+   * Purge a given delta change table, with a specified number of changes to be kept.
+   *
+   * @param cls the class of a perm/path delta change {@link MSentryPermChange} or
+   *            {@link MSentryPathChange}.
+   * @param pm a {@link PersistenceManager} instance.
+   * @param changesToKeep the number of changes the caller want to keep.
+   * @param <T> the type of delta change class.
+   */
+  @VisibleForTesting
+  <T extends MSentryChange> void purgeDeltaChangeTableCore(
+      Class<T> cls, PersistenceManager pm, long changesToKeep) {
+    Preconditions.checkArgument(changesToKeep >= 0,
+        "changes to keep must be a non-negative number");
+    long lastChangedID = getLastProcessedChangeIDCore(pm, cls);
+    long maxIDDeleted = lastChangedID - changesToKeep;
+
+    Query query = pm.newQuery(cls);
+
+    // It is an approximation of "SELECT ... LIMIT CHANGE_TO_KEEP" in SQL, because JDO w/ derby
+    // does not support "LIMIT".
+    // See: http://www.datanucleus.org/products/datanucleus/jdo/jdoql_declarative.html
+    query.setFilter("changeID <= maxChangedIdDeleted");
+    query.declareParameters("long maxChangedIdDeleted");
+    long numDeleted = query.deletePersistentAll(maxIDDeleted);
+    LOGGER.info(String.format("Purged %d of %s to changeID=%d",
+        numDeleted, cls.getSimpleName(), maxIDDeleted));
+  }
+
+  /**
+   * Purge delta change tables, {@link MSentryPermChange} and {@link MSentryPathChange}.
+   */
+  public void purgeDeltaChangeTables() {
+    LOGGER.info("Purging MSentryPathUpdate and MSentyPermUpdate tables.");
+    try {
+      tm.executeTransaction(new TransactionBlock<Object>() {
+        @Override
+        public Object execute(PersistenceManager pm) throws Exception {
+          purgeDeltaChangeTableCore(MSentryPermChange.class, pm, 1);
+          LOGGER.info("MSentryPermChange table has been purged.");
+          purgeDeltaChangeTableCore(MSentryPathChange.class, pm, 1);
+          LOGGER.info("MSentryPathUpdate table has been purged.");
+          return null;
+        }
+      });
+    } catch (Exception e) {
+      LOGGER.error("Delta change cleaning process encounter an error.", e);
     }
   }
 
@@ -3289,34 +3341,34 @@ public class SentryStore {
   }
 
   /**
-   * Get the last processed perm change ID.
+   * Get the last processed change ID for perm/path delta changes.
    *
    * @param pm the PersistenceManager
-   * @return the last processed perm changedID
+   * @param changeCls the class of a delta c
+   *
+   * @return the last processed changedID for the delta changes.
    */
-  private long getLastProcessedPermChangeIDCore(PersistenceManager pm) {
-    Query query = pm.newQuery(MSentryPermChange.class);
-    query.setResult("max(this.changeID)");
+  private <T extends MSentryChange> long getLastProcessedChangeIDCore(
+      PersistenceManager pm, Class<T> changeCls) {
+    Query query = pm.newQuery(changeCls);
+    query.setResult("max(changeID)");
     Long changeID = (Long) query.execute();
-    if (changeID == null) {
-      return EMPTY_CHANGE_ID;
-    } else {
-      return changeID;
-    }
+    return changeID == null ? EMPTY_CHANGE_ID : changeID;
   }
 
   /**
-   * Get the MSentryPermChange object by ChangeID. Internally invoke
-   * getLastProcessedPermChangeIDCore().
+   * Get the last processed change ID for perm delta changes.
    *
-   * @return MSentryPermChange
+   * Internally invoke {@link #getLastProcessedChangeIDCore(PersistenceManager, Class)}
+   *
+   * @return latest perm change ID.
    */
   @VisibleForTesting
   long getLastProcessedPermChangeID() throws Exception {
     return tm.executeTransaction(
       new TransactionBlock<Long>() {
         public Long execute(PersistenceManager pm) throws Exception {
-          return getLastProcessedPermChangeIDCore(pm);
+          return getLastProcessedChangeIDCore(pm, MSentryPermChange.class);
         }
       });
   }
@@ -3348,6 +3400,35 @@ public class SentryStore {
   }
 
   /**
+   * Fetch all {@link MSentryChange} in the database.
+   *
+   * @param cls the class of the Sentry delta change.
+   * @return a list of Sentry delta changes.
+   * @throws Exception
+   */
+  @SuppressWarnings("unchecked")
+  private <T extends MSentryChange> List<T> getMSentryChanges(final Class<T> cls) throws Exception {
+    return tm.executeTransaction(
+        new TransactionBlock<List<T>>() {
+          public List<T> execute(PersistenceManager pm) throws Exception {
+            Query query = pm.newQuery(cls);
+            return (List<T>) query.execute();
+          }
+        });
+  }
+
+  /**
+   * Fetch all {@link MSentryPermChange} in the database. It should only be used in the tests.
+   *
+   * @return a list of permission changes.
+   * @throws Exception
+   */
+  @VisibleForTesting
+  List<MSentryPermChange> getMSentryPermChanges() throws Exception {
+    return getMSentryChanges(MSentryPermChange.class);
+  }
+
+  /**
    * Get the MSentryPathChange object by ChangeID.
    */
   public MSentryPathChange getMSentryPathChangeByID(final long changeID) throws Exception {
@@ -3368,6 +3449,14 @@ public class SentryStore {
           return pathChanges.get(0);
         }
       });
+  }
+
+  /**
+   * Fetch all {@link MSentryPathChange} in the database. It should only be used in the tests.
+   */
+  @VisibleForTesting
+  List<MSentryPathChange> getMSentryPathChanges() throws Exception {
+    return getMSentryChanges(MSentryPathChange.class);
   }
 
   /**
