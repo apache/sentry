@@ -55,7 +55,7 @@ import javax.jdo.annotations.PrimaryKey;
  * can re-enhance.
  */
 @PersistenceCapable
-public class MSentryPermChange {
+public class MSentryPermChange implements MSentryChange {
 
   @PrimaryKey
   private long changeID;

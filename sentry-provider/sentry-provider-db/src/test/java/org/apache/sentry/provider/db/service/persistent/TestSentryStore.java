@@ -2038,4 +2038,37 @@ public class TestSentryStore {
     policyFile.write(policyFilePath);
   }
 
+  @Test
+  public void testPurgeDeltaChanges() throws Exception {
+    String role = "purgeRole";
+    String grantor = "g1";
+    String table = "purgeTable";
+
+    assertEquals(0, sentryStore.getMSentryPermChanges().size());
+    assertEquals(0, sentryStore.getMSentryPathChanges().size());
+
+    sentryStore.createSentryRole(role);
+
+    final int numPermChanges = 5;
+    for (int i = 0; i < numPermChanges; i++) {
+      TSentryPrivilege privilege = new TSentryPrivilege();
+      privilege.setPrivilegeScope("Column");
+      privilege.setServerName("server");
+      privilege.setDbName("db");
+      privilege.setTableName(table);
+      privilege.setColumnName("column");
+      privilege.setAction(AccessConstants.SELECT);
+      privilege.setCreateTime(System.currentTimeMillis());
+
+      PermissionsUpdate update = new PermissionsUpdate(i + 1, false);
+      sentryStore.alterSentryRoleGrantPrivilege(grantor, role, privilege, update);
+    }
+    assertEquals(numPermChanges, sentryStore.getMSentryPermChanges().size());
+
+    sentryStore.purgeDeltaChangeTables();
+    assertEquals(1, sentryStore.getMSentryPermChanges().size());
+
+    // TODO: verify MSentryPathChange being purged.
+    // assertEquals(1, sentryStore.getMSentryPathChanges().size());
+  }
 }
