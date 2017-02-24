@@ -20,6 +20,7 @@ package org.apache.sentry.provider.db.service.persistent;
 
 import static org.apache.sentry.core.common.utils.SentryConstants.AUTHORIZABLE_JOINER;
 import static org.apache.sentry.core.common.utils.SentryConstants.KV_JOINER;
+import static org.apache.sentry.provider.db.service.persistent.QueryParamBuilder.newQueryParamBuilder;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -72,7 +73,6 @@ import org.slf4j.LoggerFactory;
 import com.codahale.metrics.Gauge;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
-import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.Collections2;
@@ -699,7 +699,7 @@ public class SentryStore {
     }
 
     Query query = pm.newQuery(MSentryPrivilege.class);
-    QueryParamBuilder paramBuilder = addRolesFilter(query, null, roleNames)
+    QueryParamBuilder paramBuilder = QueryParamBuilder.addRolesFilter(query, null, roleNames)
             .add(SERVER_NAME, parent.getServerName());
 
     if (!isNULL(parent.getDbName())) {
@@ -743,7 +743,7 @@ public class SentryStore {
   @SuppressWarnings("unchecked")
   private List<MSentryPrivilege> getMSentryPrivileges(TSentryPrivilege tPriv, PersistenceManager pm) {
     Query query = pm.newQuery(MSentryPrivilege.class);
-    QueryParamBuilder paramBuilder = new QueryParamBuilder();
+    QueryParamBuilder paramBuilder = newQueryParamBuilder();
     paramBuilder
             .add(SERVER_NAME, tPriv.getServerName())
             .add("action", tPriv.getAction());
@@ -773,7 +773,7 @@ public class SentryStore {
       grantOption = false;
     }
 
-    QueryParamBuilder paramBuilder = new QueryParamBuilder();
+    QueryParamBuilder paramBuilder = newQueryParamBuilder();
     paramBuilder.add(SERVER_NAME, tPriv.getServerName())
             .add(DB_NAME, tPriv.getDbName())
             .add(TABLE_NAME, tPriv.getTableName())
@@ -961,7 +961,7 @@ public class SentryStore {
       new TransactionBlock<Boolean>() {
         public Boolean execute(PersistenceManager pm) throws Exception {
           Query query = pm.newQuery(MSentryPrivilege.class);
-          QueryParamBuilder paramBuilder = addRolesFilter(query,null, roleNames);
+          QueryParamBuilder paramBuilder = QueryParamBuilder.addRolesFilter(query,null, roleNames);
           paramBuilder.add(SERVER_NAME, serverName);
           query.setFilter(paramBuilder.toString());
           query.setResult("count(this)");
@@ -984,7 +984,7 @@ public class SentryStore {
         public List<MSentryPrivilege> execute(PersistenceManager pm)
                 throws Exception {
           Query query = pm.newQuery(MSentryPrivilege.class);
-          QueryParamBuilder paramBuilder = addRolesFilter(query, null, roleNames);
+          QueryParamBuilder paramBuilder = QueryParamBuilder.addRolesFilter(query, null, roleNames);
 
           if (authHierarchy != null && authHierarchy.getServer() != null) {
             paramBuilder.add(SERVER_NAME, authHierarchy.getServer());
@@ -1039,11 +1039,11 @@ public class SentryStore {
         new TransactionBlock<List<MSentryPrivilege>>() {
           public List<MSentryPrivilege> execute(PersistenceManager pm) throws Exception {
             Query query = pm.newQuery(MSentryPrivilege.class);
-            QueryParamBuilder paramBuilder = new QueryParamBuilder();
+            QueryParamBuilder paramBuilder = newQueryParamBuilder();
             if (roleNames == null || roleNames.isEmpty()) {
               paramBuilder.addString("!roles.isEmpty()");
             } else {
-              addRolesFilter(query, paramBuilder, roleNames);
+              QueryParamBuilder.addRolesFilter(query, paramBuilder, roleNames);
             }
             if (authHierarchy.getServer() != null) {
               paramBuilder.add(SERVER_NAME, authHierarchy.getServer());
@@ -1475,13 +1475,15 @@ public class SentryStore {
     }
     return mSentryPrivilege;
   }
-  private static String safeTrim(String s) {
+
+  static String safeTrim(String s) {
     if (s == null) {
       return null;
     }
     return s.trim();
   }
-  private static String safeTrimLower(String s) {
+
+  static String safeTrimLower(String s) {
     if (s == null) {
       return null;
     }
@@ -1828,7 +1830,7 @@ public class SentryStore {
                 throws Exception {
           Map<String, HashMap<String, String>> retVal = new HashMap<>();
           Query query = pm.newQuery(MSentryPrivilege.class);
-          QueryParamBuilder paramBuilder = new QueryParamBuilder();
+          QueryParamBuilder paramBuilder = newQueryParamBuilder();
           paramBuilder
                   .addNotNull(SERVER_NAME)
                   .addNotNull(DB_NAME)
@@ -2097,7 +2099,7 @@ public class SentryStore {
             if (roleNames == null || roleNames.isEmpty()) {
               mSentryRoles = (List<MSentryRole>)query.execute();
             } else {
-              QueryParamBuilder paramBuilder = new QueryParamBuilder(QueryParamBuilder.Op.OR);
+              QueryParamBuilder paramBuilder = newQueryParamBuilder(QueryParamBuilder.Op.OR);
               paramBuilder.addSet("roleName == ", roleNames);
               query.setFilter(paramBuilder.toString());
               mSentryRoles =
@@ -2172,7 +2174,7 @@ public class SentryStore {
         public Map<String, Set<TSentryPrivilege>> execute(PersistenceManager pm)
                 throws Exception {
           Query query = pm.newQuery(MSentryPrivilege.class);
-          QueryParamBuilder paramBuilder = new QueryParamBuilder();
+          QueryParamBuilder paramBuilder = newQueryParamBuilder();
 
           if (!StringUtils.isEmpty(dbName)) {
               paramBuilder.add(DB_NAME, dbName);
@@ -2237,11 +2239,7 @@ public class SentryStore {
       return Collections.emptySet();
     }
 
-    Set<String> roleNames = new HashSet<>(mSentryRoles.size());
-    for (MSentryRole mSentryRole : mSentryRoles) {
-      roleNames.add(mSentryRole.getRoleName());
-    }
-    return roleNames;
+    return rolesToRoleNames(mSentryRoles);
   }
 
   /**
@@ -2550,11 +2548,24 @@ public class SentryStore {
   }
 
   /**
+   * Return set of rolenames from a collection of roles
+   * @param roles - collection of roles
+   * @return set of role names for each role in collection
+   */
+  public static Set<String> rolesToRoleNames(final Iterable<MSentryRole> roles) {
+    Set<String> roleNames = new HashSet<>();
+    for (MSentryRole mSentryRole : roles) {
+      roleNames.add(mSentryRole.getRoleName());
+    }
+    return roleNames;
+  }
+
+  /**
    * Return exception for nonexistent role
    * @param roleName Role name
    * @return SentryNoSuchObjectException with appropriate message
    */
-  private SentryNoSuchObjectException noSuchRole(String roleName) {
+  private static SentryNoSuchObjectException noSuchRole(String roleName) {
     return new SentryNoSuchObjectException("nonexistent role " + roleName);
   }
 
@@ -2563,315 +2574,8 @@ public class SentryStore {
    * @param groupName Group name
    * @return SentryNoSuchObjectException with appropriate message
    */
-  private SentryNoSuchObjectException noSuchGroup(String groupName) {
+  private static SentryNoSuchObjectException noSuchGroup(String groupName) {
     return new SentryNoSuchObjectException("nonexistent group + " + groupName);
   }
 
-  /**
-   * Add common filter for set of roles
-   * @param query Query used for search
-   * @param paramBuilder paramBuilder for parameters
-   * @param roleNames set of role names
-   * @return paramBuilder supplied or a new one
-   */
-  private QueryParamBuilder addRolesFilter(Query query, QueryParamBuilder paramBuilder,
-                                           Set<String> roleNames) {
-    query.declareVariables(MSentryRole.class.getName() + " role");
-    if (paramBuilder == null) {
-      paramBuilder = new QueryParamBuilder();
-    }
-    if (roleNames == null || roleNames.isEmpty()) {
-        return paramBuilder;
-    }
-    paramBuilder.newChild().addSet("role.roleName == ", roleNames);
-    paramBuilder.addString("roles.contains(role)");
-    return paramBuilder;
-  }
-
-  /**
-   * QueryParamBuilder is a helper class assisting in creating parameters for
-   * JDOQL queries.
-   * <p>
-   * There are many places where we want to construct a non-trivial parametrized query,
-   * often with sub-queries. A simple query expression is just a list of conditions joined
-   * by operation (either AND or OR). For the whole expression we keep a dictionary of
-   * parameter names to parameter values that is passed to <em>query.executeWithMap()</em>.
-   * <p>
-   * For sub-expressions we create a child <em>QueryParamBuilder</em> which shares the
-   * dictionary with the parent. Then when we construct the final query string using
-   * <em>toString()</em> operator we recursively convert each child to a string and add each
-   * of the resulting strings to the top-level expression list.
-   * <p>
-   * The class also provides useful common methods for checking that some field is or
-   * isn't <em>NULL</em> and method <em>addSet()</em> to add dynamic set of key/values
-   * <p>
-   * Most class methods return <em>this</em> so it is possible to chain calls together.
-   * <p>
-   * Examples:
-   * <ol>
-   *     <li>
-   * <pre>
-   *   QueryParamBuilder p
-   *      .add("key1", "val1")
-   *      .add("key2", "val2")
-   *
-   *   // Returns "(this.key1 == :key1 && this.key2 == :key2)"
-   *   String queryStr = p.toString();
-   *
-   *   // Returns map {"key1": "val1", "key2": "val2"}
-   *   Map<String, Object> args = p.getArguments();
-   *
-   *   Query query = pm.newQuery(Foo.class);
-   *   query.setFilter(queryStr);
-   *   query.executeWIthMap(args);
-   * </pre></li>
-   * <li>
-   * <pre>
-   *   QueryParamBuilder p = new QueryParamBuilder();
-   *   p.add("key1", "val1")
-   *    .add("key2", "val2")
-   *    .newChild()
-   *      .add("key3", "val3")
-   *      .add("key4", "val4").
-   *
-   *  // Returns "(this.key1 == :val1 && this.key2 == :val2 && \
-   *  //  (this.key3 == :val4 || this.key4 == val4))"
-   *  String queryStr1 = p.toString()
-   * </pre></li>
-   * </ol>
-   */
-  static class QueryParamBuilder {
-
-    // Query is built by joining all parts with the specified Op
-    enum Op {
-      AND(" && "),
-      OR(" || ");
-
-      public String toString() {
-        return value;
-      }
-
-      private final String value;
-      Op(String val) {
-        this.value = val;
-      }
-    };
-
-    // Query parts that will be joined with Op
-    private final List<String> queryParts = new LinkedList<>();
-    // List of children - allocated lazily when children are added
-    private List<QueryParamBuilder> children;
-    // Query Parameters
-    private final Map<String, Object> arguments;
-    // Join operation
-    private final String operation;
-    private final String THIS = "this.";
-
-    /**
-     * Construct a default QueryParamBuilder joining arguments with AND
-     */
-    QueryParamBuilder() {
-      this(Op.AND);
-    }
-
-    /**
-     * Construct generic QueryParamBuilder
-     * @param operation join operation (AND or OR)
-     */
-    QueryParamBuilder(Op operation) {
-      this.arguments = new HashMap<>();
-      this.operation = operation.toString();
-    }
-
-    /**
-     * Internal constructor used for children - reuses arguments from parent
-     * @param parent parent element
-     * @param operation join operation
-     */
-    private QueryParamBuilder(QueryParamBuilder parent, Op operation) {
-      this.arguments = parent.getArguments();
-      this.operation = operation.toString();
-    }
-
-    /**
-     * Create a new child builder attached to this one
-     * @param operation - join operation
-     * @return new child of the QueryBuilder
-     */
-    QueryParamBuilder newChild(Op operation) {
-      QueryParamBuilder child = new QueryParamBuilder(this, operation);
-      if (children == null) {
-        children = new LinkedList<>();
-      }
-      children.add(child);
-      return child;
-    }
-
-    /**
-     * Create a new child builder and attach to this one. Child's join operation is the
-     * inverse of the parent
-     * @return new child of the QueryBuilder
-     */
-    QueryParamBuilder newChild() {
-      // Reverse operation of this builder
-      Op operation = this.operation.equals(Op.AND.toString()) ? Op.OR : Op.AND;
-      return this.newChild(operation);
-    }
-
-    /**
-     * Get query arguments
-     * @return query arguments as a map of arg name and arg value suitable for
-     * query.executeWithMap
-     */
-    public Map<String, Object> getArguments() {
-      return arguments;
-    }
-
-    /**
-     * Get query string - reconstructs the query string from all the parts and children.
-     * @return Query string which can be matched with arguments to execute a query.
-     */
-    @Override
-    public String toString() {
-      if (children == null && queryParts.isEmpty()) {
-        return "";
-      }
-      if (children == null) {
-        return "(" + Joiner.on(operation).join(queryParts) + ")";
-      }
-      // Concatenate our query parts with all children
-      List<String> result = new LinkedList<>(queryParts);
-      for (Object child: children) {
-        result.add(child.toString());
-      }
-      return "(" + Joiner.on(operation).join(result) + ")";
-    }
-
-    /**
-     * Add parameter for field fieldName with given value where value is any Object
-     * @param fieldName Field name to query for
-     * @param value Field value (can be any Object)
-     */
-    public QueryParamBuilder addObject(String fieldName, Object value) {
-      return addCustomParam(THIS + fieldName + " == :" + fieldName,
-              fieldName, value);
-    }
-
-    /**
-     * Add string parameter for field fieldName
-     * @param fieldName name of the field
-     * @param value String value. Value is normalized - converted to lower case and trimmed
-     * @return this
-     */
-    public QueryParamBuilder add(String fieldName, String value) {
-      return addCommon(fieldName, value, false);
-    }
-
-    /**
-     * Add string parameter to field value with or without normalization
-     * @param fieldName field name of the field
-     * @param value String value, inserted as is if preserveCase is true, normalized otherwise
-     * @param preserveCase if true, trm and lowercase the value.
-     * @return this
-     */
-    public QueryParamBuilder add(String fieldName, String value, boolean preserveCase) {
-      return addCommon(fieldName, value, preserveCase);
-    }
-
-    /**
-     * Add condition that fieldName is not equal to NULL
-     * @param fieldName field name to compare to NULL
-     * @return this
-     */
-    public QueryParamBuilder addNotNull(String fieldName) {
-      queryParts.add(String.format("this.%s != \"%s\"", fieldName, NULL_COL));
-      return this;
-    }
-
-    /**
-     * Add condition that fieldName is equal to NULL
-     * @param fieldName field name to compare to NULL
-     * @return this
-     */
-    public QueryParamBuilder addNull(String fieldName) {
-      queryParts.add(String.format("this.%s == \"%s\"", fieldName, NULL_COL));
-      return this;
-    }
-
-    /**
-     * Add custom string for evaluation together with a single parameter.
-     * This is used in cases where we need expression different from this.name == value
-     * @param expr String expression containing ':&lt paramName&gt' somewhere
-     * @param paramName parameter name
-     * @param value parameter value
-     * @return this
-     */
-    public QueryParamBuilder addCustomParam(String expr, String paramName, Object value) {
-      arguments.put(paramName, value);
-      queryParts.add(expr);
-      return this;
-    }
-
-    /**
-     * Add arbitrary query string without parameters
-     * @param expr String expression
-     * @return this
-     */
-    public QueryParamBuilder addString(String expr) {
-      queryParts.add(expr);
-      return this;
-    }
-
-    /**
-     * Add multiple conditions for set of values.
-     * <p>
-     * Example:
-     * <pre>
-     *  Set<String>names = new HashSet<>();
-     *  names.add("foo");
-     *  names.add("bar");
-     *  names.add("bob");
-     *  paramBuilder.addSet("prefix == ", names);
-     *  // Expect:"(prefix == :var0 && prefix == :var1 && prefix == :var2)"
-     *  paramBuilder.toString());
-     *  // paramBuilder(getArguments()) contains mapping for var0, var1 and var2
-     * </pre>
-     * @param prefix common prefix to use for expression
-     * @param values
-     * @return this
-     */
-    public QueryParamBuilder addSet(String prefix, Set<String> values) {
-      if (values == null) {
-        return this;
-      }
-      int index = 0;
-
-      // Add expressions of the form 'prefix :var$i'
-      for(String name: values) {
-        // Append index to the varName
-        String vName = String.format("var%d", index);
-        addCustomParam(prefix + ":" + vName, vName, name.trim().toLowerCase());
-        index++;
-      }
-      return this;
-    }
-
-    /**
-     * common code for adding string values
-     * @param fieldName field name to add
-     * @param value field value
-     * @param preserveCase if true, do not trim and lower
-     * @return this
-     */
-    private QueryParamBuilder addCommon(String fieldName, String value,
-                           boolean preserveCase) {
-      if (preserveCase) {
-        arguments.put(fieldName, toNULLCol(safeTrim(value)));
-      } else {
-        arguments.put(fieldName, toNULLCol(safeTrimLower(value)));
-      }
-      queryParts.add("this." + fieldName + " == :" + fieldName);
-      return this;
-    }
-  }
 }

@@ -57,6 +57,8 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 
+import static org.apache.sentry.provider.db.service.persistent.QueryParamBuilder.newQueryParamBuilder;
+
 public class TestSentryStore extends org.junit.Assert {
 
   private static File dataDir;
@@ -2186,8 +2188,8 @@ public class TestSentryStore extends org.junit.Assert {
 
   @Test
   public void testQueryParamBuilder() {
-    SentryStore.QueryParamBuilder paramBuilder;
-    paramBuilder = new SentryStore.QueryParamBuilder();
+    QueryParamBuilder paramBuilder;
+    paramBuilder = newQueryParamBuilder();
     // Try single parameter
     paramBuilder.add("key", "val");
     assertEquals("(this.key == :key)", paramBuilder.toString());
@@ -2200,7 +2202,7 @@ public class TestSentryStore extends org.junit.Assert {
     assertEquals("val", params.get("key"));
     assertEquals("Val1", params.get("key1"));
 
-    paramBuilder = new SentryStore.QueryParamBuilder(SentryStore.QueryParamBuilder.Op.OR);
+    paramBuilder = newQueryParamBuilder(QueryParamBuilder.Op.OR);
     paramBuilder.add("key", " Val ", true);
     paramBuilder.addNotNull("notNullField");
     paramBuilder.addNull("nullField");
@@ -2209,14 +2211,14 @@ public class TestSentryStore extends org.junit.Assert {
     params = paramBuilder.getArguments();
     assertEquals("Val", params.get("key"));
 
-    paramBuilder = new SentryStore.QueryParamBuilder()
+    paramBuilder = newQueryParamBuilder()
             .addNull("var1")
             .addNotNull("var2");
     assertEquals("(this.var1 == \"__NULL__\" && this.var2 != \"__NULL__\")",
             paramBuilder.toString());
 
     // Test newChild()
-    paramBuilder = new SentryStore.QueryParamBuilder();
+    paramBuilder = newQueryParamBuilder();
     paramBuilder
             .addString("e1")
             .addString("e2")
@@ -2235,7 +2237,7 @@ public class TestSentryStore extends org.junit.Assert {
     assertEquals("e4", params.get("v4"));
 
     // Test addSet
-    paramBuilder = new SentryStore.QueryParamBuilder();
+    paramBuilder = newQueryParamBuilder();
     Set<String>names = new HashSet<>();
     names.add("foo");
     names.add("bar");
