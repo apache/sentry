@@ -146,12 +146,14 @@ public class MSentryRole {
     }
   }
 
-  public void removePrivileges() {
+  public Set<MSentryPrivilege> removePrivileges() {
     // copy is required since privilege.removeRole will call remotePrivilege
-    for (MSentryPrivilege privilege : ImmutableSet.copyOf(privileges)) {
+    Set<MSentryPrivilege> copy = ImmutableSet.copyOf(privileges);
+    for (MSentryPrivilege privilege : copy) {
       privilege.removeRole(this);
     }
     Preconditions.checkState(privileges.isEmpty(), "Privileges should be empty: " + privileges);
+    return copy;
   }
 
   @Override

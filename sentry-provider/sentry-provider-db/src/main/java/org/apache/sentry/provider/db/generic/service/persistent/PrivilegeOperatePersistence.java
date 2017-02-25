@@ -19,7 +19,8 @@ package org.apache.sentry.provider.db.generic.service.persistent;
 
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -39,19 +40,29 @@ import org.apache.sentry.provider.db.generic.service.persistent.PrivilegeObject.
 import org.apache.sentry.provider.db.service.model.MSentryGMPrivilege;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.sentry.provider.db.service.persistent.QueryParamBuilder;
+import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.service.thrift.ServiceConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.sentry.provider.db.service.persistent.SentryStore.toNULLCol;
+
 /**
- * This class used do some operations related privilege and make the results
- * persistence
+ * Sentry Generic model privilege persistence support.
+ * <p>
+ * This class is similar to {@link SentryStore} but operates on generic
+ * privileges.
  */
 public class PrivilegeOperatePersistence {
+  private static final String SERVICE_NAME = "serviceName";
+  private static final String COMPONENT_NAME = "componentName";
+  private static final String SCOPE = "scope";
+  private static final String ACTION = "action";
+
   private static final Logger LOGGER = LoggerFactory.getLogger(PrivilegeOperatePersistence.class);
   private static final Map<String, BitFieldActionFactory> actionFactories = Maps.newHashMap();
   static{
@@ -65,31 +76,106 @@ public class PrivilegeOperatePersistence {
     this.conf = conf;
   }
 
-  public boolean checkPrivilegeOption(Set<MSentryRole> roles, PrivilegeObject privilege, PersistenceManager pm) {
-    MSentryGMPrivilege requestPrivilege = convertToPrivilege(privilege);
-    boolean hasGrant = false;
-    //get persistent privileges by roles
-    Query query = pm.newQuery(MSentryGMPrivilege.class);
-    StringBuilder filters = new StringBuilder();
-    if ((roles != null) && (roles.size() > 0)) {
-      query.declareVariables("org.apache.sentry.provider.db.service.model.MSentryRole role");
-      List<String> rolesFiler = new LinkedList<String>();
-      for (MSentryRole role : roles) {
-        rolesFiler.add("role.roleName == \"" + role.getRoleName() + "\" ");
-      }
-      filters.append("roles.contains(role) " + "&& (" + Joiner.on(" || ").join(rolesFiler) + ")");
-    }
-    query.setFilter(filters.toString());
+  /**
+   * Return query builder to execute in JDO for search the given privilege
+   * @param privilege Privilege to extract
+   * @return query builder suitable for executing the query
+   */
+  private static QueryParamBuilder toQueryParam(MSentryGMPrivilege privilege) {
+    QueryParamBuilder paramBuilder = QueryParamBuilder.newQueryParamBuilder();
+    paramBuilder.add(SERVICE_NAME, toNULLCol(privilege.getServiceName()), true)
+            .add(COMPONENT_NAME, toNULLCol(privilege.getComponentName()), true)
+            .add(SCOPE, toNULLCol(privilege.getScope()), true)
+            .add(ACTION, toNULLCol(privilege.getAction()), true);
 
-    List<MSentryGMPrivilege> tPrivileges = (List<MSentryGMPrivilege>)query.execute();
+    Boolean grantOption = privilege.getGrantOption();
+    paramBuilder.addObject(SentryStore.GRANT_OPTION, grantOption);
+
+    List<? extends Authorizable> authorizables = privilege.getAuthorizables();
+    int nAuthorizables = authorizables.size();
+    for (int i = 0; i < MSentryGMPrivilege.AUTHORIZABLE_LEVEL; i++) {
+      String resourceName = MSentryGMPrivilege.PREFIX_RESOURCE_NAME + String.valueOf(i);
+      String resourceType = MSentryGMPrivilege.PREFIX_RESOURCE_TYPE + String.valueOf(i);
+
+      if (i >= nAuthorizables) {
+        paramBuilder.addNull(resourceName);
+        paramBuilder.addNull(resourceType);
+      } else {
+        paramBuilder.add(resourceName, authorizables.get(i).getName(), true);
+        paramBuilder.add(resourceType, authorizables.get(i).getTypeName(), true);
+      }
+    }
+    return paramBuilder;
+  }
+
+  /**
+   * Create a query template tha includes information from the input privilege:
+   * <ul>
+   *   <li>Service name</li>
+   *   <li>Component name</li>
+   *   <li>Name and type for each authorizable present</li>
+   * </ul>
+   * For exmaple, for Solr may configure the following privileges:
+   * <ul>
+   *   <li>{@code p1:Collection=c1->action=query}</li>
+   *   <li>{@code p2:Collection=c1->Field=f1->action=query}</li>
+   *   <li>{@code p3:Collection=c1->Field=f2->action=query}</li>
+   * </ul>
+   * When the request for privilege revoke has
+   * {@code p4:Collection=c1->action=query}
+   * all privileges matching {@code Collection=c1} should be revoke which means that p1, p2 and p3
+   * should all be revoked.
+   *
+   * @param privilege Source privilege
+   * @return ParamBuilder suitable for executing the query
+   */
+  public static QueryParamBuilder populateIncludePrivilegesParams(MSentryGMPrivilege privilege) {
+    QueryParamBuilder paramBuilder = QueryParamBuilder.newQueryParamBuilder();
+    paramBuilder.add(SERVICE_NAME, toNULLCol(privilege.getServiceName()), true);
+    paramBuilder.add(COMPONENT_NAME, toNULLCol(privilege.getComponentName()), true);
+
+    List<? extends Authorizable> authorizables = privilege.getAuthorizables();
+    int i = 0;
+    for(Authorizable auth: authorizables) {
+      String resourceName = MSentryGMPrivilege.PREFIX_RESOURCE_NAME + String.valueOf(i);
+      String resourceType = MSentryGMPrivilege.PREFIX_RESOURCE_TYPE + String.valueOf(i);
+      paramBuilder.add(resourceName, auth.getName(), true);
+      paramBuilder.add(resourceType, auth.getTypeName(), true);
+      i++;
+    }
+    return paramBuilder;
+  }
+
+  /**
+   * Verify whether specified privilege can be granted
+   * @param roles set of roles for the privilege
+   * @param privilege privilege being checked
+   * @param pm Persistentence manager instance
+   * @return true iff at least one privilege within the role allows for the
+   *   requested privilege
+   */
+  boolean checkPrivilegeOption(Set<MSentryRole> roles, PrivilegeObject privilege, PersistenceManager pm) {
+    MSentryGMPrivilege requestPrivilege = convertToPrivilege(privilege);
+    if (roles.isEmpty()) {
+      return false;
+    }
+    // get persistent privileges by roles
+    // Find all GM privileges for all the input roles
+    Query query = pm.newQuery(MSentryGMPrivilege.class);
+    QueryParamBuilder paramBuilder = QueryParamBuilder.addRolesFilter(query, null,
+            SentryStore.rolesToRoleNames(roles));
+    query.setFilter(paramBuilder.toString());
+    List<MSentryGMPrivilege> tPrivileges =
+            (List<MSentryGMPrivilege>)query.executeWithMap(paramBuilder.getArguments());
+
     for (MSentryGMPrivilege tPrivilege : tPrivileges) {
       if (tPrivilege.getGrantOption() && tPrivilege.implies(requestPrivilege)) {
-        hasGrant = true;
-        break;
+        return true;
       }
     }
-    return hasGrant;
+    return false;
   }
+
   public void grantPrivilege(PrivilegeObject privilege,MSentryRole role, PersistenceManager pm) throws SentryUserException {
     MSentryGMPrivilege mPrivilege = convertToPrivilege(privilege);
     grantRolePartial(mPrivilege, role, pm);
@@ -187,25 +273,20 @@ public class PrivilegeOperatePersistence {
    */
   @SuppressWarnings("unchecked")
   private Set<MSentryGMPrivilege> populateIncludePrivileges(Set<MSentryRole> roles,
-      MSentryGMPrivilege parent, PersistenceManager pm) {
+                                                            MSentryGMPrivilege parent, PersistenceManager pm) {
     Set<MSentryGMPrivilege> childrens = Sets.newHashSet();
 
     Query query = pm.newQuery(MSentryGMPrivilege.class);
-    StringBuilder filters = new StringBuilder();
-    //add populateIncludePrivilegesQuery
-    filters.append(MSentryGMPrivilege.populateIncludePrivilegesQuery(parent));
-    // add filter for role names
-    if ((roles != null) && (roles.size() > 0)) {
-      query.declareVariables("org.apache.sentry.provider.db.service.model.MSentryRole role");
-      List<String> rolesFiler = new LinkedList<String>();
-      for (MSentryRole role : roles) {
-        rolesFiler.add("role.roleName == \"" + role.getRoleName() + "\" ");
-      }
-      filters.append("&& roles.contains(role) " + "&& (" + Joiner.on(" || ").join(rolesFiler) + ")");
-    }
-    query.setFilter(filters.toString());
+    QueryParamBuilder paramBuilder = populateIncludePrivilegesParams(parent);
 
-    List<MSentryGMPrivilege> privileges = (List<MSentryGMPrivilege>)query.execute();
+    // add filter for role names
+    if ((roles != null) && !roles.isEmpty()) {
+      QueryParamBuilder.addRolesFilter(query, paramBuilder, SentryStore.rolesToRoleNames(roles));
+    }
+    query.setFilter(paramBuilder.toString());
+
+    List<MSentryGMPrivilege> privileges =
+            (List<MSentryGMPrivilege>)query.executeWithMap(paramBuilder.getArguments());
     childrens.addAll(privileges);
     return childrens;
   }
@@ -314,32 +395,36 @@ public class PrivilegeOperatePersistence {
 
   private MSentryGMPrivilege getPrivilege(MSentryGMPrivilege privilege, PersistenceManager pm) {
     Query query = pm.newQuery(MSentryGMPrivilege.class);
-    query.setFilter(MSentryGMPrivilege.toQuery(privilege));
+    QueryParamBuilder paramBuilder = toQueryParam(privilege);
+    query.setFilter(paramBuilder.toString());
     query.setUnique(true);
-    return (MSentryGMPrivilege)query.execute();
+    MSentryGMPrivilege result = (MSentryGMPrivilege)query.executeWithMap(paramBuilder.getArguments());
+    return result;
   }
 
-  @SuppressWarnings("unchecked")
-  public Set<PrivilegeObject> getPrivilegesByRole(Set<MSentryRole> roles, PersistenceManager pm) {
-    Set<PrivilegeObject> privileges = Sets.newHashSet();
-    if ((roles == null) || (roles.size() == 0)) {
-      return privileges;
+  /**
+   * Get all privileges associated with a given roles
+   * @param roles Set of roles
+   * @param pm Persistence manager instance
+   * @return Set (potentially empty) of privileges associated with roles
+   */
+  Set<PrivilegeObject> getPrivilegesByRole(Set<MSentryRole> roles, PersistenceManager pm) {
+    if (roles == null || roles.isEmpty()) {
+      return Collections.emptySet();
     }
-    Query query = pm.newQuery(MSentryGMPrivilege.class);
-    StringBuilder filters = new StringBuilder();
-    // add filter for role names
-    query.declareVariables("org.apache.sentry.provider.db.service.model.MSentryRole role");
-    List<String> rolesFiler = new LinkedList<String>();
-    for (MSentryRole role : roles) {
-      rolesFiler.add("role.roleName == \"" + role.getRoleName() + "\" ");
-    }
-    filters.append("roles.contains(role) " + "&& (" + Joiner.on(" || ").join(rolesFiler) + ")");
 
-    query.setFilter(filters.toString());
-    List<MSentryGMPrivilege> mPrivileges = (List<MSentryGMPrivilege>) query.execute();
-    if ((mPrivileges == null) || (mPrivileges.size() ==0)) {
-      return privileges;
+    Query query = pm.newQuery(MSentryGMPrivilege.class);
+    // Find privileges matching all roles
+    QueryParamBuilder paramBuilder = QueryParamBuilder.addRolesFilter(query, null,
+            SentryStore.rolesToRoleNames(roles));
+    query.setFilter(paramBuilder.toString());
+    List<MSentryGMPrivilege> mPrivileges =
+            (List<MSentryGMPrivilege>)query.executeWithMap(paramBuilder.getArguments());
+    if (mPrivileges.isEmpty()) {
+      return Collections.emptySet();
     }
+
+    Set<PrivilegeObject> privileges = new HashSet<>(mPrivileges.size());
     for (MSentryGMPrivilege mPrivilege : mPrivileges) {
       privileges.add(new Builder()
                                .setComponent(mPrivilege.getComponentName())
@@ -356,7 +441,9 @@ public class PrivilegeOperatePersistence {
       String service, Set<MSentryRole> roles,
       List<? extends Authorizable> authorizables, PersistenceManager pm) {
     Set<PrivilegeObject> privileges = Sets.newHashSet();
-    if ((roles == null) || (roles.size() == 0)) return privileges;
+    if (roles == null || roles.isEmpty()) {
+      return privileges;
+    }
 
     MSentryGMPrivilege parentPrivilege = new MSentryGMPrivilege(component, service, authorizables, null, null);
     Set<MSentryGMPrivilege> privilegeGraph = Sets.newHashSet();

@@ -41,11 +41,13 @@ import com.google.common.collect.Lists;
  */
 @PersistenceCapable
 public class MSentryGMPrivilege {
-  private static final String PREFIX_RESOURCE_NAME = "resourceName";
-  private static final String PREFIX_RESOURCE_TYPE = "resourceType";
+  public static final String PREFIX_RESOURCE_NAME = "resourceName";
+  public static final String PREFIX_RESOURCE_TYPE = "resourceType";
+  public static final int AUTHORIZABLE_LEVEL = 4;
+
   private static final String NULL_COL = "__NULL__";
   private static final String SERVICE_SCOPE = "Server";
-  private static final int AUTHORIZABLE_LEVEL = 4;
+
   /**
    * The authorizable List has been stored into resourceName and resourceField columns
    * We assume that the generic model privilege for any component(hive/impala or solr) doesn't exceed four level.
@@ -420,65 +422,4 @@ public class MSentryGMPrivilege {
     }
   }
 
-  /**
-   * return the query to execute in JDO for search the given privilege
-   * @param privilege
-   * @return query
-   */
-  public static String toQuery(MSentryGMPrivilege privilege) {
-    StringBuilder query = new StringBuilder();
-    query.append("serviceName == \"" + toNULLCol(privilege.getServiceName()) + "\" ");
-    query.append("&& componentName == \"" + toNULLCol(privilege.getComponentName()) + "\" ");
-    query.append("&& scope == \"" + toNULLCol(privilege.getScope()) + "\" ");
-    query.append("&& action == \"" + toNULLCol(privilege.getAction()) + "\"");
-    if (privilege.getGrantOption() == null) {
-      query.append("&& this.grantOption == null ");
-    } else if (privilege.getGrantOption()) {
-      query.append("&& grantOption ");
-    } else {
-      query.append("&& !grantOption ");
-    }
-    List<? extends Authorizable> authorizables = privilege.getAuthorizables();
-    for (int i = 0; i < AUTHORIZABLE_LEVEL; i++) {
-      String resourceName = PREFIX_RESOURCE_NAME + String.valueOf(i);
-      String resourceType = PREFIX_RESOURCE_TYPE + String.valueOf(i);
-
-      if (i >= authorizables.size()) {
-        query.append("&& " + resourceName + " == \"" + NULL_COL + "\" ");
-        query.append("&& " + resourceType + " == \"" + NULL_COL + "\" ");
-      } else {
-        query.append("&& " + resourceName + " == \"" + authorizables.get(i).getName() + "\" ");
-        query.append("&& " + resourceType + " == \"" + authorizables.get(i).getTypeName() + "\" ");
-      }
-    }
-    return query.toString();
-  }
-
-  /**
-   * Get the query to execute in the JDO deducing privileges include the scope of according to the given privilege
-   * The query was used in three privilege operations:
-   * 1.revoking privilege
-   * 2.renaming privilege
-   * 3.dropping privilege
-   * Take the Solr for example, if there exists three privileges such as p1:Collection=c1->action=query,
-   * p2:Collection=c1->Field=f1->action=query and p3:Collection=c1->Field=f2->action=query.
-   * When the revoking operation happens, the request privilege is p4:Collection=c1->action=query.
-   * The result is that not only p1 should be revoked, but also p2 and p3 should be revoked together.
-   * So the populateIncludePrivilegesQuery should be Collection=c1
-   * @param privilege
-   * @return query
-   */
-  public static String populateIncludePrivilegesQuery(MSentryGMPrivilege privilege) {
-    StringBuilder query = new StringBuilder();
-    query.append("serviceName == \"" + toNULLCol(privilege.getServiceName()) + "\" ");
-    query.append("&& componentName == \"" + toNULLCol(privilege.getComponentName()) + "\" ");
-    List<? extends Authorizable> authorizables = privilege.getAuthorizables();
-    for (int i= 0 ; i < authorizables.size(); i++) {
-      String resourceName = PREFIX_RESOURCE_NAME + String.valueOf(i);
-      String resourceType = PREFIX_RESOURCE_TYPE + String.valueOf(i);
-      query.append("&& " + resourceName + " == \"" + authorizables.get(i).getName() + "\" ");
-      query.append("&& " + resourceType + " == \"" + authorizables.get(i).getTypeName() + "\" ");
-    }
-    return query.toString();
-  }
 }

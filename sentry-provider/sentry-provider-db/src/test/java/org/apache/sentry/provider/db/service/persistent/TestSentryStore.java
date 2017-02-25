@@ -47,6 +47,8 @@ import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.junit.After;
 import org.junit.AfterClass;
+
+import static org.apache.sentry.provider.db.service.persistent.QueryParamBuilder.newQueryParamBuilder;
 import static org.junit.Assert.assertArrayEquals;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -1745,8 +1747,8 @@ public class TestSentryStore {
   }
 
   public void testQueryParamBuilder() {
-    SentryStore.QueryParamBuilder paramBuilder;
-    paramBuilder = new SentryStore.QueryParamBuilder();
+    QueryParamBuilder paramBuilder;
+    paramBuilder = newQueryParamBuilder();
     // Try single parameter
     paramBuilder.add("key", "val");
     assertEquals("(this.key == :key)", paramBuilder.toString());
@@ -1759,7 +1761,7 @@ public class TestSentryStore {
     assertEquals("val", params.get("key"));
     assertEquals("Val1", params.get("key1"));
 
-    paramBuilder = new SentryStore.QueryParamBuilder(SentryStore.QueryParamBuilder.Op.OR);
+    paramBuilder = newQueryParamBuilder(QueryParamBuilder.Op.OR);
     paramBuilder.add("key", " Val ", true);
     paramBuilder.addNotNull("notNullField");
     paramBuilder.addNull("nullField");
@@ -1768,14 +1770,14 @@ public class TestSentryStore {
     params = paramBuilder.getArguments();
     assertEquals("Val", params.get("key"));
 
-    paramBuilder = new SentryStore.QueryParamBuilder()
+    paramBuilder = newQueryParamBuilder()
             .addNull("var1")
             .addNotNull("var2");
     assertEquals("(this.var1 == \"__NULL__\" && this.var2 != \"__NULL__\")",
             paramBuilder.toString());
 
     // Test newChild()
-    paramBuilder = new SentryStore.QueryParamBuilder();
+    paramBuilder = newQueryParamBuilder();
     paramBuilder
             .addString("e1")
             .addString("e2")
@@ -1794,7 +1796,7 @@ public class TestSentryStore {
     assertEquals("e4", params.get("v4"));
 
     // Test addSet
-    paramBuilder = new SentryStore.QueryParamBuilder();
+    paramBuilder = newQueryParamBuilder();
     Set<String>names = new HashSet<>();
     names.add("foo");
     names.add("bar");
