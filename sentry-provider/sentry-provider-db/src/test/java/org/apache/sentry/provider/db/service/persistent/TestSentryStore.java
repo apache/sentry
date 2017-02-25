@@ -36,6 +36,7 @@ import org.apache.sentry.core.common.exception.SentryAlreadyExistsException;
 import org.apache.sentry.core.common.exception.SentryGrantDeniedException;
 import org.apache.sentry.core.common.exception.SentryNoSuchObjectException;
 import org.apache.sentry.hdfs.PermissionsUpdate;
+import org.apache.sentry.hdfs.Updateable;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
 import org.apache.sentry.hdfs.service.thrift.TRoleChanges;
 import org.apache.sentry.provider.db.service.model.MSentryPermChange;
@@ -61,7 +62,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 
-import static org.apache.sentry.hdfs.Updateable.Update;
+import static org.apache.sentry.provider.db.service.persistent.QueryParamBuilder.newQueryParamBuilder;
 
 public class TestSentryStore extends org.junit.Assert {
 
@@ -2201,8 +2202,8 @@ public class TestSentryStore extends org.junit.Assert {
   }
 
   public void testQueryParamBuilder() {
-    SentryStore.QueryParamBuilder paramBuilder;
-    paramBuilder = new SentryStore.QueryParamBuilder();
+    QueryParamBuilder paramBuilder;
+    paramBuilder = newQueryParamBuilder();
     // Try single parameter
     paramBuilder.add("key", "val");
     assertEquals("(this.key == :key)", paramBuilder.toString());
@@ -2215,7 +2216,7 @@ public class TestSentryStore extends org.junit.Assert {
     assertEquals("val", params.get("key"));
     assertEquals("Val1", params.get("key1"));
 
-    paramBuilder = new SentryStore.QueryParamBuilder(SentryStore.QueryParamBuilder.Op.OR);
+    paramBuilder = newQueryParamBuilder(QueryParamBuilder.Op.OR);
     paramBuilder.add("key", " Val ", true);
     paramBuilder.addNotNull("notNullField");
     paramBuilder.addNull("nullField");
@@ -2224,14 +2225,14 @@ public class TestSentryStore extends org.junit.Assert {
     params = paramBuilder.getArguments();
     assertEquals("Val", params.get("key"));
 
-    paramBuilder = new SentryStore.QueryParamBuilder()
+    paramBuilder = newQueryParamBuilder()
             .addNull("var1")
             .addNotNull("var2");
     assertEquals("(this.var1 == \"__NULL__\" && this.var2 != \"__NULL__\")",
             paramBuilder.toString());
 
     // Test newChild()
-    paramBuilder = new SentryStore.QueryParamBuilder();
+    paramBuilder = newQueryParamBuilder();
     paramBuilder
             .addString("e1")
             .addString("e2")
@@ -2250,7 +2251,7 @@ public class TestSentryStore extends org.junit.Assert {
     assertEquals("e4", params.get("v4"));
 
     // Test addSet
-    paramBuilder = new SentryStore.QueryParamBuilder();
+    paramBuilder = newQueryParamBuilder();
     Set<String>names = new HashSet<>();
     names.add("foo");
     names.add("bar");
@@ -2293,7 +2294,7 @@ public class TestSentryStore extends org.junit.Assert {
         roleName, privilege.getAction().toUpperCase());
 
     // Grant the privilege to role test-privilege and verify it has been persisted.
-    Map<TSentryPrivilege, Update> addPrivilegesUpdateMap = Maps.newHashMap();
+    Map<TSentryPrivilege, Updateable.Update> addPrivilegesUpdateMap = Maps.newHashMap();
     addPrivilegesUpdateMap.put(privilege, addUpdate);
     sentryStore.alterSentryRoleGrantPrivileges(grantor, roleName, Sets.newHashSet(privilege), addPrivilegesUpdateMap);
     MSentryRole role = sentryStore.getMSentryRoleByName(roleName);
@@ -2311,7 +2312,7 @@ public class TestSentryStore extends org.junit.Assert {
         roleName, privilege.getAction().toUpperCase());
 
     // Revoke the same privilege and verify it has been removed.
-    Map<TSentryPrivilege, Update> delPrivilegesUpdateMap = Maps.newHashMap();
+    Map<TSentryPrivilege, Updateable.Update> delPrivilegesUpdateMap = Maps.newHashMap();
     delPrivilegesUpdateMap.put(privilege, delUpdate);
     sentryStore.alterSentryRoleRevokePrivileges(grantor, roleName,
         Sets.newHashSet(privilege), delPrivilegesUpdateMap);
