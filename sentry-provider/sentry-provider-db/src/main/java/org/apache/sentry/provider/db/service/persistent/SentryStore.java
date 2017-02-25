@@ -1150,29 +1150,28 @@ public class SentryStore {
     Query query = pm.newQuery(MSentryGroup.class);
     query.setFilter(":p1.contains(this.groupName)");
     List<MSentryGroup> sentryGroups = (List) query.execute(groups.toArray());
-    if (groups.isEmpty()) {
+    if (sentryGroups.isEmpty()) {
       return Collections.emptySet();
     }
     Set<String> result = new HashSet<>();
-    if (sentryGroups != null) {
-      for (MSentryGroup sentryGroup : sentryGroups) {
-        for (MSentryRole role : sentryGroup.getRoles()) {
-          result.add(role.getRoleName());
-        }
+    for (MSentryGroup sentryGroup : sentryGroups) {
+      for (MSentryRole role : sentryGroup.getRoles()) {
+        result.add(role.getRoleName());
       }
     }
     return result;
   }
 
   public Set<MSentryRole> getRolesForGroups(PersistenceManager pm, Set<String> groups) {
-    Set<MSentryRole> result = new HashSet<>();
     Query query = pm.newQuery(MSentryGroup.class);
     query.setFilter(":p1.contains(this.groupName)");
     List<MSentryGroup> sentryGroups = (List) query.execute(groups.toArray());
-    if (sentryGroups != null) {
-      for (MSentryGroup sentryGroup : sentryGroups) {
-        result.addAll(sentryGroup.getRoles());
-      }
+    if (sentryGroups.isEmpty()) {
+      return Collections.emptySet();
+    }
+    Set<MSentryRole> result = new HashSet<>();
+    for (MSentryGroup sentryGroup : sentryGroups) {
+      result.addAll(sentryGroup.getRoles());
     }
     return result;
   }
