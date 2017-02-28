@@ -1140,4 +1140,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     }
     return response;
   }
+
+  @Override
+  public TSentrySyncIDResponse sentry_sync_notifications(TSentrySyncIDRequest request) throws TException {
+    throw new UnsupportedOperationException("sentry_sync_notifications");
+  }
 }
