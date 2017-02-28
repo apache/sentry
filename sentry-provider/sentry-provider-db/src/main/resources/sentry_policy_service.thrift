@@ -231,6 +231,37 @@ struct TSentryConfigValueResponse {
 2: optional string value
 }
 
+/*
+ * API for synchronizing between HMS notification events and Sentry.
+ *
+ * When Sentry gets updates from HMS using HMS Notifications, HMS should
+ * should wait after each notification event is generated until the notification
+ * is handled by Sentry This preserves the synchronous semantics of DDL statements.
+ *
+ * The notification synchronization API is private between HMS and Sentry and should
+ * not be used by anything else.
+ *
+ * The API should be used in the following way:
+ *
+ * 1) HMS creates a notification and stores its ID in the persistent storage
+ * 2) HMS sends ID to Sentry
+ * 3) Sentry blocks the response until the specified ID is processed by Sentry
+ * 4) Sentry responds with the most recent processed ID.
+ *
+ * Note that the important part is blocking in Sentry until the specified ID
+ * is processed. The returned most recent processed ID is intended for debugging
+ * purposes only, but may be used in HMS for performance optimizations.
+ */
+
+struct TSentrySyncIDRequest {
+1: required i32 protocol_version = sentry_common_service.TSENTRY_SERVICE_V2,
+2: required i64 id // Requested ID
+}
+
+struct TSentrySyncIDResponse {
+1: required i64 id // Most recent processed ID
+}
+
 service SentryPolicyService
 {
   TCreateSentryRoleResponse create_sentry_role(1:TCreateSentryRoleRequest request)
@@ -256,4 +287,7 @@ service SentryPolicyService
  TListSentryPrivilegesByAuthResponse list_sentry_privileges_by_authorizable(1:TListSentryPrivilegesByAuthRequest request);
 
  TSentryConfigValueResponse get_sentry_config_value(1:TSentryConfigValueRequest request)
+
+ # Synchronize between HMS notifications and Sentry
+ TSentrySyncIDResponse sentry_sync_notifications(1:TSentrySyncIDRequest request);
 }

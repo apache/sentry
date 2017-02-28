@@ -847,6 +847,11 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     return response;
   }
 
+  @Override
+  public TSentrySyncIDResponse sentry_sync_notifications(TSentrySyncIDRequest request) throws TException {
+    return null;
+  }
+
   @VisibleForTesting
   static void validateClientVersion(int protocol_version) throws SentryThriftAPIMismatchException {
     if (ServiceConstants.ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT != protocol_version) {
