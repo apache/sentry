@@ -85,12 +85,12 @@ public class HMSFollower implements Runnable {
   private boolean needHiveSnapshot = true;
   private final LeaderStatusMonitor leaderMonitor;
 
-  HMSFollower(Configuration conf, LeaderStatusMonitor leaderMonitor)
+  HMSFollower(Configuration conf, SentryStore store, LeaderStatusMonitor leaderMonitor)
           throws Exception {
     LOGGER.info("HMSFollower is being initialized");
     authzConf = conf;
     this.leaderMonitor = leaderMonitor;
-    sentryStore = new SentryStore(authzConf);
+    sentryStore = store;
 
     // Initialize currentEventID based on the latest persisted notification ID.
     // If currentEventID is empty, need to retrieve a full hive snapshot,

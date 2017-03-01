@@ -18,6 +18,7 @@
 package org.apache.sentry.service.thrift;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.thrift.TMultiplexedProcessor;
 
 public abstract class ProcessorFactory {
@@ -27,5 +28,13 @@ public abstract class ProcessorFactory {
     this.conf = conf;
   }
 
-  public abstract boolean register(TMultiplexedProcessor processor) throws Exception;
+  /**
+   * Register a Thrift processor with SentryStore.
+   * @param processor a thrift processor.
+   * @param sentryStore a {@link SentryStore}
+   * @return true if success.
+   * @throws Exception
+   */
+  public abstract boolean register(TMultiplexedProcessor processor,
+                                   SentryStore sentryStore) throws Exception;
 }

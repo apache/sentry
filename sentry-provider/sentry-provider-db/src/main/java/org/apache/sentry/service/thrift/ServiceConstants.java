@@ -121,6 +121,9 @@ public class ServiceConstants {
 
     public static final String SENTRY_STORE_ORPHANED_PRIVILEGE_REMOVAL = "sentry.store.orphaned.privilege.removal";
     public static final String SENTRY_STORE_ORPHANED_PRIVILEGE_REMOVAL_DEFAULT = "false";
+    public static final String SENTRY_STORE_CLEAN_PERIOD_SECONDS =
+        "sentry.store.clean.period.seconds";
+    public static final long SENTRY_STORE_CLEAN_PERIOD_SECONDS_DEFAULT = 43200; // 12 hours.
     public static final String SENTRY_HA_ENABLED = "sentry.ha.enabled";
     public static final boolean SENTRY_HA_ENABLED_DEFAULT = false;
     public static final String SENTRY_HA_ZK_PROPERTY_PREFIX = "sentry.ha.zookeeper.";
