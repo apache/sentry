@@ -171,7 +171,7 @@ public class ServiceConstants {
     public static final long SENTRY_HMSFOLLOWER_INTERVAL_MILLS_DEFAULT = 500;
 
     public static final String SENTRY_NOTIFICATION_LOG_ENABLED = "sentry.notification.log.enabled";
-    public static final boolean SENTRY_NOTIFICATION_LOG_ENABLED_DEFAULT = false;
+    public static final boolean SENTRY_NOTIFICATION_LOG_ENABLED_DEFAULT = true;
     public static final String SENTRY_WEB_ENABLE = "sentry.service.web.enable";
     public static final Boolean SENTRY_WEB_ENABLE_DEFAULT = false;
     public static final String SENTRY_WEB_PORT = "sentry.service.web.port";
