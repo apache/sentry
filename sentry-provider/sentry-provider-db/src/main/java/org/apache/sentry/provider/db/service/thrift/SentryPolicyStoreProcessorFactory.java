@@ -18,6 +18,7 @@
 package org.apache.sentry.provider.db.service.thrift;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.service.thrift.ProcessorFactory;
 import org.apache.thrift.TMultiplexedProcessor;
 import org.apache.thrift.TProcessor;
@@ -27,13 +28,15 @@ public class SentryPolicyStoreProcessorFactory extends ProcessorFactory {
     super(conf);
   }
 
-  public boolean register(TMultiplexedProcessor multiplexedProcessor) throws Exception {
+  public boolean register(TMultiplexedProcessor multiplexedProcessor,
+                          SentryStore sentryStore) throws Exception {
     SentryPolicyStoreProcessor sentryServiceHandler =
         new SentryPolicyStoreProcessor(SentryPolicyStoreProcessor.SENTRY_POLICY_SERVICE_NAME,
-            conf);
+            conf, sentryStore);
     TProcessor processor =
       new SentryProcessorWrapper<SentryPolicyService.Iface>(sentryServiceHandler);
-    multiplexedProcessor.registerProcessor(SentryPolicyStoreProcessor.SENTRY_POLICY_SERVICE_NAME, processor);
+    multiplexedProcessor.registerProcessor(
+        SentryPolicyStoreProcessor.SENTRY_POLICY_SERVICE_NAME, processor);
     return true;
   }
 }

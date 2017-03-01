@@ -81,12 +81,12 @@ public class HMSFollower implements Runnable {
   private boolean needHiveSnapshot = true;
   private final LeaderStatusMonitor leaderMonitor;
 
-  HMSFollower(Configuration conf, LeaderStatusMonitor leaderMonitor)
+  HMSFollower(Configuration conf, SentryStore store, LeaderStatusMonitor leaderMonitor)
           throws Exception {
     LOGGER.info("HMSFollower is being initialized");
     authzConf = conf;
     this.leaderMonitor = leaderMonitor;
-    sentryStore = new SentryStore(authzConf);
+    sentryStore = store;
     //TODO: Initialize currentEventID from Sentry db
     currentEventID = 0;
   }

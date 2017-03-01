@@ -75,7 +75,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryPolicyStoreProcessor.class);
   private static final Logger AUDIT_LOGGER = LoggerFactory.getLogger(Constants.AUDIT_LOGGER_NAME);
 
-  public static final String SENTRY_POLICY_SERVICE_NAME = "SentryPolicyService";
+  static final String SENTRY_POLICY_SERVICE_NAME = "SentryPolicyService";
 
   private final String name;
   private final Configuration conf;
@@ -86,14 +86,14 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
 
   private List<SentryPolicyStorePlugin> sentryPlugins = new LinkedList<SentryPolicyStorePlugin>();
 
-  public SentryPolicyStoreProcessor(String name,
-        Configuration conf) throws Exception {
+  SentryPolicyStoreProcessor(String name,
+        Configuration conf, SentryStore store) throws Exception {
     super();
     this.name = name;
     this.conf = conf;
+    this.sentryStore = store;
     this.notificationHandlerInvoker = new NotificationHandlerInvoker(conf,
         createHandlers(conf));
-    sentryStore = new SentryStore(conf);
     adminGroups = ImmutableSet.copyOf(toTrimedLower(Sets.newHashSet(conf.getStrings(
         ServerConfig.ADMIN_GROUPS, new String[]{}))));
     Iterable<String> pluginClasses = ConfUtilties.CLASS_SPLITTER

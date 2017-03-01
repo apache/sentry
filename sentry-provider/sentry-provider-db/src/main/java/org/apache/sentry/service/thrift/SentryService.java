@@ -46,6 +46,7 @@ import org.apache.hadoop.security.SaslRpcServer.AuthMethod;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.sentry.Command;
 import org.apache.sentry.core.common.utils.SigUtils;
+import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.provider.db.service.thrift.SentryHealthCheckServletContextListener;
 import org.apache.sentry.provider.db.service.thrift.SentryMetrics;
 import org.apache.sentry.provider.db.service.thrift.SentryMetricsServletContextListener;
@@ -94,6 +95,14 @@ public class SentryService implements Callable, SigUtils.SigListener {
   private final int webServerPort;
   private SentryWebServer sentryWebServer;
   private final long maxMessageSize;
+  /*
+    sentryStore provides the data access for sentry data. It is the singleton instance shared
+    between various {@link SentryPolicyService}, i.e., {@link SentryPolicyStoreProcessor} and
+    {@link HMSFollower}.
+   */
+  private final SentryStore sentryStore;
+  private final ScheduledExecutorService sentryStoreCleanService =
+      Executors.newSingleThreadScheduledExecutor();
   private final LeaderStatusMonitor leaderMonitor;
   private final boolean notificationLogEnabled;
 
@@ -149,6 +158,7 @@ public class SentryService implements Callable, SigUtils.SigListener {
             + (count++));
       }
     });
+    this.sentryStore = new SentryStore(conf);
     this.leaderMonitor = LeaderStatusMonitor.getLeaderStatusMonitor(conf);
     webServerPort = conf.getInt(ServerConfig.SENTRY_WEB_PORT, ServerConfig.SENTRY_WEB_PORT_DEFAULT);
 
@@ -162,7 +172,7 @@ public class SentryService implements Callable, SigUtils.SigListener {
         long period = conf.getLong(ServerConfig.SENTRY_HMSFOLLOWER_INTERVAL_MILLS,
                 ServerConfig.SENTRY_HMSFOLLOWER_INTERVAL_MILLS_DEFAULT);
         hmsFollowerExecutor = Executors.newScheduledThreadPool(1);
-        hmsFollowerExecutor.scheduleAtFixedRate(new HMSFollower(conf, leaderMonitor),
+        hmsFollowerExecutor.scheduleAtFixedRate(new HMSFollower(conf, sentryStore, leaderMonitor),
                 initDelay, period, TimeUnit.MILLISECONDS);
       } catch (Exception e) {
         //TODO: Handle
@@ -181,6 +191,25 @@ public class SentryService implements Callable, SigUtils.SigListener {
       } catch (Exception e) {
         LOGGER.error("Failed to register signal", e);
       }
+    }
+
+    // If SENTRY_STORE_CLEAN_PERIOD_SECONDS is set to positive, the background SentryStore cleaning
+    // thread is enabled. Currently, it only purges the delta changes {@link MSentryChange} in
+    // the sentry store.
+    long storeCleanPeriodSecs = conf.getLong(
+        ServerConfig.SENTRY_STORE_CLEAN_PERIOD_SECONDS,
+        ServerConfig.SENTRY_STORE_CLEAN_PERIOD_SECONDS_DEFAULT);
+    if (storeCleanPeriodSecs > 0) {
+      Runnable storeCleaner = new Runnable() {
+        @Override
+        public void run() {
+          if (leaderMonitor.isLeader()) {
+            sentryStore.purgeDeltaChangeTables();
+          }
+        }
+      };
+      sentryStoreCleanService.scheduleWithFixedDelay(
+          storeCleaner, 0, storeCleanPeriodSecs, TimeUnit.SECONDS);
     }
   }
 
@@ -232,7 +261,7 @@ public class SentryService implements Callable, SigUtils.SigListener {
         LOGGER.info("ProcessorFactory being used: " + clazz.getCanonicalName());
         ProcessorFactory factory = (ProcessorFactory) constructor
             .newInstance(conf);
-        boolean registerStatus = factory.register(processor);
+        boolean registerStatus = factory.register(processor, sentryStore);
         if (!registerStatus) {
           LOGGER.error("Failed to register " + clazz.getCanonicalName());
         }
@@ -342,6 +371,17 @@ public class SentryService implements Callable, SigUtils.SigListener {
     }
     if(hmsFollowerExecutor != null) {
       hmsFollowerExecutor.shutdown();
+    }
+    sentryStoreCleanService.shutdown();
+    try {
+      if (!sentryStoreCleanService.awaitTermination(10, TimeUnit.SECONDS)) {
+        sentryStoreCleanService.shutdownNow();
+        if (!sentryStoreCleanService.awaitTermination(10, TimeUnit.SECONDS)) {
+          LOGGER.error("DeltaCleanerService did not terminate");
+        }
+      }
+    } catch (InterruptedException ie) {
+      sentryStoreCleanService.shutdownNow();
     }
     if (exception != null) {
       exception.ifExceptionThrow();
