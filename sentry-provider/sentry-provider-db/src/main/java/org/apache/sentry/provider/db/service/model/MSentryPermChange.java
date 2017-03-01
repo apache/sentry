@@ -27,7 +27,7 @@ import javax.jdo.annotations.PrimaryKey;
 
 /**
  * Database backend store for Sentry permission delta change. Each record
- * contains change ID, HMS notification ID, JSON format of a single Sentry permission change,
+ * contains change ID, JSON format of a single Sentry permission change,
  * and timestamp.
  * <p>
  * e.g. for rename privileges change in JSON format.
@@ -63,14 +63,8 @@ public class MSentryPermChange implements MSentryChange {
   // Permission change in JSON format.
   private String permChange;
   private long createTimeMs;
-  private long notificationID;
 
   public MSentryPermChange(PermissionsUpdate permChange) throws TException {
-    // Each PathsUpdate maps to a MSentryPermChange object.
-    // The PathsUpdate is generated from a HMS notification log,
-    // the notification ID is stored as seqNum and
-    // the notification update is serialized as JSON string.
-    this.notificationID = permChange.getSeqNum();
     this.permChange = permChange.JSONSerialize();
     this.createTimeMs = System.currentTimeMillis();
   }
@@ -89,9 +83,8 @@ public class MSentryPermChange implements MSentryChange {
 
   @Override
   public String toString() {
-    return String.format(
-        "MSentryPermChange [changeID=%d, notificationID=%d, permChange=%s, createTimeMs=%d]",
-        changeID, notificationID, permChange, createTimeMs);
+    return "MSentryPermChange [changeID=" + changeID + ", permChange= " + permChange +
+        ", createTimeMs=" + createTimeMs +  "]";
   }
 
   @Override
@@ -99,7 +92,6 @@ public class MSentryPermChange implements MSentryChange {
     final int prime = 31;
     int result = 1;
     result = prime * result + Long.valueOf(changeID).hashCode();
-    result = prime * result + Long.valueOf(notificationID).hashCode();
     result = prime * result + ((permChange == null) ? 0 : permChange.hashCode());
     return result;
   }
@@ -120,10 +112,6 @@ public class MSentryPermChange implements MSentryChange {
 
     MSentryPermChange other = (MSentryPermChange) obj;
     if (changeID != other.changeID) {
-      return false;
-    }
-
-    if (notificationID != other.notificationID) {
       return false;
     }
 
