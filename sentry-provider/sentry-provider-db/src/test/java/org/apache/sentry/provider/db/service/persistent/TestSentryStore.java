@@ -1754,6 +1754,14 @@ public class TestSentryStore {
     Map<String, Set<String>> pathsImage = sentryStore.retrieveFullPathsImage();
     assertEquals(2, pathsImage.size());
     assertEquals(Sets.newHashSet("/user/hive/warehouse/db1.db/table1"), pathsImage.get("db1.table1"));
+
+    Map<String, Set<String>> authzPaths = new HashMap<>();
+    authzPaths.put("db2.table1", Sets.newHashSet("/user/hive/warehouse/db2.db/table1"));
+    authzPaths.put("db2.table2", Sets.newHashSet("/user/hive/warehouse/db2.db/table2"));
+    sentryStore.persistFullPathsImage(authzPaths);
+    pathsImage = sentryStore.retrieveFullPathsImage();
+    assertEquals(4, pathsImage.size());
+    assertEquals(Sets.newHashSet("/user/hive/warehouse/db2.db/table1"), pathsImage.get("db2.table1"));
   }
 
   public void testQueryParamBuilder() {

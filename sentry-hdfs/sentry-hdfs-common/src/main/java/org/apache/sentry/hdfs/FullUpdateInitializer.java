@@ -18,7 +18,7 @@
 package org.apache.sentry.hdfs;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.Database;
@@ -33,9 +33,11 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * FullUpdateInitializer is for fetching hive full update,
@@ -297,9 +299,8 @@ public class FullUpdateInitializer implements Closeable {
         ServiceConstants.ServerConfig.SENTRY_HDFS_SYNC_METASTORE_CACHE_FAIL_ON_PARTIAL_UPDATE_DEFAULT);
   }
 
-  public UpdateableAuthzPaths createInitialUpdate() throws ExecutionException, InterruptedException, TException {
-    UpdateableAuthzPaths authzPaths = new UpdateableAuthzPaths(new
-    String[]{"/"});
+  public Map<String, Set<String>> createInitialUpdate() throws ExecutionException,
+        InterruptedException, TException {
     PathsUpdate tempUpdate = new PathsUpdate(-1, false);
     List<String> allDbStr = client.getAllDatabases();
     for (String dbName : allDbStr) {
@@ -322,10 +323,37 @@ public class FullUpdateInitializer implements Closeable {
       }
     }
 
-    authzPaths.updatePartial(Lists.newArrayList(tempUpdate), new ReentrantReadWriteLock());
-    return authzPaths;
+    return getAuthzObjToPathMapping(tempUpdate);
   }
 
+
+  /**
+   * Parsing a pathsUpdate to get the mapping of hiveObj -> [Paths].
+   * It only processes {@link TPathChanges}.addPaths, since
+   * {@link FullUpdateInitializer} only add paths when fetching
+   * full HMS Paths snapshot. Each path represented as path tree
+   * concatenated by "/". e.g 'usr/hive/warehouse'.
+   *
+   * @return mapping of hiveObj -> [Paths].
+   */
+  private Map<String, Set<String>> getAuthzObjToPathMapping(PathsUpdate pathsUpdate) {
+    Map<String, Set<String>> authzObjToPath = new HashMap<>();
+    List<TPathChanges> tPathChanges = pathsUpdate.getPathChanges();
+
+    if (!tPathChanges.isEmpty()) {
+      for (TPathChanges pathChanges : tPathChanges) {
+        // Only processes TPathChanges.addPaths
+        List<List<String>> addPaths = pathChanges.getAddPaths();
+        Set<String> paths = Sets.newHashSet();
+        for (List<String> addPath : addPaths) {
+          paths.add(PathsUpdate.cancatePath(addPath));
+        }
+        authzObjToPath.put(pathChanges.getAuthzObj(), paths);
+      }
+    }
+
+    return authzObjToPath;
+  }
 
   @Override
   public void close() throws IOException {
