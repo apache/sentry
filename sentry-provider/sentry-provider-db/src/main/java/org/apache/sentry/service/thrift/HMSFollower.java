@@ -32,6 +32,7 @@ import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hive.hcatalog.messaging.HCatEventMessage;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.core.common.exception.*;
+import org.apache.sentry.hdfs.PathsUpdate;
 import org.apache.sentry.hdfs.PermissionsUpdate;
 import org.apache.sentry.hdfs.UpdateableAuthzPaths;
 import org.apache.sentry.hdfs.FullUpdateInitializer;
@@ -52,6 +53,8 @@ import java.net.SocketException;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SYNC_CREATE_WITH_POLICY_STORE;
@@ -77,7 +80,6 @@ public class HMSFollower implements Runnable {
   private final SentryStore sentryStore;
   private String hiveInstance;
 
-  private volatile UpdateableAuthzPaths authzPaths;
   private boolean needHiveSnapshot = true;
   private final LeaderStatusMonitor leaderMonitor;
 
@@ -87,8 +89,11 @@ public class HMSFollower implements Runnable {
     authzConf = conf;
     this.leaderMonitor = leaderMonitor;
     sentryStore = store;
-    //TODO: Initialize currentEventID from Sentry db
-    currentEventID = 0;
+
+    // Initialize currentEventID based on the latest persisted notification ID.
+    // If currentEventID is empty, need to retrieve a full hive snapshot,
+    currentEventID = getLastProcessedNotificationID();
+    needHiveSnapshot = (currentEventID == SentryStore.EMPTY_CHANGE_ID);
   }
 
   @VisibleForTesting
@@ -222,13 +227,14 @@ public class HMSFollower implements Runnable {
         // will be dropped. A new attempts will be made after 500 milliseconds when
         // HMSFollower run again.
 
+        Map<String, Set<String>> pathsFullSnapshot;
         CurrentNotificationEventId eventIDBefore = client.getCurrentNotificationEventId();
         LOGGER.info(String.format("Before fetching hive full snapshot, Current NotificationID = %s.", eventIDBefore));
 
         try {
-          fetchFullUpdate();
+          pathsFullSnapshot = fetchFullUpdate();
         } catch (ExecutionException | InterruptedException ex) {
-          LOGGER.error("#### Encountered failure during fetching one hive full snapshot !!", ex);
+          LOGGER.error("#### Encountered failure during fetching hive full snapshot !!", ex);
           return;
         }
 
@@ -245,6 +251,7 @@ public class HMSFollower implements Runnable {
             eventIDAfter));
         needHiveSnapshot = false;
         currentEventID = eventIDAfter.getEventId();
+        sentryStore.persistFullPathsImage(pathsFullSnapshot);
       }
 
       NotificationEventResponse response = client.getNextNotification(currentEventID, Integer.MAX_VALUE, null);
@@ -292,17 +299,20 @@ public class HMSFollower implements Runnable {
   }
 
   /**
-   * Retrieve HMS full snapshot.
+   * Retrieve a Hive full snapshot from HMS.
+   *
+   * @return mapping of hiveObj -> [Paths].
+   * @throws ExecutionException, InterruptedException, TException
    */
-  private void fetchFullUpdate() throws ExecutionException, InterruptedException, TException {
+  private Map<String, Set<String>> fetchFullUpdate()
+        throws ExecutionException, InterruptedException, TException {
     FullUpdateInitializer updateInitializer = null;
 
     try {
       updateInitializer = new FullUpdateInitializer(client, authzConf);
-      // TODO - do we need to save returned authz path?
-      updateInitializer.createInitialUpdate();
-      // TODO: notify HDFS plugin
+      Map<String, Set<String>> pathsUpdate = updateInitializer.createInitialUpdate();
       LOGGER.info("#### Hive full update initialization complete !!");
+      return pathsUpdate;
     } finally {
       if (updateInitializer != null) {
         try {
@@ -312,6 +322,16 @@ public class HMSFollower implements Runnable {
         }
       }
     }
+  }
+
+  /**
+   * Get the last processed eventID from Sentry DB.
+   *
+   * @return the stored currentID
+   * @throws Exception
+   */
+  private long getLastProcessedNotificationID() throws Exception {
+    return sentryStore.getLastProcessedNotificationID();
   }
 
   private boolean syncWithPolicyStore(HiveAuthzConf.AuthzConfVars syncConfVar) {

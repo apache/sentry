@@ -24,6 +24,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Joiner;
+import com.google.common.base.Splitter;
 import org.apache.sentry.hdfs.service.thrift.TPathChanges;
 import org.apache.sentry.hdfs.service.thrift.TPathsUpdate;
 import org.apache.commons.httpclient.util.URIUtil;
@@ -151,6 +153,28 @@ public class PathsUpdate implements Updateable.Update {
     } catch (URIException e){
       throw new SentryMalformedPathException("Unable to create URI: ", e);
     }
+  }
+
+  /**
+   * Given a path tree in a list, return a string concatenated by "/".
+   * e.g &lt usr, hive, warehouse &gt -> 'usr/hive/warehouse'.
+   *
+   * @param paths
+   * @return a path string concatenated by "/".
+   */
+  public static String cancatePath(Iterable<String> paths) {
+    return Joiner.on("/").join(paths);
+  }
+
+  /**
+   * Split a path a path concatenated by "/" into a path tree represented
+   * as a list.
+   *
+   * @param path
+   * @return a path tree represented as a list.
+   */
+  public static List<String> splitPath(String path) {
+    return Lists.newArrayList(Splitter.on("/").split(path));
   }
 
   @Override

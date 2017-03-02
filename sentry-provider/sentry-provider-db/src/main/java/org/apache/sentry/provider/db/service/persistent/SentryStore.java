@@ -121,7 +121,7 @@ public class SentryStore {
   // is starting from 1.
   public static final long INIT_CHANGE_ID = 1L;
 
-  private static final long EMPTY_CHANGE_ID = 0L;
+  public static final long EMPTY_CHANGE_ID = 0L;
 
   // For counters, representation of the "unknown value"
   private static final long COUNT_VALUE_UNKNOWN = -1;
@@ -2329,6 +2329,24 @@ public class SentryStore {
     return result;
   }
 
+  /**
+   * Persist a full hive snapshot into Sentry DB in a single transaction.
+   *
+   * @param authzPaths Mapping of hiveObj -> [Paths]
+   * @throws Exception
+   */
+  public void persistFullPathsImage(final Map<String, Set<String>> authzPaths) throws Exception {
+    tm.executeTransactionWithRetry(
+      new TransactionBlock() {
+        public Object execute(PersistenceManager pm) throws Exception {
+          for (Map.Entry<String, Set<String>> authzPath : authzPaths.entrySet()) {
+            createAuthzPathsMappingCore(pm, authzPath.getKey(), authzPath.getValue());
+          }
+          return null;
+        }
+      });
+  }
+
   public void createAuthzPathsMapping(final String hiveObj,
       final Set<String> paths) throws Exception {
     tm.executeTransactionWithRetry(
@@ -3063,7 +3081,8 @@ public class SentryStore {
    * @param pm the PersistenceManager
    * @param changeCls the class of a delta c
    *
-   * @return the last processed changedID for the delta changes.
+   * @return the last processed changedID for the delta changes. If no
+   *         change found then return 0.
    */
   private <T extends MSentryChange> long getLastProcessedChangeIDCore(
       PersistenceManager pm, Class<T> changeCls) {
@@ -3088,6 +3107,27 @@ public class SentryStore {
           return getLastProcessedChangeIDCore(pm, MSentryPermChange.class);
         }
       });
+  }
+
+  /**
+   * Get the notification ID of last processed path delta change.
+   *
+   * @return the notification ID of latest path change. If no change
+   *         found then return 0.
+   */
+  public long getLastProcessedNotificationID() throws Exception {
+    return tm.executeTransaction(
+    new TransactionBlock<Long>() {
+      public Long execute(PersistenceManager pm) throws Exception {
+        long changeID = getLastProcessedChangeIDCore(pm, MSentryPathChange.class);
+        if (changeID == EMPTY_CHANGE_ID) {
+          return EMPTY_CHANGE_ID;
+        } else {
+          MSentryPathChange mSentryPathChange = getMSentryPathChangeByID(changeID);
+          return mSentryPathChange.getNotificationID();
+        }
+      }
+    });
   }
 
   /**

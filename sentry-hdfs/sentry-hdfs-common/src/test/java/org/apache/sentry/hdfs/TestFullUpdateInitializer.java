@@ -18,6 +18,7 @@
 package org.apache.sentry.hdfs;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.Database;
@@ -29,8 +30,8 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 public class TestFullUpdateInitializer {
 
@@ -107,22 +108,14 @@ public class TestFullUpdateInitializer {
 
     FullUpdateInitializer cacheInitializer = new
     FullUpdateInitializer(client, conf);
-    UpdateableAuthzPaths update = cacheInitializer.createInitialUpdate();
+    Map<String, Set<String>> update = cacheInitializer.createInitialUpdate();
 
-    Assert.assertEquals(new HashSet<String>(Arrays.asList("db1")), update.findAuthzObjectExactMatches(new
-    String[]{"db1"}));
-    Assert.assertEquals(new HashSet<String>(Arrays.asList("db2")), update.findAuthzObjectExactMatches(new
-    String[]{"db2"}));
-    Assert.assertEquals(new HashSet<String>(Arrays.asList("db2.tab21")), update.findAuthzObjectExactMatches(new
-    String[]{"db2", "tab21"}));
-    Assert.assertEquals(new HashSet<String>(Arrays.asList("db3")), update.findAuthzObjectExactMatches(new
-    String[]{"db3"}));
-    Assert.assertEquals(new HashSet<String>(Arrays.asList("db3.tab31")), update.findAuthzObjectExactMatches(new
-    String[]{"db3", "tab31"}));
-    Assert.assertEquals(new HashSet<String>(Arrays.asList("db3.tab31")), update.findAuthzObjectExactMatches(new
-    String[]{"db3", "tab31", "part311"}));
-    Assert.assertEquals(new HashSet<String>(Arrays.asList("db3.tab31")), update.findAuthzObjectExactMatches(new
-    String[]{"db3", "tab31", "part312"}));
+    Assert.assertEquals(update.get("db1"), Sets.newHashSet("db1"));
+    Assert.assertEquals(update.get("db2"), Sets.newHashSet("db2"));
+    Assert.assertEquals(update.get("db2.tab21"), Sets.newHashSet("db2/tab21"));
+    Assert.assertEquals(update.get("db3.tab31"), Sets.newHashSet("db3/tab31",
+        "db3/tab31/part311", "db3/tab31/part312"));
+
     cacheInitializer.close();
 
   }

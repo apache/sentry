@@ -89,6 +89,10 @@ public class MSentryPathChange implements MSentryChange {
     return changeID;
   }
 
+  public long getNotificationID() {
+    return notificationID;
+  }
+
   @Override
   public String toString() {
     return "MSentryChange [changeID=" + changeID + " , notificationID= "
