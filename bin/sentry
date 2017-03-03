@@ -75,6 +75,9 @@ then
   for f in ${SENTRY_HOME}/lib/plugins/*.jar; do
     HADOOP_CLASSPATH=${HADOOP_CLASSPATH}:${f}
   done
+  # Add Hive client configs to the classpath of Sentry
+  HADOOP_CLASSPATH=${HADOOP_CLASSPATH}:${HIVE_CONF_DIR}
+
   exec $HADOOP jar ${SENTRY_HOME}/lib/${_CMD_JAR} org.apache.sentry.SentryMain ${args[@]}
 else
   exec ${SENTRY_HOME}/bin/config_tool ${args[@]}
