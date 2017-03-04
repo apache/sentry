@@ -70,7 +70,7 @@ public class PrivilegeResultSet {
             try {
                 rs.close();
             } catch (Exception ex) {
-                LOGGER.error("failed to close result set: " + ex.getStackTrace());
+                LOGGER.error("failed to close result set: ", ex);
             }
         }
     }

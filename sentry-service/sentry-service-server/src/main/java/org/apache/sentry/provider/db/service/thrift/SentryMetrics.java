@@ -178,6 +178,7 @@ public final class SentryMetrics {
                 .convertDurationsTo(TimeUnit.MILLISECONDS)
                 .build();
         logReporter.start(reportInterval, TimeUnit.SECONDS);
+        break;
       default:
         LOGGER.warn("Invalid metrics reporter " + reporter);
         break;

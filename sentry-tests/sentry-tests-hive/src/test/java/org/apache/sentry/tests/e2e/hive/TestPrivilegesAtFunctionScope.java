@@ -185,7 +185,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
       statement.execute("CREATE TEMPORARY FUNCTION printf_test AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
       verifyPrintFuncValues(statement, "SELECT printf_test('%s', value) FROM " + tableName1);
     } catch (Exception ex) {
-      LOGGER.error("test temp func printf_test failed with reason: " + ex.getStackTrace() + " " + ex.getMessage());
+      LOGGER.error("test temp func printf_test failed with reason: ", ex);
       fail("fail to test temp func printf_test");
     }
 
@@ -200,7 +200,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     try {
       verifyPrintFuncValues(statement, "SELECT printf_test('%s', value) FROM " + tableName1);
     } catch (Exception ex) {
-      LOGGER.error("test temp func printf_test failed with reason: " + ex.getStackTrace() + " " + ex.getMessage());
+      LOGGER.error("test temp func printf_test failed with reason: ", ex);
       fail("fail to test temp func printf_test");
     }
 
@@ -218,7 +218,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
           "CREATE FUNCTION printf_test_perm AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf' ");
       verifyPrintFuncValues(statement, "SELECT printf_test_perm('%s', value) FROM " + tableName1);
     } catch (Exception ex) {
-      LOGGER.error("test perm func printf_test_perm failed with reason: " + ex.getStackTrace() + " " + ex.getMessage());
+      LOGGER.error("test perm func printf_test_perm failed with reason: ", ex);
       fail("Fail to test perm func printf_test_perm");
     }
 
@@ -233,7 +233,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     try {
       verifyPrintFuncValues(statement, "SELECT printf_test_perm('%s', value) FROM " + tableName1);
     } catch (Exception ex) {
-      LOGGER.error("test perm func printf_test_perm failed with reason: " + ex.getStackTrace() + " " + ex.getMessage());
+      LOGGER.error("test perm func printf_test_perm failed with reason: ", ex);
       fail("Fail to test perm func printf_test_perm");
     }
 
@@ -252,8 +252,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
           .execute("CREATE FUNCTION printf_test_perm_use_file AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf' "
               + " using file 'file:///tmp'");
     } catch (Exception ex) {
-      LOGGER.error("test perm func printf_test_perm_use_file failed with reason: "
-          + ex.getStackTrace() + " " + ex.getMessage());
+      LOGGER.error("test perm func printf_test_perm_use_file failed with reason: ", ex);
       fail("Fail to test perm func printf_test_perm_use_file");
     } finally {
       statement.execute("DROP FUNCTION IF EXISTS printf_test_perm_use_file");
@@ -274,8 +273,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
           "CREATE TEMPORARY FUNCTION printf_test_2 AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
       verifyPrintFuncValues(statement, "SELECT printf_test_2('%s', value) FROM " + tableName1);
     } catch (Exception ex) {
-      LOGGER.error("test perm func printf_test_2 failed with reason: "
-          + ex.getStackTrace() + " " + ex.getMessage());
+      LOGGER.error("test perm func printf_test_2 failed with reason: ", ex);
       fail("Fail to test temp func printf_test_2");
     } finally {
       statement.execute("DROP TEMPORARY FUNCTION IF EXISTS printf_test_2");
@@ -286,8 +284,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
           "CREATE FUNCTION " + DB1 + ".printf_test_2_perm AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf'");
       verifyPrintFuncValues(statement, "SELECT printf_test_2_perm('%s', value) FROM " + tableName1);
     } catch (Exception ex) {
-      LOGGER.error("test perm func printf_test_2_perm failed with reason: "
-          + ex.getStackTrace() + " " + ex.getMessage());
+      LOGGER.error("test perm func printf_test_2_perm failed with reason: ", ex);
       fail("Fail to test temp func printf_test_2_perm");
     } finally {
       statement.execute("DROP FUNCTION IF EXISTS printf_test_2_perm");

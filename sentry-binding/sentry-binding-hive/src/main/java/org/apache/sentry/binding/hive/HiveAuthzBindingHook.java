@@ -126,7 +126,7 @@ public class HiveAuthzBindingHook extends HiveAuthzBindingHookBase {
             setSerdeURI(serdeClassName);
           }
         }
-
+      /* FALLTHROUGH */
       case HiveParser.TOK_CREATEVIEW:
         /*
          * Compiler doesn't create read/write entities for create table.

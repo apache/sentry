@@ -117,7 +117,7 @@ public class TestRealTimeGet extends AbstractSolrSentryTestBase {
       assertNull("Should be no doc present: " + doc, doc);
       assertNull("Should be no doc present: " + controlDoc, controlDoc);
       assertTrue((docList == null && controlDocList == null) ||
-          (controlDocList.getNumFound() == 0 && controlDocList.getNumFound() == 0));
+          (controlDocList.getNumFound() == 0));
     } else {
       if (docList == null) {
         assertNull(controlDocList);

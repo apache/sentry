@@ -168,7 +168,7 @@ public class SentryINodeAttributesProvider extends INodeAttributeProvider
       PermissionStatus permissionStatus = new PermissionStatus(getUserName(),
               getGroupName(), getFsPermission());
       // No other way to get the long permission currently
-      return new INodeDirectory(0l, null, permissionStatus, 0l)
+      return new INodeDirectory(0L, null, permissionStatus, 0L)
               .getPermissionLong();
     }
 

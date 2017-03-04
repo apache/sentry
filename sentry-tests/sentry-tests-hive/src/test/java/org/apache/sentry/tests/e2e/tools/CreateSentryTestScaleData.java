@@ -338,6 +338,7 @@ public class CreateSentryTestScaleData {
       case "MAX_PAR":
         exec(statement, String.format("GRANT SELECT(num) ON TABLE %s TO ROLE %s", objName, roleName));
         privilegeStatus.num_partitions += 1;
+        break;
       case "MAX_COL":
         StringBuilder grantPars = new StringBuilder("GRANT SELECT(");
         for(int i = 0; i <  MAX_COLUMNS_PER_TABLE - 1; i++) {

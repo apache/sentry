@@ -111,7 +111,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
       res.close();
       statement.execute("DROP TEMPORARY FUNCTION printf_test");
     } catch (Exception ex) {
-      LOGGER.error("test temp func printf_test failed with reason: " + ex.getStackTrace() + " " + ex.getMessage());
+      LOGGER.error("test temp func printf_test failed with reason: ", ex);
       fail("fail to test temp func printf_test");
     }
 
