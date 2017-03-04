@@ -60,6 +60,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.codahale.metrics.Timer;
+import static com.codahale.metrics.MetricRegistry.name;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
@@ -82,7 +84,10 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   private final SentryStore sentryStore;
   private final NotificationHandlerInvoker notificationHandlerInvoker;
   private final ImmutableSet<String> adminGroups;
-  SentryMetrics sentryMetrics;
+  private SentryMetrics sentryMetrics;
+  private final Timer hmsWaitTimer =
+          SentryMetrics.getInstance().
+                  getTimer(name(SentryPolicyStoreProcessor.class, "hms", "wait"));
 
   private List<SentryPolicyStorePlugin> sentryPlugins = new LinkedList<SentryPolicyStorePlugin>();
 
@@ -1142,7 +1147,13 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   }
 
   @Override
-  public TSentrySyncIDResponse sentry_sync_notifications(TSentrySyncIDRequest request) throws TException {
-    throw new UnsupportedOperationException("sentry_sync_notifications");
+  public TSentrySyncIDResponse sentry_sync_notifications(TSentrySyncIDRequest request)
+          throws TException {
+    try (Timer.Context timerContext = hmsWaitTimer.time()) {
+      // Wait until Sentry Server processes specified HMS Notification ID.
+      TSentrySyncIDResponse response = new TSentrySyncIDResponse();
+      response.setId(sentryStore.getCounterWait().waitFor(request.getId()));
+      return response;
+    }
   }
 }

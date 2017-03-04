@@ -345,6 +345,7 @@ public class HMSFollower implements Runnable {
   void processNotificationEvents(List<NotificationEvent> events) throws
       SentryInvalidHMSEventException, SentryInvalidInputException {
     SentryJSONMessageDeserializer deserializer = new SentryJSONMessageDeserializer();
+    final CounterWait counterWait = sentryStore.getCounterWait();
 
     for (NotificationEvent event : events) {
       String dbName, tableName, oldLocation, newLocation, location;
@@ -479,7 +480,13 @@ public class HMSFollower implements Runnable {
           //TODO: Handle HDFS plugin
           break;
       }
-    currentEventID = event.getEventId();
+      currentEventID = event.getEventId();
+      // Wake up any HMS waiters that are waiting for this ID.
+      // counterWait should never be null, but tests mock SentryStore and a mocked one
+      // doesn't have it.
+      if (counterWait != null) {
+        counterWait.update(currentEventID);
+      }
     }
   }
 
