@@ -257,7 +257,7 @@ public abstract class TestHDFSIntegrationBase {
 
         // In case of duplicate acl exist, exception should be thrown.
         if (acls.containsKey(ent.getName())) {
-          throw new SentryAlreadyExistsException("The acl " + ent.getName() + " already exists.\n");
+          throw new SentryAlreadyExistsException("The acl " + ent.getName());
         } else {
           acls.put(ent.getName(), ent.getPermission());
         }

@@ -125,7 +125,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
             String trimmedRole = toTrimmedLower(role);
             MSentryRole mRole = getRole(trimmedRole, pm);
             if (mRole == null) {
-              throw new SentryNoSuchObjectException("Role: " + trimmedRole + " doesn't exist");
+              throw new SentryNoSuchObjectException("Role: " + trimmedRole);
             }
             /*
              * check with grant option
@@ -149,7 +149,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
             String trimmedRole = toTrimmedLower(role);
             MSentryRole mRole = getRole(trimmedRole, pm);
             if (mRole == null) {
-              throw new SentryNoSuchObjectException("Role: " + trimmedRole + " doesn't exist");
+              throw new SentryNoSuchObjectException("Role: " + trimmedRole);
             }
             /*
              * check with grant option

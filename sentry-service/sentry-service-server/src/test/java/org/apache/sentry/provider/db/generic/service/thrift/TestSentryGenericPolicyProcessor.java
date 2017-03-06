@@ -134,19 +134,19 @@ public class TestSentryGenericPolicyProcessor extends org.junit.Assert {
   public void testOperationWithException() throws Exception {
     String roleName = Matchers.anyString();
     Mockito.when(mockStore.createRole(Matchers.anyString(), roleName, Matchers.anyString()))
-    .thenThrow(new SentryAlreadyExistsException("Role: " + roleName + " already exists"));
+    .thenThrow(new SentryAlreadyExistsException("Role: " + roleName));
 
     roleName = Matchers.anyString();
     Mockito.when(mockStore.dropRole(Matchers.anyString(), roleName, Matchers.anyString()))
-    .thenThrow(new SentryNoSuchObjectException("Role: " + roleName + " doesn't exist"));
+    .thenThrow(new SentryNoSuchObjectException("Role: " + roleName ));
 
     roleName = Matchers.anyString();
     Mockito.when(mockStore.alterRoleAddGroups(Matchers.anyString(), roleName, Matchers.anySetOf(String.class), Matchers.anyString()))
-    .thenThrow(new SentryNoSuchObjectException("Role: " + roleName + " doesn't exist"));
+    .thenThrow(new SentryNoSuchObjectException("Role: " + roleName));
 
     roleName = Matchers.anyString();
     Mockito.when(mockStore.alterRoleDeleteGroups(Matchers.anyString(), roleName, Matchers.anySetOf(String.class), Matchers.anyString()))
-    .thenThrow(new SentryNoSuchObjectException("Role: " + roleName + " doesn't exist"));
+    .thenThrow(new SentryNoSuchObjectException("Role: " + roleName));
 
     roleName = Matchers.anyString();
     Mockito.when(mockStore.alterRoleGrantPrivilege(Matchers.anyString(), roleName, Matchers.any(PrivilegeObject.class), Matchers.anyString()))
