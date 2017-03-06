@@ -1,4 +1,5 @@
 RUN '007-SENTRY-872.derby.sql';
+RUN '008-SENTRY-1569.derby.sql';
 
 -- Version update
 
