@@ -25,7 +25,6 @@ import org.apache.curator.framework.recipes.leader.LeaderSelectorListenerAdapter
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.provider.db.service.persistent.HAContext;
 
-import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
@@ -108,7 +107,6 @@ final class LeaderStatusMonitor
   /** Condition variable used to synchronize voluntary leadership release */
   private final Condition cond = lock.newCondition();
   /** Leadership status - true if leader. */
-  @GuardedBy("lock")
   private boolean isLeader = false;
 
   /** Curator framework leader monitor */
