@@ -49,6 +49,8 @@ import org.apache.sentry.provider.db.service.persistent.HAContext;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.provider.db.service.persistent.ServiceRegister;
 import org.apache.sentry.provider.db.service.thrift.PolicyStoreConstants.PolicyStoreServerConfig;
+import org.apache.sentry.provider.db.service.thrift.validator.GrantPrivilegeRequestValidator;
+import org.apache.sentry.provider.db.service.thrift.validator.RevokePrivilegeRequestValidator;
 import org.apache.sentry.service.thrift.SentryServiceUtil;
 import org.apache.sentry.service.thrift.ServiceConstants;
 import org.apache.sentry.service.thrift.ServiceConstants.ConfUtilties;
@@ -253,7 +255,6 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   public TAlterSentryRoleGrantPrivilegeResponse alter_sentry_role_grant_privilege
   (TAlterSentryRoleGrantPrivilegeRequest request) throws TException {
     final Timer.Context timerContext = sentryMetrics.grantTimer.time();
-
     TAlterSentryRoleGrantPrivilegeResponse response = new TAlterSentryRoleGrantPrivilegeResponse();
     try {
       validateClientVersion(request.getProtocol_version());
@@ -265,6 +266,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       if (request.isSetPrivilege()) {
         request.setPrivileges(Sets.newHashSet(request.getPrivilege()));
       }
+      GrantPrivilegeRequestValidator.validate(request);
       sentryStore.alterSentryRoleGrantPrivileges(request.getRequestorUserName(),
           request.getRoleName(), request.getPrivileges());
       response.setStatus(Status.OK());
@@ -283,9 +285,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       LOGGER.error(msg, e);
       response.setStatus(Status.NoSuchObject(msg, e));
     } catch (SentryInvalidInputException e) {
-      String msg = "Invalid input privilege object";
-      LOGGER.error(msg, e);
-      response.setStatus(Status.InvalidInput(msg, e));
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.InvalidInput(e.getMessage(), e));
     } catch (SentryAccessDeniedException e) {
       LOGGER.error(e.getMessage(), e);
       response.setStatus(Status.AccessDenied(e.getMessage(), e));
@@ -329,6 +330,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       if (request.isSetPrivilege()) {
         request.setPrivileges(Sets.newHashSet(request.getPrivilege()));
       }
+      RevokePrivilegeRequestValidator.validate(request);
       sentryStore.alterSentryRoleRevokePrivileges(request.getRequestorUserName(),
           request.getRoleName(), request.getPrivileges());
       response.setStatus(Status.OK());
@@ -358,9 +360,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       LOGGER.error(msg.toString(), e);
       response.setStatus(Status.NoSuchObject(msg.toString(), e));
     } catch (SentryInvalidInputException e) {
-      String msg = "Invalid input privilege object";
-      LOGGER.error(msg, e);
-      response.setStatus(Status.InvalidInput(msg, e));
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.InvalidInput(e.getMessage(), e));
     } catch (SentryAccessDeniedException e) {
       LOGGER.error(e.getMessage(), e);
       response.setStatus(Status.AccessDenied(e.getMessage(), e));
