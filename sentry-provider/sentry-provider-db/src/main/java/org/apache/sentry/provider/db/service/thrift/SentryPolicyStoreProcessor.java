@@ -205,7 +205,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     } catch (SentryAlreadyExistsException e) {
       String msg = "Role: " + request + " already exists.";
       LOGGER.error(msg, e);
-      response.setStatus(Status.AlreadyExists(msg, e));
+      response.setStatus(Status.AlreadyExists(e.getMessage(), e));
     } catch (SentryAccessDeniedException e) {
       LOGGER.error(e.getMessage(), e);
       response.setStatus(Status.AccessDenied(e.getMessage(), e));

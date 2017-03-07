@@ -1882,7 +1882,7 @@ public class SentryStore {
                 .execute();
             pm.retrieveAll(mSentryVersions);
             if (mSentryVersions.isEmpty()) {
-              throw new SentryNoSuchObjectException("No matching version found");
+              throw new SentryNoSuchObjectException("Matching Version");
             }
             if (mSentryVersions.size() > 1) {
               throw new SentryAccessDeniedException(
@@ -3082,7 +3082,7 @@ public class SentryStore {
    * @return SentryNoSuchObjectException with appropriate message
    */
   private static SentryNoSuchObjectException noSuchRole(String roleName) {
-    return new SentryNoSuchObjectException("nonexistent role " + roleName);
+    return new SentryNoSuchObjectException("Role " + roleName);
   }
 
   /**
@@ -3091,7 +3091,8 @@ public class SentryStore {
    * @return SentryNoSuchObjectException with appropriate message
    */
   private static SentryNoSuchObjectException noSuchGroup(String groupName) {
-    return new SentryNoSuchObjectException("nonexistent group + " + groupName);
+    return new SentryNoSuchObjectException("Group " + groupName);
+
   }
 
   /**
