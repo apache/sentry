@@ -31,6 +31,7 @@ import org.apache.sentry.hdfs.PathsUpdate;
 import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import org.slf4j.Logger;
@@ -41,6 +42,7 @@ import org.apache.hadoop.hive.metastore.api.Table;
 /**
  * Advanced tests for HDFS Sync integration
  */
+@Ignore
 public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
 
   private static final Logger LOGGER = LoggerFactory

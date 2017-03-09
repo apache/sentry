@@ -18,19 +18,14 @@
 
 package org.apache.sentry.hdfs;
 
-import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.codahale.metrics.Timer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.common.utils.SigUtils;
 import org.apache.sentry.hdfs.ServiceConstants.ServerConfig;
-import org.apache.sentry.hdfs.UpdateForwarder.ExternalImageRetriever;
-import org.apache.sentry.hdfs.service.thrift.TPermissionsUpdate;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
 import org.apache.sentry.hdfs.service.thrift.TRoleChanges;
 import org.apache.sentry.provider.db.SentryPolicyStorePlugin;
@@ -120,48 +115,6 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
 
   public static volatile SentryPlugin instance;
 
-  static class PermImageRetriever implements ExternalImageRetriever<PermissionsUpdate> {
-
-    private final SentryStore sentryStore;
-
-    public PermImageRetriever(SentryStore sentryStore) {
-      this.sentryStore = sentryStore;
-    }
-
-    @Override
-    public PermissionsUpdate retrieveFullImage(long currSeqNum) throws Exception {
-      try(Timer.Context timerContext =
-                  SentryHdfsMetricsUtil.getRetrieveFullImageTimer.time()) {
-
-        SentryHdfsMetricsUtil.getRetrieveFullImageTimer.time();
-        Map<String, HashMap<String, String>> privilegeImage = sentryStore.retrieveFullPrivilegeImage();
-        Map<String, LinkedList<String>> roleImage = sentryStore.retrieveFullRoleImage();
-
-        TPermissionsUpdate tPermUpdate = new TPermissionsUpdate(true, currSeqNum,
-                new HashMap<String, TPrivilegeChanges>(),
-                new HashMap<String, TRoleChanges>());
-        for (Map.Entry<String, HashMap<String, String>> privEnt : privilegeImage.entrySet()) {
-          String authzObj = privEnt.getKey();
-          HashMap<String,String> privs = privEnt.getValue();
-          tPermUpdate.putToPrivilegeChanges(authzObj, new TPrivilegeChanges(
-                  authzObj, privs, new HashMap<String, String>()));
-        }
-        for (Map.Entry<String, LinkedList<String>> privEnt : roleImage.entrySet()) {
-          String role = privEnt.getKey();
-          LinkedList<String> groups = privEnt.getValue();
-          tPermUpdate.putToRoleChanges(role, new TRoleChanges(role, groups, new LinkedList<String>()));
-        }
-        PermissionsUpdate permissionsUpdate = new PermissionsUpdate(tPermUpdate);
-        permissionsUpdate.setSeqNum(currSeqNum);
-        SentryHdfsMetricsUtil.getPrivilegeChangesHistogram.update(
-                tPermUpdate.getPrivilegeChangesSize());
-        SentryHdfsMetricsUtil.getRoleChangesHistogram.update(
-                tPermUpdate.getRoleChangesSize());
-        return permissionsUpdate;
-      }
-    }
-  }
-
   private UpdateForwarder<PathsUpdate> pathsUpdater;
   private UpdateForwarder<PermissionsUpdate> permsUpdater;
   // TODO: Each perm change sequence number should be generated during persistence at sentry store.
@@ -200,10 +153,10 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
     permImageRetriever = new PermImageRetriever(sentryStore);
 
     pathsUpdater = UpdateForwarder.create(conf, new UpdateableAuthzPaths(
-        pathPrefixes), new PathsUpdate(0, false), null, 100, initUpdateRetryDelayMs);
+        pathPrefixes), new PathsUpdate(0, false), null, 100, initUpdateRetryDelayMs, false);
     permsUpdater = UpdateForwarder.create(conf,
         new UpdateablePermissions(permImageRetriever), new PermissionsUpdate(0, false),
-        permImageRetriever, 100, initUpdateRetryDelayMs);
+        permImageRetriever, 100, initUpdateRetryDelayMs, true);
     LOGGER.info("Sentry HDFS plugin initialized !!");
     instance = this;
 

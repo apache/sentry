@@ -20,18 +20,14 @@ package org.apache.sentry.hdfs;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 
-import org.apache.sentry.hdfs.PermissionsUpdate;
-import org.apache.sentry.hdfs.Updateable;
-import org.apache.sentry.hdfs.UpdateForwarder.ExternalImageRetriever;
-
 public class UpdateablePermissions implements Updateable<PermissionsUpdate>{
   private static final String UPDATABLE_TYPE_NAME = "perm_update";
 
   private AtomicLong seqNum = new AtomicLong();
-  private final ExternalImageRetriever<PermissionsUpdate> imageRetreiver;
+  private final ImageRetriever<PermissionsUpdate> imageRetreiver;
 
   public UpdateablePermissions(
-      ExternalImageRetriever<PermissionsUpdate> imageRetreiver) {
+      ImageRetriever<PermissionsUpdate> imageRetreiver) {
     this.imageRetreiver = imageRetreiver;
   }
 
@@ -64,5 +60,4 @@ public class UpdateablePermissions implements Updateable<PermissionsUpdate>{
   public String getUpdateableTypeName() {
     return UPDATABLE_TYPE_NAME;
   }
-
 }
