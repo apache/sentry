@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -37,12 +37,6 @@ import org.slf4j.LoggerFactory;
 public class UpdateForwarder<K extends Updateable.Update> implements
     Updateable<K>, Closeable {
 
-  interface ExternalImageRetriever<K> {
-
-    K retrieveFullImage(long currSeqNum) throws Exception;
-
-  }
-
   private final AtomicLong lastSeenSeqNum = new AtomicLong(0);
   protected final AtomicLong lastCommittedSeqNum = new AtomicLong(0);
   // Updates should be handled in order
@@ -60,7 +54,7 @@ public class UpdateForwarder<K extends Updateable.Update> implements
   // UpdateLog is disabled when getMaxUpdateLogSize() = 0;
   private final int maxUpdateLogSize;
 
-  private final ExternalImageRetriever<K> imageRetreiver;
+  private final ImageRetriever<K> imageRetreiver;
 
   private volatile Updateable<K> updateable;
 
@@ -72,16 +66,16 @@ public class UpdateForwarder<K extends Updateable.Update> implements
   private static final String UPDATABLE_TYPE_NAME = "update_forwarder";
 
   public UpdateForwarder(Configuration conf, Updateable<K> updateable,
-      ExternalImageRetriever<K> imageRetreiver, int maxUpdateLogSize) {
-    this(conf, updateable, imageRetreiver, maxUpdateLogSize, INIT_UPDATE_RETRY_DELAY);
+      ImageRetriever<K> imageRetreiver, int maxUpdateLogSize, boolean shouldInit) {
+    this(conf, updateable, imageRetreiver, maxUpdateLogSize, INIT_UPDATE_RETRY_DELAY, shouldInit);
   }
 
   protected UpdateForwarder(Configuration conf, Updateable<K> updateable, //NOPMD
-      ExternalImageRetriever<K> imageRetreiver, int maxUpdateLogSize,
-      int initUpdateRetryDelay) {
+      ImageRetriever<K> imageRetreiver, int maxUpdateLogSize,
+      int initUpdateRetryDelay, boolean shouldInit) {
     this.maxUpdateLogSize = maxUpdateLogSize;
     this.imageRetreiver = imageRetreiver;
-    if (imageRetreiver != null) {
+    if (shouldInit) {
       spawnInitialUpdater(updateable, initUpdateRetryDelay);
     } else {
       this.updateable = updateable;
@@ -89,17 +83,17 @@ public class UpdateForwarder<K extends Updateable.Update> implements
   }
 
   public static <K extends Updateable.Update> UpdateForwarder<K> create(Configuration conf,
-      Updateable<K> updateable, K update, ExternalImageRetriever<K> imageRetreiver,
-      int maxUpdateLogSize) throws SentryPluginException {
+      Updateable<K> updateable, K update, ImageRetriever<K> imageRetreiver,
+      int maxUpdateLogSize, boolean shouldInit) throws SentryPluginException {
     return create(conf, updateable, update, imageRetreiver, maxUpdateLogSize,
-        INIT_UPDATE_RETRY_DELAY);
+        INIT_UPDATE_RETRY_DELAY, shouldInit);
   }
 
   public static <K extends Updateable.Update> UpdateForwarder<K> create(Configuration conf,
-      Updateable<K> updateable, K update, ExternalImageRetriever<K> imageRetreiver,
-      int maxUpdateLogSize, int initUpdateRetryDelay) throws SentryPluginException {
+      Updateable<K> updateable, K update, ImageRetriever<K> imageRetreiver,
+      int maxUpdateLogSize, int initUpdateRetryDelay, boolean shouldInit) throws SentryPluginException {
     return new UpdateForwarder<K>(conf, updateable, imageRetreiver,
-        maxUpdateLogSize, initUpdateRetryDelay);
+        maxUpdateLogSize, initUpdateRetryDelay, shouldInit);
   }
 
   private void spawnInitialUpdater(final Updateable<K> updateable,

@@ -2188,21 +2188,67 @@ public class TestSentryStore extends org.junit.Assert {
   }
 
   @Test
+  public void testRetrieveFullPermssionsImage() throws Exception {
+
+    // Create roles
+    String roleName1 = "privs-r1", roleName2 = "privs-r2";
+    String groupName1 = "privs-g1";
+    String grantor = "g1";
+    sentryStore.createSentryRole(roleName1);
+    sentryStore.createSentryRole(roleName2);
+
+    // Grant Privileges to the roles
+    TSentryPrivilege privilege1 = new TSentryPrivilege();
+    privilege1.setPrivilegeScope("TABLE");
+    privilege1.setServerName("server1");
+    privilege1.setDbName("db1");
+    privilege1.setTableName("tbl1");
+    privilege1.setAction("SELECT");
+    privilege1.setCreateTime(System.currentTimeMillis());
+    sentryStore.alterSentryRoleGrantPrivilege(grantor, roleName1, privilege1);
+    sentryStore.alterSentryRoleGrantPrivilege(grantor, roleName2, privilege1);
+
+    TSentryPrivilege privilege2 = new TSentryPrivilege();
+    privilege2.setPrivilegeScope("SERVER");
+    privilege2.setServerName("server1");
+    privilege1.setDbName("db2");
+    privilege1.setAction("ALL");
+    privilege2.setCreateTime(System.currentTimeMillis());
+    sentryStore.alterSentryRoleGrantPrivilege(grantor, roleName2, privilege2);
+
+    // Grant roles to the groups
+    Set<TSentryGroup> groups = Sets.newHashSet();
+    TSentryGroup group = new TSentryGroup();
+    group.setGroupName(groupName1);
+    groups.add(group);
+    sentryStore.alterSentryRoleAddGroups(grantor, roleName1, groups);
+    sentryStore.alterSentryRoleAddGroups(grantor, roleName2, groups);
+
+    PermissionsImage permImage = sentryStore.retrieveFullPermssionsImage();
+    Map<String, Map<String, String>> privs = permImage.getPrivilegeImage();
+    Map<String, List<String>> roles = permImage.getRoleImage();
+    assertEquals(2, privs.get("db1.tbl1").size());
+    assertEquals(2, roles.size());
+  }
+
+  @Test
   public void testAuthzPathsMapping() throws Exception {
     sentryStore.createAuthzPathsMapping("db1.table1", Sets.newHashSet("/user/hive/warehouse/db1.db/table1"));
     sentryStore.createAuthzPathsMapping("db1.table2", Sets.newHashSet("/user/hive/warehouse/db1.db/table2"));
 
-    Map<String, Set<String>> pathsImage = sentryStore.retrieveFullPathsImage();
-    assertEquals(2, pathsImage.size());
-    assertEquals(Sets.newHashSet("/user/hive/warehouse/db1.db/table1"), pathsImage.get("db1.table1"));
+    PathsImage pathsImage = sentryStore.retrieveFullPathsImage();
+    Map<String, Set<String>> pathImage = pathsImage.getPathImage();
+    assertEquals(2, pathImage.size());
+    assertEquals(Sets.newHashSet("/user/hive/warehouse/db1.db/table1"), pathImage.get("db1.table1"));
 
     Map<String, Set<String>> authzPaths = new HashMap<>();
     authzPaths.put("db2.table1", Sets.newHashSet("/user/hive/warehouse/db2.db/table1"));
     authzPaths.put("db2.table2", Sets.newHashSet("/user/hive/warehouse/db2.db/table2"));
     sentryStore.persistFullPathsImage(authzPaths);
     pathsImage = sentryStore.retrieveFullPathsImage();
-    assertEquals(4, pathsImage.size());
-    assertEquals(Sets.newHashSet("/user/hive/warehouse/db2.db/table1"), pathsImage.get("db2.table1"));
+    pathImage = pathsImage.getPathImage();
+    assertEquals(4, pathImage.size());
+    assertEquals(Sets.newHashSet("/user/hive/warehouse/db2.db/table1"), pathImage.get("db2.table1"));
   }
 
   public void testQueryParamBuilder() {

@@ -2260,107 +2260,158 @@ public class SentryStore {
         ServerConfig.ADMIN_GROUPS, new String[]{}));
   }
 
-  public Map<String, HashMap<String, String>> retrieveFullPrivilegeImage() throws Exception {
-    return tm.executeTransaction(
-      new TransactionBlock<Map<String, HashMap<String, String>>>() {
-        public Map<String, HashMap<String, String>> execute(PersistenceManager pm)
-                throws Exception {
-          Map<String, HashMap<String, String>> retVal = new HashMap<>();
-          Query query = pm.newQuery(MSentryPrivilege.class);
-          QueryParamBuilder paramBuilder = newQueryParamBuilder();
-          paramBuilder
-                  .addNotNull(SERVER_NAME)
-                  .addNotNull(DB_NAME)
-                  .addNull(URI);
-
-          query.setFilter(paramBuilder.toString());
-          query.setOrdering("serverName ascending, dbName ascending, tableName ascending");
-          @SuppressWarnings("unchecked")
-          List<MSentryPrivilege> privileges =
-                  (List<MSentryPrivilege>) query.executeWithMap(paramBuilder.getArguments());
-          for (MSentryPrivilege mPriv : privileges) {
-            String authzObj = mPriv.getDbName();
-            if (!isNULL(mPriv.getTableName())) {
-              authzObj = authzObj + "." + mPriv.getTableName();
-            }
-            HashMap<String, String> pUpdate = retVal.get(authzObj);
-            if (pUpdate == null) {
-              pUpdate = new HashMap<>();
-              retVal.put(authzObj, pUpdate);
-            }
-            for (MSentryRole mRole : mPriv.getRoles()) {
-              String existingPriv = pUpdate.get(mRole.getRoleName());
-              if (existingPriv == null) {
-                pUpdate.put(mRole.getRoleName(), mPriv.getAction().toUpperCase());
-              } else {
-                pUpdate.put(mRole.getRoleName(), existingPriv + ","
-                        + mPriv.getAction().toUpperCase());
-              }
-            }
-          }
-          return retVal;
-        }
-      });
-  }
-
   /**
-   * @return Mapping of Role -> [Groups]
-   */
-  public Map<String, LinkedList<String>> retrieveFullRoleImage() throws Exception {
-    return tm.executeTransaction(
-        new TransactionBlock<Map<String, LinkedList<String>>>() {
-          public Map<String, LinkedList<String>> execute(PersistenceManager pm) throws Exception {
-            Query query = pm.newQuery(MSentryGroup.class);
-            @SuppressWarnings("unchecked")
-            List<MSentryGroup> groups = (List<MSentryGroup>) query.execute();
-            if (groups.isEmpty()) {
-              return Collections.emptyMap();
-            }
-
-            Map<String, LinkedList<String>> retVal = new HashMap<>();
-            for (MSentryGroup mGroup : groups) {
-              for (MSentryRole role : mGroup.getRoles()) {
-                LinkedList<String> rUpdate = retVal.get(role.getRoleName());
-                if (rUpdate == null) {
-                  rUpdate = new LinkedList<String>();
-                  retVal.put(role.getRoleName(), rUpdate);
-                }
-                rUpdate.add(mGroup.getGroupName());
-              }
-            }
-            return retVal;
-          }
-        });
-  }
-
-  /**
-   * This returns a Mapping of Authz -> [Paths]
-   */
-  public Map<String, Set<String>> retrieveFullPathsImage() {
-    Map<String, Set<String>> result = new HashMap<>();
-    try {
-      result = (Map<String, Set<String>>) tm.executeTransaction(
-          new TransactionBlock<Object>() {
-            public Object execute(PersistenceManager pm) throws Exception {
-              Map<String, Set<String>> retVal = new HashMap<>();
-              Query query = pm.newQuery(MAuthzPathsMapping.class);
-              List<MAuthzPathsMapping> authzToPathsMappings = (List<MAuthzPathsMapping>) query.execute();
-              for (MAuthzPathsMapping authzToPaths : authzToPathsMappings) {
-                retVal.put(authzToPaths.getAuthzObjName(), authzToPaths.getPaths());
-              }
-              return retVal;
-            }
-          });
-    } catch (Exception e) {
-      LOGGER.error(e.getMessage(), e);
-    }
-    return result;
-  }
-
-  /**
-   * Persist a full hive snapshot into Sentry DB in a single transaction.
+   * Retrieves an up-to-date sentry permission snapshot.
+   * <p>
+   * It reads hiveObj to &lt role, privileges &gt mapping from {@link MSentryPrivilege}
+   * table and role to groups mapping from {@link MSentryGroup}.
+   * It also gets the changeID of latest delta update, from {@link MSentryPathChange}, that
+   * the snapshot corresponds to.
    *
-   * @param authzPaths Mapping of hiveObj -> [Paths]
+   * @return a {@link PathsImage} contains the mapping of hiveObj to
+   *         &lt role, privileges &gt and the mapping of role to &lt Groups &gt.
+   *         For empty image returns {@link #EMPTY_CHANGE_ID} and empty maps.
+   * @throws Exception
+   */
+  public PermissionsImage retrieveFullPermssionsImage() throws Exception {
+    return tm.executeTransaction(
+    new TransactionBlock<PermissionsImage>() {
+      public PermissionsImage execute(PersistenceManager pm)
+      throws Exception {
+        // curChangeID could be 0, if Sentry server has been running before
+        // enable SentryPlugin(HDFS Sync feature).
+        long curChangeID = getLastProcessedChangeIDCore(pm, MSentryPermChange.class);
+        Map<String, List<String>> roleImage = retrieveFullRoleImageCore(pm);
+        Map<String, Map<String, String>> privilegeMap = retrieveFullPrivilegeImageCore(pm);
+
+        return new PermissionsImage(roleImage, privilegeMap, curChangeID);
+      }
+    });
+  }
+
+  /**
+   * Retrieves an up-to-date sentry privileges snapshot from {@code MSentryPrivilege} table.
+   * The snapshot is represented by mapping of hiveObj to role privileges.
+   *
+   * @param pm PersistenceManager
+   * @return a mapping of hiveObj to &lt role, privileges &gt
+   * @throws Exception
+   */
+   private Map<String, Map<String, String>> retrieveFullPrivilegeImageCore(PersistenceManager pm)
+        throws Exception {
+
+    Map<String, Map<String, String>> retVal = new HashMap<>();
+    Query query = pm.newQuery(MSentryPrivilege.class);
+    QueryParamBuilder paramBuilder = newQueryParamBuilder();
+    paramBuilder.addNotNull(SERVER_NAME)
+                .addNotNull(DB_NAME)
+                .addNull(URI);
+
+    query.setFilter(paramBuilder.toString());
+    query.setOrdering("serverName ascending, dbName ascending, tableName ascending");
+    @SuppressWarnings("unchecked")
+    List<MSentryPrivilege> privileges =
+            (List<MSentryPrivilege>) query.executeWithMap(paramBuilder.getArguments());
+    for (MSentryPrivilege mPriv : privileges) {
+      String authzObj = mPriv.getDbName();
+      if (!isNULL(mPriv.getTableName())) {
+        authzObj = authzObj + "." + mPriv.getTableName();
+      }
+      Map<String, String> pUpdate = retVal.get(authzObj);
+      if (pUpdate == null) {
+        pUpdate = new HashMap<>();
+        retVal.put(authzObj, pUpdate);
+      }
+      for (MSentryRole mRole : mPriv.getRoles()) {
+        String existingPriv = pUpdate.get(mRole.getRoleName());
+        if (existingPriv == null) {
+          pUpdate.put(mRole.getRoleName(), mPriv.getAction().toUpperCase());
+        } else {
+          pUpdate.put(mRole.getRoleName(), existingPriv + "," + mPriv.getAction().toUpperCase());
+        }
+      }
+    }
+    return retVal;
+  }
+
+  /**
+   * Retrieves an up-to-date sentry role snapshot from {@code MSentryGroup} table.
+   * The snapshot is represented by a role to groups map.
+   *
+   * @param pm PersistenceManager
+   * @return a mapping of Role to &lt Groups &gt
+   * @throws Exception
+   */
+  private Map<String, List<String>> retrieveFullRoleImageCore(PersistenceManager pm)
+          throws Exception {
+    Query query = pm.newQuery(MSentryGroup.class);
+    @SuppressWarnings("unchecked")
+    List<MSentryGroup> groups = (List<MSentryGroup>) query.execute();
+    if (groups.isEmpty()) {
+      return Collections.emptyMap();
+    }
+
+    Map<String, List<String>> retVal = new HashMap<>();
+    for (MSentryGroup mGroup : groups) {
+      for (MSentryRole role : mGroup.getRoles()) {
+        List<String> rUpdate = retVal.get(role.getRoleName());
+        if (rUpdate == null) {
+          rUpdate = new LinkedList<>();
+          retVal.put(role.getRoleName(), rUpdate);
+        }
+        rUpdate.add(mGroup.getGroupName());
+      }
+    }
+    return retVal;
+  }
+
+  /**
+   * Retrieves an up-to-date hive paths snapshot.
+   * <p>
+   * It reads hiveObj to paths mapping from {@link MAuthzPathsMapping} table and
+   * gets the changeID of latest delta update, from {@link MSentryPathChange}, that
+   * the snapshot corresponds to.
+   *
+   * @return an up-to-date hive paths snapshot contains mapping of hiveObj to &lt Paths &gt.
+   *         For empty image return {@link #EMPTY_CHANGE_ID} and a empty map.
+   * @throws Exception
+   */
+  public PathsImage retrieveFullPathsImage() throws Exception {
+    return (PathsImage) tm.executeTransaction(
+    new TransactionBlock() {
+      public Object execute(PersistenceManager pm) throws Exception {
+        // curChangeID could be 0 for the first full snapshot fetching
+        // from HMS. It does not have corresponding delta update.
+        long curChangeID = getLastProcessedChangeIDCore(pm, MSentryPathChange.class);
+        Map<String, Set<String>> pathImage = retrieveFullPathsImageCore(pm);
+
+        return new PathsImage(pathImage, curChangeID);
+      }
+    });
+  }
+
+  /**
+   * Retrieves an up-to-date hive paths snapshot from {@code MAuthzPathsMapping} table.
+   * The snapshot is represented by a hiveObj to paths map.
+   *
+   * @return a mapping of hiveObj to &lt Paths &gt.
+   */
+  private Map<String, Set<String>> retrieveFullPathsImageCore(PersistenceManager pm) {
+    Map<String, Set<String>> retVal = new HashMap<>();
+    Query query = pm.newQuery(MAuthzPathsMapping.class);
+    Iterable<MAuthzPathsMapping> authzToPathsMappings =
+        (Iterable<MAuthzPathsMapping>) query.execute();
+
+    for (MAuthzPathsMapping authzToPaths : authzToPathsMappings) {
+      retVal.put(authzToPaths.getAuthzObjName(), authzToPaths.getPaths());
+    }
+    return retVal;
+  }
+
+  /**
+   * Persist an up-to-date hive snapshot into Sentry DB in a single transaction.
+   *
+   * @param authzPaths Mapping of hiveObj to &lt Paths &lt
    * @throws Exception
    */
   public void persistFullPathsImage(final Map<String, Set<String>> authzPaths) throws Exception {

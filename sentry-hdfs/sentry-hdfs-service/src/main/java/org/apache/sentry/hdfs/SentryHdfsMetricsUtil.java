@@ -60,18 +60,29 @@ public class SentryHdfsMetricsUtil {
       MetricRegistry.name(SentryHDFSServiceProcessor.class, "handle-hms-notification",
           "path-changes-size"));
 
-  // Metrics for retrieveFullImage in SentryPlugin.PermImageRetriever
-  // The time used for each retrieveFullImage
-  public static final Timer getRetrieveFullImageTimer = sentryMetrics.getTimer(
-      MetricRegistry.name(SentryPlugin.PermImageRetriever.class, "retrieve-full-image"));
-  // The size of privilege changes for each retrieveFullImage
+  // Metrics for retrievePermFullImage in PermImageRetriever
+  // The time used for each retrievePermFullImage
+  public static final Timer getRetrievePermFullImageTimer = sentryMetrics.getTimer(
+      MetricRegistry.name(PermImageRetriever.class, "retrieve-perm-full-image"));
+  // The size of privilege changes for each retrievePermFullImage
   public static final Histogram getPrivilegeChangesHistogram = sentryMetrics.getHistogram(
-      MetricRegistry.name(SentryPlugin.PermImageRetriever.class, "retrieve-full-image",
+      MetricRegistry.name(PermImageRetriever.class, "retrieve-perm-full-image",
           "privilege-changes-size"));
-  // The size of role changes for each retrieveFullImage call
+  // The size of role changes for each retrievePermFullImage call
   public static final Histogram getRoleChangesHistogram = sentryMetrics.getHistogram(
-      MetricRegistry.name(SentryPlugin.PermImageRetriever.class, "retrieve-full-image",
+      MetricRegistry.name(PermImageRetriever.class, "retrieve-perm-full-image",
           "role-changes-size"));
+
+  // Metrics for retrievePathFullImage in PathImageRetriever
+  // The time used for each retrievePathFullImage
+  public static final Timer getRetrievePathFullImageTimer = sentryMetrics.getTimer(
+      MetricRegistry.name(PathImageRetriever.class, "retrieve-path-full-image"));
+
+  // The size of path changes for each retrievePathFullImage
+  public static final Histogram getPathChangesHistogram = sentryMetrics.getHistogram(
+      MetricRegistry.name(PathImageRetriever.class, "retrieve-path-full-image",
+          "path-changes-size"));
+
 
   // Metrics for notifySentry HMS update in MetaStorePlugin
   // The timer used for each notifySentry
