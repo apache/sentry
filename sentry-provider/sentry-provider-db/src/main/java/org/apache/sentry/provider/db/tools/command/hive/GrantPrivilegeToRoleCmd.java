@@ -18,9 +18,7 @@
 package org.apache.sentry.provider.db.tools.command.hive;
 
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
-import org.apache.sentry.provider.db.service.thrift.TSentryGrantOption;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
-import org.apache.sentry.service.thrift.ServiceConstants;
 
 /**
  * The class for admin command to grant privilege to role.
@@ -38,24 +36,6 @@ public class GrantPrivilegeToRoleCmd implements Command {
   @Override
   public void execute(SentryPolicyServiceClient client, String requestorName) throws Exception {
     TSentryPrivilege tSentryPrivilege = CommandUtil.convertToTSentryPrivilege(privilegeStr);
-    boolean grantOption = tSentryPrivilege.getGrantOption().equals(TSentryGrantOption.TRUE) ? true : false;
-    if (ServiceConstants.PrivilegeScope.SERVER.toString().equals(tSentryPrivilege.getPrivilegeScope())) {
-      client.grantServerPrivilege(requestorName, roleName, tSentryPrivilege.getServerName(),
-              tSentryPrivilege.getAction(), grantOption);
-    } else if (ServiceConstants.PrivilegeScope.DATABASE.toString().equals(tSentryPrivilege.getPrivilegeScope())) {
-      client.grantDatabasePrivilege(requestorName, roleName, tSentryPrivilege.getServerName(),
-              tSentryPrivilege.getDbName(), tSentryPrivilege.getAction(), grantOption);
-    } else if (ServiceConstants.PrivilegeScope.TABLE.toString().equals(tSentryPrivilege.getPrivilegeScope())) {
-      client.grantTablePrivilege(requestorName, roleName, tSentryPrivilege.getServerName(),
-              tSentryPrivilege.getDbName(), tSentryPrivilege.getTableName(),
-              tSentryPrivilege.getAction(), grantOption);
-    } else if (ServiceConstants.PrivilegeScope.COLUMN.toString().equals(tSentryPrivilege.getPrivilegeScope())) {
-      client.grantColumnPrivilege(requestorName, roleName, tSentryPrivilege.getServerName(),
-              tSentryPrivilege.getDbName(), tSentryPrivilege.getTableName(),
-              tSentryPrivilege.getColumnName(), tSentryPrivilege.getAction(), grantOption);
-    } else if (ServiceConstants.PrivilegeScope.URI.toString().equals(tSentryPrivilege.getPrivilegeScope())) {
-      client.grantURIPrivilege(requestorName, roleName, tSentryPrivilege.getServerName(),
-              tSentryPrivilege.getURI(), grantOption);
-    }
+    client.grantPrivilege(requestorName, roleName, tSentryPrivilege);
   }
 }
