@@ -17,10 +17,10 @@
  */
 package org.apache.sentry.hdfs;
 
-public class MockSentryAuthorizationProvider extends
-    SentryAuthorizationProvider {
+public class MockSentryINodeAttributesProvider extends
+    SentryINodeAttributesProvider {
 
-  public MockSentryAuthorizationProvider() {
+  public MockSentryINodeAttributesProvider() {
     super(new SentryAuthorizationInfoX());
   }
 }
