@@ -613,6 +613,34 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
     }
   }
 
+  public synchronized void revokePrivileges(String requestorUserName, String roleName, Set<TSentryPrivilege> privileges) throws  SentryUserException {
+    this.revokePrivilegesCore(requestorUserName, roleName, privileges);
+  }
+
+  public synchronized void revokePrivilege(String requestorUserName, String roleName, TSentryPrivilege privilege) throws  SentryUserException {
+    this.revokePrivilegeCore(requestorUserName, roleName, privilege);
+
+  }
+
+  private void revokePrivilegeCore(String requestorUserName, String roleName, TSentryPrivilege privilege) throws SentryUserException {
+    this.revokePrivilegesCore(requestorUserName, roleName, ImmutableSet.of(privilege));
+  }
+
+  private void revokePrivilegesCore(String requestorUserName, String roleName, Set<TSentryPrivilege> privileges) throws SentryUserException {
+    TAlterSentryRoleRevokePrivilegeRequest request = new TAlterSentryRoleRevokePrivilegeRequest();
+    request.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
+    request.setRequestorUserName(requestorUserName);
+    request.setRoleName(roleName);
+    request.setPrivileges(privileges);
+    try {
+      TAlterSentryRoleRevokePrivilegeResponse response = client.alter_sentry_role_revoke_privilege(
+          request);
+      Status.throwIfNotOk(response.getStatus());
+    } catch (TException e) {
+      throw new SentryUserException(THRIFT_EXCEPTION_MESSAGE, e);
+    }
+  }
+
   public synchronized void revokeURIPrivilege(String requestorUserName,
       String roleName, String server, String uri)
   throws SentryUserException {
@@ -744,19 +772,9 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
       PrivilegeScope scope, String serverName, String uri, String db, String table, List<String> columns,
       String action, Boolean grantOption)
   throws SentryUserException {
-    TAlterSentryRoleRevokePrivilegeRequest request = new TAlterSentryRoleRevokePrivilegeRequest();
-    request.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
-    request.setRequestorUserName(requestorUserName);
-    request.setRoleName(roleName);
     Set<TSentryPrivilege> privileges = convertColumnPrivileges(scope,
         serverName, uri, db, table, columns, action, grantOption);
-    request.setPrivileges(privileges);
-    try {
-      TAlterSentryRoleRevokePrivilegeResponse response = client.alter_sentry_role_revoke_privilege(request);
-      Status.throwIfNotOk(response.getStatus());
-    } catch (TException e) {
-      throw new SentryUserException(THRIFT_EXCEPTION_MESSAGE, e);
-    }
+    this.revokePrivilegesCore(requestorUserName, roleName, privileges);
   }
 
   private Set<TSentryPrivilege> convertColumnPrivileges(
