@@ -346,7 +346,15 @@ public abstract class HiveAuthzBindingHookBase extends AbstractSemanticAnalyzerH
       dbHierarchy.add(hiveAuthzBinding.getAuthServer());
       dbHierarchy.add(currDB);
       inputHierarchy.add(dbHierarchy);
-      outputHierarchy.add(dbHierarchy);
+
+      if (currOutDB != null) {
+        List<DBModelAuthorizable> outputDbHierarchy = new ArrayList<DBModelAuthorizable>();
+        outputDbHierarchy.add(hiveAuthzBinding.getAuthServer());
+        outputDbHierarchy.add(currOutDB);
+        outputHierarchy.add(outputDbHierarchy);
+      } else {
+        outputHierarchy.add(dbHierarchy);
+      }
 
       getInputHierarchyFromInputs(inputHierarchy, inputs);
 

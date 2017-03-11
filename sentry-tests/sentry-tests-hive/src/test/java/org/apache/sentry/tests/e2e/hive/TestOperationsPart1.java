@@ -69,7 +69,8 @@ public class TestOperationsPart1 extends AbstractTestWithStaticConfiguration {
     privileges.put("drop_db1_tb1", "server=server1->db=" + DB1 + "->table=tb1->action=drop");
     privileges.put("insert_db2_tb2", "server=server1->db=" + DB2 + "->table=tb2->action=insert");
     privileges.put("select_db1_view1", "server=server1->db=" + DB1 + "->table=view1->action=select");
-    privileges.put("alter_db1_view1", "server=server1->db=" + DB1 + "->table=view1->action=alter");
+    privileges.put("create_db1_view1", "server=server1->db=" + DB1  + "->action=create");
+    privileges.put("drop_db1_view1", "server=server1->db=" + DB1  + "->action=drop");
     privileges.put("select_db1_tb2", "server=server1->db=" + DB1 + "->table=tb2->action=select");
 
   }
@@ -615,9 +616,10 @@ public class TestOperationsPart1 extends AbstractTestWithStaticConfiguration {
     statement.execute("CREATE VIEW view1 AS SELECT * FROM tb1");
 
     policyFile
-        .addPermissionsToRole("alter_db1_view1", privileges.get("alter_db1_view1"))
+        .addPermissionsToRole("create_db1_view1", privileges.get("create_db1_view1"))
+        .addPermissionsToRole("drop_db1_view1", privileges.get("drop_db1_view1"))
         .addPermissionsToRole("create_db1", privileges.get("create_db1"))
-        .addRolesToGroup(USERGROUP1, "create_db1", "alter_db1_view1")
+        .addRolesToGroup(USERGROUP1, "create_db1", "create_db1_view1", "drop_db1_view1")
         .addPermissionsToRole("select_db1_view1", privileges.get("select_db1_view1"))
         .addPermissionsToRole("select_db1_tb1", privileges.get("select_db1_tb1"))
         .addRolesToGroup(USERGROUP2, "select_db1_tb1", "create_db1", "select_db1_view1");
@@ -656,9 +658,11 @@ public class TestOperationsPart1 extends AbstractTestWithStaticConfiguration {
     statement.execute("CREATE VIEW view1 AS SELECT * FROM tb1");
 
     policyFile
-        .addPermissionsToRole("select_db1_tb2", privileges.get("select_db1_tb2")).addPermissionsToRole("alter_db1_view1", privileges.get("alter_db1_view1"))
+        .addPermissionsToRole("select_db1_tb2", privileges.get("select_db1_tb2"))
+        .addPermissionsToRole("create_db1_view1", privileges.get("create_db1_view1"))
+        .addPermissionsToRole("drop_db1_view1", privileges.get("drop_db1_view1"))
         .addPermissionsToRole("create_db1", privileges.get("create_db1"))
-        .addRolesToGroup(USERGROUP1, "select_db1_tb2", "alter_db1_view1", "create_db1")
+        .addRolesToGroup(USERGROUP1, "select_db1_tb2", "create_db1_view1", "drop_db1_view1", "create_db1")
         .addPermissionsToRole("select_db1_view1", privileges.get("select_db1_view1"))
         .addRolesToGroup(USERGROUP2, "create_db1", "select_db1_view1");
     writePolicyFile(policyFile);

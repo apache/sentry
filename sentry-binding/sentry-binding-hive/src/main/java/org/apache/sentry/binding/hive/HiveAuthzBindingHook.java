@@ -261,9 +261,15 @@ public class HiveAuthzBindingHook extends HiveAuthzBindingHookBase {
           ASTNode serdeNode = (ASTNode)childASTNode.getChild(0);
           String serdeClassName = BaseSemanticAnalyzer.unescapeSQLString(serdeNode.getText());
           setSerdeURI(serdeClassName);
+          currDB = getCanonicalDb();
+        }
+        if ("TOK_ALTERTABLE_RENAME".equals(childASTNode.getText())) {
+          currDB = extractDatabase((ASTNode)ast.getChild(0));
+          ASTNode newTableNode = (ASTNode)childASTNode.getChild(0);
+          currOutDB = extractDatabase(newTableNode);
         }
       }
-
+      break;
     default:
         currDB = getCanonicalDb();
         break;

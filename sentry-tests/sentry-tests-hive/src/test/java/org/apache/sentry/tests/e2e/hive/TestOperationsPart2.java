@@ -29,6 +29,7 @@ import java.util.Map;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.sentry.provider.file.PolicyFile;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -232,41 +233,76 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
    */
   @Test
   public void renameTable() throws Exception {
-    adminCreate(DB1, tableName);
-    policyFile
-        .addPermissionsToRole("alter_db1_tb1", privileges.get("alter_db1_tb1"))
-        .addPermissionsToRole("create_db1", privileges.get("create_db1"))
-        .addRolesToGroup(USERGROUP1, "alter_db1_tb1", "create_db1")
-        .addRolesToGroup(USERGROUP2, "create_db1")
-        .addRolesToGroup(USERGROUP3, "alter_db1_tb1");
+    adminCreate(DB1, "TAB_1");
+    adminCreate(DB2, "TAB_3");
+    adminCreate(DB3, null);
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("CREATE table  " + DB1 + ".TAB_2 (a string)");
+    statement.close();
+    connection.close();
 
+    policyFile
+        .addRolesToGroup(USERGROUP1, "all_db1")
+        .addRolesToGroup(USERGROUP1, "drop_db2")
+        .addRolesToGroup(USERGROUP1, "create_db3")
+        .addPermissionsToRole("all_db1", "server=server1->db=" + DB1)
+        .addPermissionsToRole("drop_db2", "server=server1->db=" + DB2 + "->action=drop")
+        .addPermissionsToRole("create_db3", "server=server1->db=" + DB3 + "->action=create")
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
-    Connection connection;
-    Statement statement;
-
-    //Negative cases
-    connection = context.createConnection(USER2_1);
-    statement = context.createStatement(connection);
-    statement.execute("Use " + DB1);
-    assertSemanticException(statement, "ALTER TABLE tb1 RENAME TO tb2");
-    statement.close();
-    connection.close();
-
-    connection = context.createConnection(USER3_1);
-    statement = context.createStatement(connection);
-    statement.execute("Use " + DB1);
-    assertSemanticException(statement, "ALTER TABLE tb1 RENAME TO tb2");
-    statement.close();
-    connection.close();
-
-    //Positive case
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("Use " + DB1);
-    statement.execute("ALTER TABLE tb1 RENAME TO tb2");
-    statement.close();
-    connection.close();
+    // user1 haven't create permission with db_2, can't move table to db_2
+    statement.execute("use " + DB1);
+    try {
+      statement.execute("alter table TAB_1 rename to " + DB2 + ".TAB_1");
+      fail("the exception should be thrown");
+    } catch (Exception e) {
+      // ignore the exception
+    }
+    try {
+      // test with the format of table name: db.table
+      statement.execute("alter table " + DB1 + ".TAB_1 rename to " + DB2 + ".TAB_1");
+      fail("the exception should be thrown");
+    } catch (Exception e) {
+      // ignore the exception
+    }
+
+    // user1 haven't create permission with db_2, can't move table from db_2
+    statement.execute("use " + DB2);
+    try {
+      statement.execute("alter table TAB_3 rename to " + DB2 + ".TAB_1");
+      fail("the exception should be thrown");
+    } catch (Exception e) {
+      // ignore the exception
+    }
+    try {
+      // test with the format of table name: db.table
+      statement.execute("alter table " + DB2 + ".TAB_3 rename to " + DB2 + ".TAB_1");
+      fail("the exception should be thrown");
+    } catch (Exception e) {
+      // ignore the exception
+    }
+
+    // user1 have all permission with db_1 and create permission with db_3, alter_table_rename pass
+    statement.execute("use " + DB1);
+    statement.execute("alter table TAB_1 rename to " + DB3 + ".TAB_1");
+    statement.execute("alter table " + DB1 + ".TAB_2 rename to " + DB3 + ".TAB_2");
+
+    // user1 have drop permission with db_2 and create permission with db_3, alter_table_rename pass
+    statement.execute("use " + DB2);
+    statement.execute("alter table TAB_3 rename to " + DB3 + ".TAB_3");
+
+    // user1 haven't drop permission with db_3, can't move table to db_3
+    statement.execute("use " + DB3);
+    try {
+      statement.execute("alter table TAB_3 rename to TAB_4");
+      fail("the exception should be thrown");
+    } catch (Exception e) {
+      // ignore the exception
+    }
   }
 
   /* Test all operations which require alter on table (+ all on URI)

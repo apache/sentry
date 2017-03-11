@@ -104,8 +104,8 @@ public class HiveAuthzPrivilegesMap {
         build();
 
     HiveAuthzPrivileges alterTableRenamePrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
-        addInputObjectPriviledge(AuthorizableType.Table, EnumSet.of(DBModelAction.ALTER)).
-        addInputObjectPriviledge(AuthorizableType.Db, EnumSet.of(DBModelAction.CREATE)).
+        addInputObjectPriviledge(AuthorizableType.Db, EnumSet.of(DBModelAction.DROP)).
+        addOutputObjectPriviledge(AuthorizableType.Db, EnumSet.of(DBModelAction.CREATE)).
         setOperationScope(HiveOperationScope.DATABASE).
         setOperationType(HiveOperationType.DDL).
         build();
