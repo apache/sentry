@@ -16,9 +16,9 @@
  */
 package org.apache.sentry.tests.e2e.metastore;
 
-import static org.apache.sentry.policy.common.PolicyConstants.AUTHORIZABLE_SPLITTER;
-import static org.apache.sentry.policy.common.PolicyConstants.PRIVILEGE_PREFIX;
-import static org.apache.sentry.policy.common.PolicyConstants.ROLE_SPLITTER;
+import static org.apache.sentry.core.common.utils.SentryConstants.AUTHORIZABLE_SPLITTER;
+import static org.apache.sentry.core.common.utils.SentryConstants.PRIVILEGE_PREFIX;
+import static org.apache.sentry.core.common.utils.SentryConstants.ROLE_SPLITTER;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,12 +26,12 @@ import java.util.Collection;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.apache.sentry.SentryUserException;
+import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.model.db.DBModelAction;
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
-import org.apache.sentry.policy.db.DBModelAuthorizables;
+import org.apache.sentry.core.model.db.DBModelAuthorizables;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
 import org.apache.sentry.provider.file.PolicyFile;
@@ -76,7 +76,7 @@ public class SentryPolicyProviderForDb extends PolicyFile {
     }
 
     // create roles and add privileges
-    for (Entry<String, Collection<String>> roleEntry : rolesToPermissions
+    for (Entry<String, Collection<String>> roleEntry : getRolesToPermissions()
         .asMap().entrySet()) {
       sentryClient.createRole(StaticUserGroup.ADMIN1, roleEntry.getKey());
       for (String privilege : roleEntry.getValue()) {
@@ -85,7 +85,7 @@ public class SentryPolicyProviderForDb extends PolicyFile {
     }
 
     // grant roles to groups
-    for (Entry<String, Collection<String>> groupEntry : groupsToRoles.asMap()
+    for (Entry<String, Collection<String>> groupEntry : getGroupsToRoles().asMap()
         .entrySet()) {
       for (String roleNames : groupEntry.getValue()) {
         for (String roleName : roleNames.split(",")) {
