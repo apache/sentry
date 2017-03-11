@@ -2019,8 +2019,17 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     expected.add(testRole1);
     assertTestRoles(resultSet, expected, false);
 
-    context.assertSentryException(statement, "SHOW ROLE GRANT GROUP Admin",
-        SentryNoSuchObjectException.class.getSimpleName());
+    ResultSet res = statement.executeQuery("SHOW ROLE GRANT GROUP Admin");
+
+    List<String> expectedResult = new ArrayList<String>();
+    List<String> returnedResult = new ArrayList<String>();
+
+    while (res.next()) {
+      returnedResult.add(res.getString(1).trim());
+    }
+    validateReturnedResult(expectedResult, returnedResult);
+    returnedResult.clear();
+    expectedResult.clear();
 
     statement.close();
     connection.close();

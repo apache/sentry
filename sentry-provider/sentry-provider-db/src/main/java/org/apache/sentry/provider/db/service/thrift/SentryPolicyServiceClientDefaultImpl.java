@@ -332,6 +332,10 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
     TListSentryRolesResponse response;
     try {
       response = client.list_sentry_roles_by_group(request);
+      Status status = Status.fromCode(response.getStatus().getValue());
+      if (status == Status.NO_SUCH_OBJECT) {
+        return Collections.emptySet();
+      }
       Status.throwIfNotOk(response.getStatus());
       return response.getRoles();
     } catch (TException e) {

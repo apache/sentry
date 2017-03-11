@@ -24,6 +24,8 @@ import static org.junit.Assert.fail;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
@@ -141,6 +143,28 @@ public class TestGrantUserToRole extends AbstractTestWithStaticConfiguration {
     verifyResultRoles(resultSet, Sets.newHashSet(ROLENAME2.toLowerCase()));
     statement.close();
     connection.close();
+  }
+
+  @Test
+  public void testShowGrantNotExistGroup() throws Exception {
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    //group1 does not exist in db;
+    ResultSet res = statement.executeQuery("SHOW ROLE GRANT GROUP group1");
+
+    List<String> expectedResult = new ArrayList<String>();
+    List<String> returnedResult = new ArrayList<String>();
+
+    while (res.next()) {
+      returnedResult.add(res.getString(1).trim());
+    }
+    validateReturnedResult(expectedResult, returnedResult);
+    returnedResult.clear();
+    expectedResult.clear();
+
+    statement.close();
+    connection.close();
+
   }
 
   @Test
