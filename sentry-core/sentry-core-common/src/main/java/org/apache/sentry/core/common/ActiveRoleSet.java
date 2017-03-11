@@ -74,6 +74,6 @@ public class ActiveRoleSet {
     } else {
       builder.append(roles);
     }
-    return builder.append(" ").toString();
+    return builder.append(" ] ").toString();
   }
 }
