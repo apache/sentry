@@ -408,8 +408,10 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
     }
     // The HDFS plugin needs to know if it's a path change (set location)
     for (SentryMetastoreListenerPlugin plugin : sentryPlugins) {
-      plugin.renameAuthzObject(oldDbName + "." + oldTabName, oldPath,
+      if(!oldPath.equals(newPath)) {
+        plugin.renameAuthzObject(oldDbName + "." + oldTabName, oldPath,
                 newDbName + "." + newTabName, newPath);
+      }
     }
   }
 
