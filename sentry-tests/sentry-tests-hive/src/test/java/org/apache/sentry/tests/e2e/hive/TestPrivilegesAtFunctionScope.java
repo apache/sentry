@@ -200,7 +200,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     try {
       verifyPrintFuncValues(statement, "SELECT printf_test('%s', value) FROM " + tableName1);
     } catch (Exception ex) {
-      LOGGER.error("test temp func printf_test failed with reason: " + ex.getStackTrace() + " " + ex.getMessage());
+      LOGGER.error("test temp func printf_test failed with reason: ", ex);
       fail("fail to test temp func printf_test");
     }
 
@@ -233,7 +233,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     try {
       verifyPrintFuncValues(statement, "SELECT printf_test_perm('%s', value) FROM " + tableName1);
     } catch (Exception ex) {
-      LOGGER.error("test perm func printf_test_perm failed with reason: " + ex.getStackTrace() + " " + ex.getMessage());
+      LOGGER.error("test perm func printf_test_perm failed with reason: ", ex);
       fail("Fail to test perm func printf_test_perm");
     }
 
