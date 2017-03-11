@@ -37,6 +37,17 @@ public class HiveAuthzPrivilegesMapV2 {
         setOperationType(HiveOperationType.DDL).
         build();
 
+    HiveAuthzPrivileges createMacroPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
+        addOutputObjectPriviledge(AuthorizableType.Db, EnumSet.of(DBModelAction.CREATE)).
+        setOperationScope(HiveOperationScope.DATABASE).
+        setOperationType(HiveOperationType.DDL).
+        build();
+    HiveAuthzPrivileges dropMacroPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
+        addOutputObjectPriviledge(AuthorizableType.Db, EnumSet.of(DBModelAction.DROP)).
+        setOperationScope(HiveOperationScope.DATABASE).
+        setOperationType(HiveOperationType.DDL).
+        build();
+
     HiveAuthzPrivileges tableCreatePrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
         addOutputObjectPriviledge(AuthorizableType.Db, EnumSet.of(DBModelAction.CREATE)).
         addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.ALL)).//TODO: make it optional
@@ -206,6 +217,9 @@ public class HiveAuthzPrivilegesMapV2 {
     hiveAuthzStmtPrivMap.put(HiveOperation.CREATETABLE, tableCreatePrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERDATABASE, alterDbPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERDATABASE_OWNER, alterDbPrivilege);
+
+    hiveAuthzStmtPrivMap.put(HiveOperation.CREATEMACRO, createMacroPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.DROPMACRO, dropMacroPrivilege);
 
     hiveAuthzStmtPrivMap.put(HiveOperation.DROPTABLE, dropTablePrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.CREATEVIEW, createViewPrivilege);
