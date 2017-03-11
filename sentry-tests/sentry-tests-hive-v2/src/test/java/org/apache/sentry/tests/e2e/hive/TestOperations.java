@@ -483,6 +483,82 @@ public class TestOperations extends AbstractTestWithStaticConfiguration {
     connection.close();
   }
 
+  @Test
+  public void testAlterTableBucket() throws Exception {
+    adminCreate(DB1, tableName, true);
+
+    Connection connection;
+    Statement statement;
+
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    statement.execute("Use " + DB1);
+    statement.execute("ALTER TABLE tb1 CLUSTERED BY (a) SORTED BY (a) INTO 1 BUCKETS");
+    statement.execute("ALTER TABLE tb1 ADD IF NOT EXISTS PARTITION (b = '1') ");
+
+    policyFile.addPermissionsToRole("alter_db1_tb1", privileges.get("alter_db1_tb1"))
+        .addRolesToGroup(USERGROUP1, "alter_db1_tb1")
+        .addPermissionsToRole("insert_db1_tb1", privileges.get("insert_db1_tb1"))
+        .addRolesToGroup(USERGROUP2, "insert_db1_tb1");
+    writePolicyFile(policyFile);
+
+    //positive test cases
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    statement.execute("Use " + DB1);
+    statement.execute("ALTER TABLE tb1 INTO 6 BUCKETS");
+    statement.execute("ALTER TABLE tb1 PARTITION (b = '1') INTO 6 BUCKETS");
+
+    statement.close();
+    connection.close();
+
+    //negative test cases
+    connection = context.createConnection(USER2_1);
+    statement = context.createStatement(connection);
+    statement.execute("Use " + DB1);
+    context.assertSentrySemanticException(statement, "ALTER TABLE tb1 INTO 6 BUCKETS",
+        semanticException);
+    context.assertSentrySemanticException(statement, "ALTER TABLE tb1 PARTITION (b = '1') INTO 6 BUCKETS", semanticException);
+
+    statement.close();
+    connection.close();
+  }
+
+  @Test
+  public void AlterTablePartColType() throws Exception {
+    adminCreate(DB1, tableName, true);
+
+    Connection connection;
+    Statement statement;
+
+    policyFile
+        .addPermissionsToRole("alter_db1_tb1", privileges.get("alter_db1_tb1"))
+        .addRolesToGroup(USERGROUP1, "alter_db1_tb1")
+        .addPermissionsToRole("insert_db1_tb1", privileges.get("insert_db1_tb1"))
+        .addRolesToGroup(USERGROUP2, "insert_db1_tb1");
+    writePolicyFile(policyFile);
+
+    //Positive cases
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    statement.execute("Use " + DB1);
+    statement.execute("ALTER TABLE tb1 PARTITION COLUMN (b string)");
+
+    statement.close();
+    connection.close();
+
+    //Negative test cases
+    connection = context.createConnection(USER2_1);
+    statement = context.createStatement(connection);
+    statement.execute("Use " + DB1);
+
+    assertSemanticException(statement, "ALTER TABLE tb1 PARTITION COLUMN (b string)");
+
+    statement.close();
+    connection.close();
+
+  }
+
   /* Test all operations that require alter on table
   1. HiveOperation.ALTERTABLE_PROPERTIES
   2. HiveOperation.ALTERTABLE_SERDEPROPERTIES
