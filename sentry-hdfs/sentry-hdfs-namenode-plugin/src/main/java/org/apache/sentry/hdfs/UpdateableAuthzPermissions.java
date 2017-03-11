@@ -205,7 +205,14 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
     String[] strPrivs = sentryPriv.trim().split(",");
     FsAction retVal = FsAction.NONE;
     for (String strPriv : strPrivs) {
-      retVal = retVal.or(ACTION_MAPPING.get(strPriv.toUpperCase()));
+      FsAction action = ACTION_MAPPING.get(strPriv.toUpperCase());
+      /* Passing null to FsAction.or() method causes NullPointerException.
+       * Better to throw more informative exception instead
+       */
+      if (action == null) {
+        throw new IllegalArgumentException("Unsupported Action " + strPriv);
+      }
+      retVal = retVal.or(action);
     }
     return retVal;
   }
