@@ -313,14 +313,16 @@ public class DefaultSentryAccessController extends SentryHiveAccessController {
     List<HiveRoleGrant> hiveRoleGrants = new ArrayList<HiveRoleGrant>();
     try {
       sentryClient = getSentryClient();
-
-      if (principal.getType() != HivePrincipalType.GROUP) {
+      Set<TSentryRole> roles = null;
+      if (principal.getType() == HivePrincipalType.GROUP) {
+        roles = sentryClient.listRolesByGroupName(authenticator.getUserName(), principal.getName());
+      } else if (principal.getType() == HivePrincipalType.USER) {
+        roles = sentryClient.listRolesByUserName(authenticator.getUserName(), principal.getName());
+      } else {
         String msg =
             SentryHiveConstants.GRANT_REVOKE_NOT_SUPPORTED_FOR_PRINCIPAL + principal.getType();
         throw new HiveAuthzPluginException(msg);
       }
-      Set<TSentryRole> roles =
-          sentryClient.listRolesByGroupName(authenticator.getUserName(), principal.getName());
       if (roles != null && !roles.isEmpty()) {
         for (TSentryRole role : roles) {
           hiveRoleGrants.add(SentryAuthorizerUtil.convert2HiveRoleGrant(role));

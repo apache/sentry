@@ -21,6 +21,8 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.sentry.core.common.exception.SentryAccessDeniedException;
 import org.junit.Assert;
@@ -198,6 +200,33 @@ public class TestPrivilegeWithGrantOption extends AbstractTestWithStaticConfigur
     context.close();
   }
 
+  @Test
+  public void testShowRoleGrantOnUser() throws Exception {
+    // setup db objects needed by the test
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("DROP DATABASE IF EXISTS db_1 CASCADE");
+    statement.execute("DROP DATABASE IF EXISTS db_2 CASCADE");
+    statement.execute("CREATE DATABASE db_1");
+    statement.execute("CREATE ROLE group1_role");
+    statement.execute("GRANT ROLE group1_role TO USER " + USER1_1);
+
+    ResultSet res = statement.executeQuery("SHOW ROLE GRANT USER " + USER1_1);
+    List<String> expectedResult = new ArrayList<String>();
+    List<String> returnedResult = new ArrayList<String>();
+    expectedResult.add("group1_role");
+    while(res.next()){
+      returnedResult.add(res.getString(1));
+    }
+
+    validateReturnedResult(expectedResult, returnedResult);
+    returnedResult.clear();
+    expectedResult.clear();
+    res.close();
+
+    statement.close();
+    connection.close();
+  }
   /**
    * Test privileges with grant on parent objects are sufficient for operation
    * on child objects
