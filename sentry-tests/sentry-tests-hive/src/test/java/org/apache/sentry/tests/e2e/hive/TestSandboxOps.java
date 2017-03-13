@@ -435,11 +435,11 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
 
     Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
-    statement.execute("USE " + DB1);
-    statement.execute("INSERT OVERWRITE LOCAL DIRECTORY 'file://" + allowedDir.getPath() + "' SELECT * FROM " + TBL1);
-    statement.execute("INSERT OVERWRITE DIRECTORY '" + allowedDfsDir + "' SELECT * FROM " + TBL1);
-    statement.execute("LOAD DATA LOCAL INPATH 'file://" + allowedDir.getPath() + "' INTO TABLE " + TBL1);
-    statement.execute("LOAD DATA INPATH '" + allowedDfsDir + "' INTO TABLE " + TBL1);
+    exec(statement, "USE " + DB1);
+    exec(statement, "INSERT OVERWRITE LOCAL DIRECTORY 'file://" + allowedDir.getPath() + "' SELECT * FROM " + TBL1);
+    exec(statement, "INSERT OVERWRITE DIRECTORY '" + allowedDfsDir + "' SELECT * FROM " + TBL1);
+    exec(statement, "LOAD DATA LOCAL INPATH 'file://" + allowedDir.getPath() + "' INTO TABLE " + TBL1);
+    exec(statement, "LOAD DATA INPATH '" + allowedDfsDir + "' INTO TABLE " + TBL1);
     context.assertAuthzException(statement, "INSERT OVERWRITE LOCAL DIRECTORY 'file://" + restrictedDir.getPath() + "' SELECT * FROM " + TBL1);
     context.assertAuthzException(statement, "INSERT OVERWRITE DIRECTORY '" + restrictedDfsDir + "' SELECT * FROM " + TBL1);
     context.assertAuthzException(statement, "LOAD DATA INPATH 'file://" + restrictedDir.getPath() + "' INTO TABLE " + TBL1);
@@ -469,8 +469,8 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
     // a
     Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
-    statement.execute("USE " + DB1);
-    statement.execute("CREATE TABLE " + rTab1 + " AS SELECT * FROM " + DB2 + "." + TBL2);
+    exec(statement, "USE " + DB1);
+    exec(statement, "CREATE TABLE " + rTab1 + " AS SELECT * FROM " + DB2 + "." + TBL2);
     // user1 doesn't have access to db2, so following create table as should fail
     context.assertAuthzException(statement, "CREATE TABLE " + rTab2 + " AS SELECT * FROM " + DB2 + "." + TBL3);
 
@@ -494,16 +494,16 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
 
-    statement.execute("CREATE DATABASE " + DB1);
-    statement.execute("USE " + DB1);
-    statement.execute("CREATE TABLE tbl1(B INT, A STRING) " +
+    exec(statement, "CREATE DATABASE " + DB1);
+    exec(statement, "USE " + DB1);
+    exec(statement, "CREATE TABLE tbl1(B INT, A STRING) " +
                       " row format delimited fields terminated by '|'  stored as textfile");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE tbl1");
-    statement.execute("CREATE DATABASE " + DB2);
-    statement.execute("USE " + DB2);
-    statement.execute("CREATE TABLE tbl2(B INT, A STRING) " +
+    exec(statement, "LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE tbl1");
+    exec(statement, "CREATE DATABASE " + DB2);
+    exec(statement, "USE " + DB2);
+    exec(statement, "CREATE TABLE tbl2(B INT, A STRING) " +
                       " row format delimited fields terminated by '|'  stored as textfile");
-    statement.execute("LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE tbl2");
+    exec(statement, "LOAD DATA LOCAL INPATH '" + dataFile.getPath() + "' INTO TABLE tbl2");
     statement.close();
     connection.close();
 
@@ -519,8 +519,8 @@ public class TestSandboxOps  extends AbstractTestWithStaticConfiguration {
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
     // test user2 can use db2
-    statement.execute("USE " + DB2);
-    statement.execute("select * from tbl2");
+    exec(statement, "USE " + DB2);
+    exec(statement, "select * from tbl2");
 
     statement.close();
     connection.close();

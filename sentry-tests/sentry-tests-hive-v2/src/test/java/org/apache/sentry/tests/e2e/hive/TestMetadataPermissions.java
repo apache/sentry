@@ -38,12 +38,12 @@ public class TestMetadataPermissions extends AbstractTestWithStaticConfiguration
     Connection adminCon = context.createConnection(ADMIN1);
     Statement adminStmt = context.createStatement(adminCon);
     for (String dbName : new String[] { "" + DB1, DB2 }) {
-      adminStmt.execute("USE default");
-      adminStmt.execute("DROP DATABASE IF EXISTS " + dbName + " CASCADE");
-      adminStmt.execute("CREATE DATABASE " + dbName);
-      adminStmt.execute("USE " + dbName);
+      exec(adminStmt, "USE default");
+      exec(adminStmt, "DROP DATABASE IF EXISTS " + dbName + " CASCADE");
+      exec(adminStmt, "CREATE DATABASE " + dbName);
+      exec(adminStmt, "USE " + dbName);
       for (String tabName : new String[] { "tab1", "tab2" }) {
-        adminStmt.execute("CREATE TABLE " + tabName + " (id int)");
+        exec(adminStmt, "CREATE TABLE " + tabName + " (id int)");
       }
     }
 

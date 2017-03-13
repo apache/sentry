@@ -91,13 +91,13 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
   private void adminCreate(String db, String table, boolean partitioned) throws Exception{
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    statement.execute("DROP DATABASE IF EXISTS " + db + " CASCADE");
-    statement.execute("CREATE DATABASE " + db);
+    exec(statement, "DROP DATABASE IF EXISTS " + db + " CASCADE");
+    exec(statement, "CREATE DATABASE " + db);
     if(table !=null) {
       if (partitioned) {
-        statement.execute("CREATE table  " + db + "." + table + " (a string) PARTITIONED BY (b string)");
+        exec(statement, "CREATE table  " + db + "." + table + " (a string) PARTITIONED BY (b string)");
       } else{
-        statement.execute("CREATE table  " + db + "." + table + " (a string)");
+        exec(statement, "CREATE table  " + db + "." + table + " (a string)");
       }
 
     }
@@ -125,16 +125,16 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
     //Positive cases
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("Use " + DB1);
-    statement.execute("CREATE INDEX table01_index ON TABLE tb1 (a) AS 'COMPACT' WITH DEFERRED REBUILD");
-    statement.execute("ALTER INDEX table01_index ON tb1 REBUILD");
+    exec(statement, "Use " + DB1);
+    exec(statement, "CREATE INDEX table01_index ON TABLE tb1 (a) AS 'COMPACT' WITH DEFERRED REBUILD");
+    exec(statement, "ALTER INDEX table01_index ON tb1 REBUILD");
     statement.close();
     connection.close();
 
     //Negative case
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
-    statement.execute("Use " + DB1);
+    exec(statement, "Use " + DB1);
     assertSemanticException(statement, "CREATE INDEX table02_index ON TABLE tb1 (a) AS 'COMPACT' WITH DEFERRED REBUILD");
     assertSemanticException(statement, "ALTER INDEX table01_index ON tb1 REBUILD");
     assertSemanticException(statement, "DROP INDEX table01_index ON tb1");
@@ -144,8 +144,8 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
     //Positive cases
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("Use " + DB1);
-    statement.execute("DROP INDEX table01_index ON tb1");
+    exec(statement, "Use " + DB1);
+    exec(statement, "DROP INDEX table01_index ON tb1");
     statement.close();
     connection.close();
   }
@@ -169,7 +169,7 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
     //Negative case
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
-    statement.execute("Use " + DB1);
+    exec(statement, "Use " + DB1);
     assertSemanticException(statement, "drop table " + tableName);
 
     statement.close();
@@ -178,8 +178,8 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
     //Positive cases
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("Use " + DB1);
-    statement.execute("drop table " + tableName);
+    exec(statement, "Use " + DB1);
+    exec(statement, "drop table " + tableName);
 
     statement.close();
     connection.close();
@@ -210,20 +210,20 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
     //Setup
     connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
-    statement.execute("Use " + DB1);
-    statement.execute("ALTER TABLE tb1 ADD IF NOT EXISTS PARTITION (b = '10') ");
+    exec(statement, "Use " + DB1);
+    exec(statement, "ALTER TABLE tb1 ADD IF NOT EXISTS PARTITION (b = '10') ");
 
     //Negative case
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
-    statement.execute("USE " + DB1);
+    exec(statement, "USE " + DB1);
     assertSemanticException(statement, "ALTER TABLE tb1 DROP PARTITION (b = 10)");
 
     //Positive case
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("Use " + DB1);
-    statement.execute("ALTER TABLE tb1 DROP PARTITION (b = 10)");
+    exec(statement, "Use " + DB1);
+    exec(statement, "ALTER TABLE tb1 DROP PARTITION (b = 10)");
     statement.close();
     connection.close();
   }
@@ -238,7 +238,7 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
     adminCreate(DB3, null);
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    statement.execute("CREATE table  " + DB1 + ".TAB_2 (a string)");
+    exec(statement, "CREATE table  " + DB1 + ".TAB_2 (a string)");
     statement.close();
     connection.close();
 
@@ -255,50 +255,50 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     // user1 haven't create permission with db_2, can't move table to db_2
-    statement.execute("use " + DB1);
+    exec(statement, "use " + DB1);
     try {
-      statement.execute("alter table TAB_1 rename to " + DB2 + ".TAB_1");
+      exec(statement, "alter table TAB_1 rename to " + DB2 + ".TAB_1");
       fail("the exception should be thrown");
     } catch (Exception e) {
       // ignore the exception
     }
     try {
       // test with the format of table name: db.table
-      statement.execute("alter table " + DB1 + ".TAB_1 rename to " + DB2 + ".TAB_1");
+      exec(statement, "alter table " + DB1 + ".TAB_1 rename to " + DB2 + ".TAB_1");
       fail("the exception should be thrown");
     } catch (Exception e) {
       // ignore the exception
     }
 
     // user1 haven't create permission with db_2, can't move table from db_2
-    statement.execute("use " + DB2);
+    exec(statement, "use " + DB2);
     try {
-      statement.execute("alter table TAB_3 rename to " + DB2 + ".TAB_1");
+      exec(statement, "alter table TAB_3 rename to " + DB2 + ".TAB_1");
       fail("the exception should be thrown");
     } catch (Exception e) {
       // ignore the exception
     }
     try {
       // test with the format of table name: db.table
-      statement.execute("alter table " + DB2 + ".TAB_3 rename to " + DB2 + ".TAB_1");
+      exec(statement, "alter table " + DB2 + ".TAB_3 rename to " + DB2 + ".TAB_1");
       fail("the exception should be thrown");
     } catch (Exception e) {
       // ignore the exception
     }
 
     // user1 have all permission with db_1 and create permission with db_3, alter_table_rename pass
-    statement.execute("use " + DB1);
-    statement.execute("alter table TAB_1 rename to " + DB3 + ".TAB_1");
-    statement.execute("alter table " + DB1 + ".TAB_2 rename to " + DB3 + ".TAB_2");
+    exec(statement, "use " + DB1);
+    exec(statement, "alter table TAB_1 rename to " + DB3 + ".TAB_1");
+    exec(statement, "alter table " + DB1 + ".TAB_2 rename to " + DB3 + ".TAB_2");
 
     // user1 have drop permission with db_2 and create permission with db_3, alter_table_rename pass
-    statement.execute("use " + DB2);
-    statement.execute("alter table TAB_3 rename to " + DB3 + ".TAB_3");
+    exec(statement, "use " + DB2);
+    exec(statement, "alter table TAB_3 rename to " + DB3 + ".TAB_3");
 
     // user1 haven't drop permission with db_3, can't move table to db_3
-    statement.execute("use " + DB3);
+    exec(statement, "use " + DB3);
     try {
-      statement.execute("alter table TAB_3 rename to TAB_4");
+      exec(statement, "alter table TAB_3 rename to TAB_4");
       fail("the exception should be thrown");
     } catch (Exception e) {
       // ignore the exception
@@ -326,24 +326,24 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
     //Case with out uri
     Connection connection = context.createConnection(USER2_1);
     Statement statement = context.createStatement(connection);
-    statement.execute("USE " + DB1);
+    exec(statement, "USE " + DB1);
     assertSemanticException(statement, "ALTER TABLE tb1 SET LOCATION '" + tabLocation + "'");
     assertSemanticException(statement, "ALTER TABLE tb1 ADD IF NOT EXISTS PARTITION (b = '3') LOCATION '" + tabLocation + "/part'");
-    statement.execute("ALTER TABLE tb1 ADD IF NOT EXISTS PARTITION (b = '1') ");
+    exec(statement, "ALTER TABLE tb1 ADD IF NOT EXISTS PARTITION (b = '1') ");
 
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("Use " + DB1);
-    statement.execute("ALTER TABLE tb1 SET LOCATION '" + tabLocation + "'");
-    statement.execute("ALTER TABLE tb1 ADD IF NOT EXISTS PARTITION (b = '3') LOCATION '" + tabLocation + "/part'");
-    statement.execute("ALTER TABLE tb1 ADD IF NOT EXISTS PARTITION (b = '10') ");
+    exec(statement, "Use " + DB1);
+    exec(statement, "ALTER TABLE tb1 SET LOCATION '" + tabLocation + "'");
+    exec(statement, "ALTER TABLE tb1 ADD IF NOT EXISTS PARTITION (b = '3') LOCATION '" + tabLocation + "/part'");
+    exec(statement, "ALTER TABLE tb1 ADD IF NOT EXISTS PARTITION (b = '10') ");
     statement.close();
     connection.close();
 
     //Negative case: User2_1 has privileges on table but on on uri
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
-    statement.execute("Use " + DB1);
+    exec(statement, "Use " + DB1);
     context.assertSentrySemanticException(statement, "ALTER TABLE tb1 SET LOCATION '" + tabLocation + "'",
         semanticException);
     context.assertSentrySemanticException(statement,
@@ -360,7 +360,7 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
 
     connection = context.createConnection(USER3_1);
     statement = context.createStatement(connection);
-    statement.execute("Use " + DB1);
+    exec(statement, "Use " + DB1);
     assertSemanticException(statement, "ALTER TABLE tb1 ADD IF NOT EXISTS PARTITION (b = '2') ");
     assertSemanticException(statement, "ALTER TABLE tb1 SET LOCATION '" + tabLocation + "'");
 
@@ -387,8 +387,8 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
 
     Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
-    statement.execute("use " + DB2);
-    statement.execute("create view view1 as select a from " + DB1 + ".tb1");
+    exec(statement, "use " + DB2);
+    exec(statement, "create view view1 as select a from " + DB1 + ".tb1");
     statement.close();
     connection.close();
 
@@ -400,7 +400,7 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
 
     connection = context.createConnection(USER3_1);
     statement = context.createStatement(connection);
-    statement.execute("Use " + DB2);
+    exec(statement, "Use " + DB2);
     context.assertSentrySemanticException(statement, "create view view1 as select a from " + DB1 + ".tb1",
         semanticException);
     statement.close();
@@ -441,7 +441,7 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
     //Negative case
     connection = context.createConnection(USER3_1);
     statement = context.createStatement(connection);
-    statement.execute("Use " + DB1);
+    exec(statement, "Use " + DB1);
     // Import/Export works with s3 storage system only when this is turned on.
     exec(statement, "set hive.exim.uri.scheme.whitelist=hdfs,pfile,s3a;");
     context.assertSentrySemanticException(statement, "export table tb1 to '" + location + "'",
@@ -452,16 +452,16 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
     //Positive
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("Use " + DB1);
+    exec(statement, "Use " + DB1);
     exec(statement, "set hive.exim.uri.scheme.whitelist=hdfs,pfile,s3a;");
-    statement.execute("export table tb1 to '" + location + "'" );
+    exec(statement, "export table tb1 to '" + location + "'" );
     statement.close();
     connection.close();
 
     //Negative
     connection = context.createConnection(USER3_1);
     statement = context.createStatement(connection);
-    statement.execute("Use " + DB1);
+    exec(statement, "Use " + DB1);
     exec(statement, "set hive.exim.uri.scheme.whitelist=hdfs,pfile,s3a;");
     context.assertSentrySemanticException(statement, "import table tb2 from '" + location + "'",
         semanticException);
@@ -471,9 +471,9 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
     //Positive
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
-    statement.execute("Use " + DB1);
+    exec(statement, "Use " + DB1);
     exec(statement, "set hive.exim.uri.scheme.whitelist=hdfs,pfile,s3a;");
-    statement.execute("import table tb2 from '" + location + "'");
+    exec(statement, "import table tb2 from '" + location + "'");
     statement.close();
     connection.close();
 
@@ -500,8 +500,8 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
 
     Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
-    statement.execute("Use " + DB1);
-    statement.execute("load data local inpath '" + dataFile.getPath() + "' into table tb1" );
+    exec(statement, "Use " + DB1);
+    exec(statement, "load data local inpath '" + dataFile.getPath() + "' into table tb1" );
     statement.close();
     connection.close();
   }
@@ -518,8 +518,8 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
 
     Connection connection = context.createConnection(ADMIN1);
     Statement statement = context.createStatement(connection);
-    statement.execute("Use " + DB1);
-    statement.execute("create view view1 as select a from " + DB1 + ".tb1");
+    exec(statement, "Use " + DB1);
+    exec(statement, "create view view1 as select a from " + DB1 + ".tb1");
     statement.close();
     connection.close();
 
@@ -535,8 +535,8 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
 
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("Use " + DB2);
-    statement.execute("create table tb2 as select a from " + DB1 + ".tb1");
+    exec(statement, "Use " + DB2);
+    exec(statement, "create table tb2 as select a from " + DB1 + ".tb1");
     //Ensure CTAS fails without URI
     context.assertSentrySemanticException(statement, "create table tb3 location '" + location +
             "' as select a from " + DB1 + ".tb1",
@@ -550,8 +550,8 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
 
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
-    statement.execute("Use " + DB2);
-    statement.execute("create table tb3 as select a from " + DB1 + ".view1" );
+    exec(statement, "Use " + DB2);
+    exec(statement, "create table tb3 as select a from " + DB1 + ".view1" );
     context.assertSentrySemanticException(statement, "create table tb4 as select a from " + DB1 + ".tb1",
         semanticException);
 
@@ -561,8 +561,8 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
     connection = context.createConnection(USER3_1);
     statement = context.createStatement(connection);
     //CTAS is valid with URI
-    statement.execute("Use " + DB2);
-    statement.execute("create table tb4 location '" + location +
+    exec(statement, "Use " + DB2);
+    exec(statement, "create table tb4 location '" + location +
         "' as select a from " + DB1 + ".tb1");
 
     statement.close();
@@ -601,13 +601,13 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
     Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
     assertSemanticException(statement, "insert overwrite directory '" + location + "' select * from " + DB1 + ".tb1");
-    statement.execute("insert overwrite table " + DB2 + ".tb2 select * from " + DB1 + ".tb1");
+    exec(statement, "insert overwrite table " + DB2 + ".tb2 select * from " + DB1 + ".tb1");
     statement.close();
     connection.close();
 
     connection = context.createConnection(USER2_1);
     statement = context.createStatement(connection);
-    statement.execute("insert overwrite directory '" + location + "' select * from " + DB1 + ".tb1" );
+    exec(statement, "insert overwrite directory '" + location + "' select * from " + DB1 + ".tb1" );
     assertSemanticException(statement, "insert overwrite table " + DB2 + ".tb2 select * from " + DB1 + ".tb1");
     statement.close();
     connection.close();
@@ -619,12 +619,12 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
     Statement statement;
     connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
-    statement.execute("create database " + DB1);
-    statement.execute("create table " + DB1 + ".tb1(a int)");
-    statement.execute("DROP table " + DB1 + ".tb1");
-    statement.execute("create table " + DB1 + ".tb1(a int)");
-    statement.execute("use " + DB1);
-    statement.execute("drop table tb1");
+    exec(statement, "create database " + DB1);
+    exec(statement, "create table " + DB1 + ".tb1(a int)");
+    exec(statement, "DROP table " + DB1 + ".tb1");
+    exec(statement, "create table " + DB1 + ".tb1(a int)");
+    exec(statement, "use " + DB1);
+    exec(statement, "drop table tb1");
   }
 
   @Test
@@ -651,7 +651,7 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
 
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
-    statement.execute("create external table " + DB1 + ".tb1(a int) stored as " +
+    exec(statement, "create external table " + DB1 + ".tb1(a int) stored as " +
         "textfile location 'file:" + externalTblDir.getAbsolutePath() + "'");
     statement.close();
     connection.close();

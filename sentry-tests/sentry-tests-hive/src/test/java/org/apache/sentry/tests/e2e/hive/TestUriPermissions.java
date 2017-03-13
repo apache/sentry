@@ -63,10 +63,10 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
     // create dbs
     Connection adminCon = context.createConnection(ADMIN1);
     Statement adminStmt = context.createStatement(adminCon);
-    adminStmt.execute("use default");
-    adminStmt.execute("CREATE DATABASE " + DB1);
-    adminStmt.execute("use " + DB1);
-    adminStmt.execute("CREATE TABLE " + tabName + "(id int)");
+    exec(adminStmt, "use default");
+    exec(adminStmt, "CREATE DATABASE " + DB1);
+    exec(adminStmt, "use " + DB1);
+    exec(adminStmt, "CREATE TABLE " + tabName + "(id int)");
     context.close();
 
     policyFile
@@ -80,10 +80,10 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
     // positive test, user1 has access to file being loaded
     userConn = context.createConnection(USER1_1);
     userStmt = context.createStatement(userConn);
-    userStmt.execute("use " + DB1);
-    userStmt.execute("load data local inpath 'file://" + dataFile.getPath() +
+    exec(userStmt,  "use " + DB1);
+    exec(userStmt,  "load data local inpath 'file://" + dataFile.getPath() +
         "' into table " + tabName);
-    userStmt.execute("select * from " + tabName + " limit 1");
+    exec(userStmt,  "select * from " + tabName + " limit 1");
     ResultSet res = userStmt.getResultSet();
     Assert.assertTrue("Table should have data after load", res.next());
     res.close();
@@ -92,7 +92,7 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
     // Negative test, user2 doesn't have access to the file being loaded
     userConn = context.createConnection(USER2_1);
     userStmt = context.createStatement(userConn);
-    userStmt.execute("use " + DB1);
+    exec(userStmt,  "use " + DB1);
     context.assertAuthzException(userStmt, "load data local inpath 'file://" + dataFile.getPath() +
         "' into table " + tabName);
     userStmt.close();
@@ -112,10 +112,10 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
     // create dbs
     Connection adminCon = context.createConnection(ADMIN1);
     Statement adminStmt = context.createStatement(adminCon);
-    adminStmt.execute("use default");
-    adminStmt.execute("CREATE DATABASE " + DB1);
-    adminStmt.execute("use " + DB1);
-    adminStmt.execute("CREATE TABLE " + tabName + " (id int) PARTITIONED BY (dt string)");
+    exec(adminStmt, "use default");
+    exec(adminStmt, "CREATE DATABASE " + DB1);
+    exec(adminStmt, "use " + DB1);
+    exec(adminStmt, "CREATE TABLE " + tabName + " (id int) PARTITIONED BY (dt string)");
     adminCon.close();
 
     policyFile
@@ -131,38 +131,38 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
     // positive test: user1 has privilege to alter table add partition but not set location
     userConn = context.createConnection(USER1_1);
     userStmt = context.createStatement(userConn);
-    userStmt.execute("use " + DB1);
-    userStmt.execute("ALTER TABLE " + tabName + " ADD IF NOT EXISTS PARTITION (dt = '21-Dec-2012') " +
+    exec(userStmt,  "use " + DB1);
+    exec(userStmt,  "ALTER TABLE " + tabName + " ADD IF NOT EXISTS PARTITION (dt = '21-Dec-2012') " +
             " LOCATION '" + tabDir + "'");
-    userStmt.execute("ALTER TABLE " + tabName + " DROP PARTITION (dt = '21-Dec-2012')");
-    userStmt.execute("ALTER TABLE " + tabName + " ADD PARTITION (dt = '21-Dec-2012') " +
+    exec(userStmt,  "ALTER TABLE " + tabName + " DROP PARTITION (dt = '21-Dec-2012')");
+    exec(userStmt,  "ALTER TABLE " + tabName + " ADD PARTITION (dt = '21-Dec-2012') " +
         " LOCATION '" + tabDir + "'");
-    userStmt.execute(
+    exec(userStmt,
         "ALTER TABLE " + tabName + " PARTITION (dt = '21-Dec-2012') " + " SET LOCATION '" + tabDir + "'");
     userConn.close();
 
     // negative test: user2 doesn't have privilege to alter table add partition
     userConn = context.createConnection(USER2_1);
     userStmt = context.createStatement(userConn);
-    userStmt.execute("use " + DB1);
+    exec(userStmt,  "use " + DB1);
     context.assertAuthzException(userStmt,
         "ALTER TABLE " + tabName + " ADD PARTITION (dt = '22-Dec-2012') " +
           " LOCATION '" + tabDir + "/foo'");
     // positive test, user2 can alter managed partitions
-    userStmt.execute("ALTER TABLE " + tabName + " ADD PARTITION (dt = '22-Dec-2012')");
-    userStmt.execute("ALTER TABLE " + tabName + " DROP PARTITION (dt = '22-Dec-2012')");
-    userStmt.execute("ALTER TABLE " + tabName + " ADD IF NOT EXISTS PARTITION (dt = '22-Dec-2012')");
-    userStmt.execute("ALTER TABLE " + tabName + " DROP PARTITION (dt = '22-Dec-2012')");
+    exec(userStmt,  "ALTER TABLE " + tabName + " ADD PARTITION (dt = '22-Dec-2012')");
+    exec(userStmt,  "ALTER TABLE " + tabName + " DROP PARTITION (dt = '22-Dec-2012')");
+    exec(userStmt,  "ALTER TABLE " + tabName + " ADD IF NOT EXISTS PARTITION (dt = '22-Dec-2012')");
+    exec(userStmt,  "ALTER TABLE " + tabName + " DROP PARTITION (dt = '22-Dec-2012')");
     userConn.close();
 
     // positive test: user3 has privilege to add/drop partitions
     userConn = context.createConnection(USER3_1);
     userStmt = context.createStatement(userConn);
-    userStmt.execute("use " + DB1);
-    userStmt.execute(
+    exec(userStmt,  "use " + DB1);
+    exec(userStmt,
         "ALTER TABLE " + tabName + " ADD PARTITION (dt = '22-Dec-2012') " +
           " LOCATION '" + tabDir + "/foo'");
-    userStmt.execute(
+    exec(userStmt,
         "ALTER TABLE " + tabName + " DROP PARTITION (dt = '21-Dec-2012')");
 
     userStmt.close();
@@ -180,10 +180,10 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
     // create dbs
     Connection adminCon = context.createConnection(ADMIN1);
     Statement adminStmt = context.createStatement(adminCon);
-    adminStmt.execute("use default");
-    adminStmt.execute("CREATE DATABASE " + DB1);
-    adminStmt.execute("use " + DB1);
-    adminStmt.execute("CREATE TABLE " + tabName + " (id int)  PARTITIONED BY (dt string)");
+    exec(adminStmt, "use default");
+    exec(adminStmt, "CREATE DATABASE " + DB1);
+    exec(adminStmt, "use " + DB1);
+    exec(adminStmt, "CREATE TABLE " + tabName + " (id int)  PARTITIONED BY (dt string)");
     adminCon.close();
 
     policyFile
@@ -197,16 +197,16 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
     // positive test: user2 has privilege to alter table set partition
     userConn = context.createConnection(USER2_1);
     userStmt = context.createStatement(userConn);
-    userStmt.execute("use " + DB1);
-    userStmt.execute(
+    exec(userStmt,  "use " + DB1);
+    exec(userStmt,
         "ALTER TABLE " + tabName + " SET LOCATION '" + tabDir +  "'");
     userConn.close();
 
     // positive test: user1 has privilege to alter table set partition
     userConn = context.createConnection(USER1_1);
     userStmt = context.createStatement(userConn);
-    userStmt.execute("use " + DB1);
-    userStmt.execute("ALTER TABLE " + tabName + " SET LOCATION '" + tabDir + "'");
+    exec(userStmt,  "use " + DB1);
+    exec(userStmt,  "ALTER TABLE " + tabName + " SET LOCATION '" + tabDir + "'");
     userConn.close();
   }
 
@@ -226,8 +226,8 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
     // create dbs
     Connection adminCon = context.createConnection(ADMIN1);
     Statement adminStmt = context.createStatement(adminCon);
-    adminStmt.execute("use default");
-    adminStmt.execute("CREATE DATABASE " + DB1);
+    exec(adminStmt, "use default");
+    exec(adminStmt, "CREATE DATABASE " + DB1);
     adminStmt.close();
     adminCon.close();
 
@@ -241,7 +241,7 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
     // negative test: user2 doesn't have privilege to create external table in given path
     userConn = context.createConnection(USER2_1);
     userStmt = context.createStatement(userConn);
-    userStmt.execute("use " + DB1);
+    exec(userStmt,  "use " + DB1);
     context.assertAuthzException(userStmt,
         "CREATE EXTERNAL TABLE extab1(id INT) LOCATION '" + tableDir + "'");
     context.assertAuthzException(userStmt, "CREATE TABLE extab1(id INT) LOCATION '" + tableDir + "'");
@@ -251,10 +251,10 @@ public class TestUriPermissions extends AbstractTestWithStaticConfiguration {
     // positive test: user1 has privilege to create external table in given path
     userConn = context.createConnection(USER1_1);
     userStmt = context.createStatement(userConn);
-    userStmt.execute("use " + DB1);
-    userStmt.execute("CREATE EXTERNAL TABLE extab1(id INT) LOCATION '" + tableDir + "'");
-    userStmt.execute("DROP TABLE extab1");
-    userStmt.execute("CREATE TABLE extab1(id INT) LOCATION '" + tableDir + "'");
+    exec(userStmt,  "use " + DB1);
+    exec(userStmt,  "CREATE EXTERNAL TABLE extab1(id INT) LOCATION '" + tableDir + "'");
+    exec(userStmt,  "DROP TABLE extab1");
+    exec(userStmt,  "CREATE TABLE extab1(id INT) LOCATION '" + tableDir + "'");
     userStmt.close();
     userConn.close();
   }

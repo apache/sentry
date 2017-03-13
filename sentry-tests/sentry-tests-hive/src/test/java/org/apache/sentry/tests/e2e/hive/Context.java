@@ -199,6 +199,7 @@ public class Context {
   public void assertSentrySemanticException(Statement statement, String query, String exceptionType)
       throws SQLException {
     try {
+      LOGGER.info("Running [" + query + "]");
       statement.execute(query);
       Assert.fail("Expected SQLException for '" + query + "'");
     } catch (SQLException e) {

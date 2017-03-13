@@ -86,9 +86,13 @@ public class UnmanagedHiveServer implements HiveServer {
   @Override
   public String getProperty(String key) {
     if(key.equalsIgnoreCase(HiveConf.ConfVars.METASTOREWAREHOUSE.varname)) {
-      return "hdfs://" + getSystemAndConfigProperties(key, null); //UnManagedHiveServer returns the warehouse directory without hdfs://
+      String originalHiveWarehouseUri = getSystemAndConfigProperties(key, null);
+      if (originalHiveWarehouseUri != null && originalHiveWarehouseUri.isEmpty() == false
+          && originalHiveWarehouseUri.startsWith("hdfs") == false && originalHiveWarehouseUri.startsWith("s3a") == false) {
+        return "hdfs://" + getSystemAndConfigProperties(key, null); //UnManagedHiveServer returns the warehouse directory with hdfs://
+      }
     }
-   return getSystemAndConfigProperties(key, null);
+    return getSystemAndConfigProperties(key, null);
   }
 
   @Override
