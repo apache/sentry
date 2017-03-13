@@ -121,6 +121,15 @@ public abstract class AbstractMetastoreTestWithStaticConfiguration extends
     return client.getTable(dbName, tabName);
   }
 
+  public Table createMetastoreView(HiveMetaStoreClient client, String dbName,
+      String tabName, List<FieldSchema> cols) throws Exception {
+
+    Table tbl = makeMetastoreTableObject(client, dbName, tabName, cols);
+    tbl.setTableType("VIRTUAL_VIEW");
+    client.createTable(tbl);
+    return tbl;
+  }
+
   public Partition addPartition(HiveMetaStoreClient client, String dbName,
       String tblName, List<String> ptnVals, Table tbl) throws Exception {
     Partition part = makeMetastorePartitionObject(dbName, tblName, ptnVals, tbl);
