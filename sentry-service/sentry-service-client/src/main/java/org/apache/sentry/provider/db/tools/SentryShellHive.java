@@ -90,8 +90,11 @@ public class SentryShellHive extends SentryShellCommon {
       while (current != null && current.getMessage() == null) {
         current = current.getCause();
       }
-       System.out.println("The operation failed." +
-          (current.getMessage() == null ? "" : "  Message: " + current.getMessage()));
+
+      if (current != null) {
+        System.out.println("The operation failed." +
+           (current.getMessage() == null ? "" : "  Message: " + current.getMessage()));
+      }
     }
   }
 
