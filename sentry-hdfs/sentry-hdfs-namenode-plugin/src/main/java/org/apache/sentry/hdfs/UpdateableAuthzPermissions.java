@@ -17,7 +17,6 @@
  */
 package org.apache.sentry.hdfs;
 
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +24,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.fs.permission.AclEntry;
 import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.sentry.hdfs.SentryPermissions.PrivilegeInfo;
@@ -35,22 +35,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<PermissionsUpdate> {
-  public static final Map<String, FsAction> ACTION_MAPPING = new HashMap<String, FsAction>();
+  public static final ImmutableMap<String, FsAction> ACTION_MAPPING = ImmutableMap.<String, FsAction>builder()
+          .put("ALL", FsAction.ALL)
+          .put("*", FsAction.ALL)
+          .put("SELECT", FsAction.READ_EXECUTE)
+          .put("select", FsAction.READ_EXECUTE)
+          .put("INSERT", FsAction.WRITE_EXECUTE)
+          .put("insert", FsAction.WRITE_EXECUTE)
+          .build();
   
   private static final int MAX_UPDATES_PER_LOCK_USE = 99;
   private static final String UPDATABLE_TYPE_NAME = "perm_authz_update";
   private static final Logger LOG = LoggerFactory.getLogger(UpdateableAuthzPermissions.class);
   private volatile SentryPermissions perms = new SentryPermissions();
   private final AtomicLong seqNum = new AtomicLong(0);
-
-  static {
-    ACTION_MAPPING.put("ALL", FsAction.ALL);
-    ACTION_MAPPING.put("*", FsAction.ALL);
-    ACTION_MAPPING.put("SELECT", FsAction.READ_EXECUTE);
-    ACTION_MAPPING.put("select", FsAction.READ_EXECUTE);
-    ACTION_MAPPING.put("INSERT", FsAction.WRITE_EXECUTE);
-    ACTION_MAPPING.put("insert", FsAction.WRITE_EXECUTE);
-  }
 
   @Override
   public List<AclEntry> getAcls(String authzObj) {
