@@ -72,6 +72,7 @@ import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilegeMap;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
+import org.apache.sentry.service.thrift.CounterWait;
 import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.datanucleus.store.rdbms.exceptions.MissingTableException;
@@ -139,6 +140,17 @@ public class SentryStore {
   private PrivCleaner privCleaner = null;
   private Thread privCleanerThread = null;
   private final TransactionManager tm;
+
+  /**
+   * counterWait is used to synchronize notifications between Thrift and HMSFollower.
+   * Technically it doesn't belong here, but the only thing that connects HMSFollower
+   * and Thrift API is SentryStore. An alternative could be a singleton CounterWait or
+   * some factory that returns CounterWait instances keyed by name, but this complicates
+   * things unnecessary.
+   * <p>
+   * Keeping it here isn't ideal but serves the purpose until we find a better home.
+   */
+  private final CounterWait counterWait = new CounterWait();
 
   public static Properties getDataNucleusProperties(Configuration conf)
       throws SentryConfigurationException, IOException {
@@ -231,6 +243,10 @@ public class SentryStore {
 
   public TransactionManager getTransactionManager() {
     return tm;
+  }
+
+  public CounterWait getCounterWait() {
+    return counterWait;
   }
 
   // ensure that the backend DB schema is set
@@ -399,6 +415,18 @@ public class SentryStore {
       @Override
       public Long getValue() {
         return getCount(MSentryGroup.class);
+      }
+    };
+  }
+
+  /**
+   * @return number of threads waiting for HMS notifications to be processed
+   */
+  public Gauge<Integer> getHMSWaitersCountGauge() {
+    return new Gauge<Integer>() {
+      @Override
+      public Integer getValue() {
+        return counterWait.waitersCount();
       }
     };
   }

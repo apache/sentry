@@ -121,6 +121,7 @@ public final class SentryMetrics {
       addGauge(SentryStore.class, "privilege_count",
               sentryStore.getPrivilegeCountGauge());
       addGauge(SentryStore.class, "group_count", sentryStore.getGroupCountGauge());
+      addGauge(SentryStore.class, "hms.waiters", sentryStore.getHMSWaitersCountGauge());
       gaugesAdded = true;
     }
   }
