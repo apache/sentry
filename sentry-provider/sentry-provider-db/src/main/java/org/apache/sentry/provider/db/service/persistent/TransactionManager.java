@@ -23,7 +23,7 @@ import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.Timer;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.SentryUserException;
+import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.service.thrift.ServiceConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,8 +33,6 @@ import javax.jdo.PersistenceManagerFactory;
 import javax.jdo.Transaction;
 
 import org.apache.sentry.provider.db.service.thrift.SentryMetrics;
-
-import java.util.List;
 
 /**
  * TransactionManager is used for executing the database transaction, it supports

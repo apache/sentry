@@ -17,8 +17,6 @@
  */
 package org.apache.sentry.core.common.exception;
 
-import org.apache.sentry.SentryUserException;
-
 public class SentryInvalidHMSEventException extends SentryUserException {
   private static final long serialVersionUID = 29620806553835L;
   public SentryInvalidHMSEventException(String msg) {

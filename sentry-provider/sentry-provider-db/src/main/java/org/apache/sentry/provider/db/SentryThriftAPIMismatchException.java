@@ -17,7 +17,7 @@
  */
 package org.apache.sentry.provider.db;
 
-import org.apache.sentry.SentryUserException;
+import org.apache.sentry.core.common.exception.SentryUserException;
 
 public class SentryThriftAPIMismatchException extends SentryUserException {
   private static final long serialVersionUID = 7535410604425511738L;

@@ -19,7 +19,7 @@ package org.apache.sentry.provider.db.service.thrift;
 
 import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.SentryUserException;
+import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.service.thrift.SentryServiceClientFactory;
 import org.apache.sentry.service.thrift.SentryServiceFactory;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;

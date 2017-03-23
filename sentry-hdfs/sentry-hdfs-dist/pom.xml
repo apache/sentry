@@ -45,6 +45,10 @@ limitations under the License.
       <groupId>org.apache.sentry</groupId>
       <artifactId>sentry-hdfs-namenode-plugin</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.apache.sentry</groupId>
+      <artifactId>sentry-core-common</artifactId>
+    </dependency>
   </dependencies>
 
   <build>

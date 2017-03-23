@@ -21,7 +21,7 @@ package org.apache.sentry.provider.db.generic.tools;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import org.apache.commons.io.FileUtils;
-import org.apache.sentry.SentryUserException;
+import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.policy.kafka.KafkaPrivilegeValidator;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceIntegrationBase;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;

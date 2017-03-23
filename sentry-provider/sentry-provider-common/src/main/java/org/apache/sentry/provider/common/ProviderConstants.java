@@ -36,4 +36,7 @@ public class ProviderConstants {
   public static final String PRIVILEGE_NAME = "action";
   public static final String PRIVILEGE_PREFIX = (PRIVILEGE_NAME + KV_SEPARATOR).toLowerCase();
   public static final String SENTRY_ZK_JAAS_NAME = "Sentry";
+
+  public static final String KERBEROS_MODE = "kerberos";
+
 }

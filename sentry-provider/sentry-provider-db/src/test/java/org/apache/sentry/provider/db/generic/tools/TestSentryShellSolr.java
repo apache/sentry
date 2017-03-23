@@ -29,16 +29,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
-import java.security.PrivilegedExceptionAction;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
-import javax.security.auth.Subject;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.sentry.SentryUserException;
-import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
-import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClientFactory;
+import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceIntegrationBase;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryRole;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;

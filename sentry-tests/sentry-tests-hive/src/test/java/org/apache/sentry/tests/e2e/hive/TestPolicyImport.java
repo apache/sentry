@@ -21,7 +21,7 @@ import static org.junit.Assert.*;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import org.apache.sentry.SentryUserException;
+import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.binding.hive.authz.SentryConfigTool;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;

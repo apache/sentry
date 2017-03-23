@@ -19,7 +19,7 @@ package org.apache.sentry.service.thrift;
 
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.SentryUserException;
+import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClientDefaultImpl;
 import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
@@ -60,7 +60,7 @@ class RetryClientInvocationHandler extends SentryClientInvocationHandler{
    * Initialize the sentry configurations, including rpc retry count and client connection
    * configs for SentryPolicyServiceClientDefaultImpl
    */
-  RetryClientInvocationHandler(Configuration conf) throws IOException {
+  RetryClientInvocationHandler(Configuration conf) throws Exception {
     this.conf = conf;
     Preconditions.checkNotNull(this.conf, "Configuration object cannot be null");
     this.rpcRetryTotal = conf.getInt(ServiceConstants.ClientConfig.SENTRY_RPC_RETRY_TOTAL,
@@ -75,6 +75,7 @@ class RetryClientInvocationHandler extends SentryClientInvocationHandler{
    * connection problem, it will close the current connection, and retry (reconnect and
    * resend the thrift call) no more than rpcRetryTotal times. Throw SentryUserException
    * if failed retry after rpcRetryTotal times.
+   * if it is failed with other exception, method would just re-throw the exception.
    * Synchronized it for thread safety.
    */
   @Override
@@ -93,6 +94,9 @@ class RetryClientInvocationHandler extends SentryClientInvocationHandler{
         lastExc = e;
         close();
         continue;
+      } catch (Exception e) {
+        close();
+        throw e;
       }
 
       // do the thrift call

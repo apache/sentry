@@ -47,7 +47,7 @@ import org.apache.commons.io.output.NullOutputStream;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hive.beeline.BeeLine;
 import org.apache.sentry.Command;
-import org.apache.sentry.SentryUserException;
+import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.provider.db.service.persistent.SentryStoreSchemaInfo;
 import org.apache.sentry.provider.db.service.thrift.SentryConfigurationException;
 import org.apache.sentry.provider.db.tools.SentrySchemaHelper.NestedScriptParser;

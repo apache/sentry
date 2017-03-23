@@ -32,7 +32,7 @@ import java.util.Set;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.sentry.SentryUserException;
+import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.binding.solr.conf.SolrAuthzConf;
 import org.apache.sentry.binding.solr.conf.SolrAuthzConf.AuthzConfVars;
 import org.apache.sentry.core.common.Action;

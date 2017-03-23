@@ -29,7 +29,7 @@ import javax.jdo.PersistenceManager;
 import javax.jdo.Query;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.SentryUserException;
+import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.common.Action;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.BitFieldAction;

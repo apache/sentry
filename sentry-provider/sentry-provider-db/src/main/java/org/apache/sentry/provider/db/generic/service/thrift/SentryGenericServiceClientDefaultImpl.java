@@ -23,21 +23,24 @@ import java.security.PrivilegedExceptionAction;
 import java.util.*;
 
 import javax.security.auth.callback.CallbackHandler;
+import javax.security.sasl.Sasl;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.conf.Configuration;
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION;
+import static org.apache.sentry.provider.common.ProviderConstants.KERBEROS_MODE;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.SaslRpcServer;
 import org.apache.hadoop.security.SaslRpcServer.AuthMethod;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.sentry.SentryUserException;
+import org.apache.sentry.core.common.exception.MissingConfigurationException;
+import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
+import org.apache.sentry.core.common.transport.SentryPolicyClientTransportConfig;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.service.thrift.ServiceConstants;
-import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
-import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.apache.sentry.service.thrift.Status;
 import org.apache.sentry.service.thrift.sentry_common_serviceConstants;
 import org.apache.thrift.TException;
@@ -64,6 +67,10 @@ public class SentryGenericServiceClientDefaultImpl implements SentryGenericServi
   private static final Logger LOGGER = LoggerFactory
                                        .getLogger(SentryGenericServiceClientDefaultImpl.class);
   private static final String THRIFT_EXCEPTION_MESSAGE = "Thrift exception occured ";
+  private final SentryPolicyClientTransportConfig transportConfig =  new SentryPolicyClientTransportConfig();
+
+  private static final ImmutableMap<String, String> SASL_PROPERTIES =
+    ImmutableMap.of(Sasl.SERVER_AUTH, "true", Sasl.QOP, "auth-conf");
 
   /**
    * This transport wraps the Sasl transports to set up the right UGI context for open().
@@ -116,46 +123,49 @@ public class SentryGenericServiceClientDefaultImpl implements SentryGenericServi
     }
   }
 
-  public SentryGenericServiceClientDefaultImpl(Configuration conf) throws IOException {
+  public SentryGenericServiceClientDefaultImpl(Configuration conf) throws Exception {
     // copy the configuration because we may make modifications to it.
     this.conf = new Configuration(conf);
-    Preconditions.checkNotNull(this.conf, "Configuration object cannot be null");
-    this.serverAddress = NetUtils.createSocketAddr(Preconditions.checkNotNull(
-                           conf.get(ClientConfig.SERVER_RPC_ADDRESS), "Config key "
-                           + ClientConfig.SERVER_RPC_ADDRESS + " is required"), conf.getInt(
-                           ClientConfig.SERVER_RPC_PORT, ClientConfig.SERVER_RPC_PORT_DEFAULT));
-    this.connectionTimeout = conf.getInt(ClientConfig.SERVER_RPC_CONN_TIMEOUT,
-                                         ClientConfig.SERVER_RPC_CONN_TIMEOUT_DEFAULT);
-    kerberos = ServerConfig.SECURITY_MODE_KERBEROS.equalsIgnoreCase(
-        conf.get(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_KERBEROS).trim());
-    transport = new TSocket(serverAddress.getHostName(),
-        serverAddress.getPort(), connectionTimeout);
-    if (kerberos) {
-      String serverPrincipal = Preconditions.checkNotNull(conf.get(ServerConfig.PRINCIPAL), ServerConfig.PRINCIPAL + " is required");
-      // since the client uses hadoop-auth, we need to set kerberos in
-      // hadoop-auth if we plan to use kerberos
-      conf.set(HADOOP_SECURITY_AUTHENTICATION, ServerConfig.SECURITY_MODE_KERBEROS);
 
-      // Resolve server host in the same way as we are doing on server side
-      serverPrincipal = SecurityUtil.getServerPrincipal(serverPrincipal, serverAddress.getAddress());
-      LOGGER.debug("Using server kerberos principal: " + serverPrincipal);
-
-      serverPrincipalParts = SaslRpcServer.splitKerberosName(serverPrincipal);
-      Preconditions.checkArgument(serverPrincipalParts.length == 3,
-           "Kerberos principal should have 3 parts: " + serverPrincipal);
-      boolean wrapUgi = "true".equalsIgnoreCase(conf
-          .get(ServerConfig.SECURITY_USE_UGI_TRANSPORT, "true"));
-      transport = new UgiSaslClientTransport(AuthMethod.KERBEROS.getMechanismName(),
-          null, serverPrincipalParts[0], serverPrincipalParts[1],
-          ClientConfig.SASL_PROPERTIES, null, transport, wrapUgi, conf);
-    } else {
-      serverPrincipalParts = null;
-    }
+      Preconditions.checkNotNull(this.conf, "Configuration object cannot be null");
     try {
+      this.serverAddress = NetUtils.createSocketAddr(
+        transportConfig.getSentryServerRpcAddress(conf),
+        transportConfig.getServerRpcPort(conf));
+
+
+      this.connectionTimeout = transportConfig.getServerRpcConnTimeoutInMs(conf);
+      kerberos = transportConfig.isKerberosEnabled(conf);
+      transport = new TSocket(serverAddress.getHostName(),
+        serverAddress.getPort(), connectionTimeout);
+      if (kerberos) {
+
+        String serverPrincipal = transportConfig.getSentryPrincipal(conf);
+        // since the client uses hadoop-auth, we need to set kerberos in
+        // hadoop-auth if we plan to use kerberos
+        conf.set(HADOOP_SECURITY_AUTHENTICATION, KERBEROS_MODE);
+
+        // Resolve server host in the same way as we are doing on server side
+        serverPrincipal = SecurityUtil.getServerPrincipal(serverPrincipal, serverAddress.getAddress());
+        LOGGER.debug("Using server kerberos principal: " + serverPrincipal);
+
+        serverPrincipalParts = SaslRpcServer.splitKerberosName(serverPrincipal);
+        Preconditions.checkArgument(serverPrincipalParts.length == 3,
+          "Kerberos principal should have 3 parts: " + serverPrincipal);
+        boolean wrapUgi = transportConfig.useUserGroupInformation(conf);
+        transport = new UgiSaslClientTransport(AuthMethod.KERBEROS.getMechanismName(),
+          null, serverPrincipalParts[0], serverPrincipalParts[1],
+          SASL_PROPERTIES, null, transport, wrapUgi, conf);
+      } else {
+        serverPrincipalParts = null;
+      }
       transport.open();
     } catch (TTransportException e) {
       throw new IOException("Transport exception while opening transport: " + e.getMessage(), e);
+    } catch (MissingConfigurationException e) {
+      throw new RuntimeException("Client Creation Failed: " + e.getMessage(), e);
     }
+
     LOGGER.debug("Successfully opened transport: " + transport + " to " + serverAddress);
     long maxMessageSize = conf.getLong(ServiceConstants.ClientConfig.SENTRY_POLICY_CLIENT_THRIFT_MAX_MESSAGE_SIZE,
         ServiceConstants.ClientConfig.SENTRY_POLICY_CLIENT_THRIFT_MAX_MESSAGE_SIZE_DEFAULT);
