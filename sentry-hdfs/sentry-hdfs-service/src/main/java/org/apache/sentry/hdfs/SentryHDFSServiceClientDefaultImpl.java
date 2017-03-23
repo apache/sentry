@@ -24,19 +24,23 @@ import java.util.LinkedList;
 import java.util.Map;
 
 import javax.security.auth.callback.CallbackHandler;
+import javax.security.sasl.Sasl;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.SaslRpcServer;
 import org.apache.hadoop.security.SaslRpcServer.AuthMethod;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.sentry.core.common.exception.MissingConfigurationException;
 import org.apache.sentry.hdfs.service.thrift.SentryHDFSService;
 import org.apache.sentry.hdfs.service.thrift.SentryHDFSService.Client;
 import org.apache.sentry.hdfs.service.thrift.TAuthzUpdateResponse;
 import org.apache.sentry.hdfs.service.thrift.TPathsUpdate;
 import org.apache.sentry.hdfs.service.thrift.TPermissionsUpdate;
 import org.apache.sentry.hdfs.ServiceConstants.ClientConfig;
+import org.apache.sentry.core.common.transport.SentryHDFSClientTransportConfig;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.protocol.TMultiplexedProtocol;
@@ -114,43 +118,43 @@ public class SentryHDFSServiceClientDefaultImpl implements SentryHDFSServiceClie
 
   private String[] serverPrincipalParts;
   private Client client;
+  private final SentryHDFSClientTransportConfig transportConfig = new SentryHDFSClientTransportConfig();
+  private static final ImmutableMap<String, String> SASL_PROPERTIES =
+    ImmutableMap.of(Sasl.SERVER_AUTH, "true", Sasl.QOP, "auth-conf");
 
   public SentryHDFSServiceClientDefaultImpl(Configuration conf) throws IOException {
     this.conf = conf;
     Preconditions.checkNotNull(this.conf, "Configuration object cannot be null");
-    this.serverAddress = NetUtils.createSocketAddr(Preconditions.checkNotNull(
-                           conf.get(ClientConfig.SERVER_RPC_ADDRESS), "Config key "
-                           + ClientConfig.SERVER_RPC_ADDRESS + " is required"), conf.getInt(
-                           ClientConfig.SERVER_RPC_PORT, ClientConfig.SERVER_RPC_PORT_DEFAULT));
-    this.connectionTimeout = conf.getInt(ClientConfig.SERVER_RPC_CONN_TIMEOUT,
-                                         ClientConfig.SERVER_RPC_CONN_TIMEOUT_DEFAULT);
-    kerberos = ClientConfig.SECURITY_MODE_KERBEROS.equalsIgnoreCase(
-        conf.get(ClientConfig.SECURITY_MODE, ClientConfig.SECURITY_MODE_KERBEROS).trim());
-    transport = new TSocket(serverAddress.getHostName(),
-        serverAddress.getPort(), connectionTimeout);
-    if (kerberos) {
-      String serverPrincipal = Preconditions.checkNotNull(
-          conf.get(ClientConfig.PRINCIPAL), ClientConfig.PRINCIPAL + " is required");
-
-      // Resolve server host in the same way as we are doing on server side
-      serverPrincipal = SecurityUtil.getServerPrincipal(serverPrincipal, serverAddress.getAddress());
-      LOGGER.info("Using server kerberos principal: " + serverPrincipal);
-
-      serverPrincipalParts = SaslRpcServer.splitKerberosName(serverPrincipal);
-      Preconditions.checkArgument(serverPrincipalParts.length == 3,
-           "Kerberos principal should have 3 parts: " + serverPrincipal);
-      boolean wrapUgi = "true".equalsIgnoreCase(conf
-          .get(ClientConfig.SECURITY_USE_UGI_TRANSPORT, "true"));
-      transport = new UgiSaslClientTransport(AuthMethod.KERBEROS.getMechanismName(),
-          null, serverPrincipalParts[0], serverPrincipalParts[1],
-          ClientConfig.SASL_PROPERTIES, null, transport, wrapUgi);
-    } else {
-      serverPrincipalParts = null;
-    }
     try {
+      this.serverAddress = NetUtils.createSocketAddr(
+        transportConfig.getSentryServerRpcAddress(conf),
+        transportConfig.getServerRpcPort(conf));
+      this.connectionTimeout = transportConfig.getServerRpcConnTimeoutInMs(conf);
+      kerberos = transportConfig.isKerberosEnabled(conf);
+      transport = new TSocket(serverAddress.getHostName(),
+        serverAddress.getPort(), connectionTimeout);
+      if (kerberos) {
+        String serverPrincipal = transportConfig.getSentryPrincipal(conf);
+        // Resolve server host in the same way as we are doing on server side
+        serverPrincipal = SecurityUtil.getServerPrincipal(serverPrincipal, serverAddress.getAddress());
+        LOGGER.info("Using server kerberos principal: " + serverPrincipal);
+
+        serverPrincipalParts = SaslRpcServer.splitKerberosName(serverPrincipal);
+        Preconditions.checkArgument(serverPrincipalParts.length == 3,
+          "Kerberos principal should have 3 parts: " + serverPrincipal);
+        boolean wrapUgi = transportConfig.useUserGroupInformation(conf);
+        transport = new UgiSaslClientTransport(AuthMethod.KERBEROS.getMechanismName(),
+          null, serverPrincipalParts[0], serverPrincipalParts[1],
+          SASL_PROPERTIES, null, transport, wrapUgi);
+      } else {
+        serverPrincipalParts = null;
+      }
+
       transport.open();
     } catch (TTransportException e) {
       throw new IOException("Transport exception while opening transport: " + e.getMessage(), e);
+    } catch (MissingConfigurationException e) {
+      throw new RuntimeException("Client Creation Failed: " + e.getMessage(), e);
     }
     LOGGER.info("Successfully opened transport: " + transport + " to " + serverAddress);
     TProtocol tProtocol = null;

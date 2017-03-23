@@ -308,7 +308,7 @@ public class MetastorePlugin extends SentryMetastoreListenerPlugin {
         sentryClient = SentryHDFSServiceClientFactory.create(sentryConf);
       } catch (Exception e) {
         sentryClient = null;
-        LOGGER.error("#### Could not connect to Sentry HDFS Service !!", e);
+        LOGGER.error("Could not connect to Sentry HDFS Service !!", e);
       }
     }
     return sentryClient;

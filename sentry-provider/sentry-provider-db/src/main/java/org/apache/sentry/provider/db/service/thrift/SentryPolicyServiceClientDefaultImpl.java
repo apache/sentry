@@ -28,7 +28,9 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.security.auth.callback.CallbackHandler;
+import javax.security.sasl.Sasl;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.net.HostAndPort;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -36,6 +38,7 @@ import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.SaslRpcServer;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.sentry.core.common.exception.MissingConfigurationException;
 import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
@@ -44,9 +47,7 @@ import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.sentry.core.common.utils.PolicyFileConstants;
 import org.apache.sentry.service.thrift.SentryServiceUtil;
 import org.apache.sentry.service.thrift.ServiceConstants;
-import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
 import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
-import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.apache.sentry.service.thrift.ServiceConstants.ThriftConstants;
 import org.apache.sentry.service.thrift.Status;
 import org.apache.thrift.TException;
@@ -56,6 +57,7 @@ import org.apache.thrift.transport.TSaslClientTransport;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
+import org.apache.sentry.core.common.transport.SentryPolicyClientTransportConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,6 +88,9 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
   // configs for connection retry
   private int connectionFullRetryTotal;
   private List<InetSocketAddress> endpoints;
+  final SentryPolicyClientTransportConfig transportConfig =  new SentryPolicyClientTransportConfig();
+  private static final ImmutableMap<String, String> SASL_PROPERTIES =
+    ImmutableMap.of(Sasl.SERVER_AUTH, "true", Sasl.QOP, "auth-conf");
 
   /**
    * This transport wraps the Sasl transports to set up the right UGI context for open().
@@ -139,47 +144,45 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
    * Initialize the sentry configurations.
    */
   public SentryPolicyServiceClientDefaultImpl(Configuration conf)
-      throws IOException {
+    throws IOException {
     this.conf = conf;
     Preconditions.checkNotNull(this.conf, "Configuration object cannot be null");
-    this.connectionTimeout = conf.getInt(ServiceConstants.ClientConfig.SERVER_RPC_CONN_TIMEOUT,
-        ServiceConstants.ClientConfig.SERVER_RPC_CONN_TIMEOUT_DEFAULT);
-    this.connectionFullRetryTotal = conf.getInt(ServiceConstants.ClientConfig.SENTRY_FULL_RETRY_TOTAL,
-        ServiceConstants.ClientConfig.SENTRY_FULL_RETRY_TOTAL_DEFAULT);
-    this.connectionTimeout = conf.getInt(ClientConfig.SERVER_RPC_CONN_TIMEOUT,
-        ClientConfig.SERVER_RPC_CONN_TIMEOUT_DEFAULT);
-    this.kerberos = ServerConfig.SECURITY_MODE_KERBEROS.equalsIgnoreCase(
-        conf.get(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_KERBEROS).trim());
+    try {
+      String hostsAndPortsStr;
+      this.connectionTimeout = transportConfig.getServerRpcConnTimeoutInMs(conf);
+      this.connectionFullRetryTotal = transportConfig.getSentryFullRetryTotal(conf);
 
-    String hostsAndPortsStr = conf.get(ServiceConstants.ClientConfig.SERVER_RPC_ADDRESS);
-    if (hostsAndPortsStr == null) {
-      throw new RuntimeException("Config key " +
-          ServiceConstants.ClientConfig.SERVER_RPC_ADDRESS + " is required");
-    }
-    int defaultPort = conf.getInt(ServiceConstants.ClientConfig.SERVER_RPC_PORT,
-        ServiceConstants.ClientConfig.SERVER_RPC_PORT_DEFAULT);
-    String[] hostsAndPortsStrArr = hostsAndPortsStr.split(",");
-    HostAndPort[] hostsAndPorts = ThriftUtil.parseHostPortStrings(hostsAndPortsStrArr, defaultPort);
-    this.endpoints = new ArrayList(hostsAndPortsStrArr.length);
-    for (int i = hostsAndPortsStrArr.length - 1; i >= 0 ; i--) {
-      this.endpoints.add(
-          new InetSocketAddress(hostsAndPorts[i].getHostText(),hostsAndPorts[i].getPort()));
-      LOGGER.debug("Added server endpoint: " + hostsAndPorts[i].toString());
+      this.kerberos = transportConfig.isKerberosEnabled(conf);
+      hostsAndPortsStr = transportConfig.getSentryServerRpcAddress(conf);
+
+      int serverPort = transportConfig.getServerRpcPort(conf);
+
+      String[] hostsAndPortsStrArr = hostsAndPortsStr.split(",");
+      HostAndPort[] hostsAndPorts = ThriftUtil.parseHostPortStrings(hostsAndPortsStrArr, serverPort);
+      this.endpoints = new ArrayList(hostsAndPortsStrArr.length);
+      for (int i = hostsAndPortsStrArr.length - 1; i >= 0; i--) {
+        this.endpoints.add(
+          new InetSocketAddress(hostsAndPorts[i].getHostText(), hostsAndPorts[i].getPort()));
+        LOGGER.debug("Added server endpoint: " + hostsAndPorts[i].toString());
+      }
+    } catch (MissingConfigurationException e) {
+      throw new RuntimeException("Client Creation Failed: " + e.getMessage(), e);
     }
   }
 
   public SentryPolicyServiceClientDefaultImpl(String addr, int port,
-        Configuration conf) throws IOException {
+                                              Configuration conf) throws IOException {
     this.conf = conf;
     Preconditions.checkNotNull(this.conf, "Configuration object cannot be null");
-    InetSocketAddress serverAddress = NetUtils.createSocketAddr(Preconditions.checkNotNull(
-                            addr, "Config key " + ClientConfig.SERVER_RPC_ADDRESS
-                            + " is required"), port);
-    this.connectionTimeout = conf.getInt(ClientConfig.SERVER_RPC_CONN_TIMEOUT,
-                                         ClientConfig.SERVER_RPC_CONN_TIMEOUT_DEFAULT);
-    this.kerberos = ServerConfig.SECURITY_MODE_KERBEROS.equalsIgnoreCase(
-        conf.get(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_KERBEROS).trim());
-    connect(serverAddress);
+    try {
+      InetSocketAddress serverAddress = NetUtils.createSocketAddr(addr, port);
+      this.connectionTimeout = transportConfig.getServerRpcConnTimeoutInMs(conf);
+      this.kerberos = transportConfig.isKerberosEnabled(conf);
+      connect(serverAddress);
+    } catch (MissingConfigurationException e) {
+      throw new RuntimeException("Client Creation Failed: " + e.getMessage(), e);
+    }
+
   }
 
   /**
@@ -193,12 +196,14 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
    * TODO: Have a small random sleep after a full retry to prevent all clients connecting to the same server.
    * <p>
    * TODO: Add metrics for the number of successful connects and errors per client, and total number of retries.
+   * @throws Exception if client fails to connect to all servers for a configured
+   * number of times
    */
-  public synchronized void connectWithRetry() throws IOException {
+  public synchronized void connectWithRetry() throws Exception {
     if (isConnected()) {
       return;
     }
-    IOException currentException = null;
+    Exception currentException = null;
     // Here for each full connectWithRetry it will cycle through all available sentry
     // servers. Before each full connectWithRetry, it will shuffle the server list.
     for (int retryCount = 0; retryCount < connectionFullRetryTotal; retryCount++) {
@@ -210,7 +215,7 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
           connect(addr);
           LOGGER.info(String.format("Connected to SentryServer: %s", addr.toString()));
           return;
-        } catch (IOException e) {
+        } catch (Exception e) {
           LOGGER.debug(String.format("Failed connection to %s: %s",
               addr.toString(), e.getMessage()), e);
           currentException = e;
@@ -226,38 +231,37 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
   }
 
   /**
-   * Connect to the specified socket address and throw IOException if failed.
+   * Connect to the specified socket address and throw Exception if failed.
    */
   private void connect(InetSocketAddress serverAddress) throws IOException {
     transport = new TSocket(serverAddress.getHostName(),
         serverAddress.getPort(), connectionTimeout);
-    if (kerberos) {
-      String serverPrincipal = Preconditions.checkNotNull(
-          conf.get(ServiceConstants.ServerConfig.PRINCIPAL),
-          ServiceConstants.ServerConfig.PRINCIPAL + " is required");
+    try {
+      if (kerberos) {
+        String serverPrincipal = transportConfig.getSentryPrincipal(conf);
 
-      // Resolve server host in the same way as we are doing on server side
-      serverPrincipal =
+        // Resolve server host in the same way as we are doing on server side
+        serverPrincipal =
           SecurityUtil.getServerPrincipal(serverPrincipal, serverAddress.getAddress());
-      LOGGER.debug("Using server kerberos principal: " + serverPrincipal);
+        LOGGER.debug("Using server kerberos principal: " + serverPrincipal);
 
-      serverPrincipalParts = SaslRpcServer.splitKerberosName(serverPrincipal);
-      Preconditions.checkArgument(serverPrincipalParts.length == 3,
+        serverPrincipalParts = SaslRpcServer.splitKerberosName(serverPrincipal);
+        Preconditions.checkArgument(serverPrincipalParts.length == 3,
           "Kerberos principal should have 3 parts: " + serverPrincipal);
-      boolean wrapUgi = "true".equalsIgnoreCase(conf
-          .get(ServiceConstants.ServerConfig.SECURITY_USE_UGI_TRANSPORT, "true"));
-      transport = new SentryPolicyServiceClientDefaultImpl.UgiSaslClientTransport(
+        boolean wrapUgi = transportConfig.useUserGroupInformation(conf);
+        transport = new SentryPolicyServiceClientDefaultImpl.UgiSaslClientTransport(
           SaslRpcServer.AuthMethod.KERBEROS.getMechanismName(),
           null, serverPrincipalParts[0], serverPrincipalParts[1],
-          ServiceConstants.ClientConfig.SASL_PROPERTIES, null, transport, wrapUgi);
-    } else {
-      serverPrincipalParts = null;
-    }
-    try {
+          SASL_PROPERTIES, null, transport, wrapUgi);
+      } else {
+        serverPrincipalParts = null;
+      }
+
       transport.open();
     } catch (TTransportException e) {
       throw new IOException("Transport exception while opening transport: " + e.getMessage(), e);
     }
+
     LOGGER.debug("Successfully opened transport: " + transport + " to " + serverAddress);
     long maxMessageSize = conf.getLong(
         ServiceConstants.ClientConfig.SENTRY_POLICY_CLIENT_THRIFT_MAX_MESSAGE_SIZE,

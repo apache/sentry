@@ -42,4 +42,7 @@ public class SentryConstants {
   public static final String ACCESS_ALLOW_URI_PER_DB_POLICYFILE = "sentry.allow.uri.db.policyfile";
 
   public static final String SENTRY_ZK_JAAS_NAME = "Sentry";
+
+  public static final String KERBEROS_MODE = "kerberos";
+
 }
