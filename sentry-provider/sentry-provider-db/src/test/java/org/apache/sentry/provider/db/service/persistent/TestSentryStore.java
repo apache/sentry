@@ -1972,8 +1972,17 @@ public class TestSentryStore {
     assertEquals(0, privileges.size());
 
     // Query the persisted perm change and ensure it equals to the original one
-    MSentryPermChange delPermChange = sentryStore.getMSentryPermChangeByID(lastChangeID + 1);
+    lastChangeID = sentryStore.getLastProcessedPermChangeID();
+    MSentryPermChange delPermChange = sentryStore.getMSentryPermChangeByID(lastChangeID);
     assertEquals(delUpdate.JSONSerialize(), delPermChange.getPermChange());
+
+    // Verify getMSentryPermChanges will return all MSentryPermChanges up
+    // to the given changeID.
+    List<MSentryPermChange> mSentryPermChanges = sentryStore.getMSentryPermChanges(1);
+    assertEquals(lastChangeID, mSentryPermChanges.size());
+
+    // Verify ifPermChangeExists will return true for persisted MSentryPermChange.
+    assertTrue(sentryStore.permChangeExists(1));
   }
 
   @Test
@@ -2079,7 +2088,7 @@ public class TestSentryStore {
 
   @Test
   public void testRenameObjWithPermUpdate() throws Exception {
-    String roleName1 = "role1", roleName2 = "role2", roleName3 = "role3";
+    String roleName1 = "role1";
     String grantor = "g1";
     String table1 = "tbl1", table2 = "tbl2";
 

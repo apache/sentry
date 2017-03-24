@@ -42,10 +42,6 @@ public class SentryHDFSServiceProcessor implements SentryHDFSService.Iface {
     retVal.setAuthzPathUpdate(new LinkedList<TPathsUpdate>());
     retVal.setAuthzPermUpdate(new LinkedList<TPermissionsUpdate>());
     if (SentryPlugin.instance != null) {
-      if (SentryPlugin.instance.isOutOfSync()) {
-        throw new TException(
-            "This Sentry server is not communicating with other nodes and out of sync ");
-      }
       final Timer.Context timerContext =
           SentryHdfsMetricsUtil.getAllAuthzUpdatesTimer.time();
       try {
@@ -99,34 +95,12 @@ public class SentryHDFSServiceProcessor implements SentryHDFSService.Iface {
 
   @Override
   public void handle_hms_notification(TPathsUpdate update) throws TException {
-    final Timer.Context timerContext =
-        SentryHdfsMetricsUtil.getHandleHmsNotificationTimer.time();
-    try {
-      PathsUpdate hmsUpdate = new PathsUpdate(update);
-      if (SentryPlugin.instance != null) {
-        SentryPlugin.instance.handlePathUpdateNotification(hmsUpdate);
-        LOGGER.debug("Authz Paths update [" + hmsUpdate.getSeqNum() + "]..");
-      } else {
-        LOGGER.error("SentryPlugin not initialized yet !!");
-      }
-    } catch (Exception e) {
-      LOGGER.error("Error handling notification from HMS", e);
-      SentryHdfsMetricsUtil.getFailedHandleHmsNotificationCounter.inc();
-      throw new TException(e);
-    } finally {
-      timerContext.stop();
-      SentryHdfsMetricsUtil.getHandleHmsPathChangeHistogram.update(
-          update.getPathChangesSize());
-      if (update.isHasFullImage()) {
-        SentryHdfsMetricsUtil.getHandleHmsHasFullImageCounter.inc();
-      }
-    }
-
+    throw new UnsupportedOperationException("handle_hms_notification");
   }
 
   @Override
   public long check_hms_seq_num(long pathSeqNum) throws TException {
-    return SentryPlugin.instance.getLastSeenHMSPathSeqNum();
+    throw new UnsupportedOperationException("check_hms_seq_num");
   }
 
   /**

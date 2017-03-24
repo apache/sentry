@@ -83,25 +83,6 @@ public class SentryHdfsMetricsUtil {
       MetricRegistry.name(PathImageRetriever.class, "retrieve-path-full-image",
           "path-changes-size"));
 
-
-  // Metrics for notifySentry HMS update in MetaStorePlugin
-  // The timer used for each notifySentry
-  public static final Timer getNotifyHMSUpdateTimer = sentryMetrics.getTimer(
-      MetricRegistry.name(MetastorePlugin.class, "notify-sentry-HMS-update"));
-  // The number of failed notifySentry
-  public static final Counter getFailedNotifyHMSUpdateCounter = sentryMetrics.getCounter(
-      MetricRegistry.name(MetastorePlugin.class, "notify-sentry-HMS-update",
-          "failed-num"));
-
-  // Metrics for applyLocal update in MetastorePlugin
-  // The time used for each applyLocal
-  public static final Timer getApplyLocalUpdateTimer = sentryMetrics.getTimer(
-      MetricRegistry.name(MetastorePlugin.class, "apply-local-update"));
-  // The size of path changes for each applyLocal
-  public static final Histogram getApplyLocalUpdateHistogram = sentryMetrics.getHistogram(
-      MetricRegistry.name(MetastorePlugin.class, "apply-local-update",
-          "path-change-size"));
-
   private SentryHdfsMetricsUtil() {
     // Make constructor private to avoid instantiation
   }

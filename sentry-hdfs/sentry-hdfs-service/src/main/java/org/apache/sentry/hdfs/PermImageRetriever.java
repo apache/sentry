@@ -24,6 +24,7 @@ import org.apache.sentry.hdfs.service.thrift.TRoleChanges;
 import org.apache.sentry.provider.db.service.persistent.PermissionsImage;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 
+import javax.annotation.concurrent.ThreadSafe;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -31,9 +32,12 @@ import java.util.Map;
 
 /**
  * PermImageRetriever obtains a complete snapshot of Sentry permission from a persistent
- * storage and translate it into {@code PermissionsUpdate} that the consumers, such as
- * HDFS NameNod, can understand.
+ * storage and translates it into {@code PermissionsUpdate} that the consumers, such as
+ * HDFS NameNode, can understand.
+ * <p>
+ * It is a thread safe class, as all the underlying database operation is thread safe.
  */
+@ThreadSafe
 public class PermImageRetriever implements ImageRetriever<PermissionsUpdate> {
 
   private final SentryStore sentryStore;
@@ -43,7 +47,7 @@ public class PermImageRetriever implements ImageRetriever<PermissionsUpdate> {
   }
 
   @Override
-  public PermissionsUpdate retrieveFullImage(long seqNum) throws Exception {
+  public PermissionsUpdate retrieveFullImage() throws Exception {
     try(Timer.Context timerContext =
         SentryHdfsMetricsUtil.getRetrievePermFullImageTimer.time()) {
 
@@ -80,8 +84,6 @@ public class PermImageRetriever implements ImageRetriever<PermissionsUpdate> {
       }
 
       PermissionsUpdate permissionsUpdate = new PermissionsUpdate(tPermUpdate);
-      // TODO: use curSeqNum from DB instead of seqNum when doing SENTRY-1567
-      permissionsUpdate.setSeqNum(seqNum);
       SentryHdfsMetricsUtil.getPrivilegeChangesHistogram.update(
           tPermUpdate.getPrivilegeChangesSize());
       SentryHdfsMetricsUtil.getRoleChangesHistogram.update(
