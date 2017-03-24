@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -49,7 +50,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.collect.Iterables;
@@ -66,7 +66,7 @@ public class TestSentryStore extends org.junit.Assert {
   private static String[] adminGroups = { "adminGroup1" };
   private static PolicyFile policyFile;
   private static File policyFilePath;
-  final long NUM_PRIVS = 60;  // > SentryStore.PrivCleaner.NOTIFY_THRESHOLD
+  final long NUM_PRIVS = 5;  // > SentryStore.PrivCleaner.NOTIFY_THRESHOLD
   private static Configuration conf = null;
   private static char[] passwd = new char[] { '1', '2', '3'};
 
@@ -509,21 +509,12 @@ public class TestSentryStore extends org.junit.Assert {
     assertEquals(table, mPrivilege.getTableName());
     assertEquals(AccessConstants.INSERT, mPrivilege.getAction());
     assertFalse(mPrivilege.getGrantOption());
+    long numDBPrivs = sentryStore.countMSentryPrivileges();
+    assertEquals("Privilege count", numDBPrivs,1);
   }
 
   private void verifyOrphanCleanup() throws Exception {
-    boolean success = false;
-    int iterations = 30;
-    while (!success && iterations > 0) {
-      Thread.sleep(1000);
-      long numDBPrivs = sentryStore.countMSentryPrivileges();
-      if (numDBPrivs < NUM_PRIVS) {
-        assertEquals(0, numDBPrivs);
-        success = true;
-      }
-      iterations--;
-    }
-    assertTrue("Failed to cleanup orphaned privileges", success);
+    assertFalse("Failed to cleanup orphaned privileges", sentryStore.findOrphanedPrivileges());
   }
 
   /**
@@ -532,7 +523,7 @@ public class TestSentryStore extends org.junit.Assert {
    * cleanup thread runs, and expect them all to be gone from the database.
    * @throws Exception
    */
-  @Ignore("Disabled with SENTRY-545 following SENTRY-140 problems")
+ // @Ignore("Disabled with SENTRY-545 following SENTRY-140 problems")
   @Test
   public void testPrivilegeCleanup() throws Exception {
     final String roleName = "test-priv-cleanup";
@@ -556,7 +547,7 @@ public class TestSentryStore extends org.junit.Assert {
     }
 
     // Make sure we really have the expected number of privs in the database
-    assertEquals(sentryStore.countMSentryPrivileges(), NUM_PRIVS);
+     assertEquals(sentryStore.countMSentryPrivileges(), NUM_PRIVS);
 
     // Now to make a bunch of orphans, we just remove the role that
     // created them.
@@ -564,6 +555,9 @@ public class TestSentryStore extends org.junit.Assert {
 
     // Now wait and see if the orphans get cleaned up
     verifyOrphanCleanup();
+
+    List<MSentryPrivilege> list = sentryStore.getAllMSentryPrivileges();
+    assertEquals(list.size(), 0);
   }
 
   /**
@@ -574,7 +568,7 @@ public class TestSentryStore extends org.junit.Assert {
    * cleanup thread.
    * @throws Exception
    */
-  @Ignore("Disabled with SENTRY-545 following SENTRY-140 problems")
+ // @Ignore("Disabled with SENTRY-545 following SENTRY-140 problems")
   @Test
   public void testPrivilegeCleanup2() throws Exception {
     final String roleName = "test-priv-cleanup";
@@ -612,7 +606,178 @@ public class TestSentryStore extends org.junit.Assert {
     // Drop the role and clean up as before
     sentryStore.dropSentryRole(roleName);
     verifyOrphanCleanup();
+    //There should not be any Privileges left
+    List<MSentryPrivilege> list = sentryStore.getAllMSentryPrivileges();
+    assertEquals(list.size(), 0);
   }
+
+  /**
+   * This method tries to add ALL privileges on
+   * databases to a role and immediately revokes
+   * SELECT and INSERT privileges. At the end of
+   * each iteration we should not find any privileges
+   * for that role. Finally we should not find any
+   * privileges, as we are cleaning up orphan privileges
+   * immediately.
+   * @throws Exception
+   */
+  @Test
+  public void testPrivilegeCleanup3() throws Exception {
+    final String roleName = "test-priv-cleanup";
+    final String grantor = "g1";
+    final String server = "server";
+    final String dBase = "db";
+    final String table = "table-";
+
+    createRole(roleName);
+
+    // Create NUM_PRIVS unique privilege objects in the database once more,
+    // this time granting ALL and revoking SELECT to make INSERT.
+    for (int i=0 ; i < NUM_PRIVS; i++) {
+      TSentryPrivilege priv = new TSentryPrivilege();
+      priv.setPrivilegeScope("DATABASE");
+      priv.setServerName(server);
+      priv.setAction(AccessConstants.ALL);
+      priv.setCreateTime(System.currentTimeMillis());
+      priv.setTableName(table + i);
+      priv.setDbName(dBase);
+      priv.setGrantOption(TSentryGrantOption.TRUE);
+      sentryStore.alterSentryRoleGrantPrivilege(grantor, roleName, priv);
+
+      priv.setAction(AccessConstants.SELECT);
+      priv.setGrantOption(TSentryGrantOption.UNSET);
+      sentryStore.alterSentryRoleRevokePrivilege(grantor, roleName, priv);
+
+      sentryStore.findOrphanedPrivileges();
+      //After having ALL and revoking SELECT, we should have INSERT
+      //Remove the INSERT privilege as well.
+      //There should not be any more privileges in the sentry store
+      priv.setAction(AccessConstants.INSERT);
+      sentryStore.alterSentryRoleRevokePrivilege(grantor, roleName, priv);
+
+      MSentryRole role = sentryStore.getMSentryRoleByName(roleName);
+      assertEquals("Privilege Count", 0, role.getPrivileges().size());
+
+    }
+
+    // Drop the role and clean up as before
+    verifyOrphanCleanup();
+
+    //There should not be any Privileges left
+    List<MSentryPrivilege> list = sentryStore.getAllMSentryPrivileges();
+    assertEquals(list.size(), 0);
+
+  }
+
+  /**
+   * This method "n" privileges with action "ALL" on
+   * tables to a role. Later we are revoking insert
+   * and select privileges to of the tables making the
+   * the privilege orphan. Finally we should find only
+   * n -1 privileges, as we are cleaning up orphan
+   * privileges immediately.
+   * @throws Exception
+   */
+  @Test
+  public void testPrivilegeCleanup4 () throws Exception {
+    final String roleName = "test-priv-cleanup";
+    final String grantor = "g1";
+    final String server = "server";
+    final String dBase = "db";
+    final String table = "table-";
+
+    createRole(roleName);
+
+    // Create NUM_PRIVS unique privilege objects in the database
+    for (int i = 0; i < NUM_PRIVS; i++) {
+      TSentryPrivilege priv = new TSentryPrivilege();
+      priv.setPrivilegeScope("TABLE");
+      priv.setServerName(server);
+      priv.setAction(AccessConstants.ALL);
+      priv.setCreateTime(System.currentTimeMillis());
+      priv.setTableName(table + i);
+      priv.setDbName(dBase);
+      sentryStore.alterSentryRoleGrantPrivilege(grantor, roleName, priv);
+    }
+
+    // Make sure we really have the expected number of privs in the database
+    assertEquals(sentryStore.countMSentryPrivileges(), NUM_PRIVS);
+
+    //Revoking INSERT privilege. This is change the privilege to SELECT
+    TSentryPrivilege priv = new TSentryPrivilege();
+    priv.setPrivilegeScope("TABLE");
+    priv.setServerName(server);
+    priv.setAction(AccessConstants.INSERT);
+    priv.setCreateTime(System.currentTimeMillis());
+    priv.setTableName(table + '0');
+    priv.setDbName(dBase);
+    sentryStore.alterSentryRoleRevokePrivilege(grantor, roleName, priv);
+
+    //There should be SELECT privilege in the sentry store
+    priv = new TSentryPrivilege();
+    priv.setPrivilegeScope("TABLE");
+    priv.setServerName(server);
+    priv.setAction(AccessConstants.SELECT);
+    priv.setCreateTime(System.currentTimeMillis());
+    priv.setTableName(table + '0');
+    priv.setDbName(dBase);
+    MSentryPrivilege mPriv = sentryStore.findMSentryPrivilegeFromTSentryPrivilege(priv);
+    assertNotNull(mPriv);
+
+    MSentryRole role = sentryStore.getMSentryRoleByName(roleName);
+    assertEquals("Privilege Count", NUM_PRIVS, role.getPrivileges().size());
+
+    sentryStore.alterSentryRoleRevokePrivilege(grantor, roleName, priv);
+    role = sentryStore.getMSentryRoleByName(roleName);
+    assertEquals("Privilege Count", NUM_PRIVS-1, role.getPrivileges().size());
+
+  }
+
+  /**
+   * This method tries to add alter privileges on
+   * databases to a role and immediately revokes
+   * them. At the end of each iteration we should
+   * not find any privileges for that role
+   * Finally we should not find any privileges, as
+   * we are cleaning up orphan privileges immediately.
+   * @throws Exception
+   */
+  @Test
+  public void testPrivilegeCleanup5() throws Exception {
+    final String roleName = "test-priv-cleanup";
+    final String grantor = "g1";
+    final String server = "server";
+    final String dBase = "db";
+    final String table = "table-";
+
+    createRole(roleName);
+
+    // Create NUM_PRIVS unique privilege objects in the database once more,
+    // this time granting ALL and revoking SELECT to make INSERT.
+    for (int i=0 ; i < NUM_PRIVS; i++) {
+      TSentryPrivilege priv = new TSentryPrivilege();
+      priv.setPrivilegeScope("DATABASE");
+      priv.setServerName(server);
+      priv.setAction(AccessConstants.ALTER);
+      priv.setCreateTime(System.currentTimeMillis());
+      priv.setTableName(table + i);
+      priv.setDbName(dBase);
+      priv.setGrantOption(TSentryGrantOption.TRUE);
+      sentryStore.alterSentryRoleGrantPrivilege(grantor, roleName, priv);
+
+      priv.setAction(AccessConstants.ALTER);
+      sentryStore.alterSentryRoleRevokePrivilege(grantor, roleName, priv);
+
+      MSentryRole role = sentryStore.getMSentryRoleByName(roleName);
+      assertEquals("Privilege Count", 0, role.getPrivileges().size());
+    }
+    //There should not be any Privileges left
+    List<MSentryPrivilege> list = sentryStore.getAllMSentryPrivileges();
+    assertEquals(list.size(), 0);
+
+  }
+
+  //TODO Use new transaction Manager logic, Instead of
 
   @Test
   public void testGrantRevokeMultiPrivileges() throws Exception {
