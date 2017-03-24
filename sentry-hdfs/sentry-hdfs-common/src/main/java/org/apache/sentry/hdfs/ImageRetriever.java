@@ -25,7 +25,7 @@ import static org.apache.sentry.hdfs.Updateable.Update;
  * ({@code PathsUpdate}).
  * <p>
  * The snapshot image should represent a consistent state.
- * The {@link #retrieveFullImage(long)} method obtains such state snapshot from
+ * The {@link #retrieveFullImage()} method obtains such state snapshot from
  * a persistent storage.
  * The Snapshots are propagated to a consumer of Sentry, such as HDFS NameNode,
  * whenever the consumer needs to synchronize its full state.
@@ -33,13 +33,12 @@ import static org.apache.sentry.hdfs.Updateable.Update;
 public interface ImageRetriever<K extends Update> {
 
   /**
-   * Retrieve a complete snapshot of type {@code Update} from a persistent storage.
+   * Retrieves a complete snapshot of type {@code Update} from a persistent storage.
    *
-   * @param seqNum
    * @return a complete snapshot of type {@link Update}, e.g {@link PermissionsUpdate}
    *         or {@link PathsUpdate}
    * @throws Exception
    */
-  K retrieveFullImage(long seqNum) throws Exception;
+  K retrieveFullImage() throws Exception;
 
 }

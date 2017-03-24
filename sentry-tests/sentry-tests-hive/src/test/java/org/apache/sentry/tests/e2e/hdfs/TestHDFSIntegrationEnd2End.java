@@ -40,6 +40,7 @@ import java.util.ArrayList;
 /**
  * This test class includes all HDFS Sync smoke tests
  */
+@Ignore
 public class TestHDFSIntegrationEnd2End extends TestHDFSIntegrationBase {
   private static final Logger LOGGER = LoggerFactory
       .getLogger(TestHDFSIntegrationEnd2End.class);

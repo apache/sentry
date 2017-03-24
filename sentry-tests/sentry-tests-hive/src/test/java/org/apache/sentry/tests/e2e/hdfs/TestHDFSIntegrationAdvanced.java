@@ -40,6 +40,7 @@ import org.apache.hadoop.hive.metastore.api.Table;
 /**
  * Advanced tests for HDFS Sync integration
  */
+@Ignore
 public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
 
   private static final Logger LOGGER = LoggerFactory

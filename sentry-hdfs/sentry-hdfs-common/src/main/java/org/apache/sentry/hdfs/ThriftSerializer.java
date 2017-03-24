@@ -25,12 +25,12 @@ import org.apache.thrift.TDeserializer;
 import org.apache.thrift.TException;
 import org.apache.thrift.TSerializer;
 import org.apache.thrift.protocol.TCompactProtocol;
-import org.apache.thrift.protocol.TSimpleJSONProtocol;
+import org.apache.thrift.protocol.TJSONProtocol;
 
 public class ThriftSerializer {
 
-  final static private TSimpleJSONProtocol.Factory tSimpleJSONProtocol =
-          new TSimpleJSONProtocol.Factory();
+  final static private TJSONProtocol.Factory tJSONProtocol =
+          new TJSONProtocol.Factory();
 
   // Use default max thrift message size here.
   // TODO: Figure out a way to make maxMessageSize configurable, eg. create a serializer singleton at startup by
@@ -67,13 +67,13 @@ public class ThriftSerializer {
 
   public static String serializeToJSON(TBase base) throws TException  {
     // Initiate a new TSerializer each time for thread safety.
-    TSerializer tSerializer = new TSerializer(tSimpleJSONProtocol);
+    TSerializer tSerializer = new TSerializer(tJSONProtocol);
     return tSerializer.toString(base);
   }
 
   public static void deserializeFromJSON(TBase base, String dataInJson) throws TException {
     // Initiate a new TDeserializer each time for thread safety.
-    TDeserializer tDeserializer = new TDeserializer(tSimpleJSONProtocol);
+    TDeserializer tDeserializer = new TDeserializer(tJSONProtocol);
     tDeserializer.fromString(base, dataInJson);
   }
 

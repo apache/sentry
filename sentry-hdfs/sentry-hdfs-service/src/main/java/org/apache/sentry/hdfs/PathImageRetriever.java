@@ -18,28 +18,35 @@
 package org.apache.sentry.hdfs;
 
 import com.codahale.metrics.Timer;
+import com.google.common.collect.Lists;
 import org.apache.sentry.hdfs.service.thrift.TPathChanges;
 import org.apache.sentry.provider.db.service.persistent.PathsImage;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 
+import javax.annotation.concurrent.ThreadSafe;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * PathImageRetriever obtains a complete snapshot of Hive Paths from a persistent
- * storage and translate it into {@code PathsUpdate} that the consumers, such as
- * HDFS NameNod, can understand.
+ * storage and translates it into {@code PathsUpdate} that the consumers, such as
+ * HDFS NameNode, can understand.
+ * <p>
+ * It is a thread safe class, as all the underlying database operation is thread safe.
  */
+@ThreadSafe
 public class PathImageRetriever implements ImageRetriever<PathsUpdate> {
 
   private final SentryStore sentryStore;
+  private final static String[] root = {"/"};
 
   PathImageRetriever(SentryStore sentryStore) {
     this.sentryStore = sentryStore;
   }
 
   @Override
-  public PathsUpdate retrieveFullImage(long seqNum) throws Exception {
+  public PathsUpdate retrieveFullImage() throws Exception {
     try (final Timer.Context timerContext =
         SentryHdfsMetricsUtil.getRetrievePathFullImageTimer.time()) {
 
@@ -54,8 +61,7 @@ public class PathImageRetriever implements ImageRetriever<PathsUpdate> {
       // Adds all <hiveObj, paths> mapping to be included in this paths update.
       // And label it with the latest delta change sequence number for consumer
       // to be aware of the next delta change it should continue with.
-      // TODO: use curSeqNum from DB instead of seqNum when doing SENTRY-1613
-      PathsUpdate pathsUpdate = new PathsUpdate(seqNum, true);
+      PathsUpdate pathsUpdate = new PathsUpdate(curSeqNum, true);
       for (Map.Entry<String, Set<String>> pathEnt : pathImage.entrySet()) {
         TPathChanges pathChange = pathsUpdate.newPathChange(pathEnt.getKey());
 
@@ -66,6 +72,14 @@ public class PathImageRetriever implements ImageRetriever<PathsUpdate> {
 
       SentryHdfsMetricsUtil.getPathChangesHistogram.update(pathsUpdate
             .getPathChanges().size());
+
+      // Translate PathsUpdate that contains a full image to TPathsDump for
+      // consumer (NN) to be able to quickly construct UpdateableAuthzPaths
+      // from TPathsDump.
+      UpdateableAuthzPaths authzPaths = new UpdateableAuthzPaths(root);
+      authzPaths.updatePartial(Lists.newArrayList(pathsUpdate),
+          new ReentrantReadWriteLock());
+      pathsUpdate.toThrift().setPathsDump(authzPaths.getPathsDump().createPathsDump());
       return pathsUpdate;
     }
   }

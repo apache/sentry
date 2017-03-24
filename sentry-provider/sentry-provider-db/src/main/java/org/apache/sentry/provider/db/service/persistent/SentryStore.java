@@ -3156,7 +3156,7 @@ public class SentryStore {
   }
 
   /**
-   * Get the last processed change ID for perm/path delta changes.
+   * Gets the last processed change ID for perm/path delta changes.
    *
    * @param pm the PersistenceManager
    * @param changeCls the class of a delta c
@@ -3164,7 +3164,7 @@ public class SentryStore {
    * @return the last processed changedID for the delta changes. If no
    *         change found then return 0.
    */
-  private <T extends MSentryChange> long getLastProcessedChangeIDCore(
+  private <T extends MSentryChange> Long getLastProcessedChangeIDCore(
       PersistenceManager pm, Class<T> changeCls) {
     Query query = pm.newQuery(changeCls);
     query.setResult("max(changeID)");
@@ -3173,14 +3173,13 @@ public class SentryStore {
   }
 
   /**
-   * Get the last processed change ID for perm delta changes.
+   * Gets the last processed change ID for perm delta changes.
    *
    * Internally invoke {@link #getLastProcessedChangeIDCore(PersistenceManager, Class)}
    *
    * @return latest perm change ID.
    */
-  @VisibleForTesting
-  long getLastProcessedPermChangeID() throws Exception {
+  public Long getLastProcessedPermChangeID() throws Exception {
     return tm.executeTransaction(
       new TransactionBlock<Long>() {
         public Long execute(PersistenceManager pm) throws Exception {
@@ -3190,12 +3189,26 @@ public class SentryStore {
   }
 
   /**
+   * Gets the last processed change ID for path delta changes.
+   *
+   * @return latest path change ID.
+   */
+  public Long getLastProcessedPathChangeID() throws Exception {
+    return tm.executeTransaction(
+    new TransactionBlock<Long>() {
+      public Long execute(PersistenceManager pm) throws Exception {
+        return getLastProcessedChangeIDCore(pm, MSentryPathChange.class);
+      }
+    });
+  }
+
+  /**
    * Get the notification ID of last processed path delta change.
    *
    * @return the notification ID of latest path change. If no change
    *         found then return 0.
    */
-  public long getLastProcessedNotificationID() throws Exception {
+  public Long getLastProcessedNotificationID() throws Exception {
     return tm.executeTransaction(
     new TransactionBlock<Long>() {
       public Long execute(PersistenceManager pm) throws Exception {
@@ -3221,8 +3234,8 @@ public class SentryStore {
       new TransactionBlock<Object>() {
         public Object execute(PersistenceManager pm) throws Exception {
           Query query = pm.newQuery(MSentryPermChange.class);
-          query.setFilter("this.changeID == t");
-          query.declareParameters("long t");
+          query.setFilter("this.changeID == id");
+          query.declareParameters("long id");
           List<MSentryPermChange> permChanges = (List<MSentryPermChange>)query.execute(changeID);
           if (permChanges == null) {
             noSuchUpdate(changeID);
@@ -3244,7 +3257,8 @@ public class SentryStore {
    * @throws Exception
    */
   @SuppressWarnings("unchecked")
-  private <T extends MSentryChange> List<T> getMSentryChanges(final Class<T> cls) throws Exception {
+  private <T extends MSentryChange> List<T> getMSentryChanges(final Class<T> cls)
+      throws Exception {
     return tm.executeTransaction(
         new TransactionBlock<List<T>>() {
           public List<T> execute(PersistenceManager pm) throws Exception {
@@ -3266,15 +3280,71 @@ public class SentryStore {
   }
 
   /**
-   * Get the MSentryPathChange object by ChangeID.
+   * Checks if any MSentryChange object exists with the given changeID.
+   *
+   * @param pm PersistenceManager
+   * @param changeCls class instance of type {@link MSentryChange}
+   * @param changeID changeID
+   * @return true if found the MSentryChange object, otherwise false.
+   * @throws Exception
+   */
+  @SuppressWarnings("unchecked")
+  private <T extends MSentryChange> Boolean changeExistsCore(
+          PersistenceManager pm, Class<T> changeCls, final long changeID)
+              throws Exception {
+    Query query = pm.newQuery(changeCls);
+    query.setFilter("this.changeID == id");
+    query.declareParameters("long id");
+    List<T> changes = (List<T>)query.execute(changeID);
+    return !changes.isEmpty();
+  }
+
+  /**
+   * Checks if any MSentryPermChange object exists with the given changeID.
+   *
+   * @param changeID
+   * @return true if found the MSentryPermChange object, otherwise false.
+   * @throws Exception
+   */
+  public Boolean permChangeExists(final long changeID) throws Exception {
+    return tm.executeTransaction(
+    new TransactionBlock<Boolean>() {
+      public Boolean execute(PersistenceManager pm) throws Exception {
+        return changeExistsCore(pm, MSentryPermChange.class, changeID);
+      }
+    });
+  }
+
+  /**
+   * Checks if any MSentryPathChange object exists with the given changeID.
+   *
+   * @param changeID
+   * @return true if found the MSentryPathChange object, otherwise false.
+   * @throws Exception
+   */
+  public Boolean pathChangeExists(final long changeID) throws Exception {
+    return tm.executeTransaction(
+    new TransactionBlock<Boolean>() {
+      public Boolean execute(PersistenceManager pm) throws Exception {
+        return changeExistsCore(pm, MSentryPathChange.class, changeID);
+      }
+    });
+  }
+
+  /**
+   * Gets the MSentryPathChange object by ChangeID.
+   *
+   * @param changeID the given changeID
+   * @return the MSentryPathChange object with corresponding changeID.
+   * @throws Exception
    */
   public MSentryPathChange getMSentryPathChangeByID(final long changeID) throws Exception {
     return (MSentryPathChange) tm.executeTransaction(
       new TransactionBlock<Object>() {
         public Object execute(PersistenceManager pm) throws Exception {
           Query query = pm.newQuery(MSentryPathChange.class);
-          query.setFilter("this.changeID == t");
-          query.declareParameters("long t");
+          query.setFilter("this.changeID == id");
+          query.declareParameters("long id");
           List<MSentryPathChange> pathChanges = (List<MSentryPathChange>)query.execute(changeID);
           if (pathChanges == null) {
             noSuchUpdate(changeID);
@@ -3294,6 +3364,88 @@ public class SentryStore {
   @VisibleForTesting
   List<MSentryPathChange> getMSentryPathChanges() throws Exception {
     return getMSentryChanges(MSentryPathChange.class);
+  }
+
+  /**
+   * Gets a list of MSentryChange objects greater than or equal to the given changeID.
+   *
+   * @param changeID
+   * @return a list of MSentryChange objects. It can returns an empty list.
+   * @throws Exception
+   */
+  @SuppressWarnings("unchecked")
+  private <T extends MSentryChange> List<T> getMSentryChangesCore(PersistenceManager pm,
+      Class<T> changeCls, final long changeID) throws Exception {
+    Query query = pm.newQuery(changeCls);
+    query.setFilter("this.changeID >= t");
+    query.declareParameters("long t");
+    List<T> changes = (List<T>) query.execute(changeID);
+    return changes;
+  }
+
+  /**
+   * Gets a list of MSentryPathChange objects greater than or equal to the given changeID.
+   * If there is any path deltas missing in {@link MSentryPathChange} table, which means
+   * the size of retrieved paths deltas is less than the requested one, an empty list will
+   * be returned to caller.
+   *
+   * @param changeID
+   * @return a list of MSentryPathChange objects. It can returns an empty list.
+   * @throws Exception
+   */
+  public List<MSentryPathChange> getMSentryPathChanges(final long changeID)
+      throws Exception {
+    return tm.executeTransaction(new TransactionBlock<List<MSentryPathChange>>() {
+      public List<MSentryPathChange> execute(PersistenceManager pm) throws Exception {
+        List<MSentryPathChange> pathChanges =
+            getMSentryChangesCore(pm, MSentryPathChange.class, changeID);
+        long curChangeID = getLastProcessedChangeIDCore(pm, MSentryPathChange.class);
+        long expectedSize = curChangeID - changeID + 1;
+        long actualSize = pathChanges.size();
+        if (actualSize < expectedSize) {
+          LOGGER.error(String.format("Certain path delta is missing in " +
+              "SENTRY_PATH_CHANEG table! Current size of elements = %s and expected size = %s, " +
+              "from changeID: %s. The table may get corrupted.",
+              actualSize, expectedSize, changeID));
+          return Collections.emptyList();
+        } else {
+          return pathChanges;
+        }
+      }
+    });
+  }
+
+  /**
+   * Gets a list of MSentryPermChange objects greater than or equal to the given ChangeID.
+   * If there is any perm deltas missing in {@link MSentryPermChange} table, which means
+   * the size of retrieved perm deltas is less than the requested one, an empty list will
+   * be returned to caller.
+   *
+   * @param changeID
+   * @return a list of MSentryPermChange objects
+   * @throws Exception
+   */
+  public List<MSentryPermChange> getMSentryPermChanges(final long changeID)
+      throws Exception {
+    return tm.executeTransaction(
+    new TransactionBlock<List<MSentryPermChange>>() {
+      public List<MSentryPermChange> execute(PersistenceManager pm) throws Exception {
+        List<MSentryPermChange> permChanges =
+            getMSentryChangesCore(pm, MSentryPermChange.class, changeID);
+        long curChangeID = getLastProcessedChangeIDCore(pm, MSentryPermChange.class);
+        long expectedSize = curChangeID - changeID + 1;
+        long actualSize = permChanges.size();
+        if (actualSize < expectedSize) {
+          LOGGER.error(String.format("Certain perm delta is missing in " +
+             "SENTRY_PERM_CHANEG table! Current size of elements = %s and expected size = %s, " +
+              "from changeID: %s. The table may get corrupted.",
+              actualSize, expectedSize, changeID));
+          return Collections.emptyList();
+        } else {
+          return permChanges;
+        }
+      }
+    });
   }
 
   /**
