@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<configuration>
+    <!--scale data -->
+    <property>
+        <name>sentry.scale.test.threads</name>
+        <value>50</value>
+    </property>
+    <property>
+        <name>sentry.scale.test.num.databases</name>
+        <value>300</value>
+    </property>
+    <property>
+        <name>sentry.scale.test.max.tables.per.database</name>
+        <value>600</value>
+    </property>
+    <property>
+        <name>sentry.scale.test.med.tables.per.database</name>
+        <value>3</value>
+    </property>
+    <property>
+        <name>sentry.scale.test.avg.views.per.database</name>
+        <value>2</value>
+    </property>
+    <property>
+        <name>sentry.scale.test.max.partitions.per.table</name>
+        <value>600</value>
+    </property>
+    <property>
+        <name>sentry.scale.test.med.partitions.per.table</name>
+        <value>10</value>
+    </property>
+    <property>
+        <name>sentry.scale.test.max.columns.per.table</name>
+        <value>100</value>
+    </property>
+    <property>
+        <name>sentry.scale.test.med.columns.per.table</name>
+        <value>10</value>
+    </property>
+    <property>
+        <name>sentry.scale.test.external.vs.managed.tables</name>
+        <value>20</value>
+    </property>
+    <property>
+        <name>sentry.scale.test.num.roles</name>
+        <value>1000</value>
+    </property>
+    <property>
+        <name>sentry.scale.test.num.groups</name>
+        <value>500</value>
+    </property>
+    <property>
+        <name>sentry.scale.test.max.roles.per.group</name>
+        <value>10</value>
+    </property>
+    <property>
+        <name>sentry.scale.test.database.privileges.per.thread</name>
+        <value>200</value>
+    </property>
+    <property>
+        <name>sentry.scale.test.table.privileges.per.thread</name>
+        <value>200</value>
+    </property>
+    <property>
+        <name>sentry.scale.test.view.privileges.per.thread</name>
+        <value>2</value>
+    </property>
+    <property>
+        <name>sentry.scale.test.column.privileges.per.thread</name>
+        <value>2</value>
+    </property>
+    <property>
+        <name>sentry.scale.test.uri.privileges.per.thread</name>
+        <value>1</value>
+    </property>
+    <!--HiveService admin user-->
+    <property>
+        <name>sentry.e2etest.admin.group</name>
+        <value>hive</value>
+    </property>
+    <property>
+        <name>sentry.e2e.hive.keytabs.location</name>
+        <value>/cdep/keytabs</value>
+    </property>
+    <!--add it into prefix list -->
+    <property>
+        <name>sentry.e2etest.scale.data.dir</name>
+        <value>extdata</value>
+    </property>
+    <property>
+        <name>sentry.e2etest.scale.data.debug</name>
+        <value>false</value>
+    </property>
+    <property>
+        <name>sentry.tests.e2e.tools.scale.max.running.seconds</name>
+        <value>1800</value>
+    </property>
+    <property>
+        <name>sentry.tests.e2e.tools.scale.thread.waiting.seconds</name>
+        <value>60</value>
+    </property>
+</configuration>

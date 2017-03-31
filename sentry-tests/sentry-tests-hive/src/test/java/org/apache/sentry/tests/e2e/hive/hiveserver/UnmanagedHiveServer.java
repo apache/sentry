@@ -21,6 +21,7 @@ import java.sql.DriverManager;
 import java.util.Properties;
 
 import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,14 +57,14 @@ public class UnmanagedHiveServer implements HiveServer {
     if(val == null || val.trim().equals("")){
       LOGGER.warn(hiveVar + " not found in the client hive-site.xml");
       if(defaultVal == null) {
-        val = System.getProperty(hiveVar);
-      }else {
+        val = System.getProperty(hiveVar, new Configuration().get(hiveVar));
+      } else {
         val = System.getProperty(hiveVar, defaultVal);
       }
       Preconditions.checkNotNull(val, "Required system property is missed: Provide it using -D"+ hiveVar);
-      LOGGER.info("Using from system property" + hiveVar + " = " + val );
+      LOGGER.info("Using from system property: " + hiveVar + " = " + val );
     }else {
-      LOGGER.info("Using from hive-site.xml" + hiveVar + " = " + val );
+      LOGGER.info("Using from hive-site.xml: " + hiveVar + " = " + val );
     }
     return val;
   }
@@ -110,6 +111,7 @@ public class UnmanagedHiveServer implements HiveServer {
     LOGGER.info("url: " + url);
     return DriverManager.getConnection(url, oProps);
   }
+
   public void kinit(String user) throws Exception{
     UserGroupInformation.loginUserFromKeytab(user, KEYTAB_LOCATION + "/" + user + ".keytab");
     LOGGER.info("Kinited user: "+ user+" keytab: "+KEYTAB_LOCATION+"/"+user+".keytab");
