@@ -32,7 +32,9 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Vector;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -248,9 +250,7 @@ class MetastoreCacheInitializer implements Closeable {
             Callable<CallResult> partTask =
                     new PartitionTask(db.getName(), tableName,
                             partsToFetch, tblPathChange);
-            synchronized (results) {
-              results.add(threadPool.submit(partTask));
-            }
+            results.add(threadPool.submit(partTask));
           }
         }
       }
@@ -284,9 +284,9 @@ class MetastoreCacheInitializer implements Closeable {
         throw new SentryMalformedPathException(msg, e);
       }
       if (dbPath != null) {
+        Preconditions.checkArgument(dbName.equalsIgnoreCase(db.getName()),
+                "Inconsistent database names \"%s\" vs \"%s\"", dbName, db.getName());
         synchronized (update) {
-          Preconditions.checkArgument(dbName.equalsIgnoreCase(db.getName()),
-            "Inconsistent database names \"%s\" vs \"%s\"", dbName, db.getName());
           update.newPathChange(dbName).addToAddPaths(dbPath);
         }
       }
@@ -298,9 +298,7 @@ class MetastoreCacheInitializer implements Closeable {
                         i + maxTablesPerCall, allTblStr.size()));
         Callable<CallResult> tableTask =
                 new TableTask(db, tablesToFetch, update);
-        synchronized (results) {
           results.add(threadPool.submit(tableTask));
-        }
       }
     }
   }
@@ -309,8 +307,8 @@ class MetastoreCacheInitializer implements Closeable {
   private final IHMSHandler hmsHandler;
   private final int maxPartitionsPerCall;
   private final int maxTablesPerCall;
-  private final List<Future<CallResult>> results =
-          new ArrayList<Future<CallResult>>();
+  // We use Vector because it is thread-safe
+  private final Collection<Future<CallResult>> results = new Vector<>();
   private final AtomicInteger taskCounter = new AtomicInteger(0);
   private final int maxRetries;
   private final int waitDurationMillis;
@@ -361,8 +359,8 @@ class MetastoreCacheInitializer implements Closeable {
       results.add(threadPool.submit(dbTask));
     }
 
-    while (taskCounter.get() > 0) {
-      Thread.sleep(1000);
+    while (taskCounter.get() != 0) {
+      Thread.sleep(250);
       // Wait until no more tasks remain
     }
 
