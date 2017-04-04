@@ -105,8 +105,8 @@ public class SentryStore {
       .getLogger(SentryStore.class);
 
   public static final String NULL_COL = "__NULL__";
-  public static int INDEX_GROUP_ROLES_MAP = 0;
-  public static int INDEX_USER_ROLES_MAP = 1;
+  public static final int INDEX_GROUP_ROLES_MAP = 0;
+  public static final int INDEX_USER_ROLES_MAP = 1;
 
   // String constants for field names
   public static final String SERVER_NAME = "serverName";
@@ -125,7 +125,10 @@ public class SentryStore {
   public static final long EMPTY_CHANGE_ID = 0L;
 
   // For counters, representation of the "unknown value"
-  private static final long COUNT_VALUE_UNKNOWN = -1;
+  private static final long COUNT_VALUE_UNKNOWN = -1L;
+
+  // Representation for unknown HMS notification ID
+  private static final long NOTIFICATION_UNKNOWN = -1L;
 
   private static final Set<String> ALL_ACTIONS = Sets.newHashSet(AccessConstants.ALL,
       AccessConstants.SELECT, AccessConstants.INSERT, AccessConstants.ALTER,
@@ -443,6 +446,23 @@ public class SentryStore {
       @Override
       public Integer getValue() {
         return counterWait.waitersCount();
+      }
+    };
+  }
+
+  /**
+   * @return current value of last processed notification ID
+   */
+  public Gauge<Long> getLastNotificationIdGauge() {
+    return new Gauge<Long>() {
+      @Override
+      public Long getValue() {
+        try {
+          return getLastProcessedNotificationID();
+        } catch (Exception e) {
+          LOGGER.error("Can not read current notificationId", e);
+          return NOTIFICATION_UNKNOWN;
+        }
       }
     };
   }
@@ -3238,8 +3258,9 @@ public class SentryStore {
           query.declareParameters("long id");
           List<MSentryPermChange> permChanges = (List<MSentryPermChange>)query.execute(changeID);
           if (permChanges == null) {
-            noSuchUpdate(changeID);
-          } else if (permChanges.size() > 1) {
+            throw noSuchUpdate(changeID);
+          }
+          if (permChanges.size() > 1) {
             throw new Exception("Inconsistent permission delta: " + permChanges.size()
                 + " permissions for the same id, " + changeID);
           }
@@ -3347,8 +3368,9 @@ public class SentryStore {
           query.declareParameters("long id");
           List<MSentryPathChange> pathChanges = (List<MSentryPathChange>)query.execute(changeID);
           if (pathChanges == null) {
-            noSuchUpdate(changeID);
-          } else if (pathChanges.size() > 1) {
+            throw noSuchUpdate(changeID);
+          }
+          if (pathChanges.size() > 1) {
             throw new Exception("Inconsistent path delta: " + pathChanges.size()
                 + " paths for the same id, " + changeID);
           }
