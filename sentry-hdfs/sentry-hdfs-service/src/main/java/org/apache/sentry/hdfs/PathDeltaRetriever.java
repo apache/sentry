@@ -17,6 +17,7 @@
  */
 package org.apache.sentry.hdfs;
 
+import com.codahale.metrics.Timer;
 import org.apache.sentry.provider.db.service.model.MSentryPathChange;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 
@@ -43,34 +44,40 @@ public class PathDeltaRetriever implements DeltaRetriever<PathsUpdate> {
 
   @Override
   public Collection<PathsUpdate> retrieveDelta(long seqNum) throws Exception {
-    Collection<MSentryPathChange> mSentryPathChanges =
-            sentryStore.getMSentryPathChanges(seqNum);
-    if (mSentryPathChanges.isEmpty()) {
-      return Collections.emptyList();
-    }
+    try (final Timer.Context timerContext =
+                 SentryHdfsMetricsUtil.getDeltaPathChangesTimer.time()) {
+      Collection<MSentryPathChange> mSentryPathChanges =
+              sentryStore.getMSentryPathChanges(seqNum);
 
-    Collection<PathsUpdate> updates = new ArrayList<>(mSentryPathChanges.size());
-    for (MSentryPathChange mSentryPathChange : mSentryPathChanges) {
-      // Gets the changeID from the persisted MSentryPathChange.
-      long changeID = mSentryPathChange.getChangeID();
-      // Creates a corresponding PathsUpdate and deserialize the
-      // persisted delta update in JSON format to TPathsUpdate with
-      // associated changeID.
-      PathsUpdate pathsUpdate = new PathsUpdate();
-      pathsUpdate.JSONDeserialize(mSentryPathChange.getPathChange());
-      pathsUpdate.setSeqNum(changeID);
-      updates.add(pathsUpdate);
+      SentryHdfsMetricsUtil.getDeltaPathChangesHistogram.update(mSentryPathChanges.size());
+
+      if (mSentryPathChanges.isEmpty()) {
+        return Collections.emptyList();
+      }
+
+      Collection<PathsUpdate> updates = new ArrayList<>(mSentryPathChanges.size());
+      for (MSentryPathChange mSentryPathChange : mSentryPathChanges) {
+        // Gets the changeID from the persisted MSentryPathChange.
+        long changeID = mSentryPathChange.getChangeID();
+        // Creates a corresponding PathsUpdate and deserialize the
+        // persisted delta update in JSON format to TPathsUpdate with
+        // associated changeID.
+        PathsUpdate pathsUpdate = new PathsUpdate();
+        pathsUpdate.JSONDeserialize(mSentryPathChange.getPathChange());
+        pathsUpdate.setSeqNum(changeID);
+        updates.add(pathsUpdate);
+      }
+      return updates;
     }
-    return updates;
   }
 
   @Override
-  public boolean isDeltaAvailable(long seqNum) throws Exception {
+  public boolean isDeltaAvailable ( long seqNum) throws Exception {
     return sentryStore.pathChangeExists(seqNum);
   }
 
   @Override
-  public long getLatestDeltaID() throws Exception {
+  public long getLatestDeltaID () throws Exception {
     return sentryStore.getLastProcessedPathChangeID();
   }
 }

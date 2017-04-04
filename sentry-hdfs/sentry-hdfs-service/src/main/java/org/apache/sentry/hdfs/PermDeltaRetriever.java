@@ -17,6 +17,7 @@
  */
 package org.apache.sentry.hdfs;
 
+import com.codahale.metrics.Timer;
 import org.apache.sentry.provider.db.service.model.MSentryPermChange;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 
@@ -43,25 +44,31 @@ public class PermDeltaRetriever implements DeltaRetriever<PermissionsUpdate> {
 
   @Override
   public Collection<PermissionsUpdate> retrieveDelta(long seqNum) throws Exception {
-    Collection<MSentryPermChange> mSentryPermChanges =
-            sentryStore.getMSentryPermChanges(seqNum);
-    if (mSentryPermChanges.isEmpty()) {
-      return Collections.emptyList();
-    }
+    try (final Timer.Context timerContext =
+                 SentryHdfsMetricsUtil.getDeltaPermChangesTimer.time()) {
+      Collection<MSentryPermChange> mSentryPermChanges =
+              sentryStore.getMSentryPermChanges(seqNum);
 
-    Collection<PermissionsUpdate> updates = new ArrayList<>(mSentryPermChanges.size());
-    for (MSentryPermChange mSentryPermChange : mSentryPermChanges) {
-      // Get the changeID from the persisted MSentryPermChange
-      long changeID = mSentryPermChange.getChangeID();
-      // Create a corresponding PermissionsUpdate and deserialize the
-      // persisted delta update in JSON format to TPermissionsUpdate with
-      // associated changeID.
-      PermissionsUpdate permsUpdate = new PermissionsUpdate();
-      permsUpdate.JSONDeserialize(mSentryPermChange.getPermChange());
-      permsUpdate.setSeqNum(changeID);
-      updates.add(permsUpdate);
+      SentryHdfsMetricsUtil.getDeltaPermChangesHistogram.update(mSentryPermChanges.size());
+
+      if (mSentryPermChanges.isEmpty()) {
+        return Collections.emptyList();
+      }
+
+      Collection<PermissionsUpdate> updates = new ArrayList<>(mSentryPermChanges.size());
+      for (MSentryPermChange mSentryPermChange : mSentryPermChanges) {
+        // Get the changeID from the persisted MSentryPermChange
+        long changeID = mSentryPermChange.getChangeID();
+        // Create a corresponding PermissionsUpdate and deserialize the
+        // persisted delta update in JSON format to TPermissionsUpdate with
+        // associated changeID.
+        PermissionsUpdate permsUpdate = new PermissionsUpdate();
+        permsUpdate.JSONDeserialize(mSentryPermChange.getPermChange());
+        permsUpdate.setSeqNum(changeID);
+        updates.add(permsUpdate);
+      }
+      return updates;
     }
-    return updates;
   }
 
   @Override
