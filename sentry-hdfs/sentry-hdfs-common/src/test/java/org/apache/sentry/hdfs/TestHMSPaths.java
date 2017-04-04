@@ -353,6 +353,7 @@ public class TestHMSPaths {
     Assert.assertEquals(prefix, root.findPrefixEntry(
         Lists.newArrayList("a", "b", "t", "p3")));
   }
+
   @Test
   public void testRenameDiffPaths() {
     String[] prefixes = {"/user/hive/warehouse"};
@@ -360,7 +361,8 @@ public class TestHMSPaths {
     //Create old table and partition locations
     String table1Path = "/user/hive/warehouse/db1.db/table1";
     String partition1Path = "/user/hive/warehouse/db1.db/table1/part1";
-    paths.addAuthzObject("db1.table1", HMSPaths.getPathsElements(Arrays.asList(table1Path, partition1Path)));
+    paths.addAuthzObject("db1.table1",
+        HMSPaths.getPathsElements(Arrays.asList(table1Path, partition1Path)));
 
     //Create new table location
     String table2Path = "/user/hive/warehouse/db2.db/table2";
@@ -368,13 +370,16 @@ public class TestHMSPaths {
             "db2.table2", HMSPaths.getPathsElements(Arrays.asList(table2Path)));
 
     //Assert that old path is not associated with a table
-    Assert.assertEquals(null, paths.findAuthzObject(HMSPaths.getPathElements(table1Path).toArray(new String[0])));
-    Assert.assertEquals(null, paths.findAuthzObject(HMSPaths.getPathElements(partition1Path).toArray(new String[0])));
+    Assert.assertEquals(null, paths.findAuthzObject(HMSPaths.getPathElements(table1Path)));
+    Assert.assertEquals(null, paths.findAuthzObject(HMSPaths.getPathElements(partition1Path)));
     //Assert that new path is associated with new table
-    Set<String> expectedSet = new HashSet<String>();
+    Set<String> expectedSet = new HashSet<>();
     expectedSet.add("db2.table2");
-    Assert.assertEquals(expectedSet, paths.findAuthzObject(HMSPaths.getPathElements(table2Path).toArray(new String[0])));
+    Assert.assertEquals(expectedSet, paths.findAuthzObject(HMSPaths.getPathElements(table2Path)));
 
+    String partition2Path = "/user/hive/warehouse/db2.db/table2/part1";
+    Assert.assertEquals(expectedSet,
+        paths.findAuthzObject(HMSPaths.getPathElements(partition2Path)));
   }
 
   @Test
@@ -384,7 +389,8 @@ public class TestHMSPaths {
     //Create table and partition locations
     String tablePath = "/user/hive/warehouse/db1.db/table1";
     String partitionPath = "/user/hive/warehouse/db1.db/table1/part1";
-    paths.addAuthzObject("db1.table1", HMSPaths.getPathsElements(Arrays.asList(tablePath, partitionPath)));
+    paths.addAuthzObject("db1.table1",
+        HMSPaths.getPathsElements(Arrays.asList(tablePath, partitionPath)));
 
     //Create new table
     paths.renameAuthzObject("db1.table1", HMSPaths.getPathsElements(Arrays.asList(tablePath)),
@@ -393,8 +399,10 @@ public class TestHMSPaths {
     //Assert that old path is associated with new table
     Set<String> expectedSet = new HashSet<String>();
     expectedSet.add("db2.table2");
-    Assert.assertEquals(expectedSet, paths.findAuthzObject(HMSPaths.getPathElements(tablePath).toArray(new String[0])));
-    Assert.assertEquals(expectedSet, paths.findAuthzObject(HMSPaths.getPathElements(partitionPath).toArray(new String[0])));
+    Assert.assertEquals(expectedSet,
+        paths.findAuthzObject(HMSPaths.getPathElements(tablePath)));
+    Assert.assertEquals(expectedSet,
+        paths.findAuthzObject(HMSPaths.getPathElements(partitionPath)));
   }
 
   @Test
