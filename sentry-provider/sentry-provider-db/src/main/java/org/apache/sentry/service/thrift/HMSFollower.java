@@ -303,20 +303,20 @@ public class HMSFollower implements Runnable {
    * @throws ExecutionException, InterruptedException, TException
    */
   private Map<String, Set<String>> fetchFullUpdate()
-        throws ExecutionException, InterruptedException, TException {
+        throws Exception {
     FullUpdateInitializer updateInitializer = null;
 
     try {
       updateInitializer = new FullUpdateInitializer(client, authzConf);
       Map<String, Set<String>> pathsUpdate = updateInitializer.createInitialUpdate();
-      LOGGER.info("#### Hive full update initialization complete !!");
+      LOGGER.info("Obtained full snapshot from HMS");
       return pathsUpdate;
     } finally {
       if (updateInitializer != null) {
         try {
           updateInitializer.close();
         } catch (Exception e) {
-          LOGGER.info("#### Exception while closing updateInitializer !!", e);
+          LOGGER.error("Exception while closing updateInitializer", e);
         }
       }
     }
