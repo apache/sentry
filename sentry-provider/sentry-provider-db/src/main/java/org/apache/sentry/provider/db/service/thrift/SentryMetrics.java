@@ -122,6 +122,7 @@ public final class SentryMetrics {
               sentryStore.getPrivilegeCountGauge());
       addGauge(SentryStore.class, "group_count", sentryStore.getGroupCountGauge());
       addGauge(SentryStore.class, "hms.waiters", sentryStore.getHMSWaitersCountGauge());
+      addGauge(SentryStore.class, "hms.notification.id", sentryStore.getLastNotificationIdGauge());
       gaugesAdded = true;
     }
   }
@@ -151,7 +152,7 @@ public final class SentryMetrics {
    */
   void initReporting(Configuration conf) {
     final String reporter = conf.get(ServerConfig.SENTRY_REPORTER);
-    if (reporter == null || reporter.isEmpty() || reportingInitialized.getAndSet(true)) {
+    if ((reporter == null) || reporter.isEmpty() || reportingInitialized.getAndSet(true)) {
       // Nothing to do, just return
       return;
     }
