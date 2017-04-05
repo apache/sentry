@@ -73,8 +73,11 @@ public final class HAContext implements AutoCloseable {
             SENTRY_HA_ZOOKEEPER_RETRIES_MAX_COUNT_DEFAULT);
     int sleepMsBetweenRetries = conf.getInt(SENTRY_HA_ZOOKEEPER_SLEEP_BETWEEN_RETRIES_MS,
             SENTRY_HA_ZOOKEEPER_SLEEP_BETWEEN_RETRIES_MS_DEFAULT);
-    this.namespace = conf.get(SENTRY_HA_ZOOKEEPER_NAMESPACE,
-        SENTRY_HA_ZOOKEEPER_NAMESPACE_DEFAULT);
+    String ns = conf.get(SENTRY_HA_ZOOKEEPER_NAMESPACE, SENTRY_HA_ZOOKEEPER_NAMESPACE_DEFAULT);
+    // Namespace shouldn't start with slash.
+    // If config namespace starts with slash, remove it first
+    this.namespace = ns.startsWith("/") ? ns.substring(1) : ns;
+
     this.zkSecure = conf.getBoolean(SENTRY_HA_ZOOKEEPER_SECURITY,
         SENTRY_HA_ZOOKEEPER_SECURITY_DEFAULT);
     this.validateConf();
