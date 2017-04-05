@@ -16,7 +16,9 @@
  */
 package org.apache.sentry.tests.e2e.hdfs;
 
+import java.io.File;
 import java.net.URI;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.Statement;
 
@@ -795,4 +797,51 @@ public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
      stmt.close();
      conn.close();
    }
+
+  @Test
+  public void testRenameHivePartitions() throws Throwable {
+    final String dbName = "db1";
+    final String tblName = "tab1";
+    final String newTblName = "tab2";
+    final String patName = "pat1";
+    dbNames = new String[]{dbName};
+    roles = new String[]{"admin_role"};
+    admin = StaticUserGroup.ADMIN1;
+
+    try (Connection conn = hiveServer2.createConnection("hive", "hive");
+      Statement stmt = conn.createStatement()) {
+
+      stmt.execute("create role admin_role");
+      stmt.execute("grant all on server server1 to role admin_role");
+      stmt.execute("grant role admin_role to group " + StaticUserGroup.ADMINGROUP);
+    }
+
+    try (Connection conn = hiveServer2.createConnection(
+        StaticUserGroup.ADMIN1, StaticUserGroup.ADMINGROUP);
+         Statement stmt = conn.createStatement()) {
+      stmt.execute("create database " + dbName);
+      stmt.execute("use " + dbName);
+      stmt.execute("create table " + tblName + " (s string) partitioned by (month int) ");
+      String tblPath = Paths.get("/user/hive/warehouse", dbName + ".db", tblName).toString();
+      String patPath = Paths.get(tblPath, patName).toString();
+      stmt.execute("alter table " + tblName + " add partition (month = 1) location '" +
+          patPath + "'");
+
+      stmt.execute("grant all on TABLE " + tblName + " to role admin_role");
+      stmt.execute("create role user_role");
+      stmt.execute("grant insert on table " + tblName + " to role user_role");
+      stmt.execute("grant role user_role to group " + StaticUserGroup.USERGROUP1);
+
+      // Rename the hive table
+      stmt.execute("alter table " + tblName + " rename to " + newTblName);
+
+      // Verify that the permissions are preserved.
+      String newTblPath = Paths.get("/user/hive/warehouse", dbName + ".db", newTblName).toString();
+      verifyOnAllSubDirs(newTblPath, FsAction.ALL, StaticUserGroup.HIVE, true);
+      verifyOnAllSubDirs(newTblPath, FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP1, true);
+      String newPatPath = new File(newTblPath, patName).toString();
+      verifyOnPath(newPatPath, FsAction.ALL, StaticUserGroup.ADMINGROUP, true);
+      verifyOnPath(newPatPath, FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP1, true);
+    }
+  }
 }
