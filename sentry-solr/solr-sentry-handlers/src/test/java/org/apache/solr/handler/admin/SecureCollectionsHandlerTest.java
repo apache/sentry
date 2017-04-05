@@ -26,8 +26,10 @@ import org.apache.solr.sentry.SentryTestBase;
 import org.apache.solr.sentry.SentrySingletonTestInstance;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class SecureCollectionsHandlerTest extends SentryTestBase {
 
   private static SolrCore core;

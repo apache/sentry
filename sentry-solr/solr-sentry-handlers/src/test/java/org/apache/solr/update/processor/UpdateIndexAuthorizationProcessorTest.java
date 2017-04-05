@@ -39,11 +39,13 @@ import org.apache.solr.update.MergeIndexesCommand;
 import org.apache.solr.update.RollbackUpdateCommand;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Test for UpdateIndexAuthorizationProcessor
  */
+@Ignore
 public class UpdateIndexAuthorizationProcessorTest extends SentryTestBase {
 
   private List<String> methodNames = Arrays.asList("processAdd", "processDelete",

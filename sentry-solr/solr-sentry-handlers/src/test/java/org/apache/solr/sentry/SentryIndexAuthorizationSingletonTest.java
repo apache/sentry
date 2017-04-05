@@ -33,6 +33,7 @@ import org.apache.solr.request.SolrQueryRequestBase;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableSet;
@@ -40,6 +41,7 @@ import com.google.common.collect.ImmutableSet;
 /**
  * Test for SentryIndexAuthorizationSingleton
  */
+@Ignore
 public class SentryIndexAuthorizationSingletonTest extends SentryTestBase {
 
   private static SolrCore core;
