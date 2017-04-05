@@ -94,7 +94,6 @@ final class LeaderStatusMonitor
   /** Unique instance of the singleton object */
   private static LeaderStatusMonitor leaderStatusMonitor = null;
 
-  private final String zkNamespace;
   private final HAContext haContext;
 
   /** Unique string describing this instance */
@@ -122,7 +121,6 @@ final class LeaderStatusMonitor
    * specifies ZooKeeper servers.
    * @param conf Configuration. The fields we are interested in are:
    *             <ul>
-   *             <li>SENTRY_HA_ZOOKEEPER_NAMESPACE</li>
    *             <li>SENTRY_HA_ZOOKEEPER_QUORUM</li>
    *             </ul>
    *             Configuration is also passed to the
@@ -132,7 +130,6 @@ final class LeaderStatusMonitor
    */
   private LeaderStatusMonitor(Configuration conf) throws Exception {
     // Only enable HA configuration if zookeeper is configured
-    zkNamespace = conf.get(SENTRY_HA_ZOOKEEPER_NAMESPACE, "");
     String zkServers = conf.get(SENTRY_HA_ZOOKEEPER_QUORUM, "");
     if (zkServers.isEmpty()) {
       isSingleNodeMode = true;
@@ -144,8 +141,7 @@ final class LeaderStatusMonitor
     isSingleNodeMode = false;
     haContext = HAContext.getHAServerContext(conf);
 
-    LOG.info("Created LeaderStatusMonitor(zkNamespace=" + zkNamespace +
-        ", incarnationId=" + incarnationId +
+    LOG.info("Created LeaderStatusMonitor(incarnationId=" + incarnationId +
         ", zkServers='" + zkServers + "')");
   }
 
@@ -158,8 +154,7 @@ final class LeaderStatusMonitor
       return;
     }
 
-    leaderSelector = haContext.newLeaderSelector(zkNamespace + "/" +
-            LEADER_SELECTOR_SUFFIX, this);
+    leaderSelector = haContext.newLeaderSelector("/" + LEADER_SELECTOR_SUFFIX, this);
     leaderSelector.setId(incarnationId);
     leaderSelector.autoRequeue();
     leaderSelector.start();
