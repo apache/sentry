@@ -38,10 +38,8 @@ import org.apache.solr.sentry.SentrySingletonTestInstance;
 import org.eclipse.jetty.util.log.Log;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore
 public class SecureCoreAdminHandlerTest extends SentryTestBase {
 
   private static SolrCore core;

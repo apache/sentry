@@ -27,13 +27,11 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Test for QueryIndexAuthorizationComponent
  */
-@Ignore
 public class QueryIndexAuthorizationComponentTest extends SentryTestBase {
   private static SolrCore core;
   private static CloudDescriptor cloudDescriptor;
