@@ -19,6 +19,7 @@
 package org.apache.sentry.provider.db.service.model;
 
 import javax.jdo.annotations.PersistenceCapable;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -29,13 +30,16 @@ import java.util.Set;
 public class MAuthzPathsMapping {
 
   private String authzObjName;
-  private Set<String> paths;
+  private Set<MPath> paths;
   private long createTimeMs;
 
-  public MAuthzPathsMapping(String authzObjName, Set<String> paths, long createTimeMs) {
+  public MAuthzPathsMapping(String authzObjName, Iterable<String> paths) {
     this.authzObjName = authzObjName;
-    this.paths = paths;
-    this.createTimeMs = createTimeMs;
+    this.paths = new HashSet<>();
+    for (String path : paths) {
+      this.paths.add(new MPath(path));
+    }
+    this.createTimeMs = System.currentTimeMillis();
   }
 
   public long getCreateTime() {
@@ -54,11 +58,23 @@ public class MAuthzPathsMapping {
     this.authzObjName = authzObjName;
   }
 
-  public void setPaths(Set<String> paths) {
+  public void setPaths(Set<MPath> paths) {
     this.paths = paths;
   }
 
-  public Set<String> getPaths() {
+  public Set<MPath> getPaths() {
+    return paths;
+  }
+
+  /*
+  This method is used to get path set in string format
+  constructed from Set<MPath>.
+  */
+  public Set<String> getPathStrings() {
+    Set<String> paths = new HashSet<>(this.paths.size());
+    for (MPath path : this.paths) {
+      paths.add(path.getPath());
+    }
     return paths;
   }
 

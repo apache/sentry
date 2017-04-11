@@ -64,6 +64,7 @@ import org.apache.sentry.provider.db.service.model.MSentryVersion;
 import org.apache.sentry.provider.db.service.model.MSentryPathChange;
 import org.apache.sentry.provider.db.service.model.MSentryPermChange;
 import org.apache.sentry.provider.db.service.thrift.SentryConfigurationException;
+import org.apache.sentry.provider.db.service.model.MPath;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessor;
 import org.apache.sentry.provider.db.service.thrift.TSentryActiveRoleSet;
 import org.apache.sentry.provider.db.service.thrift.TSentryAuthorizable;
@@ -472,6 +473,8 @@ public class SentryStore {
               pm.newQuery(MSentryPrivilege.class).deletePersistentAll();
               pm.newQuery(MSentryPermChange.class).deletePersistentAll();
               pm.newQuery(MSentryPathChange.class).deletePersistentAll();
+              pm.newQuery(MAuthzPathsMapping.class).deletePersistentAll();
+              pm.newQuery(MPath.class).deletePersistentAll();
               return null;
             }
           });
@@ -2222,7 +2225,7 @@ public class SentryStore {
               Query query = pm.newQuery(MAuthzPathsMapping.class);
               List<MAuthzPathsMapping> authzToPathsMappings = (List<MAuthzPathsMapping>) query.execute();
               for (MAuthzPathsMapping authzToPaths : authzToPathsMappings) {
-                retVal.put(authzToPaths.getAuthzObjName(), authzToPaths.getPaths());
+                retVal.put(authzToPaths.getAuthzObjName(), authzToPaths.getPathStrings());
               }
               return retVal;
             }
@@ -2265,11 +2268,11 @@ public class SentryStore {
   private void createAuthzPathsMappingCore(PersistenceManager pm, String authzObj,
       Set<String> paths) throws SentryAlreadyExistsException {
 
-    MAuthzPathsMapping mAuthzPathsMapping = getMAuthzPathsMapping(pm, authzObj);
+    MAuthzPathsMapping mAuthzPathsMapping = getMAuthzPathsMappingCore(pm, authzObj);
 
     if (mAuthzPathsMapping == null) {
       mAuthzPathsMapping =
-          new MAuthzPathsMapping(authzObj, paths, System.currentTimeMillis());
+          new MAuthzPathsMapping(authzObj, paths);
       pm.makePersistent(mAuthzPathsMapping);
     } else {
       throw new SentryAlreadyExistsException("AuthzObj: " + authzObj);
@@ -2279,7 +2282,7 @@ public class SentryStore {
   /**
    * Get the MAuthzPathsMapping object from authzObj
    */
-  public MAuthzPathsMapping getMAuthzPathsMapping(PersistenceManager pm, String authzObj) {
+  public MAuthzPathsMapping getMAuthzPathsMappingCore(PersistenceManager pm, String authzObj) {
     Query query = pm.newQuery(MAuthzPathsMapping.class);
     query.setFilter("this.authzObjName == t");
     query.declareParameters("java.lang.String t");

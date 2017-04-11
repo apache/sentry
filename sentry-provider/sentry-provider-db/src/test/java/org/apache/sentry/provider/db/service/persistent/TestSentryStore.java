@@ -1757,20 +1757,54 @@ public class TestSentryStore {
 
   @Test
   public void testAuthzPathsMapping() throws Exception {
-    sentryStore.createAuthzPathsMapping("db1.table1", Sets.newHashSet("/user/hive/warehouse/db1.db/table1"));
-    sentryStore.createAuthzPathsMapping("db1.table2", Sets.newHashSet("/user/hive/warehouse/db1.db/table2"));
+    sentryStore.createAuthzPathsMapping("db1.table1", Sets.newHashSet("/user/hive/warehouse/db1.db/table1.1","/user/hive/warehouse/db1.db/table1.2"));
+    sentryStore.createAuthzPathsMapping("db1.table2", Sets.newHashSet("/user/hive/warehouse/db1.db/table2.1","/user/hive/warehouse/db1.db/table2.2"));
 
     Map<String, Set<String>> pathsImage = sentryStore.retrieveFullPathsImage();
     assertEquals(2, pathsImage.size());
-    assertEquals(Sets.newHashSet("/user/hive/warehouse/db1.db/table1"), pathsImage.get("db1.table1"));
+    for (Map.Entry<String, Set<String>> entry : pathsImage.entrySet()) {
+      assertEquals(2, entry.getValue().size());
+    }
+    assertEquals(Sets.newHashSet("/user/hive/warehouse/db1.db/table1.1","/user/hive/warehouse/db1.db/table1.2"), pathsImage.get("db1.table1"));
+    assertEquals(Sets.newHashSet("/user/hive/warehouse/db1.db/table2.1","/user/hive/warehouse/db1.db/table2.2"), pathsImage.get("db1.table2"));
 
     Map<String, Set<String>> authzPaths = new HashMap<>();
-    authzPaths.put("db2.table1", Sets.newHashSet("/user/hive/warehouse/db2.db/table1"));
-    authzPaths.put("db2.table2", Sets.newHashSet("/user/hive/warehouse/db2.db/table2"));
+    authzPaths.put("db2.table1", Sets.newHashSet("/user/hive/warehouse/db2.db/table1.1","/user/hive/warehouse/db2.db/table1.2"));
+    authzPaths.put("db2.table2", Sets.newHashSet("/user/hive/warehouse/db2.db/table2.1","/user/hive/warehouse/db2.db/table2.2"));
     sentryStore.persistFullPathsImage(authzPaths);
     pathsImage = sentryStore.retrieveFullPathsImage();
     assertEquals(4, pathsImage.size());
-    assertEquals(Sets.newHashSet("/user/hive/warehouse/db2.db/table1"), pathsImage.get("db2.table1"));
+    for (Map.Entry<String, Set<String>> entry : pathsImage.entrySet()) {
+      assertEquals(2, entry.getValue().size());
+    }
+    assertEquals(Sets.newHashSet("/user/hive/warehouse/db2.db/table1.1","/user/hive/warehouse/db2.db/table1.2"), pathsImage.get("db2.table1"));
+    assertEquals(Sets.newHashSet("/user/hive/warehouse/db2.db/table2.1","/user/hive/warehouse/db2.db/table2.2"), pathsImage.get("db2.table2"));
+  }
+
+  /*
+  Makes sure that Authorizable object could be associated with multiple files and are associated with other Authorizable
+  objects and can be properly persisted into database.
+ */
+  @Test
+  public void testAuthzSharedPathsMapping() throws Exception {
+    sentryStore.createAuthzPathsMapping("db1.table1", Sets.newHashSet("/user/hive/warehouse/db1.db/table1.1","/user/hive/warehouse/db1.db/table1.2"));
+
+    Map<String, Set<String>> pathsImage = sentryStore.retrieveFullPathsImage();
+     assertEquals(1, pathsImage.size());
+    for (Map.Entry<String, Set<String>> entry : pathsImage.entrySet()) {
+      assertEquals(2, entry.getValue().size());
+    }
+    assertEquals(Sets.newHashSet("/user/hive/warehouse/db1.db/table1.1","/user/hive/warehouse/db1.db/table1.2"), pathsImage.get("db1.table1"));
+
+    Map<String, Set<String>> authzPaths = new HashMap<>();
+    authzPaths.put("db2.table1", Sets.newHashSet("/user/hive/warehouse/db1.db/table1.1","/user/hive/warehouse/db1.db/table1.2"));
+    sentryStore.persistFullPathsImage(authzPaths);
+    pathsImage = sentryStore.retrieveFullPathsImage();
+    assertEquals(2, pathsImage.size());
+    for (Map.Entry<String, Set<String>> entry : pathsImage.entrySet()) {
+      assertEquals(2, entry.getValue().size());
+    }
+    assertEquals(Sets.newHashSet("/user/hive/warehouse/db1.db/table1.1","/user/hive/warehouse/db1.db/table1.2"), pathsImage.get("db2.table1"));
   }
 
   public void testQueryParamBuilder() {
