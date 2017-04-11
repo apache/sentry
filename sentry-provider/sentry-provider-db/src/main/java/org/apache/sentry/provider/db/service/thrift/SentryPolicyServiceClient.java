@@ -181,4 +181,13 @@ public interface SentryPolicyServiceClient {
   public String getConfigValue(String propertyName, String defaultValue) throws SentryUserException;
 
   public void close();
+
+  /**
+   * Requests the sentry server to synchronize all HMS notification events up to the specified id.
+   * The sentry server will return once it have processed the id specified..
+   *
+   * @param id Requested HMS notification ID.
+   * @return The most recent processed notification ID.
+   */
+  public long syncNotifications(long id) throws SentryUserException;
 }
