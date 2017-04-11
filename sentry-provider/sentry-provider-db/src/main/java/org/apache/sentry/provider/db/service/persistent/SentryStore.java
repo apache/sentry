@@ -3184,7 +3184,7 @@ public class SentryStore {
    * @return the last processed changedID for the delta changes. If no
    *         change found then return 0.
    */
-  private <T extends MSentryChange> Long getLastProcessedChangeIDCore(
+  static <T extends MSentryChange> Long getLastProcessedChangeIDCore(
       PersistenceManager pm, Class<T> changeCls) {
     Query query = pm.newQuery(changeCls);
     query.setResult("max(changeID)");

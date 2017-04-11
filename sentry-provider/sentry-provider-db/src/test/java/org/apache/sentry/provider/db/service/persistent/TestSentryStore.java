@@ -20,6 +20,11 @@ package org.apache.sentry.provider.db.service.persistent;
 
 import java.io.File;
 import java.util.*;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -57,10 +62,14 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.sentry.provider.db.service.persistent.QueryParamBuilder.newQueryParamBuilder;
 
 public class TestSentryStore extends org.junit.Assert {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(TestSentryStore.class);
 
   private static File dataDir;
   private static SentryStore sentryStore;
@@ -2571,5 +2580,63 @@ public class TestSentryStore extends org.junit.Assert {
 
     // TODO: verify MSentryPathChange being purged.
     // assertEquals(1, sentryStore.getMSentryPathChanges().size());
+  }
+
+  /**
+   * This test verifies that in the case of concurrently updating delta change tables, no gap
+   * between change ID was made. All the change IDs must be consecutive ({@see SENTRY-1643}).
+   *
+   * @throws Exception
+   */
+  @Test(timeout = 60000)
+  public void testConcurrentUpdateChanges() throws Exception {
+    final int numThreads = 20;
+    final int numChangesPerThread = 100;
+    final TransactionManager tm = sentryStore.getTransactionManager();
+    final AtomicLong seqNumGenerator = new AtomicLong(0);
+    final CyclicBarrier barrier = new CyclicBarrier(numThreads);
+
+    ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+    for (int i = 0; i < numThreads; i++) {
+      executor.submit(new Runnable() {
+        @Override
+        public void run() {
+          try {
+            barrier.await();
+          } catch (Exception e) {
+            LOGGER.error("Barrier failed to await", e);
+            return;
+          }
+          for (int j = 0; j < numChangesPerThread; j++) {
+            List<TransactionBlock<Object>> tbs = new ArrayList<>();
+            PermissionsUpdate update =
+                new PermissionsUpdate(seqNumGenerator.getAndIncrement(), false);
+            tbs.add(new DeltaTransactionBlock(update));
+            try {
+              tm.executeTransaction(tbs);
+            } catch (Exception e) {
+              LOGGER.error("Failed to execute permission update transaction", e);
+              fail(String.format("Transaction failed: %s", e.getMessage()));
+            }
+          }
+        }
+      });
+    }
+    executor.shutdown();
+    executor.awaitTermination(60, TimeUnit.SECONDS);
+
+    List<MSentryPermChange> changes = sentryStore.getMSentryPermChanges();
+    assertEquals(numThreads * numChangesPerThread, changes.size());
+    TreeSet<Long> changeIDs = new TreeSet<>();
+    for (MSentryPermChange change : changes) {
+      changeIDs.add(change.getChangeID());
+    }
+    assertEquals("duplicated change ID", numThreads * numChangesPerThread, changeIDs.size());
+    long prevId = changeIDs.first() - 1;
+    for (Long changeId : changeIDs) {
+      assertTrue(String.format("Found non-consecutive number: prev=%d cur=%d", prevId, changeId),
+          changeId - prevId == 1);
+      prevId = changeId;
+    }
   }
 }

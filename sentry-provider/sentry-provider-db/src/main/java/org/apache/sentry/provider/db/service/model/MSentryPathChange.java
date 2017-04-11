@@ -67,11 +67,15 @@ public class MSentryPathChange implements MSentryChange {
   private long createTimeMs;
   private long notificationID;
 
-  public MSentryPathChange(PathsUpdate pathChange) throws TException {
+  public MSentryPathChange(long changeID, PathsUpdate pathChange) throws TException {
     // Each PathsUpdate maps to a MSentryPathChange object.
     // The PathsUpdate is generated from a HMS notification log,
     // the notification ID is stored as seqNum and
     // the notification update is serialized as JSON string.
+    //
+    // See SENTRY-1643. changeID is set after increasing 1 of the "max(changeID)" fetched from
+    // the table, to avoid holes between changeIDs. it is subjected to change.
+    this.changeID = changeID;
     this.notificationID = pathChange.getSeqNum();
     this.pathChange = pathChange.JSONSerialize();
     this.createTimeMs = System.currentTimeMillis();
