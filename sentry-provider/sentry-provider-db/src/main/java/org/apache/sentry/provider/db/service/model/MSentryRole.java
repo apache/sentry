@@ -146,14 +146,16 @@ public class MSentryRole {
     }
   }
 
-  public Set<MSentryPrivilege> removePrivileges() {
-    // copy is required since privilege.removeRole will call remotePrivilege
-    Set<MSentryPrivilege> copy = ImmutableSet.copyOf(privileges);
-    for (MSentryPrivilege privilege : copy) {
+  public void removePrivileges() {
+    // As we iterate through the loop below Method removeRole will modify the privileges set
+    // will be updated.
+    // Copy of the <code>privileges<code> is taken at the beginning of the loop to avoid using
+    // the actual privilege set in MSentryRole instance.
+
+    for (MSentryPrivilege privilege : ImmutableSet.copyOf(privileges)) {
       privilege.removeRole(this);
     }
     Preconditions.checkState(privileges.isEmpty(), "Privileges should be empty: " + privileges);
-    return copy;
   }
 
   @Override

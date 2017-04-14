@@ -24,6 +24,7 @@ import static junit.framework.Assert.fail;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Properties;
+import java.util.List;
 
 import javax.jdo.JDOHelper;
 import javax.jdo.PersistenceManager;
@@ -49,6 +50,8 @@ import com.google.common.io.Files;
 /**
  * The class tests that the new feature SENTRY-398 generic model adds the new field in the MSentryRole
  * will not affect the functionality of the origin hive/impala authorization model
+ * Some Tests below make sure that privileges are removed from sentry storage the moment they are not associated to any role.
+ * This avoid the need for PrivCleaner to perform periodic cleanup.
  */
 public class TestSentryRole {
   private static PersistenceManagerFactory pmf;
@@ -343,6 +346,175 @@ public class TestSentryRole {
     commitTransaction(pm);
   }
 
+  /**
+   * Removes a role and makes sure that privileges are removed from sentry storage
+   * moment they are not associated to any role.
+   * @throws Exception
+   */
+  @Test
+  public void testDeleteRole() throws Exception {
+    String roleName = "r1";
+    //hive/impala privilege
+    MSentryPrivilege hivePrivilege = new MSentryPrivilege();
+    hivePrivilege.setServerName("hive.server1");
+    hivePrivilege.setDbName("db1");
+    hivePrivilege.setTableName("tb1");
+    hivePrivilege.setPrivilegeScope("table");
+    hivePrivilege.setAction("select");
+    hivePrivilege.setURI(SentryStore.NULL_COL);
+    hivePrivilege.setColumnName(SentryStore.NULL_COL);
+    hivePrivilege.setGrantOption(true);
+
+    //solr privilege
+    MSentryGMPrivilege solrPrivilege = new MSentryGMPrivilege();
+    solrPrivilege.setComponentName("solr");
+    solrPrivilege.setServiceName("solr.server1");
+    solrPrivilege.setAuthorizables(Arrays.asList(new Collection("c1")));
+    solrPrivilege.setAction("query");
+    solrPrivilege.setGrantOption(true);
+
+    PersistenceManager pm = null;
+    //create role
+    pm = openTransaction();
+    pm.makePersistent(new MSentryRole(roleName, System.currentTimeMillis()));
+    commitTransaction(pm);
+
+    //grant hivePrivilege and solrPrivilege to role
+    pm = openTransaction();
+    MSentryRole role = getMSentryRole(pm, roleName);
+    hivePrivilege.appendRole(role);
+    solrPrivilege.appendRole(role);
+    pm.makePersistent(hivePrivilege);
+    pm.makePersistent(solrPrivilege);
+    pm.makePersistent(role);
+    commitTransaction(pm);
+
+    //check
+    pm = openTransaction();
+    role = getMSentryRole(pm, roleName);
+    pm.retrieve(role);
+    assertEquals(1, role.getPrivileges().size());
+    assertEquals(1, role.getGmPrivileges().size());
+    commitTransaction(pm);
+
+    //delete role
+    pm = openTransaction();
+    role = getMSentryRole(pm, roleName);
+
+    //  pm.deletePersistent(role);
+    role.removePrivileges();
+    role.removeGMPrivileges();
+    pm.deletePersistent(role);
+    commitTransaction(pm);
+
+    //check for privileges
+    //There shouldn't be any privilages
+    pm = openTransaction();
+    Query query = pm.newQuery(MSentryPrivilege.class);
+    List<MSentryPrivilege> results = (List<MSentryPrivilege>) query.execute();
+    assertEquals(1, results.size());
+    Query query1 = pm.newQuery(MSentryGMPrivilege.class);
+    List<MSentryGMPrivilege> results1 = (List<MSentryGMPrivilege>) query1.execute();
+    assertEquals(1, results1.size());
+    commitTransaction(pm);
+
+    //check
+    pm = openTransaction();
+    role = getMSentryRole(pm, roleName);
+    assertTrue(role == null);
+    commitTransaction(pm);
+  }
+
+  /**
+   * Removes a role and makes sure that privileges are not removed from sentry storage if
+   * they are associated to any other role as well.
+   * @throws Exception
+   */
+  @Test
+  public void testDeleteRole1() throws Exception {
+    String roleName1 = "r1";
+    String roleName2 = "r2";
+    //hive/impala privilege
+    MSentryPrivilege hivePrivilege = new MSentryPrivilege();
+    hivePrivilege.setServerName("hive.server1");
+    hivePrivilege.setDbName("db1");
+    hivePrivilege.setTableName("tb1");
+    hivePrivilege.setPrivilegeScope("table");
+    hivePrivilege.setAction("select");
+    hivePrivilege.setURI(SentryStore.NULL_COL);
+    hivePrivilege.setColumnName(SentryStore.NULL_COL);
+    hivePrivilege.setGrantOption(true);
+
+    //solr privilege
+    MSentryGMPrivilege solrPrivilege = new MSentryGMPrivilege();
+    solrPrivilege.setComponentName("solr");
+    solrPrivilege.setServiceName("solr.server1");
+    solrPrivilege.setAuthorizables(Arrays.asList(new Collection("c1")));
+    solrPrivilege.setAction("query");
+    solrPrivilege.setGrantOption(true);
+
+    PersistenceManager pm = null;
+    //create role1
+    pm = openTransaction();
+    pm.makePersistent(new MSentryRole(roleName1, System.currentTimeMillis()));
+    commitTransaction(pm);
+
+    //create role2
+    pm = openTransaction();
+    pm.makePersistent(new MSentryRole(roleName2, System.currentTimeMillis()));
+    commitTransaction(pm);
+
+    //grant hivePrivilege and solrPrivilege to role1 and role2
+    pm = openTransaction();
+    MSentryRole role1 = getMSentryRole(pm, roleName1);
+    MSentryRole role2 = getMSentryRole(pm, roleName2);
+    hivePrivilege.appendRole(role1);
+    solrPrivilege.appendRole(role1);
+    hivePrivilege.appendRole(role2);
+    solrPrivilege.appendRole(role2);
+    pm.makePersistent(hivePrivilege);
+    pm.makePersistent(solrPrivilege);
+    pm.makePersistent(role1);
+    pm.makePersistent(role2);
+    commitTransaction(pm);
+
+    //check
+    pm = openTransaction();
+    role1 = getMSentryRole(pm, roleName1);
+    pm.retrieve(role1);
+    assertEquals(1, role1.getPrivileges().size());
+    assertEquals(1, role1.getGmPrivileges().size());
+    role2 = getMSentryRole(pm, roleName2);
+    pm.retrieve(role2);
+    assertEquals(1, role2.getPrivileges().size());
+    assertEquals(1, role2.getGmPrivileges().size());
+    commitTransaction(pm);
+
+    //delete role
+    pm = openTransaction();
+    role1 = getMSentryRole(pm, roleName1);
+    role1.removePrivileges();
+    role1.removeGMPrivileges();
+    pm.deletePersistent(role1);
+    commitTransaction(pm);
+
+    //check for privileges
+    //Privileges should be present
+    pm = openTransaction();
+    Query query = pm.newQuery(MSentryPrivilege.class);
+    List<MSentryPrivilege> results = (List<MSentryPrivilege>) query.execute();
+    assertEquals(1, results.size());
+    Query query1 = pm.newQuery(MSentryGMPrivilege.class);
+    List<MSentryGMPrivilege> results1 = (List<MSentryGMPrivilege>) query1.execute();
+    assertEquals(1, results1.size());
+    commitTransaction(pm);
+
+    //check
+    pm = openTransaction();
+    role1 = getMSentryRole(pm, roleName1);
+    assertTrue(role1 == null);
+    commitTransaction(pm);
+  }
   private PersistenceManager openTransaction() {
     PersistenceManager pm = pmf.getPersistenceManager();
     Transaction currentTransaction = pm.currentTransaction();
