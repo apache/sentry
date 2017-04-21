@@ -2519,17 +2519,15 @@ public class SentryStore {
       });
   }
 
-  public void createAuthzPathsMapping(final String hiveObj,
-      final Set<String> paths) throws Exception {
-    tm.executeTransactionWithRetry(
-        new TransactionBlock<Object>() {
-          public Object execute(PersistenceManager pm) throws Exception {
-            createAuthzPathsMappingCore(pm, hiveObj, paths);
-            return null;
-          }
-        });
-  }
-
+  /**
+   * Create an entry for the given authzObj and with a set of paths in
+   * the authzObj -> [Paths] mapping.
+   *
+   * @param authzObj an authzObj
+   * @param paths a set of paths need to be added into the authzObj -> [Paths] mapping
+   * @throws SentryAlreadyExistsException if this authzObj has already exist
+   *          in the mapping.
+   */
   private void createAuthzPathsMappingCore(PersistenceManager pm, String authzObj,
       Set<String> paths) throws SentryAlreadyExistsException {
 
@@ -2545,14 +2543,295 @@ public class SentryStore {
   }
 
   /**
+   * Adds the authzObj and with a set of paths into the authzObj -> [Paths] mapping.
+   * As well as persist the corresponding delta path change to MSentryPathChange
+   * table in a single transaction.
+   *
+   * @param authzObj an authzObj
+   * @param paths a set of paths need to be added into the authzObj -> [Paths] mapping
+   * @param update the corresponding path delta update
+   * @throws Exception
+   */
+  public void addAuthzPathsMapping(final String authzObj, final Set<String> paths,
+      final Update update) throws Exception {
+    execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
+      public Object execute(PersistenceManager pm) throws Exception {
+        addAuthzPathsMappingCore(pm, authzObj, paths);
+        return null;
+      }
+    });
+  }
+
+  /**
+   * Adds the authzObj and with a set of paths into the authzObj -> [Paths] mapping.
+   * If the given authzObj already exists in the mapping, only need to add the new paths
+   * into its mapping.
+   *
+   * @param pm PersistenceManager
+   * @param authzObj an authzObj
+   * @param paths a set of paths need to be added into the authzObj -> [Paths] mapping
+   */
+  private void addAuthzPathsMappingCore(PersistenceManager pm, String authzObj,
+        Set<String> paths) {
+    MAuthzPathsMapping mAuthzPathsMapping = getMAuthzPathsMappingCore(pm, authzObj);
+    if (mAuthzPathsMapping == null) {
+      mAuthzPathsMapping = new MAuthzPathsMapping(authzObj, paths);
+    } else {
+      for (String path : paths) {
+        mAuthzPathsMapping.addPath(new MPath(path));
+      }
+    }
+    pm.makePersistent(mAuthzPathsMapping);
+  }
+
+  /**
+   * Deletes a set of paths belongs to given authzObj from the authzObj -> [Paths] mapping.
+   * As well as persist the corresponding delta path change to MSentryPathChange
+   * table in a single transaction.
+   *
+   * @param authzObj an authzObj
+   * @param paths a set of paths need to be deleted from the authzObj -> [Paths] mapping
+   * @param update the corresponding path delta update
+   */
+  public void deleteAuthzPathsMapping(final String authzObj, final Set<String> paths,
+      final Update update) throws Exception {
+    execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
+      public Object execute(PersistenceManager pm) throws Exception {
+        deleteAuthzPathsMappingCore(pm, authzObj, paths);
+        return null;
+      }
+    });
+  }
+
+  /**
+   * Deletes a set of paths belongs to given authzObj from the authzObj -> [Paths] mapping.
+   *
+   * @param pm PersistenceManager
+   * @param authzObj an authzObj
+   * @param paths a set of paths need to be deleted from the authzObj -> [Paths] mapping.
+   * @throws SentryNoSuchObjectException if cannot find the existing authzObj or path.
+   */
+  private void deleteAuthzPathsMappingCore(PersistenceManager pm, String authzObj,
+        Set<String> paths) {
+    MAuthzPathsMapping mAuthzPathsMapping = getMAuthzPathsMappingCore(pm, authzObj);
+    if (mAuthzPathsMapping != null) {
+      for (String path : paths) {
+        MPath mPath = mAuthzPathsMapping.getPath(path);
+        if (mPath == null) {
+          LOGGER.error("nonexistent path: " + path);
+        } else {
+          mAuthzPathsMapping.removePath(mPath);
+          pm.deletePersistent(mPath);
+        }
+      }
+      pm.makePersistent(mAuthzPathsMapping);
+    } else {
+      LOGGER.error("nonexistent authzObj: " + authzObj);
+    }
+  }
+
+  /**
+   * Deletes all entries of the given authzObj from the authzObj -> [Paths] mapping.
+   * As well as persist the corresponding delta path change to MSentryPathChange
+   * table in a single transaction.
+   *
+   * @param authzObj an authzObj to be deleted
+   * @param update the corresponding path delta update
+   */
+  public void deleteAllAuthzPathsMapping(final String authzObj, final Update update)
+        throws Exception {
+    execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
+      public Object execute(PersistenceManager pm) throws Exception {
+        deleteAllAuthzPathsMappingCore(pm, authzObj);
+        return null;
+      }
+    });
+  }
+
+  /**
+   * Deletes the entry of the given authzObj from the authzObj -> [Paths] mapping.
+   *
+   * @param pm PersistenceManager
+   * @param authzObj an authzObj to be deleted
+   * @throws SentryNoSuchObjectException if cannot find the existing authzObj
+   */
+  private void deleteAllAuthzPathsMappingCore(PersistenceManager pm, String authzObj) {
+    MAuthzPathsMapping mAuthzPathsMapping = getMAuthzPathsMappingCore(pm, authzObj);
+    if (mAuthzPathsMapping != null) {
+      for (MPath mPath : mAuthzPathsMapping.getPaths()) {
+        mAuthzPathsMapping.removePath(mPath);
+        pm.deletePersistent(mPath);
+      }
+      pm.deletePersistent(mAuthzPathsMapping);
+    } else {
+      LOGGER.error("nonexistent authzObj: " + authzObj);
+    }
+  }
+
+  /**
+   * Renames the existing authzObj to a new one in the authzObj -> [Paths] mapping.
+   * And updates its existing path with a new path, while keeps the rest of its paths
+   * untouched if there is any. As well as persist the corresponding delta path
+   * change to MSentryPathChange table in a single transaction.
+   *
+   * @param oldObj the existing authzObj
+   * @param newObj the new name to be changed to
+   * @param oldPath a existing path of the given authzObj
+   * @param newPath a new path to be changed to
+   * @param update the corresponding path delta update
+   */
+  public void renameAuthzPathsMapping(final String oldObj, final String newObj,
+      final String oldPath, final String newPath, final Update update) throws Exception {
+    execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
+      public Object execute(PersistenceManager pm) throws Exception {
+        renameAuthzPathsMappingCore(pm, oldObj, newObj, oldPath, newPath);
+        return null;
+      }
+    });
+  }
+
+  /**
+   * Renames the existing authzObj to a new one in the authzObj -> [Paths] mapping.
+   * And updates its existing path with a new path, while keeps the rest of its paths
+   * untouched if there is any.
+   *
+   * @param pm PersistenceManager
+   * @param oldObj the existing authzObj
+   * @param newObj the new name to be changed to
+   * @param oldPath a existing path of the given authzObj
+   * @param newPath a new path to be changed to
+   * @throws SentryNoSuchObjectException if cannot find the existing authzObj or path.
+   */
+  private void renameAuthzPathsMappingCore(PersistenceManager pm, String oldObj,
+        String newObj, String oldPath, String newPath) {
+    MAuthzPathsMapping mAuthzPathsMapping = getMAuthzPathsMappingCore(pm, oldObj);
+    if (mAuthzPathsMapping != null) {
+      MPath mOldPath = mAuthzPathsMapping.getPath(oldPath);
+      if (mOldPath == null) {
+        LOGGER.error("nonexistent path: " + oldPath);
+      } else {
+        mAuthzPathsMapping.removePath(mOldPath);
+        pm.deletePersistent(mOldPath);
+      }
+      mAuthzPathsMapping.addPath(new MPath(newPath));
+      mAuthzPathsMapping.setAuthzObjName(newObj);
+      pm.makePersistent(mAuthzPathsMapping);
+    } else {
+      LOGGER.error("nonexistent authzObj: " + oldObj);
+    }
+  }
+
+  /**
+   * Renames the existing authzObj to a new one in the authzObj -> [Paths] mapping,
+   * but keeps its paths mapping as-is. As well as persist the corresponding delta path
+   * change to MSentryPathChange table in a single transaction.
+   *
+   * @param oldObj the existing authzObj
+   * @param newObj the new name to be changed to
+   * @param update the corresponding path delta update
+   */
+  public void renameAuthzObj(final String oldObj, final String newObj,
+      final Update update) throws Exception {
+    execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
+      public Object execute(PersistenceManager pm) throws Exception {
+        renameAuthzObjCore(pm, oldObj, newObj);
+        return null;
+      }
+    });
+  }
+
+  /**
+   * Renames the existing authzObj to a new one in the authzObj -> [Paths] mapping,
+   * but keeps its paths mapping as-is.
+   *
+   * @param pm PersistenceManager
+   * @param oldObj the existing authzObj
+   * @param newObj the new name to be changed to
+   * @throws SentryNoSuchObjectException if cannot find the existing authzObj.
+   */
+  private void renameAuthzObjCore(PersistenceManager pm, String oldObj,
+      String newObj) {
+    MAuthzPathsMapping mAuthzPathsMapping = getMAuthzPathsMappingCore(pm, oldObj);
+    if (mAuthzPathsMapping != null) {
+      mAuthzPathsMapping.setAuthzObjName(newObj);
+      pm.makePersistent(mAuthzPathsMapping);
+    } else {
+      LOGGER.error("nonexistent authzObj: " + oldObj);
+    }
+  }
+
+  /**
+   * Updates authzObj -> [Paths] mapping to replace an existing path with a new one
+   * given an authzObj. As well as persist the corresponding delta path change to
+   * MSentryPathChange table in a single transaction.
+   *
+   * @param authzObj an authzObj
+   * @param oldPath the existing path maps to the given authzObj
+   * @param newPath a new path to replace the existing one
+   * @param update the corresponding path delta update
+   * @throws Exception
+   */
+  public void updateAuthzPathsMapping(final String authzObj, final String oldPath,
+        final String newPath, final Update update) throws Exception {
+    execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
+      public Object execute(PersistenceManager pm) throws Exception {
+        updateAuthzPathsMappingCore(pm, authzObj, oldPath, newPath);
+        return null;
+      }
+    });
+  }
+
+  /**
+   * Updates authzObj -> [Paths] mapping to replace an existing path with a new one
+   * given an authzObj.
+   *
+   * @param pm PersistenceManager
+   * @param authzObj an authzObj
+   * @param oldPath the existing path maps to the given authzObj
+   * @param newPath a non-empty path to replace the existing one
+   * @throws SentryNoSuchObjectException if no such path found
+   *        in the authzObj -> [Paths] mapping.
+   */
+  private void updateAuthzPathsMappingCore(PersistenceManager pm, String authzObj,
+        String oldPath, String newPath) {
+
+    MAuthzPathsMapping mAuthzPathsMapping = getMAuthzPathsMappingCore(pm, authzObj);
+    if (mAuthzPathsMapping == null) {
+      mAuthzPathsMapping = new MAuthzPathsMapping(authzObj, Sets.newHashSet(newPath));
+    } else {
+      MPath mOldPath = mAuthzPathsMapping.getPath(oldPath);
+      if (mOldPath == null) {
+        LOGGER.error("nonexistent path: " + oldPath);
+      } else {
+        mAuthzPathsMapping.removePath(mOldPath);
+        pm.deletePersistent(mOldPath);
+      }
+      MPath mNewPath = new MPath(newPath);
+      mAuthzPathsMapping.addPath(mNewPath);
+    }
+    pm.makePersistent(mAuthzPathsMapping);
+  }
+
+  /**
    * Get the MAuthzPathsMapping object from authzObj
    */
-  public MAuthzPathsMapping getMAuthzPathsMappingCore(PersistenceManager pm, String authzObj) {
+  private MAuthzPathsMapping getMAuthzPathsMappingCore(PersistenceManager pm,
+        String authzObj) {
     Query query = pm.newQuery(MAuthzPathsMapping.class);
-    query.setFilter("this.authzObjName == t");
-    query.declareParameters("java.lang.String t");
+    query.setFilter("this.authzObjName == authzObjName");
+    query.declareParameters("java.lang.String authzObjName");
     query.setUnique(true);
     return (MAuthzPathsMapping) query.execute(authzObj);
+  }
+
+  @VisibleForTesting
+  List<MPath> getMPaths() throws Exception {
+    return tm.executeTransaction(new TransactionBlock<List<MPath>>() {
+      public List<MPath> execute(PersistenceManager pm) throws Exception {
+        Query query = pm.newQuery(MPath.class);
+        return (List<MPath>) query.execute();
+      }
+    });
   }
 
   /**
@@ -3193,6 +3472,24 @@ public class SentryStore {
   }
 
   /**
+   * Return exception for nonexistent path
+   * @param path path name
+   * @return SentryNoSuchObjectException with appropriate message
+   */
+  private SentryNoSuchObjectException noSuchPath(final String path) {
+    return new SentryNoSuchObjectException("nonexistent path + " + path);
+  }
+
+  /**
+   * Return exception for nonexistent authzObj
+   * @param authzObj an authzObj
+   * @return SentryNoSuchObjectException with appropriate message
+   */
+  private SentryNoSuchObjectException noSuchAuthzObj(final String authzObj) {
+    return new SentryNoSuchObjectException("nonexistent authzObj + " + authzObj);
+  }
+
+  /**
    * Fetch all {@link MSentryChange} in the database.
    *
    * @param cls the class of the Sentry delta change.
@@ -3395,8 +3692,8 @@ public class SentryStore {
   /**
    * Execute Perm/Path UpdateTransaction and corresponding actual
    * action transaction, e.g dropSentryRole, in a single transaction.
-   * The order of the transaction does not matter because there is no
-   * any return value.
+   * Note that this method only applies to TransactionBlock that
+   * does not have any return value.
    * <p>
    * Failure in any TransactionBlock would cause the whole transaction
    * to fail.

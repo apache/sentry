@@ -66,6 +66,30 @@ public class MAuthzPathsMapping {
     return paths;
   }
 
+  public boolean removePath(MPath path) {
+    return paths.remove(path);
+  }
+
+  public void addPath(MPath path) {
+    paths.add(path);
+  }
+
+  /**
+   * Gets MPath object that has the given path value.
+   * TODO: Try to avoid loop lookup in future for performance improvement.
+   *
+   * @param path the given path name
+   * @return an Path object that has the given path value.
+   */
+  public MPath getPath(String path) {
+    for (MPath mPath : paths) {
+      if (mPath.getPath().equals(path)) {
+        return mPath;
+      }
+    }
+    return null;
+  }
+
   /*
   This method is used to get path set in string format
   constructed from Set<MPath>.

@@ -161,7 +161,7 @@ public class PathsUpdate implements Updateable.Update {
    * @param paths
    * @return a path string concatenated by "/".
    */
-  public static String cancatePath(Iterable<String> paths) {
+  public static String concatenatePath(Iterable<String> paths) {
     return Joiner.on("/").join(paths);
   }
 
