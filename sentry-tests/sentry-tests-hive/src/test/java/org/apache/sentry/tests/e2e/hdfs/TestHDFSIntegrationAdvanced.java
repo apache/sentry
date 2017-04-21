@@ -31,7 +31,6 @@ import org.apache.sentry.hdfs.PathsUpdate;
 import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.slf4j.Logger;
@@ -42,7 +41,6 @@ import org.apache.hadoop.hive.metastore.api.Table;
 /**
  * Advanced tests for HDFS Sync integration
  */
-@Ignore
 public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
 
   private static final Logger LOGGER = LoggerFactory
@@ -596,7 +594,7 @@ public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
     // Create external table tab2 and partition on location '/tmp/external'.
     // Create tab2_role, and grant it with select permission on table tab2 to user_group2.
     stmt.execute("create external table tab2 (s string) partitioned by (month int)");
-    stmt.execute("alter table tab2 add partition (month = 1) location '" + tmpHDFSPartitionStr + "'");
+    stmt.execute("alter table tab2 add partition (month = 1) location '" + tmpHDFSDirStr + "'");
     stmt.execute("create role tab2_role");
     stmt.execute("grant select on table tab2 to role tab2_role");
     stmt.execute("grant role tab2_role to group " + StaticUserGroup.USERGROUP2);

@@ -343,7 +343,7 @@ public final class FullUpdateInitializer implements AutoCloseable {
         List<List<String>> addPaths = pathChanges.getAddPaths();
         Set<String> paths = Sets.newHashSet();
         for (List<String> addPath : addPaths) {
-          paths.add(PathsUpdate.cancatePath(addPath));
+          paths.add(PathsUpdate.concatenatePath(addPath));
         }
         authzObjToPath.put(pathChanges.getAuthzObj(), paths);
       }

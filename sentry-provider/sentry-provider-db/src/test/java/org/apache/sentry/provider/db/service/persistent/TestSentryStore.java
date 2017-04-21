@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.collect.Maps;
+import com.google.common.collect.Lists;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.alias.CredentialProvider;
@@ -42,10 +43,12 @@ import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.db.SentryAlreadyExistsException;
 import org.apache.sentry.provider.db.SentryGrantDeniedException;
 import org.apache.sentry.provider.db.SentryNoSuchObjectException;
+import org.apache.sentry.hdfs.PathsUpdate;
 import org.apache.sentry.hdfs.PermissionsUpdate;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
 import org.apache.sentry.hdfs.service.thrift.TRoleChanges;
 import org.apache.sentry.provider.db.service.model.MSentryPermChange;
+import org.apache.sentry.provider.db.service.model.MSentryPathChange;
 import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
 import org.apache.sentry.provider.db.service.thrift.TSentryActiveRoleSet;
@@ -1799,62 +1802,169 @@ public class TestSentryStore {
     assertEquals(2, roles.size());
   }
 
+  /**
+   * Verifies complete snapshot of HMS Paths can be persisted and retrieved properly.
+   */
   @Test
-  public void testAuthzPathsMapping() throws Exception {
-    sentryStore.createAuthzPathsMapping("db1.table1", Sets.newHashSet("/user/hive/warehouse/db1.db/table1.1","/user/hive/warehouse/db1.db/table1.2"));
-    sentryStore.createAuthzPathsMapping("db1.table2", Sets.newHashSet("/user/hive/warehouse/db1.db/table2.1","/user/hive/warehouse/db1.db/table2.2"));
-
+  public void testPersistFullPathsImage() throws Exception {
+    Map<String, Set<String>> authzPaths = new HashMap<>();
+    // Makes sure that authorizable object could be associated
+    // with different paths and can be properly persisted into database.
+    authzPaths.put("db1.table1", Sets.newHashSet("/user/hive/warehouse/db2.db/table1.1",
+                                                "/user/hive/warehouse/db2.db/table1.2"));
+    // Makes sure that the same MPaths object could be associated
+    // with multiple authorizable and can be properly persisted into database.
+    authzPaths.put("db1.table2", Sets.newHashSet("/user/hive/warehouse/db2.db/table2.1",
+                                                "/user/hive/warehouse/db2.db/table2.2"));
+    authzPaths.put("db2.table2", Sets.newHashSet("/user/hive/warehouse/db2.db/table2.1",
+                                                "/user/hive/warehouse/db2.db/table2.3"));
+    sentryStore.persistFullPathsImage(authzPaths);
     PathsImage pathsImage = sentryStore.retrieveFullPathsImage();
     Map<String, Set<String>> pathImage = pathsImage.getPathImage();
-    assertEquals(2, pathImage.size());
+    assertEquals(3, pathImage.size());
     for (Map.Entry<String, Set<String>> entry : pathImage.entrySet()) {
       assertEquals(2, entry.getValue().size());
     }
-    assertEquals(Sets.newHashSet("/user/hive/warehouse/db1.db/table1.1","/user/hive/warehouse/db1.db/table1.2"), pathImage.get("db1.table1"));
-    assertEquals(Sets.newHashSet("/user/hive/warehouse/db1.db/table2.1","/user/hive/warehouse/db1.db/table2.2"), pathImage.get("db1.table2"));
-
-    Map<String, Set<String>> authzPaths = new HashMap<>();
-    authzPaths.put("db2.table1", Sets.newHashSet("/user/hive/warehouse/db2.db/table1.1","/user/hive/warehouse/db2.db/table1.2"));
-    authzPaths.put("db2.table2", Sets.newHashSet("/user/hive/warehouse/db2.db/table2.1","/user/hive/warehouse/db2.db/table2.2"));
-    sentryStore.persistFullPathsImage(authzPaths);
-    pathsImage = sentryStore.retrieveFullPathsImage();
-    pathImage = pathsImage.getPathImage();
-    assertEquals(4, pathImage.size());
-    for (Map.Entry<String, Set<String>> entry : pathImage.entrySet()) {
-      assertEquals(2, entry.getValue().size());
-    }
-    assertEquals(Sets.newHashSet("/user/hive/warehouse/db2.db/table1.1","/user/hive/warehouse/db2.db/table1.2"), pathImage.get("db2.table1"));
-    assertEquals(Sets.newHashSet("/user/hive/warehouse/db2.db/table2.1","/user/hive/warehouse/db2.db/table2.2"), pathImage.get("db2.table2"));
+    assertEquals(2, pathImage.get("db2.table2").size());
+    assertEquals(Sets.newHashSet("/user/hive/warehouse/db2.db/table1.1",
+                                "/user/hive/warehouse/db2.db/table1.2"),
+                                pathImage.get("db1.table1"));
+    assertEquals(Sets.newHashSet("/user/hive/warehouse/db2.db/table2.1",
+                                "/user/hive/warehouse/db2.db/table2.2"),
+                                pathImage.get("db1.table2"));
+    assertEquals(Sets.newHashSet("/user/hive/warehouse/db2.db/table2.1",
+                                "/user/hive/warehouse/db2.db/table2.3"),
+                                pathImage.get("db2.table2"));
+    assertEquals(6, sentryStore.getMPaths().size());
   }
 
-  /*
-  Makes sure that Authorizable object could be associated with multiple files and are associated with other Authorizable
-  objects and can be properly persisted into database.
- */
   @Test
-  public void testAuthzSharedPathsMapping() throws Exception {
-    sentryStore.createAuthzPathsMapping("db1.table1", Sets.newHashSet("/user/hive/warehouse/db1.db/table1.1","/user/hive/warehouse/db1.db/table1.2"));
-
+  public void testAddDeleteAuthzPathsMapping() throws Exception {
+    // Add "db1.table1" authzObj
+    PathsUpdate addUpdate = new PathsUpdate(0, false);
+    addUpdate.newPathChange("db1.table").
+          addToAddPaths(Arrays.asList("db1", "tbl1"));
+    addUpdate.newPathChange("db1.table").
+          addToAddPaths(Arrays.asList("db1", "tbl2"));
+    sentryStore.addAuthzPathsMapping("db1.table",
+          Sets.newHashSet("db1/tbl1", "db1/tbl2"), addUpdate);
     PathsImage pathsImage = sentryStore.retrieveFullPathsImage();
     Map<String, Set<String>> pathImage = pathsImage.getPathImage();
-     assertEquals(1, pathImage.size());
-    for (Map.Entry<String, Set<String>> entry : pathImage.entrySet()) {
-      assertEquals(2, entry.getValue().size());
-    }
-    assertEquals(Sets.newHashSet("/user/hive/warehouse/db1.db/table1.1","/user/hive/warehouse/db1.db/table1.2"), pathImage.get("db1.table1"));
+    assertEquals(1, pathImage.size());
+    assertEquals(2, pathImage.get("db1.table").size());
+    assertEquals(2, sentryStore.getMPaths().size());
 
-    Map<String, Set<String>> authzPaths = new HashMap<>();
-    authzPaths.put("db2.table1", Sets.newHashSet("/user/hive/warehouse/db1.db/table1.1","/user/hive/warehouse/db1.db/table1.2"));
-    sentryStore.persistFullPathsImage(authzPaths);
-    pathsImage = sentryStore.retrieveFullPathsImage();
-    pathImage = pathsImage.getPathImage();
-    assertEquals(2, pathImage.size());
-    for (Map.Entry<String, Set<String>> entry : pathImage.entrySet()) {
-      assertEquals(2, entry.getValue().size());
-    }
-    assertEquals(Sets.newHashSet("/user/hive/warehouse/db1.db/table1.1","/user/hive/warehouse/db1.db/table1.2"), pathImage.get("db2.table1"));
+    // Query the persisted path change and ensure it equals to the original one
+    long lastChangeID = sentryStore.getLastProcessedPathChangeID();
+    MSentryPathChange addPathChange = sentryStore.getMSentryPathChangeByID(lastChangeID);
+    assertEquals(addUpdate.JSONSerialize(), addPathChange.getPathChange());
+
+    // Delete path 'db1.db/tbl1' from "db1.table1" authzObj.
+    PathsUpdate delUpdate = new PathsUpdate(1, false);
+    delUpdate.newPathChange("db1.table")
+          .addToDelPaths(Arrays.asList("db1", "tbl1"));
+    sentryStore.deleteAuthzPathsMapping("db1.table", Sets.newHashSet("db1/tbl1"), delUpdate);
+    pathImage = sentryStore.retrieveFullPathsImage().getPathImage();
+    assertEquals(1, pathImage.size());
+    assertEquals(1, pathImage.get("db1.table").size());
+    assertEquals(1, sentryStore.getMPaths().size());
+
+    // Query the persisted path change and ensure it equals to the original one
+    lastChangeID = sentryStore.getLastProcessedPathChangeID();
+    MSentryPathChange delPathChange = sentryStore.getMSentryPathChangeByID(lastChangeID);
+    assertEquals(delUpdate.JSONSerialize(), delPathChange.getPathChange());
+
+    // Delete "db1.table" authzObj from the authzObj -> [Paths] mapping.
+    PathsUpdate delAllupdate = new PathsUpdate(2, false);
+    delAllupdate.newPathChange("db1.table")
+        .addToDelPaths(Lists.newArrayList(PathsUpdate.ALL_PATHS));
+    sentryStore.deleteAllAuthzPathsMapping("db1.table", delAllupdate);
+    pathImage = sentryStore.retrieveFullPathsImage().getPathImage();
+    assertEquals(0, pathImage.size());
+    assertEquals(0, sentryStore.getMPaths().size());
+
+    // Query the persisted path change and ensure it equals to the original one
+    lastChangeID = sentryStore.getLastProcessedPathChangeID();
+    MSentryPathChange delAllPathChange = sentryStore.getMSentryPathChangeByID(lastChangeID);
+    assertEquals(delAllupdate.JSONSerialize(), delAllPathChange.getPathChange());
   }
 
+  @Test
+  public void testRenameUpdateAuthzPathsMapping() throws Exception {
+    Map<String, Set<String>> authzPaths = new HashMap<>();
+    authzPaths.put("db1.table1", Sets.newHashSet("user/hive/warehouse/db1.db/table1",
+                                                "user/hive/warehouse/db1.db/table1/p1"));
+    authzPaths.put("db1.table2", Sets.newHashSet("user/hive/warehouse/db1.db/table2"));
+    sentryStore.persistFullPathsImage(authzPaths);
+    Map<String, Set<String>> pathsImage = sentryStore.retrieveFullPathsImage().getPathImage();
+    assertEquals(2, pathsImage.size());
+
+    // Rename path of 'db1.table1' from 'db1.table1' to 'db1.newTable1'
+    PathsUpdate renameUpdate = new PathsUpdate(0, false);
+    renameUpdate.newPathChange("db1.table1")
+        .addToDelPaths(Arrays.asList("user", "hive", "warehouse", "db1.db", "table1"));
+    renameUpdate.newPathChange("db1.newTable1")
+        .addToAddPaths(Arrays.asList("user", "hive", "warehouse", "db1.db", "newTable1"));
+    sentryStore.renameAuthzPathsMapping("db1.table1", "db1.newTable1",
+    "user/hive/warehouse/db1.db/table1", "user/hive/warehouse/db1.db/newTable1", renameUpdate);
+    pathsImage = sentryStore.retrieveFullPathsImage().getPathImage();
+    assertEquals(2, pathsImage.size());
+    assertEquals(3, sentryStore.getMPaths().size());
+    assertTrue(pathsImage.containsKey("db1.newTable1"));
+    assertEquals(Sets.newHashSet("user/hive/warehouse/db1.db/table1/p1",
+                                "user/hive/warehouse/db1.db/newTable1"),
+                  pathsImage.get("db1.newTable1"));
+
+    // Query the persisted path change and ensure it equals to the original one
+    long lastChangeID = sentryStore.getLastProcessedPathChangeID();
+    MSentryPathChange renamePathChange = sentryStore.getMSentryPathChangeByID(lastChangeID);
+    assertEquals(renameUpdate.JSONSerialize(), renamePathChange.getPathChange());
+
+    // Rename 'db1.table1' to "db1.table2" but did not change its location.
+    renameUpdate = new PathsUpdate(1, false);
+    renameUpdate.newPathChange("db1.newTable1")
+        .addToDelPaths(Arrays.asList("user", "hive", "warehouse", "db1.db", "newTable1"));
+    renameUpdate.newPathChange("db1.newTable2")
+        .addToAddPaths(Arrays.asList("user", "hive", "warehouse", "db1.db", "newTable1"));
+    sentryStore.renameAuthzObj("db1.newTable1", "db1.newTable2", renameUpdate);
+    pathsImage = sentryStore.retrieveFullPathsImage().getPathImage();
+    assertEquals(2, pathsImage.size());
+    assertEquals(3, sentryStore.getMPaths().size());
+    assertTrue(pathsImage.containsKey("db1.newTable2"));
+    assertEquals(Sets.newHashSet("user/hive/warehouse/db1.db/table1/p1",
+                                "user/hive/warehouse/db1.db/newTable1"),
+                  pathsImage.get("db1.newTable2"));
+
+    // Query the persisted path change and ensure it equals to the original one
+    lastChangeID = sentryStore.getLastProcessedPathChangeID();
+    renamePathChange = sentryStore.getMSentryPathChangeByID(lastChangeID);
+    assertEquals(renameUpdate.JSONSerialize(), renamePathChange.getPathChange());
+
+    // Update path of 'db1.newTable2' from 'db1.newTable1' to 'db1.newTable2'
+    PathsUpdate update = new PathsUpdate(3, false);
+    update.newPathChange("db1.newTable1")
+        .addToDelPaths(Arrays.asList("user", "hive", "warehouse", "db1.db", "newTable1"));
+    update.newPathChange("db1.newTable1")
+        .addToAddPaths(Arrays.asList("user", "hive", "warehouse", "db1.db", "newTable2"));
+    sentryStore.updateAuthzPathsMapping("db1.newTable2",
+            "user/hive/warehouse/db1.db/newTable1",
+            "user/hive/warehouse/db1.db/newTable2",
+            update);
+    pathsImage = sentryStore.retrieveFullPathsImage().getPathImage();
+    assertEquals(2, pathsImage.size());
+    assertEquals(3, sentryStore.getMPaths().size());
+    assertTrue(pathsImage.containsKey("db1.newTable2"));
+    assertEquals(Sets.newHashSet("user/hive/warehouse/db1.db/table1/p1",
+                                "user/hive/warehouse/db1.db/newTable2"),
+                  pathsImage.get("db1.newTable2"));
+
+    // Query the persisted path change and ensure it equals to the original one
+    lastChangeID = sentryStore.getLastProcessedPathChangeID();
+    MSentryPathChange updatePathChange = sentryStore.getMSentryPathChangeByID(lastChangeID);
+    assertEquals(update.JSONSerialize(), updatePathChange.getPathChange());
+  }
+
+  @Test
   public void testQueryParamBuilder() {
     QueryParamBuilder paramBuilder;
     paramBuilder = newQueryParamBuilder();
@@ -1956,6 +2066,7 @@ public class TestSentryStore {
 
     // Query the persisted perm change and ensure it equals to the original one
     long lastChangeID = sentryStore.getLastProcessedPermChangeID();
+    long initialID = lastChangeID;
     MSentryPermChange addPermChange = sentryStore.getMSentryPermChangeByID(lastChangeID);
     assertEquals(addUpdate.JSONSerialize(), addPermChange.getPermChange());
 
@@ -1978,7 +2089,7 @@ public class TestSentryStore {
 
     // Verify getMSentryPermChanges will return all MSentryPermChanges up
     // to the given changeID.
-    List<MSentryPermChange> mSentryPermChanges = sentryStore.getMSentryPermChanges(1);
+    List<MSentryPermChange> mSentryPermChanges = sentryStore.getMSentryPermChanges(initialID);
     assertEquals(lastChangeID, mSentryPermChanges.size());
 
     // Verify ifPermChangeExists will return true for persisted MSentryPermChange.

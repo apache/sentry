@@ -698,6 +698,8 @@ public abstract class TestHDFSIntegrationBase {
               "org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessorFactory,org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory");
           properties.put(ServerConfig.SENTRY_NOTIFICATION_LOG_ENABLED,"true");
           properties.put("sentry.policy.store.plugins", "org.apache.sentry.hdfs.SentryPlugin");
+          properties.put(ServerConfig.SENTRY_HMSFOLLOWER_INIT_DELAY_MILLS, "10000");
+          properties.put(ServerConfig.SENTRY_HMSFOLLOWER_INTERVAL_MILLS, "50");
           properties.put(ServerConfig.RPC_MIN_THREADS, "3");
           for (Map.Entry<String, String> entry : properties.entrySet()) {
             sentryConf.set(entry.getKey(), entry.getValue());
