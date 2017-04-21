@@ -73,6 +73,8 @@ public class HMSFollower implements Runnable {
   private static final Logger LOGGER = LoggerFactory.getLogger(HMSFollower.class);
 
   private long currentEventID;
+  // Track the latest eventId of the event that has been logged. So we don't log the same message
+  private long lastLoggedEventId = SentryStore.EMPTY_CHANGE_ID;
   private static boolean connectedToHMS = false;
   private HiveMetaStoreClient client;
   private SentryKerberosContext kerberosContext;
@@ -262,9 +264,17 @@ public class HMSFollower implements Runnable {
       if (eventId.getEventId() > currentEventID) {
         NotificationEventResponse response = client.getNextNotification(currentEventID, Integer.MAX_VALUE, null);
         if (response.isSetEvents()) {
-          LOGGER.info(String.format("CurrentEventID = %s. Processing %s events",
-                currentEventID, response.getEvents().size()));
-          processNotificationEvents(response.getEvents());
+          if (!response.getEvents().isEmpty()) {
+            if (currentEventID != lastLoggedEventId) {
+              // Only log when there are updates and the notification ID has changed.
+              LOGGER.debug(String.format("CurrentEventID = %s. Processing %s events",
+                      currentEventID, response.getEvents().size()));
+
+              lastLoggedEventId = currentEventID;
+            }
+
+            processNotificationEvents(response.getEvents());
+          }
         }
       }
     } catch (TException e) {
@@ -350,6 +360,7 @@ public class HMSFollower implements Runnable {
 
   /**
    * Throws SentryInvalidHMSEventException if Notification event contains insufficient information
+   * SentryStore may throw Exception
    */
   void processNotificationEvents(List<NotificationEvent> events) throws Exception {
     SentryJSONMessageDeserializer deserializer = new SentryJSONMessageDeserializer();
