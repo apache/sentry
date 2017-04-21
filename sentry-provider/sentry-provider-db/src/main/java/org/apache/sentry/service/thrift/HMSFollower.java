@@ -70,6 +70,8 @@ public class HMSFollower implements Runnable {
   private static final Logger LOGGER = LoggerFactory.getLogger(HMSFollower.class);
 
   private long currentEventID;
+  // Track the latest eventId of the event that has been logged. So we don't log the same message
+  private long lastLoggedEventId = SentryStore.EMPTY_CHANGE_ID;
   private static boolean connectedToHMS = false;
   private HiveMetaStoreClient client;
   private SentryKerberosContext kerberosContext;
@@ -254,9 +256,17 @@ public class HMSFollower implements Runnable {
 
       NotificationEventResponse response = client.getNextNotification(currentEventID, Integer.MAX_VALUE, null);
       if (response.isSetEvents()) {
-        LOGGER.info(String.format("CurrentEventID = %s. Processing %s events",
-            currentEventID, response.getEvents().size()));
-        processNotificationEvents(response.getEvents());
+        if (!response.getEvents().isEmpty()) {
+          if (currentEventID != lastLoggedEventId) {
+            // Only log when there are updates and the notification ID has changed.
+            LOGGER.debug(String.format("CurrentEventID = %s. Processing %s events",
+                    currentEventID, response.getEvents().size()));
+
+            lastLoggedEventId = currentEventID;
+          }
+
+          processNotificationEvents(response.getEvents());
+        }
       }
     } catch (TException e) {
       // If the underlying exception is around socket exception, it is better to retry connection to HMS
@@ -373,7 +383,7 @@ public class HMSFollower implements Runnable {
           dbName = dropDatabaseMessage.getDB();
           if (dbName == null) {
             throw new SentryInvalidHMSEventException(String.format("Drop database event has incomplete information. " +
-                "dbName = %s", dbName));
+                "dbName = null"));
           }
           if (syncWithPolicyStore(AUTHZ_SYNC_DROP_WITH_POLICY_STORE)) {
             try {
