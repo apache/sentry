@@ -106,8 +106,8 @@ public class TransactionManager {
    * @return Object with the result of tb.execute()
    */
   public <T> T executeTransaction(TransactionBlock<T> tb) throws Exception {
-    final Timer.Context context = transactionTimer.time();
-    try (PersistenceManager pm = pmf.getPersistenceManager()) {
+    try (Timer.Context context = transactionTimer.time();
+         PersistenceManager pm = pmf.getPersistenceManager()) {
       Transaction transaction = pm.currentTransaction();
       transaction.begin();
       try {
@@ -123,7 +123,6 @@ public class TransactionManager {
         // Re-throw the exception
         throw e;
       } finally {
-        context.stop();
         if (transaction.isActive()) {
           transaction.rollback();
         }
@@ -141,8 +140,8 @@ public class TransactionManager {
    * @return the result of the last result of tb.execute()
    */
   public <T> T executeTransaction(Iterable<TransactionBlock<T>> tbs) throws Exception {
-    final Timer.Context context = transactionTimer.time();
-    try (PersistenceManager pm = pmf.getPersistenceManager()) {
+    try (Timer.Context context = transactionTimer.time();
+         PersistenceManager pm = pmf.getPersistenceManager()) {
       Transaction transaction = pm.currentTransaction();
       transaction.begin();
       try {
@@ -161,7 +160,6 @@ public class TransactionManager {
         // Re-throw the exception
         throw e;
       } finally {
-        context.stop();
         if (transaction.isActive()) {
           transaction.rollback();
         }
