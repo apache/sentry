@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.io.Files;
 
-public abstract class AbstractTestWithHiveServer {
+public abstract class AbstractTestWithHiveServer extends RulesForE2ETest {
   private static final Logger LOGGER = LoggerFactory
       .getLogger(AbstractTestWithHiveServer.class);
   protected static File baseDir;
