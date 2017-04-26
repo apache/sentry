@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
+import org.apache.sentry.tests.e2e.hive.SlowE2ETest;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -33,9 +34,9 @@ import org.junit.Test;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.google.common.io.Resources;
 
+@SlowE2ETest
 public class TestDbCrossOperations extends AbstractTestWithStaticConfiguration {
   private static final Logger LOGGER = LoggerFactory.
       getLogger(TestDbCrossOperations.class);
