@@ -83,11 +83,9 @@ public class DeltaTransactionBlock implements TransactionBlock<Object> {
     // changeID is trying to be persisted twice, the transaction would
     // fail.
     if (update instanceof PermissionsUpdate) {
-      long lastChangeID = SentryStore.getLastProcessedChangeIDCore(pm, MSentryPermChange.class);
-      pm.makePersistent(new MSentryPermChange(lastChangeID + 1, (PermissionsUpdate)update));
+      pm.makePersistent(new MSentryPermChange((PermissionsUpdate)update));
     } else if (update instanceof PathsUpdate) {
-      long lastChangeID = SentryStore.getLastProcessedChangeIDCore(pm, MSentryPathChange.class);
-      pm.makePersistent(new MSentryPathChange(lastChangeID + 1, (PathsUpdate)update));
+      pm.makePersistent(new MSentryPathChange((PathsUpdate)update));
     } else {
       throw new SentryInvalidInputException("Update should be type of either " +
           "PermissionsUpdate or PathsUpdate.\n");
