@@ -17,6 +17,7 @@
  */
 package org.apache.sentry.hdfs;
 
+import java.util.List;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.sentry.hdfs.service.thrift.TPathChanges;
@@ -27,6 +28,11 @@ import com.google.common.collect.Lists;
 import static org.junit.Assert.*;
 
 public class TestUpdateableAuthzPaths {
+
+  private List<String> uriToList(String uri) throws SentryMalformedPathException {
+    String path = PathsUpdate.parsePath(uri);
+    return Lists.newArrayList(path.split("/"));
+  }
 
   @Test
   public void testFullUpdate() {
@@ -75,13 +81,13 @@ public class TestUpdateableAuthzPaths {
     // Create table
     PathsUpdate update = new PathsUpdate(2, false);
     TPathChanges pathChange = update.newPathChange("db1.tbl12");
-    pathChange.addToAddPaths(PathsUpdate.parsePath("hdfs:///db1/tbl12"));
+    pathChange.addToAddPaths(uriToList("hdfs:///db1/tbl12"));
     authzPaths.updatePartial(Lists.newArrayList(update), lock);
     
     // Add partition
     update = new PathsUpdate(3, false);
     pathChange = update.newPathChange("db1.tbl12");
-    pathChange.addToAddPaths(PathsUpdate.parsePath("hdfs:///db1/tbl12/part121"));
+    pathChange.addToAddPaths(uriToList("hdfs:///db1/tbl12/part121"));
     authzPaths.updatePartial(Lists.newArrayList(update), lock);
 
     // Ensure no change in existing Paths
@@ -96,8 +102,8 @@ public class TestUpdateableAuthzPaths {
 
     // Rename table
     update = new PathsUpdate(4, false);
-    update.newPathChange("db1.xtbl11").addToAddPaths(PathsUpdate.parsePath("hdfs:///db1/xtbl11"));
-    update.newPathChange("db1.tbl11").addToDelPaths(PathsUpdate.parsePath("hdfs:///db1/tbl11"));
+    update.newPathChange("db1.xtbl11").addToAddPaths(uriToList("hdfs:///db1/xtbl11"));
+    update.newPathChange("db1.tbl11").addToDelPaths(uriToList("hdfs:///db1/tbl11"));
     authzPaths.updatePartial(Lists.newArrayList(update), lock);
 
     // Verify name change
@@ -125,7 +131,7 @@ public class TestUpdateableAuthzPaths {
     // Drop partition
     PathsUpdate update = new PathsUpdate(2, false);
     TPathChanges pathChange = update.newPathChange("db1.tbl11");
-    pathChange.addToDelPaths(PathsUpdate.parsePath("hdfs:///db1/tbl11/part111"));
+    pathChange.addToDelPaths(uriToList("hdfs:///db1/tbl11/part111"));
     authzPaths.updatePartial(Lists.newArrayList(update), lock);
 
     // Verify Paths deleted

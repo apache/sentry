@@ -17,68 +17,166 @@
  */
 package org.apache.sentry.hdfs;
 
-import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.Partition;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.sentry.hdfs.ServiceConstants.ServerConfig;
-import org.apache.sentry.hdfs.service.thrift.TPathChanges;
+import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.Vector;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.TimeUnit;
 
 /**
- * Fetch full snapshot of {@code <hiveObj, paths>} mappings from Hive.
- * Mappings for different tables are fetched concurrently by multiple threads from a pool.
+ * Manage fetching full snapshot from HMS.
+ * Snapshot is represented as a map from the hive object name to
+ * the set of paths for this object.
+ * The hive object name is either the Hive database name or
+ * Hive database name joined with Hive table name as {@code dbName.tableName}.
+ * All table partitions are stored under the table object.
+ * <p>
+ * Once {@link FullUpdateInitializer}, the {@link FullUpdateInitializer#getFullHMSSnapshot()}
+ * method should be called to get the initial update.
+ * <p>
+ * It is important to close the {@link FullUpdateInitializer} object to prevent resource
+ * leaks.
+ * <p>
+ * The usual way of using {@link FullUpdateInitializer} is
+ * <pre>
+ * {@code
+ * try (FullUpdateInitializer updateInitializer =
+ *      new FullUpdateInitializer(client, authzConf)) {
+ *         Map<String, Set<String>> pathsUpdate = updateInitializer.getFullHMSSnapshot();
+ *      return pathsUpdate;
+ * }
  */
 public final class FullUpdateInitializer implements AutoCloseable {
+
+  /*
+   * Implementation note.
+   *
+   * The snapshot is obtained using an executor. We follow the map/reduce model.
+   * Each executor thread (mapper) obtains and returns a partial snapshot which are then
+   * reduced to a single combined snapshot by getFullHMSSnapshot().
+   *
+   * Synchronization between the getFullHMSSnapshot() and executors is done using the
+   * 'results' queue. The queue holds the futures for each scheduled task.
+   * It is initially populated by getFullHMSSnapshot and each task may add new future
+   * results to it. Only getFullHMSSnapshot() removes entries from the results queue.
+   * This guarantees that once the results queue is empty there are no pending jobs.
+   *
+   * Since there are no other data sharing, the implementation is safe without
+   * any other synchronization. It is not thread-safe for concurrent calls
+   * to getFullHMSSnapshot().
+   *
+   */
 
   private final ExecutorService threadPool;
   private final HiveMetaStoreClient client;
   private final int maxPartitionsPerCall;
   private final int maxTablesPerCall;
-  private final Collection<Future<CallResult>> results = new Vector<>();
-  private final AtomicInteger taskCounter = new AtomicInteger(0);
+  private final Deque<Future<CallResult>> results = new ConcurrentLinkedDeque<>();
   private final int maxRetries;
   private final int waitDurationMillis;
-  private final boolean failOnRetry;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FullUpdateInitializer.class);
 
-  static final class CallResult {
-    private final Exception failure;
-    private final boolean successStatus;
+  private static final ObjectMapping emptyObjectMapping =
+          new ObjectMapping(Collections.<String, Set<String>>emptyMap());
 
-    CallResult(Exception ex, boolean successStatus) {
+  /**
+   * Extract path (not starting with "/") from the full URI
+   * @param uri - resource URI (usually with scheme)
+   * @return path if uri is valid or null
+   */
+  private static String pathFromURI(String uri) {
+    try {
+      return PathsUpdate.parsePath(uri);
+    } catch (SentryMalformedPathException e) {
+      LOGGER.warn(String.format("Ignoring invalid uri %s: %s",
+              uri, e.getReason()));
+      return null;
+    }
+  }
+
+  /**
+   * Mapping of object to set of paths.
+   * Used to represent partial results from executor threads. Multiple
+   * ObjectMapping objects are combined in a single mapping
+   * to get the final result.
+   */
+  private static final class ObjectMapping {
+    private final Map<String, Set<String>> objects;
+
+    ObjectMapping(Map<String, Set<String>> objects) {
+      this.objects = objects;
+    }
+
+    ObjectMapping(String authObject, String path) {
+      Set<String> values = Collections.singleton(path);
+      objects = ImmutableMap.of(authObject, values);
+    }
+
+    ObjectMapping(String authObject, Collection<String> paths) {
+      Set<String> values = new HashSet<>(paths);
+      objects = ImmutableMap.of(authObject, values);
+    }
+
+    Map<String, Set<String>> getObjects() {
+      return objects;
+    }
+  }
+
+  private static final class CallResult {
+    private final TException failure;
+    private final boolean successStatus;
+    private final ObjectMapping objectMapping;
+
+    CallResult(TException ex) {
       failure = ex;
-      this.successStatus = successStatus;
+      successStatus = false;
+      objectMapping = emptyObjectMapping;
+    }
+
+    CallResult(ObjectMapping objectMapping) {
+      failure = null;
+      successStatus = true;
+      this.objectMapping = objectMapping;
     }
 
     boolean success() {
       return successStatus;
     }
 
-    public Exception getFailure() {
+    ObjectMapping getObjectMapping() {
+      return objectMapping;
+    }
+
+    public TException getFailure() {
       return failure;
     }
   }
 
-  abstract class BaseTask implements Callable<CallResult> {
+  private abstract class BaseTask implements Callable<CallResult> {
 
     /**
      *  Class represents retry strategy for BaseTask.
@@ -87,7 +185,6 @@ public final class FullUpdateInitializer implements AutoCloseable {
       private int retryStrategyMaxRetries = 0;
       private final int retryStrategyWaitDurationMillis;
       private int retries;
-      private Exception exception;
 
       private RetryStrategy(int retryStrategyMaxRetries, int retryStrategyWaitDurationMillis) {
         this.retryStrategyMaxRetries = retryStrategyMaxRetries;
@@ -107,24 +204,22 @@ public final class FullUpdateInitializer implements AutoCloseable {
         // synchronous waiting on getting the result.
         // Retry the failure task until reach the max retry number.
         // Wait configurable duration for next retry.
+        TException exception = null;
         for (int i = 0; i < retryStrategyMaxRetries; i++) {
           try {
-            doTask();
-
-            // Task succeeds, reset the exception and return
-            // the successful flag.
-            exception = null;
-            return new CallResult(exception, true);
-          } catch (Exception ex) {
+            return new CallResult(doTask());
+          } catch (TException ex) {
             LOGGER.debug("Failed to execute task on " + (i + 1) + " attempts." +
-            " Sleeping for " + retryStrategyWaitDurationMillis + " ms. Exception: " + ex.toString(), ex);
+            " Sleeping for " + retryStrategyWaitDurationMillis + " ms. Exception: " +
+                    ex.toString(), ex);
             exception = ex;
 
             try {
               Thread.sleep(retryStrategyWaitDurationMillis);
-            } catch (InterruptedException exception) {
+            } catch (InterruptedException ignored) {
               // Skip the rest retries if get InterruptedException.
               // And set the corresponding retries number.
+              LOGGER.warn("Interrupted during update fetch during iteration " + (i + 1));
               retries = i;
               i = retryStrategyMaxRetries;
             }
@@ -134,227 +229,215 @@ public final class FullUpdateInitializer implements AutoCloseable {
         }
 
         // Task fails, return the failure flag.
-        LOGGER.error("Task did not complete successfully after " + retries + 1
+        LOGGER.error("Task did not complete successfully after " + (retries + 1)
         + " tries", exception);
-        return new CallResult(exception, false);
+        return new CallResult(exception);
       }
     }
 
     private final RetryStrategy retryStrategy;
 
     BaseTask() {
-      taskCounter.incrementAndGet();
       retryStrategy = new RetryStrategy(maxRetries, waitDurationMillis);
     }
 
     @Override
     public CallResult call() throws Exception {
-      CallResult callResult = retryStrategy.exec();
-      taskCounter.decrementAndGet();
-      return callResult;
+      return retryStrategy.exec();
     }
 
-    abstract void doTask() throws Exception;
+    abstract ObjectMapping doTask() throws TException;
   }
 
-  class PartitionTask extends BaseTask {
+  private class PartitionTask extends BaseTask {
     private final String dbName;
     private final String tblName;
+    private final String authName;
     private final List<String> partNames;
-    private final TPathChanges tblPathChange;
 
-    PartitionTask(String dbName, String tblName, List<String> partNames,
-    TPathChanges tblPathChange) {
-      super();
+    PartitionTask(String dbName, String tblName, String authName,
+                  List<String> partNames) {
       this.dbName = dbName;
       this.tblName = tblName;
+      this.authName = authName;
       this.partNames = partNames;
-      this.tblPathChange = tblPathChange;
     }
 
     @Override
-    public void doTask() throws Exception {
+    ObjectMapping doTask() throws TException {
       List<Partition> tblParts = client.getPartitionsByNames(dbName, tblName, partNames);
       if (LOGGER.isDebugEnabled()) {
         LOGGER.debug("#### Fetching partitions " +
-        "[" + dbName + "." + tblName + "]" + "[" + partNames + "]");
+                "[" + dbName + "." + tblName + "]" + "[" + partNames + "]");
       }
+      Collection<String> partitionNames = new ArrayList<>(tblParts.size());
       for (Partition part : tblParts) {
-        List<String> partPath = PathsUpdate.parsePath(part.getSd()
-        .getLocation());
+        String partPath = pathFromURI(part.getSd().getLocation());
         if (partPath != null) {
-          synchronized (tblPathChange) {
-            tblPathChange.addToAddPaths(partPath);
-          }
+          partitionNames.add(partPath);
         }
       }
+      return new ObjectMapping(authName, partitionNames);
     }
   }
 
-  class TableTask extends BaseTask {
-    private final Database db;
+  private class TableTask extends BaseTask {
+    private final String dbName;
     private final List<String> tableNames;
-    private final PathsUpdate update;
 
-    TableTask(Database db, List<String> tableNames, PathsUpdate update) {
-      super();
-      this.db = db;
+    TableTask(Database db, List<String> tableNames) {
+      dbName = db.getName();
       this.tableNames = tableNames;
-      this.update = update;
     }
 
     @Override
-    public void doTask() throws Exception {
-      List<Table> tables = client.getTableObjectsByName(db.getName(), tableNames);
+    ObjectMapping doTask() throws TException {
+      List<Table> tables = client.getTableObjectsByName(dbName, tableNames);
       if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug("#### Fetching tables [" + db.getName() + "][" +
+        LOGGER.debug("#### Fetching tables [" + dbName + "][" +
         tableNames + "]");
       }
+      Map<String, Set<String>> objectMapping = new HashMap<>(tables.size());
       for (Table tbl : tables) {
-        TPathChanges tblPathChange;
         // Table names are case insensitive
+        if (!tbl.getDbName().equalsIgnoreCase(dbName)) {
+          // Inconsistency in HMS data
+          LOGGER.warn(String.format("DB name %s for table %s does not match %s",
+                  tbl.getDbName(), tbl.getTableName(), dbName));
+          continue;
+        }
+
         String tableName = tbl.getTableName().toLowerCase();
-        Preconditions.checkArgument(tbl.getDbName().equalsIgnoreCase(db.getName()));
-        synchronized (update) {
-          tblPathChange = update.newPathChange(db.getName() + "." + tableName);
+        String authzObject = dbName + "." + tableName;
+        List<String> tblPartNames = client.listPartitionNames(dbName, tableName, (short) -1);
+        for (int i = 0; i < tblPartNames.size(); i += maxPartitionsPerCall) {
+          List<String> partsToFetch = tblPartNames.subList(i,
+                  Math.min(i + maxPartitionsPerCall, tblPartNames.size()));
+          Callable<CallResult> partTask = new PartitionTask(dbName,
+                  tableName, authzObject, partsToFetch);
+          results.add(threadPool.submit(partTask));
         }
-        if (tbl.getSd().getLocation() != null) {
-          List<String> tblPath =
-          PathsUpdate.parsePath(tbl.getSd().getLocation());
-          if (tblPath != null) {
-            tblPathChange.addToAddPaths(tblPath);
-          }
-          List<String> tblPartNames = client.listPartitionNames(db.getName(), tableName, (short) -1);
-          for (int i = 0; i < tblPartNames.size(); i += maxPartitionsPerCall) {
-            List<String> partsToFetch =
-            tblPartNames.subList(i, Math.min(
-            i + maxPartitionsPerCall, tblPartNames.size()));
-            Callable<CallResult> partTask =
-            new PartitionTask(db.getName(), tableName,
-            partsToFetch, tblPathChange);
-            results.add(threadPool.submit(partTask));
-          }
+        String tblPath = pathFromURI(tbl.getSd().getLocation());
+        if (tblPath == null) {
+          continue;
         }
+        Set<String> paths = objectMapping.get(authzObject);
+        if (paths == null) {
+          paths = new HashSet<>(1);
+          objectMapping.put(authzObject, paths);
+        }
+        paths.add(tblPath);
       }
+      return new ObjectMapping(Collections.unmodifiableMap(objectMapping));
     }
   }
 
-  class DbTask extends BaseTask {
+  private class DbTask extends BaseTask {
 
-    private final PathsUpdate update;
     private final String dbName;
 
-    DbTask(PathsUpdate update, String dbName) {
-      super();
-      this.update = update;
+    DbTask(String dbName) {
       //Database names are case insensitive
       this.dbName = dbName.toLowerCase();
     }
 
     @Override
-    public void doTask() throws Exception {
+    ObjectMapping doTask() throws TException {
       Database db = client.getDatabase(dbName);
-      List<String> dbPath = PathsUpdate.parsePath(db.getLocationUri());
-      if (dbPath != null) {
-        Preconditions.checkArgument(dbName.equalsIgnoreCase(db.getName()));
-        synchronized (update) {
-          update.newPathChange(dbName).addToAddPaths(dbPath);
-        }
+      if (!dbName.equalsIgnoreCase(db.getName())) {
+        LOGGER.warn(String.format("Database name %s does not match %s",
+                db.getName(), dbName));
+        return emptyObjectMapping;
       }
       List<String> allTblStr = client.getAllTables(dbName);
       for (int i = 0; i < allTblStr.size(); i += maxTablesPerCall) {
-        List<String> tablesToFetch =
-        allTblStr.subList(i, Math.min(
-        i + maxTablesPerCall, allTblStr.size()));
-        Callable<CallResult> tableTask =
-        new TableTask(db, tablesToFetch, update);
+        List<String> tablesToFetch = allTblStr.subList(i,
+                Math.min(i + maxTablesPerCall, allTblStr.size()));
+        Callable<CallResult> tableTask = new TableTask(db, tablesToFetch);
         results.add(threadPool.submit(tableTask));
       }
+      String dbPath =  pathFromURI(db.getLocationUri());
+      return (dbPath != null) ? new ObjectMapping(dbName, dbPath) :
+              emptyObjectMapping;
     }
   }
 
   public FullUpdateInitializer(HiveMetaStoreClient client, Configuration conf) {
     this.client = client;
-    this.maxPartitionsPerCall = conf.getInt(
+    maxPartitionsPerCall = conf.getInt(
         ServerConfig.SENTRY_HDFS_SYNC_METASTORE_CACHE_MAX_PART_PER_RPC,
         ServerConfig.SENTRY_HDFS_SYNC_METASTORE_CACHE_MAX_PART_PER_RPC_DEFAULT);
-    this.maxTablesPerCall = conf.getInt(
+    maxTablesPerCall = conf.getInt(
         ServerConfig.SENTRY_HDFS_SYNC_METASTORE_CACHE_MAX_TABLES_PER_RPC,
         ServerConfig.SENTRY_HDFS_SYNC_METASTORE_CACHE_MAX_TABLES_PER_RPC_DEFAULT);
+    maxRetries = conf.getInt(
+            ServerConfig.SENTRY_HDFS_SYNC_METASTORE_CACHE_RETRY_MAX_NUM,
+            ServerConfig.SENTRY_HDFS_SYNC_METASTORE_CACHE_RETRY_MAX_NUM_DEFAULT);
+    waitDurationMillis = conf.getInt(
+            ServerConfig.SENTRY_HDFS_SYNC_METASTORE_CACHE_RETRY_WAIT_DURAION_IN_MILLIS,
+            ServerConfig.SENTRY_HDFS_SYNC_METASTORE_CACHE_RETRY_WAIT_DURAION_IN_MILLIS_DEFAULT);
     threadPool = Executors.newFixedThreadPool(conf.getInt(
         ServerConfig.SENTRY_HDFS_SYNC_METASTORE_CACHE_INIT_THREADS,
         ServerConfig.SENTRY_HDFS_SYNC_METASTORE_CACHE_INIT_THREADS_DEFAULT));
-    maxRetries = conf.getInt(
-        ServerConfig.SENTRY_HDFS_SYNC_METASTORE_CACHE_RETRY_MAX_NUM,
-        ServerConfig.SENTRY_HDFS_SYNC_METASTORE_CACHE_RETRY_MAX_NUM_DEFAULT);
-    waitDurationMillis = conf.getInt(
-        ServerConfig.SENTRY_HDFS_SYNC_METASTORE_CACHE_RETRY_WAIT_DURAION_IN_MILLIS,
-        ServerConfig.SENTRY_HDFS_SYNC_METASTORE_CACHE_RETRY_WAIT_DURAION_IN_MILLIS_DEFAULT);
-    failOnRetry = conf.getBoolean(
-        ServerConfig.SENTRY_HDFS_SYNC_METASTORE_CACHE_FAIL_ON_PARTIAL_UPDATE,
-        ServerConfig.SENTRY_HDFS_SYNC_METASTORE_CACHE_FAIL_ON_PARTIAL_UPDATE_DEFAULT);
   }
-
-  public Map<String, Set<String>> createInitialUpdate() throws Exception {
-    PathsUpdate tempUpdate = new PathsUpdate(-1, false);
-    List<String> allDbStr = client.getAllDatabases();
-    for (String dbName : allDbStr) {
-      Callable<CallResult> dbTask = new DbTask(tempUpdate, dbName);
-      results.add(threadPool.submit(dbTask));
-    }
-
-    while (taskCounter.get() != 0) {
-      // Wait until no more tasks remain
-      Thread.sleep(250);
-    }
-
-    for (Future<CallResult> result : results) {
-      CallResult callResult = result.get();
-
-      // Fail the HMS startup if tasks are not all successful and
-      // fail on partial updates flag is set in the config.
-      if (!callResult.success() && failOnRetry) {
-        throw callResult.getFailure();
-      }
-    }
-
-    return getAuthzObjToPathMapping(tempUpdate);
-  }
-
 
   /**
-   * Parsing a pathsUpdate to get the mapping of hiveObj -> [Paths].
-   * It only processes {@link TPathChanges}.addPaths, since
-   * {@link FullUpdateInitializer} only add paths when fetching
-   * full HMS Paths snapshot. Each path represented as path tree
-   * concatenated by "/". e.g 'usr/hive/warehouse'.
-   *
-   * @return mapping of hiveObj -> [Paths].
+   * Get Full HMS snapshot.
+   * @return Full snapshot of HMS objects.
+   * @throws TException if Thrift error occured
+   * @throws ExecutionException if there was a scheduling error
+   * @throws InterruptedException if processing was interrupted
    */
-  private Map<String, Set<String>> getAuthzObjToPathMapping(PathsUpdate pathsUpdate) {
-    List<TPathChanges> tPathChanges = pathsUpdate.getPathChanges();
-    if (tPathChanges.isEmpty()) {
-      return Collections.emptyMap();
+  public Map<String, Set<String>> getFullHMSSnapshot()
+          throws TException, ExecutionException, InterruptedException {
+    // Get list of all HMS databases
+    List<String> allDbStr = client.getAllDatabases();
+    // Schedule async task for each database responsible for fetching per-database
+    // objects.
+    for (String dbName : allDbStr) {
+      results.add(threadPool.submit(new DbTask(dbName)));
     }
-    Map<String, Set<String>> authzObjToPath = new HashMap<>(tPathChanges.size());
 
-    for (TPathChanges pathChanges : tPathChanges) {
-      // Only processes TPathChanges.addPaths
-      List<List<String>> addPaths = pathChanges.getAddPaths();
-      Set<String> paths = new HashSet<>(addPaths.size());
-      for (List<String> addPath : addPaths) {
-        paths.add(PathsUpdate.concatenatePath(addPath));
+    // Resulting full snapshot
+    Map<String, Set<String>> fullSnapshot = new HashMap<>();
+
+    // As async tasks complete, merge their results into full snapshot.
+    while (!results.isEmpty()) {
+      // This is the only thread that takes elements off the results list - all other threads
+      // only add to it. Once the list is empty it can't become non-empty
+      // This means that if we check that results is non-empty we can safely call pop() and
+      // know that the result of poll() is not null.
+      Future<CallResult> result = results.pop();
+      // Wait for the task to complete
+      CallResult callResult = result.get();
+      // Fail if we got Thrift errors
+      if (!callResult.success()) {
+        throw callResult.getFailure();
       }
-      authzObjToPath.put(pathChanges.getAuthzObj(), paths);
+      // Merge values into fullUpdate
+      Map<String, Set<String>> objectMapping =
+              callResult.getObjectMapping().getObjects();
+      for (Map.Entry<String, Set<String>> entry: objectMapping.entrySet()) {
+        String key = entry.getKey();
+        Set<String> val = entry.getValue();
+        Set<String> existingSet = fullSnapshot.get(key);
+        if (existingSet == null) {
+          fullSnapshot.put(key, val);
+          continue;
+        }
+        existingSet.addAll(val);
+      }
     }
-
-    return authzObjToPath;
+    return fullSnapshot;
   }
 
   @Override
   public void close() {
-    if (threadPool != null) {
-      threadPool.shutdownNow();
+    threadPool.shutdownNow();
+    try {
+      threadPool.awaitTermination(1, TimeUnit.SECONDS);
+    } catch (InterruptedException ignored) {
+      LOGGER.warn("Interrupted shutdown");
     }
   }
 }

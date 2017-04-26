@@ -207,7 +207,7 @@ public class HMSFollower implements Runnable {
           connectedToHMS = true;
           LOGGER.info("HMSFollower of Sentry successfully connected to HMS");
         }
-      } catch (Exception e) {
+      } catch (Throwable e) {
         LOGGER.error("HMSFollower cannot connect to HMS!!", e);
         return;
       }
@@ -316,27 +316,19 @@ public class HMSFollower implements Runnable {
 
   /**
    * Retrieve a Hive full snapshot from HMS.
-   *
-   * @return mapping of hiveObj -> [Paths].
-   * @throws ExecutionException, InterruptedException, TException
+   * @return HMS snapshot. Snapshot consists of a mapping from auth object name
+   * to the set of paths corresponding to that name.
+   * @throws InterruptedException
+   * @throws TException
+   * @throws ExecutionException
    */
   private Map<String, Set<String>> fetchFullUpdate()
-        throws Exception {
-    FullUpdateInitializer updateInitializer = null;
-
-    try {
-      updateInitializer = new FullUpdateInitializer(client, authzConf);
-      Map<String, Set<String>> pathsUpdate = updateInitializer.createInitialUpdate();
-      LOGGER.info("Obtained full snapshot from HMS");
+          throws InterruptedException, TException, ExecutionException {
+    LOGGER.info("Request full HMS snapshot");
+    try (FullUpdateInitializer updateInitializer = new FullUpdateInitializer(client, authzConf)) {
+      Map<String, Set<String>> pathsUpdate = updateInitializer.getFullHMSSnapshot();
+      LOGGER.info("Obtained full HMS snapshot");
       return pathsUpdate;
-    } finally {
-      if (updateInitializer != null) {
-        try {
-          updateInitializer.close();
-        } catch (Exception e) {
-          LOGGER.error("Exception while closing updateInitializer", e);
-        }
-      }
     }
   }
 

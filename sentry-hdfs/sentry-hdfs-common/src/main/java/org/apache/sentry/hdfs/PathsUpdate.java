@@ -24,8 +24,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Joiner;
-import com.google.common.base.Splitter;
 import org.apache.sentry.hdfs.service.thrift.TPathChanges;
 import org.apache.sentry.hdfs.service.thrift.TPathsUpdate;
 import org.apache.commons.httpclient.util.URIUtil;
@@ -34,10 +32,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.conf.Configuration;
 
-import com.google.common.collect.Lists;
 import org.apache.thrift.TException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A wrapper class over the TPathsUpdate thrift generated class. Please see
@@ -45,10 +40,13 @@ import org.slf4j.LoggerFactory;
  */
 public class PathsUpdate implements Updateable.Update {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(PathsUpdate.class);
-
   public static final String ALL_PATHS = "__ALL_PATHS__";
+
+
   private static final Configuration CONF = new Configuration();
+  private static String DEFAULT_SCHEME = FileSystem.getDefaultUri(CONF).getScheme();
+  private static final String SUPPORTED_SCHEME = "hdfs";
+
   private final TPathsUpdate tPathsUpdate;
 
   public PathsUpdate() {
@@ -95,85 +93,65 @@ public class PathsUpdate implements Updateable.Update {
     return tPathsUpdate;
   }
 
+  /**
+   * Only used for testing.
+   * @param scheme new default scheme
+   */
   @VisibleForTesting
-  public static Configuration getConfiguration() {
-    return CONF;
+  public static void setDefaultScheme(String scheme) {
+    DEFAULT_SCHEME = scheme;
   }
 
   /**
-   *
-   * @param path : Needs to be a HDFS location in the forms:
-   *             - hdfs://hostname:port/path
-   *             - hdfs:///path
-   *             - /path, in which case, scheme will be constructed from FileSystem.getDefaultURI
-   *             - URIs with non hdfs schemee will just be ignored
-   * @return Path in the form a list containing the path tree with scheme/ authority stripped off.
-   * Returns null if a non HDFS path or if path is null/empty
+   * Convert URI to path, trimming leading slash.
+   * @param path HDFS location in one of the forms:
+   * <ul>
+   *   <li>hdfs://hostname:port/path
+   *   <li>hdfs:///path
+   *   <li>/path, in which case, scheme will be constructed from FileSystem.getDefaultURI
+   *   <li>URIs with non hdfs schemee will just be ignored
+   * </ul>
+   * @return Path with scheme/ authority stripped off.
+   * Returns null if a non HDFS path or if path is null/empty.
    */
-  public static List<String> parsePath(String path) throws SentryMalformedPathException {
+  public static String parsePath(String path) throws SentryMalformedPathException {
+    if (StringUtils.isEmpty(path)) {
+      return null;
+    }
+
+    URI uri;
     try {
-      LOGGER.debug("Parsing path " + path);
-      URI uri = null;
-      if (StringUtils.isNotEmpty(path)) {
-        uri = new URI(URIUtil.encodePath(path));
-      } else {
-        String msg = "Input is empty";
-        throw new SentryMalformedPathException(msg);
-      }
-
-      String scheme = uri.getScheme();
-      if (scheme == null) {
-        // Use the default URI scheme only if the path has no scheme.
-        URI defaultUri = FileSystem.getDefaultUri(CONF);
-        scheme = defaultUri.getScheme();
-        if(scheme == null) {
-          String msg = "Scheme is missing and could not be constructed from defaultURI=" + defaultUri;
-          throw new SentryMalformedPathException(msg);
-        }
-      }
-
-      // Non-HDFS paths will be skipped.
-      if(scheme.equalsIgnoreCase("hdfs")) {
-        String uriPath = uri.getPath();
-        if(uriPath == null) {
-          throw new SentryMalformedPathException("Path is empty. uri=" + uri);
-        }
-        if(uriPath.split("^/").length < 2) {
-          throw new SentryMalformedPathException("Path part of uri does not seem right, was expecting a non empty path" +
-                  ": path = " + uriPath + ", uri=" + uri);
-        }
-        return Lists.newArrayList(uriPath.split("^/")[1].split("/"));
-      } else {
-        LOGGER.warn("Invalid FS: " + scheme +  "://; expected hdfs://");
-        return null;
-      }
+      uri = new URI(URIUtil.encodePath(path));
     } catch (URISyntaxException e) {
       throw new SentryMalformedPathException("Incomprehensible path [" + path + "]", e);
-    } catch (URIException e){
-      throw new SentryMalformedPathException("Unable to create URI: ", e);
+    } catch (URIException e) {
+      throw new SentryMalformedPathException("Unable to create URI from path[" + path + "]", e);
     }
-  }
 
-  /**
-   * Given a path tree in a list, return a string concatenated by "/".
-   * e.g &lt usr, hive, warehouse &gt -> 'usr/hive/warehouse'.
-   *
-   * @param paths
-   * @return a path string concatenated by "/".
-   */
-  public static String concatenatePath(Iterable<String> paths) {
-    return Joiner.on("/").join(paths);
-  }
+    String scheme = uri.getScheme();
+    if (scheme == null) {
+      scheme = DEFAULT_SCHEME;
+      if(scheme == null) {
+        throw new SentryMalformedPathException(
+                "Scheme is missing and could not be constructed from configuration");
+      }
+    }
 
-  /**
-   * Split a path a path concatenated by "/" into a path tree represented
-   * as a list.
-   *
-   * @param path
-   * @return a path tree represented as a list.
-   */
-  public static List<String> splitPath(String path) {
-    return Lists.newArrayList(Splitter.on("/").split(path));
+    // Non-HDFS paths are skipped.
+    if(!scheme.equalsIgnoreCase(SUPPORTED_SCHEME)) {
+      return null;
+    }
+
+    String uriPath = uri.getPath();
+    if(uriPath == null) {
+      throw new SentryMalformedPathException("Path is empty. uri=" + uri);
+    }
+    if (!uriPath.startsWith("/")) {
+      throw new SentryMalformedPathException("Path part of uri does not seem right, was expecting a non empty path" +
+              ": path = " + uriPath + ", uri=" + uri);
+    }
+    // Remove leading slash
+    return uriPath.substring(1);
   }
 
   @Override

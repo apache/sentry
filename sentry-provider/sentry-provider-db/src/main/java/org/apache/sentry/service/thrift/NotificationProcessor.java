@@ -18,20 +18,22 @@
 package org.apache.sentry.service.thrift;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import org.apache.sentry.hdfs.PathsUpdate;
 import org.apache.sentry.hdfs.SentryMalformedPathException;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.slf4j.Logger;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 
 /**
  * NotificationProcessor processes various notification events generated from
  * the Hive MetaStore state change, and applies these changes on the complete
  * HMS Paths snapshot or delta update stored in Sentry using SentryStore.
  */
-public class NotificationProcessor {
+class NotificationProcessor {
 
   private final Logger LOGGER;
   private final SentryStore sentryStore;
@@ -132,7 +134,8 @@ public class NotificationProcessor {
    * @param seqNum notification event ID
    * @throws Exception if encounters errors while persisting the path change
    */
-  void processAddPartition(String dbName, String tableName, List<String> locations, long seqNum)
+  void processAddPartition(String dbName, String tableName,
+                           Collection<String> locations, long seqNum)
         throws Exception {
     String authzObj = dbName + "." + tableName;
     addPaths(authzObj, locations, seqNum);
@@ -148,7 +151,8 @@ public class NotificationProcessor {
    * @param seqNum notification event ID
    * @throws Exception if encounters errors while persisting the path change
    */
-  void processDropPartition(String dbName, String tableName, List<String> locations, long seqNum)
+  void processDropPartition(String dbName, String tableName,
+                            Collection<String> locations, long seqNum)
         throws Exception {
     String authzObj = dbName + "." + tableName;
     removePaths(authzObj, locations, seqNum);
@@ -180,17 +184,17 @@ public class NotificationProcessor {
    * @param seqNum notification event ID
    * @throws Exception
    */
-  private void addPaths(String authzObj, List<String> locations, long seqNum)
+  private void addPaths(String authzObj, Collection<String> locations, long seqNum)
         throws Exception {
     // AuthzObj is case insensitive
     authzObj = authzObj.toLowerCase();
 
     PathsUpdate update = new PathsUpdate(seqNum, false);
-    Set<String> paths = new HashSet<>();
+    Collection<String> paths = new HashSet<>(locations.size());
     // addPath and persist into Sentry DB.
     // Skip update if encounter malformed path.
     for (String location : locations) {
-      List<String> pathTree = getPath(location);
+      String pathTree = getPath(location);
       if (pathTree == null) {
         LOGGER.debug("#### HMS Path Update ["
             + "OP : addPath, "
@@ -203,8 +207,8 @@ public class NotificationProcessor {
             + authzObj + ", "
             + "path : " + location + ", "
             + "notification event ID: " + seqNum + "]");
-        update.newPathChange(authzObj).addToAddPaths(pathTree);
-        paths.add(PathsUpdate.concatenatePath(pathTree));
+        update.newPathChange(authzObj).addToAddPaths(splitPath(pathTree));
+        paths.add(pathTree);
       }
     }
     sentryStore.addAuthzPathsMapping(authzObj, paths, update);
@@ -219,15 +223,15 @@ public class NotificationProcessor {
    * @param seqNum notification event ID
    * @throws Exception
    */
-  private void removePaths(String authzObj, List<String> locations, long seqNum)
+  private void removePaths(String authzObj, Collection<String> locations, long seqNum)
         throws Exception {
     // AuthzObj is case insensitive
     authzObj = authzObj.toLowerCase();
 
     PathsUpdate update = new PathsUpdate(seqNum, false);
-    Set<String> paths = new HashSet<>();
+    Collection<String> paths = new HashSet<>(locations.size());
     for (String location : locations) {
-      List<String> pathTree = getPath(location);
+      String pathTree = getPath(location);
       if (pathTree == null) {
         LOGGER.debug("#### HMS Path Update ["
             + "OP : removePath, "
@@ -240,8 +244,8 @@ public class NotificationProcessor {
             + "authzObj : " + authzObj + ", "
             + "path : " + location + ", "
             + "notification event ID: " + seqNum + "]");
-        update.newPathChange(authzObj).addToDelPaths(pathTree);
-        paths.add(PathsUpdate.concatenatePath(pathTree));
+        update.newPathChange(authzObj).addToDelPaths(splitPath(pathTree));
+        paths.add(pathTree);
       }
     }
     sentryStore.deleteAuthzPathsMapping(authzObj, paths, update);
@@ -288,8 +292,8 @@ public class NotificationProcessor {
     // AuthzObj is case insensitive
     oldAuthzObj = oldAuthzObj.toLowerCase();
     newAuthzObj = newAuthzObj.toLowerCase();
-    List<String> oldPathTree = getPath(oldLocation);
-    List<String> newPathTree = getPath(newLocation);
+    String oldPathTree = getPath(oldLocation);
+    String newPathTree = getPath(newLocation);
 
     LOGGER.debug("#### HMS Path Update ["
         + "OP : renameAuthzObject, "
@@ -302,54 +306,52 @@ public class NotificationProcessor {
     // In the case of HiveObj name has changed
     if (!oldAuthzObj.equalsIgnoreCase(newAuthzObj)) {
       // Skip update if encounter malformed path for both oldLocation and newLocation.
-      if (oldPathTree != null && newPathTree != null) {
+      if ((oldPathTree != null) && (newPathTree != null)) {
         PathsUpdate update = new PathsUpdate(seqNum, false);
-        update.newPathChange(oldAuthzObj).addToDelPaths(oldPathTree);
-        update.newPathChange(newAuthzObj).addToAddPaths(newPathTree);
-        if (!oldLocation.equals(newLocation)) {
-          // Both name and location has changed
-          // - Alter table rename for managed table
-          sentryStore.renameAuthzPathsMapping(oldAuthzObj, newAuthzObj,
-              PathsUpdate.concatenatePath(oldPathTree),
-              PathsUpdate.concatenatePath(newPathTree),
-              update);
-        } else {
+        update.newPathChange(oldAuthzObj).addToDelPaths(splitPath(oldPathTree));
+        update.newPathChange(newAuthzObj).addToAddPaths(splitPath(newPathTree));
+        if (oldLocation.equals(newLocation)) {
           //Only name has changed
           // - Alter table rename for an external table
           sentryStore.renameAuthzObj(oldAuthzObj, newAuthzObj, update);
+        } else {
+          // Both name and location has changed
+          // - Alter table rename for managed table
+          sentryStore.renameAuthzPathsMapping(oldAuthzObj, newAuthzObj, oldPathTree,
+                  newPathTree, update);
         }
       } else if (oldPathTree != null) {
         PathsUpdate update = new PathsUpdate(seqNum, false);
-        update.newPathChange(oldAuthzObj).addToDelPaths(oldPathTree);
+        update.newPathChange(oldAuthzObj).addToDelPaths(splitPath(oldPathTree));
         sentryStore.deleteAuthzPathsMapping(oldAuthzObj,
-            Sets.newHashSet(PathsUpdate.concatenatePath(oldPathTree)),
+            Collections.singleton(oldPathTree),
             update);
       } else if (newPathTree != null) {
         PathsUpdate update = new PathsUpdate(seqNum, false);
-        update.newPathChange(newAuthzObj).addToAddPaths(newPathTree);
+        update.newPathChange(newAuthzObj).addToAddPaths(splitPath(newPathTree));
         sentryStore.addAuthzPathsMapping(newAuthzObj,
-            Sets.newHashSet(PathsUpdate.concatenatePath(newPathTree)),
+            Collections.singleton(newPathTree),
             update);
       }
     } else if (!oldLocation.equals(newLocation)) {
       // Only Location has changed, e.g. Alter table set location
-      if (oldPathTree != null && newPathTree != null) {
+      if ((oldPathTree != null) && (newPathTree != null)) {
         PathsUpdate update = new PathsUpdate(seqNum, false);
-        update.newPathChange(oldAuthzObj).addToDelPaths(oldPathTree);
-        update.newPathChange(oldAuthzObj).addToAddPaths(newPathTree);
-        sentryStore.updateAuthzPathsMapping(oldAuthzObj, PathsUpdate.concatenatePath(oldPathTree),
-            PathsUpdate.concatenatePath(newPathTree), update);
+        update.newPathChange(oldAuthzObj).addToDelPaths(splitPath(oldPathTree));
+        update.newPathChange(oldAuthzObj).addToAddPaths(splitPath(newPathTree));
+        sentryStore.updateAuthzPathsMapping(oldAuthzObj, oldPathTree,
+            newPathTree, update);
       } else if (oldPathTree != null) {
         PathsUpdate update = new PathsUpdate(seqNum, false);
-        update.newPathChange(oldAuthzObj).addToDelPaths(oldPathTree);
+        update.newPathChange(oldAuthzObj).addToDelPaths(splitPath(oldPathTree));
         sentryStore.deleteAuthzPathsMapping(oldAuthzObj,
-              Sets.newHashSet(PathsUpdate.concatenatePath(oldPathTree)),
+              Collections.singleton(oldPathTree),
               update);
       } else if (newPathTree != null) {
         PathsUpdate update = new PathsUpdate(seqNum, false);
-        update.newPathChange(oldAuthzObj).addToAddPaths(newPathTree);
+        update.newPathChange(oldAuthzObj).addToAddPaths(splitPath(newPathTree));
         sentryStore.addAuthzPathsMapping(oldAuthzObj,
-              Sets.newHashSet(PathsUpdate.concatenatePath(newPathTree)),
+              Collections.singleton(newPathTree),
               update);
       }
     } else {
@@ -366,12 +368,24 @@ public class NotificationProcessor {
    * @param path a path
    * @return the path tree given a path.
    */
-  private List<String> getPath(String path) {
+  private String getPath(String path) {
     try {
       return PathsUpdate.parsePath(path);
     } catch (SentryMalformedPathException e) {
       LOGGER.error("Unexpected path while parsing, " + path, e.getMessage());
-      return null;
     }
+    return null;
+  }
+
+  /**
+   * Split path into components on the "/" character.
+   * The path should not start with "/".
+   * This is consumed by Thrift interface, so the return result should be
+   * {@code List<String>}
+   * @param path input oath e.g. {@code foo/bar}
+   * @return list of commponents, e.g. [foo, bar]
+   */
+  private List<String> splitPath(String path) {
+    return (Lists.newArrayList(path.split("/")));
   }
 }
