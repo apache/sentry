@@ -1153,6 +1153,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       // Wait until Sentry Server processes specified HMS Notification ID.
       TSentrySyncIDResponse response = new TSentrySyncIDResponse();
       response.setId(sentryStore.getCounterWait().waitFor(request.getId()));
+      response.setStatus(Status.OK());
       return response;
     }
   }

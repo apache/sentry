@@ -97,6 +97,7 @@ limitations under the License.
     <commons-io.version>1.3.2</commons-io.version>
     <hadoop-aws.version>2.7.0</hadoop-aws.version>
     <maven.jar.plugin.version>3.0.2</maven.jar.plugin.version>
+    <datanucleus-core.version>3.2.12</datanucleus-core.version>
   </properties>
 
   <dependencyManagement>
