@@ -120,7 +120,8 @@ public class HMSPathsDumper implements AuthzPathsDumper<HMSPaths> {
         for (String authzObj: child.getAuthzObjs()) {
           Set<Entry> paths = authzObjToPath.get(authzObj);
           if (paths == null) {
-            paths = new HashSet<Entry>();
+            paths = new HashSet<>();
+            authzObjToPath.put(authzObj, paths);
           }
           paths.add(child);
         }
