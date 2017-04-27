@@ -2704,7 +2704,7 @@ public class TestSentryStore extends org.junit.Assert {
     // Verify getMSentryPermChanges will return all MSentryPermChanges up
     // to the given changeID.
     List<MSentryPermChange> mSentryPermChanges = sentryStore.getMSentryPermChanges(initialID);
-    assertEquals(lastChangeID, mSentryPermChanges.size());
+    assertEquals(lastChangeID - initialID + 1, mSentryPermChanges.size());
 
     // Verify ifPermChangeExists will return true for persisted MSentryPermChange.
     assertEquals(true, sentryStore.permChangeExists(1));
