@@ -15,14 +15,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.provider.db.service.thrift;
 
-public class PolicyStoreConstants {
-  public static final String SENTRY_GENERIC_POLICY_NOTIFICATION = "sentry.generic.policy.notification";
-  public static final String SENTRY_GENERIC_POLICY_STORE = "sentry.generic.policy.store";
-  public static final String SENTRY_GENERIC_POLICY_STORE_DEFAULT =
-      "org.apache.sentry.provider.db.generic.service.persistent.DelegateSentryStore";
-  public static class PolicyStoreServerConfig {
-    public static final String NOTIFICATION_HANDLERS = "sentry.policy.store.notification.handlers";
+package org.apache.sentry.core.common.exception;
+
+public class SentryHdfsServiceException extends RuntimeException {
+  private static final long serialVersionUID = 1511645864949767378L;
+
+  public SentryHdfsServiceException(String message, Throwable cause) {
+    super(message, cause);
   }
+
+  public SentryHdfsServiceException(String message) {
+    super(message);
+  }
+
+
 }

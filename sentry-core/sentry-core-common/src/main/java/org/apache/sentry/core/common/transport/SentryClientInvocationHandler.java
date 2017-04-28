@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.service.thrift;
+package org.apache.sentry.core.common.transport;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -44,7 +44,7 @@ public abstract class SentryClientInvocationHandler implements InvocationHandler
   /**
    * Subclass should implement this method for special function
    */
-  abstract Object invokeImpl(Object proxy, Method method, Object[] args) throws Exception;
+  abstract public Object invokeImpl(Object proxy, Method method, Object[] args) throws Exception;
 
   /**
    * An abstract method "close", an invocationHandler should close its contexts at here.

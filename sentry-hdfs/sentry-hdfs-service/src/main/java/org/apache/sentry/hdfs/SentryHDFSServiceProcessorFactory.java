@@ -22,7 +22,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.hdfs.service.thrift.SentryHDFSService;
 import org.apache.sentry.hdfs.service.thrift.SentryHDFSService.Iface;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
-import org.apache.sentry.provider.db.service.thrift.ThriftUtil;
+import org.apache.sentry.core.common.utils.ThriftUtil;
 import org.apache.sentry.service.thrift.ProcessorFactory;
 import org.apache.thrift.TException;
 import org.apache.thrift.TMultiplexedProcessor;

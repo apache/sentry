@@ -19,7 +19,7 @@
 package org.apache.sentry.service.thrift;
 
 import com.google.common.net.HostAndPort;
-import org.apache.sentry.provider.db.service.thrift.ThriftUtil;
+import org.apache.sentry.core.common.utils.ThriftUtil;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;

@@ -43,7 +43,7 @@ import org.apache.sentry.provider.db.generic.service.thrift.TDropSentryRoleReque
 import org.apache.sentry.provider.db.generic.service.thrift.TDropSentryRoleResponse;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.db.log.util.Constants;
-import org.apache.sentry.provider.db.service.thrift.ThriftUtil;
+import org.apache.sentry.core.common.utils.ThriftUtil;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.apache.sentry.service.thrift.Status;
 import org.junit.BeforeClass;

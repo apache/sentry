@@ -46,6 +46,11 @@ public final class SentryHDFSClientTransportConfig
   }
 
   @Override
+  public int getSentryRpcRetryTotal(Configuration conf) {
+    return conf.getInt(SENTRY_RPC_RETRY_TOTAL, SENTRY_RPC_RETRY_TOTAL_DEFAULT);
+  }
+
+  @Override
   public boolean useUserGroupInformation(Configuration conf)
     throws MissingConfigurationException {
     return Boolean.valueOf(conf.get(SECURITY_USE_UGI_TRANSPORT, "true"));

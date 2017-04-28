@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,162 +18,80 @@
 package org.apache.sentry.hdfs;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.security.PrivilegedExceptionAction;
 import java.util.LinkedList;
-import java.util.Map;
 
-import javax.security.auth.callback.CallbackHandler;
-import javax.security.sasl.Sasl;
-
-import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.net.NetUtils;
-import org.apache.hadoop.security.SaslRpcServer;
-import org.apache.hadoop.security.SaslRpcServer.AuthMethod;
-import org.apache.hadoop.security.SecurityUtil;
-import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.sentry.core.common.exception.MissingConfigurationException;
+import org.apache.sentry.core.common.exception.SentryHdfsServiceException;
+import org.apache.sentry.core.common.transport.SentryHDFSClientTransportConfig;
+import org.apache.sentry.core.common.transport.SentryServiceClient;
+import org.apache.sentry.core.common.transport.SentryTransportFactory;
 import org.apache.sentry.hdfs.service.thrift.SentryHDFSService;
 import org.apache.sentry.hdfs.service.thrift.SentryHDFSService.Client;
 import org.apache.sentry.hdfs.service.thrift.TAuthzUpdateResponse;
 import org.apache.sentry.hdfs.service.thrift.TPathsUpdate;
 import org.apache.sentry.hdfs.service.thrift.TPermissionsUpdate;
-import org.apache.sentry.hdfs.ServiceConstants.ClientConfig;
-import org.apache.sentry.core.common.transport.SentryHDFSClientTransportConfig;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.protocol.TMultiplexedProtocol;
 import org.apache.thrift.protocol.TProtocol;
-import org.apache.thrift.transport.TSaslClientTransport;
-import org.apache.thrift.transport.TSocket;
+
 import org.apache.thrift.transport.TTransport;
-import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Preconditions;
+/**
+ * Sentry HDFS Service Client
+ * <p>
+ * The public implementation of SentryHDFSServiceClient.
+ * A Sentry Client in which all the operations are synchronized for thread safety
+ * Note: When using this client, if there is an exception in RPC, socket can get into an inconsistent state.
+ * So it is important to close and re-open the transport so that new socket is used.
+ */
 
-public class SentryHDFSServiceClientDefaultImpl implements SentryHDFSServiceClient {
+public class SentryHDFSServiceClientDefaultImpl implements SentryHDFSServiceClient, SentryServiceClient {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryHDFSServiceClientDefaultImpl.class);
+  private Client client;
+  private SentryTransportFactory transportFactory;
+  private TTransport transport;
+  private Configuration conf;
 
-  /**
-   * This transport wraps the Sasl transports to set up the right UGI context for open().
-   */
-  public static class UgiSaslClientTransport extends TSaslClientTransport {
-    protected UserGroupInformation ugi = null;
-
-    public UgiSaslClientTransport(String mechanism, String authorizationId,
-        String protocol, String serverName, Map<String, String> props,
-        CallbackHandler cbh, TTransport transport, boolean wrapUgi)
-        throws IOException {
-      super(mechanism, authorizationId, protocol, serverName, props, cbh,
-          transport);
-      if (wrapUgi) {
-        ugi = UserGroupInformation.getLoginUser();
-      }
-    }
-
-    // open the SASL transport with using the current UserGroupInformation
-    // This is needed to get the current login context stored
-    @Override
-    public void open() throws TTransportException {
-      if (ugi == null) {
-        baseOpen();
-      } else {
-        try {
-          // ensure that the ticket is valid before connecting to service. Note that
-          // checkTGTAndReloginFromKeytab() renew the ticket only when more than 80%
-          // of ticket lifetime has passed. 
-          if (ugi.isFromKeytab()) {
-            ugi.checkTGTAndReloginFromKeytab();
-          }
-
-          ugi.doAs(new PrivilegedExceptionAction<Void>() {
-            public Void run() throws TTransportException {
-              baseOpen();
-              return null;
-            }
-          });
-        } catch (IOException e) {
-          throw new TTransportException("Failed to open SASL transport", e);
-        } catch (InterruptedException e) {
-          throw new TTransportException(
-              "Interrupted while opening underlying transport", e);
-        }
-      }
-    }
-
-    private void baseOpen() throws TTransportException {
-      super.open();
-    }
+  public SentryHDFSServiceClientDefaultImpl(Configuration conf, SentryHDFSClientTransportConfig transportConfig) throws IOException {
+    transportFactory = new SentryTransportFactory(conf, transportConfig);
+    this.conf = conf;
   }
 
-  private final Configuration conf;
-  private final InetSocketAddress serverAddress;
-  private final int connectionTimeout;
-  private boolean kerberos;
-  private TTransport transport;
-
-  private String[] serverPrincipalParts;
-  private Client client;
-  private final SentryHDFSClientTransportConfig transportConfig = new SentryHDFSClientTransportConfig();
-  private static final ImmutableMap<String, String> SASL_PROPERTIES =
-    ImmutableMap.of(Sasl.SERVER_AUTH, "true", Sasl.QOP, "auth-conf");
-
-  public SentryHDFSServiceClientDefaultImpl(Configuration conf) throws IOException {
-    this.conf = conf;
-    Preconditions.checkNotNull(this.conf, "Configuration object cannot be null");
-    try {
-      this.serverAddress = NetUtils.createSocketAddr(
-        transportConfig.getSentryServerRpcAddress(conf),
-        transportConfig.getServerRpcPort(conf));
-      this.connectionTimeout = transportConfig.getServerRpcConnTimeoutInMs(conf);
-      kerberos = transportConfig.isKerberosEnabled(conf);
-      transport = new TSocket(serverAddress.getHostName(),
-        serverAddress.getPort(), connectionTimeout);
-      if (kerberos) {
-        String serverPrincipal = transportConfig.getSentryPrincipal(conf);
-        // Resolve server host in the same way as we are doing on server side
-        serverPrincipal = SecurityUtil.getServerPrincipal(serverPrincipal, serverAddress.getAddress());
-        LOGGER.info("Using server kerberos principal: " + serverPrincipal);
-
-        serverPrincipalParts = SaslRpcServer.splitKerberosName(serverPrincipal);
-        Preconditions.checkArgument(serverPrincipalParts.length == 3,
-          "Kerberos principal should have 3 parts: " + serverPrincipal);
-        boolean wrapUgi = transportConfig.useUserGroupInformation(conf);
-        transport = new UgiSaslClientTransport(AuthMethod.KERBEROS.getMechanismName(),
-          null, serverPrincipalParts[0], serverPrincipalParts[1],
-          SASL_PROPERTIES, null, transport, wrapUgi);
-      } else {
-        serverPrincipalParts = null;
-      }
-
-      transport.open();
-    } catch (TTransportException e) {
-      throw new IOException("Transport exception while opening transport: " + e.getMessage(), e);
-    } catch (MissingConfigurationException e) {
-      throw new RuntimeException("Client Creation Failed: " + e.getMessage(), e);
+  /**
+   * Connect to the sentry server
+   *
+   * @throws IOException
+   */
+  @Override
+  public synchronized void connect() throws IOException {
+    if (transport != null && transport.isOpen()) {
+      return;
     }
-    LOGGER.info("Successfully opened transport: " + transport + " to " + serverAddress);
+
+    transport = transportFactory.getTransport();
     TProtocol tProtocol = null;
     long maxMessageSize = conf.getLong(ServiceConstants.ClientConfig.SENTRY_HDFS_THRIFT_MAX_MESSAGE_SIZE,
-        ServiceConstants.ClientConfig.SENTRY_HDFS_THRIFT_MAX_MESSAGE_SIZE_DEFAULT);
-    if (conf.getBoolean(ClientConfig.USE_COMPACT_TRANSPORT,
-        ClientConfig.USE_COMPACT_TRANSPORT_DEFAULT)) {
+            ServiceConstants.ClientConfig.SENTRY_HDFS_THRIFT_MAX_MESSAGE_SIZE_DEFAULT);
+    if (conf.getBoolean(ServiceConstants.ClientConfig.USE_COMPACT_TRANSPORT,
+            ServiceConstants.ClientConfig.USE_COMPACT_TRANSPORT_DEFAULT)) {
       tProtocol = new TCompactProtocol(transport, maxMessageSize, maxMessageSize);
     } else {
       tProtocol = new TBinaryProtocol(transport, maxMessageSize, maxMessageSize, true, true);
     }
     TMultiplexedProtocol protocol = new TMultiplexedProtocol(
-      tProtocol, SentryHDFSServiceClient.SENTRY_HDFS_SERVICE_NAME);
+            tProtocol, SentryHDFSServiceClient.SENTRY_HDFS_SERVICE_NAME);
+
     client = new SentryHDFSService.Client(protocol);
     LOGGER.info("Successfully created client");
   }
 
+  @Override
   public synchronized void notifyHMSUpdate(PathsUpdate update)
-      throws SentryHdfsServiceException {
+          throws SentryHdfsServiceException {
     try {
       client.handle_hms_notification(update.toThrift());
     } catch (Exception e) {
@@ -181,8 +99,9 @@ public class SentryHDFSServiceClientDefaultImpl implements SentryHDFSServiceClie
     }
   }
 
+  @Override
   public synchronized long getLastSeenHMSPathSeqNum()
-      throws SentryHdfsServiceException {
+          throws SentryHdfsServiceException {
     try {
       return client.check_hms_seq_num(-1);
     } catch (Exception e) {
@@ -190,8 +109,9 @@ public class SentryHDFSServiceClientDefaultImpl implements SentryHDFSServiceClie
     }
   }
 
+  @Override
   public synchronized SentryAuthzUpdate getAllUpdatesFrom(long permSeqNum, long pathSeqNum)
- throws SentryHdfsServiceException {
+          throws SentryHdfsServiceException {
     SentryAuthzUpdate retVal = new SentryAuthzUpdate(new LinkedList<PermissionsUpdate>(), new LinkedList<PathsUpdate>());
     try {
       TAuthzUpdateResponse sentryUpdates = client.get_all_authz_updates_from(permSeqNum, pathSeqNum);
@@ -211,9 +131,13 @@ public class SentryHDFSServiceClientDefaultImpl implements SentryHDFSServiceClie
     return retVal;
   }
 
-  public void close() {
-    if (transport != null) {
-      transport.close();
-    }
+  @Override
+  public synchronized void close() {
+    transportFactory.close();
+  }
+
+  @Override
+  public void disconnect() {
+    transportFactory.releaseTransport();
   }
 }

@@ -25,7 +25,6 @@ import javax.security.sasl.Sasl;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 import org.apache.sentry.provider.db.service.thrift.SentryMetrics;
-import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClientDefaultImpl;
 
 public class ServiceConstants {
 
@@ -119,6 +118,8 @@ public class ServiceConstants {
     public static final String SENTRY_STORE_LOCAL_GROUP_MAPPING = "org.apache.sentry.provider.file.LocalGroupMappingService";
     public static final String SENTRY_STORE_GROUP_MAPPING_DEFAULT = SENTRY_STORE_HADOOP_GROUP_MAPPING;
 
+    public static final String SENTRY_STORE_ORPHANED_PRIVILEGE_REMOVAL = "sentry.store.orphaned.privilege.removal";
+    public static final String SENTRY_STORE_ORPHANED_PRIVILEGE_REMOVAL_DEFAULT = "false";
     public static final String SENTRY_STORE_CLEAN_PERIOD_SECONDS =
         "sentry.store.clean.period.seconds";
     public static final long SENTRY_STORE_CLEAN_PERIOD_SECONDS_DEFAULT = 43200; // 12 hours.
@@ -225,12 +226,10 @@ public class ServiceConstants {
   }
 
   public static class ClientConfig {
-    public static final ImmutableMap<String, String> SASL_PROPERTIES = ServiceConstants.SASL_PROPERTIES;
     public static final String SERVER_RPC_PORT = "sentry.service.client.server.rpc-port";
     public static final int SERVER_RPC_PORT_DEFAULT = ServerConfig.RPC_PORT_DEFAULT;
     public static final String SERVER_RPC_ADDRESS = "sentry.service.client.server.rpc-address";
     public static final String SERVER_RPC_CONN_TIMEOUT = "sentry.service.client.server.rpc-connection-timeout";
-    public static final int SERVER_RPC_CONN_TIMEOUT_DEFAULT = 200000;
 
     // HA configuration
     public static final String SENTRY_HA_ENABLED = "sentry.ha.enabled";
@@ -253,20 +252,6 @@ public class ServiceConstants {
     // retry num for getting the connection from connection pool
     public static final String SENTRY_POOL_RETRY_TOTAL = "sentry.service.client.connection.pool.retry-total";
     public static final int SENTRY_POOL_RETRY_TOTAL_DEFAULT = 3;
-
-    /**
-     * full retry num for getting the connection in non-pool model
-     * In a full retry, it will cycle through all available sentry servers
-     * {@link SentryPolicyServiceClientDefaultImpl#connectWithRetry()}
-     */
-    public static final String SENTRY_FULL_RETRY_TOTAL = "sentry.service.client.connection.full.retry-total";
-    public static final int SENTRY_FULL_RETRY_TOTAL_DEFAULT = 2;
-    /**
-     * max retry num for client rpc
-     * {@link RetryClientInvocationHandler#invokeImpl(Object, Method, Object[])}
-     */
-    public static final String SENTRY_RPC_RETRY_TOTAL = "sentry.service.client.rpc.retry-total";
-    public static final int SENTRY_RPC_RETRY_TOTAL_DEFAULT = 3;
 
     // max message size for thrift messages
     public static String SENTRY_POLICY_CLIENT_THRIFT_MAX_MESSAGE_SIZE = "sentry.policy.client.thrift.max.message.size";
