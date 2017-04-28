@@ -751,7 +751,7 @@ public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
      // set the default URI scheme to be hdfs.
      boolean testConfOff = Boolean.valueOf(System.getProperty(EXTERNAL_SENTRY_SERVICE, "false"));
      if (!testConfOff) {
-       PathsUpdate.getConfiguration().set("fs.defaultFS", "hdfs:///");
+       PathsUpdate.setDefaultScheme("hdfs");
      }
      String dbName = "db1";
      String tblName = "tab1";

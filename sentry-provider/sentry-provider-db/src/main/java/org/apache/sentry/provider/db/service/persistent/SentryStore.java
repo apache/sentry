@@ -2409,7 +2409,7 @@ public class SentryStore {
    * @param update the corresponding path delta update
    * @throws Exception
    */
-  public void addAuthzPathsMapping(final String authzObj, final Set<String> paths,
+  public void addAuthzPathsMapping(final String authzObj, final Iterable<String> paths,
       final Update update) throws Exception {
     execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
@@ -2429,7 +2429,7 @@ public class SentryStore {
    * @param paths a set of paths need to be added into the authzObj -> [Paths] mapping
    */
   private void addAuthzPathsMappingCore(PersistenceManager pm, String authzObj,
-        Set<String> paths) {
+        Iterable<String> paths) {
     MAuthzPathsMapping mAuthzPathsMapping = getMAuthzPathsMappingCore(pm, authzObj);
     if (mAuthzPathsMapping == null) {
       mAuthzPathsMapping = new MAuthzPathsMapping(authzObj, paths);
@@ -2450,7 +2450,7 @@ public class SentryStore {
    * @param paths a set of paths need to be deleted from the authzObj -> [Paths] mapping
    * @param update the corresponding path delta update
    */
-  public void deleteAuthzPathsMapping(final String authzObj, final Set<String> paths,
+  public void deleteAuthzPathsMapping(final String authzObj, final Iterable<String> paths,
       final Update update) throws Exception {
     execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
@@ -2469,7 +2469,7 @@ public class SentryStore {
    * @throws SentryNoSuchObjectException if cannot find the existing authzObj or path.
    */
   private void deleteAuthzPathsMappingCore(PersistenceManager pm, String authzObj,
-        Set<String> paths) {
+                                           Iterable<String> paths) {
     MAuthzPathsMapping mAuthzPathsMapping = getMAuthzPathsMappingCore(pm, authzObj);
     if (mAuthzPathsMapping != null) {
       for (String path : paths) {

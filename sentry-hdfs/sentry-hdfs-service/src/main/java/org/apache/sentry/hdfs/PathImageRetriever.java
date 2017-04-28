@@ -18,12 +18,15 @@
 package org.apache.sentry.hdfs;
 
 import com.codahale.metrics.Timer;
+import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import org.apache.sentry.hdfs.service.thrift.TPathChanges;
 import org.apache.sentry.provider.db.service.persistent.PathsImage;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 
 import javax.annotation.concurrent.ThreadSafe;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -39,7 +42,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class PathImageRetriever implements ImageRetriever<PathsUpdate> {
 
   private final SentryStore sentryStore;
-  private final static String[] root = {"/"};
+  private static final String[] root = {"/"};
 
   PathImageRetriever(SentryStore sentryStore) {
     this.sentryStore = sentryStore;
@@ -66,7 +69,7 @@ public class PathImageRetriever implements ImageRetriever<PathsUpdate> {
         TPathChanges pathChange = pathsUpdate.newPathChange(pathEnt.getKey());
 
         for (String path : pathEnt.getValue()) {
-          pathChange.addToAddPaths(PathsUpdate.splitPath(path));
+          pathChange.addToAddPaths(Lists.newArrayList(Splitter.on("/").split(path)));
         }
       }
 

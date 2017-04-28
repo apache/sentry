@@ -19,6 +19,7 @@ package org.apache.sentry.hdfs;
 
 import java.util.List;
 
+import com.google.common.collect.Lists;
 import org.apache.sentry.hdfs.service.thrift.TPathChanges;
 import org.apache.sentry.hdfs.service.thrift.TPathsUpdate;
 import org.apache.thrift.TException;
@@ -26,28 +27,29 @@ import org.junit.Test;
 import junit.framework.Assert;
 
 public class TestPathsUpdate {
+  private List<String> uriToList(String uri) throws SentryMalformedPathException {
+    String path = PathsUpdate.parsePath(uri);
+    return Lists.newArrayList(path.split("/"));
+  }
+
   @Test
   public void testParsePathComplexCharacters() throws SentryMalformedPathException{
-    List<String> results = PathsUpdate.parsePath(
+    List<String> results = uriToList(
       "hdfs://hostname.test.com:8020/user/hive/warehouse/break/b=all | ' & the spaces/c=in PartKeys/With fun chars *%!|"
     );
-    System.out.println(results);
     Assert.assertNotNull("Parse path without throwing exception",results);
   }
 
   @Test
   public void testPositiveParsePath() throws SentryMalformedPathException {
-    List<String> results = PathsUpdate.parsePath("hdfs://hostname.test.com:8020/path");
-    Assert.assertTrue("Parsed path is unexpected", results.get(0).equals("path"));
-    Assert.assertTrue("Parsed path size is unexpected", results.size() == 1);
+    String result = PathsUpdate.parsePath("hdfs://hostname.test.com:8020/path");
+    Assert.assertTrue("Parsed path is unexpected", result.equals("path"));
 
-    results = PathsUpdate.parsePath("hdfs://hostname.test.com/path");
-    Assert.assertTrue("Parsed path is unexpected", results.get(0).equals("path"));
-    Assert.assertTrue("Parsed path size is unexpected", results.size() == 1);
+    result = PathsUpdate.parsePath("hdfs://hostname.test.com/path");
+    Assert.assertTrue("Parsed path is unexpected", result.equals("path"));
 
-    results = PathsUpdate.parsePath("hdfs:///path");
-    Assert.assertTrue("Parsed path is unexpected", results.get(0).equals("path"));
-    Assert.assertTrue("Parsed path size is unexpected", results.size() == 1);
+    result = PathsUpdate.parsePath("hdfs:///path");
+    Assert.assertTrue("Parsed path is unexpected", result.equals("path"));
   }
 
   @Test(expected = SentryMalformedPathException.class)
@@ -58,16 +60,17 @@ public class TestPathsUpdate {
   //if file:// - should return null
   @Test
   public void testMalformedPathFile() throws SentryMalformedPathException{
-    List<String> results = PathsUpdate.parsePath("file://hostname/path");
-    System.out.println(results);
-    Assert.assertNull("Parse path without throwing exception",results);
+    String result = PathsUpdate.parsePath("file://hostname/path");
+    Assert.assertNull("Parse path without throwing exception",result);
   }
 
   @Test
   public void testSerializeDeserializeInJSON() throws SentryMalformedPathException, TException{
     PathsUpdate update = new PathsUpdate(1, true);
     TPathChanges pathChange = update.newPathChange("db1.tbl12");
-    pathChange.addToAddPaths(PathsUpdate.parsePath("hdfs:///db1/tbl12/part121"));
+    String path = PathsUpdate.parsePath("hdfs:///db1/tbl12/part121");
+    List<String> paths = Lists.newArrayList(path.split("/"));
+    pathChange.addToAddPaths(paths);
 
     // Serialize and deserialize the PermssionUpdate object should equals to the original one.
     TPathsUpdate before = update.toThrift();
