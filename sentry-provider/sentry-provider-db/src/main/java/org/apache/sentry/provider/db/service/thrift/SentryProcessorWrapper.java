@@ -18,6 +18,7 @@
 
 package org.apache.sentry.provider.db.service.thrift;
 
+import org.apache.sentry.core.common.utils.ThriftUtil;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TProtocol;
 

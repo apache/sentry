@@ -40,6 +40,13 @@ interface SentryClientTransportConfigInterface {
 
   /**
    * @param conf configuration
+   * @return number of times should client re-create the transport and try to connect
+   * before finally giving up.
+   */
+  int getSentryRpcRetryTotal(Configuration conf);
+
+  /**
+   * @param conf configuration
    * @return True, if kerberos should be enabled.
    * False, Iff kerberos is enabled.
    * @throws MissingConfigurationException if property is mandatory and is missing in

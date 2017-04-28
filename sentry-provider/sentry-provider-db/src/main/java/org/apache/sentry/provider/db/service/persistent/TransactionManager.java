@@ -185,7 +185,7 @@ public class TransactionManager {
       } catch (Exception e) {
         retryNum++;
         if (retryNum >= transactionRetryMax) {
-          String message = "The transaction has reached max retry numbe, r"
+          String message = "The transaction has reached max retry number"
               + e.getMessage();
           LOGGER.error(message, e);
           throw new Exception(message, e);

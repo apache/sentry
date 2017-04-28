@@ -28,6 +28,7 @@ package org.apache.sentry.core.common.transport;
  * <code>SentryClientTransportConfigInterface</code>.
  */
 class SentryClientTransportConstants {
+
   /**
    * max retry num for client rpc
    * {link RetryClientInvocationHandler#invokeImpl(Object, Method, Object[])}

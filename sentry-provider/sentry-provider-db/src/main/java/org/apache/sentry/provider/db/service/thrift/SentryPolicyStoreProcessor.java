@@ -47,7 +47,7 @@ import org.apache.sentry.provider.db.log.entity.JsonLogEntity;
 import org.apache.sentry.provider.db.log.entity.JsonLogEntityFactory;
 import org.apache.sentry.provider.db.log.util.Constants;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
-import org.apache.sentry.provider.db.service.thrift.PolicyStoreConstants.PolicyStoreServerConfig;
+import org.apache.sentry.core.common.utils.PolicyStoreConstants.PolicyStoreServerConfig;
 import org.apache.sentry.provider.db.service.thrift.validator.GrantPrivilegeRequestValidator;
 import org.apache.sentry.provider.db.service.thrift.validator.RevokePrivilegeRequestValidator;
 import org.apache.sentry.service.thrift.SentryServiceUtil;

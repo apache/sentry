@@ -22,7 +22,7 @@ import org.junit.Assert;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.common.exception.SentryThriftAPIMismatchException;
-import org.apache.sentry.provider.db.service.thrift.PolicyStoreConstants.PolicyStoreServerConfig;
+import org.apache.sentry.core.common.utils.PolicyStoreConstants.PolicyStoreServerConfig;
 import org.apache.sentry.service.thrift.ServiceConstants;
 import org.junit.Before;
 import org.junit.Test;

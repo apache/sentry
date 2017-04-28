@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.sentry.hdfs;
+package org.apache.sentry.core.common.exception;
 
 public class SentryHdfsServiceException extends RuntimeException {
   private static final long serialVersionUID = 1511645864949767378L;

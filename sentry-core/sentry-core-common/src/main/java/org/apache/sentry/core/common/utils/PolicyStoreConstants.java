@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.provider.db.service.thrift;
+package org.apache.sentry.core.common.utils;
 
 public final class PolicyStoreConstants {
   public static final String SENTRY_GENERIC_POLICY_NOTIFICATION = "sentry.generic.policy.notification";

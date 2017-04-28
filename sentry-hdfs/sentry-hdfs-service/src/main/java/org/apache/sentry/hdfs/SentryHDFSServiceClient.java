@@ -17,6 +17,8 @@
  */
 package org.apache.sentry.hdfs;
 
+import org.apache.sentry.core.common.exception.SentryHdfsServiceException;
+
 public interface SentryHDFSServiceClient {
   String SENTRY_HDFS_SERVICE_NAME = "SentryHDFSService";
 

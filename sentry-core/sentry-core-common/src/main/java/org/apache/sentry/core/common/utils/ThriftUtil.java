@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.sentry.provider.db.service.thrift;
+package org.apache.sentry.core.common.utils;
 
 import com.google.common.net.HostAndPort;
 import org.apache.thrift.protocol.TProtocol;
