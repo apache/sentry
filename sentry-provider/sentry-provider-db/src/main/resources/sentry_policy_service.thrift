@@ -259,7 +259,8 @@ struct TSentrySyncIDRequest {
 }
 
 struct TSentrySyncIDResponse {
-1: required i64 id // Most recent processed ID
+1: required sentry_common_service.TSentryResponseStatus status
+2: required i64 id // Most recent processed ID
 }
 
 service SentryPolicyService
