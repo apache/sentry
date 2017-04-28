@@ -93,10 +93,18 @@ public class TestSentryStore extends org.junit.Assert {
     conf = new Configuration(false);
     final String ourUrl = UserProvider.SCHEME_NAME + ":///";
     conf.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, ourUrl);
+
+    // THis should be a UserGroupInformation provider
     CredentialProvider provider = CredentialProviderFactory.getProviders(conf).get(0);
-    provider.createCredentialEntry(ServerConfig.
-        SENTRY_STORE_JDBC_PASS, passwd);
-    provider.flush();
+
+
+    // The user credentials are stored as a static variable by UserGrouoInformation provider.
+    // We need to only set the password the first time, an attempt to set it for the second
+    // time fails with an exception.
+    if(provider.getCredentialEntry(ServerConfig.SENTRY_STORE_JDBC_PASS) == null) {
+      provider.createCredentialEntry(ServerConfig.SENTRY_STORE_JDBC_PASS, passwd);
+      provider.flush();
+    }
 
     dataDir = new File(Files.createTempDir(), "sentry_policy_db");
     conf.set(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "false");
