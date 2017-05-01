@@ -32,7 +32,9 @@ import org.apache.hadoop.security.SaslRpcServer;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hive.hcatalog.messaging.HCatEventMessage;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
-import org.apache.sentry.core.common.exception.*;
+import org.apache.sentry.core.common.exception.SentryInvalidHMSEventException;
+import org.apache.sentry.core.common.exception.SentryInvalidInputException;
+import org.apache.sentry.core.common.exception.SentryNoSuchObjectException;
 import org.apache.sentry.hdfs.PermissionsUpdate;
 import org.apache.sentry.hdfs.FullUpdateInitializer;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
@@ -175,7 +177,7 @@ public class HMSFollower implements Runnable {
         throw e;
       } finally {
         // Shutdown kerberos context if HMS connection failed to setup to avoid thread leaks.
-        if (kerberosContext != null && client == null) {
+        if ((kerberosContext != null) && (client == null)) {
           kerberosContext.shutDown();
           kerberosContext = null;
         }
@@ -282,7 +284,7 @@ public class HMSFollower implements Runnable {
       } else {
         LOGGER.error("ThriftException occured fetching Notification entries, will try", e);
       }
-    } catch (SentryInvalidInputException|SentryInvalidHMSEventException e) {
+    } catch (SentryInvalidInputException |SentryInvalidHMSEventException e) {
       LOGGER.error("Encounter SentryInvalidInputException|SentryInvalidHMSEventException " +
                    "while processing notification log", e);
     } catch (Throwable t) {
@@ -355,7 +357,11 @@ public class HMSFollower implements Runnable {
     final CounterWait counterWait = sentryStore.getCounterWait();
 
     for (NotificationEvent event : events) {
-      String dbName, tableName, oldLocation, newLocation, location;
+      String dbName;
+      String tableName;
+      String oldLocation;
+      String newLocation;
+      String location;
       List<String> locations;
       NotificationProcessor notificationProcessor = new NotificationProcessor(sentryStore, LOGGER);
       switch (HCatEventMessage.EventType.valueOf(event.getEventType())) {
@@ -363,13 +369,15 @@ public class HMSFollower implements Runnable {
           SentryJSONCreateDatabaseMessage message = deserializer.getCreateDatabaseMessage(event.getMessage());
           dbName = message.getDB();
           location = message.getLocation();
-          if (dbName == null || location == null) {
+          if ((dbName == null) || (location == null)) {
             throw new SentryInvalidHMSEventException(String.format("Create database event " +
                 "has incomplete information. dbName = %s location = %s",
                 StringUtils.defaultIfBlank(dbName, "null"),
                 StringUtils.defaultIfBlank(location, "null")));
           }
-          dropSentryDbPrivileges(dbName, event);
+          if (syncWithPolicyStore(AUTHZ_SYNC_CREATE_WITH_POLICY_STORE)) {
+            dropSentryDbPrivileges(dbName, event);
+          }
           notificationProcessor.processCreateDatabase(dbName,location, event.getEventId());
           break;
         case DROP_DATABASE:
@@ -378,11 +386,12 @@ public class HMSFollower implements Runnable {
           dbName = dropDatabaseMessage.getDB();
           location = dropDatabaseMessage.getLocation();
           if (dbName == null) {
-            throw new SentryInvalidHMSEventException(String.format("Drop database event " +
-                "has incomplete information. dbName = %s",
-                StringUtils.defaultIfBlank(dbName, "null")));
+            throw new SentryInvalidHMSEventException(
+                    "Drop database event has incomplete information: dbName = null");
           }
-          dropSentryDbPrivileges(dbName, event);
+          if (syncWithPolicyStore(AUTHZ_SYNC_DROP_WITH_POLICY_STORE)) {
+            dropSentryDbPrivileges(dbName, event);
+          }
           notificationProcessor.processDropDatabase(dbName, location, event.getEventId());
           break;
         case CREATE_TABLE:
@@ -390,27 +399,31 @@ public class HMSFollower implements Runnable {
           dbName = createTableMessage.getDB();
           tableName = createTableMessage.getTable();
           location = createTableMessage.getLocation();
-          if (dbName == null || tableName == null || location == null) {
+          if ((dbName == null) || (tableName == null) || (location == null)) {
             throw new SentryInvalidHMSEventException(String.format("Create table event " +
                 "has incomplete information. dbName = %s, tableName = %s, location = %s",
                 StringUtils.defaultIfBlank(dbName, "null"),
                 StringUtils.defaultIfBlank(tableName, "null"),
                 StringUtils.defaultIfBlank(location, "null")));
           }
-          dropSentryTablePrivileges(dbName, tableName, event);
+          if (syncWithPolicyStore(AUTHZ_SYNC_CREATE_WITH_POLICY_STORE)) {
+            dropSentryTablePrivileges(dbName, tableName, event);
+          }
           notificationProcessor.processCreateTable(dbName, tableName, location, event.getEventId());
           break;
         case DROP_TABLE:
           SentryJSONDropTableMessage dropTableMessage = deserializer.getDropTableMessage(event.getMessage());
           dbName = dropTableMessage.getDB();
           tableName = dropTableMessage.getTable();
-          if (dbName == null || tableName == null) {
+          if ((dbName == null) || (tableName == null)) {
             throw new SentryInvalidHMSEventException(String.format("Drop table event " +
                 "has incomplete information. dbName = %s, tableName = %s",
                 StringUtils.defaultIfBlank(dbName, "null"),
                 StringUtils.defaultIfBlank(tableName, "null")));
           }
-          dropSentryTablePrivileges(dbName, tableName, event);
+          if (syncWithPolicyStore(AUTHZ_SYNC_DROP_WITH_POLICY_STORE)) {
+            dropSentryTablePrivileges(dbName, tableName, event);
+          }
           notificationProcessor.processDropTable(dbName, tableName, event.getEventId());
           break;
         case ALTER_TABLE:
@@ -423,8 +436,12 @@ public class HMSFollower implements Runnable {
           oldLocation = alterTableMessage.getOldLocation();
           newLocation = alterTableMessage.getNewLocation();
 
-          if (oldDbName == null || oldTableName == null || newDbName == null || newTableName == null ||
-              oldLocation == null || newLocation == null) {
+          if ((oldDbName == null) ||
+              (oldTableName == null) ||
+              (newDbName == null) ||
+              (newTableName == null) ||
+              (oldLocation == null) ||
+              (newLocation == null)) {
             throw new SentryInvalidHMSEventException(String.format("Alter table event " +
                 "has incomplete information. oldDbName = %s, oldTableName = %s, oldLocation = %s, " +
                 "newDbName = %s, newTableName = %s, newLocation = %s",
@@ -456,7 +473,7 @@ public class HMSFollower implements Runnable {
           dbName = addPartitionMessage.getDB();
           tableName = addPartitionMessage.getTable();
           locations = addPartitionMessage.getLocations();
-          if (dbName == null || tableName == null || locations == null) {
+          if ((dbName == null) || (tableName == null) || (locations == null)) {
             LOGGER.error(String.format("Create table event has incomplete information. " +
                 "dbName = %s, tableName = %s, locations = %s",
                 StringUtils.defaultIfBlank(dbName, "null"),
@@ -472,7 +489,7 @@ public class HMSFollower implements Runnable {
           dbName = dropPartitionMessage.getDB();
           tableName = dropPartitionMessage.getTable();
           locations = dropPartitionMessage.getLocations();
-          if (dbName == null || tableName == null || locations == null) {
+          if ((dbName == null) || (tableName == null) || (locations == null)) {
             throw new SentryInvalidHMSEventException(String.format("Drop partition event " +
                 "has incomplete information. dbName = %s, tableName = %s, location = %s",
                 StringUtils.defaultIfBlank(dbName, "null"),
@@ -490,7 +507,10 @@ public class HMSFollower implements Runnable {
         oldLocation = alterPartitionMessage.getOldLocation();
         newLocation = alterPartitionMessage.getNewLocation();
 
-        if (dbName == null || tableName == null || oldLocation == null || newLocation == null) {
+        if ((dbName == null) ||
+            (tableName == null) ||
+            (oldLocation == null) ||
+            (newLocation == null)) {
           throw new SentryInvalidHMSEventException(String.format("Alter partition event " +
               "has incomplete information. dbName = %s, tableName = %s, " +
               "oldLocation = %s, newLocation = %s",
@@ -503,6 +523,9 @@ public class HMSFollower implements Runnable {
         notificationProcessor.processAlterPartition(dbName, tableName, oldLocation,
             newLocation, event.getEventId());
         break;
+        case INSERT:
+          // TODO DO we need to do anything here?
+          break;
       }
       currentEventID = event.getEventId();
       // Wake up any HMS waiters that are waiting for this ID.
@@ -515,36 +538,28 @@ public class HMSFollower implements Runnable {
   }
 
   private void dropSentryDbPrivileges(String dbName, NotificationEvent event) throws Exception {
-    if (!syncWithPolicyStore(AUTHZ_SYNC_DROP_WITH_POLICY_STORE)) {
-      return;
-    } else {
-      try {
-        TSentryAuthorizable authorizable = new TSentryAuthorizable(hiveInstance);
-        authorizable.setDb(dbName);
-        sentryStore.dropPrivilege(authorizable, onDropSentryPrivilege(authorizable));
-      } catch (SentryNoSuchObjectException e) {
-        LOGGER.info("Drop Sentry privilege ignored as there are no privileges on the database: %s", dbName);
-      } catch (Exception e) {
-        throw new SentryInvalidInputException("Could not process Drop database event." +
-            "Event: " + event.toString(), e);
-      }
+    try {
+      TSentryAuthorizable authorizable = new TSentryAuthorizable(hiveInstance);
+      authorizable.setDb(dbName);
+      sentryStore.dropPrivilege(authorizable, onDropSentryPrivilege(authorizable));
+    } catch (SentryNoSuchObjectException e) {
+      LOGGER.info("Drop Sentry privilege ignored as there are no privileges on the database: %s", dbName);
+    } catch (Exception e) {
+      throw new SentryInvalidInputException("Could not process Drop database event." +
+          "Event: " + event.toString(), e);
     }
   }
 
   private void dropSentryTablePrivileges(String dbName, String tableName, NotificationEvent event) throws Exception {
-    if (!syncWithPolicyStore(AUTHZ_SYNC_CREATE_WITH_POLICY_STORE)) {
-      return;
-    } else {
-      try {
-        TSentryAuthorizable authorizable = new TSentryAuthorizable(hiveInstance);
-        authorizable.setDb(dbName);
-        authorizable.setTable(tableName);
-        sentryStore.dropPrivilege(authorizable, onDropSentryPrivilege(authorizable));
-      } catch (SentryNoSuchObjectException e) {
-        LOGGER.info("Drop Sentry privilege ignored as there are no privileges on the table: %s.%s", dbName, tableName);
-      } catch (Exception e) {
-        throw new SentryInvalidInputException("Could not process Create table event. Event: " + event.toString(), e);
-      }
+    try {
+      TSentryAuthorizable authorizable = new TSentryAuthorizable(hiveInstance);
+      authorizable.setDb(dbName);
+      authorizable.setTable(tableName);
+      sentryStore.dropPrivilege(authorizable, onDropSentryPrivilege(authorizable));
+    } catch (SentryNoSuchObjectException e) {
+      LOGGER.info("Drop Sentry privilege ignored as there are no privileges on the table: %s.%s", dbName, tableName);
+    } catch (Exception e) {
+      throw new SentryInvalidInputException("Could not process Create table event. Event: " + event.toString(), e);
     }
   }
 
