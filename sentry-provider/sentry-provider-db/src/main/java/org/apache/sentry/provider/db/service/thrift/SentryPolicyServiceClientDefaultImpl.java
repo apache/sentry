@@ -842,6 +842,7 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
 
     try {
       TSentrySyncIDResponse response = client.sentry_sync_notifications(request);
+      Status.throwIfNotOk(response.getStatus());
       return response.getId();
     } catch (TException e) {
       throw new SentryUserException(THRIFT_EXCEPTION_MESSAGE, e);
