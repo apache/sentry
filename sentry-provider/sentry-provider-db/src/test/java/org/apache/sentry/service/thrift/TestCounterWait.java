@@ -30,12 +30,11 @@ import java.util.concurrent.LinkedBlockingDeque;
  */
 public class TestCounterWait extends TestCase {
   // Used to verify that wakeups happen in the right order
-  private BlockingDeque<Long> outSyncQueue = new LinkedBlockingDeque<>();
-  // Number of waiters to test for
-  private int nthreads = 20;
+  private final BlockingDeque<Long> outSyncQueue = new LinkedBlockingDeque<>();
 
   public void testWaitFor() throws Exception {
     // Create a thread for each waiter
+    int nthreads = 20;
     ExecutorService executor = Executors.newFixedThreadPool(nthreads);
 
     final CounterWait waiter = new CounterWait();
@@ -46,11 +45,16 @@ public class TestCounterWait extends TestCase {
     // Create a pair of threads waiting for each value in [1, nthreads / 2]
     // We use pair of threads per value to verify that both are waken up
     for (int i = 0; i < nthreads; i++) {
-      final int finalI = i + 2;
+      int finalI = i + 2;
       final int val = finalI / 2;
       executor.execute(new Runnable() {
                          public void run() {
-                           long r = waiter.waitFor(val); // blocks
+                           long r = 0;
+                           try {
+                             r = waiter.waitFor(val); // blocks
+                           } catch (InterruptedException e) {
+                             e.printStackTrace();
+                           }
                            outSyncQueue.add(r); // Once we wake up, post result
                          }
                        }
@@ -68,7 +72,7 @@ public class TestCounterWait extends TestCase {
     // Post a counter update for each value in [ 1, nthreads / 2 ]
     // After eac update two threads should be waken up and the corresponding pair of
     // values should appear in the outSyncQueue.
-    for (int i = 0; i < nthreads / 2; i++) {
+    for (int i = 0; i < (nthreads / 2); i++) {
       waiter.update(i + 1);
       long r = outSyncQueue.takeFirst();
       assertEquals(r, i + 1);

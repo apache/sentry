@@ -117,8 +117,9 @@ public final class CounterWait {
    * @param value requested counter value
    * @return current counter value that should be no smaller then the requested
    * value
+   * @throws InterruptedException if the wait was interrupted
    */
-  public long waitFor(long value) {
+  public long waitFor(long value) throws InterruptedException {
     // Fast path - counter value already reached, no need to block
     if (value <= currentId.get()) {
       return currentId.get();
@@ -220,9 +221,9 @@ public final class CounterWait {
       semaphore.acquireUninterruptibly(); // Will not block
     }
 
-    /** Wait until signaled. May return immediately if already signalled. */
-    void waitFor() {
-      semaphore.acquireUninterruptibly();
+    /** Wait until signaled or interrupted. May return immediately if already signalled. */
+    void waitFor() throws InterruptedException {
+      semaphore.acquire();
     }
 
     /** @return the value we are waiting for */
