@@ -17,11 +17,11 @@
 package org.apache.sentry.core.common.utils;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
 
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -42,7 +42,9 @@ public final class PolicyFiles {
       throws FileNotFoundException, IOException {
     for(String resource : resources) {
       LOGGER.debug("Copying " + resource + " to " + dest);
-      Resources.copy(Resources.getResource(resource), new FileOutputStream(new File(dest, resource)));
+      try (OutputStream output = Files.newOutputStream(new File(dest, resource).toPath())) {
+        Resources.copy(Resources.getResource(resource), output);
+      }
     }
   }
 
@@ -61,10 +63,9 @@ public final class PolicyFiles {
 
   public static void copyFilesToDir(FileSystem fs, Path dest, File inputFile)
       throws IOException {
-    try (InputStream input = new FileInputStream(inputFile.getPath());
+    try (InputStream input = Files.newInputStream(inputFile.toPath());
       FSDataOutputStream out = fs.create(new Path(dest, inputFile.getName()))) {
       ByteStreams.copy(input, out);
-      input.close();
       out.hflush();
       out.close();
     }
