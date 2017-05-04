@@ -924,13 +924,18 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   @Override
   public TSentrySyncIDResponse sentry_sync_notifications(TSentrySyncIDRequest request)
           throws TException {
+    TSentrySyncIDResponse response = new TSentrySyncIDResponse();
     try (Timer.Context timerContext = hmsWaitTimer.time()) {
       // Wait until Sentry Server processes specified HMS Notification ID.
-      TSentrySyncIDResponse response = new TSentrySyncIDResponse();
       response.setId(sentryStore.getCounterWait().waitFor(request.getId()));
       response.setStatus(Status.OK());
-      return response;
+    } catch (InterruptedException e) {
+      String msg = String.format("wait request for id %d is interrupted",
+              request.getId());
+      LOGGER.error(msg, e);
+      response.setStatus(Status.RuntimeError(msg, e));
     }
+    return response;
   }
 
   @VisibleForTesting
