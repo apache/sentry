@@ -30,6 +30,7 @@ import org.apache.hadoop.hive.metastore.api.NotificationEventResponse;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.SaslRpcServer;
 import org.apache.hadoop.security.SecurityUtil;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hive.hcatalog.messaging.HCatEventMessage;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.core.common.exception.SentryInvalidHMSEventException;
@@ -46,12 +47,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.sentry.binding.metastore.messaging.json.*;
 
-import javax.security.auth.Subject;
 import javax.security.auth.login.LoginException;
 import java.io.File;
 import java.io.IOException;
 import java.net.SocketException;
-import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.List;
 import java.util.Map;
@@ -118,7 +117,7 @@ public class HMSFollower implements Runnable {
    * Throws @MetaException if there was a problem on creating an HMSClient
    */
   private HiveMetaStoreClient getMetaStoreClient(Configuration conf)
-      throws LoginException, MetaException, PrivilegedActionException {
+      throws IOException, InterruptedException, LoginException, MetaException {
     if(client != null) {
       return client;
     }
@@ -159,9 +158,12 @@ public class HMSFollower implements Runnable {
         // Instantiating SentryKerberosContext in non-server mode handles the ticket renewal.
         kerberosContext = new SentryKerberosContext(principal, keytab, false);
 
+        UserGroupInformation.setConfiguration(hiveConf);
+        UserGroupInformation clientUGI = UserGroupInformation.getUGIFromSubject(kerberosContext.getSubject());
+
         // HiveMetaStoreClient handles the connection retry logic to HMS and can be configured using properties:
         // hive.metastore.connect.retries, hive.metastore.client.connect.retry.delay
-        client = Subject.doAs(kerberosContext.getSubject(), new PrivilegedExceptionAction<HiveMetaStoreClient>() {
+        client = clientUGI.doAs(new PrivilegedExceptionAction<HiveMetaStoreClient>() {
           @Override
           public HiveMetaStoreClient run() throws Exception {
             return new HiveMetaStoreClient(hiveConf);
@@ -171,9 +173,6 @@ public class HMSFollower implements Runnable {
       } catch (LoginException e) {
         // Kerberos login failed
         LOGGER.error("Failed to setup kerberos context.");
-        throw e;
-      } catch (PrivilegedActionException e) {
-        LOGGER.error("Failed to setup secure connection to HMS.");
         throw e;
       } finally {
         // Shutdown kerberos context if HMS connection failed to setup to avoid thread leaks.
