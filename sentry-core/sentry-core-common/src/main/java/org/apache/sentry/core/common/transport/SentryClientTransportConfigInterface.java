@@ -100,4 +100,13 @@ interface SentryClientTransportConfigInterface {
    *                                       configuration.
    */
   int getServerRpcConnTimeoutInMs(Configuration conf) throws MissingConfigurationException;
+
+  /**
+   *
+   * @param conf configuration
+   * @return True if the client should load balance connections between multiple servers
+   * @throws MissingConfigurationException if property is mandatory and is missing in
+   *                                       configuration.
+   */
+   boolean isLoadBalancingEnabled(Configuration conf)throws MissingConfigurationException;
 }

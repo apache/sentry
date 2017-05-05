@@ -85,4 +85,10 @@ public final class SentryHDFSClientTransportConfig
     throws MissingConfigurationException {
     return conf.getInt(SERVER_RPC_CONN_TIMEOUT, SERVER_RPC_CONN_TIMEOUT_DEFAULT);
   }
+
+  @Override
+  public boolean isLoadBalancingEnabled(Configuration conf)
+    throws MissingConfigurationException {
+    return conf.getBoolean(SENTRY_CLIENT_LOAD_BALANCING, SENTRY_CLIENT_LOAD_BALANCING_DEFAULT);
+  }
 }

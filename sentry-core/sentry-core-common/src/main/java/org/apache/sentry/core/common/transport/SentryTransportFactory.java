@@ -129,27 +129,28 @@ public class SentryTransportFactory {
     this.transportConfig = transportConfig;
 
     try {
-      String hostsAndPortsStr;
       this.connectionTimeout = transportConfig.getServerRpcConnTimeoutInMs(conf);
       this.connectionFullRetryTotal = transportConfig.getSentryFullRetryTotal(conf);
 
-      hostsAndPortsStr = transportConfig.getSentryServerRpcAddress(conf);
+      String hostsAndPortsStr = transportConfig.getSentryServerRpcAddress(conf);
 
       int serverPort = transportConfig.getServerRpcPort(conf);
 
       String[] hostsAndPortsStrArr = hostsAndPortsStr.split(",");
       HostAndPort[] hostsAndPorts = ThriftUtil.parseHostPortStrings(hostsAndPortsStrArr, serverPort);
 
-      this.endpoints = new ArrayList(hostsAndPortsStrArr.length);
+      this.endpoints = new ArrayList<>(hostsAndPortsStrArr.length);
       for (HostAndPort endpoint : hostsAndPorts) {
         this.endpoints.add(
           new InetSocketAddress(endpoint.getHostText(), endpoint.getPort()));
         LOGGER.debug("Added server endpoint: " + endpoint.toString());
       }
 
-      // Reorder endpoints randomly to prevent all clients connecting to the same endpoint
-      // at the same time after a node failure.
-      Collections.shuffle(endpoints);
+      if((endpoints.size() > 1) && (transportConfig.isLoadBalancingEnabled(conf))) {
+        // Reorder endpoints randomly to prevent all clients connecting to the same endpoint
+        // and load balance the connections towards sentry servers
+        Collections.shuffle(endpoints);
+      }
     } catch (MissingConfigurationException e) {
       throw new RuntimeException("Sentry Thrift Client Creation Failed: " + e.getMessage(), e);
     }
@@ -172,7 +173,7 @@ public class SentryTransportFactory {
     this.transportConfig = transportConfig;
 
     try {
-      this.endpoints = new ArrayList(1);
+      this.endpoints = new ArrayList<>(1);
       this.endpoints.add(NetUtils.createSocketAddr(addr, port));
       this.connectionTimeout = transportConfig.getServerRpcConnTimeoutInMs(conf);
       this.connectionFullRetryTotal = transportConfig.getSentryFullRetryTotal(conf);
@@ -199,8 +200,7 @@ public class SentryTransportFactory {
       } catch (IOException e) {
         currentException = e;
         LOGGER.error(
-          String.format("Failed to connect to all the configured sentry servers, " +
-            "Retrying again"));
+                "Failed to connect to all the configured sentry servers, Retrying again");
       }
     }
     // Throws exception on reaching the connectionFullRetryTotal.
