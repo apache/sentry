@@ -21,7 +21,10 @@ package org.apache.sentry.service.thrift;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
+import com.google.common.base.Preconditions;
 import org.apache.commons.lang.StringUtils;
 import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.core.common.utils.KeyValue;
@@ -31,6 +34,7 @@ import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
 
 import com.google.common.collect.Lists;
+import org.slf4j.Logger;
 
 public final class SentryServiceUtil {
 
@@ -149,6 +153,43 @@ public final class SentryServiceUtil {
       }
     }
     return SentryConstants.AUTHORIZABLE_JOINER.join(privileges);
+  }
+
+  /**
+   * Gracefully shut down an Executor service.
+   * <p>
+   * This code is based on the Javadoc example for the Executor service.
+   * <p>
+   * First call shutdown to reject incoming tasks, and then call
+   * shutdownNow, if necessary, to cancel any lingering tasks.
+   *
+   * @param pool the executor service to shut down
+   * @param poolName the name of the executor service to shut down to make it easy for debugging
+   * @param timeout the timeout interval to wait for its termination
+   * @param unit the unit of the timeout
+   * @param logger the logger to log the error message if it cannot terminate. It could be null
+   */
+  static void shutdownAndAwaitTermination(ExecutorService pool, String poolName,
+                       long timeout, TimeUnit unit, Logger logger) {
+    Preconditions.checkNotNull(pool);
+
+    pool.shutdown(); // Disable new tasks from being submitted
+    try {
+      // Wait a while for existing tasks to terminate
+      if (!pool.awaitTermination(timeout, unit)) {
+        pool.shutdownNow(); // Cancel currently executing tasks
+        // Wait a while for tasks to respond to being cancelled
+        if ((!pool.awaitTermination(timeout, unit)) && (logger != null)) {
+          logger.error("Executor service {} did not terminate",
+              StringUtils.defaultIfBlank(poolName, "null"));
+        }
+      }
+    } catch (InterruptedException ignored) {
+      // (Re-)Cancel if current thread also interrupted
+      pool.shutdownNow();
+      // Preserve interrupt status
+      Thread.currentThread().interrupt();
+    }
   }
 
   private SentryServiceUtil() {

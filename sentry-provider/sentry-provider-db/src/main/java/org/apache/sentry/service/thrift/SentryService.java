@@ -70,6 +70,7 @@ import com.google.common.base.Preconditions;
 
 import static org.apache.sentry.core.common.utils.SigUtils.registerSigListener;
 
+// Enable signal handler for HA leader/follower status if configured
 public class SentryService implements Callable, SigUtils.SigListener {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryService.class);
@@ -89,6 +90,7 @@ public class SentryService implements Callable, SigUtils.SigListener {
   private final String keytab;
   private final ExecutorService serviceExecutor;
   private ScheduledExecutorService hmsFollowerExecutor = null;
+  private HMSFollower hmsFollower = null;
   private Future serviceStatus;
   private TServer thriftServer;
   private Status status;
@@ -101,8 +103,7 @@ public class SentryService implements Callable, SigUtils.SigListener {
     {@link HMSFollower}.
    */
   private final SentryStore sentryStore;
-  private final ScheduledExecutorService sentryStoreCleanService =
-      Executors.newSingleThreadScheduledExecutor();
+  private ScheduledExecutorService sentryStoreCleanService;
   private final LeaderStatusMonitor leaderMonitor;
   private final boolean notificationLogEnabled;
 
@@ -165,21 +166,6 @@ public class SentryService implements Callable, SigUtils.SigListener {
     notificationLogEnabled = conf.getBoolean(ServerConfig.SENTRY_NOTIFICATION_LOG_ENABLED,
         ServerConfig.SENTRY_NOTIFICATION_LOG_ENABLED_DEFAULT);
 
-    if (notificationLogEnabled) {
-      try {
-        long initDelay = conf.getLong(ServerConfig.SENTRY_HMSFOLLOWER_INIT_DELAY_MILLS,
-                ServerConfig.SENTRY_HMSFOLLOWER_INIT_DELAY_MILLS_DEFAULT);
-        long period = conf.getLong(ServerConfig.SENTRY_HMSFOLLOWER_INTERVAL_MILLS,
-                ServerConfig.SENTRY_HMSFOLLOWER_INTERVAL_MILLS_DEFAULT);
-        hmsFollowerExecutor = Executors.newScheduledThreadPool(1);
-        hmsFollowerExecutor.scheduleAtFixedRate(new HMSFollower(conf, sentryStore, leaderMonitor),
-                initDelay, period, TimeUnit.MILLISECONDS);
-      } catch (Exception e) {
-        //TODO: Handle
-        LOGGER.error("Could not start HMSFollower");
-      }
-    }
-
     status = Status.NOT_STARTED;
 
     // Enable signal handler for HA leader/follower status if configured
@@ -191,25 +177,6 @@ public class SentryService implements Callable, SigUtils.SigListener {
       } catch (Exception e) {
         LOGGER.error("Failed to register signal", e);
       }
-    }
-
-    // If SENTRY_STORE_CLEAN_PERIOD_SECONDS is set to positive, the background SentryStore cleaning
-    // thread is enabled. Currently, it only purges the delta changes {@link MSentryChange} in
-    // the sentry store.
-    long storeCleanPeriodSecs = conf.getLong(
-        ServerConfig.SENTRY_STORE_CLEAN_PERIOD_SECONDS,
-        ServerConfig.SENTRY_STORE_CLEAN_PERIOD_SECONDS_DEFAULT);
-    if (storeCleanPeriodSecs > 0) {
-      Runnable storeCleaner = new Runnable() {
-        @Override
-        public void run() {
-          if (leaderMonitor.isLeader()) {
-            sentryStore.purgeDeltaChangeTables();
-          }
-        }
-      };
-      sentryStoreCleanService.scheduleWithFixedDelay(
-          storeCleaner, 0, storeCleanPeriodSecs, TimeUnit.SECONDS);
     }
   }
 
@@ -243,6 +210,10 @@ public class SentryService implements Callable, SigUtils.SigListener {
   }
 
   private void runServer() throws Exception {
+
+    startSentryStoreCleaner(conf);
+    startHMSFollower(conf);
+
     Iterable<String> processorFactories = ConfUtilties.CLASS_SPLITTER
         .split(conf.get(ServerConfig.PROCESSOR_FACTORIES,
             ServerConfig.PROCESSOR_FACTORIES_DEFAULT).trim());
@@ -282,7 +253,7 @@ public class SentryService implements Callable, SigUtils.SigListener {
       TSaslServerTransport.Factory saslTransportFactory = new TSaslServerTransport.Factory();
       saslTransportFactory.addServerDefinition(AuthMethod.KERBEROS
           .getMechanismName(), principalParts[0], principalParts[1],
-          ServerConfig.SASL_PROPERTIES, new GSSCallback(conf));
+              ServerConfig.SASL_PROPERTIES, new GSSCallback(conf));
       transportFactory = saslTransportFactory;
     } else {
       transportFactory = new TTransportFactory();
@@ -296,6 +267,110 @@ public class SentryService implements Callable, SigUtils.SigListener {
     LOGGER.info("Serving on " + address);
     startSentryWebServer();
     thriftServer.serve();
+  }
+
+  private void startHMSFollower(Configuration conf) throws Exception{
+    if (!notificationLogEnabled) {
+      return;
+    }
+
+    Preconditions.checkState(hmsFollower == null);
+    Preconditions.checkState(hmsFollowerExecutor == null);
+
+    try {
+      hmsFollower = new HMSFollower(conf, sentryStore, leaderMonitor);
+    } catch (Exception ex) {
+      LOGGER.error("Could not create HMSFollower", ex);
+      throw ex;
+    }
+
+    long initDelay = conf.getLong(ServerConfig.SENTRY_HMSFOLLOWER_INIT_DELAY_MILLS,
+            ServerConfig.SENTRY_HMSFOLLOWER_INIT_DELAY_MILLS_DEFAULT);
+    long period = conf.getLong(ServerConfig.SENTRY_HMSFOLLOWER_INTERVAL_MILLS,
+            ServerConfig.SENTRY_HMSFOLLOWER_INTERVAL_MILLS_DEFAULT);
+    try {
+      hmsFollowerExecutor = Executors.newScheduledThreadPool(1);
+      hmsFollowerExecutor.scheduleAtFixedRate(hmsFollower,
+              initDelay, period, TimeUnit.MILLISECONDS);
+    } catch (IllegalArgumentException e) {
+      LOGGER.error(String.format("Could not start HMSFollower due to illegal argument. period is %s ms", period), e);
+      throw e;
+    }
+  }
+
+  private void stopHMSFollower(Configuration conf) {
+    if (!notificationLogEnabled) {
+      return;
+    }
+
+    Preconditions.checkNotNull(hmsFollowerExecutor);
+    Preconditions.checkNotNull(hmsFollower);
+
+    // use follower scheduling interval as timeout for shutting down its executor as
+    // such scheduling interval should be an upper bound of how long the task normally takes to finish
+    long timeoutValue = conf.getLong(ServerConfig.SENTRY_HMSFOLLOWER_INTERVAL_MILLS,
+            ServerConfig.SENTRY_HMSFOLLOWER_INTERVAL_MILLS_DEFAULT);
+    try {
+      SentryServiceUtil.shutdownAndAwaitTermination(hmsFollowerExecutor, "hmsFollowerExecutor",
+              timeoutValue, TimeUnit.MILLISECONDS, LOGGER);
+    } finally {
+      hmsFollowerExecutor = null;
+      try {
+        // close connections
+        hmsFollower.close();
+      } catch (RuntimeException ex) {
+        LOGGER.error("HMSFollower.close() failed", ex);
+      } finally {
+        hmsFollower = null;
+      }
+    }
+  }
+
+  private void startSentryStoreCleaner(Configuration conf) {
+    Preconditions.checkState(sentryStoreCleanService == null);
+
+    // If SENTRY_STORE_CLEAN_PERIOD_SECONDS is set to positive, the background SentryStore cleaning
+    // thread is enabled. Currently, it only purges the delta changes {@link MSentryChange} in
+    // the sentry store.
+    long storeCleanPeriodSecs = conf.getLong(
+            ServerConfig.SENTRY_STORE_CLEAN_PERIOD_SECONDS,
+            ServerConfig.SENTRY_STORE_CLEAN_PERIOD_SECONDS_DEFAULT);
+    if (storeCleanPeriodSecs <= 0) {
+      return;
+    }
+
+    try {
+      Runnable storeCleaner = new Runnable() {
+        @Override
+        public void run() {
+          if (leaderMonitor.isLeader()) {
+            sentryStore.purgeDeltaChangeTables();
+          }
+        }
+      };
+
+      sentryStoreCleanService = Executors.newSingleThreadScheduledExecutor();
+      sentryStoreCleanService.scheduleWithFixedDelay(
+              storeCleaner, 0, storeCleanPeriodSecs, TimeUnit.SECONDS);
+
+      LOGGER.info("sentry store cleaner is scheduled with interval %d seconds", storeCleanPeriodSecs);
+    }
+    catch(IllegalArgumentException e){
+      LOGGER.error("Could not start SentryStoreCleaner due to illegal argument", e);
+      sentryStoreCleanService = null;
+    }
+  }
+
+  private void stopSentryStoreCleaner() {
+    Preconditions.checkNotNull(sentryStoreCleanService);
+
+    try {
+      SentryServiceUtil.shutdownAndAwaitTermination(sentryStoreCleanService, "sentryStoreCleanService",
+              10, TimeUnit.SECONDS, LOGGER);
+    }
+    finally {
+      sentryStoreCleanService = null;
+    }
   }
 
   private void addSentryServiceGauge() {
@@ -312,7 +387,6 @@ public class SentryService implements Callable, SigUtils.SigListener {
       sentryWebServer = new SentryWebServer(listenerList, webServerPort, conf);
       sentryWebServer.start();
     }
-
   }
 
   private void stopSentryWebServer() throws Exception{
@@ -369,20 +443,10 @@ public class SentryService implements Callable, SigUtils.SigListener {
     } else {
       LOGGER.info("Sentry web service is already stopped...");
     }
-    if(hmsFollowerExecutor != null) {
-      hmsFollowerExecutor.shutdown();
-    }
-    sentryStoreCleanService.shutdown();
-    try {
-      if (!sentryStoreCleanService.awaitTermination(10, TimeUnit.SECONDS)) {
-        sentryStoreCleanService.shutdownNow();
-        if (!sentryStoreCleanService.awaitTermination(10, TimeUnit.SECONDS)) {
-          LOGGER.error("DeltaCleanerService did not terminate");
-        }
-      }
-    } catch (InterruptedException ie) {
-      sentryStoreCleanService.shutdownNow();
-    }
+
+    stopHMSFollower(conf);
+    stopSentryStoreCleaner();
+
     if (exception != null) {
       exception.ifExceptionThrow();
     }

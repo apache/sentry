@@ -43,8 +43,6 @@ import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-import static org.junit.Assume.assumeNotNull;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
@@ -107,7 +105,7 @@ public abstract class AbstractTestWithDbProvider extends AbstractTestWithHiveSer
       properties.put(ClientConfig.SERVER_RPC_PORT,
           String.valueOf(server.getAddress().getPort()));
     }
-    assumeNotNull(context);
+
     context = AbstractTestWithHiveServer.createContext(properties);
     policyFile
         .setUserGroupMapping(StaticUserGroup.getStaticMapping())
