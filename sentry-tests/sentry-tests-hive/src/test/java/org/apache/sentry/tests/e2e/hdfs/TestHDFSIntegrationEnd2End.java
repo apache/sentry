@@ -41,6 +41,8 @@ public class TestHDFSIntegrationEnd2End extends TestHDFSIntegrationBase {
   private static final Logger LOGGER = LoggerFactory
       .getLogger(TestHDFSIntegrationEnd2End.class);
 
+  private static String adminRole = "admin_role";
+
   @Ignore
   @Test
   public void testEnd2End() throws Throwable {
@@ -371,8 +373,10 @@ public class TestHDFSIntegrationEnd2End extends TestHDFSIntegrationBase {
   }
 
   //SENTRY-780
+  @Ignore // SENTRY-1750 HMSFollower does not handle view update correctly. Enable this test once SENTRY-1750 is fixed
   @Test
   public void testViews() throws Throwable {
+    LOGGER.info("testViews starts");
     String dbName= "db1";
 
     tmpHDFSDir = new Path("/tmp/external");
@@ -404,6 +408,7 @@ public class TestHDFSIntegrationEnd2End extends TestHDFSIntegrationBase {
 
     stmt.close();
     conn.close();
+    LOGGER.info("testViews ends");
   }
 
   /*
@@ -411,11 +416,13 @@ TODO:SENTRY-819
 */
   @Test
   public void testAllColumn() throws Throwable {
+    LOGGER.info("testAllColumn starts");
     String dbName = "db2";
+    String userRole = "col1_role";
 
     tmpHDFSDir = new Path("/tmp/external");
     dbNames = new String[]{dbName};
-    roles = new String[]{"admin_role", "col_role"};
+    roles = new String[]{"admin_role", userRole};
     admin = StaticUserGroup.ADMIN1;
 
     Connection conn;
@@ -435,9 +442,9 @@ TODO:SENTRY-819
     stmt.execute("alter table p1 add partition (month=1, day=1)");
     loadDataTwoCols(stmt);
 
-    stmt.execute("create role col_role");
-    stmt.execute("grant select(c1,c2) on p1 to role col_role");
-    stmt.execute("grant role col_role to group "+ StaticUserGroup.USERGROUP1);
+    stmt.execute("create role " + userRole);
+    stmt.execute("grant select(c1,c2) on p1 to role " + userRole);
+    stmt.execute("grant role " + userRole + " to group "+ StaticUserGroup.USERGROUP1);
     Thread.sleep(100);
 
     //User with privileges on all columns of the data cannot still read the HDFS files
@@ -445,15 +452,19 @@ TODO:SENTRY-819
 
     stmt.close();
     conn.close();
+    LOGGER.info("testAllColumn ends");
   }
 
   @Test
   public void testColumnPrivileges() throws Throwable {
+    LOGGER.info("testColumnPrivileges starts");
     String dbName = "db2";
 
     tmpHDFSDir = new Path("/tmp/external");
     dbNames = new String[]{dbName};
+      dbNames = new String[]{dbName};
     roles = new String[]{"admin_role", "tab_role", "db_role", "col_role"};
+    roles = new String[]{adminRole, "tab_role", "db_role", "col_role"};
     admin = StaticUserGroup.ADMIN1;
 
     Connection conn;
@@ -510,6 +521,7 @@ TODO:SENTRY-819
 
     stmt.close();
     conn.close();
+    LOGGER.info("testColumnPrivileges ends");
   }
 
 

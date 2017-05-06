@@ -68,10 +68,11 @@ import static org.apache.sentry.hdfs.Updateable.Update;
  * stored for HDFS-Sentry sync.
  */
 @SuppressWarnings("PMD")
-public class HMSFollower implements Runnable {
+public class HMSFollower implements Runnable, AutoCloseable {
   private static final Logger LOGGER = LoggerFactory.getLogger(HMSFollower.class);
-
   private long currentEventID;
+  // Copy from Hive
+  public static String CONF_METASTORE_URI = "hive.metastore.uris";
   // Track the latest eventId of the event that has been logged. So we don't log the same message
   private long lastLoggedEventId = SentryStore.EMPTY_CHANGE_ID;
   private static boolean connectedToHMS = false;
@@ -85,8 +86,7 @@ public class HMSFollower implements Runnable {
   private boolean needHiveSnapshot = true;
   private final LeaderStatusMonitor leaderMonitor;
 
-  HMSFollower(Configuration conf, SentryStore store, LeaderStatusMonitor leaderMonitor)
-          throws Exception {
+  HMSFollower(Configuration conf, SentryStore store, LeaderStatusMonitor leaderMonitor) throws Exception {
     LOGGER.info("HMSFollower is being initialized");
     authzConf = conf;
     this.leaderMonitor = leaderMonitor;
@@ -111,6 +111,12 @@ public class HMSFollower implements Runnable {
     return connectedToHMS;
   }
 
+  @Override
+  public void close() {
+    // Close any outstanding connections to HMS
+    closeHMSConnection();
+  }
+
   /**
    * Returns HMS Client if successful, returns null if HMS is not ready yet to take connections
    * Throws @LoginException if Kerberos context creation failed using Sentry's kerberos credentials
@@ -120,6 +126,12 @@ public class HMSFollower implements Runnable {
       throws IOException, InterruptedException, LoginException, MetaException {
     if(client != null) {
       return client;
+    }
+
+    // Do not create client if the metastre URI in the configuration is missing
+    if (conf.get(CONF_METASTORE_URI, "").isEmpty()) {
+      // Come back later with real Hive URI
+      return null;
     }
 
     final HiveConf hiveConf = new HiveConf();
@@ -149,7 +161,7 @@ public class HMSFollower implements Runnable {
           "Kerberos principal should have 3 parts: " + principal);
 
       keytab = Preconditions.checkNotNull(conf.get(ServiceConstants.ServerConfig.KEY_TAB),
-          ServiceConstants.ServerConfig.KEY_TAB + " is required");
+              ServiceConstants.ServerConfig.KEY_TAB + " is required");
       File keytabFile = new File(keytab);
       Preconditions.checkState(keytabFile.isFile() && keytabFile.canRead(),
           "Keytab " + keytab + " does not exist or is not readable.");
@@ -560,7 +572,7 @@ public class HMSFollower implements Runnable {
     } catch (SentryNoSuchObjectException e) {
       LOGGER.info("Drop Sentry privilege ignored as there are no privileges on the table: %s.%s", dbName, tableName);
     } catch (Exception e) {
-      throw new SentryInvalidInputException("Could not process Create table event. Event: " + event.toString(), e);
+      throw new SentryInvalidInputException("Could not process Drop table event. Event: " + event.toString(), e);
     }
   }
 

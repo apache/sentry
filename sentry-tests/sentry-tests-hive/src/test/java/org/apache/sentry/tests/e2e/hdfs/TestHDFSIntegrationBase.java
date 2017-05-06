@@ -148,8 +148,11 @@ public abstract class TestHDFSIntegrationBase {
   protected static boolean testSentryHA = false;
   protected boolean ignoreCleanUp = false;
   protected static final long STALE_THRESHOLD = 5000;
-  protected static final long CACHE_REFRESH = 100; //Default is 500, but we want it to be low
-  // in our tests so that changes reflect soon
+
+  // we want to make sure the cache is updated in our tests so that changes reflect soon
+  protected static final long CACHE_REFRESH =
+          ServerConfig.SENTRY_HMSFOLLOWER_INIT_DELAY_MILLS_DEFAULT +
+                  ServerConfig.SENTRY_HMSFOLLOWER_INTERVAL_MILLS_DEFAULT * 2;
 
   protected static String fsURI;
   protected static int hmsPort;

@@ -39,9 +39,12 @@ import org.junit.After;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestDbSentryOnFailureHookLoading extends AbstractTestWithDbProvider {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(TestDbSentryOnFailureHookLoading.class);
 
   @BeforeClass
   public static void setup() throws Exception {
@@ -267,7 +270,12 @@ public class TestDbSentryOnFailureHookLoading extends AbstractTestWithDbProvider
     }
     if(dbName != null) {
       Assert.assertNotNull("Database object is null for op: " + expectedOp, DummySentryOnFailureHook.db);
-      Assert.assertTrue(dbName.equalsIgnoreCase(DummySentryOnFailureHook.db.getName()));
+
+      String failureHookDbName = DummySentryOnFailureHook.db.getName();
+      LOGGER.debug("dbName: {}; DummySentryOnFailureHook.db.getName(): {}", dbName, failureHookDbName);
+      if(!failureHookDbName.equalsIgnoreCase("*")) {
+        Assert.assertTrue(dbName.equalsIgnoreCase(failureHookDbName));
+      }
     }
   }
 }
