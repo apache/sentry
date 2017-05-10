@@ -128,13 +128,20 @@ public class HMSFollower implements Runnable, AutoCloseable {
       return client;
     }
 
+    final HiveConf hiveConf = new HiveConf();
     // Do not create client if the metastre URI in the configuration is missing
-    if (conf.get(CONF_METASTORE_URI, "").isEmpty()) {
-      // Come back later with real Hive URI
-      return null;
+    if (hiveConf.get(CONF_METASTORE_URI, "").isEmpty()) {
+      // HDFS e2e tests add metastore URI to the sentry config, so it might be there
+      String metastoreUri = conf.get(CONF_METASTORE_URI);
+      if (metastoreUri == null) {
+        // Come back later with real Hive URI
+        return null;
+      }
+      // Ok, we found metastore URI in Sentry config (thanks to the tests setup), copy it to
+      // the Hive config
+      hiveConf.set(CONF_METASTORE_URI, metastoreUri);
     }
 
-    final HiveConf hiveConf = new HiveConf();
     hiveInstance = hiveConf.get(HiveAuthzConf.AuthzConfVars.AUTHZ_SERVER_NAME.getVar());
 
     String principal, keytab;
