@@ -94,21 +94,28 @@ class UpdatableCache implements TableCache {
     String requestor;
     requestor = UserGroupInformation.getLoginUser().getShortUserName();
 
-    final SentryGenericServiceClient client = getClient();
-    final Set<TSentryRole> tSentryRoles = client.listAllRoles(requestor, componentType);
+    SentryGenericServiceClient client = null;
+    try {
+      client = getClient(); // will be closed in finaly clause
+      final Set<TSentryRole> tSentryRoles = client.listAllRoles(requestor, componentType);
 
-    for (TSentryRole tSentryRole : tSentryRoles) {
-      final String roleName = tSentryRole.getRoleName();
-      final Set<TSentryPrivilege> tSentryPrivileges = client.listPrivilegesByRoleName(requestor, roleName, componentType, serviceName);
-      for (String group : tSentryRole.getGroups()) {
-        Set<String> currentPrivileges = tempCache.get(group, roleName);
-        if (currentPrivileges == null) {
-          currentPrivileges = new HashSet<>();
-          tempCache.put(group, roleName, currentPrivileges);
+      for (TSentryRole tSentryRole : tSentryRoles) {
+        final String roleName = tSentryRole.getRoleName();
+        final Set<TSentryPrivilege> tSentryPrivileges = client.listPrivilegesByRoleName(requestor, roleName, componentType, serviceName);
+        for (String group : tSentryRole.getGroups()) {
+          Set<String> currentPrivileges = tempCache.get(group, roleName);
+          if (currentPrivileges == null) {
+            currentPrivileges = new HashSet<>();
+            tempCache.put(group, roleName, currentPrivileges);
+          }
+          for (TSentryPrivilege tSentryPrivilege : tSentryPrivileges) {
+            currentPrivileges.add(tSentryPrivilegeConverter.toString(tSentryPrivilege));
+          }
         }
-        for (TSentryPrivilege tSentryPrivilege : tSentryPrivileges) {
-          currentPrivileges.add(tSentryPrivilegeConverter.toString(tSentryPrivilege));
-        }
+      }
+    } finally {
+      if (client != null) {
+        client.close();
       }
     }
     return tempCache;
