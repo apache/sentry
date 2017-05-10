@@ -27,7 +27,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
-import java.io.FileInputStream;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Properties;
 
 public class SentryMain {
@@ -63,9 +65,9 @@ public class SentryMain {
       Properties log4jProperties = new Properties();
 
       // Firstly load log properties from properties file
-      FileInputStream istream = new FileInputStream(log4jconf);
-      log4jProperties.load(istream);
-      istream.close();
+      try (InputStream istream = Files.newInputStream(Paths.get(log4jconf))) {
+          log4jProperties.load(istream);
+      }
 
       // Set the log level of DataNucleus.Query to INFO only if it is not set in the
       // properties file
