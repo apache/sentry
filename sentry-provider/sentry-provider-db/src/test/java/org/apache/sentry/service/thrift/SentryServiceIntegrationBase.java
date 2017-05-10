@@ -180,10 +180,12 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
       conf.set(ClientConfig.SENTRY_POOL_ENABLED, "true");
     }
     if (useSSL) {
+      String keystorePath = Resources.getResource("keystore.jks").getPath();
       conf.set(ServerConfig.SENTRY_WEB_USE_SSL, "true");
-      conf.set(ServerConfig.SENTRY_WEB_SSL_KEYSTORE_PATH,
-              Resources.getResource("keystore.jks").getPath());
+      conf.set(ServerConfig.SENTRY_WEB_SSL_KEYSTORE_PATH, keystorePath);
       conf.set(ServerConfig.SENTRY_WEB_SSL_KEYSTORE_PASSWORD, "password");
+
+      LOGGER.debug("{} is at {}", ServerConfig.SENTRY_WEB_SSL_KEYSTORE_PATH, keystorePath);
     }
     conf.set(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "false");
     conf.set(ServerConfig.ADMIN_GROUPS, ADMIN_GROUP);
