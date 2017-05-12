@@ -266,6 +266,10 @@ public class SentryService implements Callable, SigUtils.SigListener {
     thriftServer = new TThreadPoolServer(args);
     LOGGER.info("Serving on " + address);
     startSentryWebServer();
+
+    // thriftServer.serve() does not return until thriftServer is stopped. Need to log before
+    // calling thriftServer.serve()
+    LOGGER.info("Sentry service is ready to serve client requests");
     thriftServer.serve();
   }
 

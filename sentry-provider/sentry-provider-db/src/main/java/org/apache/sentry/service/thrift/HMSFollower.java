@@ -84,6 +84,7 @@ public class HMSFollower implements Runnable, AutoCloseable {
   private String hiveInstance;
 
   private boolean needHiveSnapshot = true;
+  private boolean needLogHMSSupportReady = true;
   private final LeaderStatusMonitor leaderMonitor;
 
   HMSFollower(Configuration conf, SentryStore store, LeaderStatusMonitor leaderMonitor) throws Exception {
@@ -304,6 +305,13 @@ public class HMSFollower implements Runnable, AutoCloseable {
 
         // Wake up any HMS waiters that could have been put on hold before getting the eventIDBefore value.
         wakeUpWaitingClientsForSync(currentEventID);
+      }
+
+      // HMSFollower connected to HMS and it finished full snapshot if that was required
+      // Log this message only once
+      if (needLogHMSSupportReady && connectedToHMS) {
+        LOGGER.info("Sentry HMS support is ready");
+        needLogHMSSupportReady = false;
       }
 
       // HIVE-15761: Currently getNextNotification API may return an empty
