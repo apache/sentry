@@ -19,6 +19,8 @@
 package org.apache.sentry.service.thrift;
 
 import org.apache.http.annotation.ThreadSafe;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.Semaphore;
@@ -70,6 +72,8 @@ public final class CounterWait {
   // NOTE: We use PriorityBlockingQueue for waiters because it is thread-safe,
   //       we are not using its blocking queue semantics.
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(CounterWait.class);
+
   /** Counter value. May only increase. */
   private final AtomicLong currentId = new AtomicLong(0);
 
@@ -87,20 +91,26 @@ public final class CounterWait {
    * value or any value below it.
    * <p>
    * The counter value should only increase.
-   * An attempt to decrease the value is raising
-   * {@link IllegalArgumentException}.
-   * The usual case is to have a single updater thread, but we enforce this
-   * by synchronizing the call.
+   * An attempt to decrease the value is ignored.
    *
    * @param newValue the new counter value
    */
   public synchronized void update(long newValue) {
-    // Make sure the counter is never decremented
-    if (newValue < currentId.get()) {
-      throw new IllegalArgumentException("new counter value " +
-              String.valueOf(newValue) +
-              "is smaller then the previous one " + currentId);
+    // update() is synchronized so the value can't change.
+    long oldValue = currentId.get();
+
+    // Avoid doing extra work if not needed
+    if (oldValue == newValue) {
+      return; // no-op
     }
+
+    // Make sure the counter is never decremented.
+    if (newValue < oldValue) {
+      LOGGER.error("new counter value {} is smaller then the previous one {}",
+              newValue, oldValue);
+      return; // no-op
+    }
+
     currentId.set(newValue);
 
     // Wake up any threads waiting for a counter to reach this value.
