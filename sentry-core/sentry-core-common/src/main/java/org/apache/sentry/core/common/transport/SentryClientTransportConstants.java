@@ -103,7 +103,7 @@ class SentryClientTransportConstants {
     static final int SENTRY_POOL_MIN_IDLE_DEFAULT = 0;
 
     // configuration to load balance the connections to the configured sentry servers
-    static final String SENTRY_CLIENT_LOAD_BALANCING =" sentry.service.client.connection.loadbalance";
+    static final String SENTRY_CLIENT_LOAD_BALANCING = "sentry.service.client.connection.loadbalance";
     static final boolean SENTRY_CLIENT_LOAD_BALANCING_DEFAULT = true;
 
     // retry num for getting the connection from connection pool
@@ -168,7 +168,7 @@ class SentryClientTransportConstants {
     static final int SENTRY_RPC_RETRY_TOTAL_DEFAULT = 3;
 
     // configuration to load balance the connections to the configured sentry servers
-    static final String SENTRY_CLIENT_LOAD_BALANCING =" sentry.hdfs.service.client.connection.loadbalance";
+    static final String SENTRY_CLIENT_LOAD_BALANCING = "sentry.hdfs.service.client.connection.loadbalance";
     static final boolean SENTRY_CLIENT_LOAD_BALANCING_DEFAULT = true;
   }
 }
