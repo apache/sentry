@@ -75,7 +75,8 @@ limitations under the License.
                   <include>org.apache.sentry:sentry-hdfs-common</include>
                   <include>org.apache.sentry:sentry-hdfs-namenode-plugin</include>
                   <include>org.apache.sentry:sentry-provider-db</include>
-                </includes>
+	          <include>org.apache.sentry:sentry-core-common</include>
+	        </includes>
               </artifactSet>
             </configuration>
           </execution>
