@@ -229,4 +229,11 @@ CREATE TABLE "SENTRY_PATH_CHANGE"
 -- Constraints for table SENTRY_PATH_CHANGE for class [org.apache.sentry.provider.db.service.model.MSentryPathChange]
 CREATE UNIQUE INDEX "NOTIFICATIONID" ON "SENTRY_PATH_CHANGE" ("NOTIFICATION_ID");
 
+-- Table SENTRY_HMS_NOTIFICATION_ID for classes [org.apache.sentry.provider.db.service.model.MSentryHmsNotification]
+CREATE TABLE "SENTRY_HMS_NOTIFICATION_ID"
+(
+    "NOTIFICATION_ID" bigint NOT NULL,
+    CONSTRAINT "NOTIFICATION_PRIVILEGE_PK" PRIMARY KEY ("NOTIFICATION_ID")
+);
+
 COMMIT;
