@@ -940,10 +940,6 @@ limitations under the License.
                 <exclude>%regex[org.apache.sentry.tests.e2e.dbprovider.*.class]</exclude>
                 <exclude>%regex[org.apache.sentry.tests.e2e.hive.TestPrivilegesAtFunctionScope.*.class]</exclude>
                 <exclude>%regex[org.apache.sentry.tests.e2e.hdfs.TestHDFS.*.class]</exclude>
-                <!-- Add the solr test back when CDH-45122 is resolved. -->
-                <exclude>%regex[org.apache.sentry.tests.e2e.solr.*.class]</exclude>
-                <!-- Add the HMSNotificationLog test back when CDH-45447 is resolved. -->
-                <exclude>%regex[org.apache.sentry.tests.e2e.metastore.TestHMSNotificationLogUsingDBNotificationListener.*.class]</exclude>
               </excludes>
             </configuration>
           </plugin>

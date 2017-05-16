@@ -16,24 +16,16 @@
  */
 package org.apache.sentry.tests.e2e.solr;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -51,13 +43,12 @@ import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.util.EntityUtils;
-import org.apache.sentry.binding.solr.HdfsTestUtil;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
-import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -71,22 +62,18 @@ import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.servlet.SolrDispatchFilter;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.io.Files;
-
-public class AbstractSolrSentryTestBase {
+/**
+ * This is a base class used by all the Solr Sentry-plugin unit tests.
+ *
+ */
+public abstract class AbstractSolrSentryTestBase extends SolrTestCaseJ4 {
   private static final Logger LOG = LoggerFactory.getLogger(AbstractSolrSentryTestBase.class);
   protected static final String SENTRY_ERROR_MSG = "SentrySolrAuthorizationException";
-  protected static MiniDFSCluster dfsCluster;
-  protected static MiniSolrCloudCluster miniSolrCloudCluster;
-  protected static SortedMap<Class, String> extraRequestFilters;
   protected static final String ADMIN_USER = "admin";
   protected static final String ALL_DOCS = "*:*";
   protected static final Random RANDOM = new Random();
@@ -102,7 +89,7 @@ public class AbstractSolrSentryTestBase {
     builder.append("</property>\n");
   }
 
-  public static File setupSentry() throws Exception {
+  public static File setupSentry(MiniDFSCluster dfsCluster) throws Exception {
     File sentrySite = File.createTempFile("sentry-site", "xml");
     sentrySite.deleteOnExit();
     File authProviderDir = new File(RESOURCES_DIR, "sentry");
@@ -125,40 +112,6 @@ public class AbstractSolrSentryTestBase {
     return sentrySite;
   }
 
-  @BeforeClass
-  public static void beforeTestSimpleSolrEndToEnd() throws Exception {
-    dfsCluster = HdfsTestUtil.setupClass(new File(Files.createTempDir(),
-      AbstractSolrSentryTestBase.class.getName() + "_"
-        + System.currentTimeMillis()).getAbsolutePath());
-    File sentrySite = setupSentry();
-    System.setProperty("solr.authorization.sentry.site", sentrySite.toURI().toURL().toString().substring("file:".length()));
-    System.setProperty("solr.hdfs.home", dfsCluster.getURI().toString() + "/solr");
-    extraRequestFilters = new TreeMap<Class, String>(new Comparator<Class>() {
-      // There's only one class, make this as simple as possible
-      public int compare(Class o1, Class o2) {
-        return 0;
-      }
-
-      public boolean equals(Object obj) {
-        return true;
-      }
-    });
-    extraRequestFilters.put(ModifiableUserAuthenticationFilter.class, "*");
-    File solrXml = new File(RESOURCES_DIR, "solr-no-core.xml");
-    miniSolrCloudCluster = new MiniSolrCloudCluster(NUM_SERVERS, null, solrXml,
-      null, extraRequestFilters);
-  }
-
-  @AfterClass
-  public static void teardownClass() throws Exception {
-    HdfsTestUtil.teardownClass(dfsCluster);
-    System.clearProperty("solr.hdfs.home");
-    System.clearProperty("solr.authorization.sentry.site");
-    dfsCluster = null;
-    extraRequestFilters = null;
-    miniSolrCloudCluster.shutdown();
-  }
-
   @Before
   public void setupBeforeTest() throws Exception {
     System.setProperty("solr.xml.persist", "true");
@@ -169,6 +122,7 @@ public class AbstractSolrSentryTestBase {
 
   @After
   public void tearDown() throws Exception {
+    super.tearDown();
     System.clearProperty("solr.hdfs.blockcache.enabled");
     System.clearProperty("solr.xml.persist");
   }
@@ -671,13 +625,7 @@ public class AbstractSolrSentryTestBase {
    * @return instance of CloudSolrServer
    * @throws MalformedURLException
    */
-  protected CloudSolrServer getCloudSolrServer(String collectionName) throws MalformedURLException {
-    CloudSolrServer cloudSolrServer = new CloudSolrServer(miniSolrCloudCluster.getZkServer().getZkAddress(),
-        RANDOM.nextBoolean());
-    cloudSolrServer.setDefaultCollection(collectionName);
-    cloudSolrServer.connect();
-    return cloudSolrServer;
-  }
+  protected abstract CloudSolrServer getCloudSolrServer(String collectionName) throws MalformedURLException;
 
   /**
    * Function to create a solr collection with the name passed as parameter
@@ -746,11 +694,7 @@ public class AbstractSolrSentryTestBase {
     verifyUpdatePass(ADMIN_USER, collectionName, solrInputDoc);
   }
 
-  private ZkController getZkController() {
-    SolrDispatchFilter dispatchFilter =
-      (SolrDispatchFilter) miniSolrCloudCluster.getJettySolrRunners().get(0).getDispatchFilter().getFilter();
-    return dispatchFilter.getCores().getZkController();
-  }
+  protected abstract ZkController getZkController();
 
   protected void uploadConfigDirToZk(String collectionConfigDir) throws Exception {
     uploadConfigDirToZk(collectionConfigDir, CONF_DIR_IN_ZK);
@@ -771,11 +715,7 @@ public class AbstractSolrSentryTestBase {
       + confDirInZk + "/" + nameInZk, new File(file), false, true);
   }
 
-  protected CloudSolrServer createNewCloudSolrServer() throws Exception {
-    CloudSolrServer css = new CloudSolrServer(miniSolrCloudCluster.getZkServer().getZkAddress());
-    css.connect();
-    return css;
-  }
+  protected abstract CloudSolrServer createNewCloudSolrServer() throws Exception;
 
   /**
    * Make a raw http request to specific cluster node.  Node is of the format

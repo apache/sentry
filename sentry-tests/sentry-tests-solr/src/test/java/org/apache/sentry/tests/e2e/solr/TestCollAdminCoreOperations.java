@@ -31,9 +31,8 @@ import java.util.Random;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 
 import org.junit.Test;
-import static org.junit.Assert.assertEquals;
 
-public class TestCollAdminCoreOperations extends AbstractSolrSentryTestBase {
+public class TestCollAdminCoreOperations extends AbstractSolrSentryTestWithFileProvider {
 
   private static final Logger LOG = LoggerFactory
       .getLogger(TestCollAdminCoreOperations.class);

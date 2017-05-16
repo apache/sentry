@@ -22,8 +22,10 @@ import static org.apache.sentry.core.model.search.SearchModelAuthorizable.Author
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.net.MalformedURLException;
 import java.util.Comparator;
 import java.util.List;
+import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
@@ -33,6 +35,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeys;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.core.common.exception.SentryUserException;
@@ -54,12 +57,18 @@ import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.apache.sentry.tests.e2e.solr.AbstractSolrSentryTestBase;
 import org.apache.sentry.tests.e2e.solr.ModifiableUserAuthenticationFilter;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
+import org.apache.solr.cloud.ZkController;
+import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -67,6 +76,11 @@ import com.google.common.collect.Sets;
  * This class used to test the Solr integration with DB store.
  * It will set up a miniSolrCloud, miniHDFS and Sentry service in a JVM process.
  */
+@ThreadLeakFilters(defaultFilters = true, filters = {
+    BadHdfsThreadsFilter.class, // hdfs currently leaks thread(s)
+    SentryServiceThreadLeakFilter.class
+})
+@SolrTestCaseJ4.SuppressSSL
 public class AbstractSolrSentryTestWithDbProvider extends AbstractSolrSentryTestBase{
   private static final Logger LOGGER = LoggerFactory
       .getLogger(AbstractSolrSentryTestWithDbProvider.class);
@@ -82,6 +96,9 @@ public class AbstractSolrSentryTestWithDbProvider extends AbstractSolrSentryTest
 
   protected static final Configuration conf = new Configuration(false);
 
+  protected static SortedMap<Class, String> extraRequestFilters;
+  protected static MiniDFSCluster dfsCluster;
+  protected static MiniSolrCloudCluster miniSolrCloudCluster;
   protected static SentryService server;
   protected static SentryGenericServiceClient client;
 
@@ -315,5 +332,25 @@ public class AbstractSolrSentryTestWithDbProvider extends AbstractSolrSentryTest
         collection));
     tPrivilege.setAuthorizables(authorizables);
     return tPrivilege;
+  }
+
+  protected CloudSolrServer getCloudSolrServer(String collectionName) throws MalformedURLException {
+    CloudSolrServer cloudSolrServer = new CloudSolrServer(miniSolrCloudCluster.getZkServer().getZkAddress(),
+        RANDOM.nextBoolean());
+    cloudSolrServer.setDefaultCollection(collectionName);
+    cloudSolrServer.connect();
+    return cloudSolrServer;
+  }
+
+  protected CloudSolrServer createNewCloudSolrServer() throws Exception {
+    CloudSolrServer css = new CloudSolrServer(miniSolrCloudCluster.getZkServer().getZkAddress());
+    css.connect();
+    return css;
+  }
+
+  protected ZkController getZkController() {
+    SolrDispatchFilter dispatchFilter =
+      (SolrDispatchFilter) miniSolrCloudCluster.getJettySolrRunners().get(0).getDispatchFilter().getFilter();
+    return dispatchFilter.getCores().getZkController();
   }
 }

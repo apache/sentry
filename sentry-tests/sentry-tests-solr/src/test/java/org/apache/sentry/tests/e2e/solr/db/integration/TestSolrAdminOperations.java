@@ -17,8 +17,6 @@
 package org.apache.sentry.tests.e2e.solr.db.integration;
 
 
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.util.Arrays;
 

@@ -20,8 +20,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.junit.After;
 import org.junit.Before;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
@@ -33,8 +31,6 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
-
 import java.io.File;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -45,7 +41,7 @@ import org.junit.Test;
 /**
  * Test the document-level security features
  */
-public class TestDocLevelOperations extends AbstractSolrSentryTestBase {
+public class TestDocLevelOperations extends AbstractSolrSentryTestWithFileProvider {
   private static final Logger LOG = LoggerFactory
     .getLogger(TestDocLevelOperations.class);
   private static final String AUTH_FIELD = "sentry_auth";
@@ -135,7 +131,7 @@ public class TestDocLevelOperations extends AbstractSolrSentryTestBase {
       String id = doc.getFieldValue("id").toString();
       assertEquals(1, Long.valueOf(id) % 2);
     }
- 
+
     if (checkNonAdminUsers) {
       // as junit -- should get half the documents
       setAuthenticationUser("junit");

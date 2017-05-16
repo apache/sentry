@@ -32,10 +32,6 @@ import org.slf4j.LoggerFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,7 +43,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
-public class TestRealTimeGet extends AbstractSolrSentryTestBase {
+public class TestRealTimeGet extends AbstractSolrSentryTestWithFileProvider {
   private static final Logger LOG = LoggerFactory
     .getLogger(TestRealTimeGet.class);
   private static final String AUTH_FIELD = "sentry_auth";
@@ -292,7 +288,7 @@ public class TestRealTimeGet extends AbstractSolrSentryTestBase {
       doc2.addField("id", "2");
       doc2.addField("description", "description2");
       doc2.addField(AUTH_FIELD, "admin_role");
- 
+
       SolrInputDocument doc3 = new SolrInputDocument();
       doc3.addField("id", "3");
       doc3.addField("description", "description3");

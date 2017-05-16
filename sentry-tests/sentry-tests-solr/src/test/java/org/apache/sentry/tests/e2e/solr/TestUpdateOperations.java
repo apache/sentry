@@ -20,9 +20,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.junit.Test;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
@@ -38,7 +35,7 @@ import java.util.List;
 
 import org.apache.solr.common.SolrInputDocument;
 
-public class TestUpdateOperations extends AbstractSolrSentryTestBase {
+public class TestUpdateOperations extends AbstractSolrSentryTestWithFileProvider {
 
   private static final Logger LOG = LoggerFactory
       .getLogger(TestUpdateOperations.class);
