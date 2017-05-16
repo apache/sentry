@@ -290,9 +290,17 @@ public class HiveAuthzBindingHook extends AbstractSemanticAnalyzerHook {
         Preconditions.checkArgument(ast.getChildCount() == 1);
         // childcount is 1 for table without partition, 2 for table with partitions
         Preconditions.checkArgument(ast.getChild(0).getChildCount() >= 1);
-        Preconditions.checkArgument(ast.getChild(0).getChild(0).getChildCount() >= 1);
-        currOutDB = extractDatabase((ASTNode) ast.getChild(0));
-        currOutTab = extractTable((ASTNode) ast.getChild(0).getChild(0).getChild(0));
+        ASTNode tableTok = (ASTNode) ast.getChild(0).getChild(0);
+        Preconditions.checkArgument(tableTok.getChildCount() >= 1);
+        if (tableTok.getChildCount() == 1) {
+          // If tableTok chilcount is 1, tableTok does not has database information, use current working DB
+          currOutDB = extractDatabase((ASTNode) ast.getChild(0));
+          currOutTab = extractTable((ASTNode) tableTok.getChild(0));
+        } else {
+          // If tableTok has fully-qualified name(childcount is 2),
+          // get the db and table information from tableTok.
+          extractDbTableNameFromTOKTABLE(tableTok);
+        }
         break;
       default:
         currDB = getCanonicalDb();
