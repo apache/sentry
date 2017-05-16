@@ -38,7 +38,7 @@ public class MSentryGroup {
   private long createTime;
 
   public MSentryGroup(String groupName, long createTime, Set<MSentryRole> roles) {
-    this.setGroupName(groupName);
+    this.groupName = MSentryUtil.safeIntern(groupName);
     this.createTime = createTime;
     this.roles = roles;
   }
@@ -57,10 +57,6 @@ public class MSentryGroup {
 
   public String getGroupName() {
     return groupName;
-  }
-
-  public void setGroupName(String groupName) {
-    this.groupName = groupName;
   }
 
   public void appendRole(MSentryRole role) {

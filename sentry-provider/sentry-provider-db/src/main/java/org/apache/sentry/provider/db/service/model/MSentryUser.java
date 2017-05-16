@@ -38,7 +38,7 @@ public class MSentryUser {
   private long createTime;
 
   public MSentryUser(String userName, long createTime, Set<MSentryRole> roles) {
-    this.setUserName(userName);
+    this.userName = MSentryUtil.safeIntern(userName);
     this.createTime = createTime;
     this.roles = roles;
   }
@@ -57,10 +57,6 @@ public class MSentryUser {
 
   public String getUserName() {
     return userName;
-  }
-
-  public void setUserName(String userName) {
-    this.userName = userName;
   }
 
   public void appendRole(MSentryRole role) {

@@ -46,12 +46,12 @@ public class MSentryRole {
   private long createTime;
 
   public MSentryRole(String roleName, long createTime) {
-    this.roleName = roleName;
+    this.roleName = MSentryUtil.safeIntern(roleName);
     this.createTime = createTime;
-    privileges = new HashSet<MSentryPrivilege>();
-    gmPrivileges = new HashSet<MSentryGMPrivilege>();
-    groups = new HashSet<MSentryGroup>();
-    users = new HashSet<MSentryUser>();
+    privileges = new HashSet<>();
+    gmPrivileges = new HashSet<>();
+    groups = new HashSet<>();
+    users = new HashSet<>();
   }
 
   public MSentryRole(String roleName) {

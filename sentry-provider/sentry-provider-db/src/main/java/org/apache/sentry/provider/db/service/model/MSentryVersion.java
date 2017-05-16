@@ -29,8 +29,8 @@ public class MSentryVersion {
   }
 
   public MSentryVersion(String schemaVersion, String versionComment) {
-    this.schemaVersion = schemaVersion;
-    this.versionComment = versionComment;
+    this.schemaVersion = schemaVersion.intern();
+    this.versionComment = versionComment.intern();
   }
 
   /**

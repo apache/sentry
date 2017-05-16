@@ -27,7 +27,7 @@ public class MPath {
   private String path;
 
   public MPath(String path) {
-    this.path = path;
+    this.path = MSentryUtil.safeIntern(path);
   }
 
   public String getPath() {

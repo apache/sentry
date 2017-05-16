@@ -34,7 +34,7 @@ public class MAuthzPathsMapping {
   private long createTimeMs;
 
   public MAuthzPathsMapping(String authzObjName, Iterable<String> paths) {
-    this.authzObjName = authzObjName;
+    this.authzObjName = MSentryUtil.safeIntern(authzObjName);
     this.paths = new HashSet<>();
     for (String path : paths) {
       this.paths.add(new MPath(path));
