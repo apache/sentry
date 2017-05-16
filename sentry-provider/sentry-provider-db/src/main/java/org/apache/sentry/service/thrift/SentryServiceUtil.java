@@ -18,6 +18,7 @@
 
 package org.apache.sentry.service.thrift;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.core.common.utils.KeyValue;
 import org.apache.sentry.core.common.utils.PolicyFileConstants;
@@ -190,6 +192,24 @@ public final class SentryServiceUtil {
       // Preserve interrupt status
       Thread.currentThread().interrupt();
     }
+  }
+
+  /**
+   * Checks if Sentry is configured with HDFS sync enabled.
+   *
+   * @param conf The Configuration object where HDFS sync configurations are set.
+   * @return True if enabled; False otherwise.
+   */
+  static boolean isHDFSSyncEnabled(Configuration conf) {
+    List<String> processorFactories =
+        Arrays.asList(conf.get(ServiceConstants.ServerConfig.PROCESSOR_FACTORIES, "").split(","));
+
+    List<String> policyStorePlugins =
+        Arrays.asList(conf.get(ServiceConstants.ServerConfig.SENTRY_POLICY_STORE_PLUGINS, "").split(","));
+
+
+    return processorFactories.contains("org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory")
+        && policyStorePlugins.contains("org.apache.sentry.hdfs.SentryPlugin");
   }
 
   private SentryServiceUtil() {
