@@ -106,6 +106,7 @@ public class SentryService implements Callable, SigUtils.SigListener {
   private ScheduledExecutorService sentryStoreCleanService;
   private final LeaderStatusMonitor leaderMonitor;
   private final boolean notificationLogEnabled;
+  private final boolean hdfsSyncEnabled;
 
   public SentryService(Configuration conf) throws Exception {
     this.conf = conf;
@@ -164,6 +165,8 @@ public class SentryService implements Callable, SigUtils.SigListener {
     webServerPort = conf.getInt(ServerConfig.SENTRY_WEB_PORT, ServerConfig.SENTRY_WEB_PORT_DEFAULT);
     notificationLogEnabled = conf.getBoolean(ServerConfig.SENTRY_NOTIFICATION_LOG_ENABLED,
         ServerConfig.SENTRY_NOTIFICATION_LOG_ENABLED_DEFAULT);
+
+    hdfsSyncEnabled = SentryServiceUtil.isHDFSSyncEnabled(conf);
 
     status = Status.NOT_STARTED;
 
@@ -273,6 +276,11 @@ public class SentryService implements Callable, SigUtils.SigListener {
   }
 
   private void startHMSFollower(Configuration conf) throws Exception{
+    if (!hdfsSyncEnabled) {
+      LOGGER.info("HMS follower is not started because HDFS sync is disabled.");
+      return;
+    }
+
     if (!notificationLogEnabled) {
       return;
     }
@@ -302,7 +310,7 @@ public class SentryService implements Callable, SigUtils.SigListener {
   }
 
   private void stopHMSFollower(Configuration conf) {
-    if (!notificationLogEnabled) {
+    if (!notificationLogEnabled || !hdfsSyncEnabled) {
       return;
     }
 
