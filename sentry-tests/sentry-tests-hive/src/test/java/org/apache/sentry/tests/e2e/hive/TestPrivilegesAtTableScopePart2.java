@@ -315,6 +315,10 @@ public class TestPrivilegesAtTableScopePart2 extends AbstractTestWithStaticConfi
       }
       statement.execute("TRUNCATE TABLE " + TBL2);
       assertFalse(hasData(statement, TBL2));
+
+      statement.execute("USE " + DEFAULT);
+      statement.execute("TRUNCATE TABLE " + DB1 + "." + TBL2);
+      assertFalse(hasData(statement,  DB1 + "." + TBL2));
       statement.close();
       connection.close();
 
