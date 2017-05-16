@@ -132,7 +132,7 @@ public final class FullUpdateInitializer implements AutoCloseable {
     }
 
     ObjectMapping(String authObject, String path) {
-      Set<String> values = Collections.singleton(path);
+      Set<String> values = Collections.singleton(safeIntern(path));
       objects = ImmutableMap.of(authObject, values);
     }
 
@@ -257,9 +257,9 @@ public final class FullUpdateInitializer implements AutoCloseable {
 
     PartitionTask(String dbName, String tblName, String authName,
                   List<String> partNames) {
-      this.dbName = dbName;
-      this.tblName = tblName;
-      this.authName = authName;
+      this.dbName = safeIntern(dbName);
+      this.tblName = safeIntern(tblName);
+      this.authName = safeIntern(authName);
       this.partNames = partNames;
     }
 
@@ -274,7 +274,7 @@ public final class FullUpdateInitializer implements AutoCloseable {
       for (Partition part : tblParts) {
         String partPath = pathFromURI(part.getSd().getLocation());
         if (partPath != null) {
-          partitionNames.add(partPath);
+          partitionNames.add(partPath.intern());
         }
       }
       return new ObjectMapping(authName, partitionNames);
@@ -286,7 +286,7 @@ public final class FullUpdateInitializer implements AutoCloseable {
     private final List<String> tableNames;
 
     TableTask(Database db, List<String> tableNames) {
-      dbName = db.getName();
+      dbName = safeIntern(db.getName());
       this.tableNames = tableNames;
     }
 
@@ -307,8 +307,8 @@ public final class FullUpdateInitializer implements AutoCloseable {
           continue;
         }
 
-        String tableName = tbl.getTableName().toLowerCase();
-        String authzObject = dbName + "." + tableName;
+        String tableName = safeIntern(tbl.getTableName().toLowerCase());
+        String authzObject = (dbName + "." + tableName).intern();
         List<String> tblPartNames = client.listPartitionNames(dbName, tableName, (short) -1);
         for (int i = 0; i < tblPartNames.size(); i += maxPartitionsPerCall) {
           List<String> partsToFetch = tblPartNames.subList(i,
@@ -317,7 +317,7 @@ public final class FullUpdateInitializer implements AutoCloseable {
                   tableName, authzObject, partsToFetch);
           results.add(threadPool.submit(partTask));
         }
-        String tblPath = pathFromURI(tbl.getSd().getLocation());
+        String tblPath = safeIntern(pathFromURI(tbl.getSd().getLocation()));
         if (tblPath == null) {
           continue;
         }
@@ -338,7 +338,7 @@ public final class FullUpdateInitializer implements AutoCloseable {
 
     DbTask(String dbName) {
       //Database names are case insensitive
-      this.dbName = dbName.toLowerCase();
+      this.dbName = safeIntern(dbName.toLowerCase());
     }
 
     @Override
@@ -356,7 +356,7 @@ public final class FullUpdateInitializer implements AutoCloseable {
         Callable<CallResult> tableTask = new TableTask(db, tablesToFetch);
         results.add(threadPool.submit(tableTask));
       }
-      String dbPath =  pathFromURI(db.getLocationUri());
+      String dbPath = safeIntern(pathFromURI(db.getLocationUri()));
       return (dbPath != null) ? new ObjectMapping(dbName, dbPath) :
               emptyObjectMapping;
     }
@@ -439,5 +439,14 @@ public final class FullUpdateInitializer implements AutoCloseable {
     } catch (InterruptedException ignored) {
       LOGGER.warn("Interrupted shutdown");
     }
+  }
+
+  /**
+   * Intern a string but only if it is not null
+   * @param arg String to be interned, may be null
+   * @return interned string or null
+   */
+  static String safeIntern(String arg) {
+    return (arg != null) ? arg.intern() : null;
   }
 }

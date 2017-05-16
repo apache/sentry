@@ -79,11 +79,11 @@ public class MSentryGMPrivilege {
   public MSentryGMPrivilege(String componentName, String serviceName,
                                  List<? extends Authorizable> authorizables,
                                  String action, Boolean grantOption) {
-    this.componentName = componentName;
-    this.serviceName = serviceName;
-    this.action = action;
+    this.componentName = MSentryUtil.safeIntern(componentName);
+    this.serviceName = MSentryUtil.safeIntern(serviceName);
+    this.action = MSentryUtil.safeIntern(action);
     this.grantOption = grantOption;
-    this.roles = new HashSet<MSentryRole>();
+    this.roles = new HashSet<>();
     this.createTime = System.currentTimeMillis();
     setAuthorizables(authorizables);
   }
@@ -97,9 +97,7 @@ public class MSentryGMPrivilege {
     this.createTime = copy.createTime;
     setAuthorizables(copy.getAuthorizables());
     this.roles = new HashSet<MSentryRole>();
-    for (MSentryRole role : copy.roles) {
-      roles.add(role);
-    }
+    roles.addAll(copy.roles);
   }
 
   public String getServiceName() {
@@ -309,7 +307,7 @@ public class MSentryGMPrivilege {
   /**
    * Return true if this privilege implies request privilege
    * Otherwise, return false
-   * @param other, other privilege
+   * @param request, other privilege
    */
   public boolean implies(MSentryGMPrivilege request) {
     //component check

@@ -50,21 +50,21 @@ public class MSentryPrivilege {
   private long createTime;
 
   public MSentryPrivilege() {
-    this.roles = new HashSet<MSentryRole>();
+    this.roles = new HashSet<>();
   }
 
   public MSentryPrivilege(String privilegeName, String privilegeScope,
       String serverName, String dbName, String tableName, String columnName,
       String URI, String action, Boolean grantOption) {
-    this.privilegeScope = privilegeScope;
-    this.serverName = serverName;
-    this.dbName = SentryStore.toNULLCol(dbName);
-    this.tableName = SentryStore.toNULLCol(tableName);
-    this.columnName = SentryStore.toNULLCol(columnName);
-    this.URI = SentryStore.toNULLCol(URI);
-    this.action = SentryStore.toNULLCol(action);
+    this.privilegeScope = MSentryUtil.safeIntern(privilegeScope);
+    this.serverName = MSentryUtil.safeIntern(serverName);
+    this.dbName = SentryStore.toNULLCol(dbName).intern();
+    this.tableName = SentryStore.toNULLCol(tableName).intern();
+    this.columnName = SentryStore.toNULLCol(columnName).intern();
+    this.URI = SentryStore.toNULLCol(URI).intern();
+    this.action = SentryStore.toNULLCol(action).intern();
     this.grantOption = grantOption;
-    this.roles = new HashSet<MSentryRole>();
+    this.roles = new HashSet<>();
   }
 
   public MSentryPrivilege(String privilegeName, String privilegeScope,
@@ -77,16 +77,14 @@ public class MSentryPrivilege {
   public MSentryPrivilege(MSentryPrivilege other) {
     this.privilegeScope = other.privilegeScope;
     this.serverName = other.serverName;
-    this.dbName = SentryStore.toNULLCol(other.dbName);
-    this.tableName = SentryStore.toNULLCol(other.tableName);
-    this.columnName = SentryStore.toNULLCol(other.columnName);
-    this.URI = SentryStore.toNULLCol(other.URI);
-    this.action = SentryStore.toNULLCol(other.action);
+    this.dbName = SentryStore.toNULLCol(other.dbName).intern();
+    this.tableName = SentryStore.toNULLCol(other.tableName).intern();
+    this.columnName = SentryStore.toNULLCol(other.columnName).intern();
+    this.URI = SentryStore.toNULLCol(other.URI).intern();
+    this.action = SentryStore.toNULLCol(other.action).intern();
     this.grantOption = other.grantOption;
-    this.roles = new HashSet<MSentryRole>();
-    for (MSentryRole role : other.roles) {
-      roles.add(role);
-    }
+    this.roles = new HashSet<>();
+    roles.addAll(other.roles);
   }
 
   public String getServerName() {
