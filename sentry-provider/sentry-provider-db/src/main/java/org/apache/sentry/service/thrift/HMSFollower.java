@@ -283,6 +283,10 @@ public class HMSFollower implements Runnable, AutoCloseable {
 
         try {
           pathsFullSnapshot = fetchFullUpdate();
+          if(pathsFullSnapshot.isEmpty()) {
+            LOGGER.info("Hive full snapshot is Empty. Perhaps, HMS does not have any data");
+            return;
+          }
         } catch (ExecutionException | InterruptedException ex) {
           LOGGER.error("#### Encountered failure during fetching hive full snapshot !!", ex);
           return;
