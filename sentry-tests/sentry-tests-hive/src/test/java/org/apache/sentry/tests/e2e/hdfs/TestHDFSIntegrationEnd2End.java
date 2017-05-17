@@ -504,7 +504,7 @@ TODO:SENTRY-819
 
     stmt.execute("grant role col_role to group " + StaticUserGroup.ADMINGROUP);
 
-    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
+    Thread.sleep(WAIT_BEFORE_TESTVERIFY);//Wait till sentry cache is updated in Namenode
 
     //User with just column level privileges cannot read HDFS
     verifyOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/p1", null, StaticUserGroup.USERGROUP1, false);
