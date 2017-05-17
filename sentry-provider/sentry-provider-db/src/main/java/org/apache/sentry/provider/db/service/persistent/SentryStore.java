@@ -196,8 +196,8 @@ public class SentryStore {
     if (prop.getProperty(ServerConfig.DATANUCLEUS_ISOLATION_LEVEL, "").
             equals(ServerConfig.DATANUCLEUS_REPEATABLE_READ) &&
                     jdbcUrl.contains(oracleDb)) {
-      String parts[] = jdbcUrl.split(":");
-      if (parts.length > 1 && parts[1].equals(oracleDb)) {
+      String[] parts = jdbcUrl.split(":");
+      if ((parts.length > 1) && parts[1].equals(oracleDb)) {
         // For Oracle JDBC driver, replace "repeatable-read" with "serializable"
         prop.setProperty(ServerConfig.DATANUCLEUS_ISOLATION_LEVEL,
                 "serializable");
@@ -657,11 +657,11 @@ public class SentryStore {
           MSentryPrivilege mSelect = getMSentryPrivilege(tNotAll, pm);
           tNotAll.setAction(AccessConstants.INSERT);
           MSentryPrivilege mInsert = getMSentryPrivilege(tNotAll, pm);
-          if (mSelect != null && mRole.getPrivileges().contains(mSelect)) {
+          if ((mSelect != null) && mRole.getPrivileges().contains(mSelect)) {
             mSelect.removeRole(mRole);
             pm.makePersistent(mSelect);
           }
-          if (mInsert != null && mRole.getPrivileges().contains(mInsert)) {
+          if ((mInsert != null) && mRole.getPrivileges().contains(mInsert)) {
             mInsert.removeRole(mRole);
             pm.makePersistent(mInsert);
           }
@@ -2371,6 +2371,7 @@ public class SentryStore {
     new TransactionBlock<PermissionsImage>() {
       public PermissionsImage execute(PersistenceManager pm)
       throws Exception {
+        pm.setDetachAllOnCommit(false); // No need to detach objects
         // curChangeID could be 0, if Sentry server has been running before
         // enable SentryPlugin(HDFS Sync feature).
         long curChangeID = getLastProcessedChangeIDCore(pm, MSentryPermChange.class);
@@ -2392,6 +2393,7 @@ public class SentryStore {
    */
    private Map<String, Map<String, String>> retrieveFullPrivilegeImageCore(PersistenceManager pm)
         throws Exception {
+     pm.setDetachAllOnCommit(false); // No need to detach objects
 
     Map<String, Map<String, String>> retVal = new HashMap<>();
     Query query = pm.newQuery(MSentryPrivilege.class);
@@ -2437,6 +2439,7 @@ public class SentryStore {
    */
   private Map<String, List<String>> retrieveFullRoleImageCore(PersistenceManager pm)
           throws Exception {
+    pm.setDetachAllOnCommit(false); // No need to detach objects
     Query query = pm.newQuery(MSentryGroup.class);
     @SuppressWarnings("unchecked")
     List<MSentryGroup> groups = (List<MSentryGroup>) query.execute();
@@ -2475,6 +2478,7 @@ public class SentryStore {
       public Object execute(PersistenceManager pm) throws Exception {
         // curChangeID could be 0 for the first full snapshot fetching
         // from HMS. It does not have corresponding delta update.
+        pm.setDetachAllOnCommit(false); // No need to detach objects
         long curChangeID = getLastProcessedChangeIDCore(pm, MSentryPathChange.class);
         Map<String, Set<String>> pathImage = retrieveFullPathsImageCore(pm);
 
@@ -2511,6 +2515,7 @@ public class SentryStore {
     tm.executeTransactionWithRetry(
       new TransactionBlock() {
         public Object execute(PersistenceManager pm) throws Exception {
+          pm.setDetachAllOnCommit(false); // No need to detach objects
           for (Map.Entry<String, Set<String>> authzPath : authzPaths.entrySet()) {
             createAuthzPathsMappingCore(pm, authzPath.getKey(), authzPath.getValue());
           }
@@ -2597,6 +2602,7 @@ public class SentryStore {
       final Update update) throws Exception {
     execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
+        pm.setDetachAllOnCommit(false); // No need to detach objects
         deleteAuthzPathsMappingCore(pm, authzObj, paths);
         return null;
       }
@@ -2618,7 +2624,7 @@ public class SentryStore {
       for (String path : paths) {
         MPath mPath = mAuthzPathsMapping.getPath(path);
         if (mPath == null) {
-          LOGGER.error("nonexistent path: " + path);
+          LOGGER.error("nonexistent path: {}", path);
         } else {
           mAuthzPathsMapping.removePath(mPath);
           pm.deletePersistent(mPath);
@@ -2626,7 +2632,7 @@ public class SentryStore {
       }
       pm.makePersistent(mAuthzPathsMapping);
     } else {
-      LOGGER.error("nonexistent authzObj: " + authzObj);
+      LOGGER.error("nonexistent authzObj: {}", authzObj);
     }
   }
 
@@ -2642,6 +2648,7 @@ public class SentryStore {
         throws Exception {
     execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
+        pm.setDetachAllOnCommit(false); // No need to detach objects
         deleteAllAuthzPathsMappingCore(pm, authzObj);
         return null;
       }
@@ -2664,7 +2671,7 @@ public class SentryStore {
       }
       pm.deletePersistent(mAuthzPathsMapping);
     } else {
-      LOGGER.error("nonexistent authzObj: " + authzObj);
+      LOGGER.error("nonexistent authzObj: {}", authzObj);
     }
   }
 
@@ -2684,6 +2691,7 @@ public class SentryStore {
       final String oldPath, final String newPath, final Update update) throws Exception {
     execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
+        pm.setDetachAllOnCommit(false); // No need to detach objects
         renameAuthzPathsMappingCore(pm, oldObj, newObj, oldPath, newPath);
         return null;
       }
@@ -2708,7 +2716,7 @@ public class SentryStore {
     if (mAuthzPathsMapping != null) {
       MPath mOldPath = mAuthzPathsMapping.getPath(oldPath);
       if (mOldPath == null) {
-        LOGGER.error("nonexistent path: " + oldPath);
+        LOGGER.error("nonexistent path: {}", oldPath);
       } else {
         mAuthzPathsMapping.removePath(mOldPath);
         pm.deletePersistent(mOldPath);
@@ -2717,7 +2725,7 @@ public class SentryStore {
       mAuthzPathsMapping.setAuthzObjName(newObj);
       pm.makePersistent(mAuthzPathsMapping);
     } else {
-      LOGGER.error("nonexistent authzObj: " + oldObj);
+      LOGGER.error("nonexistent authzObj: {}", oldObj);
     }
   }
 
@@ -2734,6 +2742,7 @@ public class SentryStore {
       final Update update) throws Exception {
     execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
+        pm.setDetachAllOnCommit(false); // No need to detach objects
         renameAuthzObjCore(pm, oldObj, newObj);
         return null;
       }
@@ -2756,7 +2765,7 @@ public class SentryStore {
       mAuthzPathsMapping.setAuthzObjName(newObj);
       pm.makePersistent(mAuthzPathsMapping);
     } else {
-      LOGGER.error("nonexistent authzObj: " + oldObj);
+      LOGGER.error("nonexistent authzObj: {}", oldObj);
     }
   }
 
@@ -2775,6 +2784,7 @@ public class SentryStore {
         final String newPath, final Update update) throws Exception {
     execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
+        pm.setDetachAllOnCommit(false); // No need to detach objects
         updateAuthzPathsMappingCore(pm, authzObj, oldPath, newPath);
         return null;
       }
@@ -2801,7 +2811,7 @@ public class SentryStore {
     } else {
       MPath mOldPath = mAuthzPathsMapping.getPath(oldPath);
       if (mOldPath == null) {
-        LOGGER.error("nonexistent path: " + oldPath);
+        LOGGER.error("nonexistent path: {}", oldPath);
       } else {
         mAuthzPathsMapping.removePath(mOldPath);
         pm.deletePersistent(mOldPath);
@@ -2856,9 +2866,9 @@ public class SentryStore {
   }
 
   Boolean findOrphanedPrivilegesCore(PersistenceManager pm) {
-    ArrayList<Object> idList = new ArrayList<Object>();
     //Perform a SQL query to get things that look like orphans
     List<MSentryPrivilege> results = getAllMSentryPrivilegesCore(pm);
+    List<Object> idList = new ArrayList<>(results.size());
     for (MSentryPrivilege orphan : results) {
       idList.add(pm.getObjectId(orphan));
     }
@@ -2879,13 +2889,16 @@ public class SentryStore {
 
   /** get mapping datas for [group,role], [user,role] with the specific roles */
   @SuppressWarnings("unchecked")
-  public List<Map<String, Set<String>>> getGroupUserRoleMapList(final Set<String> roleNames) throws Exception {
+  public List<Map<String, Set<String>>> getGroupUserRoleMapList(final Collection<String> roleNames)
+          throws Exception {
       return tm.executeTransaction(
         new TransactionBlock<List<Map<String, Set<String>>>>() {
           public List<Map<String, Set<String>>> execute(PersistenceManager pm) throws Exception {
+            pm.setDetachAllOnCommit(false); // No need to detach objects
+
             Query query = pm.newQuery(MSentryRole.class);
             List<MSentryRole> mSentryRoles;
-            if (roleNames == null || roleNames.isEmpty()) {
+            if ((roleNames == null) || roleNames.isEmpty()) {
               mSentryRoles = (List<MSentryRole>)query.execute();
             } else {
               QueryParamBuilder paramBuilder = newQueryParamBuilder(QueryParamBuilder.Op.OR);
@@ -2904,7 +2917,7 @@ public class SentryStore {
         });
   }
 
-  private Map<String, Set<String>> getGroupRolesMap(List<MSentryRole> mSentryRoles) {
+  private Map<String, Set<String>> getGroupRolesMap(Collection<MSentryRole> mSentryRoles) {
     if (mSentryRoles.isEmpty()) {
       return Collections.emptyMap();
     }
@@ -2926,7 +2939,7 @@ public class SentryStore {
     return groupRolesMap;
   }
 
-  private Map<String, Set<String>> getUserRolesMap(List<MSentryRole> mSentryRoles) {
+  private Map<String, Set<String>> getUserRolesMap(Collection<MSentryRole> mSentryRoles) {
     if (mSentryRoles.isEmpty()) {
       return Collections.emptyMap();
     }
@@ -2962,6 +2975,7 @@ public class SentryStore {
       new TransactionBlock<Map<String, Set<TSentryPrivilege>>>() {
         public Map<String, Set<TSentryPrivilege>> execute(PersistenceManager pm)
                 throws Exception {
+          pm.setDetachAllOnCommit(false); // No need to detach objects
           Query query = pm.newQuery(MSentryPrivilege.class);
           QueryParamBuilder paramBuilder = newQueryParamBuilder();
 
@@ -2982,7 +2996,7 @@ public class SentryStore {
   }
 
   private Map<String, Set<TSentryPrivilege>> getRolePrivilegesMap(
-          List<MSentryPrivilege> mSentryPrivileges) {
+          Collection<MSentryPrivilege> mSentryPrivileges) {
     if (mSentryPrivileges.isEmpty()) {
       return Collections.emptyMap();
     }
@@ -3077,6 +3091,7 @@ public class SentryStore {
     return tm.executeTransaction(
         new TransactionBlock<Map<String, MSentryRole>>() {
           public Map<String, MSentryRole> execute(PersistenceManager pm) throws Exception {
+            pm.setDetachAllOnCommit(false); // No need to detach objects
             List<MSentryRole> mSentryRoles = getAllRoles(pm);
             if (mSentryRoles.isEmpty()) {
               return Collections.emptyMap();
@@ -3166,6 +3181,7 @@ public class SentryStore {
     tm.executeTransaction(
         new TransactionBlock<Object>() {
           public Object execute(PersistenceManager pm) throws Exception {
+            pm.setDetachAllOnCommit(false); // No need to detach objects
             TSentryMappingData mappingData = lowercaseRoleName(tSentryMappingData);
             Set<String> roleNames = getAllRoleNamesCore(pm);
 
@@ -3404,6 +3420,7 @@ public class SentryStore {
     return tm.executeTransaction(
       new TransactionBlock<Long>() {
         public Long execute(PersistenceManager pm) throws Exception {
+          pm.setDetachAllOnCommit(false); // No need to detach objects
           return getLastProcessedChangeIDCore(pm, MSentryPermChange.class);
         }
       });
@@ -3418,6 +3435,7 @@ public class SentryStore {
     return tm.executeTransaction(
     new TransactionBlock<Long>() {
       public Long execute(PersistenceManager pm) throws Exception {
+        pm.setDetachAllOnCommit(false); // No need to detach objects
         return getLastProcessedChangeIDCore(pm, MSentryPathChange.class);
       }
     });
@@ -3433,6 +3451,7 @@ public class SentryStore {
     return tm.executeTransaction(
     new TransactionBlock<Long>() {
       public Long execute(PersistenceManager pm) throws Exception {
+        pm.setDetachAllOnCommit(false); // No need to detach objects
         long changeID = getLastProcessedChangeIDCore(pm, MSentryPathChange.class);
         if (changeID == EMPTY_CHANGE_ID) {
           return EMPTY_CHANGE_ID;
@@ -3550,6 +3569,7 @@ public class SentryStore {
     return tm.executeTransaction(
     new TransactionBlock<Boolean>() {
       public Boolean execute(PersistenceManager pm) throws Exception {
+        pm.setDetachAllOnCommit(false); // No need to detach objects
         return changeExistsCore(pm, MSentryPermChange.class, changeID);
       }
     });
@@ -3566,6 +3586,7 @@ public class SentryStore {
     return tm.executeTransaction(
     new TransactionBlock<Boolean>() {
       public Boolean execute(PersistenceManager pm) throws Exception {
+        pm.setDetachAllOnCommit(false); // No need to detach objects
         return changeExistsCore(pm, MSentryPathChange.class, changeID);
       }
     });
@@ -3620,8 +3641,7 @@ public class SentryStore {
     Query query = pm.newQuery(changeCls);
     query.setFilter("this.changeID >= t");
     query.declareParameters("long t");
-    List<T> changes = (List<T>) query.execute(changeID);
-    return changes;
+    return (List<T>) query.execute(changeID);
   }
 
   /**
@@ -3638,6 +3658,7 @@ public class SentryStore {
       throws Exception {
     return tm.executeTransaction(new TransactionBlock<List<MSentryPathChange>>() {
       public List<MSentryPathChange> execute(PersistenceManager pm) throws Exception {
+        pm.setDetachAllOnCommit(false); // No need to detach objects
         List<MSentryPathChange> pathChanges =
             getMSentryChangesCore(pm, MSentryPathChange.class, changeID);
         long curChangeID = getLastProcessedChangeIDCore(pm, MSentryPathChange.class);
@@ -3671,6 +3692,7 @@ public class SentryStore {
     return tm.executeTransaction(
     new TransactionBlock<List<MSentryPermChange>>() {
       public List<MSentryPermChange> execute(PersistenceManager pm) throws Exception {
+        pm.setDetachAllOnCommit(false); // No need to detach objects
         List<MSentryPermChange> permChanges =
             getMSentryChangesCore(pm, MSentryPermChange.class, changeID);
         long curChangeID = getLastProcessedChangeIDCore(pm, MSentryPermChange.class);

@@ -70,6 +70,7 @@ public class DeltaTransactionBlock implements TransactionBlock<Object> {
    */
   private void persistUpdate(PersistenceManager pm, Update update)
       throws Exception {
+    pm.setDetachAllOnCommit(false); // No need to detach objects
 
     Preconditions.checkNotNull(update);
     // persistUpdate cannot handle full image update, instead
