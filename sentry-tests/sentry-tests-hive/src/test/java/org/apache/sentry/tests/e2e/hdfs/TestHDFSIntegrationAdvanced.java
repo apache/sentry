@@ -552,7 +552,7 @@ public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
     stmt.execute("create role table_role");
     stmt.execute("grant all on table tb1 to role table_role");
     stmt.execute("grant role table_role to group " + StaticUserGroup.USERGROUP1);
-    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
+    Thread.sleep(WAIT_BEFORE_TESTVERIFY);//Wait till sentry cache is updated in Namenode
     //Verify user1 is able to access table directory
     verifyAccessToPath(StaticUserGroup.USER1_1, StaticUserGroup.USERGROUP1, "/user/hive/warehouse/db1.db/tb1", true);
 
@@ -591,7 +591,7 @@ public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
     stmt.execute("create role tab1_role");
     stmt.execute("grant insert on table tab1 to role tab1_role");
     stmt.execute("grant role tab1_role to group " + StaticUserGroup.USERGROUP1);
-    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
+    Thread.sleep(WAIT_BEFORE_TESTVERIFY);//Wait till sentry cache is updated in Namenode
 
     // Verify that user_group1 has insert(write_execute) permission on '/tmp/external/p1'.
     verifyOnAllSubDirs("/tmp/external/p1", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP1, true);
@@ -603,7 +603,7 @@ public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
     stmt.execute("create role tab2_role");
     stmt.execute("grant select on table tab2 to role tab2_role");
     stmt.execute("grant role tab2_role to group " + StaticUserGroup.USERGROUP2);
-    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
+    Thread.sleep(WAIT_BEFORE_TESTVERIFY);//Wait till sentry cache is updated in Namenode
 
     // Verify that user_group2 have select(read_execute) permission on both paths.
     verifyOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/tab2", FsAction.READ_EXECUTE, StaticUserGroup.USERGROUP2, true);
@@ -616,7 +616,7 @@ public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
     stmt.execute("create role tab3_role");
     stmt.execute("grant insert on table tab3 to role tab3_role");
     stmt.execute("grant role tab3_role to group " + StaticUserGroup.USERGROUP3);
-    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
+    Thread.sleep(WAIT_BEFORE_TESTVERIFY);//Wait till sentry cache is updated in Namenode
 
     // When two partitions of different tables pointing to the same location with different grants,
     // ACLs should have union (no duplicates) of both rules.
@@ -626,21 +626,21 @@ public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
 
     // When alter the table name (tab2 to be tabx), ACLs should remain the same.
     stmt.execute("alter table tab2 rename to tabx");
-    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
+    Thread.sleep(WAIT_BEFORE_TESTVERIFY);//Wait till sentry cache is updated in Namenode
     verifyOnPath(tmpHDFSDirStr, FsAction.READ_EXECUTE, StaticUserGroup.USERGROUP2, true);
     verifyOnPath(tmpHDFSDirStr, FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP3, true);
 
     // When drop a partition that shares the same location with other partition belonging to
     // other table, should still have the other table permissions.
     stmt.execute("ALTER TABLE tabx DROP PARTITION (month = 1)");
-    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
+    Thread.sleep(WAIT_BEFORE_TESTVERIFY);//Wait till sentry cache is updated in Namenode
     verifyOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/tab3", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP3, true);
     verifyOnPath(tmpHDFSDirStr, FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP3, true);
 
     // When drop a table that has a partition shares the same location with other partition
     // belonging to other table, should still have the other table permissions.
     stmt.execute("DROP TABLE IF EXISTS tabx");
-    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
+    Thread.sleep(WAIT_BEFORE_TESTVERIFY);//Wait till sentry cache is updated in Namenode
     verifyOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/tab3", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP3, true);
     verifyOnPath(tmpHDFSDirStr, FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP3, true);
 
@@ -679,7 +679,7 @@ public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
     stmt.execute("create role tab1_role");
     stmt.execute("grant insert on table tab1 to role tab1_role");
     stmt.execute("grant role tab1_role to group " + StaticUserGroup.USERGROUP1);
-    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
+    Thread.sleep(WAIT_BEFORE_TESTVERIFY);//Wait till sentry cache is updated in Namenode
 
     // Verify that user_group1 has insert(write_execute) permission on '/tmp/external/p1'.
     verifyOnAllSubDirs("/tmp/external/p1", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP1, true);
@@ -721,7 +721,7 @@ public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
     stmt.execute("create role tab1_role");
     stmt.execute("grant insert on table tab1 to role tab1_role");
     stmt.execute("grant role tab1_role to group " + StaticUserGroup.USERGROUP1);
-    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
+    Thread.sleep(WAIT_BEFORE_TESTVERIFY);//Wait till sentry cache is updated in Namenode
 
     // Verify that user_group1 has insert(write_execute) permission on '/tmp/external/p1'.
     verifyOnAllSubDirs("/tmp/external/p1", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP1, true);
@@ -739,7 +739,7 @@ public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
 
     // When drop table tab1, ACLs of tab2 still remain.
     stmt.execute("DROP TABLE IF EXISTS tab1");
-    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
+    Thread.sleep(WAIT_BEFORE_TESTVERIFY);//Wait till sentry cache is updated in Namenode
     verifyOnPath("/tmp/external/p1", FsAction.READ_EXECUTE, StaticUserGroup.USERGROUP1, true);
 
     stmt.close();

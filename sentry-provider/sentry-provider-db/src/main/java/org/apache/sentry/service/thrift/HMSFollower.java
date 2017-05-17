@@ -57,6 +57,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
+import static org.apache.hadoop.hive.conf.HiveConf.ConfVars.METASTOREURIS;
 import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SYNC_CREATE_WITH_POLICY_STORE;
 import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SYNC_DROP_WITH_POLICY_STORE;
 import static org.apache.sentry.hdfs.Updateable.Update;
@@ -71,8 +72,6 @@ import static org.apache.sentry.hdfs.Updateable.Update;
 public class HMSFollower implements Runnable, AutoCloseable {
   private static final Logger LOGGER = LoggerFactory.getLogger(HMSFollower.class);
   private long currentEventID;
-  // Copy from Hive
-  public static String CONF_METASTORE_URI = "hive.metastore.uris";
   // Track the latest eventId of the event that has been logged. So we don't log the same message
   private long lastLoggedEventId = SentryStore.EMPTY_CHANGE_ID;
   private static boolean connectedToHMS = false;
@@ -129,14 +128,19 @@ public class HMSFollower implements Runnable, AutoCloseable {
       return client;
     }
 
-    // Do not create client if the metastre URI in the configuration is missing
-    if (conf.get(CONF_METASTORE_URI, "").isEmpty()) {
-      // Come back later with real Hive URI
-      return null;
-    }
-
     final HiveConf hiveConf = new HiveConf();
     hiveInstance = hiveConf.get(HiveAuthzConf.AuthzConfVars.AUTHZ_SERVER_NAME.getVar());
+
+    // Do not create client if the metastore URI in the Hive configuration is missing.
+    // E2e Hive tests start Sentry first and then configure Hive, so eventually the
+    // metastore URI will appear in the config in such cases.
+    String metaStoreUri = hiveConf.get(METASTOREURIS.varname);
+    if (metaStoreUri == null) {
+      LOGGER.error("Metastore uri is not configured in hive config.");
+      return null;
+    } else {
+      LOGGER.info("Connecting to HMS {}", metaStoreUri);
+    }
 
     String principal, keytab;
 
@@ -197,7 +201,7 @@ public class HMSFollower implements Runnable, AutoCloseable {
     } else {
       //This is only for testing purposes. Sentry strongly recommends strong authentication
       client = new HiveMetaStoreClient(hiveConf);
-      LOGGER.info("Non secure connection established with HMS");
+      LOGGER.info("Non secure connection established with HMS at {}", metaStoreUri);
     }
     return client;
   }

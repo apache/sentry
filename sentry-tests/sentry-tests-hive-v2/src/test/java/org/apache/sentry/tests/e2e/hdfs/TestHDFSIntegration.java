@@ -148,8 +148,27 @@ public class TestHDFSIntegration {
   protected static SentrySrv sentryServer;
   protected static boolean testSentryHA = false;
   private static final long STALE_THRESHOLD = 5000;
-  private static final long CACHE_REFRESH = 100; //Default is 500, but we want it to be low
-                                                // in our tests so that changes reflect soon
+
+  // It is the interval in milliseconds that hdfs uses to get acl from sentry. Default is 500, but
+  // we want it to be low in our tests so that changes reflect soon
+  private static final long CACHE_REFRESH = 100;
+
+  // It is Used to wait before verifying result in test.
+  // We want to make sure the cache is updated in our tests so that changes reflect soon. The unit is milliseconds
+  // It takes at most (ServerConfig.SENTRY_HMSFOLLOWER_INIT_DELAY_MILLS_DEFAULT + ServerConfig.SENTRY_HMSFOLLOWER_INTERVAL_MILLS_DEFAULT)
+  // for sentry to get the path configured in Hive, adding ServerConfig.SENTRY_HMSFOLLOWER_INTERVAL_MILLS_DEFAULT to be safe.
+  // And then it takes at most CACHE_REFRESH for HDFS to get this from sentry, adding CACHE_REFRESH to be sure
+  protected static final long WAIT_BEFORE_TESTVERIFY =
+          ServerConfig.SENTRY_HMSFOLLOWER_INIT_DELAY_MILLS_DEFAULT +
+                  ServerConfig.SENTRY_HMSFOLLOWER_INTERVAL_MILLS_DEFAULT * 2 + CACHE_REFRESH * 2;
+
+  // Time to wait before running next tests. The unit is milliseconds.
+  // Deleting HDFS may finish, but HDFS may not be ready for creating the same file again.
+  // We need to to make sure that creating the same file in the next test will succeed
+  // If we don't wait, next test may get exception similar to
+  // "org.apache.hadoop.security.AccessControlException Permission denied: user=hive, access=EXECUTE,
+  // inode="/tmp/external/p1":hdfs:hdfs:drwxrwx---"
+  protected static final long WAIT_BEFORE_NEXTTEST = 50;
 
   private static String fsURI;
   private static int hmsPort;
@@ -196,93 +215,38 @@ public class TestHDFSIntegration {
     hiveUgi = UserGroupInformation.createUserForTesting(
         "hive", new String[] { "hive" });
 
-    // Start Sentry
+    // Create SentryService and its internal objects.
+    // Set Sentry port
+    createSentry();
+
+    // Create hive-site.xml that contains the metastore uri
+    // it is used by HMSFollower
+    configureHiveAndMetastoreForSentry();
+
+    // Start SentryService after Hive configuration hive-site.xml is available
+    // So HMSFollower can contact metastore using its URI
     startSentry();
 
-    // Start HDFS and MR
+    // Start HDFS and MR with Sentry Port. Set fsURI
     startDFSandYARN();
 
-    // Start HiveServer2 and Metastore
-    startHiveAndMetastore();
+    // Configure Hive and Metastore with Sentry Port and fsURI
+    // Read src/test/resources/sentry-site.xml.
+    // Create hive-site.xml and sentry-site.xml used by Hive.
+    HiveConf hiveConf = configureHiveAndMetastore();
 
+    // Start Hive and Metastore after SentryService is started
+    startHiveAndMetastore(hiveConf);
   }
 
-  private static void startHiveAndMetastore() throws IOException, InterruptedException {
+  private static void startHiveAndMetastore(final HiveConf hiveConf) throws IOException, InterruptedException {
     startHiveAndMetastore(NUM_RETRIES);
   }
 
-  private static void startHiveAndMetastore(final int retries) throws IOException, InterruptedException {
+  private static void startHiveAndMetastore(final HiveConf hiveConf, final int retries) throws IOException, InterruptedException {
     hiveUgi.doAs(new PrivilegedExceptionAction<Void>() {
       @Override
       public Void run() throws Exception {
-        HiveConf hiveConf = new HiveConf();
-        hiveConf.set("sentry.service.client.server.rpc-address", "localhost");
-        hiveConf.set("sentry.hdfs.service.client.server.rpc-address", "localhost");
-        hiveConf.set("sentry.hdfs.service.client.server.rpc-port", String.valueOf(sentryPort));
-        hiveConf.set("sentry.service.client.server.rpc-port", String.valueOf(sentryPort));
-//        hiveConf.set("sentry.service.server.compact.transport", "true");
-//        hiveConf.set("sentry.service.client.compact.transport", "true");
-        hiveConf.set("sentry.service.security.mode", "none");
-        hiveConf.set("sentry.hdfs.service.security.mode", "none");
-        hiveConf.set("sentry.hdfs.init.update.retry.delay.ms", "500");
-        hiveConf.set("sentry.hive.provider.backend", "org.apache.sentry.provider.db.SimpleDBProviderBackend");
-        hiveConf.set("sentry.provider", LocalGroupResourceAuthorizationProvider.class.getName());
-        hiveConf.set("sentry.hive.provider", LocalGroupResourceAuthorizationProvider.class.getName());
-        hiveConf.set("sentry.hive.provider.resource", policyFileLocation.getPath());
-        hiveConf.set("sentry.hive.testing.mode", "true");
-        hiveConf.set("sentry.hive.server", "server1");
-
-        hiveConf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING, ServerConfig.SENTRY_STORE_LOCAL_GROUP_MAPPING);
-        hiveConf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE, policyFileLocation.getPath());
-        hiveConf.set("fs.defaultFS", fsURI);
-        hiveConf.set("fs.default.name", fsURI);
-        hiveConf.set("hive.metastore.execute.setugi", "true");
-        hiveConf.set("hive.metastore.warehouse.dir", "hdfs:///user/hive/warehouse");
-        hiveConf.set("javax.jdo.option.ConnectionURL", "jdbc:derby:;databaseName=" + baseDir.getAbsolutePath() + "/metastore_db;create=true");
-        hiveConf.set("javax.jdo.option.ConnectionDriverName", "org.apache.derby.jdbc.EmbeddedDriver");
-        hiveConf.set("javax.jdo.option.ConnectionUserName", "hive");
-        hiveConf.set("javax.jdo.option.ConnectionPassword", "hive");
-        hiveConf.set("datanucleus.schema.autoCreateAll", "true");
-        hmsPort = findPort();
-        LOGGER.info("\n\n HMS port : " + hmsPort + "\n\n");
-
-        // Sets hive.metastore.authorization.storage.checks to true, so that
-        // disallow the operations such as drop-partition if the user in question
-        // doesn't have permissions to delete the corresponding directory
-        // on the storage.
-        hiveConf.set("hive.metastore.authorization.storage.checks", "true");
-        hiveConf.set("hive.metastore.uris", "thrift://localhost:" + hmsPort);
-        hiveConf.set("hive.metastore.pre.event.listeners", MetastoreAuthzBindingV2.class.getName());
-        hiveConf.set("hive.metastore.event.listeners", SentryMetastorePostEventListenerV2.class.getName());
-        hiveConf.set("hive.security.authorization.task.factory", SentryHiveAuthorizationTaskFactoryImplV2.class.getName());
-        hiveConf.set("hive.server2.session.hook", HiveAuthzBindingSessionHookV2.class.getName());
-        hiveConf.set("sentry.metastore.service.users", "hive");// queries made by hive user (beeline) skip meta store check
-
-        HiveAuthzConf authzConf = new HiveAuthzConf(Resources.getResource("sentry-site.xml"));
-        authzConf.addResource(hiveConf);
-        File confDir = assertCreateDir(new File(baseDir, "etc"));
-        File accessSite = new File(confDir, HiveAuthzConf.AUTHZ_SITE_FILE);
-        OutputStream out = new FileOutputStream(accessSite);
-        authzConf.set("fs.defaultFS", fsURI);
-        authzConf.writeXml(out);
-        out.close();
-
-        hiveConf.set("hive.sentry.conf.url", accessSite.getPath());
-        LOGGER.info("Sentry client file : " + accessSite.getPath());
-
-        File hiveSite = new File(confDir, "hive-site.xml");
-        hiveConf.set("hive.server2.enable.doAs", "false");
-        hiveConf.set(HiveAuthzConf.HIVE_SENTRY_CONF_URL, accessSite.toURI().toURL()
-            .toExternalForm());
-        out = new FileOutputStream(hiveSite);
-        hiveConf.writeXml(out);
-        out.close();
-
-        Reflection.staticField("hiveSiteURL")
-            .ofType(URL.class)
-            .in(HiveConf.class)
-            .set(hiveSite.toURI().toURL());
-
         metastore = new InternalMetastoreServer(hiveConf);
         new Thread() {
           @Override
@@ -419,21 +383,19 @@ public class TestHDFSIntegration {
     });
   }
 
-  private static void startSentry() throws Exception {
+  private static void createSentry() throws Exception {
     try {
-
       hiveUgi.doAs(new PrivilegedExceptionAction<Void>() {
         @Override
         public Void run() throws Exception {
           Configuration sentryConf = new Configuration(false);
           Map<String, String> properties = Maps.newHashMap();
           properties.put(HiveServerFactory.AUTHZ_PROVIDER_BACKEND,
-              SimpleDBProviderBackend.class.getName());
+                  SimpleDBProviderBackend.class.getName());
           properties.put(ConfVars.HIVE_AUTHORIZATION_TASK_FACTORY.varname,
-              SentryHiveAuthorizationTaskFactoryImplV2.class.getName());
+                  SentryHiveAuthorizationTaskFactoryImplV2.class.getName());
           properties
-              .put(ConfVars.HIVE_SERVER2_THRIFT_MIN_WORKER_THREADS.varname, "2");
-          properties.put("hive.metastore.uris", "thrift://localhost:" + hmsPort);
+                  .put(ConfVars.HIVE_SERVER2_THRIFT_MIN_WORKER_THREADS.varname, "2");
           properties.put("hive.exec.local.scratchdir", Files.createTempDir().getAbsolutePath());
           properties.put(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_NONE);
 //        properties.put("sentry.service.server.compact.transport", "true");
@@ -448,18 +410,18 @@ public class TestHDFSIntegration {
           properties.put(ServerConfig.SENTRY_STORE_GROUP_MAPPING, ServerConfig.SENTRY_STORE_LOCAL_GROUP_MAPPING);
           properties.put(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE, policyFileLocation.getPath());
           properties.put(ServerConfig.SENTRY_STORE_JDBC_URL,
-              "jdbc:derby:;databaseName=" + baseDir.getPath()
-                  + "/sentrystore_db;create=true");
+                  "jdbc:derby:;databaseName=" + baseDir.getPath()
+                          + "/sentrystore_db;create=true");
           properties.put(ServerConfig.SENTRY_STORE_JDBC_PASS, "dummy");
           properties.put("sentry.service.processor.factories",
-              "org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessorFactory,org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory");
+                  "org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessorFactory,org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory");
           properties.put("sentry.policy.store.plugins", "org.apache.sentry.hdfs.SentryPlugin");
           properties.put(ServerConfig.RPC_MIN_THREADS, "3");
           for (Map.Entry<String, String> entry : properties.entrySet()) {
             sentryConf.set(entry.getKey(), entry.getValue());
           }
           sentryServer = SentrySrvFactory.create(SentrySrvFactory.SentrySrvType.INTERNAL_SERVER,
-              sentryConf, testSentryHA ? 2 : 1);
+                  sentryConf, testSentryHA ? 2 : 1);
           sentryPort = sentryServer.get(0).getAddress().getPort();
           sentryServer.startAll();
           LOGGER.info("\n\n Sentry service started \n\n");
@@ -470,6 +432,140 @@ public class TestHDFSIntegration {
       //An exception happening in above block will result in a wrapped UndeclaredThrowableException.
       throw new Exception(e.getCause());
     }
+  }
+
+  private static void startSentry() throws Exception {
+    try {
+      hiveUgi.doAs(new PrivilegedExceptionAction() {
+        @Override
+        public Void run() throws Exception {
+          sentryServer.startAll();
+          LOGGER.info("\n\n Sentry service started \n\n");
+          return null;
+        }
+      });
+    } catch (Exception ex) {
+      //An exception happening in above block will result in a wrapped UndeclaredThrowableException.
+      throw new Exception(ex.getCause());
+    }
+  }
+
+  private static HiveConf configureHiveAndMetastoreForSentry() throws IOException, InterruptedException {
+    final HiveConf hiveConfiguration = new HiveConf();
+    hiveUgi.doAs(new PrivilegedExceptionAction<Void>() {
+      @Override
+      public Void run() throws Exception {
+        HiveConf hiveConf = hiveConfiguration;
+        hmsPort = findPort();
+        LOGGER.info("\n\n HMS port : " + hmsPort + "\n\n");
+
+        // Sets hive.metastore.authorization.storage.checks to true, so that
+        // disallow the operations such as drop-partition if the user in question
+        // doesn't have permissions to delete the corresponding directory
+        // on the storage.
+        hiveConf.set("hive.metastore.authorization.storage.checks", "true");
+        hiveConf.set("hive.metastore.uris", "thrift://localhost:" + hmsPort);
+        hiveConf.set("sentry.metastore.service.users", "hive");// queries made by hive user (beeline) skip meta store check
+
+        File confDir = assertCreateDir(new File(baseDir, "etc"));
+        File hiveSite = new File(confDir, "hive-site.xml");
+        hiveConf.set("hive.server2.enable.doAs", "false");
+        OutputStream out = new FileOutputStream(hiveSite);
+        hiveConf.writeXml(out);
+        out.close();
+
+        Reflection.staticField("hiveSiteURL")
+                .ofType(URL.class)
+                .in(HiveConf.class)
+                .set(hiveSite.toURI().toURL());
+        return null;
+      }
+    });
+
+    return hiveConfiguration;
+  }
+
+  private static HiveConf configureHiveAndMetastore() throws IOException, InterruptedException {
+    final HiveConf hiveConfiguration = new HiveConf();
+    hiveUgi.doAs(new PrivilegedExceptionAction<Void>() {
+      @Override
+      public Void run() throws Exception {
+        HiveConf hiveConf = hiveConfiguration;
+        hiveConf.set("sentry.metastore.plugins", "org.apache.sentry.hdfs.MetastorePlugin");
+        hiveConf.set("sentry.service.client.server.rpc-address", "localhost");
+        hiveConf.set("sentry.hdfs.service.client.server.rpc-address", "localhost");
+        hiveConf.set("sentry.hdfs.service.client.server.rpc-port", String.valueOf(sentryPort));
+        hiveConf.set("sentry.service.client.server.rpc-port", String.valueOf(sentryPort));
+//        hiveConf.set("sentry.service.server.compact.transport", "true");
+//        hiveConf.set("sentry.service.client.compact.transport", "true");
+        hiveConf.set("sentry.service.security.mode", "none");
+        hiveConf.set("sentry.hdfs.service.security.mode", "none");
+        hiveConf.set("sentry.hdfs.init.update.retry.delay.ms", "500");
+        hiveConf.set("sentry.hive.provider.backend", "org.apache.sentry.provider.db.SimpleDBProviderBackend");
+        hiveConf.set("sentry.provider", LocalGroupResourceAuthorizationProvider.class.getName());
+        hiveConf.set("sentry.hive.provider", LocalGroupResourceAuthorizationProvider.class.getName());
+        hiveConf.set("sentry.hive.provider.resource", policyFileLocation.getPath());
+        hiveConf.set("sentry.hive.testing.mode", "true");
+        hiveConf.set("sentry.hive.server", "server1");
+
+        hiveConf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING, ServerConfig.SENTRY_STORE_LOCAL_GROUP_MAPPING);
+        hiveConf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE, policyFileLocation.getPath());
+        hiveConf.set("fs.defaultFS", fsURI);
+        hiveConf.set("fs.default.name", fsURI);
+        hiveConf.set("hive.metastore.execute.setugi", "true");
+        hiveConf.set("hive.metastore.warehouse.dir", "hdfs:///user/hive/warehouse");
+        hiveConf.set("javax.jdo.option.ConnectionURL", "jdbc:derby:;databaseName=" + baseDir.getAbsolutePath() + "/metastore_db;create=true");
+        hiveConf.set("javax.jdo.option.ConnectionDriverName", "org.apache.derby.jdbc.EmbeddedDriver");
+        hiveConf.set("javax.jdo.option.ConnectionUserName", "hive");
+        hiveConf.set("javax.jdo.option.ConnectionPassword", "hive");
+        hiveConf.set("datanucleus.autoCreateSchema", "true");
+        hiveConf.set("datanucleus.fixedDatastore", "false");
+        hiveConf.set("datanucleus.autoStartMechanism", "SchemaTable");
+        hmsPort = findPort();
+        LOGGER.info("\n\n HMS port : " + hmsPort + "\n\n");
+
+        // Sets hive.metastore.authorization.storage.checks to true, so that
+        // disallow the operations such as drop-partition if the user in question
+        // doesn't have permissions to delete the corresponding directory
+        // on the storage.
+        hiveConf.set("hive.metastore.authorization.storage.checks", "true");
+        hiveConf.set("hive.metastore.uris", "thrift://localhost:" + hmsPort);
+        hiveConf.set("hive.metastore.pre.event.listeners", "org.apache.sentry.binding.metastore.MetastoreAuthzBinding");
+        hiveConf.set("hive.metastore.event.listeners", "org.apache.sentry.binding.metastore.SentryMetastorePostEventListenerNotificationLog");
+        hiveConf.set("hcatalog.message.factory.impl.json", "org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageFactory");
+        hiveConf.set("hive.security.authorization.task.factory", "org.apache.sentry.binding.hive.SentryHiveAuthorizationTaskFactoryImpl");
+        hiveConf.set("hive.server2.session.hook", "org.apache.sentry.binding.hive.HiveAuthzBindingSessionHook");
+        hiveConf.set("sentry.metastore.service.users", "hive");// queries made by hive user (beeline) skip meta store check
+
+        HiveAuthzConf authzConf = new HiveAuthzConf(Resources.getResource("sentry-site.xml"));
+        authzConf.addResource(hiveConf);
+        File confDir = assertCreateDir(new File(baseDir, "etc"));
+        File accessSite = new File(confDir, HiveAuthzConf.AUTHZ_SITE_FILE);
+        OutputStream out = new FileOutputStream(accessSite);
+        authzConf.set("fs.defaultFS", fsURI);
+        authzConf.writeXml(out);
+        out.close();
+
+        hiveConf.set("hive.sentry.conf.url", accessSite.getPath());
+        LOGGER.info("Sentry client file : " + accessSite.getPath());
+
+        File hiveSite = new File(confDir, "hive-site.xml");
+        hiveConf.set("hive.server2.enable.doAs", "false");
+        hiveConf.set(HiveAuthzConf.HIVE_SENTRY_CONF_URL, accessSite.toURI().toURL()
+                .toExternalForm());
+        out = new FileOutputStream(hiveSite);
+        hiveConf.writeXml(out);
+        out.close();
+
+        Reflection.staticField("hiveSiteURL")
+                .ofType(URL.class)
+                .in(HiveConf.class)
+                .set(hiveSite.toURI().toURL());
+        return null;
+      }
+    });
+
+    return hiveConfiguration;
   }
 
   @After
@@ -504,6 +600,7 @@ public class TestHDFSIntegration {
     dbNames = null;
     roles = null;
     admin = null;
+    Thread.sleep(WAIT_BEFORE_NEXTTEST); // make sure the clean up is done before next test starts. otherwise, the next test may fail
   }
 
   @AfterClass
@@ -1213,7 +1310,7 @@ public class TestHDFSIntegration {
 
     stmt.execute("grant role col_role to group " + StaticUserGroup.ADMINGROUP);
 
-    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
+    Thread.sleep(WAIT_BEFORE_TESTVERIFY);//Wait till sentry cache is updated in Namenode
 
     //User with just column level privileges cannot read HDFS
     verifyOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/p1", null, StaticUserGroup.USERGROUP1, false);
@@ -1339,7 +1436,7 @@ public class TestHDFSIntegration {
     stmt.execute("create role table_role");
     stmt.execute("grant all on table tb1 to role table_role");
     stmt.execute("grant role table_role to group " + StaticUserGroup.USERGROUP1);
-    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
+    Thread.sleep(WAIT_BEFORE_TESTVERIFY);//Wait till sentry cache is updated in Namenode
     //Verify user1 is able to access table directory
     verifyAccessToPath(StaticUserGroup.USER1_1, StaticUserGroup.USERGROUP1, "/user/hive/warehouse/db1.db/tb1", true);
 
@@ -1381,7 +1478,7 @@ public class TestHDFSIntegration {
     stmt.execute("create role tab1_role");
     stmt.execute("grant insert on table tab1 to role tab1_role");
     stmt.execute("grant role tab1_role to group " + StaticUserGroup.USERGROUP1);
-    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
+    Thread.sleep(WAIT_BEFORE_TESTVERIFY);//Wait till sentry cache is updated in Namenode
 
     // Verify that user_group1 has insert(write_execute) permission on '/tmp/external/p1'.
     verifyOnAllSubDirs("/tmp/external/p1", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP1, true);
@@ -1393,7 +1490,7 @@ public class TestHDFSIntegration {
     stmt.execute("create role tab2_role");
     stmt.execute("grant select on table tab2 to role tab2_role");
     stmt.execute("grant role tab2_role to group " + StaticUserGroup.USERGROUP2);
-    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
+    Thread.sleep(WAIT_BEFORE_TESTVERIFY);//Wait till sentry cache is updated in Namenode
 
     // Verify that user_group2 have select(read_execute) permission on both paths.
     verifyOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/tab2", FsAction.READ_EXECUTE, StaticUserGroup.USERGROUP2, true);
@@ -1406,7 +1503,7 @@ public class TestHDFSIntegration {
     stmt.execute("create role tab3_role");
     stmt.execute("grant insert on table tab3 to role tab3_role");
     stmt.execute("grant role tab3_role to group " + StaticUserGroup.USERGROUP3);
-    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
+    Thread.sleep(WAIT_BEFORE_TESTVERIFY);//Wait till sentry cache is updated in Namenode
 
     // When two partitions of different tables pointing to the same location with different grants,
     // ACLs should have union (no duplicates) of both rules.
@@ -1416,21 +1513,21 @@ public class TestHDFSIntegration {
 
     // When alter the table name (tab2 to be tabx), ACLs should remain the same.
     stmt.execute("alter table tab2 rename to tabx");
-    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
+    Thread.sleep(WAIT_BEFORE_TESTVERIFY);//Wait till sentry cache is updated in Namenode
     verifyOnPath("/tmp/external", FsAction.READ_EXECUTE, StaticUserGroup.USERGROUP2, true);
     verifyOnPath("/tmp/external", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP3, true);
 
     // When drop a partition that shares the same location with other partition belonging to
     // other table, should still have the other table permissions.
     stmt.execute("ALTER TABLE tabx DROP PARTITION (month = 1)");
-    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
+    Thread.sleep(WAIT_BEFORE_TESTVERIFY);//Wait till sentry cache is updated in Namenode
     verifyOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/tab3", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP3, true);
     verifyOnPath("/tmp/external", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP3, true);
 
     // When drop a table that has a partition shares the same location with other partition
     // belonging to other table, should still have the other table permissions.
     stmt.execute("DROP TABLE IF EXISTS tabx");
-    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
+    Thread.sleep(WAIT_BEFORE_TESTVERIFY);//Wait till sentry cache is updated in Namenode
     verifyOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/tab3", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP3, true);
     verifyOnPath("/tmp/external", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP3, true);
 
@@ -1473,7 +1570,7 @@ public class TestHDFSIntegration {
     stmt.execute("create role tab1_role");
     stmt.execute("grant insert on table tab1 to role tab1_role");
     stmt.execute("grant role tab1_role to group " + StaticUserGroup.USERGROUP1);
-    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
+    Thread.sleep(WAIT_BEFORE_TESTVERIFY);//Wait till sentry cache is updated in Namenode
 
     // Verify that user_group1 has insert(write_execute) permission on '/tmp/external/p1'.
     verifyOnAllSubDirs("/tmp/external/p1", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP1, true);
@@ -1519,7 +1616,7 @@ public class TestHDFSIntegration {
     stmt.execute("create role tab1_role");
     stmt.execute("grant insert on table tab1 to role tab1_role");
     stmt.execute("grant role tab1_role to group " + StaticUserGroup.USERGROUP1);
-    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
+    Thread.sleep(WAIT_BEFORE_TESTVERIFY);//Wait till sentry cache is updated in Namenode
 
     // Verify that user_group1 has insert(write_execute) permission on '/tmp/external/p1'.
     verifyOnAllSubDirs("/tmp/external/p1", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP1, true);
@@ -1537,7 +1634,7 @@ public class TestHDFSIntegration {
 
     // When drop table tab1, ACLs of tab2 still remain.
     stmt.execute("DROP TABLE IF EXISTS tab1");
-    Thread.sleep(CACHE_REFRESH);//Wait till sentry cache is updated in Namenode
+    Thread.sleep(WAIT_BEFORE_TESTVERIFY);//Wait till sentry cache is updated in Namenode
     verifyOnPath("/tmp/external/p1", FsAction.READ_EXECUTE, StaticUserGroup.USERGROUP1, true);
 
     stmt.close();
