@@ -330,6 +330,7 @@ public class SentryStore {
     tm.executeTransactionWithRetry(
         new TransactionBlock<Object>() {
           public Object execute(PersistenceManager pm) throws Exception {
+            pm.setDetachAllOnCommit(false); // No need to detach objects
             String trimmedRoleName = trimAndLower(roleName);
             if (getRole(pm, trimmedRoleName) != null) {
               throw new SentryAlreadyExistsException("Role: " + trimmedRoleName);
@@ -351,10 +352,12 @@ public class SentryStore {
       return tm.executeTransaction(
           new TransactionBlock<Long>() {
             public Long execute(PersistenceManager pm) throws Exception {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
               Query query = pm.newQuery();
               query.setClass(tClass);
               query.setResult("count(this)");
-              return (Long) query.execute();
+              Long result = (Long)query.execute();
+              return result;
             }
           });
     } catch (Exception e) {
@@ -497,6 +500,7 @@ public class SentryStore {
       tm.executeTransaction(new TransactionBlock<Object>() {
         @Override
         public Object execute(PersistenceManager pm) throws Exception {
+          pm.setDetachAllOnCommit(false); // No need to detach objects
           purgeDeltaChangeTableCore(MSentryPermChange.class, pm, 1);
           LOGGER.info("MSentryPermChange table has been purged.");
           purgeDeltaChangeTableCore(MSentryPathChange.class, pm, 1);
@@ -519,10 +523,10 @@ public class SentryStore {
    */
   void alterSentryRoleGrantPrivilege(final String grantorPrincipal,
       final String roleName, final TSentryPrivilege privilege) throws Exception {
-
     tm.executeTransactionWithRetry(
       new TransactionBlock<Object>() {
         public Object execute(PersistenceManager pm) throws Exception {
+          pm.setDetachAllOnCommit(false); // No need to detach objects
           String trimmedRoleName = trimAndLower(roleName);
           // first do grant check
           grantOptionCheck(pm, grantorPrincipal, privilege);
@@ -573,6 +577,7 @@ public class SentryStore {
 
     execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
+        pm.setDetachAllOnCommit(false); // No need to detach objects
         String trimmedRoleName = trimAndLower(roleName);
         // first do grant check
         grantOptionCheck(pm, grantorPrincipal, privilege);
@@ -682,6 +687,7 @@ public class SentryStore {
     tm.executeTransactionWithRetry(
       new TransactionBlock<Object>() {
         public Object execute(PersistenceManager pm) throws Exception {
+          pm.setDetachAllOnCommit(false); // No need to detach objects
           String trimmedRoleName = safeTrimLower(roleName);
           // first do revoke check
           grantOptionCheck(pm, grantorPrincipal, tPrivilege);
@@ -720,11 +726,12 @@ public class SentryStore {
    * @throws Exception
    *
    */
-  void alterSentryRoleRevokePrivilege(final String grantorPrincipal,
-      final String roleName, final TSentryPrivilege tPrivilege,
-      final Update update) throws Exception {
+  private void alterSentryRoleRevokePrivilege(final String grantorPrincipal,
+                                              final String roleName, final TSentryPrivilege tPrivilege,
+                                              final Update update) throws Exception {
     execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
+        pm.setDetachAllOnCommit(false); // No need to detach objects
         String trimmedRoleName = safeTrimLower(roleName);
         // first do revoke check
         grantOptionCheck(pm, grantorPrincipal, tPrivilege);
@@ -1040,6 +1047,7 @@ public class SentryStore {
     tm.executeTransactionWithRetry(
         new TransactionBlock<Object>() {
           public Object execute(PersistenceManager pm) throws Exception {
+            pm.setDetachAllOnCommit(false); // No need to detach objects
             dropSentryRoleCore(pm, roleName);
             return null;
           }
@@ -1059,6 +1067,7 @@ public class SentryStore {
 
     execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
+        pm.setDetachAllOnCommit(false); // No need to detach objects
         dropSentryRoleCore(pm, roleName);
         return null;
       }
@@ -1113,6 +1122,7 @@ public class SentryStore {
     tm.executeTransactionWithRetry(
         new TransactionBlock<Object>() {
           public Object execute(PersistenceManager pm) throws Exception {
+            pm.setDetachAllOnCommit(false); // No need to detach objects
             alterSentryRoleAddGroupsCore(pm, roleName, groupNames);
             return null;
           }
@@ -1135,6 +1145,7 @@ public class SentryStore {
 
     execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
+        pm.setDetachAllOnCommit(false); // No need to detach objects
         alterSentryRoleAddGroupsCore(pm, roleName, groupNames);
         return null;
       }
@@ -1180,6 +1191,7 @@ public class SentryStore {
     tm.executeTransactionWithRetry(
         new TransactionBlock<Object>() {
           public Object execute(PersistenceManager pm) throws Exception {
+            pm.setDetachAllOnCommit(false); // No need to detach objects
             String trimmedRoleName = trimAndLower(roleName);
             MSentryRole role = getRole(pm, trimmedRoleName);
             if (role == null) {
@@ -1217,6 +1229,7 @@ public class SentryStore {
           throws Exception {
     execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
+        pm.setDetachAllOnCommit(false); // No need to detach objects
         String trimmedRoleName = trimAndLower(roleName);
         MSentryRole role = getRole(pm, trimmedRoleName);
         if (role == null) {
@@ -1312,6 +1325,7 @@ public class SentryStore {
     return tm.executeTransaction(
       new TransactionBlock<Boolean>() {
         public Boolean execute(PersistenceManager pm) throws Exception {
+          pm.setDetachAllOnCommit(false); // No need to detach objects
           Query query = pm.newQuery(MSentryPrivilege.class);
           QueryParamBuilder paramBuilder = QueryParamBuilder.addRolesFilter(query,null, roleNames);
           paramBuilder.add(SERVER_NAME, serverName);
@@ -1553,13 +1567,14 @@ public class SentryStore {
   }
 
   public Set<String> getRoleNamesForGroups(final Set<String> groups) throws Exception {
-    if (groups == null || groups.isEmpty()) {
+    if ((groups == null) || groups.isEmpty()) {
       return ImmutableSet.of();
     }
 
     return tm.executeTransaction(
         new TransactionBlock<Set<String>>() {
           public Set<String>execute(PersistenceManager pm) throws Exception {
+            pm.setDetachAllOnCommit(false); // No need to detach objects
             return getRoleNamesForGroupsCore(pm, groups);
           }
         });
@@ -1853,6 +1868,7 @@ public class SentryStore {
     tm.executeTransactionWithRetry(
         new TransactionBlock<Object>() {
           public Object execute(PersistenceManager pm) throws Exception {
+            pm.setDetachAllOnCommit(false); // No need to detach objects
 
             // Drop the give privilege for all possible actions from all roles.
             TSentryPrivilege tPrivilege = toSentryPrivilege(tAuthorizable);
@@ -1888,6 +1904,7 @@ public class SentryStore {
 
     execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
+        pm.setDetachAllOnCommit(false); // No need to detach objects
 
         // Drop the give privilege for all possible actions from all roles.
         TSentryPrivilege tPrivilege = toSentryPrivilege(tAuthorizable);
@@ -1923,6 +1940,7 @@ public class SentryStore {
     tm.executeTransactionWithRetry(
         new TransactionBlock<Object>() {
           public Object execute(PersistenceManager pm) throws Exception {
+            pm.setDetachAllOnCommit(false); // No need to detach objects
 
             // Drop the give privilege for all possible actions from all roles.
             TSentryPrivilege tPrivilege = toSentryPrivilege(oldTAuthorizable);
@@ -1965,6 +1983,7 @@ public class SentryStore {
 
     execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
+        pm.setDetachAllOnCommit(false); // No need to detach objects
 
         // Drop the give privilege for all possible actions from all roles.
         TSentryPrivilege tPrivilege = toSentryPrivilege(oldTAuthorizable);
@@ -2416,6 +2435,7 @@ public class SentryStore {
       final Update update) throws Exception {
     execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
+        pm.setDetachAllOnCommit(false); // No need to detach objects
         addAuthzPathsMappingCore(pm, authzObj, paths);
         return null;
       }
@@ -2748,6 +2768,7 @@ public class SentryStore {
     return tm.executeTransaction(
         new TransactionBlock<Set<String>>() {
           public Set<String> execute(PersistenceManager pm) throws Exception {
+            pm.setDetachAllOnCommit(false); // No need to detach objects
             return getAllRoleNames(pm);
           }
         });
@@ -3072,7 +3093,6 @@ public class SentryStore {
       throws Exception {
     return tm.executeTransaction(new TransactionBlock<List<MSentryPathChange>>() {
       public List<MSentryPathChange> execute(PersistenceManager pm) throws Exception {
-        pm.setDetachAllOnCommit(false); // No need to detach objects
         List<MSentryPathChange> pathChanges =
             getMSentryChangesCore(pm, MSentryPathChange.class, changeID);
         long curChangeID = getLastProcessedChangeIDCore(pm, MSentryPathChange.class);
@@ -3106,7 +3126,6 @@ public class SentryStore {
     return tm.executeTransaction(
     new TransactionBlock<List<MSentryPermChange>>() {
       public List<MSentryPermChange> execute(PersistenceManager pm) throws Exception {
-        pm.setDetachAllOnCommit(false); // No need to detach objects
         List<MSentryPermChange> permChanges =
             getMSentryChangesCore(pm, MSentryPermChange.class, changeID);
         long curChangeID = getLastProcessedChangeIDCore(pm, MSentryPermChange.class);

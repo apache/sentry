@@ -118,6 +118,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
     delegate.getTransactionManager().executeTransactionWithRetry(
       new TransactionBlock() {
         public Object execute(PersistenceManager pm) throws Exception {
+          pm.setDetachAllOnCommit(false); // No need to detach objects
           String trimmedRole = toTrimmedLower(role);
           MSentryRole mRole = getRole(trimmedRole, pm);
           if (mRole == null) {
@@ -141,6 +142,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
     delegate.getTransactionManager().executeTransactionWithRetry(
       new TransactionBlock() {
         public Object execute(PersistenceManager pm) throws Exception {
+          pm.setDetachAllOnCommit(false); // No need to detach objects
           String trimmedRole = toTrimmedLower(role);
           MSentryRole mRole = getRole(trimmedRole, pm);
           if (mRole == null) {
@@ -177,6 +179,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
     delegate.getTransactionManager().executeTransactionWithRetry(
         new TransactionBlock() {
           public Object execute(PersistenceManager pm) throws Exception {
+            pm.setDetachAllOnCommit(false); // No need to detach objects
             privilegeOperator.renamePrivilege(toTrimmedLower(component), toTrimmedLower(service),
                 oldAuthorizables, newAuthorizables, requestor, pm);
             return null;
@@ -193,6 +196,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
     delegate.getTransactionManager().executeTransactionWithRetry(
         new TransactionBlock() {
           public Object execute(PersistenceManager pm) throws Exception {
+            pm.setDetachAllOnCommit(false); // No need to detach objects
             privilegeOperator.dropPrivilege(privilege, pm);
             return null;
           }
@@ -284,6 +288,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
     return delegate.getTransactionManager().executeTransaction(
       new TransactionBlock<Set<PrivilegeObject>>() {
         public Set<PrivilegeObject> execute(PersistenceManager pm) throws Exception {
+          pm.setDetachAllOnCommit(false); // No need to detach objects
           Set<PrivilegeObject> privileges = new HashSet<>();
           Set<MSentryRole> mRoles = new HashSet<>();
           for (String role : roles) {
@@ -308,6 +313,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
     return delegate.getTransactionManager().executeTransaction(
       new TransactionBlock<Set<PrivilegeObject>>() {
         public Set<PrivilegeObject> execute(PersistenceManager pm) throws Exception {
+          pm.setDetachAllOnCommit(false); // No need to detach objects
           String trimmedComponent = toTrimmedLower(component);
           String trimmedService = toTrimmedLower(service);
 
