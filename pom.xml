@@ -78,6 +78,8 @@ limitations under the License.
     <jettyVersion>8.1.19.v20160209</jettyVersion>
     <joda-time.version>2.5</joda-time.version>
     <junit.version>4.10</junit.version>
+    <kafka.version>0.9.0.0</kafka.version>
+    <libfb303.version>0.9.3</libfb303.version>
     <libthrift.version>0.9.3</libthrift.version>
     <log4j.version>1.2.16</log4j.version>
     <maven.antrun.plugin.version>1.7</maven.antrun.plugin.version>
@@ -93,8 +95,6 @@ limitations under the License.
     <sqoop.version>1.99.6</sqoop.version>
     <test.sentry.hadoop.classpath>${maven.test.classpath}</test.sentry.hadoop.classpath>
     <zookeeper.version>3.4.5</zookeeper.version>
-    <kafka.version>0.9.0.0</kafka.version>
-    <commons-io.version>1.3.2</commons-io.version>
     <hadoop-aws.version>2.7.0</hadoop-aws.version>
     <maven.jar.plugin.version>3.0.2</maven.jar.plugin.version>
     <datanucleus-core.version>3.2.12</datanucleus-core.version>
