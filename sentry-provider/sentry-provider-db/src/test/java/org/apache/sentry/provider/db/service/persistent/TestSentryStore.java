@@ -75,6 +75,8 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.sentry.provider.db.service.persistent.QueryParamBuilder.newQueryParamBuilder;
 
+import javax.jdo.JDODataStoreException;
+
 public class TestSentryStore extends org.junit.Assert {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TestSentryStore.class);
@@ -2460,11 +2462,13 @@ public class TestSentryStore extends org.junit.Assert {
   @Test
   public void testAddDeleteAuthzPathsMapping() throws Exception {
     // Add "db1.table1" authzObj
-    PathsUpdate addUpdate = new PathsUpdate(0, false);
+    Long lastNotificationId = sentryStore.getLastProcessedNotificationID();
+    PathsUpdate addUpdate = new PathsUpdate(1, false);
     addUpdate.newPathChange("db1.table").
           addToAddPaths(Arrays.asList("db1", "tbl1"));
     addUpdate.newPathChange("db1.table").
           addToAddPaths(Arrays.asList("db1", "tbl2"));
+
     sentryStore.addAuthzPathsMapping("db1.table",
           Sets.newHashSet("db1/tbl1", "db1/tbl2"), addUpdate);
     PathsImage pathsImage = sentryStore.retrieveFullPathsImage();
@@ -2477,9 +2481,11 @@ public class TestSentryStore extends org.junit.Assert {
     long lastChangeID = sentryStore.getLastProcessedPathChangeID();
     MSentryPathChange addPathChange = sentryStore.getMSentryPathChangeByID(lastChangeID);
     assertEquals(addUpdate.JSONSerialize(), addPathChange.getPathChange());
+    lastNotificationId = sentryStore.getLastProcessedNotificationID();
+    assertEquals(1, lastNotificationId.longValue());
 
     // Delete path 'db1.db/tbl1' from "db1.table1" authzObj.
-    PathsUpdate delUpdate = new PathsUpdate(1, false);
+    PathsUpdate delUpdate = new PathsUpdate(2, false);
     delUpdate.newPathChange("db1.table")
           .addToDelPaths(Arrays.asList("db1", "tbl1"));
     sentryStore.deleteAuthzPathsMapping("db1.table", Sets.newHashSet("db1/tbl1"), delUpdate);
@@ -2492,9 +2498,11 @@ public class TestSentryStore extends org.junit.Assert {
     lastChangeID = sentryStore.getLastProcessedPathChangeID();
     MSentryPathChange delPathChange = sentryStore.getMSentryPathChangeByID(lastChangeID);
     assertEquals(delUpdate.JSONSerialize(), delPathChange.getPathChange());
+    lastNotificationId = sentryStore.getLastProcessedNotificationID();
+    assertEquals(2, lastNotificationId.longValue());
 
     // Delete "db1.table" authzObj from the authzObj -> [Paths] mapping.
-    PathsUpdate delAllupdate = new PathsUpdate(2, false);
+    PathsUpdate delAllupdate = new PathsUpdate(3, false);
     delAllupdate.newPathChange("db1.table")
         .addToDelPaths(Lists.newArrayList(PathsUpdate.ALL_PATHS));
     sentryStore.deleteAllAuthzPathsMapping("db1.table", delAllupdate);
@@ -2506,11 +2514,16 @@ public class TestSentryStore extends org.junit.Assert {
     lastChangeID = sentryStore.getLastProcessedPathChangeID();
     MSentryPathChange delAllPathChange = sentryStore.getMSentryPathChangeByID(lastChangeID);
     assertEquals(delAllupdate.JSONSerialize(), delAllPathChange.getPathChange());
+
+    lastNotificationId = sentryStore.getLastProcessedNotificationID();
+    assertEquals(3, lastNotificationId.longValue());
+
   }
 
   @Test
   public void testRenameUpdateAuthzPathsMapping() throws Exception {
     Map<String, Set<String>> authzPaths = new HashMap<>();
+    Long lastNotificationId = sentryStore.getLastProcessedNotificationID();
     authzPaths.put("db1.table1", Sets.newHashSet("user/hive/warehouse/db1.db/table1",
                                                 "user/hive/warehouse/db1.db/table1/p1"));
     authzPaths.put("db1.table2", Sets.newHashSet("user/hive/warehouse/db1.db/table2"));
@@ -2518,8 +2531,9 @@ public class TestSentryStore extends org.junit.Assert {
     Map<String, Set<String>> pathsImage = sentryStore.retrieveFullPathsImage().getPathImage();
     assertEquals(2, pathsImage.size());
 
+
     // Rename path of 'db1.table1' from 'db1.table1' to 'db1.newTable1'
-    PathsUpdate renameUpdate = new PathsUpdate(0, false);
+    PathsUpdate renameUpdate = new PathsUpdate(1, false);
     renameUpdate.newPathChange("db1.table1")
         .addToDelPaths(Arrays.asList("user", "hive", "warehouse", "db1.db", "table1"));
     renameUpdate.newPathChange("db1.newTable1")
@@ -2538,9 +2552,10 @@ public class TestSentryStore extends org.junit.Assert {
     long lastChangeID = sentryStore.getLastProcessedPathChangeID();
     MSentryPathChange renamePathChange = sentryStore.getMSentryPathChangeByID(lastChangeID);
     assertEquals(renameUpdate.JSONSerialize(), renamePathChange.getPathChange());
-
+    lastNotificationId = sentryStore.getLastProcessedNotificationID();
+    assertEquals(1, lastNotificationId.longValue());
     // Rename 'db1.table1' to "db1.table2" but did not change its location.
-    renameUpdate = new PathsUpdate(1, false);
+    renameUpdate = new PathsUpdate(2, false);
     renameUpdate.newPathChange("db1.newTable1")
         .addToDelPaths(Arrays.asList("user", "hive", "warehouse", "db1.db", "newTable1"));
     renameUpdate.newPathChange("db1.newTable2")
@@ -2553,6 +2568,8 @@ public class TestSentryStore extends org.junit.Assert {
     assertEquals(Sets.newHashSet("user/hive/warehouse/db1.db/table1/p1",
                                 "user/hive/warehouse/db1.db/newTable1"),
                   pathsImage.get("db1.newTable2"));
+    lastNotificationId = sentryStore.getLastProcessedNotificationID();
+    assertEquals(2, lastNotificationId.longValue());
 
     // Query the persisted path change and ensure it equals to the original one
     lastChangeID = sentryStore.getLastProcessedPathChangeID();
@@ -2581,6 +2598,8 @@ public class TestSentryStore extends org.junit.Assert {
     lastChangeID = sentryStore.getLastProcessedPathChangeID();
     MSentryPathChange updatePathChange = sentryStore.getMSentryPathChangeByID(lastChangeID);
     assertEquals(update.JSONSerialize(), updatePathChange.getPathChange());
+    lastNotificationId = sentryStore.getLastProcessedNotificationID();
+    assertEquals(3, lastNotificationId.longValue());
   }
 
   @Test
@@ -2962,6 +2981,56 @@ public class TestSentryStore extends org.junit.Assert {
       assertTrue(String.format("Found non-consecutive number: prev=%d cur=%d", prevId, changeId),
           changeId - prevId == 1);
       prevId = changeId;
+    }
+  }
+
+  @Test
+  public void testDuplicateNotification() throws Exception {
+    Map<String, Set<String>> authzPaths = new HashMap<>();
+    Long lastNotificationId = sentryStore.getLastProcessedNotificationID();
+    authzPaths.put("db1.table1", Sets.newHashSet("user/hive/warehouse/db1.db/table1",
+      "user/hive/warehouse/db1.db/table1/p1"));
+    authzPaths.put("db1.table2", Sets.newHashSet("user/hive/warehouse/db1.db/table2"));
+    sentryStore.persistFullPathsImage(authzPaths);
+    Map<String, Set<String>> pathsImage = sentryStore.retrieveFullPathsImage().getPathImage();
+    assertEquals(2, pathsImage.size());
+
+    if (lastNotificationId == null) {
+      lastNotificationId = SentryStore.EMPTY_NOTIFICATION_ID;
+    }
+
+    // Rename path of 'db1.table1' from 'db1.table1' to 'db1.newTable1'
+    PathsUpdate renameUpdate = new PathsUpdate(1, false);
+    renameUpdate.newPathChange("db1.table1")
+      .addToDelPaths(Arrays.asList("user", "hive", "warehouse", "db1.db", "table1"));
+    renameUpdate.newPathChange("db1.newTable1")
+      .addToAddPaths(Arrays.asList("user", "hive", "warehouse", "db1.db", "newTable1"));
+    sentryStore.renameAuthzPathsMapping("db1.table1", "db1.newTable1",
+      "user/hive/warehouse/db1.db/table1", "user/hive/warehouse/db1.db/newTable1", renameUpdate);
+    pathsImage = sentryStore.retrieveFullPathsImage().getPathImage();
+    assertEquals(2, pathsImage.size());
+    assertEquals(3, sentryStore.getMPaths().size());
+    assertTrue(pathsImage.containsKey("db1.newTable1"));
+    assertEquals(Sets.newHashSet("user/hive/warehouse/db1.db/table1/p1",
+      "user/hive/warehouse/db1.db/newTable1"),
+      pathsImage.get("db1.newTable1"));
+
+    // Query the persisted path change and ensure it equals to the original one
+    long lastChangeID = sentryStore.getLastProcessedPathChangeID();
+    MSentryPathChange renamePathChange = sentryStore.getMSentryPathChangeByID(lastChangeID);
+    assertEquals(renameUpdate.JSONSerialize(), renamePathChange.getPathChange());
+    lastNotificationId = sentryStore.getLastProcessedNotificationID();
+    assertEquals(1, lastNotificationId.longValue());
+
+
+    // Process the notificaiton second time
+    try {
+      sentryStore.renameAuthzPathsMapping("db1.table1", "db1.newTable1",
+        "user/hive/warehouse/db1.db/table1", "user/hive/warehouse/db1.db/newTable1", renameUpdate);
+    } catch (Exception e) {
+      if (!(e.getCause() instanceof JDODataStoreException)) {
+        fail("Unexpected failure occured while processing duplicate notification");
+      }
     }
   }
 }

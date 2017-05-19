@@ -32,6 +32,10 @@ import java.util.List;
  * NotificationProcessor processes various notification events generated from
  * the Hive MetaStore state change, and applies these changes on the complete
  * HMS Paths snapshot or delta update stored in Sentry using SentryStore.
+ * <p>
+ * NotificationProcessor should not skip processing notification events for any reason.
+ * If some notification events are to be skipped, appropriate logic should be added in
+ * HMSFollower before invoking NotificationProcessor.
  */
 class NotificationProcessor {
 
@@ -354,10 +358,6 @@ class NotificationProcessor {
               Collections.singleton(newPathTree),
               update);
       }
-    } else {
-      LOGGER.info(String.format("Alter table notification ignored as neither name nor " +
-          "location has changed: oldAuthzObj = %s, oldLocation = %s, newAuthzObj = %s, " +
-          "newLocation = %s", oldAuthzObj, oldLocation, newAuthzObj, newLocation));
     }
   }
 

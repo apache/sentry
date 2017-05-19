@@ -56,6 +56,7 @@ import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
 import org.apache.sentry.provider.db.service.model.MAuthzPathsMapping;
 import org.apache.sentry.provider.db.service.model.MSentryChange;
 import org.apache.sentry.provider.db.service.model.MSentryGroup;
+import org.apache.sentry.provider.db.service.model.MSentryHmsNotification;
 import org.apache.sentry.provider.db.service.model.MSentryPathChange;
 import org.apache.sentry.provider.db.service.model.MSentryPermChange;
 import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
@@ -121,6 +122,8 @@ public class SentryStore {
   public static final long INIT_CHANGE_ID = 1L;
 
   public static final long EMPTY_CHANGE_ID = 0L;
+
+  public static final long EMPTY_NOTIFICATION_ID = 0L;
 
   // For counters, representation of the "unknown value"
   private static final long COUNT_VALUE_UNKNOWN = -1L;
@@ -3436,6 +3439,35 @@ public class SentryStore {
   }
 
   /**
+   * Gets the last processed Notification ID
+   * <p>
+   * As the table might have zero or one record, result of the query
+   * might be null OR instance of MSentryHmsNotification.
+   *
+   * @param pm the PersistenceManager
+   * @return EMPTY_NOTIFICATION_ID(0) when there are no notifications processed.
+   * else  last NotificationID processed by HMSFollower
+   */
+  static Long getLastProcessedNotificationIDCore(
+      PersistenceManager pm) {
+    Query query = pm.newQuery(MSentryHmsNotification.class);
+    query.setResult("max(notificationId)");
+    Long notificationId = (Long) query.execute();
+    return notificationId == null ? EMPTY_NOTIFICATION_ID : notificationId;
+  }
+
+  /**
+   * Set the notification ID of last processed HMS notification.
+   */
+  public void persistLastProcessedNotificationID(final Long notificationId) throws Exception {
+    tm.executeTransaction(
+      new TransactionBlock<Object>() {
+        public Object execute(PersistenceManager pm) throws Exception {
+          return pm.makePersistent(new MSentryHmsNotification(notificationId));
+        }
+      });
+  }
+  /**
    * Gets the last processed change ID for perm delta changes.
    *
    * Internally invoke {@link #getLastProcessedChangeIDCore(PersistenceManager, Class)}
@@ -3477,14 +3509,7 @@ public class SentryStore {
     return tm.executeTransaction(
     new TransactionBlock<Long>() {
       public Long execute(PersistenceManager pm) throws Exception {
-        pm.setDetachAllOnCommit(false); // No need to detach objects
-        long changeID = getLastProcessedChangeIDCore(pm, MSentryPathChange.class);
-        if (changeID == EMPTY_CHANGE_ID) {
-          return EMPTY_CHANGE_ID;
-        } else {
-          MSentryPathChange mSentryPathChange = getMSentryPathChangeByID(changeID);
-          return mSentryPathChange.getNotificationID();
-        }
+        return getLastProcessedNotificationIDCore(pm);
       }
     });
   }

@@ -60,6 +60,7 @@ import javax.jdo.annotations.PrimaryKey;
 public class MSentryPathChange implements MSentryChange {
 
   @PrimaryKey
+  //This value is auto incremented by JDO
   private long changeID;
 
   // Path change in JSON format.

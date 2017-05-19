@@ -58,6 +58,7 @@ import javax.jdo.annotations.PrimaryKey;
 public class MSentryPermChange implements MSentryChange {
 
   @PrimaryKey
+  //This value is auto incremented by JDO
   private long changeID;
 
   // Permission change in JSON format.
