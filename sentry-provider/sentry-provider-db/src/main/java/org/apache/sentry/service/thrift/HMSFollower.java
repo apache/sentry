@@ -57,7 +57,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
-import static org.apache.hadoop.hive.conf.HiveConf.ConfVars.METASTOREURIS;
 import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SYNC_CREATE_WITH_POLICY_STORE;
 import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SYNC_DROP_WITH_POLICY_STORE;
 import static org.apache.sentry.hdfs.Updateable.Update;
@@ -131,17 +130,6 @@ public class HMSFollower implements Runnable, AutoCloseable {
     final HiveConf hiveConf = new HiveConf();
     hiveInstance = hiveConf.get(HiveAuthzConf.AuthzConfVars.AUTHZ_SERVER_NAME.getVar());
 
-    // Do not create client if the metastore URI in the Hive configuration is missing.
-    // E2e Hive tests start Sentry first and then configure Hive, so eventually the
-    // metastore URI will appear in the config in such cases.
-    String metaStoreUri = hiveConf.get(METASTOREURIS.varname);
-    if (metaStoreUri == null) {
-      LOGGER.error("Metastore uri is not configured in hive config.");
-      return null;
-    } else {
-      LOGGER.info("Connecting to HMS {}", metaStoreUri);
-    }
-
     String principal, keytab;
 
     //TODO: Is this the right(standard) way to create a HMS client? HiveMetastoreClientFactoryImpl?
@@ -201,7 +189,7 @@ public class HMSFollower implements Runnable, AutoCloseable {
     } else {
       //This is only for testing purposes. Sentry strongly recommends strong authentication
       client = new HiveMetaStoreClient(hiveConf);
-      LOGGER.info("Non secure connection established with HMS at {}", metaStoreUri);
+      LOGGER.info("Established non-secure connection with HMS");
     }
     return client;
   }

@@ -163,18 +163,20 @@ public class HiveServerFactory {
 
     properties.put(METASTORE_RAW_STORE_IMPL,
         "org.apache.sentry.binding.metastore.AuthorizingObjectStore");
-    if (!properties.containsKey(METASTORE_URI)) {
-      if (HiveServer2Type.InternalMetastore.equals(type)) {
-        // The configuration sentry.metastore.service.users is for the user who
-        // has all access to get the metadata.
-        properties.put(METASTORE_BYPASS, "accessAllMetaUser");
+
+    if (HiveServer2Type.InternalMetastore.equals(type)) {
+      // The configuration sentry.metastore.service.users is for the user who
+      // has all access to get the metadata.
+      properties.put(METASTORE_BYPASS, "accessAllMetaUser");
+
+      if (!properties.containsKey(METASTORE_URI)) {
         properties.put(METASTORE_URI,
-          "thrift://localhost:" + String.valueOf(findPort()));
-        if (!properties.containsKey(METASTORE_HOOK)) {
-          properties.put(METASTORE_HOOK,
-              "org.apache.sentry.binding.metastore.MetastoreAuthzBinding");
-        }
-        properties.put(ConfVars.METASTORESERVERMINTHREADS.varname, "5");
+                "thrift://localhost:" + String.valueOf(findPort()));
+      }
+
+      if (!properties.containsKey(METASTORE_HOOK)) {
+        properties.put(METASTORE_HOOK,
+            "org.apache.sentry.binding.metastore.MetastoreAuthzBinding");
       }
     }
 
