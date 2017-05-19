@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import org.apache.sentry.hdfs.PathsUpdate;
 import org.apache.sentry.hdfs.PermissionsUpdate;
 import org.apache.sentry.provider.db.SentryInvalidInputException;
+import org.apache.sentry.provider.db.service.model.MSentryHmsNotification;
 import org.apache.sentry.provider.db.service.model.MSentryPathChange;
 import org.apache.sentry.provider.db.service.model.MSentryPermChange;
 import static org.apache.sentry.hdfs.Updateable.Update;
@@ -84,12 +85,15 @@ public class DeltaTransactionBlock implements TransactionBlock<Object> {
     // changeID is trying to be persisted twice, the transaction would
     // fail.
     if (update instanceof PermissionsUpdate) {
-      pm.makePersistent(new MSentryPermChange((PermissionsUpdate)update));
+      pm.makePersistent(new MSentryPermChange((PermissionsUpdate) update));
     } else if (update instanceof PathsUpdate) {
-      pm.makePersistent(new MSentryPathChange((PathsUpdate)update));
+      pm.makePersistent(new MSentryPathChange((PathsUpdate) update));
+      // Notification id from PATH_UPDATE entry is made persistent in
+      // SENTRY_LAST_NOTIFICATION_ID table.
+      pm.makePersistent(new MSentryHmsNotification(update.getSeqNum()));
     } else {
       throw new SentryInvalidInputException("Update should be type of either " +
-          "PermissionsUpdate or PathsUpdate.\n");
+        "PermissionsUpdate or PathsUpdate.\n");
     }
   }
 }

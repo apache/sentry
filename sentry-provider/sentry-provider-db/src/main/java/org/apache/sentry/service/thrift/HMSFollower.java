@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -47,7 +47,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.sentry.binding.metastore.messaging.json.*;
 
+import javax.jdo.JDODataStoreException;
 import javax.security.auth.login.LoginException;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.SocketException;
@@ -70,7 +72,6 @@ import static org.apache.sentry.hdfs.Updateable.Update;
 @SuppressWarnings("PMD")
 public class HMSFollower implements Runnable, AutoCloseable {
   private static final Logger LOGGER = LoggerFactory.getLogger(HMSFollower.class);
-  private long currentEventID;
   // Track the latest eventId of the event that has been logged. So we don't log the same message
   private long lastLoggedEventId = SentryStore.EMPTY_CHANGE_ID;
   private static boolean connectedToHMS = false;
@@ -85,16 +86,24 @@ public class HMSFollower implements Runnable, AutoCloseable {
   private boolean needLogHMSSupportReady = true;
   private final LeaderStatusMonitor leaderMonitor;
 
-  HMSFollower(Configuration conf, SentryStore store, LeaderStatusMonitor leaderMonitor) throws Exception {
+  HMSFollower(Configuration conf, SentryStore store, LeaderStatusMonitor leaderMonitor) {
     LOGGER.info("HMSFollower is being initialized");
+    Long lastProcessedNotificationID;
     authzConf = conf;
     this.leaderMonitor = leaderMonitor;
     sentryStore = store;
 
-    // Initialize currentEventID based on the latest persisted notification ID.
-    // If currentEventID is empty, need to retrieve a full hive snapshot,
-    currentEventID = getLastProcessedNotificationID();
-    needHiveSnapshot = (currentEventID == SentryStore.EMPTY_CHANGE_ID);
+    try {
+      // Initializing lastProcessedNotificationID based on the latest persisted notification ID.
+      lastProcessedNotificationID = sentryStore.getLastProcessedNotificationID();
+    } catch (Exception e) {
+      LOGGER.error("Failed to get the last processed notification id from sentry store, " +
+        "Skipping the processing", e);
+      needHiveSnapshot = true;
+      return;
+    }
+    // If lastProcessedNotificationID is empty, need to retrieve a full hive snapshot,
+    needHiveSnapshot = (lastProcessedNotificationID == SentryStore.EMPTY_CHANGE_ID);
   }
 
   @VisibleForTesting
@@ -122,8 +131,8 @@ public class HMSFollower implements Runnable, AutoCloseable {
    * Throws @MetaException if there was a problem on creating an HMSClient
    */
   private HiveMetaStoreClient getMetaStoreClient(Configuration conf)
-      throws IOException, InterruptedException, LoginException, MetaException {
-    if(client != null) {
+    throws IOException, InterruptedException, LoginException, MetaException {
+    if (client != null) {
       return client;
     }
 
@@ -135,29 +144,29 @@ public class HMSFollower implements Runnable, AutoCloseable {
     //TODO: Is this the right(standard) way to create a HMS client? HiveMetastoreClientFactoryImpl?
     //TODO: Check if HMS is using kerberos instead of relying on Sentry conf
     kerberos = ServiceConstants.ServerConfig.SECURITY_MODE_KERBEROS.equalsIgnoreCase(
-        conf.get(ServiceConstants.ServerConfig.SECURITY_MODE, ServiceConstants.ServerConfig.SECURITY_MODE_KERBEROS).trim());
+      conf.get(ServiceConstants.ServerConfig.SECURITY_MODE, ServiceConstants.ServerConfig.SECURITY_MODE_KERBEROS).trim());
     if (kerberos) {
       LOGGER.info("Making a kerberos connection to HMS");
       try {
         int port = conf.getInt(ServiceConstants.ServerConfig.RPC_PORT, ServiceConstants.ServerConfig.RPC_PORT_DEFAULT);
         String rawPrincipal = Preconditions.checkNotNull(conf.get(ServiceConstants.ServerConfig.PRINCIPAL),
-            ServiceConstants.ServerConfig.PRINCIPAL + " is required");
+          ServiceConstants.ServerConfig.PRINCIPAL + " is required");
         principal = SecurityUtil.getServerPrincipal(rawPrincipal, NetUtils.createSocketAddr(
-            conf.get(ServiceConstants.ServerConfig.RPC_ADDRESS, ServiceConstants.ServerConfig.RPC_ADDRESS_DEFAULT), port).getAddress());
-      } catch(IOException io) {
+          conf.get(ServiceConstants.ServerConfig.RPC_ADDRESS, ServiceConstants.ServerConfig.RPC_ADDRESS_DEFAULT), port).getAddress());
+      } catch (IOException io) {
         throw new RuntimeException("Can't translate kerberos principal'", io);
       }
 
       LOGGER.info("Using kerberos principal: " + principal);
       final String[] principalParts = SaslRpcServer.splitKerberosName(principal);
       Preconditions.checkArgument(principalParts.length == 3,
-          "Kerberos principal should have 3 parts: " + principal);
+        "Kerberos principal should have 3 parts: " + principal);
 
       keytab = Preconditions.checkNotNull(conf.get(ServiceConstants.ServerConfig.KEY_TAB),
-              ServiceConstants.ServerConfig.KEY_TAB + " is required");
+        ServiceConstants.ServerConfig.KEY_TAB + " is required");
       File keytabFile = new File(keytab);
       Preconditions.checkState(keytabFile.isFile() && keytabFile.canRead(),
-          "Keytab " + keytab + " does not exist or is not readable.");
+        "Keytab " + keytab + " does not exist or is not readable.");
 
       try {
         // Instantiating SentryKerberosContext in non-server mode handles the ticket renewal.
@@ -196,21 +205,24 @@ public class HMSFollower implements Runnable, AutoCloseable {
 
   @Override
   public void run() {
-    // Wake any clients connected to this service waiting for HMS already processed notifications.
+    Long lastProcessedNotificationID;
     try {
-      wakeUpWaitingClientsForSync(getLastProcessedNotificationID());
+      // Initializing lastProcessedNotificationID based on the latest persisted notification ID.
+      lastProcessedNotificationID = sentryStore.getLastProcessedNotificationID();
     } catch (Exception e) {
-      LOGGER.error("Couldn't wake up HMS waiters because an error attempting to get the latest notification ID.", e);
+      LOGGER.error("Failed to get the last processed notification id from sentry store, " +
+        "Skipping the processing", e);
+      return;
     }
-
+    // Wake any clients connected to this service waiting for HMS already processed notifications.
+    wakeUpWaitingClientsForSync(lastProcessedNotificationID);
     // Only the leader should listen to HMS updates
     if ((leaderMonitor != null) && !leaderMonitor.isLeader()) {
       // Close any outstanding connections to HMS
       closeHMSConnection();
       return;
     }
-
-    processHiveMetastoreUpdates();
+    processHiveMetastoreUpdates(lastProcessedNotificationID);
   }
 
   /**
@@ -237,7 +249,7 @@ public class HMSFollower implements Runnable, AutoCloseable {
    *
    * Clients connections waiting for an event notification will be woken up afterwards.
    */
-  private void processHiveMetastoreUpdates() {
+  private void processHiveMetastoreUpdates(Long lastProcessedNotificationID) {
     if (client == null) {
       try {
         client = getMetaStoreClient(authzConf);
@@ -289,18 +301,24 @@ public class HMSFollower implements Runnable, AutoCloseable {
 
         if (!eventIDBefore.equals(eventIDAfter)) {
           LOGGER.error("#### Fail to get a point-in-time hive full snapshot !! Current NotificationID = " +
-              eventIDAfter.toString());
+            eventIDAfter.toString());
           return;
         }
 
         LOGGER.info(String.format("Successfully fetched hive full snapshot, Current NotificationID = %s.",
-            eventIDAfter));
-        needHiveSnapshot = false;
-        currentEventID = eventIDAfter.getEventId();
+          eventIDAfter));
+        // As eventIDAfter is the last event that was processed, eventIDAfter is used to update
+        // lastProcessedNotificationID instead of getting it from persistent store.
+        lastProcessedNotificationID = eventIDAfter.getEventId();
         sentryStore.persistFullPathsImage(pathsFullSnapshot);
-
+        needHiveSnapshot = false;
+        sentryStore.persistLastProcessedNotificationID(eventIDAfter.getEventId());
         // Wake up any HMS waiters that could have been put on hold before getting the eventIDBefore value.
-        wakeUpWaitingClientsForSync(currentEventID);
+        wakeUpWaitingClientsForSync(lastProcessedNotificationID);
+      } else {
+        // Every time HMSFollower is scheduled to run, value should be updates based
+        // on the value stored in database.
+        lastProcessedNotificationID = sentryStore.getLastProcessedNotificationID();
       }
 
       // HMSFollower connected to HMS and it finished full snapshot if that was required
@@ -314,16 +332,16 @@ public class HMSFollower implements Runnable, AutoCloseable {
       // NotificationEventResponse causing TProtocolException.
       // Workaround: Only processes the notification events newer than the last updated one.
       CurrentNotificationEventId eventId = client.getCurrentNotificationEventId();
-      if (eventId.getEventId() > currentEventID) {
-        NotificationEventResponse response = client.getNextNotification(currentEventID, Integer.MAX_VALUE, null);
+      if (eventId.getEventId() > lastProcessedNotificationID) {
+        NotificationEventResponse response =
+          client.getNextNotification(lastProcessedNotificationID, Integer.MAX_VALUE, null);
         if (response.isSetEvents()) {
           if (!response.getEvents().isEmpty()) {
-            if (currentEventID != lastLoggedEventId) {
+            if (lastProcessedNotificationID != lastLoggedEventId) {
               // Only log when there are updates and the notification ID has changed.
-              LOGGER.debug(String.format("CurrentEventID = %s. Processing %s events",
-                      currentEventID, response.getEvents().size()));
-
-              lastLoggedEventId = currentEventID;
+              LOGGER.debug(String.format("lastProcessedNotificationID = %s. Processing %s events",
+                lastProcessedNotificationID, response.getEvents().size()));
+              lastLoggedEventId = lastProcessedNotificationID;
             }
 
             processNotificationEvents(response.getEvents());
@@ -338,13 +356,13 @@ public class HMSFollower implements Runnable, AutoCloseable {
       } else {
         LOGGER.error("ThriftException occured fetching Notification entries, will try", e);
       }
-    } catch (SentryInvalidInputException |SentryInvalidHMSEventException e) {
+    } catch (SentryInvalidInputException | SentryInvalidHMSEventException e) {
       LOGGER.error("Encounter SentryInvalidInputException|SentryInvalidHMSEventException " +
-                   "while processing notification log", e);
+        "while processing notification log", e);
     } catch (Throwable t) {
       // catching errors to prevent the executor to halt.
       LOGGER.error("Caught unexpected exception in HMSFollower! Caused by: " + t.getMessage(),
-            t.getCause());
+        t.getCause());
       t.printStackTrace();
     }
   }
@@ -372,6 +390,7 @@ public class HMSFollower implements Runnable, AutoCloseable {
 
   /**
    * Retrieve a Hive full snapshot from HMS.
+   *
    * @return HMS snapshot. Snapshot consists of a mapping from auth object name
    * to the set of paths corresponding to that name.
    * @throws InterruptedException
@@ -379,23 +398,13 @@ public class HMSFollower implements Runnable, AutoCloseable {
    * @throws ExecutionException
    */
   private Map<String, Set<String>> fetchFullUpdate()
-          throws InterruptedException, TException, ExecutionException {
+    throws InterruptedException, TException, ExecutionException {
     LOGGER.info("Request full HMS snapshot");
     try (FullUpdateInitializer updateInitializer = new FullUpdateInitializer(client, authzConf)) {
       Map<String, Set<String>> pathsUpdate = updateInitializer.getFullHMSSnapshot();
       LOGGER.info("Obtained full HMS snapshot");
       return pathsUpdate;
     }
-  }
-
-  /**
-   * Get the last processed eventID from Sentry DB.
-   *
-   * @return the stored currentID
-   * @throws Exception
-   */
-  private long getLastProcessedNotificationID() throws Exception {
-    return sentryStore.getLastProcessedNotificationID();
   }
 
   private boolean syncWithPolicyStore(HiveAuthzConf.AuthzConfVars syncConfVar) {
@@ -410,6 +419,7 @@ public class HMSFollower implements Runnable, AutoCloseable {
   void processNotificationEvents(List<NotificationEvent> events) throws Exception {
     SentryJSONMessageDeserializer deserializer = new SentryJSONMessageDeserializer();
 
+    boolean isNotificationProcessingSkipped = false;
     for (NotificationEvent event : events) {
       String dbName;
       String tableName;
@@ -418,172 +428,221 @@ public class HMSFollower implements Runnable, AutoCloseable {
       String location;
       List<String> locations;
       NotificationProcessor notificationProcessor = new NotificationProcessor(sentryStore, LOGGER);
-      switch (HCatEventMessage.EventType.valueOf(event.getEventType())) {
-        case CREATE_DATABASE:
-          SentryJSONCreateDatabaseMessage message = deserializer.getCreateDatabaseMessage(event.getMessage());
-          dbName = message.getDB();
-          location = message.getLocation();
-          if ((dbName == null) || (location == null)) {
-            throw new SentryInvalidHMSEventException(String.format("Create database event " +
-                "has incomplete information. dbName = %s location = %s",
+      try {
+        switch (HCatEventMessage.EventType.valueOf(event.getEventType())) {
+          case CREATE_DATABASE:
+            SentryJSONCreateDatabaseMessage message = deserializer.getCreateDatabaseMessage(event.getMessage());
+            dbName = message.getDB();
+            location = message.getLocation();
+            if ((dbName == null) || (location == null)) {
+              isNotificationProcessingSkipped = true;
+              LOGGER.error(String.format("Create database event " +
+                  "has incomplete information. dbName = %s location = %s",
                 StringUtils.defaultIfBlank(dbName, "null"),
                 StringUtils.defaultIfBlank(location, "null")));
-          }
-          if (syncWithPolicyStore(AUTHZ_SYNC_CREATE_WITH_POLICY_STORE)) {
-            dropSentryDbPrivileges(dbName, event);
-          }
-          notificationProcessor.processCreateDatabase(dbName,location, event.getEventId());
-          break;
-        case DROP_DATABASE:
-          SentryJSONDropDatabaseMessage dropDatabaseMessage =
+              break;
+            }
+            if (syncWithPolicyStore(AUTHZ_SYNC_CREATE_WITH_POLICY_STORE)) {
+              dropSentryDbPrivileges(dbName, event);
+            }
+            notificationProcessor.processCreateDatabase(dbName, location, event.getEventId());
+            break;
+          case DROP_DATABASE:
+            SentryJSONDropDatabaseMessage dropDatabaseMessage =
               deserializer.getDropDatabaseMessage(event.getMessage());
-          dbName = dropDatabaseMessage.getDB();
-          location = dropDatabaseMessage.getLocation();
-          if (dbName == null) {
-            throw new SentryInvalidHMSEventException(
-                    "Drop database event has incomplete information: dbName = null");
-          }
-          if (syncWithPolicyStore(AUTHZ_SYNC_DROP_WITH_POLICY_STORE)) {
-            dropSentryDbPrivileges(dbName, event);
-          }
-          notificationProcessor.processDropDatabase(dbName, location, event.getEventId());
-          break;
-        case CREATE_TABLE:
-          SentryJSONCreateTableMessage createTableMessage = deserializer.getCreateTableMessage(event.getMessage());
-          dbName = createTableMessage.getDB();
-          tableName = createTableMessage.getTable();
-          location = createTableMessage.getLocation();
-          if ((dbName == null) || (tableName == null) || (location == null)) {
-            throw new SentryInvalidHMSEventException(String.format("Create table event " +
-                "has incomplete information. dbName = %s, tableName = %s, location = %s",
+            dbName = dropDatabaseMessage.getDB();
+            location = dropDatabaseMessage.getLocation();
+            if (dbName == null) {
+              isNotificationProcessingSkipped = true;
+              LOGGER.error("Drop database event has incomplete information: dbName = null");
+              break;
+            }
+            if (syncWithPolicyStore(AUTHZ_SYNC_DROP_WITH_POLICY_STORE)) {
+              dropSentryDbPrivileges(dbName, event);
+            }
+            notificationProcessor.processDropDatabase(dbName, location, event.getEventId());
+            break;
+          case CREATE_TABLE:
+            SentryJSONCreateTableMessage createTableMessage = deserializer.getCreateTableMessage(event.getMessage());
+            dbName = createTableMessage.getDB();
+            tableName = createTableMessage.getTable();
+            location = createTableMessage.getLocation();
+            if ((dbName == null) || (tableName == null) || (location == null)) {
+              isNotificationProcessingSkipped = true;
+              LOGGER.error(String.format("Create table event " + "has incomplete information."
+                  + " dbName = %s, tableName = %s, location = %s",
                 StringUtils.defaultIfBlank(dbName, "null"),
                 StringUtils.defaultIfBlank(tableName, "null"),
                 StringUtils.defaultIfBlank(location, "null")));
-          }
-          if (syncWithPolicyStore(AUTHZ_SYNC_CREATE_WITH_POLICY_STORE)) {
-            dropSentryTablePrivileges(dbName, tableName, event);
-          }
-          notificationProcessor.processCreateTable(dbName, tableName, location, event.getEventId());
-          break;
-        case DROP_TABLE:
-          SentryJSONDropTableMessage dropTableMessage = deserializer.getDropTableMessage(event.getMessage());
-          dbName = dropTableMessage.getDB();
-          tableName = dropTableMessage.getTable();
-          if ((dbName == null) || (tableName == null)) {
-            throw new SentryInvalidHMSEventException(String.format("Drop table event " +
-                "has incomplete information. dbName = %s, tableName = %s",
+              break;
+            }
+            if (syncWithPolicyStore(AUTHZ_SYNC_CREATE_WITH_POLICY_STORE)) {
+              dropSentryTablePrivileges(dbName, tableName, event);
+            }
+            notificationProcessor.processCreateTable(dbName, tableName, location, event.getEventId());
+            break;
+          case DROP_TABLE:
+            SentryJSONDropTableMessage dropTableMessage = deserializer.getDropTableMessage(event.getMessage());
+            dbName = dropTableMessage.getDB();
+            tableName = dropTableMessage.getTable();
+            if ((dbName == null) || (tableName == null)) {
+              isNotificationProcessingSkipped = true;
+              LOGGER.error(String.format("Drop table event " +
+                  "has incomplete information. dbName = %s, tableName = %s",
                 StringUtils.defaultIfBlank(dbName, "null"),
                 StringUtils.defaultIfBlank(tableName, "null")));
-          }
-          if (syncWithPolicyStore(AUTHZ_SYNC_DROP_WITH_POLICY_STORE)) {
-            dropSentryTablePrivileges(dbName, tableName, event);
-          }
-          notificationProcessor.processDropTable(dbName, tableName, event.getEventId());
-          break;
-        case ALTER_TABLE:
-          SentryJSONAlterTableMessage alterTableMessage = deserializer.getAlterTableMessage(event.getMessage());
+              break;
+            }
+            if (syncWithPolicyStore(AUTHZ_SYNC_DROP_WITH_POLICY_STORE)) {
+              dropSentryTablePrivileges(dbName, tableName, event);
+            }
+            notificationProcessor.processDropTable(dbName, tableName, event.getEventId());
+            break;
+          case ALTER_TABLE:
+            SentryJSONAlterTableMessage alterTableMessage = deserializer.getAlterTableMessage(event.getMessage());
 
-          String oldDbName = alterTableMessage.getDB();
-          String oldTableName = alterTableMessage.getTable();
-          String newDbName = event.getDbName();
-          String newTableName = event.getTableName();
-          oldLocation = alterTableMessage.getOldLocation();
-          newLocation = alterTableMessage.getNewLocation();
+            String oldDbName = alterTableMessage.getDB();
+            String oldTableName = alterTableMessage.getTable();
+            String newDbName = event.getDbName();
+            String newTableName = event.getTableName();
+            oldLocation = alterTableMessage.getOldLocation();
+            newLocation = alterTableMessage.getNewLocation();
 
-          if ((oldDbName == null) ||
+            if ((oldDbName == null) ||
               (oldTableName == null) ||
               (newDbName == null) ||
               (newTableName == null) ||
               (oldLocation == null) ||
               (newLocation == null)) {
-            throw new SentryInvalidHMSEventException(String.format("Alter table event " +
-                "has incomplete information. oldDbName = %s, oldTableName = %s, oldLocation = %s, " +
-                "newDbName = %s, newTableName = %s, newLocation = %s",
+              isNotificationProcessingSkipped = true;
+              LOGGER.error(String.format("Alter table event " +
+                  "has incomplete information. oldDbName = %s, oldTableName = %s, oldLocation = %s, " +
+                  "newDbName = %s, newTableName = %s, newLocation = %s",
                 StringUtils.defaultIfBlank(oldDbName, "null"),
                 StringUtils.defaultIfBlank(oldTableName, "null"),
                 StringUtils.defaultIfBlank(oldLocation, "null"),
                 StringUtils.defaultIfBlank(newDbName, "null"),
                 StringUtils.defaultIfBlank(newTableName, "null"),
                 StringUtils.defaultIfBlank(newLocation, "null")));
-          }
-
-          if(!newDbName.equalsIgnoreCase(oldDbName) || !oldTableName.equalsIgnoreCase(newTableName)) {
-            // Name has changed
-            try {
-              renamePrivileges(oldDbName, oldTableName, newDbName, newTableName);
-            } catch (SentryNoSuchObjectException e) {
-              LOGGER.info("Rename Sentry privilege ignored as there are no privileges on the table: %s.%s",
-                  oldDbName, oldTableName);
-            } catch (Exception e) {
-              throw new SentryInvalidInputException("Could not process Alter table event. Event: " + event.toString(), e);
+              break;
+            } else if ((oldDbName == newDbName) &&
+              (oldTableName == newTableName) &&
+              (oldLocation == newLocation)) {
+              isNotificationProcessingSkipped = true;
+              LOGGER.info(String.format("Alter table notification ignored as neither name nor " +
+                "location has changed: oldAuthzObj = %s, oldLocation = %s, newAuthzObj = %s, " +
+                "newLocation = %s", oldDbName + "." + oldTableName , oldLocation,
+                newDbName + "." + newTableName, newLocation));
+              break;
             }
-          }
-          notificationProcessor.processAlterTable(oldDbName, newDbName, oldTableName,
+
+            if (!newDbName.equalsIgnoreCase(oldDbName) || !oldTableName.equalsIgnoreCase(newTableName)) {
+              // Name has changed
+              try {
+                renamePrivileges(oldDbName, oldTableName, newDbName, newTableName);
+              } catch (SentryNoSuchObjectException e) {
+                LOGGER.info("Rename Sentry privilege ignored as there are no privileges on the table: %s.%s",
+                  oldDbName, oldTableName);
+              } catch (Exception e) {
+                isNotificationProcessingSkipped = true;
+                LOGGER.info("Could not process Alter table event. Event: " + event.toString(), e);
+                break;
+              }
+            }
+            notificationProcessor.processAlterTable(oldDbName, newDbName, oldTableName,
               newTableName, oldLocation, newLocation, event.getEventId());
-          break;
-        case ADD_PARTITION:
-          SentryJSONAddPartitionMessage addPartitionMessage =
-                deserializer.getAddPartitionMessage(event.getMessage());
-          dbName = addPartitionMessage.getDB();
-          tableName = addPartitionMessage.getTable();
-          locations = addPartitionMessage.getLocations();
-          if ((dbName == null) || (tableName == null) || (locations == null)) {
-            LOGGER.error(String.format("Create table event has incomplete information. " +
-                "dbName = %s, tableName = %s, locations = %s",
+            break;
+          case ADD_PARTITION:
+            SentryJSONAddPartitionMessage addPartitionMessage =
+              deserializer.getAddPartitionMessage(event.getMessage());
+            dbName = addPartitionMessage.getDB();
+            tableName = addPartitionMessage.getTable();
+            locations = addPartitionMessage.getLocations();
+            if ((dbName == null) || (tableName == null) || (locations == null)) {
+              isNotificationProcessingSkipped = true;
+              LOGGER.error(String.format("Create table event has incomplete information. " +
+                  "dbName = %s, tableName = %s, locations = %s",
                 StringUtils.defaultIfBlank(dbName, "null"),
                 StringUtils.defaultIfBlank(tableName, "null"),
                 locations != null ? locations.toString() : "null"));
-          }
-          notificationProcessor.processAddPartition(dbName, tableName, locations,
-              event.getEventId());
-          break;
-        case DROP_PARTITION:
-          SentryJSONDropPartitionMessage dropPartitionMessage =
-                deserializer.getDropPartitionMessage(event.getMessage());
-          dbName = dropPartitionMessage.getDB();
-          tableName = dropPartitionMessage.getTable();
-          locations = dropPartitionMessage.getLocations();
-          if ((dbName == null) || (tableName == null) || (locations == null)) {
-            throw new SentryInvalidHMSEventException(String.format("Drop partition event " +
-                "has incomplete information. dbName = %s, tableName = %s, location = %s",
+              break;
+            }
+            notificationProcessor.processAddPartition(dbName, tableName, locations, event.getEventId());
+            break;
+          case DROP_PARTITION:
+            SentryJSONDropPartitionMessage dropPartitionMessage =
+              deserializer.getDropPartitionMessage(event.getMessage());
+            dbName = dropPartitionMessage.getDB();
+            tableName = dropPartitionMessage.getTable();
+            locations = dropPartitionMessage.getLocations();
+            if ((dbName == null) || (tableName == null) || (locations == null)) {
+              isNotificationProcessingSkipped = true;
+              LOGGER.error(String.format("Drop partition event " +
+                  "has incomplete information. dbName = %s, tableName = %s, location = %s",
                 StringUtils.defaultIfBlank(dbName, "null"),
                 StringUtils.defaultIfBlank(tableName, "null"),
                 locations != null ? locations.toString() : "null"));
-          }
-          notificationProcessor.processDropPartition(dbName, tableName, locations,
-              event.getEventId());
-          break;
-      case ALTER_PARTITION:
-        SentryJSONAlterPartitionMessage alterPartitionMessage =
+              break;
+            }
+            notificationProcessor.processDropPartition(dbName, tableName, locations, event.getEventId());
+
+            break;
+          case ALTER_PARTITION:
+            SentryJSONAlterPartitionMessage alterPartitionMessage =
               deserializer.getAlterPartitionMessage(event.getMessage());
-        dbName = alterPartitionMessage.getDB();
-        tableName = alterPartitionMessage.getTable();
-        oldLocation = alterPartitionMessage.getOldLocation();
-        newLocation = alterPartitionMessage.getNewLocation();
+            dbName = alterPartitionMessage.getDB();
+            tableName = alterPartitionMessage.getTable();
+            oldLocation = alterPartitionMessage.getOldLocation();
+            newLocation = alterPartitionMessage.getNewLocation();
 
-        if ((dbName == null) ||
-            (tableName == null) ||
-            (oldLocation == null) ||
-            (newLocation == null)) {
-          throw new SentryInvalidHMSEventException(String.format("Alter partition event " +
-              "has incomplete information. dbName = %s, tableName = %s, " +
-              "oldLocation = %s, newLocation = %s",
-              StringUtils.defaultIfBlank(dbName, "null"),
-              StringUtils.defaultIfBlank(tableName, "null"),
-              StringUtils.defaultIfBlank(oldLocation, "null"),
-              StringUtils.defaultIfBlank(newLocation, "null")));
+            if ((dbName == null) ||
+              (tableName == null) ||
+              (oldLocation == null) ||
+              (newLocation == null)) {
+              isNotificationProcessingSkipped = true;
+              LOGGER.error(String.format("Alter partition event " +
+                  "has incomplete information. dbName = %s, tableName = %s, " +
+                  "oldLocation = %s, newLocation = %s",
+                StringUtils.defaultIfBlank(dbName, "null"),
+                StringUtils.defaultIfBlank(tableName, "null"),
+                StringUtils.defaultIfBlank(oldLocation, "null"),
+                StringUtils.defaultIfBlank(newLocation, "null")));
+              break;
+            } else if (oldLocation == newLocation) {
+              isNotificationProcessingSkipped = true;
+              LOGGER.info(String.format("Alter partition notification ignored as" +
+                "location has not changed: AuthzObj = %s, Location = %s", dbName + "." +
+                "." + tableName, oldLocation));
+              break;
+            }
+
+            notificationProcessor.processAlterPartition(dbName, tableName, oldLocation,
+              newLocation, event.getEventId());
+            break;
+          case INSERT:
+            // TODO DO we need to do anything here?
+            break;
         }
-
-        notificationProcessor.processAlterPartition(dbName, tableName, oldLocation,
-            newLocation, event.getEventId());
-        break;
-        case INSERT:
-          // TODO DO we need to do anything here?
-          break;
+      } catch (Exception e) {
+        if (e.getCause() instanceof JDODataStoreException) {
+          LOGGER.info("Received JDO Storage Exception, Could be because of processing " +
+            "duplicate notification");
+          if (event.getEventId() <= sentryStore.getLastProcessedNotificationID()) {
+            // Rest of the notifications need not be processed.
+            throw e;
+          }
+        }
+        sentryStore.persistLastProcessedNotificationID(event.getEventId());
       }
-      currentEventID = event.getEventId();
+      if (isNotificationProcessingSkipped) {
+        // Update the notification ID in the persistent store even when the notification is
+        // not processed as the content in in the notification is not valid.
+        // Continue processing the next notification.
+        sentryStore.persistLastProcessedNotificationID(event.getEventId());
+        isNotificationProcessingSkipped = false;
+      }
       // Wake up any HMS waiters that are waiting for this ID.
-      wakeUpWaitingClientsForSync(currentEventID);
+      wakeUpWaitingClientsForSync(event.getEventId());
     }
   }
 
@@ -596,7 +655,7 @@ public class HMSFollower implements Runnable, AutoCloseable {
       LOGGER.info("Drop Sentry privilege ignored as there are no privileges on the database: %s", dbName);
     } catch (Exception e) {
       throw new SentryInvalidInputException("Could not process Drop database event." +
-          "Event: " + event.toString(), e);
+        "Event: " + event.toString(), e);
     }
   }
 
@@ -614,7 +673,7 @@ public class HMSFollower implements Runnable, AutoCloseable {
   }
 
   private void renamePrivileges(String oldDbName, String oldTableName, String newDbName, String newTableName) throws
-      Exception {
+    Exception {
     TSentryAuthorizable oldAuthorizable = new TSentryAuthorizable(hiveInstance);
     oldAuthorizable.setDb(oldDbName);
     oldAuthorizable.setTable(oldTableName);
@@ -622,7 +681,7 @@ public class HMSFollower implements Runnable, AutoCloseable {
     newAuthorizable.setDb(newDbName);
     newAuthorizable.setTable(newTableName);
     Update update =
-        onRenameSentryPrivilege(oldAuthorizable, newAuthorizable);
+      onRenameSentryPrivilege(oldAuthorizable, newAuthorizable);
     sentryStore.renamePrivilege(oldAuthorizable, newAuthorizable, update);
   }
 
@@ -636,8 +695,8 @@ public class HMSFollower implements Runnable, AutoCloseable {
 
   @VisibleForTesting
   static Update onRenameSentryPrivilege(TSentryAuthorizable oldAuthorizable,
-            TSentryAuthorizable newAuthorizable)
-          throws SentryPolicyStorePlugin.SentryPluginException {
+                                        TSentryAuthorizable newAuthorizable)
+    throws SentryPolicyStorePlugin.SentryPluginException {
     String oldAuthz = getAuthzObj(oldAuthorizable);
     String newAuthz = getAuthzObj(newAuthorizable);
     PermissionsUpdate update = new PermissionsUpdate(SentryStore.INIT_CHANGE_ID, false);
