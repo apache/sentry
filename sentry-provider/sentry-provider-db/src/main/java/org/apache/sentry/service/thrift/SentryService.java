@@ -286,6 +286,14 @@ public class SentryService implements Callable, SigUtils.SigListener {
       return;
     }
 
+    String metastoreURI = SentryServiceUtil.getHiveMetastoreURI();
+    if (metastoreURI == null) {
+      LOGGER.info("Metastore uri is not configured. Do not start HMSFollower");
+      return;
+    }
+
+    LOGGER.info("Starting HMSFollower to HMS {}", metastoreURI);
+
     Preconditions.checkState(hmsFollower == null);
     Preconditions.checkState(hmsFollowerExecutor == null);
 
@@ -313,6 +321,14 @@ public class SentryService implements Callable, SigUtils.SigListener {
   private void stopHMSFollower(Configuration conf) {
     if (!notificationLogEnabled || !hdfsSyncEnabled) {
       return;
+    }
+
+    if ((hmsFollowerExecutor == null) || (hmsFollower == null)) {
+        Preconditions.checkState(hmsFollower == null);
+        Preconditions.checkState(hmsFollowerExecutor == null);
+
+        LOGGER.debug("Skip shuting down hmsFollowerExecutor and closing hmsFollower because they are not created");
+        return;
     }
 
     Preconditions.checkNotNull(hmsFollowerExecutor);

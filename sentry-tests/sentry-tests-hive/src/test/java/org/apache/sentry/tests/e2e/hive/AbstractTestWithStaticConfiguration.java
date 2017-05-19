@@ -17,7 +17,11 @@
 package org.apache.sentry.tests.e2e.hive;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.net.ServerSocket;
+import java.net.URL;
 import java.security.PrivilegedExceptionAction;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -31,6 +35,7 @@ import java.util.HashSet;
 
 import com.google.common.collect.Sets;
 import org.apache.sentry.tests.e2e.hive.fs.TestFSContants;
+import org.fest.reflect.core.Reflection;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -295,6 +300,7 @@ public abstract class AbstractTestWithStaticConfiguration extends RulesForE2ETes
           "org.apache.hadoop.hive.ql.lockmgr.EmbeddedLockManager");
     }
     if (useSentryService && (!startSentry)) {
+      configureHiveAndMetastoreForSentry();
       setupSentryService();
     }
 
@@ -441,6 +447,41 @@ public abstract class AbstractTestWithStaticConfiguration extends RulesForE2ETes
         exec(statement, sql);
       }
     }
+  }
+
+  private static int findPort() throws IOException {
+    ServerSocket socket = new ServerSocket(0);
+    int port = socket.getLocalPort();
+    socket.close();
+    return port;
+  }
+
+  private static HiveConf configureHiveAndMetastoreForSentry() throws IOException, InterruptedException {
+    HiveConf hiveConf = new HiveConf();
+    int hmsPort = findPort();
+    LOGGER.info("\n\n HMS port : " + hmsPort + "\n\n");
+
+    // Sets hive.metastore.authorization.storage.checks to true, so that
+    // disallow the operations such as drop-partition if the user in question
+    // doesn't have permissions to delete the corresponding directory
+    // on the storage.
+    hiveConf.set("hive.metastore.authorization.storage.checks", "true");
+    hiveConf.set("hive.metastore.uris", "thrift://localhost:" + hmsPort);
+    hiveConf.set("sentry.metastore.service.users", "hive");// queries made by hive user (beeline) skip meta store check
+
+    File confDir = assertCreateDir(new File(baseDir, "etc"));
+    File hiveSite = new File(confDir, "hive-site.xml");
+    hiveConf.set("hive.server2.enable.doAs", "false");
+    OutputStream out = new FileOutputStream(hiveSite);
+    hiveConf.writeXml(out);
+    out.close();
+
+    Reflection.staticField("hiveSiteURL")
+            .ofType(URL.class)
+            .in(HiveConf.class)
+            .set(hiveSite.toURI().toURL());
+
+    return hiveConf;
   }
 
   private static void setupSentryService() throws Exception {

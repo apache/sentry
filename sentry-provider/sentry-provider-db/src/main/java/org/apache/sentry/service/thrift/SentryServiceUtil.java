@@ -28,6 +28,8 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import static org.apache.hadoop.hive.conf.HiveConf.ConfVars.METASTOREURIS;
+import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.core.common.utils.KeyValue;
 import org.apache.sentry.core.common.utils.PolicyFileConstants;
@@ -210,6 +212,11 @@ public final class SentryServiceUtil {
 
     return processorFactories.contains("org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory")
         && policyStorePlugins.contains("org.apache.sentry.hdfs.SentryPlugin");
+  }
+
+  static String getHiveMetastoreURI() {
+    HiveConf hiveConf = new HiveConf();
+    return hiveConf.get(METASTOREURIS.varname);
   }
 
   private SentryServiceUtil() {
