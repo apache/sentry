@@ -22,8 +22,6 @@ import java.util.*;
 
 import org.apache.hadoop.conf.Configuration;
 
-//import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION;
-
 import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
@@ -63,15 +61,8 @@ public class SentryGenericServiceClientDefaultImpl implements SentryGenericServi
   private static final String THRIFT_EXCEPTION_MESSAGE = "Thrift exception occured ";
 
   public SentryGenericServiceClientDefaultImpl(Configuration conf, SentryPolicyClientTransportConfig transportConfig) throws IOException {
-
-    //TODO(kalyan) need to find appropriate place to add it
-    // if (kerberos) {
-    //  // since the client uses hadoop-auth, we need to set kerberos in
-    //  // hadoop-auth if we plan to use kerberos
-    //  conf.set(HADOOP_SECURITY_AUTHENTICATION, SentryConstants.KERBEROS_MoODE);
-    // }
-    this.conf = conf;
     transportFactory = new SentryTransportFactory(conf, transportConfig);
+    this.conf = conf;
   }
 
   /**

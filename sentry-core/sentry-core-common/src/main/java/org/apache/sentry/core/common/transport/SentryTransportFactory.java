@@ -74,9 +74,8 @@ public class SentryTransportFactory {
       super(mechanism, null, protocol, serverName, SASL_PROPERTIES, null,
         transport);
       if (wrapUgi) {
-        // If we don't set the configuration, the UGI will be created based on
-        // what's on the classpath, which may lack the kerberos changes we require
-        UserGroupInformation.setConfiguration(conf);
+        //Re-initializing UserGroupInformation, if needed
+        UserGroupInformationInitializer.initialize(conf);
         ugi = UserGroupInformation.getLoginUser();
       }
     }
