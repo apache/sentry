@@ -42,7 +42,7 @@ public class TestHMSFollower {
 
     // Create notification events
     NotificationEvent notificationEvent = new NotificationEvent(1, 0, HCatEventMessage.EventType.CREATE_DATABASE.toString(),
-        messageFactory.buildCreateDatabaseMessage(new Database(dbName, null, "hdfs://db1", null)).toString());
+        messageFactory.buildCreateDatabaseMessage(new Database(dbName, null, "hdfs:///db1", null)).toString());
     List<NotificationEvent> events = new ArrayList<>();
     events.add(notificationEvent);
 
@@ -54,7 +54,7 @@ public class TestHMSFollower {
     authorizable.setServer(hiveInstance);
     authorizable.setDb("db1");
 
-    verify(sentryStore, times(1)).dropPrivilege(authorizable, HMSFollower.onDropSentryPrivilege(authorizable));
+    verify(sentryStore, times(0)).dropPrivilege(authorizable, HMSFollower.onDropSentryPrivilege(authorizable));
   }
 
   @Test
@@ -63,7 +63,7 @@ public class TestHMSFollower {
 
     // Create notification events
     NotificationEvent notificationEvent = new NotificationEvent(1, 0, HCatEventMessage.EventType.DROP_DATABASE.toString(),
-        messageFactory.buildDropDatabaseMessage(new Database(dbName, null, "hdfs://db1", null)).toString());
+        messageFactory.buildDropDatabaseMessage(new Database(dbName, null, "hdfs:///db1", null)).toString());
     List<NotificationEvent> events = new ArrayList<>();
     events.add(notificationEvent);
 
@@ -84,7 +84,7 @@ public class TestHMSFollower {
 
     // Create notification events
     StorageDescriptor sd = new StorageDescriptor();
-    sd.setLocation("hdfs://db1.db/table1");
+    sd.setLocation("hdfs:///db1.db/table1");
     NotificationEvent notificationEvent = new NotificationEvent(1, 0, HCatEventMessage.EventType.CREATE_TABLE.toString(),
         messageFactory.buildCreateTableMessage(new Table(tableName, dbName, null, 0, 0, 0, sd, null, null, null, null, null)).toString());
     List<NotificationEvent> events = new ArrayList<>();
@@ -99,7 +99,7 @@ public class TestHMSFollower {
     authorizable.setDb("db1");
     authorizable.setTable(tableName);
 
-    verify(sentryStore, times(1)).dropPrivilege(authorizable, HMSFollower.onDropSentryPrivilege(authorizable));
+    verify(sentryStore, times(0)).dropPrivilege(authorizable, HMSFollower.onDropSentryPrivilege(authorizable));
   }
   @Test
   public void testDropTable() throws Exception {
@@ -108,7 +108,7 @@ public class TestHMSFollower {
 
     // Create notification events
     StorageDescriptor sd = new StorageDescriptor();
-    sd.setLocation("hdfs://db1.db/table1");
+    sd.setLocation("hdfs:///db1.db/table1");
     NotificationEvent notificationEvent = new NotificationEvent(1, 0, HCatEventMessage.EventType.DROP_TABLE.toString(),
         messageFactory.buildDropTableMessage(new Table(tableName, dbName, null, 0, 0, 0, sd, null, null, null, null, null)).toString());
     List<NotificationEvent> events = new ArrayList<>();
@@ -135,7 +135,7 @@ public class TestHMSFollower {
 
     // Create notification events
     StorageDescriptor sd = new StorageDescriptor();
-    sd.setLocation("hdfs://db1.db/table1");
+    sd.setLocation("hdfs:///db1.db/table1");
     NotificationEvent notificationEvent = new NotificationEvent(1, 0, HCatEventMessage.EventType.ALTER_TABLE.toString(),
         messageFactory.buildAlterTableMessage(
             new Table(tableName, dbName, null, 0, 0, 0, sd, null, null, null, null, null),
