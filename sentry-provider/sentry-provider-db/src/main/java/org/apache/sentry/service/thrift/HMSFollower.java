@@ -411,7 +411,7 @@ public class HMSFollower implements Runnable, AutoCloseable {
 
   private boolean syncWithPolicyStore(HiveAuthzConf.AuthzConfVars syncConfVar) {
     return "true"
-        .equalsIgnoreCase((authzConf.get(syncConfVar.getVar(), "true")));
+        .equalsIgnoreCase((authzConf.get(syncConfVar.getVar(), syncConfVar.getDefault())));
   }
 
   /**

@@ -372,7 +372,7 @@ class NotificationProcessor {
     try {
       return PathsUpdate.parsePath(path);
     } catch (SentryMalformedPathException e) {
-      LOGGER.error("Unexpected path while parsing, " + path, e.getMessage());
+      LOGGER.error("Unexpected path while parsing {}", path, e);
     }
     return null;
   }
