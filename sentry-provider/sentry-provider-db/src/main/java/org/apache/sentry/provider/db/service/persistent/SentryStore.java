@@ -476,6 +476,7 @@ public class SentryStore {
               pm.newQuery(MSentryPathChange.class).deletePersistentAll();
               pm.newQuery(MAuthzPathsMapping.class).deletePersistentAll();
               pm.newQuery(MPath.class).deletePersistentAll();
+              pm.newQuery(MSentryHmsNotification.class).deletePersistentAll();
               return null;
             }
           });
