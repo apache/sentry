@@ -74,8 +74,6 @@ public class SentryTransportFactory {
       super(mechanism, null, protocol, serverName, SASL_PROPERTIES, null,
         transport);
       if (wrapUgi) {
-        //Re-initializing UserGroupInformation, if needed
-        UserGroupInformationInitializer.initialize(conf);
         ugi = UserGroupInformation.getLoginUser();
       }
     }
@@ -130,7 +128,11 @@ public class SentryTransportFactory {
     try {
       this.connectionTimeout = transportConfig.getServerRpcConnTimeoutInMs(conf);
       this.connectionFullRetryTotal = transportConfig.getSentryFullRetryTotal(conf);
-
+      if(transportConfig.isKerberosEnabled(conf) &&
+        transportConfig.useUserGroupInformation(conf)) {
+          // Re-initializing UserGroupInformation, if needed
+          UserGroupInformationInitializer.initialize(conf);
+      }
       String hostsAndPortsStr = transportConfig.getSentryServerRpcAddress(conf);
 
       int serverPort = transportConfig.getServerRpcPort(conf);
