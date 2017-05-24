@@ -291,23 +291,27 @@ public class SentryConfigTool {
     Map<String, Map<String, Set<String>>> policyFileMappingData = sentryPolicyFileFormatter.parse(
         importPolicyFilePath, authzConf);
     // todo: here should be an validator to check the data's value, format, hierarchy
-    SentryPolicyServiceClient client = SentryServiceClientFactory.create(getAuthzConf());
-    // import the mapping data to database
-    client.importPolicy(policyFileMappingData, requestorUserName, importOverwriteRole);
+    try(SentryPolicyServiceClient client =
+                SentryServiceClientFactory.create(getAuthzConf())) {
+      // import the mapping data to database
+      client.importPolicy(policyFileMappingData, requestorUserName, importOverwriteRole);
+    }
   }
 
   // export the sentry mapping data to file
   public void exportPolicy() throws Exception {
     String requestorUserName = System.getProperty("user.name", "");
-    SentryPolicyServiceClient client = SentryServiceClientFactory.create(getAuthzConf());
-    // export the sentry mapping data from database to map structure
-    Map<String, Map<String, Set<String>>> policyFileMappingData = client
-        .exportPolicy(requestorUserName, objectPath);
-    // get the FileFormatter according to the configuration
-    SentryPolicyFileFormatter sentryPolicyFileFormatter = SentryPolicyFileFormatFactory
-        .createFileFormatter(authzConf);
-    // write the sentry mapping data to exportPolicyFilePath with the data in map structure
-    sentryPolicyFileFormatter.write(exportPolicyFilePath, policyFileMappingData);
+    try (SentryPolicyServiceClient client =
+                SentryServiceClientFactory.create(getAuthzConf())) {
+      // export the sentry mapping data from database to map structure
+      Map<String, Map<String, Set<String>>> policyFileMappingData = client
+              .exportPolicy(requestorUserName, objectPath);
+      // get the FileFormatter according to the configuration
+      SentryPolicyFileFormatter sentryPolicyFileFormatter = SentryPolicyFileFormatFactory
+              .createFileFormatter(authzConf);
+      // write the sentry mapping data to exportPolicyFilePath with the data in map structure
+      sentryPolicyFileFormatter.write(exportPolicyFilePath, policyFileMappingData);
+    }
   }
 
   // list permissions for given user

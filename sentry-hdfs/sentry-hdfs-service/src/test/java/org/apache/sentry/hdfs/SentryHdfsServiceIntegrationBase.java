@@ -44,7 +44,10 @@ public class SentryHdfsServiceIntegrationBase extends
   @After
   public void after() {
     if (hdfsClient != null) {
-      hdfsClient.close();
+      try {
+        hdfsClient.close();
+      } catch (Exception ignored) {
+      }
     }
   }
 

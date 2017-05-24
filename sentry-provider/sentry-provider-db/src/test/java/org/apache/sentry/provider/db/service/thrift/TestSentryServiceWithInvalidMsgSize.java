@@ -44,6 +44,7 @@ public class TestSentryServiceWithInvalidMsgSize extends SentryServiceIntegratio
     runTestAsSubject(new TestOperation() {
       @Override
       public void runTestAsSubject() throws Exception {
+        SentryServiceClientFactory oldFactory = SentryServiceClientFactory.factoryReset(null);
         Configuration confWithSmallMaxMsgSize = new Configuration(conf);
         confWithSmallMaxMsgSize.setLong(ServiceConstants.ClientConfig.SENTRY_POLICY_CLIENT_THRIFT_MAX_MESSAGE_SIZE, 20);
         // create a client with a small thrift max message size
@@ -63,6 +64,7 @@ public class TestSentryServiceWithInvalidMsgSize extends SentryServiceIntegratio
         } finally {
           Assert.assertEquals(true, exceptionThrown);
           clientWithSmallMaxMsgSize.close();
+          SentryServiceClientFactory.factoryReset(oldFactory);
         }
 
         // client can still talk with sentry server when message size is smaller.

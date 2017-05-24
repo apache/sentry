@@ -17,15 +17,12 @@
  */
 package org.apache.sentry.hdfs;
 
-import java.io.IOException;
-import java.util.LinkedList;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.common.exception.SentryHdfsServiceException;
-import org.apache.sentry.core.common.transport.SentryHDFSClientTransportConfig;
-import org.apache.sentry.core.common.transport.SentryServiceClient;
-import org.apache.sentry.core.common.transport.SentryTransportFactory;
-import org.apache.sentry.hdfs.service.thrift.SentryHDFSService;
+import org.apache.sentry.core.common.transport.SentryConnection;
+import org.apache.sentry.core.common.transport.SentryTransportPool;
+import org.apache.sentry.core.common.transport.TTransportWrapper;
+import org.apache.sentry.hdfs.ServiceConstants.ClientConfig;
 import org.apache.sentry.hdfs.service.thrift.SentryHDFSService.Client;
 import org.apache.sentry.hdfs.service.thrift.TAuthzUpdateResponse;
 import org.apache.sentry.hdfs.service.thrift.TPathsUpdate;
@@ -35,82 +32,57 @@ import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.protocol.TMultiplexedProtocol;
 import org.apache.thrift.protocol.TProtocol;
 
-import org.apache.thrift.transport.TTransport;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.io.IOException;
+import java.util.LinkedList;
 
 /**
  * Sentry HDFS Service Client
  * <p>
- * The public implementation of SentryHDFSServiceClient.
- * A Sentry Client in which all the operations are synchronized for thread safety
- * Note: When using this client, if there is an exception in RPC, socket can get into an inconsistent state.
- * So it is important to close and re-open the transport so that new socket is used.
+ * The class isn't thread-safe - it is up to the aller to ensure thread safety
  */
-
-public class SentryHDFSServiceClientDefaultImpl implements SentryHDFSServiceClient, SentryServiceClient {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(SentryHDFSServiceClientDefaultImpl.class);
+public class SentryHDFSServiceClientDefaultImpl
+        implements SentryHDFSServiceClient, SentryConnection {
+  private final boolean useCompactTransport;
   private Client client;
-  private SentryTransportFactory transportFactory;
-  private TTransport transport;
-  private Configuration conf;
+  private final SentryTransportPool transportPool;
+  private TTransportWrapper transport;
+  private final long maxMessageSize;
 
-  public SentryHDFSServiceClientDefaultImpl(Configuration conf, SentryHDFSClientTransportConfig transportConfig) throws IOException {
-    transportFactory = new SentryTransportFactory(conf, transportConfig);
-    this.conf = conf;
+  SentryHDFSServiceClientDefaultImpl(Configuration conf,
+                                     SentryTransportPool transportPool) throws IOException {
+    maxMessageSize = conf.getLong(ClientConfig.SENTRY_HDFS_THRIFT_MAX_MESSAGE_SIZE,
+            ClientConfig.SENTRY_HDFS_THRIFT_MAX_MESSAGE_SIZE_DEFAULT);
+    useCompactTransport = conf.getBoolean(ClientConfig.USE_COMPACT_TRANSPORT,
+            ClientConfig.USE_COMPACT_TRANSPORT_DEFAULT);
+    this.transportPool = transportPool;
   }
 
   /**
    * Connect to the sentry server
    *
-   * @throws IOException
+   * @throws Exception
    */
   @Override
-  public synchronized void connect() throws IOException {
-    if (transport != null && transport.isOpen()) {
+  public void connect() throws Exception {
+    if ((transport != null) && transport.isOpen()) {
       return;
     }
 
-    transport = transportFactory.getTransport();
-    TProtocol tProtocol = null;
-    long maxMessageSize = conf.getLong(ServiceConstants.ClientConfig.SENTRY_HDFS_THRIFT_MAX_MESSAGE_SIZE,
-            ServiceConstants.ClientConfig.SENTRY_HDFS_THRIFT_MAX_MESSAGE_SIZE_DEFAULT);
-    if (conf.getBoolean(ServiceConstants.ClientConfig.USE_COMPACT_TRANSPORT,
-            ServiceConstants.ClientConfig.USE_COMPACT_TRANSPORT_DEFAULT)) {
-      tProtocol = new TCompactProtocol(transport, maxMessageSize, maxMessageSize);
+    transport = transportPool.getTransport();
+    TProtocol tProtocol;
+    if (useCompactTransport) {
+      tProtocol = new TCompactProtocol(transport.getTTransport(), maxMessageSize, maxMessageSize);
     } else {
-      tProtocol = new TBinaryProtocol(transport, maxMessageSize, maxMessageSize, true, true);
+      tProtocol = new TBinaryProtocol(transport.getTTransport(), maxMessageSize, maxMessageSize, true, true);
     }
     TMultiplexedProtocol protocol = new TMultiplexedProtocol(
             tProtocol, SentryHDFSServiceClient.SENTRY_HDFS_SERVICE_NAME);
 
-    client = new SentryHDFSService.Client(protocol);
-    LOGGER.info("Successfully created client");
+    client = new Client(protocol);
   }
 
   @Override
-  public synchronized void notifyHMSUpdate(PathsUpdate update)
-          throws SentryHdfsServiceException {
-    try {
-      client.handle_hms_notification(update.toThrift());
-    } catch (Exception e) {
-      throw new SentryHdfsServiceException("Thrift Exception occurred !!", e);
-    }
-  }
-
-  @Override
-  public synchronized long getLastSeenHMSPathSeqNum()
-          throws SentryHdfsServiceException {
-    try {
-      return client.check_hms_seq_num(-1);
-    } catch (Exception e) {
-      throw new SentryHdfsServiceException("Thrift Exception occurred !!", e);
-    }
-  }
-
-  @Override
-  public synchronized SentryAuthzUpdate getAllUpdatesFrom(long permSeqNum, long pathSeqNum)
+  public SentryAuthzUpdate getAllUpdatesFrom(long permSeqNum, long pathSeqNum)
           throws SentryHdfsServiceException {
     SentryAuthzUpdate retVal = new SentryAuthzUpdate(new LinkedList<PermissionsUpdate>(), new LinkedList<PathsUpdate>());
     try {
@@ -132,12 +104,23 @@ public class SentryHDFSServiceClientDefaultImpl implements SentryHDFSServiceClie
   }
 
   @Override
-  public synchronized void close() {
-    transportFactory.close();
+  public void close() {
+    done();
   }
 
   @Override
-  public void disconnect() {
-    transportFactory.releaseTransport();
+  public void done() {
+    if (transport != null) {
+      transportPool.returnTransport(transport);
+      transport = null;
+    }
+  }
+
+  @Override
+  public void invalidate() {
+    if (transport != null) {
+      transportPool.invalidateTransport(transport);
+      transport = null;
+    }
   }
 }

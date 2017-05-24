@@ -25,7 +25,7 @@ import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 
-public interface SentryGenericServiceClient {
+public interface SentryGenericServiceClient extends AutoCloseable {
 
   /**
    * Create a sentry role
@@ -191,6 +191,4 @@ public interface SentryGenericServiceClient {
   Map<String, TSentryPrivilegeMap> listPrivilegsbyAuthorizable(String component,
       String serviceName, String requestorUserName, Set<String> authorizablesSet,
       Set<String> groups, ActiveRoleSet roleSet) throws SentryUserException;
-
-  void close();
 }

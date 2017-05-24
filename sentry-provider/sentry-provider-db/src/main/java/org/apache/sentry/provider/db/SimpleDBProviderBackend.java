@@ -77,9 +77,8 @@ public class SimpleDBProviderBackend implements ProviderBackend {
     int retries = Math.max(retryCount + 1, 1); // if customer configs retryCount as Integer.MAX_VALUE, try only once
     while (retries > 0) {
       retries--;
-      SentryPolicyServiceClient policyServiceClient = null;
-      try {
-        policyServiceClient = SentryServiceClientFactory.create(conf);
+      try (SentryPolicyServiceClient policyServiceClient =
+                   SentryServiceClientFactory.create(conf)) {
         return ImmutableSet.copyOf(policyServiceClient.listPrivilegesForProvider(groups, users,
             roleSet, authorizableHierarchy));
       } catch (Exception e) {
@@ -96,10 +95,6 @@ public class SimpleDBProviderBackend implements ProviderBackend {
           } catch (InterruptedException e1) {
             LOGGER.info("Sleeping is interrupted.", e1);
           }
-        }
-      } finally {
-        if(policyServiceClient != null) {
-          policyServiceClient.close();
         }
       }
     }

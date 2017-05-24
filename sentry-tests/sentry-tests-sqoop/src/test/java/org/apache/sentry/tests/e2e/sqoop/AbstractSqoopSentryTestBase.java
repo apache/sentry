@@ -197,19 +197,14 @@ public class AbstractSqoopSentryTestBase {
   }
 
   public static void setAdminPrivilege() throws Exception {
-    SentryGenericServiceClient sentryClient = null;
-    try {
-      /** grant all privilege to admin user */
-      sentryClient = SentryGenericServiceClientFactory.create(getClientConfig());
+    try (SentryGenericServiceClient sentryClient =
+                 SentryGenericServiceClientFactory.create(getClientConfig())){
+      // grant all privilege to admin user
       sentryClient.createRoleIfNotExist(ADMIN_USER, ADMIN_ROLE, COMPONENT);
       sentryClient.addRoleToGroups(ADMIN_USER, ADMIN_ROLE, COMPONENT, Sets.newHashSet(ADMIN_GROUP));
       sentryClient.grantPrivilege(ADMIN_USER, ADMIN_ROLE, COMPONENT,
           new TSentryPrivilege(COMPONENT, SQOOP_SERVER_NAME, new ArrayList<TAuthorizable>(),
               SqoopActionConstant.ALL));
-    } finally {
-      if (sentryClient != null) {
-        sentryClient.close();
-      }
     }
   }
 
