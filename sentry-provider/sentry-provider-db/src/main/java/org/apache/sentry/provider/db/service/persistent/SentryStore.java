@@ -696,7 +696,6 @@ public class SentryStore {
         mPrivilege = convertToMSentryPrivilege(privilege);
       }
       mPrivilege.appendRole(mRole);
-      pm.makePersistent(mRole);
       pm.makePersistent(mPrivilege);
     }
     return mPrivilege;
