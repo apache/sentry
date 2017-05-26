@@ -92,6 +92,7 @@ public abstract class SentryTestBase extends SolrTestCaseJ4 {
   protected SolrQueryRequest prepareCollAndUser(SolrCore core, SolrQueryRequest request,
       String collection, String user, boolean onlyOnce) throws Exception {
     CloudDescriptor mCloudDescriptor = EasyMock.createMock(CloudDescriptor.class);
+    EasyMock.expect(mCloudDescriptor.getCoreNodeName()).andReturn(core.getCoreDescriptor().getName()).anyTimes();
     IExpectationSetters getCollNameExpect = EasyMock.expect(mCloudDescriptor.getCollectionName()).andReturn(collection);
     getCollNameExpect.anyTimes();
     IExpectationSetters getShardIdExpect = EasyMock.expect(mCloudDescriptor.getShardId()).andReturn("shard1");
