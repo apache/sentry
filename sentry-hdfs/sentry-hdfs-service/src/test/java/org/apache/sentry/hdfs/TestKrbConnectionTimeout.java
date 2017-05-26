@@ -18,7 +18,6 @@
 package org.apache.sentry.hdfs;
 
 import org.apache.hadoop.minikdc.MiniKdc;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -27,9 +26,7 @@ public class TestKrbConnectionTimeout extends
  SentryHdfsServiceIntegrationBase {
 
   @BeforeClass
-  public static void setup() throws Exception {
-    Assume.assumeTrue("true".equalsIgnoreCase(System.getProperty(
-        "sentry.hive.test.ticket.timeout", "false")));
+  public static void setupConf() throws Exception {
     kdcConfOverlay.setProperty(MiniKdc.MAX_TICKET_LIFETIME, "300001");
     setup();
   }
