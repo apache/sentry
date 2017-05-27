@@ -82,28 +82,14 @@ public class HMSFollower implements Runnable, AutoCloseable {
   private final SentryStore sentryStore;
   private String hiveInstance;
 
-  private boolean needHiveSnapshot = true;
   private boolean needLogHMSSupportReady = true;
   private final LeaderStatusMonitor leaderMonitor;
 
   HMSFollower(Configuration conf, SentryStore store, LeaderStatusMonitor leaderMonitor) {
     LOGGER.info("HMSFollower is being initialized");
-    Long lastProcessedNotificationID;
     authzConf = conf;
     this.leaderMonitor = leaderMonitor;
     sentryStore = store;
-
-    try {
-      // Initializing lastProcessedNotificationID based on the latest persisted notification ID.
-      lastProcessedNotificationID = sentryStore.getLastProcessedNotificationID();
-    } catch (Exception e) {
-      LOGGER.error("Failed to get the last processed notification id from sentry store, " +
-        "Skipping the processing", e);
-      needHiveSnapshot = true;
-      return;
-    }
-    // If lastProcessedNotificationID is empty, need to retrieve a full hive snapshot,
-    needHiveSnapshot = (lastProcessedNotificationID == SentryStore.EMPTY_CHANGE_ID);
   }
 
   @VisibleForTesting
@@ -267,7 +253,9 @@ public class HMSFollower implements Runnable, AutoCloseable {
     }
 
     try {
-      if (needHiveSnapshot) {
+      // Decision of taking full snapshot is based on AuthzPathsMapping information persisted
+      // in the sentry persistent store. If AuthzPathsMapping is empty, shapshot is needed.
+      if (sentryStore.isAuthzPathsMappingEmpty()) {
         // TODO: expose time used for full update in the metrics
 
         // To ensure point-in-time snapshot consistency, need to make sure
@@ -311,7 +299,6 @@ public class HMSFollower implements Runnable, AutoCloseable {
         // lastProcessedNotificationID instead of getting it from persistent store.
         lastProcessedNotificationID = eventIDAfter.getEventId();
         sentryStore.persistFullPathsImage(pathsFullSnapshot);
-        needHiveSnapshot = false;
         sentryStore.persistLastProcessedNotificationID(eventIDAfter.getEventId());
         // Wake up any HMS waiters that could have been put on hold before getting the eventIDBefore value.
         wakeUpWaitingClientsForSync(lastProcessedNotificationID);
