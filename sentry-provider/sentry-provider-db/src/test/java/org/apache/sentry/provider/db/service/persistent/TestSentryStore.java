@@ -3033,4 +3033,27 @@ public class TestSentryStore extends org.junit.Assert {
       }
     }
   }
+
+  @Test
+  public void testIsAuthzPathsMappingEmpty() throws Exception {
+    // Add "db1.table1" authzObj
+    Long lastNotificationId = sentryStore.getLastProcessedNotificationID();
+    PathsUpdate addUpdate = new PathsUpdate(1, false);
+    addUpdate.newPathChange("db1.table").
+      addToAddPaths(Arrays.asList("db1", "tbl1"));
+    addUpdate.newPathChange("db1.table").
+      addToAddPaths(Arrays.asList("db1", "tbl2"));
+
+    assertEquals(sentryStore.isAuthzPathsMappingEmpty(), true);
+    sentryStore.addAuthzPathsMapping("db1.table",
+      Sets.newHashSet("db1/tbl1", "db1/tbl2"), addUpdate);
+    PathsImage pathsImage = sentryStore.retrieveFullPathsImage();
+    Map<String, Set<String>> pathImage = pathsImage.getPathImage();
+    assertEquals(1, pathImage.size());
+    assertEquals(2, pathImage.get("db1.table").size());
+    assertEquals(2, sentryStore.getMPaths().size());
+    assertEquals(sentryStore.isAuthzPathsMappingEmpty(), false);
+    sentryStore.clearAllTables();
+    assertEquals(sentryStore.isAuthzPathsMappingEmpty(), true);
+  }
 }

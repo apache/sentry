@@ -2798,6 +2798,23 @@ public class SentryStore {
   }
 
   /**
+   * Tells if there are any records in MAuthzPathsMapping
+   *
+   * @return true if there are no entries in <code>MAuthzPathsMapping</code>
+   * false if there are entries
+   * @throws Exception
+   */
+  public boolean isAuthzPathsMappingEmpty() throws Exception {
+    return tm.executeTransactionWithRetry(
+      new TransactionBlock<Boolean>() {
+        public Boolean execute(PersistenceManager pm) throws Exception {
+          pm.setDetachAllOnCommit(false); // No need to detach objects
+          return isTableEmptyCore(pm, MAuthzPathsMapping.class);
+        }
+      });
+  }
+
+  /**
    * Updates authzObj -> [Paths] mapping to replace an existing path with a new one
    * given an authzObj. As well as persist the corresponding delta path change to
    * MSentryPathChange table in a single transaction.
@@ -2860,6 +2877,25 @@ public class SentryStore {
     query.declareParameters("java.lang.String authzObjName");
     query.setUnique(true);
     return (MAuthzPathsMapping) query.execute(authzObj);
+  }
+
+  /**
+   * Checks if the table associated with class provided is empty
+   *
+   * @param pm PersistenceManager
+   * @param clazz class
+   * @return True is the table is empty
+   * False if it not.
+   */
+  private boolean isTableEmptyCore(PersistenceManager pm, Class clazz) {
+    Query query = pm.newQuery(clazz);
+    // setRange is implemented efficiently for MySQL, Postgresql (using the LIMIT SQL keyword)
+    // and Oracle (using the ROWNUM keyword), with the query only finding the objects required
+    // by the user directly in the datastore. For other RDBMS the query will retrieve all
+    // objects up to the "to" record, and will not pass any unnecessary objects that are before
+    // the "from" record.
+    query.setRange(0, 1);
+    return ((List<MAuthzPathsMapping>) query.execute()).isEmpty();
   }
 
   @VisibleForTesting
