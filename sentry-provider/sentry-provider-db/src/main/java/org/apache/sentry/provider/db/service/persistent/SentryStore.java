@@ -910,7 +910,7 @@ public class SentryStore {
    * The responsibility to commit/rollback the transaction should be handled by the caller.
    */
   private void populateChildren(PersistenceManager pm, Set<String> roleNames, MSentryPrivilege priv,
-      Set<MSentryPrivilege> children) throws SentryInvalidInputException {
+      Collection<MSentryPrivilege> children) throws SentryInvalidInputException {
     Preconditions.checkNotNull(pm);
     if ((!isNULL(priv.getServerName())) || (!isNULL(priv.getDbName()))
         || (!isNULL(priv.getTableName()))) {
@@ -2050,44 +2050,49 @@ public class SentryStore {
       TSentryPrivilege tPrivilege,
       TSentryPrivilege newTPrivilege) throws SentryNoSuchObjectException,
       SentryInvalidInputException {
-    HashSet<MSentryRole> roleSet = Sets.newHashSet();
-
+    Collection<MSentryRole> roleSet = new HashSet<>();
     List<MSentryPrivilege> mPrivileges = getMSentryPrivileges(tPrivilege, pm);
-    if (mPrivileges != null && !mPrivileges.isEmpty()) {
-      for (MSentryPrivilege mPrivilege : mPrivileges) {
-        roleSet.addAll(ImmutableSet.copyOf((mPrivilege.getRoles())));
-      }
+    for (MSentryPrivilege mPrivilege : mPrivileges) {
+      roleSet.addAll(ImmutableSet.copyOf(mPrivilege.getRoles()));
     }
-
+    // Dropping the privilege
+    if (newTPrivilege == null) {
+      for (MSentryRole role : roleSet) {
+        alterSentryRoleRevokePrivilegeCore(pm, role.getRoleName(), tPrivilege);
+      }
+      return;
+    }
+    // Renaming privilege
     MSentryPrivilege parent = getMSentryPrivilege(tPrivilege, pm);
+    if (parent != null) {
+      // When all the roles associated with that privilege are revoked, privilege
+      // will be removed from the database.
+      // parent is an JDO object which is associated with privilege data in the database.
+      // When the associated row is deleted in database, JDO should be not be
+      // dereferenced. If object has to be used even after that it should have been detached.
+      parent = pm.detachCopy(parent);
+    }
     for (MSentryRole role : roleSet) {
       // 1. get privilege and child privileges
-      Set<MSentryPrivilege> privilegeGraph = Sets.newHashSet();
+      Collection<MSentryPrivilege> privilegeGraph = new HashSet<>();
       if (parent != null) {
-
-        //  Parent privilege object is used after revoking.
-        //  If the privilege was associated to only role which is revoked,
-        //  privilege object should not be used. It is safe to insert
-        //  a copy of the parent object in the privilegeGraph
-        privilegeGraph.add(convertToMSentryPrivilege(convertToTSentryPrivilege(parent)));
+        privilegeGraph.add(parent);
         populateChildren(pm, Sets.newHashSet(role.getRoleName()), parent, privilegeGraph);
       } else {
         populateChildren(pm, Sets.newHashSet(role.getRoleName()), convertToMSentryPrivilege(tPrivilege),
-            privilegeGraph);
+          privilegeGraph);
       }
       // 2. revoke privilege and child privileges
       alterSentryRoleRevokePrivilegeCore(pm, role.getRoleName(), tPrivilege);
       // 3. add new privilege and child privileges with new tableName
-      if (newTPrivilege != null) {
-        for (MSentryPrivilege m : privilegeGraph) {
-          TSentryPrivilege t = convertToTSentryPrivilege(m);
-          if (newTPrivilege.getPrivilegeScope().equals(PrivilegeScope.DATABASE.name())) {
-            t.setDbName(newTPrivilege.getDbName());
-          } else if (newTPrivilege.getPrivilegeScope().equals(PrivilegeScope.TABLE.name())) {
-            t.setTableName(newTPrivilege.getTableName());
-          }
-          alterSentryRoleGrantPrivilegeCore(pm, role.getRoleName(), t);
+      for (MSentryPrivilege mPriv : privilegeGraph) {
+        TSentryPrivilege tPriv = convertToTSentryPrivilege(mPriv);
+        if (newTPrivilege.getPrivilegeScope().equals(PrivilegeScope.DATABASE.name())) {
+          tPriv.setDbName(newTPrivilege.getDbName());
+        } else if (newTPrivilege.getPrivilegeScope().equals(PrivilegeScope.TABLE.name())) {
+          tPriv.setTableName(newTPrivilege.getTableName());
         }
+        alterSentryRoleGrantPrivilegeCore(pm, role.getRoleName(), tPriv);
       }
     }
   }
