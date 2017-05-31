@@ -17,10 +17,12 @@
 package org.apache.sentry.tests.e2e.dbprovider;
 
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
+import org.apache.sentry.tests.e2e.hive.SlowE2ETest;
 import org.apache.sentry.tests.e2e.hive.TestPrivilegesAtFunctionScope;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
+@SlowE2ETest
 public class TestDbPrivilegesAtFunctionScope extends
     TestPrivilegesAtFunctionScope {
   @Override

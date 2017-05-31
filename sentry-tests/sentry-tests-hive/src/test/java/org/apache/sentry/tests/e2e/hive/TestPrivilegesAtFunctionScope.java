@@ -31,6 +31,7 @@ import java.sql.Statement;
 
 import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.io.Resources;
@@ -65,6 +66,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
    * user with table level access should be able to create/drop temp functions
    * user with no privilege should NOT be able to create/drop temp functions
    */
+  @Ignore("Once CDH-54745 is fixed, enable this test again")
   @Test
   public void testFuncPrivileges1() throws Exception {
     String tableName1 = "tb_1";
