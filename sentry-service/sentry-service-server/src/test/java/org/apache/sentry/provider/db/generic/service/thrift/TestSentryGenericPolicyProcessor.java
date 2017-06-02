@@ -300,13 +300,6 @@ public class TestSentryGenericPolicyProcessor extends org.junit.Assert {
     SentryGenericPolicyProcessor.createHandlers(conf);
   }
 
-  @Test(expected=SentrySiteConfigurationException.class)
-  public void testConfigCannotCreateSentryStore() throws Exception {
-    Configuration conf = new Configuration();
-    conf.set(PolicyStoreConstants.SENTRY_GENERIC_POLICY_STORE,"junk");
-    SentryGenericPolicyProcessor.createStore(conf);
-  }
-
   public static class MockGroupMapping implements GroupMappingService {
     public MockGroupMapping(Configuration conf, String resource) { //NOPMD
     }

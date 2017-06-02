@@ -62,7 +62,7 @@ public class DelegateSentryStore implements SentryStoreLayer {
   private Set<String> adminGroups;
   private PrivilegeOperatePersistence privilegeOperator;
 
-  DelegateSentryStore(Configuration conf) throws Exception {
+  public DelegateSentryStore(Configuration conf) throws Exception {
     this.privilegeOperator = new PrivilegeOperatePersistence(conf);
     this.conf = conf;
     //delegated old sentryStore
