@@ -99,12 +99,12 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     if (conf.getBoolean(ServerConfig.SENTRY_HA_ENABLED,
         ServerConfig.SENTRY_HA_ENABLED_DEFAULT)) {
       haContext = HAContext.getHAServerContext(conf);
-      sentryStore = new SentryStore(conf);
+      sentryStore = SentryStore.getInstance(conf);
       ServiceRegister reg = new ServiceRegister(haContext);
       reg.regService(conf.get(ServerConfig.RPC_ADDRESS),
           conf.getInt(ServerConfig.RPC_PORT,ServerConfig.RPC_PORT_DEFAULT));
     } else {
-      sentryStore = new SentryStore(conf);
+      sentryStore = SentryStore.getInstance(conf);
     }
     isReady = true;
     adminGroups = ImmutableSet.copyOf(toTrimedLower(Sets.newHashSet(conf.getStrings(
@@ -137,7 +137,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
 
   public void stop() {
     if (isReady) {
-      sentryStore.stop();
+      sentryStore.close();
     }
     if (haContext != null) {
       try {

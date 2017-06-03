@@ -114,7 +114,7 @@ public class SentryAdminServlet extends HttpServlet {
 
     Writer out = response.getWriter();
     try {
-      SentryStore sentrystore = new SentryStore(conf);
+      SentryStore sentrystore = SentryStore.getInstance(conf);
       Map<String, Set<TSentryPrivilege>> roleMap = new HashMap<>();
       Set<String> roleSet = sentrystore.getAllRoleNames();
       for (String roleName: roleSet) {

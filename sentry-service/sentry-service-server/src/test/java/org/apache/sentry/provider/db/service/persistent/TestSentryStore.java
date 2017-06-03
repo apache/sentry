@@ -110,7 +110,7 @@ public class TestSentryStore extends org.junit.Assert {
   @AfterClass
   public static void teardown() {
     if (sentryStore != null) {
-      sentryStore.stop();
+      sentryStore.close();
     }
     if (dataDir != null) {
       FileUtils.deleteQuietly(dataDir);

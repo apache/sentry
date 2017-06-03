@@ -54,7 +54,7 @@ public class TestSentryVersion {
   public void testVerifySentryVersionCheck() throws Exception {
     conf.set(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "false");
     SentryStore sentryStore = new SentryStore(conf);
-    sentryStore.stop();
+    sentryStore.close();
     conf.set(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "true");
   }
 

@@ -27,11 +27,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.jdo.FetchGroup;
 import javax.jdo.JDODataStoreException;
@@ -83,7 +85,10 @@ import com.google.common.collect.Sets;
  * such as role and group names will be normalized to lowercase
  * in addition to starting and ending whitespace.
  */
-public class SentryStore {
+public final class SentryStore {
+  // SentryStore is a singleton, except for testing purposes
+  private static final AtomicReference<SentryStore> instance = new AtomicReference<>();
+
   private static final Logger LOGGER = LoggerFactory
           .getLogger(SentryStore.class);
 
@@ -104,7 +109,7 @@ public class SentryStore {
   // For counters, representation of the "unknown value"
   private static final long COUNT_VALUE_UNKNOWN = -1;
 
-  private static final Set<String> ALL_ACTIONS = Sets.newHashSet(AccessConstants.ALL,
+  private static final Set<String> ALL_ACTIONS = ImmutableSet.of(AccessConstants.ALL,
       AccessConstants.SELECT, AccessConstants.INSERT, AccessConstants.ALTER,
       AccessConstants.CREATE, AccessConstants.DROP, AccessConstants.INDEX,
       AccessConstants.LOCK);
@@ -112,14 +117,56 @@ public class SentryStore {
   // Now partial revoke just support action with SELECT,INSERT and ALL.
   // e.g. If we REVOKE SELECT from a privilege with action ALL, it will leads to INSERT
   // Otherwise, if we revoke other privilege(e.g. ALTER,DROP...), we will remove it from a role directly.
-  private static final Set<String> PARTIAL_REVOKE_ACTIONS = Sets.newHashSet(AccessConstants.ALL,
+  private static final Set<String> PARTIAL_REVOKE_ACTIONS = ImmutableSet.of(AccessConstants.ALL,
       AccessConstants.ACTION_ALL.toLowerCase(), AccessConstants.SELECT, AccessConstants.INSERT);
 
   private final PersistenceManagerFactory pmf;
   private Configuration conf;
   private final TransactionManager tm;
 
-  public SentryStore(Configuration conf) throws Exception {
+  /**
+   * return a singleton instance of the SentryStore
+   * @param conf Configuration object. Only used for the initial construction,
+   *             ignored for all subsequent calls.
+   * @return instance of the SentryStore object.
+   * @throws Exception if something goes wrong during SentryStore creation
+   */
+  public static SentryStore getInstance(Configuration conf) throws Exception {
+    // If there is an instance already, return it
+    SentryStore store = instance.get();
+    if (store != null) {
+      LOGGER.debug("Using cached SentryStore store");
+      return store;
+    }
+    LOGGER.debug("creating new SentryStore");
+    // Create a new one
+    store = new SentryStore(conf);
+    // Save the new instance. In case someone beat us in the race, ignore the new instance
+    boolean ok = instance.compareAndSet(null, store);
+    if (ok) {
+      // Successfully saved, return the new value
+      return store;
+    }
+    // Someone already installed a new store, use it.
+    store.close();
+    return instance.get();
+  }
+
+  /**
+   * Reset the static instance of SentryStore. This is only used by tests when they want to start
+   * a new SentryStore with a different configuration.
+   */
+  public static void resetSentryStore() {
+    SentryStore store = instance.get();
+    instance.set(null);
+    // Close old instance
+    if (store != null) {
+      store.close();
+    }
+  }
+
+  @VisibleForTesting
+  protected SentryStore(Configuration conf) throws Exception {
     this.conf = conf;
     Properties prop = new Properties();
     prop.putAll(ServerConfig.SENTRY_STORE_DEFAULTS);
@@ -217,7 +264,7 @@ public class SentryStore {
     }
   }
 
-  public synchronized void stop() {
+  public synchronized void close() {
     if (pmf != null) {
       pmf.close();
     }

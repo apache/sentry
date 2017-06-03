@@ -130,7 +130,7 @@ public class TestSentryStoreImportExport {
   @AfterClass
   public static void teardown() {
     if (sentryStore != null) {
-      sentryStore.stop();
+      sentryStore.close();
     }
     if (dataDir != null) {
       FileUtils.deleteQuietly(dataDir);

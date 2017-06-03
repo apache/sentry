@@ -40,6 +40,7 @@ import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericService
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClientFactory;
 import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
+import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.provider.file.LocalGroupResourceAuthorizationProvider;
 import org.apache.sentry.core.common.utils.PolicyFile;
 import org.apache.sentry.service.thrift.SentryService;
@@ -114,6 +115,7 @@ public class AbstractSqoopSentryTestBase {
   }
 
   public static void setupConf() throws Exception {
+    SentryStore.resetSentryStore();
     baseDir = createTempDir();
     sqoopDir = new File(baseDir, "sqoop");
     dbDir = new File(baseDir, "sentry_policy_db");
