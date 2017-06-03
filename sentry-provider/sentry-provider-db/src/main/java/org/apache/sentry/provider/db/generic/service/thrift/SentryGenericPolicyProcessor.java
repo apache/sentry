@@ -22,6 +22,7 @@ import static org.apache.sentry.provider.common.ProviderConstants.KV_JOINER;
 import static org.apache.sentry.provider.common.ProviderConstants.AUTHORIZABLE_SPLITTER;
 
 import java.lang.reflect.Constructor;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +40,7 @@ import org.apache.sentry.provider.db.SentryAlreadyExistsException;
 import org.apache.sentry.provider.db.SentryInvalidInputException;
 import org.apache.sentry.provider.db.SentryNoSuchObjectException;
 import org.apache.sentry.provider.db.SentryThriftAPIMismatchException;
+import org.apache.sentry.provider.db.generic.service.persistent.DelegateSentryStore;
 import org.apache.sentry.provider.db.generic.service.persistent.PrivilegeObject;
 import org.apache.sentry.provider.db.generic.service.persistent.PrivilegeObject.Builder;
 import org.apache.sentry.provider.db.generic.service.persistent.SentryStoreLayer;
@@ -78,8 +80,8 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
   public static final String SENTRY_GENERIC_SERVICE_NAME = "SentryGenericPolicyService";
   private static final String ACCESS_DENIAL_MESSAGE = "Access denied to ";
 
-  public SentryGenericPolicyProcessor(Configuration conf) throws Exception {
-    this.store = createStore(conf);
+  SentryGenericPolicyProcessor(Configuration conf) throws Exception {
+    this.store = new DelegateSentryStore(conf);
     this.handerInvoker = new NotificationHandlerInvoker(createHandlers(conf));
     this.conf = conf;
     adminGroups = ImmutableSet.copyOf((Sets.newHashSet(conf.getStrings(
@@ -87,7 +89,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
   }
 
   @VisibleForTesting
-  public SentryGenericPolicyProcessor(Configuration conf, SentryStoreLayer store) throws Exception {
+  SentryGenericPolicyProcessor(Configuration conf, SentryStoreLayer store) throws Exception {
     this.store = store;
     this.handerInvoker = new NotificationHandlerInvoker(createHandlers(conf));
     this.conf = conf;
@@ -106,10 +108,10 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
   }
 
   private Set<String> toTrimmedLower(Set<String> s) {
-    if (null == s) {
-      return new HashSet<String>();
+    if (s == null) {
+      return Collections.emptySet();
     }
-    Set<String> result = Sets.newHashSet();
+    Set<String> result = new HashSet<>(s.size());
     for (String v : s) {
       result.add(v.trim().toLowerCase());
     }
@@ -117,10 +119,10 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
   }
 
   private Set<String> toTrimmed(Set<String> s) {
-    if (null == s) {
-      return new HashSet<String>();
+    if (s == null) {
+      return Collections.emptySet();
     }
-    Set<String> result = Sets.newHashSet();
+    Set<String> result = new HashSet<>(s.size());
     for (String v : s) {
       result.add(v.trim());
     }
@@ -134,32 +136,15 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
     return s.trim().toLowerCase();
   }
 
-  public static Set<String> getRequestorGroups(Configuration conf, String userName) throws SentryUserException {
+  private static Set<String> getRequestorGroups(Configuration conf, String userName) throws SentryUserException {
     return SentryPolicyStoreProcessor.getGroupsFromUserName(conf, userName);
   }
 
   private boolean inAdminGroups(Set<String> requestorGroups) {
-    if (Sets.intersection(adminGroups, requestorGroups).isEmpty()) {
-      return false;
-    } else return true;
+    return !Sets.intersection(adminGroups, requestorGroups).isEmpty();
   }
 
-  public static SentryStoreLayer createStore(Configuration conf) throws SentryConfigurationException {
-    SentryStoreLayer storeLayer = null;
-    String Store = conf.get(PolicyStoreConstants.SENTRY_GENERIC_POLICY_STORE, PolicyStoreConstants.SENTRY_GENERIC_POLICY_STORE_DEFAULT);
-
-    if (Strings.isNullOrEmpty(Store)) {
-      throw new SentryConfigurationException("the parameter configuration for sentry.generic.policy.store can't be empty");
-    }
-    try {
-      storeLayer = createInstance(Store, conf, SentryStoreLayer.class);
-    } catch (Exception e) {
-      throw new SentryConfigurationException("Create sentryStore error: " + e.getMessage(), e);
-    }
-    return storeLayer;
-  }
-
-  public static List<NotificationHandler> createHandlers(Configuration conf) throws SentryConfigurationException {
+  static List<NotificationHandler> createHandlers(Configuration conf) throws SentryConfigurationException {
 
     List<NotificationHandler> handlers = Lists.newArrayList();
     Iterable<String> notificationHandlers = Splitter.onPattern("[\\s,]").trimResults()
@@ -175,7 +160,7 @@ public class SentryGenericPolicyProcessor implements SentryGenericPolicyService.
   }
 
   @SuppressWarnings("unchecked")
-  public static <T> T createInstance(String className, Configuration conf, Class<T> iface) throws Exception {
+  private static <T> T createInstance(String className, Configuration conf, Class<T> iface) throws Exception {
     T result;
     try {
       Class clazz = Class.forName(className);
