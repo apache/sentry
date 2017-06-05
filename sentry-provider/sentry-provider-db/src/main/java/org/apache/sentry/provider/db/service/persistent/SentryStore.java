@@ -517,23 +517,27 @@ public class SentryStore {
 
   /**
    * Purge delta change tables, {@link MSentryPermChange} and {@link MSentryPathChange}.
+   * The number of deltas to keep is configurable
    */
   public void purgeDeltaChangeTables() {
-    LOGGER.info("Purging MSentryPathUpdate and MSentyPermUpdate tables.");
+    final int changesToKeep = conf.getInt(ServerConfig.SENTRY_DELTA_KEEP_COUNT,
+            ServerConfig.SENTRY_DELTA_KEEP_COUNT_DEFAULT);
+    LOGGER.info("Purging MSentryPathUpdate and MSentyPermUpdate tables, leaving {} entries",
+            changesToKeep);
     try {
       tm.executeTransaction(new TransactionBlock<Object>() {
         @Override
         public Object execute(PersistenceManager pm) throws Exception {
           pm.setDetachAllOnCommit(false); // No need to detach objects
-          purgeDeltaChangeTableCore(MSentryPermChange.class, pm, 1);
+          purgeDeltaChangeTableCore(MSentryPermChange.class, pm, changesToKeep);
           LOGGER.info("MSentryPermChange table has been purged.");
-          purgeDeltaChangeTableCore(MSentryPathChange.class, pm, 1);
+          purgeDeltaChangeTableCore(MSentryPathChange.class, pm, changesToKeep);
           LOGGER.info("MSentryPathUpdate table has been purged.");
           return null;
         }
       });
     } catch (Exception e) {
-      LOGGER.error("Delta change cleaning process encounter an error.", e);
+      LOGGER.error("Delta change cleaning process encounter an error", e);
     }
   }
 

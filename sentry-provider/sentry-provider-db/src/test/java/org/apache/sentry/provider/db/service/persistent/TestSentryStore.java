@@ -59,6 +59,7 @@ import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
 import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.service.thrift.ServiceConstants;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -2902,8 +2903,10 @@ public class TestSentryStore extends org.junit.Assert {
     assertEquals(0, sentryStore.getMSentryPathChanges().size());
 
     sentryStore.createSentryRole(role);
+    int privCleanCount = ServerConfig.SENTRY_DELTA_KEEP_COUNT_DEFAULT;
+    int extraPrivs = 5;
 
-    final int numPermChanges = 5;
+    final int numPermChanges = extraPrivs + privCleanCount;
     for (int i = 0; i < numPermChanges; i++) {
       TSentryPrivilege privilege = new TSentryPrivilege();
       privilege.setPrivilegeScope("Column");
@@ -2920,7 +2923,7 @@ public class TestSentryStore extends org.junit.Assert {
     assertEquals(numPermChanges, sentryStore.getMSentryPermChanges().size());
 
     sentryStore.purgeDeltaChangeTables();
-    assertEquals(1, sentryStore.getMSentryPermChanges().size());
+    assertEquals(privCleanCount, sentryStore.getMSentryPermChanges().size());
 
     // TODO: verify MSentryPathChange being purged.
     // assertEquals(1, sentryStore.getMSentryPathChanges().size());
