@@ -223,6 +223,14 @@ public class ServiceConstants {
     public static final String SENTRY_KERBEROS_TGT_AUTORENEW = "sentry.service.kerberos.tgt.autorenew";
     @Deprecated
     public static final Boolean SENTRY_KERBEROS_TGT_AUTORENEW_DEFAULT = false;
+
+    /**
+     * Number of path/priv deltas to keep around during cleaning
+     * The value which is too small may cause unnecessary full snapshots sent to the Name Node
+     * A value which is too large may cause slowdown due to too many deltas lying around in the DB.
+     */
+    public static final String SENTRY_DELTA_KEEP_COUNT = "sentry.server.delta.keep.count";
+    public static final int SENTRY_DELTA_KEEP_COUNT_DEFAULT = 200;
   }
 
   public static class ClientConfig {
