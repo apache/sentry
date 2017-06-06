@@ -54,6 +54,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.SocketException;
 import java.security.PrivilegedExceptionAction;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -273,14 +274,9 @@ public class HMSFollower implements Runnable, AutoCloseable {
         CurrentNotificationEventId eventIDBefore = client.getCurrentNotificationEventId();
         LOGGER.info(String.format("Before fetching hive full snapshot, Current NotificationID = %s.", eventIDBefore));
 
-        try {
-          pathsFullSnapshot = fetchFullUpdate();
-          if(pathsFullSnapshot.isEmpty()) {
-            LOGGER.info("Hive full snapshot is Empty. Perhaps, HMS does not have any data");
-            return;
-          }
-        } catch (ExecutionException | InterruptedException ex) {
-          LOGGER.error("#### Encountered failure during fetching hive full snapshot !!", ex);
+        pathsFullSnapshot = fetchFullUpdate();
+        if(pathsFullSnapshot.isEmpty()) {
+          LOGGER.info("Hive full snapshot is Empty. Perhaps, HMS does not have any data");
           return;
         }
 
@@ -385,12 +381,15 @@ public class HMSFollower implements Runnable, AutoCloseable {
    * @throws ExecutionException
    */
   private Map<String, Set<String>> fetchFullUpdate()
-    throws InterruptedException, TException, ExecutionException {
+    throws TException, ExecutionException {
     LOGGER.info("Request full HMS snapshot");
     try (FullUpdateInitializer updateInitializer = new FullUpdateInitializer(client, authzConf)) {
       Map<String, Set<String>> pathsUpdate = updateInitializer.getFullHMSSnapshot();
       LOGGER.info("Obtained full HMS snapshot");
       return pathsUpdate;
+    } catch (Exception ignored) {
+      // Caller will retry later
+      return Collections.emptyMap();
     }
   }
 

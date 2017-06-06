@@ -18,7 +18,6 @@
 package org.apache.sentry.hdfs;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.Database;
@@ -147,11 +146,11 @@ public final class FullUpdateInitializer implements AutoCloseable {
   }
 
   private static final class CallResult {
-    private final TException failure;
+    private final Exception failure;
     private final boolean successStatus;
     private final ObjectMapping objectMapping;
 
-    CallResult(TException ex) {
+    CallResult(Exception ex) {
       failure = ex;
       successStatus = false;
       objectMapping = emptyObjectMapping;
@@ -171,7 +170,7 @@ public final class FullUpdateInitializer implements AutoCloseable {
       return objectMapping;
     }
 
-    public TException getFailure() {
+    public Exception getFailure() {
       return failure;
     }
   }
@@ -184,53 +183,54 @@ public final class FullUpdateInitializer implements AutoCloseable {
     private final class RetryStrategy {
       private int retryStrategyMaxRetries = 0;
       private final int retryStrategyWaitDurationMillis;
-      private int retries;
 
       private RetryStrategy(int retryStrategyMaxRetries, int retryStrategyWaitDurationMillis) {
         this.retryStrategyMaxRetries = retryStrategyMaxRetries;
-        retries = 0;
 
         // Assign default wait duration if negative value is provided.
-        if (retryStrategyWaitDurationMillis > 0) {
-          this.retryStrategyWaitDurationMillis = retryStrategyWaitDurationMillis;
-        } else {
-          this.retryStrategyWaitDurationMillis = 1000;
-        }
+        this.retryStrategyWaitDurationMillis = (retryStrategyWaitDurationMillis > 0) ?
+                retryStrategyWaitDurationMillis : 1000;
       }
 
+      @SuppressWarnings({"squid:S1141", "squid:S2142"})
       public CallResult exec()  {
-
         // Retry logic is happening inside callable/task to avoid
         // synchronous waiting on getting the result.
         // Retry the failure task until reach the max retry number.
         // Wait configurable duration for next retry.
-        TException exception = null;
-        for (int i = 0; i < retryStrategyMaxRetries; i++) {
-          try {
-            return new CallResult(doTask());
-          } catch (TException ex) {
-            LOGGER.debug("Failed to execute task on " + (i + 1) + " attempts." +
-            " Sleeping for " + retryStrategyWaitDurationMillis + " ms. Exception: " +
-                    ex.toString(), ex);
-            exception = ex;
-
+        //
+        // Only thrift exceptions are retried.
+        // Other exceptions are propagated up the stack.
+        Exception exception = null;
+        try {
+          // We catch all exceptions except Thrift exceptions which are retried
+          for (int i = 0; i < retryStrategyMaxRetries; i++) {
+            //noinspection NestedTryStatement
             try {
-              Thread.sleep(retryStrategyWaitDurationMillis);
-            } catch (InterruptedException ignored) {
-              // Skip the rest retries if get InterruptedException.
-              // And set the corresponding retries number.
-              LOGGER.warn("Interrupted during update fetch during iteration " + (i + 1));
-              retries = i;
-              i = retryStrategyMaxRetries;
+              return new CallResult(doTask());
+            } catch (TException ex) {
+              LOGGER.debug("Failed to execute task on " + (i + 1) + " attempts." +
+                      " Sleeping for " + retryStrategyWaitDurationMillis + " ms. Exception: " +
+                      ex.toString(), ex);
+              exception = ex;
+
+              try {
+                Thread.sleep(retryStrategyWaitDurationMillis);
+              } catch (InterruptedException ignored) {
+                // Skip the rest retries if get InterruptedException.
+                // And set the corresponding retries number.
+                LOGGER.warn("Interrupted during update fetch during iteration " + (i + 1));
+                break;
+              }
             }
           }
-
-          retries = i;
+        } catch (Exception ex) {
+          exception = ex;
         }
-
-        // Task fails, return the failure flag.
-        LOGGER.error("Task did not complete successfully after " + (retries + 1)
-        + " tries", exception);
+        LOGGER.error("Failed to execute task", exception);
+        // We will fail in the end, so we are shutting down the pool to prevent
+        // new tasks from being scheduled.
+        threadPool.shutdown();
         return new CallResult(exception);
       }
     }
@@ -291,6 +291,7 @@ public final class FullUpdateInitializer implements AutoCloseable {
     }
 
     @Override
+    @SuppressWarnings({"squid:S2629", "squid:S135"})
     ObjectMapping doTask() throws TException {
       List<Table> tables = client.getTableObjectsByName(dbName, tableNames);
       if (LOGGER.isDebugEnabled()) {
@@ -345,8 +346,7 @@ public final class FullUpdateInitializer implements AutoCloseable {
     ObjectMapping doTask() throws TException {
       Database db = client.getDatabase(dbName);
       if (!dbName.equalsIgnoreCase(db.getName())) {
-        LOGGER.warn(String.format("Database name %s does not match %s",
-                db.getName(), dbName));
+        LOGGER.warn("Database name {} does not match {}", db.getName(), dbName);
         return emptyObjectMapping;
       }
       List<String> allTblStr = client.getAllTables(dbName);
@@ -388,8 +388,9 @@ public final class FullUpdateInitializer implements AutoCloseable {
    * @throws ExecutionException if there was a scheduling error
    * @throws InterruptedException if processing was interrupted
    */
+  @SuppressWarnings("squid:S00112")
   public Map<String, Set<String>> getFullHMSSnapshot()
-          throws TException, ExecutionException, InterruptedException {
+          throws Exception {
     // Get list of all HMS databases
     List<String> allDbStr = client.getAllDatabases();
     // Schedule async task for each database responsible for fetching per-database
@@ -410,7 +411,7 @@ public final class FullUpdateInitializer implements AutoCloseable {
       Future<CallResult> result = results.pop();
       // Wait for the task to complete
       CallResult callResult = result.get();
-      // Fail if we got Thrift errors
+      // Fail if we got errors
       if (!callResult.success()) {
         throw callResult.getFailure();
       }
@@ -438,6 +439,7 @@ public final class FullUpdateInitializer implements AutoCloseable {
       threadPool.awaitTermination(1, TimeUnit.SECONDS);
     } catch (InterruptedException ignored) {
       LOGGER.warn("Interrupted shutdown");
+      Thread.currentThread().interrupt();
     }
   }
 
