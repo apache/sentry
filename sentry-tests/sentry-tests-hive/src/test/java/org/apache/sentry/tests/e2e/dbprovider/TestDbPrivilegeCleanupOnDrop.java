@@ -40,7 +40,6 @@ import com.google.common.io.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Ignore("Ignoring until SENTRY-1321 is complete")
 public class TestDbPrivilegeCleanupOnDrop extends
     AbstractTestWithStaticConfiguration {
   private static final Logger LOGGER = LoggerFactory

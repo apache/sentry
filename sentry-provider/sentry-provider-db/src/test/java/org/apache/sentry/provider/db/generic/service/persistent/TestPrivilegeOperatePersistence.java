@@ -47,7 +47,6 @@ import com.google.common.collect.Sets;
  * The test cases are used for search component The authorizables are COLLECTION and Field
  * The actions of search privilege are ALL,QUERY and UPDATE
  */
-@Ignore("Enable after fencing has been disabled - SENTRY-1478")
 public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase {
   private static final String SEARCH = "solr";
   private static final String ADMIN_USER = "solr";
