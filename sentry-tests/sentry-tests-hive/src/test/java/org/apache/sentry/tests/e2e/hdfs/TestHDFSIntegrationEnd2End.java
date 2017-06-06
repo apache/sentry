@@ -43,7 +43,6 @@ public class TestHDFSIntegrationEnd2End extends TestHDFSIntegrationBase {
 
   private static String adminRole = "admin_role";
 
-  @Ignore
   @Test
   public void testEnd2End() throws Throwable {
     tmpHDFSDir = new Path("/tmp/external");
@@ -373,7 +372,6 @@ public class TestHDFSIntegrationEnd2End extends TestHDFSIntegrationBase {
   }
 
   //SENTRY-780
-  @Ignore // SENTRY-1750 HMSFollower does not handle view update correctly. Enable this test once SENTRY-1750 is fixed
   @Test
   public void testViews() throws Throwable {
     LOGGER.info("testViews starts");
