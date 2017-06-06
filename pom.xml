@@ -785,6 +785,7 @@ limitations under the License.
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
             <argLine>-Xms512m -Xmx2g -XX:MaxPermSize=2g</argLine>
             <systemPropertyVariables>
+              <java.security.egd>file:/dev/./urandom</java.security.egd>
               <java.net.preferIPv4Stack>true</java.net.preferIPv4Stack>
             </systemPropertyVariables>
           </configuration>
