@@ -120,6 +120,7 @@ public class TestSentryStore extends org.junit.Assert {
     policyFilePath = new File(dataDir, "local_policy_file.ini");
     conf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE,
         policyFilePath.getPath());
+    conf.setInt(ServerConfig.SENTRY_STORE_TRANSACTION_RETRY, 10);
     sentryStore = new SentryStore(conf);
   }
 
@@ -2960,7 +2961,7 @@ public class TestSentryStore extends org.junit.Assert {
                 new PermissionsUpdate(seqNumGenerator.getAndIncrement(), false);
             tbs.add(new DeltaTransactionBlock(update));
             try {
-              tm.executeTransaction(tbs);
+              tm.executeTransactionBlocksWithRetry(tbs);
             } catch (Exception e) {
               LOGGER.error("Failed to execute permission update transaction", e);
               fail(String.format("Transaction failed: %s", e.getMessage()));
