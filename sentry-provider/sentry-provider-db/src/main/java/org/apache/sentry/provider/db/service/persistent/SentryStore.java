@@ -3148,6 +3148,7 @@ public class SentryStore {
     Query query = pm.newQuery(changeCls);
     query.setFilter("this.changeID >= t");
     query.declareParameters("long t");
+    query.setOrdering("this.changeID ascending");
     return (List<T>) query.execute(changeID);
   }
 
