@@ -65,9 +65,8 @@ public class MSentryPermChange implements MSentryChange {
   private String permChange;
   private long createTimeMs;
 
-  public MSentryPermChange(PermissionsUpdate permChange) throws TException {
-    // See SENTRY-1643. changeID is set after increasing 1 of the "max(changeID)" fetched from
-    // the table, to avoid holes between changeIDs. it is subjected to change.
+  public MSentryPermChange(long changeID, PermissionsUpdate permChange) throws TException {
+    this.changeID = changeID;
     this.permChange = permChange.JSONSerialize();
     this.createTimeMs = System.currentTimeMillis();
   }
