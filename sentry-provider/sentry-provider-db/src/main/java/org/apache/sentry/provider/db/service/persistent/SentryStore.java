@@ -63,6 +63,7 @@ import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
 import org.apache.sentry.provider.db.service.model.MSentryUser;
 import org.apache.sentry.provider.db.service.model.MSentryVersion;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
+import org.apache.sentry.provider.db.service.model.MSentryUtil;
 import org.apache.sentry.provider.db.service.model.MPath;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessor;
 import org.apache.sentry.provider.db.service.thrift.TSentryActiveRoleSet;
@@ -3743,67 +3744,94 @@ public class SentryStore {
 
   /**
    * Gets a list of MSentryPathChange objects greater than or equal to the given changeID.
-   * If there is any path deltas missing in {@link MSentryPathChange} table, which means
-   * the size of retrieved paths deltas is less than the requested one, an empty list will
-   * be returned to caller.
+   * If there is any path delta missing in {@link MSentryPathChange} table, an empty list is returned.
    *
-   * @param changeID
-   * @return a list of MSentryPathChange objects. It can returns an empty list.
+   * @param changeID  Requested changeID
+   * @return a list of MSentryPathChange objects. May be empty.
    * @throws Exception
    */
   public List<MSentryPathChange> getMSentryPathChanges(final long changeID)
-      throws Exception {
+          throws Exception {
     return tm.executeTransaction(new TransactionBlock<List<MSentryPathChange>>() {
       public List<MSentryPathChange> execute(PersistenceManager pm) throws Exception {
+        // 1. We first retrieve the entire list of latest delta changes since the changeID
         List<MSentryPathChange> pathChanges =
-            getMSentryChangesCore(pm, MSentryPathChange.class, changeID);
-        long curChangeID = getLastProcessedChangeIDCore(pm, MSentryPathChange.class);
-        long expectedSize = curChangeID - changeID + 1;
-        long actualSize = pathChanges.size();
-        if (actualSize < expectedSize) {
-          LOGGER.error(String.format("Certain path delta is missing in " +
-              "SENTRY_PATH_CHANEG table! Current size of elements = %s and expected size = %s, " +
-              "from changeID: %s. The table may get corrupted.",
-              actualSize, expectedSize, changeID));
-          return Collections.emptyList();
-        } else {
+                getMSentryChangesCore(pm, MSentryPathChange.class, changeID);
+        // 2. We then check for consistency issues with delta changes
+        if (validateDeltaChanges(changeID, pathChanges)) {
+          // If everything is in order, return the delta changes
           return pathChanges;
         }
+
+        // Looks like delta change validation failed. Return an empty list.
+        return Collections.emptyList();
       }
     });
   }
 
   /**
    * Gets a list of MSentryPermChange objects greater than or equal to the given ChangeID.
-   * If there is any perm deltas missing in {@link MSentryPermChange} table, which means
-   * the size of retrieved perm deltas is less than the requested one, an empty list will
-   * be returned to caller.
+   * If there is any path delta missing in {@link MSentryPermChange} table, an empty list is returned.
    *
-   * @param changeID
-   * @return a list of MSentryPermChange objects
+   * @param changeID Requested changeID
+   * @return a list of MSentryPathChange objects. May be empty.
    * @throws Exception
    */
   public List<MSentryPermChange> getMSentryPermChanges(final long changeID)
       throws Exception {
-    return tm.executeTransaction(
-    new TransactionBlock<List<MSentryPermChange>>() {
+    return tm.executeTransaction(new TransactionBlock<List<MSentryPermChange>>() {
       public List<MSentryPermChange> execute(PersistenceManager pm) throws Exception {
+        // 1. We first retrieve the entire list of latest delta changes since the changeID
         List<MSentryPermChange> permChanges =
             getMSentryChangesCore(pm, MSentryPermChange.class, changeID);
-        long curChangeID = getLastProcessedChangeIDCore(pm, MSentryPermChange.class);
-        long expectedSize = curChangeID - changeID + 1;
-        long actualSize = permChanges.size();
-        if (actualSize < expectedSize) {
-          LOGGER.error(String.format("Certain perm delta is missing in " +
-             "SENTRY_PERM_CHANEG table! Current size of elements = %s and expected size = %s, " +
-              "from changeID: %s. The table may get corrupted.",
-              actualSize, expectedSize, changeID));
-          return Collections.emptyList();
-        } else {
+        // 2. We then check for consistency issues with delta changes
+        if (validateDeltaChanges(changeID, permChanges)) {
+          // If everything is in order, return the delta changes
           return permChanges;
         }
+
+        // Looks like delta change validation failed. Return an empty list.
+        return Collections.emptyList();
       }
     });
+  }
+
+  /**
+   * Validate if the delta changes are consistent with the requested changeID.
+   * <p>
+   *   1. Checks if the first delta changeID matches the requested changeID
+   *   (This verifies the delta table still has entries starting from the changeID) <br/>
+   *   2. Checks if there are any holes in the list of delta changes <br/>
+   * </p>
+   * @param changeID Requested changeID
+   * @param changes List of delta changes
+   * @return True if the delta changes are all consistent otherwise returns False
+   */
+  public <T extends MSentryChange> boolean validateDeltaChanges(final long changeID, List<T> changes) {
+    if (changes.isEmpty()) {
+      // If database has nothing more recent than CHANGE_ID return True
+      return true;
+    }
+
+    // The first delta change from the DB should match the changeID
+    // If it doesn't, then it means the delta table no longer has entries starting from the requested CHANGE_ID
+    if (changes.get(0).getChangeID() != changeID) {
+      LOGGER.debug(String.format("Starting delta change from %s is off from the requested id. " +
+          "Requested changeID: %s, Missing delta count: %s",
+          changes.get(0).getClass().getCanonicalName(), changeID, changes.get(0).getChangeID() - changeID));
+      return false;
+    }
+
+    // Check for holes in the delta changes.
+    if (!MSentryUtil.isConsecutive(changes)) {
+      String pathChangesIds = MSentryUtil.collapseChangeIDsToString(changes);
+      LOGGER.error(String.format("Certain delta is missing in %s! The table may get corrupted. " +
+          "Start changeID %s, Current size of elements = %s. path changeID list: %s",
+          changes.get(0).getClass().getCanonicalName(), changeID, changes.size(), pathChangesIds));
+      return false;
+    }
+
+    return true;
   }
 
   /**
