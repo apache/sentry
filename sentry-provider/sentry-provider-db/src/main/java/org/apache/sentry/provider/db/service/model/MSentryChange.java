@@ -21,4 +21,5 @@ package org.apache.sentry.provider.db.service.model;
  * The base class for various delta changes stored in Sentry DB.
  */
 public interface MSentryChange {
+  long getChangeID();
 }
