@@ -26,7 +26,7 @@ import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 
-public interface SentryPolicyServiceClient {
+public interface SentryPolicyServiceClient extends AutoCloseable {
 
   void createRole(String requestorUserName, String roleName) throws SentryUserException;
 
@@ -207,8 +207,6 @@ public interface SentryPolicyServiceClient {
    * @throws SentryUserException
    */
   String getConfigValue(String propertyName, String defaultValue) throws SentryUserException;
-
-  void close();
 
   // Import the sentry mapping data with map structure
   void importPolicy(Map<String, Map<String, Set<String>>> policyFileMappingData,

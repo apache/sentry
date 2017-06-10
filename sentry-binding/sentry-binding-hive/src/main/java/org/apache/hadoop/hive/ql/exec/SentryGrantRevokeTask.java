@@ -98,7 +98,6 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
   private static final int terminator = Utilities.newLineCode;
   private static final long serialVersionUID = -7625118066790571999L;
 
-  private SentryPolicyServiceClient sentryClient;
   private HiveConf conf;
   private HiveAuthzBinding hiveAuthzBinding;
   private HiveAuthzConf authzConf;
@@ -116,13 +115,8 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
 
   @Override
   public int execute(DriverContext driverContext) {
-    try {
-      try {
-        this.sentryClient = SentryServiceClientFactory.create(authzConf);
-      } catch (Exception e) {
-        String msg = "Error creating Sentry client: " + e.getMessage();
-        throw new RuntimeException(msg, e);
-      }
+    try (SentryPolicyServiceClient sentryClient =
+                 SentryServiceClientFactory.create(authzConf)) {
       Preconditions.checkNotNull(hiveAuthzBinding, "HiveAuthzBinding cannot be null");
       Preconditions.checkNotNull(authzConf, "HiveAuthConf cannot be null");
       Preconditions.checkNotNull(subject, "Subject cannot be null");
@@ -179,9 +173,6 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
       console.printError(msg);
       return RETURN_CODE_FAILURE;
     } finally {
-      if (sentryClient != null) {
-        sentryClient.close();
-      }
       if (hiveAuthzBinding != null) {
         hiveAuthzBinding.close();
       }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -17,8 +17,8 @@
  */
 package org.apache.sentry.core.common.transport;
 
+import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.core.common.exception.MissingConfigurationException;
 
 /**
  * Configuration interface for Sentry Thrift Clients
@@ -29,14 +29,6 @@ import org.apache.sentry.core.common.exception.MissingConfigurationException;
  * the transport configuration.
  */
 interface SentryClientTransportConfigInterface {
-  /**
-   * @param conf configuration
-   * @return number of times client retry logic should iterate through all
-   * the servers before giving up.
-   * @throws MissingConfigurationException if property is mandatory and is missing in
-   *                                       configuration.
-   */
-  int getSentryFullRetryTotal(Configuration conf) throws MissingConfigurationException;
 
   /**
    * @param conf configuration
@@ -49,46 +41,36 @@ interface SentryClientTransportConfigInterface {
    * @param conf configuration
    * @return True, if kerberos should be enabled.
    * False, Iff kerberos is enabled.
-   * @throws MissingConfigurationException if property is mandatory and is missing in
-   *                                       configuration.
    */
-  boolean isKerberosEnabled(Configuration conf) throws MissingConfigurationException;
+  boolean isKerberosEnabled(Configuration conf);
 
   /**
    * @param conf configuration
    * @return True, if Ugi transport has to be used
    * False, If not.
-   * @throws MissingConfigurationException if property is mandatory and is missing in
-   *                                       configuration.
    */
-  boolean useUserGroupInformation(Configuration conf) throws MissingConfigurationException;
+  boolean useUserGroupInformation(Configuration conf);
 
   /**
    * @param conf configuration
    * @return principle for the particular sentry service
-   * @throws MissingConfigurationException if property is mandatory and is missing in
-   *                                       configuration.
    */
-  String getSentryPrincipal(Configuration conf) throws MissingConfigurationException;
+  String getSentryPrincipal(Configuration conf);
 
   /**
    * Port in RPC Addresses configured is optional
    * @param conf configuration
    * @return comma-separated list of available sentry server addresses.
-   * @throws MissingConfigurationException if property is mandatory and is missing in
-   *                                       configuration.
    */
-  String getSentryServerRpcAddress(Configuration conf) throws MissingConfigurationException;
+  String getSentryServerRpcAddress(Configuration conf);
 
   /**
    * Port in RPC Addresses configured is optional. If a port is not provided for a server
    * listed in RPC configuration, this configuration is used as a default port.
    * @param conf configuration
    * @return port where sentry server is listening.
-   * @throws MissingConfigurationException if property is mandatory and is missing in
-   *                                       configuration.
    */
-  int getServerRpcPort(Configuration conf) throws MissingConfigurationException;
+  int getServerRpcPort(Configuration conf);
 
   /**
    * @param conf configuration
@@ -96,17 +78,60 @@ interface SentryClientTransportConfigInterface {
    * establishment of connection to the server. If the connection
    * is not established with-in this interval client should try connecting
    * to next configured server
-   * @throws MissingConfigurationException if property is mandatory and is missing in
-   *                                       configuration.
    */
-  int getServerRpcConnTimeoutInMs(Configuration conf) throws MissingConfigurationException;
+  int getServerRpcConnTimeoutInMs(Configuration conf);
 
   /**
-   *
+   * Maximum number of connections in the pool.
+   * See {@link org.apache.commons.pool2.impl.GenericObjectPoolConfig#setMaxTotal(int)}
    * @param conf configuration
-   * @return True if the client should load balance connections between multiple servers
-   * @throws MissingConfigurationException if property is mandatory and is missing in
-   *                                       configuration.
+   * @return maximum number of connection objects in the pool
    */
-   boolean isLoadBalancingEnabled(Configuration conf)throws MissingConfigurationException;
+  int getPoolMaxTotal(Configuration conf);
+
+  /**
+   * Minimum number of idle obects on the pool.
+   * See {@link org.apache.commons.pool2.impl.GenericObjectPoolConfig#setMinIdle(int)}
+   * @param conf Configuration
+   * @return Minimum idle connections to keep in the pool
+   */
+  int getPoolMinIdle(Configuration conf);
+
+  /**
+   * Maximum number of idle connections in the pool.
+   * See {@link org.apache.commons.pool2.impl.GenericObjectPoolConfig#setMaxIdle(int)}
+   * @param conf Configuration
+   * @return Maximum number of idle connections in the pool
+   */
+  int getPoolMaxIdle(Configuration conf);
+
+  /**
+   * This is the minimum amount of time an object may sit idle in the pool
+   * before it is eligible for eviction.
+   * See {@link org.apache.commons.pool2.impl.GenericObjectPoolConfig#setMinEvictableIdleTimeMillis}
+   * @param conf Configuration
+   * @return The value for the pool minimum eviction time.
+   */
+  long getMinEvictableTimeSec(Configuration conf);
+
+  /**
+   * The number of seconds to sleep between runs of the idle object evictor thread.
+   * When non-positive, no idle object evictor thread will be run.
+   * See {@link GenericObjectPoolConfig#getTimeBetweenEvictionRunsMillis()}
+   * @param conf Configuration
+   * @return The number of seconds to sleep between runs of the idle object evictor thread.
+   */
+  long getTimeBetweenEvictionRunsSec(Configuration conf);
+
+  /**
+   * @param conf configuration
+   * @return True if using load-balancing between Sentry servers
+   */
+  boolean isLoadBalancingEnabled(Configuration conf);
+
+  /**
+   * @param conf configuration
+   * @return true if transport pools are enabled
+   */
+  boolean isTransportPoolEnabled(Configuration conf);
 }

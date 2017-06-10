@@ -40,36 +40,39 @@ public class SentryShellHive extends SentryShellCommon {
 
   public void run() throws Exception {
     Command command = null;
-    SentryPolicyServiceClient client = SentryServiceClientFactory.create(getSentryConf());
-    UserGroupInformation ugi = UserGroupInformation.getLoginUser();
-    String requestorName = ugi.getShortUserName();
 
-    if (isCreateRole) {
-      command = new CreateRoleCmd(roleName);
-    } else if (isDropRole) {
-      command = new DropRoleCmd(roleName);
-    } else if (isAddRoleGroup) {
-      command = new GrantRoleToGroupsCmd(roleName, groupName);
-    } else if (isDeleteRoleGroup) {
-      command = new RevokeRoleFromGroupsCmd(roleName, groupName);
-    } else if (isGrantPrivilegeRole) {
-      command = new GrantPrivilegeToRoleCmd(roleName, privilegeStr);
-    } else if (isRevokePrivilegeRole) {
-      command = new RevokePrivilegeFromRoleCmd(roleName, privilegeStr);
-    } else if (isListRole) {
-      command = new ListRolesCmd(groupName);
-    } else if (isListPrivilege) {
-      command = new ListPrivilegesCmd(roleName);
-    }
+    try(SentryPolicyServiceClient client =
+                SentryServiceClientFactory.create(getSentryConf())) {
+      UserGroupInformation ugi = UserGroupInformation.getLoginUser();
+      String requestorName = ugi.getShortUserName();
 
-    // check the requestor name
-    if (StringUtils.isEmpty(requestorName)) {
-      // The exception message will be recoreded in log file.
-      throw new Exception("The requestor name is empty.");
-    }
+      if (isCreateRole) {
+        command = new CreateRoleCmd(roleName);
+      } else if (isDropRole) {
+        command = new DropRoleCmd(roleName);
+      } else if (isAddRoleGroup) {
+        command = new GrantRoleToGroupsCmd(roleName, groupName);
+      } else if (isDeleteRoleGroup) {
+        command = new RevokeRoleFromGroupsCmd(roleName, groupName);
+      } else if (isGrantPrivilegeRole) {
+        command = new GrantPrivilegeToRoleCmd(roleName, privilegeStr);
+      } else if (isRevokePrivilegeRole) {
+        command = new RevokePrivilegeFromRoleCmd(roleName, privilegeStr);
+      } else if (isListRole) {
+        command = new ListRolesCmd(groupName);
+      } else if (isListPrivilege) {
+        command = new ListPrivilegesCmd(roleName);
+      }
 
-    if (command != null) {
-      command.execute(client, requestorName);
+      // check the requestor name
+      if (StringUtils.isEmpty(requestorName)) {
+        // The exception message will be recoreded in log file.
+        throw new Exception("The requestor name is empty.");
+      }
+
+      if (command != null) {
+        command.execute(client, requestorName);
+      }
     }
   }
 

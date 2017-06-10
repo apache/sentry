@@ -18,28 +18,95 @@
 package org.apache.sentry.hdfs;
 
 import java.lang.reflect.Proxy;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.common.transport.RetryClientInvocationHandler;
 import org.apache.sentry.core.common.transport.SentryHDFSClientTransportConfig;
+import org.apache.sentry.core.common.transport.SentryTransportFactory;
+import org.apache.sentry.core.common.transport.SentryTransportPool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.concurrent.ThreadSafe;
 
 /**
- * Client factory to create normal client or proxy with HA invocation handler
+ * Client factory for creating HDFS service clients.
+ * This is a singleton which uses a single factory.
  */
-public class SentryHDFSServiceClientFactory {
-  private final static SentryHDFSClientTransportConfig transportConfig =
-          new SentryHDFSClientTransportConfig();
+@ThreadSafe
+public final class SentryHDFSServiceClientFactory {
+  private static final Logger LOGGER = LoggerFactory.getLogger(SentryHDFSServiceClientFactory.class);
 
-  private SentryHDFSServiceClientFactory() {
-    // Make constructor private to avoid instantiation
+  private static final AtomicReference<SentryHDFSServiceClientFactory> clientFactory =
+          new AtomicReference<>();
+
+  private final SentryHDFSClientTransportConfig transportConfig =
+          new SentryHDFSClientTransportConfig();
+  private final Configuration conf;
+  private final SentryTransportPool transportPool;
+
+  /**
+   * Return a client instance
+   * @param conf
+   * @return
+   * @throws Exception
+   */
+  public static SentryHDFSServiceClient create(Configuration conf) throws Exception {
+    SentryHDFSServiceClientFactory factory = clientFactory.get();
+    if (factory != null) {
+      return factory.create();
+    }
+    factory = new SentryHDFSServiceClientFactory(conf);
+    boolean ok = clientFactory.compareAndSet(null, factory);
+    if (ok) {
+      return factory.create();
+    }
+    factory.close();
+    return clientFactory.get().create();
   }
 
-  public static SentryHDFSServiceClient create(Configuration conf)
-    throws Exception {
+  private SentryHDFSServiceClientFactory(Configuration conf) {
+    this.conf = conf;
+    transportPool = new SentryTransportPool(conf, transportConfig,
+            new SentryTransportFactory(conf, transportConfig));
+  }
+
+  /**
+   * Create a new client connection to one of the Sentry servers.
+   * @return client instance
+   * @throws Exception if something goes wrong
+   */
+  @SuppressWarnings("squid:S00112")
+  private SentryHDFSServiceClient create() throws Exception {
     return (SentryHDFSServiceClient) Proxy
       .newProxyInstance(SentryHDFSServiceClientDefaultImpl.class.getClassLoader(),
         SentryHDFSServiceClientDefaultImpl.class.getInterfaces(),
         new RetryClientInvocationHandler(conf,
-          new SentryHDFSServiceClientDefaultImpl(conf, transportConfig), transportConfig));
+          new SentryHDFSServiceClientDefaultImpl(conf, transportPool), transportConfig));
+  }
+
+  /**
+   * Reset existing factory and return the old one.
+   * Only used by tests.
+   */
+  public static void factoryReset() {
+    LOGGER.debug("factory reset");
+    SentryHDFSServiceClientFactory factory = clientFactory.getAndSet(null);
+    if (factory != null) {
+      try {
+        factory.transportPool.close();
+      } catch (Exception e) {
+        LOGGER.error("failed to close transport pool", e);
+      }
+    }
+  }
+
+  private void close() {
+    try {
+      transportPool.close();
+    } catch (Exception e) {
+      LOGGER.error("failed to close transport pool", e);
+    }
   }
 }
