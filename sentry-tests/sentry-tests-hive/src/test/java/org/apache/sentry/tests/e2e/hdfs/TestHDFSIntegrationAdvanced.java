@@ -368,7 +368,7 @@ public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
 
     stmt.execute("create database " + dbName);
     stmt.execute("create role db_role");
-    stmt.execute("grant create on database " + dbName +" to role db_role");
+    stmt.execute("grant all on database " + dbName +" to role db_role");
     stmt.execute("grant all on URI '/tmp/external' to role db_role");
     stmt.execute("grant role db_role to group " + StaticUserGroup.USERGROUP1);
 
