@@ -82,6 +82,7 @@ public class SentryGenericProviderBackend extends CacheProvider implements Provi
       } catch (NoSuchMethodException | ClassNotFoundException | InstantiationException | InvocationTargetException | IllegalAccessException e) {
         throw new RuntimeException("Failed to create privilege converter of type " + privilegeConverter, e);
       }
+      LOGGER.debug("Starting Updateable Cache");
       UpdatableCache cache = new UpdatableCache(conf, getComponentType(), getServiceName(), sentryPrivilegeConverter);
       try {
         cache.startUpdateThread(true);
@@ -110,9 +111,7 @@ public class SentryGenericProviderBackend extends CacheProvider implements Provi
     if (enableCaching) {
       return super.getPrivileges(groups, roleSet, authorizableHierarchy);
     } else {
-      SentryGenericServiceClient client = null;
-      try {
-        client = getClient();
+      try (SentryGenericServiceClient client = getClient()){
         return ImmutableSet.copyOf(client.listPrivilegesForProvider(componentType, serviceName,
             roleSet, groups, Arrays.asList(authorizableHierarchy)));
       } catch (SentryUserException e) {
@@ -121,10 +120,6 @@ public class SentryGenericProviderBackend extends CacheProvider implements Provi
       } catch (Exception e) {
         String msg = "Unable to obtain client:" + e.getMessage();
         LOGGER.error(msg, e);
-      } finally {
-        if (client != null) {
-          client.close();
-        }
       }
     }
     return ImmutableSet.of();
@@ -138,10 +133,8 @@ public class SentryGenericProviderBackend extends CacheProvider implements Provi
     if (enableCaching) {
       return super.getRoles(groups, roleSet);
     } else {
-      SentryGenericServiceClient client = null;
-      try {
+      try (SentryGenericServiceClient client = getClient()){
         Set<TSentryRole> tRoles = Sets.newHashSet();
-        client = getClient();
         //get the roles according to group
         String requestor = UserGroupInformation.getCurrentUser().getShortUserName();
         for (String group : groups) {
@@ -158,10 +151,6 @@ public class SentryGenericProviderBackend extends CacheProvider implements Provi
       } catch (Exception e) {
         String msg = "Unable to obtain client:" + e.getMessage();
         LOGGER.error(msg, e);
-      } finally {
-        if (client != null) {
-          client.close();
-        }
       }
       return ImmutableSet.of();
     }

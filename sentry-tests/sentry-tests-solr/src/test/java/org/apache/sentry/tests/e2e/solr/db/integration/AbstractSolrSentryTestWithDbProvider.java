@@ -226,6 +226,15 @@ public class AbstractSolrSentryTestWithDbProvider extends AbstractSolrSentryTest
   }
 
   public static void stopAllService() throws Exception {
+    if (client != null) {
+      client.close();
+      client = null;
+    }
+    SentryGenericServiceClientFactory.factoryReset();
+    if (server != null) {
+      server.stop();
+      server = null;
+    }
     if (miniSolrCloudCluster != null) {
       miniSolrCloudCluster.shutdown();
       miniSolrCloudCluster = null;
@@ -233,14 +242,6 @@ public class AbstractSolrSentryTestWithDbProvider extends AbstractSolrSentryTest
     if (dfsCluster != null) {
       HdfsTestUtil.teardownClass(dfsCluster);
       dfsCluster = null;
-    }
-    if (client != null) {
-      client.close();
-      client = null;
-    }
-    if (server != null) {
-      server.stop();
-      server = null;
     }
   }
 

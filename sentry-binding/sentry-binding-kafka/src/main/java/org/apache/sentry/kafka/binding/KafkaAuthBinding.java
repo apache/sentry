@@ -374,9 +374,7 @@ public class KafkaAuthBinding {
     }
 
     private <T> T execute(Command<T> cmd) throws KafkaException {
-        SentryGenericServiceClient client = null;
-        try {
-            client = getClient();
+        try(SentryGenericServiceClient client = getClient()) {
             return cmd.run(client);
         } catch (SentryUserException ex) {
             String msg = "Unable to excute command on sentry server: " + ex.getMessage();
@@ -386,10 +384,6 @@ public class KafkaAuthBinding {
             String msg = "Unable to obtain client:" + ex.getMessage();
             LOG.error(msg, ex);
             throw new KafkaException(msg, ex);
-        } finally {
-            if (client != null) {
-                client.close();
-            }
         }
     }
 

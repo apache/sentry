@@ -19,6 +19,8 @@
 package org.apache.sentry.core.common.transport;
 
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * Defines configuration strings needed for sentry thrift clients to handle the transport level
  * operations.
@@ -27,7 +29,7 @@ package org.apache.sentry.core.common.transport;
  * Clients that needs these configuration string use the implementations of interface
  * <code>SentryClientTransportConfigInterface</code>.
  */
-class SentryClientTransportConstants {
+public final class SentryClientTransportConstants {
 
   /**
    * max retry num for client rpc
@@ -44,9 +46,17 @@ class SentryClientTransportConstants {
     "sentry.service.client.connection.full.retry-total";
   static final int SENTRY_FULL_RETRY_TOTAL_DEFAULT = 2;
 
+  /**
+   * Enable load balancing between servers
+   */
+  static final String SENTRY_CLIENT_LOAD_BALANCING =
+          "sentry.service.client.connection.loadbalance";
+  static final boolean SENTRY_CLIENT_LOAD_BALANCING_DEFAULT = true;
+
   static final int RPC_PORT_DEFAULT = 8038;
 
-  static final String KERBEROS_MODE = "kerberos";
+  private SentryClientTransportConstants() {
+  }
 
   /**
    * Defines configuration strings needed for sentry thrift policy clients to handle
@@ -58,7 +68,6 @@ class SentryClientTransportConstants {
 
     //configuration for server address. It can be coma seperated list of server addresses.
     static final String SERVER_RPC_ADDRESS = "sentry.service.client.server.rpc-address";
-
 
     /**
      * This configuration parameter is only meant to be used for testing purposes.
@@ -74,7 +83,7 @@ class SentryClientTransportConstants {
     static final int SENTRY_FULL_RETRY_TOTAL_DEFAULT =
       SentryClientTransportConstants.SENTRY_FULL_RETRY_TOTAL_DEFAULT;
 
-    static final String SECURITY_USE_UGI_TRANSPORT = "sentry.service.security.use.ugi";
+    public static final String SECURITY_USE_UGI_TRANSPORT = "sentry.service.security.use.ugi";
     static final String PRINCIPAL = "sentry.service.server.principal";
 
     //configration for the client connection timeout.
@@ -90,35 +99,39 @@ class SentryClientTransportConstants {
     static final String SENTRY_RPC_RETRY_TOTAL = "sentry.service.client.rpc.retry-total";
     static final int SENTRY_RPC_RETRY_TOTAL_DEFAULT = 3;
 
-    // connection pool configuration
-    static final String SENTRY_POOL_ENABLED = "sentry.service.client.connection.pool.enabled";
-    static final boolean SENTRY_POOL_ENABLED_DEFAULT = false;
+    // commons-pool configuration
+    static final String SENTRY_POOL_ENABLE = "sentry.service.client.connection.pool.enabled";
+    static final boolean SENTRY_POOL_ENABLE_DEFAULT = true;
 
-    // commons-pool configuration for pool size
+    /** Allow unlimited number of idle connections */
     static final String SENTRY_POOL_MAX_TOTAL = "sentry.service.client.connection.pool.max-total";
-    static final int SENTRY_POOL_MAX_TOTAL_DEFAULT = 8;
+    static final int SENTRY_POOL_MAX_TOTAL_DEFAULT = -1;
     static final String SENTRY_POOL_MAX_IDLE = "sentry.service.client.connection.pool.max-idle";
-    static final int SENTRY_POOL_MAX_IDLE_DEFAULT = 8;
+    static final int SENTRY_POOL_MAX_IDLE_DEFAULT = 400;
     static final String SENTRY_POOL_MIN_IDLE = "sentry.service.client.connection.pool.min-idle";
-    static final int SENTRY_POOL_MIN_IDLE_DEFAULT = 0;
+    static final int SENTRY_POOL_MIN_IDLE_DEFAULT = 10;
+    static final String SENTRY_POOL_MIN_EVICTION_TIME_SEC =
+            "sentry.service.client.connection.pool.eviction.mintime.sec";
+    // 2 minutes seconds min time before eviction
+    static final long SENTRY_POOL_MIN_EVICTION_TIME_SEC_DEFAULT =
+            TimeUnit.MILLISECONDS.convert(2, TimeUnit.MINUTES);;
+    static final String SENTRY_POOL_EVICTION_INTERVAL_SEC =
+            "sentry.service.client.connection.pool.eviction.interval.sec";
+    // Run eviction thread every minute
+    static final long SENTRY_POOL_EVICTION_INTERVAL_SEC_DEFAULT =
+            TimeUnit.MILLISECONDS.convert(1L, TimeUnit.MINUTES);
 
-    // configuration to load balance the connections to the configured sentry servers
-    static final String SENTRY_CLIENT_LOAD_BALANCING = "sentry.service.client.connection.loadbalance";
-    static final boolean SENTRY_CLIENT_LOAD_BALANCING_DEFAULT = true;
-
-    // retry num for getting the connection from connection pool
-    static final String SENTRY_POOL_RETRY_TOTAL =
-      SentryClientTransportConstants.SENTRY_FULL_RETRY_TOTAL;
-    static final int SENTRY_POOL_RETRY_TOTAL_DEFAULT =
-      SentryClientTransportConstants.SENTRY_RPC_RETRY_TOTAL_DEFAULT;
-
+    static final String SENTRY_CLIENT_LOAD_BALANCING =
+            SentryClientTransportConstants.SENTRY_CLIENT_LOAD_BALANCING;
+    static final boolean SENTRY_CLIENT_LOAD_BALANCING_DEFAULT =
+            SentryClientTransportConstants.SENTRY_CLIENT_LOAD_BALANCING_DEFAULT;
   }
 
   /**
    * Defines configuration strings needed for sentry HDFS clients to handle the transport level
    * operations.
    */
-  static class HDFSClientConstants {
+  public static class HDFSClientConstants {
 
     //Default server port
     static final int SERVER_RPC_PORT_DEFAULT = SentryClientTransportConstants.RPC_PORT_DEFAULT;
@@ -144,13 +157,9 @@ class SentryClientTransportConstants {
     static final int SENTRY_FULL_RETRY_TOTAL_DEFAULT =
       SentryClientTransportConstants.SENTRY_FULL_RETRY_TOTAL_DEFAULT;
 
-    static final String SECURITY_USE_UGI_TRANSPORT = "sentry.hdfs.service.security.use.ugi";
+    public static final String SECURITY_USE_UGI_TRANSPORT = "sentry.hdfs.service.security.use.ugi";
 
     static final String PRINCIPAL = "sentry.hdfs.service.server.principal";
-
-    static final String RPC_ADDRESS = "sentry.hdfs.service.client.server.rpc-address";
-
-    static final String RPC_ADDRESS_DEFAULT = "0.0.0.0"; //NOPMD
 
     //configration for the client connection timeout.
     static final String SERVER_RPC_CONN_TIMEOUT =
@@ -167,8 +176,28 @@ class SentryClientTransportConstants {
 
     static final int SENTRY_RPC_RETRY_TOTAL_DEFAULT = 3;
 
-    // configuration to load balance the connections to the configured sentry servers
-    static final String SENTRY_CLIENT_LOAD_BALANCING = "sentry.hdfs.service.client.connection.loadbalance";
-    static final boolean SENTRY_CLIENT_LOAD_BALANCING_DEFAULT = true;
+    // commons-pool configuration - disable pool for HDFS clients
+    static final String SENTRY_POOL_ENABLE = "sentry.hdfs.service.client.connection.pool.enable";
+    static final boolean SENTRY_POOL_ENABLE_DEFAULT = false;
+
+    /** Total maximum number of open connections. There shouldn't be many. */
+    static final String SENTRY_POOL_MAX_TOTAL = "sentry.hdfs.service.client.connection.pool.max-total";
+    static final int SENTRY_POOL_MAX_TOTAL_DEFAULT = 16;
+    /** Maximum number of idle connections to keep */
+    static final String SENTRY_POOL_MAX_IDLE = "sentry.hdfs.service.client.connection.pool.max-idle";
+    static final int SENTRY_POOL_MAX_IDLE_DEFAULT = 2;
+    static final String SENTRY_POOL_MIN_IDLE = "sentry.hdfs.service.client.connection.pool.min-idle";
+    static final int SENTRY_POOL_MIN_IDLE_DEFAULT = 1;
+    static final String SENTRY_POOL_MIN_EVICTION_TIME_SEC =
+            "sentry.hdfs.service.client.connection.pool.eviction.mintime.sec";
+    // No evictions for HDFS connections by default
+    static final long SENTRY_POOL_MIN_EVICTION_TIME_SEC_DEFAULT = 0L;
+    static final String SENTRY_POOL_EVICTION_INTERVAL_SEC =
+            "sentry.hdfs.service.client.connection.pool.eviction.interval.sec";
+    static final long SENTRY_POOL_EVICTION_INTERVAL_SEC_DEFAULT = -1L;
+    static final String SENTRY_CLIENT_LOAD_BALANCING =
+            SentryClientTransportConstants.SENTRY_CLIENT_LOAD_BALANCING;
+    static final boolean SENTRY_CLIENT_LOAD_BALANCING_DEFAULT =
+            SentryClientTransportConstants.SENTRY_CLIENT_LOAD_BALANCING_DEFAULT;
   }
 }

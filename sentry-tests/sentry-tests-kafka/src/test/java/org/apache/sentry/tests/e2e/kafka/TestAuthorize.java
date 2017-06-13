@@ -35,6 +35,7 @@ import org.apache.sentry.core.model.kafka.KafkaActionConstant;
 import org.apache.sentry.core.model.kafka.Host;
 import org.apache.sentry.core.model.kafka.Topic;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
+import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClientFactory;
 import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
 import org.junit.Test;
@@ -55,6 +56,8 @@ public class TestAuthorize extends AbstractKafkaSentryTestBase {
 
   @Test
   public void testProduceConsumeForSuperuser() {
+    LOGGER.debug("testProduceConsumeForSuperuser");
+    SentryGenericServiceClientFactory.factoryReset();
     try {
       final String SuperuserName = "test";
       testProduce(SuperuserName);
@@ -66,7 +69,10 @@ public class TestAuthorize extends AbstractKafkaSentryTestBase {
 
   @Test
   public void testProduceConsumeCycle() throws Exception {
+    LOGGER.debug("testProduceConsumeCycle");
     final String localhost = InetAddress.getLocalHost().getHostAddress();
+
+    // SentryGenericServiceClientFactory.factoryReset();
 
     // START TESTING PRODUCER
     try {

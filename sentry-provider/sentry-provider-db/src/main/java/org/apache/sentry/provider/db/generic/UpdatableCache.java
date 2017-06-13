@@ -29,8 +29,14 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
-class UpdatableCache implements TableCache {
+public final class UpdatableCache implements TableCache, AutoCloseable {
   private static final Logger LOGGER = LoggerFactory.getLogger(UpdatableCache.class);
+
+  // Timer for getting updates periodically
+  private final Timer timer = new Timer();
+  private boolean initialized = false;
+  // saved timer is used by tests to cancel previous timer
+  private static Timer savedTimer;
 
   private final String componentType;
   private final String serviceName;
@@ -94,14 +100,13 @@ class UpdatableCache implements TableCache {
     String requestor;
     requestor = UserGroupInformation.getLoginUser().getShortUserName();
 
-    SentryGenericServiceClient client = null;
-    try {
-      client = getClient(); // will be closed in finaly clause
-      final Set<TSentryRole> tSentryRoles = client.listAllRoles(requestor, componentType);
+    try(SentryGenericServiceClient client = getClient()) {
+      Set<TSentryRole>  tSentryRoles = client.listAllRoles(requestor, componentType);
 
       for (TSentryRole tSentryRole : tSentryRoles) {
         final String roleName = tSentryRole.getRoleName();
-        final Set<TSentryPrivilege> tSentryPrivileges = client.listPrivilegesByRoleName(requestor, roleName, componentType, serviceName);
+        final Set<TSentryPrivilege> tSentryPrivileges =
+                client.listPrivilegesByRoleName(requestor, roleName, componentType, serviceName);
         for (String group : tSentryRole.getGroups()) {
           Set<String> currentPrivileges = tempCache.get(group, roleName);
           if (currentPrivileges == null) {
@@ -113,12 +118,8 @@ class UpdatableCache implements TableCache {
           }
         }
       }
-    } finally {
-      if (client != null) {
-        client.close();
-      }
+      return tempCache;
     }
-    return tempCache;
   }
 
   /**
@@ -136,7 +137,19 @@ class UpdatableCache implements TableCache {
       reloadData();
     }
 
-    Timer timer = new Timer();
+    if (initialized) {
+      LOGGER.info("Already initialized");
+      return;
+    }
+
+    initialized = true;
+    // Save timer to be able to cancel it.
+    if (savedTimer != null) {
+      LOGGER.debug("Resetting saved timer");
+      savedTimer.cancel();
+    }
+    savedTimer = timer;
+
     final long refreshIntervalMs = TimeUnit.NANOSECONDS.toMillis(cacheTtlNs);
     timer.scheduleAtFixedRate(
         new TimerTask() {
@@ -158,6 +171,7 @@ class UpdatableCache implements TableCache {
 
   private void revokeAllPrivilegesIfRequired() {
     if (++consecutiveUpdateFailuresCount > allowedUpdateFailuresCount) {
+      consecutiveUpdateFailuresCount = 0;
       // Clear cache to revoke all privileges.
       // Update table cache to point to an empty table to avoid thread-unsafe characteristics of HashBasedTable.
       this.table = HashBasedTable.create();
@@ -174,5 +188,22 @@ class UpdatableCache implements TableCache {
   private boolean shouldRefresh() {
     final long currentTimeNs = System.nanoTime();
     return lastRefreshedNs + cacheTtlNs < currentTimeNs;
+  }
+
+  /**
+   * Only called by tests to disable timer.
+   */
+  public static void disable() {
+    if (savedTimer != null) {
+      LOGGER.info("Disabling timer");
+      savedTimer.cancel();
+    }
+  }
+
+  @Override
+  public void close() {
+    timer.cancel();
+    savedTimer = null;
+    LOGGER.info("Closed Updatable Cache");
   }
 }

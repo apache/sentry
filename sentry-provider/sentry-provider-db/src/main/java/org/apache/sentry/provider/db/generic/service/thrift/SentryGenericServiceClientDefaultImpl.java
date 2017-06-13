@@ -17,51 +17,63 @@
  */
 package org.apache.sentry.provider.db.generic.service.thrift;
 
-import java.io.IOException;
-import java.util.*;
-
+import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
-import org.apache.sentry.core.common.transport.SentryPolicyClientTransportConfig;
-import org.apache.sentry.core.common.transport.SentryServiceClient;
-import org.apache.sentry.core.common.transport.SentryTransportFactory;
+import org.apache.sentry.core.common.exception.SentryUserException;
+import org.apache.sentry.core.common.transport.SentryConnection;
+import org.apache.sentry.core.common.transport.SentryTransportPool;
+import org.apache.sentry.core.common.transport.TTransportWrapper;
 import org.apache.sentry.core.model.db.AccessConstants;
-import org.apache.sentry.service.thrift.ServiceConstants;
+import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericPolicyService.Client;
+import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
 import org.apache.sentry.service.thrift.Status;
 import org.apache.sentry.service.thrift.sentry_common_serviceConstants;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TMultiplexedProtocol;
 
-import org.apache.thrift.transport.TTransport;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import com.google.common.collect.Lists;
 
 /**
- * Sentry Generic Service Client
+ * Sentry Generic Service Client.
  * <p>
- * The public implementation of SentryGenericServiceClient.
- * TODO(kalyan) A Sentry Client in which all the operations are synchronized for thread safety
- * Note: When using this client, if there is an exception in RPC, socket can get into an inconsistent state.
- * So it is important to close and re-open the transportFactory so that new socket is used.
+ * Thread safety. This class is not thread safe - it is up to the
+ * caller to ensure thread safety.
  */
+public class SentryGenericServiceClientDefaultImpl
+        implements SentryGenericServiceClient, SentryConnection {
 
-public class SentryGenericServiceClientDefaultImpl implements SentryGenericServiceClient, SentryServiceClient {
-  private SentryGenericPolicyService.Client client;
-  private SentryTransportFactory transportFactory;
-  private TTransport transport;
-  private Configuration conf;
-  private static final Logger LOGGER = LoggerFactory
-    .getLogger(SentryGenericServiceClientDefaultImpl.class);
+  private Client client;
+  private final SentryTransportPool transportPool;
+  private TTransportWrapper transport;
   private static final String THRIFT_EXCEPTION_MESSAGE = "Thrift exception occured ";
+  private final long maxMessageSize;
 
-  public SentryGenericServiceClientDefaultImpl(Configuration conf, SentryPolicyClientTransportConfig transportConfig) throws IOException {
-    transportFactory = new SentryTransportFactory(conf, transportConfig);
-    this.conf = conf;
+  /**
+   * Initialize client with the given configuration, using specified transport pool
+   * implementation for obtaining transports.
+   * @param conf Sentry Configuration
+   * @param transportPool source of connected transports
+   */
+  SentryGenericServiceClientDefaultImpl(Configuration conf,
+                                        SentryTransportPool transportPool) {
+
+    //TODO(kalyan) need to find appropriate place to add it
+    // if (kerberos) {
+    //  // since the client uses hadoop-auth, we need to set kerberos in
+    //  // hadoop-auth if we plan to use kerberos
+    //  conf.set(HADOOP_SECURITY_AUTHENTICATION, SentryConstants.KERBEROS_MoODE);
+    // }
+    maxMessageSize = conf.getLong(ClientConfig.SENTRY_POLICY_CLIENT_THRIFT_MAX_MESSAGE_SIZE,
+            ClientConfig.SENTRY_POLICY_CLIENT_THRIFT_MAX_MESSAGE_SIZE_DEFAULT);
+    this.transportPool = transportPool;
   }
 
   /**
@@ -70,20 +82,18 @@ public class SentryGenericServiceClientDefaultImpl implements SentryGenericServi
    * @throws IOException
    */
   @Override
-  public synchronized void connect() throws IOException {
-    if (transport != null && transport.isOpen()) {
+  public void connect() throws Exception {
+    if ((transport != null) && transport.isOpen()) {
       return;
     }
 
-    transport = transportFactory.getTransport();
-    TMultiplexedProtocol protocol = null;
-    long maxMessageSize = conf.getLong(ServiceConstants.ClientConfig.SENTRY_POLICY_CLIENT_THRIFT_MAX_MESSAGE_SIZE,
-      ServiceConstants.ClientConfig.SENTRY_POLICY_CLIENT_THRIFT_MAX_MESSAGE_SIZE_DEFAULT);
-    protocol = new TMultiplexedProtocol(
-      new TBinaryProtocol(transport, maxMessageSize, maxMessageSize, true, true),
+    // Obtain connection to Sentry server
+    transport = transportPool.getTransport();
+    TMultiplexedProtocol protocol = new TMultiplexedProtocol(
+      new TBinaryProtocol(transport.getTTransport(), maxMessageSize,
+              maxMessageSize, true, true),
       SentryGenericPolicyProcessor.SENTRY_GENERIC_SERVICE_NAME);
-    client = new SentryGenericPolicyService.Client(protocol);
-    LOGGER.debug("Successfully created client");
+    client = new Client(protocol);
   }
 
   /**
@@ -95,7 +105,7 @@ public class SentryGenericServiceClientDefaultImpl implements SentryGenericServi
    * @throws SentryUserException
    */
   @Override
-  public synchronized void createRole(String requestorUserName, String roleName, String component)
+  public void createRole(String requestorUserName, String roleName, String component)
     throws SentryUserException {
     TCreateSentryRoleRequest request = new TCreateSentryRoleRequest();
     request.setProtocol_version(sentry_common_serviceConstants.TSENTRY_SERVICE_V2);
@@ -358,7 +368,7 @@ public class SentryGenericServiceClientDefaultImpl implements SentryGenericServi
    * @throws SentryUserException
    */
   @Override
-  public synchronized Set<TSentryRole> listRolesByGroupName(
+  public Set<TSentryRole> listRolesByGroupName(
     String requestorUserName,
     String groupName,
     String component)
@@ -412,7 +422,7 @@ public class SentryGenericServiceClientDefaultImpl implements SentryGenericServi
     request.setServiceName(serviceName);
     request.setRequestorUserName(requestorUserName);
     request.setRoleName(roleName);
-    if ((authorizables != null) && (authorizables.size() > 0)) {
+    if (authorizables != null && !authorizables.isEmpty()) {
       List<TAuthorizable> tAuthorizables = Lists.newArrayList();
       for (Authorizable authorizable : authorizables) {
         tAuthorizables.add(new TAuthorizable(authorizable.getTypeName(), authorizable.getName()));
@@ -464,7 +474,7 @@ public class SentryGenericServiceClientDefaultImpl implements SentryGenericServi
       request.setGroups(groups);
     }
     List<TAuthorizable> tAuthoriables = Lists.newArrayList();
-    if ((authorizables != null) && (authorizables.size() > 0)) {
+    if (authorizables != null && !authorizables.isEmpty()) {
       for (Authorizable authorizable : authorizables) {
         tAuthoriables.add(new TAuthorizable(authorizable.getTypeName(), authorizable.getName()));
       }
@@ -527,12 +537,23 @@ public class SentryGenericServiceClientDefaultImpl implements SentryGenericServi
   }
 
   @Override
-  public synchronized void close() {
-    transportFactory.close();
+  public void close() {
+    done();
   }
 
   @Override
-  public void disconnect() {
-    transportFactory.releaseTransport();
+  public void done() {
+    if (transport != null) {
+      transportPool.returnTransport(transport);
+      transport = null;
+    }
+  }
+
+  @Override
+  public void invalidate() {
+    if (transport != null) {
+      transportPool.invalidateTransport(transport);
+      transport = null;
+    }
   }
 }

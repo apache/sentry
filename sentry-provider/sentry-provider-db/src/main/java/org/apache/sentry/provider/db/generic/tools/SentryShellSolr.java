@@ -47,39 +47,41 @@ public class SentryShellSolr extends SentryShellCommon {
     Configuration conf = getSentryConf();
 
     String service = conf.get(SOLR_SERVICE_NAME, "service1");
-    SentryGenericServiceClient client = SentryGenericServiceClientFactory.create(conf);
-    UserGroupInformation ugi = UserGroupInformation.getLoginUser();
-    String requestorName = ugi.getShortUserName();
+    try(SentryGenericServiceClient client =
+                SentryGenericServiceClientFactory.create(conf)) {
+      UserGroupInformation ugi = UserGroupInformation.getLoginUser();
+      String requestorName = ugi.getShortUserName();
 
-    if (isCreateRole) {
-      command = new CreateRoleCmd(roleName, component);
-    } else if (isDropRole) {
-      command = new DropRoleCmd(roleName, component);
-    } else if (isAddRoleGroup) {
-      command = new AddRoleToGroupCmd(roleName, groupName, component);
-    } else if (isDeleteRoleGroup) {
-      command = new DeleteRoleFromGroupCmd(roleName, groupName, component);
-    } else if (isGrantPrivilegeRole) {
-      command = new GrantPrivilegeToRoleCmd(roleName, component,
-          privilegeStr, new SolrTSentryPrivilegeConverter(component, service));
-    } else if (isRevokePrivilegeRole) {
-      command = new RevokePrivilegeFromRoleCmd(roleName, component,
-          privilegeStr, new SolrTSentryPrivilegeConverter(component, service));
-    } else if (isListRole) {
-      command = new ListRolesCmd(groupName, component);
-    } else if (isListPrivilege) {
-      command = new ListPrivilegesByRoleCmd(roleName, component,
-          service, new SolrTSentryPrivilegeConverter(component, service));
-    }
+      if (isCreateRole) {
+        command = new CreateRoleCmd(roleName, component);
+      } else if (isDropRole) {
+        command = new DropRoleCmd(roleName, component);
+      } else if (isAddRoleGroup) {
+        command = new AddRoleToGroupCmd(roleName, groupName, component);
+      } else if (isDeleteRoleGroup) {
+        command = new DeleteRoleFromGroupCmd(roleName, groupName, component);
+      } else if (isGrantPrivilegeRole) {
+        command = new GrantPrivilegeToRoleCmd(roleName, component,
+                privilegeStr, new SolrTSentryPrivilegeConverter(component, service));
+      } else if (isRevokePrivilegeRole) {
+        command = new RevokePrivilegeFromRoleCmd(roleName, component,
+                privilegeStr, new SolrTSentryPrivilegeConverter(component, service));
+      } else if (isListRole) {
+        command = new ListRolesCmd(groupName, component);
+      } else if (isListPrivilege) {
+        command = new ListPrivilegesByRoleCmd(roleName, component,
+                service, new SolrTSentryPrivilegeConverter(component, service));
+      }
 
-    // check the requestor name
-    if (StringUtils.isEmpty(requestorName)) {
-      // The exception message will be recorded in log file.
-      throw new Exception("The requestor name is empty.");
-    }
+      // check the requestor name
+      if (StringUtils.isEmpty(requestorName)) {
+        // The exception message will be recorded in log file.
+        throw new Exception("The requestor name is empty.");
+      }
 
-    if (command != null) {
-      command.execute(client, requestorName);
+      if (command != null) {
+        command.execute(client, requestorName);
+      }
     }
   }
 

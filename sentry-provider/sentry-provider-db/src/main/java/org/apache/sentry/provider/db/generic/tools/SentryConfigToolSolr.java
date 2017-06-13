@@ -62,12 +62,14 @@ public class SentryConfigToolSolr extends SentryConfigToolCommon {
     String service = conf.get(SOLR_SERVICE_NAME, "service1");
     // instantiate a solr client for sentry service.  This sets the ugi, so must
     // be done before getting the ugi below.
-    SentryGenericServiceClient client = SentryGenericServiceClientFactory.create(conf);
-    UserGroupInformation ugi = UserGroupInformation.getLoginUser();
-    String requestorName = ugi.getShortUserName();
+    try(SentryGenericServiceClient client =
+                SentryGenericServiceClientFactory.create(conf)) {
+      UserGroupInformation ugi = UserGroupInformation.getLoginUser();
+      String requestorName = ugi.getShortUserName();
 
-    convertINIToSentryServiceCmds(component, service, requestorName, conf, client,
-        getPolicyFile(), getValidate(), getImportPolicy(), getCheckCompat());
+      convertINIToSentryServiceCmds(component, service, requestorName, conf, client,
+              getPolicyFile(), getValidate(), getImportPolicy(), getCheckCompat());
+    }
   }
 
   private Configuration getSentryConf() {

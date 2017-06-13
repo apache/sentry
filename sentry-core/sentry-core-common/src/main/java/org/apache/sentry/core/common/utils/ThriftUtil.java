@@ -112,12 +112,8 @@ public class ThriftUtil {
    * (host:port). The hostname could be in ipv6 style. If port is not specified,
    * defaultPort will be used.
    */
-  public static HostAndPort[] parseHostPortStrings(String[] hostsAndPortsArr, int defaultPort) {
-    HostAndPort[] hostsAndPorts = new HostAndPort[hostsAndPortsArr.length];
-    for (int i = 0; i < hostsAndPorts.length; i++) {
-     hostsAndPorts[i] =
-          HostAndPort.fromString(hostsAndPortsArr[i]).withDefaultPort(defaultPort);
-    }
-    return hostsAndPorts;
+  public static HostAndPort parseAddress(String address, int defaultPort) {
+    return HostAndPort.fromString(address).withDefaultPort(defaultPort);
   }
+
 }

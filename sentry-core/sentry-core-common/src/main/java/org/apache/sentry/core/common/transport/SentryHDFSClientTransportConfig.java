@@ -22,7 +22,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.common.exception.MissingConfigurationException;
 
 import static org.apache.sentry.core.common.transport.SentryClientTransportConstants.HDFSClientConstants.*;
-import static org.apache.sentry.core.common.transport.SentryClientTransportConstants.KERBEROS_MODE;
 
 /**
  * Provides configuration values and the configuration string for the HDFS sentry
@@ -32,17 +31,13 @@ import static org.apache.sentry.core.common.transport.SentryClientTransportConst
  */
 public final class SentryHDFSClientTransportConfig
   implements SentryClientTransportConfigInterface {
-  public SentryHDFSClientTransportConfig() { }
+  private static final String KERBEROS_MODE = "kerberos";
+
 
   @Override
-  public boolean isKerberosEnabled(Configuration conf) throws MissingConfigurationException {
+  public boolean isKerberosEnabled(Configuration conf) {
     return (conf.get(SECURITY_MODE, KERBEROS_MODE).trim()
-      .equalsIgnoreCase((KERBEROS_MODE)));
-  }
-
-  @Override
-  public int getSentryFullRetryTotal(Configuration conf) throws MissingConfigurationException {
-    return conf.getInt(SENTRY_FULL_RETRY_TOTAL, SENTRY_FULL_RETRY_TOTAL_DEFAULT);
+      .equalsIgnoreCase(KERBEROS_MODE));
   }
 
   @Override
@@ -51,44 +46,79 @@ public final class SentryHDFSClientTransportConfig
   }
 
   @Override
-  public boolean useUserGroupInformation(Configuration conf)
-    throws MissingConfigurationException {
-    return Boolean.valueOf(conf.get(SECURITY_USE_UGI_TRANSPORT, "true"));
+  public boolean useUserGroupInformation(Configuration conf) {
+    return Boolean.parseBoolean(conf.get(SECURITY_USE_UGI_TRANSPORT, "true"));
   }
 
+  /**
+   * @throws MissingConfigurationException
+   */
   @Override
-  public String getSentryPrincipal(Configuration conf) throws MissingConfigurationException {
+  public String getSentryPrincipal(Configuration conf) {
     String principle = conf.get(PRINCIPAL);
-    if (principle != null && !principle.isEmpty()) {
+    if ((principle != null) && !principle.isEmpty()) {
       return principle;
     }
     throw new MissingConfigurationException(PRINCIPAL);
   }
 
+  /**
+   * @throws MissingConfigurationException
+   */
   @Override
-  public String getSentryServerRpcAddress(Configuration conf)
-    throws MissingConfigurationException {
+  public String getSentryServerRpcAddress(Configuration conf) {
     String serverAddress = conf.get(SERVER_RPC_ADDRESS);
-    if (serverAddress != null && !serverAddress.isEmpty()) {
+    if ((serverAddress != null) && !serverAddress.isEmpty()) {
       return serverAddress;
     }
     throw new MissingConfigurationException(SERVER_RPC_ADDRESS);
   }
 
   @Override
-  public int getServerRpcPort(Configuration conf) throws MissingConfigurationException {
+  public int getServerRpcPort(Configuration conf) {
     return conf.getInt(SERVER_RPC_PORT, SentryClientTransportConstants.RPC_PORT_DEFAULT);
   }
 
   @Override
-  public int getServerRpcConnTimeoutInMs(Configuration conf)
-    throws MissingConfigurationException {
+  public int getServerRpcConnTimeoutInMs(Configuration conf) {
     return conf.getInt(SERVER_RPC_CONN_TIMEOUT, SERVER_RPC_CONN_TIMEOUT_DEFAULT);
   }
 
   @Override
-  public boolean isLoadBalancingEnabled(Configuration conf)
-    throws MissingConfigurationException {
-    return conf.getBoolean(SENTRY_CLIENT_LOAD_BALANCING, SENTRY_CLIENT_LOAD_BALANCING_DEFAULT);
+  public int getPoolMaxTotal(Configuration conf) {
+    return conf.getInt(SENTRY_POOL_MAX_TOTAL, SENTRY_POOL_MAX_TOTAL_DEFAULT);
+  }
+
+  @Override
+  public int getPoolMinIdle(Configuration conf) {
+    return conf.getInt(SENTRY_POOL_MIN_IDLE, SENTRY_POOL_MIN_IDLE_DEFAULT);
+  }
+
+  @Override
+  public int getPoolMaxIdle(Configuration conf) {
+    return conf.getInt(SENTRY_POOL_MAX_IDLE, SENTRY_POOL_MAX_IDLE_DEFAULT);
+  }
+
+  @Override
+  public long getMinEvictableTimeSec(Configuration conf) {
+    return conf.getLong(SENTRY_POOL_MIN_EVICTION_TIME_SEC,
+            SENTRY_POOL_MIN_EVICTION_TIME_SEC_DEFAULT);
+  }
+
+  @Override
+  public long getTimeBetweenEvictionRunsSec(Configuration conf) {
+    return conf.getLong(SENTRY_POOL_EVICTION_INTERVAL_SEC,
+            SENTRY_POOL_EVICTION_INTERVAL_SEC_DEFAULT);
+  }
+
+  @Override
+  public boolean isLoadBalancingEnabled(Configuration conf) {
+    return conf.getBoolean(SENTRY_CLIENT_LOAD_BALANCING,
+            SENTRY_CLIENT_LOAD_BALANCING_DEFAULT);
+  }
+
+  @Override
+  public boolean isTransportPoolEnabled(Configuration conf) {
+    return conf.getBoolean(SENTRY_POOL_ENABLE, SENTRY_POOL_ENABLE_DEFAULT);
   }
 }

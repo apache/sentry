@@ -312,7 +312,8 @@ public class SentryService implements Callable, SigUtils.SigListener {
       hmsFollowerExecutor.scheduleAtFixedRate(hmsFollower,
               initDelay, period, TimeUnit.MILLISECONDS);
     } catch (IllegalArgumentException e) {
-      LOGGER.error(String.format("Could not start HMSFollower due to illegal argument. period is %s ms", period), e);
+      LOGGER.error(String.format("Could not start HMSFollower due to illegal argument. period is %s ms",
+              period), e);
       throw e;
     }
   }
@@ -380,7 +381,7 @@ public class SentryService implements Callable, SigUtils.SigListener {
       sentryStoreCleanService.scheduleWithFixedDelay(
               storeCleaner, 0, storeCleanPeriodSecs, TimeUnit.SECONDS);
 
-      LOGGER.info("sentry store cleaner is scheduled with interval %d seconds", storeCleanPeriodSecs);
+      LOGGER.info("sentry store cleaner is scheduled with interval {} seconds", storeCleanPeriodSecs);
     }
     catch(IllegalArgumentException e){
       LOGGER.error("Could not start SentryStoreCleaner due to illegal argument", e);

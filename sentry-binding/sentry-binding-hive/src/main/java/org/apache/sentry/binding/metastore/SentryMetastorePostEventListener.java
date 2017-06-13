@@ -364,11 +364,12 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
       throws SentryUserException, IOException, MetaException {
     String requestorUserName = UserGroupInformation.getCurrentUser()
         .getShortUserName();
-    SentryPolicyServiceClient sentryClient = getSentryServiceClient();
-    sentryClient.dropPrivileges(requestorUserName, authorizableTable);
-
-    // Close the connection after dropping privileges is done.
-    sentryClient.close();
+    try (SentryPolicyServiceClient sentryClient = SentryServiceClientFactory.create(authzConf)) {
+      sentryClient.dropPrivileges(requestorUserName, authorizableTable);
+    } catch (Exception e) {
+      throw new MetaException("Failed to connect to Sentry service "
+              + e.getMessage());
+    }
   }
 
   private void renameSentryTablePrivilege(String oldDbName, String oldTabName,
@@ -403,7 +404,11 @@ public class SentryMetastorePostEventListener extends MetaStoreEventListener {
       } finally {
 
         // Close the connection after renaming privileges is done.
-        sentryClient.close();
+        try {
+          sentryClient.close();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
       }
     }
     // The HDFS plugin needs to know if it's a path change (set location)

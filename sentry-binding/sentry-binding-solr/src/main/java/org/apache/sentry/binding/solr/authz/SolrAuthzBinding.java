@@ -307,9 +307,7 @@ public class SolrAuthzBinding {
     if (!isSyncEnabled()) {
       return;
     }
-    SentryGenericServiceClient client = null;
-    try {
-      client = getClient();
+    try (SentryGenericServiceClient client = getClient()) {
       TSentryPrivilege tPrivilege = new TSentryPrivilege();
       tPrivilege.setComponent(AuthorizationComponent.Search);
       tPrivilege.setServiceName(authzConf.get(SENTRY_SEARCH_SERVICE_KEY,
@@ -325,10 +323,6 @@ public class SolrAuthzBinding {
           " can't delete privileges for collection " + collection);
     } catch (Exception ex) {
       throw new SentrySolrAuthorizationException("Unable to obtain client:" + ex.getMessage());
-    } finally {
-      if (client != null) {
-        client.close();
-      }
     }
   }
 }

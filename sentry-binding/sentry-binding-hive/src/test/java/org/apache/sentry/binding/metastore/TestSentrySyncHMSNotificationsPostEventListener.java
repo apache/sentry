@@ -99,9 +99,13 @@ public class TestSentrySyncHMSNotificationsPostEventListener {
       ).syncNotifications(i);
     }
 
-    Mockito.verify(
-        eventListener.getSentryServiceClient(), Mockito.times((int)latestEventId)
-    ).close();
+    try {
+      Mockito.verify(
+          eventListener.getSentryServiceClient(), Mockito.times((int)latestEventId)
+      ).close();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
 
     Mockito.verifyNoMoreInteractions(eventListener.getSentryServiceClient());
   }
@@ -124,9 +128,13 @@ public class TestSentrySyncHMSNotificationsPostEventListener {
       ).syncNotifications(i);
     }
 
-    Mockito.verify(
-        eventListener.getSentryServiceClient(), Mockito.times((int)latestEventId / 2)
-    ).close();
+    try {
+      Mockito.verify(
+          eventListener.getSentryServiceClient(), Mockito.times((int)latestEventId / 2)
+      ).close();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
 
     Mockito.verifyNoMoreInteractions(eventListener.getSentryServiceClient());
   }

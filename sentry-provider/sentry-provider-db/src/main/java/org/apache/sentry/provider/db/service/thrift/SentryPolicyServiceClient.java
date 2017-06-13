@@ -26,7 +26,7 @@ import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 
-public interface SentryPolicyServiceClient {
+public interface SentryPolicyServiceClient extends AutoCloseable {
 
   public void createRole(String requestorUserName, String roleName) throws SentryUserException;
 
@@ -179,8 +179,6 @@ public interface SentryPolicyServiceClient {
    * @throws SentryUserException
    */
   public String getConfigValue(String propertyName, String defaultValue) throws SentryUserException;
-
-  public void close();
 
   /**
    * Requests the sentry server to synchronize all HMS notification events up to the specified id.

@@ -67,9 +67,11 @@ import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.binding.hive.SentryHiveAuthorizationTaskFactoryImpl;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
+import org.apache.sentry.hdfs.SentryHDFSServiceClientFactory;
 import org.apache.sentry.provider.db.SimpleDBProviderBackend;
 import org.apache.sentry.provider.file.LocalGroupResourceAuthorizationProvider;
 import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.service.thrift.SentryServiceClientFactory;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 import org.apache.sentry.tests.e2e.hive.fs.MiniDFS;
@@ -742,6 +744,11 @@ public abstract class TestHDFSIntegrationBase {
   }
 
   private static void startSentry() throws Exception {
+    SentryServiceClientFactory factory = SentryServiceClientFactory.factoryReset(null);
+    if (factory != null) {
+      factory.close();
+    }
+    SentryHDFSServiceClientFactory.factoryReset();
     try {
       hiveUgi.doAs(new PrivilegedExceptionAction() {
         @Override

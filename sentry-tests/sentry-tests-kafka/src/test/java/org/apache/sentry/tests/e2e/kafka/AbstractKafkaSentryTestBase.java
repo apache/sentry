@@ -28,6 +28,7 @@ import org.apache.sentry.core.model.kafka.KafkaActionConstant;
 import org.apache.sentry.core.model.kafka.Host;
 import org.apache.sentry.kafka.conf.KafkaAuthConf;
 import org.apache.sentry.provider.db.generic.SentryGenericProviderBackend;
+import org.apache.sentry.provider.db.generic.UpdatableCache;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClientFactory;
 import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
@@ -77,8 +78,12 @@ public class AbstractKafkaSentryTestBase {
 
   @BeforeClass
   public static void beforeTestEndToEnd() throws Exception {
+    // Stop background update thread
+    UpdatableCache.disable();
     setupConf();
     startSentryServer();
+    // We started a new server, invalidate all connections to the old one
+    SentryGenericServiceClientFactory.factoryReset();
     setUserGroups();
     setAdminPrivilege();
     startKafkaServer();
@@ -86,8 +91,10 @@ public class AbstractKafkaSentryTestBase {
 
   @AfterClass
   public static void afterTestEndToEnd() throws Exception {
-    stopSentryServer();
+    // Stop background update thread
+    UpdatableCache.disable();
     stopKafkaServer();
+    stopSentryServer();
   }
 
   private static void stopKafkaServer() {
@@ -168,10 +175,8 @@ public class AbstractKafkaSentryTestBase {
   }
 
   public static void setAdminPrivilege() throws Exception {
-    SentryGenericServiceClient sentryClient = null;
-    try {
-      /** grant all privilege to admin user */
-      sentryClient = getSentryClient();
+    try (SentryGenericServiceClient sentryClient = getSentryClient()){
+      // grant all privilege to admin user
       sentryClient.createRoleIfNotExist(ADMIN_USER, ADMIN_ROLE, COMPONENT);
       sentryClient.addRoleToGroups(ADMIN_USER, ADMIN_ROLE, COMPONENT, Sets.newHashSet(ADMIN_GROUP));
       final ArrayList<TAuthorizable> authorizables = new ArrayList<TAuthorizable>();
@@ -182,14 +187,10 @@ public class AbstractKafkaSentryTestBase {
       sentryClient.grantPrivilege(ADMIN_USER, ADMIN_ROLE, COMPONENT,
           new TSentryPrivilege(COMPONENT, "kafka", authorizables,
               KafkaActionConstant.ALL));
-    } finally {
-      if (sentryClient != null) {
-        sentryClient.close();
-      }
     }
   }
 
-  protected static SentryGenericServiceClient getSentryClient() throws Exception {
+  static SentryGenericServiceClient getSentryClient() throws Exception {
     return SentryGenericServiceClientFactory.create(getClientConfig());
   }
 

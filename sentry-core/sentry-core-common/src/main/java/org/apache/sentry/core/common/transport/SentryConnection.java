@@ -18,20 +18,20 @@
 package org.apache.sentry.core.common.transport;
 
 /**
- * Client interface for Proxy Invocation handlers
- * <p>
- * Defines interface that Sentry client's should expose to the Invocation handlers like
- * <code>RetryClientInvocationHandler</code> used to proxy the method invocation on sentry
- * client instances .
- * <p>
- * All the sentry clients that need retrying and failover capabilities should implement
- * this interface.
+ * Representation of a connection to a Sentry Server.
+ * <ul>
+ *   <li>Connection is initialized using the {@link #connect()} method.</li>
+ *   <li>When the connection is no longer used, the {@link #done()} method should be called to
+ * deallocate any resources.</li>
+ * <li>If the user detected that connection is broken, they should call
+ * {@link #invalidate()} method. The connection can not be used after that.</li>
+ * </ul>
  */
-public interface SentryServiceClient {
+public interface SentryConnection {
   /**
    * Connect to Sentry server.
    * Either creates a new connection or reuses an existing one.
-   * @throws Exception on failure to acquire a transport towards server.
+   * @throws Exception on failure to connect.
    */
   void connect() throws Exception;
 
@@ -39,5 +39,16 @@ public interface SentryServiceClient {
    * Disconnect from the server. May close connection or return it to a
    * pool for reuse.
    */
-  void disconnect();
+  void done();
+
+  /**
+   * The connection is assumed to be non-working, invalidate it.
+   * Subsequent {@link #connect() call} should attempt to obtain
+   * another connection.
+   * <p>
+   * The implementation may attempt to connect
+   * to another server immediately or delay it till the call to
+   * {@link #connect()}.
+   */
+  void invalidate();
 }

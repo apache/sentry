@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -22,57 +22,136 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.HostAndPort;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.SaslRpcServer;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.sentry.core.common.exception.MissingConfigurationException;
 import org.apache.thrift.transport.TSaslClientTransport;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
-import org.apache.sentry.core.common.utils.ThriftUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.concurrent.ThreadSafe;
 import javax.security.sasl.Sasl;
-import javax.security.sasl.SaslException;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.PrivilegedExceptionAction;
-import java.util.ArrayList;
-import java.util.Collections;
 
 /**
- * Create Thrift transports suitable for talking to Sentry
+ * Factory for producing connected Thrift transports.
+ * It can produce regular transports as well as Kerberos-enabled transports.
+ * <p>
+ * This class is immutable and thus thread-safe.
  */
-
-public class SentryTransportFactory {
-  protected final Configuration conf;
-  private String[] serverPrincipalParts;
-  protected TTransport thriftTransport;
-  private final int connectionTimeout;
+@ThreadSafe
+public final class SentryTransportFactory implements TransportFactory {
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryTransportFactory.class);
-  // configs for connection retry
-  private final int connectionFullRetryTotal;
-  private final ArrayList<InetSocketAddress> endpoints;
-  private final SentryClientTransportConfigInterface transportConfig;
+
+  private final Configuration conf;
+  private final boolean useUgi;
+  private final String serverPrincipal;
+  private final int connectionTimeout;
+  private final boolean isKerberosEnabled;
   private static final ImmutableMap<String, String> SASL_PROPERTIES =
     ImmutableMap.of(Sasl.SERVER_AUTH, "true", Sasl.QOP, "auth-conf");
 
   /**
+   * Initialize the object based on the sentry configuration provided.
+   *
+   * @param conf            Sentry configuration
+   * @param transportConfig transport configuration to use
+   */
+  public SentryTransportFactory(Configuration conf,
+                         SentryClientTransportConfigInterface transportConfig) {
+
+    this.conf = conf;
+    Preconditions.checkNotNull(this.conf, "Configuration object cannot be null");
+    connectionTimeout = transportConfig.getServerRpcConnTimeoutInMs(conf);
+    isKerberosEnabled = transportConfig.isKerberosEnabled(conf);
+    if (isKerberosEnabled) {
+      useUgi = transportConfig.useUserGroupInformation(conf);
+      serverPrincipal = transportConfig.getSentryPrincipal(conf);
+    } else {
+      serverPrincipal = null;
+      useUgi = false;
+    }
+  }
+
+  /**
+   * Connect to the endpoint and return a connected Thrift transport.
+   * @return Connection to the endpoint
+   * @throws IOException
+   */
+  @Override
+  public TTransportWrapper getTransport(HostAndPort endpoint) throws IOException {
+    return new TTransportWrapper(connectToServer(new InetSocketAddress(endpoint.getHostText(),
+                                                 endpoint.getPort())),
+                                 endpoint);
+  }
+
+  /**
+   * Connect to the specified socket address and throw IOException if failed.
+   *
+   * @param serverAddress Address client needs to connect
+   * @throws Exception if there is failure in establishing the connection.
+   */
+  private TTransport connectToServer(InetSocketAddress serverAddress) throws IOException {
+    try {
+      TTransport thriftTransport = createTransport(serverAddress);
+      thriftTransport.open();
+      return thriftTransport;
+    } catch (TTransportException e) {
+      throw new IOException("Failed to open transport: " + e.getMessage(), e);
+    }
+  }
+
+  /**
+   * Create transport given InetSocketAddress
+   * @param serverAddress - endpoint address
+   * @return unconnected transport
+   * @throws TTransportException
+   * @throws IOException
+   */
+  @SuppressWarnings("squid:S2095")
+  private TTransport createTransport(InetSocketAddress serverAddress)
+          throws IOException {
+    String hostName = serverAddress.getHostName();
+    int port = serverAddress.getPort();
+    TTransport socket = new TSocket(hostName, port, connectionTimeout);
+
+    if (!isKerberosEnabled) {
+      LOGGER.debug("created unprotected connection to {}:{} ", hostName, port);
+      return socket;
+    }
+
+    String principal = SecurityUtil.getServerPrincipal(serverPrincipal, serverAddress.getAddress());
+    String[] serverPrincipalParts = SaslRpcServer.splitKerberosName(principal);
+    if (serverPrincipalParts.length != 3) {
+      throw new IOException("Kerberos principal should have 3 parts: " + principal);
+    }
+
+    UgiSaslClientTransport connection =
+            new UgiSaslClientTransport(SaslRpcServer.AuthMethod.KERBEROS.getMechanismName(),
+              serverPrincipalParts[0], serverPrincipalParts[1],
+              socket, useUgi);
+
+    LOGGER.debug("creating secured connection to {}:{} ", hostName, port);
+    return connection;
+  }
+
+  /**
    * This transport wraps the Sasl transports to set up the right UGI context for open().
    */
-  public static class UgiSaslClientTransport extends TSaslClientTransport {
-    UserGroupInformation ugi = null;
+  private static class UgiSaslClientTransport extends TSaslClientTransport {
+    private UserGroupInformation ugi = null;
 
-    public UgiSaslClientTransport(String mechanism, String protocol,
-                                  String serverName, TTransport transport,
-                                  boolean wrapUgi, Configuration conf)
-      throws IOException, SaslException {
+    UgiSaslClientTransport(String mechanism, String protocol,
+                           String serverName, TTransport transport,
+                           boolean wrapUgi)
+            throws IOException {
       super(mechanism, null, protocol, serverName, SASL_PROPERTIES, null,
-        transport);
+              transport);
       if (wrapUgi) {
         ugi = UserGroupInformation.getLoginUser();
       }
@@ -98,213 +177,15 @@ public class SentryTransportFactory {
         } catch (IOException e) {
           throw new TTransportException("Failed to open SASL transport: " + e.getMessage(), e);
         } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
           throw new TTransportException(
-            "Interrupted while opening underlying transport: " + e.getMessage(), e);
+                  "Interrupted while opening underlying transport: " + e.getMessage(), e);
         }
       }
     }
 
     private void baseOpen() throws TTransportException {
       super.open();
-    }
-  }
-
-  /**
-   * Initialize the object based on the sentry configuration provided.
-   * List of configured servers are reordered randomly preventing all
-   * clients connecting to the same server.
-   *
-   * @param conf            Sentry configuration
-   * @param transportConfig transport configuration to use
-   */
-  public SentryTransportFactory(Configuration conf,
-                                SentryClientTransportConfigInterface transportConfig) throws IOException {
-
-    this.conf = conf;
-    Preconditions.checkNotNull(this.conf, "Configuration object cannot be null");
-    serverPrincipalParts = null;
-    this.transportConfig = transportConfig;
-
-    try {
-      this.connectionTimeout = transportConfig.getServerRpcConnTimeoutInMs(conf);
-      this.connectionFullRetryTotal = transportConfig.getSentryFullRetryTotal(conf);
-      if(transportConfig.isKerberosEnabled(conf) &&
-        transportConfig.useUserGroupInformation(conf)) {
-          // Re-initializing UserGroupInformation, if needed
-          UserGroupInformationInitializer.initialize(conf);
-      }
-      String hostsAndPortsStr = transportConfig.getSentryServerRpcAddress(conf);
-
-      int serverPort = transportConfig.getServerRpcPort(conf);
-
-      String[] hostsAndPortsStrArr = hostsAndPortsStr.split(",");
-      HostAndPort[] hostsAndPorts = ThriftUtil.parseHostPortStrings(hostsAndPortsStrArr, serverPort);
-
-      this.endpoints = new ArrayList<>(hostsAndPortsStrArr.length);
-      for (HostAndPort endpoint : hostsAndPorts) {
-        this.endpoints.add(
-          new InetSocketAddress(endpoint.getHostText(), endpoint.getPort()));
-        LOGGER.debug("Added server endpoint: " + endpoint.toString());
-      }
-
-      if((endpoints.size() > 1) && (transportConfig.isLoadBalancingEnabled(conf))) {
-        // Reorder endpoints randomly to prevent all clients connecting to the same endpoint
-        // and load balance the connections towards sentry servers
-        Collections.shuffle(endpoints);
-      }
-    } catch (MissingConfigurationException e) {
-      throw new RuntimeException("Sentry Thrift Client Creation Failed: " + e.getMessage(), e);
-    }
-  }
-
-  /**
-   * Initialize object based on the parameters provided provided.
-   *
-   * @param addr            Host address which the client needs to connect
-   * @param port            Host Port which the client needs to connect
-   * @param conf            Sentry configuration
-   * @param transportConfig transport configuration to use
-   */
-  public SentryTransportFactory(String addr, int port, Configuration conf,
-                                SentryClientTransportConfigInterface transportConfig) throws IOException {
-    // copy the configuration because we may make modifications to it.
-    this.conf = new Configuration(conf);
-    serverPrincipalParts = null;
-    Preconditions.checkNotNull(this.conf, "Configuration object cannot be null");
-    this.transportConfig = transportConfig;
-
-    try {
-      this.endpoints = new ArrayList<>(1);
-      this.endpoints.add(NetUtils.createSocketAddr(addr, port));
-      this.connectionTimeout = transportConfig.getServerRpcConnTimeoutInMs(conf);
-      this.connectionFullRetryTotal = transportConfig.getSentryFullRetryTotal(conf);
-    } catch (MissingConfigurationException e) {
-      throw new RuntimeException("Sentry Thrift Client Creation Failed: " + e.getMessage(), e);
-    }
-  }
-
-
-  /**
-   * On connection error, Iterates through all the configured servers and tries to connect.
-   * On successful connection, control returns
-   * On connection failure, continues iterating through all the configured sentry servers,
-   * and then retries the whole server list no more than connectionFullRetryTotal times.
-   * In this case, it won't introduce more latency when some server fails.
-   * <p>
-   * TODO: Add metrics for the number of successful connects and errors per client, and total number of retries.
-   */
-  public TTransport getTransport() throws IOException {
-    IOException currentException = null;
-    for (int retryCount = 0; retryCount < connectionFullRetryTotal; retryCount++) {
-      try {
-        return connectToAvailableServer();
-      } catch (IOException e) {
-        currentException = e;
-        LOGGER.error(
-                "Failed to connect to all the configured sentry servers, Retrying again");
-      }
-    }
-    // Throws exception on reaching the connectionFullRetryTotal.
-    LOGGER.error(
-      String.format("Reach the max connection retry num %d ", connectionFullRetryTotal),
-      currentException);
-    throw currentException;
-  }
-
-  /**
-   * Iterates through all the configured servers and tries to connect.
-   * On connection error, tries to connect to next server.
-   * Control returns on successful connection OR it's done trying to all the
-   * configured servers.
-   *
-   * @throws IOException
-   */
-  private TTransport connectToAvailableServer() throws IOException {
-    IOException currentException = null;
-    for (InetSocketAddress addr : endpoints) {
-      try {
-        return connectToServer(addr);
-      } catch (IOException e) {
-        LOGGER.error(String.format("Failed connection to %s: %s",
-          addr.toString(), e.getMessage()), e);
-        currentException = e;
-      }
-    }
-    throw currentException;
-  }
-
-  /**
-   * Connect to the specified socket address and throw IOException if failed.
-   *
-   * @param serverAddress Address client needs to connect
-   * @throws Exception if there is failure in establishing the connection.
-   */
-  private TTransport connectToServer(InetSocketAddress serverAddress) throws IOException {
-    try {
-      thriftTransport = createTransport(serverAddress);
-      thriftTransport.open();
-    } catch (TTransportException e) {
-      throw new IOException("Failed to open transport: " + e.getMessage(), e);
-    } catch (MissingConfigurationException e) {
-      throw new RuntimeException(e.getMessage(), e);
-    }
-
-    LOGGER.debug("Successfully opened transport: " + thriftTransport + " to " + serverAddress);
-    return thriftTransport;
-  }
-
-  /**
-   * New socket is is created
-   *
-   * @param serverAddress
-   * @return
-   * @throws TTransportException
-   * @throws MissingConfigurationException
-   * @throws IOException
-   */
-  private TTransport createTransport(InetSocketAddress serverAddress)
-    throws TTransportException, MissingConfigurationException, IOException {
-    TTransport socket = new TSocket(serverAddress.getHostName(),
-      serverAddress.getPort(), connectionTimeout);
-
-    if (!transportConfig.isKerberosEnabled(conf)) {
-      return socket;
-    } else {
-      String serverPrincipal = transportConfig.getSentryPrincipal(conf);
-      serverPrincipal = SecurityUtil.getServerPrincipal(serverPrincipal, serverAddress.getAddress());
-      LOGGER.debug("Using server kerberos principal: " + serverPrincipal);
-      if (serverPrincipalParts == null) {
-        serverPrincipalParts = SaslRpcServer.splitKerberosName(serverPrincipal);
-        Preconditions.checkArgument(serverPrincipalParts.length == 3,
-          "Kerberos principal should have 3 parts: " + serverPrincipal);
-      }
-
-      boolean wrapUgi = transportConfig.useUserGroupInformation(conf);
-      return new UgiSaslClientTransport(SaslRpcServer.AuthMethod.KERBEROS.getMechanismName(),
-        serverPrincipalParts[0], serverPrincipalParts[1],
-        socket, wrapUgi, conf);
-    }
-  }
-
-  private boolean isConnected() {
-    return thriftTransport != null && thriftTransport.isOpen();
-  }
-
-  /**
-   * Method currently closes the transport
-   * TODO (Kalyan) Plan is to hold the transport and resuse it accross multiple client's
-   * That way, new connection need not be created for each new client
-   */
-  public void releaseTransport() {
-    close();
-  }
-
-  /**
-   * Method closes the transport
-   */
-  public void close() {
-    if (isConnected()) {
-      thriftTransport.close();
     }
   }
 }
