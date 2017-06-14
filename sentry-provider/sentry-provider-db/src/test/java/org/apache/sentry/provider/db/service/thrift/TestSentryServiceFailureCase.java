@@ -67,8 +67,7 @@ public class TestSentryServiceFailureCase extends SentryServiceIntegrationBase {
       if (cause == null) {
         throw e;
       }
-      String msg = "Exception message: " + cause.getMessage() + " to contain " +
-          PEER_CALLBACK_FAILURE;
+      String msg = "Exception message: " + cause.getMessage();
       Assert.assertTrue(msg, Strings.nullToEmpty(cause.getMessage())
           .contains(PEER_CALLBACK_FAILURE));
     }

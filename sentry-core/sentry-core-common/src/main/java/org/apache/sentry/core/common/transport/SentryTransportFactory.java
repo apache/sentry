@@ -48,7 +48,6 @@ import java.security.PrivilegedExceptionAction;
 public final class SentryTransportFactory implements TransportFactory {
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryTransportFactory.class);
 
-  private final Configuration conf;
   private final boolean useUgi;
   private final String serverPrincipal;
   private final int connectionTimeout;
@@ -65,8 +64,7 @@ public final class SentryTransportFactory implements TransportFactory {
   public SentryTransportFactory(Configuration conf,
                          SentryClientTransportConfigInterface transportConfig) {
 
-    this.conf = conf;
-    Preconditions.checkNotNull(this.conf, "Configuration object cannot be null");
+    Preconditions.checkNotNull(conf, "Configuration object cannot be null");
     connectionTimeout = transportConfig.getServerRpcConnTimeoutInMs(conf);
     isKerberosEnabled = transportConfig.isKerberosEnabled(conf);
     if (isKerberosEnabled) {
@@ -84,10 +82,10 @@ public final class SentryTransportFactory implements TransportFactory {
    * @throws IOException
    */
   @Override
-  public TTransportWrapper getTransport(HostAndPort endpoint) throws IOException {
+  public TTransportWrapper getTransport(HostAndPort endpoint) throws Exception {
     return new TTransportWrapper(connectToServer(new InetSocketAddress(endpoint.getHostText(),
-                                                 endpoint.getPort())),
-                                 endpoint);
+      endpoint.getPort())),
+      endpoint);
   }
 
   /**
@@ -96,14 +94,11 @@ public final class SentryTransportFactory implements TransportFactory {
    * @param serverAddress Address client needs to connect
    * @throws Exception if there is failure in establishing the connection.
    */
-  private TTransport connectToServer(InetSocketAddress serverAddress) throws IOException {
-    try {
-      TTransport thriftTransport = createTransport(serverAddress);
-      thriftTransport.open();
-      return thriftTransport;
-    } catch (TTransportException e) {
-      throw new IOException("Failed to open transport: " + e.getMessage(), e);
-    }
+  private TTransport connectToServer(InetSocketAddress serverAddress) throws Exception {
+    TTransport thriftTransport = createTransport(serverAddress);
+    thriftTransport.open();
+    LOGGER.debug("Successfully opened transport {} to {}", thriftTransport, serverAddress);
+    return thriftTransport;
   }
 
   /**

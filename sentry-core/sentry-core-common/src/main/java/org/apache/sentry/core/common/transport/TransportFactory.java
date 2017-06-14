@@ -20,8 +20,6 @@ package org.apache.sentry.core.common.transport;
 
 import com.google.common.net.HostAndPort;
 
-import java.io.IOException;
-
 /**
  * Generic transport factory interface.
  * <p>
@@ -33,7 +31,7 @@ public interface TransportFactory {
   /**
    * Connect to the endpoint and return a connected Thrift transport.
    * @return Connection to the endpoint
-   * @throws IOException
+   * @throws Exception if can't establish connection
    */
-  TTransportWrapper getTransport(HostAndPort endpoint) throws IOException;
+  TTransportWrapper getTransport(HostAndPort endpoint) throws Exception;
 }

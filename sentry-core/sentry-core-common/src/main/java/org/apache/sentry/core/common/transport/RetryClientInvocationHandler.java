@@ -131,29 +131,28 @@ public final class RetryClientInvocationHandler extends SentryClientInvocationHa
    * @throws Exception
    */
   private void connect() throws Exception {
-    Exception lastExc = null;
+    Throwable lastExc = null;
     for (int retryCount = 0;  retryCount < maxRetryCount; retryCount++) {
       try {
+        // If there is a TTransportException while connecting to sentry server, retry is
+        // attempted. For the rest, retry is not attempted.
         client.connect();
         return;
-      } catch (TTransportException e) {
+      } catch (TTransportException failure) {
         // Retry when the exception is caused by connection problem.
-        LOGGER.error("failed to connect", e);
-        lastExc = e;
-      } catch (Exception e) {
-        Throwable causeException = e.getCause();
-        if (causeException instanceof TTransportException) {
-          // Retry when the exception is caused by connection problem.
-          LOGGER.error("failed to connect", e);
-          lastExc = e;
-          continue;
+        LOGGER.error("Failed to connect", failure);
+        lastExc = failure;
+      } catch (Exception failure) {
+        Throwable causeException = failure.getCause();
+        if (!(causeException instanceof TTransportException)) {
+          LOGGER.error("Failed to connect to Sentry Server", failure);
+          throw new SentryUserException(failure.getMessage(), causeException);
         }
-        // Some other failure, re-throw it
-        throw e;
+        lastExc = causeException;
       }
     }
     assert lastExc != null;
-    throw lastExc;
+    throw new SentryUserException (lastExc.getMessage(), lastExc);
   }
 
   @Override
