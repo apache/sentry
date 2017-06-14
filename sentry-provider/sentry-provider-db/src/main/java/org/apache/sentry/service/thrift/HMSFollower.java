@@ -315,6 +315,8 @@ public class HMSFollower implements Runnable, AutoCloseable {
       // NotificationEventResponse causing TProtocolException.
       // Workaround: Only processes the notification events newer than the last updated one.
       CurrentNotificationEventId eventId = client.getCurrentNotificationEventId();
+      LOGGER.debug("Last Notification in HMS {} lastProcessedNotificationID is {}",
+        eventId.getEventId(), lastProcessedNotificationID);
       if (eventId.getEventId() > lastProcessedNotificationID) {
         NotificationEventResponse response =
           client.getNextNotification(lastProcessedNotificationID, Integer.MAX_VALUE, null);
@@ -414,9 +416,12 @@ public class HMSFollower implements Runnable, AutoCloseable {
       List<String> locations;
       NotificationProcessor notificationProcessor = new NotificationProcessor(sentryStore, LOGGER);
       try {
+        LOGGER.debug("Processing notification with id {} and type {}", event.getEventId(),
+          event.getEventType());
         switch (HCatEventMessage.EventType.valueOf(event.getEventType())) {
           case CREATE_DATABASE:
-            SentryJSONCreateDatabaseMessage message = deserializer.getCreateDatabaseMessage(event.getMessage());
+            SentryJSONCreateDatabaseMessage message =
+              deserializer.getCreateDatabaseMessage(event.getMessage());
             dbName = message.getDB();
             location = message.getLocation();
             if ((dbName == null) || (location == null)) {
@@ -510,9 +515,9 @@ public class HMSFollower implements Runnable, AutoCloseable {
                 StringUtils.defaultIfBlank(newTableName, "null"),
                 StringUtils.defaultIfBlank(newLocation, "null")));
               break;
-            } else if ((oldDbName == newDbName) &&
-              (oldTableName == newTableName) &&
-              (oldLocation == newLocation)) {
+            } else if ((oldDbName.equalsIgnoreCase(newDbName)) &&
+              (oldTableName.equalsIgnoreCase(newTableName)) &&
+              (oldLocation.equalsIgnoreCase(newLocation))) {
               isNotificationProcessingSkipped = true;
               LOGGER.info(String.format("Alter table notification ignored as neither name nor " +
                 "location has changed: oldAuthzObj = %s, oldLocation = %s, newAuthzObj = %s, " +
@@ -593,7 +598,7 @@ public class HMSFollower implements Runnable, AutoCloseable {
                 StringUtils.defaultIfBlank(oldLocation, "null"),
                 StringUtils.defaultIfBlank(newLocation, "null")));
               break;
-            } else if (oldLocation == newLocation) {
+            } else if (oldLocation.equalsIgnoreCase(newLocation)) {
               isNotificationProcessingSkipped = true;
               LOGGER.info(String.format("Alter partition notification ignored as" +
                 "location has not changed: AuthzObj = %s, Location = %s", dbName + "." +

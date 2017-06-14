@@ -3506,6 +3506,7 @@ public class SentryStore {
    * Set the notification ID of last processed HMS notification.
    */
   public void persistLastProcessedNotificationID(final Long notificationId) throws Exception {
+    LOGGER.debug("Persisting Last Processed Notification ID {}", notificationId);
     tm.executeTransaction(
       new TransactionBlock<Object>() {
         public Object execute(PersistenceManager pm) throws Exception {
@@ -3552,12 +3553,15 @@ public class SentryStore {
    *         found then return 0.
    */
   public Long getLastProcessedNotificationID() throws Exception {
-    return tm.executeTransaction(
+    long notificationId = tm.executeTransaction(
     new TransactionBlock<Long>() {
       public Long execute(PersistenceManager pm) throws Exception {
-        return getLastProcessedNotificationIDCore(pm);
+        long notificationId =  getLastProcessedNotificationIDCore(pm);
+        return notificationId;
       }
     });
+    LOGGER.debug("Retrieving Last Processed Notification ID {}", notificationId);
+    return notificationId;
   }
 
   /**

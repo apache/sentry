@@ -20,6 +20,7 @@ package org.apache.sentry.service.thrift;
 import com.google.common.collect.Lists;
 import org.apache.sentry.hdfs.PathsUpdate;
 import org.apache.sentry.hdfs.SentryMalformedPathException;
+import org.apache.sentry.core.common.exception.SentryInvalidHMSEventException;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.slf4j.Logger;
 
@@ -358,6 +359,11 @@ class NotificationProcessor {
               Collections.singleton(newPathTree),
               update);
       }
+    } else {
+      LOGGER.error("Update Notification for Auhorizable object {}, with no change, skipping",
+        oldAuthzObj);
+      throw new SentryInvalidHMSEventException("Update Notification for Authorizable object" +
+        "with no change");
     }
   }
 
