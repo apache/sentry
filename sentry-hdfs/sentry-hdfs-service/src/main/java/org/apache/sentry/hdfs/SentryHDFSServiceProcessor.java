@@ -24,6 +24,7 @@ import java.util.Map;
 
 import com.codahale.metrics.Timer;
 import org.apache.sentry.hdfs.service.thrift.SentryHDFSService;
+import org.apache.sentry.hdfs.service.thrift.TAuthzUpdateRequest;
 import org.apache.sentry.hdfs.service.thrift.TAuthzUpdateResponse;
 import org.apache.sentry.hdfs.service.thrift.TPathsUpdate;
 import org.apache.sentry.hdfs.service.thrift.TPermissionsUpdate;
@@ -31,12 +32,19 @@ import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.sentry.hdfs.service.thrift.sentry_hdfs_serviceConstants.UNUSED_PATH_UPDATE_IMG_NUM;
+
 public class SentryHDFSServiceProcessor implements SentryHDFSService.Iface {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryHDFSServiceProcessor.class);
 
   @Override
-  public TAuthzUpdateResponse get_all_authz_updates_from(long permSeqNum, long pathSeqNum)
+  public TAuthzUpdateResponse get_all_authz_updates_from(long permSeqNum, long pathSeqNum) throws TException {
+    return get_authz_updates(new TAuthzUpdateRequest(permSeqNum, pathSeqNum, UNUSED_PATH_UPDATE_IMG_NUM));
+  }
+
+  @Override
+  public TAuthzUpdateResponse get_authz_updates(TAuthzUpdateRequest request)
       throws TException {
     TAuthzUpdateResponse retVal = new TAuthzUpdateResponse();
     retVal.setAuthzPathUpdate(new LinkedList<TPathsUpdate>());
@@ -46,10 +54,10 @@ public class SentryHDFSServiceProcessor implements SentryHDFSService.Iface {
           SentryHdfsMetricsUtil.getAllAuthzUpdatesTimer.time();
       try {
         List<PermissionsUpdate> permUpdates =
-            SentryPlugin.instance.getAllPermsUpdatesFrom(permSeqNum);
+            SentryPlugin.instance.getAllPermsUpdatesFrom(request.getPermSeqNum());
         SentryHdfsMetricsUtil.getPermUpdateHistogram.update(permUpdates.size());
         List<PathsUpdate> pathUpdates =
-            SentryPlugin.instance.getAllPathsUpdatesFrom(pathSeqNum);
+            SentryPlugin.instance.getAllPathsUpdatesFrom(request.getPathSeqNum());
         SentryHdfsMetricsUtil.getPathUpdateHistogram.update(pathUpdates.size());
         for (PathsUpdate update : pathUpdates) {
           if (LOGGER.isDebugEnabled()) {
@@ -77,8 +85,8 @@ public class SentryHDFSServiceProcessor implements SentryHDFSService.Iface {
           }
           pathSeq.append(">");
           LOGGER.debug("#### Updates requested from HDFS ["
-              + "permReq=" + permSeqNum + ", permResp=" + permSeq + "] "
-              + "[pathReq=" + pathSeqNum + ", pathResp=" + pathSeq + "]");
+              + "permReq=" + request.getPermSeqNum() + ", permResp=" + permSeq + "] "
+              + "[pathReq=" + request.getPathSeqNum() + ", pathResp=" + pathSeq + "]");
         }
       } catch (Exception e) {
         LOGGER.error("Error Sending updates to downstream Cache", e);

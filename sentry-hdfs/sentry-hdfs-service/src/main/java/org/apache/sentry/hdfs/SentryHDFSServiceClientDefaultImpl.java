@@ -24,6 +24,7 @@ import org.apache.sentry.core.common.transport.SentryTransportPool;
 import org.apache.sentry.core.common.transport.TTransportWrapper;
 import org.apache.sentry.hdfs.ServiceConstants.ClientConfig;
 import org.apache.sentry.hdfs.service.thrift.SentryHDFSService.Client;
+import org.apache.sentry.hdfs.service.thrift.TAuthzUpdateRequest;
 import org.apache.sentry.hdfs.service.thrift.TAuthzUpdateResponse;
 import org.apache.sentry.hdfs.service.thrift.TPathsUpdate;
 import org.apache.sentry.hdfs.service.thrift.TPermissionsUpdate;
@@ -34,6 +35,8 @@ import org.apache.thrift.protocol.TProtocol;
 
 import java.io.IOException;
 import java.util.LinkedList;
+
+import static org.apache.sentry.hdfs.service.thrift.sentry_hdfs_serviceConstants.UNUSED_PATH_UPDATE_IMG_NUM;
 
 /**
  * Sentry HDFS Service Client
@@ -86,7 +89,8 @@ public class SentryHDFSServiceClientDefaultImpl
           throws SentryHdfsServiceException {
     SentryAuthzUpdate retVal = new SentryAuthzUpdate(new LinkedList<PermissionsUpdate>(), new LinkedList<PathsUpdate>());
     try {
-      TAuthzUpdateResponse sentryUpdates = client.get_all_authz_updates_from(permSeqNum, pathSeqNum);
+      TAuthzUpdateRequest updateRequest = new TAuthzUpdateRequest(permSeqNum, pathSeqNum, UNUSED_PATH_UPDATE_IMG_NUM);
+      TAuthzUpdateResponse sentryUpdates = client.get_authz_updates(updateRequest);
       if (sentryUpdates.getAuthzPathUpdate() != null) {
         for (TPathsUpdate pathsUpdate : sentryUpdates.getAuthzPathUpdate()) {
           retVal.getPathUpdates().add(new PathsUpdate(pathsUpdate));
