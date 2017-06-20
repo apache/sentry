@@ -20,7 +20,7 @@ package org.apache.sentry.hdfs;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -59,7 +59,7 @@ public class PathsUpdate implements Updateable.Update {
 
   public PathsUpdate(long seqNum, boolean hasFullImage) {
     tPathsUpdate = new TPathsUpdate(hasFullImage, seqNum,
-        new LinkedList<TPathChanges>());
+        new ArrayList<TPathChanges>());
   }
 
   @Override
@@ -70,12 +70,12 @@ public class PathsUpdate implements Updateable.Update {
   public TPathChanges newPathChange(String authzObject) {
 
     TPathChanges pathChanges = new TPathChanges(authzObject,
-        new LinkedList<List<String>>(), new LinkedList<List<String>>());
+        new ArrayList<List<String>>(), new ArrayList<List<String>>());
     tPathsUpdate.addToPathChanges(pathChanges);
     return pathChanges;
   }
 
-  public List<TPathChanges> getPathChanges() {
+  List<TPathChanges> getPathChanges() {
     return tPathsUpdate.getPathChanges();
   }
 
@@ -89,7 +89,7 @@ public class PathsUpdate implements Updateable.Update {
     tPathsUpdate.setSeqNum(seqNum);
   }
 
-  public TPathsUpdate toThrift() {
+  TPathsUpdate toThrift() {
     return tPathsUpdate;
   }
 

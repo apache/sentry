@@ -27,7 +27,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -2489,7 +2488,7 @@ public class SentryStore {
       for (MSentryRole role : mGroup.getRoles()) {
         List<String> rUpdate = retVal.get(role.getRoleName());
         if (rUpdate == null) {
-          rUpdate = new LinkedList<>();
+          rUpdate = new ArrayList<>();
           retVal.put(role.getRoleName(), rUpdate);
         }
         rUpdate.add(mGroup.getGroupName());
@@ -2594,7 +2593,7 @@ public class SentryStore {
    * @param update the corresponding path delta update
    * @throws Exception
    */
-  public void addAuthzPathsMapping(final String authzObj, final Iterable<String> paths,
+  public void addAuthzPathsMapping(final String authzObj, final Collection<String> paths,
       final Update update) throws Exception {
     execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
@@ -2615,7 +2614,7 @@ public class SentryStore {
    * @param paths a set of paths need to be added into the authzObj -> [Paths] mapping
    */
   private void addAuthzPathsMappingCore(PersistenceManager pm, String authzObj,
-        Iterable<String> paths) {
+        Collection<String> paths) {
     MAuthzPathsMapping mAuthzPathsMapping = getMAuthzPathsMappingCore(pm, authzObj);
     if (mAuthzPathsMapping == null) {
       mAuthzPathsMapping = new MAuthzPathsMapping(authzObj, paths);
@@ -3303,7 +3302,7 @@ public class SentryStore {
         for (String roleName : roleNames) {
           Set<TSentryGroup> tSentryGroups = roleGroupsMap.get(roleName);
           if (tSentryGroups == null) {
-            tSentryGroups = Sets.newHashSet();
+            tSentryGroups = new HashSet<>();
           }
           tSentryGroups.add(new TSentryGroup(entry.getKey()));
           roleGroupsMap.put(roleName, tSentryGroups);

@@ -18,16 +18,11 @@
 
 package org.apache.sentry.core.common.exception;
 
-public class SentryHdfsServiceException extends RuntimeException {
+public class SentryHdfsServiceException extends Exception {
   private static final long serialVersionUID = 1511645864949767378L;
 
   public SentryHdfsServiceException(String message, Throwable cause) {
     super(message, cause);
   }
-
-  public SentryHdfsServiceException(String message) {
-    super(message);
-  }
-
 
 }

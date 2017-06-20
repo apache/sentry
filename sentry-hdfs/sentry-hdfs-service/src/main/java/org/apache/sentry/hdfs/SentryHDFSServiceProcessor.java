@@ -18,11 +18,12 @@
 
 package org.apache.sentry.hdfs;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import com.codahale.metrics.Timer;
+import com.codahale.metrics.Timer.Context;
 import org.apache.sentry.hdfs.service.thrift.SentryHDFSService;
 import org.apache.sentry.hdfs.service.thrift.TAuthzUpdateRequest;
 import org.apache.sentry.hdfs.service.thrift.TAuthzUpdateResponse;
@@ -34,8 +35,11 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.sentry.hdfs.service.thrift.sentry_hdfs_serviceConstants.UNUSED_PATH_UPDATE_IMG_NUM;
 
+/**
+ * Process requests from HDFS Name Node plugin.
+ * The only supported request is {@link #get_all_authz_updates_from(long, long)}.
+ */
 public class SentryHDFSServiceProcessor implements SentryHDFSService.Iface {
-
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryHDFSServiceProcessor.class);
 
   @Override
@@ -47,55 +51,57 @@ public class SentryHDFSServiceProcessor implements SentryHDFSService.Iface {
   public TAuthzUpdateResponse get_authz_updates(TAuthzUpdateRequest request)
       throws TException {
     TAuthzUpdateResponse retVal = new TAuthzUpdateResponse();
-    retVal.setAuthzPathUpdate(new LinkedList<TPathsUpdate>());
-    retVal.setAuthzPermUpdate(new LinkedList<TPermissionsUpdate>());
-    if (SentryPlugin.instance != null) {
-      final Timer.Context timerContext =
-          SentryHdfsMetricsUtil.getAllAuthzUpdatesTimer.time();
-      try {
-        List<PermissionsUpdate> permUpdates =
-            SentryPlugin.instance.getAllPermsUpdatesFrom(request.getPermSeqNum());
-        SentryHdfsMetricsUtil.getPermUpdateHistogram.update(permUpdates.size());
-        List<PathsUpdate> pathUpdates =
-            SentryPlugin.instance.getAllPathsUpdatesFrom(request.getPathSeqNum());
-        SentryHdfsMetricsUtil.getPathUpdateHistogram.update(pathUpdates.size());
-        for (PathsUpdate update : pathUpdates) {
-          if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("### Sending PATH preUpdate seq [" + update.getSeqNum() + "] ###");
-            LOGGER.debug("### Sending PATH preUpdate [" + update.toThrift() + "] ###");
-          }
-          retVal.getAuthzPathUpdate().add(update.toThrift());
-        }
-        for (PermissionsUpdate update : permUpdates) {
-          if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("### Sending PERM preUpdate seq [" + update.getSeqNum() + "] ###");
-            LOGGER.debug("### Sending PERM preUpdate [" + update.toThrift() + "] ###");
-          }
-          retVal.getAuthzPermUpdate().add(update.toThrift());
-        }
-        if (LOGGER.isDebugEnabled()) {
-          StringBuilder permSeq = new StringBuilder("<");
-          for (PermissionsUpdate permUpdate : permUpdates) {
-            permSeq.append(permUpdate.getSeqNum()).append(",");
-          }
-          permSeq.append(">");
-          StringBuilder pathSeq = new StringBuilder("<");
-          for (PathsUpdate pathUpdate : pathUpdates) {
-            pathSeq.append(pathUpdate.getSeqNum()).append(",");
-          }
-          pathSeq.append(">");
-          LOGGER.debug("#### Updates requested from HDFS ["
-              + "permReq=" + request.getPermSeqNum() + ", permResp=" + permSeq + "] "
-              + "[pathReq=" + request.getPathSeqNum() + ", pathResp=" + pathSeq + "]");
-        }
-      } catch (Exception e) {
-        LOGGER.error("Error Sending updates to downstream Cache", e);
-        throw new TException(e);
-      } finally {
-        timerContext.stop();
-      }
-    } else {
+
+    if (SentryPlugin.instance == null) {
       LOGGER.error("SentryPlugin not initialized yet !!");
+      retVal.setAuthzPathUpdate(Collections.<TPathsUpdate>emptyList());
+      retVal.setAuthzPermUpdate(Collections.<TPermissionsUpdate>emptyList());
+      return retVal;
+    }
+
+    try (Context timerContext =
+                 SentryHdfsMetricsUtil.getAllAuthzUpdatesTimer.time()){
+      List<PermissionsUpdate> permUpdates =
+          SentryPlugin.instance.getAllPermsUpdatesFrom(request.getPermSeqNum());
+      SentryHdfsMetricsUtil.getPermUpdateHistogram.update(permUpdates.size());
+      List<PathsUpdate> pathUpdates =
+          SentryPlugin.instance.getAllPathsUpdatesFrom(request.getPathSeqNum());
+      SentryHdfsMetricsUtil.getPathUpdateHistogram.update(pathUpdates.size());
+
+      List<TPathsUpdate> retPathUpdates = new ArrayList<>(pathUpdates.size());
+      for (PathsUpdate update : pathUpdates) {
+        LOGGER.debug("Sending PATH preUpdate seq [{}], [{}]",
+                update.getSeqNum(), update.toThrift());
+        retPathUpdates.add(update.toThrift());
+      }
+      retVal.setAuthzPathUpdate(retPathUpdates);
+
+      List<TPermissionsUpdate>retPermUpdates = new ArrayList<>(permUpdates.size());
+      for (PermissionsUpdate update : permUpdates) {
+        LOGGER.debug("Sending PERM preUpdate seq [{}], [{}]",
+                update.getSeqNum(), update.toThrift());
+        retPermUpdates.add(update.toThrift());
+      }
+      retVal.setAuthzPermUpdate(retPermUpdates);
+
+      if (LOGGER.isDebugEnabled()) {
+        StringBuilder permSeq = new StringBuilder("<");
+        for (PermissionsUpdate permUpdate : permUpdates) {
+          permSeq.append(permUpdate.getSeqNum()).append(",");
+        }
+        permSeq.append(">");
+        StringBuilder pathSeq = new StringBuilder("<");
+        for (PathsUpdate pathUpdate : pathUpdates) {
+          pathSeq.append(pathUpdate.getSeqNum()).append(",");
+        }
+        pathSeq.append(">");
+        LOGGER.debug("Updates requested from HDFS ["
+            + "permReq=" + request.getPermSeqNum() + ", permResp=" + permSeq + "] "
+            + "[pathReq=" + request.getPathSeqNum() + ", pathResp=" + pathSeq + "]");
+      }
+    } catch (Exception e) {
+      LOGGER.error("Error Sending updates to downstream Cache", e);
+      throw new TException(e);
     }
 
     return retVal;

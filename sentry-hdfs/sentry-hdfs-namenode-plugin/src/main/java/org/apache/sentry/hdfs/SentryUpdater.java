@@ -46,13 +46,12 @@ class SentryUpdater {
       }
     }
     try {
-      SentryAuthzUpdate sentryUpdates = sentryClient.getAllUpdatesFrom(
+      return sentryClient.getAllUpdatesFrom(
           authzInfo.getAuthzPermissions().getLastUpdatedSeqNum() + 1,
           authzInfo.getAuthzPaths().getLastUpdatedSeqNum() + 1);
-      return sentryUpdates;
     } catch (Exception e)  {
       sentryClient = null;
-      LOG.error("Error receiving updates from Sentry !!", e);
+      LOG.error("Error receiving updates from Sentry", e);
       return null;
     }
   }

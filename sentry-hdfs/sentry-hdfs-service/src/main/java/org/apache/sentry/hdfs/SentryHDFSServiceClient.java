@@ -17,9 +17,25 @@
  */
 package org.apache.sentry.hdfs;
 
+import org.apache.sentry.core.common.exception.SentryHdfsServiceException;
+
+/**
+ * Private interface between HDFS NameNode and the Sentry Server.
+ * The only exposed service is update exchange via {@link #getAllUpdatesFrom(long, long)}
+ */
 public interface SentryHDFSServiceClient extends AutoCloseable {
+  /** Service name for Thrift */
   String SENTRY_HDFS_SERVICE_NAME = "SentryHDFSService";
 
-  SentryAuthzUpdate getAllUpdatesFrom(long permSeqNum, long pathSeqNum);
+  /**
+   * Get any permission and path updates accumulated since given sequence numbers.
+   * May return full update.
+   * @param permSeqNum Last sequence number for permissions update processed by the NameNode plugin
+   * @param pathSeqNum Last sequence number for paths update processed by the NameNode plugin
+   * @return List of permission and path changes which may include a full snapshot.
+   * @throws SentryHdfsServiceException if a connection exception happens
+   */
+  SentryAuthzUpdate getAllUpdatesFrom(long permSeqNum, long pathSeqNum)
+          throws SentryHdfsServiceException;
 }
 

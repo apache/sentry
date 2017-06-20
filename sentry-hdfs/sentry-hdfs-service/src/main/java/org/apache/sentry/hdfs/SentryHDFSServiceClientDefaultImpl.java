@@ -33,15 +33,16 @@ import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.protocol.TMultiplexedProtocol;
 import org.apache.thrift.protocol.TProtocol;
 
-import java.io.IOException;
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import static org.apache.sentry.hdfs.service.thrift.sentry_hdfs_serviceConstants.UNUSED_PATH_UPDATE_IMG_NUM;
 
 /**
  * Sentry HDFS Service Client
  * <p>
- * The class isn't thread-safe - it is up to the aller to ensure thread safety
+ * The class isn't thread-safe - it is up to the caller to ensure thread safety
  */
 public class SentryHDFSServiceClientDefaultImpl
         implements SentryHDFSServiceClient, SentryConnection {
@@ -52,7 +53,7 @@ public class SentryHDFSServiceClientDefaultImpl
   private final long maxMessageSize;
 
   SentryHDFSServiceClientDefaultImpl(Configuration conf,
-                                     SentryTransportPool transportPool) throws IOException {
+                                     SentryTransportPool transportPool) {
     maxMessageSize = conf.getLong(ClientConfig.SENTRY_HDFS_THRIFT_MAX_MESSAGE_SIZE,
             ClientConfig.SENTRY_HDFS_THRIFT_MAX_MESSAGE_SIZE_DEFAULT);
     useCompactTransport = conf.getBoolean(ClientConfig.USE_COMPACT_TRANSPORT,
@@ -76,7 +77,8 @@ public class SentryHDFSServiceClientDefaultImpl
     if (useCompactTransport) {
       tProtocol = new TCompactProtocol(transport.getTTransport(), maxMessageSize, maxMessageSize);
     } else {
-      tProtocol = new TBinaryProtocol(transport.getTTransport(), maxMessageSize, maxMessageSize, true, true);
+      tProtocol = new TBinaryProtocol(transport.getTTransport(), maxMessageSize, maxMessageSize,
+              true, true);
     }
     TMultiplexedProtocol protocol = new TMultiplexedProtocol(
             tProtocol, SentryHDFSServiceClient.SENTRY_HDFS_SERVICE_NAME);
@@ -87,24 +89,30 @@ public class SentryHDFSServiceClientDefaultImpl
   @Override
   public SentryAuthzUpdate getAllUpdatesFrom(long permSeqNum, long pathSeqNum)
           throws SentryHdfsServiceException {
-    SentryAuthzUpdate retVal = new SentryAuthzUpdate(new LinkedList<PermissionsUpdate>(), new LinkedList<PathsUpdate>());
     try {
-      TAuthzUpdateRequest updateRequest = new TAuthzUpdateRequest(permSeqNum, pathSeqNum, UNUSED_PATH_UPDATE_IMG_NUM);
+      TAuthzUpdateRequest updateRequest = new TAuthzUpdateRequest(permSeqNum, pathSeqNum,
+              UNUSED_PATH_UPDATE_IMG_NUM);
       TAuthzUpdateResponse sentryUpdates = client.get_authz_updates(updateRequest);
+      List<PathsUpdate> pathsUpdates = Collections.emptyList();
       if (sentryUpdates.getAuthzPathUpdate() != null) {
+        pathsUpdates = new ArrayList<>(sentryUpdates.getAuthzPathUpdate().size());
         for (TPathsUpdate pathsUpdate : sentryUpdates.getAuthzPathUpdate()) {
-          retVal.getPathUpdates().add(new PathsUpdate(pathsUpdate));
+          pathsUpdates.add(new PathsUpdate(pathsUpdate));
         }
       }
+
+      List<PermissionsUpdate> permsUpdates = Collections.emptyList();
       if (sentryUpdates.getAuthzPermUpdate() != null) {
+        permsUpdates = new ArrayList<>(sentryUpdates.getAuthzPermUpdate().size());
         for (TPermissionsUpdate permsUpdate : sentryUpdates.getAuthzPermUpdate()) {
-          retVal.getPermUpdates().add(new PermissionsUpdate(permsUpdate));
+          permsUpdates.add(new PermissionsUpdate(permsUpdate));
         }
       }
+
+      return new SentryAuthzUpdate(permsUpdates, pathsUpdates);
     } catch (Exception e) {
       throw new SentryHdfsServiceException("Thrift Exception occurred !!", e);
     }
-    return retVal;
   }
 
   @Override

@@ -17,7 +17,7 @@
  */
 package org.apache.sentry.hdfs;
 
-import com.codahale.metrics.Timer;
+import com.codahale.metrics.Timer.Context;
 import org.apache.sentry.provider.db.service.model.MSentryPermChange;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 
@@ -25,6 +25,7 @@ import javax.annotation.concurrent.ThreadSafe;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * PermDeltaRetriever retrieves delta updates of Sentry permission from a persistent
@@ -43,8 +44,8 @@ public class PermDeltaRetriever implements DeltaRetriever<PermissionsUpdate> {
   }
 
   @Override
-  public Collection<PermissionsUpdate> retrieveDelta(long seqNum) throws Exception {
-    try (final Timer.Context timerContext =
+  public List<PermissionsUpdate> retrieveDelta(long seqNum) throws Exception {
+    try (final Context timerContext =
                  SentryHdfsMetricsUtil.getDeltaPermChangesTimer.time()) {
       Collection<MSentryPermChange> mSentryPermChanges =
               sentryStore.getMSentryPermChanges(seqNum);
@@ -55,7 +56,7 @@ public class PermDeltaRetriever implements DeltaRetriever<PermissionsUpdate> {
         return Collections.emptyList();
       }
 
-      Collection<PermissionsUpdate> updates = new ArrayList<>(mSentryPermChanges.size());
+      List<PermissionsUpdate> updates = new ArrayList<>(mSentryPermChanges.size());
       for (MSentryPermChange mSentryPermChange : mSentryPermChanges) {
         // Get the changeID from the persisted MSentryPermChange
         long changeID = mSentryPermChange.getChangeID();

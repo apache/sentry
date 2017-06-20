@@ -18,7 +18,7 @@
 
 package org.apache.sentry.hdfs;
 
-import java.util.Collection;
+import java.util.List;
 
 import static org.apache.sentry.hdfs.Updateable.Update;
 
@@ -36,15 +36,15 @@ import static org.apache.sentry.hdfs.Updateable.Update;
 public interface DeltaRetriever<K extends Update> {
 
   /**
-   * Retrieves all delta updates of type {@link Update} newer than or equal with
+   * Retrieves all delta updates of type {@link Update} newer than or equal to
    * the given sequence number/change ID (inclusive) from a persistent storage.
    * An empty collection can be returned.
    *
    * @param seqNum the given seq number
-   * @return a collect of delta updates of type K
+   * @return delta updates of type K
    * @throws Exception when there is an error in operation on persistent storage
    */
-  Collection<K> retrieveDelta(long seqNum) throws Exception;
+  List<K> retrieveDelta(long seqNum) throws Exception;
 
   /**
    * Checks if there the delta update is available, given the sequence number/change

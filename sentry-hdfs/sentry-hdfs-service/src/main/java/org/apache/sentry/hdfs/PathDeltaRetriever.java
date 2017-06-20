@@ -17,21 +17,22 @@
  */
 package org.apache.sentry.hdfs;
 
-import com.codahale.metrics.Timer;
+import com.codahale.metrics.Timer.Context;
 import org.apache.sentry.provider.db.service.model.MSentryPathChange;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * PathDeltaRetriever retrieves delta updates of Hive Paths from a persistent
- * storage and translates them into a collection of {@code PathsUpdate} that the
+ * storage.
+ * Paths are translated into a collection of {@code PathsUpdate} that the
  * consumers, such as HDFS NameNode, can understand.
  * <p>
- * It is a thread safe class, as all the underlying database operation is thread safe.
+ * It is a thread safe class, as all the underlying database operation are thread safe.
  */
 @ThreadSafe
 public class PathDeltaRetriever implements DeltaRetriever<PathsUpdate> {
@@ -43,10 +44,10 @@ public class PathDeltaRetriever implements DeltaRetriever<PathsUpdate> {
   }
 
   @Override
-  public Collection<PathsUpdate> retrieveDelta(long seqNum) throws Exception {
-    try (final Timer.Context timerContext =
+  public List<PathsUpdate> retrieveDelta(long seqNum) throws Exception {
+    try (final Context timerContext =
                  SentryHdfsMetricsUtil.getDeltaPathChangesTimer.time()) {
-      Collection<MSentryPathChange> mSentryPathChanges =
+      List<MSentryPathChange> mSentryPathChanges =
               sentryStore.getMSentryPathChanges(seqNum);
 
       SentryHdfsMetricsUtil.getDeltaPathChangesHistogram.update(mSentryPathChanges.size());
@@ -55,7 +56,7 @@ public class PathDeltaRetriever implements DeltaRetriever<PathsUpdate> {
         return Collections.emptyList();
       }
 
-      Collection<PathsUpdate> updates = new ArrayList<>(mSentryPathChanges.size());
+      List<PathsUpdate> updates = new ArrayList<>(mSentryPathChanges.size());
       for (MSentryPathChange mSentryPathChange : mSentryPathChanges) {
         // Gets the changeID from the persisted MSentryPathChange.
         long changeID = mSentryPathChange.getChangeID();

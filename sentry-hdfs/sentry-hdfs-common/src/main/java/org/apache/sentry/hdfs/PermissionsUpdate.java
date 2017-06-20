@@ -18,9 +18,9 @@
 package org.apache.sentry.hdfs;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedList;
 
 import org.apache.sentry.hdfs.service.thrift.TPermissionsUpdate;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
@@ -80,21 +80,21 @@ public class PermissionsUpdate implements Updateable.Update {
     if (tPermUpdate.getRoleChanges().containsKey(role)) {
       return tPermUpdate.getRoleChanges().get(role);
     }
-    TRoleChanges roleUpdate = new TRoleChanges(role, new LinkedList<String>(),
-        new LinkedList<String>());
+    TRoleChanges roleUpdate = new TRoleChanges(role, new ArrayList<String>(),
+        new ArrayList<String>());
     tPermUpdate.getRoleChanges().put(role, roleUpdate);
     return roleUpdate;
   }
 
-  public Collection<TRoleChanges> getRoleUpdates() {
+  Collection<TRoleChanges> getRoleUpdates() {
     return tPermUpdate.getRoleChanges().values();
   }
 
-  public Collection<TPrivilegeChanges> getPrivilegeUpdates() {
+  Collection<TPrivilegeChanges> getPrivilegeUpdates() {
     return tPermUpdate.getPrivilegeChanges().values();
   }
 
-  public TPermissionsUpdate toThrift() {
+  TPermissionsUpdate toThrift() {
     return tPermUpdate;
   }
 

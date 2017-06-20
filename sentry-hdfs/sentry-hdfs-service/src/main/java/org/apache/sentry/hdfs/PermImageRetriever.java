@@ -17,7 +17,7 @@
  */
 package org.apache.sentry.hdfs;
 
-import com.codahale.metrics.Timer;
+import com.codahale.metrics.Timer.Context;
 import org.apache.sentry.hdfs.service.thrift.TPermissionsUpdate;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
 import org.apache.sentry.hdfs.service.thrift.TRoleChanges;
@@ -25,8 +25,8 @@ import org.apache.sentry.provider.db.service.persistent.PermissionsImage;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 
 import javax.annotation.concurrent.ThreadSafe;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -48,7 +48,7 @@ public class PermImageRetriever implements ImageRetriever<PermissionsUpdate> {
 
   @Override
   public PermissionsUpdate retrieveFullImage() throws Exception {
-    try(Timer.Context timerContext =
+    try(Context timerContext =
         SentryHdfsMetricsUtil.getRetrievePermFullImageTimer.time()) {
 
       // Read the most up-to-date snapshot of Sentry perm information,
@@ -80,7 +80,7 @@ public class PermImageRetriever implements ImageRetriever<PermissionsUpdate> {
         String role = privEnt.getKey();
         List<String> groups = privEnt.getValue();
         tPermUpdate.putToRoleChanges(role, new TRoleChanges(role, groups,
-            new LinkedList<String>()));
+            new ArrayList<String>()));
       }
 
       PermissionsUpdate permissionsUpdate = new PermissionsUpdate(tPermUpdate);

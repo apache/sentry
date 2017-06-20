@@ -19,6 +19,7 @@
 package org.apache.sentry.provider.db.service.model;
 
 import javax.jdo.annotations.PersistenceCapable;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -33,9 +34,9 @@ public class MAuthzPathsMapping {
   private Set<MPath> paths;
   private long createTimeMs;
 
-  public MAuthzPathsMapping(String authzObjName, Iterable<String> paths) {
+  public MAuthzPathsMapping(String authzObjName, Collection<String> paths) {
     this.authzObjName = MSentryUtil.safeIntern(authzObjName);
-    this.paths = new HashSet<>();
+    this.paths = new HashSet<>(paths.size());
     for (String path : paths) {
       this.paths.add(new MPath(path));
     }
