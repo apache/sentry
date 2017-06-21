@@ -18,6 +18,8 @@
 package org.apache.sentry.tests.e2e.kafka;
 
 import kafka.server.KafkaServerStartable;
+
+import org.apache.curator.test.TestingServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,15 +34,13 @@ import java.util.Properties;
 public class KafkaTestServer {
     private static final Logger LOGGER = LoggerFactory.getLogger(KafkaTestServer.class);
 
-    private int zkPort = -1;
     private int kafkaPort = -1;
-    private EmbeddedZkServer zkServer = null;
+    private TestingServer zkServer;
     private KafkaServerStartable kafkaServer = null;
     private File sentrySitePath = null;
 
     public KafkaTestServer(File sentrySitePath) throws Exception {
         this.sentrySitePath = sentrySitePath;
-        this.zkPort = TestUtils.getFreePort();
         createZkServer();
         this.kafkaPort = TestUtils.getFreePort();
         createKafkaServer();
@@ -60,7 +60,7 @@ public class KafkaTestServer {
 
         if (zkServer != null) {
             try {
-                zkServer.shutdown();
+                zkServer.stop();
                 LOGGER.info("Stopped ZK server.");
             } catch (IOException e) {
                 LOGGER.error("Failed to shutdown ZK server.", e);
@@ -82,7 +82,7 @@ public class KafkaTestServer {
     private void setupKafkaProps(Properties props) throws UnknownHostException {
         props.put("listeners", "SSL://" + InetAddress.getLocalHost().getHostAddress() + ":" + kafkaPort);
         props.put("log.dir", getTempDirectory().toAbsolutePath().toString());
-        props.put("zookeeper.connect", InetAddress.getLocalHost().getHostAddress() + ":" + zkPort);
+        props.put("zookeeper.connect", zkServer.getConnectString());
         props.put("replica.socket.timeout.ms", "1500");
         props.put("controller.socket.timeout.ms", "1500");
         props.put("controlled.shutdown.enable", true);
@@ -110,8 +110,7 @@ public class KafkaTestServer {
 
     private void createZkServer() throws Exception {
         try {
-            zkServer = new EmbeddedZkServer(zkPort);
-            zkPort = zkServer.getZk().getClientPort();
+            zkServer = new TestingServer();
         } catch (Exception e) {
             LOGGER.error("Failed to create testing zookeeper server.");
             throw new RuntimeException(e);
