@@ -237,6 +237,12 @@
       </field>
      </class>
 
+    <class name="MAuthzPathsSnapshotId" identity-type="application" table="AUTHZ_PATHS_SNAPSHOT_ID" detachable="true">
+       <field name="authzSnapshotID" primary-key="true">
+         <column name="AUTHZ_SNAPSHOT_ID" jdbc-type="BIGINT" allows-null="false"/>
+       </field>
+    </class>
+
     <class name="MAuthzPathsMapping" identity-type="datastore" table="AUTHZ_PATHS_MAPPING" detachable="true">
        <datastore-identity>
          <column name="AUTHZ_OBJ_ID"/>
@@ -258,6 +264,9 @@
            <element>
              <column name="AUTHZ_OBJ_ID"/>
            </element>
+       </field>
+       <field name="authzSnapshotID">
+         <column name="AUTHZ_SNAPSHOT_ID" jdbc-type="BIGINT" allows-null="false"/>
        </field>
      </class>
 

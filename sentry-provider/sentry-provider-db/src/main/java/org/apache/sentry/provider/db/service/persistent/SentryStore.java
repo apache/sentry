@@ -125,6 +125,9 @@ public class SentryStore {
 
   public static final long EMPTY_NOTIFICATION_ID = 0L;
 
+  // Representation for empty HMS snapshots not found on MAuthzPathsSnapshotId
+  public static final long EMPTY_AUTHZ_SNAPSHOT_ID = 0L;
+
   // For counters, representation of the "unknown value"
   private static final long COUNT_VALUE_UNKNOWN = -1L;
 
@@ -2576,7 +2579,7 @@ public class SentryStore {
 
     if (mAuthzPathsMapping == null) {
       mAuthzPathsMapping =
-          new MAuthzPathsMapping(authzObj, paths);
+          new MAuthzPathsMapping(EMPTY_AUTHZ_SNAPSHOT_ID, authzObj, paths);
       pm.makePersistent(mAuthzPathsMapping);
     } else {
       throw new SentryAlreadyExistsException("AuthzObj: " + authzObj);
@@ -2617,7 +2620,7 @@ public class SentryStore {
         Collection<String> paths) {
     MAuthzPathsMapping mAuthzPathsMapping = getMAuthzPathsMappingCore(pm, authzObj);
     if (mAuthzPathsMapping == null) {
-      mAuthzPathsMapping = new MAuthzPathsMapping(authzObj, paths);
+      mAuthzPathsMapping = new MAuthzPathsMapping(EMPTY_AUTHZ_SNAPSHOT_ID, authzObj, paths);
     } else {
       for (String path : paths) {
         mAuthzPathsMapping.addPath(new MPath(path));
@@ -2861,7 +2864,7 @@ public class SentryStore {
 
     MAuthzPathsMapping mAuthzPathsMapping = getMAuthzPathsMappingCore(pm, authzObj);
     if (mAuthzPathsMapping == null) {
-      mAuthzPathsMapping = new MAuthzPathsMapping(authzObj, Sets.newHashSet(newPath));
+      mAuthzPathsMapping = new MAuthzPathsMapping(EMPTY_AUTHZ_SNAPSHOT_ID, authzObj, Sets.newHashSet(newPath));
     } else {
       MPath mOldPath = mAuthzPathsMapping.getPath(oldPath);
       if (mOldPath == null) {

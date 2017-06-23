@@ -18,6 +18,8 @@
 
 package org.apache.sentry.provider.db.service.model;
 
+import org.apache.sentry.provider.db.service.persistent.SentryStore;
+
 import javax.jdo.annotations.PersistenceCapable;
 import java.util.Collection;
 import java.util.HashSet;
@@ -30,11 +32,13 @@ import java.util.Set;
 @PersistenceCapable
 public class MAuthzPathsMapping {
 
+  private long authzSnapshotID;
   private String authzObjName;
   private Set<MPath> paths;
   private long createTimeMs;
 
-  public MAuthzPathsMapping(String authzObjName, Collection<String> paths) {
+  public MAuthzPathsMapping(long authzSnapshotID, String authzObjName, Collection<String> paths) {
+    this.authzSnapshotID = authzSnapshotID;
     this.authzObjName = MSentryUtil.safeIntern(authzObjName);
     this.paths = new HashSet<>(paths.size());
     for (String path : paths) {
@@ -105,8 +109,8 @@ public class MAuthzPathsMapping {
 
   @Override
   public String toString() {
-    return "MSentryPathsUpdate [authzObj=" + authzObjName + "], paths=[" + paths.toString()
-        + "], createTimeMs=[" + String.valueOf(createTimeMs) + "]";
+    return "MSentryPathsUpdate authzSnapshotID=[" + authzSnapshotID + "], authzObj=[" + authzObjName
+        + "], paths=[" + paths.toString() + "], createTimeMs=[" + String.valueOf(createTimeMs) + "]";
   }
 
   @Override
@@ -136,7 +140,9 @@ public class MAuthzPathsMapping {
       }
     } else if (!authzObjName.equals(other.authzObjName)) {
       return false;
-    }
+    } else if (authzSnapshotID != other.authzSnapshotID) {
+      return false;
+   }
 
     return true;
   }
