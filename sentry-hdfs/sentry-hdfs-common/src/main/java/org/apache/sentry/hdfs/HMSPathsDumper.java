@@ -17,6 +17,7 @@
  */
 package org.apache.sentry.hdfs;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -58,9 +59,9 @@ public class HMSPathsDumper implements AuthzPathsDumper<HMSPaths> {
 
   private void cloneToTPathEntry(Entry parent, TPathEntry tParent,
       AtomicInteger counter, Map<Integer, TPathEntry> idMap) {
-    for (Entry child : parent.getChildren().values()) {
+    for (Entry child : parent.childrenValues()) {
       Tuple childTuple = createTPathEntry(child, counter, idMap);
-      tParent.getChildren().add(childTuple.id);
+      tParent.addToChildren(childTuple.id);
       cloneToTPathEntry(child, childTuple.entry, counter, idMap);
     }
   }
@@ -68,9 +69,11 @@ public class HMSPathsDumper implements AuthzPathsDumper<HMSPaths> {
   private Tuple createTPathEntry(Entry entry, AtomicInteger idCounter,
       Map<Integer, TPathEntry> idMap) {
     int myId = idCounter.incrementAndGet();
+    Set<Integer> children = entry.hasChildren() ?
+        new HashSet<Integer>(entry.numChildren()) : Collections.<Integer>emptySet();
     TPathEntry tEntry = new TPathEntry(entry.getType().getByte(),
-        entry.getPathElement(), new HashSet<Integer>());
-    if (entry.getAuthzObjs().size() != 0) {
+        entry.getPathElement(), children);
+    if (!entry.getAuthzObjs().isEmpty()) {
       tEntry.setAuthzObjs(entry.getAuthzObjs());
     }
     idMap.put(myId, tEntry);
@@ -99,7 +102,7 @@ public class HMSPathsDumper implements AuthzPathsDumper<HMSPaths> {
       Entry child = null;
       boolean isChildPrefix = hasCrossedPrefix;
       if (!hasCrossedPrefix) {
-        child = parent.getChildren().get(tChild.getPathElement());
+        child = parent.getChild(tChild.getPathElement());
         // If we havn't reached a prefix entry yet, then child should
         // already exists.. else it is not part of the prefix
         if (child == null) {
@@ -126,7 +129,7 @@ public class HMSPathsDumper implements AuthzPathsDumper<HMSPaths> {
           paths.add(child);
         }
       }
-      parent.getChildren().put(child.getPathElement(), child);
+      parent.putChild(child.getPathElement(), child);
       cloneToEntry(tChild, child, idMap, authzObjToPath, isChildPrefix);
     }
   }
