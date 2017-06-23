@@ -65,7 +65,7 @@ public class TestHMSPaths {
     Assert.assertEquals(HMSPaths.EntryType.DIR, root.getType());
     Assert.assertTrue(root.getAuthzObjs().size() == 0);
     Assert.assertEquals(Path.SEPARATOR, root.getFullPath());
-    Assert.assertTrue(root.getChildren().isEmpty());
+    Assert.assertFalse(root.hasChildren());
     root.delete();
     try {
       root.find(null, true);
@@ -122,14 +122,14 @@ public class TestHMSPaths {
     HMSPaths.Entry entry = root.createPrefix(Lists.newArrayList("a"));
     entry.toString();
     
-    Assert.assertEquals(1, root.getChildren().size());
+    Assert.assertEquals(1, root.childrenValues().size());
 
     Assert.assertEquals(root, entry.getParent());
     Assert.assertEquals(HMSPaths.EntryType.PREFIX, entry.getType());
     Assert.assertEquals("a", entry.getPathElement());
     Assert.assertEquals(0, entry.getAuthzObjs().size());
     Assert.assertEquals(Path.SEPARATOR + "a", entry.getFullPath());
-    Assert.assertTrue(entry.getChildren().isEmpty());
+    Assert.assertFalse(entry.hasChildren());
 
     Assert.assertEquals(entry, root.findPrefixEntry(Lists.newArrayList("a")));
     Assert.assertEquals(entry, root.findPrefixEntry(Lists.newArrayList("a", "b")));
@@ -154,7 +154,7 @@ public class TestHMSPaths {
     }
 
     entry.delete();
-    Assert.assertTrue(root.getChildren().isEmpty());
+    Assert.assertFalse(root.hasChildren());
   }
 
   @Test
@@ -163,7 +163,7 @@ public class TestHMSPaths {
     HMSPaths.Entry entry = root.createPrefix(Lists.newArrayList("a", "b"));
     entry.toString();
 
-    Assert.assertEquals(1, root.getChildren().size());
+    Assert.assertEquals(1, root.childrenValues().size());
 
     Assert.assertEquals(root, entry.getParent().getParent());
     Assert.assertEquals(HMSPaths.EntryType.PREFIX, entry.getType());
@@ -176,8 +176,8 @@ public class TestHMSPaths {
     Assert.assertEquals(Path.SEPARATOR + "a" + Path.SEPARATOR + "b",
         entry.getFullPath());
     Assert.assertEquals(Path.SEPARATOR + "a", entry.getParent().getFullPath());
-    Assert.assertTrue(entry.getChildren().isEmpty());
-    Assert.assertEquals(1, entry.getParent().getChildren().size());
+    Assert.assertFalse(entry.hasChildren());
+    Assert.assertEquals(1, entry.getParent().childrenValues().size());
 
     Assert.assertEquals(entry, root.findPrefixEntry(Lists.newArrayList("a", "b")));
     Assert.assertNull(root.findPrefixEntry(Lists.newArrayList("a")));
@@ -199,7 +199,7 @@ public class TestHMSPaths {
     }
 
     entry.delete();
-    Assert.assertTrue(root.getChildren().isEmpty());
+    Assert.assertFalse(root.hasChildren());
   }
 
   @Test
