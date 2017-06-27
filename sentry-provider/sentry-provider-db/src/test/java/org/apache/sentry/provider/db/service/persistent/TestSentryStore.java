@@ -2463,6 +2463,9 @@ public class TestSentryStore extends org.junit.Assert {
 
   @Test
   public void testAddDeleteAuthzPathsMapping() throws Exception {
+    // Persist an empty image so that we can add paths to it.
+    sentryStore.persistFullPathsImage(new HashMap<String, Set<String>>());
+
     // Add "db1.table1" authzObj
     Long lastNotificationId = sentryStore.getLastProcessedNotificationID();
     PathsUpdate addUpdate = new PathsUpdate(1, false);
@@ -2602,6 +2605,142 @@ public class TestSentryStore extends org.junit.Assert {
     assertEquals(update.JSONSerialize(), updatePathChange.getPathChange());
     lastNotificationId = sentryStore.getLastProcessedNotificationID();
     assertEquals(3, lastNotificationId.longValue());
+  }
+
+  @Test
+  public void testPersistAndReplaceANewPathsImage() throws Exception {
+    Map<String, Set<String>> authzPaths = new HashMap<>();
+
+    // First image to persist (this will be replaced later)
+    authzPaths.put("db1.table1", Sets.newHashSet("/user/hive/warehouse/db2.db/table1.1",
+        "/user/hive/warehouse/db2.db/table1.2"));
+    authzPaths.put("db1.table2", Sets.newHashSet("/user/hive/warehouse/db2.db/table2.1",
+        "/user/hive/warehouse/db2.db/table2.2"));
+    sentryStore.persistFullPathsImage(authzPaths);
+
+    // Second image to persist (it should replace first image)
+    authzPaths.clear();
+    authzPaths.put("db3.table1", Sets.newHashSet("/another-warehouse/db2.db/table1.1",
+        "/another-warehouse/db2.db/table1.2"));
+    authzPaths.put("db3.table2", Sets.newHashSet("/another-warehouse/db2.db/table2.1",
+        "/another-warehouse/db2.db/table2.2"));
+    authzPaths.put("db4.table2", Sets.newHashSet("/another-warehouse/db2.db/table2.1",
+        "/another-warehouse/db2.db/table2.3"));
+    sentryStore.persistFullPathsImage(authzPaths);
+
+    PathsImage pathsImage = sentryStore.retrieveFullPathsImage();
+    Map<String, Set<String>> pathImage = pathsImage.getPathImage();
+    assertEquals(3, pathImage.size());
+
+    for (Map.Entry<String, Set<String>> entry : pathImage.entrySet()) {
+      assertEquals(2, entry.getValue().size());
+    }
+
+    assertEquals(2, pathImage.get("db4.table2").size());
+
+    assertEquals(Sets.newHashSet("/another-warehouse/db2.db/table1.1",
+        "/another-warehouse/db2.db/table1.2"),
+        pathImage.get("db3.table1"));
+    assertEquals(Sets.newHashSet("/another-warehouse/db2.db/table2.1",
+        "/another-warehouse/db2.db/table2.2"),
+        pathImage.get("db3.table2"));
+    assertEquals(Sets.newHashSet("/another-warehouse/db2.db/table2.1",
+        "/another-warehouse/db2.db/table2.3"),
+        pathImage.get("db4.table2"));
+
+    assertEquals(6, sentryStore.getMPaths().size());
+  }
+
+  @Test
+  public void testAddDeleteAfterReplacingANewPathsImage() throws Exception {
+    // Add some paths first (these should be replaced)
+    PathsUpdate addUpdate = new PathsUpdate(1, false);
+    addUpdate.newPathChange("db1.table").addToAddPaths(Arrays.asList("db1", "tbl1"));
+    addUpdate.newPathChange("db1.table").addToAddPaths(Arrays.asList("db1", "tbl2"));
+    sentryStore.addAuthzPathsMapping("db1.table", Sets.newHashSet("db1/tbl1", "db1/tbl2"), addUpdate);
+
+    // Persist a new image that contains a new image ID (it replaces previous paths)
+    Map<String, Set<String>> authzPaths = new HashMap<>();
+    authzPaths.put("db2.table3", Sets.newHashSet("/user/hive/warehouse/db2.db/table1.1",
+        "/user/hive/warehouse/db2.db/table1.2"));
+    sentryStore.persistFullPathsImage(authzPaths);
+
+    // Add new paths
+    PathsUpdate newAddUpdate = new PathsUpdate(2, false);
+    newAddUpdate.newPathChange("db2.table").addToAddPaths(Arrays.asList("db2", "tbl1"));
+    newAddUpdate.newPathChange("db2.table").addToAddPaths(Arrays.asList("db2", "tbl2"));
+    sentryStore.addAuthzPathsMapping("db2.table", Sets.newHashSet("db2/tbl1", "db2/tbl2"), newAddUpdate);
+    PathsImage pathsImage = sentryStore.retrieveFullPathsImage();
+    Map<String, Set<String>> pathImage = pathsImage.getPathImage();
+    assertEquals(2, pathImage.size());
+    assertEquals(2, pathImage.get("db2.table").size());
+    assertEquals(4, sentryStore.getMPaths().size());
+
+    // Delete one path
+    PathsUpdate delUpdate = new PathsUpdate(3, false);
+    delUpdate.newPathChange("db2.table").addToDelPaths(Arrays.asList("db2", "tbl1"));
+    sentryStore.deleteAuthzPathsMapping("db2.table", Sets.newHashSet("db2/tbl1"), delUpdate);
+    pathsImage = sentryStore.retrieveFullPathsImage();
+    pathImage = pathsImage.getPathImage();
+    assertEquals(2, pathImage.size());
+    assertEquals(1, pathImage.get("db2.table").size());
+    assertEquals(3, sentryStore.getMPaths().size());
+
+    Long lastNotificationId = sentryStore.getLastProcessedNotificationID();
+    assertEquals(3, lastNotificationId.longValue());
+  }
+
+  @Test
+  public void testRenameUpdateAfterReplacingANewPathsImage() throws Exception {
+    Map<String, Set<String>> authzPaths = new HashMap<>();
+
+    // First image to persist (this will be replaced later)
+    authzPaths.put("db1.table1", Sets.newHashSet("/user/hive/warehouse/db2.db/table1.1",
+        "/user/hive/warehouse/db2.db/table1.2"));
+    authzPaths.put("db1.table2", Sets.newHashSet("/user/hive/warehouse/db2.db/table2.1",
+        "/user/hive/warehouse/db2.db/table2.2"));
+    sentryStore.persistFullPathsImage(authzPaths);
+
+    // Second image to persist (it should replace first image)
+    authzPaths.clear();
+    authzPaths.put("db3.table1", Sets.newHashSet("/another-warehouse/db3.db/table1.1",
+        "/another-warehouse/db3.db/table1.2"));
+    authzPaths.put("db3.table2", Sets.newHashSet("/another-warehouse/db3.db/table2.1",
+        "/another-warehouse/db3.db/table2.2"));
+    sentryStore.persistFullPathsImage(authzPaths);
+
+    // Rename path of 'db1.table1' from 'db1.table1' to 'db1.newTable1'
+    PathsUpdate renameUpdate = new PathsUpdate(1, false);
+    renameUpdate.newPathChange("db3.table1")
+        .addToDelPaths(Arrays.asList("another-warehouse", "db3.db", "table1.1"));
+    renameUpdate.newPathChange("db1.newTable1")
+        .addToAddPaths(Arrays.asList("user", "hive", "warehouse", "db1.db", "newTable1"));
+    sentryStore.renameAuthzPathsMapping("db3.table1", "db1.newTable1",
+        "/another-warehouse/db3.db/table1.1", "user/hive/warehouse/db1.db/newTable1", renameUpdate);
+    Map<String, Set<String>> pathsImage = sentryStore.retrieveFullPathsImage().getPathImage();
+    assertEquals(2, pathsImage.size());
+    assertEquals(4, sentryStore.getMPaths().size());
+    assertTrue(pathsImage.containsKey("db1.newTable1"));
+    assertEquals(Sets.newHashSet("/another-warehouse/db3.db/table1.2",
+        "user/hive/warehouse/db1.db/newTable1"),
+        pathsImage.get("db1.newTable1"));
+
+    // Update path of 'db1.newTable2' from 'db1.newTable1' to 'db1.newTable2'
+    PathsUpdate update = new PathsUpdate(2, false);
+    update.newPathChange("db1.newTable1")
+        .addToDelPaths(Arrays.asList("user", "hive", "warehouse", "db1.db", "newTable1"));
+    update.newPathChange("db1.newTable1")
+        .addToAddPaths(Arrays.asList("user", "hive", "warehouse", "db1.db", "newTable2"));
+    sentryStore.updateAuthzPathsMapping("db1.newTable2",
+        "user/hive/warehouse/db1.db/newTable1",
+        "user/hive/warehouse/db1.db/newTable2",
+        update);
+    pathsImage = sentryStore.retrieveFullPathsImage().getPathImage();
+    assertEquals(3, pathsImage.size());
+    assertEquals(5, sentryStore.getMPaths().size());
+    assertTrue(pathsImage.containsKey("db1.newTable2"));
+    assertEquals(Sets.newHashSet("user/hive/warehouse/db1.db/newTable2"),
+        pathsImage.get("db1.newTable2"));
   }
 
   @Test
@@ -3051,6 +3190,9 @@ public class TestSentryStore extends org.junit.Assert {
       addToAddPaths(Arrays.asList("db1", "tbl1"));
     addUpdate.newPathChange("db1.table").
       addToAddPaths(Arrays.asList("db1", "tbl2"));
+
+    // Persist an empty image so that we can add paths to it.
+    sentryStore.persistFullPathsImage(new HashMap<String, Set<String>>());
 
     assertEquals(sentryStore.isAuthzPathsMappingEmpty(), true);
     sentryStore.addAuthzPathsMapping("db1.table",

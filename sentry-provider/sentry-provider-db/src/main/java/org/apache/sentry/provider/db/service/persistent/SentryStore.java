@@ -53,6 +53,7 @@ import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
 import org.apache.sentry.provider.db.service.model.MAuthzPathsMapping;
+import org.apache.sentry.provider.db.service.model.MAuthzPathsSnapshotId;
 import org.apache.sentry.provider.db.service.model.MSentryChange;
 import org.apache.sentry.provider.db.service.model.MSentryGroup;
 import org.apache.sentry.provider.db.service.model.MSentryHmsNotification;
@@ -126,7 +127,7 @@ public class SentryStore {
   public static final long EMPTY_NOTIFICATION_ID = 0L;
 
   // Representation for empty HMS snapshots not found on MAuthzPathsSnapshotId
-  public static final long EMPTY_AUTHZ_SNAPSHOT_ID = 0L;
+  public static final long EMPTY_PATHS_SNAPSHOT_ID = 0L;
 
   // For counters, representation of the "unknown value"
   private static final long COUNT_VALUE_UNKNOWN = -1L;
@@ -480,6 +481,7 @@ public class SentryStore {
               pm.newQuery(MAuthzPathsMapping.class).deletePersistentAll();
               pm.newQuery(MPath.class).deletePersistentAll();
               pm.newQuery(MSentryHmsNotification.class).deletePersistentAll();
+              pm.newQuery(MAuthzPathsSnapshotId.class).deletePersistentAll();
               return null;
             }
           });
@@ -2528,24 +2530,36 @@ public class SentryStore {
 
   /**
    * Retrieves an up-to-date hive paths snapshot from {@code MAuthzPathsMapping} table.
-   * The snapshot is represented by a hiveObj to paths map.
+   * The snapshot is represented by a snapshot ID, and a map from hiveObj to paths.
    *
    * @return a mapping of hiveObj to &lt Paths &gt.
    */
   private Map<String, Set<String>> retrieveFullPathsImageCore(PersistenceManager pm) {
-    Map<String, Set<String>> retVal = new HashMap<>();
-    Query query = pm.newQuery(MAuthzPathsMapping.class);
-    Iterable<MAuthzPathsMapping> authzToPathsMappings =
-        (Iterable<MAuthzPathsMapping>) query.execute();
+    long currentSnapshotID = getCurrentAuthzPathsSnapshotID(pm);
+    if (currentSnapshotID <= EMPTY_PATHS_SNAPSHOT_ID) {
+      return Collections.emptyMap();
+    }
 
+    Query query = pm.newQuery(MAuthzPathsMapping.class);
+    query.setFilter("this.authzSnapshotID == currentSnapshotID");
+    query.declareParameters("long currentSnapshotID");
+    Collection<MAuthzPathsMapping> authzToPathsMappings =
+        (Collection<MAuthzPathsMapping>) query.execute(currentSnapshotID);
+
+    if (authzToPathsMappings.isEmpty()) {
+      return Collections.emptyMap();
+    }
+
+    Map<String, Set<String>> retVal = new HashMap<>(authzToPathsMappings.size());
     for (MAuthzPathsMapping authzToPaths : authzToPathsMappings) {
       retVal.put(authzToPaths.getAuthzObjName(), authzToPaths.getPathStrings());
     }
+
     return retVal;
   }
 
   /**
-   * Persist an up-to-date hive snapshot into Sentry DB in a single transaction.
+   * Persist an up-to-date HMS snapshot into Sentry DB in a single transaction.
    *
    * @param authzPaths Mapping of hiveObj to &lt Paths &lt
    * @throws Exception
@@ -2555,8 +2569,13 @@ public class SentryStore {
       new TransactionBlock() {
         public Object execute(PersistenceManager pm) throws Exception {
           pm.setDetachAllOnCommit(false); // No need to detach objects
+
+          long snapshotID = getCurrentAuthzPathsSnapshotID(pm);
+          long nextSnapshotID = snapshotID + 1;
+
+          pm.makePersistent(new MAuthzPathsSnapshotId(nextSnapshotID));
           for (Map.Entry<String, Set<String>> authzPath : authzPaths.entrySet()) {
-            createAuthzPathsMappingCore(pm, authzPath.getKey(), authzPath.getValue());
+            pm.makePersistent(new MAuthzPathsMapping(nextSnapshotID, authzPath.getKey(), authzPath.getValue()));
           }
           return null;
         }
@@ -2564,26 +2583,13 @@ public class SentryStore {
   }
 
   /**
-   * Create an entry for the given authzObj and with a set of paths in
-   * the authzObj -> [Paths] mapping.
+   * Gets the last authorization path snapshot ID persisted.
    *
-   * @param authzObj an authzObj
-   * @param paths a set of paths need to be added into the authzObj -> [Paths] mapping
-   * @throws SentryAlreadyExistsException if this authzObj has already exist
-   *          in the mapping.
+   * @param pm The PersistenceManager object.
+   * @return the last persisted snapshot ID. It returns 0 if no rows are found.
    */
-  private void createAuthzPathsMappingCore(PersistenceManager pm, String authzObj,
-      Set<String> paths) throws SentryAlreadyExistsException {
-
-    MAuthzPathsMapping mAuthzPathsMapping = getMAuthzPathsMappingCore(pm, authzObj);
-
-    if (mAuthzPathsMapping == null) {
-      mAuthzPathsMapping =
-          new MAuthzPathsMapping(EMPTY_AUTHZ_SNAPSHOT_ID, authzObj, paths);
-      pm.makePersistent(mAuthzPathsMapping);
-    } else {
-      throw new SentryAlreadyExistsException("AuthzObj: " + authzObj);
-    }
+  private static long getCurrentAuthzPathsSnapshotID(PersistenceManager pm) {
+    return getMaxPersistedIDCore(pm, MAuthzPathsSnapshotId.class, "authzSnapshotID", EMPTY_PATHS_SNAPSHOT_ID);
   }
 
   /**
@@ -2618,9 +2624,14 @@ public class SentryStore {
    */
   private void addAuthzPathsMappingCore(PersistenceManager pm, String authzObj,
         Collection<String> paths) {
-    MAuthzPathsMapping mAuthzPathsMapping = getMAuthzPathsMappingCore(pm, authzObj);
+    long currentSnapshotID = getCurrentAuthzPathsSnapshotID(pm);
+    if (currentSnapshotID <= EMPTY_PATHS_SNAPSHOT_ID) {
+      LOGGER.error("AuthzObj: {} cannot be persisted if an paths snapshot ID does not exist yet.");
+    }
+
+    MAuthzPathsMapping mAuthzPathsMapping = getMAuthzPathsMappingCore(pm, currentSnapshotID, authzObj);
     if (mAuthzPathsMapping == null) {
-      mAuthzPathsMapping = new MAuthzPathsMapping(EMPTY_AUTHZ_SNAPSHOT_ID, authzObj, paths);
+      mAuthzPathsMapping = new MAuthzPathsMapping(currentSnapshotID, authzObj, paths);
     } else {
       for (String path : paths) {
         mAuthzPathsMapping.addPath(new MPath(path));
@@ -2659,7 +2670,12 @@ public class SentryStore {
    */
   private void deleteAuthzPathsMappingCore(PersistenceManager pm, String authzObj,
                                            Iterable<String> paths) {
-    MAuthzPathsMapping mAuthzPathsMapping = getMAuthzPathsMappingCore(pm, authzObj);
+    long currentSnapshotID = getCurrentAuthzPathsSnapshotID(pm);
+    if (currentSnapshotID <= EMPTY_PATHS_SNAPSHOT_ID) {
+      LOGGER.error("No paths snapshot ID is found. Cannot delete authzoObj: {}", authzObj);
+    }
+
+    MAuthzPathsMapping mAuthzPathsMapping = getMAuthzPathsMappingCore(pm, currentSnapshotID, authzObj);
     if (mAuthzPathsMapping != null) {
       for (String path : paths) {
         MPath mPath = mAuthzPathsMapping.getPath(path);
@@ -2672,7 +2688,8 @@ public class SentryStore {
       }
       pm.makePersistent(mAuthzPathsMapping);
     } else {
-      LOGGER.error("nonexistent authzObj: {}", authzObj);
+      LOGGER.error("nonexistent authzObj: {} on current paths snapshot ID #{}",
+          authzObj, currentSnapshotID);
     }
   }
 
@@ -2703,7 +2720,12 @@ public class SentryStore {
    * @throws SentryNoSuchObjectException if cannot find the existing authzObj
    */
   private void deleteAllAuthzPathsMappingCore(PersistenceManager pm, String authzObj) {
-    MAuthzPathsMapping mAuthzPathsMapping = getMAuthzPathsMappingCore(pm, authzObj);
+    long currentSnapshotID = getCurrentAuthzPathsSnapshotID(pm);
+    if (currentSnapshotID <= EMPTY_PATHS_SNAPSHOT_ID) {
+      LOGGER.error("No paths snapshot ID is found. Cannot delete authzoObj: {}", authzObj);
+    }
+
+    MAuthzPathsMapping mAuthzPathsMapping = getMAuthzPathsMappingCore(pm, currentSnapshotID, authzObj);
     if (mAuthzPathsMapping != null) {
       for (MPath mPath : mAuthzPathsMapping.getPaths()) {
         mAuthzPathsMapping.removePath(mPath);
@@ -2711,7 +2733,8 @@ public class SentryStore {
       }
       pm.deletePersistent(mAuthzPathsMapping);
     } else {
-      LOGGER.error("nonexistent authzObj: {}", authzObj);
+      LOGGER.error("nonexistent authzObj: {} on current paths snapshot ID #{}",
+          authzObj, currentSnapshotID);
     }
   }
 
@@ -2752,7 +2775,12 @@ public class SentryStore {
    */
   private void renameAuthzPathsMappingCore(PersistenceManager pm, String oldObj,
         String newObj, String oldPath, String newPath) {
-    MAuthzPathsMapping mAuthzPathsMapping = getMAuthzPathsMappingCore(pm, oldObj);
+    long currentSnapshotID = getCurrentAuthzPathsSnapshotID(pm);
+    if (currentSnapshotID <= EMPTY_PATHS_SNAPSHOT_ID) {
+      LOGGER.error("No paths snapshot ID is found. Cannot rename authzoObj: {}", oldObj);
+    }
+
+    MAuthzPathsMapping mAuthzPathsMapping = getMAuthzPathsMappingCore(pm, currentSnapshotID, oldObj);
     if (mAuthzPathsMapping != null) {
       MPath mOldPath = mAuthzPathsMapping.getPath(oldPath);
       if (mOldPath == null) {
@@ -2765,7 +2793,8 @@ public class SentryStore {
       mAuthzPathsMapping.setAuthzObjName(newObj);
       pm.makePersistent(mAuthzPathsMapping);
     } else {
-      LOGGER.error("nonexistent authzObj: {}", oldObj);
+      LOGGER.error("nonexistent authzObj: {} on current paths snapshot ID #{}",
+          oldObj, currentSnapshotID);
     }
   }
 
@@ -2800,12 +2829,18 @@ public class SentryStore {
    */
   private void renameAuthzObjCore(PersistenceManager pm, String oldObj,
       String newObj) {
-    MAuthzPathsMapping mAuthzPathsMapping = getMAuthzPathsMappingCore(pm, oldObj);
+    long currentSnapshotID = getCurrentAuthzPathsSnapshotID(pm);
+    if (currentSnapshotID <= EMPTY_PATHS_SNAPSHOT_ID) {
+      LOGGER.error("No paths snapshot ID is found. Cannot rename authzoObj: {}", oldObj);
+    }
+
+    MAuthzPathsMapping mAuthzPathsMapping = getMAuthzPathsMappingCore(pm, currentSnapshotID, oldObj);
     if (mAuthzPathsMapping != null) {
       mAuthzPathsMapping.setAuthzObjName(newObj);
       pm.makePersistent(mAuthzPathsMapping);
     } else {
-      LOGGER.error("nonexistent authzObj: {}", oldObj);
+      LOGGER.error("nonexistent authzObj: {} on current paths snapshot ID #{}",
+          oldObj, currentSnapshotID);
     }
   }
 
@@ -2862,9 +2897,14 @@ public class SentryStore {
   private void updateAuthzPathsMappingCore(PersistenceManager pm, String authzObj,
         String oldPath, String newPath) {
 
-    MAuthzPathsMapping mAuthzPathsMapping = getMAuthzPathsMappingCore(pm, authzObj);
+    long currentSnapshotID = getCurrentAuthzPathsSnapshotID(pm);
+    if (currentSnapshotID <= EMPTY_PATHS_SNAPSHOT_ID) {
+      LOGGER.error("No paths snapshot ID is found. Cannot update authzoObj: {}", authzObj);
+    }
+
+    MAuthzPathsMapping mAuthzPathsMapping = getMAuthzPathsMappingCore(pm, currentSnapshotID, authzObj);
     if (mAuthzPathsMapping == null) {
-      mAuthzPathsMapping = new MAuthzPathsMapping(EMPTY_AUTHZ_SNAPSHOT_ID, authzObj, Sets.newHashSet(newPath));
+      mAuthzPathsMapping = new MAuthzPathsMapping(currentSnapshotID, authzObj, Sets.newHashSet(newPath));
     } else {
       MPath mOldPath = mAuthzPathsMapping.getPath(oldPath);
       if (mOldPath == null) {
@@ -2883,12 +2923,12 @@ public class SentryStore {
    * Get the MAuthzPathsMapping object from authzObj
    */
   private MAuthzPathsMapping getMAuthzPathsMappingCore(PersistenceManager pm,
-        String authzObj) {
+        long authzSnapshotID, String authzObj) {
     Query query = pm.newQuery(MAuthzPathsMapping.class);
-    query.setFilter("this.authzObjName == authzObjName");
-    query.declareParameters("java.lang.String authzObjName");
+    query.setFilter("this.authzSnapshotID == authzSnapshotID && this.authzObjName == authzObjName");
+    query.declareParameters("long authzSnapshotID, java.lang.String authzObjName");
     query.setUnique(true);
-    return (MAuthzPathsMapping) query.execute(authzObj);
+    return (MAuthzPathsMapping) query.execute(authzSnapshotID, authzObj);
   }
 
   /**
@@ -2910,12 +2950,34 @@ public class SentryStore {
     return ((List<MAuthzPathsMapping>) query.execute()).isEmpty();
   }
 
+  /**
+   * Generic method used to query the maximum number (or ID) of a column from a specified class.
+   *
+   * @param pm The PersistenceManager object.
+   * @param clazz The class name to query.
+   * @param columnName The column name to query.
+   * @return the maximum number persisted on the class. It returns NULL if the class has no rows.
+   */
+  private static long getMaxPersistedIDCore(PersistenceManager pm, Class clazz, String columnName, long defaultValue) {
+    Query query = pm.newQuery(clazz);
+    query.setResult(String.format("max(%s)", columnName));
+    Long maxValue = (Long) query.execute();
+    return (maxValue != null) ? maxValue : defaultValue;
+  }
+
   @VisibleForTesting
   List<MPath> getMPaths() throws Exception {
     return tm.executeTransaction(new TransactionBlock<List<MPath>>() {
       public List<MPath> execute(PersistenceManager pm) throws Exception {
-        Query query = pm.newQuery(MPath.class);
-        return (List<MPath>) query.execute();
+        long currentSnapshotID = getCurrentAuthzPathsSnapshotID(pm);
+
+        Query query = pm.newQuery("SQL",
+            "SELECT p.PATH_NAME FROM AUTHZ_PATH p " +
+               "JOIN AUTHZ_PATHS_MAPPING a ON a.AUTHZ_OBJ_ID = p.AUTHZ_OBJ_ID " +
+               "WHERE a.AUTHZ_SNAPSHOT_ID = ?"
+        );
+        query.setResultClass(MPath.class);
+        return (List<MPath>) query.execute(currentSnapshotID);
       }
     });
   }
@@ -3480,10 +3542,7 @@ public class SentryStore {
    */
   static <T extends MSentryChange> Long getLastProcessedChangeIDCore(
       PersistenceManager pm, Class<T> changeCls) {
-    Query query = pm.newQuery(changeCls);
-    query.setResult("max(changeID)");
-    Long changeID = (Long) query.execute();
-    return changeID == null ? EMPTY_CHANGE_ID : changeID;
+    return getMaxPersistedIDCore(pm, changeCls, "changeID", EMPTY_CHANGE_ID);
   }
 
   /**
@@ -3498,10 +3557,7 @@ public class SentryStore {
    */
   static Long getLastProcessedNotificationIDCore(
       PersistenceManager pm) {
-    Query query = pm.newQuery(MSentryHmsNotification.class);
-    query.setResult("max(notificationId)");
-    Long notificationId = (Long) query.execute();
-    return notificationId == null ? EMPTY_NOTIFICATION_ID : notificationId;
+    return getMaxPersistedIDCore(pm, MSentryHmsNotification.class, "notificationId", EMPTY_NOTIFICATION_ID);
   }
 
   /**
