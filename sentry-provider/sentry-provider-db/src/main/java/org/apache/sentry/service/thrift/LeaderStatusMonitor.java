@@ -16,6 +16,7 @@
  */
 package org.apache.sentry.service.thrift;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.curator.framework.CuratorFramework;
@@ -96,7 +97,8 @@ final class LeaderStatusMonitor
   private final HAContext haContext;
 
   /** Unique string describing this instance */
-  private final String incarnationId = generateIncarnationId();
+  private final String defaultIncarnationId = generateIncarnationId();
+  private String incarnationId;
 
   /** True when not using ZooKeeeper */
   private final boolean isSingleNodeMode;
@@ -126,17 +128,21 @@ final class LeaderStatusMonitor
    *             which uses more properties.
    * @throws Exception
    */
-  private LeaderStatusMonitor(Configuration conf) throws Exception {
+
+  @VisibleForTesting
+  protected LeaderStatusMonitor(Configuration conf) throws Exception {
     // Only enable HA configuration if zookeeper is configured
     String zkServers = conf.get(SENTRY_HA_ZOOKEEPER_QUORUM, "");
     if (zkServers.isEmpty()) {
       isSingleNodeMode = true;
       haContext = null;
       isLeader = true;
+      incarnationId = "";
       LOG.info("Leader election protocol disabled, assuming single active server");
       return;
     }
     isSingleNodeMode = false;
+    incarnationId = defaultIncarnationId;
     haContext = HAContext.getHAServerContext(conf);
 
     LOG.info("Created LeaderStatusMonitor(incarnationId=" + incarnationId +
@@ -144,10 +150,23 @@ final class LeaderStatusMonitor
   }
 
   /**
+   * Tests may need to provide custm incarnation ID
+   * @param conf confguration
+   * @param incarnationId custom incarnation ID
+   * @throws Exception
+   */
+  @VisibleForTesting
+  protected LeaderStatusMonitor(Configuration conf, String incarnationId) throws Exception {
+    this(conf);
+    this.incarnationId = incarnationId;
+  }
+
+  /**
    * Second half of the constructor links this object with {@link HAContext} and
    * starts leader election protocol.
    */
-  private void init() {
+  @VisibleForTesting
+  protected void init() {
     if (isSingleNodeMode) {
       return;
     }

@@ -156,7 +156,9 @@ public final class HAContext implements AutoCloseable {
       public void run() {
         LOGGER.info("ShutdownHook closing curator framework");
         try {
-          serverHAContext.close();
+          if (serverHAContext != null) {
+            serverHAContext.close();
+          }
         } catch (Throwable t) {
           LOGGER.error("Error stopping curator framework", t);
         }
@@ -177,6 +179,23 @@ public final class HAContext implements AutoCloseable {
     serverContext.checkAndSetACLs();
     return serverContext;
   }
+
+  /**
+   * Reset existing HA context.
+   * Should be only used by tests to provide different configurations.
+   */
+  public static void resetHAContext() {
+    HAContext oldContext = serverHAContext;
+    if (oldContext != null) {
+      try {
+        oldContext.close();
+      } catch (Exception e) {
+        LOGGER.error("Failed to close HACOntext", e);
+      }
+    }
+    serverHAContext = null;
+  }
+
 
   private void validateConf() {
     checkNotNull(zookeeperQuorum, "Zookeeper Quorum should not be null.");
