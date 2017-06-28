@@ -92,7 +92,7 @@ public class ServiceConstants {
     // the default value is 500 ms
     public static final String SENTRY_STORE_TRANSACTION_RETRY_WAIT_TIME_MILLIS =
         "sentry.store.transaction.retry.wait.time.millis";
-    public static final int SENTRY_STORE_TRANSACTION_RETRY_WAIT_TIME_MILLIS_DEFAULT = 500;
+    public static final int SENTRY_STORE_TRANSACTION_RETRY_WAIT_TIME_MILLIS_DEFAULT = 250;
 
     public static final String JAVAX_JDO_URL = "javax.jdo.option.ConnectionURL";
     public static final String JAVAX_JDO_USER = "javax.jdo.option.ConnectionUserName";
