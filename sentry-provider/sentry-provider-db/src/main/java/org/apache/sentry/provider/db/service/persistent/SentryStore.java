@@ -99,6 +99,24 @@ import static org.apache.sentry.provider.db.service.persistent.QueryParamBuilder
  * SentryStore is the data access object for Sentry data. Strings
  * such as role and group names will be normalized to lowercase
  * in addition to starting and ending whitespace.
+ * <p>
+ * We have several places where we rely on transactions to support
+ * read/modify/write semantics for incrementing IDs.
+ * This works but using DB support is rather expensive and we can
+ * user in-core serializations to help with this a least within a
+ * single node and rely on DB for multi-node synchronization.
+ * <p>
+ * This isn't much of a problem for path updates since they are
+ * driven by HMSFollower which usually runs on a single leader
+ * node, but permission updates originate from clients
+ * directly and may be highly concurrent.
+ * <p>
+ * We are internally serializing all permissions update anyway, so doing
+ * partial serialization on every node helps. For this reason all
+ * SentryStore calls that affect permission deltas are serialized.
+ * <p>
+ * See <a href="https://issues.apache.org/jira/browse/SENTRY-1824">SENTRY-1824</a>
+ * for more detail.
  */
 public class SentryStore {
   private static final Logger LOGGER = LoggerFactory
@@ -604,7 +622,7 @@ public class SentryStore {
    * @throws Exception
    *
    */
-  void alterSentryRoleGrantPrivilege(final String grantorPrincipal,
+  synchronized void alterSentryRoleGrantPrivilege(final String grantorPrincipal,
       final String roleName, final TSentryPrivilege privilege,
       final Update update) throws Exception {
 
@@ -764,7 +782,7 @@ public class SentryStore {
    * @throws Exception
    *
    */
-  private void alterSentryRoleRevokePrivilege(final String grantorPrincipal,
+  private synchronized void alterSentryRoleRevokePrivilege(final String grantorPrincipal,
                                               final String roleName, final TSentryPrivilege tPrivilege,
                                               final Update update) throws Exception {
     execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
@@ -1100,7 +1118,7 @@ public class SentryStore {
    * @param update the corresponding permission delta update
    * @throws Exception
    */
-  public void dropSentryRole(final String roleName,
+  public synchronized void dropSentryRole(final String roleName,
       final Update update) throws Exception {
 
     execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
@@ -1177,7 +1195,7 @@ public class SentryStore {
    * @param update the corresponding permission delta update
    * @throws Exception
    */
-  public void alterSentryRoleAddGroups(final String grantorPrincipal,
+  public synchronized void alterSentryRoleAddGroups(final String grantorPrincipal,
       final String roleName, final Set<TSentryGroup> groupNames,
       final Update update) throws Exception {
 
@@ -1327,7 +1345,7 @@ public class SentryStore {
    * @param update the corresponding permission delta update
    * @throws Exception
    */
-  public void alterSentryRoleDeleteGroups(final String roleName,
+  public synchronized void alterSentryRoleDeleteGroups(final String roleName,
       final Set<TSentryGroup> groupNames, final Update update)
           throws Exception {
     execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
@@ -2062,7 +2080,7 @@ public class SentryStore {
    * @param update the corresponding permission delta update.
    * @throws Exception
    */
-  public void dropPrivilege(final TSentryAuthorizable tAuthorizable,
+  public synchronized void dropPrivilege(final TSentryAuthorizable tAuthorizable,
       final Update update) throws Exception {
 
     execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
@@ -2140,7 +2158,7 @@ public class SentryStore {
    * @throws SentryNoSuchObjectException
    * @throws SentryInvalidInputException
    */
-  public void renamePrivilege(final TSentryAuthorizable oldTAuthorizable,
+  public synchronized void renamePrivilege(final TSentryAuthorizable oldTAuthorizable,
       final TSentryAuthorizable newTAuthorizable, final Update update)
         throws Exception {
 
