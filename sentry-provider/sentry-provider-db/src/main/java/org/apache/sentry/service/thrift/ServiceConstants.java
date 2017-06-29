@@ -179,7 +179,7 @@ public class ServiceConstants {
     public static final Boolean SENTRY_WEB_ENABLE_DEFAULT = false;
     public static final String SENTRY_WEB_PORT = "sentry.service.web.port";
     public static final int SENTRY_WEB_PORT_DEFAULT = 29000;
-    // Reporter is either "console" or "jmx"
+    // Reporter is either "console", "log" or "jmx"
     public static final String SENTRY_REPORTER = "sentry.service.reporter";
     public static final String SENTRY_REPORTER_JMX = SentryMetrics.Reporting.JMX.name(); //case insensitive
     public static final String SENTRY_REPORTER_CONSOLE = SentryMetrics.Reporting.CONSOLE.name();//case insensitive
@@ -187,6 +187,9 @@ public class ServiceConstants {
     // for console reporter, reporting interval in seconds
     public static final String SENTRY_REPORTER_INTERVAL_SEC =
             "sentry.service.reporter.interval.sec";
+    public static final String SENTRY_JSON_REPORTER_FILE = "sentry.service.reporter.file";
+    public static final String SENTRY_JSON_REPORTER_FILE_DEFAULT = "/tmp/sentry-metrics.json";
+
     // Report every 5 minutes by default
     public static final int SENTRY_REPORTER_INTERVAL_DEFAULT = 300;
 

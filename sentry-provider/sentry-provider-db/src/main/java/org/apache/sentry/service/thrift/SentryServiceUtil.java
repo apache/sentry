@@ -173,7 +173,7 @@ public final class SentryServiceUtil {
    * @param unit the unit of the timeout
    * @param logger the logger to log the error message if it cannot terminate. It could be null
    */
-  static void shutdownAndAwaitTermination(ExecutorService pool, String poolName,
+  public static void shutdownAndAwaitTermination(ExecutorService pool, String poolName,
                        long timeout, TimeUnit unit, Logger logger) {
     Preconditions.checkNotNull(pool);
 

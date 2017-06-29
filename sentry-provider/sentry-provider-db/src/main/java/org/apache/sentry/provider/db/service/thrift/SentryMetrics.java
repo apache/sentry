@@ -21,21 +21,37 @@ import com.codahale.metrics.*;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
+import com.codahale.metrics.json.MetricsModule;
 import com.codahale.metrics.jvm.BufferPoolMetricSet;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocalFileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.service.thrift.SentryService;
+import org.apache.sentry.service.thrift.SentryServiceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.io.File.createTempFile;
 import static org.apache.sentry.provider.db.service.thrift.SentryMetricsServletContextListener.METRIC_REGISTRY;
 import static org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -43,6 +59,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * A singleton class which holds metrics related utility functions as well as the list of metrics
  */
 public final class SentryMetrics {
+  public enum Reporting {
+    JMX,
+    CONSOLE,
+    LOG,
+    JSON,
+  }
+
   private static final Logger LOGGER = LoggerFactory
           .getLogger(SentryMetrics.class);
 
@@ -163,8 +186,8 @@ public final class SentryMetrics {
 
     switch(SentryMetrics.Reporting.valueOf(reporter.toUpperCase())) {
       case CONSOLE:
-        LOGGER.info(String.format("Enabled console metrics reporter with %d seconds interval",
-                reportInterval));
+        LOGGER.info("Enabled console metrics reporter with {} seconds interval",
+                reportInterval);
         final ConsoleReporter consoleReporter =
                 ConsoleReporter.forRegistry(METRIC_REGISTRY)
             .convertRatesTo(TimeUnit.SECONDS)
@@ -181,8 +204,8 @@ public final class SentryMetrics {
         jmxReporter.start();
         break;
       case LOG:
-        LOGGER.info(String.format("Enabled Log4J metrics reporter with %d seconds interval",
-                reportInterval));
+        LOGGER.info("Enabled Log4J metrics reporter with {} seconds interval",
+                reportInterval);
         final Slf4jReporter logReporter = Slf4jReporter.forRegistry(METRIC_REGISTRY)
                 .outputTo(LOGGER)
                 .convertRatesTo(TimeUnit.SECONDS)
@@ -190,8 +213,13 @@ public final class SentryMetrics {
                 .build();
         logReporter.start(reportInterval, TimeUnit.SECONDS);
         break;
+      case JSON:
+        LOGGER.info("Enabled JSON metrics reporter with {} seconds interval", reportInterval);
+        JsonFileReporter jsonReporter = new JsonFileReporter(conf, reportInterval, TimeUnit.SECONDS);
+        jsonReporter.start();
+        break;
       default:
-        LOGGER.warn("Invalid metrics reporter " + reporter);
+        LOGGER.warn("Invalid metrics reporter {}", reporter);
         break;
     }
   }
@@ -211,9 +239,77 @@ public final class SentryMetrics {
     }
   }
 
-  public enum Reporting {
-    JMX,
-    CONSOLE,
-    LOG,
+  /**
+   * Custom reporter that writes metrics as a JSON file.
+   * This class originated from Apache Hive JSON reporter.
+   */
+  private static class JsonFileReporter implements AutoCloseable, Runnable {
+    /** File permissions: -rw-r--r-- */
+    private static final short PERMISSIONS = 0644;
+    private static final String JSON_REPORTER_THREAD_NAME = "json-reporter";
+
+    private ScheduledExecutorService executor = null;
+    private final ObjectMapper jsonMapper =
+            new ObjectMapper().registerModule(new MetricsModule(TimeUnit.SECONDS,
+                    TimeUnit.MILLISECONDS,
+                    false));
+    private final Configuration conf;
+    /** Destination file name */
+    private final String pathString;
+    private final long interval;
+    private final TimeUnit unit;
+
+    JsonFileReporter(Configuration conf, long interval, TimeUnit unit) {
+      this.conf = conf;
+      pathString = conf.get(ServerConfig.SENTRY_JSON_REPORTER_FILE,
+              ServerConfig.SENTRY_JSON_REPORTER_FILE_DEFAULT);
+      this.interval = interval;
+      this.unit = unit;
+    }
+
+    private void start() {
+      executor = Executors.newScheduledThreadPool(1,
+              new ThreadFactoryBuilder().setNameFormat(JSON_REPORTER_THREAD_NAME).build());
+      executor.scheduleAtFixedRate(this, 0, interval, unit);
+    }
+
+    @Override
+    public void run() {
+      String json = null;
+      try {
+        json = jsonMapper.writerWithDefaultPrettyPrinter().writeValueAsString(METRIC_REGISTRY);
+      } catch (JsonProcessingException e) {
+        LOGGER.error("Error converting metrics to JSON", e);
+        return;
+      }
+      File tmpFile = null;
+      try {
+        tmpFile = createTempFile("sentry-json", null);
+      } catch (IOException e) {
+        LOGGER.error("failed to create temp file for JSON metrics", e);
+      }
+
+      assert tmpFile != null;
+      try (LocalFileSystem fs = FileSystem.getLocal(conf);
+           BufferedWriter bw = new BufferedWriter(new FileWriter(tmpFile))) {
+        bw.write(json);
+        Path tmpPath = new Path(tmpFile.getAbsolutePath());
+        fs.setPermission(tmpPath, FsPermission.createImmutable(PERMISSIONS));
+        Path path = new Path(pathString);
+        fs.rename(tmpPath, path);
+        fs.setPermission(path, FsPermission.createImmutable(PERMISSIONS));
+      } catch (IOException e) {
+        LOGGER.warn("Error writing JSON metrics", e);
+      }
+    }
+
+    @Override
+    public void close() {
+      if (executor != null) {
+        SentryServiceUtil.shutdownAndAwaitTermination(executor,
+                JSON_REPORTER_THREAD_NAME, 1, TimeUnit.MINUTES, LOGGER);
+        executor = null;
+      }
+    }
   }
 }
