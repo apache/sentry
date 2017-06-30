@@ -54,18 +54,19 @@ for f in ${SENTRY_HOME}/lib/plugins/*.jar; do
 done
 
 args=()
-# get the type argument for the command, and check use the shell for hive model or for generic model.
-# todo: currently, supoort hive only, need add generic model support
+shell=org.apache.sentry.provider.db.tools.SentryShellHive
+# get the type argument for the command
 while [ $# -gt 0 ]; do    # Until you run out of parameters . . .
   if [[ "$1" = "-t" || "$1" = "--type" ]]; then
-    # currently, only support the hive model
-    if ! [[ $2 =~ ^[H|h][I|i][V|v][E|e]$ ]]; then
-      echo "Doesn't support the type $2!"
-      exit 1
-    fi
+    case $2 in
+      "hive") shell=org.apache.sentry.provider.db.tools.SentryShellHive ;;
+      "kafka") shell=org.apache.sentry.provider.db.generic.tools.SentryShellKafka ;;
+      "solr") shell=org.apache.sentry.provider.db.generic.tools.SentryShellSolr ;;
+      *) echo "Doesn't support the type $2!"; exit 1 ;;
+    esac
   fi
   args+=" $1"
   shift
 done
 
-exec $HADOOP jar ${SENTRY_HOME}/lib/${_CMD_JAR} org.apache.sentry.provider.db.tools.SentryShellHive ${args[@]}
+exec $HADOOP jar ${SENTRY_HOME}/lib/${_CMD_JAR} $shell ${args[@]}
