@@ -28,6 +28,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.hadoop.conf.Configuration;
 
+import static org.apache.commons.lang.StringEscapeUtils.escapeHtml;
+
 /**
  * Servlet to print out all sentry configuration.
  */
@@ -62,7 +64,7 @@ public class ConfServlet extends HttpServlet {
     } else if (FORMAT_XML.equals(format)) {
       conf.writeXml(out);
     } else {
-      response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Bad format: " + format);
+      response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Bad format: " + escapeHtml(format));
     }
     out.close();
   }

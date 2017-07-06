@@ -33,6 +33,10 @@ limitations under the License.
       <artifactId>commons-cli</artifactId>
     </dependency>
     <dependency>
+      <groupId>commons-lang</groupId>
+      <artifactId>commons-lang</artifactId>
+    </dependency>
+    <dependency>
       <groupId>com.jolbox</groupId>
       <artifactId>bonecp</artifactId>
     </dependency>
