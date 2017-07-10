@@ -38,6 +38,8 @@ public interface Updateable<K extends Updateable.Update> {
 
     void setSeqNum(long seqNum);
 
+    long getImgNum();
+
     byte[] serialize() throws IOException;
 
     void deserialize(byte data[]) throws IOException;
@@ -80,11 +82,26 @@ public interface Updateable<K extends Updateable.Update> {
   long getLastUpdatedSeqNum();
 
   /**
+   * Return image number of Last Update
+   * @return
+   */
+  long getLastUpdatedImgNum();
+
+  /**
    * Create and Full image update of the local data structure
    * @param currSeqNum
    * @return
    */
+  @Deprecated
   K createFullImageUpdate(long currSeqNum) throws Exception;
+
+  /**
+   * Create and Full image update of the local data structure
+   * @param currSeqNum
+   * @param currImgNum
+   * @return
+   */
+  K createFullImageUpdate(long currSeqNum, long currImgNum) throws Exception;
 
   String getUpdateableTypeName();
 

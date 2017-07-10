@@ -21,6 +21,7 @@ import com.codahale.metrics.Timer.Context;
 import org.apache.sentry.hdfs.service.thrift.TPermissionsUpdate;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
 import org.apache.sentry.hdfs.service.thrift.TRoleChanges;
+import org.apache.sentry.hdfs.service.thrift.sentry_hdfs_serviceConstants;
 import org.apache.sentry.provider.db.service.persistent.PermissionsImage;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 
@@ -92,4 +93,8 @@ public class PermImageRetriever implements ImageRetriever<PermissionsUpdate> {
     }
   }
 
+  @Override
+  public long getLatestImageID() throws Exception {
+    return sentry_hdfs_serviceConstants.UNUSED_PATH_UPDATE_IMG_NUM;
+  }
 }

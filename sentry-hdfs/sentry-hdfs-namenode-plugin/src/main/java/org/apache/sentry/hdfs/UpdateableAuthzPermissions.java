@@ -31,8 +31,11 @@ import org.apache.sentry.hdfs.SentryPermissions.PrivilegeInfo;
 import org.apache.sentry.hdfs.SentryPermissions.RoleInfo;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
 import org.apache.sentry.hdfs.service.thrift.TRoleChanges;
+import org.apache.sentry.hdfs.service.thrift.sentry_hdfs_serviceConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.sentry.hdfs.ServiceConstants.SEQUENCE_NUMBER_UPDATE_UNINITIALIZED;
 
 public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<PermissionsUpdate> {
   private static final ImmutableMap<String, FsAction> ACTION_MAPPING = ImmutableMap.<String, FsAction>builder()
@@ -46,7 +49,7 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
   private static final String UPDATABLE_TYPE_NAME = "perm_authz_update";
   private static final Logger LOG = LoggerFactory.getLogger(UpdateableAuthzPermissions.class);
   private final SentryPermissions perms = new SentryPermissions();
-  private final AtomicLong seqNum = new AtomicLong(0);
+  private final AtomicLong seqNum = new AtomicLong(SEQUENCE_NUMBER_UPDATE_UNINITIALIZED);
 
   @Override
   public List<AclEntry> getAcls(String authzObj) {
@@ -219,6 +222,11 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
   }
 
   @Override
+  public long getLastUpdatedImgNum() {
+    return sentry_hdfs_serviceConstants.UNUSED_PATH_UPDATE_IMG_NUM;
+  }
+
+  @Override
   public PermissionsUpdate createFullImageUpdate(long currSeqNum) {
     // Using in-memory cache perms to create a full permission snapshot.
     PermissionsUpdate retVal = new PermissionsUpdate(currSeqNum, true);
@@ -235,6 +243,11 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
       }
     }
     return retVal;
+  }
+
+  @Override
+  public PermissionsUpdate createFullImageUpdate(long currSeqNum, long currImgNum) throws Exception {
+    throw new UnsupportedOperationException("createFullImageUpdate(currSeqNum, currImgNum");
   }
 
   @Override

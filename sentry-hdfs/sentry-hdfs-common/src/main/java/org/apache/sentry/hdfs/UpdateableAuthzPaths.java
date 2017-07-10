@@ -28,12 +28,16 @@ import org.apache.sentry.hdfs.service.thrift.TPathsDump;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.sentry.hdfs.ServiceConstants.IMAGE_NUMBER_UPDATE_UNINITIALIZED;
+import static org.apache.sentry.hdfs.ServiceConstants.SEQUENCE_NUMBER_UPDATE_UNINITIALIZED;
+
 public class UpdateableAuthzPaths implements AuthzPaths, Updateable<PathsUpdate> {
   private static final int MAX_UPDATES_PER_LOCK_USE = 99;
   private static final String UPDATABLE_TYPE_NAME = "path_update";
   private static final Logger LOG = LoggerFactory.getLogger(UpdateableAuthzPaths.class);
   private volatile HMSPaths paths;
-  private final AtomicLong seqNum = new AtomicLong(0);
+  private final AtomicLong seqNum = new AtomicLong(SEQUENCE_NUMBER_UPDATE_UNINITIALIZED);
+  private final AtomicLong imgNum = new AtomicLong(IMAGE_NUMBER_UPDATE_UNINITIALIZED);
 
   public UpdateableAuthzPaths(String[] pathPrefixes) {
     this.paths = new HMSPaths(pathPrefixes);
@@ -63,6 +67,7 @@ public class UpdateableAuthzPaths implements AuthzPaths, Updateable<PathsUpdate>
     UpdateableAuthzPaths other = getPathsDump().initializeFromDump(
             update.toThrift().getPathsDump());
     other.seqNum.set(update.getSeqNum());
+    other.imgNum.set(update.getImgNum());
     return other;
   }
 
@@ -79,7 +84,8 @@ public class UpdateableAuthzPaths implements AuthzPaths, Updateable<PathsUpdate>
           lock.writeLock().lock();
         }
         seqNum.set(update.getSeqNum());
-        LOG.debug("##### Updated paths seq Num [" + seqNum.get() + "]");
+        imgNum.set(update.getImgNum());
+        LOG.debug("##### Updated paths seq Num [{}] img Num [{}]", seqNum.get(), imgNum.get());
       }
     } finally {
       lock.writeLock().unlock();
@@ -145,8 +151,18 @@ public class UpdateableAuthzPaths implements AuthzPaths, Updateable<PathsUpdate>
   }
 
   @Override
+  public long getLastUpdatedImgNum() {
+    return imgNum.get();
+  }
+
+  @Override
   public PathsUpdate createFullImageUpdate(long currSeqNum) {
-    PathsUpdate pathsUpdate = new PathsUpdate(currSeqNum, true);
+    throw new UnsupportedOperationException("createFullImageUpdate(currSeqNum)");
+  }
+
+  @Override
+  public PathsUpdate createFullImageUpdate(long currSeqNum, long currImgNum) throws Exception {
+    PathsUpdate pathsUpdate = new PathsUpdate(currSeqNum, currImgNum, true);
     pathsUpdate.toThrift().setPathsDump(getPathsDump().createPathsDump());
     return pathsUpdate;
   }

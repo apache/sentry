@@ -2443,6 +2443,7 @@ public class TestSentryStore extends org.junit.Assert {
                                                 "/user/hive/warehouse/db2.db/table2.3"));
     sentryStore.persistFullPathsImage(authzPaths);
     PathsImage pathsImage = sentryStore.retrieveFullPathsImage();
+    assertEquals(1, pathsImage.getCurImgNum());
     Map<String, Set<String>> pathImage = pathsImage.getPathImage();
     assertEquals(3, pathImage.size());
     for (Map.Entry<String, Set<String>> entry : pathImage.entrySet()) {
@@ -2610,6 +2611,7 @@ public class TestSentryStore extends org.junit.Assert {
   @Test
   public void testPersistAndReplaceANewPathsImage() throws Exception {
     Map<String, Set<String>> authzPaths = new HashMap<>();
+    PathsImage pathsImage;
 
     // First image to persist (this will be replaced later)
     authzPaths.put("db1.table1", Sets.newHashSet("/user/hive/warehouse/db2.db/table1.1",
@@ -2617,6 +2619,8 @@ public class TestSentryStore extends org.junit.Assert {
     authzPaths.put("db1.table2", Sets.newHashSet("/user/hive/warehouse/db2.db/table2.1",
         "/user/hive/warehouse/db2.db/table2.2"));
     sentryStore.persistFullPathsImage(authzPaths);
+    pathsImage = sentryStore.retrieveFullPathsImage();
+    assertEquals(1, pathsImage.getCurImgNum());
 
     // Second image to persist (it should replace first image)
     authzPaths.clear();
@@ -2628,7 +2632,8 @@ public class TestSentryStore extends org.junit.Assert {
         "/another-warehouse/db2.db/table2.3"));
     sentryStore.persistFullPathsImage(authzPaths);
 
-    PathsImage pathsImage = sentryStore.retrieveFullPathsImage();
+    pathsImage = sentryStore.retrieveFullPathsImage();
+    assertEquals(2, pathsImage.getCurImgNum());
     Map<String, Set<String>> pathImage = pathsImage.getPathImage();
     assertEquals(3, pathImage.size());
 

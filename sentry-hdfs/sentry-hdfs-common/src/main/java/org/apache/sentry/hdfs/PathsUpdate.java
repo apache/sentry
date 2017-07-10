@@ -34,6 +34,8 @@ import org.apache.hadoop.conf.Configuration;
 
 import org.apache.thrift.TException;
 
+import static org.apache.sentry.hdfs.service.thrift.sentry_hdfs_serviceConstants.UNUSED_PATH_UPDATE_IMG_NUM;
+
 /**
  * A wrapper class over the TPathsUpdate thrift generated class. Please see
  * {@link Updateable.Update} for more information
@@ -58,8 +60,12 @@ public class PathsUpdate implements Updateable.Update {
   }
 
   public PathsUpdate(long seqNum, boolean hasFullImage) {
-    tPathsUpdate = new TPathsUpdate(hasFullImage, seqNum,
-        new ArrayList<TPathChanges>());
+    this(seqNum, UNUSED_PATH_UPDATE_IMG_NUM, hasFullImage);
+  }
+
+  public PathsUpdate(long seqNum, long imgNum, boolean hasFullImage) {
+    tPathsUpdate = new TPathsUpdate(hasFullImage, seqNum, new ArrayList<TPathChanges>());
+    tPathsUpdate.setImgNum(imgNum);
   }
 
   @Override
@@ -87,6 +93,11 @@ public class PathsUpdate implements Updateable.Update {
   @Override
   public void setSeqNum(long seqNum) {
     tPathsUpdate.setSeqNum(seqNum);
+  }
+
+  @Override
+  public long getImgNum() {
+    return tPathsUpdate.getImgNum();
   }
 
   TPathsUpdate toThrift() {

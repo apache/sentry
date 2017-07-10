@@ -131,18 +131,19 @@ public class SentryAuthorizationInfo implements Runnable {
           updates.getPathUpdates(), authzPaths);
       UpdateableAuthzPermissions newAuthzPerms = processUpdates(
           updates.getPermUpdates(), authzPermissions);
-      // If there were any FULL updates the returned instance would be
-      // different
+
+      // processUpdates() should return different newAuthzPaths and newAuthzPerms object references
+      // if FULL updates were fetched from the Sentry server, otherwise, the same authzPaths and authzPermissions
+      // objects will be returned.
       if (newAuthzPaths != authzPaths || newAuthzPerms != authzPermissions) {
         lock.writeLock().lock();
         try {
-          LOG.debug("FULL Updated paths seq Num [old="
-              + authzPaths.getLastUpdatedSeqNum() + "], [new="
-              + newAuthzPaths.getLastUpdatedSeqNum() + "]");
+          LOG.debug(String.format("FULL Updated paths seq Num [old=%d], [new=%d] img Num [old=%d], [new=%d]",
+              authzPaths.getLastUpdatedSeqNum(), newAuthzPaths.getLastUpdatedSeqNum(),
+              authzPaths.getLastUpdatedImgNum(), newAuthzPaths.getLastUpdatedImgNum()));
           authzPaths = newAuthzPaths;
-          LOG.debug("FULL Updated perms seq Num [old="
-              + authzPermissions.getLastUpdatedSeqNum() + "], [new="
-              + newAuthzPerms.getLastUpdatedSeqNum() + "]");
+          LOG.debug(String.format("FULL Updated perms seq Num [old=%d], [new=%d]",
+              authzPermissions.getLastUpdatedSeqNum(), newAuthzPerms.getLastUpdatedSeqNum()));
           authzPermissions = newAuthzPerms;
         } finally {
           lock.writeLock().unlock();
@@ -160,22 +161,25 @@ public class SentryAuthorizationInfo implements Runnable {
     V newUpdateable = updateable;
     if (!updates.isEmpty()) {
       if (updates.get(0).hasFullImage()) {
-        LOG.debug("Process Update : FULL IMAGE "
-            + "[" + newUpdateable.getClass() + "]"
-            + "[" + updates.get(0).getSeqNum() + "]");
+        LOG.debug(String.format("Process Update : FULL IMAGE [%s][%d][%d]",
+            newUpdateable.getClass().getName(),
+            updates.get(0).getSeqNum(),
+            updates.get(0).getImgNum()));
         newUpdateable = (V)newUpdateable.updateFull(updates.remove(0));
       }
       // Any more elements ?
       if (!updates.isEmpty()) {
-        LOG.debug("Process Update : More updates.. "
-            + "[" + newUpdateable.getClass() + "]"
-            + "[" + newUpdateable.getLastUpdatedSeqNum() + "]"
-            + "[" + updates.size() + "]");
+        LOG.debug(String.format("Process Update : More updates.. [%s][%d][%d][%d]",
+            newUpdateable.getClass().getName(),
+            newUpdateable.getLastUpdatedSeqNum(),
+            newUpdateable.getLastUpdatedImgNum(),
+            updates.size()));
         newUpdateable.updatePartial(updates, lock);
       }
-      LOG.debug("Process Update : Finished updates.. "
-          + "[" + newUpdateable.getClass() + "]"
-          + "[" + newUpdateable.getLastUpdatedSeqNum() + "]");
+      LOG.debug(String.format("Process Update : Finished updates.. [%s][%d][%d]",
+          newUpdateable.getClass().getName(),
+          newUpdateable.getLastUpdatedSeqNum(),
+          newUpdateable.getLastUpdatedImgNum()));
     }
     return newUpdateable;
   }

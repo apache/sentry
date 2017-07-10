@@ -25,6 +25,7 @@ import java.util.HashMap;
 import org.apache.sentry.hdfs.service.thrift.TPermissionsUpdate;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
 import org.apache.sentry.hdfs.service.thrift.TRoleChanges;
+import org.apache.sentry.hdfs.service.thrift.sentry_hdfs_serviceConstants;
 import org.apache.thrift.TException;
 
 public class PermissionsUpdate implements Updateable.Update {
@@ -59,6 +60,11 @@ public class PermissionsUpdate implements Updateable.Update {
   @Override
   public void setSeqNum(long seqNum) {
     tPermUpdate.setSeqNum(seqNum);
+  }
+
+  @Override
+  public long getImgNum() {
+    return sentry_hdfs_serviceConstants.UNUSED_PATH_UPDATE_IMG_NUM;
   }
 
   @Override

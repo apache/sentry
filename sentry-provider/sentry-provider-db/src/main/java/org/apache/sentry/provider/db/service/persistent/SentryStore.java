@@ -2539,9 +2539,10 @@ public class SentryStore {
         // from HMS. It does not have corresponding delta update.
         pm.setDetachAllOnCommit(false); // No need to detach objects
         long curChangeID = getLastProcessedChangeIDCore(pm, MSentryPathChange.class);
-        Map<String, Set<String>> pathImage = retrieveFullPathsImageCore(pm);
+        long curImageID = getCurrentAuthzPathsSnapshotID(pm);
+        Map<String, Set<String>> pathImage = retrieveFullPathsImageCore(pm, curImageID);
 
-        return new PathsImage(pathImage, curChangeID);
+        return new PathsImage(pathImage, curChangeID, curImageID);
       }
     });
   }
@@ -2552,8 +2553,7 @@ public class SentryStore {
    *
    * @return a mapping of hiveObj to &lt Paths &gt.
    */
-  private Map<String, Set<String>> retrieveFullPathsImageCore(PersistenceManager pm) {
-    long currentSnapshotID = getCurrentAuthzPathsSnapshotID(pm);
+  private Map<String, Set<String>> retrieveFullPathsImageCore(PersistenceManager pm, long currentSnapshotID) {
     if (currentSnapshotID <= EMPTY_PATHS_SNAPSHOT_ID) {
       return Collections.emptyMap();
     }
@@ -3638,6 +3638,21 @@ public class SentryStore {
     });
     LOGGER.debug("Retrieving Last Processed Notification ID {}", notificationId);
     return notificationId;
+  }
+
+  /**
+   * Gets the last processed HMS snapshot ID for path delta changes.
+   *
+   * @return latest path change ID.
+   */
+  public long getLastProcessedImageID() throws Exception {
+    return tm.executeTransaction(new TransactionBlock<Long>() {
+      @Override
+      public Long execute(PersistenceManager pm) throws Exception {
+        pm.setDetachAllOnCommit(false); // No need to detach objects
+        return getCurrentAuthzPathsSnapshotID(pm);
+      }
+    });
   }
 
   /**

@@ -21,7 +21,6 @@ package org.apache.sentry.hdfs;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.common.utils.SigUtils;
@@ -43,9 +42,12 @@ import org.apache.sentry.service.thrift.HMSFollower;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.sentry.hdfs.ServiceConstants.IMAGE_NUMBER_UPDATE_UNINITIALIZED;
+import static org.apache.sentry.hdfs.ServiceConstants.SEQUENCE_NUMBER_UPDATE_UNINITIALIZED;
 import static org.apache.sentry.hdfs.Updateable.Update;
+import static org.apache.sentry.hdfs.service.thrift.sentry_hdfs_serviceConstants.UNUSED_PATH_UPDATE_IMG_NUM;
 
-  /**
+/**
    * SentryPlugin listens to all sentry permission update events, persists permission
    * changes into database. It also facilitates HDFS synchronization between HMS and NameNode.
    * <p>
@@ -60,8 +62,11 @@ import static org.apache.sentry.hdfs.Updateable.Update;
    * or more updates previously received via HMS notification log.
    * </ol>
    * <p>
-   * Each individual update is assigned a corresponding sequence number to synchronize
-   * updates between Sentry and NameNode.
+   * Each individual update is assigned a corresponding sequence number and an image number
+   * to synchronize updates between Sentry and NameNode.
+   * <p>
+   * The image number may be used to identify whether new full updates are persisted and need
+   * to be retrieved instead of delta updates.
    * <p>
    * SentryPlugin also implements signal-triggered mechanism of full path
    * updates from HMS to Sentry and from Sentry to NameNode, to address
@@ -94,15 +99,6 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
   private DBUpdateForwarder<PathsUpdate> pathsUpdater;
   private DBUpdateForwarder<PermissionsUpdate> permsUpdater;
 
-  /*
-   * This number is smaller than starting sequence numbers used by NN and HMS
-   * so in both cases its effect is to create appearance of out-of-sync
-   * updates on the Sentry server (as if there were no previous updates at all).
-   * It, in turn, triggers a) pushing full update from HMS to Sentry and
-   * b) pulling full update from Sentry to NameNode.
-   */
-  private static final long NO_LAST_SEEN_HMS_PATH_SEQ_NUM = 0L;
-
   @Override
   public void initialize(Configuration conf, SentryStore sentryStore) throws SentryPluginException {
     PermImageRetriever permImageRetriever = new PermImageRetriever(sentryStore);
@@ -133,49 +129,50 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
    * Request for update from NameNode.
    * Full update to NameNode should happen only after full update from HMS.
    */
-  public List<PathsUpdate> getAllPathsUpdatesFrom(long pathSeqNum) throws Exception {
+  public List<PathsUpdate> getAllPathsUpdatesFrom(long pathSeqNum, long pathImgNum) throws Exception {
     if (!fullUpdateNN.get()) {
       // Most common case - Sentry is NOT handling a full update.
-      return pathsUpdater.getAllUpdatesFrom(pathSeqNum);
-    } else {
-      /*
-       * Sentry is in the middle of signal-triggered full update.
-       * It already got a full update from HMS
-       */
-      LOGGER.info("SIGNAL HANDLING: sending full update to NameNode");
-      fullUpdateNN.set(false); // don't do full NN update till the next signal
-      List<PathsUpdate> updates = pathsUpdater.getAllUpdatesFrom(NO_LAST_SEEN_HMS_PATH_SEQ_NUM);
-      /*
-       * This code branch is only called when Sentry is in the middle of a full update
-       * (fullUpdateNN == true) and Sentry has already received full update from HMS
-       * (fullUpdateHMSWait == false). It means that the local cache has a full update
-       * from HMS.
-       *
-       * The full update list is expected to contain the last full update as the first
-       * element, followed by zero or more subsequent partial updates.
-       *
-       * Returning NULL, empty, or partial update instead would be unexplainable, so
-       * it should be logged.
-       */
-      if (updates != null) {
-        if (!updates.isEmpty()) {
-          if (updates.get(0).hasFullImage()) {
-            LOGGER.info("SIGNAL HANDLING: Confirmed full update to NameNode");
-          } else {
-            LOGGER.warn("SIGNAL HANDLING: Sending partial instead of full update to NameNode (???)");
-          }
+      return pathsUpdater.getAllUpdatesFrom(pathSeqNum, pathImgNum);
+    }
+
+    /*
+     * Sentry is in the middle of signal-triggered full update.
+     * It already got a full update from HMS
+     */
+    LOGGER.info("SIGNAL HANDLING: sending full update to NameNode");
+    fullUpdateNN.set(false); // don't do full NN update till the next signal
+    List<PathsUpdate> updates =
+        pathsUpdater.getAllUpdatesFrom(SEQUENCE_NUMBER_UPDATE_UNINITIALIZED, IMAGE_NUMBER_UPDATE_UNINITIALIZED);
+    /*
+     * This code branch is only called when Sentry is in the middle of a full update
+     * (fullUpdateNN == true) and Sentry has already received full update from HMS
+     * (fullUpdateHMSWait == false). It means that the local cache has a full update
+     * from HMS.
+     *
+     * The full update list is expected to contain the last full update as the first
+     * element, followed by zero or more subsequent partial updates.
+     *
+     * Returning NULL, empty, or partial update instead would be unexplainable, so
+     * it should be logged.
+     */
+    if (updates != null) {
+      if (!updates.isEmpty()) {
+        if (updates.get(0).hasFullImage()) {
+          LOGGER.info("SIGNAL HANDLING: Confirmed full update to NameNode");
         } else {
-          LOGGER.warn("SIGNAL HANDLING: Sending empty instead of full update to NameNode (???)");
+          LOGGER.warn("SIGNAL HANDLING: Sending partial instead of full update to NameNode (???)");
         }
       } else {
-        LOGGER.warn("SIGNAL HANDLING: returned NULL instead of full update to NameNode (???)");
+        LOGGER.warn("SIGNAL HANDLING: Sending empty instead of full update to NameNode (???)");
       }
-      return updates;
+    } else {
+      LOGGER.warn("SIGNAL HANDLING: returned NULL instead of full update to NameNode (???)");
     }
+    return updates;
   }
 
   public List<PermissionsUpdate> getAllPermsUpdatesFrom(long permSeqNum) throws Exception {
-    return permsUpdater.getAllUpdatesFrom(permSeqNum);
+    return permsUpdater.getAllUpdatesFrom(permSeqNum, UNUSED_PATH_UPDATE_IMG_NUM);
   }
 
   @Override

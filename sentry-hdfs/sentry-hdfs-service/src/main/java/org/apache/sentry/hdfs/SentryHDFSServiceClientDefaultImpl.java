@@ -87,11 +87,15 @@ public class SentryHDFSServiceClientDefaultImpl
   }
 
   @Override
-  public SentryAuthzUpdate getAllUpdatesFrom(long permSeqNum, long pathSeqNum)
+  public SentryAuthzUpdate getAllUpdatesFrom(long permSeqNum, long pathSeqNum) throws SentryHdfsServiceException {
+    return getAllUpdatesFrom(permSeqNum, pathSeqNum, UNUSED_PATH_UPDATE_IMG_NUM);
+  }
+
+  @Override
+  public SentryAuthzUpdate getAllUpdatesFrom(long permSeqNum, long pathSeqNum, long pathImgNum)
           throws SentryHdfsServiceException {
     try {
-      TAuthzUpdateRequest updateRequest = new TAuthzUpdateRequest(permSeqNum, pathSeqNum,
-              UNUSED_PATH_UPDATE_IMG_NUM);
+      TAuthzUpdateRequest updateRequest = new TAuthzUpdateRequest(permSeqNum, pathSeqNum, pathImgNum);
       TAuthzUpdateResponse sentryUpdates = client.get_authz_updates(updateRequest);
       List<PathsUpdate> pathsUpdates = Collections.emptyList();
       if (sentryUpdates.getAuthzPathUpdate() != null) {

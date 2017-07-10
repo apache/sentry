@@ -41,4 +41,9 @@ public interface ImageRetriever<K extends Update> {
    */
   K retrieveFullImage() throws Exception;
 
+  /**
+   * @return the latest image ID.
+   * @throws Exception if an error occurred requesting the image ID from the persistent storage.
+   */
+  long getLatestImageID() throws Exception;
 }

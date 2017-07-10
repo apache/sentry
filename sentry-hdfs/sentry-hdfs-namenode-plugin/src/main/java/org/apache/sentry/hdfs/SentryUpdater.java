@@ -48,7 +48,8 @@ class SentryUpdater {
     try {
       return sentryClient.getAllUpdatesFrom(
           authzInfo.getAuthzPermissions().getLastUpdatedSeqNum() + 1,
-          authzInfo.getAuthzPaths().getLastUpdatedSeqNum() + 1);
+          authzInfo.getAuthzPaths().getLastUpdatedSeqNum() + 1,
+          authzInfo.getAuthzPaths().getLastUpdatedImgNum());
     } catch (Exception e)  {
       sentryClient = null;
       LOG.error("Error receiving updates from Sentry", e);

@@ -24,22 +24,28 @@ import java.util.Set;
 /**
  * A container for complete hive paths snapshot.
  * <p>
- * It is composed by a hiveObj to Paths mapping and the sequence number/change ID
+ * It is composed by a hiveObj to Paths mapping, a paths image ID and the sequence number/change ID
  * of latest delta change that the snapshot maps to.
  */
 public class PathsImage {
 
-  // A full snapshot of hiveObj to Paths mapping.
+  // A full image of hiveObj to Paths mapping.
   private final Map<String, Set<String>> pathImage;
   private final long curSeqNum;
+  private final long curImgNum;
 
-  PathsImage(Map<String, Set<String>> pathImage, long curSeqNum) {
+  public PathsImage(Map<String, Set<String>> pathImage, long curSeqNum, long curImgNum) {
     this.pathImage = pathImage;
     this.curSeqNum = curSeqNum;
+    this.curImgNum = curImgNum;
   }
 
   public long getCurSeqNum() {
     return curSeqNum;
+  }
+
+  public long getCurImgNum() {
+    return curImgNum;
   }
 
   public Map<String, Set<String>> getPathImage() {

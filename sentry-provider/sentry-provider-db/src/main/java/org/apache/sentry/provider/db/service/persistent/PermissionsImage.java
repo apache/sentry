@@ -36,8 +36,8 @@ public class PermissionsImage {
   private final Map<String, Map<String, String>> privilegeImage;
   private final long curSeqNum;
 
-  PermissionsImage(Map<String, List<String>> roleImage,
-          Map<String, Map<String, String>> privilegeImage, long curSeqNum) {
+  public PermissionsImage(Map<String, List<String>> roleImage,
+                          Map<String, Map<String, String>> privilegeImage, long curSeqNum) {
     this.roleImage = roleImage;
     this.privilegeImage = privilegeImage;
     this.curSeqNum = curSeqNum;

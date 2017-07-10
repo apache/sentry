@@ -25,8 +25,6 @@ import org.apache.sentry.provider.db.service.persistent.PathsImage;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 
 import javax.annotation.concurrent.ThreadSafe;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -58,13 +56,14 @@ public class PathImageRetriever implements ImageRetriever<PathsUpdate> {
       // delta change the snapshot corresponds to.
       PathsImage pathsImage = sentryStore.retrieveFullPathsImage();
       long curSeqNum = pathsImage.getCurSeqNum();
+      long curImgNum = pathsImage.getCurImgNum();
       Map<String, Set<String>> pathImage = pathsImage.getPathImage();
 
       // Translates the complete Hive paths snapshot into a PathsUpdate.
       // Adds all <hiveObj, paths> mapping to be included in this paths update.
       // And label it with the latest delta change sequence number for consumer
       // to be aware of the next delta change it should continue with.
-      PathsUpdate pathsUpdate = new PathsUpdate(curSeqNum, true);
+      PathsUpdate pathsUpdate = new PathsUpdate(curSeqNum, curImgNum, true);
       for (Map.Entry<String, Set<String>> pathEnt : pathImage.entrySet()) {
         TPathChanges pathChange = pathsUpdate.newPathChange(pathEnt.getKey());
 
@@ -85,5 +84,10 @@ public class PathImageRetriever implements ImageRetriever<PathsUpdate> {
       pathsUpdate.toThrift().setPathsDump(authzPaths.getPathsDump().createPathsDump());
       return pathsUpdate;
     }
+  }
+
+  @Override
+  public long getLatestImageID() throws Exception {
+    return sentryStore.getLastProcessedImageID();
   }
 }

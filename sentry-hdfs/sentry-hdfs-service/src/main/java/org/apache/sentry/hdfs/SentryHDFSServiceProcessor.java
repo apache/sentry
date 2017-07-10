@@ -33,8 +33,6 @@ import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.sentry.hdfs.service.thrift.sentry_hdfs_serviceConstants.UNUSED_PATH_UPDATE_IMG_NUM;
-
 /**
  * Process requests from HDFS Name Node plugin.
  * The only supported request is {@link #get_all_authz_updates_from(long, long)}.
@@ -44,7 +42,8 @@ public class SentryHDFSServiceProcessor implements SentryHDFSService.Iface {
 
   @Override
   public TAuthzUpdateResponse get_all_authz_updates_from(long permSeqNum, long pathSeqNum) throws TException {
-    return get_authz_updates(new TAuthzUpdateRequest(permSeqNum, pathSeqNum, UNUSED_PATH_UPDATE_IMG_NUM));
+   throw new UnsupportedOperationException(
+       "get_all_authz_updates_from() is not supported due to known bugs. Use get_authz_updates() instead.");
   }
 
   @Override
@@ -65,13 +64,15 @@ public class SentryHDFSServiceProcessor implements SentryHDFSService.Iface {
           SentryPlugin.instance.getAllPermsUpdatesFrom(request.getPermSeqNum());
       SentryHdfsMetricsUtil.getPermUpdateHistogram.update(permUpdates.size());
       List<PathsUpdate> pathUpdates =
-          SentryPlugin.instance.getAllPathsUpdatesFrom(request.getPathSeqNum());
+          SentryPlugin.instance.getAllPathsUpdatesFrom(request.getPathSeqNum(), request.getPathImgNum());
       SentryHdfsMetricsUtil.getPathUpdateHistogram.update(pathUpdates.size());
 
       List<TPathsUpdate> retPathUpdates = new ArrayList<>(pathUpdates.size());
       for (PathsUpdate update : pathUpdates) {
-        LOGGER.debug("Sending PATH preUpdate seq [{}], [{}]",
-                update.getSeqNum(), update.toThrift());
+        if (LOGGER.isDebugEnabled()) {
+          LOGGER.debug("Sending PATH preUpdate seq [{}], [{}]",
+              update.getSeqNum(), update.getImgNum());
+        }
         retPathUpdates.add(update.toThrift());
       }
       retVal.setAuthzPathUpdate(retPathUpdates);
@@ -93,11 +94,11 @@ public class SentryHDFSServiceProcessor implements SentryHDFSService.Iface {
         StringBuilder pathSeq = new StringBuilder("<");
         for (PathsUpdate pathUpdate : pathUpdates) {
           pathSeq.append(pathUpdate.getSeqNum()).append(",");
+          pathSeq.append(pathUpdate.getImgNum()).append(",");
         }
         pathSeq.append(">");
-        LOGGER.debug("Updates requested from HDFS ["
-            + "permReq=" + request.getPermSeqNum() + ", permResp=" + permSeq + "] "
-            + "[pathReq=" + request.getPathSeqNum() + ", pathResp=" + pathSeq + "]");
+        LOGGER.debug("Updates requested from HDFS [permReq={}, permResp={}] [pathReq={}, pathResp={}]",
+            new Object[]{request.getPermSeqNum(), permSeq, request.getPathSeqNum(), pathSeq});
       }
     } catch (Exception e) {
       LOGGER.error("Error Sending updates to downstream Cache", e);

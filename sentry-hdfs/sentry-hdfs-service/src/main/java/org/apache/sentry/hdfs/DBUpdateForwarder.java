@@ -20,11 +20,13 @@ package org.apache.sentry.hdfs;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.concurrent.ThreadSafe;
+
+import static org.apache.sentry.hdfs.ServiceConstants.IMAGE_NUMBER_UPDATE_UNINITIALIZED;
+import static org.apache.sentry.hdfs.ServiceConstants.SEQUENCE_NUMBER_UPDATE_UNINITIALIZED;
 
 /**
  * DBUpdateForwarder propagates a complete snapshot or delta update of either
@@ -48,35 +50,69 @@ class DBUpdateForwarder<K extends Updateable.Update> {
   }
 
   /**
-   * Retrieves all delta updates from the requested sequence number (inclusive) from
-   * a persistent storage.
-   * It first checks if there is such newer deltas exists in the persistent storage.
+   * Retrieves all delta updates from the requested sequence number (inclusive) or a single full
+   * update with its own sequence number from a persistent storage.
+   * <p>
+   * As part of the requested sequence number, an image number may also be used that identifies whether
+   * new full updates are persisted and need to be retrieved instead of delta updates.
+   * <p>
+   * It first checks if there is such image number exists and/or has newer images persisted.
+   * If a newer image is found, then it will return it as a new single full update.
+   * Otherwise. it checks if there is such newer deltas exists in the persistent storage.
    * If there is, returns a list of delta updates.
-   * Otherwise, a complete snapshot will be returned.
+   * Otherwise, an empty list is returned.
    *
-   * @param seqNum the requested sequence number
-   * @return a list of delta updates, e.g. {@link PathsUpdate} or {@link PermissionsUpdate}
+   * @param imgNum the requested image number (>= 0).
+   *               A value < 0 is identified as an unused value, and full updates would be returned
+   *               only if the sequence number if <= 0.
+   * @param seqNum the requested sequence number.
+   *               Values <= 0 will be recognized as full updates request (unless an image number is used).
+   * @return a list of full or delta updates (a full update is returned as a single-element list),
+   *         e.g. {@link PathsUpdate} or {@link PermissionsUpdate}
    */
-  List<K> getAllUpdatesFrom(long seqNum) throws Exception {
+  List<K> getAllUpdatesFrom(long seqNum, long imgNum) throws Exception {
+    LOGGER.debug("GetAllUpdatesFrom sequence number {}, image number {}", seqNum, imgNum);
+
+    // An imgNum >= 0 are valid values for image identifiers (0 means a full update is requested)
+    if (imgNum >= IMAGE_NUMBER_UPDATE_UNINITIALIZED) {
+      long curImgNum = imageRetriever.getLatestImageID();
+      LOGGER.debug("Current image number is {}", curImgNum);
+
+      if (curImgNum == IMAGE_NUMBER_UPDATE_UNINITIALIZED) {
+        // Sentry has not fetched a full HMS snapshot yet.
+        return Collections.emptyList();
+      } else if (curImgNum > imgNum) {
+        // In case a new HMS snapshot has been processed, then return a full paths image.
+        LOGGER.info("A newer full update is found with image number: ", curImgNum);
+        return Collections.singletonList(imageRetriever.retrieveFullImage());
+      }
+    }
+
+    /*
+     * If no new images are found, then continue with checking for delta updates
+     */
+
     long curSeqNum = deltaRetriever.getLatestDeltaID();
-    LOGGER.debug("GetAllUpdatesFrom sequence number {}, current sequence number is {}",
-            seqNum, curSeqNum);
+    LOGGER.debug("Current sequence number is {}", curSeqNum);
+
     if (seqNum > curSeqNum) {
-      // No new deltas requested
+      // No new notifications were processed.
       return Collections.emptyList();
     }
 
     // Checks if newer deltas exist in the persistent storage.
     // If there are, return the list of delta updates.
-    if ((seqNum != SentryStore.INIT_CHANGE_ID) &&
-            deltaRetriever.isDeltaAvailable(seqNum)) {
+    if (seqNum > SEQUENCE_NUMBER_UPDATE_UNINITIALIZED && deltaRetriever.isDeltaAvailable(seqNum)) {
       List<K> deltas = deltaRetriever.retrieveDelta(seqNum);
       if (!deltas.isEmpty()) {
+        LOGGER.info("Newer delta updates are found up to sequence number: ", curSeqNum);
         return deltas;
       }
     }
 
-    // Return the full snapshot
+    // If the sequence number is < 0 or the requested delta is not available, then we
+    // return a full update.
+    LOGGER.info("A full update is returned due to an unavailable sequence number: ", seqNum);
     return Collections.singletonList(imageRetriever.retrieveFullImage());
   }
 }

@@ -28,6 +28,15 @@ public class ServiceConstants {
 
   private static final ImmutableMap<String, String> SASL_PROPERTIES;
 
+  // number used in authz paths and permissions to request initial syncs
+  public static final long SEQUENCE_NUMBER_UPDATE_UNINITIALIZED = -1L;
+
+  // number used in authz paths and permissions to request initial syncs
+  public static final long IMAGE_NUMBER_UPDATE_UNINITIALIZED = 0L;
+
+  // number used in authz paths and permissions that specifies an unused image number
+  public static final long IMAGE_NUMBER_UPDATE_UNUSED = -1L;
+
   static {
     Map<String, String> saslProps = new HashMap<String, String>();
     saslProps.put(Sasl.SERVER_AUTH, "true");
