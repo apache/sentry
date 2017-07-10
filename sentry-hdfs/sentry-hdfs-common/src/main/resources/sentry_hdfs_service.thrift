@@ -58,6 +58,7 @@ struct TPathEntry {
 struct TPathsDump {
 1: required i32 rootId;
 2: required map<i32,TPathEntry> nodeMap;
+3: optional list<string> dupStringValues;
 }
 
 struct TPathsUpdate {

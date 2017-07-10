@@ -32,12 +32,13 @@ import com.google.common.collect.Lists;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.io.IOException;
+import java.util.List;
 
 public class TestHMSPathsFullDump {
   private static boolean useCompact = true;
 
   @Test
-  public void testDumpAndInitialize() {
+  public void testDumpAndInitialize() throws Exception {
     HMSPaths hmsPaths = new HMSPaths(new String[] {"/user/hive/warehouse", "/user/hive/w2"});
     hmsPaths._addAuthzObject("default", Lists.newArrayList("/user/hive/warehouse"));
     hmsPaths._addAuthzObject("db1", Lists.newArrayList("/user/hive/warehouse/db1"));
@@ -45,7 +46,11 @@ public class TestHMSPathsFullDump {
     hmsPaths._addPathsToAuthzObject("db1.tbl11", Lists.newArrayList(
         "/user/hive/warehouse/db1/tbl11/part111",
         "/user/hive/warehouse/db1/tbl11/part112",
-        "/user/hive/warehouse/db1/tbl11/p1=1/p2=x"));
+        "/user/hive/warehouse/db1/tbl11/p1=1/p2=x",
+        "/user/hive/warehouse/db1/tbl11/part_duplicate1",
+        "/user/hive/warehouse/db1/tbl11/part_duplicate1/part_duplicate2",
+        "/user/hive/warehouse/db1/tbl11/part_duplicate2",
+        "/user/hive/warehouse/db1/tbl11/part_duplicate2/part_duplicate1"));
 
     // Not in Deserialized objects prefix paths
     hmsPaths._addAuthzObject("db2", Lists.newArrayList("/user/hive/w2/db2"));
@@ -63,7 +68,34 @@ public class TestHMSPathsFullDump {
     Assert.assertEquals(new HashSet<String>(Arrays.asList("db2.tbl21")), hmsPaths.findAuthzObject(new String[]{"user", "hive", "w2", "db2", "tbl21", "p1=1"}, true));
 
     HMSPathsDumper serDe = hmsPaths.getPathsDump();
-    TPathsDump pathsDump = serDe.createPathsDump();
+    TPathsDump pathsDump = serDe.createPathsDump(true);
+
+    Assert.assertTrue(pathsDump.isSetDupStringValues());
+    List<String> dupStringValues = pathsDump.getDupStringValues();
+    Assert.assertEquals(2, dupStringValues.size());
+    Assert.assertTrue(dupStringValues.contains("part_duplicate1"));
+    Assert.assertTrue(dupStringValues.contains("part_duplicate2"));
+
+    checkDeserializedHmsPaths(pathsDump);
+
+    TProtocolFactory protoFactory = getTProtocolFactory();
+    byte[] serMinimized = new TSerializer(protoFactory).serialize(pathsDump);
+
+    // Check that when no message size minimization is requested, everything still works
+    serDe = hmsPaths.getPathsDump();
+    pathsDump = serDe.createPathsDump(false);
+    Assert.assertFalse(pathsDump.isSetDupStringValues());
+
+    checkDeserializedHmsPaths(pathsDump);
+
+    byte[] serNormal = new TSerializer(protoFactory).serialize(pathsDump);
+
+    System.out.println("minimized length = " + serMinimized.length +
+        ", normal length = " + serNormal.length);
+    Assert.assertTrue(serMinimized.length < serNormal.length);
+  }
+
+  private void checkDeserializedHmsPaths(TPathsDump pathsDump) {
     HMSPaths hmsPaths2 = new HMSPaths(new String[] {"/user/hive/warehouse"}).getPathsDump().initializeFromDump(pathsDump);
 
     Assert.assertEquals(new HashSet<String>(Arrays.asList("default")), hmsPaths2.findAuthzObject(new String[]{"user", "hive", "warehouse"}, false));
@@ -71,6 +103,10 @@ public class TestHMSPathsFullDump {
     Assert.assertEquals(new HashSet<String>(Arrays.asList("db1.tbl11")), hmsPaths2.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11"}, false));
     Assert.assertEquals(new HashSet<String>(Arrays.asList("db1.tbl11")), hmsPaths2.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11", "part111"}, false));
     Assert.assertEquals(new HashSet<String>(Arrays.asList("db1.tbl11")), hmsPaths2.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11", "part112"}, false));
+    Assert.assertEquals(new HashSet<String>(Arrays.asList("db1.tbl11")), hmsPaths2.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11", "part_duplicate1"}, false));
+    Assert.assertEquals(new HashSet<String>(Arrays.asList("db1.tbl11")), hmsPaths2.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11", "part_duplicate1", "part_duplicate2"}, false));
+    Assert.assertEquals(new HashSet<String>(Arrays.asList("db1.tbl11")), hmsPaths2.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11", "part_duplicate2"}, false));
+    Assert.assertEquals(new HashSet<String>(Arrays.asList("db1.tbl11")), hmsPaths2.findAuthzObject(new String[]{"user", "hive", "warehouse", "db1", "tbl11", "part_duplicate2", "part_duplicate1"}, false));
 
     // This path is not under prefix, so should not be deserialized..
     Assert.assertNull(hmsPaths2.findAuthzObject(new String[]{"user", "hive", "w2", "db2", "tbl21", "p1=1"}, true));
@@ -80,14 +116,9 @@ public class TestHMSPathsFullDump {
   public void testThrftSerialization() throws TException {
     HMSPathsDumper serDe = genHMSPathsDumper();
     long t1 = System.currentTimeMillis();
-    TPathsDump pathsDump = serDe.createPathsDump();
-    
-    TProtocolFactory protoFactory = useCompact ? new TCompactProtocol.Factory(
-        ServiceConstants.ClientConfig.SENTRY_HDFS_THRIFT_MAX_MESSAGE_SIZE_DEFAULT,
-        ServiceConstants.ClientConfig.SENTRY_HDFS_THRIFT_MAX_MESSAGE_SIZE_DEFAULT)
-        : new TBinaryProtocol.Factory(true, true,
-        ServiceConstants.ClientConfig.SENTRY_HDFS_THRIFT_MAX_MESSAGE_SIZE_DEFAULT,
-        ServiceConstants.ClientConfig.SENTRY_HDFS_THRIFT_MAX_MESSAGE_SIZE_DEFAULT);
+    TPathsDump pathsDump = serDe.createPathsDump(true);
+
+    TProtocolFactory protoFactory = getTProtocolFactory();
     byte[] ser = new TSerializer(protoFactory).serialize(pathsDump);
     long serTime = System.currentTimeMillis() - t1;
     System.out.println("Serialization Time: " + serTime + ", " + ser.length);
@@ -107,7 +138,7 @@ public class TestHMSPathsFullDump {
   @Test
   public void testThriftSerializerWithInvalidMsgSize() throws TException, IOException {
     HMSPathsDumper serDe = genHMSPathsDumper();
-    TPathsDump pathsDump = serDe.createPathsDump();
+    TPathsDump pathsDump = serDe.createPathsDump(true);
     byte[] ser =ThriftSerializer.serialize(pathsDump);
 
     boolean exceptionThrown = false;
@@ -152,4 +183,12 @@ public class TestHMSPathsFullDump {
     return hmsPaths.getPathsDump();
   }
 
+  private TProtocolFactory getTProtocolFactory() {
+    return useCompact ? new TCompactProtocol.Factory(
+        ServiceConstants.ClientConfig.SENTRY_HDFS_THRIFT_MAX_MESSAGE_SIZE_DEFAULT,
+        ServiceConstants.ClientConfig.SENTRY_HDFS_THRIFT_MAX_MESSAGE_SIZE_DEFAULT)
+        : new TBinaryProtocol.Factory(true, true,
+        ServiceConstants.ClientConfig.SENTRY_HDFS_THRIFT_MAX_MESSAGE_SIZE_DEFAULT,
+        ServiceConstants.ClientConfig.SENTRY_HDFS_THRIFT_MAX_MESSAGE_SIZE_DEFAULT);
+  }
 }

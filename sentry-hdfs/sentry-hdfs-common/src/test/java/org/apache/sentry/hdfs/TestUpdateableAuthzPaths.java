@@ -38,7 +38,7 @@ public class TestUpdateableAuthzPaths {
 
     UpdateableAuthzPaths authzPaths = new UpdateableAuthzPaths(hmsPaths);
     PathsUpdate update = new PathsUpdate(1, true);
-    update.toThrift().setPathsDump(authzPaths.getPathsDump().createPathsDump());
+    update.toThrift().setPathsDump(authzPaths.getPathsDump().createPathsDump(true));
 
     UpdateableAuthzPaths authzPaths2 = new UpdateableAuthzPaths(new String[] {"/"});
     UpdateableAuthzPaths pre = authzPaths2.updateFull(update);
@@ -53,7 +53,7 @@ public class TestUpdateableAuthzPaths {
     // Ensure Full Update wipes old stuff
     UpdateableAuthzPaths authzPaths3 = new UpdateableAuthzPaths(createBaseHMSPaths(2, 1));
     update = new PathsUpdate(2, true);
-    update.toThrift().setPathsDump(authzPaths3.getPathsDump().createPathsDump());
+    update.toThrift().setPathsDump(authzPaths3.getPathsDump().createPathsDump(true));
     pre = authzPaths2.updateFull(update);
     assertFalse(pre == authzPaths2);
     authzPaths2 = pre;
