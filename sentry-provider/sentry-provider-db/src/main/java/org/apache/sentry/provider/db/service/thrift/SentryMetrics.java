@@ -145,7 +145,14 @@ public final class SentryMetrics {
               sentryStore.getPrivilegeCountGauge());
       addGauge(SentryStore.class, "group_count", sentryStore.getGroupCountGauge());
       addGauge(SentryStore.class, "hms.waiters", sentryStore.getHMSWaitersCountGauge());
-      addGauge(SentryStore.class, "hms.notification.id", sentryStore.getLastNotificationIdGauge());
+      addGauge(SentryStore.class, "hms.notification.id",
+          sentryStore.getLastNotificationIdGauge());
+      addGauge(SentryStore.class, "hms.snapshot.paths.id",
+          sentryStore.getLastPathsSnapshotIdGauge());
+      addGauge(SentryStore.class, "hms.perm.change.id",
+          sentryStore.getPermChangeIdGauge());
+      addGauge(SentryStore.class, "hms.psth.change.id",
+          sentryStore.getPathChangeIdGauge());
       gaugesAdded = true;
     }
   }

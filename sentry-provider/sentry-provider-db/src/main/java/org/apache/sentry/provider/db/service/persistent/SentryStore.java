@@ -206,17 +206,16 @@ public class SentryStore {
     prop.setProperty(ServerConfig.JAVAX_JDO_DRIVER_NAME, driverName);
 
     /*
-     * Oracle doesn't support "repeatable-read" isolation level, so we use
-	   * "serializable" instead. This should be handled by Datanucleus, but it
-	   * incorrectly states that "repeatable-read" is supported and Oracle barks
-	   * at run-time. This code is a hack, but until it is fixed in Datanucleus
-	   * we can't do much.
-	   *
-	   * JDBC URL always looks like jdbc:oracle:<drivertype>:@<database>
-	   *  we look at the second component.
-	   *
-	   * The isolation property can be overwritten via configuration property.
-	   */
+     * Oracle doesn't support "repeatable-read" isolation level, so we use* "serializable" instead. This should be handled by Datanucleus, but it
+     * incorrectly states that "repeatable-read" is supported and Oracle barks
+     * at run-time. This code is a hack, but until it is fixed in Datanucleus
+     * we can't do much.
+     *
+     * JDBC URL always looks like jdbc:oracle:<drivertype>:@<database>
+     *  we look at the second component.
+     *
+     * The isolation property can be overwritten via configuration property.
+     */
     final String oracleDb = "oracle";
     if (prop.getProperty(ServerConfig.DATANUCLEUS_ISOLATION_LEVEL, "").
             equals(ServerConfig.DATANUCLEUS_REPEATABLE_READ) &&
@@ -287,20 +286,6 @@ public class SentryStore {
   public synchronized void stop() {
     if (pmf != null) {
       pmf.close();
-    }
-  }
-
-  private void rollbackTransaction(PersistenceManager pm) {
-    if (pm == null || pm.isClosed()) {
-      return;
-    }
-    Transaction currentTransaction = pm.currentTransaction();
-    if (currentTransaction.isActive()) {
-      try {
-        currentTransaction.rollback();
-      } finally {
-        pm.close();
-      }
     }
   }
 
@@ -468,6 +453,71 @@ public class SentryStore {
           return getLastProcessedNotificationID();
         } catch (Exception e) {
           LOGGER.error("Can not read current notificationId", e);
+          return NOTIFICATION_UNKNOWN;
+        }
+      }
+    };
+  }
+
+  /**
+   * @return ID of the path snapshot
+   */
+  public Gauge<Long> getLastPathsSnapshotIdGauge() {
+    return new Gauge<Long>() {
+      @Override
+      public Long getValue() {
+        try {
+          return getCurrentAuthzPathsSnapshotID();
+        } catch (Exception e) {
+          LOGGER.error("Can not read current paths snapshot ID", e);
+          return NOTIFICATION_UNKNOWN;
+        }
+      }
+    };
+  }
+
+  /**
+   * @return Permissions change ID
+   */
+  public Gauge<Long> getPermChangeIdGauge() {
+    return new Gauge<Long>() {
+      @Override
+      public Long getValue() {
+        try {
+          return tm.executeTransaction(
+              new TransactionBlock<Long>() {
+                @Override
+                public Long execute(PersistenceManager pm) throws Exception {
+                  return getLastProcessedChangeIDCore(pm, MSentryPermChange.class);
+                }
+              }
+          );
+        } catch (Exception e) {
+          LOGGER.error("Can not read current permissions change ID", e);
+          return NOTIFICATION_UNKNOWN;
+        }
+      }
+    };
+  }
+
+  /**
+   * @return Path change id
+   */
+  public Gauge<Long> getPathChangeIdGauge() {
+    return new Gauge<Long>() {
+      @Override
+      public Long getValue() {
+        try {
+          return tm.executeTransaction(
+              new TransactionBlock<Long>() {
+                @Override
+                public Long execute(PersistenceManager pm) throws Exception {
+                  return getLastProcessedChangeIDCore(pm, MSentryPathChange.class);
+                }
+              }
+          );
+        } catch (Exception e) {
+          LOGGER.error("Can not read current path change ID", e);
           return NOTIFICATION_UNKNOWN;
         }
       }
@@ -2601,13 +2651,33 @@ public class SentryStore {
   }
 
   /**
-   * Gets the last authorization path snapshot ID persisted.
+   * Get the last authorization path snapshot ID persisted.
+   * Always executed in the transaction context.
    *
    * @param pm The PersistenceManager object.
    * @return the last persisted snapshot ID. It returns 0 if no rows are found.
    */
   private static long getCurrentAuthzPathsSnapshotID(PersistenceManager pm) {
     return getMaxPersistedIDCore(pm, MAuthzPathsSnapshotId.class, "authzSnapshotID", EMPTY_PATHS_SNAPSHOT_ID);
+  }
+
+
+  /**
+   * Get the last authorization path snapshot ID persisted.
+   * Always executed in the non-transaction context.
+   * This is used for metrics, so no retries are attempted.
+   *
+   * @return the last persisted snapshot ID. It returns 0 if no rows are found.
+   */
+  private long getCurrentAuthzPathsSnapshotID() throws Exception {
+    return tm.executeTransaction(
+        new TransactionBlock<Long>() {
+          @Override
+          public Long execute(PersistenceManager pm) throws Exception {
+            return getCurrentAuthzPathsSnapshotID(pm);
+          }
+        }
+    );
   }
 
   /**
