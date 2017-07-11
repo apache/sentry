@@ -40,6 +40,7 @@ import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.SaslRpcServer;
 import org.apache.hadoop.security.SaslRpcServer.AuthMethod;
@@ -74,6 +75,7 @@ import static org.apache.sentry.core.common.utils.SigUtils.registerSigListener;
 public class SentryService implements Callable, SigUtils.SigListener {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryService.class);
+  private HiveSimpleConnectionFactory hiveConnectionFactory;
 
   private enum Status {
     NOT_STARTED,
@@ -276,7 +278,7 @@ public class SentryService implements Callable, SigUtils.SigListener {
     thriftServer.serve();
   }
 
-  private void startHMSFollower(Configuration conf) throws Exception{
+  private void startHMSFollower(Configuration conf) throws Exception {
     if (!hdfsSyncEnabled) {
       LOGGER.info("HMS follower is not started because HDFS sync is disabled.");
       return;
@@ -296,13 +298,11 @@ public class SentryService implements Callable, SigUtils.SigListener {
 
     Preconditions.checkState(hmsFollower == null);
     Preconditions.checkState(hmsFollowerExecutor == null);
+    Preconditions.checkState(hiveConnectionFactory == null);
 
-    try {
-      hmsFollower = new HMSFollower(conf, sentryStore, leaderMonitor);
-    } catch (Exception ex) {
-      LOGGER.error("Could not create HMSFollower", ex);
-      throw ex;
-    }
+    hiveConnectionFactory = new HiveSimpleConnectionFactory(conf, new HiveConf());
+    hiveConnectionFactory.init();
+    hmsFollower = new HMSFollower(conf, sentryStore, leaderMonitor, hiveConnectionFactory);
 
     long initDelay = conf.getLong(ServerConfig.SENTRY_HMSFOLLOWER_INIT_DELAY_MILLS,
             ServerConfig.SENTRY_HMSFOLLOWER_INIT_DELAY_MILLS_DEFAULT);
@@ -334,6 +334,7 @@ public class SentryService implements Callable, SigUtils.SigListener {
 
     Preconditions.checkNotNull(hmsFollowerExecutor);
     Preconditions.checkNotNull(hmsFollower);
+    Preconditions.checkNotNull(hiveConnectionFactory);
 
     // use follower scheduling interval as timeout for shutting down its executor as
     // such scheduling interval should be an upper bound of how long the task normally takes to finish
@@ -343,7 +344,13 @@ public class SentryService implements Callable, SigUtils.SigListener {
       SentryServiceUtil.shutdownAndAwaitTermination(hmsFollowerExecutor, "hmsFollowerExecutor",
               timeoutValue, TimeUnit.MILLISECONDS, LOGGER);
     } finally {
+      try {
+        hiveConnectionFactory.close();
+      } catch (Exception e) {
+        LOGGER.error("Can't close HiveConnectionFactory", e);
+      }
       hmsFollowerExecutor = null;
+      hiveConnectionFactory = null;
       try {
         // close connections
         hmsFollower.close();

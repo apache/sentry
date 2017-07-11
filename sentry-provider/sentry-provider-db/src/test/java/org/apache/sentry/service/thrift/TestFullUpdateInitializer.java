@@ -15,13 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.hdfs;
+package org.apache.sentry.service.thrift;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.Database;
+import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.Partition;
 import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
 import org.apache.hadoop.hive.metastore.api.Table;
@@ -30,9 +31,9 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -43,11 +44,11 @@ public class TestFullUpdateInitializer {
   private static Configuration conf = new Configuration();
 
   static {
-    conf.setInt(ServiceConstants.ServerConfig
+    conf.setInt(org.apache.sentry.hdfs.ServiceConstants.ServerConfig
             .SENTRY_HDFS_SYNC_METASTORE_CACHE_MAX_PART_PER_RPC, 1);
-    conf.setInt(ServiceConstants.ServerConfig
+    conf.setInt(org.apache.sentry.hdfs.ServiceConstants.ServerConfig
             .SENTRY_HDFS_SYNC_METASTORE_CACHE_MAX_TABLES_PER_RPC, 1);
-    conf.setInt(ServiceConstants.ServerConfig
+    conf.setInt(org.apache.sentry.hdfs.ServiceConstants.ServerConfig
             .SENTRY_HDFS_SYNC_METASTORE_CACHE_INIT_THREADS, 8);
   }
 
@@ -165,6 +166,28 @@ public class TestFullUpdateInitializer {
     }
   }
 
+  private static class MockHMSClientFactory implements HiveConnectionFactory {
+
+    private final HiveMetaStoreClient mClient;
+
+    private MockHMSClientFactory(MockClient mClient) {
+      this.mClient = mClient.client;
+    }
+
+    private MockHMSClientFactory(HiveMetaStoreClient client) {
+      this.mClient = client;
+    }
+
+    @Override
+    public HMSClient connect() throws IOException, InterruptedException, MetaException {
+      return new HMSClient(mClient);
+    }
+
+    @Override
+    public void close() throws Exception {
+    }
+  }
+
   /**
    * Create mock database with the given name
    * @param name Database name
@@ -222,7 +245,8 @@ public class TestFullUpdateInitializer {
     MockClient c = new MockClient(snap);
 
     Map<String, Set<String>> update;
-    try(FullUpdateInitializer cacheInitializer = new FullUpdateInitializer(c.client, conf)) {
+    try(FullUpdateInitializer cacheInitializer =
+                new FullUpdateInitializer(new MockHMSClientFactory(c), conf)) {
       update = cacheInitializer.getFullHMSSnapshot();
     }
     Assert.assertEquals(5, update.size());
@@ -265,7 +289,8 @@ public class TestFullUpdateInitializer {
 
 
     Map<String, Set<String>> update;
-    try(FullUpdateInitializer cacheInitializer = new FullUpdateInitializer(client, conf)) {
+    try(FullUpdateInitializer cacheInitializer =
+                new FullUpdateInitializer(new MockHMSClientFactory(client), conf)) {
       update = cacheInitializer.getFullHMSSnapshot();
     }
     Assert.assertEquals(2, update.size());
@@ -295,7 +320,8 @@ public class TestFullUpdateInitializer {
     }
     MockClient c = new MockClient(snap);
     Map<String, Set<String>> update;
-    try(FullUpdateInitializer cacheInitializer = new FullUpdateInitializer(c.client, conf)) {
+    try(FullUpdateInitializer cacheInitializer =
+                new FullUpdateInitializer(new MockHMSClientFactory(c), conf)) {
       update = cacheInitializer.getFullHMSSnapshot();
     }
     Assert.assertEquals((ntables * ndbs) + ndbs, update.size());

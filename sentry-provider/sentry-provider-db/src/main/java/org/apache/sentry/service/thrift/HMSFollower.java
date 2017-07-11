@@ -18,7 +18,6 @@
 package org.apache.sentry.service.thrift;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -27,17 +26,12 @@ import org.apache.hadoop.hive.metastore.api.CurrentNotificationEventId;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.NotificationEvent;
 import org.apache.hadoop.hive.metastore.api.NotificationEventResponse;
-import org.apache.hadoop.net.NetUtils;
-import org.apache.hadoop.security.SaslRpcServer;
-import org.apache.hadoop.security.SecurityUtil;
-import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hive.hcatalog.messaging.HCatEventMessage;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.core.common.exception.SentryInvalidHMSEventException;
 import org.apache.sentry.core.common.exception.SentryInvalidInputException;
 import org.apache.sentry.core.common.exception.SentryNoSuchObjectException;
 import org.apache.sentry.hdfs.PermissionsUpdate;
-import org.apache.sentry.hdfs.FullUpdateInitializer;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
 import org.apache.sentry.provider.db.SentryPolicyStorePlugin;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
@@ -50,10 +44,8 @@ import org.apache.sentry.binding.metastore.messaging.json.*;
 import javax.jdo.JDODataStoreException;
 import javax.security.auth.login.LoginException;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.SocketException;
-import java.security.PrivilegedExceptionAction;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -73,32 +65,33 @@ import static org.apache.sentry.hdfs.Updateable.Update;
 @SuppressWarnings("PMD")
 public class HMSFollower implements Runnable, AutoCloseable {
   private static final Logger LOGGER = LoggerFactory.getLogger(HMSFollower.class);
+  private HiveSimpleConnectionFactory hiveConnectionFactory;
   // Track the latest eventId of the event that has been logged. So we don't log the same message
   private long lastLoggedEventId = SentryStore.EMPTY_CHANGE_ID;
   private static boolean connectedToHMS = false;
-  private HiveMetaStoreClient client;
-  private SentryKerberosContext kerberosContext;
+  private HMSClient client;
   private final Configuration authzConf;
-  private boolean kerberos;
   private final SentryStore sentryStore;
   private String hiveInstance;
 
   private boolean needLogHMSSupportReady = true;
   private final LeaderStatusMonitor leaderMonitor;
 
-  HMSFollower(Configuration conf, SentryStore store, LeaderStatusMonitor leaderMonitor) {
-    LOGGER.info("HMSFollower is being initialized");
+  HMSFollower(Configuration conf, SentryStore store, LeaderStatusMonitor leaderMonitor,
+              HiveSimpleConnectionFactory hiveConnectionFactory) {
     authzConf = conf;
     this.leaderMonitor = leaderMonitor;
     sentryStore = store;
+    this.hiveConnectionFactory = hiveConnectionFactory;
   }
 
   @VisibleForTesting
-  HMSFollower(Configuration conf, SentryStore sentryStore, String hiveInstance) {
-    this.authzConf = conf;
-    this.sentryStore = sentryStore;
+  HMSFollower(Configuration conf, SentryStore sentryStore, String hiveInstance)
+      throws IOException, LoginException {
+    this(conf, sentryStore, null, null);
     this.hiveInstance = hiveInstance;
-    this.leaderMonitor = null;
+    hiveConnectionFactory = new HiveSimpleConnectionFactory(conf, new HiveConf());
+    hiveConnectionFactory.init();
   }
 
   @VisibleForTesting
@@ -110,6 +103,11 @@ public class HMSFollower implements Runnable, AutoCloseable {
   public void close() {
     // Close any outstanding connections to HMS
     closeHMSConnection();
+    try {
+      hiveConnectionFactory.close();
+    } catch (Exception e) {
+      LOGGER.error("failed to close Hive Connection Factory", e);
+    }
   }
 
   /**
@@ -117,77 +115,13 @@ public class HMSFollower implements Runnable, AutoCloseable {
    * Throws @LoginException if Kerberos context creation failed using Sentry's kerberos credentials
    * Throws @MetaException if there was a problem on creating an HMSClient
    */
-  private HiveMetaStoreClient getMetaStoreClient(Configuration conf)
-    throws IOException, InterruptedException, LoginException, MetaException {
-    if (client != null) {
-      return client;
+  private HiveMetaStoreClient getMetaStoreClient()
+    throws IOException, InterruptedException, MetaException {
+    if (client == null) {
+      client = hiveConnectionFactory.connect();
+      connectedToHMS = true;
     }
-
-    final HiveConf hiveConf = new HiveConf();
-    hiveInstance = hiveConf.get(HiveAuthzConf.AuthzConfVars.AUTHZ_SERVER_NAME.getVar());
-
-    String principal, keytab;
-
-    //TODO: Is this the right(standard) way to create a HMS client? HiveMetastoreClientFactoryImpl?
-    //TODO: Check if HMS is using kerberos instead of relying on Sentry conf
-    kerberos = ServiceConstants.ServerConfig.SECURITY_MODE_KERBEROS.equalsIgnoreCase(
-      conf.get(ServiceConstants.ServerConfig.SECURITY_MODE, ServiceConstants.ServerConfig.SECURITY_MODE_KERBEROS).trim());
-    if (kerberos) {
-      LOGGER.info("Making a kerberos connection to HMS");
-      try {
-        int port = conf.getInt(ServiceConstants.ServerConfig.RPC_PORT, ServiceConstants.ServerConfig.RPC_PORT_DEFAULT);
-        String rawPrincipal = Preconditions.checkNotNull(conf.get(ServiceConstants.ServerConfig.PRINCIPAL),
-          ServiceConstants.ServerConfig.PRINCIPAL + " is required");
-        principal = SecurityUtil.getServerPrincipal(rawPrincipal, NetUtils.createSocketAddr(
-          conf.get(ServiceConstants.ServerConfig.RPC_ADDRESS, ServiceConstants.ServerConfig.RPC_ADDRESS_DEFAULT), port).getAddress());
-      } catch (IOException io) {
-        throw new RuntimeException("Can't translate kerberos principal'", io);
-      }
-
-      LOGGER.info("Using kerberos principal: " + principal);
-      final String[] principalParts = SaslRpcServer.splitKerberosName(principal);
-      Preconditions.checkArgument(principalParts.length == 3,
-        "Kerberos principal should have 3 parts: " + principal);
-
-      keytab = Preconditions.checkNotNull(conf.get(ServiceConstants.ServerConfig.KEY_TAB),
-        ServiceConstants.ServerConfig.KEY_TAB + " is required");
-      File keytabFile = new File(keytab);
-      Preconditions.checkState(keytabFile.isFile() && keytabFile.canRead(),
-        "Keytab " + keytab + " does not exist or is not readable.");
-
-      try {
-        // Instantiating SentryKerberosContext in non-server mode handles the ticket renewal.
-        kerberosContext = new SentryKerberosContext(principal, keytab, false);
-
-        UserGroupInformation.setConfiguration(hiveConf);
-        UserGroupInformation clientUGI = UserGroupInformation.getUGIFromSubject(kerberosContext.getSubject());
-
-        // HiveMetaStoreClient handles the connection retry logic to HMS and can be configured using properties:
-        // hive.metastore.connect.retries, hive.metastore.client.connect.retry.delay
-        client = clientUGI.doAs(new PrivilegedExceptionAction<HiveMetaStoreClient>() {
-          @Override
-          public HiveMetaStoreClient run() throws Exception {
-            return new HiveMetaStoreClient(hiveConf);
-          }
-        });
-        LOGGER.info("Secure connection established with HMS");
-      } catch (LoginException e) {
-        // Kerberos login failed
-        LOGGER.error("Failed to setup kerberos context.");
-        throw e;
-      } finally {
-        // Shutdown kerberos context if HMS connection failed to setup to avoid thread leaks.
-        if ((kerberosContext != null) && (client == null)) {
-          kerberosContext.shutDown();
-          kerberosContext = null;
-        }
-      }
-    } else {
-      //This is only for testing purposes. Sentry strongly recommends strong authentication
-      client = new HiveMetaStoreClient(hiveConf);
-      LOGGER.info("Established non-secure connection with HMS");
-    }
-    return client;
+    return client.getClient();
   }
 
   @Override
@@ -209,7 +143,7 @@ public class HMSFollower implements Runnable, AutoCloseable {
       closeHMSConnection();
       return;
     }
-    processHiveMetastoreUpdates(lastProcessedNotificationID);
+    processHiveMetastoreUpdates();
   }
 
   /**
@@ -236,26 +170,11 @@ public class HMSFollower implements Runnable, AutoCloseable {
    *
    * Clients connections waiting for an event notification will be woken up afterwards.
    */
-  private void processHiveMetastoreUpdates(Long lastProcessedNotificationID) {
-    if (client == null) {
-      try {
-        client = getMetaStoreClient(authzConf);
-        if (client == null) {
-          //TODO: Do we want to throw an exception after a certain timeout?
-          return;
-        } else {
-          connectedToHMS = true;
-          LOGGER.info("HMSFollower of Sentry successfully connected to HMS");
-        }
-      } catch (Throwable e) {
-        LOGGER.error("HMSFollower cannot connect to HMS!!", e);
-        return;
-      }
-    }
-
+  private void processHiveMetastoreUpdates() {
     try {
       // Decision of taking full snapshot is based on AuthzPathsMapping information persisted
       // in the sentry persistent store. If AuthzPathsMapping is empty, shapshot is needed.
+      Long lastProcessedNotificationID;
       if (sentryStore.isAuthzPathsMappingEmpty()) {
         // TODO: expose time used for full update in the metrics
 
@@ -270,27 +189,26 @@ public class HMSFollower implements Runnable, AutoCloseable {
         // will be dropped. A new attempts will be made after 500 milliseconds when
         // HMSFollower run again.
 
-        Map<String, Set<String>> pathsFullSnapshot;
-        CurrentNotificationEventId eventIDBefore = client.getCurrentNotificationEventId();
-        LOGGER.info(String.format("Before fetching hive full snapshot, Current NotificationID = %s.", eventIDBefore));
+        CurrentNotificationEventId eventIDBefore = getMetaStoreClient().getCurrentNotificationEventId();
+        LOGGER.info("Before fetching hive full snapshot, Current NotificationID = {}", eventIDBefore);
 
-        pathsFullSnapshot = fetchFullUpdate();
+        Map<String, Set<String>> pathsFullSnapshot = fetchFullUpdate();
         if(pathsFullSnapshot.isEmpty()) {
           LOGGER.info("Hive full snapshot is Empty. Perhaps, HMS does not have any data");
           return;
         }
 
-        CurrentNotificationEventId eventIDAfter = client.getCurrentNotificationEventId();
-        LOGGER.info(String.format("After fetching hive full snapshot, Current NotificationID = %s.", eventIDAfter));
+        CurrentNotificationEventId eventIDAfter = getMetaStoreClient().getCurrentNotificationEventId();
+        LOGGER.info("After fetching hive full snapshot, Current NotificationID = {}", eventIDAfter);
 
         if (!eventIDBefore.equals(eventIDAfter)) {
-          LOGGER.error("#### Fail to get a point-in-time hive full snapshot !! Current NotificationID = " +
-            eventIDAfter.toString());
+          LOGGER.error("Fail to get a point-in-time hive full snapshot. Current ID = {}",
+            eventIDAfter);
           return;
         }
 
-        LOGGER.info(String.format("Successfully fetched hive full snapshot, Current NotificationID = %s.",
-          eventIDAfter));
+        LOGGER.info("Successfully fetched hive full snapshot, Current NotificationID = {}",
+          eventIDAfter);
         // As eventIDAfter is the last event that was processed, eventIDAfter is used to update
         // lastProcessedNotificationID instead of getting it from persistent store.
         lastProcessedNotificationID = eventIDAfter.getEventId();
@@ -314,18 +232,18 @@ public class HMSFollower implements Runnable, AutoCloseable {
       // HIVE-15761: Currently getNextNotification API may return an empty
       // NotificationEventResponse causing TProtocolException.
       // Workaround: Only processes the notification events newer than the last updated one.
-      CurrentNotificationEventId eventId = client.getCurrentNotificationEventId();
+      CurrentNotificationEventId eventId = getMetaStoreClient().getCurrentNotificationEventId();
       LOGGER.debug("Last Notification in HMS {} lastProcessedNotificationID is {}",
         eventId.getEventId(), lastProcessedNotificationID);
       if (eventId.getEventId() > lastProcessedNotificationID) {
         NotificationEventResponse response =
-          client.getNextNotification(lastProcessedNotificationID, Integer.MAX_VALUE, null);
+          getMetaStoreClient().getNextNotification(lastProcessedNotificationID, Integer.MAX_VALUE, null);
         if (response.isSetEvents()) {
           if (!response.getEvents().isEmpty()) {
             if (lastProcessedNotificationID != lastLoggedEventId) {
               // Only log when there are updates and the notification ID has changed.
-              LOGGER.debug(String.format("lastProcessedNotificationID = %s. Processing %s events",
-                lastProcessedNotificationID, response.getEvents().size()));
+              LOGGER.debug("lastProcessedNotificationID = {}. Processing {} events",
+                      lastProcessedNotificationID, response.getEvents().size());
               lastLoggedEventId = lastProcessedNotificationID;
             }
 
@@ -337,6 +255,7 @@ public class HMSFollower implements Runnable, AutoCloseable {
       // If the underlying exception is around socket exception, it is better to retry connection to HMS
       if (e.getCause() instanceof SocketException) {
         LOGGER.error("Encountered Socket Exception during fetching Notification entries, will reconnect to HMS", e);
+        client.invalidate();
         closeHMSConnection();
       } else {
         LOGGER.error("ThriftException occured fetching Notification entries, will try", e);
@@ -360,16 +279,10 @@ public class HMSFollower implements Runnable, AutoCloseable {
       if (client != null) {
         LOGGER.info("Closing the HMS client connection");
         client.close();
+        connectedToHMS = false;
       }
-      if (kerberosContext != null) {
-        LOGGER.info("Shutting down kerberos context associated with the HMS client connection");
-        kerberosContext.shutDown();
-      }
-    } catch (LoginException le) {
-      LOGGER.warn("Failed to stop kerberos context (potential to cause thread leak)", le);
     } finally {
       client = null;
-      kerberosContext = null;
     }
   }
 
@@ -385,7 +298,8 @@ public class HMSFollower implements Runnable, AutoCloseable {
   private Map<String, Set<String>> fetchFullUpdate()
     throws TException, ExecutionException {
     LOGGER.info("Request full HMS snapshot");
-    try (FullUpdateInitializer updateInitializer = new FullUpdateInitializer(client, authzConf)) {
+    try (FullUpdateInitializer updateInitializer =
+                 new FullUpdateInitializer(hiveConnectionFactory, authzConf)) {
       Map<String, Set<String>> pathsUpdate = updateInitializer.getFullHMSSnapshot();
       LOGGER.info("Obtained full HMS snapshot");
       return pathsUpdate;

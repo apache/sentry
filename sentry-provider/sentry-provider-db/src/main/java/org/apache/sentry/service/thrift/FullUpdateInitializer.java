@@ -15,14 +15,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.hdfs;
+package org.apache.sentry.service.thrift;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.Partition;
 import org.apache.hadoop.hive.metastore.api.Table;
+import org.apache.sentry.hdfs.PathsUpdate;
+import org.apache.sentry.hdfs.SentryMalformedPathException;
 import org.apache.sentry.hdfs.ServiceConstants.ServerConfig;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
@@ -63,7 +64,7 @@ import java.util.concurrent.TimeUnit;
  * <pre>
  * {@code
  * try (FullUpdateInitializer updateInitializer =
- *      new FullUpdateInitializer(client, authzConf)) {
+ *      new FullUpdateInitializer(clientFactory, authzConf)) {
  *         Map<String, Set<String>> pathsUpdate = updateInitializer.getFullHMSSnapshot();
  *      return pathsUpdate;
  * }
@@ -90,7 +91,6 @@ public final class FullUpdateInitializer implements AutoCloseable {
    */
 
   private final ExecutorService threadPool;
-  private final HiveMetaStoreClient client;
   private final int maxPartitionsPerCall;
   private final int maxTablesPerCall;
   private final Deque<Future<CallResult>> results = new ConcurrentLinkedDeque<>();
@@ -101,6 +101,7 @@ public final class FullUpdateInitializer implements AutoCloseable {
 
   private static final ObjectMapping emptyObjectMapping =
           new ObjectMapping(Collections.<String, Set<String>>emptyMap());
+  private final HiveConnectionFactory clientFactory;
 
   /**
    * Extract path (not starting with "/") from the full URI
@@ -246,7 +247,7 @@ public final class FullUpdateInitializer implements AutoCloseable {
       return retryStrategy.exec();
     }
 
-    abstract ObjectMapping doTask() throws TException;
+    abstract ObjectMapping doTask() throws Exception;
   }
 
   private class PartitionTask extends BaseTask {
@@ -264,12 +265,22 @@ public final class FullUpdateInitializer implements AutoCloseable {
     }
 
     @Override
-    ObjectMapping doTask() throws TException {
-      List<Partition> tblParts = client.getPartitionsByNames(dbName, tblName, partNames);
-      if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug("#### Fetching partitions " +
-                "[" + dbName + "." + tblName + "]" + "[" + partNames + "]");
+    ObjectMapping doTask() throws Exception {
+      List<Partition> tblParts;
+      HMSClient c = null;
+      try (HMSClient client = clientFactory.connect()) {
+        c = client;
+        tblParts = client.getClient().getPartitionsByNames(dbName, tblName, partNames);
+      } catch (Exception e) {
+        if (c != null) {
+          c.invalidate();
+        }
+        throw e;
       }
+
+      LOGGER.debug("Fetched partitions for db = {}, table = {}",
+              dbName, tblName);
+
       Collection<String> partitionNames = new ArrayList<>(tblParts.size());
       for (Partition part : tblParts) {
         String partPath = pathFromURI(part.getSd().getLocation());
@@ -292,44 +303,52 @@ public final class FullUpdateInitializer implements AutoCloseable {
 
     @Override
     @SuppressWarnings({"squid:S2629", "squid:S135"})
-    ObjectMapping doTask() throws TException {
-      List<Table> tables = client.getTableObjectsByName(dbName, tableNames);
-      if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug("#### Fetching tables [" + dbName + "][" +
-        tableNames + "]");
-      }
-      Map<String, Set<String>> objectMapping = new HashMap<>(tables.size());
-      for (Table tbl : tables) {
-        // Table names are case insensitive
-        if (!tbl.getDbName().equalsIgnoreCase(dbName)) {
-          // Inconsistency in HMS data
-          LOGGER.warn(String.format("DB name %s for table %s does not match %s",
-                  tbl.getDbName(), tbl.getTableName(), dbName));
-          continue;
-        }
+    ObjectMapping doTask() throws Exception {
+      HMSClient c = null;
+      try (HMSClient client = clientFactory.connect()) {
+        c = client;
+        List<Table> tables = client.getClient().getTableObjectsByName(dbName, tableNames);
 
-        String tableName = safeIntern(tbl.getTableName().toLowerCase());
-        String authzObject = (dbName + "." + tableName).intern();
-        List<String> tblPartNames = client.listPartitionNames(dbName, tableName, (short) -1);
-        for (int i = 0; i < tblPartNames.size(); i += maxPartitionsPerCall) {
-          List<String> partsToFetch = tblPartNames.subList(i,
-                  Math.min(i + maxPartitionsPerCall, tblPartNames.size()));
-          Callable<CallResult> partTask = new PartitionTask(dbName,
-                  tableName, authzObject, partsToFetch);
-          results.add(threadPool.submit(partTask));
+        LOGGER.debug("Fetching tables for db = {}, tables = {}", dbName, tableNames);
+
+        Map<String, Set<String>> objectMapping = new HashMap<>(tables.size());
+        for (Table tbl : tables) {
+          // Table names are case insensitive
+          if (!tbl.getDbName().equalsIgnoreCase(dbName)) {
+            // Inconsistency in HMS data
+            LOGGER.warn(String.format("DB name %s for table %s does not match %s",
+                    tbl.getDbName(), tbl.getTableName(), dbName));
+            continue;
+          }
+
+          String tableName = safeIntern(tbl.getTableName().toLowerCase());
+          String authzObject = (dbName + "." + tableName).intern();
+          List<String> tblPartNames = client.getClient().listPartitionNames(dbName, tableName, (short) -1);
+          for (int i = 0; i < tblPartNames.size(); i += maxPartitionsPerCall) {
+            List<String> partsToFetch = tblPartNames.subList(i,
+                    Math.min(i + maxPartitionsPerCall, tblPartNames.size()));
+            Callable<CallResult> partTask = new PartitionTask(dbName,
+                    tableName, authzObject, partsToFetch);
+            results.add(threadPool.submit(partTask));
+          }
+          String tblPath = safeIntern(pathFromURI(tbl.getSd().getLocation()));
+          if (tblPath == null) {
+            continue;
+          }
+          Set<String> paths = objectMapping.get(authzObject);
+          if (paths == null) {
+            paths = new HashSet<>(1);
+            objectMapping.put(authzObject, paths);
+          }
+          paths.add(tblPath);
         }
-        String tblPath = safeIntern(pathFromURI(tbl.getSd().getLocation()));
-        if (tblPath == null) {
-          continue;
+        return new ObjectMapping(Collections.unmodifiableMap(objectMapping));
+      } catch (Exception e) {
+        if (c != null) {
+          c.invalidate();
         }
-        Set<String> paths = objectMapping.get(authzObject);
-        if (paths == null) {
-          paths = new HashSet<>(1);
-          objectMapping.put(authzObject, paths);
-        }
-        paths.add(tblPath);
+        throw e;
       }
-      return new ObjectMapping(Collections.unmodifiableMap(objectMapping));
     }
   }
 
@@ -343,27 +362,36 @@ public final class FullUpdateInitializer implements AutoCloseable {
     }
 
     @Override
-    ObjectMapping doTask() throws TException {
-      Database db = client.getDatabase(dbName);
-      if (!dbName.equalsIgnoreCase(db.getName())) {
-        LOGGER.warn("Database name {} does not match {}", db.getName(), dbName);
-        return emptyObjectMapping;
+    ObjectMapping doTask() throws Exception {
+      HMSClient c = null;
+      try (HMSClient client = clientFactory.connect()) {
+        c = client;
+        Database db = client.getClient().getDatabase(dbName);
+        if (!dbName.equalsIgnoreCase(db.getName())) {
+          LOGGER.warn("Database name {} does not match {}", db.getName(), dbName);
+          return emptyObjectMapping;
+        }
+        List<String> allTblStr = client.getClient().getAllTables(dbName);
+        for (int i = 0; i < allTblStr.size(); i += maxTablesPerCall) {
+          List<String> tablesToFetch = allTblStr.subList(i,
+                  Math.min(i + maxTablesPerCall, allTblStr.size()));
+          Callable<CallResult> tableTask = new TableTask(db, tablesToFetch);
+          results.add(threadPool.submit(tableTask));
+        }
+        String dbPath = safeIntern(pathFromURI(db.getLocationUri()));
+        return (dbPath != null) ? new ObjectMapping(dbName, dbPath) :
+                emptyObjectMapping;
+      } catch (Exception e) {
+        if (c != null) {
+          c.invalidate();
+        }
+        throw e;
       }
-      List<String> allTblStr = client.getAllTables(dbName);
-      for (int i = 0; i < allTblStr.size(); i += maxTablesPerCall) {
-        List<String> tablesToFetch = allTblStr.subList(i,
-                Math.min(i + maxTablesPerCall, allTblStr.size()));
-        Callable<CallResult> tableTask = new TableTask(db, tablesToFetch);
-        results.add(threadPool.submit(tableTask));
-      }
-      String dbPath = safeIntern(pathFromURI(db.getLocationUri()));
-      return (dbPath != null) ? new ObjectMapping(dbName, dbPath) :
-              emptyObjectMapping;
     }
   }
 
-  public FullUpdateInitializer(HiveMetaStoreClient client, Configuration conf) {
-    this.client = client;
+  FullUpdateInitializer(HiveConnectionFactory clientFactory, Configuration conf) {
+    this.clientFactory = clientFactory;
     maxPartitionsPerCall = conf.getInt(
         ServerConfig.SENTRY_HDFS_SYNC_METASTORE_CACHE_MAX_PART_PER_RPC,
         ServerConfig.SENTRY_HDFS_SYNC_METASTORE_CACHE_MAX_PART_PER_RPC_DEFAULT);
@@ -389,10 +417,20 @@ public final class FullUpdateInitializer implements AutoCloseable {
    * @throws InterruptedException if processing was interrupted
    */
   @SuppressWarnings("squid:S00112")
-  public Map<String, Set<String>> getFullHMSSnapshot()
-          throws Exception {
+  Map<String, Set<String>> getFullHMSSnapshot() throws Exception {
     // Get list of all HMS databases
-    List<String> allDbStr = client.getAllDatabases();
+    List<String> allDbStr;
+    HMSClient c = null;
+    try (HMSClient client = clientFactory.connect()) {
+      c = client;
+      allDbStr = client.getClient().getAllDatabases();
+    } catch (Exception e) {
+      if (c != null) {
+        c.invalidate();
+      }
+      throw e;
+    }
+
     // Schedule async task for each database responsible for fetching per-database
     // objects.
     for (String dbName : allDbStr) {

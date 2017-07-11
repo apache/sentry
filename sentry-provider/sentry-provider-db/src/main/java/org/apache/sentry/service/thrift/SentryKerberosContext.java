@@ -40,9 +40,9 @@ public class SentryKerberosContext implements Runnable {
   private LoginContext loginContext;
   private Subject subject;
   private final javax.security.auth.login.Configuration kerberosConfig;
-  @Deprecated
+  
   private Thread renewerThread;
-  @Deprecated
+
   private boolean shutDownRenewer = false;
 
   public SentryKerberosContext(String principal, String keyTab, boolean server)
@@ -113,7 +113,6 @@ public class SentryKerberosContext implements Runnable {
    * Ticket renewer thread
    * wait till 80% time interval left on the ticket and then renew it
    */
-  @Deprecated
   @Override
   public void run() {
     try {
@@ -145,7 +144,6 @@ public class SentryKerberosContext implements Runnable {
     }
   }
 
-  @Deprecated
   public void startRenewerThread() {
     renewerThread = new Thread(this);
     renewerThread.start();
