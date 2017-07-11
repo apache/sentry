@@ -17,17 +17,14 @@
  */
 package org.apache.sentry.tests.e2e.minisentry;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.curator.test.TestingServer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.service.thrift.SentryService;
 import org.apache.sentry.service.thrift.SentryServiceFactory;
 import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
-import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.server.ServerContext;
 import org.apache.thrift.server.TServerEventHandler;
@@ -105,24 +102,13 @@ public class InternalSentrySrv implements SentrySrv {
   }
 
   private List<SentryService> sentryServers = Lists.newArrayList();
-  private static TestingServer zkServer; // created only if in case of HA
   private static final Logger LOGGER = LoggerFactory
       .getLogger(InternalSentrySrv.class);
   private boolean isActive = false;
 
   public InternalSentrySrv(Configuration sentryConf, int numServers)
       throws Exception {
-    // Enable HA when numServers is more that 1, start Curator TestingServer
-    if (numServers > 1) {
-      zkServer = new TestingServer();
-      zkServer.start();
-      sentryConf.setBoolean(ServerConfig.SENTRY_HA_ENABLED, true);
-      sentryConf.set(ServerConfig.SENTRY_HA_ZOOKEEPER_QUORUM,
-          zkServer.getConnectString());
-    } else if (numServers <= 0) {
-      throw new IllegalArgumentException("Invalid number of Servers: "
-          + numServers + " ,must be > 0");
-    }
+
     for (int count = 0; count < numServers; count++) {
       Configuration servConf = new Configuration(sentryConf);
       SentryService sentryServer = new SentryServiceFactory().create(servConf);
@@ -202,13 +188,6 @@ public class InternalSentrySrv implements SentrySrv {
         LOGGER.error("Error stoping Sentry service ", e);
       }
     }
-    if (zkServer != null) {
-      try {
-        zkServer.stop();
-      } catch (IOException e) {
-        LOGGER.warn("Error stoping ZK service ", e);
-      }
-    }
     sentryServers.clear();
     isActive = false;
   }
@@ -216,19 +195,6 @@ public class InternalSentrySrv implements SentrySrv {
   @Override
   public SentryService get(int serverNum) {
     return sentryServers.get(serverNum);
-  }
-
-  @Override
-  public String getZKQuorum() throws Exception {
-    if (zkServer == null) {
-      throw new IOException("Sentry HA is not enabled");
-    }
-    return zkServer.getConnectString();
-  }
-
-  @Override
-  public boolean isHaEnabled() {
-    return zkServer != null;
   }
 
   @Override

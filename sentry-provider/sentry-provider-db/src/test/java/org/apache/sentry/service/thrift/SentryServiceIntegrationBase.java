@@ -26,7 +26,6 @@ import java.util.concurrent.TimeoutException;
 
 import com.google.common.io.Resources;
 import org.apache.commons.io.FileUtils;
-import org.apache.curator.test.TestingServer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.minikdc.MiniKdc;
 import org.apache.hadoop.net.NetUtils;
@@ -37,7 +36,6 @@ import org.apache.sentry.provider.db.service.thrift.TSentryRole;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
-import org.apache.zookeeper.server.ZooKeeperSaslServer;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -59,8 +57,6 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
   protected static final String HTTP_PRINCIPAL = "HTTP/" + SERVER_HOST;
   protected static final String CLIENT_PRINCIPAL = "hive/" + SERVER_HOST;
   protected static final String CLIENT_KERBEROS_SHORT_NAME = "hive";
-  protected static final String CLIENT_KERBEROS_NAME = CLIENT_KERBEROS_SHORT_NAME
-      + "/" + SERVER_HOST + "@" + REALM;
   protected static final String ADMIN_USER = "admin_user";
   protected static final String ADMIN_GROUP = "admin_group";
 
@@ -78,12 +74,6 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
   protected PolicyFile policyFile;
   protected File policyFilePath;
   protected static Properties kdcConfOverlay = new Properties();
-
-  protected static boolean haEnabled = false;
-  protected static final String ZK_SERVER_PRINCIPAL = "zookeeper/" + SERVER_HOST;
-  protected static TestingServer zkServer;
-
-  private static File ZKKeytabFile;
 
   protected static boolean webServerEnabled = false;
   protected static int webServerPort = ServerConfig.SENTRY_WEB_PORT_DEFAULT;
@@ -150,15 +140,7 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
       LOGGER.info("Stopped KDC");
       conf.set(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_NONE);
     }
-    if (haEnabled) {
-      zkServer = getZKServer();
-      conf.set(ServerConfig.SENTRY_HA_ENABLED, "true");
-      conf.set(ServerConfig.SENTRY_HA_ZOOKEEPER_QUORUM, zkServer.getConnectString());
-      conf.set(ServerConfig.SENTRY_HA_ZOOKEEPER_NAMESPACE, "sentry-test-case");
-      if (kerberos) {
-        conf.set(ServerConfig.SENTRY_HA_ZOOKEEPER_SECURITY, "true");
-      }
-    }
+
     if (webServerEnabled) {
       conf.set(ServerConfig.SENTRY_WEB_ENABLE, "true");
       conf.set(ServerConfig.SENTRY_WEB_PORT, String.valueOf(webServerPort));
@@ -303,39 +285,6 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
 
   protected void writePolicyFile() throws Exception {
     policyFile.write(policyFilePath);
-  }
-
-  protected static TestingServer getZKServer() throws Exception {
-    if (!kerberos) {
-      LOGGER.info("Creating a non-security ZooKeeper Server.");
-      return new TestingServer();
-    } else {
-      LOGGER.info("Creating a security ZooKeeper Server.");
-      // Not entirely sure exactly what "javax.security.auth.useSubjectCredsOnly=false" does, but it has something to do with
-      // re-authenticating in cases where it otherwise wouldn't.  One of the sections on this page briefly mentions it:
-      // http://docs.oracle.com/javase/7/docs/technotes/guides/security/jgss/tutorials/Troubleshooting.html
-      System.setProperty("javax.security.auth.useSubjectCredsOnly", "false");
-
-      // Setup KDC and principal
-      kdc = getKdc();
-      ZKKeytabFile = new File(kdcWorkDir, "test.keytab");
-      kdc.createPrincipal(ZKKeytabFile, ZK_SERVER_PRINCIPAL);
-
-      System.setProperty("zookeeper.authProvider.1", "org.apache.zookeeper.server.auth.SASLAuthenticationProvider");
-      System.setProperty("zookeeper.kerberos.removeHostFromPrincipal", "true");
-      System.setProperty("zookeeper.kerberos.removeRealmFromPrincipal", "true");
-
-      JaasConfiguration.addEntryForKeytab("Server", ZK_SERVER_PRINCIPAL, ZKKeytabFile.getAbsolutePath());
-      // Here's where we add the "Client" to the jaas configuration, even though we'd like not to
-      JaasConfiguration.addEntryForKeytab(ServiceConstants.SENTRY_ZK_JAAS_NAME,
-          SERVER_KERBEROS_NAME, serverKeytab.getAbsolutePath());
-      javax.security.auth.login.Configuration.setConfiguration(JaasConfiguration.getInstance());
-
-      System.setProperty(ZooKeeperSaslServer.LOGIN_CONTEXT_NAME_KEY, "Server");
-
-      return new TestingServer();
-    }
-
   }
 
   protected void runTestAsSubject(final TestOperation test) throws Exception {

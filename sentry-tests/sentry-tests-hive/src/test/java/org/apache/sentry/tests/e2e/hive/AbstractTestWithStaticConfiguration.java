@@ -128,7 +128,6 @@ public abstract class AbstractTestWithStaticConfiguration extends RulesForE2ETes
   protected static final String SERVER_HOST = "localhost";
   private static final String EXTERNAL_SENTRY_SERVICE = "sentry.e2etest.external.sentry";
   protected static final String EXTERNAL_HIVE_LIB = "sentry.e2etest.hive.lib";
-  private static final String ENABLE_SENTRY_HA = "sentry.e2etest.enable.service.ha";
   private static final String ENABLE_NOTIFICATION_LOG = "sentry.e2etest.enable.notification.log";
 
   protected static boolean policyOnHdfs = false;
@@ -153,7 +152,6 @@ public abstract class AbstractTestWithStaticConfiguration extends RulesForE2ETes
   protected static Map<String, String> properties;
   protected static SentrySrv sentryServer;
   protected static Configuration sentryConf;
-  protected static boolean enableSentryHA = false;
   protected static boolean enableNotificationLog = false;
   protected static Context context;
   protected final String semanticException = "SemanticException No valid privileges";
@@ -282,10 +280,6 @@ public abstract class AbstractTestWithStaticConfiguration extends RulesForE2ETes
       policyURI += "/" + HiveServerFactory.AUTHZ_PROVIDER_FILENAME;
     } else {
       policyURI = policyFileLocation.getPath();
-    }
-
-    if ("true".equalsIgnoreCase(System.getProperty(ENABLE_SENTRY_HA, "false"))) {
-      enableSentryHA = true;
     }
 
     if ("true".equalsIgnoreCase(System.getProperty(ENABLE_NOTIFICATION_LOG, "false"))) {
@@ -511,7 +505,7 @@ public abstract class AbstractTestWithStaticConfiguration extends RulesForE2ETes
       sentryConf.set(entry.getKey(), entry.getValue());
     }
     sentryServer = SentrySrvFactory.create(
-        SentrySrvType.INTERNAL_SERVER, sentryConf, enableSentryHA ? 2 : 1);
+        SentrySrvType.INTERNAL_SERVER, sentryConf, 1);
     properties.put(ClientConfig.SERVER_RPC_ADDRESS, sentryServer.get(0)
         .getAddress()
         .getHostName());
@@ -522,11 +516,7 @@ public abstract class AbstractTestWithStaticConfiguration extends RulesForE2ETes
         String.valueOf(sentryServer.get(0).getAddress().getPort()));
     sentryConf.set(ClientConfig.SERVER_RPC_PORT,
         String.valueOf(sentryServer.get(0).getAddress().getPort()));
-    if (enableSentryHA) {
-      properties.put(ClientConfig.SENTRY_HA_ENABLED, "true");
-      properties.put(ClientConfig.SENTRY_HA_ZOOKEEPER_QUORUM,
-          sentryServer.getZKQuorum());
-    }
+
     startSentryService();
     if (setMetastoreListener) {
       LOGGER.info("setMetastoreListener is enabled");

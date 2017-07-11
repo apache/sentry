@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.curator.test.TestingServer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
@@ -61,9 +60,6 @@ public abstract class AbstractTestWithDbProvider extends AbstractTestWithHiveSer
   private static File policyFilePath;
   protected static Context context;
 
-  protected static boolean haEnabled;
-  private static TestingServer zkServer;
-
   @BeforeClass
   public static void setupTest() throws Exception {
   }
@@ -88,13 +84,7 @@ public abstract class AbstractTestWithDbProvider extends AbstractTestWithHiveSer
     policyFilePath = new File(Files.createTempDir(), "sentry-policy-file.ini");
     properties.put(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE,
         policyFilePath.getPath());
-    if (haEnabled) {
-      zkServer = new TestingServer();
-      zkServer.start();
-      properties.put(ServerConfig.SENTRY_HA_ENABLED, "true");
-      properties.put(ServerConfig.SENTRY_HA_ZOOKEEPER_NAMESPACE, "sentry-test");
-      properties.put(ServerConfig.SENTRY_HA_ZOOKEEPER_QUORUM, zkServer.getConnectString());
-    }
+
     for (Map.Entry<String, String> entry : properties.entrySet()) {
       conf.set(entry.getKey(), entry.getValue());
     }
@@ -127,9 +117,6 @@ public abstract class AbstractTestWithDbProvider extends AbstractTestWithHiveSer
     }
     if (dbDir != null) {
       FileUtils.deleteQuietly(dbDir);
-    }
-    if (zkServer != null) {
-      zkServer.stop();
     }
   }
 

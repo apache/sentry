@@ -39,7 +39,6 @@ public class TestPrivilegeWithHAGrantOption extends AbstractTestWithDbProvider {
 
   @BeforeClass
   public static void setup() throws Exception {
-    haEnabled = true;
     properties = new HashMap<String, String>();
     properties.put(HiveAuthzConf.AuthzConfVars.AUTHZ_ONFAILURE_HOOKS.getVar(),
         DummySentryOnFailureHook.class.getName());

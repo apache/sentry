@@ -25,7 +25,6 @@ public class TestSentryServerForPoolWithoutKerberos extends TestSentryServerWith
   @BeforeClass
   public static void setup() throws Exception {
     kerberos = false;
-    haEnabled = false;
     pooled = true;
     beforeSetup();
     setupConf();

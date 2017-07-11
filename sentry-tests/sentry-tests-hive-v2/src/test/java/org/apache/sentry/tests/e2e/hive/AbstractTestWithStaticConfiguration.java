@@ -119,7 +119,6 @@ public abstract class AbstractTestWithStaticConfiguration {
   protected static final String SERVER_HOST = "localhost";
   private static final String EXTERNAL_SENTRY_SERVICE = "sentry.e2etest.external.sentry";
   protected static final String EXTERNAL_HIVE_LIB = "sentry.e2etest.hive.lib";
-  private static final String ENABLE_SENTRY_HA = "sentry.e2etest.enable.service.ha";
 
   protected static boolean policyOnHdfs = false;
   protected static boolean useSentryService = false;
@@ -141,7 +140,6 @@ public abstract class AbstractTestWithStaticConfiguration {
   protected static Map<String, String> properties;
   protected static SentrySrv sentryServer;
   protected static Configuration sentryConf;
-  protected static boolean enableSentryHA = false;
   protected static Context context;
   protected final String semanticException = "Exception No valid privileges";
 
@@ -267,9 +265,7 @@ public abstract class AbstractTestWithStaticConfiguration {
     }
 
     boolean startSentry = Boolean.valueOf(System.getProperty(EXTERNAL_SENTRY_SERVICE, "false"));
-    if ("true".equalsIgnoreCase(System.getProperty(ENABLE_SENTRY_HA, "false"))) {
-      enableSentryHA = true;
-    }
+
     if (useSentryService && (!startSentry)) {
       setupSentryService();
     }
@@ -451,7 +447,7 @@ public abstract class AbstractTestWithStaticConfiguration {
       sentryConf.set(entry.getKey(), entry.getValue());
     }
     sentryServer = SentrySrvFactory.create(
-        SentrySrvType.INTERNAL_SERVER, sentryConf, enableSentryHA ? 2 : 1);
+        SentrySrvType.INTERNAL_SERVER, sentryConf, 1);
     properties.put(ClientConfig.SERVER_RPC_ADDRESS, sentryServer.get(0)
         .getAddress()
         .getHostName());
@@ -462,11 +458,7 @@ public abstract class AbstractTestWithStaticConfiguration {
         String.valueOf(sentryServer.get(0).getAddress().getPort()));
     sentryConf.set(ClientConfig.SERVER_RPC_PORT,
         String.valueOf(sentryServer.get(0).getAddress().getPort()));
-    if (enableSentryHA) {
-      properties.put(ClientConfig.SERVER_HA_ENABLED, "true");
-      properties.put(ClientConfig.SENTRY_HA_ZOOKEEPER_QUORUM,
-          sentryServer.getZKQuorum());
-    }
+
     startSentryService();
     if (setMetastoreListener) {
       LOGGER.info("setMetastoreListener is enabled");

@@ -49,25 +49,12 @@ public class ServiceConstants {
     /**
      * This configuration parameter is only meant to be used for testing purposes.
      */
-    public static final String SENTRY_HDFS_INTEGRATION_PATH_PREFIXES = "sentry.hdfs.integration.path.prefixes";
-    public static final String[] SENTRY_HDFS_INTEGRATION_PATH_PREFIXES_DEFAULT =
-        new String[]{"/user/hive/warehouse"};
-    public static final String SENTRY_HDFS_INIT_UPDATE_RETRY_DELAY_MS = "sentry.hdfs.init.update.retry.delay.ms";
-    public static final int SENTRY_HDFS_INIT_UPDATE_RETRY_DELAY_DEFAULT = 10000;
-    public static final String SENTRY_HDFS_SYNC_CHECKER_PERIOD_MS = "sentry.hdfs.sync.checker.period.ms";
-    public static final int SENTRY_HDFS_SYNC_CHECKER_PERIOD_DEFAULT = 1000;
-    public static final String SENTRY_HDFS_HA_ZOOKEEPER_NAMESPACE = "sentry.hdfs.ha.zookeeper.namespace";
-    public static final String SENTRY_HDFS_HA_ZOOKEEPER_NAMESPACE_DEFAULT = "/sentry_hdfs";
-    public static final String SENTRY_METASTORE_HA_ZOOKEEPER_NAMESPACE = "sentry.metastore.ha.zookeeper.namespace";
-    public static final String SENTRY_METASTORE_HA_ZOOKEEPER_NAMESPACE_DEFAULT = "/sentry_metastore";
     public static final String SENTRY_HDFS_SYNC_METASTORE_CACHE_INIT_THREADS = "sentry.hdfs.sync.metastore.cache.init.threads";
     public static final int SENTRY_HDFS_SYNC_METASTORE_CACHE_INIT_THREADS_DEFAULT = 10;
     public static final String SENTRY_HDFS_SYNC_METASTORE_CACHE_RETRY_MAX_NUM = "sentry.hdfs.sync.metastore.cache.retry.max.num";
     public static final int SENTRY_HDFS_SYNC_METASTORE_CACHE_RETRY_MAX_NUM_DEFAULT = 1;
     public static final String SENTRY_HDFS_SYNC_METASTORE_CACHE_RETRY_WAIT_DURAION_IN_MILLIS = "sentry.hdfs.sync.metastore.cache.retry.wait.duration.millis";
     public static final int SENTRY_HDFS_SYNC_METASTORE_CACHE_RETRY_WAIT_DURAION_IN_MILLIS_DEFAULT = 1000;
-    public static final String SENTRY_HDFS_SYNC_METASTORE_CACHE_ASYNC_INIT_ENABLE = "sentry.hdfs.sync.metastore.cache.async-init.enable";
-    public static final boolean SENTRY_HDFS_SYNC_METASTORE_CACHE_ASYNC_INIT_ENABLE_DEFAULT = false;
 
     public static final String SENTRY_HDFS_SYNC_METASTORE_CACHE_MAX_PART_PER_RPC = "sentry.hdfs.sync.metastore.cache.max-partitions-per-rpc";
     public static final int SENTRY_HDFS_SYNC_METASTORE_CACHE_MAX_PART_PER_RPC_DEFAULT = 100;
@@ -81,7 +68,6 @@ public class ServiceConstants {
 
     public static final String SECURITY_MODE = "sentry.hdfs.service.security.mode";
     public static final String SECURITY_MODE_KERBEROS = "kerberos";
-    public static final String SECURITY_MODE_NONE = "none";
     public static final String SECURITY_USE_UGI_TRANSPORT = "sentry.hdfs.service.security.use.ugi";
     public static final String PRINCIPAL = "sentry.hdfs.service.server.principal";
 

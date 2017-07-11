@@ -123,8 +123,6 @@ public class ServiceConstants {
     public static final String SENTRY_STORE_CLEAN_PERIOD_SECONDS =
         "sentry.store.clean.period.seconds";
     public static final long SENTRY_STORE_CLEAN_PERIOD_SECONDS_DEFAULT = 43200; // 12 hours.
-    public static final String SENTRY_HA_ENABLED = "sentry.ha.enabled";
-    public static final boolean SENTRY_HA_ENABLED_DEFAULT = false;
     public static final String SENTRY_HA_ZK_PROPERTY_PREFIX = "sentry.ha.zookeeper.";
     public static final String SENTRY_HA_ZOOKEEPER_SECURITY = SENTRY_HA_ZK_PROPERTY_PREFIX + "security";
     public static final boolean SENTRY_HA_ZOOKEEPER_SECURITY_DEFAULT = false;
@@ -243,7 +241,6 @@ public class ServiceConstants {
     public static final String SERVER_RPC_CONN_TIMEOUT = "sentry.service.client.server.rpc-connection-timeout";
 
     // HA configuration
-    public static final String SENTRY_HA_ENABLED = "sentry.ha.enabled";
     public static final String SENTRY_HA_ZOOKEEPER_QUORUM = ServerConfig.SENTRY_HA_ZOOKEEPER_QUORUM;
     public static final String SENTRY_HA_ZOOKEEPER_NAMESPACE = ServerConfig.SENTRY_HA_ZOOKEEPER_NAMESPACE;
     public static final String SERVER_HA_ZOOKEEPER_NAMESPACE_DEFAULT = ServerConfig.SENTRY_HA_ZOOKEEPER_NAMESPACE_DEFAULT;
