@@ -17,6 +17,9 @@
  */
 package org.apache.sentry.service.thrift;
 
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Timer;
+import com.codahale.metrics.Timer.Context;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -35,6 +38,7 @@ import org.apache.sentry.hdfs.PermissionsUpdate;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
 import org.apache.sentry.provider.db.SentryPolicyStorePlugin;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
+import org.apache.sentry.provider.db.service.thrift.SentryMetrics;
 import org.apache.sentry.provider.db.service.thrift.TSentryAuthorizable;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
@@ -52,6 +56,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
+import static com.codahale.metrics.MetricRegistry.name;
 import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SYNC_CREATE_WITH_POLICY_STORE;
 import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SYNC_DROP_WITH_POLICY_STORE;
 import static org.apache.sentry.hdfs.Updateable.Update;
@@ -76,6 +81,14 @@ public class HMSFollower implements Runnable, AutoCloseable {
 
   private boolean needLogHMSSupportReady = true;
   private final LeaderStatusMonitor leaderMonitor;
+
+  private static final String SNAPSHOT = "snapshot";
+  /** Measures time to get full snapshot */
+  private final Timer updateTimer = SentryMetrics.getInstance()
+      .getTimer(name(FullUpdateInitializer.class, SNAPSHOT));
+  /** Number of times update failed */
+  private final Counter failedSnapshotsCount = SentryMetrics.getInstance()
+      .getCounter(name(FullUpdateInitializer.class, "failed"));
 
   HMSFollower(Configuration conf, SentryStore store, LeaderStatusMonitor leaderMonitor,
               HiveSimpleConnectionFactory hiveConnectionFactory) {
@@ -299,11 +312,13 @@ public class HMSFollower implements Runnable, AutoCloseable {
     throws TException, ExecutionException {
     LOGGER.info("Request full HMS snapshot");
     try (FullUpdateInitializer updateInitializer =
-                 new FullUpdateInitializer(hiveConnectionFactory, authzConf)) {
+                 new FullUpdateInitializer(hiveConnectionFactory, authzConf);
+             Context context = updateTimer.time()) {
       Map<String, Set<String>> pathsUpdate = updateInitializer.getFullHMSSnapshot();
       LOGGER.info("Obtained full HMS snapshot");
       return pathsUpdate;
     } catch (Exception ignored) {
+      failedSnapshotsCount.inc();
       // Caller will retry later
       return Collections.emptyMap();
     }

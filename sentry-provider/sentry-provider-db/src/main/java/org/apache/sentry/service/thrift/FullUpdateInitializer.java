@@ -17,6 +17,7 @@
  */
 package org.apache.sentry.service.thrift;
 
+import com.codahale.metrics.Counter;
 import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.metastore.api.Database;
@@ -25,6 +26,7 @@ import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.sentry.hdfs.PathsUpdate;
 import org.apache.sentry.hdfs.SentryMalformedPathException;
 import org.apache.sentry.hdfs.ServiceConstants.ServerConfig;
+import org.apache.sentry.provider.db.service.thrift.SentryMetrics;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +47,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
+import static com.codahale.metrics.MetricRegistry.name;
 
 /**
  * Manage fetching full snapshot from HMS.
@@ -102,6 +106,18 @@ public final class FullUpdateInitializer implements AutoCloseable {
   private static final ObjectMapping emptyObjectMapping =
           new ObjectMapping(Collections.<String, Set<String>>emptyMap());
   private final HiveConnectionFactory clientFactory;
+
+  /** Total number of database objects */
+  private final Counter databaseCount = SentryMetrics.getInstance()
+      .getCounter(name(FullUpdateInitializer.class, "total", "db"));
+
+  /** Total number of table objects */
+  private final Counter tableCount = SentryMetrics.getInstance()
+      .getCounter(name(FullUpdateInitializer.class, "total", "tables"));
+
+  /** Total number of partition objects */
+  private final Counter partitionCount = SentryMetrics.getInstance()
+      .getCounter(name(FullUpdateInitializer.class, "total", "partitions"));
 
   /**
    * Extract path (not starting with "/") from the full URI
@@ -323,7 +339,10 @@ public final class FullUpdateInitializer implements AutoCloseable {
 
           String tableName = safeIntern(tbl.getTableName().toLowerCase());
           String authzObject = (dbName + "." + tableName).intern();
-          List<String> tblPartNames = client.getClient().listPartitionNames(dbName, tableName, (short) -1);
+          List<String> tblPartNames =
+              client.getClient().listPartitionNames(dbName, tableName, (short) -1);
+          // Count total number of partitions
+          partitionCount.inc(tblPartNames.size());
           for (int i = 0; i < tblPartNames.size(); i += maxPartitionsPerCall) {
             List<String> partsToFetch = tblPartNames.subList(i,
                     Math.min(i + maxPartitionsPerCall, tblPartNames.size()));
@@ -359,6 +378,7 @@ public final class FullUpdateInitializer implements AutoCloseable {
     DbTask(String dbName) {
       //Database names are case insensitive
       this.dbName = safeIntern(dbName.toLowerCase());
+      databaseCount.inc();
     }
 
     @Override
@@ -372,6 +392,8 @@ public final class FullUpdateInitializer implements AutoCloseable {
           return emptyObjectMapping;
         }
         List<String> allTblStr = client.getClient().getAllTables(dbName);
+        // Count total number of tables
+        tableCount.inc(allTblStr.size());
         for (int i = 0; i < allTblStr.size(); i += maxTablesPerCall) {
           List<String> tablesToFetch = allTblStr.subList(i,
                   Math.min(i + maxTablesPerCall, allTblStr.size()));
