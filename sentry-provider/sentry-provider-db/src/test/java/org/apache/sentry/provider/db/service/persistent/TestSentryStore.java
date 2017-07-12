@@ -59,7 +59,6 @@ import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
 import org.apache.sentry.provider.file.PolicyFile;
-import org.apache.sentry.service.thrift.ServiceConstants;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -3073,6 +3072,41 @@ public class TestSentryStore extends org.junit.Assert {
     // TODO: verify MSentryPathChange being purged.
     // assertEquals(1, sentryStore.getMSentryPathChanges().size());
   }
+
+  @Test
+  public void testpurgeNotificationIdTable() throws Exception {
+
+    int totalentires = 200;
+    int remainingEntires = ServerConfig.SENTRY_HMS_NOTIFICATION_ID_KEEP_COUNT_DEFAULT;
+    assertTrue(sentryStore.isNotificationIDTableEmpty());
+    for(int id = 1; id <= totalentires; id++) {
+      sentryStore.persistLastProcessedNotificationID((long)id);
+    }
+    assertEquals(totalentires, sentryStore.getMSentryHmsNotificationCore().size());
+    sentryStore.purgeNotificationIdTable();
+
+    // Make sure that sentry store still hold entries based on SENTRY_HMS_NOTIFICATION_ID_KEEP_COUNT_DEFAULT
+    assertEquals(remainingEntires, sentryStore.getMSentryHmsNotificationCore().size());
+
+    sentryStore.purgeNotificationIdTable();
+    // Make sure that sentry store still hold entries based on SENTRY_HMS_NOTIFICATION_ID_KEEP_COUNT_DEFAULT
+    assertEquals(remainingEntires, sentryStore.getMSentryHmsNotificationCore().size());
+
+    sentryStore.clearAllTables();
+
+
+    totalentires = 50;
+    for(int id = 1; id <= totalentires; id++) {
+      sentryStore.persistLastProcessedNotificationID((long)id);
+    }
+    assertEquals(totalentires, sentryStore.getMSentryHmsNotificationCore().size());
+    sentryStore.purgeNotificationIdTable();
+
+    // Make sure that sentry store still holds all the entries as total entries is less than
+    // SENTRY_HMS_NOTIFICATION_ID_KEEP_COUNT_DEFAULT.
+    assertEquals(totalentires, sentryStore.getMSentryHmsNotificationCore().size());
+  }
+
 
   /**
    * This test verifies that in the case of concurrently updating delta change tables, no gap

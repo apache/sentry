@@ -381,6 +381,7 @@ public class SentryService implements Callable, SigUtils.SigListener {
         public void run() {
           if (leaderMonitor.isLeader()) {
             sentryStore.purgeDeltaChangeTables();
+            sentryStore.purgeNotificationIdTable();
           }
         }
       };

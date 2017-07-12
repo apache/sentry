@@ -232,6 +232,12 @@ public class ServiceConstants {
      */
     public static final String SENTRY_DELTA_KEEP_COUNT = "sentry.server.delta.keep.count";
     public static final int SENTRY_DELTA_KEEP_COUNT_DEFAULT = 200;
+
+    /**
+     * Number of notification id's to keep around during cleaning
+     */
+    public static final String SENTRY_HMS_NOTIFICATION_ID_KEEP_COUNT = "sentry.server.delta.keep.count";
+    public static final int SENTRY_HMS_NOTIFICATION_ID_KEEP_COUNT_DEFAULT = 100;
   }
 
   public static class ClientConfig {

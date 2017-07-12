@@ -589,6 +589,28 @@ public class SentryStore {
   }
 
   /**
+   * Purge notification id table, keeping a specified number of entries.
+   * @param pm a {@link PersistenceManager} instance.
+   * @param changesToKeep  the number of changes the caller want to keep.
+   */
+  @VisibleForTesting
+  protected void purgeNotificationIdTableCore(PersistenceManager pm,
+      long changesToKeep) {
+    Preconditions.checkArgument(changesToKeep > 0,
+      "You need to keep at least one entry in SENTRY_HMS_NOTIFICATION_ID table");
+    long lastNotificationID = getLastProcessedNotificationIDCore(pm);
+    Query query = pm.newQuery(MSentryHmsNotification.class);
+
+    // It is an approximation of "SELECT ... LIMIT CHANGE_TO_KEEP" in SQL, because JDO w/ derby
+    // does not support "LIMIT".
+    // See: http://www.datanucleus.org/products/datanucleus/jdo/jdoql_declarative.html
+    query.setFilter("notificationId <= maxNotificationIdDeleted");
+    query.declareParameters("long maxNotificationIdDeleted");
+    long numDeleted = query.deletePersistentAll(lastNotificationID - changesToKeep);
+    LOGGER.info("Purged {} of {}", numDeleted, MSentryHmsNotification.class.getSimpleName());
+  }
+
+  /**
    * Purge delta change tables, {@link MSentryPermChange} and {@link MSentryPathChange}.
    * The number of deltas to keep is configurable
    */
@@ -610,10 +632,33 @@ public class SentryStore {
         }
       });
     } catch (Exception e) {
-      LOGGER.error("Delta change cleaning process encounter an error", e);
+      LOGGER.error("Delta change cleaning process encountered an error", e);
     }
   }
 
+  /**
+   * Purge hms notification id table , {@link MSentryHmsNotification}.
+   * The number of notifications id's to be kept is based on configuration
+   * sentry.server.delta.keep.count
+   */
+  public void purgeNotificationIdTable() {
+    final int changesToKeep = conf.getInt(ServerConfig.SENTRY_HMS_NOTIFICATION_ID_KEEP_COUNT,
+      ServerConfig.SENTRY_HMS_NOTIFICATION_ID_KEEP_COUNT_DEFAULT);
+    LOGGER.debug("Purging MSentryHmsNotification table, leaving {} entries",
+      changesToKeep);
+    try {
+      tm.executeTransaction(new TransactionBlock<Object>() {
+        @Override
+        public Object execute(PersistenceManager pm) throws Exception {
+          pm.setDetachAllOnCommit(false); // No need to detach objects
+          purgeNotificationIdTableCore(pm, changesToKeep);
+          return null;
+        }
+      });
+    } catch (Exception e) {
+      LOGGER.error("MSentryHmsNotification cleaning process encountered an error", e);
+    }
+  }
   /**
    * Alter a given sentry role to grant a privilege.
    *
@@ -2950,6 +2995,24 @@ public class SentryStore {
   }
 
   /**
+   * Tells if there are any records in MSentryHmsNotification
+   *
+   * @return true if there are no entries in {@link MSentryHmsNotification}
+   * false if there are entries
+   * @throws Exception
+   */
+  @VisibleForTesting
+  boolean isNotificationIDTableEmpty() throws Exception {
+    return tm.executeTransactionWithRetry(
+      new TransactionBlock<Boolean>() {
+        public Boolean execute(PersistenceManager pm) throws Exception {
+          pm.setDetachAllOnCommit(false); // No need to detach objects
+          return isTableEmptyCore(pm, MSentryHmsNotification.class);
+        }
+      });
+  }
+
+  /**
    * Updates authzObj -> [Paths] mapping to replace an existing path with a new one
    * given an authzObj. As well as persist the corresponding delta path change to
    * MSentryPathChange table in a single transaction.
@@ -3801,6 +3864,23 @@ public class SentryStore {
   }
 
   /**
+   * Fetch all {@link MSentryHmsNotification} in the database. It should only be used in the tests.
+   *
+   * @return a list of notifications ids.
+   * @throws Exception
+   */
+  @VisibleForTesting
+  List<MSentryHmsNotification> getMSentryHmsNotificationCore() throws Exception {
+    return tm.executeTransaction(
+      new TransactionBlock<List<MSentryHmsNotification>>() {
+        public List<MSentryHmsNotification> execute(PersistenceManager pm) throws Exception {
+          Query query = pm.newQuery(MSentryHmsNotification.class);
+          return (List<MSentryHmsNotification>) query.execute();
+        }
+      });
+  }
+
+    /**
    * Checks if any MSentryChange object exists with the given changeID.
    *
    * @param pm PersistenceManager
