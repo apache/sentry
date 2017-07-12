@@ -15,6 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.sentry.hdfs;
 
 import java.util.*;
@@ -25,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.AclEntry;
@@ -39,6 +41,8 @@ import com.google.common.base.Preconditions;
 public class SentryAuthorizationInfo implements Runnable {
   private static final Logger LOG =
       LoggerFactory.getLogger(SentryAuthorizationInfo.class);
+
+  private static final String SENTRY_AUTHORIZATION_INFO_THREAD_NAME = "sentry-auth-info-refresher";
 
   private SentryUpdater updater;
   private volatile UpdateableAuthzPaths authzPaths;
@@ -83,12 +87,15 @@ public class SentryAuthorizationInfo implements Runnable {
           SentryAuthorizationConstants.CACHE_REFRESH_RETRY_WAIT_KEY,
           SentryAuthorizationConstants.CACHE_REFRESH_RETRY_WAIT_DEFAULT);
 
-      LOG.debug("Sentry authorization will enforced in the following HDFS " +
-          "locations: [{}]", StringUtils.arrayToString(newPathPrefixes));
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(
+            "Sentry authorization will enforced in the following HDFS locations: [{}]",
+            StringUtils.arrayToString(newPathPrefixes));
+      }
       setPrefixPaths(newPathPrefixes);
-      LOG.debug("Refresh interval [{}]ms, retry wait [{}], stale threshold " +
-              "[{}]ms", new Object[] 
-          {refreshIntervalMillisec, retryWaitMillisec, staleThresholdMillisec});
+      LOG.debug("Refresh interval [{}]ms, retry wait [{}]",
+          refreshIntervalMillisec, retryWaitMillisec);
+      LOG.debug("stale threshold [{}]ms", staleThresholdMillisec);
 
       authzPaths = new UpdateableAuthzPaths(newPathPrefixes);
       authzPermissions = new UpdateableAuthzPermissions();
@@ -222,17 +229,11 @@ public class SentryAuthorizationInfo implements Runnable {
       if (!success) {
         waitUntil = System.currentTimeMillis() + retryWaitMillisec;
       }
-      executor = Executors.newSingleThreadScheduledExecutor(
-          new ThreadFactory() {
-            @Override
-            public Thread newThread(Runnable r) {
-              Thread t = new Thread(r, SentryAuthorizationInfo.class.getName() +
-                  "-refresher");
-              t.setDaemon(true);
-              return t;
-            }
-          }
-      );
+      ThreadFactory sentryAuthInfoRefresherThreadFactory = new ThreadFactoryBuilder()
+          .setNameFormat(SENTRY_AUTHORIZATION_INFO_THREAD_NAME)
+          .setDaemon(true)
+          .build();
+      executor = Executors.newSingleThreadScheduledExecutor(sentryAuthInfoRefresherThreadFactory);
       executor.scheduleWithFixedDelay(this, refreshIntervalMillisec, 
           refreshIntervalMillisec, TimeUnit.MILLISECONDS);
     }
@@ -268,7 +269,7 @@ public class SentryAuthorizationInfo implements Runnable {
   public boolean isManaged(String[] pathElements) {
     return isUnderPrefix(pathElements);
   }
-  
+
   public boolean doesBelongToAuthzObject(String[] pathElements) {
     lock.readLock().lock();
     try {
@@ -296,12 +297,12 @@ public class SentryAuthorizationInfo implements Runnable {
       // Apparently setFAcl throws error if 'group::---' is not present
       AclEntry noGroup = AclEntry.parseAclEntry("group::---", true);
 
-      Set<AclEntry> retSet = new HashSet<AclEntry>();
+      Set<AclEntry> retSet = new HashSet<>();
       retSet.add(noGroup);
 
       if (authzObjs == null) {
-        retSet.addAll(Collections.EMPTY_LIST);
-        return new ArrayList<AclEntry>(retSet);
+        retSet.addAll(Collections.<AclEntry>emptyList());
+        return new ArrayList<>(retSet);
       }
 
       // No duplicate acls should be added.
@@ -309,7 +310,7 @@ public class SentryAuthorizationInfo implements Runnable {
         retSet.addAll(authzPermissions.getAcls(authzObj));
       }
 
-      return new ArrayList<AclEntry>(retSet);
+      return new ArrayList<>(retSet);
     } finally {
       lock.readLock().unlock();
     }

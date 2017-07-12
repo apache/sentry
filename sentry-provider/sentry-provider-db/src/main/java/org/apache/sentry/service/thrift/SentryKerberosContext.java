@@ -21,6 +21,7 @@ package org.apache.sentry.service.thrift;
 import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ThreadFactory;
 
 import javax.security.auth.Subject;
 import javax.security.auth.kerberos.KerberosPrincipal;
@@ -28,21 +29,22 @@ import javax.security.auth.kerberos.KerberosTicket;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Sets;
 
 public class SentryKerberosContext implements Runnable {
+
+  private static final String KERBEROS_RENEWER_THREAD_NAME = "kerberos-renewer-%d";
   private static final float TICKET_RENEW_WINDOW = 0.80f;
   private static final Logger LOGGER = LoggerFactory
       .getLogger(SentryKerberosContext.class);
   private LoginContext loginContext;
   private Subject subject;
   private final javax.security.auth.login.Configuration kerberosConfig;
-  
   private Thread renewerThread;
-
   private boolean shutDownRenewer = false;
 
   public SentryKerberosContext(String principal, String keyTab, boolean server)
@@ -100,12 +102,10 @@ public class SentryKerberosContext implements Runnable {
     return null;
   }
 
-  @Deprecated
   private long getRefreshTime(KerberosTicket tgt) {
     long start = tgt.getStartTime().getTime();
     long end = tgt.getEndTime().getTime();
-    LOGGER.debug("Ticket start time: " + start);
-    LOGGER.debug("Ticket End time: " + end);
+    LOGGER.debug("Ticket start time: {}, end time: {}", start, end);
     return start + (long) ((end - start) * TICKET_RENEW_WINDOW);
   }
 
@@ -145,7 +145,10 @@ public class SentryKerberosContext implements Runnable {
   }
 
   public void startRenewerThread() {
-    renewerThread = new Thread(this);
+    ThreadFactory renewerThreadFactory = new ThreadFactoryBuilder()
+        .setNameFormat(KERBEROS_RENEWER_THREAD_NAME)
+        .build();
+    renewerThread = renewerThreadFactory.newThread(this);
     renewerThread.start();
   }
 

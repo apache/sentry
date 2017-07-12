@@ -34,6 +34,7 @@ import javax.security.auth.Subject;
 
 import com.codahale.metrics.Gauge;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.GnuParser;
@@ -76,6 +77,11 @@ public class SentryService implements Callable, SigUtils.SigListener {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryService.class);
   private HiveSimpleConnectionFactory hiveConnectionFactory;
+
+  private static final String SENTRY_SERVICE_THREAD_NAME = "sentry-service";
+  private static final String HMSFOLLOWER_THREAD_NAME = "hms-follower";
+  private static final String STORE_CLEANER_THREAD_NAME = "store-cleaner";
+  private static final String SERVICE_SHUTDOWN_THREAD_NAME = "service-shutdown";
 
   private enum Status {
     NOT_STARTED,
@@ -121,7 +127,7 @@ public class SentryService implements Callable, SigUtils.SigListener {
     this.address = NetUtils.createSocketAddr(
         conf.get(ServerConfig.RPC_ADDRESS, ServerConfig.RPC_ADDRESS_DEFAULT),
         port);
-    LOGGER.info("Configured on address " + address);
+    LOGGER.info("Configured on address {}", address);
     kerberos = ServerConfig.SECURITY_MODE_KERBEROS.equalsIgnoreCase(
         conf.get(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_KERBEROS).trim());
     maxThreads = conf.getInt(ServerConfig.RPC_MAX_THREADS,
@@ -138,7 +144,7 @@ public class SentryService implements Callable, SigUtils.SigListener {
       } catch(IOException io) {
         throw new RuntimeException("Can't translate kerberos principal'", io);
       }
-      LOGGER.info("Using kerberos principal: " + principal);
+      LOGGER.info("Using kerberos principal: {}", principal);
 
       principalParts = SaslRpcServer.splitKerberosName(principal);
       Preconditions.checkArgument(principalParts.length == 3,
@@ -147,21 +153,16 @@ public class SentryService implements Callable, SigUtils.SigListener {
           ServerConfig.KEY_TAB + " is required");
       File keytabFile = new File(keytab);
       Preconditions.checkState(keytabFile.isFile() && keytabFile.canRead(),
-          "Keytab " + keytab + " does not exist or is not readable.");
+          "Keytab %s does not exist or is not readable.", keytab);
     } else {
       principal = null;
       principalParts = null;
       keytab = null;
     }
-    serviceExecutor = Executors.newSingleThreadExecutor(new ThreadFactory() {
-      private int count = 0;
-
-      @Override
-      public Thread newThread(Runnable r) {
-        return new Thread(r, SentryService.class.getSimpleName() + "-"
-            + (count++));
-      }
-    });
+    ThreadFactory sentryServiceThreadFactory = new ThreadFactoryBuilder()
+        .setNameFormat(SENTRY_SERVICE_THREAD_NAME)
+        .build();
+    serviceExecutor = Executors.newSingleThreadExecutor(sentryServiceThreadFactory);
     this.sentryStore = new SentryStore(conf);
     this.leaderMonitor = LeaderStatusMonitor.getLeaderStatusMonitor(conf);
     webServerPort = conf.getInt(ServerConfig.SENTRY_WEB_PORT, ServerConfig.SENTRY_WEB_PORT_DEFAULT);
@@ -176,7 +177,7 @@ public class SentryService implements Callable, SigUtils.SigListener {
     // Enable signal handler for HA leader/follower status if configured
     String sigName = conf.get(ServerConfig.SERVER_HA_STANDBY_SIG);
     if ((sigName != null) && !sigName.isEmpty()) {
-      LOGGER.info("Registering signal handler " + sigName + " for HA");
+      LOGGER.info("Registering signal handler {} for HA", sigName);
       try {
         registerSigListener(sigName, this);
       } catch (Exception e) {
@@ -269,7 +270,7 @@ public class SentryService implements Callable, SigUtils.SigListener {
         .protocolFactory(new TBinaryProtocol.Factory(true, true, maxMessageSize, maxMessageSize))
         .minWorkerThreads(minThreads).maxWorkerThreads(maxThreads);
     thriftServer = new TThreadPoolServer(args);
-    LOGGER.info("Serving on " + address);
+    LOGGER.info("Serving on {}", address);
     startSentryWebServer();
 
     // thriftServer.serve() does not return until thriftServer is stopped. Need to log before
@@ -309,7 +310,10 @@ public class SentryService implements Callable, SigUtils.SigListener {
     long period = conf.getLong(ServerConfig.SENTRY_HMSFOLLOWER_INTERVAL_MILLS,
             ServerConfig.SENTRY_HMSFOLLOWER_INTERVAL_MILLS_DEFAULT);
     try {
-      hmsFollowerExecutor = Executors.newScheduledThreadPool(1);
+      ThreadFactory hmsFollowerThreadFactory = new ThreadFactoryBuilder()
+          .setNameFormat(HMSFOLLOWER_THREAD_NAME)
+          .build();
+      hmsFollowerExecutor = Executors.newScheduledThreadPool(1, hmsFollowerThreadFactory);
       hmsFollowerExecutor.scheduleAtFixedRate(hmsFollower,
               initDelay, period, TimeUnit.MILLISECONDS);
     } catch (IllegalArgumentException e) {
@@ -386,7 +390,10 @@ public class SentryService implements Callable, SigUtils.SigListener {
         }
       };
 
-      sentryStoreCleanService = Executors.newSingleThreadScheduledExecutor();
+      ThreadFactory sentryStoreCleanerThreadFactory = new ThreadFactoryBuilder()
+          .setNameFormat(STORE_CLEANER_THREAD_NAME)
+          .build();
+      sentryStoreCleanService = Executors.newSingleThreadScheduledExecutor(sentryStoreCleanerThreadFactory);
       sentryStoreCleanService.scheduleWithFixedDelay(
               storeCleaner, 0, storeCleanPeriodSecs, TimeUnit.SECONDS);
 
@@ -418,7 +425,7 @@ public class SentryService implements Callable, SigUtils.SigListener {
     Boolean sentryReportingEnable = conf.getBoolean(ServerConfig.SENTRY_WEB_ENABLE,
         ServerConfig.SENTRY_WEB_ENABLE_DEFAULT);
     if(sentryReportingEnable) {
-      List<EventListener> listenerList = new ArrayList<EventListener>();
+      List<EventListener> listenerList = new ArrayList<>();
       listenerList.add(new SentryHealthCheckServletContextListener());
       listenerList.add(new SentryMetricsServletContextListener());
       sentryWebServer = new SentryWebServer(listenerList, webServerPort, conf);
@@ -569,7 +576,11 @@ public class SentryService implements Callable, SigUtils.SigListener {
       Configuration serverConf = loadConfig(configFileName);
       final SentryService server = new SentryService(serverConf);
       server.start();
-      Runtime.getRuntime().addShutdownHook(new Thread() {
+
+      ThreadFactory serviceShutdownThreadFactory = new ThreadFactoryBuilder()
+          .setNameFormat(SERVICE_SHUTDOWN_THREAD_NAME)
+          .build();
+      Runtime.getRuntime().addShutdownHook(serviceShutdownThreadFactory.newThread(new Runnable() {
         @Override
         public void run() {
           LOGGER.info("ShutdownHook shutting down server");
@@ -580,7 +591,7 @@ public class SentryService implements Callable, SigUtils.SigListener {
             System.exit(1);
           }
         }
-      });
+      }));
 
       // Let's wait on the service to stop
       try {

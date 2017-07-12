@@ -20,6 +20,7 @@ package org.apache.sentry.provider.db.service.persistent;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -42,6 +43,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.ThreadFactory;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -59,6 +61,7 @@ public final class HAContext implements AutoCloseable {
   private static boolean aclUnChecked = true;
 
   private static final String SENTRY_ZK_JAAS_NAME = "SentryClient";
+  private static final String SHUTDOWN_THREAD_NAME = "ha-context-shutdown";
   private final String zookeeperQuorum;
   private final String namespace;
 
@@ -97,7 +100,7 @@ public final class HAContext implements AutoCloseable {
 
       if (!Strings.isNullOrEmpty(allowConnect)) {
         for (String principal : allowConnect.split("\\s*,\\s*")) {
-          LOGGER.info("Adding acls for " + principal);
+          LOGGER.info("Adding acls for {}", principal);
           saslACL.add(new ACL(Perms.ALL, new Id("sasl", principal)));
         }
       }
@@ -151,7 +154,13 @@ public final class HAContext implements AutoCloseable {
     serverHAContext = new HAContext(conf);
 
     serverHAContext.start();
-    Runtime.getRuntime().addShutdownHook(new Thread() {
+    ThreadFactory haContextShutdownThreadFactory = new ThreadFactoryBuilder()
+        .setDaemon(false)
+        .setNameFormat(SHUTDOWN_THREAD_NAME)
+        .build();
+    Runtime.getRuntime()
+        .addShutdownHook(haContextShutdownThreadFactory
+            .newThread(new Runnable() {
       @Override
       public void run() {
         LOGGER.info("ShutdownHook closing curator framework");
@@ -163,7 +172,7 @@ public final class HAContext implements AutoCloseable {
           LOGGER.error("Error stopping curator framework", t);
         }
       }
-    });
+    }));
     return serverHAContext;
   }
 
@@ -202,8 +211,7 @@ public final class HAContext implements AutoCloseable {
     checkNotNull(namespace, "Zookeeper namespace should not be null.");
   }
 
-  private static String getServicePrincipal(Configuration conf, String confProperty)
-      throws IOException {
+  private static String getServicePrincipal(Configuration conf, String confProperty) {
     String principal = checkNotNull(conf.get(confProperty));
     checkArgument(!principal.isEmpty(), "Server principal is empty.");
     return principal.split("[/@]")[0];
@@ -232,7 +240,7 @@ public final class HAContext implements AutoCloseable {
   }
 
   private void checkAndSetACLs(String path) throws Exception {
-    LOGGER.info("Setting acls on " + path);
+    LOGGER.info("Setting acls on {}", path);
     List<String> children = curatorFramework.getChildren().forPath(path);
     for (String child : children) {
       this.checkAndSetACLs(path + "/" + child);

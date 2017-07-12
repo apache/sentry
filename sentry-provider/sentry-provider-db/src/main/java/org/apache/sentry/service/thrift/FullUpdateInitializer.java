@@ -19,6 +19,7 @@ package org.apache.sentry.service.thrift;
 
 import com.codahale.metrics.Counter;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.Partition;
@@ -46,6 +47,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import static com.codahale.metrics.MetricRegistry.name;
@@ -94,6 +96,8 @@ public final class FullUpdateInitializer implements AutoCloseable {
    *
    */
 
+
+  private static final String FULL_UPDATE_INITIALIZER_THREAD_NAME = "hms-fetch-%d";
   private final ExecutorService threadPool;
   private final int maxPartitionsPerCall;
   private final int maxTablesPerCall;
@@ -426,9 +430,15 @@ public final class FullUpdateInitializer implements AutoCloseable {
     waitDurationMillis = conf.getInt(
             ServerConfig.SENTRY_HDFS_SYNC_METASTORE_CACHE_RETRY_WAIT_DURAION_IN_MILLIS,
             ServerConfig.SENTRY_HDFS_SYNC_METASTORE_CACHE_RETRY_WAIT_DURAION_IN_MILLIS_DEFAULT);
+
+    ThreadFactory fullUpdateInitThreadFactory = new ThreadFactoryBuilder()
+        .setNameFormat(FULL_UPDATE_INITIALIZER_THREAD_NAME)
+        .setDaemon(false)
+        .build();
     threadPool = Executors.newFixedThreadPool(conf.getInt(
         ServerConfig.SENTRY_HDFS_SYNC_METASTORE_CACHE_INIT_THREADS,
-        ServerConfig.SENTRY_HDFS_SYNC_METASTORE_CACHE_INIT_THREADS_DEFAULT));
+        ServerConfig.SENTRY_HDFS_SYNC_METASTORE_CACHE_INIT_THREADS_DEFAULT),
+            fullUpdateInitThreadFactory);
   }
 
   /**
