@@ -797,7 +797,6 @@ public abstract class TestHDFSIntegrationBase {
           properties.put(ServerConfig.SENTRY_STORE_JDBC_PASS, "dummy");
           properties.put("sentry.service.processor.factories",
               "org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessorFactory,org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory");
-          properties.put(ServerConfig.SENTRY_NOTIFICATION_LOG_ENABLED,"true");
           properties.put("sentry.policy.store.plugins", "org.apache.sentry.hdfs.SentryPlugin");
           properties.put(ServerConfig.SENTRY_HMSFOLLOWER_INIT_DELAY_MILLS, "10000");
           properties.put(ServerConfig.SENTRY_HMSFOLLOWER_INTERVAL_MILLS, "50");

@@ -113,7 +113,6 @@ public class SentryService implements Callable, SigUtils.SigListener {
   private final SentryStore sentryStore;
   private ScheduledExecutorService sentryStoreCleanService;
   private final LeaderStatusMonitor leaderMonitor;
-  private final boolean notificationLogEnabled;
   private final boolean hdfsSyncEnabled;
 
   public SentryService(Configuration conf) throws Exception {
@@ -166,9 +165,6 @@ public class SentryService implements Callable, SigUtils.SigListener {
     this.sentryStore = new SentryStore(conf);
     this.leaderMonitor = LeaderStatusMonitor.getLeaderStatusMonitor(conf);
     webServerPort = conf.getInt(ServerConfig.SENTRY_WEB_PORT, ServerConfig.SENTRY_WEB_PORT_DEFAULT);
-
-    notificationLogEnabled = conf.getBoolean(ServerConfig.SENTRY_NOTIFICATION_LOG_ENABLED,
-        ServerConfig.SENTRY_NOTIFICATION_LOG_ENABLED_DEFAULT);
 
     hdfsSyncEnabled = SentryServiceUtil.isHDFSSyncEnabled(conf);
 
@@ -285,10 +281,6 @@ public class SentryService implements Callable, SigUtils.SigListener {
       return;
     }
 
-    if (!notificationLogEnabled) {
-      return;
-    }
-
     String metastoreURI = SentryServiceUtil.getHiveMetastoreURI();
     if (metastoreURI == null) {
       LOGGER.info("Metastore uri is not configured. Do not start HMSFollower");
@@ -324,7 +316,7 @@ public class SentryService implements Callable, SigUtils.SigListener {
   }
 
   private void stopHMSFollower(Configuration conf) {
-    if (!notificationLogEnabled || !hdfsSyncEnabled) {
+    if (!hdfsSyncEnabled) {
       return;
     }
 
