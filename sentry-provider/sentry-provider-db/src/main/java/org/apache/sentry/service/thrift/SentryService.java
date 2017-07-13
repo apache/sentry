@@ -98,7 +98,7 @@ public class SentryService implements Callable, SigUtils.SigListener {
   private final String keytab;
   private final ExecutorService serviceExecutor;
   private ScheduledExecutorService hmsFollowerExecutor = null;
-  private HmsFollower hmsFollower = null;
+  private HMSFollower hmsFollower = null;
   private Future serviceStatus;
   private TServer thriftServer;
   private Status status;
@@ -108,7 +108,7 @@ public class SentryService implements Callable, SigUtils.SigListener {
   /*
     sentryStore provides the data access for sentry data. It is the singleton instance shared
     between various {@link SentryPolicyService}, i.e., {@link SentryPolicyStoreProcessor} and
-    {@link HmsFollower}.
+    {@link HMSFollower}.
    */
   private final SentryStore sentryStore;
   private ScheduledExecutorService sentryStoreCleanService;
@@ -283,11 +283,11 @@ public class SentryService implements Callable, SigUtils.SigListener {
 
     String metastoreURI = SentryServiceUtil.getHiveMetastoreURI();
     if (metastoreURI == null) {
-      LOGGER.info("Metastore uri is not configured. Do not start HmsFollower");
+      LOGGER.info("Metastore uri is not configured. Do not start HMSFollower");
       return;
     }
 
-    LOGGER.info("Starting HmsFollower to HMS {}", metastoreURI);
+    LOGGER.info("Starting HMSFollower to HMS {}", metastoreURI);
 
     Preconditions.checkState(hmsFollower == null);
     Preconditions.checkState(hmsFollowerExecutor == null);
@@ -295,7 +295,8 @@ public class SentryService implements Callable, SigUtils.SigListener {
 
     hiveConnectionFactory = new HiveSimpleConnectionFactory(conf, new HiveConf());
     hiveConnectionFactory.init();
-    hmsFollower = new HmsFollower(conf, sentryStore, leaderMonitor, hiveConnectionFactory);
+    hmsFollower = new HMSFollower(conf, sentryStore, leaderMonitor, hiveConnectionFactory);
+
     long initDelay = conf.getLong(ServerConfig.SENTRY_HMSFOLLOWER_INIT_DELAY_MILLS,
             ServerConfig.SENTRY_HMSFOLLOWER_INIT_DELAY_MILLS_DEFAULT);
     long period = conf.getLong(ServerConfig.SENTRY_HMSFOLLOWER_INTERVAL_MILLS,
@@ -308,7 +309,7 @@ public class SentryService implements Callable, SigUtils.SigListener {
       hmsFollowerExecutor.scheduleAtFixedRate(hmsFollower,
               initDelay, period, TimeUnit.MILLISECONDS);
     } catch (IllegalArgumentException e) {
-      LOGGER.error(String.format("Could not start HmsFollower due to illegal argument. period is %s ms",
+      LOGGER.error(String.format("Could not start HMSFollower due to illegal argument. period is %s ms",
               period), e);
       throw e;
     }
@@ -349,8 +350,8 @@ public class SentryService implements Callable, SigUtils.SigListener {
       try {
         // close connections
         hmsFollower.close();
-      } catch (Exception ex) {
-        LOGGER.error("HmsFollower.close() failed", ex);
+      } catch (RuntimeException ex) {
+        LOGGER.error("HMSFollower.close() failed", ex);
       } finally {
         hmsFollower = null;
       }

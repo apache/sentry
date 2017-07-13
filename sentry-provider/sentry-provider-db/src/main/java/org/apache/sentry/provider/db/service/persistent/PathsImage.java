@@ -31,17 +31,17 @@ public class PathsImage {
 
   // A full image of hiveObj to Paths mapping.
   private final Map<String, Set<String>> pathImage;
-  private final long id;
+  private final long curSeqNum;
   private final long curImgNum;
 
-  public PathsImage(Map<String, Set<String>> pathImage, long id, long curImgNum) {
+  public PathsImage(Map<String, Set<String>> pathImage, long curSeqNum, long curImgNum) {
     this.pathImage = pathImage;
-    this.id = id;
+    this.curSeqNum = curSeqNum;
     this.curImgNum = curImgNum;
   }
 
-  public long getId() {
-    return id;
+  public long getCurSeqNum() {
+    return curSeqNum;
   }
 
   public long getCurImgNum() {

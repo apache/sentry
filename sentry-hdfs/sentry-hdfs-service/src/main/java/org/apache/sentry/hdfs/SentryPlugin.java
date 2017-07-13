@@ -23,14 +23,12 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.core.common.exception.SentryInvalidInputException;
 import org.apache.sentry.core.common.utils.SigUtils;
 import org.apache.sentry.hdfs.ServiceConstants.ServerConfig;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
 import org.apache.sentry.hdfs.service.thrift.TRoleChanges;
 import org.apache.sentry.provider.db.SentryPolicyStorePlugin;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
-import org.apache.sentry.service.thrift.SentryServiceUtil;
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleAddGroupsRequest;
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleDeleteGroupsRequest;
 import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleGrantPrivilegeRequest;
@@ -40,7 +38,7 @@ import org.apache.sentry.provider.db.service.thrift.TDropSentryRoleRequest;
 import org.apache.sentry.provider.db.service.thrift.TRenamePrivilegesRequest;
 import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
-import org.apache.sentry.service.thrift.HmsFollower;
+import org.apache.sentry.service.thrift.HMSFollower;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +56,7 @@ import static org.apache.sentry.hdfs.service.thrift.sentry_hdfs_serviceConstants
    * <ol>
    * <li>
    * Whenever updates happen on HMS, a corresponding notification log is generated,
-   * and {@link HmsFollower} will process the notification event and persist it in database.
+   * and {@link HMSFollower} will process the notification event and persist it in database.
    * <li>
    * The NameNode periodically asks Sentry for updates. Sentry may return zero
    * or more updates previously received via HMS notification log.
@@ -242,22 +240,16 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
 
   @Override
   public Update onRenameSentryPrivilege(TRenamePrivilegesRequest request)
-      throws SentryPluginException, SentryInvalidInputException{
-    String oldAuthz = null;
-    String newAuthz = null;
-    try {
-      oldAuthz = SentryServiceUtil.getAuthzObj(request.getOldAuthorizable());
-      newAuthz = SentryServiceUtil.getAuthzObj(request.getNewAuthorizable());
-    } catch (SentryInvalidInputException failure) {
-      LOGGER.error("onRenameSentryPrivilege, Could not rename sentry privilege ", failure);
-      throw failure;
-    }
+      throws SentryPluginException {
+    String oldAuthz = HMSFollower.getAuthzObj(request.getOldAuthorizable());
+    String newAuthz = HMSFollower.getAuthzObj(request.getNewAuthorizable());
     PermissionsUpdate update = new PermissionsUpdate();
     TPrivilegeChanges privUpdate = update.addPrivilegeUpdate(PermissionsUpdate.RENAME_PRIVS);
     privUpdate.putToAddPrivileges(newAuthz, newAuthz);
     privUpdate.putToDelPrivileges(oldAuthz, oldAuthz);
 
-    LOGGER.debug("onRenameSentryPrivilege, Authz Perm preUpdate [ {} ]", oldAuthz);
+    LOGGER.debug(String.format("onRenameSentryPrivilege, Authz Perm preUpdate [ %s ]",
+                  oldAuthz));
     return update;
   }
 
@@ -291,7 +283,8 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
     update.addPrivilegeUpdate(authzObj).putToDelPrivileges(
         roleName, privilege.getAction().toUpperCase());
 
-    LOGGER.debug("onAlterSentryRoleRevokePrivilegeCore, Authz Perm preUpdate [ {} ]", authzObj);
+    LOGGER.debug(String.format("onAlterSentryRoleRevokePrivilegeCore, Authz Perm preUpdate [ %s ]",
+                  authzObj));
     return update;
   }
 
@@ -303,7 +296,8 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
         request.getRoleName(), PermissionsUpdate.ALL_AUTHZ_OBJ);
     update.addRoleUpdate(request.getRoleName()).addToDelGroups(PermissionsUpdate.ALL_GROUPS);
 
-    LOGGER.debug("onDropSentryRole, Authz Perm preUpdate [ {} ]", request.getRoleName());
+    LOGGER.debug(String.format("onDropSentryRole, Authz Perm preUpdate [ %s ]",
+                  request.getRoleName()));
     return update;
   }
 
@@ -311,18 +305,12 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
   public Update onDropSentryPrivilege(TDropPrivilegesRequest request)
       throws SentryPluginException {
     PermissionsUpdate update = new PermissionsUpdate();
-    String authzObj = null;
-    try {
-       authzObj = SentryServiceUtil.getAuthzObj(request.getAuthorizable());
-    } catch (SentryInvalidInputException failure) {
-      LOGGER.error("onDropSentryPrivilege, Could not drop sentry privilege "
-        + failure.toString(), failure);
-      throw new SentryPluginException(failure.getMessage(), failure);
-    }
+    String authzObj = HMSFollower.getAuthzObj(request.getAuthorizable());
     update.addPrivilegeUpdate(authzObj).putToDelPrivileges(
         PermissionsUpdate.ALL_ROLES, PermissionsUpdate.ALL_ROLES);
 
-    LOGGER.debug("onDropSentryPrivilege, Authz Perm preUpdate [ {} ]", authzObj);
+    LOGGER.debug(String.format("onDropSentryPrivilege, Authz Perm preUpdate [ %s ]",
+                  authzObj));
     return update;
   }
 
