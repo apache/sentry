@@ -37,11 +37,13 @@ import org.apache.sentry.provider.db.service.thrift.TSentryRole;
 import org.apache.sentry.core.common.utils.PolicyFile;
 import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 import org.apache.tools.ant.util.StringUtils;
-import org.mortbay.log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Sets;
 
 public class SentryPolicyProviderForDb extends PolicyFile {
+  private static final Logger LOG = LoggerFactory.getLogger(SentryPolicyProviderForDb.class);
   protected static final Set<String> ADMIN_GROUP_SET = Sets
       .newHashSet(StaticUserGroup.ADMINGROUP);
   private SentryPolicyServiceClient sentryClient;
@@ -93,7 +95,7 @@ public class SentryPolicyProviderForDb extends PolicyFile {
             sentryClient
                 .grantRoleToGroup(StaticUserGroup.ADMIN1, groupEntry.getKey(), roleName);
           } catch (SentryUserException e) {
-            Log.warn("Error granting role " + roleName + " to group "
+            LOG.warn("Error granting role " + roleName + " to group "
                 + groupEntry.getKey());
           }
         }
