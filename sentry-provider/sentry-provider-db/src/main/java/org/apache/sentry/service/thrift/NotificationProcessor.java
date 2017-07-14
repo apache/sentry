@@ -15,82 +15,275 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.sentry.service.thrift;
 
-import com.google.common.collect.Lists;
-import org.apache.sentry.hdfs.PathsUpdate;
-import org.apache.sentry.hdfs.SentryMalformedPathException;
-import org.apache.sentry.core.common.exception.SentryInvalidHMSEventException;
-import org.apache.sentry.provider.db.service.persistent.SentryStore;
-import org.slf4j.Logger;
+import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SYNC_CREATE_WITH_POLICY_STORE;
+import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SYNC_DROP_WITH_POLICY_STORE;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Lists;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hive.metastore.api.NotificationEvent;
+import org.apache.hive.hcatalog.messaging.HCatEventMessage;
+import org.apache.sentry.binding.metastore.messaging.json.SentryJSONAddPartitionMessage;
+import org.apache.sentry.binding.metastore.messaging.json.SentryJSONAlterPartitionMessage;
+import org.apache.sentry.binding.metastore.messaging.json.SentryJSONAlterTableMessage;
+import org.apache.sentry.binding.metastore.messaging.json.SentryJSONCreateDatabaseMessage;
+import org.apache.sentry.binding.metastore.messaging.json.SentryJSONCreateTableMessage;
+import org.apache.sentry.binding.metastore.messaging.json.SentryJSONDropDatabaseMessage;
+import org.apache.sentry.binding.metastore.messaging.json.SentryJSONDropPartitionMessage;
+import org.apache.sentry.binding.metastore.messaging.json.SentryJSONDropTableMessage;
+import org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageDeserializer;
+import org.apache.sentry.core.common.exception.SentryInvalidHMSEventException;
+import org.apache.sentry.core.common.exception.SentryInvalidInputException;
+import org.apache.sentry.core.common.exception.SentryNoSuchObjectException;
+import org.apache.sentry.hdfs.PathsUpdate;
+import org.apache.sentry.hdfs.PermissionsUpdate;
+import org.apache.sentry.hdfs.SentryMalformedPathException;
+import org.apache.sentry.hdfs.Updateable.Update;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
+import org.apache.sentry.provider.db.service.persistent.SentryStore;
+import org.apache.sentry.provider.db.service.thrift.TSentryAuthorizable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
 
 /**
  * NotificationProcessor processes various notification events generated from
- * the Hive MetaStore state change, and applies these changes on the complete
+ * the Hive MetaStore state change, and applies these changes to the complete
  * HMS Paths snapshot or delta update stored in Sentry using SentryStore.
- * <p>
- * NotificationProcessor should not skip processing notification events for any reason.
+ *
+ * <p>NotificationProcessor should not skip processing notification events for any reason.
  * If some notification events are to be skipped, appropriate logic should be added in
- * HMSFollower before invoking NotificationProcessor.
+ * HmsFollower before invoking NotificationProcessor.
  */
-class NotificationProcessor {
+final class NotificationProcessor {
 
-  private final Logger LOGGER;
+  private static final Logger LOGGER = LoggerFactory.getLogger(NotificationProcessor.class);
   private final SentryStore sentryStore;
+  private final SentryJSONMessageDeserializer deserializer;
+  private final String authServerName;
+  // These variables can be updated even after object is instantiated, for testing purposes.
+  private boolean syncStoreOnCreate = false;
+  private boolean syncStoreOnDrop = false;
 
-  NotificationProcessor(SentryStore sentryStore, Logger LOGGER) {
-    this.LOGGER = LOGGER;
+  /**
+   * Configuring notification processor.
+   *
+   * @param sentryStore sentry backend store
+   * @param authServerName Server that sentry is authorizing
+   * @param conf sentry configuration
+   */
+  NotificationProcessor(SentryStore sentryStore, String authServerName,
+      Configuration conf) {
     this.sentryStore = sentryStore;
+    deserializer = new SentryJSONMessageDeserializer();
+    this.authServerName = authServerName;
+    syncStoreOnCreate = Boolean
+        .parseBoolean(conf.get(AUTHZ_SYNC_CREATE_WITH_POLICY_STORE.getVar(),
+            AUTHZ_SYNC_CREATE_WITH_POLICY_STORE.getDefault()));
+    syncStoreOnDrop = Boolean.parseBoolean(conf.get(AUTHZ_SYNC_DROP_WITH_POLICY_STORE.getVar(),
+        AUTHZ_SYNC_DROP_WITH_POLICY_STORE.getDefault()));
+  }
+
+  /**
+   * Split path into components on the "/" character.
+   * The path should not start with "/".
+   * This is consumed by Thrift interface, so the return result should be
+   * {@code List<String>}
+   *
+   * @param path input oath e.g. {@code foo/bar}
+   * @return list of components, e.g. [foo, bar]
+   */
+  private static List<String> splitPath(String path) {
+    return (Lists.newArrayList(path.split("/")));
+  }
+
+  /**
+   * Constructs permission update to be persisted for drop event that can be persisted
+   * from thrift object.
+   *
+   * @param authorizable thrift object that is dropped.
+   * @return update to be persisted
+   * @throws SentryInvalidInputException if the required fields are set in argument provided
+   */
+  @VisibleForTesting
+  static Update getPermUpdatableOnDrop(TSentryAuthorizable authorizable)
+      throws SentryInvalidInputException {
+    PermissionsUpdate update = new PermissionsUpdate(SentryStore.INIT_CHANGE_ID, false);
+    String authzObj = SentryServiceUtil.getAuthzObj(authorizable);
+    update.addPrivilegeUpdate(authzObj)
+        .putToDelPrivileges(PermissionsUpdate.ALL_ROLES, PermissionsUpdate.ALL_ROLES);
+    return update;
+  }
+
+  /**
+   * Constructs permission update to be persisted for rename event that can be persisted from thrift
+   * object.
+   *
+   * @param oldAuthorizable old thrift object
+   * @param newAuthorizable new thrift object
+   * @return update to be persisted
+   * @throws SentryInvalidInputException if the required fields are set in arguments provided
+   */
+  @VisibleForTesting
+  static Update getPermUpdatableOnRename(TSentryAuthorizable oldAuthorizable,
+      TSentryAuthorizable newAuthorizable)
+      throws SentryInvalidInputException {
+    String oldAuthz = SentryServiceUtil.getAuthzObj(oldAuthorizable);
+    String newAuthz = SentryServiceUtil.getAuthzObj(newAuthorizable);
+    PermissionsUpdate update = new PermissionsUpdate(SentryStore.INIT_CHANGE_ID, false);
+    TPrivilegeChanges privUpdate = update.addPrivilegeUpdate(PermissionsUpdate.RENAME_PRIVS);
+    privUpdate.putToAddPrivileges(newAuthz, newAuthz);
+    privUpdate.putToDelPrivileges(oldAuthz, oldAuthz);
+    return update;
+  }
+
+  /**
+   * This function is only used for testing purposes.
+   *
+   * @param value to be set
+   */
+  @SuppressWarnings("SameParameterValue")
+  @VisibleForTesting
+  void setSyncStoreOnCreate(boolean value) {
+    syncStoreOnCreate = value;
+  }
+
+  /**
+   * This function is only used for testing purposes.
+   *
+   * @param value to be set
+   */
+  @SuppressWarnings("SameParameterValue")
+  @VisibleForTesting
+  void setSyncStoreOnDrop(boolean value) {
+    syncStoreOnDrop = value;
+  }
+
+  /**
+   * Processes the event and persist to sentry store.
+   *
+   * @param event to be processed
+   * @return true, if the event is persisted to sentry store. false, if the event is not persisted.
+   * @throws Exception if there is an error processing the event.
+   */
+  boolean processNotificationEvent(NotificationEvent event) throws Exception {
+    LOGGER
+        .debug("Processing event with id:{} and Type:{}", event.getEventId(), event.getEventType());
+    switch (HCatEventMessage.EventType.valueOf(event.getEventType())) {
+      case CREATE_DATABASE:
+        return processCreateDatabase(event);
+      case DROP_DATABASE:
+        return processDropDatabase(event);
+      case CREATE_TABLE:
+        return processCreateTable(event);
+      case DROP_TABLE:
+        return processDropTable(event);
+      case ALTER_TABLE:
+        return processAlterTable(event);
+      case ADD_PARTITION:
+        return processAddPartition(event);
+      case DROP_PARTITION:
+        return processDropPartition(event);
+      case ALTER_PARTITION:
+        return processAlterPartition(event);
+      case INSERT:
+        return false;
+      default:
+        LOGGER.error("Notification with ID:{} has invalid event type: {}", event.getEventId(),
+            event.getEventType());
+        return false;
+    }
   }
 
   /**
    * Processes "create database" notification event, and applies its corresponding
    * snapshot change as well as delta path update into Sentry DB.
    *
-   * @param dbName database name
-   * @param location database location
-   * @param seqNum notification event ID
+   * @param event notification event to be processed.
    * @throws Exception if encounters errors while persisting the path change
    */
-  void processCreateDatabase(String dbName, String location, long seqNum) throws Exception {
+  private boolean processCreateDatabase(NotificationEvent event) throws Exception {
+    SentryJSONCreateDatabaseMessage message =
+        deserializer.getCreateDatabaseMessage(event.getMessage());
+    String dbName = message.getDB();
+    String location = message.getLocation();
+    if ((dbName == null) || (location == null)) {
+      LOGGER.error("Create database event "
+              + "has incomplete information. dbName: {} location: {}",
+          StringUtils.defaultIfBlank(dbName, "null"),
+          StringUtils.defaultIfBlank(location, "null"));
+      return false;
+    }
     List<String> locations = Collections.singletonList(location);
-    addPaths(dbName, locations, seqNum);
+    addPaths(dbName, locations, event.getEventId());
+    if (syncStoreOnCreate) {
+      dropSentryDbPrivileges(dbName, event);
+    }
+    return true;
   }
 
   /**
    * Processes "drop database" notification event, and applies its corresponding
    * snapshot change as well as delta path update into Sentry DB.
    *
-   * @param dbName database name
-   * @param location database location
-   * @param seqNum notification event ID
+   * @param event notification event to be processed.
    * @throws Exception if encounters errors while persisting the path change
    */
-  void processDropDatabase(String dbName, String location, long seqNum) throws Exception {
+  private boolean processDropDatabase(NotificationEvent event) throws Exception {
+    SentryJSONDropDatabaseMessage dropDatabaseMessage =
+        deserializer.getDropDatabaseMessage(event.getMessage());
+    String dbName = dropDatabaseMessage.getDB();
+    String location = dropDatabaseMessage.getLocation();
+    if (dbName == null) {
+      LOGGER.error("Drop database event has incomplete information: dbName = null");
+      return false;
+    }
+    if (syncStoreOnDrop) {
+      dropSentryDbPrivileges(dbName, event);
+    }
     List<String> locations = Collections.singletonList(location);
-    removePaths(dbName, locations, seqNum);
+    removePaths(dbName, locations, event.getEventId());
+    return true;
   }
 
   /**
    * Processes "create table" notification event, and applies its corresponding
    * snapshot change as well as delta path update into Sentry DB.
    *
-   * @param dbName database name
-   * @param tableName table name
-   * @param location table location
-   * @param seqNum notification event ID
+   * @param event notification event to be processed.
    * @throws Exception if encounters errors while persisting the path change
    */
-  void processCreateTable(String dbName, String tableName, String location, long seqNum)
-        throws Exception {
-    String authzObj = dbName + "." + tableName;
+  private boolean processCreateTable(NotificationEvent event)
+      throws Exception {
+    SentryJSONCreateTableMessage createTableMessage = deserializer
+        .getCreateTableMessage(event.getMessage());
+    String dbName = createTableMessage.getDB();
+    String tableName = createTableMessage.getTable();
+    String location = createTableMessage.getLocation();
+    if ((dbName == null) || (tableName == null) || (location == null)) {
+      LOGGER.error(String.format("Create table event " + "has incomplete information."
+              + " dbName = %s, tableName = %s, location = %s",
+          StringUtils.defaultIfBlank(dbName, "null"),
+          StringUtils.defaultIfBlank(tableName, "null"),
+          StringUtils.defaultIfBlank(location, "null")));
+      return false;
+    }
+    if (syncStoreOnCreate) {
+      dropSentryTablePrivileges(dbName, tableName, event);
+    }
+    String authzObj = SentryServiceUtil.getAuthzObj(dbName, tableName);
     List<String> locations = Collections.singletonList(location);
-    addPaths(authzObj, locations, seqNum);
+    addPaths(authzObj, locations, event.getEventId());
+    return true;
   }
 
   /**
@@ -98,86 +291,185 @@ class NotificationProcessor {
    * the table as well. And applies its corresponding snapshot change as well
    * as delta path update into Sentry DB.
    *
-   * @param dbName database name
-   * @param tableName table name
-   * @param seqNum notification event ID
+   * @param event notification event to be processed.
    * @throws Exception if encounters errors while persisting the path change
    */
-  void processDropTable(String dbName, String tableName, long seqNum) throws Exception {
-    String authzObj = dbName + "." + tableName;
-    removeAllPaths(authzObj, seqNum);
+  private boolean processDropTable(NotificationEvent event) throws Exception {
+    SentryJSONDropTableMessage dropTableMessage = deserializer
+        .getDropTableMessage(event.getMessage());
+    String dbName = dropTableMessage.getDB();
+    String tableName = dropTableMessage.getTable();
+    if ((dbName == null) || (tableName == null)) {
+      LOGGER.error("Drop table event "
+          + "has incomplete information. dbName: {}, tableName: {}",
+          StringUtils.defaultIfBlank(dbName, "null"),
+          StringUtils.defaultIfBlank(tableName, "null"));
+      return false;
+    }
+    if (syncStoreOnDrop) {
+      dropSentryTablePrivileges(dbName, tableName, event);
+    }
+    String authzObj = SentryServiceUtil.getAuthzObj(dbName, tableName);
+    removeAllPaths(authzObj, event.getEventId());
+    return true;
   }
 
   /**
    * Processes "alter table" notification event, and applies its corresponding
    * snapshot change as well as delta path update into Sentry DB.
    *
-   * @param oldDbName old database name
-   * @param newDbName new database name
-   * @param oldTableName old table name
-   * @param newTableName new table name
-   * @param oldLocation old table location
-   * @param newLocation new table location
-   * @param seqNum notification event ID
+   * @param event notification event to be processed.
    * @throws Exception if encounters errors while persisting the path change
    */
-  void processAlterTable(String oldDbName, String newDbName, String oldTableName,
-          String newTableName, String oldLocation, String newLocation, long seqNum)
-              throws Exception {
+  private boolean processAlterTable(NotificationEvent event) throws Exception {
+    SentryJSONAlterTableMessage alterTableMessage =
+        deserializer.getAlterTableMessage(event.getMessage());
+    String oldDbName = alterTableMessage.getDB();
+    String oldTableName = alterTableMessage.getTable();
+    String newDbName = event.getDbName();
+    String newTableName = event.getTableName();
+    String oldLocation = alterTableMessage.getOldLocation();
+    String newLocation = alterTableMessage.getNewLocation();
+
+    if ((oldDbName == null)
+        || (oldTableName == null)
+        || (newDbName == null)
+        || (newTableName == null)
+        || (oldLocation == null)
+        || (newLocation == null)) {
+      LOGGER.error(String.format("Alter table event "
+              + "has incomplete information. oldDbName = %s, oldTableName = %s, oldLocation = %s, "
+              + "newDbName = %s, newTableName = %s, newLocation = %s",
+          StringUtils.defaultIfBlank(oldDbName, "null"),
+          StringUtils.defaultIfBlank(oldTableName, "null"),
+          StringUtils.defaultIfBlank(oldLocation, "null"),
+          StringUtils.defaultIfBlank(newDbName, "null"),
+          StringUtils.defaultIfBlank(newTableName, "null"),
+          StringUtils.defaultIfBlank(newLocation, "null")));
+      return false;
+    }
+
+    if ((oldDbName.equals(newDbName))
+        && (oldTableName.equals(newTableName))
+        && (oldLocation.equals(newLocation))) {
+      LOGGER.error(String.format("Alter table notification ignored as neither name nor "
+              + "location has changed: oldAuthzObj = %s, oldLocation = %s, newAuthzObj = %s, "
+              + "newLocation = %s", oldDbName + "." + oldTableName, oldLocation,
+          newDbName + "." + newTableName, newLocation));
+      return false;
+    }
+
+    if (!newDbName.equalsIgnoreCase(oldDbName) || !oldTableName.equalsIgnoreCase(newTableName)) {
+      // Name has changed
+      try {
+        renamePrivileges(oldDbName, oldTableName, newDbName, newTableName);
+      } catch (SentryNoSuchObjectException e) {
+        LOGGER.info("Rename Sentry privilege ignored as there are no privileges on the table:"
+            + " {}.{}", oldDbName, oldTableName);
+      } catch (Exception e) {
+        LOGGER.info("Could not process Alter table event. Event: {}", event.toString(), e);
+        return false;
+      }
+    }
     String oldAuthzObj = oldDbName + "." + oldTableName;
     String newAuthzObj = newDbName + "." + newTableName;
-    renameAuthzPath(oldAuthzObj, newAuthzObj, oldLocation, newLocation, seqNum);
+    renameAuthzPath(oldAuthzObj, newAuthzObj, oldLocation, newLocation, event.getEventId());
+    return true;
   }
 
   /**
    * Processes "add partition" notification event, and applies its corresponding
    * snapshot change as well as delta path update into Sentry DB.
    *
-   * @param dbName database name
-   * @param tableName table name
-   * @param locations partition locations
-   * @param seqNum notification event ID
+   * @param event notification event to be processed.
    * @throws Exception if encounters errors while persisting the path change
    */
-  void processAddPartition(String dbName, String tableName,
-                           Collection<String> locations, long seqNum)
-        throws Exception {
-    String authzObj = dbName + "." + tableName;
-    addPaths(authzObj, locations, seqNum);
+  private boolean processAddPartition(NotificationEvent event)
+      throws Exception {
+    SentryJSONAddPartitionMessage addPartitionMessage =
+        deserializer.getAddPartitionMessage(event.getMessage());
+    String dbName = addPartitionMessage.getDB();
+    String tableName = addPartitionMessage.getTable();
+    List<String> locations = addPartitionMessage.getLocations();
+    if ((dbName == null) || (tableName == null) || (locations == null)) {
+      LOGGER.error(String.format("Create table event has incomplete information. "
+              + "dbName = %s, tableName = %s, locations = %s",
+          StringUtils.defaultIfBlank(dbName, "null"),
+          StringUtils.defaultIfBlank(tableName, "null"),
+          locations != null ? locations.toString() : "null"));
+      return false;
+    }
+    String authzObj = SentryServiceUtil.getAuthzObj(dbName, tableName);
+    addPaths(authzObj, locations, event.getEventId());
+    return true;
   }
 
   /**
    * Processes "drop partition" notification event, and applies its corresponding
    * snapshot change as well as delta path update into Sentry DB.
    *
-   * @param dbName database name
-   * @param tableName table name
-   * @param locations partition locations
-   * @param seqNum notification event ID
+   * @param event notification event to be processed.
    * @throws Exception if encounters errors while persisting the path change
    */
-  void processDropPartition(String dbName, String tableName,
-                            Collection<String> locations, long seqNum)
-        throws Exception {
-    String authzObj = dbName + "." + tableName;
-    removePaths(authzObj, locations, seqNum);
+  private boolean processDropPartition(NotificationEvent event)
+      throws Exception {
+    SentryJSONDropPartitionMessage dropPartitionMessage =
+        deserializer.getDropPartitionMessage(event.getMessage());
+    String dbName = dropPartitionMessage.getDB();
+    String tableName = dropPartitionMessage.getTable();
+    List<String> locations = dropPartitionMessage.getLocations();
+    if ((dbName == null) || (tableName == null) || (locations == null)) {
+      LOGGER.error(String.format("Drop partition event "
+              + "has incomplete information. dbName = %s, tableName = %s, location = %s",
+          StringUtils.defaultIfBlank(dbName, "null"),
+          StringUtils.defaultIfBlank(tableName, "null"),
+          locations != null ? locations.toString() : "null"));
+      return false;
+    }
+    String authzObj = SentryServiceUtil.getAuthzObj(dbName, tableName);
+    removePaths(authzObj, locations, event.getEventId());
+    return true;
   }
 
   /**
    * Processes "alter partition" notification event, and applies its corresponding
    * snapshot change as well as delta path update into Sentry DB.
    *
-   * @param dbName database name
-   * @param tableName table name
-   * @param oldLocation old partition location
-   * @param newLocation new partition location
-   * @param seqNum notification event ID
+   * @param event notification event to be processed.
    * @throws Exception if encounters errors while persisting the path change
    */
-  void processAlterPartition(String dbName, String tableName, String oldLocation,
-        String newLocation, long seqNum) throws Exception {
+  private boolean processAlterPartition(NotificationEvent event) throws Exception {
+    SentryJSONAlterPartitionMessage alterPartitionMessage =
+        deserializer.getAlterPartitionMessage(event.getMessage());
+    String dbName = alterPartitionMessage.getDB();
+    String tableName = alterPartitionMessage.getTable();
+    String oldLocation = alterPartitionMessage.getOldLocation();
+    String newLocation = alterPartitionMessage.getNewLocation();
+
+    if ((dbName == null)
+        || (tableName == null)
+        || (oldLocation == null)
+        || (newLocation == null)) {
+      LOGGER.error(String.format("Alter partition event "
+              + "has incomplete information. dbName = %s, tableName = %s, "
+              + "oldLocation = %s, newLocation = %s",
+          StringUtils.defaultIfBlank(dbName, "null"),
+          StringUtils.defaultIfBlank(tableName, "null"),
+          StringUtils.defaultIfBlank(oldLocation, "null"),
+          StringUtils.defaultIfBlank(newLocation, "null")));
+      return false;
+    }
+
+    if (oldLocation.equals(newLocation)) {
+      LOGGER.info(String.format("Alter partition notification ignored as"
+          + "location has not changed: AuthzObj = %s, Location = %s", dbName + "."
+          + "." + tableName, oldLocation));
+      return false;
+    }
+
     String oldAuthzObj = dbName + "." + tableName;
-    renameAuthzPath(oldAuthzObj, oldAuthzObj, oldLocation, newLocation, seqNum);
+    renameAuthzPath(oldAuthzObj, oldAuthzObj, oldLocation, newLocation, event.getEventId());
+    return true;
   }
 
   /**
@@ -187,10 +479,9 @@ class NotificationProcessor {
    * @param authzObj the given authzObj
    * @param locations a set of paths need to be added
    * @param seqNum notification event ID
-   * @throws Exception
    */
   private void addPaths(String authzObj, Collection<String> locations, long seqNum)
-        throws Exception {
+      throws Exception {
     // AuthzObj is case insensitive
     authzObj = authzObj.toLowerCase();
 
@@ -201,13 +492,13 @@ class NotificationProcessor {
     for (String location : locations) {
       String pathTree = getPath(location);
       if (pathTree == null) {
-        LOGGER.debug("#### HMS Path Update ["
+        LOGGER.debug("HMS Path Update ["
             + "OP : addPath, "
             + "authzObj : " + authzObj + ", "
             + "path : " + location + "] - nothing to add" + ", "
             + "notification event ID: " + seqNum + "]");
       } else {
-        LOGGER.debug("#### HMS Path Update ["
+        LOGGER.debug("HMS Path Update ["
             + "OP : addPath, " + "authzObj : "
             + authzObj + ", "
             + "path : " + location + ", "
@@ -226,10 +517,9 @@ class NotificationProcessor {
    * @param authzObj the given authzObj
    * @param locations a set of paths need to be removed
    * @param seqNum notification event ID
-   * @throws Exception
    */
   private void removePaths(String authzObj, Collection<String> locations, long seqNum)
-        throws Exception {
+      throws Exception {
     // AuthzObj is case insensitive
     authzObj = authzObj.toLowerCase();
 
@@ -238,13 +528,13 @@ class NotificationProcessor {
     for (String location : locations) {
       String pathTree = getPath(location);
       if (pathTree == null) {
-        LOGGER.debug("#### HMS Path Update ["
+        LOGGER.debug("HMS Path Update ["
             + "OP : removePath, "
             + "authzObj : " + authzObj + ", "
             + "path : " + location + "] - nothing to remove" + ", "
             + "notification event ID: " + seqNum + "]");
       } else {
-        LOGGER.debug("#### HMS Path Update ["
+        LOGGER.debug("HMS Path Update ["
             + "OP : removePath, "
             + "authzObj : " + authzObj + ", "
             + "path : " + location + ", "
@@ -263,14 +553,13 @@ class NotificationProcessor {
    *
    * @param authzObj the given authzObj to be deleted
    * @param seqNum notification event ID
-   * @throws Exception
    */
   private void removeAllPaths(String authzObj, long seqNum)
-        throws Exception {
+      throws Exception {
     // AuthzObj is case insensitive
     authzObj = authzObj.toLowerCase();
 
-    LOGGER.debug("#### HMS Path Update ["
+    LOGGER.debug("HMS Path Update ["
         + "OP : removeAllPaths, "
         + "authzObj : " + authzObj + ", "
         + "notification event ID: " + seqNum + "]");
@@ -289,21 +578,19 @@ class NotificationProcessor {
    * @param newAuthzObj the new name to be changed to
    * @param oldLocation a existing path of the given authzObj
    * @param newLocation a new path to be changed to
-   * @param seqNum
-   * @throws Exception
    */
   private void renameAuthzPath(String oldAuthzObj, String newAuthzObj, String oldLocation,
-          String newLocation, long seqNum) throws Exception {
+      String newLocation, long seqNum) throws Exception {
     // AuthzObj is case insensitive
     oldAuthzObj = oldAuthzObj.toLowerCase();
     newAuthzObj = newAuthzObj.toLowerCase();
     String oldPathTree = getPath(oldLocation);
     String newPathTree = getPath(newLocation);
 
-    LOGGER.debug("#### HMS Path Update ["
+    LOGGER.debug("HMS Path Update ["
         + "OP : renameAuthzObject, "
         + "oldAuthzObj : " + oldAuthzObj + ", "
-        + "newAuthzObj : " + newAuthzObj   + ", "
+        + "newAuthzObj : " + newAuthzObj + ", "
         + "oldLocation : " + oldLocation + ", "
         + "newLocation : " + newLocation + ", "
         + "notification event ID: " + seqNum + "]");
@@ -323,20 +610,10 @@ class NotificationProcessor {
           // Both name and location has changed
           // - Alter table rename for managed table
           sentryStore.renameAuthzPathsMapping(oldAuthzObj, newAuthzObj, oldPathTree,
-                  newPathTree, update);
+              newPathTree, update);
         }
-      } else if (oldPathTree != null) {
-        PathsUpdate update = new PathsUpdate(seqNum, false);
-        update.newPathChange(oldAuthzObj).addToDelPaths(splitPath(oldPathTree));
-        sentryStore.deleteAuthzPathsMapping(oldAuthzObj,
-            Collections.singleton(oldPathTree),
-            update);
-      } else if (newPathTree != null) {
-        PathsUpdate update = new PathsUpdate(seqNum, false);
-        update.newPathChange(newAuthzObj).addToAddPaths(splitPath(newPathTree));
-        sentryStore.addAuthzPathsMapping(newAuthzObj,
-            Collections.singleton(newPathTree),
-            update);
+      } else {
+        updateAuthzPathsMapping(oldAuthzObj, oldPathTree, newAuthzObj, newPathTree, seqNum);
       }
     } else if (!oldLocation.equals(newLocation)) {
       // Only Location has changed, e.g. Alter table set location
@@ -346,25 +623,33 @@ class NotificationProcessor {
         update.newPathChange(oldAuthzObj).addToAddPaths(splitPath(newPathTree));
         sentryStore.updateAuthzPathsMapping(oldAuthzObj, oldPathTree,
             newPathTree, update);
-      } else if (oldPathTree != null) {
-        PathsUpdate update = new PathsUpdate(seqNum, false);
-        update.newPathChange(oldAuthzObj).addToDelPaths(splitPath(oldPathTree));
-        sentryStore.deleteAuthzPathsMapping(oldAuthzObj,
-              Collections.singleton(oldPathTree),
-              update);
-      } else if (newPathTree != null) {
-        PathsUpdate update = new PathsUpdate(seqNum, false);
-        update.newPathChange(oldAuthzObj).addToAddPaths(splitPath(newPathTree));
-        sentryStore.addAuthzPathsMapping(oldAuthzObj,
-              Collections.singleton(newPathTree),
-              update);
+      } else {
+        updateAuthzPathsMapping(oldAuthzObj, oldPathTree, newAuthzObj, newPathTree, seqNum);
       }
     } else {
       LOGGER.error("Update Notification for Auhorizable object {}, with no change, skipping",
-        oldAuthzObj);
-      throw new SentryInvalidHMSEventException("Update Notification for Authorizable object" +
-        "with no change");
+          oldAuthzObj);
+      throw new SentryInvalidHMSEventException("Update Notification for Authorizable object"
+          + "with no change");
     }
+  }
+
+  private void updateAuthzPathsMapping(String oldAuthzObj, String oldPathTree,
+      String newAuthzObj, String newPathTree, long seqNum) throws Exception {
+    if (oldPathTree != null) {
+      PathsUpdate update = new PathsUpdate(seqNum, false);
+      update.newPathChange(oldAuthzObj).addToDelPaths(splitPath(oldPathTree));
+      sentryStore.deleteAuthzPathsMapping(oldAuthzObj,
+          Collections.singleton(oldPathTree),
+          update);
+    } else if (newPathTree != null) {
+      PathsUpdate update = new PathsUpdate(seqNum, false);
+      update.newPathChange(newAuthzObj).addToAddPaths(splitPath(newPathTree));
+      sentryStore.addAuthzPathsMapping(newAuthzObj,
+          Collections.singleton(newPathTree),
+          update);
+    }
+
   }
 
   /**
@@ -383,15 +668,45 @@ class NotificationProcessor {
     return null;
   }
 
-  /**
-   * Split path into components on the "/" character.
-   * The path should not start with "/".
-   * This is consumed by Thrift interface, so the return result should be
-   * {@code List<String>}
-   * @param path input oath e.g. {@code foo/bar}
-   * @return list of commponents, e.g. [foo, bar]
-   */
-  private List<String> splitPath(String path) {
-    return (Lists.newArrayList(path.split("/")));
+  private void dropSentryDbPrivileges(String dbName, NotificationEvent event) {
+    try {
+      TSentryAuthorizable authorizable = new TSentryAuthorizable(authServerName);
+      authorizable.setDb(dbName);
+      sentryStore.dropPrivilege(authorizable, getPermUpdatableOnDrop(authorizable));
+    } catch (SentryNoSuchObjectException e) {
+      LOGGER.info("Drop Sentry privilege ignored as there are no privileges on the database: {}",
+          dbName);
+    } catch (Exception e) {
+      LOGGER.error("Could not process Drop database event." + "Event: " + event.toString(), e);
+    }
+  }
+
+  private void dropSentryTablePrivileges(String dbName, String tableName,
+      NotificationEvent event) {
+    try {
+      TSentryAuthorizable authorizable = new TSentryAuthorizable(authServerName);
+      authorizable.setDb(dbName);
+      authorizable.setTable(tableName);
+      sentryStore.dropPrivilege(authorizable, getPermUpdatableOnDrop(authorizable));
+    } catch (SentryNoSuchObjectException e) {
+      LOGGER.info("Drop Sentry privilege ignored as there are no privileges on the table: {}.{}",
+          dbName, tableName);
+    } catch (Exception e) {
+      LOGGER.error("Could not process Drop table event. Event: " + event.toString(), e);
+    }
+  }
+
+  private void renamePrivileges(String oldDbName, String oldTableName, String newDbName,
+      String newTableName) throws
+      Exception {
+    TSentryAuthorizable oldAuthorizable = new TSentryAuthorizable(authServerName);
+    oldAuthorizable.setDb(oldDbName);
+    oldAuthorizable.setTable(oldTableName);
+    TSentryAuthorizable newAuthorizable = new TSentryAuthorizable(authServerName);
+    newAuthorizable.setDb(newDbName);
+    newAuthorizable.setTable(newTableName);
+    Update update =
+        getPermUpdatableOnRename(oldAuthorizable, newAuthorizable);
+    sentryStore.renamePrivilege(oldAuthorizable, newAuthorizable, update);
   }
 }

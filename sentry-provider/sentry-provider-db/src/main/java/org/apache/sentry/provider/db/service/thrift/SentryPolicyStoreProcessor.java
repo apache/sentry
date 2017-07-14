@@ -945,7 +945,10 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     } catch (SentryThriftAPIMismatchException e) {
       LOGGER.error(e.getMessage(), e);
       response.setStatus(Status.THRIFT_VERSION_MISMATCH(e.getMessage(), e));
-    } catch (Exception e) {
+    } catch (SentryInvalidInputException e) {
+      response.setStatus(Status.InvalidInput(e.getMessage(), e));
+    }
+    catch (Exception e) {
       String msg = "Unknown error for request: " + request + ", message: "
           + e.getMessage();
       LOGGER.error(msg, e);
