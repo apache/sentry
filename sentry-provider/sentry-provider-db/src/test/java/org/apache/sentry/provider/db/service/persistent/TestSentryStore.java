@@ -2697,7 +2697,6 @@ public class TestSentryStore extends org.junit.Assert {
   @Test
   public void testRenameUpdateAfterReplacingANewPathsImage() throws Exception {
     Map<String, Set<String>> authzPaths = new HashMap<>();
-
     // First image to persist (this will be replaced later)
     authzPaths.put("db1.table1", Sets.newHashSet("/user/hive/warehouse/db2.db/table1.1",
         "/user/hive/warehouse/db2.db/table1.2"));

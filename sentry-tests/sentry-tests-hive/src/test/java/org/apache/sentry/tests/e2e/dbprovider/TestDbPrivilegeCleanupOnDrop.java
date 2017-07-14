@@ -31,7 +31,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.sentry.service.thrift.HMSFollower;
+import org.apache.sentry.service.thrift.HmsFollower;
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
 import org.junit.BeforeClass;
 import org.junit.Before;
@@ -78,7 +78,7 @@ public class TestDbPrivilegeCleanupOnDrop extends
     to.close();
     // Check the HMS connection only when notification log is enabled.
     if (enableNotificationLog) {
-      while (!HMSFollower.isConnectedToHMS()) {
+      while (!HmsFollower.isConnectedToHms()) {
         Thread.sleep(1000);
       }
     }
