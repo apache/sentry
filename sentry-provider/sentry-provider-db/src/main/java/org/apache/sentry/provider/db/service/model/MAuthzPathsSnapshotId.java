@@ -22,7 +22,7 @@ import javax.jdo.annotations.PrimaryKey;
 
 /**
  * This class is used to persist new authz paths snapshots IDs. An authz path snapshot ID is required by
- * the MAuthzPathsMapping to detect new HMS snapshots created by the HmsFollower.
+ * the MAuthzPathsMapping to detect new HMS snapshots created by the HMSFollower.
  */
 @PersistenceCapable
 public class MAuthzPathsSnapshotId {
