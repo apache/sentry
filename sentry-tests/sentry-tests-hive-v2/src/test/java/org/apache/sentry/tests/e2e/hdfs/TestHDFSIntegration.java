@@ -240,7 +240,7 @@ public class TestHDFSIntegration {
   }
 
   private static void startHiveAndMetastore(final HiveConf hiveConf) throws IOException, InterruptedException {
-    startHiveAndMetastore(NUM_RETRIES);
+    startHiveAndMetastore(hiveConf, NUM_RETRIES);
   }
 
   private static void startHiveAndMetastore(final HiveConf hiveConf, final int retries) throws IOException, InterruptedException {
@@ -316,7 +316,7 @@ public class TestHDFSIntegration {
       public Void run() throws Exception {
         System.setProperty(MiniDFSCluster.PROP_TEST_BUILD_DATA, "target/test/data");
         hadoopConf = new HdfsConfiguration();
-        hadoopConfconf.set(DFSConfigKeys.DFS_NAMENODE_INODE_ATTRIBUTES_PROVIDER_KEY,
+        hadoopConf.set(DFSConfigKeys.DFS_NAMENODE_INODE_ATTRIBUTES_PROVIDER_KEY,
             SentryINodeAttributesProvider.class.getName());
         hadoopConf.setBoolean(DFSConfigKeys.DFS_NAMENODE_ACLS_ENABLED_KEY, true);
         hadoopConf.setInt(DFSConfigKeys.DFS_REPLICATION_KEY, 1);
@@ -1688,9 +1688,9 @@ public class TestHDFSIntegration {
 
      // In the local test environment, EXTERNAL_SENTRY_SERVICE is false,
      // set the default URI scheme to be hdfs.
-     boolean testConfOff = new Boolean(System.getProperty(EXTERNAL_SENTRY_SERVICE, "false"));
+     boolean testConfOff = Boolean.valueOf(System.getProperty(EXTERNAL_SENTRY_SERVICE, "false"));
      if (!testConfOff) {
-       PathsUpdate.getConfiguration().set("fs.defaultFS", "hdfs:///");
+       PathsUpdate.setDefaultScheme("hdfs");
      }
 
      tmpHDFSDir = new Path("/tmp/external");

@@ -127,9 +127,7 @@ public class DefaultSentryAccessController extends SentryHiveAccessController {
       String msg = "Error occurred when Sentry client creating role: " + e.getMessage();
       executeOnErrorHooks(msg, e);
     } finally {
-      if (sentryClient != null) {
-        sentryClient.close();
-      }
+      closeClient();
     }
   }
 
@@ -150,9 +148,7 @@ public class DefaultSentryAccessController extends SentryHiveAccessController {
       String msg = "Error occurred when Sentry client creating role: " + e.getMessage();
       executeOnErrorHooks(msg, e);
     } finally {
-      if (sentryClient != null) {
-        sentryClient.close();
-      }
+      closeClient();
     }
   }
 
@@ -169,9 +165,7 @@ public class DefaultSentryAccessController extends SentryHiveAccessController {
       String msg = "Error when sentryClient listRoles: " + e.getMessage();
       executeOnErrorHooks(msg, e);
     } finally {
-      if (sentryClient != null) {
-        sentryClient.close();
-      }
+      closeClient();
     }
     return roles;
   }
@@ -243,9 +237,7 @@ public class DefaultSentryAccessController extends SentryHiveAccessController {
       String msg = "Error when sentryClient listPrivilegesByRoleName: " + e.getMessage();
       executeOnErrorHooks(msg, e);
     } finally {
-      if (sentryClient != null) {
-        sentryClient.close();
-      }
+      closeClient();
     }
     return infoList;
   }
@@ -265,9 +257,7 @@ public class DefaultSentryAccessController extends SentryHiveAccessController {
       String msg = "Error when sentryClient setCurrentRole: " + e.getMessage();
       executeOnErrorHooks(msg, e);
     } finally {
-      if (sentryClient != null) {
-        sentryClient.close();
-      }
+      closeClient();
       if (hiveAuthzBinding != null) {
         hiveAuthzBinding.close();
       }
@@ -290,9 +280,7 @@ public class DefaultSentryAccessController extends SentryHiveAccessController {
       String msg = "Error when sentryClient listUserRoles: " + e.getMessage();
       executeOnErrorHooks(msg, e);
     } finally {
-      if (sentryClient != null) {
-        sentryClient.close();
-      }
+      closeClient();
       if (hiveAuthzBinding != null) {
         hiveAuthzBinding.close();
       }
@@ -335,9 +323,7 @@ public class DefaultSentryAccessController extends SentryHiveAccessController {
       String msg = "Error when sentryClient listRolesByGroupName: " + e.getMessage();
       executeOnErrorHooks(msg, e);
     } finally {
-      if (sentryClient != null) {
-        sentryClient.close();
-      }
+      closeClient();
     }
     return hiveRoleGrants;
   }
@@ -463,9 +449,7 @@ public class DefaultSentryAccessController extends SentryHiveAccessController {
       String msg = "Error when sentryClient grant/revoke privilege:" + e.getMessage();
       executeOnErrorHooks(msg, e);
     } finally {
-      if (sentryClient != null) {
-        sentryClient.close();
-      }
+      closeClient();
     }
   }
   /**
@@ -524,9 +508,7 @@ public class DefaultSentryAccessController extends SentryHiveAccessController {
       String msg = "Error when sentryClient grant/revoke role:" + e.getMessage();
       executeOnErrorHooks(msg, e);
     } finally {
-      if (sentryClient != null) {
-        sentryClient.close();
-      }
+      closeClient();
     }
   }
 
@@ -564,6 +546,14 @@ public class DefaultSentryAccessController extends SentryHiveAccessController {
       throw new HiveAuthzPluginException(msg, e);
     }
   }
-
+  private void closeClient() {
+    if (sentryClient != null) {
+      try {
+        sentryClient.close();
+      } catch (Exception e) {
+        LOG.error("Error while closing the connection with sentry server", e);
+      }
+    }
+  }
 
 }

@@ -48,6 +48,9 @@ limitations under the License.
       <activation>
         <activeByDefault>false</activeByDefault>
       </activation>
+      <properties>
+        <pmd.skip>true</pmd.skip>
+      </properties>
       <modules>
         <module>sentry-tests-hive-v2</module>
       </modules>
