@@ -107,7 +107,7 @@ import static org.apache.sentry.provider.db.service.persistent.QueryParamBuilder
  * single node and rely on DB for multi-node synchronization.
  * <p>
  * This isn't much of a problem for path updates since they are
- * driven by HmsFollower which usually runs on a single leader
+ * driven by HMSFollower which usually runs on a single leader
  * node, but permission updates originate from clients
  * directly and may be highly concurrent.
  * <p>
@@ -151,7 +151,7 @@ public class SentryStore {
   private static final long COUNT_VALUE_UNKNOWN = -1L;
 
   // Representation for unknown HMS notification ID
-  public static final long NOTIFICATION_UNKNOWN = -1L;
+  private static final long NOTIFICATION_UNKNOWN = -1L;
 
   private static final Set<String> ALL_ACTIONS = Sets.newHashSet(AccessConstants.ALL,
       AccessConstants.SELECT, AccessConstants.INSERT, AccessConstants.ALTER,
@@ -169,8 +169,8 @@ public class SentryStore {
   private final TransactionManager tm;
 
   /**
-   * counterWait is used to synchronize notifications between Thrift and HmsFollower.
-   * Technically it doesn't belong here, but the only thing that connects HmsFollower
+   * counterWait is used to synchronize notifications between Thrift and HMSFollower.
+   * Technically it doesn't belong here, but the only thing that connects HMSFollower
    * and Thrift API is SentryStore. An alternative could be a singleton CounterWait or
    * some factory that returns CounterWait instances keyed by name, but this complicates
    * things unnecessary.
@@ -2674,7 +2674,7 @@ public class SentryStore {
   /**
    * Persist an up-to-date HMS snapshot into Sentry DB in a single transaction.
    *
-   * @param authzPaths paths to be be persisted
+   * @param authzPaths Mapping of hiveObj to &lt Paths &lt
    * @throws Exception
    */
   public void persistFullPathsImage(final Map<String, Set<String>> authzPaths) throws Exception {
@@ -2685,6 +2685,7 @@ public class SentryStore {
 
           long snapshotID = getCurrentAuthzPathsSnapshotID(pm);
           long nextSnapshotID = snapshotID + 1;
+
           pm.makePersistent(new MAuthzPathsSnapshotId(nextSnapshotID));
           for (Map.Entry<String, Set<String>> authzPath : authzPaths.entrySet()) {
             pm.makePersistent(new MAuthzPathsMapping(nextSnapshotID, authzPath.getKey(), authzPath.getValue()));
@@ -3703,7 +3704,7 @@ public class SentryStore {
    *
    * @param pm the PersistenceManager
    * @return EMPTY_NOTIFICATION_ID(0) when there are no notifications processed.
-   * else  last NotificationID processed by HmsFollower
+   * else  last NotificationID processed by HMSFollower
    */
   static Long getLastProcessedNotificationIDCore(
       PersistenceManager pm) {

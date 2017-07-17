@@ -20,13 +20,15 @@ package org.apache.sentry.provider.db.service.model;
 /**
  * Database backend store for HMS Notification ID's. All the notifications that are processed
  * by sentry are stored.
- * <p>
+ */
+
+/*
  * <p> HMS notification ID's are stored in separate table for three reasons</p>
  * <ol>
  * <li>SENTRY_PATH_CHANGE is not updated for every notification that is received from HMS. There
- * are cases where HmsFollower doesn't process notifications and skip's them. Depending on
+ * are cases where HMSFollower doesn't process notifications and skip's them. Depending on
  * SENTRY_PATH_CHANGE information may not provide the last notification processed.</li>
- * <li> There could be cases where HmsFollower thread in multiple sentry servers acting as a
+ * <li> There could be cases where HMSFollower thread in multiple sentry servers acting as a
  * leader and process HMS notifications. we need to avoid processing the notifications
  * multiple times. This can be made sure by always having some number of notification
  * information always regardless of purging interval.</li>

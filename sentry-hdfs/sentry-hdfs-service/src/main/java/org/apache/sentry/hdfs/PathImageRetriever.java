@@ -25,14 +25,9 @@ import org.apache.sentry.provider.db.service.persistent.PathsImage;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 
 import javax.annotation.concurrent.ThreadSafe;
-
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import javax.annotation.concurrent.ThreadSafe;
-import org.apache.sentry.hdfs.service.thrift.TPathChanges;
-import org.apache.sentry.provider.db.service.persistent.PathsImage;
-import org.apache.sentry.provider.db.service.persistent.SentryStore;
 
 /**
  * PathImageRetriever obtains a complete snapshot of Hive Paths from a persistent
@@ -42,10 +37,10 @@ import org.apache.sentry.provider.db.service.persistent.SentryStore;
  * It is a thread safe class, as all the underlying database operation is thread safe.
  */
 @ThreadSafe
-class PathImageRetriever implements ImageRetriever<PathsUpdate> {
+public class PathImageRetriever implements ImageRetriever<PathsUpdate> {
 
-  private static final String[] root = {"/"};
   private final SentryStore sentryStore;
+  private static final String[] root = {"/"};
 
   PathImageRetriever(SentryStore sentryStore) {
     this.sentryStore = sentryStore;
@@ -60,8 +55,8 @@ class PathImageRetriever implements ImageRetriever<PathsUpdate> {
       // persistent storage, along with the sequence number of latest
       // delta change the snapshot corresponds to.
       PathsImage pathsImage = sentryStore.retrieveFullPathsImage();
+      long curSeqNum = pathsImage.getCurSeqNum();
       long curImgNum = pathsImage.getCurImgNum();
-      long curSeqNum = pathsImage.getId();
       Map<String, Set<String>> pathImage = pathsImage.getPathImage();
 
       // Translates the complete Hive paths snapshot into a PathsUpdate.
@@ -78,7 +73,7 @@ class PathImageRetriever implements ImageRetriever<PathsUpdate> {
       }
 
       SentryHdfsMetricsUtil.getPathChangesHistogram.update(pathsUpdate
-          .getPathChanges().size());
+            .getPathChanges().size());
 
       // Translate PathsUpdate that contains a full image to TPathsDump for
       // consumer (NN) to be able to quickly construct UpdateableAuthzPaths
