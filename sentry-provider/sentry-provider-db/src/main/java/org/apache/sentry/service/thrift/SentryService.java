@@ -296,7 +296,6 @@ public class SentryService implements Callable, SigUtils.SigListener {
     hiveConnectionFactory = new HiveSimpleConnectionFactory(conf, new HiveConf());
     hiveConnectionFactory.init();
     hmsFollower = new HMSFollower(conf, sentryStore, leaderMonitor, hiveConnectionFactory);
-
     long initDelay = conf.getLong(ServerConfig.SENTRY_HMSFOLLOWER_INIT_DELAY_MILLS,
             ServerConfig.SENTRY_HMSFOLLOWER_INIT_DELAY_MILLS_DEFAULT);
     long period = conf.getLong(ServerConfig.SENTRY_HMSFOLLOWER_INTERVAL_MILLS,
@@ -350,7 +349,7 @@ public class SentryService implements Callable, SigUtils.SigListener {
       try {
         // close connections
         hmsFollower.close();
-      } catch (RuntimeException ex) {
+      } catch (Exception ex) {
         LOGGER.error("HMSFollower.close() failed", ex);
       } finally {
         hmsFollower = null;

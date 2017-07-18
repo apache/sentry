@@ -78,7 +78,7 @@ public class TestDbPrivilegeCleanupOnDrop extends
     to.close();
     // Check the HMS connection only when notification log is enabled.
     if (enableNotificationLog) {
-      while (!HMSFollower.isConnectedToHMS()) {
+      while (!HMSFollower.isConnectedToHms()) {
         Thread.sleep(1000);
       }
     }

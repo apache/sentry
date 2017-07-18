@@ -20,9 +20,7 @@ package org.apache.sentry.provider.db.service.model;
 /**
  * Database backend store for HMS Notification ID's. All the notifications that are processed
  * by sentry are stored.
- */
-
-/*
+ * <p>
  * <p> HMS notification ID's are stored in separate table for three reasons</p>
  * <ol>
  * <li>SENTRY_PATH_CHANGE is not updated for every notification that is received from HMS. There
