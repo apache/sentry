@@ -35,7 +35,7 @@
     <value>8038</value>
   </property>
   <property>
-    <name>sentry.service.client.server.rpc-address</name>
+    <name>sentry.service.client.server.rpc-addresses</name>
     <value>localhost</value>
   </property>
   <property>

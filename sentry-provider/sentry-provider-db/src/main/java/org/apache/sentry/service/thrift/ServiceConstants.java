@@ -241,7 +241,7 @@ public class ServiceConstants {
   public static class ClientConfig {
     public static final String SERVER_RPC_PORT = "sentry.service.client.server.rpc-port";
     public static final int SERVER_RPC_PORT_DEFAULT = ServerConfig.RPC_PORT_DEFAULT;
-    public static final String SERVER_RPC_ADDRESS = "sentry.service.client.server.rpc-address";
+    public static final String SERVER_RPC_ADDRESS = "sentry.service.client.server.rpc-addresses";
     public static final String SERVER_RPC_CONN_TIMEOUT = "sentry.service.client.server.rpc-connection-timeout";
 
     // HA configuration

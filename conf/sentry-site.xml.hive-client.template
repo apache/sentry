@@ -37,7 +37,7 @@
 
 
   <property>
-    <name>sentry.service.client.server.rpc-address</name>
+    <name>sentry.service.client.server.rpc-addresses</name>
     <value> </value>
     <description> TCP address of the sentry store server</description>
   </property>

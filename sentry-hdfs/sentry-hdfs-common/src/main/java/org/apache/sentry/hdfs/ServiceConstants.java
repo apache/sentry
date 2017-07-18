@@ -73,7 +73,7 @@ public class ServiceConstants {
 
     public static final String SERVER_RPC_PORT = "sentry.hdfs.service.client.server.rpc-port";
   
-    public static final String SERVER_RPC_ADDRESS = "sentry.hdfs.service.client.server.rpc-address";
+    public static final String SERVER_RPC_ADDRESS = "sentry.hdfs.service.client.server.rpc-addresses";
 
     public static final String USE_COMPACT_TRANSPORT = "sentry.hdfs.service.client.compact.transport";
     public static final boolean USE_COMPACT_TRANSPORT_DEFAULT = false;

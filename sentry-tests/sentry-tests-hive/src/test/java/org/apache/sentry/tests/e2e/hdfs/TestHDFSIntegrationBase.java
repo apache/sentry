@@ -526,8 +526,8 @@ public abstract class TestHDFSIntegrationBase {
       public Void run() throws Exception {
         HiveConf hiveConf = hiveConfiguration;
         hiveConf.set("sentry.metastore.plugins", "org.apache.sentry.hdfs.MetastorePlugin");
-        hiveConf.set("sentry.service.client.server.rpc-address", "localhost");
-        hiveConf.set("sentry.hdfs.service.client.server.rpc-address", "localhost");
+        hiveConf.set("sentry.service.client.server.rpc-addresses", "localhost");
+        hiveConf.set("sentry.hdfs.service.client.server.rpc-addresses", "localhost");
         hiveConf.set("sentry.hdfs.service.client.server.rpc-port", String.valueOf(sentryPort));
         hiveConf.set("sentry.service.client.server.rpc-port", String.valueOf(sentryPort));
 //        hiveConf.set("sentry.service.server.compact.transport", "true");
@@ -694,7 +694,7 @@ public abstract class TestHDFSIntegrationBase {
         hadoopConf.set("sentry.authorization-provider.cache-stale-threshold.ms", String.valueOf(STALE_THRESHOLD));
 
         hadoopConf.set("sentry.hdfs.service.security.mode", "none");
-        hadoopConf.set("sentry.hdfs.service.client.server.rpc-address", "localhost");
+        hadoopConf.set("sentry.hdfs.service.client.server.rpc-addresses", "localhost");
         hadoopConf.set("sentry.hdfs.service.client.server.rpc-port", String.valueOf(sentryPort));
         EditLogFileOutputStream.setShouldSkipFsyncForTesting(true);
         miniDFS = new MiniDFSCluster.Builder(hadoopConf).build();

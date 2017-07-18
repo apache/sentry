@@ -67,7 +67,7 @@ public final class SentryClientTransportConstants {
     static final String SERVER_RPC_PORT = "sentry.service.client.server.rpc-port";
 
     //configuration for server address. It can be coma seperated list of server addresses.
-    static final String SERVER_RPC_ADDRESS = "sentry.service.client.server.rpc-address";
+    static final String SERVER_RPC_ADDRESS = "sentry.service.client.server.rpc-addresses";
 
     /**
      * This configuration parameter is only meant to be used for testing purposes.
@@ -140,7 +140,7 @@ public final class SentryClientTransportConstants {
     static final String SERVER_RPC_PORT = "sentry.hdfs.service.client.server.rpc-port";
 
     //configuration for server address. It can be coma seperated list of server addresses.
-    static final String SERVER_RPC_ADDRESS = "sentry.hdfs.service.client.server.rpc-address";
+    static final String SERVER_RPC_ADDRESS = "sentry.hdfs.service.client.server.rpc-addresses";
 
     /**
      * This configuration parameter is only meant to be used for testing purposes.
