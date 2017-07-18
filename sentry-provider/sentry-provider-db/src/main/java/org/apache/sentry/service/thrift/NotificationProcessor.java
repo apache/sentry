@@ -195,8 +195,6 @@ final class NotificationProcessor {
         return processDropPartition(event);
       case ALTER_PARTITION:
         return processAlterPartition(event);
-      case INSERT:
-        return false;
       default:
         LOGGER.error("Notification with ID:{} has invalid event type: {}", event.getEventId(),
             event.getEventType());

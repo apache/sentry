@@ -56,7 +56,7 @@ limitations under the License.
     <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-service</artifactId>
-      <version>${hive-v2.version}</version>
+      <version>${hive.version}</version>
       <exclusions>
         <exclusion>
           <groupId>ant</groupId>
@@ -68,13 +68,13 @@ limitations under the License.
     <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-shims</artifactId>
-      <version>${hive-v2.version}</version>
+      <version>${hive.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-serde</artifactId>
-      <version>${hive-v2.version}</version>
+      <version>${hive.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -90,19 +90,19 @@ limitations under the License.
           <artifactId>datanucleus-rdbms</artifactId>
         </exclusion>
       </exclusions>
-      <version>${hive-v2.version}</version>
+      <version>${hive.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-jdbc</artifactId>
-      <version>${hive-v2.version}</version>
+      <version>${hive.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-hbase-handler</artifactId>
-      <version>${hive-v2.version}</version>
+      <version>${hive.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -118,43 +118,43 @@ limitations under the License.
           <artifactId>datanucleus-rdbms</artifactId>
         </exclusion>
       </exclusions>
-      <version>${hive-v2.version}</version>
+      <version>${hive.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-contrib</artifactId>
-      <version>${hive-v2.version}</version>
+      <version>${hive.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-common</artifactId>
-      <version>${hive-v2.version}</version>
+      <version>${hive.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-cli</artifactId>
-      <version>${hive-v2.version}</version>
+      <version>${hive.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hive.hcatalog</groupId>
       <artifactId>hive-hcatalog-core</artifactId>
-      <version>${hive-v2.version}</version>
+      <version>${hive.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hive.hcatalog</groupId>
       <artifactId>hive-hcatalog-pig-adapter</artifactId>
-      <version>${hive-v2.version}</version>
+      <version>${hive.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-beeline</artifactId>
-      <version>${hive-v2.version}</version>
+      <version>${hive.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

@@ -48,6 +48,7 @@ limitations under the License.
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-metastore</artifactId>
       <scope>provided</scope>
+      <version>${hive.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>

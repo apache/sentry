@@ -76,37 +76,37 @@ limitations under the License.
     <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-exec</artifactId>
-      <version>${hive-v2.version}</version>
+      <version>${hive.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-service</artifactId>
-      <version>${hive-v2.version}</version>
+      <version>${hive.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-metastore</artifactId>
-      <version>${hive-v2.version}</version>
+      <version>${hive.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-shims</artifactId>
-      <version>${hive-v2.version}</version>
+      <version>${hive.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-serde</artifactId>
-      <version>${hive-v2.version}</version>
+      <version>${hive.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-common</artifactId>
-      <version>${hive-v2.version}</version>
+      <version>${hive.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>

@@ -47,20 +47,24 @@ limitations under the License.
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-service</artifactId>
       <scope>test</scope>
+      <version>${hive.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-shims</artifactId>
       <scope>test</scope>
+      <version>${hive.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-serde</artifactId>
       <scope>test</scope>
+      <version>${hive.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-metastore</artifactId>
+      <version>${hive.version}</version>
       <exclusions>
         <exclusion>
           <groupId>org.datanucleus</groupId>
@@ -76,16 +80,19 @@ limitations under the License.
     <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-jdbc</artifactId>
+      <version>${hive.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-hbase-handler</artifactId>
+      <version>${hive.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-exec</artifactId>
+      <version>${hive.version}</version>
       <exclusions>
         <exclusion>
           <groupId>org.datanucleus</groupId>
@@ -101,16 +108,19 @@ limitations under the License.
     <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-contrib</artifactId>
+      <version>${hive.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-common</artifactId>
+      <version>${hive.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-cli</artifactId>
+      <version>${hive.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -122,11 +132,13 @@ limitations under the License.
     <dependency>
       <groupId>org.apache.hive.hcatalog</groupId>
       <artifactId>hive-hcatalog-core</artifactId>
+      <version>${hive.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hive.hcatalog</groupId>
       <artifactId>hive-hcatalog-pig-adapter</artifactId>
+      <version>${hive.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
