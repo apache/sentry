@@ -17,6 +17,8 @@
 package org.apache.sentry.binding.solr.conf;
 
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
@@ -29,11 +31,14 @@ public class SolrAuthzConf extends Configuration {
    * Config setting definitions
    */
   public static enum AuthzConfVars {
-    AUTHZ_PROVIDER("sentry.provider",
+    AUTHZ_PROVIDER("sentry.solr.provider",
       "org.apache.sentry.provider.common.HadoopGroupResourceAuthorizationProvider"),
     AUTHZ_PROVIDER_RESOURCE("sentry.solr.provider.resource", ""),
     AUTHZ_PROVIDER_BACKEND("sentry.solr.provider.backend", "org.apache.sentry.provider.file.SimpleFileProviderBackend"),
-    AUTHZ_POLICY_ENGINE("sentry.solr.policy.engine", "org.apache.sentry.policy.engine.common.CommonPolicyEngine");
+    AUTHZ_POLICY_ENGINE("sentry.solr.policy.engine", "org.apache.sentry.policy.engine.common.CommonPolicyEngine"),
+
+    AUTHZ_PROVIDER_DEPRECATED("sentry.provider",
+      "org.apache.sentry.provider.common.HadoopGroupResourceAuthorizationProvider");
 
     private final String varName;
     private final String defaultVal;
@@ -61,6 +66,11 @@ public class SolrAuthzConf extends Configuration {
     }
   }
 
+  private static final Map<String, AuthzConfVars> currentToDeprecatedProps = new HashMap<>();
+  static {
+    currentToDeprecatedProps.put(AuthzConfVars.AUTHZ_PROVIDER.getVar(), AuthzConfVars.AUTHZ_PROVIDER_DEPRECATED);
+  }
+
   @SuppressWarnings("unused")
   private static final Logger LOG = LoggerFactory
       .getLogger(SolrAuthzConf.class);
@@ -73,6 +83,19 @@ public class SolrAuthzConf extends Configuration {
 
   @Override
   public String get(String varName) {
-    return get(varName, AuthzConfVars.getDefault(varName));
+    String retVal = super.get(varName);
+    if (retVal == null) {
+      // check if the deprecated value is set here
+      if (currentToDeprecatedProps.containsKey(varName)) {
+          AuthzConfVars var = currentToDeprecatedProps.get(varName);
+          retVal = super.get(var.getVar());
+      }
+      if (retVal == null) {
+        retVal = AuthzConfVars.getDefault(varName);
+      } else {
+        LOG.warn("Using the deprecated config setting " + currentToDeprecatedProps.get(varName).getVar() + " instead of " + varName);
+      }
+    }
+    return retVal;
   }
 }

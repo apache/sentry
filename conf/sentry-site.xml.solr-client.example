@@ -19,7 +19,7 @@
 
 <configuration>
   <property>
-    <name>sentry.provider</name>
+    <name>sentry.solr.provider</name>
     <value>org.apache.sentry.provider.file.LocalGroupResourceAuthorizationProvider</value>
   </property>
   <property>
