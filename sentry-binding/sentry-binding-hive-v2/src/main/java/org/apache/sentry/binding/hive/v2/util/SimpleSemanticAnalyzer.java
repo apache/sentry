@@ -122,7 +122,7 @@ public class SimpleSemanticAnalyzer {
       + "([A-Za-z0-9._]+)";
 
   private static final String LOAD = "^LOAD\\s+" + "DATA\\s+" + "(LOCAL\\s+)?" + "INPATH\\s+"
-      + "([A-Za-z0-9._':///-]+)" +"\\s" + "INTO\\s" + "TABLE\\s" + "([A-Za-z0-9._]+)";
+      + "([A-Za-z0-9._':///-]+)" +"\\s" + "(OVERWRITE\\s+)?" + "INTO\\s" + "TABLE\\s" + "([A-Za-z0-9._]+)";
 
   /**
    * LOCK DATABASE dbname;
@@ -279,7 +279,7 @@ public class SimpleSemanticAnalyzer {
       String tbName = matcher.group(matcher.groupCount());
       extractDbAndTb(tbName.trim());
     } else {
-      throw new HiveAuthzPluginException("this command " + cmd + " is not match table meta grammar");
+      throw new HiveAuthzPluginException("this command " + cmd + " does not match the table meta grammar");
     }
   }
 
@@ -291,7 +291,7 @@ public class SimpleSemanticAnalyzer {
       currentDb = dbName;
       currentTb = Table.SOME.getName();
     } else {
-      throw new HiveAuthzPluginException("this command " + cmd + " is not match table meta grammar");
+      throw new HiveAuthzPluginException("this command " + cmd + " does not match the table meta grammar");
     }
   }
 
@@ -313,7 +313,7 @@ public class SimpleSemanticAnalyzer {
       currentDb = matcher.group(matcher.groupCount());
     } else {
       throw new HiveAuthzPluginException("this command " + cmd
-          + " is not match database meta grammar");
+          + " does not match the database meta grammar");
     }
   }
 
@@ -324,7 +324,7 @@ public class SimpleSemanticAnalyzer {
       String tbName = matcher.group(matcher.groupCount());
       extractDbAndTb(tbName.trim());
     } else {
-      throw new HiveAuthzPluginException("this command " + cmd + " is not match table meta grammar");
+      throw new HiveAuthzPluginException("this command " + cmd + " does not match the table meta grammar");
     }
   }
 
@@ -341,7 +341,7 @@ public class SimpleSemanticAnalyzer {
         extractDbAndTb(tbName);
       }
     } else {
-      throw new HiveAuthzPluginException("this command " + cmd + " is not match show index grammar");
+      throw new HiveAuthzPluginException("this command " + cmd + " does not match the show index grammar");
     }
   }
 
@@ -357,7 +357,7 @@ public class SimpleSemanticAnalyzer {
       }
     } else {
       throw new HiveAuthzPluginException("this command " + cmd
-          + " is not match create function grammar");
+          + " does not match the create function grammar");
     }
   }
 
