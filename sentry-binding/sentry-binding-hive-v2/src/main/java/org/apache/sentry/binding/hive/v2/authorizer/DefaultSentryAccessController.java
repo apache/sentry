@@ -347,7 +347,7 @@ public class DefaultSentryAccessController extends SentryHiveAccessController {
     // Apply rest of the configuration only to HiveServer2
     if (ctx.getClientType() != CLIENT_TYPE.HIVESERVER2
         || !hiveConf.getBoolVar(ConfVars.HIVE_AUTHORIZATION_ENABLED)) {
-      throw new HiveAuthzPluginException("Sentry just support for hiveserver2");
+      throw new HiveAuthzPluginException("Sentry only supports hiveserver2");
     }
   }
 

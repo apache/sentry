@@ -18,7 +18,11 @@ package org.apache.sentry.binding.hive.conf;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -88,7 +92,7 @@ public class HiveAuthzConf extends Configuration {
    * Config setting definitions
    */
   public static enum AuthzConfVars {
-    AUTHZ_PROVIDER("sentry.provider",
+    AUTHZ_PROVIDER("sentry.hive.provider",
       "org.apache.sentry.provider.common.HadoopGroupResourceAuthorizationProvider"),
     AUTHZ_PROVIDER_RESOURCE("sentry.hive.provider.resource", ""),
     AUTHZ_PROVIDER_BACKEND("sentry.hive.provider.backend", "org.apache.sentry.provider.file.SimpleFileProviderBackend"),
@@ -108,6 +112,8 @@ public class HiveAuthzConf extends Configuration {
 
     AUTHZ_PROVIDER_DEPRECATED("hive.sentry.provider",
       "org.apache.sentry.provider.file.ResourceAuthorizationProvider"),
+    AUTHZ_PROVIDER_DEPRECATED2("sentry.provider",
+      "org.apache.sentry.provider.common.HadoopGroupResourceAuthorizationProvider"),
     AUTHZ_PROVIDER_RESOURCE_DEPRECATED("hive.sentry.provider.resource", ""),
     AUTHZ_SERVER_NAME_DEPRECATED("hive.sentry.server", ""),
     AUTHZ_RESTRICT_DEFAULT_DB_DEPRECATED("hive.sentry.restrict.defaultDB", "false"),
@@ -146,16 +152,22 @@ public class HiveAuthzConf extends Configuration {
   // as long as the new property names aren't also provided.  Since the binding code
   // only calls the new property names, we require a map from current names to deprecated
   // names in order to check if the deprecated name of a property was set.
-  private static final Map<String, AuthzConfVars> currentToDeprecatedProps =
-      new HashMap<String, AuthzConfVars>();
+  private static final Map<String, List<AuthzConfVars>> currentToDeprecatedProps = new HashMap<>();
   static {
-    currentToDeprecatedProps.put(AuthzConfVars.AUTHZ_PROVIDER.getVar(), AuthzConfVars.AUTHZ_PROVIDER_DEPRECATED);
-    currentToDeprecatedProps.put(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar(), AuthzConfVars.AUTHZ_PROVIDER_RESOURCE_DEPRECATED);
-    currentToDeprecatedProps.put(AuthzConfVars.AUTHZ_SERVER_NAME.getVar(), AuthzConfVars.AUTHZ_SERVER_NAME_DEPRECATED);
-    currentToDeprecatedProps.put(AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB_DEPRECATED);
-    currentToDeprecatedProps.put(AuthzConfVars.SENTRY_TESTING_MODE.getVar(), AuthzConfVars.SENTRY_TESTING_MODE_DEPRECATED);
-    currentToDeprecatedProps.put(AuthzConfVars.AUTHZ_ALLOW_HIVE_IMPERSONATION.getVar(), AuthzConfVars.AUTHZ_ALLOW_HIVE_IMPERSONATION_DEPRECATED);
-    currentToDeprecatedProps.put(AuthzConfVars.AUTHZ_ONFAILURE_HOOKS.getVar(), AuthzConfVars.AUTHZ_ONFAILURE_HOOKS_DEPRECATED);
+    currentToDeprecatedProps.put(AuthzConfVars.AUTHZ_PROVIDER.getVar(),
+                                 Arrays.asList(AuthzConfVars.AUTHZ_PROVIDER_DEPRECATED, AuthzConfVars.AUTHZ_PROVIDER_DEPRECATED2));
+    currentToDeprecatedProps.put(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar(),
+                                 Collections.singletonList(AuthzConfVars.AUTHZ_PROVIDER_RESOURCE_DEPRECATED));
+    currentToDeprecatedProps.put(AuthzConfVars.AUTHZ_SERVER_NAME.getVar(),
+                                 Collections.singletonList(AuthzConfVars.AUTHZ_SERVER_NAME_DEPRECATED));
+    currentToDeprecatedProps.put(AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(),
+                                 Collections.singletonList(AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB_DEPRECATED));
+    currentToDeprecatedProps.put(AuthzConfVars.SENTRY_TESTING_MODE.getVar(),
+                                 Collections.singletonList(AuthzConfVars.SENTRY_TESTING_MODE_DEPRECATED));
+    currentToDeprecatedProps.put(AuthzConfVars.AUTHZ_ALLOW_HIVE_IMPERSONATION.getVar(),
+                                 Collections.singletonList(AuthzConfVars.AUTHZ_ALLOW_HIVE_IMPERSONATION_DEPRECATED));
+    currentToDeprecatedProps.put(AuthzConfVars.AUTHZ_ONFAILURE_HOOKS.getVar(),
+                                 Collections.singletonList(AuthzConfVars.AUTHZ_ONFAILURE_HOOKS_DEPRECATED));
   };
 
   private static final Logger LOG = LoggerFactory
@@ -168,7 +180,6 @@ public class HiveAuthzConf extends Configuration {
     LOG.info("DefaultFS: " + super.get("fs.defaultFS"));
     addResource(hiveAuthzSiteURL);
     applySystemProperties();
-    LOG.info("DefaultFS: " + super.get("fs.defaultFS"));
     this.hiveAuthzSiteFile = hiveAuthzSiteURL.toString();
   }
   /**
@@ -208,14 +219,20 @@ public class HiveAuthzConf extends Configuration {
     String retVal = super.get(varName);
     if (retVal == null) {
       // check if the deprecated value is set here
+      String deprecatedPropName = null;
       if (currentToDeprecatedProps.containsKey(varName)) {
-        retVal = super.get(currentToDeprecatedProps.get(varName).getVar());
+          for (AuthzConfVars var : currentToDeprecatedProps.get(varName)) {
+              retVal = super.get(var.getVar());
+              if (retVal != null) {
+                  deprecatedPropName = var.getVar();
+                  break;
+              }
+          }
       }
       if (retVal == null) {
         retVal = AuthzConfVars.getDefault(varName);
       } else {
-        LOG.warn("Using the deprecated config setting " + currentToDeprecatedProps.get(varName).getVar() +
-            " instead of " + varName);
+        LOG.warn("Using the deprecated config setting " + deprecatedPropName + " instead of " + varName);
       }
     }
     if (retVal == null) {

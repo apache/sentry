@@ -72,7 +72,7 @@
 -->
 
   <property>
-    <name>sentry.provider</name>
+    <name>sentry.hive.provider</name>
     <value>org.apache.sentry.provider.file.HadoopGroupResourceAuthorizationProvider</value>
     <description> Deprecated name: hive.sentry.provider.  Group mapping which should be used at client side</description>
   </property>
