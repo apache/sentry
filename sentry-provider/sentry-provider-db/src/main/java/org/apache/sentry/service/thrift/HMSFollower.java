@@ -23,6 +23,7 @@ import com.google.common.annotations.VisibleForTesting;
 import java.net.SocketException;
 
 import java.util.Collection;
+import java.util.List;
 import javax.jdo.JDODataStoreException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -44,7 +45,7 @@ public class HMSFollower implements Runnable, AutoCloseable {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(HMSFollower.class);
   private static boolean connectedToHms = false;
-  private final SentryHMSClient client;
+  private SentryHMSClient client;
   private final Configuration authzConf;
   private final SentryStore sentryStore;
   private final NotificationProcessor notificationProcessor;
@@ -91,6 +92,11 @@ public class HMSFollower implements Runnable, AutoCloseable {
     return connectedToHms;
   }
 
+  @VisibleForTesting
+  void setSentryHmsClient(SentryHMSClient client) {
+    this.client = client;
+  }
+
   @Override
   public void close() {
     if (client != null) {
@@ -117,12 +123,16 @@ public class HMSFollower implements Runnable, AutoCloseable {
     // Wake any clients connected to this service waiting for HMS already processed notifications.
     wakeUpWaitingClientsForSync(lastProcessedNotificationId);
     // Only the leader should listen to HMS updates
-    if ((leaderMonitor != null) && !leaderMonitor.isLeader()) {
+    if (!isLeader()) {
       // Close any outstanding connections to HMS
       close();
       return;
     }
     syncupWithHms(lastProcessedNotificationId);
+  }
+
+  private boolean isLeader() {
+    return (leaderMonitor == null) || leaderMonitor.isLeader();
   }
 
   /**
@@ -145,18 +155,23 @@ public class HMSFollower implements Runnable, AutoCloseable {
     }
 
     try {
-      long lastProcessedNotificationId = notificationId;
-      // Create a full HMS snapshot if there is none
-      // Decision of taking full snapshot is based on AuthzPathsMapping information persisted
-      // in the sentry persistent store. If AuthzPathsMapping is empty, snapshot is needed.
-      if (sentryStore.isAuthzPathsMappingEmpty()) {
-        lastProcessedNotificationId = createFullSnapshot();
-        if (lastProcessedNotificationId == SentryStore.EMPTY_NOTIFICATION_ID) {
-          return;
-        }
+      /* Before getting notifications, it checks if a full HMS snapshot is required. */
+      if (isFullSnapshotRequired(notificationId)) {
+        createFullSnapshot();
+        return;
       }
-      // Get the new notification from HMS and process them.
-      processNotifications(client.getNotifications(lastProcessedNotificationId));
+
+      Collection<NotificationEvent> notifications = client.getNotifications(notificationId);
+
+      // After getting notifications, it checks if the HMS did some clean-up and notifications
+      // are out-of-sync with Sentry.
+      if (areNotificationsOutOfSync(notifications, notificationId)) {
+        createFullSnapshot();
+        return;
+      }
+
+      // Continue with processing new notifications if no snapshots are done.
+      processNotifications(notifications);
     } catch (TException e) {
       // If the underlying exception is around socket exception,
       // it is better to retry connection to HMS
@@ -175,6 +190,75 @@ public class HMSFollower implements Runnable, AutoCloseable {
   }
 
   /**
+   * Checks if a new full HMS snapshot request is needed by checking if:
+   * <ul>
+   *   <li>No snapshots has been persisted yet.</li>
+   *   <li>The current notification Id on the HMS is less than the
+   *   latest processed by Sentry.</li>
+   * </ul>
+   *
+   * @param latestSentryNotificationId The notification Id to check against the HMS
+   * @return True if a full snapshot is required; False otherwise.
+   * @throws Exception If an error occurs while checking the SentryStore or the HMS client.
+   */
+  private boolean isFullSnapshotRequired(long latestSentryNotificationId) throws Exception {
+    if (sentryStore.isAuthzPathsMappingEmpty()) {
+      return true;
+    }
+
+    long currentHmsNotificationId = client.getCurrentNotificationId();
+    if (currentHmsNotificationId < latestSentryNotificationId) {
+      LOGGER.info("The latest notification ID on HMS is less than the latest notification ID "
+          + "processed by Sentry. Need to request a full HMS snapshot.");
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Checks if the HMS and Sentry processed notifications are out-of-sync.
+   * This could happen because the HMS did some clean-up of old notifications
+   * and Sentry was not requesting notifications during that time.
+   *
+   * @param events All new notifications to check for an out-of-sync.
+   * @param latestProcessedId The latest notification processed by Sentry to check against the
+   *        list of notifications events.
+   * @return True if an out-of-sync is found; False otherwise.
+   */
+  private boolean areNotificationsOutOfSync(Collection<NotificationEvent> events,
+      long latestProcessedId) {
+    if (events.isEmpty()) {
+      return false;
+    }
+
+    List<NotificationEvent> eventList = (List<NotificationEvent>) events;
+    long firstNotificationId = eventList.get(0).getEventId();
+    long lastNotificationId = eventList.get(eventList.size() - 1).getEventId();
+
+    /* If the next expected notification is not available, then an out-of-sync might
+     * have happened due to the following issue:
+     *
+     * - HDFS sync was disabled or Sentry was shutdown for a time period longer than
+     *   the HMS notification clean-up thread causing old notifications to be deleted.
+     */
+    if ((latestProcessedId + 1) != firstNotificationId) {
+      LOGGER.info("Current HMS notifications are out-of-sync with latest Sentry processed"
+          + "notifications. Need to request a full HMS snapshot.");
+      return true;
+    }
+
+    long expectedSize = lastNotificationId - latestProcessedId;
+    if (expectedSize < eventList.size()) {
+      LOGGER.info("The HMS notifications fetched has some gaps in the # of events received. These"
+          + "should not cause an out-of-sync issue. (expected = {}, fetched = {})",
+          expectedSize, eventList.size());
+    }
+
+    return false;
+  }
+
+  /**
    * Request for full snapshot and persists it if there is no snapshot available in the
    * sentry store. Also, wakes-up any waiting clients.
    *
@@ -187,6 +271,12 @@ public class HMSFollower implements Runnable, AutoCloseable {
     if (snapshotInfo.getPathImage().isEmpty()) {
       return snapshotInfo.getId();
     }
+
+    // Check we're still the leader before persisting the new snapshot
+    if (!isLeader()) {
+      return SentryStore.EMPTY_NOTIFICATION_ID;
+    }
+
     try {
       LOGGER.debug("Persisting HMS path full snapshot");
       sentryStore.persistFullPathsImage(snapshotInfo.getPathImage());
@@ -220,7 +310,7 @@ public class HMSFollower implements Runnable, AutoCloseable {
       isNotificationProcessed = false;
       try {
         // Only the leader should process the notifications
-        if ((leaderMonitor != null) && !leaderMonitor.isLeader()) {
+        if (!isLeader()) {
           return;
         }
         isNotificationProcessed = notificationProcessor.processNotificationEvent(event);

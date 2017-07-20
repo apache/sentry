@@ -20,10 +20,14 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.google.common.collect.Sets;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.api.Database;
@@ -36,6 +40,7 @@ import org.apache.hive.hcatalog.messaging.HCatEventMessage;
 import org.apache.hive.hcatalog.messaging.HCatEventMessage.EventType;
 import org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageFactory;
 import org.apache.sentry.hdfs.Updateable;
+import org.apache.sentry.provider.db.service.persistent.PathsImage;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.provider.db.service.thrift.TSentryAuthorizable;
 import org.junit.BeforeClass;
@@ -58,6 +63,147 @@ public class TestHMSFollower {
     hiveConnectionFactory = new HiveSimpleConnectionFactory(configuration, new HiveConf());
     hiveConnectionFactory.init();
     configuration.set("sentry.hive.sync.create", "true");
+  }
+
+  @Test
+  public void testPersistAFullSnapshotWhenNoSnapshotAreProcessedYet() throws Exception {
+    /*
+     * TEST CASE
+     *
+     * Simulates (by using mocks) that Sentry has not processed any notifications, so this
+     * should trigger a new full HMS snapshot request with the eventId = 1
+     */
+
+    final long SENTRY_PROCESSED_EVENT_ID = SentryStore.EMPTY_NOTIFICATION_ID;
+    final long HMS_PROCESSED_EVENT_ID = 1L;
+
+    // Mock that returns a full snapshot
+    Map<String, Set<String>> snapshotObjects = new HashMap<>();
+    snapshotObjects.put("db", Sets.newHashSet("/db"));
+    snapshotObjects.put("db.table", Sets.newHashSet("/db/table"));
+    PathsImage fullSnapshot = new PathsImage(snapshotObjects, HMS_PROCESSED_EVENT_ID, 1);
+
+    SentryHMSClient sentryHmsClient = Mockito.mock(SentryHMSClient.class);
+    Mockito.when(sentryHmsClient.getFullSnapshot()).thenReturn(fullSnapshot);
+    Mockito.when(sentryHmsClient.getCurrentNotificationId()).thenReturn(fullSnapshot.getId());
+
+    HMSFollower hmsFollower = new HMSFollower(configuration, sentryStore, null,
+        hiveConnectionFactory, hiveInstance);
+    hmsFollower.setSentryHmsClient(sentryHmsClient);
+
+    // 1st run should get a full snapshot because AuthzPathsMapping is empty
+    Mockito.when(sentryStore.getLastProcessedNotificationID()).thenReturn(SENTRY_PROCESSED_EVENT_ID);
+    Mockito.when(sentryStore.isAuthzPathsMappingEmpty()).thenReturn(true);
+    hmsFollower.run();
+    Mockito.verify(sentryStore, times(1)).persistFullPathsImage(fullSnapshot.getPathImage());
+    Mockito.verify(sentryStore, times(1)).persistLastProcessedNotificationID(fullSnapshot.getId());
+
+    Mockito.reset(sentryStore);
+
+    // 2nd run should not get a snapshot because is already processed
+    Mockito.when(sentryStore.getLastProcessedNotificationID()).thenReturn(fullSnapshot.getId());
+    Mockito.when(sentryStore.isAuthzPathsMappingEmpty()).thenReturn(false);
+    hmsFollower.run();
+    Mockito.verify(sentryStore, times(0)).persistFullPathsImage(Mockito.anyMap());
+    Mockito.verify(sentryStore, times(0)).persistLastProcessedNotificationID(Mockito.anyLong());
+  }
+
+  @Test
+  public void testPersistAFullSnapshotWhenLastHmsNotificationIsLowerThanLastProcessed()
+      throws Exception {
+    /*
+     * TEST CASE
+     *
+     * Simulates (by using mocks) that Sentry already processed (and persisted) a notification
+     * with Id = 5, but the latest notification processed by the HMS is eventId = 1. So, an
+     * out-of-sync issue is happening on Sentry and HMS. This out-of-sync issue should trigger
+     * a new full HMS snapshot request with the same eventId = 1;
+     */
+
+    final long SENTRY_PROCESSED_EVENT_ID = 5L;
+    final long HMS_PROCESSED_EVENT_ID = 1L;
+
+    // Mock that returns a full snapshot
+    Map<String, Set<String>> snapshotObjects = new HashMap<>();
+    snapshotObjects.put("db", Sets.newHashSet("/db"));
+    snapshotObjects.put("db.table", Sets.newHashSet("/db/table"));
+    PathsImage fullSnapshot = new PathsImage(snapshotObjects, HMS_PROCESSED_EVENT_ID, 1);
+
+    SentryHMSClient sentryHmsClient = Mockito.mock(SentryHMSClient.class);
+    Mockito.when(sentryHmsClient.getFullSnapshot()).thenReturn(fullSnapshot);
+    Mockito.when(sentryHmsClient.getCurrentNotificationId()).thenReturn(fullSnapshot.getId());
+
+    HMSFollower hmsFollower = new HMSFollower(configuration, sentryStore, null,
+        hiveConnectionFactory, hiveInstance);
+    hmsFollower.setSentryHmsClient(sentryHmsClient);
+
+    // 1st run should get a full snapshot
+    Mockito.when(sentryStore.getLastProcessedNotificationID()).thenReturn(SENTRY_PROCESSED_EVENT_ID);
+    Mockito.when(sentryStore.isAuthzPathsMappingEmpty()).thenReturn(false);
+    hmsFollower.run();
+    Mockito.verify(sentryStore, times(1)).persistFullPathsImage(Mockito.anyMap());
+    Mockito.verify(sentryStore, times(1)).persistLastProcessedNotificationID(Mockito.anyLong());
+
+    Mockito.reset(sentryStore);
+
+    // 2nd run should not get a snapshot because is already processed
+    Mockito.when(sentryStore.getLastProcessedNotificationID()).thenReturn(HMS_PROCESSED_EVENT_ID);
+    Mockito.when(sentryStore.isAuthzPathsMappingEmpty()).thenReturn(false);
+    hmsFollower.run();
+    Mockito.verify(sentryStore, times(0)).persistFullPathsImage(Mockito.anyMap());
+    Mockito.verify(sentryStore, times(0)).persistLastProcessedNotificationID(Mockito.anyLong());
+  }
+
+  @Test
+  public void testPersistAFullSnapshotWhenNextExpectedEventIsNotAvailable() throws Exception {
+    /*
+     * TEST CASE
+     *
+     * Simulates (by using mocks) that Sentry already processed (and persisted) a notification
+     * with Id = 1, and the latest notification processed by the HMS is eventId = 5. So, new
+     * notifications should be fetched.
+     *
+     * The number of expected notifications should be 4, but we simulate that we fetch only one
+     * notification with eventId = 5 causing an out-of-sync because the expected notificatoin
+     * should be 2. This out-of-sync should trigger a new full HMS snapshot request with the
+     * same eventId = 5.
+     */
+
+    final long SENTRY_PROCESSED_EVENT_ID = 1L;
+    final long HMS_PROCESSED_EVENT_ID = 5L;
+
+    // Mock that returns a full snapshot
+    Map<String, Set<String>> snapshotObjects = new HashMap<>();
+    snapshotObjects.put("db", Sets.newHashSet("/db"));
+    snapshotObjects.put("db.table", Sets.newHashSet("/db/table"));
+    PathsImage fullSnapshot = new PathsImage(snapshotObjects, HMS_PROCESSED_EVENT_ID, 1);
+
+    SentryHMSClient sentryHmsClient = Mockito.mock(SentryHMSClient.class);
+    Mockito.when(sentryHmsClient.getFullSnapshot()).thenReturn(fullSnapshot);
+    Mockito.when(sentryHmsClient.getCurrentNotificationId()).thenReturn(fullSnapshot.getId());
+    Mockito.when(sentryHmsClient.getNotifications(SENTRY_PROCESSED_EVENT_ID))
+        .thenReturn(Collections.singletonList(
+            new NotificationEvent(fullSnapshot.getId(), 0, "", "")));
+
+    HMSFollower hmsFollower = new HMSFollower(configuration, sentryStore, null,
+        hiveConnectionFactory, hiveInstance);
+    hmsFollower.setSentryHmsClient(sentryHmsClient);
+
+    // 1st run should get a full snapshot
+    Mockito.when(sentryStore.getLastProcessedNotificationID()).thenReturn(SENTRY_PROCESSED_EVENT_ID);
+    Mockito.when(sentryStore.isAuthzPathsMappingEmpty()).thenReturn(false);
+    hmsFollower.run();
+    Mockito.verify(sentryStore, times(1)).persistFullPathsImage(Mockito.anyMap());
+    Mockito.verify(sentryStore, times(1)).persistLastProcessedNotificationID(Mockito.anyLong());
+
+    Mockito.reset(sentryStore);
+
+    // 2nd run should not get a snapshot because is already processed
+    Mockito.when(sentryStore.getLastProcessedNotificationID()).thenReturn(HMS_PROCESSED_EVENT_ID);
+    Mockito.when(sentryStore.isAuthzPathsMappingEmpty()).thenReturn(false);
+    hmsFollower.run();
+    Mockito.verify(sentryStore, times(0)).persistFullPathsImage(Mockito.anyMap());
+    Mockito.verify(sentryStore, times(0)).persistLastProcessedNotificationID(Mockito.anyLong());
   }
 
   /**
