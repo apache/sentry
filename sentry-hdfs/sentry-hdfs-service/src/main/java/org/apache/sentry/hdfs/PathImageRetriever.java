@@ -86,7 +86,8 @@ class PathImageRetriever implements ImageRetriever<PathsUpdate> {
       UpdateableAuthzPaths authzPaths = new UpdateableAuthzPaths(root);
       authzPaths.updatePartial(Lists.newArrayList(pathsUpdate),
           new ReentrantReadWriteLock());
-      pathsUpdate.toThrift().setPathsDump(authzPaths.getPathsDump().createPathsDump());
+      //Setting minimizeSize parameter to false based on interface description
+      pathsUpdate.toThrift().setPathsDump(authzPaths.getPathsDump().createPathsDump(false));
       return pathsUpdate;
     }
   }

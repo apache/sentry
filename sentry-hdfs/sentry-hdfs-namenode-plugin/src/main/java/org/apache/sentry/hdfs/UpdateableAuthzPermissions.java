@@ -246,11 +246,6 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
   }
 
   @Override
-  public PermissionsUpdate createFullImageUpdate(long currSeqNum, long currImgNum) throws Exception {
-    throw new UnsupportedOperationException("createFullImageUpdate(currSeqNum, currImgNum");
-  }
-
-  @Override
   public String getUpdateableTypeName() {
     return UPDATABLE_TYPE_NAME;
   }

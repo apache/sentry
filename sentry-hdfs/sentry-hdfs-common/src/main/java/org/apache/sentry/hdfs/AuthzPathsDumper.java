@@ -15,14 +15,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.sentry.hdfs;
 
 import org.apache.sentry.hdfs.service.thrift.TPathsDump;
 
 public interface AuthzPathsDumper<K extends AuthzPaths> {
 
-  TPathsDump createPathsDump();
+  /**
+   * Creates a TPathsDump thrift object from the data in memory (K instance).
+   *
+   * @param minimizeSize if true, the code will make an effort to minimize the
+   *                     size of the serialized message by, for example,
+   *                     performing customized interning of duplicate strings.
+   *                     So far this is optional since, in particular, messages
+   *                     created with minimizeSize == false are compatible with
+   *                     the older TPathsDump messages.
+   */
+  TPathsDump createPathsDump(boolean minimizeSize);
 
+  /**
+   * Creates data in memory (an instance of K) from TPathsDump thrift object.
+   */
   K initializeFromDump(TPathsDump pathsDump);
 
 }
