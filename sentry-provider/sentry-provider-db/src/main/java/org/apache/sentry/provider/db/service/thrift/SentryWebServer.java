@@ -122,8 +122,8 @@ public class SentryWebServer {
     contextHandlerCollection.setHandlers(new Handler[]{contextHandler, servletContextHandler});
 
     String authMethod = conf.get(ServerConfig.SENTRY_WEB_SECURITY_TYPE);
-    if (!ServerConfig.SENTRY_WEB_SECURITY_TYPE_NONE.equals(authMethod)) {
-      /*
+    if (!ServerConfig.SENTRY_WEB_SECURITY_TYPE_NONE.equalsIgnoreCase(authMethod)) {
+      /**
        * SentryAuthFilter is a subclass of AuthenticationFilter and
        * AuthenticationFilter tagged as private and unstable interface:
        * While there are not guarantees that this interface will not change,
