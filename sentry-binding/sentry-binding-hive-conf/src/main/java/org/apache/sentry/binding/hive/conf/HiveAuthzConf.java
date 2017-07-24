@@ -87,6 +87,7 @@ public class HiveAuthzConf extends Configuration {
                     "noopstreaming,noopwithmapstreaming,windowingtablefunction,matchpath";
 
     public static final String HIVE_UDF_BLACK_LIST = "reflect,reflect2,java_method";
+    public static final String SENTRY_HIVE_SERVER_DEFAULT = "";
 
     /**
      * Config setting definitions
@@ -100,7 +101,7 @@ public class HiveAuthzConf extends Configuration {
         AUTHZ_POLICY_FILE_FORMATTER(
                 "sentry.hive.policy.file.formatter",
                 "org.apache.sentry.binding.hive.SentryIniPolicyFileFormatter"),
-        AUTHZ_SERVER_NAME("sentry.hive.server", ""),
+        AUTHZ_SERVER_NAME("sentry.hive.server", SENTRY_HIVE_SERVER_DEFAULT),
         AUTHZ_RESTRICT_DEFAULT_DB("sentry.hive.restrict.defaultDB", "false"),
         SENTRY_TESTING_MODE("sentry.hive.testing.mode", "false"),
         AUTHZ_ALLOW_HIVE_IMPERSONATION("sentry.hive.allow.hive.impersonation", "false"),
@@ -115,7 +116,7 @@ public class HiveAuthzConf extends Configuration {
         AUTHZ_PROVIDER_DEPRECATED2("sentry.provider",
                 "org.apache.sentry.provider.common.HadoopGroupResourceAuthorizationProvider"),
         AUTHZ_PROVIDER_RESOURCE_DEPRECATED("hive.sentry.provider.resource", ""),
-        AUTHZ_SERVER_NAME_DEPRECATED("hive.sentry.server", ""),
+        AUTHZ_SERVER_NAME_DEPRECATED("hive.sentry.server", SENTRY_HIVE_SERVER_DEFAULT),
         AUTHZ_RESTRICT_DEFAULT_DB_DEPRECATED("hive.sentry.restrict.defaultDB", "false"),
         SENTRY_TESTING_MODE_DEPRECATED("hive.sentry.testing.mode", "false"),
         AUTHZ_ALLOW_HIVE_IMPERSONATION_DEPRECATED("hive.sentry.allow.hive.impersonation", "false"),

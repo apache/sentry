@@ -56,7 +56,7 @@ public final class HiveSimpleConnectionFactory implements HiveConnectionFactory 
   private final boolean insecure;
   private SentryKerberosContext kerberosContext = null;
 
-  HiveSimpleConnectionFactory(Configuration sentryConf, HiveConf hiveConf) {
+  public HiveSimpleConnectionFactory(Configuration sentryConf, HiveConf hiveConf) {
     this.conf = sentryConf;
     this.hiveConf = hiveConf;
     insecure = !ServerConfig.SECURITY_MODE_KERBEROS.equalsIgnoreCase(

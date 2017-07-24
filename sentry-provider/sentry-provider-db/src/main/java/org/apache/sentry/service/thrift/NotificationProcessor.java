@@ -124,6 +124,11 @@ final class NotificationProcessor {
     return update;
   }
 
+  @VisibleForTesting
+  String getAuthServerName() {
+    return authServerName;
+  }
+
   /**
    * Constructs permission update to be persisted for rename event that can be persisted from thrift
    * object.

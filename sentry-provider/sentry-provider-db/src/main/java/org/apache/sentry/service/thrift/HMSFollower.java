@@ -18,17 +18,16 @@
 
 package org.apache.sentry.service.thrift;
 
+
 import com.google.common.annotations.VisibleForTesting;
-
 import java.net.SocketException;
-
 import java.util.Collection;
 import java.util.List;
 import javax.jdo.JDODataStoreException;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.api.NotificationEvent;
-import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
+import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SERVER_NAME;
+import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SERVER_NAME_DEPRECATED;
 import org.apache.sentry.provider.db.service.persistent.PathsImage;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.thrift.TException;
@@ -73,16 +72,18 @@ public class HMSFollower implements Runnable, AutoCloseable {
    * @param leaderMonitor
    * @param authServerName Server that sentry is Authorizing
    */
-  HMSFollower(Configuration conf, SentryStore store, LeaderStatusMonitor leaderMonitor,
+  public HMSFollower(Configuration conf, SentryStore store, LeaderStatusMonitor leaderMonitor,
               HiveSimpleConnectionFactory hiveConnectionFactory, String authServerName) {
     LOGGER.info("HMSFollower is being initialized");
     authzConf = conf;
     this.leaderMonitor = leaderMonitor;
     sentryStore = store;
-   if (authServerName == null) {
-     HiveConf hiveConf = new HiveConf();
-     authServerName = hiveConf.get(HiveAuthzConf.AuthzConfVars.AUTHZ_SERVER_NAME.getVar());
-   }
+
+    if (authServerName == null) {
+      authServerName = conf.get(AUTHZ_SERVER_NAME.getVar(),
+        conf.get(AUTHZ_SERVER_NAME_DEPRECATED.getVar(), AUTHZ_SERVER_NAME_DEPRECATED.getDefault()));
+    }
+
     notificationProcessor = new NotificationProcessor(sentryStore, authServerName, authzConf);
     client = new SentryHMSClient(authzConf, hiveConnectionFactory);
   }
@@ -133,6 +134,11 @@ public class HMSFollower implements Runnable, AutoCloseable {
 
   private boolean isLeader() {
     return (leaderMonitor == null) || leaderMonitor.isLeader();
+  }
+
+  @VisibleForTesting
+  String getAuthServerName() {
+    return notificationProcessor.getAuthServerName();
   }
 
   /**
@@ -301,11 +307,12 @@ public class HMSFollower implements Runnable, AutoCloseable {
    * @param events list of event to be processed
    * @throws Exception if the complete notification list is not processed because of JDO Exception
    */
-  void processNotifications(Collection<NotificationEvent> events) throws Exception {
+  public void processNotifications(Collection<NotificationEvent> events) throws Exception {
     boolean isNotificationProcessed;
     if (events.isEmpty()) {
       return;
     }
+
     for (NotificationEvent event : events) {
       isNotificationProcessed = false;
       try {

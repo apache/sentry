@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import junit.framework.Assert;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.api.Database;
@@ -38,6 +39,8 @@ import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.hive.hcatalog.messaging.HCatEventMessage;
 import org.apache.hive.hcatalog.messaging.HCatEventMessage.EventType;
+import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
+import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
 import org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageFactory;
 import org.apache.sentry.hdfs.Updateable;
 import org.apache.sentry.provider.db.service.persistent.PathsImage;
@@ -190,7 +193,8 @@ public class TestHMSFollower {
     hmsFollower.setSentryHmsClient(sentryHmsClient);
 
     // 1st run should get a full snapshot
-    Mockito.when(sentryStore.getLastProcessedNotificationID()).thenReturn(SENTRY_PROCESSED_EVENT_ID);
+    Mockito.when(sentryStore.getLastProcessedNotificationID())
+        .thenReturn(SENTRY_PROCESSED_EVENT_ID);
     Mockito.when(sentryStore.isAuthzPathsMappingEmpty()).thenReturn(false);
     hmsFollower.run();
     Mockito.verify(sentryStore, times(1)).persistFullPathsImage(Mockito.anyMap());
@@ -204,6 +208,66 @@ public class TestHMSFollower {
     hmsFollower.run();
     Mockito.verify(sentryStore, times(0)).persistFullPathsImage(Mockito.anyMap());
     Mockito.verify(sentryStore, times(0)).persistLastProcessedNotificationID(Mockito.anyLong());
+  }
+
+  /**
+   * Test that HMSFollower uses the input authentication server name when it is not null
+   */
+  @Test
+  public void testInputConfigurationGetInputAuthServerName() {
+    Configuration sentryConfiguration = new Configuration();
+    HMSFollower hmsFollower = new HMSFollower(sentryConfiguration, sentryStore, null,
+        hiveConnectionFactory, hiveInstance);
+    String authServerName = hmsFollower.getAuthServerName();
+
+    Assert.assertEquals(true, authServerName.equals(hiveInstance));
+  }
+
+  /**
+   * Test that HMSFollower uses the default authentication server name when its constructor input
+   * value is null and the configuration does not configure AUTHZ_SERVER_NAME nor
+   * AUTHZ_SERVER_NAME_DEPRECATED
+   */
+  @Test
+  public void testNoConfigurationGetDefaultAuthServerName() {
+    Configuration sentryConfiguration = new Configuration();
+    HMSFollower hmsFollower = new HMSFollower(sentryConfiguration, sentryStore, null,
+        hiveConnectionFactory, null);
+    String authServerName = hmsFollower.getAuthServerName();
+
+    Assert.assertEquals(true, authServerName.equals(AuthzConfVars.AUTHZ_SERVER_NAME_DEPRECATED.getDefault()));
+  }
+
+  /**
+   * Test that HMSFollower uses the configured authentication server name when its constructor input
+   * value is null and the configuration contains configuration for AUTHZ_SERVER_NAME
+   */
+  @Test
+  public void testNewNameConfigurationGetAuthServerName() {
+    String serverName = "newServer";
+    Configuration sentryConfiguration = new Configuration();
+    sentryConfiguration.set(HiveAuthzConf.AuthzConfVars.AUTHZ_SERVER_NAME.getVar(), serverName);
+    HMSFollower hmsFollower = new HMSFollower(sentryConfiguration, sentryStore, null,
+        hiveConnectionFactory, null);
+    String authServerName = hmsFollower.getAuthServerName();
+
+    Assert.assertEquals(true, authServerName.equals(serverName));
+  }
+
+  /**
+   * Test that HMSFollower uses the configured deprecated authentication server name when its constructor input
+   * value is null and the configuration contains configuration for AUTHZ_SERVER_NAME_DEPRECATED
+   */
+  @Test
+  public void testOldNameConfigurationGetAuthServerName() {
+    String serverName = "oldServer";
+    Configuration sentryConfiguration = new Configuration();
+    sentryConfiguration.set(AuthzConfVars.AUTHZ_SERVER_NAME_DEPRECATED.getVar(), serverName);
+    HMSFollower hmsFollower = new HMSFollower(sentryConfiguration, sentryStore, null,
+        hiveConnectionFactory, null);
+    String authServerName = hmsFollower.getAuthServerName();
+
+    Assert.assertEquals(true, authServerName.equals(serverName));
   }
 
   /**
