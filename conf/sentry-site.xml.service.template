@@ -123,4 +123,34 @@
     <description>Service Kerberos principal</description>
   </property>
 
+  <property>
+    <name>sentry.service.web.enable</name>
+    <value>false</value>
+    <description>Enable web service</description>
+  </property>
+
+  <property>
+    <name>sentry.service.web.authentication.type</name>
+    <value>NONE</value>
+    <description>Options: kerberos, NONE.  Authentication mode for Sentry web service.</description>
+  </property>
+
+  <property>
+    <name>sentry.service.web.authentication.kerberos.keytab</name>
+    <value></value>
+    <description>Keytab for web service principal</description>
+  </property>
+
+  <property>
+    <name>sentry.service.web.authentication.kerberos.principal</name>
+    <value></value>
+    <description>Web service Kerberos principal</description>
+  </property>
+
+  <property>
+    <name>sentry.service.web.authentication.allow.connect.users</name>
+    <value></value>
+    <description>comma separated list of users - List of users that are allowed to connect to the web service (eg Hive, Impala) </description>
+  </property>
+
 </configuration>
