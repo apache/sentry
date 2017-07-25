@@ -18,19 +18,14 @@
 
 package org.apache.sentry.service.thrift;
 
-import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SYNC_CREATE_WITH_POLICY_STORE;
-import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SYNC_DROP_WITH_POLICY_STORE;
-
+import com.codahale.metrics.Timer;
+import com.codahale.metrics.Timer.Context;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.metastore.api.NotificationEvent;
-import org.apache.hive.hcatalog.messaging.HCatEventMessage;
+import org.apache.hive.hcatalog.messaging.HCatEventMessage.EventType;
 import org.apache.sentry.binding.metastore.messaging.json.SentryJSONAddPartitionMessage;
 import org.apache.sentry.binding.metastore.messaging.json.SentryJSONAlterPartitionMessage;
 import org.apache.sentry.binding.metastore.messaging.json.SentryJSONAlterTableMessage;
@@ -49,9 +44,19 @@ import org.apache.sentry.hdfs.SentryMalformedPathException;
 import org.apache.sentry.hdfs.Updateable.Update;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
+import org.apache.sentry.provider.db.service.thrift.SentryMetrics;
 import org.apache.sentry.provider.db.service.thrift.TSentryAuthorizable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+
+import static com.codahale.metrics.MetricRegistry.name;
+import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SYNC_CREATE_WITH_POLICY_STORE;
+import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SYNC_DROP_WITH_POLICY_STORE;
 
 
 
@@ -183,27 +188,37 @@ final class NotificationProcessor {
   boolean processNotificationEvent(NotificationEvent event) throws Exception {
     LOGGER
         .debug("Processing event with id:{} and Type:{}", event.getEventId(), event.getEventType());
-    switch (HCatEventMessage.EventType.valueOf(event.getEventType())) {
-      case CREATE_DATABASE:
-        return processCreateDatabase(event);
-      case DROP_DATABASE:
-        return processDropDatabase(event);
-      case CREATE_TABLE:
-        return processCreateTable(event);
-      case DROP_TABLE:
-        return processDropTable(event);
-      case ALTER_TABLE:
-        return processAlterTable(event);
-      case ADD_PARTITION:
-        return processAddPartition(event);
-      case DROP_PARTITION:
-        return processDropPartition(event);
-      case ALTER_PARTITION:
-        return processAlterPartition(event);
-      default:
-        LOGGER.error("Notification with ID:{} has invalid event type: {}", event.getEventId(),
-            event.getEventType());
-        return false;
+
+    // Expose time used for each request time as a metric.
+    // We use lower-case version of the event name.
+    EventType eventType = EventType.valueOf(event.getEventType());
+    Timer timer = SentryMetrics
+        .getInstance()
+        .getTimer(name(HMSFollower.class, eventType.toString().toLowerCase()));
+
+    try (Context ignored = timer.time()) {
+      switch (eventType) {
+        case CREATE_DATABASE:
+          return processCreateDatabase(event);
+        case DROP_DATABASE:
+          return processDropDatabase(event);
+        case CREATE_TABLE:
+          return processCreateTable(event);
+        case DROP_TABLE:
+          return processDropTable(event);
+        case ALTER_TABLE:
+          return processAlterTable(event);
+        case ADD_PARTITION:
+          return processAddPartition(event);
+        case DROP_PARTITION:
+          return processDropPartition(event);
+        case ALTER_PARTITION:
+          return processAlterPartition(event);
+        default:
+          LOGGER.error("Notification with ID:{} has invalid event type: {}", event.getEventId(),
+              event.getEventType());
+          return false;
+      }
     }
   }
 
