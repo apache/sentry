@@ -164,6 +164,10 @@ public class SentryStore {
   private static final Set<String> PARTIAL_REVOKE_ACTIONS = Sets.newHashSet(AccessConstants.ALL,
       AccessConstants.ACTION_ALL.toLowerCase(), AccessConstants.SELECT, AccessConstants.INSERT);
 
+  // Datanucleus property controlling whether query results are loaded at commit time
+  // to make query usable post-commit
+  private static final String LOAD_RESULTS_AT_COMMIT = "datanucleus.query.loadResultsAtCommit";
+
   private final PersistenceManagerFactory pmf;
   private Configuration conf;
   private final TransactionManager tm;
@@ -297,6 +301,7 @@ public class SentryStore {
    */
   public MSentryRole getRole(PersistenceManager pm, String roleName) {
     Query query = pm.newQuery(MSentryRole.class);
+    query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
     query.setFilter("this.roleName == :roleName");
     query.setUnique(true);
     return (MSentryRole) query.execute(roleName);
@@ -310,6 +315,7 @@ public class SentryStore {
   @SuppressWarnings("unchecked")
   private List<MSentryRole> getAllRoles(PersistenceManager pm) {
     Query query = pm.newQuery(MSentryRole.class);
+    query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
     return (List<MSentryRole>) query.execute();
   }
 
@@ -371,6 +377,7 @@ public class SentryStore {
             public Long execute(PersistenceManager pm) throws Exception {
               pm.setDetachAllOnCommit(false); // No need to detach objects
               Query query = pm.newQuery();
+              query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
               query.setClass(tClass);
               query.setResult("count(this)");
               Long result = (Long)query.execute();
@@ -577,6 +584,7 @@ public class SentryStore {
     long maxIDDeleted = lastChangedID - changesToKeep;
 
     Query query = pm.newQuery(cls);
+    query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
 
     // It is an approximation of "SELECT ... LIMIT CHANGE_TO_KEEP" in SQL, because JDO w/ derby
     // does not support "LIMIT".
@@ -600,6 +608,7 @@ public class SentryStore {
       "You need to keep at least one entry in SENTRY_HMS_NOTIFICATION_ID table");
     long lastNotificationID = getLastProcessedNotificationIDCore(pm);
     Query query = pm.newQuery(MSentryHmsNotification.class);
+    query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
 
     // It is an approximation of "SELECT ... LIMIT CHANGE_TO_KEEP" in SQL, because JDO w/ derby
     // does not support "LIMIT".
@@ -1542,6 +1551,7 @@ public class SentryStore {
         public Boolean execute(PersistenceManager pm) throws Exception {
           pm.setDetachAllOnCommit(false); // No need to detach objects
           Query query = pm.newQuery(MSentryPrivilege.class);
+          query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
           QueryParamBuilder paramBuilder = QueryParamBuilder.addRolesFilter(query,null, roleNames);
           paramBuilder.add(SERVER_NAME, serverName);
           query.setFilter(paramBuilder.toString());
@@ -1842,6 +1852,7 @@ public class SentryStore {
     Set<MSentryRole> result = Sets.newHashSet();
     if (groups != null) {
       Query query = pm.newQuery(MSentryGroup.class);
+      query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
       query.setFilter(":p1.contains(this.groupName)");
       List<MSentryGroup> sentryGroups = (List) query.execute(groups.toArray());
       if (sentryGroups != null) {
@@ -1857,6 +1868,7 @@ public class SentryStore {
     Set<MSentryRole> result = Sets.newHashSet();
     if (users != null) {
       Query query = pm.newQuery(MSentryUser.class);
+      query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
       query.setFilter(":p1.contains(this.userName)");
       List<MSentryUser> sentryUsers = (List) query.execute(users.toArray());
       if (sentryUsers != null) {
@@ -2551,6 +2563,8 @@ public class SentryStore {
 
     Map<String, Map<String, String>> retVal = new HashMap<>();
     Query query = pm.newQuery(MSentryPrivilege.class);
+    query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
+
     QueryParamBuilder paramBuilder = newQueryParamBuilder();
     paramBuilder.addNotNull(SERVER_NAME)
                 .addNotNull(DB_NAME)
@@ -2580,6 +2594,7 @@ public class SentryStore {
         }
       }
     }
+    query.closeAll();
     return retVal;
   }
 
@@ -2595,6 +2610,7 @@ public class SentryStore {
           throws Exception {
     pm.setDetachAllOnCommit(false); // No need to detach objects
     Query query = pm.newQuery(MSentryGroup.class);
+    query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
     @SuppressWarnings("unchecked")
     List<MSentryGroup> groups = (List<MSentryGroup>) query.execute();
     if (groups.isEmpty()) {
@@ -2612,6 +2628,7 @@ public class SentryStore {
         rUpdate.add(mGroup.getGroupName());
       }
     }
+    query.closeAll();
     return retVal;
   }
 
@@ -3091,6 +3108,7 @@ public class SentryStore {
    */
   private boolean isTableEmptyCore(PersistenceManager pm, Class clazz) {
     Query query = pm.newQuery(clazz);
+    query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
     // setRange is implemented efficiently for MySQL, Postgresql (using the LIMIT SQL keyword)
     // and Oracle (using the ROWNUM keyword), with the query only finding the objects required
     // by the user directly in the datastore. For other RDBMS the query will retrieve all
@@ -3110,6 +3128,7 @@ public class SentryStore {
    */
   private static long getMaxPersistedIDCore(PersistenceManager pm, Class clazz, String columnName, long defaultValue) {
     Query query = pm.newQuery(clazz);
+    query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
     query.setResult(String.format("max(%s)", columnName));
     Long maxValue = (Long) query.execute();
     return (maxValue != null) ? maxValue : defaultValue;
@@ -3185,6 +3204,7 @@ public class SentryStore {
             pm.setDetachAllOnCommit(false); // No need to detach objects
 
             Query query = pm.newQuery(MSentryRole.class);
+            query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
             List<MSentryRole> mSentryRoles;
             if ((roleNames == null) || roleNames.isEmpty()) {
               mSentryRoles = (List<MSentryRole>)query.execute();
@@ -3265,6 +3285,7 @@ public class SentryStore {
                 throws Exception {
           pm.setDetachAllOnCommit(false); // No need to detach objects
           Query query = pm.newQuery(MSentryPrivilege.class);
+          query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
           QueryParamBuilder paramBuilder = newQueryParamBuilder();
 
           if (!StringUtils.isEmpty(dbName)) {
@@ -3893,6 +3914,7 @@ public class SentryStore {
           PersistenceManager pm, Class<T> changeCls, final long changeID)
               throws Exception {
     Query query = pm.newQuery(changeCls);
+    query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
     query.setFilter("this.changeID == id");
     query.declareParameters("long id");
     List<T> changes = (List<T>)query.execute(changeID);
