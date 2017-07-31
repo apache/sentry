@@ -80,9 +80,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-public abstract class HiveAuthzBindingHookBase extends AbstractSemanticAnalyzerHook {
+public abstract class HiveAuthzBindingHookBaseV2 extends AbstractSemanticAnalyzerHook {
   private static final Logger LOG = LoggerFactory
-      .getLogger(HiveAuthzBindingHookBase.class);
+      .getLogger(HiveAuthzBindingHookBaseV2.class);
   protected final HiveAuthzBinding hiveAuthzBinding;
   protected final HiveAuthzConf authzConf;
   protected Database currDB = Database.ALL;
@@ -109,7 +109,7 @@ public abstract class HiveAuthzBindingHookBase extends AbstractSemanticAnalyzerH
   // require table-level privileges.
   protected boolean isDescTableBasic = false;
 
-  public HiveAuthzBindingHookBase() throws Exception {
+  public HiveAuthzBindingHookBaseV2() throws Exception {
     SessionState session = SessionState.get();
     if(session == null) {
       throw new IllegalStateException("Session has not been started");

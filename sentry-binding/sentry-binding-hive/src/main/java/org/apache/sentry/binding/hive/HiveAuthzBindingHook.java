@@ -41,6 +41,7 @@ import org.apache.hadoop.hive.ql.plan.ShowColumnsDesc;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.sentry.binding.hive.authz.HiveAuthzPrivileges;
 import org.apache.sentry.binding.hive.authz.HiveAuthzPrivilegesMap;
+import org.apache.sentry.binding.hive.authz.HiveAuthzBindingHookBase;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.db.Database;

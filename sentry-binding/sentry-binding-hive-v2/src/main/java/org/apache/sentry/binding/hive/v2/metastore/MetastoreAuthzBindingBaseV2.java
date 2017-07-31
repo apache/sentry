@@ -69,7 +69,7 @@ import com.google.common.collect.Sets;
  * passed down to the hive binding which handles the authorization. This ensures
  * that we follow the same privilege model and policies.
  */
-public abstract class MetastoreAuthzBindingBase extends MetaStorePreEventListener {
+public abstract class MetastoreAuthzBindingBaseV2 extends MetaStorePreEventListener {
 
   /**
    * Build the set of object hierarchies ie fully qualified db model objects
@@ -136,7 +136,7 @@ public abstract class MetastoreAuthzBindingBase extends MetaStorePreEventListene
   private final String warehouseDir;
   protected static boolean sentryCacheOutOfSync = false;
 
-  public MetastoreAuthzBindingBase(Configuration config) throws Exception {
+  public MetastoreAuthzBindingBaseV2(Configuration config) throws Exception {
     super(config);
     String hiveAuthzConf = config.get(HiveAuthzConf.HIVE_SENTRY_CONF_URL);
     if (hiveAuthzConf == null

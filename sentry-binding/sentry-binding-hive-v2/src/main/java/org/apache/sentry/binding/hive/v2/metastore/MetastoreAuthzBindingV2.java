@@ -30,7 +30,7 @@ import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.sentry.binding.hive.authz.HiveAuthzBinding;
 import org.apache.sentry.binding.hive.v2.HiveAuthzPrivilegesMapV2;
-import org.apache.sentry.binding.metastore.MetastoreAuthzBindingBase;
+import org.apache.sentry.binding.metastore.MetastoreAuthzBindingBaseV2;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
@@ -44,7 +44,7 @@ import org.apache.sentry.core.model.db.DBModelAuthorizable;
  * passed down to the hive binding which handles the authorization. This ensures
  * that we follow the same privilege model and policies.
  */
-public class MetastoreAuthzBindingV2 extends MetastoreAuthzBindingBase {
+public class MetastoreAuthzBindingV2 extends MetastoreAuthzBindingBaseV2 {
 
   public MetastoreAuthzBindingV2(Configuration config) throws Exception {
     super(config);

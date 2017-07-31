@@ -31,7 +31,7 @@ import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hive.service.cli.HiveSQLException;
 import org.apache.hive.service.cli.session.HiveSessionHookContext;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
-
+import org.apache.sentry.binding.hive.authz.HiveAuthzBindingHookBase;
 import com.google.common.base.Joiner;
 
 public class HiveAuthzBindingSessionHook

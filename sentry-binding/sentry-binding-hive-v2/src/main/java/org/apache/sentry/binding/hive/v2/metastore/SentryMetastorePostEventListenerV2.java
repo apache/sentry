@@ -24,10 +24,10 @@ import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.Partition;
 import org.apache.hadoop.hive.metastore.events.AddPartitionEvent;
 import org.apache.hadoop.hive.metastore.events.DropPartitionEvent;
-import org.apache.sentry.binding.metastore.SentryMetastorePostEventListenerBase;
+import org.apache.sentry.binding.metastore.SentryMetastorePostEventListenerBaseV2;
 import org.apache.sentry.provider.db.SentryMetastoreListenerPlugin;
 
-public class SentryMetastorePostEventListenerV2 extends SentryMetastorePostEventListenerBase {
+public class SentryMetastorePostEventListenerV2 extends SentryMetastorePostEventListenerBaseV2 {
 
   public SentryMetastorePostEventListenerV2(Configuration config) {
     super(config);

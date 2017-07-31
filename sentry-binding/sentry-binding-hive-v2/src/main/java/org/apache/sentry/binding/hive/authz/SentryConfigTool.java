@@ -44,7 +44,7 @@ import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.sentry.Command;
-import org.apache.sentry.binding.hive.HiveAuthzBindingHookBase;
+import org.apache.sentry.binding.hive.HiveAuthzBindingHookBaseV2;
 import org.apache.sentry.binding.hive.SentryPolicyFileFormatFactory;
 import org.apache.sentry.binding.hive.SentryPolicyFileFormatter;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
@@ -227,7 +227,7 @@ public class SentryConfigTool {
     System.setProperty(AuthzConfVars.SENTRY_TESTING_MODE.getVar(), "true");
     setHiveConf(new HiveConf(SessionState.class));
     getHiveConf().setVar(ConfVars.SEMANTIC_ANALYZER_HOOK,
-        HiveAuthzBindingHookBase.class.getName());
+        HiveAuthzBindingHookBaseV2.class.getName());
     try {
       System.out.println("Hive config: " + HiveConf.getHiveSiteLocation());
     } catch (NullPointerException e) {

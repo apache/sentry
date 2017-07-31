@@ -34,7 +34,7 @@ import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.plan.DDLWork;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.ql.session.SessionState;
-import org.apache.sentry.binding.hive.HiveAuthzBindingHookBase;
+import org.apache.sentry.binding.hive.HiveAuthzBindingHookBaseV2;
 import org.apache.sentry.binding.hive.authz.HiveAuthzPrivileges;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.core.common.Subject;
@@ -42,7 +42,7 @@ import org.apache.sentry.core.model.db.Database;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HiveAuthzBindingHookV2 extends HiveAuthzBindingHookBase {
+public class HiveAuthzBindingHookV2 extends HiveAuthzBindingHookBaseV2 {
   private static final Logger LOG = LoggerFactory
       .getLogger(HiveAuthzBindingHookV2.class);
 
