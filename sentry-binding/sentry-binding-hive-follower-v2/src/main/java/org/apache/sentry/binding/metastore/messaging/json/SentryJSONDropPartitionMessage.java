@@ -18,21 +18,23 @@
 
 package org.apache.sentry.binding.metastore.messaging.json;
 
-import org.apache.hive.hcatalog.messaging.json.JSONAddPartitionMessage;
+import org.apache.hive.hcatalog.messaging.json.JSONDropPartitionMessage;
 import org.codehaus.jackson.annotate.JsonProperty;
 
 import java.util.List;
 import java.util.Map;
 
-public class SentryJSONAddPartitionMessage extends JSONAddPartitionMessage {
+public class SentryJSONDropPartitionMessage extends JSONDropPartitionMessage {
   @JsonProperty
   private List<String> locations;
 
-  public SentryJSONAddPartitionMessage() {
+  public SentryJSONDropPartitionMessage() {
   }
 
-  public SentryJSONAddPartitionMessage(String server, String servicePrincipal, String db, String table,
-                                       List<Map<String, String>> partitions, Long timestamp, List<String> locations) {
+  public SentryJSONDropPartitionMessage(String server, String servicePrincipal,
+                                        String db, String table,
+                                        List<Map<String, String>> partitions,
+                                        Long timestamp, List<String> locations) {
     super(server, servicePrincipal, db, table, partitions, timestamp);
     this.locations = locations;
   }
@@ -45,4 +47,5 @@ public class SentryJSONAddPartitionMessage extends JSONAddPartitionMessage {
   public String toString() {
     return SentryJSONMessageDeserializer.serialize(this);
   }
+
 }
