@@ -506,7 +506,7 @@ public class TestHMSFollower {
         0, 0, sd, null);
     partitions.add(partition);
     notificationEvent = new NotificationEvent(inputEventId, 0, EventType.ADD_PARTITION.toString(),
-        messageFactory.buildAddPartitionMessage(table, partitions).toString());
+       messageFactory.buildAddPartitionMessage(table, partitions).toString());
     notificationEvent.setDbName(dbName);
     notificationEvent.setTableName(tableName1);
     events.add(notificationEvent);
@@ -526,7 +526,7 @@ public class TestHMSFollower {
     // This is an invalid event and should be processed by sentry store.
     // Event Id should be explicitly persisted using persistLastProcessedNotificationID
     notificationEvent = new NotificationEvent(inputEventId, 0, EventType.ALTER_PARTITION.toString(),
-        messageFactory.buildAlterPartitionMessage(partition, partition).toString());
+        messageFactory.buildAlterPartitionMessage(table, partition, partition).toString());
     notificationEvent.setDbName(dbName);
     notificationEvent.setTableName(tableName1);
     events.add(notificationEvent);
@@ -544,7 +544,7 @@ public class TestHMSFollower {
     Partition updatedPartition = new Partition(partition);
     updatedPartition.setSd(sd);
     notificationEvent = new NotificationEvent(inputEventId, 0, EventType.ALTER_PARTITION.toString(),
-        messageFactory.buildAlterPartitionMessage(partition, updatedPartition).toString());
+      messageFactory.buildAlterPartitionMessage(table, partition, updatedPartition).toString());
     notificationEvent.setDbName(dbName);
     notificationEvent.setTableName(tableName1);
     events.add(notificationEvent);

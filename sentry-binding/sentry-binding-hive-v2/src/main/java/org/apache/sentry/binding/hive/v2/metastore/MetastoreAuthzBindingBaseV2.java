@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Iterator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -337,14 +338,19 @@ public abstract class MetastoreAuthzBindingBaseV2 extends MetaStorePreEventListe
 
   protected void authorizeDropPartition(PreDropPartitionEvent context)
       throws InvalidOperationException, MetaException {
+    Iterator<Partition> partitionIterator = context.getPartitionIterator();
+    HierarcyBuilder inputHierarchy = new HierarcyBuilder();
+    HierarcyBuilder outputHierarchy = new HierarcyBuilder();
+    Partition partition;
+    while(partitionIterator.hasNext()) {
+      partition = partitionIterator.next();
+      inputHierarchy.addTableToOutput(getAuthServer(), partition.getDbName(),
+          partition.getTableName());
+      outputHierarchy.addTableToOutput(getAuthServer(), partition.getDbName(),
+          partition.getTableName());
+    }
     authorizeMetastoreAccess(
-        HiveOperation.ALTERTABLE_DROPPARTS,
-        new HierarcyBuilder().addTableToOutput(getAuthServer(),
-            context.getPartition().getDbName(),
-            context.getPartition().getTableName()).build(),
-        new HierarcyBuilder().addTableToOutput(getAuthServer(),
-            context.getPartition().getDbName(),
-            context.getPartition().getTableName()).build());
+        HiveOperation.ALTERTABLE_DROPPARTS, inputHierarchy.build(), outputHierarchy.build());
   }
 
   private void authorizeAlterPartition(PreAlterPartitionEvent context)
@@ -447,7 +453,7 @@ public abstract class MetastoreAuthzBindingBaseV2 extends MetaStorePreEventListe
   }
 
   public static void setSentryCacheOutOfSync(boolean sentryCacheOutOfSync) {
-    MetastoreAuthzBindingBase.sentryCacheOutOfSync = sentryCacheOutOfSync;
+    MetastoreAuthzBindingBaseV2.sentryCacheOutOfSync = sentryCacheOutOfSync;
   }
 
 }

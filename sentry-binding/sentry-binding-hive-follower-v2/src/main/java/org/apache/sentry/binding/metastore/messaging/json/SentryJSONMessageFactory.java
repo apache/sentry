@@ -21,13 +21,11 @@ package org.apache.sentry.binding.metastore.messaging.json;
 import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.hive.common.classification.InterfaceAudience;
-import org.apache.hadoop.hive.common.classification.InterfaceStability;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.Partition;
 import org.apache.hadoop.hive.metastore.api.Table;
-import org.apache.hadoop.hive.metastore.partition.spec.PartitionSpecProxy;
 import org.apache.hive.hcatalog.messaging.*;
+import org.apache.hive.hcatalog.messaging.json.JSONInsertMessage;
 
 import java.util.*;
 
@@ -76,48 +74,59 @@ public class SentryJSONMessageFactory extends MessageFactory {
         table.getTableName(), now(), table.getSd().getLocation());
   }
 
-  public SentryJSONAddPartitionMessage buildAddPartitionMessage(Table table, List<Partition> partitions) {
-    return new SentryJSONAddPartitionMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, table.getDbName(),
-        table.getTableName(), getPartitionKeyValues(table, partitions), now(),
-        getPartitionLocations(partitions));
-  }
-
-  private List<String> getPartitionLocations(List<Partition> partitions) {
-    List<String> paths = Lists.newLinkedList();
-    for (Partition partition : partitions) {
-      paths.add(partition.getSd().getLocation());
-    }
-    return paths;
-  }
-
-  private List<String> getPartitionLocations(PartitionSpecProxy partitionSpec) {
-    Iterator<Partition> iterator = partitionSpec.getPartitionIterator();
-    List<String> locations = Lists.newLinkedList();
-    while (iterator.hasNext()) {
-      locations.add(iterator.next().getSd().getLocation());
-    }
-    return locations;
-  }
-
-  @InterfaceAudience.LimitedPrivate( {"Hive"})
-  @InterfaceStability.Evolving
-  public SentryJSONAddPartitionMessage buildAddPartitionMessage(Table table, PartitionSpecProxy partitionSpec) {
-    return new SentryJSONAddPartitionMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, table.getDbName(),
-        table.getTableName(), getPartitionKeyValues(table, partitionSpec), now(),
-        getPartitionLocations(partitionSpec));
+  @Override
+  public SentryJSONAlterPartitionMessage buildAlterPartitionMessage(Table table,
+      Partition before, Partition after) {
+    return new SentryJSONAlterPartitionMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL,
+        before.getDbName(), before.getTableName(), getPartitionKeyValues(table, before),
+        after.getValues(), now(), before.getSd().getLocation(), after.getSd().getLocation());
   }
 
   @Override
-  public SentryJSONAlterPartitionMessage buildAlterPartitionMessage(Partition before, Partition after) {
-    return new SentryJSONAlterPartitionMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, before.getDbName(),
-        before.getTableName(), before.getValues(), after.getValues(), now(), before.getSd().getLocation(),
-        after.getSd().getLocation());
+  public DropPartitionMessage buildDropPartitionMessage(Table table, Iterator<Partition> partitions) {
+    return new SentryJSONDropPartitionMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL,
+        table.getDbName(), table.getTableName(),getPartitionKeyValues(table, partitions),
+        now(), getPartitionLocations(partitions));
   }
 
-  public SentryJSONDropPartitionMessage buildDropPartitionMessage(Table table, Partition partition) {
-    return new SentryJSONDropPartitionMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, partition.getDbName(),
-        partition.getTableName(), Arrays.asList(getPartitionKeyValues(table, partition)),
-        now(), Arrays.asList(partition.getSd().getLocation()));
+  @Override
+  public InsertMessage buildInsertMessage(String db, String table, Map<String,String> partKeyVals,
+      List<String> files) {
+    // Sentry would be not be interested in InsertMessage as these are generated when is data is
+    // added inserted. This method is implemented for completeness. This is reason why, new sentry
+    // JSON class is not defined for InsertMessage.
+    return new JSONInsertMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, db, table, partKeyVals,
+        files, now());
+  }
+
+  @Override
+  public AddPartitionMessage buildAddPartitionMessage(Table table,
+      Iterator<Partition> partitionsIterator) {
+    return new SentryJSONAddPartitionMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, table.getDbName(),
+        table.getTableName(), getPartitionKeyValues(table, partitionsIterator), now(),
+        getPartitionLocations(partitionsIterator));
+  }
+
+  public AddPartitionMessage buildAddPartitionMessage(Table table,
+                                                      List<Partition> partitions) {
+    return buildAddPartitionMessage (table, partitions.iterator());
+  }
+
+  private static List<Map<String, String>> getPartitionKeyValues(Table table,
+      Iterator<Partition> partitions) {
+    List<Map<String, String>> partitionList = Lists.newLinkedList();
+    while(partitions.hasNext()) {
+      partitionList.add(getPartitionKeyValues(table, partitions.next()));
+    }
+    return partitionList;
+  }
+
+  private List<String> getPartitionLocations(Iterator<Partition> partitionsIterator) {
+    List<String> locations = Lists.newLinkedList();
+    while(partitionsIterator.hasNext()) {
+      locations.add(partitionsIterator.next().getSd().getLocation());
+    }
+    return locations;
   }
 
   private static Map<String, String> getPartitionKeyValues(Table table, Partition partition) {
@@ -128,30 +137,6 @@ public class SentryJSONMessageFactory extends MessageFactory {
     }
 
     return partitionKeys;
-  }
-
-  private static List<Map<String, String>> getPartitionKeyValues(Table table, List<Partition> partitions) {
-    List<Map<String, String>> partitionList = Lists.newLinkedList();
-
-    for (Partition partition : partitions) {
-      partitionList.add(getPartitionKeyValues(table, partition));
-    }
-
-    return partitionList;
-  }
-
-  @InterfaceAudience.LimitedPrivate( {"Hive"})
-  @InterfaceStability.Evolving
-  private static List<Map<String, String>> getPartitionKeyValues(Table table, PartitionSpecProxy partitionSpec) {
-    ArrayList partitionList = new ArrayList();
-    PartitionSpecProxy.PartitionIterator iterator = partitionSpec.getPartitionIterator();
-
-    while (iterator.hasNext()) {
-      Partition partition = iterator.next();
-      partitionList.add(getPartitionKeyValues(table, partition));
-    }
-
-    return partitionList;
   }
 
   //This is private in parent class

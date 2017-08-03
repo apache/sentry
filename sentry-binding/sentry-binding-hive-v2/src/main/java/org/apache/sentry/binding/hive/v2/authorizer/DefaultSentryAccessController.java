@@ -35,7 +35,6 @@ import org.apache.hadoop.hive.ql.security.authorization.plugin.HivePrivilege;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HivePrivilegeInfo;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HivePrivilegeObject;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveRoleGrant;
-import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.sentry.binding.hive.SentryOnFailureHookContext;
 import org.apache.sentry.binding.hive.SentryOnFailureHookContextImpl;
 import org.apache.sentry.binding.hive.authz.HiveAuthzBinding;
@@ -514,8 +513,14 @@ public class DefaultSentryAccessController extends SentryHiveAccessController {
 
   private void executeOnFailureHooks(HiveOperation hiveOp, SentryAccessDeniedException e)
       throws HiveAccessControlException {
+
+    // With Hive 2.x cmd information is not available from SessionState. More over cmd information
+    // is not used in SentryOnFailureHookContextImpl. If this information is really needed an issue
+    // should be raised with  Hive community to update HiveAccessController interface to pass
+    // HiveSemanticAnalyzerHookContext, which has cmd information. For now, empty string is used for
+    // cmd.
     SentryOnFailureHookContext hookCtx =
-        new SentryOnFailureHookContextImpl(SessionState.get().getCmd(), null, null, hiveOp, null,
+        new SentryOnFailureHookContextImpl("", null, null, hiveOp, null,
             null, null, null, authenticator.getUserName(), null, new AuthorizationException(e),
             authzConf);
     SentryAuthorizerUtil.executeOnFailureHooks(hookCtx, authzConf);
