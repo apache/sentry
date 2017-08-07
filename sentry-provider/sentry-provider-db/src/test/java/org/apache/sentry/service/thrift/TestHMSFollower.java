@@ -66,6 +66,10 @@ public class TestHMSFollower {
     hiveConnectionFactory = new HiveSimpleConnectionFactory(configuration, new HiveConf());
     hiveConnectionFactory.init();
     configuration.set("sentry.hive.sync.create", "true");
+
+    // enable HDFS sync, so perm and path changes will be saved into DB
+    configuration.set(ServiceConstants.ServerConfig.PROCESSOR_FACTORIES, "org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory");
+    configuration.set(ServiceConstants.ServerConfig.SENTRY_POLICY_STORE_PLUGINS, "org.apache.sentry.hdfs.SentryPlugin");
   }
 
   @Test
@@ -606,6 +610,10 @@ public class TestHMSFollower {
         Mockito.anyCollection(), Mockito.any(Updateable.Update.class));
 
     Configuration configuration = new Configuration();
+    // enable HDFS sync, so perm and path changes will be saved into DB
+    configuration.set(ServiceConstants.ServerConfig.PROCESSOR_FACTORIES, "org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory");
+    configuration.set(ServiceConstants.ServerConfig.SENTRY_POLICY_STORE_PLUGINS, "org.apache.sentry.hdfs.SentryPlugin");
+
     HMSFollower hmsFollower = new HMSFollower(configuration, sentryStore, null,
         hiveConnectionFactory, hiveInstance);
 
@@ -738,5 +746,80 @@ public class TestHMSFollower {
     //noinspection unchecked
     verify(sentryStore, times(1)).addAuthzPathsMapping(Mockito.anyString(), Mockito.anyCollection(),
         Mockito.any(Updateable.Update.class));
+  }
+
+  @Test
+  public void testNoHdfsNoPersistAFullSnapshot() throws Exception {
+    /*
+     * TEST CASE
+     *
+     * Simulates (by using mocks) that Sentry has not processed any notifications, so this
+     * should trigger a new full HMS snapshot request with the eventId = 1
+     */
+
+    final long SENTRY_PROCESSED_EVENT_ID = SentryStore.EMPTY_NOTIFICATION_ID;
+    final long HMS_PROCESSED_EVENT_ID = 1L;
+
+    // Mock that returns a full snapshot
+    Map<String, Set<String>> snapshotObjects = new HashMap<>();
+    snapshotObjects.put("db", Sets.newHashSet("/db"));
+    snapshotObjects.put("db.table", Sets.newHashSet("/db/table"));
+    PathsImage fullSnapshot = new PathsImage(snapshotObjects, HMS_PROCESSED_EVENT_ID, 1);
+
+    SentryHMSClient sentryHmsClient = Mockito.mock(SentryHMSClient.class);
+    Mockito.when(sentryHmsClient.getFullSnapshot()).thenReturn(fullSnapshot);
+    Mockito.when(sentryHmsClient.getCurrentNotificationId()).thenReturn(fullSnapshot.getId());
+
+    Configuration configuration = new Configuration();
+    HMSFollower hmsFollower = new HMSFollower(configuration, sentryStore, null,
+        hiveConnectionFactory, hiveInstance);
+    hmsFollower.setSentryHmsClient(sentryHmsClient);
+
+    // 1st run should get a full snapshot because AuthzPathsMapping is empty
+    Mockito.when(sentryStore.getLastProcessedNotificationID()).thenReturn(SENTRY_PROCESSED_EVENT_ID);
+    Mockito.when(sentryStore.isAuthzPathsMappingEmpty()).thenReturn(true);
+    hmsFollower.run();
+    Mockito.verify(sentryStore, times(0)).persistFullPathsImage(fullSnapshot.getPathImage());
+    Mockito.verify(sentryStore, times(1)).persistLastProcessedNotificationID(fullSnapshot.getId());
+  }
+
+  @Test
+  public void testNoHdfsSyncAlterTableNotPersisted() throws Exception {
+    String dbName = "db1";
+    String tableName = "table1";
+    String newDbName = "db1";
+    String newTableName = "table2";
+
+    // Create notification events
+    StorageDescriptor sd = new StorageDescriptor();
+    sd.setLocation("hdfs:///db1.db/table1");
+    NotificationEvent notificationEvent = new NotificationEvent(1, 0,
+        HCatEventMessage.EventType.ALTER_TABLE.toString(),
+        messageFactory.buildAlterTableMessage(
+            new Table(tableName, dbName, null, 0, 0, 0, sd, null, null, null, null, null),
+            new Table(newTableName, newDbName, null, 0, 0, 0, sd, null, null, null, null, null))
+            .toString());
+    notificationEvent.setDbName(newDbName);
+    notificationEvent.setTableName(newTableName);
+    List<NotificationEvent> events = new ArrayList<>();
+    events.add(notificationEvent);
+
+    Configuration configuration = new Configuration();
+    HMSFollower hmsFollower = new HMSFollower(configuration, sentryStore, null,
+        hiveConnectionFactory, hiveInstance);
+    hmsFollower.processNotifications(events);
+
+    TSentryAuthorizable authorizable = new TSentryAuthorizable(hiveInstance);
+    authorizable.setServer(hiveInstance);
+    authorizable.setDb(dbName);
+    authorizable.setTable(tableName);
+
+    TSentryAuthorizable newAuthorizable = new TSentryAuthorizable(hiveInstance);
+    authorizable.setServer(hiveInstance);
+    newAuthorizable.setDb(newDbName);
+    newAuthorizable.setTable(newTableName);
+
+    verify(sentryStore, times(0)).renamePrivilege(authorizable, newAuthorizable,
+        NotificationProcessor.getPermUpdatableOnRename(authorizable, newAuthorizable));
   }
 }

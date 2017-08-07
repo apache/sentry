@@ -31,6 +31,7 @@ import java.io.Writer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import org.apache.sentry.service.thrift.SentryServiceUtil;
 
 /**
  * Admin Servlet is only used when SENTRY_WEB_ADMIN_SERVLET_ENABLED is true.

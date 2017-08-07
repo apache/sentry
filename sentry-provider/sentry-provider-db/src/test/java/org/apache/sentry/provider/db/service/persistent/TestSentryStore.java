@@ -59,6 +59,8 @@ import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
 import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.service.thrift.SentryServiceUtil;
+import org.apache.sentry.service.thrift.ServiceConstants;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -96,6 +98,10 @@ public class TestSentryStore extends org.junit.Assert {
     final String ourUrl = UserProvider.SCHEME_NAME + ":///";
     conf.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, ourUrl);
 
+    // enable HDFS sync, so perm and path changes will be saved into DB
+    conf.set(ServiceConstants.ServerConfig.PROCESSOR_FACTORIES, "org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory");
+    conf.set(ServiceConstants.ServerConfig.SENTRY_POLICY_STORE_PLUGINS, "org.apache.sentry.hdfs.SentryPlugin");
+
     // THis should be a UserGroupInformation provider
     CredentialProvider provider = CredentialProviderFactory.getProviders(conf).get(0);
 
@@ -120,7 +126,9 @@ public class TestSentryStore extends org.junit.Assert {
     conf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE,
         policyFilePath.getPath());
     conf.setInt(ServerConfig.SENTRY_STORE_TRANSACTION_RETRY, 10);
+    boolean hdfsSyncEnabled = SentryServiceUtil.isHDFSSyncEnabled(conf);
     sentryStore = new SentryStore(conf);
+    sentryStore.setPersistUpdateDeltas(hdfsSyncEnabled);
   }
 
   @Before
@@ -3243,5 +3251,71 @@ public class TestSentryStore extends org.junit.Assert {
     assertEquals(sentryStore.isAuthzPathsMappingEmpty(), false);
     sentryStore.clearAllTables();
     assertEquals(sentryStore.isAuthzPathsMappingEmpty(), true);
+  }
+
+  @Test
+  public void testAddDeleteAuthzPathsMappingNoDeltaSavedWithoutHDFSSync() throws Exception {
+
+    // disable HDFS
+    conf.set(ServiceConstants.ServerConfig.PROCESSOR_FACTORIES, "");
+    conf.set(ServiceConstants.ServerConfig.SENTRY_POLICY_STORE_PLUGINS, "");
+    SentryStore localSentryStore = new SentryStore(conf);
+
+    // Persist an empty image so that we can add paths to it.
+    localSentryStore.persistFullPathsImage(new HashMap<String, Set<String>>());
+
+    // Add "db1.table1" authzObj
+    Long lastNotificationId = sentryStore.getLastProcessedNotificationID();
+    PathsUpdate addUpdate = new PathsUpdate(1, false);
+    addUpdate.newPathChange("db1.table").
+        addToAddPaths(Arrays.asList("db1", "tbl1"));
+    addUpdate.newPathChange("db1.table").
+        addToAddPaths(Arrays.asList("db1", "tbl2"));
+
+    localSentryStore.addAuthzPathsMapping("db1.table",
+        Sets.newHashSet("db1/tbl1", "db1/tbl2"), addUpdate);
+    PathsImage pathsImage = localSentryStore.retrieveFullPathsImage();
+    Map<String, Set<String>> pathImage = pathsImage.getPathImage();
+    assertEquals(1, pathImage.size());
+    assertEquals(2, pathImage.get("db1.table").size());
+    assertEquals(2, localSentryStore.getMPaths().size());
+
+    // Query the persisted path change and ensure it is not saved
+    long lastChangeID = localSentryStore.getLastProcessedPathChangeID();
+    assertEquals(0, lastChangeID);
+
+    // Delete path 'db1.db/tbl1' from "db1.table1" authzObj.
+    PathsUpdate delUpdate = new PathsUpdate(2, false);
+    delUpdate.newPathChange("db1.table")
+        .addToDelPaths(Arrays.asList("db1", "tbl1"));
+    localSentryStore.deleteAuthzPathsMapping("db1.table", Sets.newHashSet("db1/tbl1"), delUpdate);
+    pathImage = localSentryStore.retrieveFullPathsImage().getPathImage();
+    assertEquals(1, pathImage.size());
+    assertEquals(1, pathImage.get("db1.table").size());
+    assertEquals(1, localSentryStore.getMPaths().size());
+
+    // Query the persisted path change and ensure it is not saved
+    lastChangeID = localSentryStore.getLastProcessedPathChangeID();
+    assertEquals(0, lastChangeID);
+
+    // Delete "db1.table" authzObj from the authzObj -> [Paths] mapping.
+    PathsUpdate delAllupdate = new PathsUpdate(3, false);
+    delAllupdate.newPathChange("db1.table")
+        .addToDelPaths(Lists.newArrayList(PathsUpdate.ALL_PATHS));
+    localSentryStore.deleteAllAuthzPathsMapping("db1.table", delAllupdate);
+    pathImage = localSentryStore.retrieveFullPathsImage().getPathImage();
+    assertEquals(0, pathImage.size());
+    assertEquals(0, localSentryStore.getMPaths().size());
+
+    // Query the persisted path change and ensure it is not saved
+    lastChangeID = localSentryStore.getLastProcessedPathChangeID();
+    assertEquals(0, lastChangeID);
+
+    lastNotificationId = localSentryStore.getLastProcessedNotificationID();
+    assertEquals(0, lastNotificationId.longValue());
+
+    // enable HDFS for other tests
+    conf.set(ServiceConstants.ServerConfig.PROCESSOR_FACTORIES, "org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory");
+    conf.set(ServiceConstants.ServerConfig.SENTRY_POLICY_STORE_PLUGINS, "org.apache.sentry.hdfs.SentryPlugin");
   }
 }

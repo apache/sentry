@@ -38,7 +38,6 @@ import javax.jdo.JDOHelper;
 import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
 import javax.jdo.Query;
-import javax.jdo.Transaction;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -172,6 +171,10 @@ public class SentryStore {
   private Configuration conf;
   private final TransactionManager tm;
 
+  // When it is true, execute DeltaTransactionBlock to persist delta changes.
+  // When it is false, do not execute DeltaTransactionBlock
+  private boolean persistUpdateDeltas;
+
   /**
    * counterWait is used to synchronize notifications between Thrift and HMSFollower.
    * Technically it doesn't belong here, but the only thing that connects HMSFollower
@@ -262,6 +265,11 @@ public class SentryStore {
     tm = new TransactionManager(pmf, conf);
     verifySentryStoreSchema(checkSchemaVersion);
   }
+
+  public void setPersistUpdateDeltas(boolean persistUpdateDeltas) {
+    this.persistUpdateDeltas = persistUpdateDeltas;
+  }
+
 
   public TransactionManager getTransactionManager() {
     return tm;
@@ -730,7 +738,7 @@ public class SentryStore {
       final String roleName, final TSentryPrivilege privilege,
       final Update update) throws Exception {
 
-    execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
+    execute(update, new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
         pm.setDetachAllOnCommit(false); // No need to detach objects
         String trimmedRoleName = trimAndLower(roleName);
@@ -889,7 +897,7 @@ public class SentryStore {
   private synchronized void alterSentryRoleRevokePrivilege(final String grantorPrincipal,
                                               final String roleName, final TSentryPrivilege tPrivilege,
                                               final Update update) throws Exception {
-    execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
+    execute(update, new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
         pm.setDetachAllOnCommit(false); // No need to detach objects
         String trimmedRoleName = safeTrimLower(roleName);
@@ -1224,8 +1232,7 @@ public class SentryStore {
    */
   public synchronized void dropSentryRole(final String roleName,
       final Update update) throws Exception {
-
-    execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
+    execute(update, new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
         pm.setDetachAllOnCommit(false); // No need to detach objects
         dropSentryRoleCore(pm, roleName);
@@ -1303,7 +1310,7 @@ public class SentryStore {
       final String roleName, final Set<TSentryGroup> groupNames,
       final Update update) throws Exception {
 
-    execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
+    execute(update, new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
         pm.setDetachAllOnCommit(false); // No need to detach objects
         alterSentryRoleAddGroupsCore(pm, roleName, groupNames);
@@ -1452,7 +1459,7 @@ public class SentryStore {
   public synchronized void alterSentryRoleDeleteGroups(final String roleName,
       final Set<TSentryGroup> groupNames, final Update update)
           throws Exception {
-    execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
+    execute(update, new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
         pm.setDetachAllOnCommit(false); // No need to detach objects
         String trimmedRoleName = trimAndLower(roleName);
@@ -2189,8 +2196,7 @@ public class SentryStore {
    */
   public synchronized void dropPrivilege(final TSentryAuthorizable tAuthorizable,
       final Update update) throws Exception {
-
-    execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
+    execute(update, new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
         pm.setDetachAllOnCommit(false); // No need to detach objects
 
@@ -2269,7 +2275,7 @@ public class SentryStore {
       final TSentryAuthorizable newTAuthorizable, final Update update)
         throws Exception {
 
-    execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
+    execute(update, new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
         pm.setDetachAllOnCommit(false); // No need to detach objects
 
@@ -2753,7 +2759,7 @@ public class SentryStore {
    */
   public void addAuthzPathsMapping(final String authzObj, final Collection<String> paths,
       final Update update) throws Exception {
-    execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
+    execute(update, new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
         pm.setDetachAllOnCommit(false); // No need to detach objects
         addAuthzPathsMappingCore(pm, authzObj, paths);
@@ -2800,7 +2806,7 @@ public class SentryStore {
    */
   public void deleteAuthzPathsMapping(final String authzObj, final Iterable<String> paths,
       final Update update) throws Exception {
-    execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
+    execute(update, new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
         pm.setDetachAllOnCommit(false); // No need to detach objects
         deleteAuthzPathsMappingCore(pm, authzObj, paths);
@@ -2852,7 +2858,7 @@ public class SentryStore {
    */
   public void deleteAllAuthzPathsMapping(final String authzObj, final Update update)
         throws Exception {
-    execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
+    execute(update, new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
         pm.setDetachAllOnCommit(false); // No need to detach objects
         deleteAllAuthzPathsMappingCore(pm, authzObj);
@@ -2901,7 +2907,7 @@ public class SentryStore {
    */
   public void renameAuthzPathsMapping(final String oldObj, final String newObj,
       final String oldPath, final String newPath, final Update update) throws Exception {
-    execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
+    execute(update, new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
         pm.setDetachAllOnCommit(false); // No need to detach objects
         renameAuthzPathsMappingCore(pm, oldObj, newObj, oldPath, newPath);
@@ -2958,7 +2964,7 @@ public class SentryStore {
    */
   public void renameAuthzObj(final String oldObj, final String newObj,
       final Update update) throws Exception {
-    execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
+    execute(update, new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
         pm.setDetachAllOnCommit(false); // No need to detach objects
         renameAuthzObjCore(pm, oldObj, newObj);
@@ -3041,7 +3047,7 @@ public class SentryStore {
    */
   public void updateAuthzPathsMapping(final String authzObj, final String oldPath,
         final String newPath, final Update update) throws Exception {
-    execute(new DeltaTransactionBlock(update), new TransactionBlock<Object>() {
+    execute(update, new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
         pm.setDetachAllOnCommit(false); // No need to detach objects
         updateAuthzPathsMappingCore(pm, authzObj, oldPath, newPath);
@@ -4080,7 +4086,8 @@ public class SentryStore {
     }
 
     // The first delta change from the DB should match the changeID
-    // If it doesn't, then it means the delta table no longer has entries starting from the requested CHANGE_ID
+    // If it doesn't, then it means the delta table no longer has entries starting from the
+    // requested CHANGE_ID
     if (changes.get(0).getChangeID() != changeID) {
       LOGGER.debug(String.format("Starting delta change from %s is off from the requested id. " +
           "Requested changeID: %s, Missing delta count: %s",
@@ -4101,24 +4108,26 @@ public class SentryStore {
   }
 
   /**
-   * Execute Perm/Path UpdateTransaction and corresponding actual
-   * action transaction, e.g dropSentryRole, in a single transaction.
+   * Execute actual Perm/Path action transaction, e.g dropSentryRole, and persist corresponding
+   * Update in a single transaction if persistUpdateDeltas is true.
    * Note that this method only applies to TransactionBlock that
    * does not have any return value.
    * <p>
    * Failure in any TransactionBlock would cause the whole transaction
    * to fail.
    *
-   * @param deltaTransactionBlock
+   * @param update
    * @param transactionBlock
    * @throws Exception
    */
-  private void execute(DeltaTransactionBlock deltaTransactionBlock,
+  private void execute(Update update,
         TransactionBlock<Object> transactionBlock) throws Exception {
-    List<TransactionBlock<Object>> tbs = Lists.newArrayList();
-    if (deltaTransactionBlock != null) {
-      tbs.add(deltaTransactionBlock);
+    List<TransactionBlock<Object>> tbs = new ArrayList(2);
+
+    if (persistUpdateDeltas) {
+      tbs.add(new DeltaTransactionBlock(update));
     }
+
     tbs.add(transactionBlock);
     tm.executeTransactionBlocksWithRetry(tbs);
   }

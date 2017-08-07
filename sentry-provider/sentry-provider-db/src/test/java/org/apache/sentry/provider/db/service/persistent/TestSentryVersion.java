@@ -24,6 +24,7 @@ import java.io.File;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.common.exception.SentryNoSuchObjectException;
+import org.apache.sentry.service.thrift.SentryServiceUtil;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.junit.Before;
 import org.junit.Test;
@@ -53,10 +54,13 @@ public class TestSentryVersion {
   @Test
   public void testVerifySentryVersionCheck() throws Exception {
     conf.set(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "false");
+    boolean hdfsSyncEnabled = SentryServiceUtil.isHDFSSyncEnabled(conf);
     SentryStore sentryStore = new SentryStore(conf);
+    sentryStore.setPersistUpdateDeltas(hdfsSyncEnabled);
     sentryStore.stop();
     conf.set(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "true");
     sentryStore = new SentryStore(conf);
+    sentryStore.setPersistUpdateDeltas(hdfsSyncEnabled);
   }
 
   /**
@@ -77,7 +81,9 @@ public class TestSentryVersion {
   @Test
   public void testSentryImplicitVersion() throws Exception {
     conf.set(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "false");
+    boolean hdfsSyncEnabled = SentryServiceUtil.isHDFSSyncEnabled(conf);
     SentryStore sentryStore = new SentryStore(conf);
+    sentryStore.setPersistUpdateDeltas(hdfsSyncEnabled);
     assertEquals(SentryStoreSchemaInfo.getSentryVersion(),
         sentryStore.getSentryVersion());
   }

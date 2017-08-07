@@ -78,6 +78,7 @@ final class NotificationProcessor {
   // These variables can be updated even after object is instantiated, for testing purposes.
   private boolean syncStoreOnCreate = false;
   private boolean syncStoreOnDrop = false;
+  private final boolean hdfsSyncEnabled;
 
   /**
    * Configuring notification processor.
@@ -96,6 +97,7 @@ final class NotificationProcessor {
             AUTHZ_SYNC_CREATE_WITH_POLICY_STORE.getDefault()));
     syncStoreOnDrop = Boolean.parseBoolean(conf.get(AUTHZ_SYNC_DROP_WITH_POLICY_STORE.getVar(),
         AUTHZ_SYNC_DROP_WITH_POLICY_STORE.getDefault()));
+    hdfsSyncEnabled = SentryServiceUtil.isHDFSSyncEnabled(conf);
   }
 
   /**
@@ -241,12 +243,19 @@ final class NotificationProcessor {
           StringUtils.defaultIfBlank(location, "null"));
       return false;
     }
-    List<String> locations = Collections.singletonList(location);
-    addPaths(dbName, locations, event.getEventId());
+
     if (syncStoreOnCreate) {
       dropSentryDbPrivileges(dbName, event);
     }
-    return true;
+
+    if (hdfsSyncEnabled) {
+      List<String> locations = Collections.singletonList(location);
+      addPaths(dbName, locations, event.getEventId());
+
+      return true;
+    }
+
+    return false;
   }
 
   /**
@@ -268,9 +277,13 @@ final class NotificationProcessor {
     if (syncStoreOnDrop) {
       dropSentryDbPrivileges(dbName, event);
     }
-    List<String> locations = Collections.singletonList(location);
-    removePaths(dbName, locations, event.getEventId());
-    return true;
+
+    if (hdfsSyncEnabled) {
+      List<String> locations = Collections.singletonList(location);
+      removePaths(dbName, locations, event.getEventId());
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -298,10 +311,15 @@ final class NotificationProcessor {
     if (syncStoreOnCreate) {
       dropSentryTablePrivileges(dbName, tableName, event);
     }
-    String authzObj = SentryServiceUtil.getAuthzObj(dbName, tableName);
-    List<String> locations = Collections.singletonList(location);
-    addPaths(authzObj, locations, event.getEventId());
-    return true;
+
+    if (hdfsSyncEnabled) {
+      String authzObj = SentryServiceUtil.getAuthzObj(dbName, tableName);
+      List<String> locations = Collections.singletonList(location);
+      addPaths(authzObj, locations, event.getEventId());
+      return true;
+    }
+
+    return false;
   }
 
   /**
@@ -327,9 +345,14 @@ final class NotificationProcessor {
     if (syncStoreOnDrop) {
       dropSentryTablePrivileges(dbName, tableName, event);
     }
-    String authzObj = SentryServiceUtil.getAuthzObj(dbName, tableName);
-    removeAllPaths(authzObj, event.getEventId());
-    return true;
+
+    if (hdfsSyncEnabled) {
+      String authzObj = SentryServiceUtil.getAuthzObj(dbName, tableName);
+      removeAllPaths(authzObj, event.getEventId());
+      return true;
+    }
+
+    return false;
   }
 
   /**
@@ -340,6 +363,11 @@ final class NotificationProcessor {
    * @throws Exception if encounters errors while persisting the path change
    */
   private boolean processAlterTable(NotificationEvent event) throws Exception {
+
+    if (!hdfsSyncEnabled) {
+      return false;
+    }
+
     SentryJSONAlterTableMessage alterTableMessage =
         deserializer.getAlterTableMessage(event.getMessage());
     String oldDbName = alterTableMessage.getDB();
@@ -404,6 +432,10 @@ final class NotificationProcessor {
    */
   private boolean processAddPartition(NotificationEvent event)
       throws Exception {
+    if (!hdfsSyncEnabled) {
+      return false;
+    }
+
     SentryJSONAddPartitionMessage addPartitionMessage =
         deserializer.getAddPartitionMessage(event.getMessage());
     String dbName = addPartitionMessage.getDB();
@@ -431,6 +463,10 @@ final class NotificationProcessor {
    */
   private boolean processDropPartition(NotificationEvent event)
       throws Exception {
+    if (!hdfsSyncEnabled) {
+      return false;
+    }
+
     SentryJSONDropPartitionMessage dropPartitionMessage =
         deserializer.getDropPartitionMessage(event.getMessage());
     String dbName = dropPartitionMessage.getDB();
@@ -457,6 +493,10 @@ final class NotificationProcessor {
    * @throws Exception if encounters errors while persisting the path change
    */
   private boolean processAlterPartition(NotificationEvent event) throws Exception {
+    if (!hdfsSyncEnabled) {
+      return false;
+    }
+
     SentryJSONAlterPartitionMessage alterPartitionMessage =
         deserializer.getAlterPartitionMessage(event.getMessage());
     String dbName = alterPartitionMessage.getDB();

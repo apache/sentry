@@ -29,6 +29,10 @@ import com.google.common.base.Preconditions;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import static org.apache.hadoop.hive.conf.HiveConf.ConfVars.METASTOREURIS;
+import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SYNC_ALTER_WITH_POLICY_STORE;
+import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SYNC_CREATE_WITH_POLICY_STORE;
+import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SYNC_DROP_WITH_POLICY_STORE;
+
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.sentry.core.common.exception.SentryInvalidInputException;
 import org.apache.sentry.core.common.utils.SentryConstants;
@@ -44,6 +48,9 @@ import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 
 public final class SentryServiceUtil {
+
+  private static boolean firstCallHDFSSyncEnabled = true;
+  private static boolean hdfsSyncEnabled = false;
 
   // parse the privilege in String and get the TSentryPrivilege as result
   public static TSentryPrivilege convertToTSentryPrivilege(String privilegeStr) {
@@ -200,21 +207,71 @@ public final class SentryServiceUtil {
   }
 
   /**
-   * Checks if Sentry is configured with HDFS sync enabled.
+   * Check if Sentry is configured with HDFS sync enabled. Cache the result
    *
    * @param conf The Configuration object where HDFS sync configurations are set.
    * @return True if enabled; False otherwise.
    */
-  static boolean isHDFSSyncEnabled(Configuration conf) {
+  public static boolean isHDFSSyncEnabled(Configuration conf) {
+    if (firstCallHDFSSyncEnabled) {
+      List<String> processorFactories =
+          Arrays.asList(conf.get(ServiceConstants.ServerConfig.PROCESSOR_FACTORIES, "").split(","));
+
+      List<String> policyStorePlugins =
+          Arrays.asList(
+              conf.get(ServiceConstants.ServerConfig.SENTRY_POLICY_STORE_PLUGINS, "").split(","));
+
+      hdfsSyncEnabled =
+          processorFactories.contains("org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory")
+              && policyStorePlugins.contains("org.apache.sentry.hdfs.SentryPlugin");
+      firstCallHDFSSyncEnabled = false;
+    }
+
+    return hdfsSyncEnabled;
+  }
+
+    /**
+     * Check if Sentry is configured with HDFS sync enabled without caching the result
+     *
+     * @param conf The Configuration object where HDFS sync configurations are set.
+     * @return True if enabled; False otherwise.
+     */
+  public static boolean isHDFSSyncEnabledNoCache(Configuration conf) {
+
     List<String> processorFactories =
         Arrays.asList(conf.get(ServiceConstants.ServerConfig.PROCESSOR_FACTORIES, "").split(","));
 
     List<String> policyStorePlugins =
-        Arrays.asList(conf.get(ServiceConstants.ServerConfig.SENTRY_POLICY_STORE_PLUGINS, "").split(","));
+        Arrays.asList(
+            conf.get(ServiceConstants.ServerConfig.SENTRY_POLICY_STORE_PLUGINS, "").split(","));
+
+    hdfsSyncEnabled =
+        processorFactories.contains("org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory")
+            && policyStorePlugins.contains("org.apache.sentry.hdfs.SentryPlugin");
 
 
-    return processorFactories.contains("org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory")
-        && policyStorePlugins.contains("org.apache.sentry.hdfs.SentryPlugin");
+    return hdfsSyncEnabled;
+  }
+
+  /**
+   * Check if Sentry is configured with policy store sync enabled
+   * @param conf
+   * @return True if enabled; False otherwise
+   */
+  public static boolean isSyncPolicyStoreEnabled(Configuration conf) {
+    boolean syncStoreOnCreate;
+    boolean syncStoreOnDrop;
+    boolean syncStoreOnAlter;
+
+    syncStoreOnCreate  = Boolean
+        .parseBoolean(conf.get(AUTHZ_SYNC_CREATE_WITH_POLICY_STORE.getVar(),
+            AUTHZ_SYNC_CREATE_WITH_POLICY_STORE.getDefault()));
+    syncStoreOnDrop = Boolean.parseBoolean(conf.get(AUTHZ_SYNC_DROP_WITH_POLICY_STORE.getVar(),
+        AUTHZ_SYNC_DROP_WITH_POLICY_STORE.getDefault()));
+    syncStoreOnAlter = Boolean.parseBoolean(conf.get(AUTHZ_SYNC_ALTER_WITH_POLICY_STORE.getVar(),
+        AUTHZ_SYNC_ALTER_WITH_POLICY_STORE.getDefault()));
+
+    return syncStoreOnCreate || syncStoreOnDrop || syncStoreOnAlter;
   }
 
   static String getHiveMetastoreURI() {

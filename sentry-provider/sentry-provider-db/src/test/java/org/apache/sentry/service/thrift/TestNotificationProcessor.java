@@ -54,6 +54,10 @@ public class TestNotificationProcessor {
   public static void setup() {
     conf.set("sentry.hive.sync.create", "true");
     conf.set("sentry.hive.sync.drop", "true");
+
+    // enable HDFS sync, so perm and path changes will be saved into DB
+    conf.set(ServiceConstants.ServerConfig.PROCESSOR_FACTORIES, "org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory");
+    conf.set(ServiceConstants.ServerConfig.SENTRY_POLICY_STORE_PLUGINS, "org.apache.sentry.hdfs.SentryPlugin");
   }
 
   @After
@@ -253,6 +257,10 @@ public class TestNotificationProcessor {
     String tableName = "table1";
 
     Configuration authConf = new Configuration();
+    // enable HDFS sync, so perm and path changes will be saved into DB
+    authConf.set(ServiceConstants.ServerConfig.PROCESSOR_FACTORIES, "org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory");
+    authConf.set(ServiceConstants.ServerConfig.SENTRY_POLICY_STORE_PLUGINS, "org.apache.sentry.hdfs.SentryPlugin");
+
     notificationProcessor = new NotificationProcessor(sentryStore,
         hiveInstance, authConf);
 
@@ -291,6 +299,10 @@ public class TestNotificationProcessor {
     String newTableName = "table2";
 
     Configuration authConf = new Configuration();
+    // enable HDFS sync, so perm and path changes will be saved into DB
+    authConf.set(ServiceConstants.ServerConfig.PROCESSOR_FACTORIES, "org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory");
+    authConf.set(ServiceConstants.ServerConfig.SENTRY_POLICY_STORE_PLUGINS, "org.apache.sentry.hdfs.SentryPlugin");
+
     notificationProcessor = new NotificationProcessor(sentryStore,
         hiveInstance, authConf);
 
@@ -338,6 +350,10 @@ public class TestNotificationProcessor {
     String newTableName = "table2";
 
     Configuration authConf = new Configuration();
+    // enable HDFS sync, so perm and path changes will be saved into DB
+    authConf.set(ServiceConstants.ServerConfig.PROCESSOR_FACTORIES, "org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory");
+    authConf.set(ServiceConstants.ServerConfig.SENTRY_POLICY_STORE_PLUGINS, "org.apache.sentry.hdfs.SentryPlugin");
+
     notificationProcessor = new NotificationProcessor(sentryStore,
         hiveInstance, authConf);
 
@@ -393,6 +409,10 @@ public class TestNotificationProcessor {
         Mockito.anyCollection(), Mockito.any(Updateable.Update.class));
 
     Configuration authConf = new Configuration();
+    // enable HDFS sync, so perm and path changes will be saved into DB
+    authConf.set(ServiceConstants.ServerConfig.PROCESSOR_FACTORIES, "org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory");
+    authConf.set(ServiceConstants.ServerConfig.SENTRY_POLICY_STORE_PLUGINS, "org.apache.sentry.hdfs.SentryPlugin");
+
     notificationProcessor = new NotificationProcessor(sentryStore,
         hiveInstance, authConf);
 

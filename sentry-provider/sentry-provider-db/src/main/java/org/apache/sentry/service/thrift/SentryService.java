@@ -113,7 +113,6 @@ public class SentryService implements Callable, SigUtils.SigListener {
   private final SentryStore sentryStore;
   private ScheduledExecutorService sentryStoreCleanService;
   private final LeaderStatusMonitor leaderMonitor;
-  private final boolean hdfsSyncEnabled;
 
   public SentryService(Configuration conf) throws Exception {
     this.conf = conf;
@@ -163,10 +162,9 @@ public class SentryService implements Callable, SigUtils.SigListener {
         .build();
     serviceExecutor = Executors.newSingleThreadExecutor(sentryServiceThreadFactory);
     this.sentryStore = new SentryStore(conf);
+    sentryStore.setPersistUpdateDeltas(SentryServiceUtil.isHDFSSyncEnabled(conf));
     this.leaderMonitor = LeaderStatusMonitor.getLeaderStatusMonitor(conf);
     webServerPort = conf.getInt(ServerConfig.SENTRY_WEB_PORT, ServerConfig.SENTRY_WEB_PORT_DEFAULT);
-
-    hdfsSyncEnabled = SentryServiceUtil.isHDFSSyncEnabled(conf);
 
     status = Status.NOT_STARTED;
 
@@ -276,8 +274,10 @@ public class SentryService implements Callable, SigUtils.SigListener {
   }
 
   private void startHMSFollower(Configuration conf) throws Exception {
-    if (!hdfsSyncEnabled) {
-      LOGGER.info("HMS follower is not started because HDFS sync is disabled.");
+    boolean syncPolicyStore = SentryServiceUtil.isSyncPolicyStoreEnabled(conf);
+
+    if ((!SentryServiceUtil.isHDFSSyncEnabled(conf)) && (!syncPolicyStore)) {
+      LOGGER.info("HMS follower is not started because HDFS sync is disabled and perm sync is disabled");
       return;
     }
 
@@ -315,10 +315,6 @@ public class SentryService implements Callable, SigUtils.SigListener {
   }
 
   private void stopHMSFollower(Configuration conf) {
-    if (!hdfsSyncEnabled) {
-      return;
-    }
-
     if ((hmsFollowerExecutor == null) || (hmsFollower == null)) {
         Preconditions.checkState(hmsFollower == null);
         Preconditions.checkState(hmsFollowerExecutor == null);

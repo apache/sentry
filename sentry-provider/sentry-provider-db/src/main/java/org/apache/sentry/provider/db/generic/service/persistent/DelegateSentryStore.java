@@ -40,6 +40,7 @@ import org.apache.sentry.provider.db.service.persistent.TransactionBlock;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessor;
 import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
+import org.apache.sentry.service.thrift.SentryServiceUtil;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 
 import com.google.common.annotations.VisibleForTesting;

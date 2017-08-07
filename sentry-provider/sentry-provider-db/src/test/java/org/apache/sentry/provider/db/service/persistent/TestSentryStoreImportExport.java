@@ -37,6 +37,7 @@ import org.apache.sentry.provider.db.service.thrift.TSentryGrantOption;
 import org.apache.sentry.provider.db.service.thrift.TSentryMappingData;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.service.thrift.SentryServiceUtil;
 import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.junit.After;
@@ -79,7 +80,9 @@ public class TestSentryStoreImportExport {
     policyFilePath = new File(dataDir, "local_policy_file.ini");
     conf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE, policyFilePath.getPath());
     policyFile = new PolicyFile();
+    boolean hdfsSyncEnabled = SentryServiceUtil.isHDFSSyncEnabled(conf);
     sentryStore = new SentryStore(conf);
+    sentryStore.setPersistUpdateDeltas(hdfsSyncEnabled);
 
     String adminUser = "g1";
     addGroupsToUser(adminUser, adminGroups);

@@ -82,7 +82,6 @@ public class TestHMSFollowerSentryStoreIntegration {
     // THis should be a UserGroupInformation provider
     CredentialProvider provider = CredentialProviderFactory.getProviders(conf).get(0);
 
-
     // The user credentials are stored as a static variable by UserGrouoInformation provider.
     // We need to only set the password the first time, an attempt to set it for the second
     // time fails with an exception.
@@ -109,6 +108,7 @@ public class TestHMSFollowerSentryStoreIntegration {
   @Before
   public void before() throws Exception {
     sentryStore = new SentryStore(conf);
+    sentryStore.setPersistUpdateDeltas(true);
     policyFile = new PolicyFile();
     String adminUser = "g1";
     addGroupsToUser(adminUser, adminGroups);
@@ -153,17 +153,6 @@ public class TestHMSFollowerSentryStoreIntegration {
   private void checkRoleExists(String roleName) throws Exception {
     Assert.assertEquals(roleName.toLowerCase(),
         sentryStore.getMSentryRoleByName(roleName).getRoleName());
-  }
-
-  /**
-   * Create a role with the given name and verify that it is created
-   * @param roleName
-   * @throws Exception
-   */
-  private void createRole(String roleName) throws Exception {
-    checkRoleDoesNotExist(roleName);
-    sentryStore.createSentryRole(roleName);
-    checkRoleExists(roleName);
   }
 
   private TSentryAuthorizable toTSentryAuthorizable(
