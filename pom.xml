@@ -546,7 +546,7 @@ limitations under the License.
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-pmd-plugin</artifactId>
-        <version>3.5</version>
+        <version>3.7</version>
         <configuration>
           <rulesets>
             <ruleset>${buildtools.dir}/sentry-pmd-ruleset.xml</ruleset>
@@ -556,7 +556,7 @@ limitations under the License.
           <linkXRef>false</linkXRef>
           <includeTests>true</includeTests>
           <verbose>true</verbose>
-          <targetJdk>${targetJdk}</targetJdk>
+          <targetJdk>1.7</targetJdk>
           <excludeRoots>
             <excludeRoot>${basedir}/src/main/generated</excludeRoot>
           </excludeRoots>

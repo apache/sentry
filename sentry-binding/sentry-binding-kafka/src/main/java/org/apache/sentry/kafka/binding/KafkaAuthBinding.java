@@ -265,7 +265,7 @@ public class KafkaAuthBinding {
     });
   }
 
-  public void addRoleToGroups(final String role, final java.util.Set<String> groups) {
+  public void addRoleToGroups(final String role, final Set<String> groups) {
     execute(new Command<Void>() {
       @Override
       public Void run(SentryGenericServiceClient client) throws Exception {
@@ -335,8 +335,9 @@ public class KafkaAuthBinding {
 
   public scala.collection.immutable.Set<Acl> getAcls(final Resource resource) {
     final Option<scala.collection.immutable.Set<Acl>> acls = getAcls().get(resource);
-    if (acls.nonEmpty())
+    if (acls.nonEmpty()) {
       return acls.get();
+    }
     return new scala.collection.immutable.HashSet<Acl>();
   }
 
@@ -491,7 +492,7 @@ public class KafkaAuthBinding {
     return rolePrivilegesMap;
   }
 
-  private void addExistingAclsForResource(java.util.Map<Resource, scala.collection.immutable.Set<Acl>> resourceAclsMap, Resource resource, java.util.Set<Acl> newAclsJava) {
+  private void addExistingAclsForResource(java.util.Map<Resource, scala.collection.immutable.Set<Acl>> resourceAclsMap, Resource resource, Set<Acl> newAclsJava) {
     final scala.collection.immutable.Set<Acl> existingAcls = resourceAclsMap.get(resource);
     if (existingAcls != null) {
       final Iterator<Acl> aclsIter = existingAcls.iterator();
@@ -550,7 +551,7 @@ public class KafkaAuthBinding {
     }
     synchronized (KafkaAuthBinding.class) {
       if (kerberosInit == null) {
-        kerberosInit = new Boolean(true);
+        kerberosInit = Boolean.TRUE;
         // let's avoid modifying the supplied configuration, just to be conservative
         final Configuration ugiConf = new Configuration();
         ugiConf.set(HADOOP_SECURITY_AUTHENTICATION, ServiceConstants.ServerConfig.SECURITY_MODE_KERBEROS);

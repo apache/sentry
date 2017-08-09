@@ -18,20 +18,24 @@
 
 package org.apache.sentry.service.thrift;
 
-import junit.framework.TestCase;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
 
+import org.junit.Test;
+
 /**
  * Test for CounterWait class
  */
-public class TestCounterWait extends TestCase {
+public class TestCounterWait {
   // Used to verify that wakeups happen in the right order
   private final BlockingDeque<Long> outSyncQueue = new LinkedBlockingDeque<>();
 
+  @Test
   public void testWaitFor() throws Exception {
     // Create a thread for each waiter
     int nthreads = 20;

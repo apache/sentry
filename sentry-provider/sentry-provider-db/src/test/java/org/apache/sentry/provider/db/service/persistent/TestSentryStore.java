@@ -19,17 +19,19 @@
 package org.apache.sentry.provider.db.service.persistent;
 
 import java.io.File;
-import java.util.*;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.List;
 
 import com.google.common.collect.Lists;
@@ -3230,7 +3232,6 @@ public class TestSentryStore extends org.junit.Assert {
   @Test
   public void testIsAuthzPathsMappingEmpty() throws Exception {
     // Add "db1.table1" authzObj
-    Long lastNotificationId = sentryStore.getLastProcessedNotificationID();
     PathsUpdate addUpdate = new PathsUpdate(1, false);
     addUpdate.newPathChange("db1.table").
       addToAddPaths(Arrays.asList("db1", "tbl1"));

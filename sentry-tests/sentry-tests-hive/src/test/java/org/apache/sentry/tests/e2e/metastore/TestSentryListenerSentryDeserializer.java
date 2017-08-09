@@ -100,7 +100,7 @@ public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestW
     assertEquals(testDB, createDatabaseMessage.getDB()); //dbName
     String expectedLocation = warehouseDir + "/" + testDB + ".db";
     if(!useDbNotificationListener) {
-      Assert.assertEquals(expectedLocation.toLowerCase(), createDatabaseMessage.getLocation());
+      assertEquals(expectedLocation.toLowerCase(), createDatabaseMessage.getLocation());
     }
 
     //Alter database location and rename are not supported. See HIVE-4847
@@ -118,7 +118,7 @@ public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestW
     assertEquals(HCatEventMessage.EventType.DROP_DATABASE, dropDatabaseMessage.getEventType()); //Event type
     assertThat(dropDatabaseMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB)); // dbName
     if(!useDbNotificationListener) {
-      Assert.assertEquals(expectedLocation.toLowerCase(), dropDatabaseMessage.getLocation()); //location
+      assertEquals(expectedLocation.toLowerCase(), dropDatabaseMessage.getLocation()); //location
     }
   }
 
@@ -148,7 +148,7 @@ public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestW
     assertEquals(testTable, createTableMessage.getTable()); //tableName
     String expectedLocation = warehouseDir + "/" + testDB + ".db/" + testTable;
     if(!useDbNotificationListener) {
-      Assert.assertEquals(expectedLocation.toLowerCase(), createTableMessage.getLocation());
+      assertEquals(expectedLocation.toLowerCase(), createTableMessage.getLocation());
     }
 
 
@@ -167,7 +167,7 @@ public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestW
     assertThat(dropTableMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB));//dbName
     assertThat(dropTableMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable));//tableName
     if(!useDbNotificationListener) {
-      Assert.assertEquals(expectedLocation.toLowerCase(), dropTableMessage.getLocation()); //location
+      assertEquals(expectedLocation.toLowerCase(), dropTableMessage.getLocation()); //location
     }
   }
 
@@ -195,7 +195,7 @@ public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestW
     assertEquals(testTable, createTableMessage.getTable()); //tableName
     String expectedLocation = warehouseDir + "/" + testDB + ".db/" + testTable;
     if(!useDbNotificationListener) {
-      Assert.assertEquals(expectedLocation.toLowerCase(), createTableMessage.getLocation());
+      assertEquals(expectedLocation.toLowerCase(), createTableMessage.getLocation());
     }
 
     //Drop table
@@ -213,7 +213,7 @@ public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestW
     assertThat(dropTableMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB));//dbName
     assertThat(dropTableMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable));//tableName
     if(!useDbNotificationListener) {
-      Assert.assertEquals(expectedLocation.toLowerCase(), dropTableMessage.getLocation()); //location
+      assertEquals(expectedLocation.toLowerCase(), dropTableMessage.getLocation()); //location
     }
   }
 
@@ -247,7 +247,7 @@ public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestW
     assertThat(addPartitionMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable));// tableName (returns lowered version)
     String expectedLocation = warehouseDir + "/" + testDB + ".db/" + testTable + "/" + partColName + "=" + partColValue;
     if(!useDbNotificationListener) {
-      Assert.assertEquals(expectedLocation.toLowerCase(), addPartitionMessage.getLocations().get(0));
+      assertEquals(expectedLocation.toLowerCase(), addPartitionMessage.getLocations().get(0));
     }
 
     //Drop partition
@@ -265,7 +265,7 @@ public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestW
     assertThat(dropPartitionMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB)); //dbName
     assertThat(dropPartitionMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable)); //tableName
     if(!useDbNotificationListener) {
-      Assert.assertEquals(Arrays.asList(expectedLocation.toLowerCase()), dropPartitionMessage.getLocations());
+      assertEquals(Arrays.asList(expectedLocation.toLowerCase()), dropPartitionMessage.getLocations());
     }
   }
 
@@ -301,8 +301,8 @@ public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestW
     assertThat(alterTableMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB));//dbName
     assertThat(alterTableMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable));//tableName
     if(!useDbNotificationListener) {
-      Assert.assertEquals(oldLocation, alterTableMessage.getOldLocation()); //oldLocation
-      Assert.assertEquals(tbl1.getSd().getLocation(), alterTableMessage.getNewLocation()); //newLocation
+      assertEquals(oldLocation, alterTableMessage.getOldLocation()); //oldLocation
+      assertEquals(tbl1.getSd().getLocation(), alterTableMessage.getNewLocation()); //newLocation
     }
 
     //Alter table rename managed table - location also changes
@@ -333,8 +333,8 @@ public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestW
     assertThat(response.getEvents().get(0).getDbName(), IsEqualIgnoringCase.equalToIgnoringCase(newDBName));//newDbName
     assertThat(response.getEvents().get(0).getTableName(), IsEqualIgnoringCase.equalToIgnoringCase(newTableName));//newTableName
     if(!useDbNotificationListener) {
-      Assert.assertEquals(oldLocation, alterTableMessage.getOldLocation()); //oldLocation
-      Assert.assertEquals(tbl1.getSd().getLocation(), alterTableMessage.getNewLocation()); //newLocation
+      assertEquals(oldLocation, alterTableMessage.getOldLocation()); //oldLocation
+      assertEquals(tbl1.getSd().getLocation(), alterTableMessage.getNewLocation()); //newLocation
     }
   }
 
@@ -372,8 +372,8 @@ public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestW
     assertThat(alterPartitionMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB));// dbName
     assertThat(alterPartitionMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable));// tableName
     if(!useDbNotificationListener) {
-      Assert.assertEquals(oldLocation.toLowerCase(), alterPartitionMessage.getOldLocation());
-      Assert.assertEquals(newLocation.toLowerCase(), alterPartitionMessage.getNewLocation());
+      assertEquals(oldLocation.toLowerCase(), alterPartitionMessage.getOldLocation());
+      assertEquals(newLocation.toLowerCase(), alterPartitionMessage.getNewLocation());
       assertEquals(partVals1, alterPartitionMessage.getValues());
       assertEquals(partVals1, alterPartitionMessage.getNewValues());
     }

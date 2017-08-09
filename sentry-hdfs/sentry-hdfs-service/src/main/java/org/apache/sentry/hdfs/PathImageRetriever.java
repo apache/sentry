@@ -29,10 +29,6 @@ import javax.annotation.concurrent.ThreadSafe;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import javax.annotation.concurrent.ThreadSafe;
-import org.apache.sentry.hdfs.service.thrift.TPathChanges;
-import org.apache.sentry.provider.db.service.persistent.PathsImage;
-import org.apache.sentry.provider.db.service.persistent.SentryStore;
 
 /**
  * PathImageRetriever obtains a complete snapshot of Hive Paths from a persistent

@@ -293,7 +293,7 @@ public class ServiceConstants {
   }
 
   /* Privilege operation scope */
-  public static enum PrivilegeScope {
+  public enum PrivilegeScope {
     SERVER,
     URI,
     DATABASE,

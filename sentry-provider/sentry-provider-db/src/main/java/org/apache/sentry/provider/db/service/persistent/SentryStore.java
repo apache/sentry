@@ -3842,24 +3842,6 @@ public class SentryStore {
   }
 
   /**
-   * Return exception for nonexistent path
-   * @param path path name
-   * @return SentryNoSuchObjectException with appropriate message
-   */
-  private SentryNoSuchObjectException noSuchPath(final String path) {
-    return new SentryNoSuchObjectException("nonexistent path + " + path);
-  }
-
-  /**
-   * Return exception for nonexistent authzObj
-   * @param authzObj an authzObj
-   * @return SentryNoSuchObjectException with appropriate message
-   */
-  private SentryNoSuchObjectException noSuchAuthzObj(final String authzObj) {
-    return new SentryNoSuchObjectException("nonexistent authzObj + " + authzObj);
-  }
-
-  /**
    * Fetch all {@link MSentryChange} in the database.
    *
    * @param cls the class of the Sentry delta change.

@@ -163,7 +163,7 @@ public abstract class AbstractTestWithStaticConfiguration extends RulesForE2ETes
 
   private static LoginContext clientLoginContext;
   protected static SentryPolicyServiceClient client;
-  private static boolean startSentry = new Boolean(System.getProperty(EXTERNAL_SENTRY_SERVICE, "false"));
+  private static boolean startSentry = Boolean.getBoolean(EXTERNAL_SENTRY_SERVICE);
 
   protected static boolean enableHDFSAcls = false;
   protected static String dfsType;

@@ -18,7 +18,6 @@ package org.apache.sentry.binding.hive.conf;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -92,7 +91,7 @@ public class HiveAuthzConf extends Configuration {
     /**
      * Config setting definitions
      */
-    public static enum AuthzConfVars {
+    public enum AuthzConfVars {
         AUTHZ_PROVIDER("sentry.hive.provider",
                 "org.apache.sentry.provider.common.HadoopGroupResourceAuthorizationProvider"),
         AUTHZ_PROVIDER_RESOURCE("sentry.hive.provider.resource", ""),

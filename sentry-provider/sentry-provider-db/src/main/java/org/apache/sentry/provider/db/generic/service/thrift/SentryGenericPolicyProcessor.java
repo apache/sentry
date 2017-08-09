@@ -40,7 +40,6 @@ import org.apache.sentry.core.common.exception.SentryAlreadyExistsException;
 import org.apache.sentry.core.common.exception.SentryInvalidInputException;
 import org.apache.sentry.core.common.exception.SentryNoSuchObjectException;
 import org.apache.sentry.core.common.exception.SentryThriftAPIMismatchException;
-import org.apache.sentry.core.model.search.Collection;
 import org.apache.sentry.provider.db.generic.service.persistent.DelegateSentryStore;
 import org.apache.sentry.provider.db.generic.service.persistent.PrivilegeObject;
 import org.apache.sentry.provider.db.generic.service.persistent.PrivilegeObject.Builder;

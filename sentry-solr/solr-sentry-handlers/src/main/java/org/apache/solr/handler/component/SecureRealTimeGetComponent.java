@@ -26,13 +26,9 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BytesRef;
 
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
@@ -44,7 +40,6 @@ import org.apache.solr.response.transform.TransformContext;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
-import org.apache.solr.search.ReturnFields;
 import org.apache.solr.sentry.SentryIndexAuthorizationSingleton;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.UpdateCommand;
@@ -58,7 +53,6 @@ import com.google.common.annotations.VisibleForTesting;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -174,7 +168,9 @@ public class SecureRealTimeGetComponent extends SearchComponent
         }
 
         int docid = getFilteredInternalDocId(doc, idField, fieldType, filterQuery, searcher);
-        if (docid < 0) continue;
+        if (docid < 0) {
+          continue;
+        }
         Document luceneDocument = searcher.doc(docid);
         SolrDocument newDoc = toSolrDoc(luceneDocument,  core.getLatestSchema());
         if( transformer != null ) {
@@ -205,7 +201,9 @@ public class SecureRealTimeGetComponent extends SearchComponent
         SchemaField sf = schema.getFieldOrNull(f.name());
 
         // don't return copyField targets
-        if (sf != null && schema.isCopyFieldTarget(sf)) continue;
+        if (sf != null && schema.isCopyFieldTarget(sf)) {
+          continue;
+        }
 
         if (sf != null && sf.multiValued()) {
           List<Object> vals = new ArrayList<>();
@@ -311,7 +309,9 @@ public class SecureRealTimeGetComponent extends SearchComponent
       this.originalTransformer = docTransformer;
       this.filterQuery = filterQuery;
       final DocTransformers docTransformers = new DocTransformers();
-      if (originalTransformer != null) docTransformers.addTransformer(originalTransformer);
+      if (originalTransformer != null) {
+        docTransformers.addTransformer(originalTransformer);
+      }
       docTransformers.addTransformer(new DocIdAugmenter(ID_FIELD_NAME));
       this.transformer = docTransformers;
     }

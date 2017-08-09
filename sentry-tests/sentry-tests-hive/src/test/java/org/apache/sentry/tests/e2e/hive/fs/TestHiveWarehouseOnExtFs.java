@@ -16,8 +16,6 @@
  */
 package org.apache.sentry.tests.e2e.hive.fs;
 
-import com.google.common.base.Strings;
-import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.fs.Path;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,7 +28,6 @@ import java.sql.Statement;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 
 /**
  * Configure Hive warehouse dir to an external storage FS system:

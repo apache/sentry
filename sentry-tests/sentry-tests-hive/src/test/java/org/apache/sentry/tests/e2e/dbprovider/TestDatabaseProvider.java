@@ -19,10 +19,7 @@ package org.apache.sentry.tests.e2e.dbprovider;
 
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -986,7 +983,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
       assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
       assertThat(resultSet.getString(7), equalToIgnoringCase("*"));
-      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      assertThat(resultSet.getBoolean(8), is(Boolean.FALSE));//grantOption
       //Create time is not tested
       //assertThat(resultSet.getLong(9), is(new Long(0)));
       assertThat(resultSet.getString(10), equalToIgnoringCase("--"));//grantor
@@ -1008,7 +1005,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
       assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
       assertThat(resultSet.getString(7), equalToIgnoringCase("*"));
-      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      assertThat(resultSet.getBoolean(8), is(Boolean.FALSE));//grantOption
       //Create time is not tested
       //assertThat(resultSet.getLong(9), is(new Long(0)));
       assertThat(resultSet.getString(10), equalToIgnoringCase("--"));//grantor
@@ -1030,7 +1027,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
       assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
       assertThat(resultSet.getString(7), equalToIgnoringCase("*"));
-      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      assertThat(resultSet.getBoolean(8), is(Boolean.FALSE));//grantOption
       //Create time is not tested
       //assertThat(resultSet.getLong(9), is(new Long(0)));
       assertThat(resultSet.getString(10), equalToIgnoringCase("--"));//grantor
@@ -1051,7 +1048,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
       assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
       assertThat(resultSet.getString(7), equalToIgnoringCase("*"));
-      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      assertThat(resultSet.getBoolean(8), is(Boolean.FALSE));//grantOption
       //Create time is not tested
       //assertThat(resultSet.getLong(9), is(new Long(0)));
       assertThat(resultSet.getString(10), equalToIgnoringCase("--"));//grantor
@@ -1073,7 +1070,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
       assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
       assertThat(resultSet.getString(7), equalToIgnoringCase("insert"));
-      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      assertThat(resultSet.getBoolean(8), is(Boolean.FALSE));//grantOption
       //Create time is not tested
       //assertThat(resultSet.getLong(9), is(new Long(0)));
       assertThat(resultSet.getString(10), equalToIgnoringCase("--"));//grantor
@@ -1095,7 +1092,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
       assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
       assertThat(resultSet.getString(7), equalToIgnoringCase("select"));
-      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      assertThat(resultSet.getBoolean(8), is(Boolean.FALSE));//grantOption
       //Create time is not tested
       //assertThat(resultSet.getLong(9), is(new Long(0)));
       assertThat(resultSet.getString(10), equalToIgnoringCase("--"));//grantor
@@ -1118,7 +1115,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
       assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
       assertThat(resultSet.getString(7), equalToIgnoringCase("select"));
-      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      assertThat(resultSet.getBoolean(8), is(Boolean.FALSE));//grantOption
       //Create time is not tested
       //assertThat(resultSet.getLong(9), is(new Long(0)));
       assertThat(resultSet.getString(10), equalToIgnoringCase("--"));//grantor
@@ -1143,7 +1140,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
       assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
       assertThat(resultSet.getString(7), equalToIgnoringCase("select"));
-      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      assertThat(resultSet.getBoolean(8), is(Boolean.FALSE));//grantOption
       //Create time is not tested
       //assertThat(resultSet.getLong(9), is(new Long(0)));
       assertThat(resultSet.getString(10), equalToIgnoringCase("--"));//grantor
@@ -1164,7 +1161,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
       assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
       assertThat(resultSet.getString(7), equalToIgnoringCase("insert"));
-      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      assertThat(resultSet.getBoolean(8), is(Boolean.FALSE));//grantOption
       //Create time is not tested
       //assertThat(resultSet.getLong(9), is(new Long(0)));
       assertThat(resultSet.getString(10), equalToIgnoringCase("--"));//grantor
@@ -1408,7 +1405,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     assertThat(resultSetMetaData.getColumnName(4), equalToIgnoringCase("grantor"));
     while ( resultSet.next()) {
       assertThat(resultSet.getString(1), equalToIgnoringCase("role1"));
-      assertThat(resultSet.getBoolean(2), is(new Boolean("False")));
+      assertThat(resultSet.getBoolean(2), is(Boolean.FALSE));
       //Create time is not tested
       //assertThat(resultSet.getLong(3), is(new Long(0)));
       assertThat(resultSet.getString(4), equalToIgnoringCase("--"));
@@ -1525,7 +1522,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
         assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
         assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
         assertThat(resultSet.getString(7), equalToIgnoringCase("select"));
-        assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+        assertThat(resultSet.getBoolean(8), is(Boolean.FALSE));//grantOption
         //Create time is not tested
         //assertThat(resultSet.getLong(9), is(new Long(0)));
         assertThat(resultSet.getString(10), equalToIgnoringCase("--"));//grantor
@@ -1573,7 +1570,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
       assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
       assertThat(resultSet.getString(7), equalToIgnoringCase("select"));
-      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      assertThat(resultSet.getBoolean(8), is(Boolean.FALSE));//grantOption
       //Create time is not tested
       //assertThat(resultSet.getLong(9), is(new Long(0)));
       assertThat(resultSet.getString(10), equalToIgnoringCase("--"));//grantor
@@ -1590,7 +1587,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
       assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
       assertThat(resultSet.getString(7), equalToIgnoringCase("select"));
-      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      assertThat(resultSet.getBoolean(8), is(Boolean.FALSE));//grantOption
       //Create time is not tested
       //assertThat(resultSet.getLong(9), is(new Long(0)));
       assertThat(resultSet.getString(10), equalToIgnoringCase("--"));//grantor
@@ -1607,7 +1604,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
       assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
       assertThat(resultSet.getString(7), equalToIgnoringCase("select"));
-      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      assertThat(resultSet.getBoolean(8), is(Boolean.FALSE));//grantOption
       //Create time is not tested
       //assertThat(resultSet.getLong(9), is(new Long(0)));
       assertThat(resultSet.getString(10), equalToIgnoringCase("--"));//grantor
@@ -1624,7 +1621,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
       assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
       assertThat(resultSet.getString(7), equalToIgnoringCase("select"));
-      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      assertThat(resultSet.getBoolean(8), is(Boolean.FALSE));//grantOption
       //Create time is not tested
       //assertThat(resultSet.getLong(9), is(new Long(0)));
       assertThat(resultSet.getString(10), equalToIgnoringCase("--"));//grantor
@@ -1641,7 +1638,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
       assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
       assertThat(resultSet.getString(7), equalToIgnoringCase("select"));
-      assertThat(resultSet.getBoolean(8), is(new Boolean("True")));//grantOption
+      assertThat(resultSet.getBoolean(8), is(Boolean.TRUE));//grantOption
       //Create time is not tested
       //assertThat(resultSet.getLong(9), is(new Long(0)));
       assertThat(resultSet.getString(10), equalToIgnoringCase("--"));//grantor
@@ -1658,7 +1655,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
       assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
       assertThat(resultSet.getString(7), equalToIgnoringCase("select"));
-      assertThat(resultSet.getBoolean(8), is(new Boolean("True")));//grantOption
+      assertThat(resultSet.getBoolean(8), is(Boolean.TRUE));//grantOption
       //Create time is not tested
       //assertThat(resultSet.getLong(9), is(new Long(0)));
       assertThat(resultSet.getString(10), equalToIgnoringCase("--"));//grantor
@@ -1706,7 +1703,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
       assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
       assertThat(resultSet.getString(7), equalToIgnoringCase("select"));
-      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      assertThat(resultSet.getBoolean(8), is(Boolean.FALSE));//grantOption
       //Create time is not tested
       //assertThat(resultSet.getLong(9), is(new Long(0)));
       assertThat(resultSet.getString(10), equalToIgnoringCase("--"));//grantor
@@ -1746,7 +1743,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
       assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
       assertThat(resultSet.getString(7), equalToIgnoringCase("*"));
-      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      assertThat(resultSet.getBoolean(8), is(Boolean.FALSE));//grantOption
       //Create time is not tested
       //assertThat(resultSet.getLong(9), is(new Long(0)));
       assertThat(resultSet.getString(10), equalToIgnoringCase("--"));//grantor
@@ -1762,7 +1759,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
       assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
       assertThat(resultSet.getString(7), equalToIgnoringCase("*"));
-      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      assertThat(resultSet.getBoolean(8), is(Boolean.FALSE));//grantOption
       //Create time is not tested
       //assertThat(resultSet.getLong(9), is(new Long(0)));
       assertThat(resultSet.getString(10), equalToIgnoringCase("--"));//grantor
@@ -1800,7 +1797,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
       assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
       assertThat(resultSet.getString(7), equalToIgnoringCase("*"));
-      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      assertThat(resultSet.getBoolean(8), is(Boolean.FALSE));//grantOption
       //Create time is not tested
       //assertThat(resultSet.getLong(9), is(new Long(0)));
       assertThat(resultSet.getString(10), equalToIgnoringCase("--"));//grantor
@@ -1816,7 +1813,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
       assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
       assertThat(resultSet.getString(7), equalToIgnoringCase("*"));
-      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      assertThat(resultSet.getBoolean(8), is(Boolean.FALSE));//grantOption
       //Create time is not tested
       //assertThat(resultSet.getLong(9), is(new Long(0)));
       assertThat(resultSet.getString(10), equalToIgnoringCase("--"));//grantor
@@ -1848,7 +1845,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
       assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
       assertThat(resultSet.getString(7), equalToIgnoringCase("*"));
-      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      assertThat(resultSet.getBoolean(8), is(Boolean.FALSE));//grantOption
       //Create time is not tested
       //assertThat(resultSet.getLong(9), is(new Long(0)));
       assertThat(resultSet.getString(10), equalToIgnoringCase("--"));//grantor
@@ -1993,7 +1990,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
       assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
       assertThat(resultSet.getString(7), equalToIgnoringCase("*"));
-      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      assertThat(resultSet.getBoolean(8), is(Boolean.FALSE));//grantOption
       //Create time is not tested
       //assertThat(resultSet.getLong(9), is(new Long(0)));
       assertThat(resultSet.getString(10), equalToIgnoringCase("--"));//grantor
@@ -2216,7 +2213,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
       assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
       assertThat(resultSet.getString(7), equalToIgnoringCase("select"));
-      assertThat(resultSet.getBoolean(8), is(new Boolean("False")));//grantOption
+      assertThat(resultSet.getBoolean(8), is(Boolean.FALSE));//grantOption
       assertThat(resultSet.getString(10), equalToIgnoringCase("--"));//grantor
     }
     statement.close();

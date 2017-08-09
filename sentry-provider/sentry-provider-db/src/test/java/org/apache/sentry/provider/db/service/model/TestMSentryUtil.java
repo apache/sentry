@@ -21,7 +21,6 @@ package org.apache.sentry.provider.db.service.model;
 import org.apache.sentry.hdfs.PathsUpdate;
 import org.apache.sentry.hdfs.PermissionsUpdate;
 
-import org.apache.sentry.hdfs.Updateable;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

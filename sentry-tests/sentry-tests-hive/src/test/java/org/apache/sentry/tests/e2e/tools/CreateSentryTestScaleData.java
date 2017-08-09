@@ -103,7 +103,9 @@ public class CreateSentryTestScaleData {
   private static Configuration scaleConfig = new Configuration();
   static {
     StringBuilder fullPath = new StringBuilder();
-    if (CONFIG_PATH != null && CONFIG_PATH.length() > 0 ) fullPath.append(CONFIG_PATH);
+    if (CONFIG_PATH != null && CONFIG_PATH.length() > 0 ) {
+      fullPath.append(CONFIG_PATH);
+    }
     if (fullPath.length() > 0 && fullPath.lastIndexOf("/") != fullPath.length() - 1) {
       fullPath.append("/");
     }
@@ -186,9 +188,10 @@ public class CreateSentryTestScaleData {
 
   //private functions start from here
   private static String getKeytabPath(String runAsUser) {
-    if (KEYTAB_LOCATION != null || KEYTAB_LOCATION.length() > 0)
+    if (KEYTAB_LOCATION != null && KEYTAB_LOCATION.length() > 0) {
       return KEYTAB_LOCATION + "/" + runAsUser + ".keytab";
-    else return runAsUser + ".keytab"; //in classpath
+    }
+    return runAsUser + ".keytab"; //in classpath
   }
 
   private void print(String msg, String level) {
@@ -451,9 +454,7 @@ public class CreateSentryTestScaleData {
             threadTestStatus.failed += 1;
             print("create() throws exception: " + ex + ", Stacktrace: " + Arrays.deepToString(ex.getStackTrace()), "ERROR");
           }
-          finally {
-            return threadTestStatus;
-          }
+          return threadTestStatus;
         }
       });
       jobs.add(job);
@@ -493,10 +494,9 @@ public class CreateSentryTestScaleData {
       }
     } catch (InterruptedException ex) {
       print("Failed to shut down pool: " + ex, "ERROR");
-    } finally {
-      testStatus.elapsed_time = (System.currentTimeMillis() - createStartTime) / 1000L; //secs
-      return testStatus;
     }
+    testStatus.elapsed_time = (System.currentTimeMillis() - createStartTime) / 1000L; //secs
+    return testStatus;
   }
 
   /**

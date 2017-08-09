@@ -34,24 +34,15 @@ import org.apache.hadoop.fs.permission.AclEntry;
 import org.apache.hadoop.fs.permission.AclStatus;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.security.UserGroupInformation;
-
-import static org.apache.sentry.tests.e2e.hive.fs.DFSFactory.DFSType;
-import static org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory.HiveServer2Type;
-
+import org.apache.sentry.tests.e2e.hive.fs.DFSFactory.DFSType;
 import org.apache.sentry.tests.e2e.hive.fs.TestFSContants;
+import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory.HiveServer2Type;
 import org.junit.After;
-import org.junit.Assume;
 import org.junit.BeforeClass;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.equalToIgnoringCase;
-import static org.hamcrest.Matchers.lessThan;
-
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeThat;
-import static org.junit.Assume.assumeNotNull;
-import static org.junit.Assert.fail;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
+import static org.junit.Assume.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,7 +94,7 @@ public abstract class TestDbHdfsBase extends AbstractTestWithStaticConfiguration
   public static void setupTestStaticConfiguration() throws Exception {
     if (!Strings.isNullOrEmpty(storageUriStr)) {
       LOGGER.warn("Skip HDFS tests if HDFS fileSystem is not configured on hdfs");
-      Assume.assumeTrue(storageUriStr.toLowerCase().startsWith("hdfs"));
+      assumeTrue(storageUriStr.toLowerCase().startsWith("hdfs"));
     }
     useSentryService = true;
     enableHDFSAcls = true;
@@ -229,13 +220,13 @@ public abstract class TestDbHdfsBase extends AbstractTestWithStaticConfiguration
       retry += 1;
       if (!actualAcls.isEmpty() && !actualAcls.contains(expectedAcls.get(expectedAcls.size()-1))) {
         Thread.sleep(WAIT_SECS_FOR_ACLS);
-        continue;
+      } else {
+          for (AclEntry expected : expectedAcls) {
+            assertTrue("Fail to find aclEntry: " + expected.toString(),
+                actualAcls.contains(expected));
+          }
+          break;
       }
-      for (AclEntry expected : expectedAcls) {
-        assertTrue("Fail to find aclEntry: " + expected.toString(),
-            actualAcls.contains(expected));
-      }
-      break;
     }
     assertThat(retry, lessThan(NUM_RETRIES_FOR_ACLS));
     if (recursive && fileSystem.getFileStatus(path).isDirectory()) {

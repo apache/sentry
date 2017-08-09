@@ -32,8 +32,6 @@ import org.apache.hadoop.security.alias.UserProvider;
 import org.apache.hive.hcatalog.messaging.HCatEventMessage;
 import org.apache.hive.hcatalog.messaging.HCatEventMessage.EventType;
 import org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageFactory;
-import org.apache.sentry.core.common.exception.SentryNoSuchObjectException;
-import org.apache.sentry.provider.db.service.thrift.TSentryAuthorizable;
 
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.service.thrift.HiveSimpleConnectionFactory;
@@ -129,40 +127,6 @@ public class TestHMSFollowerSentryStoreIntegration {
     if (dataDir != null) {
       FileUtils.deleteQuietly(dataDir);
     }
-  }
-
-  /**
-   * Fail test if role already exists
-   * @param roleName Role name to checl
-   * @throws Exception
-   */
-  private void checkRoleDoesNotExist(String roleName) throws Exception {
-    try {
-      sentryStore.getMSentryRoleByName(roleName);
-      Assert.fail("Role " + roleName + "already exists");
-    } catch (SentryNoSuchObjectException e) {
-      // Ok
-    }
-  }
-
-  /**
-   * Fail test if role doesn't exist
-   * @param roleName Role name to checl
-   * @throws Exception
-   */
-  private void checkRoleExists(String roleName) throws Exception {
-    Assert.assertEquals(roleName.toLowerCase(),
-        sentryStore.getMSentryRoleByName(roleName).getRoleName());
-  }
-
-  private TSentryAuthorizable toTSentryAuthorizable(
-      TSentryPrivilege tSentryPrivilege) {
-    TSentryAuthorizable tSentryAuthorizable = new TSentryAuthorizable();
-    tSentryAuthorizable.setServer(tSentryPrivilege.getServerName());
-    tSentryAuthorizable.setDb(tSentryPrivilege.getDbName());
-    tSentryAuthorizable.setTable(tSentryPrivilege.getTableName());
-    tSentryAuthorizable.setUri(tSentryPrivilege.getURI());
-    return tSentryAuthorizable;
   }
 
   protected static void addGroupsToUser(String user, String... groupNames) {

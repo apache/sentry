@@ -18,8 +18,6 @@
 
 package org.apache.sentry.provider.db.service.model;
 
-import org.apache.sentry.provider.db.service.persistent.SentryStore;
-
 import javax.jdo.annotations.PersistenceCapable;
 import java.util.Collection;
 import java.util.HashSet;

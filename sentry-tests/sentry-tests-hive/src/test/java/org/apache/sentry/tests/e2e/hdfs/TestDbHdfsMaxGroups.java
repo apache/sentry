@@ -215,7 +215,6 @@ public class TestDbHdfsMaxGroups extends TestDbHdfsBase {
     dropRecreateRole(statement, TEST_ROLE1);
     exec(statement, "GRANT SELECT ON TABLE " + TEST_TBL + " TO ROLE " + TEST_ROLE1);
 
-    List<AclEntry> dbacls = new ArrayList<>();
     List<AclEntry> tblacls = new ArrayList<>();
     for (int i = 0; i < MAX_NUM_OF_GROUPS; i ++) {
       String tblgrp = "tblgrp" + String.valueOf(i);

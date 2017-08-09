@@ -30,7 +30,6 @@ import org.apache.hadoop.fs.permission.AclEntry;
 import static org.junit.Assume.assumeThat;
 import static org.hamcrest.Matchers.not;
 
-import org.apache.sentry.tests.e2e.hive.PrivilegeResultSet;
 import org.junit.Test;
 
 import org.slf4j.Logger;
