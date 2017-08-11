@@ -105,7 +105,7 @@ class DBUpdateForwarder<K extends Updateable.Update> {
     if (seqNum > SEQUENCE_NUMBER_UPDATE_UNINITIALIZED && deltaRetriever.isDeltaAvailable(seqNum)) {
       List<K> deltas = deltaRetriever.retrieveDelta(seqNum);
       if (!deltas.isEmpty()) {
-        LOGGER.info("Newer delta updates are found up to sequence number: ", curSeqNum);
+        LOGGER.info("Newer delta updates are found up to sequence number: {}", curSeqNum);
         return deltas;
       }
     }

@@ -19,6 +19,7 @@
 package org.apache.sentry.service.thrift;
 
 import static com.codahale.metrics.MetricRegistry.name;
+import static java.util.Collections.emptyMap;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
@@ -39,6 +40,7 @@ import org.apache.hadoop.hive.metastore.api.CurrentNotificationEventId;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.NotificationEvent;
 import org.apache.hadoop.hive.metastore.api.NotificationEventResponse;
+import org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageDeserializer;
 import org.apache.sentry.provider.db.service.persistent.PathsImage;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.provider.db.service.thrift.SentryMetrics;
@@ -57,6 +59,8 @@ import org.slf4j.LoggerFactory;
 class SentryHMSClient implements AutoCloseable {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryHMSClient.class);
+  private static final String NOT_CONNECTED_MSG = "Client is not connected to HMS";
+
   private final Configuration conf;
   private HiveMetaStoreClient client = null;
   private HiveConnectionFactory hiveConnectionFactory;
@@ -142,7 +146,7 @@ class SentryHMSClient implements AutoCloseable {
   PathsImage getFullSnapshot() {
     try {
       if (client == null) {
-        LOGGER.error("Client is not connected to HMS");
+        LOGGER.error(NOT_CONNECTED_MSG);
         return new PathsImage(Collections.<String, Set<String>>emptyMap(),
             SentryStore.EMPTY_NOTIFICATION_ID, SentryStore.EMPTY_PATHS_SNAPSHOT_ID);
       }
@@ -157,22 +161,58 @@ class SentryHMSClient implements AutoCloseable {
       CurrentNotificationEventId eventIdAfter = client.getCurrentNotificationEventId();
       LOGGER.info("NotificationID, Before Snapshot: {}, After Snapshot {}",
           eventIdBefore.getEventId(), eventIdAfter.getEventId());
-      // To ensure point-in-time snapshot consistency, need to make sure
-      // there were no HMS updates while retrieving the snapshot. If there are updates, snapshot
-      // is discarded. New attempt will be made after 500 milliseconds when
-      // HMSFollower runs again.
-      if (!eventIdBefore.equals(eventIdAfter)) {
-        LOGGER.error("Snapshot discarded, updates to HMS data while shapshot is being taken."
-            + "ID Before: {}. ID After: {}", eventIdBefore.getEventId(), eventIdAfter.getEventId());
-        return new PathsImage(Collections.<String, Set<String>>emptyMap(),
-            SentryStore.EMPTY_NOTIFICATION_ID, SentryStore.EMPTY_PATHS_SNAPSHOT_ID);
+
+      if (eventIdAfter.equals(eventIdBefore)) {
+        LOGGER.info("Successfully fetched hive full snapshot, Current NotificationID: {}.",
+                eventIdAfter);
+        // As eventIDAfter is the last event that was processed, eventIDAfter is used to update
+        // lastProcessedNotificationID instead of getting it from persistent store.
+        return new PathsImage(pathsFullSnapshot, eventIdAfter.getEventId(),
+                SentryStore.EMPTY_PATHS_SNAPSHOT_ID);
+      }
+
+      LOGGER.info("Reconciling full snapshot - applying {} changes",
+              eventIdAfter.getEventId() - eventIdBefore.getEventId());
+
+      // While we were taking snapshot, HMS made some changes, so now we need to apply all
+      // extra events to the snapshot
+      long currentEventId = eventIdBefore.getEventId();
+      SentryJSONMessageDeserializer deserializer = new SentryJSONMessageDeserializer();
+
+      while (currentEventId < eventIdAfter.getEventId()) {
+        NotificationEventResponse response =
+                client.getNextNotification(currentEventId, Integer.MAX_VALUE, null);
+        if (response == null || !response.isSetEvents() || response.getEvents().isEmpty()) {
+          LOGGER.error("Snapshot discarded, updates to HMS data while shapshot is being taken."
+                  + "ID Before: {}. ID After: {}", eventIdBefore.getEventId(), eventIdAfter.getEventId());
+          return new PathsImage(Collections.<String, Set<String>>emptyMap(),
+                  SentryStore.EMPTY_NOTIFICATION_ID, SentryStore.EMPTY_PATHS_SNAPSHOT_ID);
+        }
+
+        for (NotificationEvent event : response.getEvents()) {
+          if (event.getEventId() <= eventIdBefore.getEventId()) {
+            LOGGER.error("Received stray event with eventId {} which is less then {}",
+                    event.getEventId(), eventIdBefore);
+            continue;
+          }
+          if (event.getEventId() > eventIdAfter.getEventId()) {
+            // Enough events processed
+            break;
+          }
+          try {
+            FullUpdateModifier.applyEvent(pathsFullSnapshot, event, deserializer);
+          } catch (Exception e) {
+            LOGGER.warn("Failed to apply operation", e);
+          }
+          currentEventId = event.getEventId();
+        }
       }
 
       LOGGER.info("Successfully fetched hive full snapshot, Current NotificationID: {}.",
-          eventIdAfter);
+          currentEventId);
       // As eventIDAfter is the last event that was processed, eventIDAfter is used to update
       // lastProcessedNotificationID instead of getting it from persistent store.
-      return new PathsImage(pathsFullSnapshot, eventIdAfter.getEventId(),
+      return new PathsImage(pathsFullSnapshot, currentEventId,
           SentryStore.EMPTY_PATHS_SNAPSHOT_ID);
     } catch (TException failure) {
       LOGGER.error("Failed to communicate to HMS");
@@ -198,7 +238,7 @@ class SentryHMSClient implements AutoCloseable {
     } catch (Exception ignored) {
       failedSnapshotsCount.inc();
       LOGGER.error("Snapshot created failed ", ignored);
-      return Collections.emptyMap();
+      return emptyMap();
     }
   }
 
@@ -210,7 +250,7 @@ class SentryHMSClient implements AutoCloseable {
    */
   Collection<NotificationEvent> getNotifications(long notificationId) throws Exception {
     if (client == null) {
-      LOGGER.error("Client is not connected to HMS");
+      LOGGER.error(NOT_CONNECTED_MSG);
       return Collections.emptyList();
     }
 
@@ -246,9 +286,9 @@ class SentryHMSClient implements AutoCloseable {
    * @return the latest notification Id logged by the HMS
    * @throws Exception when an error occurs when talking to the HMS client
    */
-  public long getCurrentNotificationId() throws Exception {
+  long getCurrentNotificationId() throws Exception {
     if (client == null) {
-      LOGGER.error("Client is not connected to HMS");
+      LOGGER.error(NOT_CONNECTED_MSG);
       return SentryStore.EMPTY_NOTIFICATION_ID;
     }
 
