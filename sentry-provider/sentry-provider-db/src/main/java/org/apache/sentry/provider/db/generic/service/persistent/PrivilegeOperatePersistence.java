@@ -74,7 +74,7 @@ public class PrivilegeOperatePersistence {
 
   private final Configuration conf;
 
-  public PrivilegeOperatePersistence(Configuration conf) {
+  PrivilegeOperatePersistence(Configuration conf) {
     this.conf = conf;
   }
 
@@ -131,7 +131,7 @@ public class PrivilegeOperatePersistence {
    * @param privilege Source privilege
    * @return ParamBuilder suitable for executing the query
    */
-  public static QueryParamBuilder populateIncludePrivilegesParams(MSentryGMPrivilege privilege) {
+  private static QueryParamBuilder populateIncludePrivilegesParams(MSentryGMPrivilege privilege) {
     QueryParamBuilder paramBuilder = QueryParamBuilder.newQueryParamBuilder();
     paramBuilder.add(SERVICE_NAME, toNULLCol(privilege.getServiceName()), true);
     paramBuilder.add(COMPONENT_NAME, toNULLCol(privilege.getComponentName()), true);
@@ -184,8 +184,8 @@ public class PrivilegeOperatePersistence {
   }
 
   private void grantRolePartial(MSentryGMPrivilege grantPrivilege,
-      MSentryRole role,PersistenceManager pm) {
-    /**
+      MSentryRole role,PersistenceManager pm) throws SentryUserException {
+    /*
      * If Grant is for ALL action and other actions belongs to ALL action already exists..
      * need to remove it and GRANT ALL action
      */
@@ -194,7 +194,7 @@ public class PrivilegeOperatePersistence {
     BitFieldAction allAction = getAction(component, Action.ALL);
 
     if (action.implies(allAction)) {
-      /**
+      /*
        * ALL action is a multi-bit set action that includes some actions such as INSERT,SELECT and CREATE.
        */
       List<? extends BitFieldAction> actions = getActionFactory(component).getActionsByCode(allAction.getActionCode());
@@ -202,7 +202,7 @@ public class PrivilegeOperatePersistence {
         grantPrivilege.setAction(ac.getValue());
         MSentryGMPrivilege existPriv = getPrivilege(grantPrivilege, pm);
         if (existPriv != null && role.getGmPrivileges().contains(existPriv)) {
-          /**
+          /*
            * force to load all roles related this privilege
            * avoid the lazy-loading risk,such as:
            * if the roles field of privilege aren't loaded, then the roles is a empty set
@@ -215,7 +215,7 @@ public class PrivilegeOperatePersistence {
         }
       }
     } else {
-      /**
+      /*
        * If ALL Action already exists..
        * do nothing.
        */
@@ -226,11 +226,11 @@ public class PrivilegeOperatePersistence {
       }
     }
 
-    /**
+    /*
      * restore the action
      */
     grantPrivilege.setAction(action.getValue());
-    /**
+    /*
      * check the privilege is exist or not
      */
     MSentryGMPrivilege mPrivilege = getPrivilege(grantPrivilege, pm);
@@ -247,18 +247,18 @@ public class PrivilegeOperatePersistence {
     if (mPrivilege == null) {
       mPrivilege = convertToPrivilege(privilege);
     } else {
-      mPrivilege = (MSentryGMPrivilege) pm.detachCopy(mPrivilege);
+      mPrivilege = pm.detachCopy(mPrivilege);
     }
 
     Set<MSentryGMPrivilege> privilegeGraph = Sets.newHashSet();
     privilegeGraph.addAll(populateIncludePrivileges(Sets.newHashSet(role), mPrivilege, pm));
 
-    /**
+    /*
      * Get the privilege graph
      * populateIncludePrivileges will get the privileges that needed revoke
      */
     for (MSentryGMPrivilege persistedPriv : privilegeGraph) {
-      /**
+      /*
        * force to load all roles related this privilege
        * avoid the lazy-loading risk,such as:
        * if the roles field of privilege aren't loaded, then the roles is a empty set
@@ -298,25 +298,25 @@ public class PrivilegeOperatePersistence {
    */
   private void revokeRolePartial(MSentryGMPrivilege revokePrivilege,
       MSentryGMPrivilege persistedPriv, MSentryRole role,
-      PersistenceManager pm) {
+      PersistenceManager pm) throws SentryUserException {
     String component = revokePrivilege.getComponentName();
     BitFieldAction revokeaction = getAction(component, revokePrivilege.getAction());
     BitFieldAction persistedAction = getAction(component, persistedPriv.getAction());
     BitFieldAction allAction = getAction(component, Action.ALL);
 
     if (revokeaction.implies(allAction)) {
-      /**
+      /*
        * if revoke action is ALL, directly revoke its children privileges and itself
        */
       persistedPriv.removeRole(role);
       pm.makePersistent(persistedPriv);
     } else {
-      /**
+      /*
        * if persisted action is ALL, it only revoke the requested action and left partial actions
        * like the requested action is SELECT, the UPDATE and CREATE action are left
        */
       if (persistedAction.implies(allAction)) {
-        /**
+        /*
          * revoke the ALL privilege
          */
         persistedPriv.removeRole(role);
@@ -325,7 +325,7 @@ public class PrivilegeOperatePersistence {
         List<? extends BitFieldAction> actions = getActionFactory(component).getActionsByCode(allAction.getActionCode());
         for (BitFieldAction ac: actions) {
           if (ac.getActionCode() != revokeaction.getActionCode()) {
-            /**
+            /*
              * grant the left privileges to role
              */
             MSentryGMPrivilege tmpPriv = new MSentryGMPrivilege(persistedPriv);
@@ -341,14 +341,14 @@ public class PrivilegeOperatePersistence {
           }
         }
       } else if (revokeaction.implies(persistedAction)) {
-        /**
+        /*
          * if the revoke action is equal to the persisted action and they aren't ALL action
          * directly remove the role from privilege
          */
         persistedPriv.removeRole(role);
         pm.makePersistent(persistedPriv);
       }
-      /**
+      /*
        * if the revoke action is not equal to the persisted action,
        * do nothing
        */
@@ -358,13 +358,13 @@ public class PrivilegeOperatePersistence {
   /**
    * Drop any role related to the requested privilege and its children privileges
    */
-  public void dropPrivilege(PrivilegeObject privilege,PersistenceManager pm) {
+  public void dropPrivilege(PrivilegeObject privilege,PersistenceManager pm) throws SentryUserException {
     MSentryGMPrivilege requestPrivilege = convertToPrivilege(privilege);
 
     if (Strings.isNullOrEmpty(privilege.getAction())) {
       requestPrivilege.setAction(getAction(privilege.getComponent(), Action.ALL).getValue());
     }
-    /**
+    /*
      * Get the privilege graph
      * populateIncludePrivileges will get the privileges that need dropped,
      */
@@ -372,7 +372,7 @@ public class PrivilegeOperatePersistence {
     privilegeGraph.addAll(populateIncludePrivileges(null, requestPrivilege, pm));
 
     for (MSentryGMPrivilege mPrivilege : privilegeGraph) {
-      /**
+      /*
        * force to load all roles related this privilege
        * avoid the lazy-loading
        */
@@ -434,9 +434,9 @@ public class PrivilegeOperatePersistence {
     return privileges;
   }
 
-  public Set<PrivilegeObject> getPrivilegesByProvider(String component,
-      String service, Set<MSentryRole> roles,
-      List<? extends Authorizable> authorizables, PersistenceManager pm) {
+  Set<PrivilegeObject> getPrivilegesByProvider(String component,
+                                               String service, Set<MSentryRole> roles,
+                                               List<? extends Authorizable> authorizables, PersistenceManager pm) {
     Set<PrivilegeObject> privileges = Sets.newHashSet();
     if (roles == null || roles.isEmpty()) {
       return privileges;
@@ -458,9 +458,9 @@ public class PrivilegeOperatePersistence {
     return privileges;
   }
 
-  public Set<MSentryGMPrivilege> getPrivilegesByAuthorizable(String component,
-      String service, Set<MSentryRole> roles,
-      List<? extends Authorizable> authorizables, PersistenceManager pm) {
+  Set<MSentryGMPrivilege> getPrivilegesByAuthorizable(String component,
+                                                      String service, Set<MSentryRole> roles,
+                                                      List<? extends Authorizable> authorizables, PersistenceManager pm) {
 
     Set<MSentryGMPrivilege> privilegeGraph = Sets.newHashSet();
 
@@ -479,7 +479,7 @@ public class PrivilegeOperatePersistence {
       throws SentryUserException {
     MSentryGMPrivilege oldPrivilege = new MSentryGMPrivilege(component, service, oldAuthorizables, null, null);
     oldPrivilege.setAction(getAction(component,Action.ALL).getValue());
-    /**
+    /*
      * Get the privilege graph
      * populateIncludePrivileges will get the old privileges that need dropped
      */
@@ -487,7 +487,7 @@ public class PrivilegeOperatePersistence {
     privilegeGraph.addAll(populateIncludePrivileges(null, oldPrivilege, pm));
 
     for (MSentryGMPrivilege dropPrivilege : privilegeGraph) {
-      /**
+      /*
        * construct the new privilege needed to add
        */
       List<Authorizable> authorizables = new ArrayList<Authorizable>(
@@ -499,7 +499,7 @@ public class PrivilegeOperatePersistence {
           component,service, authorizables, dropPrivilege.getAction(),
           dropPrivilege.getGrantOption());
 
-      /**
+      /*
        * force to load all roles related this privilege
        * avoid the lazy-loading
        */
@@ -513,16 +513,16 @@ public class PrivilegeOperatePersistence {
     }
   }
 
-  private BitFieldAction getAction(String component, String name) {
+  private BitFieldAction getAction(String component, String name) throws SentryUserException {
     BitFieldActionFactory actionFactory = getActionFactory(component);
     BitFieldAction action = actionFactory.getActionByName(name);
     if (action == null) {
-      throw new RuntimeException("Can not get BitFieldAction for name: " + name);
+      throw new SentryUserException("Can not get BitFieldAction for name: " + name);
     }
     return action;
   }
 
-  private BitFieldActionFactory getActionFactory(String component) {
+  private BitFieldActionFactory getActionFactory(String component) throws SentryUserException {
     String caseInsensitiveComponent = component.toLowerCase();
     if (actionFactories.containsKey(caseInsensitiveComponent)) {
       return actionFactories.get(caseInsensitiveComponent);
@@ -534,11 +534,11 @@ public class PrivilegeOperatePersistence {
     return actionFactory;
   }
 
-  private BitFieldActionFactory createActionFactory(String component) {
+  private BitFieldActionFactory createActionFactory(String component) throws SentryUserException {
     String actionFactoryClassName =
       conf.get(String.format(ServiceConstants.ServerConfig.SENTRY_COMPONENT_ACTION_FACTORY_FORMAT, component));
     if (actionFactoryClassName == null) {
-      throw new RuntimeException("ActionFactory not defined for component " + component +
+      throw new SentryUserException("ActionFactory not defined for component " + component +
                                    ". Please define the parameter " +
                                    "sentry." + component + ".action.factory in configuration");
     }
@@ -546,10 +546,10 @@ public class PrivilegeOperatePersistence {
     try {
       actionFactoryClass = Class.forName(actionFactoryClassName);
     } catch (ClassNotFoundException e) {
-      throw new RuntimeException("ActionFactory class " + actionFactoryClassName + " not found.");
+      throw new SentryUserException("ActionFactory class " + actionFactoryClassName + " not found.");
     }
     if (!BitFieldActionFactory.class.isAssignableFrom(actionFactoryClass)) {
-      throw new RuntimeException("ActionFactory class " + actionFactoryClassName + " must extend "
+      throw new SentryUserException("ActionFactory class " + actionFactoryClassName + " must extend "
                                    + BitFieldActionFactory.class.getName());
     }
     BitFieldActionFactory actionFactory;
@@ -558,7 +558,7 @@ public class PrivilegeOperatePersistence {
       actionFactoryConstructor.setAccessible(true);
       actionFactory = (BitFieldActionFactory) actionFactoryClass.newInstance();
     } catch (NoSuchMethodException | InstantiationException | IllegalAccessException e) {
-      throw new RuntimeException("Could not instantiate actionFactory " + actionFactoryClassName +
+      throw new SentryUserException("Could not instantiate actionFactory " + actionFactoryClassName +
                                    " for component: " + component, e);
     }
     return actionFactory;
