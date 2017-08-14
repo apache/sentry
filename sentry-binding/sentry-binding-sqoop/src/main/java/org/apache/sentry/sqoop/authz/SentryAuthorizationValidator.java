@@ -19,6 +19,7 @@ package org.apache.sentry.sqoop.authz;
 import java.util.List;
 
 import org.apache.sentry.core.common.Subject;
+import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.sqoop.PrincipalDesc;
 import org.apache.sentry.sqoop.PrincipalDesc.PrincipalType;
 import org.apache.sentry.sqoop.SentrySqoopError;
@@ -54,9 +55,15 @@ public class SentryAuthorizationValidator extends AuthorizationValidator {
         LOG.debug("Going to authorize check on privilege : " + privilege +
             " for principal: " + principal);
       }
-      if (!binding.authorize(new Subject(principalDesc.getName()), privilege)) {
+      try {
+        if (!binding.authorize(new Subject(principalDesc.getName()), privilege)) {
+          throw new SqoopException(SecurityError.AUTH_0014, "User " + principalDesc.getName() +
+              " does not have privileges for : " + privilege.toString());
+        }
+      } catch (SentryUserException e) {
         throw new SqoopException(SecurityError.AUTH_0014, "User " + principalDesc.getName() +
-            " does not have privileges for : " + privilege.toString());
+              " with privilege " + privilege.toString() + " could not be authorized because"
+            + " the following error: " + e.getMessage());
       }
     }
   }

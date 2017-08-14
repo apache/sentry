@@ -149,7 +149,7 @@ public class SqoopAuthBinding {
    * @param action
    * @return true or false
    */
-  public boolean authorize(Subject subject, MPrivilege privilege) {
+  public boolean authorize(Subject subject, MPrivilege privilege) throws SentryUserException {
     List<Authorizable> authorizables = toAuthorizable(privilege.getResource());
     if (!hasServerInclude(authorizables)) {
       authorizables.add(0, sqoopServer);

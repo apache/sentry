@@ -22,9 +22,10 @@ import org.apache.sentry.core.common.BitFieldAction;
 import org.apache.sentry.core.common.BitFieldActionFactory;
 
 import com.google.common.collect.Lists;
+import org.apache.sentry.core.common.exception.SentryUserException;
 
 public class SqoopActionFactory extends BitFieldActionFactory {
-  enum SqoopActionType {
+  public enum SqoopActionType {
     READ(SqoopActionConstant.READ,1),
     WRITE(SqoopActionConstant.WRITE,2),
     ALL(SqoopActionConstant.ALL,READ.getCode() | WRITE.getCode());
@@ -44,16 +45,16 @@ public class SqoopActionFactory extends BitFieldActionFactory {
       return name;
     }
 
-    static SqoopActionType getActionByName(String name) {
+    static SqoopActionType getActionByName(String name) throws SentryUserException {
       for (SqoopActionType action : SqoopActionType.values()) {
         if (action.name.equalsIgnoreCase(name)) {
           return action;
         }
       }
-      throw new RuntimeException("can't get sqoopActionType by name:" + name);
+      throw new SentryUserException("can't get sqoopActionType by name:" + name);
     }
 
-    static List<SqoopActionType> getActionByCode(int code) {
+    static List<SqoopActionType> getActionByCode(int code) throws SentryUserException {
       List<SqoopActionType> actions = Lists.newArrayList();
       for (SqoopActionType action : SqoopActionType.values()) {
         if ((action.code & code) == action.code && action != SqoopActionType.ALL) {
@@ -62,14 +63,14 @@ public class SqoopActionFactory extends BitFieldActionFactory {
         }
       }
       if (actions.isEmpty()) {
-        throw new RuntimeException("can't get sqoopActionType by code:" + code);
+        throw new SentryUserException("can't get sqoopActionType by code:" + code);
       }
       return actions;
     }
   }
 
   public static class SqoopAction extends BitFieldAction {
-    public SqoopAction(String name) {
+    public SqoopAction(String name) throws SentryUserException {
       this(SqoopActionType.getActionByName(name));
     }
     public SqoopAction(SqoopActionType sqoopActionType) {
@@ -78,7 +79,7 @@ public class SqoopActionFactory extends BitFieldActionFactory {
   }
 
   @Override
-  public BitFieldAction getActionByName(String name) {
+  public BitFieldAction getActionByName(String name) throws SentryUserException {
     //Check the name is All
     if (SqoopActionConstant.ALL_NAME.equalsIgnoreCase(name)) {
       return new SqoopAction(SqoopActionType.ALL);
@@ -87,7 +88,7 @@ public class SqoopActionFactory extends BitFieldActionFactory {
   }
 
   @Override
-  public List<? extends BitFieldAction> getActionsByCode(int code) {
+  public List<? extends BitFieldAction> getActionsByCode(int code) throws SentryUserException {
     List<SqoopAction> actions = Lists.newArrayList();
     for (SqoopActionType action : SqoopActionType.getActionByCode(code)) {
       actions.add(new SqoopAction(action));

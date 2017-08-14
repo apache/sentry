@@ -23,6 +23,7 @@ import org.apache.sentry.core.common.BitFieldAction;
 import org.apache.sentry.core.common.BitFieldActionFactory;
 import org.apache.sentry.core.common.ImplyMethodType;
 import org.apache.sentry.core.common.Model;
+import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.common.utils.KeyValue;
 import org.apache.sentry.core.common.utils.PathUtils;
 import org.apache.sentry.core.common.utils.SentryConstants;
@@ -160,8 +161,16 @@ public class CommonPrivilege implements Privilege {
   // for Solr, the action will be update, query, etc.
   private boolean impliesAction(String policyValue, String requestValue,
                                 BitFieldActionFactory bitFieldActionFactory) {
-    BitFieldAction currentAction = bitFieldActionFactory.getActionByName(policyValue);
-    BitFieldAction requestAction = bitFieldActionFactory.getActionByName(requestValue);
+    BitFieldAction currentAction;
+    BitFieldAction requestAction;
+
+    try {
+      currentAction = bitFieldActionFactory.getActionByName(policyValue);
+      requestAction = bitFieldActionFactory.getActionByName(requestValue);
+    } catch (SentryUserException e) {
+      return false;
+    }
+
     // the action in privilege is not supported
     if (currentAction == null || requestAction == null) {
       return false;

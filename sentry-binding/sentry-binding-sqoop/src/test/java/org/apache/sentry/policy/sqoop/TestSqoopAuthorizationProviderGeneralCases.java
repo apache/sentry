@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.sentry.core.model.sqoop.SqoopActionFactory;
 import org.junit.Assert;
 
 import org.apache.commons.io.FileUtils;
@@ -35,7 +36,6 @@ import org.apache.sentry.core.model.sqoop.Connector;
 import org.apache.sentry.core.model.sqoop.Job;
 import org.apache.sentry.core.model.sqoop.Link;
 import org.apache.sentry.core.model.sqoop.Server;
-import org.apache.sentry.core.model.sqoop.SqoopActionConstant;
 import org.apache.sentry.core.model.sqoop.SqoopActionFactory.SqoopAction;
 import org.apache.sentry.core.model.sqoop.SqoopPrivilegeModel;
 import org.apache.sentry.provider.common.GroupMappingService;
@@ -73,9 +73,9 @@ public class TestSqoopAuthorizationProviderGeneralCases {
   private static final Job job1 = new Job("job1");
   private static final Job job2 = new Job("job2");
 
-  private static final SqoopAction ALL = new SqoopAction(SqoopActionConstant.ALL);
-  private static final SqoopAction READ = new SqoopAction(SqoopActionConstant.READ);
-  private static final SqoopAction WRITE = new SqoopAction(SqoopActionConstant.WRITE);
+  private static final SqoopAction ALL = new SqoopAction(SqoopActionFactory.SqoopActionType.ALL);
+  private static final SqoopAction READ = new SqoopAction(SqoopActionFactory.SqoopActionType.READ);
+  private static final SqoopAction WRITE = new SqoopAction(SqoopActionFactory.SqoopActionType.WRITE);
 
   private static final String ADMIN = "admin";
   private static final String DEVELOPER = "developer";

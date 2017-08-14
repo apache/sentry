@@ -17,6 +17,8 @@
  */
 package org.apache.sentry.core.common;
 
+import org.apache.sentry.core.common.exception.SentryUserException;
+
 import java.util.List;
 
 public abstract class BitFieldActionFactory {
@@ -27,11 +29,11 @@ public abstract class BitFieldActionFactory {
    * @param actionCode
    * @return The BitFieldAction List
    */
-  public abstract List<? extends BitFieldAction> getActionsByCode(int actionCode);
+  public abstract List<? extends BitFieldAction> getActionsByCode(int actionCode) throws SentryUserException;
   /**
    * Get the BitFieldAction from the given name
    * @param name
    * @return
    */
-  public abstract BitFieldAction getActionByName(String name);
+  public abstract BitFieldAction getActionByName(String name) throws SentryUserException;
 }

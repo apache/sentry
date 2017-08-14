@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.model.sqoop.SqoopActionFactory.SqoopAction;
 import org.junit.Test;
 
@@ -29,7 +30,7 @@ public class TestSqoopAction {
   private SqoopActionFactory factory = new SqoopActionFactory();
 
   @Test
-  public void testImpliesAction() {
+  public void testImpliesAction() throws SentryUserException {
     SqoopAction readAction = (SqoopAction)factory.getActionByName(SqoopActionConstant.READ);
     SqoopAction writeAction = (SqoopAction)factory.getActionByName(SqoopActionConstant.WRITE);
     SqoopAction allAction = (SqoopAction)factory.getActionByName(SqoopActionConstant.ALL);
