@@ -128,7 +128,7 @@ public final class FullUpdateInitializer implements AutoCloseable {
    * @param uri - resource URI (usually with scheme)
    * @return path if uri is valid or null
    */
-  private static String pathFromURI(String uri) {
+  static String pathFromURI(String uri) {
     try {
       return PathsUpdate.parsePath(uri);
     } catch (SentryMalformedPathException e) {

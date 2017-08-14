@@ -6,9 +6,9 @@
   to you under the Apache License, Version 2.0 (the
   "License"); you may not use this file except in compliance
   with the License.  You may obtain a copy of the License at
-  <p>
+
   http://www.apache.org/licenses/LICENSE-2.0
-  <p>
+
   Unless required by applicable law or agreed to in writing, software
   distributed under the License is distributed on an "AS IS" BASIS,
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -64,7 +64,6 @@ public class HMSFollower implements Runnable, AutoCloseable {
     this(conf, store, leaderMonitor, hiveConnectionFactory, null);
   }
 
-  @VisibleForTesting
   /**
    * Constructor should be used only for testing purposes.
    *
@@ -73,6 +72,7 @@ public class HMSFollower implements Runnable, AutoCloseable {
    * @param leaderMonitor
    * @param authServerName Server that sentry is Authorizing
    */
+  @VisibleForTesting
   public HMSFollower(Configuration conf, SentryStore store, LeaderStatusMonitor leaderMonitor,
               HiveSimpleConnectionFactory hiveConnectionFactory, String authServerName) {
     LOGGER.info("HMSFollower is being initialized");
@@ -244,12 +244,13 @@ public class HMSFollower implements Runnable, AutoCloseable {
     long firstNotificationId = eventList.get(0).getEventId();
     long lastNotificationId = eventList.get(eventList.size() - 1).getEventId();
 
-    /* If the next expected notification is not available, then an out-of-sync might
-     * have happened due to the following issue:
-     *
-     * - HDFS sync was disabled or Sentry was shutdown for a time period longer than
-     *   the HMS notification clean-up thread causing old notifications to be deleted.
-     */
+    //
+    // If the next expected notification is not available, then an out-of-sync might
+    // have happened due to the following issue:
+    //
+    // - HDFS sync was disabled or Sentry was shutdown for a time period longer than
+    // the HMS notification clean-up thread causing old notifications to be deleted.
+    //
     if ((latestProcessedId + 1) != firstNotificationId) {
       LOGGER.info("Current HMS notifications are out-of-sync with latest Sentry processed"
           + "notifications. Need to request a full HMS snapshot.");
