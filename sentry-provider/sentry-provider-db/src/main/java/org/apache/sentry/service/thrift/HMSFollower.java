@@ -290,11 +290,11 @@ public class HMSFollower implements Runnable, AutoCloseable {
       LOGGER.debug("Persisting HMS path full snapshot");
 
       if (hdfsSyncEnabled) {
-        sentryStore.persistFullPathsImage(snapshotInfo.getPathImage());
+        sentryStore.persistFullPathsImage(snapshotInfo.getPathImage(), snapshotInfo.getId());
+      } else {
+        // We need to persist latest notificationID for next poll
+        sentryStore.persistLastProcessedNotificationID(snapshotInfo.getId());
       }
-
-      // We need to persist latest notificationID for next poll
-      sentryStore.persistLastProcessedNotificationID(snapshotInfo.getId());
     } catch (Exception failure) {
       LOGGER.error("Received exception while persisting HMS path full snapshot ");
       throw failure;

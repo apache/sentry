@@ -2695,17 +2695,24 @@ public class SentryStore {
   }
 
   /**
-   * Persist an up-to-date HMS snapshot into Sentry DB in a single transaction.
+   * Persist an up-to-date HMS snapshot into Sentry DB in a single transaction with its latest
+   * notification ID
    *
    * @param authzPaths paths to be be persisted
+   * @param notificationID the latest notificationID associated with the snapshot
    * @throws Exception
    */
-  public void persistFullPathsImage(final Map<String, Set<String>> authzPaths) throws Exception {
+  public void persistFullPathsImage(final Map<String, Set<String>> authzPaths,
+      final long notificationID) throws Exception {
     tm.executeTransactionWithRetry(
       new TransactionBlock() {
         public Object execute(PersistenceManager pm) throws Exception {
           pm.setDetachAllOnCommit(false); // No need to detach objects
 
+          // persist the notidicationID
+          pm.makePersistent(new MSentryHmsNotification(notificationID));
+
+          // persist the full snapshot
           long snapshotID = getCurrentAuthzPathsSnapshotID(pm);
           long nextSnapshotID = snapshotID + 1;
           pm.makePersistent(new MAuthzPathsSnapshotId(nextSnapshotID));
