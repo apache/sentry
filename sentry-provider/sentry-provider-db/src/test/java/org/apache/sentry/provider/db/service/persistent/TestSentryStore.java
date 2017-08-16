@@ -2478,6 +2478,62 @@ public class TestSentryStore extends org.junit.Assert {
   }
 
   @Test
+  public void testAddPathsWithDuplicatedNotificationIdShouldBeAllowed() throws Exception {
+    long notificationID = 1;
+
+    // Persist an empty image so that we can add paths to it.
+    sentryStore.persistFullPathsImage(new HashMap<String, Set<String>>(), 0);
+
+    // Create two path updates with the same sequence ID
+    PathsUpdate update1 = new PathsUpdate(notificationID, false);
+    PathsUpdate update2 = new PathsUpdate(notificationID, false);
+
+    // Populate the path updates with different objects and paths
+    update1.newPathChange("db1").addToAddPaths(Arrays.asList("/hive/db1"));
+    update2.newPathChange("db2").addToAddPaths(Arrays.asList("/hive/db2"));
+
+    // Persist both path updates. Persisting should be allowed, and paths should be
+    // persisted even if they have the same sequence ID
+    sentryStore.addAuthzPathsMapping("db1", Arrays.asList("/hive/db1"), update1);
+    sentryStore.addAuthzPathsMapping("db2", Arrays.asList("/hive/db2"), update2);
+
+    // Check the latest persisted ID matches to both the path updates
+    long latestID = sentryStore.getLastProcessedNotificationID();
+    assertEquals(notificationID, latestID);
+
+    // Check that retrieving a full paths image returns both paths updates
+    Map<String, Set<String>> pathsImage = sentryStore.retrieveFullPathsImage().getPathImage();
+    assertEquals(2, pathsImage.size());
+    assertEquals(1, pathsImage.get("db1").size());
+    assertTrue(pathsImage.get("db1").contains("/hive/db1"));
+    assertEquals(1, pathsImage.get("db2").size());
+    assertTrue(pathsImage.get("db2").contains("/hive/db2"));
+
+    // Check that retrieving delta changes returns both patch updates
+    List<MSentryPathChange> pathsChanges = sentryStore.getMSentryPathChanges();
+    assertEquals(2, pathsChanges.size());
+    assertEquals(1, pathsChanges.get(0).getChangeID()); // changeID = 1
+    assertEquals(notificationID, pathsChanges.get(0).getNotificationID());
+    assertTrue(pathsChanges.get(0).getPathChange().contains("/hive/db1"));
+    assertEquals(2, pathsChanges.get(1).getChangeID()); // changeID = 2
+    assertEquals(notificationID, pathsChanges.get(1).getNotificationID());
+    assertTrue(pathsChanges.get(1).getPathChange().contains("/hive/db2"));
+  }
+
+  @Test
+  public void testPersistDuplicatedNotificationIdShouldBeAllowed() throws Exception {
+    long notificationID = 1;
+
+    // Persist the same ID twice should not cause any issues
+    sentryStore.persistLastProcessedNotificationID(notificationID);
+    sentryStore.persistLastProcessedNotificationID(notificationID);
+
+    // Retrieving latest peristed ID should match with the previous persisted ID
+    long latestID = sentryStore.getLastProcessedNotificationID();
+    assertEquals(notificationID, latestID);
+  }
+
+  @Test
   public void testAddDeleteAuthzPathsMapping() throws Exception {
     long notificationID = 0;
 

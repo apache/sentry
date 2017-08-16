@@ -297,7 +297,6 @@
        </field>
        <field name="notificationID">
          <column name="NOTIFICATION_ID" jdbc-type="BIGINT" allows-null="false"/>
-         <index name="NOTIFICATIONID" unique="true"/>
        </field>
        <field name ="pathChange">
          <column name="PATH_CHANGE" length="4000" jdbc-type="VARCHAR" allows-null="false"/>
@@ -306,8 +305,8 @@
          <column name="CREATE_TIME_MS" jdbc-type="BIGINT"/>
        </field>
      </class>
-     <class name="MSentryHmsNotification" table="SENTRY_HMS_NOTIFICATION_ID" identity-type="application" detachable="true">
-        <field name="notificationId" primary-key="true">
+     <class name="MSentryHmsNotification" table="SENTRY_HMS_NOTIFICATION_ID" identity-type="nondurable" detachable="true">
+        <field name="notificationId">
           <column name="NOTIFICATION_ID" jdbc-type="BIGINT" allows-null="false"/>
         </field>
      </class>
