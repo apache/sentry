@@ -144,13 +144,13 @@ class SentryHMSClient implements AutoCloseable {
    * @return Full path snapshot and the last notification id on success
    */
   PathsImage getFullSnapshot() {
-    try {
-      if (client == null) {
-        LOGGER.error(NOT_CONNECTED_MSG);
-        return new PathsImage(Collections.<String, Set<String>>emptyMap(),
-            SentryStore.EMPTY_NOTIFICATION_ID, SentryStore.EMPTY_PATHS_SNAPSHOT_ID);
-      }
+    if (client == null) {
+      LOGGER.error(NOT_CONNECTED_MSG);
+      return new PathsImage(Collections.<String, Set<String>>emptyMap(),
+          SentryStore.EMPTY_NOTIFICATION_ID, SentryStore.EMPTY_PATHS_SNAPSHOT_ID);
+    }
 
+    try {
       CurrentNotificationEventId eventIdBefore = client.getCurrentNotificationEventId();
       Map<String, Set<String>> pathsFullSnapshot = fetchFullUpdate();
       if (pathsFullSnapshot.isEmpty()) {
@@ -215,7 +215,8 @@ class SentryHMSClient implements AutoCloseable {
       return new PathsImage(pathsFullSnapshot, currentEventId,
           SentryStore.EMPTY_PATHS_SNAPSHOT_ID);
     } catch (TException failure) {
-      LOGGER.error("Failed to communicate to HMS");
+      LOGGER.error("Fetching a new HMS snapshot cannot continue because an error occurred during "
+          + "the HMS communication: ", failure.getMessage());
       return new PathsImage(Collections.<String, Set<String>>emptyMap(),
           SentryStore.EMPTY_NOTIFICATION_ID, SentryStore.EMPTY_PATHS_SNAPSHOT_ID);
     }
