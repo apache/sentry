@@ -3026,19 +3026,18 @@ public class SentryStore {
   /**
    * Tells if there are any records in MSentryHmsNotification
    *
-   * @return true if there are no entries in {@link MSentryHmsNotification}
+   * @return true if there are no entries in <code>MSentryHmsNotification</code>
    * false if there are entries
    * @throws Exception
    */
-  @VisibleForTesting
-  boolean isNotificationIDTableEmpty() throws Exception {
+  public boolean isHmsNotificationEmpty() throws Exception {
     return tm.executeTransactionWithRetry(
-      new TransactionBlock<Boolean>() {
-        public Boolean execute(PersistenceManager pm) throws Exception {
-          pm.setDetachAllOnCommit(false); // No need to detach objects
-          return isTableEmptyCore(pm, MSentryHmsNotification.class);
-        }
-      });
+        new TransactionBlock<Boolean>() {
+          public Boolean execute(PersistenceManager pm) throws Exception {
+            pm.setDetachAllOnCommit(false); // No need to detach objects
+            return isTableEmptyCore(pm, MSentryHmsNotification.class);
+          }
+        });
   }
 
   /**

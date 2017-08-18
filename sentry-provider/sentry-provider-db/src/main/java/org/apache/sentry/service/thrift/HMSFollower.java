@@ -210,7 +210,7 @@ public class HMSFollower implements Runnable, AutoCloseable {
    * @throws Exception If an error occurs while checking the SentryStore or the HMS client.
    */
   private boolean isFullSnapshotRequired(long latestSentryNotificationId) throws Exception {
-    if (sentryStore.isAuthzPathsMappingEmpty()) {
+    if (sentryStore.isHmsNotificationEmpty()) {
       return true;
     }
 

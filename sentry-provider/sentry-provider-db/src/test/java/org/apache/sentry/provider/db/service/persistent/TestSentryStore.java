@@ -3162,7 +3162,7 @@ public class TestSentryStore extends org.junit.Assert {
 
     int totalentires = 200;
     int remainingEntires = ServerConfig.SENTRY_HMS_NOTIFICATION_ID_KEEP_COUNT_DEFAULT;
-    assertTrue(sentryStore.isNotificationIDTableEmpty());
+    assertTrue(sentryStore.isHmsNotificationEmpty());
     for(int id = 1; id <= totalentires; id++) {
       sentryStore.persistLastProcessedNotificationID((long)id);
     }
