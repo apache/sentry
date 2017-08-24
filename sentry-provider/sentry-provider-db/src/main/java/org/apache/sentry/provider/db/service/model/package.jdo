@@ -299,7 +299,7 @@
          <column name="NOTIFICATION_ID" jdbc-type="BIGINT" allows-null="false"/>
        </field>
        <field name ="pathChange">
-         <column name="PATH_CHANGE" length="4000" jdbc-type="VARCHAR" allows-null="false"/>
+         <column name="PATH_CHANGE" jdbc-type="LONGVARCHAR" allows-null="false"/>
        </field>
        <field name="createTimeMs">
          <column name="CREATE_TIME_MS" jdbc-type="BIGINT"/>

@@ -14,7 +14,7 @@ CREATE TABLE SENTRY_PATH_CHANGE
     CHANGE_ID BIGINT NOT NULL,
     NOTIFICATION_ID BIGINT NOT NULL,
     CREATE_TIME_MS BIGINT NOT NULL,
-    PATH_CHANGE VARCHAR(4000) NOT NULL
+    PATH_CHANGE CLOB NOT NULL
 );
 
 -- Constraints for table SENTRY_PATH_CHANGE for class [org.apache.sentry.provider.db.service.model.MSentryPathChange]
