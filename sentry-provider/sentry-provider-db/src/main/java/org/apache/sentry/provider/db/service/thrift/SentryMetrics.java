@@ -49,14 +49,16 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * A singleton class which holds metrics related utility functions as well as the list of metrics
+ * A singleton class which holds metrics related utility functions as well as the list of metrics.
  */
 public final class SentryMetrics {
   public enum Reporting {
@@ -131,6 +133,9 @@ public final class SentryMetrics {
     registerMetricSet("threads", new ThreadStatesGaugeSet(), METRIC_REGISTRY);
   }
 
+  /**
+   * Get singleton instance.
+   */
   public static synchronized SentryMetrics getInstance() {
     if (sentryMetrics == null) {
       sentryMetrics = new SentryMetrics();
@@ -139,7 +144,7 @@ public final class SentryMetrics {
   }
 
   void addSentryStoreGauges(SentryStore sentryStore) {
-    if(!gaugesAdded) {
+    if (!gaugesAdded) {
       addGauge(SentryStore.class, "role_count", sentryStore.getRoleCountGauge());
       addGauge(SentryStore.class, "privilege_count",
               sentryStore.getPrivilegeCountGauge());
@@ -157,8 +162,12 @@ public final class SentryMetrics {
     }
   }
 
+  /**
+   * Add gauges for the SentryService class.
+   * @param sentryservice
+   */
   public void addSentryServiceGauges(SentryService sentryservice) {
-    if(!sentryServiceGaugesAdded) {
+    if (!sentryServiceGaugesAdded) {
       addGauge(SentryService.class, "is_active", sentryservice.getIsActiveGauge());
       addGauge(SentryService.class, "activated", sentryservice.getBecomeActiveCount());
       sentryServiceGaugesAdded = true;
@@ -166,8 +175,8 @@ public final class SentryMetrics {
   }
 
   /**
-   * Initialize reporters. Only initializes once.
-   * <p>
+   * Initialize reporters. Only initializes once.<p>
+   *
    * Available reporters:
    * <ul>
    *     <li>console</li>
@@ -175,11 +184,12 @@ public final class SentryMetrics {
    *     <li>jmx</li>
    * </ul>
    *
-   * For console reporter configre it to report every
+   * <p><For console reporter configre it to report every
    * <em>SENTRY_REPORTER_INTERVAL_SEC</em> seconds.
-   * <p>
-   * Method is thread safe.
+   *
+   * <p>Method is thread safe.
    */
+  @SuppressWarnings("squid:S2095")
   void initReporting(Configuration conf) {
     final String reporter = conf.get(ServerConfig.SENTRY_REPORTER);
     if ((reporter == null) || reporter.isEmpty() || reportingInitialized.getAndSet(true)) {
@@ -191,43 +201,58 @@ public final class SentryMetrics {
             conf.getInt(ServerConfig.SENTRY_REPORTER_INTERVAL_SEC,
                     ServerConfig.SENTRY_REPORTER_INTERVAL_DEFAULT);
 
-    switch(SentryMetrics.Reporting.valueOf(reporter.toUpperCase())) {
-      case CONSOLE:
-        LOGGER.info("Enabled console metrics reporter with {} seconds interval",
-                reportInterval);
-        final ConsoleReporter consoleReporter =
-                ConsoleReporter.forRegistry(METRIC_REGISTRY)
-            .convertRatesTo(TimeUnit.SECONDS)
-            .convertDurationsTo(TimeUnit.MILLISECONDS)
-            .build();
-        consoleReporter.start(reportInterval, TimeUnit.SECONDS);
-        break;
-      case JMX:
-        LOGGER.info("Enabled JMX metrics reporter");
-        final JmxReporter jmxReporter = JmxReporter.forRegistry(METRIC_REGISTRY)
-            .convertRatesTo(TimeUnit.SECONDS)
-            .convertDurationsTo(TimeUnit.MILLISECONDS)
-            .build();
-        jmxReporter.start();
-        break;
-      case LOG:
-        LOGGER.info("Enabled Log4J metrics reporter with {} seconds interval",
-                reportInterval);
-        final Slf4jReporter logReporter = Slf4jReporter.forRegistry(METRIC_REGISTRY)
-                .outputTo(LOGGER)
-                .convertRatesTo(TimeUnit.SECONDS)
-                .convertDurationsTo(TimeUnit.MILLISECONDS)
-                .build();
-        logReporter.start(reportInterval, TimeUnit.SECONDS);
-        break;
-      case JSON:
-        LOGGER.info("Enabled JSON metrics reporter with {} seconds interval", reportInterval);
-        JsonFileReporter jsonReporter = new JsonFileReporter(conf, reportInterval, TimeUnit.SECONDS);
-        jsonReporter.start();
-        break;
-      default:
-        LOGGER.warn("Invalid metrics reporter {}", reporter);
-        break;
+    // Get list of configured reporters
+    Set<String> reporters = new HashSet<>();
+    for (String r: reporter.split(",")) {
+      reporters.add(r.trim().toUpperCase());
+    }
+
+    // In case there are no reporters, configure JSON reporter
+    if (reporters.isEmpty()) {
+      reporters.add(Reporting.JSON.toString());
+    }
+
+    // Configure all reporters
+    for (String r: reporters) {
+      switch (SentryMetrics.Reporting.valueOf(r)) {
+        case CONSOLE:
+          LOGGER.info("Enabled console metrics reporter with {} seconds interval",
+                  reportInterval);
+          final ConsoleReporter consoleReporter =
+                  ConsoleReporter.forRegistry(METRIC_REGISTRY)
+                          .convertRatesTo(TimeUnit.SECONDS)
+                          .convertDurationsTo(TimeUnit.MILLISECONDS)
+                          .build();
+          consoleReporter.start(reportInterval, TimeUnit.SECONDS);
+          break;
+        case JMX:
+          LOGGER.info("Enabled JMX metrics reporter");
+          final JmxReporter jmxReporter = JmxReporter.forRegistry(METRIC_REGISTRY)
+                  .convertRatesTo(TimeUnit.SECONDS)
+                  .convertDurationsTo(TimeUnit.MILLISECONDS)
+                  .build();
+          jmxReporter.start();
+          break;
+        case LOG:
+          LOGGER.info("Enabled Log4J metrics reporter with {} seconds interval",
+                  reportInterval);
+          final Slf4jReporter logReporter = Slf4jReporter.forRegistry(METRIC_REGISTRY)
+                  .outputTo(LOGGER)
+                  .convertRatesTo(TimeUnit.SECONDS)
+                  .convertDurationsTo(TimeUnit.MILLISECONDS)
+                  .build();
+          logReporter.start(reportInterval, TimeUnit.SECONDS);
+          break;
+        case JSON:
+          LOGGER.info("Enabled JSON metrics reporter with {} seconds interval", reportInterval);
+          JsonFileReporter jsonReporter = new JsonFileReporter(conf,
+                  reportInterval, TimeUnit.SECONDS);
+          jsonReporter.start();
+          break;
+        default:
+          LOGGER.warn("Invalid metrics reporter {}", reporter);
+          break;
+      }
     }
   }
 
@@ -261,7 +286,7 @@ public final class SentryMetrics {
                     TimeUnit.MILLISECONDS,
                     false));
     private final Configuration conf;
-    /** Destination file name */
+    /** Destination file name. */
     private final String pathString;
     private final long interval;
     private final TimeUnit unit;
