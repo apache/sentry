@@ -17,6 +17,7 @@
  */
 package org.apache.sentry.hdfs;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,10 +31,14 @@ import org.apache.sentry.hdfs.HMSPaths.Entry;
 import org.apache.sentry.hdfs.HMSPaths.EntryType;
 import org.apache.sentry.hdfs.service.thrift.TPathEntry;
 import org.apache.sentry.hdfs.service.thrift.TPathsDump;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HMSPathsDumper implements AuthzPathsDumper<HMSPaths> {
 
   private final HMSPaths hmsPaths;
+
+  private static final Logger LOG = LoggerFactory.getLogger(HMSPathsDumper.class);
 
   static class Tuple {
     private final TPathEntry entry;
@@ -65,9 +70,16 @@ public class HMSPathsDumper implements AuthzPathsDumper<HMSPaths> {
         hmsPaths.getRootEntry(), tRootTuple.entry, counter, idMap, dups);
     TPathsDump dump = new TPathsDump(tRootTuple.id, idMap);
 
+    String stringDupMsg = "";
     if (minimizeSize) {
-      dump.setDupStringValues(Arrays.asList(dups.getDupStringValues()));
+      String[] dupStringValues = dups.getDupStringValues();
+      dump.setDupStringValues(Arrays.asList(dupStringValues));
+      stringDupMsg = String.format(" %d total path strings, %d duplicate strings found, " +
+          "compacted to %d unique strings.", dups.nTotalStrings, dups.nDupStrings,
+          dupStringValues.length);
     }
+    LOG.info("Paths Dump created." + stringDupMsg);
+
     return dump;
   }
 
@@ -83,14 +95,14 @@ public class HMSPathsDumper implements AuthzPathsDumper<HMSPaths> {
   private Tuple createTPathEntry(Entry entry, AtomicInteger idCounter,
       Map<Integer, TPathEntry> idMap, DupDetector dups) {
     int myId = idCounter.incrementAndGet();
-    Set<Integer> children = entry.hasChildren() ?
-        new HashSet<Integer>(entry.numChildren()) : Collections.<Integer>emptySet();
+    List<Integer> children = entry.hasChildren() ?
+        new ArrayList<Integer>(entry.numChildren()) : Collections.<Integer>emptyList();
     String pathElement = entry.getPathElement();
     String sameOrReplacementId =
         dups != null ? dups.getReplacementString(pathElement) : pathElement;
     TPathEntry tEntry = new TPathEntry(entry.getType().getByte(), sameOrReplacementId, children);
-    if (!entry.getAuthzObjs().isEmpty()) {
-      tEntry.setAuthzObjs(entry.getAuthzObjs());
+    if (!entry.isAuthzObjsEmpty()) {
+      tEntry.setAuthzObjs(new ArrayList<>(entry.getAuthzObjs()));
     }
     idMap.put(myId, tEntry);
     return new Tuple(tEntry, myId);
@@ -142,7 +154,7 @@ public class HMSPathsDumper implements AuthzPathsDumper<HMSPaths> {
         child = new Entry(parent, tChildPathElement,
             EntryType.fromByte(tChild.getType()), tChild.getAuthzObjs());
       }
-      if (child.getAuthzObjs().size() != 0) {
+      if (!child.isAuthzObjsEmpty()) {
         for (String authzObj: child.getAuthzObjs()) {
           Set<Entry> paths = authzObjToPath.get(authzObj);
           if (paths == null) {
@@ -200,6 +212,8 @@ public class HMSPathsDumper implements AuthzPathsDumper<HMSPaths> {
     // Size of the auxiliary string array - essentially the number of duplicate
     // strings that we detected and encoded.
     private int auxArraySize;
+    // For statistics/debugging
+    int nTotalStrings, nDupStrings;
 
     /**
      * Finds duplicate strings in the tree of Entry objects with the given root,
@@ -215,6 +229,7 @@ public class HMSPathsDumper implements AuthzPathsDumper<HMSPaths> {
         if (keys[i] != null) {
           if (values[i] >= MIN_NUM_DUPLICATES) {
             values[i] = auxArraySize++;
+            nDupStrings += values[i];
           } else {  // No duplication for this string
             keys[i] = null;
             values[i] = -1;  // Just to mark invalid slots
@@ -258,6 +273,7 @@ public class HMSPathsDumper implements AuthzPathsDumper<HMSPaths> {
     }
 
     private void inspectEntry(Entry entry) {
+      nTotalStrings++;
       String pathElement = entry.getPathElement();
       if (pathElement.length() > AVG_ID_LENGTH) {
         // In the serialized data, it doesn't make sense to replace string origS

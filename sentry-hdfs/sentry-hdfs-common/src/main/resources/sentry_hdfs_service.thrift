@@ -49,10 +49,10 @@ struct TPathEntry {
 2: required string pathElement;
 
 # The child tuple id of the Path Entry.
-4: required set<i32> children;
+4: required list<i32> children;
 
 # A set of authzObjs associated with the Path Entry.
-5: optional set<string> authzObjs;
+5: optional list<string> authzObjs;
 }
 
 struct TPathsDump {

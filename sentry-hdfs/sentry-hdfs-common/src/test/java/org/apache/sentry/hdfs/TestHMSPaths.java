@@ -63,6 +63,9 @@ public class TestHMSPaths {
     root.toString();
     Assert.assertNull(root.getParent());
     Assert.assertEquals(HMSPaths.EntryType.DIR, root.getType());
+    Assert.assertTrue(root.getAuthzObjsSize() == 0);
+    Assert.assertTrue(root.isAuthzObjsEmpty());
+    // getAuthzObjs().size() is not recommended, but let's check that it works correctly
     Assert.assertTrue(root.getAuthzObjs().size() == 0);
     Assert.assertEquals(Path.SEPARATOR, root.getFullPath());
     Assert.assertFalse(root.hasChildren());
@@ -127,6 +130,9 @@ public class TestHMSPaths {
     Assert.assertEquals(root, entry.getParent());
     Assert.assertEquals(HMSPaths.EntryType.PREFIX, entry.getType());
     Assert.assertEquals("a", entry.getPathElement());
+    Assert.assertEquals(0, entry.getAuthzObjsSize());
+    Assert.assertTrue(entry.isAuthzObjsEmpty());
+    // getAuthzObjs().size() is not recommended, but let's check that it works correctly
     Assert.assertEquals(0, entry.getAuthzObjs().size());
     Assert.assertEquals(Path.SEPARATOR + "a", entry.getFullPath());
     Assert.assertFalse(entry.hasChildren());
@@ -171,6 +177,10 @@ public class TestHMSPaths {
         entry.getParent().getType());
     Assert.assertEquals("b", entry.getPathElement());
     Assert.assertEquals("a", entry.getParent().getPathElement());
+    Assert.assertTrue(entry.getAuthzObjsSize() == 0);
+    Assert.assertTrue(entry.isAuthzObjsEmpty());
+    Assert.assertTrue(entry.getParent().getAuthzObjsSize() == 0);
+    // getAuthzObjs().size() is not recommended, but let's check that it works correctly
     Assert.assertTrue(entry.getAuthzObjs().size() == 0);
     Assert.assertTrue(entry.getParent().getAuthzObjs().size() == 0);
     Assert.assertEquals(Path.SEPARATOR + "a" + Path.SEPARATOR + "b",
@@ -296,6 +306,9 @@ public class TestHMSPaths {
     Assert.assertNull(root.find(new String[]{"a", "b", "t", "p1"},
         true));
     Assert.assertEquals(HMSPaths.EntryType.DIR, entry.getType());
+    Assert.assertEquals(entry.getAuthzObjsSize(), 0);
+    Assert.assertTrue(entry.isAuthzObjsEmpty());
+    // getAuthzObjs().size() is not recommended, but let's check that it works correctly
     Assert.assertEquals(entry.getAuthzObjs().size(), 0);
 
     Assert.assertNull(root.find(new String[]{"a", "b", "t", "p1"}, false));
